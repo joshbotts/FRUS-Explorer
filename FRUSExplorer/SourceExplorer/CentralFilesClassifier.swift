@@ -214,10 +214,12 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///         outcome states, the direction-aware serial label, and `documentYear(fromDateline:)`.
 ///   1.5 — 2026-10-01 (the 2026-09-28 audit, folded into #1514): the Department cue is the U.S.
 ///         Department's own (`isUSDepartmentDateline`) — not the Confederate department at Richmond,
-///         nor a foreign ministry styled a department of state, and `State Department` and
-///         `Dapartment of State` read too; and a letter the sitting Secretary of State signs is the
-///         Department's from wherever he wrote it (`sittingSecretarySender`), where the despatch
-///         fallback read Seward at Auburn and Blaine at Bar Harbor as despatches from abroad.
+///         nor a foreign ministry styled a department of state or datelined at its own capital, and
+///         `State Department` and the volumes' misprints (`Dapartment`, `Deparment`, `Stats`, …) read
+///         too; and a letter the sitting Secretary of State signs is the Department's from wherever
+///         he wrote it (`sittingSecretarySender`, his bare surname, never an initialled namesake),
+///         where the despatch fallback read Seward at Auburn and Blaine at Bar Harbor as despatches
+///         from abroad.
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -501,21 +503,43 @@ enum CentralFilesClassifier {
     ///
     /// The cue was `contains("department of state")`, wrong both ways. Measured over the first
     /// `<dateline>` of the 46,710 document divisions in the 81 manifest volumes whose span opens
-    /// before 1906 (a regex census of the TEI the classifier reads, not of its output): 44 datelines
-    /// name a department of state that is not the U.S. one — the Confederate department at
-    /// Richmond (12, `isConfederateDateline`), a foreign ministry styled `Department of State for
-    /// Foreign Affairs` or `… and (of) Foreign Relations` (21: Paraguay's at Luque and Asunción,
-    /// Mexico's, Haiti's, and six unplaced), and a foreign department datelined at its own capital
-    /// (11: Madrid's Palace, `Bureau of Political Affairs, Madrid`, Mexico, Peking, Monrovia) — and
-    /// each was read as the Department's outbound letter. A foreign ministry's letter now takes the
-    /// despatch fallback, as an enclosure filed with the U.S. mission's despatch, which is what the
-    /// fallback says it is; a Confederate letter takes none. And the cue missed five U.S. datelines
-    /// spelt otherwise: `State Department` (frus1866p1/d66, frus1886/d244, frus1894app1/d638) and the
-    /// misprint `Dapartment of State` (frus1885/d310, frus1905/d321), which the legation-chapter
-    /// sender rule already read.
+    /// before 1906 — a regex census of the TEI the classifier reads, not of its output, joining a
+    /// dateline's pieces as the index stores it (`PrintedText`). A few of those documents are dated
+    /// 1906 or later, outside the classifier's year gate; they are counted where they fall, and the
+    /// gate is named where it matters.
+    /// - **41 name a department of state that is not the U.S. one**, and the cue read each as the
+    ///   Department's outbound letter: the Confederate department at Richmond (12,
+    ///   `isConfederateDateline`); a foreign ministry styled `Department of State for Foreign
+    ///   Affairs` or `… and (of) Foreign Relations` (21, read by the style alone: Paraguay's at Luque
+    ///   and Asunción 11, Portugal's with no place 7, Mexico's at the City of Mexico 2, Haiti's at Port
+    ///   au Prince 1); and a foreign department datelined at its own capital with no style (8, read by
+    ///   the place, `foreignDepartmentPlaces`: Spain's, at the Palace or its `Bureau of Political
+    ///   Affairs, Madrid`, 7, and Liberia's at Monrovia). A foreign ministry's letter now takes the
+    ///   despatch fallback, as an enclosure filed with the U.S. mission's despatch, which is what the
+    ///   fallback says it is; a Confederate letter takes none.
+    /// - **3 print a foreign capital after the Department and are U.S. letters.** Two are
+    ///   Frelinghuysen's instructions to the minister in Mexico, `Department of State, Mexico`
+    ///   (frus1884/d254, d262), so `mexico` is no foreign department's place and they read as the
+    ///   Department's; the third is the minister's despatch from Peking, `Department of State, Peking,
+    ///   … (Received December 5.)` (Denby to Bayard, frus1885/d119), which `peking` sends to the
+    ///   despatch fallback — the right series, though not because a foreign department wrote it.
+    /// - **37 are the U.S. Department's, spelt otherwise** (33 inside the year gate). The cue read
+    ///   five: `State Department` (frus1866p1/d66, frus1886/d244, frus1894app1/d638) and `Dapartment
+    ///   of State` (frus1885/d310, frus1905/d321). `usDepartmentNamePattern` reads the rest, misprints
+    ///   of four kinds: `of` misread (`Department op State` ×7, `oe` ×2, `or`, `in`), letters dropped
+    ///   (`Deparment` ×3, `Depatment`, `Sate`, `Stat Washington`), letters added or misread
+    ///   (`Department of Stats` ×4, `Departmeint`, `Departmrnt`, `Departmentl`, `Departmment`,
+    ///   `Departmemt`, `Stpte`), and stray punctuation (`Department.of`, `Department, of` ×2, `of.
+    ///   State`, `of’State`). A sitting Secretary signed 23 of the 28 inside the gate, and
+    ///   `sittingSecretarySender` read those; the legation-chapter sender rule reads one more, Adee
+    ///   to Sir Julian Pauncefote in the British-embassy chapter (frus1893/d338). No rule read the
+    ///   other four, all U.S. letters, which the spelling alone now decides: Hunter to Biddle
+    ///   (frus1872p1/d411), Adee to Pauncefote among the Samoan papers (frus1894app1/d591), Hill to
+    ///   Beaupré (frus1902/d267) and the Secretary to the German chargé (frus1905/d687). Of the five
+    ///   the old cue read, only `Dapartment` at frus1905/d321 was decided by its spelling alone in its
+    ///   own chapter; the sender rules read the other four.
     static func isUSDepartmentDateline(_ dl: String) -> Bool {
-        guard dl.contains("department of state") || dl.contains("dapartment of state")
-                || dl.range(of: #"\bstate department\b"#, options: .regularExpression) != nil
+        guard dl.range(of: usDepartmentNamePattern, options: .regularExpression) != nil
         else { return false }
         if isConfederateDateline(dl) { return false }
         if dl.range(of: #"department of states?\s*,?\s*(?:for|and)\s+(?:of\s+)?foreign"#,
@@ -523,13 +547,20 @@ enum CentralFilesClassifier {
         return !containsAny(dl, foreignDepartmentPlaces)
     }
 
-    /// Where a foreign department of state datelines its letters, as the pre-1906 volumes print it —
-    /// every place the census above found after a `Department of State` that is not Washington and
-    /// is not a U.S. bureau (`Bureau of Claims`).
-    private static let foreignDepartmentPlaces = [
-        "palace", "madrid", "mexico", "peking", "monrovia", "luque", "asuncion", "asunción",
-        "port au prince",
-    ]
+    /// The Department's name as the pre-1906 datelines print it, misprints included (see
+    /// `isUSDepartmentDateline`): a word opening `dep` or `dap` with an `m` in its next six letters,
+    /// then `of` or a misreading of it between up to three spaces or stops, then `stat` (which opens
+    /// `State`, `Stats` and `Stat Washington`), `Sate` or `Stpte` — or `State Department`. Measured
+    /// over the census, it reads no dateline that is not a department of state.
+    private static let usDepartmentNamePattern =
+        #"\bd[ae]p[a-z]{0,4}m[a-z]{0,4}[\s.,’']{1,3}(?:o[a-z]|in)[\s.,’']{1,3}s(?:tat|ate\b|tpte\b)|\bstate department\b"#
+
+    /// Where a foreign department of state with no `… Foreign Affairs/Relations` style datelines its
+    /// letters, as the census in `isUSDepartmentDateline` found them: Spain's Palace and its bureau
+    /// at Madrid, Liberia's Monrovia — and Peking, where the one such dateline is the U.S.
+    /// minister's despatch, which the despatch fallback places. Paraguay's, Mexico's and Haiti's
+    /// ministries print the style, which reads them wherever they wrote.
+    private static let foreignDepartmentPlaces = ["palace", "madrid", "peking", "monrovia"]
 
     /// Whether a lower-cased dateline is the Confederate States' department of state at Richmond
     /// (frus1863p1/d35–d46, frus1872p2v2/d20) — not the Department's, and not a letter from abroad.
@@ -569,13 +600,19 @@ enum CentralFilesClassifier {
     /// alone is not: the same surnames sign despatches home when they are NOT Secretary — Bayard and
     /// Hay as ambassadors in London (frus1894app1, frus1897/d290), George F. Seward from Hong Kong
     /// (frus1876/d33), Foster from Mexico in the 1870s. A dateline with no date decides nothing.
+    ///
+    /// And the sender is the bare surname after `Mr.`: initials name someone else. In the census
+    /// `isUSDepartmentDateline` describes, 109 headers carry initials before a Secretary's surname
+    /// inside his term, and none is his — 105 are Frederick W. Seward's, the Assistant Secretary,
+    /// whose datelines name the Department anyway, and 4 are George F. Seward's, the consul general
+    /// at Shanghai, writing in his uncle's term (frus1866p1/d376, frus1867p1/d395–d397).
     static func sittingSecretarySender(inHeader headerL: String, dateline: String) -> Bool {
         guard let toRange = headerL.range(of: " to "),
               let dateISO = datelineDateISO(from: dateline) else { return false }
         let sender = String(headerL[..<toRange.lowerBound])
         return secretaryTenures.contains { tenure in
             dateISO >= tenure.from && dateISO <= tenure.through
-                && sender.range(of: #"\bmr\.? (?:[a-z]\. ?)*"# + tenure.surname + #"\b"#,
+                && sender.range(of: #"\bmr\.? "# + tenure.surname + #"\b"#,
                                 options: .regularExpression) != nil
         }
     }

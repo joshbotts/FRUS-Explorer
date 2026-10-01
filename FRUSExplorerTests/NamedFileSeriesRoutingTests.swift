@@ -28,6 +28,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #354 item 1
+///   1.1 — 2026-10-01: #1514, review round 1 — the panel's explainer, the Mac note and the State
+///          records link, driven through the real parser and read in both views
 @Suite("Named file series routing")
 struct NamedFileSeriesRoutingTests {
 
@@ -221,6 +223,40 @@ struct NamedFileSeriesRoutingTests {
         }
     }
 
+    // MARK: - The panel's explainer and link (#1514, review round 1)
+
+    /// A series whose stored name opens with the agency holding it is told so, on both platforms,
+    /// and is not offered NARA's Department of State records page; one naming no holder is told the
+    /// repository is unstated, and is. Each note is a verbatim corpus note driven through the real
+    /// parser — frus1969-76v21/d43 (the Department's INR/IL series since #1514), frus1977-80v11p1/d54
+    /// (a National Security Council series, #353), and frus1945v01/d138 (`IO Files`, no holder).
+    @Test("The explainer names the holder, and only a holder-less series gets the State records link",
+          arguments: [
+        ("Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile Chronology 1970. Secret; Immediate; Roger Channel. A stamped notation on the first page reads: “Special Handling.”",
+         "Department of State"),
+        ("Source: National Security Council, Carter Intelligence Files, Box I020, SCC Meetings, Minutes— SCC 1979. Top Secret. The meeting took place in the White House Situation Room.",
+         "National Security Council"),
+        ("IO Files: US Cr Min 6", nil),
+    ] as [(String, String?)])
+    func explainerNamesTheHolder(_ note: String, _ holder: String?) {
+        guard case .namedFileSeries(let series, _) = parser.parse(note) else {
+            Issue.record("parsed as \(parser.parse(note)), not a named series")
+            return
+        }
+        let explainer = NamedFileSeriesRouting.explainer(seriesName: series)
+        let macNote = NamedFileSeriesRouting.macNote(seriesName: series)
+        if let holder {
+            #expect(explainer == "A file series the citation places with the \(holder), cited without a lot number.")
+            #expect(macNote == "A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
+            #expect(!NamedFileSeriesRouting.offersStateRecordsLink(seriesName: series),
+                    "\(series) is offered NARA's State records page, though its citation places it with the \(holder)")
+        } else {
+            #expect(explainer == "A named file series cited without a lot number. The repository is not stated in the citation.")
+            #expect(macNote == "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.")
+            #expect(NamedFileSeriesRouting.offersStateRecordsLink(seriesName: series))
+        }
+    }
+
     // MARK: - Wiring
 
     private static let views = [
@@ -255,6 +291,36 @@ struct NamedFileSeriesRoutingTests {
                             \(path) renders the destination without its evidence, which turns \
                             the editors' own statement into an unsourced assertion.
                             """))
+        }
+    }
+
+    /// Both views say what the shared functions say (#1514, review round 1): the iOS panel's
+    /// explainer and the Mac box's note come from `NamedFileSeriesRouting`, neither view keeps the
+    /// old "repository is not stated" sentence as a literal of its own, and each gates NARA's
+    /// State records link on `offersStateRecordsLink`. A source audit with the limits the test
+    /// above states: it sees a call removed or a literal restored, not a condition changed.
+    @Test("Both views read the named-series explainer and gate the State records link")
+    func bothViewsReadTheExplainerAndGateTheLink() throws {
+        let calls = [
+            "FRUSExplorer/SourceExplorer/SourceExplorerView.swift":
+                ["NamedFileSeriesRouting.explainer(seriesName: seriesName)",
+                 "NamedFileSeriesRouting.offersStateRecordsLink(seriesName: seriesName)"],
+            "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift":
+                ["NamedFileSeriesRouting.macNote(seriesName: series)",
+                 "NamedFileSeriesRouting.offersStateRecordsLink(seriesName: series)"],
+        ]
+        for path in Self.views {
+            let text = try Self.source(path)
+            for call in calls[path] ?? [] {
+                #expect(text.contains(call), Comment(rawValue: "\(path) never calls \(call)"))
+            }
+            for literal in ["The repository is not stated in the citation",
+                            "The citation does not state the holding repository"] {
+                #expect(!text.contains(literal),
+                        Comment(rawValue: "\(path) keeps its own \"\(literal)\" instead of the shared explainer"))
+            }
+            #expect(text.components(separatedBy: "NARACatalogClient.stateDepartmentRecordsURL").count == 2,
+                    Comment(rawValue: "\(path) opens the State records page from more than the one gated place"))
         }
     }
 }

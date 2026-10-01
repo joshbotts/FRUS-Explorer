@@ -39,7 +39,8 @@ import Foundation
 ///   2.4 — #1489: a central-file note's drawn-from line names the file after an era label, and
 ///          none for a withheld-pages remark, a volume number, a U.N. symbol or a URL
 ///   2.5 — #1514, #1515: an INR/IL note's line names its folder with the volume, and a
-///          designation ending in `U.S.` keeps the abbreviation's stop
+///          designation ending in `U.S.` keeps the abbreviation's stop; review round 1: a Department
+///          series' group is placed nowhere, and one naming no holder still at College Park
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -159,6 +160,30 @@ struct TripPacketBuilderTests {
             unknown, its building is not.
             """)
         #expect(model.groups[0].resolution == nil)
+    }
+
+    /// #1514, review round 1, through the real builder: a Department series is stored as a named
+    /// series with no repository and no record group, so the builder's group label is its stored
+    /// name, and that is what the facility rule reads. The INR/IL group is placed nowhere and asks
+    /// for confirmation; a named series naming no holder stays at College Park (the control).
+    @MainActor
+    @Test("A Department series' group is not placed at College Park")
+    func departmentSeriesGroupIsUnplaced() async {
+        let inr = "Department of State, Bureau of Intelligence and Research, INR/IL Historical Files"
+        let stub = Stub(sources: [
+            // frus1969-76v21/d43, as the index stores it
+            record("v1", "d1", era: "named_series", series: inr, rg: nil,
+                   rawText: "Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile Chronology 1970. Secret; Immediate; Roger Channel."),
+            record("v1", "d2", era: "named_series", series: "IO Files", rg: nil,
+                   rawText: "Source: IO Files, US/A/M(SR)/1. Confidential."),
+        ])
+        let model = await TripPacketBuilder.build(
+            documents: [("v1", "d1"), ("v1", "d2")], researchQuestion: nil, dataSource: stub)
+        let facilities = Dictionary(uniqueKeysWithValues: model.groups.map { ($0.label, $0.facility) })
+        #expect(facilities[inr] == .unknown, "the INR/IL group resolved to \(String(describing: facilities[inr]))")
+        #expect(facilities["IO Files"] == .servedAt(facility: ResearchFacilityResolver.collegePark,
+                                                    provenance: "Department of State"))
+        #expect(model.needingConfirmation.map(\.label) == [inr])
     }
 
     // MARK: - Form-aware keys (§2b)

@@ -51,7 +51,8 @@ import CoreGraphics
 ///   2.3 — 2026-09-26: #1407 review, round 1 — the crib prints no band for a year that misprints
 ///          its document's day (`cribBandChecksTheDocumentsDay`); fixture rows carry `documentDay`
 ///   2.4 — 2026-10-01: #1514's fold-ins — the crib's examples are chosen by tested form, and the
-///          access block counts divided lots (`dividedPlan`)
+///          access block counts divided lots (`dividedPlan`); review round 1: beside a flagged
+///          series too (`flaggedCountNamesTheDividedLots`)
 @Suite("Trip packet exporter (Archive Visits Phase 1)")
 struct TripPacketExporterTests {
 
@@ -1392,10 +1393,11 @@ struct TripPacketExporterTests {
     // MARK: - Divided lots in the access block (#1514's fold-in, #1205's residue)
 
     /// A plan whose lot NARA divides across two series: the lot resolves to no single series since
-    /// #1205, so it adds no row to the triage. `extra` adds a resolved, unrestricted lot; `statuses`
-    /// gives each claimant's measured access status, `nil` for none; `unresolved` documents cite
-    /// nothing the app resolved.
+    /// #1205, so it adds no row to the triage. `extra` adds a resolved lot whose series' access
+    /// status is `extraStatus`; `statuses` gives each claimant's measured access status, `nil` for
+    /// none; `unresolved` documents cite nothing the app resolved.
     private static func dividedPlan(statuses: [String?], extra: Bool = false,
+                                    extraStatus: String = "Unrestricted",
                                     unresolved: Int = 0) -> TripPacketModel {
         let claimantIds = statuses.indices.map { "c\($0)" }
         var groups: [(key: String, label: String, category: SourceProvenanceCategory?,
@@ -1416,7 +1418,7 @@ struct TripPacketExporterTests {
             documentYears: [1956], unresolvedLotCount: 0, unresolvedDocumentCount: unresolved,
             researchQuestion: nil,
             facts: { naId in
-                if naId == "555" { return SeriesFactsIndex.Facts(accessStatus: "Unrestricted", accessRestrictions: [],
+                if naId == "555" { return SeriesFactsIndex.Facts(accessStatus: extraStatus, accessRestrictions: [],
                                                 useStatus: nil, useRestrictions: [], extent: nil,
                                                 referenceUnit: nil, findingAids: [], years: nil) }
                 guard let index = claimantIds.firstIndex(of: naId), let status = statuses[index]
@@ -1463,6 +1465,34 @@ struct TripPacketExporterTests {
         #expect(!text.contains("Every series this packet cites is recorded as unrestricted"),
                 "the all-clear printed beside an unclear divided lot: \(text)")
         #expect(text.contains("Every series this packet resolves to on its own is recorded as unrestricted, but 1 divided lot has"))
+    }
+
+    /// A flagged resolved series used to silence the divided lots: the plan-level count is over the
+    /// resolved series, which a divided lot is not one of, so a closed claimant went unmentioned
+    /// beside it (#1514, review round 1). One fixture per conjunct of an unclear divided lot, as
+    /// above.
+    @Test("A flagged count says how many unclear divided lots it leaves out", arguments: [
+        ["Restricted - Fully", "Unrestricted"],
+        ["Unrestricted", nil],
+    ] as [[String?]])
+    func flaggedCountNamesTheDividedLots(_ statuses: [String?]) {
+        let text = Self.coverage(Self.dividedPlan(statuses: statuses, extra: true,
+                                                  extraStatus: "Restricted - Fully"))
+        #expect(text.contains("1 of 1 cited series carries a restriction or no stated status"),
+                "the flagged count: \(text)")
+        #expect(text.contains("That count leaves out divided lots, which resolve to no single series: "
+                              + "1 of this plan's 1 divided lot has a claimant series that is restricted "
+                              + "or has no stated status."),
+                "the divided lot beside a flagged series: \(text)")
+    }
+
+    /// Its control: with every claimant measured and unrestricted, the flagged count stands alone.
+    @Test("A flagged count with clear divided lots adds no divided-lot sentence")
+    func flaggedCountWithClearDividedLots() {
+        let text = Self.coverage(Self.dividedPlan(statuses: ["Unrestricted", "Unrestricted"], extra: true,
+                                                  extraStatus: "Restricted - Fully"))
+        #expect(text.contains("1 of 1 cited series carries a restriction or no stated status"))
+        #expect(!text.contains("That count leaves out divided lots"))
     }
 
     /// The control: every claimant measured and unrestricted, so the all-clear is true.

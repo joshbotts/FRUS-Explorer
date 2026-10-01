@@ -96,8 +96,10 @@ import Foundation
 ///   2.5 — #1514's fold-ins: the crib's examples are chosen by a designation's tested form
 ///          (`isDecimalFileDesignation`, `isSubjectNumericDesignation`), never by its first
 ///          character; and the coverage report's access block counts divided lots — it prints when
-///          a plan's only resolvable citations are divided lots, and the all-clear sentence waits
-///          for every claimant of every divided lot to be measured and unrestricted
+///          a plan's only resolvable citations are divided lots, the all-clear sentence waits for
+///          every claimant of every divided lot to be measured and unrestricted, and (review round
+///          1) a plan whose resolved series are flagged also says how many divided lots that count
+///          leaves out
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -680,7 +682,8 @@ struct TripPacketExporter {
         // to no single series, so it adds no row. Gated on the triage alone, a plan whose only
         // resolvable citations were divided lots printed nothing about access, and "Every series
         // this packet cites is recorded as unrestricted" printed beside a closed claimant. So the
-        // block opens on either, and the all-clear sentence waits for the divided lots too.
+        // block opens on either, the all-clear sentence waits for the divided lots too, and a
+        // count of flagged series says how many divided lots it leaves out.
         let triage = model.triage
         let divided = model.targets.compactMap(\.restriction).filter(\.isDivided)
         if !triage.isEmpty || !divided.isEmpty {
@@ -695,6 +698,15 @@ struct TripPacketExporter {
                            + " a restriction or no stated status — each affected target's row "
                            + "states it, worst covered status first. A closed series cannot be "
                            + "pulled, so raise these in your inquiry rather than on arrival.")
+                // That count is over the resolved series, which a divided lot is not one of
+                // (#1514, review round 1): say what it leaves out.
+                if !dividedUnclear.isEmpty {
+                    out.append("That count leaves out divided lots, which resolve to no single "
+                               + "series: \(dividedUnclear.count) of this plan's \(divided.count) "
+                               + "divided " + (divided.count == 1 ? "lot" : "lots") + " "
+                               + (dividedUnclear.count == 1 ? "has" : "have")
+                               + " a claimant series that is restricted or has no stated status.")
+                }
             } else if triage.rows.isEmpty && divided.isEmpty {
                 // Only unresolved documents: no series to speak for (the line below says so).
             } else if dividedUnclear.isEmpty {

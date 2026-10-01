@@ -88,7 +88,9 @@ import Foundation
 ///   1.0 — Session 2026-08-07: #354 item 1, repository table + record-group map
 ///   1.1 — 2026-10-01 (#1514): the named-series panel's explainer, shared by both Source Explorer
 ///          views, names the agency a series' name opens with instead of saying no repository is
-///          stated (`explainer(seriesName:)`, `macNote(seriesName:)`)
+///          stated (`explainer(seriesName:)`, `macNote(seriesName:)`); review round 1: neither view
+///          offers NARA's Department of State records page for such a series
+///          (`offersStateRecordsLink(seriesName:)`)
 enum NamedFileSeriesRouting {
 
     // MARK: - Destination
@@ -320,5 +322,20 @@ enum NamedFileSeriesRouting {
         }
         return String(localized: "source.explorer.namedSeries.note",
                       defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.")
+    }
+
+    /// Whether the named-series panel offers NARA's Department of State records page
+    /// (`NARACatalogClient.stateDepartmentRecordsURL`) — only when the series' name states no
+    /// holder (#1514, review round 1).
+    ///
+    /// That page covers the central files, the post files and the lot files at the National
+    /// Archives together, which is a real next step for a series cited by name alone. It is the
+    /// wrong one for a series whose name opens with the agency holding it: the Department's own
+    /// series the volumes cite this way are not at the National Archives on their own account —
+    /// frus1964-68v07's Sources describes the INR/IL Historical Files as "still under Department of
+    /// State custody" — and another agency's series (#353) are not State records at all. The
+    /// explainer above names the holder instead. In one place, so the two views cannot disagree.
+    static func offersStateRecordsLink(seriesName: String) -> Bool {
+        SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) == nil
     }
 }

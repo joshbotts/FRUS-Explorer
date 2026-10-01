@@ -2891,32 +2891,37 @@ struct VolumeSourceMatcherTests {
 
     /// #1460 through the pipeline. The narrative rule scanned the whole note and stored a year from
     /// a reprint clause as the central-file identifier — "file 1978" in an Archives Visit packet —
-    /// and every decimal row sharing that year became an archival neighbour of the others. The two
-    /// INR notes are frus1961-63v14 d20's (verbatim) and a sibling reprinted the same year; the
-    /// third is frus1961-63v05 d11's, whose designator the long remark used to hide. The fourth is
-    /// frus1964-68v24 d191's (review round 1): its citation sentence prints a year SPAN where a file
-    /// number would sit, which the bounded scan newly reached and a year-only refusal let through.
-    /// Since #1514 d1, d2 and d4 are Department INR series, not central files, so their
-    /// `series_name` is the series — never the year.
+    /// and every decimal row sharing that year became an archival neighbour of the others.
+    ///
+    /// Two guards hold it, and each fixture is the one that fails when ONE is removed (measured over
+    /// the probe that drives the shipped parser, #1514 review round 1). d3, frus1955-57v01/d168
+    /// (verbatim), guards the citation-sentence bound: with no classification marking after its
+    /// file number, the whole-note scan's segment runs on into the drafting remark and stores
+    /// `751G.00/5–355. Drafted by Young and cleared by Robertson`. d4 guards the date refusal: its
+    /// citation sentence prints a year SPAN where a file number would sit (frus1964-68v24/d191's
+    /// shape, review round 1 of #1460). d1 and d2 are frus1961-63v14/d20's reprint and a sibling's,
+    /// the issue's own case; the two guards each catch them, so only removing both stores `1978` —
+    /// and makes them each other's neighbours, which the last check sees.
+    ///
+    /// d1, d2 and d4 lead with the Central Files, CONSTRUCTED since #1514: the notes they were
+    /// (`Department of State, INR-NIE Files`, `INR Files`, `INR Historical Files`) are Department
+    /// series now, which never reach the identifier rule, so this test had stopped guarding it.
     @Test("A reprint year is never stored as a central-file identifier, nor groups neighbours (#1460)")
     func reprintYearIsNotAnIdentifier() async throws {
         try await withTempDir { dir in
             let pipeline = try await indexFixture(dir: dir, notes: [
-                ("d1", "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."),
-                ("d2", "Source: Department of State, INR Files. Secret. Also printed in Declassified Documents, 1978, 7C."),
-                ("d3", "Source: Department of State, Central Files, 761.5411/1-2361. Secret; Niact. Drafted by Kohler on January 23 and approved by Rusk. Also printed in Declassified Documents, 1977, 73B."),
-                ("d4", "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text."),
+                ("d1", "Source: Department of State, Central Files, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."),
+                ("d2", "Source: Department of State, Central Files, INR Files. Secret. Also printed in Declassified Documents, 1978, 7C."),
+                ("d3", "Source: Department of State, Central Files, 751G.00/5–355. Drafted by Young and cleared by Robertson, MacArthur, Dulles, and with Tyler and Murphy in substance. Sent also priority to Paris."),
+                ("d4", "Source: Department of State, Central Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text."),
             ])
             let stored = try Self.seriesNames(dir.appendingPathComponent("test.sqlite"))
             #expect(stored.count == 4, "read \(stored.count) document_sources rows")
-            #expect(stored["d1"] == .some("Department of State, INR-NIE Files"),
-                    "d1 stored \(String(describing: stored["d1"]))")
-            #expect(stored["d2"] == .some("Department of State, INR Files"),
-                    "d2 stored \(String(describing: stored["d2"]))")
-            #expect(stored["d3"] == .some("761.5411/1-2361"),
+            #expect(stored["d1"] == .some(nil), "d1 stored \(String(describing: stored["d1"]))")
+            #expect(stored["d2"] == .some(nil), "d2 stored \(String(describing: stored["d2"]))")
+            #expect(stored["d3"] == .some("751G.00/5–355"),
                     "d3 stored \(String(describing: stored["d3"]))")
-            #expect(stored["d4"] == .some("Department of State, INR Historical Files"),
-                    "d4 stored \(String(describing: stored["d4"]))")
+            #expect(stored["d4"] == .some(nil), "d4 stored \(String(describing: stored["d4"]))")
 
             let neighbours = try await pipeline.archivalNeighbors(
                 forVolumeId: "frus1969-76v01", documentId: "d1")

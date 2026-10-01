@@ -38,7 +38,8 @@ import Testing
 ///          series, so the INR/IL, INR–NIE and reading-room notes these tests drove the identifier
 ///          rule through are no longer central files. Each test that needs the rule now leads its
 ///          note with the Central Files (marked constructed), and the INR notes' own parse is pinned
-///          in `DepartmentSeriesTests`
+///          in `DepartmentSeriesTests`; review round 1 renames `eraLabelAloneLeavesNone`, which now
+///          asserts the designator IS stored, to `eraLabelThenADigitlessDesignatorStoresTheDesignator`
 @Suite("Central-files identifier from the citation sentence")
 struct CitationSentenceIdentifierTests {
 
@@ -282,7 +283,7 @@ struct CitationSentenceIdentifierTests {
     /// gate refused it and the note stored no identifier until #1514 admitted a Subject-Numeric
     /// designator by its handbook category; it never stores the label.
     @Test("An era label followed by a designator with no number stores the designator")
-    func eraLabelAloneLeavesNone() {
+    func eraLabelThenADigitlessDesignatorStoresTheDesignator() {
         let note = "Source: National Archives and Records Administration, Central Files 1967–69, POL ARAB–ISR. Secret; Immediate; Nodis. Received at 6:20 p.m."
         #expect(identifier(note) == "POL ARAB–ISR")
     }
