@@ -38,7 +38,9 @@ import SwiftData
 ///          only returned the app to onboarding, which made the no-op look like a repair. The
 ///          work moved to ``PendingStoreReset``, performed at the next launch (the only moment
 ///          nothing holds the files open) against an explicit file list.
-///   1.4 — #1539: a read-only **Language Analysis** row in Diagnostics (``LanguageAnalysisRow``).
+///   1.4 — #1531: while an upload has failed with none succeeding since, Fix iCloud Sync's row,
+///          the ladder's footer and the confirmation warn that it would discard those changes.
+///   1.5 — #1539: a read-only **Language Analysis** row in Diagnostics (``LanguageAnalysisRow``).
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -141,8 +143,7 @@ struct DataRecoveryView: View {
             Button(String(localized: "settings.connections.cancel", defaultValue: "Cancel"),
                    role: .cancel) {}
         } message: {
-            Text(String(localized: "settings.dataRecovery.fixSync.message",
-                        defaultValue: "This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it."))
+            Text(Self.fixSyncMessage(unrecovered: appState.unrecoveredExport))
         }
         // The reset is performed at the next launch, before any store is opened — the only moment
         // no connection is holding the files. Without this the button would appear to do nothing.
@@ -232,8 +233,7 @@ struct DataRecoveryView: View {
                     // Was "nothing is deleted", which was true only by accident: the action deleted
                     // nothing at all. It clears this device's copy at the next launch, and the row
                     // now says which of those two facts it means.
-                    detail: String(localized: "settings.dataRecovery.fixSync.detail",
-                                   defaultValue: "Re-download from iCloud at next launch")
+                    detail: Self.fixSyncRowDetail(unrecovered: appState.unrecoveredExport)
                 )
                 .contentShape(Rectangle())
             }
@@ -266,9 +266,53 @@ struct DataRecoveryView: View {
             Text(String(localized: "settings.dataRecovery.recovery.header",
                         defaultValue: "Recovery"))
         } footer: {
-            Text(String(localized: "settings.dataRecovery.recovery.footer",
-                        defaultValue: "In order of how much they take away. Try the first one first — it is the one that deletes nothing."))
+            Text(Self.recoveryFooter(unrecovered: appState.unrecoveredExport))
         }
+    }
+
+    // MARK: - Fix iCloud Sync while an upload is unrecovered (#1531)
+    //
+    // Fix iCloud Sync deletes this device's store and downloads iCloud's copy. Anything that has not
+    // uploaded is in the store and nowhere else, so while an upload has failed with none succeeding
+    // since, the action discards real work — in #1531, everything made on a Mac in the week its
+    // uploads were refused. These three say so wherever the action is offered. Each reads
+    // `AppState.unrecoveredExport` directly rather than the status summary, because a failure
+    // begun in THIS launch puts the same changes at risk. Warn, not disable: the plan of record's
+    // choice, since a reader may have a reason to discard (and the store may be what is broken).
+
+    /// The Fix iCloud Sync confirmation: the standing message, after a warning when this device
+    /// holds an upload that has not succeeded.
+    static func fixSyncMessage(unrecovered: UnrecoveredExport?) -> String {
+        let message = String(localized: "settings.dataRecovery.fixSync.message",
+                             defaultValue: "This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.")
+        guard let unrecovered else { return message }
+        let warning = String(format: String(
+            localized: "settings.dataRecovery.fixSync.warning %@",
+            defaultValue: "Warning: no upload from this device has succeeded since %@, so it holds changes that are not in iCloud yet. Fix iCloud Sync would discard them."),
+            SyncStoppedCopy.since(unrecovered))
+        return "\(warning)\n\n\(message)"
+    }
+
+    /// The Fix iCloud Sync row's line: where the data comes from, or — while an upload is
+    /// unrecovered — what the action would cost.
+    static func fixSyncRowDetail(unrecovered: UnrecoveredExport?) -> String {
+        guard unrecovered != nil else {
+            return String(localized: "settings.dataRecovery.fixSync.detail",
+                          defaultValue: "Re-download from iCloud at next launch")
+        }
+        return String(localized: "settings.dataRecovery.fixSync.detail.unrecovered",
+                      defaultValue: "Would discard changes not yet in iCloud")
+    }
+
+    /// The recovery ladder's footer. Its "the one that deletes nothing" is false of Fix iCloud Sync
+    /// while an upload is unrecovered, so that state has a footer of its own.
+    static func recoveryFooter(unrecovered: UnrecoveredExport?) -> String {
+        guard unrecovered != nil else {
+            return String(localized: "settings.dataRecovery.recovery.footer",
+                          defaultValue: "In order of how much they take away. Try the first one first — it is the one that deletes nothing.")
+        }
+        return String(localized: "settings.dataRecovery.recovery.footer.unrecovered",
+                      defaultValue: "In order of how much they take away. While this device holds changes that have not reached iCloud, Fix iCloud Sync would discard them too.")
     }
 
     // MARK: - Navigation

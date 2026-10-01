@@ -62,6 +62,17 @@ import UIKit
 ///   sheet may NOT keep — a volume another removal took meanwhile — needs a second removal in a
 ///   second window, which this suite cannot drive; `DownloadedVolumesListModelTests` pins it.
 ///
+/// Three checks ride along, each in a test that runs on both idioms:
+/// - ``testFreeUpSpaceKeepsItsVolumeWhileRemovingIt()`` taps the row being removed, mid-removal,
+///   and requires its checkmark and the recovery line unchanged (#1432): the rows stayed tappable,
+///   so a tap toggled both while the removal went on removing the volume.
+/// - ``testRemovalMarkSurvivesLeavingTheHub()`` requires the seeded row to read its header's
+///   title, "UI Test Storage Row 04", at launch: boot did not reconcile side-loaded volumes, so a
+///   relaunch with no indexing batch listed them by raw id.
+/// - Every confirmation the suite reads must carry no asterisk (``testRemovedRowLeavesTheListWithoutATouch()``
+///   on both idioms, the anchor test on iPad): the side-loaded message's `**…**` is Markdown, and
+///   drawn as a plain string it printed them (seen on an iPad popover).
+///
 /// A phone runs the two anchor tests only to skip them: there the dialog is an action sheet with
 /// no source, which neither guards nor controls anything.
 ///
@@ -88,6 +99,8 @@ import UIKit
 ///          `testRemovalMarkSurvivesLeavingTheHub`; animations off; rows found by scrolling
 ///   1.2 — #1356 review, round 2: `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt`; the two Free Up
 ///          Space tests open the sheet through one helper
+///   1.3 — #1432, and two fold-ins of lane STOR: a tap mid-removal, the row's title at launch, and
+///          no asterisks in a confirmation
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -135,6 +148,15 @@ final class VolumeRemovalTests: XCTestCase {
 
     /// A phrase only the catalogue confirmation carries.
     private static let redownloadPromise = "can be downloaded again"
+
+    /// How Free Up Space's recovery line ends, in BOTH its states: the estimate while a volume is
+    /// selected ("~9 KB estimated recovery") and the prompt while none is ("Select volumes to see
+    /// estimated recovery"). So it finds the line whatever is selected; the selection is read from
+    /// the row itself.
+    private static let recoverySuffix = "estimated recovery"
+
+    /// The title the side-load catalogue reads from ``targetVolumeId``'s header.
+    private static let targetTitle = "UI Test Storage Row 04"
 
     /// How far, in points, a popover's facing edge may sit from its source's facing edge. Covers
     /// the arrow, which XCUI may or may not count in the popover's frame (measured with the fix, it
@@ -283,6 +305,34 @@ final class VolumeRemovalTests: XCTestCase {
             \(app.debugDescription)
             """)
 
+        // #1432: a tap on the row being removed changes nothing — not its checkmark, and not the
+        // recovery line, which used to follow the selection while the removal ignored it.
+        let recovery = app.staticTexts.matching(
+            NSPredicate(format: "label ENDSWITH %@", Self.recoverySuffix)).firstMatch
+        let recoveryBefore = recovery.exists ? recovery.label : nil
+        sheet.candidate.tap()
+        Thread.sleep(forTimeInterval: 1)
+        let tappedAt = Date().timeIntervalSince(confirmedAt)
+        let stillSelected = sheet.candidate.exists && sheet.candidate.isSelected
+        let recoveryAfter = recovery.exists ? recovery.label : nil
+        print("[VolumeRemovalTests] tapped the row being removed "
+              + String(format: "%.1f s after the confirmation", tappedAt)
+              + ": it is \(stillSelected ? "still selected" : "no longer selected"); the recovery line "
+              + "read \(recoveryBefore ?? "nothing") before and \(recoveryAfter ?? "nothing") after")
+        XCTAssertLessThan(tappedAt, Double(Self.freeUpHoldSeconds) - 2, """
+            The tap came \(Int(tappedAt)) s after the confirmation, so the \(Self.freeUpHoldSeconds)-s \
+            hold may have ended and the sheet may be closing. Raise `freeUpHoldSeconds`.
+            """)
+        XCTAssertTrue(stillSelected, """
+            A tap on \(Self.catalogueVolumeId)'s row while Free Up Space removes it took its checkmark \
+            away, though the removal goes on removing it (#1432): the rows must be disabled while \
+            the sheet removes. Tree:
+            \(app.debugDescription)
+            """)
+        XCTAssertNotNil(recoveryBefore, "precondition: the sheet showed its recovery line, in either state, before the tap")
+        XCTAssertEqual(recoveryAfter, recoveryBefore,
+                       "the recovery line changed on a tap while the sheet removes (#1432)")
+
         // The removal ends, and the sheet closes itself.
         let closed = sheet.bar.waitForNonExistence(timeout: TimeInterval(Self.freeUpHoldSeconds + 30))
         print("[VolumeRemovalTests] Free Up Space \(closed ? "closed" : "was still open") "
@@ -323,6 +373,14 @@ final class VolumeRemovalTests: XCTestCase {
     func testRemovalMarkSurvivesLeavingTheHub() throws {
         launchApp(holdingRemovalsFor: Self.removalHoldSeconds)
         try openVolumeList()
+        // Boot reconciles side-loaded volumes, so the seeded row carries its header's title from
+        // launch. Before, a relaunch with no indexing batch listed it as `uitest-storage-04`.
+        _ = try requireRow(Self.targetVolumeId)
+        XCTAssertTrue(app.staticTexts[Self.targetTitle].waitForExistence(timeout: 5), """
+            \(Self.targetVolumeId)'s row does not read its title "\(Self.targetTitle)": side-loaded \
+            volumes were not reconciled at boot, so the list names them by raw id. Tree:
+            \(app.debugDescription)
+            """)
         _ = try askToRemove(Self.targetVolumeId)
         try requireConfirmButton().tap()
         let confirmedAt = Date()
@@ -558,6 +616,10 @@ final class VolumeRemovalTests: XCTestCase {
             NSPredicate(format: "label CONTAINS[c] %@", unexpected)).firstMatch.exists, """
             The confirmation for \(volumeId) says "\(unexpected)", which is another kind of \
             volume's message (#777).
+            """)
+        // The side-loaded message's bold is Markdown; drawn as a plain string it printed its `**`.
+        XCTAssertFalse(says.label.contains("*"), """
+            The confirmation for \(volumeId) prints Markdown's asterisks: "\(says.label)".
             """)
     }
 

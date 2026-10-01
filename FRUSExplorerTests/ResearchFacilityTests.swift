@@ -33,6 +33,8 @@ import Foundation
 ///          `libraryDoesNotGuess` changes deliberately, as its own message said it would; review,
 ///          round 1: the library walk guards on "not empty" rather than "ten" (D14), and the
 ///          National Archives case is the drawn-from citation the corpus prints, not a footnote
+///   1.2 — 2026-10-01: #1514, review round 1 — a named series whose name opens with the agency
+///          holding it is placed nowhere, one fixture per conjunct of the rule
 @Suite("Research facility derivation (#830 T-1)")
 struct ResearchFacilityTests {
 
@@ -147,6 +149,43 @@ struct ResearchFacilityTests {
                 location is not in doubt.
                 """)
         }
+    }
+
+    // MARK: - A series the citation places with an agency (#1514, review round 1)
+
+    /// A named series whose stored name opens with the agency holding it is placed nowhere: the
+    /// Department's own series, which #1514 routed out of the central files — frus1964-68v07's
+    /// Sources describes the INR/IL Historical Files as "still under Department of State custody" —
+    /// and another agency's (#353). College Park was a guess the packet printed as a destination.
+    @Test("A named series an agency holds is not placed at College Park", arguments: [
+        "Department of State, Bureau of Intelligence and Research, INR/IL Historical Files",  // frus1969-76v21/d43
+        "Department of State, INR-NIE Files",                                                 // frus1961-63v14/d20
+        "National Security Council, Carter Intelligence Files",                               // #353's type case
+    ])
+    func agencyHeldNamedSeriesIsUnplaced(_ seriesName: String) {
+        let facility = ResearchFacilityResolver.facility(
+            naId: nil, category: .namedFileSeries, repository: nil, seriesName: seriesName,
+            facts: { _ in nil })
+        #expect(facility == .unknown, """
+            "\(seriesName)" resolved to \(facility). The citation places the series with an agency, \
+            and whether it was ever accessioned is not something the citation states.
+            """)
+        #expect(facility.chapterHeading == nil)
+    }
+
+    /// One control per conjunct of the rule: a named series that names no holder, or none at all,
+    /// is still served at College Park; and a holder-led name on another category is not the
+    /// named-series rule's to read.
+    @Test("The holder rule needs a named series and a holder", arguments: [
+        (SourceProvenanceCategory.namedFileSeries, "IO Files"),
+        (.namedFileSeries, nil),
+        (.centralDecimalFile, "Department of State, INR-NIE Files"),
+    ] as [(SourceProvenanceCategory, String?)])
+    func holderRuleConjuncts(_ category: SourceProvenanceCategory, _ seriesName: String?) {
+        #expect(ResearchFacilityResolver.facility(
+            naId: nil, category: category, repository: nil, seriesName: seriesName,
+            facts: { _ in nil })
+            == .servedAt(facility: ResearchFacilityResolver.collegePark, provenance: "Department of State"))
     }
 
     // MARK: - The prohibition, and the curated libraries (#1458, #1459)

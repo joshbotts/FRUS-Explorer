@@ -33,6 +33,12 @@ import Testing
 /// must be answered either by listing the new identifiers as awaiting deploy or by restating the
 /// baseline. Both are explicit, both are visible in the diff.
 ///
+/// Since #1531 the claim is checked outside this process: `Scripts/check_cloudkit_schema.py`
+/// reads Production's schema with a CloudKit management token and compares it with the inventory,
+/// and every archive — TestFlight and App Store from Xcode, and notarize.sh's DMG — runs it as the
+/// archive-only "Check CloudKit schema" phase and fails until a read of Production has shown every
+/// identifier this build can write. `everyArchiveRunsTheGate` pins that phase on both app targets.
+///
 /// ## The failure messages are the deliverable
 /// A gate nobody is forced to act on is theatre. Every `#expect` here fails with the deploy
 /// checklist and, where it can, the exact text to paste — so the developer who trips it does not
@@ -96,7 +102,11 @@ struct CloudKitSchemaInventoryTests {
         type/field once, so NSPersistentCloudKitContainer creates it in the Development schema.
         4. CloudKit Dashboard > Schema > Deploy Schema Changes to Production, for container \
         iCloud.bottsywattsy.FRUS-Explorer.
-        5. Only then: clear identifiersAwaitingDeploy, set deployedThroughBuild / deployedOn, \
+        5. Run ./Scripts/check_cloudkit_schema.py (it needs a CloudKit management token: \
+        xcrun cktool save-token --type management). It must PASS and say that every identifier \
+        awaiting deploy is in Production; until it has, every archive fails at its "Check \
+        CloudKit schema" phase.
+        6. Only then: clear identifiersAwaitingDeploy, set deployedThroughBuild / deployedOn, \
         and re-run this suite — deployedBaselineIsPinned prints the count and digest to paste.
 
         static let installedIdentifiers: [String] = [
@@ -158,8 +168,10 @@ struct CloudKitSchemaInventoryTests {
         that claims a Production deploy that has not happened.
 
         If you HAVE deployed to Production (CloudKit Dashboard > Schema > Deploy Schema Changes \
-        to Production): clear identifiersAwaitingDeploy, set deployedThroughBuild to the current \
-        CURRENT_PROJECT_VERSION and deployedOn to today, then paste:
+        to Production) AND ./Scripts/check_cloudkit_schema.py passes — it reads Production, so \
+        the deploy is checked rather than remembered (#1531) — clear identifiersAwaitingDeploy, \
+        set deployedThroughBuild to the current CURRENT_PROJECT_VERSION and deployedOn to today, \
+        then paste:
 
             static let deployedIdentifierCount = \(baseline.count)
             static let deployedIdentifierDigest = "\(digest)"
@@ -364,6 +376,104 @@ struct CloudKitSchemaInventoryTests {
         the identifier from identifiersAwaitingWriter to identifiersAwaitingDeploy and follow the
         usual checklist.
         """)
+    }
+
+    // MARK: - The release gate's exemptions (#1531)
+
+    /// `Scripts/check_cloudkit_schema.py` does not require the to-many side of a relationship of
+    /// Production, because CloudKit stores the relationship on its to-one side. The list it reads
+    /// is derived here from the live `Schema`, so a new to-many relationship cannot be left for the
+    /// gate to report as missing on every archive — and nothing else can hide in the list.
+    @Test("The gate's to-many exemptions are exactly the schema's to-many relationships")
+    func toManyExemptionsMatchTheSchema() {
+        var toMany: [String] = []
+        for entity in Schema(ModelContainer.frusModelTypes).entities {
+            for relationship in entity.relationships where !relationship.isToOneRelationship {
+                let name = relationship.originalName.isEmpty ? relationship.name
+                    : relationship.originalName
+                toMany.append("CD_\(entity.name).CD_\(name)")
+            }
+        }
+        #expect(!toMany.isEmpty, "fixture guard: the schema has no to-many relationship to read")
+        #expect(CloudKitSchemaInventory.identifiersNotStoredAsFields == toMany.sorted(), """
+            identifiersNotStoredAsFields must be exactly the schema's to-many relationship sides. Paste:
+            \(Self.literal(for: toMany.sorted()))
+            """)
+        #expect(Set(CloudKitSchemaInventory.identifiersNotStoredAsFields)
+                    .isSubset(of: CloudKitSchemaInventory.installedIdentifiers))
+    }
+
+    /// The gate reads the inventory's Swift source with a script, so the script's own self-test
+    /// pins its parser against this file — but only when someone runs it. This pins the reverse
+    /// from here: the four lists it reads are declared in the one shape its pattern matches.
+    @Test("The inventory declares the four lists the release gate reads, in the shape it reads")
+    func gateCanReadTheInventory() throws {
+        let source = try String(contentsOf: Self.projectRoot.appendingPathComponent(
+            "FRUSExplorer/Models/CloudKitSchemaInventory.swift"), encoding: .utf8)
+        let script = try String(contentsOf: Self.projectRoot.appendingPathComponent(
+            "Scripts/check_cloudkit_schema.py"), encoding: .utf8)
+        for name in ["installedIdentifiers", "identifiersAwaitingDeploy",
+                     "identifiersAwaitingWriter", "identifiersNotStoredAsFields"] {
+            #expect(source.contains("static let \(name): [String] = ["),
+                    Comment(rawValue: "\(name) is not declared as the gate's pattern expects"))
+            #expect(script.contains("\"\(name)\""),
+                    Comment(rawValue: "the gate no longer reads \(name)"))
+        }
+    }
+
+    /// #1531 shipped through TestFlight, archived in Xcode — not through `notarize.sh`, the gate's
+    /// first and only caller. So every archive runs it: an archive-only phase, FIRST on both app
+    /// targets (a refused archive fails before a Release compile), reading the three files it
+    /// declares for the script sandbox — the last being the record a live read of Production
+    /// writes. Read from the project the archive is built from, and from project.yml, which
+    /// regenerates it.
+    @Test("Both app targets run the Production schema gate first, at archive only")
+    func everyArchiveRunsTheGate() throws {
+        let pbxproj = try String(contentsOf: Self.projectRoot.appendingPathComponent(
+            "FRUSExplorer.xcodeproj/project.pbxproj"), encoding: .utf8)
+        let inputs = ["\"$(SRCROOT)/Scripts/check_cloudkit_schema.py\"",
+                      "\"$(SRCROOT)/FRUSExplorer/Models/CloudKitSchemaInventory.swift\"",
+                      "\"$(SRCROOT)/.cache/cloudkit-schema-gate/production-schema.txt\""]
+        let phase = try NSRegularExpression(
+            pattern: #"\t\t([0-9A-F]{24}) /\* Check CloudKit schema \*/ = \{(.*?)\n\t\t\};"#,
+            options: [.dotMatchesLineSeparators])
+        let range = NSRange(pbxproj.startIndex..., in: pbxproj)
+        var ids: [String] = []
+        for match in phase.matches(in: pbxproj, range: range) {
+            guard let id = Range(match.range(at: 1), in: pbxproj),
+                  let body = Range(match.range(at: 2), in: pbxproj) else { continue }
+            ids.append(String(pbxproj[id]))
+            let text = String(pbxproj[body])
+            #expect(text.contains("runOnlyForDeploymentPostprocessing = 1;"),
+                    "the gate runs on every build, or never — it must run at archive only")
+            #expect(text.contains(#"check_cloudkit_schema.py\" --archive-phase"#),
+                    "the phase no longer runs the gate's archive mode")
+            for input in inputs {
+                #expect(text.contains(input),
+                        Comment(rawValue: "the phase does not declare \(input); the sandbox refuses it"))
+            }
+        }
+        #expect(ids.count == 2, "expected one gate phase per app target, found \(ids.count)")
+        for target in ["FRUSExplorer", "FRUSExplorerMac"] {
+            let list = try NSRegularExpression(
+                pattern: #"/\* \#(target) \*/ = \{\s*isa = PBXNativeTarget;.*?buildPhases = \(\s*([0-9A-F]{24}) /\* ([^*]+) \*/"#,
+                options: [.dotMatchesLineSeparators])
+            let first = try #require(list.firstMatch(in: pbxproj, range: range),
+                                     Comment(rawValue: "\(target)'s build phases were not found"))
+            let name = Range(first.range(at: 2), in: pbxproj).map { String(pbxproj[$0]) }
+            let id = Range(first.range(at: 1), in: pbxproj).map { String(pbxproj[$0]) }
+            #expect(name == "Check CloudKit schema" && ids.contains(id ?? ""),
+                    Comment(rawValue: "\(target)'s first build phase is \(name ?? "nothing"), not the gate"))
+        }
+
+        let yml = try String(contentsOf: Self.projectRoot.appendingPathComponent("project.yml"),
+                             encoding: .utf8)
+        #expect(yml.components(separatedBy: "- name: Check CloudKit schema").count - 1 == 2,
+                "project.yml no longer declares the gate on both app targets; xcodegen would drop it")
+        let script = try String(contentsOf: Self.projectRoot.appendingPathComponent(
+            "Scripts/check_cloudkit_schema.py"), encoding: .utf8)
+        #expect(script.contains(#""cloudkit-schema-gate", "production-schema.txt""#),
+                "the script writes its record somewhere the phase does not declare")
     }
 
 }

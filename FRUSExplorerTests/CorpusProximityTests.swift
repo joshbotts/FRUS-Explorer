@@ -131,10 +131,11 @@ struct CorpusProximityTests {
         /// The `frus1919Parisv13` guard, and the single most important test here.
         ///
         /// That volume — the Paris Peace Conference treaty texts — has **2** `<div type="document">`
-        /// elements and 176 sections, against 170 rows in `document_cache`: the app presents whole
-        /// prose sections as readable documents. Counting documents alone makes the denominator 2,
-        /// every log ratio collapses, and all 170 of its documents score a flat 1.0 against each
-        /// other — a silent revert to the behaviour this axis exists to replace, in a real volume.
+        /// elements and 176 sections, against 153 rows in `document_cache` (170 until index v63
+        /// stopped indexing its 17 heading-only containers, #1510): the app presents whole prose
+        /// sections as readable documents. Counting documents alone makes the denominator 2, every
+        /// log ratio collapses, and all 153 of its documents score a flat 1.0 against each other — a
+        /// silent revert to the behaviour this axis exists to replace, in a real volume.
         @Test("Units count sections as well as documents")
         func sectionsAreUnits() {
             var sections: [VolumeSection] = [Self.section("ch1", docs: ["d1"])]

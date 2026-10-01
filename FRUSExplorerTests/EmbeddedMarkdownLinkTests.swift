@@ -37,6 +37,8 @@ import Foundation
 ///   1.1 — Build-43 content pass: the feature-catalog test re-pinned to the contracts
 ///         convention (pages 5–7 organized by task, closing with a User Manual pointer;
 ///         the per-feature section ids and per-section glyphs were the retired convention)
+///   1.2 — Lane STOR review, round 1: every localized default carrying Markdown is drawn as
+///         Markdown (`localizedMarkdownIsDrawnAsMarkdown`)
 struct EmbeddedMarkdownLinkTests {
 
     // MARK: - Link extraction
@@ -144,6 +146,119 @@ struct EmbeddedMarkdownLinkTests {
             #expect(renderedText != raw,
                     "Expected Markdown link syntax to be parsed out of: \(raw.prefix(80))…")
         }
+    }
+
+    // MARK: - Localized defaults that carry Markdown
+
+    /// Every localized default in the app that carries Markdown, and the code that draws it.
+    ///
+    /// `Text(_: String)` renders VERBATIM — only a `LocalizedStringKey` literal is read as Markdown —
+    /// so a `**…**` the owner writes into a `String(localized:)` default prints its asterisks unless
+    /// the string goes through `AttributedString(markdownBody:)`. Lane STOR found it in the two
+    /// side-loaded Remove messages, and its review two more sites, in Archives (library mode's
+    /// intro, “**your**”) and Archival Flows (the unprinted outgoing caption, “*away*”). The census
+    /// is tree-wide so a fifth cannot appear unseen: a new Markdown-carrying default fails
+    /// ``localizedMarkdownIsDrawnAsMarkdown()`` until it is listed here with the call that draws it.
+    /// A `String(format:)` is formatted FIRST and then wrapped, so the numbers are part of the text
+    /// Markdown reads.
+    private static let markdownDrawnBy: [String: (path: String, drawnBy: String)] = [
+        "settings.hub.remove.message.iOS.sideloaded": (
+            "FRUSExplorer/Settings/VolumesStorageHubView.swift",
+            #"Text(AttributedString(markdownBody: String(localized: "settings.hub.remove.message.iOS.sideloaded""#),
+        "settings.hub.remove.message.sideloaded": (
+            "FRUSExplorer/Settings/MacVolumesStorageHub.swift",
+            #"Text(AttributedString(markdownBody: String(localized: "settings.hub.remove.message.sideloaded""#),
+        "archival.library.intro %lld %lld": (
+            "FRUSExplorer/Analytics/ArchivalAnalyticsView.swift",
+            #"Text(AttributedString(markdownBody: String(format: String(localized: "archival.library.intro %lld %lld""#),
+        "archival.flows.caption.unprinted.outgoing %lld %lld": (
+            "FRUSExplorer/Analytics/ArchivalFlowsView.swift",
+            "Text(AttributedString(markdownBody: diagramCaption(data)))"),
+        "about.frus.description": (
+            "FRUSExplorer/Settings/AboutView.swift",
+            "AttributedString(markdownBody: Self.frusDescriptionRaw)"),
+    ]
+
+    /// Inline Markdown that `AttributedString(markdownBody:)` reads and `Text(String)` prints:
+    /// strong and plain emphasis, and links.
+    private static let inlineMarkdown = try! NSRegularExpression(
+        pattern: #"\*\*[^*]+\*\*|(?<![*\w])\*[A-Za-z][^*\n]*?\*(?![*\w])|\[[^\]]+\]\([^)]+\)"#)
+
+    private static func matches(_ regex: NSRegularExpression, in text: String) -> [NSTextCheckingResult] {
+        regex.matches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text))
+    }
+
+    /// `text` without `//` comments and without whitespace, so a call is found however it wraps and
+    /// a call that has been commented out is not found. A `//` inside a URL has no space before it
+    /// and is kept.
+    private static func squeezedCode(_ text: String) -> String {
+        text.components(separatedBy: "\n")
+            .map { line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("//") { return "" }
+                return line.range(of: " //").map { String(line[..<$0.lowerBound]) } ?? line
+            }
+            .joined()
+            .filter { !$0.isWhitespace }
+    }
+
+    @Test("Every localized default that carries Markdown is drawn as Markdown, so no asterisk prints")
+    func localizedMarkdownIsDrawnAsMarkdown() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let enumerator = try #require(FileManager.default.enumerator(
+            at: root.appendingPathComponent("FRUSExplorer"), includingPropertiesForKeys: nil))
+        let single = try NSRegularExpression(pattern: #"defaultValue:\s*"((?:[^"\\\n]|\\.)*)""#)
+        let triple = try NSRegularExpression(pattern: #"defaultValue:\s*"""\n(.*?)\n\s*""""#,
+                                             options: .dotMatchesLineSeparators)
+        let key = try NSRegularExpression(pattern: #"localized:\s*"((?:[^"\\]|\\.)*)""#)
+
+        var files = 0
+        var found: [String: (path: String, value: String)] = [:]
+        var sources: [String: String] = [:]
+        for case let url as URL in enumerator where url.pathExtension == "swift" {
+            files += 1
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let path = url.path.replacingOccurrences(of: root.path + "/", with: "")
+            sources[path] = text
+            let nsText = text as NSString
+            for regex in [single, triple] {
+                for match in Self.matches(regex, in: text) {
+                    let value = nsText.substring(with: match.range(at: 1))
+                    guard !Self.matches(Self.inlineMarkdown, in: value).isEmpty else { continue }
+                    let before = NSRange(location: 0, length: match.range.location)
+                    let named = try #require(key.matches(in: text, range: before).last,
+                                             "\(path): a Markdown default with no key before it")
+                    found[nsText.substring(with: named.range(at: 1))] = (path, value)
+                }
+            }
+        }
+        #expect(files > 300, "scanned only \(files) app files")
+
+        #expect(Set(found.keys) == Set(Self.markdownDrawnBy.keys), """
+            These localized defaults carry Markdown and are not listed with the code that draws them: \
+            \(Set(found.keys).subtracting(Self.markdownDrawnBy.keys).sorted()). Draw each through \
+            AttributedString(markdownBody:) — Text(String) prints the asterisks — and list it in \
+            `markdownDrawnBy`. Listed and no longer carrying Markdown: \
+            \(Set(Self.markdownDrawnBy.keys).subtracting(found.keys).sorted()).
+            """)
+
+        var checked = 0
+        for (name, site) in Self.markdownDrawnBy.sorted(by: { $0.key < $1.key }) {
+            let code = Self.squeezedCode(try #require(sources[site.path], "\(site.path) moved"))
+            #expect(code.contains(site.drawnBy.filter { !$0.isWhitespace }), """
+                \(site.path) does not draw `\(name)` through AttributedString(markdownBody:), so its \
+                Markdown prints as written. Expected:
+                \(site.drawnBy)
+                """)
+            guard let value = found[name]?.value else { continue }
+            // The text a reader is shown: Swift's line continuations joined, the numbers filled in.
+            let shown = value.replacingOccurrences(of: "\\\n", with: "")
+                .replacingOccurrences(of: #"%(\d\$)?lld"#, with: "12", options: .regularExpression)
+            let drawn = String(AttributedString(markdownBody: shown).characters)
+            #expect(!drawn.contains("*") && !drawn.contains("]("), "`\(name)` still draws its Markdown: \(drawn)")
+            checked += 1
+        }
+        #expect(checked == Self.markdownDrawnBy.count, "read only \(checked) of the listed defaults")
     }
 
     @Test("Research Guide keeps its three using-the-app pages, as contracts")

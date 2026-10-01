@@ -113,6 +113,17 @@ import Foundation
 ///          never a prose section promoted to a quasi-document — and a `<pb n="[31]">` is page 31
 ///          only when its `xml:id` names that page, `pg_31` or `pg_031`
 ///          (`PageNumber.parse(_:xmlId:)`). Still index v61.
+///   2.9 — #1510, #1511 and the persons list: a compilation, chapter or subchapter holding promoted
+///          sections and nothing of its own but a heading is no longer indexed, one with text of its
+///          own keeps only the breaks within that text, and the breaks either leaves go to the
+///          section that begins after them (`FRUSDocumentAST.carriedPages`, `finishParse`); a digit
+///          break with a `pg-seq` id is another pagination (`PageNumber.otherPagination`); and a
+///          persons-list year after "until" and another event ("until his resignation on") is an end
+///          (`endEventCueRegex`). Index v63.
+///   2.10 — 2026-10-01 (#1514's fold-in): `SourcesParserDelegate` inherits a repository from a
+///          heading that names it in full and carries no keyword (`Princeton University Library`
+///          → `Princeton University`, `CollectionKeying.bridgedRepository(ofHeading:)`), the
+///          name the authority keys the rows under. Index v64. (Numbered after lane PAGE's 2.9.)
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -133,6 +144,7 @@ public actor FRUSDocumentParser {
         if let error = delegate.fatalError {
             throw FRUSParserError.xmlError(error)
         }
+        delegate.finishParse()
 
         #if DEBUG
         print("[TEIParser] Parsed \(delegate.documents.count) documents from \(volumeURL.lastPathComponent).")
@@ -297,6 +309,7 @@ public actor FRUSDocumentParser {
         if let error = composite.teiDelegate.fatalError {
             throw FRUSParserError.xmlError(error)
         }
+        composite.teiDelegate.finishParse()
 
         #if DEBUG
         let name = volumeURL.lastPathComponent
@@ -852,6 +865,26 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// non-whitespace character data, or when it closes.
     private var divsAwaitingText: [Int] = []
 
+    /// How many `<div>`s the parse has opened so far (#1510): a div's `ParseFrame.openIndex`, and
+    /// the position a `<pb>` is recorded at (`ParseFrame.directBreakOpenCounts`).
+    private var divsOpened = 0
+
+    /// For each entry of `documents`, the `openIndex` of the div it came from, and whether it is a
+    /// promoted section rather than a document or an editorial note (#1510).
+    private var emitted: [(openIndex: Int, isSection: Bool)] = []
+
+    /// Page breaks a container the index leaves out, or narrows, gives to the section that begins
+    /// after them (#1510): each with the number of divs opened before it. Resolved by
+    /// ``finishParse()``, once every section that could begin after them has been emitted.
+    private var carriedBreaks: [(divsOpenedBefore: Int, page: PageNumber)] = []
+
+    /// The section kinds whose containers the index leaves out when they hold only a heading, and
+    /// narrows when they hold text of their own (#1510, owner decision D1): compilation, chapter and
+    /// subchapter. A heading-only appendix or historical-document container — seven in the corpus,
+    /// such as `frus1917-72PubDip`'s Appendix A, which alone answers its pp. 95–105 — keeps v62's
+    /// treatment.
+    private static let containerKindsLeftOut: Set<String> = ["compilation", "chapter", "subchapter"]
+
     /// Section kinds eligible for quasi-document promotion into the FTS5 index.
     ///
     /// The body-structure types (compilation, chapter, …) are included because a
@@ -895,6 +928,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         if elementName == "div" {
             frame.startPage = lastPageBreak
             divsAwaitingText.append(stack.count)
+            // #1510: the order divs open in, which is the order sections BEGIN in — unlike the
+            // order they are emitted in, where a section follows everything it holds.
+            frame.openIndex = divsOpened
+            divsOpened += 1
         }
         stack.append(frame)
     }
@@ -962,6 +999,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                                       dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax,
                                       printedNumber: printedNumber, startPage: frame.startPage)
             documents.append(doc)
+            emitted.append((frame.openIndex, false))
             documentDivDepth = -1
             // Mark the enclosing frame so structural parent sections are not promoted
             // to quasi-documents when they also contain numbered documents.
@@ -1003,6 +1041,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
             documents.append(doc)
+            emitted.append((frame.openIndex, true))
             foundTargetDocument = true
             parserRef?.abortParsing()
             return
@@ -1015,6 +1054,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             let doc = FRUSDocumentAST(documentId: docId, nodes: wrappedChildren,
                                       startPage: frame.startPage)
             documents.append(doc)
+            emitted.append((frame.openIndex, false))
             if !stack.isEmpty {
                 stack[stack.count - 1].hasChildDocuments = true
             }
@@ -1039,31 +1079,67 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // noise to full-text search. The section becomes its own indexed
             // entity; children are not bubbled to the parent.
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
+            // #1510 (owner decision D1): a compilation, chapter or subchapter holding a section the
+            // parser promotes is a CONTAINER, which history.state.gov shows as a list of what it
+            // holds. One that holds nothing but its heading is not indexed at all; one with text of
+            // its own is indexed for that text, and the breaks that follow the text — between or
+            // after the sections it holds — belong to the section that begins after them.
+            var nodes = frame.children
+            if frame.holdsPromotedSection, Self.containerKindsLeftOut.contains(kind) {
+                let ownBreaks = Self.directPageBreaks(frame)
+                if frame.children.allSatisfy(Self.isHeadingOrPageBreak) {
+                    // Left out: its breaks are carried, and its heading goes nowhere — passing it up
+                    // would put "I: The Treaty of Peace…" into the text of a section around it.
+                    carriedBreaks.append(contentsOf: ownBreaks)
+                    if !stack.isEmpty { stack[stack.count - 1].holdsPromotedSection = true }
+                    return
+                }
+                let trailing = frame.children.reversed().prefix { node in
+                    if case .pageBreak = node { return true }
+                    return false
+                }.count
+                if trailing > 0 {
+                    carriedBreaks.append(contentsOf: ownBreaks.suffix(trailing))
+                    nodes.removeLast(trailing)
+                }
+            }
             // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
             // No start page (#1503 review round 1): a page names the documents printed on it, and
             // a section beginning on one — a referral stub, an errata list, a President's message
             // under its own pagination — would otherwise be the page's answer. Its own breaks, in
             // its nodes, are indexed as they always were.
             let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
-            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
+            let doc = FRUSDocumentAST(documentId: docId, nodes: nodes,
                                       isFrontMatter: isFrontMatter)
             documents.append(doc)
+            emitted.append((frame.openIndex, true))
+            // The section it sits in now holds a promoted section (#1510).
+            if !stack.isEmpty { stack[stack.count - 1].holdsPromotedSection = true }
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.
             // Propagate hasChildDocuments so that ancestor structural sections know a
             // descendant section contains documents — preventing the ancestor from being
-            // incorrectly promoted to a quasi-document.
+            // incorrectly promoted to a quasi-document. `holdsPromotedSection` passes up the same
+            // way, and the positions of the breaks among the children with them (#1510).
             if !stack.isEmpty {
                 if frame.hasChildDocuments {
                     stack[stack.count - 1].hasChildDocuments = true
                 }
+                if frame.holdsPromotedSection {
+                    stack[stack.count - 1].holdsPromotedSection = true
+                }
                 stack[stack.count - 1].children.append(contentsOf: frame.children)
+                stack[stack.count - 1].directBreakOpenCounts.append(contentsOf: frame.directBreakOpenCounts)
             }
         } else if let node = buildNode(elementName: elementName,
                                        attributes: frame.attributes,
                                        children: frame.children) {
             if !stack.isEmpty {
                 stack[stack.count - 1].children.append(node)
+                // #1510: where a break that is a child of its parent sits among the divs.
+                if case .pageBreak = node {
+                    stack[stack.count - 1].directBreakOpenCounts.append(divsOpened)
+                }
             }
         }
         // If buildNode returns nil and the element is not transparent, the element is silently
@@ -1077,6 +1153,56 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         #if DEBUG
         print("[TEIParser] Parse error: \(parseError)")
         #endif
+    }
+
+    // MARK: - Containers (#1510)
+
+    /// Gives each break a container carried (`carriedBreaks`) to the section that begins after it:
+    /// the emitted section, document or editorial note whose div opened first after the break. Call
+    /// once the whole volume is parsed, since that section may come after the container closes.
+    ///
+    /// A break whose next beginning is a document or an editorial note is not carried: that break,
+    /// or a later one, is already the page the document begins on (`FRUSDocumentAST.startPage`), so
+    /// the page has its answer. One followed by nothing the index holds goes nowhere.
+    func finishParse() {
+        guard !carriedBreaks.isEmpty else { return }
+        var carried: [Int: [PageNumber]] = [:]
+        // Source order: a container closes after the containers inside it, so their breaks were
+        // appended first; ordered by position (stably, for breaks with no div between them), they
+        // read as printed.
+        let ordered = carriedBreaks.enumerated()
+            .sorted { ($0.element.divsOpenedBefore, $0.offset) < ($1.element.divsOpenedBefore, $1.offset) }
+            .map(\.element)
+        for (before, page) in ordered {
+            let next = emitted.indices
+                .filter { emitted[$0].openIndex >= before }
+                .min { emitted[$0].openIndex < emitted[$1].openIndex }
+            guard let next, emitted[next].isSection else { continue }
+            carried[next, default: []].append(page)
+        }
+        for (index, pages) in carried {
+            documents[index] = documents[index].carrying(pages)
+        }
+        carriedBreaks.removeAll()
+    }
+
+    /// The `.pageBreak` children of `frame`, each with how many divs had opened before it (#1510).
+    private static func directPageBreaks(_ frame: ParseFrame) -> [(divsOpenedBefore: Int, page: PageNumber)] {
+        let pages = frame.children.compactMap { node -> PageNumber? in
+            if case .pageBreak(let page) = node { return page }
+            return nil
+        }
+        return zip(frame.directBreakOpenCounts, pages).map { (divsOpenedBefore: $0, page: $1) }
+    }
+
+    /// Whether `node` is a heading or a page break — all a container that holds no text of its own
+    /// has among its children (#1510). A footnote in the heading is inside the `.head`, so it is not
+    /// text of the container's own.
+    private static func isHeadingOrPageBreak(_ node: FRUSASTNode) -> Bool {
+        switch node {
+        case .head, .pageBreak: return true
+        default: return false
+        }
     }
 
     // MARK: - Frame Helpers
@@ -1436,6 +1562,18 @@ private struct ParseFrame {
     /// (`TEIParserDelegate.divsAwaitingText`). `nil` for every other element. Only a document's
     /// and an editorial note's reach `FRUSDocumentAST.startPage` (#1503 review round 1).
     var startPage: PageNumber?
+    /// For a `<div>`: how many divs the parse had opened before this one (#1510) — the order
+    /// sections begin in. `-1` for every other element.
+    var openIndex: Int = -1
+    /// Set when a section the parser promotes closes inside this frame, directly or through
+    /// transparent wrappers, or when a container left out of the index does (#1510). It makes a
+    /// promotable section a container (`TEIParserDelegate.containerKindsLeftOut`).
+    var holdsPromotedSection: Bool = false
+    /// For each `.pageBreak` in `children`, in order, how many divs the parse had opened before that
+    /// `<pb>` (#1510): which section begins after it. A break reaches `children` only from its own
+    /// `<pb>` frame or spliced from a transparent child with that child's entries, so the two
+    /// always line up.
+    var directBreakOpenCounts: [Int] = []
 }
 
 // MARK: - Person List Heuristics
@@ -1854,6 +1992,18 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             + cueQualifierPattern
             + monthDayPattern + "?$",
         options: [.caseInsensitive])
+    /// "until" and another event before the date it gives — "until his resignation on April 22,
+    /// 1959", "until his defection in January 1951", "until country renamed in October 1964", "until
+    /// deposed in a coup on September 11, 1973": the year the post ended, like "until April 22, 1959"
+    /// (#1370's left-open item, folded into #1510's lane). One to six words of letters, with no digit
+    /// and no clause break, then "in" or "on", then the date as `cueRegex` reads one. Only "until" and
+    /// "till": "to" with words before an "in" is a delegate's conference ("Delegation to the
+    /// Conference on Disarmament in 1962"), and "before" runs into the next post ("before joining
+    /// the Department in 1950"). A death after the cue is `lifeEventCueRegex`'s, which is read first.
+    private static let endEventCueRegex = try? NSRegularExpression(
+        pattern: #"\b(?:until|till)\s+(?:[A-Za-z’'-]+\s+){1,6}?(?:in|on)\s+"# + cueQualifierPattern
+            + monthDayPattern + "?$",
+        options: [.caseInsensitive])
     /// The words that end a life rather than a post.
     private static let lifeEventWords = "died|killed|assassinated|murdered|executed|death|shot|hanged|suicide"
     /// The nouns a list writes for that end after a cue word: "until his assassination on July 14,
@@ -1964,7 +2114,9 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// and day, printed with or without a space, or a season or "the end of") is "until", "till",
     /// "to", "through", "thru" or "before" — "prior to" included — and a START otherwise, cue or none,
     /// as a bare year always was. One clause that opens with "from" and closes with an end cue around
-    /// a single year ("from January 31 until August 25, 1961") gives that year as both ends.
+    /// a single year ("from January 31 until August 25, 1961") gives that year as both ends. "until"
+    /// with another event before the date — "until his resignation on April 22, 1959", "until
+    /// overthrown on January 25, 1971" — is an end too (`endEventCueRegex`, index v63).
     ///
     /// **A death is not a post.** "until his death on November 22, 1963", "until assassinated on
     /// January 2, 1955", "until his assassination on July 14, 1958" are ends like any "until"; "after
@@ -1984,7 +2136,7 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     static func yearSpan(in text: String) -> (start: Int?, end: Int?) {
         guard let rangeRe = Self.yearRangeRegex, let yearRe = Self.yearRegex, let cueRe = Self.cueRegex,
               let lifeCueRe = Self.lifeEventCueRegex, let lifeRe = Self.lifeEventRegex,
-              let fromUntilRe = Self.fromUntilOneYearRegex else {
+              let fromUntilRe = Self.fromUntilOneYearRegex, let endEventRe = Self.endEventCueRegex else {
             return (nil, nil)
         }
         let ns = text as NSString
@@ -2035,6 +2187,9 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             let cue = cueRe.firstMatch(in: before, range: beforeRange)
                 .map { beforeNS.substring(with: $0.range(at: 1)).lowercased() }
             if let cue, Self.endCues.contains(cue) {
+                ends.append(year)
+            } else if cue == nil, endEventRe.firstMatch(in: before, range: beforeRange) != nil {
+                // "until his resignation on April 22, 1959": the end of the post, as "until" is.
                 ends.append(year)
             } else {
                 starts.append(year)
@@ -2798,7 +2953,13 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         if rg == nil || repo == nil {
             for ancestor in ancestorTexts.reversed() {
                 if rg == nil { rg = extractRecordGroup(from: ancestor) }
-                if repo == nil { repo = extractRepository(from: ancestor) }
+                // A heading naming its repository by its full name, which no keyword reads
+                // (`Princeton University Library`, `Jimmy Carter Presidential Library`): the row
+                // takes the name the authority keyed it under (2026-09-28 audit, folded into #1514).
+                if repo == nil {
+                    repo = extractRepository(from: ancestor)
+                        ?? CollectionKeying.bridgedRepository(ofHeading: ancestor)
+                }
                 if rg != nil && repo != nil { break }
             }
         }

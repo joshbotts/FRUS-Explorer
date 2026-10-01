@@ -75,6 +75,7 @@ import UniformTypeIdentifiers
 ///          signed-out device showed three contradictory ones: Sync Error, Private Zone Missing,
 ///          Account Issue); every status `Label` sets `.titleAndIcon`, without which iOS 27 drew
 ///          the row with ~180 pt of blank space under it, signed in or out
+///   2.9 — #1531: a **Sync Stopped** row, for an upload failure remembered across launches
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -273,6 +274,16 @@ struct SettingsView: View {
                 // "Fix iCloud Sync". Both platforms now name the one true path.
                 detail: String(localized: "settings.icloud.zoneMissing.detail",
                                defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.")
+            )
+
+        case .stopped(let run):
+            // #1531: an upload failed in an earlier launch and none has succeeded since. Red, like
+            // a missing zone: nothing this device writes is reaching iCloud.
+            iCloudStatusCell(
+                label: String(localized: "settings.icloud.stopped", defaultValue: "Sync Stopped"),
+                systemImage: "exclamationmark.icloud.fill",
+                color: .red,
+                detail: SyncStoppedCopy.fullDetail(run)
             )
 
         case .failed(let message):

@@ -76,6 +76,10 @@ import AppKit
 ///   1.12 — 2026-09-30: #1483 — `source.explorer.unrecognized.explanation` carries one text on both
 ///           platforms, the owner's: the raw text "is shown under Source Note", the left column's
 ///           heading here and the iOS sheet's section header. Mirrors SourceExplorerView 1.13.
+///   1.13 — 2026-10-01: #1514 — the named-series box's note names the agency a series' name opens
+///           with (`NamedFileSeriesRouting.macNote`); review round 1: the provenance column offers
+///           NARA's Department of State records page only when the name states no holder
+///           (`NamedFileSeriesRouting.offersStateRecordsLink`). Mirrors SourceExplorerView 1.14.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -792,10 +796,12 @@ struct MacSourceExplorerView: View {
                                                    defaultValue: "File"),
                                       value: fileId)
                     }
-                    // Mirrors the iOS panel's orientation link, on the same condition (nothing
-                    // curated for this series) and reading the same shared URL and label, so the
-                    // two hand-maintained twins cannot offer different destinations.
-                    if CuratedLotResolutionsStore.shared?.record(forSeriesName: series) == nil {
+                    // Mirrors the iOS panel's orientation link, on the same conditions (nothing
+                    // curated for this series, and a name that states no holder — #1514, review
+                    // round 1) and reading the same shared URL and label, so the two
+                    // hand-maintained twins cannot offer different destinations.
+                    if CuratedLotResolutionsStore.shared?.record(forSeriesName: series) == nil,
+                       NamedFileSeriesRouting.offersStateRecordsLink(seriesName: series) {
                         Button {
                             openURL(NARACatalogClient.stateDepartmentRecordsURL)
                         } label: {
@@ -1049,8 +1055,7 @@ struct MacSourceExplorerView: View {
                 namedSeriesRoutingBox(routing)
             } else {
                 GroupBox(header) {
-                    Text(String(localized: "source.explorer.namedSeries.note",
-                                defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available."))
+                    Text(NamedFileSeriesRouting.macNote(seriesName: series))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

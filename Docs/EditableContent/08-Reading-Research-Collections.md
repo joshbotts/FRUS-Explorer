@@ -65,14 +65,14 @@ This deletes the whole record of your work: every document you opened, every sea
 <!-- END SOURCE: settings.sessions.manage.footer.whole -->
 
 #### iCloud unavailable (Local Only) detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 238–239 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 239–240 | key: settings.icloud.localOnly.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 iCloud sync is unavailable. Notes, tags, and collections won’t sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.
 
 <!-- END SOURCE: settings.icloud.localOnly.detail -->
 
 #### iCloud zone-missing detail
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 274–275 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SettingsView.iCloudSyncStatusRow | lines: 275–276 | key: settings.icloud.zoneMissing.detail | shared: iOS only (the macOS status lives in the main window's status bar) -->
 
 The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.
 
@@ -99,42 +99,42 @@ recorded change (text, apparatus, gone) and on whether any stored highlight was 
 earlier rendering. The first key is the pre-existing highlight hedge, now declared here only.
 
 #### No recorded change, stale highlights
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 98–99 | key: highlight.stale.warning | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 104–105 | key: highlight.stale.warning | shared: iOS+macOS (single edit point) -->
 
 Some highlights may be misaligned — the document has been updated since they were created.
 
 <!-- END SOURCE: highlight.stale.warning -->
 
 #### Text changed
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 101–102 | key: document.changed.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 107–108 | key: document.changed.body | shared: iOS+macOS (single edit point) -->
 
 The text of this document changed in a volume update. Highlight positions may have moved.
 
 <!-- END SOURCE: document.changed.body -->
 
 #### Text changed, stale highlights
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 104–105 | key: document.changed.body.stale | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 110–111 | key: document.changed.body.stale | shared: iOS+macOS (single edit point) -->
 
 The text of this document changed in a volume update. Some highlights may be misaligned.
 
 <!-- END SOURCE: document.changed.body.stale -->
 
 #### Apparatus changed
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 107–108 | key: document.changed.apparatus | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 113–114 | key: document.changed.apparatus | shared: iOS+macOS (single edit point) -->
 
 Footnotes, the source note, or the heading changed in a volume update. The text did not.
 
 <!-- END SOURCE: document.changed.apparatus -->
 
 #### Apparatus changed, stale highlights
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 110–111 | key: document.changed.apparatus.stale | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 116–117 | key: document.changed.apparatus.stale | shared: iOS+macOS (single edit point) -->
 
 Footnotes, the source note, or the heading changed in a volume update, and some highlights may be misaligned.
 
 <!-- END SOURCE: document.changed.apparatus.stale -->
 
 #### No longer in the volume
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 113–114 | key: document.changed.vanished | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 119–120 | key: document.changed.vanished | shared: iOS+macOS (single edit point) -->
 
 This document is no longer in the volume.
 
@@ -177,7 +177,7 @@ from *Review Changes…* on a Research row. Lists what changed, every highlight 
 and its Confirm / Remove actions, and the other annotations the app cannot judge.
 
 #### Banner control
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 60–60 | key: document.changed.review | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 66–66 | key: document.changed.review | shared: iOS+macOS (single edit point) -->
 
 Review…
 
@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2240–2240 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2247–2247 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2241–2242 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2248–2249 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -707,7 +707,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2546–2547 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2553–2554 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1317,132 +1317,132 @@ travel into a PDF somebody else opens. Each names a source the exported material
 prints only the ones that apply to its own contents.
 
 #### provenance.source.frusText
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 107–107 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 108–108 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
 
 FRUS text
 
 <!-- END SOURCE: provenance.source.frusText -->
 
 #### provenance.source.nara
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 109–109 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 110–110 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
 
 FRUS + NARA catalog
 
 <!-- END SOURCE: provenance.source.nara -->
 
 #### provenance.source.ohPeople
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 111–112 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 112–113 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
 
 FRUS + OH people register
 
 <!-- END SOURCE: provenance.source.ohPeople -->
 
 #### provenance.source.ohSubjects
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 114–115 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 115–116 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
 
 FRUS + OH subjects
 
 <!-- END SOURCE: provenance.source.ohSubjects -->
 
 #### provenance.source.stateSchedule
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 117–118 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 118–119 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
 
 FRUS + State Dept. schedule
 
 <!-- END SOURCE: provenance.source.stateSchedule -->
 
 #### provenance.source.wordLists
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 120–121 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 121–122 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
 
 FRUS + this app's word lists
 
 <!-- END SOURCE: provenance.source.wordLists -->
 
 #### provenance.source.model
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 123–123 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 124–124 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
 
 This app's model
 
 <!-- END SOURCE: provenance.source.model -->
 
 #### provenance.source.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 125–125 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 126–126 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
 
 Your reading
 
 <!-- END SOURCE: provenance.source.yourReading -->
 
 #### provenance.method.frusText
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 137–138 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 138–139 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
 
 Read from the text and editorial apparatus of the FRUS volumes, and from no other source. Where a value was parsed out of printed prose, this app did the reading.
 
 <!-- END SOURCE: provenance.method.frusText -->
 
 #### provenance.method.joined %@
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 140–141 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 141–142 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
 
 Produced by joining the FRUS volumes to %@. The join is this app's; a record it could not match is absent rather than wrong.
 
 <!-- END SOURCE: provenance.method.joined %@ -->
 
 #### provenance.method.computed
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 144–145 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 145–146 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
 
 Computed by this app rather than read from a source — a model or a scoring rule stands between the volumes and this figure. Cite it as the app's output, not the record's.
 
 <!-- END SOURCE: provenance.method.computed -->
 
 #### provenance.method.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 147–148 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 148–149 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
 
 Your own notes, tags and highlights. The app never mixes them into the published text.
 
 <!-- END SOURCE: provenance.method.yourReading -->
 
 #### provenance.partner.nara
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 156–157 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 157–158 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
 
 the National Archives catalog
 
 <!-- END SOURCE: provenance.partner.nara -->
 
 #### provenance.partner.ohPeople
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 159–160 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 160–161 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
 
 the Office of the Historian's people register
 
 <!-- END SOURCE: provenance.partner.ohPeople -->
 
 #### provenance.partner.ohSubjects
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 162–163 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 163–164 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
 
 the Office of the Historian's subject taxonomy
 
 <!-- END SOURCE: provenance.partner.ohSubjects -->
 
 #### provenance.partner.stateSchedule
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 165–166 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 166–167 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
 
 the State Department's decimal classification schedule
 
 <!-- END SOURCE: provenance.partner.stateSchedule -->
 
 #### provenance.curated.disclosure
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 180–181 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 181–182 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
 
 Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.
 
 <!-- END SOURCE: provenance.curated.disclosure -->
 
 #### provenance.parseResidual.disclosure
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 205–206 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 206–207 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
 
 Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.
 
 <!-- END SOURCE: provenance.parseResidual.disclosure -->
 
-Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,469 of 267,663 notes since #1489; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
+Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,465 of 267,663 notes since #1514, 5,469 after #1489; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
 
 #### provenance.block.heading
 <!-- SOURCE: FRUSExplorer/Provenance/ProvenanceStatement.swift | lines: 35–35 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
@@ -1658,7 +1658,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3056–3057 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3026–3027 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -1681,14 +1681,14 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 <!-- END SOURCE: summary.unavailable.explanation -->
 
 #### Tooltip — Choose citation style (history.state.gov, Chicago…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1230–1231 | key: citation.popover.stylePicker.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1270–1271 | key: citation.popover.stylePicker.help | shared: macOS only -->
 
 Choose citation style (history.state.gov, Chicago, Turabian) for this view — change the default in Settings → Display
 
 <!-- END SOURCE: citation.popover.stylePicker.help -->
 
 #### Tooltip — Copy this citation as BibTeX or RIS, or save a .bib file.…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1346–1347 | key: citation.popover.copyAs.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1386–1387 | key: citation.popover.copyAs.help | shared: macOS only -->
 
 Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are on the document’s Share button.
 
@@ -2067,7 +2067,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1434–1435 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1441–1442 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
@@ -2455,7 +2455,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: collection.import.error.version -->
 
 #### %@, footnote (no printed number recorded).
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 936–937 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 985–986 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 %@, footnote (no printed number recorded).
 
@@ -2464,7 +2464,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 #### %@, footnote %@.
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 940–941 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 989–990 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 %@, footnote %@.
 

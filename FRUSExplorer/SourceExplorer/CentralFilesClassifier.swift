@@ -212,6 +212,14 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///         home is dropped, but a document's only reel is never removed. Also the evaluation both
 ///         Source Explorer views now share (`gate`, `documentHomes`, `enclosureRolls`, `evaluate`), its
 ///         outcome states, the direction-aware serial label, and `documentYear(fromDateline:)`.
+///   1.5 — 2026-10-01 (the 2026-09-28 audit, folded into #1514): the Department cue is the U.S.
+///         Department's own (`isUSDepartmentDateline`) — not the Confederate department at Richmond,
+///         nor a foreign ministry styled a department of state or datelined at its own capital, and
+///         `State Department` and the volumes' misprints (`Dapartment`, `Deparment`, `Stats`, …) read
+///         too; and a letter the sitting Secretary of State signs is the Department's from wherever
+///         he wrote it (`sittingSecretarySender`, his bare surname, never an initialled namesake),
+///         where the despatch fallback read Seward at Auburn and Blaine at Bar Harbor as despatches
+///         from abroad.
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -227,7 +235,7 @@ enum CentralFilesClassifier {
         // instruction TO the agent; anything else is the agent's despatch home.
         if ["special agent", "special commissioner", "special mission"]
             .contains(where: { headerL.contains($0) || dl.contains($0) }) {
-            if dl.contains("department of state") {
+            if isUSDepartmentDateline(dl) || sittingSecretarySender(inHeader: headerL, dateline: dateline) {
                 return [CentralFilesClassification(
                     category: .specialAgentsInstructions, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.specialAgentInstruction",
@@ -287,8 +295,15 @@ enum CentralFilesClassifier {
         // "17 Madison Place", an OCR-damaged "Dapartment of State". Scoped to foreign-legation chapters,
         // because elsewhere the same surnames sign despatches home: Foster from Mexico, Adee from
         // Madrid, Root from Santiago.
-        let departmentOutbound = dl.contains("department of state")
+        //
+        // The dateline cue is the U.S. Department's own (`isUSDepartmentDateline`): not the
+        // Confederate department at Richmond, nor a foreign ministry styled "Department of State"
+        // (1.5). And everywhere, a letter the SITTING Secretary of State signs is the Department's,
+        // from wherever he wrote — Seward at Auburn, Blaine at Bar Harbor, Olney at Falmouth — which
+        // the despatch fallback below read as a despatch from abroad (`sittingSecretarySender`).
+        let departmentOutbound = isUSDepartmentDateline(dl)
             || (legationChapter && secretaryOfStateSender(inHeader: headerL))
+            || sittingSecretarySender(inHeader: headerL, dateline: dateline)
 
         // A U.S. diplomatic mission abroad → a despatch home.
         if containsAny(dl, ["legation of the united states", "embassy of the united states",
@@ -378,7 +393,7 @@ enum CentralFilesClassifier {
         // documents are overwhelmingly despatches from the U.S. mission (or enclosures filmed
         // with them), so resolve to the country's despatch series.
         if !dl.trimmingCharacters(in: .whitespaces).isEmpty,
-           !dl.contains("washington"), !dl.contains("department of state") {
+           !dl.contains("washington"), !isUSDepartmentDateline(dl), !isConfederateDateline(dl) {
             return [CentralFilesClassification(
                 category: .despatches, geoKeys: geoKeys, confidence: .medium,
                 rationale: String(localized: "centralFiles.rationale.despatchAbroad",
@@ -481,6 +496,125 @@ enum CentralFilesClassifier {
         return sender.range(
             of: #"\b(?:secretary of state(?! for)|mr\.? (?:[a-z]\. ?)*(?:seward|fish|evarts|blaine|frelinghuysen|bayard|foster|gresham|olney|sherman|day|hay|root|hunter|adee|wharton|uhl))\b"#,
             options: .regularExpression) != nil
+    }
+
+    /// Whether a lower-cased dateline is the U.S. Department of State's own (1.5, the 2026-09-28
+    /// audit, folded into #1514).
+    ///
+    /// The cue was `contains("department of state")`, wrong both ways. Measured over the first
+    /// `<dateline>` of the 46,710 document divisions in the 81 manifest volumes whose span opens
+    /// before 1906 — a regex census of the TEI the classifier reads, not of its output, joining a
+    /// dateline's pieces as the index stores it (`PrintedText`). A few of those documents are dated
+    /// 1906 or later, outside the classifier's year gate; they are counted where they fall, and the
+    /// gate is named where it matters.
+    /// - **41 name a department of state that is not the U.S. one**, and the cue read each as the
+    ///   Department's outbound letter: the Confederate department at Richmond (12,
+    ///   `isConfederateDateline`); a foreign ministry styled `Department of State for Foreign
+    ///   Affairs` or `… and (of) Foreign Relations` (21, read by the style alone: Paraguay's at Luque
+    ///   and Asunción 11, Portugal's with no place 7, Mexico's at the City of Mexico 2, Haiti's at Port
+    ///   au Prince 1); and a foreign department datelined at its own capital with no style (8, read by
+    ///   the place, `foreignDepartmentPlaces`: Spain's, at the Palace or its `Bureau of Political
+    ///   Affairs, Madrid`, 7, and Liberia's at Monrovia). A foreign ministry's letter now takes the
+    ///   despatch fallback, as an enclosure filed with the U.S. mission's despatch, which is what the
+    ///   fallback says it is; a Confederate letter takes none.
+    /// - **3 print a foreign capital after the Department and are U.S. letters.** Two are
+    ///   Frelinghuysen's instructions to the minister in Mexico, `Department of State, Mexico`
+    ///   (frus1884/d254, d262), so `mexico` is no foreign department's place and they read as the
+    ///   Department's; the third is the minister's despatch from Peking, `Department of State, Peking,
+    ///   … (Received December 5.)` (Denby to Bayard, frus1885/d119), which `peking` sends to the
+    ///   despatch fallback — the right series, though not because a foreign department wrote it.
+    /// - **37 are the U.S. Department's, spelt otherwise** (33 inside the year gate). The cue read
+    ///   five: `State Department` (frus1866p1/d66, frus1886/d244, frus1894app1/d638) and `Dapartment
+    ///   of State` (frus1885/d310, frus1905/d321). `usDepartmentNamePattern` reads the rest, misprints
+    ///   of four kinds: `of` misread (`Department op State` ×7, `oe` ×2, `or`, `in`), letters dropped
+    ///   (`Deparment` ×3, `Depatment`, `Sate`, `Stat Washington`), letters added or misread
+    ///   (`Department of Stats` ×4, `Departmeint`, `Departmrnt`, `Departmentl`, `Departmment`,
+    ///   `Departmemt`, `Stpte`), and stray punctuation (`Department.of`, `Department, of` ×2, `of.
+    ///   State`, `of’State`). A sitting Secretary signed 23 of the 28 inside the gate, and
+    ///   `sittingSecretarySender` read those; the legation-chapter sender rule reads one more, Adee
+    ///   to Sir Julian Pauncefote in the British-embassy chapter (frus1893/d338). No rule read the
+    ///   other four, all U.S. letters, which the spelling alone now decides: Hunter to Biddle
+    ///   (frus1872p1/d411), Adee to Pauncefote among the Samoan papers (frus1894app1/d591), Hill to
+    ///   Beaupré (frus1902/d267) and the Secretary to the German chargé (frus1905/d687). Of the five
+    ///   the old cue read, only `Dapartment` at frus1905/d321 was decided by its spelling alone in its
+    ///   own chapter; the sender rules read the other four.
+    static func isUSDepartmentDateline(_ dl: String) -> Bool {
+        guard dl.range(of: usDepartmentNamePattern, options: .regularExpression) != nil
+        else { return false }
+        if isConfederateDateline(dl) { return false }
+        if dl.range(of: #"department of states?\s*,?\s*(?:for|and)\s+(?:of\s+)?foreign"#,
+                    options: .regularExpression) != nil { return false }
+        return !containsAny(dl, foreignDepartmentPlaces)
+    }
+
+    /// The Department's name as the pre-1906 datelines print it, misprints included (see
+    /// `isUSDepartmentDateline`): a word opening `dep` or `dap` with an `m` in its next six letters,
+    /// then `of` or a misreading of it between up to three spaces or stops, then `stat` (which opens
+    /// `State`, `Stats` and `Stat Washington`), `Sate` or `Stpte` — or `State Department`. Measured
+    /// over the census, it reads no dateline that is not a department of state.
+    private static let usDepartmentNamePattern =
+        #"\bd[ae]p[a-z]{0,4}m[a-z]{0,4}[\s.,’']{1,3}(?:o[a-z]|in)[\s.,’']{1,3}s(?:tat|ate\b|tpte\b)|\bstate department\b"#
+
+    /// Where a foreign department of state with no `… Foreign Affairs/Relations` style datelines its
+    /// letters, as the census in `isUSDepartmentDateline` found them: Spain's Palace and its bureau
+    /// at Madrid, Liberia's Monrovia — and Peking, where the one such dateline is the U.S.
+    /// minister's despatch, which the despatch fallback places. Paraguay's, Mexico's and Haiti's
+    /// ministries print the style, which reads them wherever they wrote.
+    private static let foreignDepartmentPlaces = ["palace", "madrid", "peking", "monrovia"]
+
+    /// Whether a lower-cased dateline is the Confederate States' department of state at Richmond
+    /// (frus1863p1/d35–d46, frus1872p2v2/d20) — not the Department's, and not a letter from abroad.
+    static func isConfederateDateline(_ dl: String) -> Bool {
+        dl.contains("richmond") || dl.contains("confederate states")
+    }
+
+    /// The Secretaries of State of 1860–1909 and their tenures, from the Office of the Historian's
+    /// list of principal officers — the dates a header's surname is checked against.
+    private static let secretaryTenures: [(surname: String, from: String, through: String)] = [
+        ("black", "1860-12-17", "1861-03-05"),
+        ("seward", "1861-03-05", "1869-03-04"),
+        ("washburne", "1869-03-05", "1869-03-16"),
+        ("fish", "1869-03-17", "1877-03-12"),
+        ("evarts", "1877-03-12", "1881-03-07"),
+        ("blaine", "1881-03-07", "1881-12-19"),
+        ("frelinghuysen", "1881-12-19", "1885-03-06"),
+        ("bayard", "1885-03-07", "1889-03-06"),
+        ("blaine", "1889-03-07", "1892-06-04"),
+        ("foster", "1892-06-29", "1893-02-23"),
+        ("gresham", "1893-03-07", "1895-05-28"),
+        ("olney", "1895-06-10", "1897-03-05"),
+        ("sherman", "1897-03-06", "1898-04-27"),
+        ("day", "1898-04-28", "1898-09-16"),
+        ("hay", "1898-09-30", "1905-07-01"),
+        ("root", "1905-07-19", "1909-01-27"),
+    ]
+
+    /// Whether a lower-cased header's SENDER is the Secretary of State SITTING on the dateline's date
+    /// (1.5) — so his letter is the Department's from wherever he wrote it: `Mr. Seward to Sir F.
+    /// Bruce, Auburn, July 27, 1867` (frus1867p1/d214), `Mr. Blaine to Mr. Edwardes, Bar Harbor`
+    /// (frus1890/d256), `Mr. Olney to Mr. Dupuy de Lôme, Falmouth` (frus1895p2/d381), `Mr. Bayard to
+    /// Señor Flores, Wilmington, Del.` (frus1886/d139). The despatch fallback read each as a letter
+    /// from the U.S. mission abroad.
+    ///
+    /// The date is what makes this safe outside a legation chapter, where `secretaryOfStateSender`
+    /// alone is not: the same surnames sign despatches home when they are NOT Secretary — Bayard and
+    /// Hay as ambassadors in London (frus1894app1, frus1897/d290), George F. Seward from Hong Kong
+    /// (frus1876/d33), Foster from Mexico in the 1870s. A dateline with no date decides nothing.
+    ///
+    /// And the sender is the bare surname after `Mr.`: initials name someone else. In the census
+    /// `isUSDepartmentDateline` describes, 109 headers carry initials before a Secretary's surname
+    /// inside his term, and none is his — 105 are Frederick W. Seward's, the Assistant Secretary,
+    /// whose datelines name the Department anyway, and 4 are George F. Seward's, the consul general
+    /// at Shanghai, writing in his uncle's term (frus1866p1/d376, frus1867p1/d395–d397).
+    static func sittingSecretarySender(inHeader headerL: String, dateline: String) -> Bool {
+        guard let toRange = headerL.range(of: " to "),
+              let dateISO = datelineDateISO(from: dateline) else { return false }
+        let sender = String(headerL[..<toRange.lowerBound])
+        return secretaryTenures.contains { tenure in
+            dateISO >= tenure.from && dateISO <= tenure.through
+                && sender.range(of: #"\bmr\.? "# + tenure.surname + #"\b"#,
+                                options: .regularExpression) != nil
+        }
     }
 
     /// Whether a lower-cased header's SENDER is the President (`The President to King Humbert .`,

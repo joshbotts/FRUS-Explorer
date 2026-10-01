@@ -361,7 +361,7 @@ struct ArchivalFlowsView: View {
                                                      defaultValue: "all %@ origins")))
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Text(diagramCaption(data)).font(.caption).foregroundStyle(.secondary)
+            Text(AttributedString(markdownBody: diagramCaption(data))).font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             GeometryReader { geometry in
                 ZStack(alignment: .topLeading) {

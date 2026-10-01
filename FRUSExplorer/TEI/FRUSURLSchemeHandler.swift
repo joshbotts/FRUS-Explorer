@@ -44,7 +44,7 @@ enum CrossRefDestination: Equatable {
 /// |------------------------------------------|-----------------|
 /// | `frusexplorer://person/{ref}`            | `onPersonTap`   |
 /// | `frusexplorer://gloss/{ref}`             | `onGlossTap`    |
-/// | `frusexplorer://doc/{target}[/{vol}]`    | `onCrossRefTap` |
+/// | `frusexplorer://doc/{target}[/{vol}][?no=…&day=…]` | `onCrossRefTap` |
 ///
 /// All three respond with an empty 200-OK so WebKit never surfaces a navigation
 /// error. The handler silently ignores any scheme task that arrives after `.cancel`
@@ -68,6 +68,8 @@ enum CrossRefDestination: Equatable {
 ///          navigation delegate's `decidePolicyFor`. `webView(_:start:)` no longer
 ///          dispatches — cancelling the navigation there suppresses the scheme task
 ///          on macOS, which is why in-document person/term links never fired.
+///   1.2 — #1509: `onCrossRefTap` also receives what a page link's footnote names
+///          (`PageCitationHint`), read back from the link's query.
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -78,8 +80,9 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     /// Called with the resolved `GlossEntry` (or `nil`) when a gloss link is tapped.
     var onGlossTap:    ((GlossEntry?) -> Void)?
 
-    /// Called with the target document ID and optional source volume ID.
-    var onCrossRefTap: ((String, String?) -> Void)?
+    /// Called with the target document ID, the optional source volume ID and, for a page link inside
+    /// a footnote, what the footnote names (#1509) — read back from the link's query.
+    var onCrossRefTap: ((String, String?, PageCitationHint?) -> Void)?
 
     /// Called with the broken-ref detail (or `nil`) when an unresolvable `<ref>` is tapped.
     var onBrokenRefTap: ((BrokenRefInfo?) -> Void)?
@@ -152,10 +155,12 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             onGlossTap?(glossByRef[ref])
 
         case "doc":
-            // URL: frusexplorer://doc/{target}  or  frusexplorer://doc/{target}/{volumeId}
+            // URL: frusexplorer://doc/{target}  or  frusexplorer://doc/{target}/{volumeId}, and for a
+            // page link in a footnote a query naming what the footnote names (#1509).
             guard let target = parts.first else { return }
             let volumeId: String? = parts.count >= 2 ? parts[1] : nil
-            onCrossRefTap?(target, volumeId)
+            let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            onCrossRefTap?(target, volumeId, PageCitationHint(queryItems: query))
 
         case "brokenref":
             // URL: frusexplorer://brokenref/{target} — a dead cross-reference. Never navigates;
@@ -304,7 +309,7 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
                  .titlePageBlock(let cs), .attachmentHeading(let cs):
                 scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
-            case .crossRefLink(_, _, let brokenInfo, let cs):
+            case .crossRefLink(_, _, let brokenInfo, _, let cs):
                 if let brokenInfo { broken[brokenInfo.target] = brokenInfo }
                 scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 

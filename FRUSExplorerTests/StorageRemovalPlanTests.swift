@@ -768,6 +768,139 @@ struct DownloadedVolumesListModelTests {
     }
 }
 
+// MARK: - StorageHeroTests
+
+/// Volumes & Storage's hero states no measurement it has not taken (#1476), in the owner's
+/// 2026-09-30 wording: "—" and "Measuring…" while measuring, "—" and "Could not measure storage"
+/// after a measurement with no earlier report fails, and a volume being removed in a clause of its
+/// own, counted in neither "downloaded" nor "not yet indexed".
+///
+/// Both hubs draw ``DownloadedVolumesListModel/heroContent(catalogCount:interruptedCount:)`` and
+/// measure through ``DownloadedVolumesListModel/measure(_:)`` — `HubRemovalRoutingTests` pins that
+/// — so these drive the model the hubs read. The removal case drives the real
+/// ``DownloadedVolumesListModel/removeVolumes(_:unindex:deleteFile:remeasure:)`` and reads the hero
+/// at each step, which is where #1476 saw "1 not yet indexed".
+///
+/// Version history:
+///   1.0 — #1476: initial implementation
+@Suite("Volumes & Storage hero")
+@MainActor
+struct StorageHeroTests {
+
+    private static let catalog = 553
+
+    private static func report(_ volumeIds: [String]) -> StorageReport {
+        StorageReport(totalVolumesBytes: 2_048 * volumeIds.count, totalIndexBytes: 0,
+                      totalSummariesBytes: 0, totalVectorBytes: 0,
+                      perVolume: volumeIds.map { VolumeStorageEntry(volumeId: $0, volumeFileBytes: 2_048) })
+    }
+
+    /// What the hero read at each step of a removal.
+    @MainActor
+    final class Readings {
+        /// The hero's sentence, by the step it was read at.
+        var byStep: [String: String] = [:]
+    }
+
+    private func hero(_ model: DownloadedVolumesListModel, interrupted: Int = 0) -> StorageHeroContent {
+        model.heroContent(catalogCount: Self.catalog, interruptedCount: interrupted)
+    }
+
+    /// A measurement that fails the way `DownloadManager.storageReport` does when it cannot list
+    /// the volumes directory.
+    private struct MeasurementFailed: LocalizedError {
+        var errorDescription: String? { "The folder “Volumes” could not be read." }
+    }
+
+    @Test("Before the first measurement the hero says it is measuring, with no figures")
+    func measuringStatesNoFigures() {
+        let model = DownloadedVolumesListModel()
+        let content = hero(model, interrupted: 2)
+        #expect(content.value == "—", "the size reads \(content.value) before anything was measured")
+        #expect(content.status == "Measuring…", """
+            The hero's sentence before the first measurement reads "\(content.status)". Before #1476 \
+            it read "0 of 553 downloaded · nothing indexed yet" over a library it had not measured.
+            """)
+        #expect(content.valueAccessibilityLabel == "Measuring…", "VoiceOver reads the dash as a dash")
+        #expect(!content.needsAttention, "nothing measured, nothing flagged")
+    }
+
+    @Test("A first measurement that fails says so, with no figures")
+    func failedMeasurementWithNoReport() async {
+        let model = DownloadedVolumesListModel()
+        await model.measure { throw MeasurementFailed() }
+        let content = hero(model)
+        #expect(model.report == nil)
+        #expect(model.loadError == "The folder “Volumes” could not be read.")
+        #expect(content.value == "—")
+        #expect(content.status == "Could not measure storage", """
+            After a failed measurement the hero reads "\(content.status)". The Mac's used to stand \
+            at "0 of 553 downloaded · nothing indexed yet" until a measurement succeeded.
+            """)
+        #expect(content.valueAccessibilityLabel == "Could not measure storage")
+    }
+
+    @Test("A measured library that really is empty keeps its figures")
+    func measuredEmptyLibrary() async {
+        let model = DownloadedVolumesListModel()
+        await model.measure { Self.report([]) }
+        let content = hero(model)
+        #expect(content.value != "—", "a measured size is shown, even of nothing")
+        #expect(content.valueAccessibilityLabel == nil, "VoiceOver reads the measured size itself")
+        #expect(content.status == "0 of 553 downloaded · nothing indexed yet")
+    }
+
+    @Test("A re-measure that fails keeps the last report and its figures, and records the error")
+    func failedRemeasureKeepsTheReport() async {
+        let model = DownloadedVolumesListModel()
+        await model.measure { Self.report(["a", "b"]) }
+        model.indexedVolumeIds = ["a", "b"]
+        await model.measure { throw MeasurementFailed() }
+        #expect(model.report?.perVolume.map(\.volumeId) == ["a", "b"], """
+            A failed re-measure dropped the report: the list empties and the hero goes back to an \
+            empty library. That was the Mac's `try?` (#1476).
+            """)
+        #expect(model.loadError != nil, "the failure is not recorded, so no row says so")
+        #expect(hero(model).status == "2 of 553 downloaded · all indexed · nothing needs attention")
+
+        await model.measure { Self.report(["a"]) }
+        #expect(model.loadError == nil, "a measurement that succeeds clears the failure")
+    }
+
+    @Test("A volume being removed is counted in its own clause, never as not yet indexed")
+    func removalHasItsOwnClause() async throws {
+        let model = DownloadedVolumesListModel()
+        model.report = Self.report(["a", "b", "c"])
+        model.indexedVolumeIds = ["a", "b", "c"]
+        let gate = DownloadedVolumesListModelTests.StepGate()
+        let readings = Readings()
+        let removal = Task {
+            await model.removeVolumes(["b"],
+                                      unindex: { _ in await gate.hold("unindex") },
+                                      deleteFile: { _ in readings.byStep["deleteFile"] = self.hero(model).status },
+                                      remeasure: {
+                                          readings.byStep["remeasure"] = self.hero(model).status
+                                          model.report = Self.report(["a", "c"])
+                                      })
+        }
+        try #require(await gate.waitUntilParked(at: "unindex"), "the removal never reached its first step")
+        readings.byStep["unindex"] = hero(model).status
+        gate.release()
+        await removal.value
+
+        let expected = "2 of 553 downloaded · all indexed · 1 being removed · nothing needs attention"
+        for step in ["unindex", "deleteFile", "remeasure"] {
+            let status = try #require(readings.byStep[step], "the hero was not read at \(step)")
+            #expect(status == expected, """
+                While "b" is being removed (\(step)), the hero reads "\(status)". Before #1476 it \
+                counted "b" as downloaded and, once its rows were deleted, as "1 not yet indexed".
+                """)
+        }
+        #expect(hero(model).status == "2 of 553 downloaded · all indexed · nothing needs attention",
+                "once the re-measure lands the clause goes")
+    }
+}
+
 // MARK: - HubRemovalRoutingTests
 
 /// Both hubs reach the removal through the one routing, read the one model on `AppState`, and both
@@ -790,6 +923,11 @@ struct DownloadedVolumesListModelTests {
 ///   1.0 — #1356 review, round 1: initial implementation
 ///   1.1 — #1356 review, round 2: both Free Up Space sheets keep their own removal's volumes, and
 ///          remove only what their plan still offers
+///   1.2 — lane STOR: both hubs draw the model's hero and measure through it (#1476); both
+///          side-loaded Remove messages read their Markdown; iOS Free Up Space's rows are disabled
+///          while it removes (#1432)
+///   1.3 — lane STOR review, round 1: the hero's dash reads as its sentence to VoiceOver on both
+///          hubs (#1476)
 @Suite("Hub removal routing")
 struct HubRemovalRoutingTests {
 
@@ -944,5 +1082,135 @@ struct HubRemovalRoutingTests {
                 removal would race the first.
                 """)
         }
+    }
+
+    @Test("Both hubs draw the model's hero and measure through the model, which keeps a failure (#1476)")
+    func bothHubsDrawTheModelsHero() throws {
+        for hub in Self.hubs {
+            // Bodies are cut from the raw source, so a `//` inside a string cannot unbalance them,
+            // and then read without comments.
+            let raw = try Self.source(hub.path)
+            let text = Self.code(raw)
+            let hero = Self.code(try Self.body(of: "private var heroSection: some View", in: raw))
+            #expect(hero.contains("volumeList.heroContent(catalogCount: catalogCount,"), """
+                \(hub.path)'s hero does not draw the model's hero content, so it can state figures \
+                it has not measured:
+                \(hero)
+                """)
+            #expect(!hero.contains("grandTotalBytes"), "\(hub.path)'s hero formats a size of its own")
+            #expect(hero.contains("if let loadError"), "\(hub.path)'s hero has no row for a failed measurement")
+            let load = Self.code(try Self.body(of: "private func loadReport() async", in: raw))
+            #expect(load.contains("await volumeList.measure {"), """
+                \(hub.path) measures outside the model, which is what keeps the last report on a \
+                failure and records the error:
+                \(load)
+                """)
+            #expect(!text.contains("try? await dm.storageReport"), """
+                \(hub.path) drops a failed measurement's error — the Mac's `try?` did, and its hero \
+                then stated an empty library (#1476).
+                """)
+        }
+    }
+
+    /// The model's dash means a sentence — "Measuring…", "Could not measure storage" — and
+    /// VoiceOver reads the sentence only if each hub hands the card the model's label and the card
+    /// puts it on the value. `SettingsHeroCard`'s parameter defaults to `nil`, so a hub that drops
+    /// the argument still compiles and every model test stays green while VoiceOver says "dash"
+    /// (review round 1); the model's labels are pinned in `StorageHeroTests`.
+    @Test("Both hubs give the hero's dash the model's sentence, and the card reads it to VoiceOver (#1476)")
+    func heroDashReadsAsItsSentence() throws {
+        for hub in Self.hubs {
+            let hero = Self.code(try Self.body(of: "private var heroSection: some View",
+                                               in: try Self.source(hub.path)))
+            let card = try #require(hero.range(of: "SettingsHeroCard("), "\(hub.path)'s hero has no card")
+            let arguments = String(hero[card.upperBound...].prefix(while: { $0 != "{" }))
+            #expect(arguments.contains("valueAccessibilityLabel: hero.valueAccessibilityLabel,"), """
+                \(hub.path)'s hero does not hand the card the model's VoiceOver label, so VoiceOver \
+                reads the placeholder as "dash" instead of the sentence it stands for:
+                \(arguments)
+                """)
+        }
+        let cardBody = Self.code(try Self.body(of: "var body: some View",
+                                               in: try Self.source("FRUSExplorer/Settings/SettingsComponents.swift"),
+                                               after: "struct SettingsHeroCard<"))
+        let value = try #require(cardBody.range(of: "Text(value)"), "the card no longer draws its value")
+        let modifiers = String(cardBody[value.upperBound...].prefix(while: { $0 != "}" }))
+            .components(separatedBy: "visual()").first ?? ""
+        #expect(modifiers.contains(".accessibilityLabel(Text(valueAccessibilityLabel ?? value))"), """
+            SettingsHeroCard does not read `valueAccessibilityLabel` on its value, so a hub that passes \
+            it changes nothing VoiceOver says:
+            \(modifiers)
+            """)
+    }
+
+    /// `text` with every `//` comment cut, so a call or modifier that has been commented out is not
+    /// read as one.
+    private static func code(_ text: String) -> String {
+        text.components(separatedBy: "\n").map { line in
+            line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line
+        }.joined(separator: "\n")
+    }
+
+    /// The `Text(...)` call carrying `key`, found by `key`'s literal and read to the parenthesis
+    /// that balances its `Text(`.
+    private static func textCall(carrying key: String, in text: String) throws -> String {
+        let literal = try #require(text.range(of: "\"\(key)\""), "no `\(key)`")
+        let open = try #require(text[..<literal.lowerBound].range(of: "Text(", options: .backwards),
+                                "`\(key)` is not inside a Text(…)")
+        var depth = 1
+        var index = open.upperBound
+        while index < text.endIndex {
+            if text[index] == "(" { depth += 1 }
+            if text[index] == ")" {
+                depth -= 1
+                if depth == 0 { return String(text[open.lowerBound...index]) }
+            }
+            index = text.index(after: index)
+        }
+        Issue.record("`\(key)`'s Text( never closes")
+        return ""
+    }
+
+    @Test("Both side-loaded Remove confirmations read their Markdown, so no asterisks are printed")
+    func sideLoadedRemoveMessagesReadTheirMarkdown() throws {
+        let sites = [("FRUSExplorer/Settings/VolumesStorageHubView.swift", "settings.hub.remove.message.iOS.sideloaded"),
+                     ("FRUSExplorer/Settings/MacVolumesStorageHub.swift", "settings.hub.remove.message.sideloaded")]
+        var checked = 0
+        for (path, key) in sites {
+            let call = try Self.textCall(carrying: key, in: Self.code(try Self.source(path)))
+            #expect(call.hasPrefix("Text(AttributedString(markdownBody: String(localized: \"\(key)\""), """
+                \(path) draws `\(key)` as a plain string, so its `**` prints as asterisks around the \
+                side-loaded warning:
+                \(call)
+                """)
+            let quoted = try #require(call.range(of: "defaultValue: \""), "\(key) has no defaultValue")
+            let rest = call[quoted.upperBound...]
+            let value = String(try #require(rest.range(of: "\")").map { rest[..<$0.lowerBound] }))
+            #expect(value.contains("**"), "precondition: the shipped text carries the owner's bold")
+            let drawn = AttributedString(markdownBody: value)
+            #expect(!String(drawn.characters).contains("*"), "\(key) still prints asterisks: \(drawn)")
+            let bold = drawn.runs.filter { $0.inlinePresentationIntent == .stronglyEmphasized }
+                .map { String(drawn[$0.range].characters) }
+            #expect(bold == ["This volume was side-loaded, so the app cannot download it again"],
+                    "\(key)'s emphasis did not survive: \(bold)")
+            checked += 1
+        }
+        #expect(checked == 2)
+    }
+
+    @Test("iOS Free Up Space's rows are disabled while its removal runs (#1432)")
+    func freeUpSpaceRowsAreDisabledWhileRemoving() throws {
+        let row = try Self.body(of: "private func candidateRow(_ candidate: StorageRemovalPlan.Candidate) -> some View",
+                                in: try Self.source("FRUSExplorer/Settings/VolumesStorageHubView.swift"),
+                                after: "private struct FreeUpSpaceSheet")
+        // Comments cut: a modifier commented out is not a modifier (measured — the first draft
+        // passed with this one commented out).
+        let code = Self.code(row)
+        #expect(code.contains("Button {"), "candidateRow no longer reads as a Button:\n\(row)")
+        #expect(code.contains(".disabled(isRemoving)"), """
+            Free Up Space's rows stay tappable while it removes: a tap toggles a checkmark and the \
+            recovery line and changes nothing being removed (#1432).
+            \(row)
+            """)
     }
 }

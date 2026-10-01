@@ -34,6 +34,12 @@ import Testing
 ///          a folder title's second year is kept, and a U.N. document symbol is a publication
 ///   1.4 — 2026-09-26 (#1489 review round 1): a U.N. symbol LATER in a central-files note leaves it
 ///          a central file (frus1955-57v16/d476), which pins the U.N. rule's lead anchor
+///   1.5 — 2026-10-01 (#1514): a Department of State series that is not the central files is a named
+///          series, so the INR/IL, INR–NIE and reading-room notes these tests drove the identifier
+///          rule through are no longer central files. Each test that needs the rule now leads its
+///          note with the Central Files (marked constructed), and the INR notes' own parse is pinned
+///          in `DepartmentSeriesTests`; review round 1 renames `eraLabelAloneLeavesNone`, which now
+///          asserts the designator IS stored, to `eraLabelThenADigitlessDesignatorStoresTheDesignator`
 @Suite("Central-files identifier from the citation sentence")
 struct CitationSentenceIdentifierTests {
 
@@ -52,10 +58,13 @@ struct CitationSentenceIdentifierTests {
 
     /// frus1961-63v14/d20: no designator at all, so the old scan returned the reprint's year and the
     /// packet printed "file 1978".
+    /// Since #1514 the note is the Department's INR–NIE series, not a central file; the reprint year
+    /// is still stored nowhere.
     @Test("A note naming no file number stores none, not the reprint year")
     func reprintYearIsNotAnIdentifier() {
         let note = "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."
-        #expect(identifier(note) == nil)
+        #expect(parser.parse(note) == .namedFileSeries(seriesName: "Department of State, INR-NIE Files",
+                                                       fileIdentifier: nil))
     }
 
     /// frus1961-63v05/d11: the designator's comma segment ran to "Also printed in Declassified
@@ -73,13 +82,13 @@ struct CitationSentenceIdentifierTests {
         #expect(identifier(note) == "793.5/8–2958")
     }
 
-    /// frus1964-68v29p1/d359: the years are INSIDE the citation sentence ("Japan, 1964, 1965"), so
-    /// bounding the scan is not enough — the date refusal is what removes them. The first, `1964`,
-    /// ends the scan; the sentence-final spelling `1965.` is the rule's other branch, pinned in
-    /// `dateShape`.
+    /// frus1964-68v29p1/d359's shape: the years are INSIDE the citation sentence ("Japan, 1964,
+    /// 1965"), so bounding the scan is not enough — the date refusal is what removes them. The first,
+    /// `1964`, ends the scan; the sentence-final spelling `1965.` is the rule's other branch, pinned in
+    /// `dateShape`. Constructed since #1514: d359 itself is an INR/IL series note.
     @Test("A bare year inside the citation sentence is refused, with or without its full stop")
     func bareYearInsideTheCitationIsRefused() {
-        let note = "Source: Department of State, INR/IL Historical Files: East Asia Country Files, Japan, 1964, 1965. Secret; Eyes Only. 2 pages of source text not declassified."
+        let note = "Source: Department of State, Central Files, East Asia Country Files, Japan, 1964, 1965. Secret; Eyes Only. 2 pages of source text not declassified."
         #expect(identifier(note) == nil)
     }
 
@@ -104,17 +113,13 @@ struct CitationSentenceIdentifierTests {
                 == "611.93/12–854")
     }
 
-    /// "Department of State" in the citation sentence itself still makes a central-files note, even
-    /// with no "Central Files" anywhere — the d20 shape, checked for its CLASSIFICATION here (the
-    /// first test checks its identifier).
-    @Test("The Department named in the citation still makes a central-files note")
+    /// "Department of State" in the citation sentence still makes a central-files note when the
+    /// citation names a file number and no central files (frus1955-57v11/d237). Since #1514 the d20
+    /// shape it used to pin — a Department series naming no file — is a named series instead.
+    @Test("The Department named in the citation with a file number still makes a central-files note")
     func departmentInTheCitationIsStillCentralFiles() {
-        guard case .centralFiles = parser.parse(
-            "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B.")
-        else {
-            Issue.record("the Department-led citation left .centralFiles")
-            return
-        }
+        #expect(identifier("Source: Department of State, 310.2/10-2656. Secret. Drafted by Virginia F. Hartley.")
+                == "310.2/10-2656")
     }
 
     /// frus1908/d5: a Numerical File case number is four digits and looks like a year. It is read
@@ -155,18 +160,20 @@ struct CitationSentenceIdentifierTests {
     /// for a later segment. The year-only refusal let every one of these through. Each is a corpus
     /// note, one per shape: a year span, a month span with its year, a month and year, a span
     /// joined by `through`, and a span the INR files leave open with `Thru` (review round 2 — the
-    /// dash-only open end stored `1964 Thru`, where `v2` had stored nothing).
+    /// dash-only open end stored `1964 Thru`, where `v2` had stored nothing). Since #1514 every one
+    /// is an INR series note and no longer a central file, so each shape is constructed under the
+    /// Central Files here; the notes' own parse is pinned in `DepartmentSeriesTests`.
     @Test("A date span inside the citation sentence is refused", arguments: [
-        // frus1964-68v24/d191
-        "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text.",
-        // frus1969-76v21/d303
-        "Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile, July–December 1972. Secret; No Foreign Dissem; Controlled Dissem; No Dissem Abroad; This Information Is Not To Be Included in Any Other Document or Publication.",
-        // frus1964-68v24/d343
-        "Source: Department of State, INR /IL Historical Files, Somali Republic, April 1967. Top Secret. 11 pages of source text not declassified.",
-        // frus1964-68v29p1/d86
-        "Source: Department of State, INR /IL Historical Files, East Asia and Pacific General File, East Asia, FE Weekly Meetings, January through July 1966. Secret. Drafted on June 21. Koren sent this memorandum to Hughes, Denney, and Evans.",
-        // frus1964-68v24/d591
-        "Source: Department of State, INR Files, Country Files, Republic of South Africa, 1964 Thru. Secret; Special Handling. 3 pages of source text not declassified.",
+        // frus1964-68v24/d191's shape
+        "Source: Department of State, Central Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text.",
+        // frus1969-76v21/d303's shape
+        "Source: Department of State, Central Files, Chile, July–December 1972. Secret; No Foreign Dissem; Controlled Dissem; No Dissem Abroad; This Information Is Not To Be Included in Any Other Document or Publication.",
+        // frus1964-68v24/d343's shape
+        "Source: Department of State, Central Files, Somali Republic, April 1967. Top Secret. 11 pages of source text not declassified.",
+        // frus1964-68v29p1/d86's shape
+        "Source: Department of State, Central Files, East Asia and Pacific General File, East Asia, FE Weekly Meetings, January through July 1966. Secret. Drafted on June 21. Koren sent this memorandum to Hughes, Denney, and Evans.",
+        // frus1964-68v24/d591's shape
+        "Source: Department of State, Central Files, Country Files, Republic of South Africa, 1964 Thru. Secret; Special Handling. 3 pages of source text not declassified.",
     ])
     func dateSpanInsideTheCitationIsRefused(_ note: String) {
         #expect(identifier(note) == nil)
@@ -176,10 +183,11 @@ struct CitationSentenceIdentifierTests {
     /// (frus1964-68v01/d423, `Bundy Files, Working Papers, Nov 1964, Vol. 1.`) or a classification
     /// the printer ran on without a stop (frus1964-68v01/d18, `January 30,1964 Secret.`). Skipping
     /// the date instead stored `Vol. 1` — a value the dotted neighbour arm then routes — and
-    /// `1964 Secret`.
+    /// `1964 Secret`. Both notes are Department series since #1514, so the shapes are constructed
+    /// under the Central Files here.
     @Test("A date in the citation sentence ends the scan", arguments: [
-        "Source: Department of State, Bundy Files, Working Papers, Nov 1964, Vol. 1. Top Secret. Also sent to McNamara, McCone, Wheeler, Ball, and McGeorge Bundy.",
-        "Source: Department of State, HarVan Files, Vietnam Coup Two, January 30,1964 Secret. The source text, which bears no time of transmission from Saigon, is a copy sent by the CIA to the Department of State for Hilsman.",
+        "Source: Department of State, Central Files, Working Papers, Nov 1964, Vol. 1. Top Secret. Also sent to McNamara, McCone, Wheeler, Ball, and McGeorge Bundy.",
+        "Source: Department of State, Central Files, Vietnam Coup Two, January 30,1964 Secret. The source text, which bears no time of transmission from Saigon, is a copy sent by the CIA to the Department of State for Hilsman.",
     ])
     func aDateEndsTheScan(_ note: String) {
         #expect(identifier(note) == nil)
@@ -271,12 +279,13 @@ struct CitationSentenceIdentifierTests {
         #expect(identifier(note) == designator)
     }
 
-    /// frus1964-68v19/d134: the file after the era label carries no digit (`POL ARAB–ISR`), so the
-    /// digit gate refuses it and the note stores NO identifier — never the label.
-    @Test("An era label with no numbered file after it leaves no identifier")
-    func eraLabelAloneLeavesNone() {
+    /// frus1964-68v19/d134: the file after the era label carries no digit (`POL ARAB–ISR`). The digit
+    /// gate refused it and the note stored no identifier until #1514 admitted a Subject-Numeric
+    /// designator by its handbook category; it never stores the label.
+    @Test("An era label followed by a designator with no number stores the designator")
+    func eraLabelThenADigitlessDesignatorStoresTheDesignator() {
         let note = "Source: National Archives and Records Administration, Central Files 1967–69, POL ARAB–ISR. Secret; Immediate; Nodis. Received at 6:20 p.m."
-        #expect(identifier(note) == nil)
+        #expect(identifier(note) == "POL ARAB–ISR")
     }
 
     /// The same label printed as a PREFIX of the file, run on with a stop, a semicolon or nothing
@@ -307,19 +316,21 @@ struct CitationSentenceIdentifierTests {
     /// designation — a CONSTRUCTED control, since the corpus's central-files citations print none.
     @Test("A declassification remark is not a file", arguments: [
         ("Source: Department of State, Central Files. 3 pages not declassified.", nil),
-        ("Source: Department of State, INR/IL Historical Files, [less than 1 line not declassified], 1986–88, Tunis. Secret; Priority; [handling restriction not declassified].", nil),
-        ("Source: Department of State, INR/IL Historical Files, Box 5 [folder title not declassified]. Secret.",
+        // frus1981-88v24/d162's shape under the Central Files (constructed since #1514).
+        ("Source: Department of State, Central Files, [less than 1 line not declassified], 1986–88, Tunis. Secret; Priority; [handling restriction not declassified].", nil),
+        ("Source: Department of State, Central Files, Box 5 [folder title not declassified]. Secret.",
          "Box 5 [folder title not declassified]"),
     ] as [(String, String?)])
     func declassificationRemarkIsNotAFile(_ note: String, _ designation: String?) {
         #expect(identifier(note) == designation)
     }
 
-    /// A URL (the FOIA reading room's Kissinger telcons, frus1969-76v39/d301) and a sentence of
-    /// prose (frus1952-54v03/d940, whose "citation" is an editor's account of a telegram) open in
-    /// lower case, and a lower-case segment ENDS the scan: what follows prose is more prose.
+    /// A URL (the shape of the FOIA reading room's Kissinger telcons, frus1969-76v39/d301 — a
+    /// publication since #1514, so constructed under the Central Files here) and a sentence of prose
+    /// (frus1952-54v03/d940, whose "citation" is an editor's account of a telegram) open in lower
+    /// case, and a lower-case segment ENDS the scan: what follows prose is more prose.
     @Test("A URL or a fragment of prose is not a file", arguments: [
-        "Source: Department of State, Electronic Reading Room, Kissinger Transcripts of Telephone Conversations, http://foia.state.gov/documents/ kissinger /0000C042.pdf. No classification marking.",
+        "Source: Department of State, Central Files, Kissinger Transcripts of Telephone Conversations, http://foia.state.gov/documents/ kissinger /0000C042.pdf. No classification marking.",
         "Source: This statement was based on a substantial revision of the Department of State draft, the revision being transmitted by Lodge in telegram 706, May 7, 1954, 7:07 p.m., file 799.021/5–754, and approved by the Department in telegram 549, May 10, 1954,6:57 p.m., file 799.021/5–754, neither printed.",
     ])
     func urlOrProseIsNotAFile(_ note: String) {
@@ -330,12 +341,14 @@ struct CitationSentenceIdentifierTests {
     /// does. Skipping it instead was measured over the eight corpus notes: it reached two real
     /// transfer numbers and stored three worse values — two slash-dated spans (`10/2/64–12/31/64`,
     /// `1/1/65–7/6/65`) and `Box 5 [Moscow`, cut at the bracketed city's comma. d198 is a note where
-    /// skipping would have found a transfer number; it is pinned so the choice is deliberate.
+    /// skipping would have found a transfer number; it is pinned so the choice is deliberate. All
+    /// eight are INR/IL series notes, which #1514 made named series keeping the folder with its
+    /// volume (`DepartmentSeriesTests`), so the shapes are constructed under the Central Files here.
     @Test("A volume number ends the scan", arguments: [
-        // frus1964-68v32/d422
-        "Source: Department of State, INR/IL Historical Files, Carlson –Department Messages, Vol. 4, 1965–69. Secret. The date is handwritten on the bottom of page 1 of the telegram.",
-        // frus1977-80v23/d198
-        "Source: Department of State, INR/IL Files, Volume 22, Transfer Identification Number 980643000012, Jamaica, 1977–80. Secret; Sensitive.",
+        // frus1964-68v32/d422's shape
+        "Source: Department of State, Central Files, Carlson –Department Messages, Vol. 4, 1965–69. Secret. The date is handwritten on the bottom of page 1 of the telegram.",
+        // frus1977-80v23/d198's shape
+        "Source: Department of State, Central Files, Volume 22, Transfer Identification Number 980643000012, Jamaica, 1977–80. Secret; Sensitive.",
     ])
     func volumeNumberEndsTheScan(_ note: String) {
         #expect(identifier(note) == nil)
@@ -344,11 +357,12 @@ struct CitationSentenceIdentifierTests {
     /// The INR/IL Historical Files are filed by folder title, and a title carries a year
     /// (`Chile Chronology 1970`, frus1969-76v21/d42): a real designation, kept. `Guyana 1969, 1970`
     /// (frus1964-68v32/d423) was cut at its comma to `Guyana 1969`; a bare year following a title
-    /// that ends in one is the title's own and is kept with it.
+    /// that ends in one is the title's own and is kept with it. Since #1514 those notes are INR/IL
+    /// named series, so the shapes are constructed under the Central Files here.
     @Test("A folder title with a year is kept whole", arguments: [
-        ("Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile Chronology 1970. Secret; Roger Channel. Drafted by Crimmins; approved by Coerr.",
+        ("Source: Department of State, Central Files, Chile Chronology 1970. Secret; Roger Channel. Drafted by Crimmins; approved by Coerr.",
          "Chile Chronology 1970"),
-        ("Source: Department of State, INR/IL Historical Files, Guyana 1969, 1970. Secret.",
+        ("Source: Department of State, Central Files, Guyana 1969, 1970. Secret.",
          "Guyana 1969, 1970"),
     ])
     func folderTitleIsKept(_ note: String, _ designation: String) {
@@ -361,7 +375,7 @@ struct CitationSentenceIdentifierTests {
     /// joined only by a following BARE year, never by the next segment whatever it is.
     @Test("A year joins only a title ending in a year, and only a bare year joins it", arguments: [
         ("Source: Department of State, Central Files, 611.93/12–854, 1954. Secret.", "611.93/12–854"),
-        ("Source: Department of State, INR/IL Historical Files, Guyana 1969, Box 3. Secret.", "Guyana 1969"),
+        ("Source: Department of State, Central Files, Guyana 1969, Box 3. Secret.", "Guyana 1969"),
     ])
     func yearJoinConjuncts(_ note: String, _ designation: String) {
         #expect(identifier(note) == designation)

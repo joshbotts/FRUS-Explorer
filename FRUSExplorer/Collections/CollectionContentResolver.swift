@@ -1663,7 +1663,7 @@ class CollectionContentResolver {
         case .attachmentBlock(_, let c), .unknown(_, let c):
             return renderNodePlainText(c)
         case .persNameLink(_, let c, _), .glossLink(_, let c, _),
-             .crossRefLink(_, _, _, let c):
+             .crossRefLink(_, _, _, _, let c):
             return renderNodePlainText(c)
         case .formulaText(let s):
             return s

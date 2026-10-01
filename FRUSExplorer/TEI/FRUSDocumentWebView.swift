@@ -114,7 +114,7 @@ func decodeSelectionRect(_ value: Any?) -> CGRect? {
 ///     model: model,
 ///     onPersonTap:   { ref in vm.handlePersonTap(ref: ref) },
 ///     onGlossTap:    { ref in vm.handleGlossTap(ref: ref) },
-///     onCrossRefTap: { target, vol in handleCrossRefTap(target: target, volumeId: vol) }
+///     onCrossRefTap: { target, vol, citing in handleCrossRefTap(target: target, volumeId: vol, citing: citing) }
 /// )
 /// ```
 ///
@@ -163,8 +163,9 @@ public struct FRUSDocumentWebView: View {
     /// Called with the resolved `GlossEntry` (or `nil`) when a gloss link is tapped.
     public var onGlossTap: ((GlossEntry?) -> Void)? = nil
 
-    /// Called with the target document ID and optional source volume ID.
-    public var onCrossRefTap: ((String, String?) -> Void)? = nil
+    /// Called with the target document ID, the optional source volume ID and, for a page link in a
+    /// footnote, what the footnote names (#1509).
+    public var onCrossRefTap: ((String, String?, PageCitationHint?) -> Void)? = nil
 
     /// Called with the broken-ref detail (or `nil`) when an unresolvable `<ref>` is tapped.
     public var onBrokenRefTap: ((BrokenRefInfo?) -> Void)? = nil
@@ -588,7 +589,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     var findController:     DocumentFindController?
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
-    var onCrossRefTap:      ((String, String?) -> Void)?
+    var onCrossRefTap:      ((String, String?, PageCitationHint?) -> Void)?
     var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
     var onSelectionChanged: ((SelectionPayload) -> Void)?
     var onSelectionCleared: (() -> Void)?
@@ -693,7 +694,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var findPresenter:  DocumentFindPresenter?
     var onPersonTap:        ((PersonEntry?) -> Void)?
     var onGlossTap:         ((GlossEntry?) -> Void)?
-    var onCrossRefTap:      ((String, String?) -> Void)?
+    var onCrossRefTap:      ((String, String?, PageCitationHint?) -> Void)?
     var onBrokenRefTap:     ((BrokenRefInfo?) -> Void)?
     var onSelectionChanged: ((SelectionPayload) -> Void)?
     var onSelectionCleared: (() -> Void)?

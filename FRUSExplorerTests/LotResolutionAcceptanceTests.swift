@@ -274,6 +274,7 @@ struct LotAcceptanceWiringAuditTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-04: #674 live-path acceptance test
+///   1.1 — 2026-10-01: a result's series dates, from NARA's date objects and both pairs
 @Suite("Catalog result decoding")
 struct CatalogResultDecodingTests {
 
@@ -321,6 +322,68 @@ struct CatalogResultDecodingTests {
         #expect(result.variantControlNumbers.isEmpty)
         #expect(NARACatalogClient.firstAcceptable([result], recordGroup: "59",
                                                  lotNumber: "90D234") == nil)
+    }
+
+    // MARK: - Series dates (2026-09-28 audit, folded into #1514)
+
+    /// NARA's date object, the bulk export's shape (`Planning/nara-record-group-catalog/series-sample.json`).
+    static func date(_ iso: String) -> [String: Any] {
+        ["logicalDate": iso, "year": Int(iso.prefix(4)) ?? 0]
+    }
+
+    /// The decoder read the coverage pair as STRINGS only, so NARA's date objects gave every live
+    /// result no span; and it never read the inclusive pair. naId 604801's pairs are the CLAUDE.md
+    /// example: inclusive 1963–1973 against coverage 1947–1964, whose union is 1947–1973.
+    @Test("A record's span is the union of NARA's two date pairs, read from date objects", arguments: [
+        // Both pairs, neither containing the other.
+        ("1963-01-01", "1973-12-31", "1947-01-01", "1964-12-31", "1947–1973"),
+        // The inclusive pair alone — most series publish no coverage.
+        ("1877-01-01", "1910-12-31", nil, nil, "1877–1910"),
+        // The coverage pair alone, in one year.
+        (nil, nil, "1964-01-01", "1964-12-31", "1964"),
+    ] as [(String?, String?, String?, String?, String)])
+    func seriesDatesAreTheUnion(_ inclusiveStart: String?, _ inclusiveEnd: String?,
+                                _ coverageStart: String?, _ coverageEnd: String?,
+                                _ span: String) throws {
+        var record: [String: Any] = ["naId": "604801", "title": "Series"]
+        for (key, value) in [("inclusiveStartDate", inclusiveStart), ("inclusiveEndDate", inclusiveEnd),
+                             ("coverageStartDate", coverageStart), ("coverageEndDate", coverageEnd)] {
+            if let value { record[key] = Self.date(value) }
+        }
+        let result = try #require(NARACatalogClient.buildResult(from: record))
+        #expect(result.dateRange == span)
+    }
+
+    /// An object carrying only its logical date is read by it.
+    @Test("A date object with no year is read by its logical date")
+    func logicalDateOnly() throws {
+        let record: [String: Any] = ["naId": "1", "title": "T",
+                                     "inclusiveStartDate": ["logicalDate": "1950-01-01"],
+                                     "inclusiveEndDate": ["logicalDate": "1955-12-31"]]
+        #expect(try #require(NARACatalogClient.buildResult(from: record)).dateRange == "1950–1955")
+    }
+
+    /// The v1 nesting carries the pairs under `description`, as it carries every other field.
+    @Test("A v1-nested record's dates are read")
+    func nestedSeriesDates() throws {
+        let record: [String: Any] = ["description": [
+            "naId": "1039947", "title": "Series",
+            "inclusiveStartDate": Self.date("1961-01-01"), "inclusiveEndDate": Self.date("1963-12-31"),
+        ] as [String: Any]]
+        #expect(try #require(NARACatalogClient.buildResult(from: record)).dateRange == "1961–1963")
+    }
+
+    /// The string branch, kept in case an endpoint returns one (the shape the decoder used to
+    /// expect), and the empty record, which has no span.
+    @Test("A string date is read by its year; no dates is no span")
+    func stringDatesAndNone() throws {
+        let strings: [String: Any] = ["naId": "1", "title": "T",
+                                      "coverageStartDate": "1950-01-01", "coverageEndDate": "1955-12-31"]
+        #expect(try #require(NARACatalogClient.buildResult(from: strings)).dateRange == "1950–1955")
+        let none: [String: Any] = ["naId": "2", "title": "T",
+                                   "inclusiveStartDate": Self.date("1950-01-01")]
+        #expect(try #require(NARACatalogClient.buildResult(from: none)).dateRange == nil,
+                "a start with no end is no span")
     }
 }
 

@@ -37,6 +37,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-05: N-4 step 1
+///   1.1 — #1514: the Bandow citation resolves on the Reagan Library's own key, since the
+///          Sources rows under a full-name library heading are filed under that library
 @Suite("Collection authority — cross-repository alias bridges")
 struct ManuscriptRepositoryBridgeTests {
 
@@ -167,12 +169,16 @@ struct ManuscriptRepositoryBridgeTests {
         #expect(try resolve(wnrc)?.id
                 == "txt:washington national records center|aid administrator files: frc 69 a 1866")
 
-        // A library citation reaching a Department-of-State cluster is deliberately left
-        // alone: the record's repository is the creating agency, not a rival building.
+        // Until #1514 this citation reached a Department of State cluster through the alias
+        // step, which the guard deliberately left alone: frus1981-88v41 nests its "Reagan
+        // Presidential Library" heading inside the Department's list, and a heading named in
+        // full did not count as a repository, so the Sources rows under it took the
+        // Department. `CollectionKeying.bridgedRepository(ofHeading:)` now files them under
+        // the library, and the citation lands on its own repository-scoped key.
         let bandow = "Source: Reagan Library, Bandow Files, Bandow Paper for the Tenth "
             + "Session of the Conference on the Law of the Sea, Feb 13, 1981. Secret. "
             + "Drafted by Wulf . Sent through Busby ."
-        #expect(try resolve(bandow)?.id == "txt:department of state|bandow file")
+        #expect(try resolve(bandow)?.id == "txt:reagan library|bandow file")
     }
 
     /// The alias step's whole purpose: a citation that names no repository at all still

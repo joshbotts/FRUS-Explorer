@@ -284,3 +284,251 @@ struct ICloudStatusSummaryTests {
             "\(labels) Label(s) in the iCloud status row but \(styled) .labelStyle(.titleAndIcon) — a Label left at the automatic style brings back ~180 pt of blank row"))
     }
 }
+
+// MARK: - The remembered upload failure (#1531)
+
+/// An upload that failed with none succeeding since, remembered across launches, and the status it
+/// resolves to.
+///
+/// ## The outage this pins
+/// In #1531 Production rejected one summary field about 1.3 s into every launch, Core Data stopped
+/// syncing in both directions, and the app said nothing: the event that failed arrived before the
+/// observer existed, the status was "idle", and idle shows no banner. A failure the app does see
+/// lasted only until the next event of ANY kind succeeded. So the fixtures below put a remembered
+/// failure beside every event state, including a succeeded one, and require that only a successful
+/// upload ends it.
+///
+/// Idiom-agnostic: pure state and `UserDefaults` suites of their own, on any destination.
+@Suite("Remembered upload failure (#1531)")
+@MainActor
+struct UnrecoveredExportTests {
+
+    private let thisLaunch = UUID()
+    private let earlierLaunch = UUID()
+    private let failedAt = Date(timeIntervalSince1970: 1_790_000_000)
+
+    /// A `UserDefaults` domain private to one test, and its suite name — which the test removes
+    /// when it ends, so no run leaves a `frus.test.<uuid>` preferences file in the test host.
+    private func makeDefaults() throws -> (defaults: UserDefaults, suite: String) {
+        let suite = "frus.test.\(UUID().uuidString)"
+        return (try #require(UserDefaults(suiteName: suite)), suite)
+    }
+
+    private func run(begunIn launch: UUID, message: String? = "CKErrorDomain partialFailure",
+                     identifiers: [String]? = nil) -> UnrecoveredExport {
+        UnrecoveredExport(firstFailedAt: failedAt, lastFailedAt: failedAt, firstLaunchID: launch,
+                          message: message, schemaIdentifiers: identifiers)
+    }
+
+    private func resolve(_ state: CloudKitSyncState, _ export: UnrecoveredExport?,
+                         account: CKAccountStatus? = .available, zone: Bool? = true,
+                         enabled: Bool = true) -> ICloudStatusSummary {
+        ICloudStatusSummary.resolve(cloudKitEnabled: enabled, initError: "diag", syncState: state,
+                                    accountStatus: account, zoneVerified: zone,
+                                    unrecoveredExport: export, launchID: thisLaunch)
+    }
+
+    private var everyEventState: [CloudKitSyncState] {
+        [.unknown, .syncing, .succeeded(Date(timeIntervalSince1970: 1_790_000_100)),
+         .failed("CKErrorDomain networkFailure")]
+    }
+
+    // MARK: The status
+
+    /// The reader relaunched and no upload has succeeded since: stopped, whatever the events say —
+    /// a successful import or a setup must not quiet it.
+    @Test("A failure begun in an earlier launch is Stopped, over every event state")
+    func earlierLaunchIsStopped() {
+        let export = run(begunIn: earlierLaunch)
+        for state in everyEventState {
+            #expect(resolve(state, export) == .stopped(export),
+                    Comment(rawValue: "\(state) with an unrecovered upload from an earlier launch"))
+        }
+    }
+
+    /// Begun in this launch, it is a failure — "relaunch to try again" is still true — and it stays
+    /// one when a later event of another kind succeeds or starts.
+    @Test("A failure begun in this launch stays Failed until an upload succeeds")
+    func thisLaunchStaysFailed() {
+        let export = run(begunIn: thisLaunch)
+        #expect(resolve(.unknown, export) == .failed(message: "CKErrorDomain partialFailure"))
+        #expect(resolve(.syncing, export) == .failed(message: "CKErrorDomain partialFailure"))
+        #expect(resolve(.succeeded(.now), export) == .failed(message: "CKErrorDomain partialFailure"),
+                "a successful import quieted an upload that has not recovered")
+        #expect(resolve(.failed("CKErrorDomain networkFailure"), export)
+                == .failed(message: "CKErrorDomain networkFailure"),
+                "the latest failed event's own reason is the one to show")
+    }
+
+    /// A run with no recorded reason still reads as a failure, in the observer's own fallback words.
+    @Test("A failure with no reason falls back to the observer's wording")
+    func reasonlessFailure() {
+        #expect(resolve(.succeeded(.now), run(begunIn: thisLaunch, message: nil))
+                == .failed(message: "Unknown sync error"))
+    }
+
+    /// Precedence: local-only, an account problem and a missing zone are each more fundamental.
+    @Test("Local-only, an account problem and a missing zone still outrank Stopped")
+    func moreFundamentalStatesOutrankStopped() {
+        let export = run(begunIn: earlierLaunch)
+        #expect(resolve(.unknown, export, enabled: false) == .localOnly(diagnostic: "diag"))
+        #expect(resolve(.unknown, export, account: .noAccount) == .accountUnavailable(.noAccount))
+        #expect(resolve(.unknown, export, zone: false) == .zoneMissing)
+    }
+
+    /// The views read `AppState.iCloudStatusSummary`; it must hand the resolver the remembered run.
+    @Test("AppState's summary reads its remembered failure")
+    func appStateReadsTheRun() {
+        let appState = AppState()
+        appState.cloudKitSyncEnabled = true
+        appState.cloudKitAccountStatus = .available
+        appState.cloudKitZoneVerified = true
+        appState.cloudKitSyncState = .succeeded(.now)
+        let export = run(begunIn: earlierLaunch)
+        appState.unrecoveredExport = export
+        #expect(appState.iCloudStatusSummary == .stopped(export))
+    }
+
+    // MARK: The memory
+
+    /// The whole lifecycle in one device's defaults: a failure starts a run, a second extends it
+    /// (keeping when and in which launch it began), and a successful upload ends it.
+    @Test("A failure starts the run, another extends it, a success ends it")
+    func lifecycle() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let first = SyncExportFailureMemory.recordExport(
+            succeeded: false, at: failedAt, message: "CKErrorDomain partialFailure",
+            schemaIdentifiers: ["CD_GeneratedSummary"], launchID: earlierLaunch,
+            defaults: defaults, configuration: .debug)
+        #expect(first?.firstLaunchID == earlierLaunch)
+
+        let later = failedAt.addingTimeInterval(3_600)
+        let second = try #require(SyncExportFailureMemory.recordExport(
+            succeeded: false, at: later, message: "CKErrorDomain serverRejectedRequest",
+            schemaIdentifiers: ["CD_GeneratedSummary", "CD_sourceContentHash"], launchID: thisLaunch,
+            defaults: defaults, configuration: .debug))
+        #expect(second.firstFailedAt == failedAt, "a relaunch that failed again restarted the clock")
+        #expect(second.firstLaunchID == earlierLaunch, "the run forgot which launch it began in")
+        #expect(second.lastFailedAt == later)
+        #expect(second.message == "CKErrorDomain serverRejectedRequest")
+        #expect(second.schemaIdentifiers == ["CD_GeneratedSummary", "CD_sourceContentHash"])
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .debug) == second,
+                "the run did not survive a reload — it would not survive a relaunch")
+
+        let ended = SyncExportFailureMemory.recordExport(
+            succeeded: true, at: later.addingTimeInterval(60), message: nil, schemaIdentifiers: nil,
+            launchID: thisLaunch, defaults: defaults, configuration: .debug)
+        #expect(ended == nil)
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .debug) == nil,
+                "a successful upload did not end the run")
+    }
+
+    /// A Debug build keeps a store of its own, so its failures are not the shipped app's.
+    @Test("Each build configuration remembers its own store's failures")
+    func configurationsAreSeparate() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
+                                             schemaIdentifiers: nil, launchID: thisLaunch,
+                                             defaults: defaults, configuration: .debug)
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .release) == nil)
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .debug) != nil)
+        #expect(SyncExportFailureMemory.key(for: .debug) != SyncExportFailureMemory.key(for: .release))
+    }
+
+    /// Identifiers the system-log read finds seconds later join the run — and do nothing once an
+    /// upload has succeeded in between.
+    @Test("Late identifiers join a live run and never revive an ended one")
+    func lateIdentifiers() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        #expect(SyncExportFailureMemory.addSchemaIdentifiers(
+            ["CD_GeneratedSummary"], defaults: defaults, configuration: .debug) == nil,
+                "identifiers created a run where no upload had failed")
+        SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
+                                             schemaIdentifiers: nil, launchID: thisLaunch,
+                                             defaults: defaults, configuration: .debug)
+        let updated = SyncExportFailureMemory.addSchemaIdentifiers(
+            ["CD_sourceContentHash", "CD_GeneratedSummary"], defaults: defaults, configuration: .debug)
+        #expect(updated?.schemaIdentifiers == ["CD_GeneratedSummary", "CD_sourceContentHash"])
+    }
+
+    /// Past the cap, a later failure's names fill only the room left: they never evict a name the
+    /// run already holds. A sort of the union would let twelve record types found later push out
+    /// the field found first — `CD_sourceContentHash`, which sorts after every `CD_<Type>`.
+    @Test("Names already remembered are not evicted by later ones past the cap")
+    func rememberedNamesStay() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
+                                             schemaIdentifiers: ["CD_sourceContentHash"],
+                                             launchID: thisLaunch, defaults: defaults,
+                                             configuration: .debug)
+        let types = (0..<14).map { String(format: "CD_Type%02d", $0) }
+        let run = try #require(SyncExportFailureMemory.addSchemaIdentifiers(
+            types, defaults: defaults, configuration: .debug))
+        let names = try #require(run.schemaIdentifiers)
+        #expect(names.count == CloudKitErrorInspector.maxSchemaIdentifiers)
+        #expect(names.contains("CD_sourceContentHash"),
+                "a later failure's record types evicted the field the run had found")
+        #expect(names == names.sorted(), "the remembered names are no longer sorted")
+        #expect(names.filter { $0.hasPrefix("CD_Type") } == Array(types.prefix(11)),
+                "the room left was not filled in the order the new names came")
+    }
+
+    /// Fix iCloud Sync clears the store whose unsent changes the run was about.
+    @Test("Forgetting ends the run")
+    func forgetEndsTheRun() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
+                                             schemaIdentifiers: nil, launchID: thisLaunch,
+                                             defaults: defaults, configuration: .debug)
+        SyncExportFailureMemory.forget(defaults: defaults, configuration: .debug)
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .debug) == nil)
+    }
+
+    /// A value that does not decode is no run, never a crash.
+    @Test("An unreadable stored value reads as no run")
+    func garbageIsNoRun() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(Data("not json".utf8), forKey: SyncExportFailureMemory.key(for: .debug))
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .debug) == nil)
+    }
+
+    // MARK: The words
+
+    /// The Settings row and the Mac chip say since when, that the changes are kept, and what Fix
+    /// iCloud Sync would do — and carry the reason and the schema names for a report.
+    @Test("The stopped detail names the date, the kept changes, and the reason")
+    func stoppedCopy() throws {
+        let export = run(begunIn: earlierLaunch,
+                         identifiers: ["CD_GeneratedSummary", "CD_sourceContentHash"])
+        let detail = SyncStoppedCopy.detail(export)
+        #expect(detail.contains(SyncStoppedCopy.since(export)))
+        #expect(detail.contains("kept here"))
+        #expect(detail.contains("Fix iCloud Sync would discard them"))
+        #expect(!detail.localizedCaseInsensitiveContains("try again"),
+                "the stopped state promised a retry the reader cannot cause")
+        let full = SyncStoppedCopy.fullDetail(export)
+        #expect(full.hasPrefix(detail))
+        #expect(full.contains("CKErrorDomain partialFailure · CD_GeneratedSummary, CD_sourceContentHash"))
+        #expect(SyncStoppedCopy.diagnostic(run(begunIn: earlierLaunch, message: nil)) == nil)
+        #expect(SyncStoppedCopy.fullDetail(run(begunIn: earlierLaunch, message: nil)) == SyncStoppedCopy.detail(run(begunIn: earlierLaunch, message: nil)))
+    }
+
+    /// The two views that render status draw a Stopped arm from the shared copy, so neither can
+    /// describe the state in words of its own. Read with comments and strings masked.
+    @Test("The Settings row and the Mac chip draw Stopped from SyncStoppedCopy",
+          arguments: ["FRUSExplorer/Settings/SettingsView.swift", "FRUSExplorer/App/SupportingViews.swift"])
+    func viewsDrawStopped(path: String) throws {
+        let code = String(decoding: CodingStandardsAuditTests.maskedCode(
+            try DebugStoreSeparationTests.appSource(path)), as: UTF8.self)
+        #expect(code.contains("case .stopped(let run):"),
+                Comment(rawValue: "\(path) has no Stopped arm"))
+        #expect(code.contains("SyncStoppedCopy.fullDetail(run)"),
+                Comment(rawValue: "\(path) describes a stopped sync in words of its own"))
+    }
+}

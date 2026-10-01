@@ -1,31 +1,30 @@
-collection-authority.json regeneration report — 2026-09-25
+collection-authority.json regeneration report — 2026-10-01
 ============================================================
 volumes parsed:            502
 document notes parsed:     264552
-authority records:         4083 (lot-keyed: 1718, with NAID: 1014)
-sub-series children:       7663
-alias forms:               5244
+authority records:         4051 (lot-keyed: 1718, with NAID: 1014)
+sub-series children:       7594
+alias forms:               5243
 unclusterable references:  0
-artifact size:             1860269 bytes
+artifact size:             1851151 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
   lot-keyed:   4261/4261 (100.0%)
   class-keyed: 3294/4022 (81.9%)
-  text-keyed:  9308/12425 (74.9%)
-  overall:     16863/20708 (81.4%)
+  text-keyed:  10505/13698 (76.7%)
+  overall:     18060/21981 (82.2%)
 
 Coverage — document source notes by era (parsed → clusterable → landed):
-  1946–1960: 73657 notes → 27758 clusterable (37.7%) → 27429 landed (37.2% of notes, 98.8% of clusterable)
+  1946–1960: 73657 notes → 27759 clusterable (37.7%) → 27430 landed (37.2% of notes, 98.8% of clusterable)
   1961–1968: 22481 notes → 19725 clusterable (87.7%) → 19050 landed (84.7% of notes, 96.6% of clusterable)
-  1969–1976: 18489 notes → 15959 clusterable (86.3%) → 15542 landed (84.1% of notes, 97.4% of clusterable)
-  1977–1988: 12171 notes → 9232 clusterable (75.9%) → 8505 landed (69.9% of notes, 92.1% of clusterable)
+  1969–1976: 18489 notes → 15967 clusterable (86.4%) → 15553 landed (84.1% of notes, 97.4% of clusterable)
+  1977–1988: 12171 notes → 9232 clusterable (75.9%) → 8539 landed (70.2% of notes, 92.5% of clusterable)
   1989–…: 239 notes → 169 clusterable (70.7%) → 88 landed (36.8% of notes, 52.1% of clusterable)
   …–1945: 137515 notes → 4275 clusterable (3.1%) → 3979 landed (2.9% of notes, 93.1% of clusterable)
 
-Ambiguous clusters left unmerged (same leading segment, different repositories): 419
+Ambiguous clusters left unmerged (same leading segment, different repositories): 391
   advisory committee on foreign aid: frc 74 a 58  ←  national archives | washington national records center
   advisory committees on foreign aid: frc 73 a 159  ←  national archives | washington national records center
-  african affairs directorate  ←  department of state | reagan library
   agency file  ←  (unattributed) | carter library | national archives | nixon
   aid administrator files: frc 65 a 481  ←  (unattributed) | national archives | washington national records center
   aid administrator files: frc 67 a 1530  ←  (unattributed) | national archives | washington national records center
@@ -39,12 +38,9 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   athens embassy file  ←  (unattributed) | department of state
   backchannel file  ←  (unattributed) | nixon
   ball paper  ←  johnson library | kennedy library
-  bandow file  ←  department of state | reagan library
   bangkok embassy files: frc 68 a 5612  ←  (unattributed) | department of state
   bromley smith paper  ←  (unattributed) | johnson library | kennedy library
   brzezinski  ←  department of state | national archives
-  brzezinski donated material  ←  carter library | department of state | national archives
-  brzezinski material  ←  carter library | department of state
   bureau of european affair  ←  department of state | national archives
   bureau of information  ←  (unattributed) | national archives
   bureau of intelligence and research  ←  department of state | national archives
@@ -52,7 +48,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   bush presidential record  ←  (unattributed) | bush library
   c. douglas dillon paper  ←  (unattributed) | kennedy library
   c.d. jackson paper  ←  (unattributed) | eisenhower library
-  carlucci file  ←  department of state | reagan library
   carter  ←  department of state | national archives
   central file  ←  department of state | eisenhower library | johnson library
   central policy file  ←  department of state | national archives
@@ -65,7 +60,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   chronological files of c. tracy barne  ←  (unattributed) | central intelligence agency
   cia file  ←  (unattributed) | central intelligence agency
   clifford paper  ←  (unattributed) | johnson library
-  cobb file  ←  department of state | reagan library
   conference file  ←  department of state | national archives | washington national records center
   conference files: frc 83-0067  ←  department of state | national archives
   conference files: frc 83-0068  ←  department of state | national archives | washington national records center
@@ -93,8 +87,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   def 18-3 ussr (mo): defense affair  ←  (unattributed) | department of state
   defense programs and operation  ←  department of state | national archives
   department of commerce  ←  (unattributed) | national archives
-  donated material  ←  carter library | national archives
-  dulles paper  ←  (unattributed) | eisenhower library | national archives | princeton university
+  dulles paper  ←  (unattributed) | eisenhower library | princeton university
   dwight d. eisenhower paper  ←  (unattributed) | eisenhower library
   dwight d. eisenhower record  ←  (unattributed) | eisenhower library
   e files: frc 71 a 6682  ←  (unattributed) | department of state | national archives
@@ -102,7 +95,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   edwin meese file  ←  (unattributed) | reagan library
   electronic reading room  ←  central intelligence agency | department of state
   elliot richardson paper  ←  (unattributed) | library of congress
-  european and soviet affairs directorate  ←  (unattributed) | department of state | reagan library
+  european and soviet affairs directorate  ←  (unattributed) | reagan library
   executive registry file  ←  (unattributed) | central intelligence agency
   executive secretariat  ←  (unattributed) | department of state | national archives | reagan library
   executive secretariat file  ←  (unattributed) | national archives
@@ -122,10 +115,9 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   geopolitical file  ←  (unattributed) | library of congress
   george elsey paper  ←  department of state | johnson library
   george h.w. bush presidential record  ←  (unattributed) | bush library
-  george p. shultz paper  ←  (unattributed) | department of state | reagan library
+  george p. shultz paper  ←  (unattributed) | reagan library
   george shultz paper  ←  (unattributed) | reagan library
   george w. ball paper  ←  (unattributed) | kennedy library
-  guhin file  ←  department of state | reagan library
   h. alexander smith paper  ←  (unattributed) | princeton university
   haldeman  ←  (unattributed) | nixon | washington national records center
   harriman paper  ←  (unattributed) | columbia university | library of congress
@@ -154,12 +146,9 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   io file  ←  (unattributed) | department of state
   iran  ←  central intelligence agency | department of state
   james c. hagerty paper  ←  (unattributed) | eisenhower library
-  james e. connor file  ←  ford library | national archives
-  james m. cannon file  ←  ford library | national archives
   jcs file  ←  (unattributed) | department of defense | department of state | national archives
   jcs record  ←  (unattributed) | national archives | washington national records center
   john foster dulles paper  ←  (unattributed) | eisenhower library
-  john o. marsh file  ←  ford library | national archives
   karachi embassy file  ←  department of state | washington national records center
   karachi embassy files: frc 68 a 1814  ←  national archives | washington national records center
   kissinger  ←  (unattributed) | washington national records center
@@ -171,17 +160,15 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   lansdale files: frc 63 a 1803  ←  (unattributed) | department of defense | national archives | washington national records center
   lansdale paper  ←  hoover institution | washington national records center
   lemnitzer paper  ←  (unattributed) | national defense university
-  lisa r. jameson file  ←  (unattributed) | department of state | reagan library
+  lisa r. jameson file  ←  (unattributed) | reagan library
   london embassy file  ←  (unattributed) | national archives
   mansfield library  ←  (unattributed) | university of montana
   manuscript division  ←  (unattributed) | library of congress
   mccone file  ←  (unattributed) | central intelligence agency
   mccone paper  ←  (unattributed) | eisenhower library
-  mcfarlane file  ←  department of state | reagan library
   mcnamara files: frc 31 a 3470  ←  (unattributed) | washington national records center
   mcnamara files: frc 71 a 3470  ←  (unattributed) | national archives | washington national records center
   mcnamara vietnam files: frc 77-0075  ←  (unattributed) | national archives | washington national records center
-  meese file  ←  department of state | reagan library
   meetings with president  ←  (unattributed) | central intelligence agency
   memoranda of conversation  ←  (unattributed) | ford library | library of congress
   memoranda of interview  ←  (unattributed) | department of state
@@ -198,12 +185,10 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   national intelligence council  ←  (unattributed) | central intelligence agency
   national intelligence estimate  ←  (unattributed) | central intelligence agency
   national security action memorandum  ←  (unattributed) | department of state | national archives
-  national security advisor  ←  department of state | ford library | national archives
-  national security advisor file  ←  ford library | national archives
-  national security affair  ←  carter library | department of state | kennedy library | national archives | reagan library
+  national security affair  ←  carter library | kennedy library | reagan library
   national security council  ←  (unattributed) | carter library | department of state | ford library | library of congress | national archives | reagan library | washington national records center
   national security council file  ←  (unattributed) | carter library | department of state | national archives | nixon
-  national security council institutional file  ←  (unattributed) | carter library | ford library | national archives | nixon
+  national security council institutional file  ←  (unattributed) | carter library | ford library | nixon
   national security council institutional files (h-files)  ←  (unattributed) | ford library | national archives | nixon
   national security council meeting  ←  (unattributed) | nixon
   national security council staff record  ←  (unattributed) | eisenhower library
@@ -211,7 +196,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   national security study memoranda  ←  national archives | nixon
   negotiating and planning records for 1977  ←  department of state | national archives
   nicholas rostow file  ←  (unattributed) | reagan library
-  nr002 natural resources classified  ←  department of state | reagan library
   nsc agency file  ←  nixon | reagan library
   nsc file  ←  ford library | national archives | nixon
   nsc institutional file  ←  (unattributed) | carter library | ford library | nixon
@@ -226,14 +210,18 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   office of current intelligence  ←  (unattributed) | central intelligence agency
   office of international monetary affairs: frc 77 a 68  ←  (unattributed) | washington national records center
   office of research  ←  (unattributed) | national archives
+  office of the assistant legal advisor for european affair  ←  department of state | national archives
   office of the assistant secretary for international affairs: frc 83 a 26  ←  (unattributed) | washington national records center
   office of the director  ←  (unattributed) | national archives
   office of the director of central intelligence  ←  (unattributed) | central intelligence agency
+  office of the secretariat staff  ←  department of state | national archives
   office of the secretary of commerce files: frc 69 a 6828  ←  (unattributed) | washington national records center
+  office of the secretary of defense  ←  department of defense | national archives | washington national records center
   office of the secretary of the treasury: frc 74 a 17  ←  (unattributed) | washington national records center
   office of the secretary of the treasury: frc 74 a 4  ←  (unattributed) | washington national records center
   office of the secretary of the treasury: frc 74 a 7  ←  (unattributed) | washington national records center
   office of the secretary of the treasury: frc 80 a 1  ←  (unattributed) | washington national records center
+  office of the under secretary for security assistance  ←  department of state | national archives
   office of the under secretary of the treasury: frc 79 a 14  ←  (unattributed) | washington national records center
   office of the under secretary of the treasury: frc 79 a 15  ←  (unattributed) | washington national records center
   osd file  ←  (unattributed) | department of defense | national archives | washington national records center
@@ -267,7 +255,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   paula j. dobriansky file  ←  (unattributed) | reagan library
   personal paper  ←  (unattributed) | johnson library | reagan library
   personal papers of william p. roger  ←  (unattributed) | ford library | national archives
-  plains file  ←  (unattributed) | carter library | department of state | national archives
+  plains file  ←  (unattributed) | carter library
   plumbers task force  ←  (unattributed) | national archives
   pol cuba-ussr : soviet union-cuba relation  ←  (unattributed) | department of state
   pol uk-us: political affairs and relations between the u.k. and the u.s  ←  (unattributed) | department of state
@@ -275,7 +263,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   presidential correspondence  ←  (unattributed) | national archives | nixon
   presidential daily appointment  ←  (unattributed) | eisenhower library
   presidential daily briefing  ←  (unattributed) | nixon
-  presidential daily diary  ←  (unattributed) | carter library | ford library | johnson library | kennedy library | national archives
+  presidential daily diary  ←  (unattributed) | carter library | ford library | johnson library | kennedy library | reagan library
   presidential office file  ←  (unattributed) | eisenhower library | ford library | kennedy library | nixon
   presidential personal file  ←  (unattributed) | nixon
   presidential trip file  ←  (unattributed) | nixon
@@ -294,7 +282,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   ridgway paper  ←  (unattributed) | department of defense
   robert h. lilac file  ←  (unattributed) | reagan library
   roger hilsman paper  ←  (unattributed) | kennedy library
-  rusk appointment book  ←  (unattributed) | department of state | johnson library
+  rusk appointment book  ←  (unattributed) | johnson library
   saigon embassy files of ambassador ellsworth bunker  ←  (unattributed) | national archives
   saigon embassy files: frc 67 a 677  ←  (unattributed) | national archives | washington national records center
   saigon embassy files: frc 68 a 5159  ←  (unattributed) | national archives | washington national records center
@@ -324,8 +312,8 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   usia historical collection  ←  (unattributed) | national archives
   usun file  ←  (unattributed) | national archives
   vertical file  ←  (unattributed) | carter library
-  vice presidential record  ←  (unattributed) | bush library | department of state
-  vice presidential security file  ←  (unattributed) | department of state | johnson library
+  vice presidential record  ←  (unattributed) | bush library
+  vice presidential security file  ←  (unattributed) | johnson library
   vip visit  ←  (unattributed) | nixon
   w file  ←  (unattributed) | reagan library
   w. averell harriman paper  ←  (unattributed) | library of congress
@@ -333,9 +321,9 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   white house central file  ←  (unattributed) | carter library | department of state | eisenhower library | ford library | johnson library | kennedy library | national archives | nixon | truman library
   white house office file  ←  (unattributed) | eisenhower library | ford library
   white house special file  ←  (unattributed) | eisenhower library | ford library | national archives | nixon
-  white house staff and office file  ←  (unattributed) | national archives | reagan library
+  white house staff and office file  ←  (unattributed) | reagan library
   white house tape  ←  (unattributed) | national archives | nixon
   whitman file  ←  (unattributed) | eisenhower library
   william l. stearman file  ←  (unattributed) | reagan library
   yale university  ←  (unattributed) | washington national records center
-  … 104 more, none involving (unattributed)
+  … 88 more, none involving (unattributed)

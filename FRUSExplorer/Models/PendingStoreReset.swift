@@ -38,13 +38,32 @@ import Foundation
 /// once cleared a store — it only sent the user back through onboarding, which made it look like
 /// it had worked.
 ///
+/// ## Why the request is kept per build configuration
+/// A Debug build opens stores of its own (``FRUSStoreConfiguration``, #1531) but shares
+/// `UserDefaults` with the shipped app on a device that runs both. With one request key, whichever
+/// build launched next consumed the request and cleared only ITS files: a reset asked for in the
+/// shipped app could be spent on the Debug store, leaving the shipped store as it was and the
+/// request gone. So each configuration has its own key (``requestKey(for:)``), and each build reads
+/// and clears only its own.
+///
 /// Version history:
 ///   1.0 — replaces the extension-matching reset that could not match the real store names
+///   1.1 — #1531 review: the request is kept per build configuration (``requestKey(for:)``)
 enum PendingStoreReset {
 
-    /// `UserDefaults` key holding the request. Namespaced so it cannot collide with an
-    /// `@AppStorage` key elsewhere in the app.
+    /// `UserDefaults` key holding the shipped build's request — the key every earlier build wrote,
+    /// so a request made before an update is still honoured after it. Namespaced so it cannot
+    /// collide with an `@AppStorage` key elsewhere in the app.
     static let requestKey = "frus.pendingStoreReset"
+
+    /// The key holding one build configuration's request: ``requestKey`` for the shipped build, a
+    /// key of its own for a Debug build.
+    static func requestKey(for configuration: FRUSStoreConfiguration) -> String {
+        switch configuration {
+        case .release: return requestKey
+        case .debug: return requestKey + ".debug"
+        }
+    }
 
     /// Suffixes appended to a store's path to form the full set of files SwiftData and CloudKit
     /// mirroring create alongside it.
@@ -55,21 +74,26 @@ enum PendingStoreReset {
 
     // MARK: - The request
 
-    /// Records that the stores should be cleared at the next launch.
+    /// Records that this build's stores should be cleared at its next launch.
     ///
-    /// - Parameter defaults: injectable so tests never touch the real domain.
-    static func request(defaults: UserDefaults = .standard) {
-        defaults.set(true, forKey: requestKey)
+    /// - Parameters:
+    ///   - defaults: injectable so tests never touch the real domain.
+    ///   - configuration: whose stores; the running build's.
+    static func request(defaults: UserDefaults = .standard,
+                        configuration: FRUSStoreConfiguration = .current) {
+        defaults.set(true, forKey: requestKey(for: configuration))
     }
 
-    /// `true` when a reset is waiting for the next launch.
-    static func isRequested(defaults: UserDefaults = .standard) -> Bool {
-        defaults.bool(forKey: requestKey)
+    /// `true` when a reset of `configuration`'s stores is waiting for its next launch.
+    static func isRequested(defaults: UserDefaults = .standard,
+                            configuration: FRUSStoreConfiguration = .current) -> Bool {
+        defaults.bool(forKey: requestKey(for: configuration))
     }
 
-    /// Withdraws a pending request.
-    static func cancel(defaults: UserDefaults = .standard) {
-        defaults.removeObject(forKey: requestKey)
+    /// Withdraws `configuration`'s pending request.
+    static func cancel(defaults: UserDefaults = .standard,
+                       configuration: FRUSStoreConfiguration = .current) {
+        defaults.removeObject(forKey: requestKey(for: configuration))
     }
 
     // MARK: - The reset
@@ -84,7 +108,8 @@ enum PendingStoreReset {
         var isClean: Bool { failed.isEmpty }
     }
 
-    /// Performs a requested reset, then clears the request.
+    /// Performs a reset requested for `configuration`, then clears that request — never the other
+    /// configuration's.
     ///
     /// Call **before opening any store**. Returns `nil` when no reset was requested, so the normal
     /// launch path costs one `UserDefaults` read.
@@ -97,14 +122,16 @@ enum PendingStoreReset {
     ///   - storeURLs: the stores to clear — pass ``ModelContainer/managedStoreURLs``.
     ///   - fileManager: injectable for tests.
     ///   - defaults: injectable for tests.
+    ///   - configuration: whose request to read and clear — the build `storeURLs` belong to.
     @discardableResult
     static func performIfRequested(
         storeURLs: [URL],
         fileManager: FileManager = .default,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        configuration: FRUSStoreConfiguration = .current
     ) -> Outcome? {
-        guard isRequested(defaults: defaults) else { return nil }
-        defer { cancel(defaults: defaults) }
+        guard isRequested(defaults: defaults, configuration: configuration) else { return nil }
+        defer { cancel(defaults: defaults, configuration: configuration) }
 
         var outcome = Outcome()
         for storeURL in storeURLs {

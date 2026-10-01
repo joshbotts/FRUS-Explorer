@@ -903,6 +903,8 @@ struct ArchivalNetworkSectorZoneTests {
 ///   1.0 — 2026-09-24: #1384 review
 ///   1.1 — 2026-09-24: #1384 review round 2 — by the owner's decision the focus is labelled at
 ///          every size, on the one plate, over the disc that lies under it at 390 × 300
+///   1.2 — 2026-10-01: #1514's regenerated authority — the Whitman File's neighbourhood places 6
+///          labels at 1000 × 640 and at 700 × 420
 struct ArchivalNetworkLabelTests {
 
     /// A node for the hand-made graphs below.
@@ -1009,10 +1011,10 @@ struct ArchivalNetworkLabelTests {
     }
 
     @Test("Over the Whitman File's real neighbourhood, the focus is labelled on its plate, and no partner label touches a label, the plate or a node",
-          // 7 and 5 since #1466/#1469's regenerated authority (8 and 4 before): its rebuilt records
-          // moved which partners each wedge draws, so which labels fit moved with them.
-          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 7, nodeUnderFocus: false),
-                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 5, nodeUnderFocus: false),
+          // 6 and 6 since #1514's regenerated authority (7 and 5 after #1466/#1469's, 8 and 4 before
+          // it): each rebuild moved which partners the wedges draw, so which labels fit moved too.
+          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 6, nodeUnderFocus: false),
+                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 6, nodeUnderFocus: false),
                       LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 2, nodeUnderFocus: true)])
     func aLaidOutNeighbourhoodPlacesClearLabels(_ layoutCase: LayoutCase) throws {
         let records = CollectionAuthorityStore.shared?.collections ?? []
