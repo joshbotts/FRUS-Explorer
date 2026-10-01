@@ -237,6 +237,23 @@ struct ClassificationASTTransformTests {
         }
     }
 
+    /// The transform is the one place outside the parser that builds an AST from another, so every
+    /// field it does not mean to change must ride through — the page a document begins on and the
+    /// breaks a container gave a section (#1510) among them (#1510 review round 1).
+    @Test("An override keeps the start page and the pages a container carried, both ways")
+    func overrideKeepsPages() {
+        let section = FRUSDocumentAST(documentId: "ch9",
+                                      nodes: [.paragraph(children: [.text("The United States of America.")])],
+                                      startPage: .arabic(57), carriedPages: [.unnumbered(56), .arabic(57)])
+        let wrapped = section.applyingClassificationOverride(isEditorialNote: true)
+        #expect(wrapped.isShapedAsEditorialNote)
+        #expect(wrapped.startPage == .arabic(57))
+        #expect(wrapped.carriedPages == [.unnumbered(56), .arabic(57)])
+        let back = wrapped.applyingClassificationOverride(isEditorialNote: false)
+        #expect(back.isShapedAsEditorialNote == false)
+        #expect(back.carriedPages == [.unnumbered(56), .arabic(57)])
+    }
+
     @Test("A matching override is the identity — callers apply the effective flag unconditionally")
     func idempotent() {
         let doc = documentAST()

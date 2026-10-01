@@ -28,7 +28,13 @@ import SwiftUI
 /// | body | yes | the text changed; some highlights may be misaligned |
 /// | apparatus | no | footnotes, source note, or heading changed; the text did not |
 /// | apparatus | yes | both facts, because both are true |
-/// | vanished | any | no longer in the volume (unreachable from an open document, but stated) |
+/// | vanished | any | no longer in the volume (an update left no div to open, but stated) |
+///
+/// Only an update STAMPS a disappearance (`IndexingPipeline.auxMarkVanishedRevisions`). A document
+/// a whole-index pass stops emitting — index v63's 162 heading-only containers (#1510) — is still in
+/// its volume's file and still opens by id, from a collection entry, reading history or Spotlight;
+/// its row is marked `'vanished'` with no `changedAt`, so this view reads it as recording no change
+/// (#1510 review round 1), as does the review sheet its hedge opens (`recordsRemoval`, round 2).
 ///
 /// "Stale" is the caller's fact — each highlight's own `renderingVersion` against the document's —
 /// and the recorded change is the index's fact (`document_revisions`). They usually agree, since

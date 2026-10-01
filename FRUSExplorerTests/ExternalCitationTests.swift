@@ -27,6 +27,8 @@ import SQLite3
 ///   1.1 — 2026-09-24: #1390 review — `unitFieldsSeparateCitationsBuiltInMemory` pins the unit
 ///         fields in `ExternalCitation.id`, which the class test below stopped pinning once the
 ///         readers began passing `citationIndex`
+///   1.2 — 2026-10-01: the generator/app parity suite reads only the stored lot and library rows;
+///         the class rows index v46 added to the table had made it fail whenever the mirror was set
 @Suite("External citations (#784)")
 struct ExternalCitationTests {
 
@@ -929,13 +931,22 @@ struct RealTEIFootnoteParityTests {
         }
     }
 
-    /// The app's stored rows in the same key shape, for the documents the generator found.
+    /// The app's stored lot and library rows in the same key shape, for the documents the
+    /// generator found.
+    ///
+    /// The central-file class rows are left out: since index v46 (#834) the same table also holds
+    /// them, written by `classCandidates(inNote:)` and the `Ibid.` walker beside the scanner, and
+    /// `scan(note:)` — the generator side here — never yields one. Read with them, each class row
+    /// keyed as `lib:Department of State||false`, and every document citing a central file beside
+    /// a lot or a library mismatched (10 documents over the two volumes, on 2026-10-01: this suite
+    /// runs only with `FRUS_TEI_MIRROR` set, so nothing showed it).
     private static func storedCitationKeys(pipeline: IndexingPipeline, volumeId: String,
                                            documentIds: Set<String>) async throws -> [String: [String]] {
         var result: [String: [String]] = [:]
         for documentId in documentIds {
             let rows = try await pipeline.externalCitations(volumeId: volumeId,
                                                             documentId: documentId)
+                .filter { $0.decimalClass == nil }
             guard !rows.isEmpty else { continue }
             result[documentId] = rows.map { row in
                 if let norm = row.lotFileNorm, !norm.isEmpty {

@@ -816,6 +816,8 @@ struct CitationLookupIndexedTests {
         var rawBefore = ""
         /// Extra TEI appended to the document's body, e.g. a footnote holding a page reference.
         var body = ""
+        /// The document's `frus:doc-dateTime-min`, which the index stores as its day (#1509).
+        var dated: String?
     }
 
     /// Creates a temporary directory, calls `body`, and cleans up after.
@@ -844,7 +846,8 @@ struct CitationLookupIndexedTests {
         let divs = docs.map { doc in
             doc.rawBefore
                 + docBreaks(doc.pagesBefore, of: doc)
-                + "<div type=\"document\" xml:id=\"\(doc.id)\" n=\"\(doc.number)\">"
+                + "<div type=\"document\" xml:id=\"\(doc.id)\" n=\"\(doc.number)\""
+                + (doc.dated.map { " frus:doc-dateTime-min=\"\($0)\"" } ?? "") + ">"
                 + docBreaks(doc.pagesAtTop, of: doc)
                 + "<head>\(doc.number). Memorandum \(doc.id)</head>"
                 + docBreaks(doc.pages, of: doc)
@@ -852,7 +855,7 @@ struct CitationLookupIndexedTests {
         }.joined(separator: "\n")
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0">
           <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
           <publicationStmt><date>1990</date></publicationStmt>
           <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
@@ -1998,6 +2001,315 @@ struct CitationLookupIndexedTests {
             targets.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
         }
         return targets
+    }
+
+    // MARK: - Which of several documents on a page a reference means (#1509)
+
+    /// A footnote holding one page reference, in a paragraph of its own.
+    private func footnote(_ id: String, _ text: String, page: Int) -> String {
+        "<p>See the note.<note n=\"1\" xml:id=\"\(id)fn1\">"
+            + text.replacingOccurrences(of: "{page}", with: "<ref target=\"#pg_\(page)\">\(page)</ref>")
+            + "</note></p>"
+    }
+
+    /// `frus1888p1`'s pp. 682–684 as the volume prints them (#1509's type case): d495 (June 18,
+    /// 1888) begins on 682 and runs onto 683; d496 (July 11) and d497 (August 17) both begin on 683,
+    /// and d497 runs onto 684. Then three documents of one day each beginning on page 700 — e1
+    /// (January 1, 1889), e2 (January 2), e3 (January 3) — and, from page 800 on, one citing document
+    /// per cue, each with one footnote citing page 683 or 700. Under v62 every one of them stored the
+    /// first document on its page.
+    private var tieBreakVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        let candidates = [
+            Doc(id: "d495", number: "495", pages: [683], pagesBefore: [682], dated: "1888-06-18T00:00:00-05:00"),
+            Doc(id: "d496", number: "496", pages: [], dated: "1888-07-11T00:00:00-05:00"),
+            Doc(id: "d497", number: "497", pages: [684], dated: "1888-08-17T00:00:00-05:00"),
+            Doc(id: "e1", number: "601", pages: [], pagesBefore: [700], dated: "1889-01-01T00:00:00-05:00"),
+            Doc(id: "e2", number: "602", pages: [], dated: "1889-01-02T00:00:00-05:00"),
+            Doc(id: "e3", number: "603", pages: [701], dated: "1889-01-03T00:00:00-05:00"),
+        ]
+        let notes: [(id: String, text: String, page: Int)] = [
+            // frus1888p1 d230's footnote 1, word for word: the number and the day both name d497.
+            ("c230", "Mr. Bayard to Count Arco Valley, August 17, 1888, with inclosures, printed as Doc. No. 497 <hi rend=\"italic\">post</hi>, page {page}.", 683),
+            ("cNumber", "For inclosures see Doc. No. 497, <hi rend=\"italic\">post</hi>, p. {page}.", 683),
+            ("cDay", "Count Arco Valley’s note of August 17, 1888, p. {page}.", 683),
+            ("cAbbreviated", "Count Arco Valley’s note of Aug. 17, p. {page}.", 683),
+            ("cNone", "See the memorandum by the Chief of the Division, p. {page}.", 683),
+            // frus1934v01 d397's shape: "No. N" alone is a telegram's number, not a document's.
+            ("cTelegram", "Telegram No. 497, July 11, 1 p.m., p. {page}.", 683),
+            // A printed year that is not the document's names no document.
+            ("cWrongYear", "Despatch of August 17, 1887, p. {page}.", 683),
+            // Two numbers both on the page decide nothing; the day does.
+            ("cTwoNumbers", "See Doc. No. 496 and Doc. No. 497, the latter of August 17, p. {page}.", 683),
+            // Two days on the page, the first of the documents not among them: the first of the two.
+            ("cTwoDays", "Telegrams of January 3 and January 2, p. {page}.", 700),
+        ]
+        let citing = notes.enumerated().map { index, note in
+            Doc(id: note.id, number: "\(900 + index)", pages: [], pagesBefore: [800 + index],
+                body: footnote(note.id, note.text, page: note.page))
+        }
+        return [(entry("frus1888p1", "1888", "Papers Relating to the Foreign Relations of the United States, 1888, Part I"),
+                 candidates + citing)]
+    }
+
+    /// Where each citing document's one page reference must be stored, and what its link must open.
+    private let tieBreakExpectations: [String: String] = [
+        "c230": "d497", "cNumber": "d497", "cDay": "d497", "cAbbreviated": "d497", "cNone": "d496",
+        "cTelegram": "d496", "cWrongYear": "d496", "cTwoNumbers": "d497", "cTwoDays": "e2",
+    ]
+
+    @Test("A page reference is stored against the document its footnote names, by number or by day, among several beginning on the page (#1509)",
+          arguments: ["c230", "cNumber", "cDay", "cAbbreviated", "cNone", "cTelegram", "cWrongYear",
+                      "cTwoNumbers", "cTwoDays"])
+    func pageReferenceIsStoredAgainstTheDocumentItsFootnoteNames(_ citing: String) async throws {
+        try await withIndex(tieBreakVolume) { _, index in
+            let targets = try crossReferenceTargets(from: citing, in: "frus1888p1", databaseURL: index.databaseURL)
+            #expect(targets == [tieBreakExpectations[citing]], "\(citing): \(targets)")
+        }
+    }
+
+    /// The reader's page link, driven the way a tap is: the citing document parsed, converted and
+    /// serialized as the reader renders it, its page link's href dispatched through
+    /// `FRUSURLSchemeHandler`, and what the handler hands back asked of the store the reader's
+    /// `resolvePageReference` asks. It must open the document the index stored the edge against.
+    @Test("The reader's page link opens the document the stored edge names, for every cue (#1509)")
+    func readersPageLinkOpensTheStoredDocument() async throws {
+        try await withIndex(tieBreakVolume) { _, index in
+            let url = index.volumesDirectory.appendingPathComponent("frus1888p1.xml")
+            var checked = 0
+            for (citing, expected) in tieBreakExpectations.sorted(by: { $0.key < $1.key }) {
+                let ast = try #require(try await FRUSDocumentParser().parseDocument(documentId: citing, volumeURL: url))
+                var converter = ASTToRenderNodeConverter()
+                let html = FRUSRenderNodeHTMLSerializer().serialize(converter.convert(ast))
+                let start = try #require(html.range(of: "href=\"frusexplorer://doc/"), "\(citing): no page link")
+                let end = try #require(html[start.upperBound...].firstIndex(of: "\""))
+                let href = "frusexplorer://doc/" + html[start.upperBound..<end]
+                    .replacingOccurrences(of: "&amp;", with: "&")
+                let link = try #require(URL(string: href))
+                let tapped = await MainActor.run { () -> (String, String?, PageCitationHint?)? in
+                    let handler = FRUSURLSchemeHandler()
+                    var received: (String, String?, PageCitationHint?)?
+                    handler.onCrossRefTap = { received = ($0, $1, $2) }
+                    handler.dispatch(url: link)
+                    return received
+                }
+                let tap = try #require(tapped, "\(citing): the link dispatched nothing")
+                guard case .page(_, let page) = FRUSURLSchemeHandler.resolveCrossRefTarget(tap.0, volumeId: tap.1) else {
+                    Issue.record("\(citing): \(tap.0) is not a page link"); continue
+                }
+                let opened = try await index.pages.document(forPage: page, inVolume: "frus1888p1", citing: tap.2)
+                let stored = try crossReferenceTargets(from: citing, in: "frus1888p1", databaseURL: index.databaseURL)
+                #expect(opened == expected, "\(citing): the link opened \(opened ?? "nothing")")
+                #expect(stored == [opened ?? ""], "\(citing): the link and the stored edge disagree")
+                checked += 1
+            }
+            #expect(checked == tieBreakExpectations.count)
+        }
+    }
+
+    /// Each reader view hands a page link's footnote hint on at every step from the web view to the
+    /// store (#1509 review round 1). `readersPageLinkOpensTheStoredDocument` drives the converter,
+    /// the serializer, the scheme handler and the store, but not the views' own closures, which no
+    /// unit test can host, and a view that dropped the hint at any of its three steps would still
+    /// build while its page links opened the first document on the page. Neither view's
+    /// `handleCrossRefTap` nor `resolvePageReference` defaults its `citing`, so a call that leaves
+    /// the argument out does not build; this reads each step's own call, by its balanced
+    /// parentheses, for the forms that would: a closure that ignores or replaces the hint, a default
+    /// put back, and a store call without it (`PageRangeStore.document(forPage:inVolume:citing:)`
+    /// keeps its default for callers outside a footnote).
+    @Test("Both reader views pass a page link's footnote hint from the web view to the store (#1509 review round 1)",
+          arguments: ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"])
+    func readerViewsPassTheHintThrough(_ path: String) throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer").appendingPathComponent(path)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        /// The argument list of every call of `function` inside `scope`.
+        func calls(of function: String, in scope: Substring) throws -> [Substring] {
+            var found: [Substring] = []
+            var from = scope.startIndex
+            while let call = source.range(of: function + "(", range: from..<scope.endIndex) {
+                let arguments = try #require(WindowTargetingTests.balancedBlock(
+                    in: source, from: source.index(before: call.upperBound), open: "(", close: ")"),
+                                             "\(path): unbalanced call of \(function)")
+                found.append(arguments)
+                from = arguments.endIndex
+            }
+            return found
+        }
+        /// `function`'s parameter list and body.
+        func declaration(of function: String) throws -> (parameters: Substring, body: Substring) {
+            let name = try #require(source.range(of: "func \(function)("), "\(path): no \(function)")
+            let parameters = try #require(WindowTargetingTests.balancedBlock(
+                in: source, from: source.index(before: name.upperBound), open: "(", close: ")"))
+            let body = try #require(WindowTargetingTests.balancedBlock(in: source, from: parameters.endIndex))
+            return (parameters, body)
+        }
+
+        // 1. The web view's callback binds the hint and hands it to `handleCrossRefTap`.
+        let tap = try #require(source.range(of: "onCrossRefTap: {"), "\(path): no onCrossRefTap closure")
+        let closure = try #require(WindowTargetingTests.balancedBlock(in: source, from: tap.lowerBound))
+        let header = closure.prefix { $0 != "\n" }.trimmingCharacters(in: .whitespaces)
+        #expect(header.hasSuffix(", citing in"), "\(path): the callback does not bind the hint: \(header)")
+        let handed = try calls(of: "handleCrossRefTap", in: closure)
+        #expect(handed.count == 1 && handed.allSatisfy { $0.contains("citing: citing") },
+                "\(path): the callback does not hand the hint on: \(handed)")
+
+        // 2. `handleCrossRefTap` takes it with no default and hands it to `resolvePageReference`.
+        let handler = try declaration(of: "handleCrossRefTap")
+        #expect(handler.parameters.contains("citing: PageCitationHint?") && !handler.parameters.contains("="),
+                "\(path): handleCrossRefTap(\(handler.parameters))")
+        let resolved = try calls(of: "resolvePageReference", in: handler.body)
+        #expect(resolved.count == 1 && resolved.allSatisfy { $0.contains("citing: citing") },
+                "\(path): the page case does not hand the hint on: \(resolved)")
+
+        // 3. `resolvePageReference` takes it with no default and asks the store with it.
+        let resolver = try declaration(of: "resolvePageReference")
+        #expect(resolver.parameters.contains("citing: PageCitationHint?") && !resolver.parameters.contains("="),
+                "\(path): resolvePageReference(\(resolver.parameters))")
+        let asked = try calls(of: "store.document", in: resolver.body)
+        #expect(asked.count == 1 && asked.allSatisfy { $0.contains("citing: citing") },
+                "\(path): the store is not asked with the hint: \(asked)")
+    }
+
+    // MARK: - Another pagination's breaks (#1511)
+
+    /// `frus1871`'s shape: the President's message (d1) opens on `[19]` of its own pagination and
+    /// carries `pg-seq1_20` and `pg-seq1_23`; d7 begins on the volume's page 21 and runs onto 22. A
+    /// footnote in d9 cites the volume's page 22. Until #1511 the message's breaks read as the
+    /// volume's pages 20–23, so page 22 named d1 beside d7, and d1 first.
+    private var otherPaginationVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1871", "1871", "Papers Relating to the Foreign Relations of the United States, 1871"),
+          [Doc(id: "d1", number: "1", pages: [], rawBefore: "<pb n=\"[19]\" xml:id=\"pg-seq1_19\"/>",
+               body: "<p>The message<pb n=\"20\" xml:id=\"pg-seq1_20\"/>continues<pb n=\"23\" xml:id=\"pg-seq1_23\"/>to its end.</p>"),
+           Doc(id: "d7", number: "7", pages: [22], pagesBefore: [21]),
+           Doc(id: "d9", number: "9", pages: [], pagesBefore: [30],
+               body: footnote("d9", "See p. {page}.", page: 22))])]
+    }
+
+    @Test("A page of the volume's other pagination answers no page of the volume, and is still stored (#1511)")
+    func anotherPaginationAnswersNoVolumePage() async throws {
+        try await withIndex(otherPaginationVolume) { _, index in
+            let page22 = try await index.pages.documents(forPage: 22, inVolume: "frus1871")
+            #expect(page22?.documents.map(\.documentId) == ["d7"], "\(String(describing: page22))")
+            #expect(try await index.pages.documents(forPage: 20, inVolume: "frus1871") == nil)
+            #expect(try crossReferenceTargets(from: "d9", in: "frus1871", databaseURL: index.databaseURL) == ["d7"])
+            #expect(try pageRows(of: "d1", in: "frus1871", databaseURL: index.databaseURL)
+                    == ["unparseable:[19]", "other-pagination:20", "other-pagination:23"])
+        }
+    }
+
+    /// `type:raw` for every `page_ranges` row of `documentId`, in stored order.
+    private func pageRows(of documentId: String, in volumeId: String, databaseURL: URL) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(databaseURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+              let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "CitationLookupIndexedTests", code: 3)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        let sql = """
+            SELECT page_number_type, page_number_raw FROM page_ranges
+            WHERE volume_id = ? AND document_id = ? ORDER BY rowid
+            """
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "CitationLookupIndexedTests", code: 4)
+        }
+        defer { sqlite3_finalize(stmt) }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        sqlite3_bind_text(stmt, 1, volumeId, -1, transient)
+        sqlite3_bind_text(stmt, 2, documentId, -1, transient)
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let type = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            let raw = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            rows.append("\(type):\(raw)")
+        }
+        return rows
+    }
+
+    // MARK: - Containers (#1510)
+
+    /// A synthetic shape, both kinds of container in one tree, modelled on `frus1919Parisv13`'s comp3
+    /// but not that volume's data. As in the volume, comp3 holds only its heading and its breaks
+    /// `[56]` and 57 before ch9 (the Preamble) begins on 57, and 69 before ch10. Unlike it, ch10 here
+    /// holds text of its own on 69 and, after it, the break 72 its subchapter begins on: the real
+    /// ch10 (Part I, the Covenant) holds only its heading and is left out too, and the 69 before it
+    /// goes to ch10subch1. The real narrowed container is ch12, whose own text is on 134 and whose
+    /// trailing 135 goes to ch12subch1. `RealTEIPageCitationsV63Tests.parisv13Containers` checks both
+    /// pages against the volume; `ContainerTests.proseContainerIsNarrowedToItsOwnText` holds ch12's
+    /// shape on a fixture. No document anywhere.
+    private let partOne = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>frus1919Parisv13</title></titleStmt>
+          <publicationStmt><date>1947</date></publicationStmt>
+          <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><body>
+            <pb n="[55]" xml:id="pg_55"/>
+            <div type="compilation" xml:id="comp3">
+              <head>I: The Treaty of Peace</head>
+              <pb n="[56]" xml:id="pg_56"/>
+              <pb n="57" xml:id="pg_57"/>
+              <div subtype="editorial-note" type="chapter" xml:id="ch9"><head>Preamble</head>
+                <p>The United States of America.</p><pb n="58" xml:id="pg_58"/><p>More treaty text.</p></div>
+              <pb n="69" xml:id="pg_69"/>
+              <div type="chapter" xml:id="ch10"><head>Part II</head><p>Notes to Part II.</p>
+                <pb n="72" xml:id="pg_72"/>
+                <div type="subchapter" xml:id="ch10subch1"><head>The Covenant</head><p>Article 1.</p>
+                  <pb n="73" xml:id="pg_73"/><p>Article 2.</p></div>
+              </div>
+            </div>
+          </body></text>
+        </TEI>
+        """
+
+    @Test("A heading-only container is not indexed, a page names the section beginning on it, and a prose container answers only its own pages (#1510)")
+    func containersAndTheirPages() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try partOne.data(using: .utf8)!.write(to: volDir.appendingPathComponent("frus1919Parisv13.xml"))
+            try await pipeline.indexVolume("frus1919Parisv13")
+            let databaseURL = dir.appendingPathComponent("test.sqlite")
+            let pages = try PageRangeStore(databaseURL: databaseURL)
+            func answer(_ page: Int) async throws -> [String] {
+                try await pages.documents(forPage: page, inVolume: "frus1919Parisv13")?.documents.map(\.documentId) ?? []
+            }
+            // Under v62 comp3 was indexed too, printed on 56–69 by its own breaks.
+            #expect(try indexedDocumentIds(in: "frus1919Parisv13", databaseURL: databaseURL)
+                    == ["ch10", "ch10subch1", "ch9"])
+            // Under v62: comp3 alone on 56, 57 and 69, and comp3 beside ch9 on 58.
+            #expect(try await answer(56) == ["ch9"])
+            #expect(try await answer(57) == ["ch9"])
+            #expect(try await answer(58) == ["ch9"])
+            #expect(try await answer(69) == ["ch10"])
+            // Under v62: ch10, whose own text ends before the break 72 it held.
+            #expect(try await answer(72) == ["ch10subch1"])
+            #expect(try await answer(73) == ["ch10subch1"])
+        }
+    }
+
+    /// Every `document_cache` id of `volumeId`, sorted.
+    private func indexedDocumentIds(in volumeId: String, databaseURL: URL) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(databaseURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+              let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "CitationLookupIndexedTests", code: 5)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, "SELECT document_id FROM document_cache WHERE volume_id = ? ORDER BY document_id",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "CitationLookupIndexedTests", code: 6)
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var ids: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            ids.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return ids
     }
 
     /// Volume E–2 of 1969–76, numbering its pages per document as 14 of the 22 E-volumes and

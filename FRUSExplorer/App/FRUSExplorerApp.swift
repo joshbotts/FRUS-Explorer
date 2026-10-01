@@ -263,6 +263,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.20 — #1522: the boot builds the citation engine over the volumes directory, which it reads at
 ///          each lookup, rather than over the ids the directory held at boot.
 ///   4.21 — #1483: the Mac Find menu's Search… has a key of its own, `menu.find.search.mac`.
+///   4.22 — Lane STOR (#1526): `bootDownloadManager()` reconciles side-loaded volumes once the volumes
+///          directory is set (`AppState.reconcileSideloadedVolumes()`), and the date re-index runs
+///          through `AppState.indexAllVolumes(with:)`, which re-reads the indexed-volume set after it.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2170,6 +2173,11 @@ struct FRUSExplorerApp: App {
         // Retained so any in-session index rebuild can reopen the read-only stores against them (#275).
         appState.databaseURL = dbURL
         appState.volumesDirectory = volumesDir
+        // Side-loaded volumes take their titles from sidecars only `reconcileSideloadedVolumes()`
+        // reads. Without this a relaunch with no indexing batch listed them by raw id until a hub
+        // action or a batch's end reached it. After the storage-row seam above, so a UI test's rows
+        // are on disk — or swept, with their sidecars — before it runs.
+        appState.reconcileSideloadedVolumes()
         // R-1d: the settle hook's context. `container.mainContext` is the same context the hubs get
         // from `@Environment(\.modelContext)` — every scene is `.modelContainer(modelContainer)`.
         appState.modelContainer = modelContainer
@@ -2383,7 +2391,9 @@ struct FRUSExplorerApp: App {
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index triggered (dateReindex=true, ftsRebuild=\(ftsRebuildNeeded)).")
                     #endif
-                    try? await pipeline.indexAllVolumes()
+                    // The pass, then a re-read of which volumes the index holds (#1526): the pass
+                    // reports no volume as it finishes it, and ended by storing an empty id.
+                    await appState.indexAllVolumes(with: pipeline)
                     await pipeline.markDateReindexComplete()
                     if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
                     // Rebuild the materialised person rollup after the persons table changes.
@@ -2667,7 +2677,7 @@ struct FRUSExplorerApp: App {
                 { @Sendable [appState] volumeId in
                     try? await pipeline.removeVolume(volumeId)
                     await MainActor.run {
-                        _ = appState.indexedVolumeIds.remove(volumeId)
+                        appState.markVolumeUnindexed(volumeId)
                         // R-5 P3b-1: the unreviewed read now excludes volumes with no cache rows,
                         // so a removal changes its answer — tell the three readers.
                         appState.revisionReviewToken += 1

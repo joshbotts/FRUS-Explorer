@@ -153,8 +153,8 @@ struct DocumentChangeReviewSheet: View {
         return nil
     }
 
-    /// A vanished document: no text to judge against, every annotation an orphan.
-    private var isVanished: Bool { revision?.changeKind == "vanished" }
+    /// Removed by an update (`recordsRemoval`): no text to judge against, every annotation an orphan.
+    private var isVanished: Bool { revision?.recordsRemoval ?? false }
 
     /// Whether the row can still be stamped.
     private var canMarkReviewed: Bool {

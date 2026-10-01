@@ -101,6 +101,10 @@ import Foundation
 ///          (`footnoteDOMKey`'s `n-` branch, the DOCX id map), so nothing stored moves. The index is
 ///          untouched: `IndexingPipeline` reads bodies and footnotes from the AST, where the head
 ///          and its notes always were.
+///   1.12 — #1509: a link to a printed page inside a footnote carries what the footnote names
+///          (`.crossRefLink`'s `citing`, `PageCitationHint(noteChildren:)`), built from the same AST
+///          the indexer builds the reference's edge from. **`kVersion` is not bumped:** the hint is
+///          no text, and `flatText` reads only `.crossRefLink`'s children.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -237,7 +241,7 @@ public struct ASTToRenderNodeConverter {
                  .titlePageBlock(let c), .attachmentHeading(let c):
                 result += flatText(c)
             case .persNameLink(_, let c, _), .glossLink(_, let c, _),
-                 .crossRefLink(_, _, _, let c), .attachmentBlock(_, let c),
+                 .crossRefLink(_, _, _, _, let c), .attachmentBlock(_, let c),
                  .unknown(_, let c):
                 result += flatText(c)
             }
@@ -277,6 +281,11 @@ public struct ASTToRenderNodeConverter {
 
     private var footnoteCounter = 0
     private var collectedFootnotes: [FRUSRenderNode] = []
+    /// The footnotes being converted, innermost last: each one's AST children, or `nil` for an
+    /// editorial note's own text, which is in no footnote (#1509). A page link takes what the
+    /// innermost names (`PageCitationHint(noteChildren:)`), as `IndexingPipeline.collectDocumentRefs`
+    /// does for the edge it stores.
+    private var citingNotes: [[FRUSASTNode]?] = []
 
     // MARK: Init
 
@@ -350,7 +359,9 @@ public struct ASTToRenderNodeConverter {
             // an empty string. The counter still advances for every note, so the DOM key below is
             // dense and stable regardless.
             let displayLabel = Self.printedLabel(from: printedNumber)
+            citingNotes.append(children)
             let convertedChildren = convertNodes(children)
+            citingNotes.removeLast()
             // When a footnote contains only inline nodes (no <p> wrapper in the source TEI),
             // wrap them in a single .paragraph so the renderer treats them as continuous prose
             // rather than rendering each node as a separate VStack row.
@@ -401,8 +412,15 @@ public struct ASTToRenderNodeConverter {
             // `target` is the verbatim `@target` attribute — the exact key the broken-refs index
             // is keyed on. A non-nil result renders as a non-navigable explained span.
             let broken = brokenRefLookup?(target)
+            // #1509: a link to a printed page carries what its footnote names, so the tap opens the
+            // document the footnote means among several the page names.
+            var citing: PageCitationHint?
+            if let note = citingNotes.last ?? nil,
+               case .page = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId) {
+                citing = PageCitationHint(noteChildren: note)
+            }
             return [.crossRefLink(target: target, volumeId: volumeId, broken: broken,
-                                  children: inner)]
+                                  citing: citing, children: inner)]
 
         case .emphasis(let style, let children):
             let inner = convertNodes(children)
@@ -495,6 +513,8 @@ public struct ASTToRenderNodeConverter {
         // MARK: Structural divisions (Session 07)
 
         case .editorialNote(let children):
+            citingNotes.append(nil)
+            defer { citingNotes.removeLast() }
             return [.editorialNoteBlock(convertNodes(children))]
 
         case .titlePage(let children):

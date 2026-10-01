@@ -164,7 +164,12 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          to show; set through `openArchiveVisitWindow(on:using:)`, declared beside the window
 ///   4.17 — #1522: the citation engine is built over the volumes directory, which it reads at each
 ///          lookup, so `connectIndexingProgress` no longer tells it that a volume finished indexing
-///   4.18 — #1531: `unrecoveredExport`, an upload failure remembered across launches, which the
+///   4.18 — Lane STOR (#1526): `indexAllVolumes(with:)` and `rebuildSearchIndex(pipeline:)` re-read
+///          the indexed-volume set after a whole-index pass (`reseedIndexedVolumeIds`), every write to
+///          it goes through `markVolumeIndexed` / `markVolumeUnindexed` / `clearIndexedVolumeIds`,
+///          which journal while a re-read is in flight, and `reconcileSideloadedVolumes()` reads the
+///          side-loaded volumes' sidecars, which boot now calls
+///   4.19 — #1531: `unrecoveredExport`, an upload failure remembered across launches, which the
 ///          status summary resolves to `.stopped` and Fix iCloud Sync warns about
 
 // MARK: - CloudKitSyncState
@@ -1341,12 +1346,8 @@ final class AppState {
     func refreshAfterCorpusChange(context: ModelContext) {
         refreshReadOnlyStores()
         // #777: a side-loaded volume is a corpus change the catalogue cannot see. Reconciling here
-        // means the volume is browsable the moment its import finishes, and — because this also
-        // runs at boot — that a volume side-loaded before #777 shipped gains its metadata on the
-        // next launch rather than needing to be imported again.
-        if let volumesDirectory {
-            manifestStore.refreshLocalEntries(volumesDirectory: volumesDirectory)
-        }
+        // means the volume is browsable the moment its import finishes.
+        reconcileSideloadedVolumes()
         guard let indexingPipeline else { return }
         Task { @MainActor in
             if await PersonRollupRefresh.afterCorpusChange(context: context,
@@ -1355,6 +1356,24 @@ final class AppState {
                 refreshReadOnlyStores()
             }
         }
+    }
+
+    /// Reads the side-loaded volumes' sidecars into the catalogue, minting one for any volume that
+    /// has none (`ManifestStore.refreshLocalEntries(volumesDirectory:)`, #777).
+    ///
+    /// Two callers, and the second is the one that was missing: ``refreshAfterCorpusChange(context:)``,
+    /// so a volume is browsable the moment its import finishes, and boot, right after the volumes
+    /// directory is known. Before boot called it, a relaunch with no indexing batch listed every
+    /// side-loaded volume by its raw id — in Volumes & Storage, in Browse, everywhere
+    /// `entry(forVolumeId:)` is read — until a hub action or the end of an indexing batch reached
+    /// this, while two doc comments said boot already did. The steady-state cost is one directory
+    /// listing and a read of each side-loaded volume's sidecar; a header is parsed only for a
+    /// volume side-loaded before #777 shipped, once.
+    ///
+    /// No-op until boot has set ``volumesDirectory``.
+    func reconcileSideloadedVolumes() {
+        guard let volumesDirectory else { return }
+        manifestStore.refreshLocalEntries(volumesDirectory: volumesDirectory)
     }
 
     func refreshReadOnlyStores() {
@@ -1973,7 +1992,10 @@ final class AppState {
     ///
     /// Seeded at boot via `seedIndexedVolumeIds(pipeline:)` which runs a single
     /// `SELECT DISTINCT volume_id FROM document_cache` query. Updated incrementally
-    /// in `connectIndexingProgress` when a volume's `.complete` event fires.
+    /// in `connectIndexingProgress` when a volume's `.complete` event fires, and re-read after
+    /// every whole-index pass (`indexAllVolumes(with:)`, #1526), which reports no volume as it
+    /// finishes it. Write it through `markVolumeIndexed(_:)`, `markVolumeUnindexed(_:)` and
+    /// `clearIndexedVolumeIds()`, so a change made while a re-read is in flight survives it.
     ///
     /// Replaces per-call `IndexingPipeline.isVolumeIndexed()` lookups from view bodies
     /// (which previously fired SQLite queries on every SwiftUI render pass — up to 10×/s
@@ -2266,17 +2288,125 @@ final class AppState {
     ///
     /// Runs a single `SELECT DISTINCT volume_id FROM document_cache` query so subsequent
     /// per-volume checks use an O(1) Set lookup instead of per-call SQLite queries from
-    /// the SwiftUI render loop.  Called once at boot after the pipeline is created.
+    /// the SwiftUI render loop. Boot calls this once, after the pipeline is created; a whole-index
+    /// pass re-reads through ``reseedIndexedVolumeIds(pipeline:)`` instead, which it awaits.
     func seedIndexedVolumeIds(pipeline: IndexingPipeline) {
-        Task.detached(priority: .utility) { [weak self] in
-            let ids = (try? pipeline.allIndexedVolumeIds()) ?? []
-            await MainActor.run { [weak self] in
-                self?.indexedVolumeIds = ids
-                #if os(iOS)
-                self?.refreshUnindexedVolumeCount()
-                #endif
+        Task { await reseedIndexedVolumeIds(pipeline: pipeline) }
+    }
+
+    // MARK: - The indexed-volume set across whole-index passes (#1526)
+
+    /// One change made to ``indexedVolumeIds`` while a re-read of the index was in flight.
+    ///
+    /// Version history:
+    ///   1.0 — #1526: initial implementation
+    private enum IndexedVolumeEdit {
+        /// A volume finished indexing.
+        case indexed(String)
+        /// A volume's index rows were deleted.
+        case unindexed(String)
+        /// The whole index was wiped.
+        case cleared
+    }
+
+    /// The edits made since the oldest re-read in flight began. Emptied when the last one lands.
+    private var indexedVolumeEdits: [IndexedVolumeEdit] = []
+    /// How many re-reads of the index are in flight.
+    private var indexedVolumeReadsInFlight = 0
+
+    /// Runs a whole-index pass, then re-reads which volumes the index holds (#1526).
+    ///
+    /// `indexAllVolumes()` reports no volume as it finishes it — only one `.complete` with an EMPTY
+    /// volume id at the very end — so the per-volume inserts in ``connectIndexingProgress(pipeline:)``
+    /// never see the volumes it indexed. Settings ▸ Rebuild Index empties the set first, so until a
+    /// relaunch every reader of the set (Add Documents, working corpora, the Browse-tab badge, the
+    /// Mac Search window's saved-search run records) saw nothing indexed. This is the only call
+    /// site of `indexAllVolumes()` in the app. `IndexedVolumeSetTests` fails on a bare call anywhere
+    /// else — but it does not scan this file or `IndexingPipeline.swift`, so a second call in
+    /// either is the reviewer's to catch; and its write scan finds only writes spelled
+    /// `appState.indexedVolumeIds`, so one inside this file, or through another name, is not seen.
+    ///
+    /// Errors are swallowed as every caller did before: a pass that fails part-way has still
+    /// indexed what it indexed, and the re-read says which.
+    func indexAllVolumes(with pipeline: IndexingPipeline) async {
+        try? await pipeline.indexAllVolumes()
+        await reseedIndexedVolumeIds(pipeline: pipeline)
+    }
+
+    /// Settings ▸ Rebuild Index: wipes the search index, rebuilds it from every downloaded volume,
+    /// and re-reads which volumes it now holds. Both hubs call this.
+    ///
+    /// - Returns: `false` when the wipe failed. Nothing is re-indexed then, because re-indexing on
+    ///   top of a partially deleted index is worse than stopping.
+    func rebuildSearchIndex(pipeline: IndexingPipeline) async -> Bool {
+        do {
+            try await pipeline.removeAllVolumesFromIndex()
+        } catch {
+            return false
+        }
+        clearIndexedVolumeIds()
+        await indexAllVolumes(with: pipeline)
+        return true
+    }
+
+    /// Re-reads ``indexedVolumeIds`` from the index and waits for it to land.
+    func reseedIndexedVolumeIds(pipeline: IndexingPipeline) async {
+        await reseedIndexedVolumeIds(reading: { try? pipeline.allIndexedVolumeIds() })
+    }
+
+    /// Replaces ``indexedVolumeIds`` with what `read` finds, keeping every change made while it
+    /// read.
+    ///
+    /// The read runs off the main actor, and a volume can finish indexing — or be removed — while
+    /// it does. Assigning its answer as it stands would drop that change: a volume indexed during
+    /// the read would read *not indexed* until a relaunch, which is #1526's defect again in a
+    /// narrower window. So every change made through ``markVolumeIndexed(_:)``,
+    /// ``markVolumeUnindexed(_:)`` or ``clearIndexedVolumeIds()`` while a read is in flight is
+    /// journalled, and replayed over the read's answer.
+    ///
+    /// - Parameter read: Returns the ids the index holds, or `nil` when it could not be read, in
+    ///   which case the set is left as it is. An empty id is never stored.
+    func reseedIndexedVolumeIds(reading read: @escaping @Sendable () async -> Set<String>?) async {
+        let firstEdit = indexedVolumeEdits.count
+        indexedVolumeReadsInFlight += 1
+        defer {
+            indexedVolumeReadsInFlight -= 1
+            if indexedVolumeReadsInFlight == 0 { indexedVolumeEdits.removeAll() }
+        }
+        let found = await Task.detached(priority: .utility) { await read() }.value
+        guard var ids = found else { return }
+        for edit in indexedVolumeEdits[firstEdit...] {
+            switch edit {
+            case .indexed(let volumeId): ids.insert(volumeId)
+            case .unindexed(let volumeId): ids.remove(volumeId)
+            case .cleared: ids.removeAll()
             }
         }
+        ids.remove("")
+        indexedVolumeIds = ids
+        #if os(iOS)
+        refreshUnindexedVolumeCount()
+        #endif
+    }
+
+    /// Records that `volumeId` finished indexing. An empty id — the end-of-pass signal of a
+    /// whole-index pass, which names no volume — is ignored.
+    func markVolumeIndexed(_ volumeId: String) {
+        guard !volumeId.isEmpty else { return }
+        indexedVolumeIds.insert(volumeId)
+        if indexedVolumeReadsInFlight > 0 { indexedVolumeEdits.append(.indexed(volumeId)) }
+    }
+
+    /// Records that `volumeId`'s index rows were deleted.
+    func markVolumeUnindexed(_ volumeId: String) {
+        indexedVolumeIds.remove(volumeId)
+        if indexedVolumeReadsInFlight > 0 { indexedVolumeEdits.append(.unindexed(volumeId)) }
+    }
+
+    /// Records that the whole index was wiped.
+    func clearIndexedVolumeIds() {
+        indexedVolumeIds = []
+        if indexedVolumeReadsInFlight > 0 { indexedVolumeEdits.append(.cleared) }
     }
 
     /// Subscribes to `pipeline.progressStream` and `pipeline.metadataStream`, forwarding
@@ -2297,7 +2427,10 @@ final class AppState {
                     self.completedIndexingMetadata = self.lastDiscoveredMetadata
                     self.currentIndexingProgress = nil
                     self.interruptedVolumeIds.remove(update.volumeId)
-                    self.indexedVolumeIds.insert(update.volumeId)
+                    // A whole-index pass ends with a `.complete` naming no volume; that is not an
+                    // id to store (#1526). Its volumes reach the set through the re-read the pass
+                    // runs after it (`indexAllVolumes(with:)`).
+                    self.markVolumeIndexed(update.volumeId)
                     #if os(iOS)
                     // The Browse-tab badge counts downloaded-but-unindexed volumes, and one
                     // just left that set.

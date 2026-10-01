@@ -732,3 +732,129 @@ struct RealTEIPageRefResolutionTests {
         }
     }
 }
+
+// MARK: - Page citations against real TEI (index v63: #1509, #1510, #1511)
+
+/// The cases #1509, #1510 and #1511 name, indexed from the published volumes by the real pipeline.
+/// Skipped without `FRUS_TEI_MIRROR` (see `RealTEICorpus`); each figure is the corpus's at
+/// `550a8c5c5`, whose `volumes/` are unchanged through `8e5da08c1`.
+@Suite("IndexingPipeline — real-TEI page citations (index v63: #1509, #1510, #1511)",
+       .enabled(if: RealTEICorpus.hasVolumes(["frus1888p1", "frus1883", "frus1871", "frus1919Parisv13"]),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEIPageCitationsV63Tests {
+
+    /// The `target_document_id` of every cross-reference `documentId` of `volumeId` makes, in order.
+    private func targets(from documentId: String, in volumeId: String, dbURL: URL) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "RealTEIPageCitationsV63Tests", code: 1)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        let sql = """
+            SELECT target_document_id FROM cross_references
+            WHERE source_volume_id = ? AND source_document_id = ? ORDER BY rowid
+            """
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "RealTEIPageCitationsV63Tests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        sqlite3_bind_text(stmt, 1, volumeId, -1, transient)
+        sqlite3_bind_text(stmt, 2, documentId, -1, transient)
+        var found: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            found.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return found
+    }
+
+    @Test("frus1888p1 d230's \"printed as Doc. No. 497 post, page 683\" is stored against d497, not d496, which also begins on 683 (#1509)")
+    func docNo497() async throws {
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            try await pipeline.indexVolume("frus1888p1")
+            let found = try targets(from: "d230", in: "frus1888p1", dbURL: dbURL)
+            #expect(found.contains("d497"), "\(found)")
+            #expect(!found.contains("d496"), "\(found)")
+            let pages = try PageRangeStore(databaseURL: dbURL)
+            #expect(try await pages.documents(forPage: 683, inVolume: "frus1888p1")?.documents.map(\.documentId)
+                    == ["d496", "d497"])
+        }
+    }
+
+    @Test("frus1883 d346's \"No. 56, March 5, 1883, page 552\" is stored against d332 (March 5), not d331 (February 26) (#1509)")
+    func march5() async throws {
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            try await pipeline.indexVolume("frus1883")
+            let found = try targets(from: "d346", in: "frus1883", dbURL: dbURL)
+            #expect(found.contains("d332"), "\(found)")
+            #expect(!found.contains("d331"), "\(found)")
+        }
+    }
+
+    @Test("frus1871's President's message, numbered pg-seq1_20 on, names no page of the volume: p. 20 names nothing and p. 25 d10 alone (#1511)")
+    func frus1871SecondPagination() async throws {
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            try await pipeline.indexVolume("frus1871")
+            let pages = try PageRangeStore(databaseURL: dbURL)
+            #expect(try await pages.documents(forPage: 19, inVolume: "frus1871") == nil)
+            #expect(try await pages.documents(forPage: 20, inVolume: "frus1871") == nil)
+            #expect(try await pages.documents(forPage: 25, inVolume: "frus1871")?.documents.map(\.documentId) == ["d10"])
+        }
+    }
+
+    @Test("frus1919Parisv13's heading-only containers are not indexed, pp. 57, 69 and 135 name the sections a container's break went to, and no page names several sections (#1510)")
+    func parisv13Containers() async throws {
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            try await pipeline.indexVolume("frus1919Parisv13")
+            let pages = try PageRangeStore(databaseURL: dbURL)
+            func answer(_ page: Int) async throws -> [String] {
+                try await pages.documents(forPage: page, inVolume: "frus1919Parisv13")?.documents.map(\.documentId) ?? []
+            }
+            // comp3 holds only its heading and its breaks: 57 goes to the Preamble, which begins after it.
+            let p57 = try await answer(57)
+            #expect(p57 == ["ch9"], "p. 57: \(p57)")
+            // 69, comp3's too, goes two levels down: ch10 (Part I) prints only its heading and is left
+            // out as well, so its first section takes it (review round 2: the `partOne` fixture's doc
+            // named this test for it before it looked).
+            let p69 = try await answer(69)
+            #expect(p69 == ["ch10subch1"], "p. 69: \(p69)")
+            // ch12 (Part III) has text of its own, ending on 134; the 135 it prints after that text,
+            // before its first section, goes to that section (review round 2's manual counterexample).
+            let p135 = try await answer(135)
+            #expect(p135 == ["ch12subch1"], "p. 135: \(p135)")
+            var several: [Int] = []
+            var answered = 0
+            for page in 1...960 {
+                guard let claimants = try await pages.documents(forPage: page, inVolume: "frus1919Parisv13") else { continue }
+                answered += 1
+                if claimants.documents.count > 1 { several.append(page) }
+            }
+            // 942 pages are answered under v62 and v63 alike; 740 of them named several under v62.
+            #expect(answered > 900, "the volume's pages must be answered at all: \(answered)")
+            #expect(several.isEmpty, "\(several.count) pages name several: \(several.prefix(10))")
+            var db: OpaquePointer?
+            guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let handle = db else {
+                sqlite3_close(db)
+                throw NSError(domain: "RealTEIPageCitationsV63Tests", code: 3)
+            }
+            defer { sqlite3_close_v2(handle) }
+            var stmt: OpaquePointer?
+            #expect(sqlite3_prepare_v2(handle, "SELECT document_id FROM document_cache WHERE volume_id = 'frus1919Parisv13'",
+                                       -1, &stmt, nil) == SQLITE_OK)
+            defer { sqlite3_finalize(stmt) }
+            var ids: Set<String> = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                ids.insert(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+            }
+            #expect(ids.count == 153, "\(ids.count) indexed")
+            #expect(ids.isDisjoint(with: ["comp1", "comp3", "comp4", "comp5", "ch10"]))
+            #expect(ids.isSuperset(of: ["ch9", "ch12", "ch10subch1", "d1", "d2"]))
+        }
+    }
+}
