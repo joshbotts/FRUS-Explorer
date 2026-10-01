@@ -1281,6 +1281,25 @@ struct TripPacketExporterTests {
         #expect(document.numberOfPages >= 1)
     }
 
+    /// A long project name made a file name the file system refuses, so `render` returned `nil` and the sheet's Share
+    /// PDF control disappeared with no error (lane EXPORT review round 1, #1498's class). Each title is long enough that
+    /// the uncut name fails the write: by bytes and units alike, and — `ǖ` — by decomposed units alone.
+    @Test("A project name too long for a file name still renders a PDF, its name cut on a character")
+    func overlongTitleStillRenders() throws {
+        let text = exporter().export()
+        for title in [String(repeating: "Berlin Airlift ", count: 20), String(repeating: "\u{01D6}", count: 120)] {
+            let url = try #require(TripPacketPDFRenderer.render(packet: text, title: title),
+                                   "no PDF for a \(title.count)-character title")
+            defer { try? FileManager.default.removeItem(at: url) }
+            let name = url.lastPathComponent
+            #expect(ExportFileName.length(of: name) <= ExportFileName.maxLength, "a name of length \(name.count)")
+            #expect(name.hasPrefix("Archives Visit — ") && name.hasSuffix(".pdf"), "\(name.prefix(30))…")
+            let stem = String(name.dropFirst("Archives Visit — ".count).dropLast(".pdf".count))
+            #expect(!stem.isEmpty && title.hasPrefix(stem), "the title's own opening was not kept: \(stem.prefix(30))")
+            #expect(CGPDFDocument(url as CFURL) != nil, "the produced file is not a PDF")
+        }
+    }
+
     /// A packet a researcher emails to archivists should not say "1 claimants". Found by
     /// reading the output.
     @Test("Counted sentences agree in number")

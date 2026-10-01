@@ -306,20 +306,20 @@ Format, one entry per change:
 
 - **Manual / section:** Mac §12.3 Composing: Headings, Prose, Excerpts, and Apparatus (the **Section headings** bullet)
 - **Current:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
-- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
+- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every PDF, HTML and Word export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
 - **Why:** #1465, decision D4: an export resolves with `dropsUntitledHeadings` (`FRUSExplorer/Collections/CollectionContentResolver.swift:452`), whose levels come from `CollectionOutline.exportLevels` (`FRUSExplorer/Collections/CollectionOutline.swift:155`) while the section cascades still run over the whole outline; the preview prints the heading through `headingText` (`FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift:257`). Before, every format printed an empty heading, and the preview's Contents a row of "1." and nothing.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §12.3 Section Headings and Prose (the **Section headings** bullet)
 - **Current:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
-- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
+- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every PDF, HTML and Word export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
 - **Why:** as for the Mac (#1465; the same resolver and renderer serve both platforms).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §12.9 Export (the **Send to Zotero Library** bullet)
 - **Current:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected library over the Web API, with tags and research notes; with no account it falls back to an RIS file for desktop import.
 - **Proposed:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected library over the Web API — into a new Zotero collection named after it, or, for a collection with no name, *FRUS Explorer Collection -* and the day you send it (*FRUS Explorer Collection - 2026-10-01*) — with tags and research notes; with no account it falls back to an RIS file for desktop import.
-- **Why:** #1497, decision D16: the send names its Zotero collection through `CollectionExportNaming.zoteroCollectionName` (`FRUSExplorer/Collections/CollectionExportSheet.swift:749`, `FRUSExplorer/Collections/CollectionExporter.swift:1525`), trimmed; an unnamed collection's items used to land loose in the library, in no Zotero collection.
+- **Why:** #1497, decision D16: the send names its Zotero collection through `CollectionExportNaming.zoteroCollectionName` (`FRUSExplorer/Collections/CollectionExportSheet.swift:749`, `FRUSExplorer/Collections/CollectionExporter.swift:1539`), trimmed; an unnamed collection's items used to land loose in the library, in no Zotero collection.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §12.10 Export (the **Send to Zotero Library** bullet)
@@ -331,7 +331,7 @@ Format, one entry per change:
 - **Manual / section:** Mac §12.9 Export (the paragraph after the bullets)
 - **Current:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export.
 - **Proposed:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export. A name too long for a file name is shortened, at a whole character, in the file's name only; the export's title keeps it whole.
-- **Why:** #1498: `CollectionExportNaming.fileName` cuts the stem through `ExportFileName.fitting` (`FRUSExplorer/Collections/CollectionExporter.swift:1501`, `:1576`) so name and suffix fit within 240 bytes; a name past the file system's 255 failed every format's write with "Could not write export file".
+- **Why:** #1498: `CollectionExportNaming.fileName` cuts the stem through `ExportFileName.fitting` (`FRUSExplorer/Collections/CollectionExporter.swift:1515`, `:1611`) so name and suffix fit within 240 UTF-8 bytes of the name's decomposed form, which bounds the UTF-16 units of that form the file system counts; uncut, a name past the file system's 255 units failed every format's write with "Could not write export file".
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §12.10 Export (the paragraph after the bullets)
@@ -343,13 +343,13 @@ Format, one entry per change:
 - **Manual / section:** Mac §12.9 Export (the **Importing** bullet)
 - **Current:** **Importing.** **Import Collection…** in the window, or just **double-click a `.fruscollection` file** (or receive one by AirDrop) — the window opens with the import selected. Double-clicking a byte-identical file again during the same app session re-opens the collection it created; after a relaunch, opening the file imports a fresh copy.
 - **Proposed:** **Importing.** **Import Collection…** in the window, or just **double-click a `.fruscollection` file** (or receive one by AirDrop) — the window opens with the import selected. Research notes the file carries become notes of yours on those documents, searchable straight away. Double-clicking a byte-identical file again during the same app session re-opens the collection it created; after a relaunch, opening the file imports a fresh copy.
-- **Why:** the 2026-09-28 audit (from #1280's log): both import paths now index the notes an import brings (`NativeCollectionSerializer.indexImportedNotes`, `FRUSExplorer/Collections/NativeCollectionFormat.swift:774`, called at `FRUSExplorer/Collections/MacCollectionManagerView.swift:386` and `FRUSExplorer/Collections/CollectionListView.swift:254`); before, they became searchable only at the next launch.
+- **Why:** the 2026-09-28 audit (from #1280's log): all three import paths now index the notes an import brings (`NativeCollectionSerializer.indexImportedNotes`, `FRUSExplorer/Collections/NativeCollectionFormat.swift:776`, called by Import Collection… at `FRUSExplorer/Collections/MacCollectionManagerView.swift:386` and `FRUSExplorer/Collections/CollectionListView.swift:254`, and for a double-clicked or AirDropped file at `FRUSExplorer/App/FRUSExplorerApp.swift:2081`); before, they became searchable only at the next launch.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §12.10 Export (the **Importing** bullet)
 - **Current:** **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
 - **Proposed:** **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Research notes the file carries become notes of yours on those documents, searchable straight away. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
-- **Why:** as for the Mac (`CollectionListView.swift:254`).
+- **Why:** as for the Mac — Import Collection… at `CollectionListView.swift:254`, and a file opened from Files, Mail or AirDrop at `FRUSExplorerApp.swift:2081`.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §15.8 Exporting a Chart for Publication (the **What.** bullet)
@@ -378,13 +378,13 @@ Format, one entry per change:
 
 - **Manual / section:** Mac §17.5 Data & Recovery (the **Export Query Log as a Method Appendix** paragraph)
 - **Current:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned.
-- **Proposed:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned. Both, and the query log a collection appends, close on what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
+- **Proposed:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned. Both, and the query log a collection appends, say what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
 - **Why:** PV-1's appendix half (the 2026-09-28 audit): only the CSV carried the sources block; `QueryMethodAppendix.sourceLines` (`FRUSExplorer/Export/QueryMethodAppendix.swift:484`) now feeds the Markdown and the plain-text lines a collection export embeds too.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §17.6 Data & Recovery (the **Export Query Log as a Method Appendix** paragraph)
 - **Current:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned.
-- **Proposed:** As for the Mac, append: Both, and the query log a collection appends, close on what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
+- **Proposed:** As for the Mac, append: Both, and the query log a collection appends, say what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
 - **Why:** as for the Mac (`QueryMethodAppendix.swift:484`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 

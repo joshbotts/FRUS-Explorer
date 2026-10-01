@@ -929,10 +929,12 @@ extension Collection {
 /// follow (`FrontMatterModelSync`) — and `CollectionDetailPane`'s own name follow.
 /// Every row that lists a collection by name prints through `listName` (#1464): `CollectionPickerSheet`'s rows, the
 /// Research rail's Collections section, the Collections list, the Mac window's picker label, Project Home's
-/// Collections section and its Manage sheet, the Research sidebar, its list rows and its list title, and the
-/// document change review. So do the word cloud's collection scope (`WordCloudScopeResolver`) and every export's
-/// title (`CollectionExportNaming.title`, #1463). The picker's search matches through `listNameMatches`, and the rail
-/// sorts by `listName`. `CollectionListNameTests` reads each row.
+/// Collections section and its Manage sheet, the Research sidebar, its list rows and its list title, the document
+/// change review, the word cloud's Collection scope and Compare menus, and the unpresented `GlobalContextView`'s rows.
+/// So do the word cloud's collection scope heading (`WordCloudScopeResolver`), the Archives Visit picker's "from the
+/// collection" line, and every export's title (`CollectionExportNaming.title`, #1463). The picker's search matches
+/// through `listNameMatches`, and every list of them that sorts by name sorts by what its rows print —
+/// `sortedByListName`, or `listOrder` where a list breaks ties its own way. `CollectionListNameTests` reads each site.
 ///
 /// It lives beside the model it names rather than in a view file, because the exporters' model layer reads `listName`
 /// and should not reach into a SwiftUI view for it.
@@ -946,6 +948,8 @@ extension Collection {
 ///          no longer reaches into a SwiftUI view file for its title
 ///   1.5 — #1464: eight more rows print through `listName`; `listNameMatches` for the picker's search; and
 ///          `untitledSection`, the name the inspector and the preview give a Section heading with no text (#1465)
+///   1.6 — #1464 review, round 1: the word cloud's two menus, `GlobalContextView` and the Archives Visit line print
+///          through `listName` too; `listOrder` and `sortedByListName`, so the lists that print `listName` sort by it
 enum CollectionEditorNaming {
 
     /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
@@ -972,6 +976,24 @@ enum CollectionEditorNaming {
     /// Printed bare, it was a blank row reading "0 documents" (#1359 review, round 2).
     static func listName(savedName: String) -> String {
         navigationTitle(savedName: savedName, isNewCollection: false)
+    }
+
+    /// How collections saved under `lhs` and `rhs` order in a list: by the names their rows print, `listName`, ignoring
+    /// case. `.orderedSame` for two that print the same, which each caller breaks its own way.
+    ///
+    /// The lists that print `listName` sorted on the raw name, so an unnamed collection — saved as "" — sorted first
+    /// while it read "Untitled Collection", and a padded name sorted by its leading space (#1464 review, round 1).
+    static func listOrder(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        listName(savedName: lhs).localizedCaseInsensitiveCompare(listName(savedName: rhs))
+    }
+
+    /// `collections` in the order a list of them reads: by `listOrder`, then by id, so two collections that print the
+    /// same name keep one order from render to render.
+    static func sortedByListName(_ collections: [Collection]) -> [Collection] {
+        collections.sorted {
+            let order = listOrder($0.name, $1.name)
+            return order != .orderedSame ? order == .orderedAscending : $0.id.uuidString < $1.id.uuidString
+        }
     }
 
     /// Whether a search for `searchText` finds a collection saved under `savedName`: the name its row prints,

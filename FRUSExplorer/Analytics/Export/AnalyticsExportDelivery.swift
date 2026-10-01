@@ -121,7 +121,7 @@ enum AnalyticsExportDelivery {
     /// of the same chart are distinguishable in a download folder.
     ///
     /// The title's part is cut, on a whole character, so the prefix, the date and an extension of up
-    /// to 8 bytes fit the file system (`ExportFileName`; every caller appends 4, `.csv`, `.png` or
+    /// to 8 characters fit the file system (`ExportFileName`; every caller appends 4, `.csv`, `.png` or
     /// `.pdf`). Uncut, a word cloud of the manifest's longest volume title (`frus1865p4`) made a
     /// 515-byte PNG name, and the iOS share sheet's write failed (the 2026-09-28 audit, beside #1498).
     ///
@@ -143,7 +143,8 @@ enum AnalyticsExportDelivery {
         // The prefix, the date, the two hyphens joining them, and the extension a caller appends.
         let extensionAllowance = 8
         let fitted = ExportFileName.fitting(
-            stem, reserving: prefix.utf8.count + stamp.utf8.count + 2 + extensionAllowance)
+            stem, reserving: ExportFileName.length(of: prefix) + ExportFileName.length(of: stamp) + 2
+                + extensionAllowance)
         if fitted.count < stem.count {
             stem = fitted
             while stem.hasSuffix("-") { stem.removeLast() }

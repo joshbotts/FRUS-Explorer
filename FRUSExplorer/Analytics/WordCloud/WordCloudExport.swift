@@ -120,7 +120,7 @@ enum WordCloudExporter {
 
     /// Default colour palette for exported clouds — system colours, which take their light values
     /// because `WordCloudImageContent` pins its colour scheme to light (it did not until the
-    /// 2026-09-28 audit, so on a device in dark appearance the words took their dark tints).
+    /// 2026-09-28 audit, so a dark environment would give the words their dark tints).
     static let palette: [Color] = [
         .blue, .teal, .indigo, .purple, .pink, .orange, .green, .red, .cyan, .mint
     ]
@@ -203,7 +203,8 @@ enum WordCloudExporter {
 }
 
 /// Non-interactive word-cloud artwork used as the source for image exports — the analytics plate and the cloud a
-/// collection's PDF and Word exports embed.
+/// collection's exports embed (`WordCloudExporter.collectionCloudImage`): PDF and HTML, which the export sheet asks
+/// for it, and Word, whose exporter draws it when asked.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
@@ -275,9 +276,10 @@ struct WordCloudImageContent: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        // The plate is detached content and resolves the renderer's default appearance, which follows the device. Its
-        // canvas and band are fixed light colours, so pin light — as `AnalyticsFigureCanvas` does — or the system
-        // colours of `WordCloudExporter.palette` and every semantic style here take their dark-mode values.
+        // The plate is detached content, and nothing set its appearance: in a dark environment the system colours of
+        // `WordCloudExporter.palette` and every semantic style here take their dark-mode values on the plate's fixed
+        // light canvas and band. Whether the renderer's default environment follows the device was not measured; pin
+        // light — as `AnalyticsFigureCanvas` does — so it does not matter (`WordCloudPlateAppearanceTests`).
         .environment(\.colorScheme, .light)
     }
 

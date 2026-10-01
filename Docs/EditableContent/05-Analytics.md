@@ -1298,7 +1298,7 @@ Counted as printed: this device isn’t reducing words to their dictionary forms
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2240–2241 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2239–2240 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 
@@ -1454,14 +1454,14 @@ Up and down is the volume’s coverage midpoint, not each document’s own date.
 
 
 #### Research-rail tile
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1066–1066 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1063–1063 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
 
 On the Map
 
 <!-- END SOURCE: researchRail.tile.semanticMap -->
 
 #### Research-rail tile help
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1067–1068 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1064–1065 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
 
 Show where this document sits on the semantic map, among the documents whose language is most like it
 

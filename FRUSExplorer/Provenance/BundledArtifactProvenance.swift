@@ -223,7 +223,7 @@ enum BundledArtifactProvenance {
     /// central-files, so they inherit the exclusion.
     ///
     /// The consequence was a false sentence in every collection export containing an
-    /// archival-sources block — see `CollectionColophon.sourceLines(for:)`. The property is gone
+    /// archival-sources block — see `CollectionColophon.sourceLines(for:embedsWordCloud:)`. The property is gone
     /// rather than emptied: an always-empty set invites a caller to reinstate the same claim.
     ///
     /// Curated outcomes are real and they are rendered — by `SourceExplorerView.curatedLotSection`

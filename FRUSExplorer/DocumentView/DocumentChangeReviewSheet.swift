@@ -407,8 +407,9 @@ struct DocumentChangeReviewSheet: View {
                 // "Notes" and "notes" are unequal strings that compare `.orderedSame`, so the
                 // obvious form returns false for both orderings and leaves them unordered against
                 // each other — and `sorted` is not stable, so the rows could swap between renders.
-                let order = ($0.collection?.name ?? "")
-                    .localizedCaseInsensitiveCompare($1.collection?.name ?? "")
+                // By the name each row prints (#1464 review, round 1), not the raw one.
+                let order = CollectionEditorNaming.listOrder($0.collection?.name ?? "",
+                                                             $1.collection?.name ?? "")
                 if order != .orderedSame { return order == .orderedAscending }
                 if $0.sortOrder != $1.sortOrder { return $0.sortOrder < $1.sortOrder }
                 return $0.id.uuidString < $1.id.uuidString

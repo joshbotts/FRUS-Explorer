@@ -150,21 +150,21 @@ Changed by an update
 <!-- END SOURCE: research.sidebar.updated -->
 
 #### Row line — text changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1673–1674 | key: research.row.changed.body -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1675–1676 | key: research.row.changed.body -->
 
 Text changed in an update — highlight positions may have moved
 
 <!-- END SOURCE: research.row.changed.body -->
 
 #### Row line — apparatus changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1676–1677 | key: research.row.changed.apparatus -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1678–1679 | key: research.row.changed.apparatus -->
 
 Footnotes, source note, or heading changed in an update — the text did not
 
 <!-- END SOURCE: research.row.changed.apparatus -->
 
 #### Row line — gone
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1663–1663 | key: research.row.changed.vanished -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1665–1665 | key: research.row.changed.vanished -->
 
 No longer in the volume
 
@@ -184,7 +184,7 @@ Review…
 <!-- END SOURCE: document.changed.review -->
 
 #### Research row action
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1156–1156 | key: research.action.reviewChanges -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1157–1157 | key: research.action.reviewChanges -->
 
 Review Changes…
 
@@ -275,140 +275,140 @@ Remove…
 <!-- END SOURCE: document.review.highlight.remove -->
 
 #### Highlight standing — orphaned
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1041–1042 | key: document.review.highlight.orphaned | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1042–1043 | key: document.review.highlight.orphaned | shared: iOS+macOS (single edit point) -->
 
 The document it was made on is no longer in the volume.
 
 <!-- END SOURCE: document.review.highlight.orphaned -->
 
 #### Highlight standing — aligned
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1046–1047 | key: document.review.highlight.aligned | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1047–1048 | key: document.review.highlight.aligned | shared: iOS+macOS (single edit point) -->
 
 Matches the current text.
 
 <!-- END SOURCE: document.review.highlight.aligned -->
 
 #### Highlight standing — stale
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1049–1050 | key: document.review.highlight.stale | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1050–1051 | key: document.review.highlight.stale | shared: iOS+macOS (single edit point) -->
 
 Made against an earlier version of the text — its position may have moved.
 
 <!-- END SOURCE: document.review.highlight.stale -->
 
 #### Highlight standing — stale, no passage
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1052–1053 | key: document.review.highlight.stale.noPassage | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1053–1054 | key: document.review.highlight.stale.noPassage | shared: iOS+macOS (single edit point) -->
 
 Made against an earlier version of the text, and the words it covered were not stored — it can only be checked by eye.
 
 <!-- END SOURCE: document.review.highlight.stale.noPassage -->
 
 #### Highlight standing — unverifiable
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1055–1056 | key: document.review.highlight.unverifiable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1056–1057 | key: document.review.highlight.unverifiable | shared: iOS+macOS (single edit point) -->
 
 This device has no record to compare it against.
 
 <!-- END SOURCE: document.review.highlight.unverifiable -->
 
 #### Other Annotations — header
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 580–580 | key: document.review.other.header | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 581–581 | key: document.review.other.header | shared: iOS+macOS (single edit point) -->
 
 Other Annotations
 
 <!-- END SOURCE: document.review.other.header -->
 
 #### Other Annotations — none
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 524–524 | key: document.review.other.none | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 525–525 | key: document.review.other.none | shared: iOS+macOS (single edit point) -->
 
 No other annotations on this document.
 
 <!-- END SOURCE: document.review.other.none -->
 
 #### Other Annotations — notes
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 511–512 | key: document.review.other.notes %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 512–513 | key: document.review.other.notes %lld | shared: iOS+macOS (single edit point) -->
 
 %lld notes
 
 <!-- END SOURCE: document.review.other.notes %lld -->
 
 #### Other Annotations — tags
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 513–514 | key: document.review.other.tags %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 514–515 | key: document.review.other.tags %lld | shared: iOS+macOS (single edit point) -->
 
 %lld tags
 
 <!-- END SOURCE: document.review.other.tags %lld -->
 
 #### Other Annotations — collections
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 515–516 | key: document.review.other.collections %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 516–517 | key: document.review.other.collections %lld | shared: iOS+macOS (single edit point) -->
 
 in %lld collections
 
 <!-- END SOURCE: document.review.other.collections %lld -->
 
 #### Other Annotations — summaries
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 517–518 | key: document.review.other.summaries %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 518–519 | key: document.review.other.summaries %lld | shared: iOS+macOS (single edit point) -->
 
 %lld summaries
 
 <!-- END SOURCE: document.review.other.summaries %lld -->
 
 #### Other Annotations — visit plan
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 519–520 | key: document.review.other.visit | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 520–521 | key: document.review.other.visit | shared: iOS+macOS (single edit point) -->
 
 in an archive-visit plan
 
 <!-- END SOURCE: document.review.other.visit -->
 
 #### Other Annotations — footer
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 588–589 | key: document.review.other.footer.v3 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 589–590 | key: document.review.other.footer.v3 | shared: iOS+macOS (single edit point) -->
 
 These carry no position in the text, so the app cannot judge them against the change — it can take you to them, and it can summarize the document again. Review them by eye; a summary describes the text as it was when it was written, and the app cannot tell you which of these predate the correction.
 
 <!-- END SOURCE: document.review.other.footer.v3 -->
 
 #### Other Annotations — footer when no summary can be made
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 591–592 | key: document.review.other.footer.noSummarizer.v3 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 592–593 | key: document.review.other.footer.noSummarizer.v3 | shared: iOS+macOS (single edit point) -->
 
 These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written, and the app cannot tell you which of these predate the correction.
 
 <!-- END SOURCE: document.review.other.footer.noSummarizer.v3 -->
 
 #### Other Annotations — make another summary
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 663–664 | key: document.review.other.summarizeAgain | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 664–665 | key: document.review.other.summarizeAgain | shared: iOS+macOS (single edit point) -->
 
 Summarize Again
 
 <!-- END SOURCE: document.review.other.summarizeAgain -->
 
 #### Other Annotations — Summarize Again will substitute a prompt
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 652–653 | key: document.review.summarizeAgain.fallback %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 653–654 | key: document.review.summarizeAgain.fallback %@ | shared: iOS+macOS (single edit point) -->
 
 Summarize Again will use “%@” — the prompt that made the newest summary is no longer on this device.
 
 <!-- END SOURCE: document.review.summarizeAgain.fallback %@ -->
 
 #### Other Annotations — a new summary was added
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 748–749 | key: document.review.other.summarizeAgain.done | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 749–750 | key: document.review.other.summarizeAgain.done | shared: iOS+macOS (single edit point) -->
 
 A new summary was added. The earlier ones are kept — step through them in the document’s Summary panel.
 
 <!-- END SOURCE: document.review.other.summarizeAgain.done -->
 
 #### Other Annotations — Edit Tags
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 554–555 | key: document.review.other.editTags | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 555–556 | key: document.review.other.editTags | shared: iOS+macOS (single edit point) -->
 
 Edit Tags…
 
 <!-- END SOURCE: document.review.other.editTags -->
 
 #### Other Annotations — a note with nothing written in it yet
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 871–871 | key: document.review.other.note.untitled | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 872–872 | key: document.review.other.note.untitled | shared: iOS+macOS (single edit point) -->
 
 Open note
 
 <!-- END SOURCE: document.review.other.note.untitled -->
 
 #### Other Annotations — open an archive-visit plan
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 569–570 | key: document.review.other.openPlan %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 570–571 | key: document.review.other.openPlan %@ | shared: iOS+macOS (single edit point) -->
 
 Open the plan “%@”
 
@@ -445,84 +445,84 @@ Document tools
 <!-- END SOURCE: researchRail.tools.info.heading -->
 
 #### Cite — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1073–1073 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1070–1070 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
 
 Cite
 
 <!-- END SOURCE: researchRail.tile.cite -->
 
 #### Cite — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1074–1075 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1071–1072 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
 
 Cite this document — copy a formatted citation or export BibTeX/RIS
 
 <!-- END SOURCE: researchRail.tile.cite.help -->
 
 #### Word Cloud — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1080–1080 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1077–1077 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
 
 Word Cloud
 
 <!-- END SOURCE: researchRail.tile.wordCloud -->
 
 #### Word Cloud — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1081–1082 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1078–1079 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
 
 Show a word cloud of this document’s most frequent terms
 
 <!-- END SOURCE: researchRail.tile.wordCloud.help -->
 
 #### Sources — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1087–1087 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1084–1084 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
 
 Sources
 
 <!-- END SOURCE: researchRail.tile.sources -->
 
 #### Sources — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1088–1089 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1085–1086 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
 
 Resolve this document’s source note in the NARA Catalog or RG-59 records
 
 <!-- END SOURCE: researchRail.tile.sources.help -->
 
 #### Graph — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1094–1094 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1091–1091 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
 
 Graph
 
 <!-- END SOURCE: researchRail.tile.graph -->
 
 #### Graph — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1095–1096 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1092–1093 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
 
 Show this document’s cross-reference graph
 
 <!-- END SOURCE: researchRail.tile.graph.help -->
 
 #### Related — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1101–1101 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1098–1098 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
 
 Related
 
 <!-- END SOURCE: researchRail.tile.related -->
 
 #### Related — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1102–1103 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1099–1100 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
 
 Find related documents by archival provenance, cross-references, date, and shared people
 
 <!-- END SOURCE: researchRail.tile.related.help -->
 
 #### Share — the tile's caption
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1108–1108 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1105–1105 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
 
 Share
 
 <!-- END SOURCE: researchRail.tile.share -->
 
 #### Share — what the tile does
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1109–1110 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1106–1107 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
 
 Share or export this document
 
@@ -551,28 +551,28 @@ mistag the app went on quoting the old reading — and the Undo beside it put th
 into the index. Both now read FRUS's parse as it stands.
 
 #### When FRUS adopts the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1191–1192 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1188–1189 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
 
 FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS’s classification.
 
 <!-- END SOURCE: panel.classification.overrideNowRedundant -->
 
 #### FRUS's own tagging, beside the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1194–1195 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1191–1192 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
 
 FRUS tags this as %@ — reclassified by you.
 
 <!-- END SOURCE: panel.classification.overridden %@ -->
 
 #### The inline noun for an editorial note
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1197–1198 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1194–1195 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
 
 an editorial note
 
 <!-- END SOURCE: panel.classification.note.inline -->
 
 #### The inline noun for a document
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1199–1200 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1196–1197 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
 
 a document
 
@@ -594,42 +594,42 @@ Move Here
 <!-- END SOURCE: document.review.highlight.move -->
 
 #### Found, unmoved
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1015–1016 | key: document.review.search.here | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1016–1017 | key: document.review.search.here | shared: iOS+macOS (single edit point) -->
 
 Found once, still in this position.
 
 <!-- END SOURCE: document.review.search.here -->
 
 #### Found at a new position
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1018–1019 | key: document.review.search.moved | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1019–1020 | key: document.review.search.moved | shared: iOS+macOS (single edit point) -->
 
 Found once, at a new position in the corrected text.
 
 <!-- END SOURCE: document.review.search.moved -->
 
 #### Found far away
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1021–1022 | key: document.review.search.far | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1022–1023 | key: document.review.search.far | shared: iOS+macOS (single edit point) -->
 
 Found once, but far from where it was. This can mean the document was renumbered and this one is not the same document — check it before moving anything by hand.
 
 <!-- END SOURCE: document.review.search.far -->
 
 #### Not found
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1024–1025 | key: document.review.search.notFound | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1025–1026 | key: document.review.search.notFound | shared: iOS+macOS (single edit point) -->
 
 Not found in the current text. The passage may have been edited, or this document may have been renumbered.
 
 <!-- END SOURCE: document.review.search.notFound -->
 
 #### Found more than once
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1027–1028 | key: document.review.search.ambiguous %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1028–1029 | key: document.review.search.ambiguous %lld | shared: iOS+macOS (single edit point) -->
 
 Found %lld times, so the app cannot tell which one is yours.
 
 <!-- END SOURCE: document.review.search.ambiguous %lld -->
 
 #### Too short to search
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1031–1032 | key: document.review.search.tooShort.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 1032–1033 | key: document.review.search.tooShort.v2 | shared: iOS+macOS (single edit point) -->
 
 Too short to look for: a passage this brief can repeat, so finding it once would not prove anything.
 
@@ -730,21 +730,21 @@ all, because a footnote selection reports text without offsets, and it is perfec
 its sentence has to say how it was taken, never that something moved.
 
 #### Quotations — header
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 426–426 | key: document.review.excerpts.header | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 427–427 | key: document.review.excerpts.header | shared: iOS+macOS (single edit point) -->
 
 Quotations
 
 <!-- END SOURCE: document.review.excerpts.header -->
 
 #### Quotations — footer
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 428–429 | key: document.review.excerpts.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 429–430 | key: document.review.excerpts.footer | shared: iOS+macOS (single edit point) -->
 
 A quotation is a copy, so a correction cannot change what it prints — what it can change is whether those words are still in the record it cites. This is the same check that runs when a collection is exported, and it reads the whole document, footnotes included. So a quotation can be affected by a correction described above as touching only the notes, and a quotation can fail this check for reasons older than any correction. Nothing here edits or removes a quotation: it belongs to its collection, and the collection editor is where you change it.
 
 <!-- END SOURCE: document.review.excerpts.footer -->
 
 #### Quotation — checking
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 460–461 | key: document.review.excerpt.checking | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 461–462 | key: document.review.excerpt.checking | shared: iOS+macOS (single edit point) -->
 
 Checking this quotation against the current text…
 
@@ -1504,7 +1504,7 @@ corpus). Softening the "cannot see this change" sentence would turn a disclosed 
 silent inconsistency.*
 
 #### The override confirmation warning
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1229–1230 | key: classification.override.warning.v2 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1226–1227 | key: classification.override.warning.v2 -->
 
 The document’s body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS’s own classification at any time from here or from Settings ▸ Search.
 
@@ -1658,7 +1658,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3036–3037 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3048–3049 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2183,7 +2183,7 @@ No activity in this project yet. Read documents, take notes, or build a collecti
 <!-- END SOURCE: project.home.recent.empty -->
 
 #### Footer — A collection can belong to more than one project. Attaching…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1352–1353 | key: project.collections.manage.footer -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1355–1356 | key: project.collections.manage.footer -->
 
 A collection can belong to more than one project. Attaching it here doesn’t remove it from any others.
 
@@ -2197,7 +2197,7 @@ A collection can belong to more than one project. Attaching it here doesn’t re
      this one key through `CollectionEditorNaming.listName`, trimmed. The two Project Home keys
      (`project.home.collections.untitled`, `project.collections.manage.untitled`) are gone, so their
      two blocks are this one, the one place the wording lives. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 963–963 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 967–967 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Untitled Collection
@@ -2205,14 +2205,14 @@ Untitled Collection
 <!-- END SOURCE: collection.untitled.name -->
 
 #### Empty state — Tag documents while you research, then choose which tags…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1501–1502 | key: project.focusTags.empty.detail -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1504–1505 | key: project.focusTags.empty.detail -->
 
 Tag documents while you research, then choose which tags focus this project’s suggestions here.
 
 <!-- END SOURCE: project.focusTags.empty.detail -->
 
 #### %lld documents · reached from %lld of yours
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1607–1608 | key: project.reach.volumeDetail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1610–1611 | key: project.reach.volumeDetail %lld %lld -->
 
 %lld documents · reached from %lld of yours
 
@@ -2309,14 +2309,14 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1413–1414 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1416–1417 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1767–1768 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1773–1774 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
@@ -2395,7 +2395,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1534–1535 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1548–1549 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2408,14 +2408,14 @@ FRUS Explorer Collection - %@
      name, in its body and its Contents, set apart in grey italics; every export leaves the heading
      out, and the editor's own row keeps its "Section heading" prompt. The inspector's identity row
      has always used it. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 992–992 | key: collection.inspector.section.untitled -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 1014–1014 | key: collection.inspector.section.untitled -->
 
 Untitled section
 
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 953–954 | key: export.colophon.line -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 955–956 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
@@ -2453,14 +2453,14 @@ No content yet. Use the Add menu in the toolbar to add documents, headings, note
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1418–1419 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1421–1422 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1689–1690 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1692–1693 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

@@ -335,8 +335,8 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          `CollectionExportNaming` — `Untitled Collection.fruscollection` for an unnamed
 ///          collection, never a hidden file; no schema or format change
 ///   1.10 — #1497: `apply` trims the name it imports; #1498: a file name too long for the file system
-///          is cut; and `indexImportedNotes`, which both import paths call, puts an import's notes into
-///          the search index at once (the 2026-09-28 audit). No schema or format change
+///          is cut; and `indexImportedNotes`, which all three import paths call, puts an import's notes
+///          into the search index at once (the 2026-09-28 audit). No schema or format change
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -758,13 +758,15 @@ enum NativeCollectionSerializer {
     /// Puts the notes an import brought into the search index, so they are findable at once rather than
     /// at the next launch's replay (the 2026-09-28 audit, from #1280's session log).
     ///
-    /// `apply` recreates each note a file carries as a new `ResearchNote` linked to its entry, and both
-    /// import paths only saved, so search could not see an imported note until the app relaunched. Each
+    /// `apply` recreates each note a file carries as a new `ResearchNote` linked to its entry, and every
+    /// import path only saved, so search could not see an imported note until the app relaunched. Each
     /// document an imported note sits on is rewritten through the column's one writer,
     /// `ResearchNote.reindexNoteText`, which reads every note on the document — the reader's own as well
-    /// as the imported ones — so an import never narrows what the column held. Both import paths
-    /// (`CollectionListView` and the Mac collection window) call it after they save: that save is what
-    /// the writer's read sees.
+    /// as the imported ones — so an import never narrows what the column held. All three import paths
+    /// call it after they save, since that save is what the writer's read sees: Import Collection… in
+    /// `CollectionListView` and in the Mac collection window, and a file opened from Files, Mail, AirDrop
+    /// or Finder (`FRUSExplorerApp.importOpenedCollection`). `ImportedNoteIndexTests.everyImportPathIndexes`
+    /// finds the paths by their call to `apply` or `importCollection(from:into:)`, not from a list.
     ///
     /// - Parameters:
     ///   - collection: The collection `apply` made.

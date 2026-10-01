@@ -936,6 +936,8 @@ struct CollectionExportMetadata: Sendable {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 4: initial implementation
+///   1.1 — Lane EXPORT review round 1 (PV-1): `sourceLines(for:embedsWordCloud:)` names the app's word lists when
+///          the export embeds the collection's word cloud
 enum CollectionColophon {
     /// The colophon line for a resolved item list: app attribution, document/volume
     /// counts, and the compilation date.
@@ -963,7 +965,19 @@ enum CollectionColophon {
     ///
     /// The set is derived from the items, never passed in, so an export cannot name a source it did
     /// not use. Empty for a collection of headings alone, and the callers render nothing then.
-    static func sourceLines(for items: [CollectionExportItem]) -> [String] {
+    ///
+    /// The one addition the items cannot show is the word cloud a rich export can embed
+    /// (`CollectionExportOptions.includeWordCloud`, which the export sheet sets for PDF and HTML, and
+    /// which the Word exporter honours too): it is an export option, not an item, and it is
+    /// counted through the app's own lexicons and stopwords, so it adds ``ProvenanceSource/appWordLists``
+    /// — what the standalone word-cloud export states (`WordCloudView`). Each renderer passes whether
+    /// it actually drew one (the image it holds, not the option, since a collection with no countable
+    /// words draws none), so the block names the lists exactly when the figure is there (review round 1).
+    ///
+    /// - Parameters:
+    ///   - items: The resolved items the export prints.
+    ///   - embedsWordCloud: Whether this export draws the collection's word cloud.
+    static func sourceLines(for items: [CollectionExportItem], embedsWordCloud: Bool) -> [String] {
         // **No `includesCuratedResolutions`, and the omission is measured rather than an oversight.**
         // PV-1 shipped this call passing `true` whenever an archival-sources block was present, on
         // the assumption that such a block "may carry an identifier the owner matched by hand". It
@@ -990,8 +1004,8 @@ enum CollectionColophon {
             if case .generated(let block) = item, block.type == .archivalSources { return true }
             return false
         }
-        return ProvenanceStatement.block(for: items.provenanceSources,
-                                         restsOnSourceNoteParse: restsOnParse)
+        let sources = items.provenanceSources.union(embedsWordCloud ? [.appWordLists] : [])
+        return ProvenanceStatement.block(for: sources, restsOnSourceNoteParse: restsOnParse)
     }
 }
 
@@ -1495,15 +1509,15 @@ enum CollectionExportNaming {
     /// in it names the file "Untitled Collection".
     ///
     /// A title too long for a file name is cut, on a whole character, so the name and its suffix fit
-    /// (`ExportFileName`, #1498): uncut, a name past 255 bytes of UTF-8 failed every format's write in
-    /// the temporary directory. The export's title, and a `.fruscollection` file's own name field, keep
-    /// the whole name; only the file's name is cut.
+    /// (`ExportFileName`, #1498): uncut, a name past the file system's 255 UTF-16 units failed every
+    /// format's write in the temporary directory. The export's title, and a `.fruscollection` file's own
+    /// name field, keep the whole name; only the file's name is cut.
     static func fileName(savedName: String, suffix: String) -> String {
         let written = title(savedName: savedName)
             .components(separatedBy: hostileCharacters)
             .joined(separator: "-")
         let stem = ExportFileName.fitting(String(written.drop(while: { $0 == "." || $0.isWhitespace })),
-                                          reserving: suffix.utf8.count)
+                                          reserving: ExportFileName.length(of: suffix))
         return (stem.isEmpty ? title(savedName: "") : stem) + suffix
     }
 
@@ -1548,38 +1562,59 @@ enum CollectionExportNaming {
 
 /// An export's file name, cut to fit the file system (#1498).
 ///
-/// APFS takes 255 bytes of UTF-8 in a name (`NAME_MAX`; the 2026-09-27 triage created a 255-byte name on
-/// the build Mac and saw a 256-byte one fail with errno 63, "File name too long", which is the error
-/// `CollectionExportNamingTests` met on the iOS simulator), and nothing capped the names the app
-/// writes: a collection's name became its
-/// export's stem whole, and an analytics figure's title its file's. Both now pass through here —
-/// `CollectionExportNaming.fileName`, which every collection exporter and the `.fruscollection` writer
-/// name their file through, and `AnalyticsExportDelivery.filenameStem`.
+/// Nothing capped the names the app writes: a collection's name became its export's stem whole, and an analytics
+/// figure's title its file's. Both now pass through here — `CollectionExportNaming.fileName`, which every collection
+/// exporter and the `.fruscollection` writer name their file through, `AnalyticsExportDelivery.filenameStem`, and the
+/// Archives Visit packet's PDF (`TripPacketPDFRenderer.fileName(title:)`).
+///
+/// **What the limit counts was measured, and it is not bytes** (review round 1, 2026-10-01, on APFS — the build Mac's
+/// temporary directory, which is also where the iOS simulator writes). A name may take 255 UTF-16 units of its
+/// canonically DECOMPOSED form, the form Foundation hands the file system: 255 `a` or 251 `外` and `.pdf` (757 bytes of
+/// UTF-8) are written, and one more of either fails with errno 63, "File name too long" — the error
+/// `CollectionExportNamingTests` met. A file URL holds its last component decomposed too: `appendingPathComponent`
+/// returns `ǖ` (U+01D6, two bytes as typed) as `u` and two combining marks, five bytes. A character can decompose into
+/// more units than it takes bytes as typed — `ǖ` is 2 bytes and 1 unit, but 3 units decomposed — so 118 of them and
+/// `.pdf`, 240 bytes as typed, failed the write. The 2026-09-27 triage measured 255 and 256 with ASCII names, which
+/// cannot tell bytes from units, and this type first budgeted the bytes as typed, which let that name through.
+///
+/// So `length(of:)` counts the UTF-8 bytes of the decomposed form. That is never less than the UTF-16 units APFS
+/// counts (a scalar takes at least as many UTF-8 bytes as UTF-16 units), it is the same whichever form a name arrives
+/// in, and it is what a file system that limits bytes would be handed — ext4 and most Linux file systems, behind a
+/// share — which is reasoned, not measured. The cost falls on decomposing scripts: an accented letter counts 3, a
+/// Hangul syllable 6 to 9.
 ///
 /// Version history:
 ///   1.0 — #1498 and the 2026-09-28 audit's analytics stem: initial implementation
+///   1.1 — #1498 review, round 1: `length(of:)` counts the decomposed form's UTF-8 bytes, which bounds the UTF-16 units
+///          the file system counts, and `maxBytes` is `maxLength`; the trip packet's PDF names its file here too
 enum ExportFileName {
 
-    /// The most UTF-8 bytes a file name may take here, suffix included: the file system's 255, less 15,
-    /// so a name the system lengthens when the reader keeps a second copy beside the first — Finder adds
-    /// " 2" — still fits.
-    static let maxBytes = 240
+    /// The longest a file name may be here, suffix included, by `length(of:)`: the file system's 255, less 15, so a
+    /// name the system lengthens when the reader keeps a second copy beside the first — Finder adds " 2" — still fits.
+    static let maxLength = 240
 
-    /// `stem` cut so that it, and `reservedBytes` more, fit within `maxBytes` — whole when it already
-    /// fits. The cut falls between two characters, never inside one (a combining accent stays on its
-    /// letter, a flag stays a flag), and any whitespace it leaves at the end is dropped.
+    /// How long `name` is for a file name: the UTF-8 bytes of its canonically decomposed form, the form Foundation
+    /// hands the file system. The count is additive over a string's characters and the same for every normalization
+    /// of one name, so a name read back from a file URL — decomposed — measures what it measured when it was made.
+    static func length(of name: String) -> Int {
+        name.decomposedStringWithCanonicalMapping.utf8.count
+    }
+
+    /// `stem` cut so that it, and `reservedLength` more, fit within `maxLength` by `length(of:)` — whole when it
+    /// already fits. The cut falls between two characters, never inside one (a combining accent stays on its letter, a
+    /// flag stays a flag), and any whitespace it leaves at the end is dropped.
     ///
     /// - Parameters:
     ///   - stem: The name's own part.
-    ///   - reservedBytes: The bytes of what the caller puts around it — a suffix, a prefix and a date.
+    ///   - reservedLength: The `length(of:)` of what the caller puts around it — a suffix, a prefix and a date.
     /// - Returns: The stem, cut to fit; empty when nothing fits.
-    static func fitting(_ stem: String, reserving reservedBytes: Int) -> String {
-        let budget = max(maxBytes - reservedBytes, 0)
-        guard stem.utf8.count > budget else { return stem }
+    static func fitting(_ stem: String, reserving reservedLength: Int) -> String {
+        let budget = max(maxLength - reservedLength, 0)
+        guard length(of: stem) > budget else { return stem }
         var used = 0
         var end = stem.startIndex
         for index in stem.indices {
-            let size = stem[index].utf8.count
+            let size = length(of: String(stem[index]))
             if used + size > budget { break }
             used += size
             end = stem.index(after: index)

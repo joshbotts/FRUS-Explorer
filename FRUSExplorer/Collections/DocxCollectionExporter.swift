@@ -588,7 +588,7 @@ final class DocxCollectionExporter: CollectionExporter {
         if collection.includeColophon {
             body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
             // PV-1: the sources block travels with the colophon, in all three rich formats.
-            for line in CollectionColophon.sourceLines(for: items) {
+            for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudXML != nil) {
                 body += styledPara(escaped(line), styleId: "Colophon")
             }
         }

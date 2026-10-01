@@ -114,7 +114,7 @@ struct ProvenanceStatementTests {
     func headingsClaimNothing() {
         let items: [CollectionExportItem] = [.heading("A", level: 1)]
         #expect(items.provenanceSources.isEmpty)
-        #expect(CollectionColophon.sourceLines(for: items).isEmpty)
+        #expect(CollectionColophon.sourceLines(for: items, embedsWordCloud: false).isEmpty)
     }
 
     /// **An archival-sources block does NOT disclose hand-curated identifiers, because it cannot
@@ -138,7 +138,7 @@ struct ProvenanceStatementTests {
             rows: [CollectionGeneratedRow(text: "RG 59, Central Files")])
         let items: [CollectionExportItem] = [doc("d1"), .generated(block)]
 
-        let lines = CollectionColophon.sourceLines(for: items)
+        let lines = CollectionColophon.sourceLines(for: items, embedsWordCloud: false)
         #expect(!lines.isEmpty, "the guard is vacuous if the block produced no sources at all")
         #expect(lines.contains(ProvenanceSource.naraCatalog.methodSentence),
                 "an archival-sources block does draw on the catalog, and must still say so")
@@ -150,18 +150,48 @@ struct ProvenanceStatementTests {
 
     /// **The W-13 failure this must not repeat**: a fact added to one renderer ships in one format
     /// and vanishes from the other two. The sources block is built once, in the shared colophon,
-    /// and all three rich renderers call it.
-    @Test("All three rich renderers emit the shared sources block")
+    /// and all three rich renderers call it — each telling it whether the word cloud it drew is there,
+    /// from the image it holds rather than from the option (review round 1).
+    @Test("All three rich renderers emit the shared sources block, saying whether they drew the cloud")
     func everyRendererEmitsTheBlock() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        for file in ["FRUSExplorer/Collections/PDFCollectionExporter.swift",
-                     "FRUSExplorer/Collections/DocxCollectionExporter.swift",
-                     "FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift"] {
+        for (file, cloud) in [("FRUSExplorer/Collections/PDFCollectionExporter.swift", "wordCloud"),
+                              ("FRUSExplorer/Collections/DocxCollectionExporter.swift", "wordCloudXML"),
+                              ("FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift", "wordCloudPNGBase64")] {
             let source = try String(contentsOf: root.appendingPathComponent(file), encoding: .utf8)
-            #expect(source.contains("CollectionColophon.sourceLines(for: items)"),
-                    Comment(rawValue: "\(file) must emit the shared sources block, not its own"))
+            #expect(source.contains("CollectionColophon.sourceLines(for: items, embedsWordCloud: \(cloud) != nil)"),
+                    Comment(rawValue: "\(file) must emit the shared sources block, not its own, and say whether it drew a cloud"))
         }
+    }
+
+    /// PV-1, review round 1: a PDF, HTML or Word export can embed the collection's word cloud, which the app counts
+    /// through its own lexicons and stopwords — the reason the standalone word-cloud export names
+    /// ``ProvenanceSource/appWordLists``. The cloud is an export option, not an item, so a colophon derived from the
+    /// items alone stated only the volumes' text above a figure the app computed. Driven through the real HTML
+    /// renderer, which draws the figure from the image it is handed.
+    @Test("A collection export that embeds the word cloud names the app's word lists, and one without it does not")
+    func embeddedWordCloudNamesTheWordLists() {
+        let items = [doc("d1"), doc("d2")]
+        let listsSentence = ProvenanceSource.appWordLists.methodSentence
+        #expect(CollectionColophon.sourceLines(for: items, embedsWordCloud: true).contains(listsSentence))
+        #expect(!CollectionColophon.sourceLines(for: items, embedsWordCloud: false).contains(listsSentence))
+        let metadata = CollectionExportMetadata(name: "Berlin", note: nil, includeColophon: true)
+        let renderer = CollectionItemHTMLRenderer()
+        let withCloud = renderer.pageHTML(metadata: metadata, items: items, wordCloudPNGBase64: "iVBORw0KGgo=")
+        let without = renderer.pageHTML(metadata: metadata, items: items, wordCloudPNGBase64: nil)
+        #expect(withCloud.contains("<figure class=\"word-cloud\">"), "the fixture drew no cloud, so this tests nothing")
+        #expect(withCloud.contains(Self.htmlEscaped(listsSentence)),
+                "an export with the cloud does not name the app's word lists")
+        #expect(!without.contains(Self.htmlEscaped(listsSentence)), "an export without the cloud names the word lists")
+        #expect(without.contains(Self.htmlEscaped(ProvenanceSource.frusText.methodSentence)),
+                "the colophon's sources block is missing altogether, so the absence above proves nothing")
+    }
+
+    /// `text` as the HTML renderer escapes it.
+    private static func htmlEscaped(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;").replacingOccurrences(of: "\"", with: "&quot;")
     }
 
     /// A trimmed plate is the artifact most likely to be shared detached from its CSV, so the

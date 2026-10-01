@@ -1380,10 +1380,13 @@ struct CollectionEditorView: View {
                         modelContext: modelContext) else { return }
                     planPickerRequest = PlanPickerRequest(
                         documents: docs, includeSource: true, includeExternalRefs: true,
+                        // The collection as every list row names it, and the plan after its trimmed name — an
+                        // unnamed one makes an untitled plan (#1464 review, round 1).
                         basis: String(format: String(
                             localized: "archiveVisit.basis.collection %@",
-                            defaultValue: "from the collection “%@”"), collection.name),
-                        suggestedName: collection.name)
+                            defaultValue: "from the collection “%@”"),
+                            CollectionEditorNaming.listName(savedName: collection.name)),
+                        suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
                 }
             } label: {
                 Label(String(localized: "collection.addToVisit",
@@ -1458,10 +1461,13 @@ struct CollectionEditorView: View {
                         modelContext: modelContext) else { return }
                     planPickerRequest = PlanPickerRequest(
                         documents: docs, includeSource: true, includeExternalRefs: true,
+                        // The collection as every list row names it, and the plan after its trimmed name — an
+                        // unnamed one makes an untitled plan (#1464 review, round 1).
                         basis: String(format: String(
                             localized: "archiveVisit.basis.collection %@",
-                            defaultValue: "from the collection “%@”"), collection.name),
-                        suggestedName: collection.name)
+                            defaultValue: "from the collection “%@”"),
+                            CollectionEditorNaming.listName(savedName: collection.name)),
+                        suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
                 }
             } label: {
                 Label(String(localized: "collection.addToVisit",

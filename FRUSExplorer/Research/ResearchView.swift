@@ -1031,7 +1031,8 @@ struct ResearchView: View {
             let collectionRows: [(id: UUID, name: String)] = entry.collectionIds
                 .compactMap { id in allCollections.first(where: { $0.id == id }).map { (id, $0.name) } }
                 .sorted {
-                    let names = $0.name.localizedCaseInsensitiveCompare($1.name)
+                    // By the name each chip prints (#1464 review, round 1), not the raw one.
+                    let names = CollectionEditorNaming.listOrder($0.name, $1.name)
                     return names != .orderedSame ? names == .orderedAscending : $0.id.uuidString < $1.id.uuidString
                 }
             let hasFooter = !tagRows.isEmpty || entry.noteCount > 1 || !collectionRows.isEmpty
@@ -1280,9 +1281,10 @@ struct ResearchView: View {
             return (collection: collection, count: count)
         }
         .sorted {
-            // Alphabetical, then the stable collection id — a total order so equal/empty-named
-            // collections (id is a UUID, name defaults to "") don't reshuffle on recompute.
-            let names = $0.collection.name.localizedCaseInsensitiveCompare($1.collection.name)
+            // Alphabetical by the name each row prints (#1464 review, round 1), then the stable
+            // collection id — a total order so equal/empty-named collections (id is a UUID, name
+            // defaults to "") don't reshuffle on recompute.
+            let names = CollectionEditorNaming.listOrder($0.collection.name, $1.collection.name)
             return names != .orderedSame ? names == .orderedAscending
                                          : $0.collection.id.uuidString < $1.collection.id.uuidString
         }

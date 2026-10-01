@@ -362,8 +362,11 @@ struct AnalyticsExportDeliveryTests {
     @Test("An overlong title is cut on a character, keeps its prefix and date, and the file is written")
     func overlongTitleIsCutToFit() throws {
         let stamp = "-2025-07-20"
+        // The last, `ǖ` (U+01D6), is two bytes but three UTF-16 units decomposed, which is what the file system counts:
+        // a cut by bytes alone left its name too long (review round 1).
         for title in [String(repeating: "Diplomatic Correspondence ", count: 20),
-                      String(repeating: "外交", count: 120), String(repeating: "e\u{301}", count: 150)] {
+                      String(repeating: "外交", count: 120), String(repeating: "e\u{301}", count: 150),
+                      String(repeating: "\u{01D6}", count: 120)] {
             let stem = AnalyticsExportDelivery.filenameStem(title: title, prefix: "FRUS-WordCloud", date: date)
             #expect(stem.hasPrefix("FRUS-WordCloud-"), "the family prefix was cut: \(stem.prefix(20))")
             #expect(stem.hasSuffix(stamp), "the date was cut: \(stem.suffix(20))")
@@ -377,7 +380,9 @@ struct AnalyticsExportDeliveryTests {
             }
             for ext in ["png", "pdf", "csv"] {
                 let name = stem + "." + ext
-                #expect(name.utf8.count <= 255, "a \(name.utf8.count)-byte name")
+                // `maxLength`, not the file system's 255: it pins the extension the stem reserves room for.
+                #expect(ExportFileName.length(of: name) <= ExportFileName.maxLength,
+                        "a name of length \(ExportFileName.length(of: name))")
                 let directory = FileManager.default.temporaryDirectory
                     .appendingPathComponent(UUID().uuidString, isDirectory: true)
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

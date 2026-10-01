@@ -927,10 +927,7 @@ struct ResearchRailView: View {
         }
         // By the name each row prints (#1464): the raw name sorted a padded one by its spaces, and an unnamed one
         // first while it read "Untitled Collection".
-        return result.sorted {
-            CollectionEditorNaming.listName(savedName: $0.name)
-                .localizedCompare(CollectionEditorNaming.listName(savedName: $1.name)) == .orderedAscending
-        }
+        return CollectionEditorNaming.sortedByListName(result)
     }
 
     // MARK: - Tile actions (macOS)

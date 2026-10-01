@@ -8867,13 +8867,22 @@ struct CollectionExportNamingTests {
         #expect(CollectionExportMetadata(name: "  Suez  ", note: nil).name == "Suez")
     }
 
-    /// Names whose file would run past the 255 bytes of UTF-8 a file name may take: one byte a character, three, a
-    /// character of two code points (`e` and a combining acute, three bytes), and a flag of two (eight bytes).
-    static let overlongNames = [String(repeating: "a", count: 300), String(repeating: "外", count: 120),
-                                String(repeating: "e\u{301}", count: 150), String(repeating: "🇺🇸", count: 40)]
+    /// Names whose uncut file name the file system refuses. It counts 255 UTF-16 units of the name's decomposed form
+    /// (`ExportFileName`, measured in review round 1), so each name here is past that: `a` (one byte, one unit), `外`
+    /// (three bytes, one unit), `e` and a combining acute (a character of two code points, three bytes, two units), a
+    /// flag (eight bytes, four units), and `ǖ` (U+01D6: two bytes and one unit as typed, three units and five bytes
+    /// decomposed). The last is 236 bytes as typed, so a cut by those bytes kept it whole beside a 4-byte suffix and its
+    /// write still failed; it is the fixture that tells a budget on the typed bytes from one the file system honours. The
+    /// first round's `外` ×120 and flag ×40 were 124 and 164 units with `.pdf` — written without error before #1498's
+    /// fix — so they are longer now.
+    static let overlongNames = [String(repeating: "a", count: 300), String(repeating: "外", count: 260),
+                                String(repeating: "e\u{301}", count: 150), String(repeating: "🇺🇸", count: 70),
+                                String(repeating: "\u{01D6}", count: 118)]
 
     /// #1498: nothing capped the stem, so every export of such a collection failed its write in the temporary
-    /// directory and the sheet reported "Could not write export file". Each format's real exporter writes the file.
+    /// directory and the sheet reported "Could not write export file". Each format's real exporter writes the file,
+    /// and the name stays within `maxLength` by both measures, so the margin left for a copy's " 2" — and the suffix
+    /// the cut reserves — are pinned rather than only the file system's 255.
     @Test("A name too long for a file name is cut on a character, and every format's export is written (#1498)",
           arguments: formats.indices)
     @MainActor
@@ -8881,13 +8890,16 @@ struct CollectionExportNamingTests {
         let (format, suffix) = Self.formats[index]
         for name in Self.overlongNames {
             let file = try await exportedFileName(format, name: name)
-            #expect(file.utf8.count <= 255, "\(format) wrote a \(file.utf8.count)-byte name")
+            #expect(ExportFileName.length(of: file) <= ExportFileName.maxLength,
+                    "\(format) wrote a name of length \(ExportFileName.length(of: file))")
             #expect(file.hasSuffix(suffix), "\(format) lost its suffix: \(file)")
             let stem = String(file.dropLast(suffix.count))
             #expect(!stem.isEmpty && name.hasPrefix(stem), "\(format) did not cut the name's own opening: \(stem)")
-            // Cut on a character: every character of the stem is a whole one of the name's.
-            let perCharacter = try #require(name.first).utf8.count
-            #expect(stem.utf8.count == stem.count * perCharacter, "\(format) cut inside a character: \(stem.suffix(3))")
+            // Cut on a character: every character of the stem is a whole one of the name's. Measured decomposed, because
+            // a file URL hands its name back in that form (`ExportFileName`).
+            let perCharacter = ExportFileName.length(of: String(try #require(name.first)))
+            #expect(ExportFileName.length(of: stem) == stem.count * perCharacter,
+                    "\(format) cut inside a character: \(stem.suffix(3))")
         }
     }
 
@@ -8903,7 +8915,7 @@ struct CollectionExportNamingTests {
                                                            resolveNoteTexts: { _ in [] })
             let url = try NativeCollectionSerializer.writeTemporaryFile(file)
             defer { try? FileManager.default.removeItem(at: url) }
-            #expect(url.lastPathComponent.utf8.count <= 255)
+            #expect(ExportFileName.length(of: url.lastPathComponent) <= ExportFileName.maxLength)
             #expect(url.lastPathComponent.hasSuffix(".fruscollection"))
             // The file keeps the whole name, so an import restores it as it was.
             #expect(try NativeCollectionSerializer.decode(Data(contentsOf: url)).name == name)
@@ -9234,14 +9246,20 @@ struct NestedFootnoteDocxTests {
 
 /// Every row that lists a collection by name reads it through `CollectionEditorNaming.listName` (#1464), so a
 /// collection with no name reads "Untitled Collection" everywhere, and one whose name is only spaces, or padded with
-/// them, reads the same on every surface.
+/// them, reads the same on every surface — and every list of them that sorts by name sorts by what its rows print.
 ///
-/// Project Home and its Manage sheet spelled the fallback "Untitled collection" under keys of their own, and six more
-/// rows (the Collections list, the Mac window's picker label, three Research rows and the document change review)
-/// spelled it right but tested the name untrimmed; the Add to Collection picker's search and the Research rail's
-/// collection sort read the raw name too. No test target hosts these views (the picker's own row test says why), so
-/// the rows are read from the source, call by call; what `listName` prints is pinned by
-/// `CollectionEditorNamingTests.listNameFallsBackToUntitled`. Runs on any destination.
+/// Project Home and its Manage sheet printed the fallback under keys of their own — "Untitled Collection" by this
+/// lane's base, where lane WB had already capitalized the lower-case spelling both used before — and tested the name
+/// untrimmed; six more rows (the Collections list, the Mac window's picker label, three Research rows and the document
+/// change review) used the shared key but tested the name untrimmed too; the Add to Collection picker's search and the
+/// Research rail's collection sort read the raw name. Review round 1 found the word cloud's Collection scope and Compare
+/// menus printing a fallback of their own ("Untitled", untrimmed), the unpresented `GlobalContextView` printing the raw
+/// name, the Archives Visit picker's "from the collection" line quoting it raw, and five lists that print `listName`
+/// still sorting by the raw name. So the lower-case half of `theFallbackIsSpelledOnlyWhereACollectionIsNamed` is a
+/// control at this lane's base, not a guard; its sites half is what fails there. No test target hosts these views (the
+/// picker's own row test says why), so the rows are read from the source, call by call; what `listName` prints is
+/// pinned by `CollectionEditorNamingTests.listNameFallsBackToUntitled`, and the order by `listOrderSortsByTheListedName`.
+/// Runs on any destination.
 @Suite("Every row that lists a collection names it through listName (#1464)")
 struct CollectionListNameTests {
 
@@ -9279,6 +9297,12 @@ struct CollectionListNameTests {
         ("Research/ResearchView.swift", "case .collection(let id):\n", "name"),
         ("DocumentView/DocumentChangeReviewSheet.swift", "Text(entry.text ?? \"\")",
          "entry.collection?.name ?? \"\""),
+        // Review round 1: the word cloud's two menus, and the unpresented `GlobalContextView`'s row.
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.compare.collections\"",
+         "collection.name"),
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.scope.collection\"",
+         "collection.name"),
+        ("ProjectContext/GlobalContextView.swift", "private struct CollectionRowView: View {", "collection.name"),
     ]
 
     @Test("Each row that prints a collection's name prints it through listName", arguments: rows.indices)
@@ -9305,6 +9329,85 @@ struct CollectionListNameTests {
                 "\(row.path) (\(row.anchor)) does not print its collection's name through listName:\n\(code)")
         #expect(!code.contains("Untitled Collection") && !code.contains("Untitled collection"),
                 "\(row.path) (\(row.anchor)) still spells its own fallback:\n\(code)")
+        #expect(!code.contains("defaultValue: \"Untitled\""), "\(row.path) (\(row.anchor)) still spells its own fallback:\n\(code)")
+    }
+
+    /// The Archives Visit picker's line under the plan list quoted the raw name, so an unnamed collection read 'from the
+    /// collection “”' (review round 1). Every call that formats it — the iOS editor's two menus and the Mac window's —
+    /// formats the name a row prints, and names the plan after the trimmed name, so an unnamed collection makes an
+    /// untitled plan rather than one named with spaces.
+    @Test("The Archives Visit picker names the collection as its rows do")
+    func archiveVisitBasisNamesTheListedName() throws {
+        var calls = 0
+        for path in ["Collections/CollectionEditorView.swift", "Collections/MacCollectionManagerView.swift"] {
+            let text = try source(path)
+            for hit in text.ranges(of: "localized: \"archiveVisit.basis.collection %@\"") {
+                calls += 1
+                let format = try #require(text[..<hit.lowerBound].range(of: "String(format:", options: .backwards))
+                let call = try #require(WindowTargetingTests.balancedBlock(in: text, from: format.lowerBound,
+                                                                           open: "(", close: ")"))
+                #expect(call.contains("CollectionEditorNaming.listName(savedName: collection.name)"),
+                        "\(path) quotes the collection's raw name:\n\(call)")
+                let rest = text[call.endIndex...].prefix(200)
+                #expect(rest.contains("suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines)"),
+                        "\(path) names the plan after the untrimmed name:\n\(rest)")
+            }
+        }
+        #expect(calls == 3, "found \(calls) Archives Visit calls, not the iOS editor's two and the Mac window's one")
+    }
+
+    /// The lists that print `listName` sorted on the raw name, so an unnamed collection sorted first while it read
+    /// "Untitled Collection" and a padded name sorted by its space (review round 1).
+    @Test("listOrder and sortedByListName order collections by the name each row prints")
+    @MainActor
+    func listOrderSortsByTheListedName() throws {
+        #expect(CollectionEditorNaming.listOrder("", "Alpha") == .orderedDescending)
+        #expect(CollectionEditorNaming.listOrder(" Zebra", "Beta") == .orderedDescending)
+        #expect(CollectionEditorNaming.listOrder("alpha", "Beta") == .orderedAscending)
+        #expect(CollectionEditorNaming.listOrder(" \n", "Untitled collection") == .orderedSame)
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let collections = [" Zebra", "", "alpha", "Beta"].map { name -> Collection in
+            let collection = Collection(name: name)
+            context.insert(collection)
+            return collection
+        }
+        let sorted = CollectionEditorNaming.sortedByListName(collections)
+            .map { CollectionEditorNaming.listName(savedName: $0.name) }
+        #expect(sorted == ["alpha", "Beta", "Untitled Collection", "Zebra"], "\(sorted)")
+        // Two that print the same keep one order, by id, whichever way they arrive.
+        let twins = [Collection(name: ""), Collection(name: "  ")]
+        #expect(CollectionEditorNaming.sortedByListName(twins).map(\.id)
+                == CollectionEditorNaming.sortedByListName(twins.reversed()).map(\.id))
+        withExtendedLifetime(container) {}
+    }
+
+    /// Each list that prints `listName` and sorts by name: the file, an anchor, the text that ends the code read, and
+    /// the call its sort must make.
+    static let sortedLists: [(path: String, anchor: String, end: String, call: String)] = [
+        ("Research/ResearchView.swift", "private var sortedCollectionsWithCounts", "\n    }\n",
+         "CollectionEditorNaming.listOrder($0.collection.name, $1.collection.name)"),
+        ("Research/ResearchView.swift", "let collectionRows: [(id: UUID, name: String)]", "let hasFooter",
+         "CollectionEditorNaming.listOrder($0.name, $1.name)"),
+        ("DocumentView/DocumentChangeReviewSheet.swift", "private var excerpts: [CollectionEntry] {", "\n    }\n",
+         "CollectionEditorNaming.listOrder($0.collection?.name ?? \"\""),
+        ("ProjectContext/ProjectHomeView.swift", "struct ProjectCollectionsEditor: View {", "ForEach(members)",
+         "CollectionEditorNaming.sortedByListName(allCollections)"),
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.compare.collections\"",
+         "\n            }\n", "ForEach(CollectionEditorNaming.sortedByListName(collections))"),
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.scope.collection\"",
+         "\n                }\n", "ForEach(CollectionEditorNaming.sortedByListName(collections))"),
+    ]
+
+    @Test("Each list that prints listName sorts by it", arguments: sortedLists.indices)
+    func listSortsByTheListedName(_ index: Int) throws {
+        let list = Self.sortedLists[index]
+        let text = try source(list.path)
+        let hit = try #require(text.range(of: list.anchor), "\(list.path) no longer holds \(list.anchor)")
+        let end = text.range(of: list.end, range: hit.upperBound..<text.endIndex)?.upperBound ?? text.endIndex
+        let code = String(text[hit.lowerBound..<end])
+        #expect(code.contains(list.call), "\(list.path) (\(list.anchor)) does not sort by listName:\n\(code)")
+        #expect(!code.contains(".name.localizedCaseInsensitiveCompare("), "\(list.path) still sorts by the raw name")
     }
 
     /// The spelling has one owner: a `defaultValue` of "Untitled Collection" survives only where a collection is
