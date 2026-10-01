@@ -164,6 +164,11 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          to show; set through `openArchiveVisitWindow(on:using:)`, declared beside the window
 ///   4.17 — #1522: the citation engine is built over the volumes directory, which it reads at each
 ///          lookup, so `connectIndexingProgress` no longer tells it that a volume finished indexing
+///   4.18 — Lane STOR (#1526): `indexAllVolumes(with:)` and `rebuildSearchIndex(pipeline:)` re-read
+///          the indexed-volume set after a whole-index pass (`reseedIndexedVolumeIds`), every write to
+///          it goes through `markVolumeIndexed` / `markVolumeUnindexed` / `clearIndexedVolumeIds`,
+///          which journal while a re-read is in flight, and `reconcileSideloadedVolumes()` reads the
+///          side-loaded volumes' sidecars, which boot now calls
 
 // MARK: - CloudKitSyncState
 
@@ -2299,8 +2304,10 @@ final class AppState {
     /// never see the volumes it indexed. Settings ▸ Rebuild Index empties the set first, so until a
     /// relaunch every reader of the set (Add Documents, working corpora, the Browse-tab badge, the
     /// Mac Search window's saved-search run records) saw nothing indexed. This is the only call
-    /// site of `indexAllVolumes()` in the app — `IndexedVolumeSetTests` pins that — so the re-read
-    /// cannot be forgotten by a new one.
+    /// site of `indexAllVolumes()` in the app. `IndexedVolumeSetTests` fails on a bare call anywhere
+    /// else — but it does not scan this file or `IndexingPipeline.swift`, so a second call in
+    /// either is the reviewer's to catch; and its write scan finds only writes spelled
+    /// `appState.indexedVolumeIds`, so one inside this file, or through another name, is not seen.
     ///
     /// Errors are swallowed as every caller did before: a pass that fails part-way has still
     /// indexed what it indexed, and the re-read says which.

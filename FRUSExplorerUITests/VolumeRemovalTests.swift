@@ -149,7 +149,10 @@ final class VolumeRemovalTests: XCTestCase {
     /// A phrase only the catalogue confirmation carries.
     private static let redownloadPromise = "can be downloaded again"
 
-    /// How Free Up Space's recovery line ends while a volume is selected.
+    /// How Free Up Space's recovery line ends, in BOTH its states: the estimate while a volume is
+    /// selected ("~9 KB estimated recovery") and the prompt while none is ("Select volumes to see
+    /// estimated recovery"). So it finds the line whatever is selected; the selection is read from
+    /// the row itself.
     private static let recoverySuffix = "estimated recovery"
 
     /// The title the side-load catalogue reads from ``targetVolumeId``'s header.
@@ -326,7 +329,7 @@ final class VolumeRemovalTests: XCTestCase {
             the sheet removes. Tree:
             \(app.debugDescription)
             """)
-        XCTAssertNotNil(recoveryBefore, "precondition: the sheet showed a recovery line before the tap")
+        XCTAssertNotNil(recoveryBefore, "precondition: the sheet showed its recovery line, in either state, before the tap")
         XCTAssertEqual(recoveryAfter, recoveryBefore,
                        "the recovery line changed on a tap while the sheet removes (#1432)")
 

@@ -1871,7 +1871,7 @@ private struct FreeUpSpaceSheet: View {
         .buttonStyle(.plain)
         // #1432: nothing to choose while a removal runs. Its volumes were taken at the
         // confirmation, so a tap here toggled a checkmark and the recovery line and changed
-        // nothing that was being removed. The Mac sheet disables its list the same way.
+        // nothing that was being removed. The Mac sheet covers its list with an overlay instead.
         .disabled(isRemoving)
         // A5: expose selection as a trait, not just the symbol swap.
         .accessibilityAddTraits(isSelected ? .isSelected : [])

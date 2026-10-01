@@ -1027,7 +1027,7 @@ enum ResearchDataExporter {
 /// 5. **Four rules stop being remembered and start being structural.** `research_documents`,
 ///    `research_cross_references` and `research_suppressed_volumes` pre-apply the guide's
 ///    EXCLUSIONS block and its Ed2 fold. See `installResearchViews`.
-/// 6. **The copy is built away from the destination, and only handed over once it has verified
+/// 6. **The copy is built away from the destination, and only handed over once it is complete
 ///    (#1538).** The Mac's save panel grants the sandbox ONE path, the file the reader chose.
 ///    SQLite cannot write a database through that grant alone: its first write transaction creates
 ///    `<file>-journal` beside the file, which the sandbox refuses ("Operation not permitted"),
@@ -1039,12 +1039,19 @@ enum ResearchDataExporter {
 ///    and the finished file is moved to the destination last — so nothing appears there unless a
 ///    whole copy does, and an existing file there is left alone when the copy fails. The copy is
 ///    switched from the live index's WAL mode to a rollback journal before anything else is
-///    written, so it is ONE file: moved alone, a WAL-mode copy does not even open read-only.
+///    written, so it is ONE file: moved alone, a WAL-mode copy does not even open read-only. A
+///    file already at the destination is REPLACED in one step (`replaceItemAt`), so a hand-over
+///    that fails leaves it as it was — unless the copy was staged on another volume, where no swap
+///    is possible (see `handOver`). "Complete" is not "verified": a copy whose verification
+///    found problems is still handed over, with the problems in the `Report`, as before #1538.
+///    The sandbox itself is in no test; a sandboxed probe running this type's own code is the
+///    measurement (`Planning/DEVELOPMENT-PLAN.md`, lane STOR, review round 1).
 ///
 /// Version history:
 ///   1.0 — W-19 L-2: initial implementation
 ///   1.1 — W-19 L-8 residue: `research_provenance` stamp and the three `research_*` views
-///   1.2 — #1538: built in a staging directory and moved to the destination once verified
+///   1.2 — #1538: built in a staging directory and moved to the destination once complete
+///   1.3 — #1538 review: an existing file is replaced in one step; the tests observe every step
 enum IndexDatabaseExporter {
 
     /// What an export produced, for the surface to report honestly.
@@ -1088,6 +1095,26 @@ enum IndexDatabaseExporter {
         }
     }
 
+    /// The steps of building a copy, at each of which `export`'s observer is called (#1538).
+    ///
+    /// Every step, not just the first: a step that opened a connection at the destination — or
+    /// moved the copy there early and wrote on — would recreate the journal the sandbox refuses,
+    /// and an observer called once after the page copy could not see it.
+    enum CopyStep: String, CaseIterable, Sendable {
+        /// The page copy, `sqlite3_backup`.
+        case pageCopy
+        /// The switch from WAL to a rollback journal.
+        case singleFile
+        /// The removal of the reader's own writing; skipped when it is kept.
+        case strip
+        /// The `research_*` views.
+        case views
+        /// The `research_provenance` stamp.
+        case provenance
+        /// The verification, the last step before the hand-over.
+        case verified
+    }
+
     /// Copies `source` to `destination`, optionally stripping the reader's own writing.
     ///
     /// Synchronous and potentially long: the author's own store is ~6.3 GiB including freelist.
@@ -1098,7 +1125,9 @@ enum IndexDatabaseExporter {
     /// `destination`'s folder, so SQLite never needs a journal beside the file the reader chose, and
     /// a copy that fails creates nothing there and leaves any file already there as it was. A copy
     /// whose verification found problems is still handed over, with the problems in the `Report`,
-    /// because the surface tells the reader so rather than withholding the file.
+    /// because the surface tells the reader so rather than withholding the file. A file already at
+    /// `destination` is replaced in one step, so a hand-over that fails leaves it as it was (unless
+    /// the copy had to be staged on another volume; see `handOver`).
     ///
     /// - Parameters:
     ///   - source: The live index. Read only; never modified.
@@ -1108,13 +1137,14 @@ enum IndexDatabaseExporter {
     ///   - stamp: The state to record inside the copy. Deliberately not optional: a copy that
     ///     cannot say which index generation wrote it is the failure this parameter exists to
     ///     prevent, and a default would let a call site skip it silently.
-    ///   - observeStagedCopy: Called once the page copy has been written, with the path of the file
-    ///     the writing connection has open, read from that connection. For the tests, which pin
-    ///     that the path lies outside `destination`'s folder; the app passes nothing.
+    ///   - observeStagedCopy: Called after each ``CopyStep``, with the path of the file the writing
+    ///     connection has open, read from that connection. For the tests, which pin that the path
+    ///     lies outside `destination`'s folder and that nothing is at `destination` until the
+    ///     hand-over; the app passes nothing.
     /// - Returns: A `Report` describing what was written.
     static func export(from source: URL, to destination: URL, includeMyWriting: Bool,
                        stamp: ResearchStateRecord,
-                       observeStagedCopy: (String) -> Void = { _ in }) throws -> Report {
+                       observeStagedCopy: (CopyStep, String) -> Void = { _, _ in }) throws -> Report {
         let staging = try stagingDirectory(appropriateFor: destination)
         defer { try? FileManager.default.removeItem(at: staging) }
         let staged = staging.appendingPathComponent(destination.lastPathComponent)
@@ -1168,7 +1198,7 @@ enum IndexDatabaseExporter {
     /// - Returns: The problems the verification found; empty is the expected result.
     private static func buildCopy(from source: URL, at staged: URL, includeMyWriting: Bool,
                                   stamp: ResearchStateRecord,
-                                  observeStagedCopy: (String) -> Void) throws -> [String] {
+                                  observeStagedCopy: (CopyStep, String) -> Void) throws -> [String] {
         var src: OpaquePointer?
         guard sqlite3_open_v2(source.path, &src, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let src else {
             let message = src.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
@@ -1186,6 +1216,9 @@ enum IndexDatabaseExporter {
             throw ExportError.cannotOpenDestination(message)
         }
         defer { sqlite3_close(dst) }
+        func observe(_ step: CopyStep) {
+            observeStagedCopy(step, sqlite3_db_filename(dst, "main").map { String(cString: $0) } ?? "")
+        }
 
         // The page copy. `-1` copies every remaining page in one call; the source is read through
         // its connection, so WAL content is included and no checkpoint of the live database is
@@ -1198,7 +1231,7 @@ enum IndexDatabaseExporter {
         guard stepResult == SQLITE_DONE, finishResult == SQLITE_OK else {
             throw ExportError.backupFailed(String(cString: sqlite3_errmsg(dst)))
         }
-        observeStagedCopy(sqlite3_db_filename(dst, "main").map { String(cString: $0) } ?? "")
+        observe(.pageCopy)
 
         // The page copy carries the live index's WAL mode in its header, and a WAL-mode file keeps
         // its last writes and its lock state in `-wal` and `-shm` beside it — two more files at the
@@ -1206,35 +1239,62 @@ enum IndexDatabaseExporter {
         // at all ("unable to open database file", measured). A rollback journal folds every write
         // into the one file, so the file the reader gets is the whole copy.
         try exec(dst, step: "making the copy a single file", sql: "PRAGMA journal_mode=DELETE")
+        observe(.singleFile)
 
         if !includeMyWriting {
             try strip(dst)
+            observe(.strip)
         }
 
         // After the strip, so the views are built over the rows the reader will actually get, and
         // before the verification, so a copy that failed to take either one fails the export
         // rather than arriving quietly incomplete.
         try installResearchViews(dst)
+        observe(.views)
         try writeProvenance(dst, stamp: stamp, includeMyWriting: includeMyWriting)
+        observe(.provenance)
 
-        return verify(dst)
+        let problems = verify(dst)
+        observe(.verified)
+        return problems
     }
 
     /// Moves the finished copy to `destination`, replacing a file the reader agreed to replace.
     ///
-    /// The old file is removed only now, with a whole verified copy waiting, and the move writes
-    /// nothing beside `destination` but `destination` itself — a rename on the same volume, a copy
-    /// across volumes.
+    /// Nothing is written beside `destination` but `destination` itself. A file already there is
+    /// REPLACED (`replaceItemAt`, which swaps the two in one step), never removed and then moved
+    /// over: removed first, a move that then failed — a full disk, an ejected volume, a refusal —
+    /// lost the reader's earlier export with nothing in its place. The one case the swap cannot do
+    /// is a copy staged on another volume, the fallback in ``stagingDirectory(appropriateFor:replacementDirectory:)``:
+    /// it fails there with `EXDEV` (measured in a sandboxed probe), and since no file can be written
+    /// beside the destination to swap through, the old file is removed and the copy moved across.
     private static func handOver(_ staged: URL, to destination: URL) throws {
         let fileManager = FileManager.default
         do {
             if fileManager.fileExists(atPath: destination.path) {
-                try fileManager.removeItem(at: destination)
+                do {
+                    _ = try fileManager.replaceItemAt(destination, withItemAt: staged)
+                    return
+                } catch where crossesVolumes(error) {
+                    try fileManager.removeItem(at: destination)
+                }
             }
             try fileManager.moveItem(at: staged, to: destination)
         } catch {
             throw ExportError.cannotOpenDestination(error.localizedDescription)
         }
+    }
+
+    /// Whether `error` says the staged copy and the destination are on different volumes: POSIX
+    /// `EXDEV` anywhere in its chain of underlying errors. `replaceItemAt` reports it as a Cocoa
+    /// write error (code 512) with the POSIX error underneath — measured in the sandboxed probe.
+    static func crossesVolumes(_ error: Error) -> Bool {
+        var current: NSError? = error as NSError
+        while let nsError = current {
+            if nsError.domain == NSPOSIXErrorDomain && nsError.code == Int(EXDEV) { return true }
+            current = nsError.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return false
     }
 
     /// Removes the reader's own writing from an already-copied database.

@@ -926,6 +926,8 @@ struct StorageHeroTests {
 ///   1.2 — lane STOR: both hubs draw the model's hero and measure through it (#1476); both
 ///          side-loaded Remove messages read their Markdown; iOS Free Up Space's rows are disabled
 ///          while it removes (#1432)
+///   1.3 — lane STOR review, round 1: the hero's dash reads as its sentence to VoiceOver on both
+///          hubs (#1476)
 @Suite("Hub removal routing")
 struct HubRemovalRoutingTests {
 
@@ -1108,6 +1110,37 @@ struct HubRemovalRoutingTests {
                 then stated an empty library (#1476).
                 """)
         }
+    }
+
+    /// The model's dash means a sentence — "Measuring…", "Could not measure storage" — and
+    /// VoiceOver reads the sentence only if each hub hands the card the model's label and the card
+    /// puts it on the value. `SettingsHeroCard`'s parameter defaults to `nil`, so a hub that drops
+    /// the argument still compiles and every model test stays green while VoiceOver says "dash"
+    /// (review round 1); the model's labels are pinned in `StorageHeroTests`.
+    @Test("Both hubs give the hero's dash the model's sentence, and the card reads it to VoiceOver (#1476)")
+    func heroDashReadsAsItsSentence() throws {
+        for hub in Self.hubs {
+            let hero = Self.code(try Self.body(of: "private var heroSection: some View",
+                                               in: try Self.source(hub.path)))
+            let card = try #require(hero.range(of: "SettingsHeroCard("), "\(hub.path)'s hero has no card")
+            let arguments = String(hero[card.upperBound...].prefix(while: { $0 != "{" }))
+            #expect(arguments.contains("valueAccessibilityLabel: hero.valueAccessibilityLabel,"), """
+                \(hub.path)'s hero does not hand the card the model's VoiceOver label, so VoiceOver \
+                reads the placeholder as "dash" instead of the sentence it stands for:
+                \(arguments)
+                """)
+        }
+        let cardBody = Self.code(try Self.body(of: "var body: some View",
+                                               in: try Self.source("FRUSExplorer/Settings/SettingsComponents.swift"),
+                                               after: "struct SettingsHeroCard<"))
+        let value = try #require(cardBody.range(of: "Text(value)"), "the card no longer draws its value")
+        let modifiers = String(cardBody[value.upperBound...].prefix(while: { $0 != "}" }))
+            .components(separatedBy: "visual()").first ?? ""
+        #expect(modifiers.contains(".accessibilityLabel(Text(valueAccessibilityLabel ?? value))"), """
+            SettingsHeroCard does not read `valueAccessibilityLabel` on its value, so a hub that passes \
+            it changes nothing VoiceOver says:
+            \(modifiers)
+            """)
     }
 
     /// `text` with every `//` comment cut, so a call or modifier that has been commented out is not

@@ -263,6 +263,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.20 — #1522: the boot builds the citation engine over the volumes directory, which it reads at
 ///          each lookup, rather than over the ids the directory held at boot.
 ///   4.21 — #1483: the Mac Find menu's Search… has a key of its own, `menu.find.search.mac`.
+///   4.22 — Lane STOR (#1526): `bootDownloadManager()` reconciles side-loaded volumes once the volumes
+///          directory is set (`AppState.reconcileSideloadedVolumes()`), and the date re-index runs
+///          through `AppState.indexAllVolumes(with:)`, which re-reads the indexed-volume set after it.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
