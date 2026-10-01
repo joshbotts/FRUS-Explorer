@@ -338,12 +338,12 @@ The XML file and its search-index rows are deleted from this Mac. Your notes, hi
      the import's own result ("Imported 1 volume") when a file the reader side-loads is a volume the
      app's bundled catalogue does not list. A file named after a catalogue volume is that volume and
      draws no notice. The row's title is "Not in the bundled catalogue"
-     (`settings.hub.sideload.notCatalogued`, in the same file four lines above this block's range);
-     this is its detail line.
+     (`settings.hub.sideload.notCatalogued`, the `label` declared in the same file just above this
+     block's `detail`); this is its detail line.
      Both storage hubs show the one shared row, so this is a single edit point. Citation Lookup and
      Add Documents' Citations tab resolve citations and links against the bundled catalogue only, so
      they refuse such a volume however it is cited; Browse and Search reach it. -->
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SideloadCatalogueNotice.detail | lines: 501–503 | key: settings.hub.sideload.notCatalogued.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SideloadCatalogueNotice.detail | lines: 502–503 | key: settings.hub.sideload.notCatalogued.detail | shared: iOS+macOS (single edit point) -->
 
 Volumes added from your own files are not included in features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.
 
