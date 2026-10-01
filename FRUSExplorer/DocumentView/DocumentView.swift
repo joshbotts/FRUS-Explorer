@@ -236,6 +236,9 @@ enum DocumentSheet: Identifiable {
 ///   3.11 — Wave R / R-8: the research-rail toolbar toggle names itself in its `Label`. This
 ///          toolbar holds one item and cannot overflow today; the shape is normalised so that
 ///          adding a second item can never silently rename this one to its SF Symbol.
+///   3.12 — #1540: the floating selection bar is retired here. Its four colours, Excerpt, Look Up
+///          in NARA and Note now lead the system edit menu (`.onSelectionVerb`,
+///          `performSelectionVerb`), which UIKit could draw over the bar.
 struct DocumentView: View {
 
     @Environment(AppState.self) private var appState
@@ -297,8 +300,8 @@ struct DocumentView: View {
 
     // MARK: Highlight state
     /// The `DocumentHighlight.id` of the most recently created highlight. Non-nil while the rail's
-    /// transient "Add Note to Highlight" row should appear (its dot was just tapped on the floating
-    /// selection bar); cleared once the linked note is composed.
+    /// transient "Add Note to Highlight" row should appear (a colour was just chosen from the
+    /// selection's edit menu); cleared once the linked note is composed.
     @State private var pendingHighlightLink: UUID? = nil
     /// WebKit selection range — `(start, end)` UTF-16 offsets (the
     /// `DocumentHighlight.startOffset` coordinate space; `frus-selection.js` counts a JS string's
@@ -311,11 +314,6 @@ struct DocumentView: View {
     /// The enclosing footnote body for a footnote selection (the JS `blockText`, #269), or
     /// `nil` for an in-document selection. Feeds the NARA lookup's candidate-citation scan.
     @State private var webKitSelectedBlockText: String? = nil
-    /// Visibility + anchor for the floating selection bar (Research-rail Phase B). Driven straight
-    /// from the selection payload's `rect`/`scale`; owns the debounced hide that survives the
-    /// false-clear blur. (The bar reads the rect from the payload in `onSelectionChanged`, so no
-    /// separate rect/scale `@State` is kept.)
-    @State private var selectionBar = SelectionBarState()
     /// The last *valid in-document* selection range, preserved across the false
     /// `selectioncleared` the system overflow "···" menu fires when it blurs the web
     /// view (see `onSelectionCleared`). `webKitSelectedText` already survives that
@@ -367,7 +365,6 @@ struct DocumentView: View {
     /// Which mode (Read/Research/remember-last) a document opens in (Session 154).
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
 
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.openWindow) private var openWindow
     // NO `@Environment(\.openURL)` HERE — deliberately, and do not re-add it.
     //
@@ -486,8 +483,8 @@ struct DocumentView: View {
                 vm = nil
                 // A different document is loading into this reused view. Clear ALL selection-derived
                 // state — not just the geometry — because Phase B made the range/text load-bearing:
-                // `createHighlight` falls back to `lastValidSelectionRange`, and the floating bar,
-                // NARA look-up, and note-linking read `webKitSelected*`/`pendingHighlightLink`. The
+                // `createHighlight` falls back to `lastValidSelectionRange`, and the edit menu's
+                // NARA look-up and note-linking read `webKitSelected*`/`pendingHighlightLink`. The
                 // reloaded web view won't reliably fire `selectioncleared`, so anything left set here
                 // would act against the NEW document — a wrong-offset highlight, or a note bound to
                 // the outgoing document's highlight. (macOS clears the equivalent block in
@@ -634,9 +631,9 @@ struct DocumentView: View {
             documentKey: "\(entry.volumeId)/\(entry.documentId)",
             canGoPrevious: previous != nil,
             canGoNext: next != nil,
-            // Mirrors the floating selection bar's own enablement, including the
-            // blur-surviving fallback — otherwise ⌘⇧H would be dead exactly when the
-            // menu bar took focus away from the web view.
+            // Reads the same range `createHighlight` does, including the blur-surviving
+            // fallback — otherwise ⌘⇧H would be dead exactly when the menu bar took focus
+            // away from the web view.
             canHighlight: webKitSelectionRange != nil || lastValidSelectionRange != nil,
             isResearchPanelVisible: railToggleActive,
             goPrevious: { if let previous { navigateToAdjacentDocument(previous) } },
@@ -1396,12 +1393,12 @@ struct DocumentView: View {
     /// Document toolbar — collapsed to a single **Research rail toggle** (Phase D).
     ///
     /// The redesign moved every former toolbar action onto the rail (its tiles + the
-    /// Summary/Notes/Tags/Collections accordions) or the floating selection bar, so the navigation
-    /// bar now carries just this one control. Back is free (the enclosing `NavigationStack`). The
-    /// toggle shows/hides the rail: on iPad the trailing `.inspector`, on iPhone the `.researchRail`
-    /// bottom sheet. "Open in New Window" lives in the rail header on iPad (D8); the summarize-failure
-    /// alert and the retired color picker's replacement (the floating bar's colour dots) live outside
-    /// the toolbar, so nothing is stranded by the collapse.
+    /// Summary/Notes/Tags/Collections accordions) or the selection's verbs (the edit menu since
+    /// #1540), so the navigation bar carries just this one control. Back is free (the enclosing
+    /// `NavigationStack`). The toggle shows/hides the rail: on iPad the trailing `.inspector`, on
+    /// iPhone the `.researchRail` bottom sheet. "Open in New Window" lives in the rail header on iPad
+    /// (D8); the summarize-failure alert and the retired color picker's replacement (the edit menu's
+    /// colours) live outside the toolbar, so nothing is stranded by the collapse.
     @ToolbarContentBuilder
     private func documentToolbar(vm: DocumentViewModel) -> some ToolbarContent {
         // Find in Document (UI review F-7). The web view has carried
@@ -1740,16 +1737,6 @@ struct DocumentView: View {
                     webKitSelectedBlockText = selection.blockText.isEmpty ? nil : selection.blockText
                 }
                 webKitSelectedText = selection.text.isEmpty ? nil : selection.text
-                // Drive the floating selection bar (Phase B) straight from the payload. Anchor it
-                // at the selection rect, but hide it while pinch-zoomed (D4) — the rect is in
-                // unzoomed point space, so a zoomed anchor would be wrong. A footnote/out-of-document
-                // selection disables the dots + Excerpt (no offsets), keeping Look Up + Note.
-                if let rect = selection.rect, !selection.text.isEmpty,
-                   abs(selection.scale - 1) < 0.01 {
-                    selectionBar.present(rect: rect, atFootnote: !selection.hasOffsets)
-                } else {
-                    selectionBar.hideNow()
-                }
             }
             .onSelectionCleared {
                 // Only clear the offset range. webKitSelectedText is intentionally
@@ -1760,24 +1747,17 @@ struct DocumentView: View {
                 // lastValidSelectionRange is likewise preserved so the overflow-menu
                 // "Add Selection as Excerpt" action still captures the A9 anchors.
                 webKitSelectionRange = nil
-                // Debounced so the bar survives the false `selectioncleared` the web view fires
-                // when a floating-bar tap blurs it; a real clear lets it elapse.
-                selectionBar.scheduleHide()
             }
-            .onSelectionScrolled {
-                // The anchor rect is stale after a scroll (or a pinch-zoom / rotation, which the JS
-                // also routes here) — hide the bar immediately so it never floats over stale text.
-                selectionBar.hideNow()
-            }
+            // #1540: the selection's verbs lead the system edit menu. The web view decides which
+            // it offers (a footnote selection gets Look Up in NARA and Note) and clears the
+            // selection after one is chosen; this performs it.
+            .onSelectionVerb { verb in performSelectionVerb(verb, vm: vm) }
             .onHighlightTapped  { start, end in highlightToDelete = (start, end) }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             documentEdgeNavigationOverlay(vm: vm)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay {
-                floatingSelectionBarOverlay(vm: vm)
-            }
             // The inline Summary/Notes/Tags accordion is retired (Phase D) — the shared Research rail
             // (iPad `.inspector` / iPhone `.researchRail` sheet) is now the one research surface.
         }
@@ -1812,57 +1792,45 @@ struct DocumentView: View {
                                end: range.1 + NARALookupAnalyzer.contextAfter)
     }
 
-    // MARK: - Floating Selection Bar (Research-rail Phase B)
+    // MARK: - Selection verbs (#1540)
 
-    /// The floating selection bar overlay: a debounced, rect-anchored ``FloatingSelectionBar``
-    /// carrying the four highlight-colour dots plus Excerpt · Look Up · Note, replacing the former
-    /// iOS text-selection edit-menu verbs. Anchored *below* the selection (`below: true`) so the
-    /// system edit menu (Copy, Look Up, Translate) keeps the space above it (D3). The dots create a
-    /// highlight; Excerpt/Look Up/Note reuse the same flows the toolbar and NARA hand-off use, all
-    /// of which read the blur-surviving `lastValidSelectionRange`/`webKitSelectedText`.
-    @ViewBuilder
-    private func floatingSelectionBarOverlay(vm: DocumentViewModel) -> some View {
-        GeometryReader { proxy in
-            if let anchor = selectionBar.anchor {
-                FloatingSelectionBar(
-                    atFootnote: selectionBar.atFootnote,
-                    compact: sizeClass == .compact,
-                    onHighlight: { color in
-                        createHighlight(color: color)
-                        selectionBar.hideNow()
-                    },
-                    onExcerpt: {
-                        if let capture = selectionExcerptCapture(vm: vm) {
-                            activeSheet = .addSelectionAsExcerpt(capture)
-                        }
-                        selectionBar.hideNow()
-                    },
-                    onLookUp: {
-                        let text = webKitSelectedText ?? ""
-                        let blockContext = lookupContext(vm: vm)
-                        webKitSelectedText = nil
-                        webKitSelectedBlockText = nil
-                        activeSheet = .naraLookup(text: text, blockContext: blockContext)
-                        selectionBar.hideNow()
-                    },
-                    onNote: {
-                        // Always a document note — NOT linked to `pendingHighlightLink`. Creating a
-                        // highlight hides the bar, so a bar tap here can only ever land on a *later,
-                        // different* selection; linking to the still-pending earlier highlight would
-                        // silently misattribute the note. The labeled toolbar "Add Note to Highlight"
-                        // (which fires immediately after highlighting) remains the linked path.
-                        activeSheet = .noteEditor
-                        selectionBar.hideNow()
-                    }
-                )
-                .modifier(FloatingSelectionBarPositioner(
-                    // gap 22 clears the WKWebView selection drag-handle that hangs below maxY, so the
-                    // user can still grab it to extend the selection without hitting the bar (M3).
-                    selection: anchor, container: proxy.size, below: true, gap: 22))
+    /// Performs one of the selection's verbs, chosen from the start of the system edit menu
+    /// (`SelectionEditMenu`) — the iPhone and iPad home of what the retired floating selection bar
+    /// offered, and what the Mac's bar still does. Every verb reads the blur-surviving
+    /// `lastValidSelectionRange`/`webKitSelectedText`, as the bar's did. The range is dropped
+    /// afterwards: the web view then clears the page's selection, and the iPad's Highlight Selection
+    /// (⌘⇧H) must not stay enabled for the passage just handled.
+    /// - Parameters:
+    ///   - verb: The chosen verb. The menu offers a colour and Excerpt only for a selection in the
+    ///     document body; a footnote selection gets Look Up in NARA and Note.
+    ///   - vm: The document view model (the render model the excerpt and look-up read).
+    @MainActor
+    private func performSelectionVerb(_ verb: SelectionVerb, vm: DocumentViewModel) {
+        switch verb {
+        case .highlight(let color):
+            createHighlight(color: color)
+        case .excerpt:
+            if let capture = selectionExcerptCapture(vm: vm) {
+                activeSheet = .addSelectionAsExcerpt(capture)
             }
+        case .lookUpInNARA:
+            let text = webKitSelectedText ?? ""
+            let blockContext = lookupContext(vm: vm)
+            webKitSelectedText = nil
+            webKitSelectedBlockText = nil
+            activeSheet = .naraLookup(text: text, blockContext: blockContext)
+        case .note:
+            // Always a document note — NOT linked to `pendingHighlightLink`. A colour chosen from
+            // the menu clears the selection, so Note can only ever be chosen on a *later, different*
+            // selection; linking to the still-pending earlier highlight would silently misattribute
+            // the note. The rail's "Add Note to Highlight" (shown right after highlighting) remains
+            // the linked path.
+            activeSheet = .noteEditor
         }
-        .allowsHitTesting(selectionBar.isVisible)
-        .animation(.easeOut(duration: 0.25), value: selectionBar.isVisible)
+        // `onSelectionCleared` keeps `lastValidSelectionRange` through a blur's false clear; the clear
+        // that follows a verb is real, so the range goes here, or ⌘⇧H would highlight it again.
+        webKitSelectionRange = nil
+        lastValidSelectionRange = nil
     }
 
     // MARK: - Edge-Tap Document Navigation (Read mode "page-turn")
@@ -2066,10 +2034,9 @@ struct DocumentView: View {
     /// (see the `.task(id:)` reset), so no offsets/text/highlight-link from the outgoing document
     /// can act against the incoming one — the iOS counterpart to macOS's `HighlightCoordinator.reset()`.
     /// Load-bearing since Phase B: `createHighlight` falls back to `lastValidSelectionRange`, and the
-    /// floating bar / NARA look-up read `webKitSelected*`.
+    /// edit menu's NARA look-up reads `webKitSelected*`.
     @MainActor
     private func clearSelectionState() {
-        selectionBar.hideNow()
         webKitSelectionRange = nil
         lastValidSelectionRange = nil
         webKitSelectedText = nil
@@ -2079,10 +2046,11 @@ struct DocumentView: View {
 
     @MainActor
     private func createHighlight(color: DocumentHighlight.Color) {
-        // Fall back to the blur-surviving `lastValidSelectionRange`: tapping a floating-bar dot
-        // blurs the web view, which fires a false `selectioncleared` that nils `webKitSelectionRange`
-        // before this runs (the same race excerpt capture already guards against). Both track the
-        // same in-document selection, so the fallback recovers the correct offsets.
+        // Fall back to the blur-surviving `lastValidSelectionRange`: ⌘⇧H from an iPad's menu bar
+        // can blur the web view, which fires a false `selectioncleared` that nils
+        // `webKitSelectionRange` before this runs (the same race excerpt capture already guards
+        // against; the retired floating bar's dots raced it too). Both track the same in-document
+        // selection, so the fallback recovers the correct offsets.
         guard let range = webKitSelectionRange ?? lastValidSelectionRange,
               let model = vm?.renderModel else { return }
         let rv = ASTToRenderNodeConverter.renderingVersion(for: model)

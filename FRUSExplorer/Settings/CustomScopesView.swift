@@ -75,7 +75,7 @@ struct CustomScopesView: View {
 
     var body: some View {
         List {
-            Section {
+            WrappingFooterSection {
                 if scopes.isEmpty {
                     Text(String(localized: "settings.scopes.empty.detail",
                                 defaultValue: "Create a named set of volumes to use as a search scope — for example, every volume covering a crisis, a region, or an administration."))

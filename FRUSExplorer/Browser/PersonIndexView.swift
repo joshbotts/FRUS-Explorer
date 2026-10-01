@@ -652,7 +652,7 @@ struct PersonIndexDetailSheet: View {
     /// would have to invent the missing month and day.
     @ViewBuilder
     private func careerSection(_ career: POCOMCareer) -> some View {
-        Section {
+        WrappingFooterSection {
             ForEach(career.a) { assignment in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(assignment.titleText)
@@ -878,7 +878,7 @@ struct PersonIndexDetailSheet: View {
                 if let career, !career.a.isEmpty { careerSection(career) }
 
                 if effectiveRollupId != nil {
-                    Section {
+                    WrappingFooterSection {
                         Button {
                             showMergePicker = true
                         } label: {
@@ -896,7 +896,7 @@ struct PersonIndexDetailSheet: View {
                 }
 
                 if !candidates.isEmpty {
-                    Section {
+                    WrappingFooterSection {
                         ForEach(candidates) { candidate in
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
@@ -931,7 +931,7 @@ struct PersonIndexDetailSheet: View {
                 }
 
                 if members.count > 1 {
-                    Section {
+                    WrappingFooterSection {
                         ForEach(members) { member in
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {

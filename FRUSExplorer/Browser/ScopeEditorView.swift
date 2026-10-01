@@ -127,7 +127,7 @@ struct ScopeEditorView: View {
                 }
             }
 
-            Section {
+            WrappingFooterSection {
                 ForEach(scope.volumeIds, id: \.self) { volumeId in
                     memberRow(volumeId, in: scope)
                 }

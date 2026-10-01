@@ -600,7 +600,7 @@ struct SubjectDetailSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
+                WrappingFooterSection {
                     LabeledContent(String(localized: "subjects.detail.category",
                                           defaultValue: "Category"),
                                    value: "\(subject.category) · \(subject.subcategory)")
@@ -620,7 +620,7 @@ struct SubjectDetailSheet: View {
 
                 coveringVolumesSection
 
-                Section {
+                WrappingFooterSection {
                     Button {
                         findDocuments()
                     } label: {
@@ -684,7 +684,7 @@ struct SubjectDetailSheet: View {
             let visible = showsAllVolumes
                 ? coveringVolumeIds
                 : Array(coveringVolumeIds.prefix(Self.volumePreviewCap))
-            Section {
+            WrappingFooterSection {
                 ForEach(visible, id: \.self) { volumeId in
                     Button {
                         openVolume(volumeId)

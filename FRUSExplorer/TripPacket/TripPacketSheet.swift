@@ -629,13 +629,32 @@ struct TripPacketSheet: View {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-23: #830
+///   1.1 — Lane EXPORT review round 1: `fileName(title:)` cuts the title to fit (`ExportFileName`), so a long
+///          project name no longer leaves the sheet with no PDF to share
 enum TripPacketPDFRenderer {
+
+    /// The PDF's file name: "Archives Visit — " and `title`, its path separators written as `-`, cut on a whole
+    /// character so the name fits the file system (`ExportFileName`, #1498's rule).
+    ///
+    /// Uncut, a project name past about 230 characters made a name the file system refuses, `CGDataConsumer(url:)`
+    /// failed, `render` returned `nil`, and the sheet's Share PDF control disappeared without a word (review round 1).
+    ///
+    /// - Parameter title: The packet's title — the project's name.
+    /// - Returns: The file name, ending in `.pdf`.
+    static func fileName(title: String) -> String {
+        let prefix = "Archives Visit — "
+        let safeName = title.components(separatedBy: CharacterSet(charactersIn: "/\\:"))
+            .joined(separator: "-")
+        let stem = ExportFileName.fitting(safeName,
+                                          reserving: ExportFileName.length(of: prefix) + ExportFileName.length(of: ".pdf"))
+        return prefix + stem + ".pdf"
+    }
 
     /// Renders the packet to a temporary PDF, or `nil` when the context cannot be made.
     ///
     /// - Parameters:
     ///   - packet: The exporter's plain-text output.
-    ///   - title: Names the file, sanitized.
+    ///   - title: Names the file, through `fileName(title:)`.
     /// - Returns: A `file://` URL in the temporary directory.
     static func render(packet: String, title: String) -> URL? {
         var pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)   // US Letter, points
@@ -651,10 +670,7 @@ enum TripPacketPDFRenderer {
             ])
         let framesetter = CTFramesetterCreateWithAttributedString(attributed)
 
-        let safeName = title.components(separatedBy: CharacterSet(charactersIn: "/\\:"))
-            .joined(separator: "-")
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Archives Visit — \(safeName).pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName(title: title))
         guard let consumer = CGDataConsumer(url: url as CFURL),
               let context = CGContext(consumer: consumer, mediaBox: &pageRect, nil) else {
             return nil

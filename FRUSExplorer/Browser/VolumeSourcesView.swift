@@ -867,7 +867,7 @@ struct CrossVolumeProvenanceContent: View {
 
     var body: some View {
         List {
-            Section {
+            WrappingFooterSection {
                 ForEach(volumeIds, id: \.self) { volumeId in
                     Button {
                         open(volumeId)

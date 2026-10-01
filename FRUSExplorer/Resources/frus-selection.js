@@ -25,12 +25,14 @@
  *                                               Highlight creation disabled; NARA lookup enabled.
  *   { start: -1, end: -1 }                     — selection cleared; button disabled.
  * `rect` = { x, y, w, h } is the selection's bounding box in web-view viewport CSS px and
- * `scale` = visualViewport.scale — together they anchor the floating selection bar.
+ * `scale` = visualViewport.scale — together they anchor the Mac's floating selection bar. The
+ * iPhone and iPad reader draws no bar since #1540 (its actions lead the system edit menu), so
+ * nothing there reads them.
  *
  * A separate `selectionScrolled` message (empty body) fires, throttled to one per frame, while
  * a selection is live and the document scrolls inside the web view, OR the visual viewport changes
  * (pinch zoom, visual-viewport pan, rotation) — none of which re-fire selectionchange — so the
- * viewport-anchored bar can dismiss before its rect goes stale.
+ * viewport-anchored bar can dismiss before its rect goes stale. Only the Mac listens since #1540.
  *
  * ## Reverse mapping
  * rangeEndpointToOffset() is the inverse of the forward-mapping used by
@@ -58,13 +60,25 @@
  *   1.6 — #1495: a table's caption, drawn under data-skip above the table, is one of those parts: an
  *          endpoint inside it moves to the first cell's first letter. `listPartHolding` is renamed
  *          `drawnPartHolding`, since it no longer finds only list parts.
+ *   1.7 — #1540 review round 1: an endpoint just past a mapped text node's last character maps to
+ *          the offset after it instead of to -1, so a selection that ends a paragraph or stops just
+ *          before a footnote marker keeps its offsets. On iPhone and iPad it had lost the colours
+ *          and Excerpt from the edit menu; the Mac's bar had drawn them dimmed.
  */
 
 function rangeEndpointToOffset(node, localOffset) {
   if (!window.FRUSOffsets) return -1;
   const map = window.FRUSOffsets.charToNode;
+  // #1540: the map holds one entry per character, so a caret just past a text node's last
+  // character has none of its own. A drag that ends a paragraph, or ends just before a footnote
+  // marker or a name, puts its end there, and the whole selection fell to the footnote branch. It
+  // is the offset after that last character, the endpoint buildRanges in frus-highlights.js gives a
+  // highlight that ends there. Only a mapped node: a footnote's text still maps to -1.
+  const atNodeEnd = node.nodeType === Node.TEXT_NODE && localOffset > 0 && localOffset === node.length;
   for (let i = 0; i < map.length; i++) {
-    if (map[i].node === node && map[i].localOffset === localOffset) return i;
+    if (map[i].node !== node) continue;
+    if (map[i].localOffset === localOffset) return i;
+    if (atNodeEnd && map[i].localOffset === localOffset - 1) return i + 1;
   }
   const part = drawnPartHolding(node);
   return part ? firstOffsetAfter(part) : -1;
@@ -125,10 +139,11 @@ function enclosingBlockText(range, fallback) {
   return text ? text.slice(0, 5000) : fallback;
 }
 // The selection's bounding box in web-view viewport coordinates (CSS px) plus the visual
-// viewport scale, for anchoring the floating selection bar. getBoundingClientRect is
+// viewport scale, for anchoring the Mac's floating selection bar. getBoundingClientRect is
 // viewport-relative (already accounts for internal scroll); at scale 1 it maps 1:1 onto the
-// web view's own point space. `scale` (visualViewport.scale) lets a pinch-zoomed iOS reader
-// correct or hide the bar.
+// web view's own point space. `scale` (visualViewport.scale) was read by the iPhone and iPad
+// bar, which hid itself while pinch-zoomed; that bar is retired (#1540) and macOS never
+// magnifies, so nothing reads it now.
 function selectionGeometry(range) {
   const r = range.getBoundingClientRect();
   return {
@@ -168,7 +183,7 @@ document.addEventListener('selectionchange', () => {
 // A viewport-anchored floating bar goes stale when the document scrolls inside the web view,
 // and `selectionchange` does NOT re-fire on scroll. Post a throttled (one-per-frame) hide
 // signal while a selection is live so the bar can dismiss; capture-phase + passive so it sees
-// scrolls on any inner scroller without blocking them.
+// scrolls on any inner scroller without blocking them. Only the Mac draws a bar since #1540.
 let selectionScrollScheduled = false;
 function scheduleSelectionScrolled() {
   if (selectionScrollScheduled) return;

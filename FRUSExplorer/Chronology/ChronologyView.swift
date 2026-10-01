@@ -896,7 +896,7 @@ struct ChronologyView: View {
 
     @ViewBuilder
     private var spanningSection: some View {
-        Section {
+        WrappingFooterSection {
             ForEach(displayedSpanningRows) { row in
                 Button {
                     open(row)
@@ -966,7 +966,7 @@ struct ChronologyView: View {
 
     @ViewBuilder
     private var overflowSection: some View {
-        Section {
+        WrappingFooterSection {
             ForEach(displayedOverflowRows) { row in
                 Button {
                     open(row)

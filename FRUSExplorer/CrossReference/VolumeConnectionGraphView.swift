@@ -48,6 +48,7 @@ import SwiftUI
 ///          disc radius the canvas draws and the placement keeps clear of
 ///   2.3 — #1471: `clearSelection()`, which `load` and a click on the Mac's empty canvas call;
 ///          #1500: `centreTitle(in:)`, the title the Mac window names the graph by
+///   2.4 — #1434: `isLayoutSettling`, set while an animated layout runs and cleared by its last pass
 @Observable
 @MainActor
 final class VolumeConnectionGraphViewModel {
@@ -140,6 +141,18 @@ final class VolumeConnectionGraphViewModel {
 
     var nodePositions: [String: CGPoint] = [:]
 
+    /// Whether the spring layout is still animating toward its settled positions (#1434): `true`
+    /// from the moment `rerunLayout` starts an animated layout until its last pass is published, and
+    /// `false` for a layout settled at once (Reduce Motion, or three volumes or fewer). The canvas
+    /// hands it to `GraphNodeLabels.place(_:avoiding:settling:)`, which places only the central
+    /// volume's label while it is set, so the partner labels are chosen once, from the settled
+    /// layout, and do not flicker.
+    private(set) var isLayoutSettling = false
+
+    /// How many passes an animated layout publishes before it rests: each runs `runPhysics` for 20
+    /// iterations, then waits a frame (16 ms).
+    static let layoutSteps = 15
+
     // MARK: - Private
 
     private var canvasSize: CGSize = .zero
@@ -201,11 +214,12 @@ final class VolumeConnectionGraphViewModel {
     /// every Nixon–Ford volume read "frus1969-7". The longest bundled id is 22 characters
     /// (`frus1961-63v07-09mSupp`), so this draws every one whole; a longer id, a side-loaded
     /// volume's, is cut hard and marked, since an id has no word boundary. The width costs labels,
-    /// since `GraphNodeLabels.place(_:)` drops a label that would crowd another: over
-    /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that suite's
-    /// estimate rather than a font, it keeps 18 labels on a 700 × 520 canvas and 11 on a
-    /// 360 × 420 one (pinned there), where ten characters kept 25 and 11 — but every one of those
-    /// 25 read "frus1969-…".
+    /// since `GraphNodeLabels.place(_:avoiding:settling:)` drops a label crowded in both its
+    /// places: over `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that
+    /// suite's estimate rather than a font, it kept 18 labels on a 700 × 520 canvas and 11 on a
+    /// 360 × 420 one with one place per label, where ten characters kept 25 and 11 — but every one
+    /// of those 25 read "frus1969-…". With the place above a node (#1438) it keeps 31 and 19,
+    /// pinned there.
     static let labelLimit = 22
 
     /// The radius of the central volume's disc.
@@ -247,8 +261,8 @@ final class VolumeConnectionGraphViewModel {
     }
 
     /// One placement request per laid-out node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
-    /// the canvas draws neither its disc nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:settling:)`. A node with no position or no measured size
+    /// is left out, since the canvas draws neither its disc nor its label.
     /// - Parameter sizes: Each node's measured label size, keyed by volume id.
     /// - Returns: The requests, highest priority first.
     func labelRequests(sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {
@@ -353,6 +367,9 @@ final class VolumeConnectionGraphViewModel {
 
     private func rerunLayout(reduceMotion: Bool) {
         layoutTask?.cancel()
+        // Every layout settled at once leaves the labels free (#1434); only the animated one below
+        // holds them back, and only until its last pass.
+        isLayoutSettling = false
         let central  = centralVolumeId
         let ids      = allVolumeIds
         let inbound  = inboundEdges
@@ -383,9 +400,10 @@ final class VolumeConnectionGraphViewModel {
         }
 
         nodePositions = initial
+        isLayoutSettling = true
         layoutTask = Task { [weak self] in
             var current = initial
-            for _ in 0..<15 {
+            for step in 0..<Self.layoutSteps {
                 guard !Task.isCancelled else { break }
                 current = VolumeConnectionGraphViewModel.runPhysics(
                     ids: ids, centralId: central, edges: allEdges,
@@ -394,6 +412,10 @@ final class VolumeConnectionGraphViewModel {
                 await MainActor.run { [weak self] in
                     guard let self, !Task.isCancelled else { return }
                     self.nodePositions = current
+                    // The last pass is the settled layout, published with the flag in one change,
+                    // so the frame that draws it places every label (#1434). A cancelled layout
+                    // never gets here: the one that cancelled it owns the flag.
+                    if step == Self.layoutSteps - 1 { self.isLayoutSettling = false }
                 }
                 try? await Task.sleep(for: .milliseconds(16))
             }
@@ -512,6 +534,10 @@ final class VolumeConnectionGraphViewModel {
 ///   2.3 — #1471: each hit area writes its `.onHover` and `.help` before `.position(pos)`, so
 ///          its pointer region is its disc and not the whole canvas; on the Mac a click on empty
 ///          canvas calls `clearSelection()`. #1500: `init(vm:)`, a view model the host owns
+///   2.4 — 2026-10-01: #1434, the partner labels wait for the settled layout; #1517, the empty
+///          canvas takes hits on iOS too, so a drag, pinch or double-tap can start there (a tap
+///          clears nothing there; the Mac's click still clears). Measured in review round 1, on
+///          the sheet in an iPhone 17 and an iPad Pro 13-inch (M5) simulator: see `emptyCanvas`
 struct VolumeConnectionGraphView: View {
 
     /// The graph's view model: this view's own (`init(volumeId:)`) or the host's (`init(vm:)`,
@@ -586,9 +612,7 @@ struct VolumeConnectionGraphView: View {
                 }
                 .scaleEffect(vm.scale, anchor: .center)
                 .offset(vm.panOffset)
-                #if os(macOS)
                 .background { emptyCanvas }
-                #endif
                 .gesture(magnificationGesture)
                 .gesture(panGesture)
                 .gesture(resetViewportGesture)
@@ -603,9 +627,9 @@ struct VolumeConnectionGraphView: View {
 
     // MARK: - Canvas
 
-    #if os(macOS)
-    /// The empty canvas behind the discs, which takes a click (#1471): a single click calls
-    /// `clearSelection()`, closing the panel whether it shows a pinned volume or a hover preview.
+    /// The empty canvas behind the discs, which takes hits (#1471, #1517), and on the Mac a click
+    /// (#1471): a single click calls `clearSelection()`, closing the panel whether it shows a pinned
+    /// volume or a hover preview.
     ///
     /// The canvas draws nothing a click can hit — `graphCanvas` does not take hits and a hit area
     /// is a 48-pt disc — so without this a pinned panel closed only on a second click on the same
@@ -614,19 +638,31 @@ struct VolumeConnectionGraphView: View {
     /// double-click and a single click on empty canvas all went unanswered without it, and with it
     /// the drag pans, the double-click resets the viewport without also clearing, and a click on a
     /// disc still reaches the disc, whose hit area lies above this. It is a `.background` after
-    /// `.offset`, so it covers the canvas however far the graph is panned. macOS only: on iOS the
-    /// graph is a sheet with detents, and a hit-testable canvas would change which of the sheet and
-    /// the graph a drag moves, which is not measured.
+    /// `.offset`, so it covers the canvas however far the graph is panned.
+    ///
+    /// On iOS it was left out until #1517, because the graph is a sheet with detents and a
+    /// hit-testable canvas might change which of the sheet and the graph a drag moves. Measured on
+    /// `v2` @ `284f52c8`, a drag across empty canvas moved neither: on an iPad Pro 13-inch (M5)
+    /// simulator (iOS 27.0) the graph did not pan and the sheet did not move, and on an iPhone 17
+    /// simulator (iOS 26.5), at the `.medium` detent, neither a sideways nor an upward drag panned
+    /// the graph or raised the sheet. With this canvas (review round 1, the same two simulators), a
+    /// drag across empty canvas pans the graph sideways and up or down, on the iPhone at `.medium`
+    /// and on the iPad, the sheet staying where it was, and a double-tap there resets the view; the
+    /// sheet still changes detent from its grabber and title bar (measured on the iPhone, an upward
+    /// drag there raised it to `.large`). A tap here clears nothing on iOS, as a click on empty
+    /// canvas clears nothing in the document graph (the owner's decision D8).
     private var emptyCanvas: some View {
-        Color.clear
-            .contentShape(Rectangle())
+        GraphEmptyCanvas()
+            #if os(macOS)
             .onTapGesture { vm.clearSelection() }
-            .accessibilityHidden(true)
+            #endif
     }
-    #endif
 
     private var graphCanvas: some View {
-        Canvas { context, _ in
+        // Read here, in body, where Observation registers it: a read inside the Canvas closure runs
+        // at render time and registers nothing (#1434).
+        let settling = vm.isLayoutSettling
+        return Canvas { context, _ in
             let maxCount  = CGFloat(vm.maxCount)
             let centralId = vm.centralVolumeId
 
@@ -687,7 +723,7 @@ struct VolumeConnectionGraphView: View {
             // Labels (#1384): each measured as it will be drawn, then placed in priority order —
             // the central volume always, on its plate, then the panel's volume and the partners by
             // references, each only where it keeps clear of the labels already placed and of every
-            // other disc.
+            // other disc. While the layout animates, the central volume's alone (#1434).
             var resolved: [String: GraphicsContext.ResolvedText] = [:]
             var sizes: [String: CGSize] = [:]
             for id in vm.labelPriority {
@@ -697,7 +733,7 @@ struct VolumeConnectionGraphView: View {
                                                     height: .greatestFiniteMagnitude))
             }
             let requests = vm.labelRequests(sizes: sizes)
-            let placed = GraphNodeLabels.place(requests)
+            let placed = GraphNodeLabels.place(requests, settling: settling)
             if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
                 GraphNodeLabels.drawPlate(&context, in: plate)
             }

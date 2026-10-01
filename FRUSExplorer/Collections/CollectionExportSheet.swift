@@ -35,6 +35,8 @@ import UIKit
 ///          which the preview calls too, and the native file is written by
 ///          `NativeCollectionSerializer.writeTemporaryFile(_:)`; both name an unnamed collection
 ///          "Untitled Collection" through `CollectionExportNaming`
+///   1.4 — #1497: Send to Zotero Library names its Zotero collection through
+///          `CollectionExportNaming.zoteroCollectionName` — trimmed, or "FRUS Explorer Collection - yyyy-mm-dd"
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -744,7 +746,7 @@ struct ExportSheetView: View {
             }
             let result = try await ZoteroAPIClient().send(
                 items: items,
-                collectionName: collection.name.isEmpty ? nil : collection.name,
+                collectionName: CollectionExportNaming.zoteroCollectionName(savedName: collection.name),
                 apiKey: apiKey,
                 userID: userID,
                 username: store.username

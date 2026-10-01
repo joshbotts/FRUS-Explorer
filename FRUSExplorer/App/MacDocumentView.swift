@@ -629,17 +629,17 @@ struct MacDocumentView: View {
 
     // MARK: - Floating Selection Bar (Research-rail Phase B2)
 
-    /// The macOS floating selection bar overlay: the shared ``FloatingSelectionBar`` anchored
-    /// *above* the selection (D3 — macOS has no system selection callout to compete with) on the
-    /// web view. The dots create a highlight; Excerpt/Look Up/Note reuse the same actions the
-    /// Research rail and Document menu drive.
+    /// The macOS floating selection bar overlay: the ``FloatingSelectionBar`` anchored *above* the
+    /// selection (D3 — macOS shows its system menu only on a right-click, so nothing competes for
+    /// that space) on the web view. iPhone and iPad retired their bar for the edit menu (#1540). The
+    /// dots create a highlight; Excerpt/Look Up in NARA/Note reuse the same actions the Research rail
+    /// and Document menu drive.
     @ViewBuilder
     private var macFloatingSelectionBarOverlay: some View {
         GeometryReader { proxy in
             if let anchor = selectionBar.anchor {
                 FloatingSelectionBar(
                     atFootnote: selectionBar.atFootnote,
-                    compact: false,
                     onHighlight: { color in
                         createWebKitHighlight(color: color)
                         selectionBar.hideNow()

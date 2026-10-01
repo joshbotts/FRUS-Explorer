@@ -277,7 +277,7 @@ struct DocumentChangeReviewSheet: View {
 
     /// What the re-index recorded, in the banner's own words, and the document-level disposition.
     private var changeSection: some View {
-        Section {
+        WrappingFooterSection {
             if !loaded {
                 Text(String(localized: "document.review.loading", defaultValue: "Reading the change record…"))
                     .foregroundStyle(.secondary)
@@ -317,7 +317,7 @@ struct DocumentChangeReviewSheet: View {
 
     /// Every highlight on the document, with its standing and its two actions.
     private var highlightsSection: some View {
-        Section {
+        WrappingFooterSection {
             ForEach(orderedHighlights) { highlight in
                 highlightRow(highlight)
             }
@@ -407,8 +407,9 @@ struct DocumentChangeReviewSheet: View {
                 // "Notes" and "notes" are unequal strings that compare `.orderedSame`, so the
                 // obvious form returns false for both orderings and leaves them unordered against
                 // each other — and `sorted` is not stable, so the rows could swap between renders.
-                let order = ($0.collection?.name ?? "")
-                    .localizedCaseInsensitiveCompare($1.collection?.name ?? "")
+                // By the name each row prints (#1464 review, round 1), not the raw one.
+                let order = CollectionEditorNaming.listOrder($0.collection?.name ?? "",
+                                                             $1.collection?.name ?? "")
                 if order != .orderedSame { return order == .orderedAscending }
                 if $0.sortOrder != $1.sortOrder { return $0.sortOrder < $1.sortOrder }
                 return $0.id.uuidString < $1.id.uuidString
@@ -418,7 +419,7 @@ struct DocumentChangeReviewSheet: View {
     /// The quotations frozen from this document, each with what an exact search of the current
     /// text found and which version it was taken from.
     private var excerptsSection: some View {
-        Section {
+        WrappingFooterSection {
             ForEach(excerpts) { entry in
                 excerptRow(entry)
             }
@@ -442,9 +443,9 @@ struct DocumentChangeReviewSheet: View {
         return VStack(alignment: .leading, spacing: 6) {
             Text(entry.text ?? "")
                 .lineLimit(4)
-            Text(entry.collection?.name.isEmpty == false
-                 ? entry.collection?.name ?? ""
-                 : String(localized: "research.list.untitledCollection", defaultValue: "Untitled Collection"))
+            // The collection's name as every list row reads it (#1464): trimmed, and "Untitled
+            // Collection" when it has none.
+            Text(CollectionEditorNaming.listName(savedName: entry.collection?.name ?? ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let outcome, let lines {
@@ -519,7 +520,7 @@ struct DocumentChangeReviewSheet: View {
             visitDocuments.isEmpty ? nil : String(localized: "document.review.other.visit",
                                                   defaultValue: "in an archive-visit plan"),
         ].compactMap { $0 }
-        return Section {
+        return WrappingFooterSection {
             if parts.isEmpty {
                 Text(String(localized: "document.review.other.none", defaultValue: "No other annotations on this document."))
                     .foregroundStyle(.secondary)

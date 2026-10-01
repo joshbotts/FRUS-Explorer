@@ -60,6 +60,7 @@ enum AnalyticsExportOutcome {
 ///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
+///   1.1 — the 2026-09-28 audit, beside #1498: `filenameStem` cuts a title too long for a file name
 @MainActor
 enum AnalyticsExportDelivery {
 
@@ -119,6 +120,11 @@ enum AnalyticsExportDelivery {
     /// A filesystem-safe filename stem built from a chart title, with a date stamp so repeat exports
     /// of the same chart are distinguishable in a download folder.
     ///
+    /// The title's part is cut, on a whole character, so the prefix, the date and an extension of up
+    /// to 8 characters fit the file system (`ExportFileName`; every caller appends 4, `.csv`, `.png` or
+    /// `.pdf`). Uncut, a word cloud of the manifest's longest volume title (`frus1865p4`) made a
+    /// 515-byte PNG name, and the iOS share sheet's write failed (the 2026-09-28 audit, beside #1498).
+    ///
     /// - Parameters:
     ///   - title: The chart's title.
     ///   - prefix: The filename family, so a word cloud is not filed as a chart.
@@ -133,8 +139,17 @@ enum AnalyticsExportDelivery {
             .trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: " +", with: " ", options: .regularExpression)
             .replacingOccurrences(of: " ", with: "-")
-        if stem.isEmpty { stem = "chart" }
         let stamp = date.formatted(.iso8601.year().month().day().dateSeparator(.dash))
+        // The prefix, the date, the two hyphens joining them, and the extension a caller appends.
+        let extensionAllowance = 8
+        let fitted = ExportFileName.fitting(
+            stem, reserving: ExportFileName.length(of: prefix) + ExportFileName.length(of: stamp) + 2
+                + extensionAllowance)
+        if fitted.count < stem.count {
+            stem = fitted
+            while stem.hasSuffix("-") { stem.removeLast() }
+        }
+        if stem.isEmpty { stem = "chart" }
         return "\(prefix)-\(stem)-\(stamp)"
     }
 }

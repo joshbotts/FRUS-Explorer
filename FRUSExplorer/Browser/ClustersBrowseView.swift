@@ -747,7 +747,7 @@ struct ClusterDocumentsView: View {
         // number shown here and the number a capture reports cannot disagree.
         let resolution = WorkingCorpusResolver(indexedVolumeIds: appState.indexedVolumeIds)
             .resolve(WorkingCorpus(name: "", documentKeys: keys))
-        Section {
+        WrappingFooterSection {
             LabeledContent(String(localized: "browser.clusters.drill.count",
                                   defaultValue: "Documents in the series"),
                            value: cluster.documentCount.formatted())
@@ -770,7 +770,7 @@ struct ClusterDocumentsView: View {
 
     @ViewBuilder
     private func actionsSection(_ cluster: SemanticMapArtifacts.Cluster) -> some View {
-        Section {
+        WrappingFooterSection {
             // R-1b: the LAYOUT identity, not the family digest. A cluster id means nothing outside
             // the layout that minted it, and the family digest is unchanged by a relayout — see
             // `SemanticMapArtifacts.MapIndex.layoutIdentity`.
@@ -832,7 +832,7 @@ struct ClusterDocumentsView: View {
 
     @ViewBuilder
     private var showMoreSection: some View {
-        Section {
+        WrappingFooterSection {
             Button {
                 drill.showMore(Self.pageSize, for: clusterId)
                 Task { await loadMetadata() }

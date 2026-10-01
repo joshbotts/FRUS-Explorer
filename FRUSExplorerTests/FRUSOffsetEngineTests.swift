@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import UIKit
 import WebKit
 @testable import FRUSExplorer
 
@@ -507,8 +508,9 @@ struct TableCaptionLayoutTests {
 // MARK: - ListLabelSelectionTests (#1371)
 
 /// A selection whose start or end falls inside an offset-invisible (`data-skip`) node maps to −1
-/// in `kSelectionJS`, so the selection bar treats it as a footnote selection and disables
-/// Highlight and Excerpt. A drag from the left edge of a numbered item commonly starts on its
+/// in `kSelectionJS`, so the reader treats it as a footnote selection: the Mac's selection bar
+/// disables Highlight and Excerpt, and the iPhone and iPad edit menu leaves them out (#1540).
+/// A drag from the left edge of a numbered item commonly starts on its
 /// printed label, so restoring the labels under `data-skip` (#1371) would have made numbered
 /// paragraphs harder to highlight than they were while the labels were missing.
 ///
@@ -981,7 +983,10 @@ struct ListLabelLayoutTests {
 @MainActor
 final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
 
-    private let webView: WKWebView
+    /// The iPhone and iPad reader's own web view (#1540), wired to ``coordinator`` as
+    /// `_FRUSDocumentWebViewiOS.makeUIView` wires it, so a test can build the edit menu's group
+    /// from what the page reported and see what choosing an item does to the page.
+    let webView: _FRUSEditMenuWebView
     private var loadContinuation: CheckedContinuation<Void, Error>?
 
     /// The production message handler the page's scripts post to. Kept (#1371) so a test can
@@ -1002,11 +1007,12 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
         )
         // Give the web view a concrete frame so WebKit allocates a proper
         // rendering surface for script execution.
-        webView = WKWebView(
+        webView = _FRUSEditMenuWebView(
             frame: CGRect(x: 0, y: 0, width: 800, height: 600),
             configuration: config
         )
         super.init()
+        webView.selectionReports = stubCoordinator
         webView.navigationDelegate = self
     }
 
@@ -1089,6 +1095,28 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
             return payload
         }
         return nil
+    }
+
+    /// Runs `action` and returns whether the production bridge reports the page's selection cleared
+    /// within `timeout`: the `{ start: -1, end: -1 }` message `postCleared` sends, which the
+    /// coordinator turns into `onSelectionCleared` (#1540).
+    func selectionCleared(
+        timeout: Duration = .seconds(5),
+        after action: () async throws -> Void
+    ) async throws -> Bool {
+        let (events, continuation) = AsyncStream.makeStream(of: Void.self)
+        coordinator.onSelectionCleared = { continuation.yield(()) }
+        defer { coordinator.onSelectionCleared = nil }
+        let timer = Task {
+            try? await Task.sleep(for: timeout)
+            continuation.finish()
+        }
+        defer { timer.cancel() }
+        try await action()
+        for await _ in events {
+            return true
+        }
+        return false
     }
 
     /// Returns `true` if `window.FRUSOffsets` was set by the injected WKUserScript.
@@ -1390,5 +1418,408 @@ struct SelectionBarStateTests {
         state.scheduleHide(after: 30)
         try? await Task.sleep(for: .milliseconds(120))
         #expect(state.isVisible == false)
+    }
+}
+
+// MARK: - SelectionEditMenuItemTests (#1540)
+
+/// The iPhone and iPad edit menu's own items (#1540): which verbs a selection offers, in what order,
+/// under what spoken names, and what each performs — and the web view's rule for adding them.
+///
+/// `SelectionEditMenuTests` in the UI target is the half that drives UIKit: it selects a word in a
+/// real document and reads the menu UIKit drew. This half pins what that test cannot reach — a
+/// footnote selection (the fixture has no footnote), each colour's action, the three guards in
+/// `_FRUSEditMenuWebView.selectionGroup()` (a handler, a reported selection, text in it), and the
+/// clear that follows a chosen item, read from a page through the real selection bridge.
+///
+/// Two pieces of the wiring are reached by no test here or in the UI suite: `buildMenu(with:)`'s
+/// `builder.system == .context` guard, which keeps the items out of the iPad's menu bar (a
+/// `UIMenuBuilder` cannot be built in a test), and the representables' `forgetSelection()` call
+/// when a new page loads (`updateUIView` needs a SwiftUI context). The insertion at the start of
+/// the menu is the UI suite's.
+@MainActor
+struct SelectionEditMenuItemTests {
+
+    /// Collects what the menu's items perform, so a test can read it back.
+    @MainActor
+    private final class Recorder {
+        var verbs: [SelectionVerb] = []
+        var changed = 0
+        var cleared = 0
+    }
+
+    /// The names the edit menu speaks, in the order #1540's decision puts them.
+    private static let spokenNames = ["Highlight Yellow", "Highlight Green", "Highlight Blue",
+                                      "Highlight Pink", "Excerpt", "Look Up in NARA", "Note"]
+
+    /// A selection in the document body, as the selection bridge reports one.
+    private static let bodySelection = SelectionPayload(start: 3, end: 12, text: "Synthetic")
+
+    /// A selection inside a footnote: text, its note, no offsets.
+    private static let footnoteSelection = SelectionPayload(
+        start: -1, end: -1, text: "Lot 61 D 233", blockText: "Source: Lot 61 D 233.")
+
+    /// What each item is called aloud: its title, or for an untitled colour dot its image's label,
+    /// which is where the menu reads an untitled item's name (the UI suite measured "Circle" when
+    /// the name was on the action instead).
+    private func spokenName(_ action: UIAction) -> String {
+        action.title.isEmpty ? (action.image?.accessibilityLabel ?? "") : action.title
+    }
+
+    @Test("A selection in the document body offers all seven verbs, the colours first")
+    func bodySelectionOffersEveryVerb() {
+        #expect(SelectionEditMenu.verbs(hasDocumentOffsets: true) == [
+            .highlight(.yellow), .highlight(.green), .highlight(.blue), .highlight(.pink),
+            .excerpt, .lookUpInNARA, .note,
+        ])
+    }
+
+    @Test("A footnote selection offers only Look Up in NARA and Note")
+    func footnoteSelectionOffersLookUpAndNote() {
+        #expect(SelectionEditMenu.verbs(hasDocumentOffsets: false) == [.lookUpInNARA, .note])
+    }
+
+    @Test("The group is inline, and each item carries the name VoiceOver reads")
+    func itemsCarryTheirSpokenNames() {
+        let group = SelectionEditMenu.menu(hasDocumentOffsets: true) { _ in }
+        #expect(group.identifier == SelectionEditMenu.identifier)
+        #expect(group.options.contains(.displayInline))
+        let actions = group.children.compactMap { $0 as? UIAction }
+        #expect(actions.count == group.children.count)
+        #expect(actions.map(spokenName) == Self.spokenNames)
+        // A colour is an untitled dot with an image; the three verbs are titled.
+        for dot in actions.prefix(4) {
+            #expect(dot.title.isEmpty)
+            #expect(dot.image != nil)
+        }
+        for verb in actions.suffix(3) {
+            #expect(!verb.title.isEmpty)
+        }
+    }
+
+    @Test("Choosing an item performs its own verb")
+    func eachItemPerformsItsVerb() {
+        let recorder = Recorder()
+        let group = SelectionEditMenu.menu(hasDocumentOffsets: true) { recorder.verbs.append($0) }
+        for case let action as UIAction in group.children {
+            action.performWithSender(nil, target: nil)
+        }
+        #expect(recorder.verbs == SelectionVerb.allInOrder)
+        #expect(recorder.verbs.count == 7)
+    }
+
+    @Test("The Mac bar and the iOS menu share one name per verb; Look Up says NARA")
+    func verbNames() {
+        #expect(SelectionVerb.allInOrder.map(\.title) == Self.spokenNames)
+        #expect(SelectionVerb.lookUpInNARA.title == "Look Up in NARA")
+        #expect(SelectionVerb.allInOrder.filter(\.needsDocumentOffsets).count == 5)
+    }
+
+    @Test("The coordinator keeps the selection the page reported last, and forgets it on a clear")
+    func coordinatorTracksTheLiveSelection() {
+        let coordinator = _FRUSWebViewCoordinator()
+        let recorder = Recorder()
+        coordinator.onSelectionChanged = { _ in recorder.changed += 1 }
+        coordinator.onSelectionCleared = { recorder.cleared += 1 }
+        #expect(coordinator.liveSelection == nil)
+
+        coordinator.receive(.selection(Self.bodySelection))
+        #expect(coordinator.liveSelection == Self.bodySelection)
+        coordinator.receive(.selection(Self.footnoteSelection))
+        #expect(coordinator.liveSelection == Self.footnoteSelection)
+        coordinator.receive(.cleared)
+        #expect(coordinator.liveSelection == nil)
+        // The view's callbacks still hear every report.
+        #expect(recorder.changed == 2)
+        #expect(recorder.cleared == 1)
+
+        coordinator.receive(.selection(Self.bodySelection))
+        coordinator.forgetSelection()
+        #expect(coordinator.liveSelection == nil)
+    }
+
+    /// A web view wired to a coordinator, as `makeUIView` builds it.
+    private func webView(reporting selection: SelectionPayload?,
+                         recorder: Recorder?) -> (_FRUSEditMenuWebView, _FRUSWebViewCoordinator) {
+        let coordinator = _FRUSWebViewCoordinator()
+        let webView = _FRUSEditMenuWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        webView.selectionReports = coordinator
+        if let recorder {
+            webView.onSelectionVerb = { recorder.verbs.append($0) }
+        }
+        if let selection {
+            coordinator.receive(.selection(selection))
+        }
+        return (webView, coordinator)
+    }
+
+    @Test("The web view adds all seven items for a selection in the document body")
+    func webViewGroupForABodySelection() throws {
+        let recorder = Recorder()
+        let (webView, coordinator) = webView(reporting: Self.bodySelection, recorder: recorder)
+        let group = try #require(webView.selectionGroup())
+        let actions = group.children.compactMap { $0 as? UIAction }
+        #expect(actions.map(spokenName) == Self.spokenNames)
+        actions[5].performWithSender(nil, target: nil)
+        #expect(recorder.verbs == [.lookUpInNARA])
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds only Look Up in NARA and Note for a footnote selection")
+    func webViewGroupForAFootnoteSelection() throws {
+        let (webView, coordinator) = webView(reporting: Self.footnoteSelection, recorder: Recorder())
+        let group = try #require(webView.selectionGroup())
+        #expect(group.children.compactMap { $0 as? UIAction }.map(spokenName)
+                == ["Look Up in NARA", "Note"])
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds nothing before the page has reported a selection")
+    func webViewGroupWithNoReportedSelection() {
+        let (webView, coordinator) = webView(reporting: nil, recorder: Recorder())
+        #expect(webView.selectionGroup() == nil)
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds nothing after the page reports a clear")
+    func webViewGroupAfterAClear() {
+        let (webView, coordinator) = webView(reporting: Self.bodySelection, recorder: Recorder())
+        coordinator.receive(.cleared)
+        #expect(webView.selectionGroup() == nil)
+        // Held to here, as in the tests beside it: the web view holds the coordinator weakly, and a
+        // coordinator released early would make the group nil whether or not the clear was recorded.
+        withExtendedLifetime(coordinator) {}
+    }
+
+    /// A one-paragraph document to select a word in, through the real selection bridge.
+    private static let pageFixture = """
+    <div type="document" xml:id="d1"><p>Synthetic text for the edit menu.</p></div>
+    """
+
+    @Test("Choosing an item performs its verb and clears the page's selection, which the page reports")
+    func choosingAnItemClearsTheSelection() async throws {
+        let model = try await ListShapeFixtures.renderModel(Self.pageFixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let recorder = Recorder()
+        harness.webView.onSelectionVerb = { recorder.verbs.append($0) }
+
+        let reported = try await harness.selectionPayload {
+            _ = try await harness.evaluateString("""
+                (() => {
+                  const walker = document.createTreeWalker(
+                    document.querySelector('.frus-document'), NodeFilter.SHOW_TEXT);
+                  let t = walker.nextNode();
+                  while (t && !t.nodeValue.includes('Synthetic')) t = walker.nextNode();
+                  if (!t) return 'no text';
+                  const at = t.nodeValue.indexOf('Synthetic');
+                  getSelection().removeAllRanges();
+                  getSelection().setBaseAndExtent(t, at, t, at + 9);
+                  return getSelection().toString();
+                })()
+                """)
+        }
+        let selection = try #require(reported, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets && selection.text == "Synthetic",
+                "start \(selection.start), end \(selection.end), \"\(selection.text)\"")
+        #expect(harness.coordinator.liveSelection == selection)
+
+        let group = try #require(harness.webView.selectionGroup())
+        let yellow = try #require(group.children.compactMap { $0 as? UIAction }
+            .first { spokenName($0) == "Highlight Yellow" })
+        let cleared = try await harness.selectionCleared {
+            yellow.performWithSender(nil, target: nil)
+        }
+        #expect(recorder.verbs == [.highlight(.yellow)])
+        #expect(cleared, "choosing Highlight Yellow reported no clear: the page kept its selection")
+        #expect(harness.coordinator.liveSelection == nil)
+        let collapsed = try await harness.evaluateString("String(getSelection().isCollapsed)")
+        #expect(collapsed == "true", "the page still holds a selection after Highlight Yellow")
+    }
+
+    @Test("The web view adds nothing for a reported selection with no text")
+    func webViewGroupForAnEmptySelection() {
+        let (webView, coordinator) = webView(
+            reporting: SelectionPayload(start: 3, end: 12, text: ""), recorder: Recorder())
+        #expect(webView.selectionGroup() == nil)
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds nothing when no handler is attached")
+    func webViewGroupWithNoHandler() {
+        let (webView, coordinator) = webView(reporting: Self.bodySelection, recorder: nil)
+        #expect(webView.selectionGroup() == nil)
+        withExtendedLifetime(coordinator) {}
+    }
+}
+
+// MARK: - SelectionBarRetirementTests (#1540)
+
+/// The iPhone and iPad reader mounts no floating selection bar, and routes the selection's verbs
+/// through the edit menu instead (#1540).
+///
+/// A source read, because the bar's absence has no runtime value a unit test can observe. The
+/// runtime guard is the UI suite `SelectionEditMenuTests`, which fails on iPhone and iPad when a
+/// button named like one of the bar's is on screen beside the edit menu. This pins the two calls
+/// the fix turns on, so a bar mounted again fails here with its site named.
+struct SelectionBarRetirementTests {
+
+    /// `DocumentView.swift`, the iPhone and iPad reader.
+    private static func readerSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/DocumentView/DocumentView.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The 1-based lines of `source` holding `needle`.
+    private static func lines(of needle: String, in source: String) -> [Int] {
+        source.components(separatedBy: "\n").enumerated()
+            .filter { $0.element.contains(needle) }.map { $0.offset + 1 }
+    }
+
+    @Test("The iOS reader mounts no FloatingSelectionBar and wires the edit menu's verbs")
+    func readerUsesTheEditMenu() throws {
+        let source = try Self.readerSource()
+        #expect(source.count > 50_000, "read too little of DocumentView.swift to judge it")
+        let barSites = Self.lines(of: "FloatingSelectionBar(", in: source)
+            + Self.lines(of: "FloatingSelectionBarPositioner(", in: source)
+        #expect(barSites.isEmpty, "DocumentView.swift mounts the retired bar at lines \(barSites)")
+        let menuSites = Self.lines(of: ".onSelectionVerb {", in: source)
+        #expect(menuSites.count == 1,
+                "DocumentView.swift should hand the edit menu's verbs to the reader once; found \(menuSites)")
+    }
+}
+
+// MARK: - TextNodeEndSelectionTests (#1540 review round 1)
+
+/// A selection endpoint just past a text node's last character maps to the offset after that
+/// character, not to −1 (#1540 review round 1).
+///
+/// The offset engine holds one `charToNode` entry per character, so an endpoint at
+/// `(textNode, textNode.length)` — where a drag that ends a paragraph, or ends just before a
+/// footnote marker or a name, puts its end — had no entry, and the whole selection took the
+/// footnote branch: on iPhone and iPad the edit menu left out the colours and Excerpt, and the
+/// Mac's bar drew them dimmed. `buildRanges` in `frus-highlights.js` ends a highlight's range at
+/// exactly that endpoint, so the reverse mapping now accepts what the forward one produces.
+///
+/// The endpoints are placed directly, as `ListLabelSelectionTests`' scope tests place theirs, and
+/// the payload read is the one the production bridge posts.
+@Suite("A selection ending at a text node's end keeps its offsets (#1540)")
+@MainActor
+struct TextNodeEndSelectionTests {
+
+    /// A paragraph whose first text node ends at a footnote marker, the text after the marker, a
+    /// second paragraph, and a footnote shorter than the body's first text node, so that a rule
+    /// matching a character by its position alone would find one in the body.
+    private static let fixture = """
+    <div type="document" xml:id="d1">
+      <p>Body text with a note.<note n="1" xml:id="d1fn1"><p>Lot 61 D 233.</p></note> More body text.</p>
+      <p>A second paragraph.</p>
+    </div>
+    """
+
+    /// Loads the fixture and returns the harness plus the Swift flat text its offsets index.
+    private func loaded() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(Self.fixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// The UTF-16 offset of `needle` in `flat`.
+    private func offset(of needle: String, in flat: String) throws -> Int {
+        let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+        return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+    }
+
+    /// A JS expression: the first text node under `root` holding `needle`, outside any `data-skip`
+    /// element (so the body's text, not a footnote popover's).
+    private func textNode(_ needle: String,
+                          under root: String = "document.querySelector('.frus-document')") -> String {
+        """
+        (() => {
+          const walker = document.createTreeWalker(\(root), NodeFilter.SHOW_TEXT, { acceptNode: t =>
+            t.parentElement.closest('[data-skip="1"]') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+          let t = walker.nextNode();
+          while (t && !t.nodeValue.includes('\(needle)')) t = walker.nextNode();
+          return t;
+        })()
+        """
+    }
+
+    /// Selects from `startOffset` in the text node `start` to `endOffset` in `end`, and returns the
+    /// payload the bridge posts. The offsets are JS expressions, so `a.length` and `b.length` name
+    /// the ends of the start and end nodes.
+    private func select(_ harness: OffsetEngineTestHarness,
+                        from start: String, _ startOffset: String,
+                        to end: String, _ endOffset: String) async throws -> SelectionPayload? {
+        try await harness.selectionPayload {
+            let result = try await harness.evaluateString("""
+                (() => {
+                  const a = \(start);
+                  const b = \(end);
+                  if (!a || !b) return 'an endpoint text node is not on the page';
+                  getSelection().removeAllRanges();
+                  getSelection().setBaseAndExtent(a, \(startOffset), b, \(endOffset));
+                  return 'ok';
+                })()
+                """)
+            #expect(result == "ok", "\(result ?? "the script returned nothing")")
+        }
+    }
+
+    @Test("A selection ending just before a footnote marker, at its text node's end, keeps its offsets")
+    func endAtATextNodesEndBeforeAMarker() async throws {
+        let (harness, flat) = try await loaded()
+        let node = textNode("Body text")
+        let payload = try await select(harness, from: node, "5", to: node, "b.length")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        let base = try offset(of: "Body text with a note.", in: flat)
+        #expect(selection.start == base + 5)
+        #expect(selection.end == base + 22)
+        #expect(selection.text == "text with a note.")
+    }
+
+    @Test("A selection ending at the end of a paragraph keeps its offsets")
+    func endAtTheEndOfAParagraph() async throws {
+        let (harness, flat) = try await loaded()
+        let node = textNode("A second")
+        let payload = try await select(harness, from: node, "2", to: node, "b.length")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        let base = try offset(of: "A second paragraph.", in: flat)
+        #expect(selection.start == base + 2)
+        #expect(selection.end == base + 19)
+    }
+
+    @Test("A selection starting at a text node's end starts at the next character in the flat text")
+    func startAtATextNodesEnd() async throws {
+        let (harness, flat) = try await loaded()
+        let payload = try await select(harness, from: textNode("Body text"), "a.length",
+                                       to: textNode("More body"), "5")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        let next = try offset(of: " More body text.", in: flat)
+        #expect(selection.start == next, "the marker between adds nothing to the flat text")
+        #expect(selection.end == next + 5)
+    }
+
+    /// Nothing in the Footnotes list is in the offset map, so the end of one of its text nodes must
+    /// stay unmapped: a rule that matched the character before it by position, or moved it to the
+    /// next mapped character, would turn a drag into a footnote into a highlight of the body.
+    @Test("A selection ending at the end of a footnote's text is still a footnote selection")
+    func endAtTheEndOfAFootnoteStaysAFootnoteSelection() async throws {
+        let (harness, _) = try await loaded()
+        let payload = try await select(
+            harness, from: textNode("Body text"), "5",
+            to: textNode("Lot 61", under: "document.querySelector('.footnotes-section')"), "b.length")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(!selection.hasOffsets,
+                "a footnote endpoint must stay unmapped: start \(selection.start), end \(selection.end)")
     }
 }
