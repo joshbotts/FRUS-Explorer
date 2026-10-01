@@ -198,6 +198,8 @@ struct ChronologyOverflowCounts: Equatable, Sendable {
 ///   1.5 — #1422: the spanning chip counts "documents", not "editorial notes", and says they "span
 ///          more than a year" — the rule `partition` applies — not "this whole period", which an
 ///          overlap query cannot promise; `spanningSectionHeader` gives the section the same words
+///   1.6 — #1472: `volumeTopic` removes an E-volume's "Volume E–N" as it does a Roman "Volume N",
+///          so the 22 E-volumes' labels no longer say their number twice
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -1011,6 +1013,11 @@ final class ChronologyViewModel {
     /// volumes). Strips the series boilerplate, the subseries year, the "Volume N"/"Part N"
     /// tokens, and trailing date ranges. It does NOT truncate: `distilledVolumeLabel` cuts the
     /// result to `volumeTopicMaxLength`, and `distilledVolumeLabelParts` returns it whole.
+    ///
+    /// "Volume N" includes a 1969–76 E-volume's "Volume E–13" (#1472). Until then the removal
+    /// matched only a Roman numeral, so all 22 E-volumes' topics began with their own number —
+    /// "Volume E–13, Documents on China" — and every label said it twice, once there and once in
+    /// the tag ("… · 1969-76 vE-13"). The topic now begins "Documents on China".
     nonisolated private static func volumeTopic(from title: String) -> String {
         var t = title.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespaces)
@@ -1034,7 +1041,7 @@ final class ChronologyViewModel {
             t = t.replacingOccurrences(of: boilerplate, with: "")
         }
         let removals = [
-            ",?\\s*\\bVolumes?\\s+[IVXLCDM/]+(?:,\\s*[IVXLCDM/]+)*\\b",
+            ",?\\s*\\bVolumes?\\s+(?:E[–-][0-9]+|[IVXLCDM/]+(?:,\\s*[IVXLCDM/]+)*)\\b",
             ",?\\s*\\bPart\\s+([IVXLCDM]+|[0-9]+)\\b",
             "to the .*?Congress",
             "^[0-9]{4}(?:[–-][0-9]{2,4})?\\s*,?\\s*",

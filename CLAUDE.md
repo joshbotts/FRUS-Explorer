@@ -414,6 +414,15 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
 ```
 
+**`CrossReferenceRankingChartTests` (#1473) runs on any iPhone or iPad and never skips**; it lives in
+`AnalyticsRotationTests.swift` beside the matrix suite and launches with the same
+`FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`. It reads the Most-Referenced Documents chart's bars by their VoiceOver
+value ("N inbound citations"). Swift Charts gives each bar's element the bar's ROW ACROSS THE PLOT, not the bar's
+length (every one 218 pt on an iPhone 17), so it is the plot's width it requires: over 20 pt, inside the window. On
+`v2`'s chart, iPhone 17, iOS 26.5, every bar was 1 pt wide at x 977 of a 402 pt window; expect **1 test, 1
+passed**. The Mac, where #1473 was found at 720–820 pt, has no UI target: `RankingChartAxisTests` draws the chart
+at 720, 820 and 402 pt and counts the bars in the pixels, and the by-eye check is the owner's.
+
 **`CollectionProseRowRestTests` (#1360) must run on an iPad AND an iPhone; it lives in
 `CollectionEditorTitleTests.swift`.** It types a long paragraph into a collection note block (and into the
 introduction in Collection settings), puts the keyboard away and asks Vision what the text view DRAWS — a text view's

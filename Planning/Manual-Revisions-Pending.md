@@ -380,3 +380,19 @@ Format, one entry per change:
 - **Proposed:** …each with its canonical name, the variant forms volumes actually print, its NARA catalog record where one resolved offline, and every citing volume. Where a volume prints a collection's title and a paragraph about it as one entry, the title is the name and the paragraph one of its variant forms (*Indexed Central Files*).
 - **Why:** as for the Mac (#1468; `ReferenceBuilder.swift:268`, `AuthorityBuilder.swift:252`). The same paragraph's "~4,400 archival collections" predates #1469 and #1514 (the artifact holds 4,051; the Mac manual says ~4,100), which lane MANUALS or DOCS-2 can take with it.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## XREF — #1472, #1473
+
+*Lane XREF fixed Cross-Reference Analytics' Most-Referenced Documents chart at narrow widths (#1473), the 1969–76 E-volumes' matrix column codes and their doubled number in every short volume label (#1472), and the matrix row labels whose first word broke across two lines on a phone (the plan's fold-in). The manuals describe none of the matrix's column codes or on-screen row labels, and quote no E-volume label, so only the ranking needs anything. Each entry quotes the manual as it stands at `origin/v2` 0591a2df.*
+
+- **Manual / section:** Mac §15.4 Cross-Reference Analytics, the **Most-Referenced Documents** bullet
+- **Current:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. <!-- OPEN #1473: at the window's 720 pt minimum and its ~820 pt default, this chart draws document titles with no bars (a bug, not behaviour). -->
+- **Proposed:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. In the chart a long title takes up to two lines and is cut at its end, so the bars keep their room at any window width; the table, and VoiceOver on each bar, give the title whole.
+- **Why:** #1473 is fixed, so the `OPEN` comment goes. The chart's labels are at most 40% of its width, between 120 and 320 pt, and always leave the plot 160 pt (`RankingChartAxis.labelWidth`, `FRUSExplorer/Analytics/RankingChartLabels.swift:411`), wrapping to two lines (`RankingAxisLabelLayout`, `FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift:1578`); before, a title took its whole one-line width and at 720–820 pt left the bars none. The added sentence is optional: the manual never said a title was shown whole, but a reader who sees one cut may want to know where to read it.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.4 Cross-Reference Analytics, the **Most-Referenced Documents** bullet
+- **Current:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to.
+- **Proposed:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. In the chart a long title takes up to two lines and is cut at its end; the table, and VoiceOver on each bar, give the title whole.
+- **Why:** as for the Mac (#1473; the same `CrossReferenceRankingChart` on every platform, `CrossReferenceAnalyticsView.swift:1516`). On an iPhone the bug was worse than on the Mac: on `v2`, iPhone 17, the plot was squeezed to 1 pt at x 977 of a 402 pt window, and 5 of the 12 rows on screen showed no title at all. Optional, like the Mac sentence.
+- **Owner:** ☐ approve ☐ edit ☐ reject

@@ -1008,3 +1008,142 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
         app.state == .runningForeground ? app.debugDescription : "(app not in the foreground)"
     }
 }
+
+// MARK: - CrossReferenceRankingChartTests
+
+/// Cross-Reference Analytics' Most-Referenced Documents chart draws its bars in the window (#1473).
+///
+/// ## What was wrong
+/// Each bar's y-axis label was its document's whole title, which Swift Charts laid out at its full
+/// one-line width. The labels took the width and the plot got what was left: at the Mac window's
+/// 720 pt minimum and its default ~820 pt, nothing — titles running off the right edge and no
+/// bars. A label is now at most `RankingChartAxis.labelWidth` wide and wraps to two lines.
+///
+/// ## What the test asserts
+/// It launches with `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1` (#1379's fixture), so the ranking's rows
+/// are mostly documents of volumes the simulator has not downloaded, each named "Document N —
+/// <volume title>" — the long labels the issue is about. It finds the bars by their VoiceOver value,
+/// "N inbound citations", which each bar carries. Swift Charts gives a bar's accessibility element
+/// the bar's ROW ACROSS THE PLOT, not the bar's own length (measured: every bar 218 pt wide on an
+/// iPhone 17, whatever its count), so the test reads the plot: every bar's element must be wider
+/// than 20 pt and lie inside the window. On `v2`'s chart, on that iPhone, every one was 1 pt wide at
+/// x 977 in a 402 pt window — the plot squeezed to nothing and pushed off screen by the titles. The
+/// unit suite `RankingChartAxisTests` draws the chart at the Mac's 720 and 820 pt and measures the
+/// bars themselves; this checks the chart in the app, where its width comes from the window.
+///
+/// ## Where it runs
+/// Any iPhone, or an iPad: the titles are wider than any full-screen iOS window. It failed on
+/// iPhone 17, iOS 26.5, on `v2`'s chart and passed with the fix; an iPad is reasoned, not measured.
+/// The Mac, where #1473 was found, has no UI-test target; the unit suite and the owner's by-eye
+/// check cover it.
+///
+/// Version history:
+///   1.0 — #1473: initial implementation
+@MainActor
+final class CrossReferenceRankingChartTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    /// Read through a closure: `setUp` mints a fresh `XCUIApplication` per test (#1278).
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// The ranking's section heading.
+    private static let rankingHeading = "Most-Referenced Documents"
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_CROSSREF_MATRIX"] = "1"
+        // A screen measured at rest (CLAUDE.md, the iOS 27 idle stall).
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        // The ranking open and first, whatever an earlier run left in UserDefaults.
+        app.launchArguments = UITestLaunch.arguments() + [
+            "-frus.crossRefAnalytics.rankingExpanded", "YES",
+            "-frus.crossRefAnalytics.distributionExpanded", "NO",
+            "-frus.crossRefAnalytics.matrixExpanded", "NO",
+            "-frus.crossRefAnalytics.landmarkExpanded", "NO",
+        ]
+    }
+
+    override func tearDown() async throws {
+        // Close the analytics window before terminating (#1279): iPadOS restores an open window
+        // scene on the next launch.
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
+    /// One element of a snapshot of the tree.
+    private struct Seen {
+        /// The element's type.
+        let type: XCUIElement.ElementType
+        /// Its accessibility label.
+        let label: String
+        /// Its accessibility value, as text.
+        let value: String
+        /// Its frame, in screen points.
+        let frame: CGRect
+    }
+
+    /// Every element of ONE snapshot of the tree.
+    private func everything() throws -> [Seen] {
+        var found: [Seen] = []
+        func walk(_ element: XCUIElementSnapshot) {
+            found.append(Seen(type: element.elementType, label: element.label,
+                              value: element.value.map { "\($0)" } ?? "", frame: element.frame))
+            for child in element.children { walk(child) }
+        }
+        walk(try app.snapshot())
+        return found
+    }
+
+    /// Every bar of the ranking: an element whose value is "N inbound citations".
+    private func bars(in snapshot: [Seen]) -> [Seen] {
+        snapshot.filter { $0.value.hasSuffix(" inbound citations") }
+    }
+
+    /// Every bar has width, inside the window.
+    func testEveryRankedBarIsDrawnInsideTheWindow() throws {
+        app.launch()
+        try AnalysisToolsMenu.open("Cross-Reference Analytics", in: app, through: navigator)
+        XCTAssertTrue(app.buttons[Self.rankingHeading].firstMatch.waitForExistence(timeout: 20),
+                      "Cross-Reference Analytics opened without its ranking section.\n\(app.debugDescription)")
+        var snapshot = try everything()
+        let deadline = Date().addingTimeInterval(30)
+        while bars(in: snapshot).count < 15, Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+            snapshot = try everything()
+        }
+        let found = bars(in: snapshot)
+        let heading = try XCTUnwrap(snapshot.first { $0.type == .button && $0.label == Self.rankingHeading },
+                                    "No '\(Self.rankingHeading)' heading in the tree.").frame
+        let centre = CGPoint(x: heading.midX, y: heading.midY)
+        let window = try XCTUnwrap(snapshot.filter { $0.type == .window && $0.frame.contains(centre) }
+            .map(\.frame)
+            .min { $0.width * $0.height < $1.width * $1.height },
+            "No window holds the ranking heading at \(centre).")
+        let report = found.map { "\($0.value) at \($0.frame)" }.joined(separator: "\n")
+        print("[CrossReferenceRankingChartTests] window \(window); \(found.count) bars:\n\(report)")
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Most-Referenced Documents chart"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        XCTAssertEqual(found.count, 15, """
+            The ranking shows \(found.count) bars, not the fixture's fifteen — was the index seeded? \
+            (FRUS_UI_TEST_SEED_CROSSREF_MATRIX)\n\(app.debugDescription)
+            """)
+        let thin = found.filter { $0.frame.width <= 20 }
+        XCTAssertTrue(thin.isEmpty, """
+            In a window \(window.width) pt wide these bars are 20 pt or less: \
+            \(thin.map { "\($0.value) \($0.frame.width) pt" }). The titles beside them took the width — #1473.
+            """)
+        let outside = found.filter { $0.frame.minX < window.minX - 0.5 || $0.frame.maxX > window.maxX + 0.5 }
+        XCTAssertTrue(outside.isEmpty, """
+            These bars lie outside the \(window.width) pt window: \
+            \(outside.map { "\($0.value) at \($0.frame)" }) — #1473.
+            """)
+    }
+}

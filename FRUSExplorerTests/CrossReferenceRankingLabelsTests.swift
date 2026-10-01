@@ -7,7 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftUI
 import Testing
+import Vision
 @testable import FRUSExplorer
 
 // MARK: - CrossReferenceRankingLabelsTests
@@ -216,6 +218,116 @@ struct MatrixColumnCodeTests {
     func emptyInput() {
         #expect(matrixColumnCodes([]).isEmpty)
     }
+
+    // MARK: E-volumes (#1472)
+    //
+    // The 1969–76 E-volumes print their number as "Volume E–13", which the Roman-only numeral match
+    // missed, so the code fell back to the topic's first word — "Volume", since the topic kept the
+    // designator too. These read the bundled manifest through `HeatMatrixColumnAxis.column`, the
+    // function the matrix builds its columns with, rather than hand-written titles.
+
+    /// The bundled manifest's entries, or a recorded failure.
+    @MainActor
+    private func bundledEntries() throws -> [VolumeManifestEntry] {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        return entries
+    }
+
+    /// The matrix's column for a bundled volume.
+    @MainActor
+    private func column(_ volumeId: String, in entries: [VolumeManifestEntry]) throws -> HeatMatrixColumnAxis.Column {
+        let entry = try #require(entries.first { $0.volumeId == volumeId }, "\(volumeId) is not in the bundled manifest")
+        return HeatMatrixColumnAxis.column(volumeId: volumeId, entry: entry)
+    }
+
+    /// Whether `title` names a 1969–76 E-volume ("Volume E–13").
+    private static func isEVolume(_ title: String) -> Bool {
+        title.range(of: "Volume\\s+E[–-][0-9]", options: .regularExpression) != nil
+    }
+
+    @Test("An E-volume's code is its E-number, not the first word of its title (#1472)")
+    @MainActor
+    func eVolumeCodeIsItsENumber() throws {
+        let entries = try bundledEntries()
+        let codes = matrixColumnCodes([try column("frus1969-76ve13", in: entries)])
+        #expect(codes["frus1969-76ve13"] == "’69–76 E–13")
+        // A hyphen where the manifest prints an en dash is the same designator, kept as printed.
+        let hyphen = matrixColumnCodes([(id: "frusE", subseries: "1969-76",
+                                         title: "Foreign Relations of the United States, 1969–1976, Volume E-13, Documents on China, 1969–1972",
+                                         topic: "Documents on China")])
+        #expect(hyphen["frusE"] == "’69–76 E-13")
+    }
+
+    @Test("The two parts of one E-volume are told apart by their topics, past 'Documents on' (#1472)")
+    @MainActor
+    func eVolumePartsExpandPastDocumentsOn() throws {
+        let entries = try bundledEntries()
+        let codes = matrixColumnCodes([try column("frus1969-76ve05p1", in: entries),
+                                       try column("frus1969-76ve05p2", in: entries)])
+        #expect(codes["frus1969-76ve05p1"] == "’69–76 E–5 Sub")
+        #expect(codes["frus1969-76ve05p2"] == "’69–76 E–5 North")
+    }
+
+    @Test("No bundled volume's column code reads 'Volume', alone or beside the other E-volumes (#1472)")
+    @MainActor
+    func noBundledCodeReadsVolume() throws {
+        let entries = try bundledEntries()
+        var eVolumes: [HeatMatrixColumnAxis.Column] = []
+        var offenders: [String] = []
+        for entry in entries {
+            let column = HeatMatrixColumnAxis.column(volumeId: entry.volumeId, entry: entry)
+            if Self.isEVolume(entry.title) { eVolumes.append(column) }
+            let code = matrixColumnCodes([column])[entry.volumeId] ?? ""
+            if code.range(of: "\\bVolumes?\\b", options: .regularExpression) != nil {
+                offenders.append("\(entry.volumeId) → \(code)")
+            }
+        }
+        // The sweep met the shape it is about: 22 E-volumes in the manifest of 2026-10.
+        #expect(eVolumes.count > 0, "the sweep visited no E-volume, so it says nothing about them")
+        #expect(offenders.isEmpty, "\(offenders.count) column codes read 'Volume': \(offenders)")
+        // All of them in one matrix: the collision passes must still say no "Volume", and part from
+        // part.
+        let together = matrixColumnCodes(eVolumes)
+        #expect(Set(together.values).count == eVolumes.count, "two E-volume columns read alike: \(together)")
+        let wordy = together.filter { $0.value.contains("Volume") }
+        #expect(wordy.isEmpty, "E-volume codes read 'Volume' beside one another: \(wordy)")
+    }
+
+    // MARK: The topic's distinctive words (#1472)
+
+    @Test("A leading 'Documents on' is dropped, with the articles after it")
+    func documentsOnIsDropped() {
+        #expect(matrixTopicWords("Documents on China") == ["China"])
+        #expect(matrixTopicWords("Documents on the United Nations") == ["United", "Nations"])
+        #expect(matrixTopicWords("Documents on Sub-Saharan Africa") == ["Sub", "Saharan", "Africa"])
+    }
+
+    @Test("'Documents' not followed by 'on' is kept")
+    func documentsWithoutOnIsKept() {
+        #expect(matrixTopicWords("Documents Relating to the War") == ["Documents", "Relating", "to", "the", "War"])
+    }
+
+    @Test("'on' after another first word is kept")
+    func onAfterAnotherWordIsKept() {
+        #expect(matrixTopicWords("Survey on China") == ["Survey", "on", "China"])
+    }
+
+    @Test("A one-word topic is kept, 'Documents' included")
+    func oneWordTopicIsKept() {
+        #expect(matrixTopicWords("Documents") == ["Documents"])
+        #expect(matrixTopicWords("China") == ["China"])
+    }
+
+    @Test("'Documents on' with nothing after it is kept whole")
+    func documentsOnAloneIsKept() {
+        #expect(matrixTopicWords("Documents on") == ["Documents", "on"])
+    }
+
+    @Test("'Documents on' followed only by articles is kept whole, rather than leaving no word")
+    func documentsOnThenOnlyArticlesIsKept() {
+        #expect(matrixTopicWords("Documents on the") == ["Documents", "on", "the"])
+    }
 }
 
 // MARK: - HeatMatrixRowAxisTests
@@ -237,9 +349,15 @@ struct MatrixColumnCodeTests {
 /// window, each label against its row of cells, and, on an iPhone, the cells scrolling sideways
 /// beside labels that stay put.
 ///
+/// The XREF fold-in added where the tag goes — `tagSitsBesideTopic`, one fixture per conjunct — and
+/// a drawing of `HeatMatrixRowLabel` at a phone's 150 pt, read back with Vision, since a label's
+/// text is the same string however its lines break.
+///
 /// Version history:
 ///   1.0 — #1379: initial implementation
 ///   1.1 — #1379 review round 1: the identifier pin reads the UI suite's own spelling
+///   1.2 — XREF fold-in: the tag-placement rule and the 150 pt drawing; the source scan reads
+///          `HeatMatrixRowLabel` and its layout
 @Suite("Heat matrix row axis")
 struct HeatMatrixRowAxisTests {
 
@@ -338,6 +456,71 @@ struct HeatMatrixRowAxisTests {
         #expect(HeatMatrixRowAxis.columnCodeIdentifierPrefix == columnPrefix)
     }
 
+    // MARK: Where the tag goes (XREF fold-in)
+
+    @Test("The tag sits beside the topic when it leaves half the column and the first word")
+    func tagSitsBesideWhenItLeavesRoom() {
+        // An iPad's 277 pt column and a short tag.
+        #expect(HeatMatrixRowAxis.tagSitsBesideTopic(columnWidth: 277, tagWidth: 60, firstWordWidth: 40))
+        // Exactly half is enough.
+        #expect(HeatMatrixRowAxis.tagSitsBesideTopic(columnWidth: 150, tagWidth: 75, firstWordWidth: 75))
+    }
+
+    @Test("The tag drops below the topic when it leaves less than half the column")
+    func tagDropsWhenItLeavesLessThanHalf() {
+        // The Potsdam case: the first word ("The") fits, but two lines beside the tag hold less
+        // than one line across.
+        #expect(!HeatMatrixRowAxis.tagSitsBesideTopic(columnWidth: 150, tagWidth: 80, firstWordWidth: 18))
+    }
+
+    @Test("The tag drops below the topic when the room it leaves cannot hold the first word")
+    func tagDropsWhenTheFirstWordWouldBreak() {
+        // Half the column is left, but the first word is wider than that, and would break.
+        #expect(!HeatMatrixRowAxis.tagSitsBesideTopic(columnWidth: 200, tagWidth: 90, firstWordWidth: 111))
+    }
+
+    @Test("A topic's first word is what precedes its first space")
+    func firstWordOfATopic() {
+        #expect(HeatMatrixRowAxis.firstWord(of: "The Conference of Berlin") == "The")
+        #expect(HeatMatrixRowAxis.firstWord(of: "Microfiche Supplement, American Republics") == "Microfiche")
+        #expect(HeatMatrixRowAxis.firstWord(of: "China") == "China")
+        #expect(HeatMatrixRowAxis.firstWord(of: "") == "")
+    }
+
+    /// The labels as drawn, read back with Vision — a label's text is the same string however it
+    /// breaks, so only the drawing shows where a line ends. Drives `HeatMatrixRowLabel`, the view
+    /// both label columns draw, in the frame `heatMatrixRowLabels` gives it.
+    @Test("At a phone's 150 pt a long tag drops below its topic, and no first word breaks across lines")
+    @MainActor
+    func narrowColumnNeverBreaksTheFirstWord() throws {
+        func lines(_ volumeId: String, width: CGFloat) throws -> [String] {
+            let parts = HeatMatrixRowAxis.label(volumeId: volumeId, entry: try entry(volumeId))
+            let drawn = try RenderedText.recognizedLines(
+                in: HeatMatrixRowLabel(parts: parts).frame(width: width, height: 34, alignment: .trailing),
+                width: width)
+            print("[HeatMatrixRowAxisTests] \(volumeId) at \(width) pt draws \(drawn)")
+            return drawn
+        }
+        // #1379's recording on an iPhone: "Microfi" over "che S…", and "The" over "Conference o…".
+        let fiche = try lines("frus1961-63v10-12mSupp", width: 150)
+        #expect(fiche.first?.hasPrefix("Microfiche Supplement") == true,
+                "the supplement's first line is not its topic's first words: \(fiche)")
+        #expect(fiche.contains { $0.contains("1961-63 v10") }, "the supplement's tag is not drawn whole: \(fiche)")
+        let potsdam = try lines("frus1945Berlinv01", width: 150)
+        #expect(potsdam.first?.hasPrefix("The Conference of Berlin") == true,
+                "the Potsdam volume's first line is not its topic's first words: \(potsdam)")
+        #expect(potsdam.contains { $0.contains("1945 Berlin v1") }, "the Potsdam tag is not drawn whole: \(potsdam)")
+        // The corpus's longest tag, which leaves its topic the least room.
+        let longest = try lines("frus1969-76ve15p2Ed2", width: 150)
+        #expect(longest.first?.hasPrefix("Documents on Western") == true,
+                "the longest tag's row does not open on its topic's first words: \(longest)")
+        // The control: at an iPad's 277 pt the tag stays beside the Potsdam topic, on its last line.
+        let wide = try lines("frus1945Berlinv01", width: 277)
+        #expect(wide.first?.hasPrefix("The Conference of Berlin") == true, "\(wide)")
+        #expect(wide.last?.hasSuffix("1945 Berlin v1") == true && (wide.last?.count ?? 0) > "1945 Berlin v1".count + 3,
+                "at 277 pt the tag no longer sits beside the topic's last line: \(wide)")
+    }
+
     // MARK: The layout, read from the view's source
 
     /// `CrossReferenceAnalyticsView.swift`, with every whole-line comment blanked so a comment can
@@ -398,20 +581,207 @@ struct HeatMatrixRowAxisTests {
         let code = try Self.viewCode()
         #expect(Self.count(".truncationMode(.head)", in: code) == 0,
                 "a matrix label is still cut at its head, which drops a topic's first words")
-        let label = try Self.braces(after: "private func matrixRowLabel(", in: code)
+        let label = try Self.braces(after: "struct HeatMatrixRowLabel: View", in: code)
         #expect(Self.count(".truncationMode(.tail)", in: label) == 1, "the topic is not cut at its tail:\n\(label)")
         #expect(Self.count(".lineLimit(HeatMatrixRowAxis.labelLines)", in: label) == 1,
                 "the topic does not take the axis's two lines:\n\(label)")
-        // The tag, beside a topic and alone, takes the width it needs.
-        #expect(Self.count(".fixedSize(horizontal: true, vertical: false)", in: label) == 2,
+        // The tag, beside a topic and alone, takes the width it needs — and so does the topic's
+        // first word, which the layout measures to decide where the tag goes.
+        #expect(Self.count(".fixedSize(horizontal: true, vertical: false)", in: label) == 3,
                 "a tag can be cut:\n\(label)")
+        // The tag goes where the tested rule puts it.
+        #expect(Self.count("HeatMatrixRowLabelLayout {", in: label) == 1,
+                "the topic and tag are not arranged by HeatMatrixRowLabelLayout:\n\(label)")
+        let layout = try Self.braces(after: "private struct HeatMatrixRowLabelLayout: Layout", in: code)
+        #expect(Self.count("HeatMatrixRowAxis.tagSitsBesideTopic(", in: layout) == 1,
+                "the layout does not decide by HeatMatrixRowAxis.tagSitsBesideTopic:\n\(layout)")
         // Both columns draw it: the screen's and the figure's.
         let column = try Self.braces(after: "private func heatMatrixRowLabels(", in: code)
-        #expect(Self.count("matrixRowLabel(", in: column) == 1, "the label column does not draw matrixRowLabel:\n\(column)")
+        #expect(Self.count("HeatMatrixRowLabel(", in: column) == 1, "the label column does not draw HeatMatrixRowLabel:\n\(column)")
         let figure = try Self.braces(after: "private func exportMatrixFigure(", in: code)
         #expect(Self.count("heatMatrixRowLabels(", in: figure) == 1, "the figure draws labels of its own:\n\(figure)")
         #expect(Self.count("HeatMatrixRowAxis.figureLabelWidth", in: figure) == 1,
                 "the figure's label column is not the figure's width:\n\(figure)")
+    }
+}
+
+// MARK: - RankingChartAxisTests (#1473)
+
+/// The Most-Referenced Documents chart's label column (#1473).
+///
+/// ## What was wrong
+/// Each bar's y-axis label was its document's whole title, set as a bare `Text` that Swift Charts
+/// lays out at its full one-line width. The label column took that, the plot got the rest, and at
+/// the Mac window's 720 pt minimum and its default ~820 pt the rest was nothing: titles running off
+/// the right edge, and no bars. A label is now at most `RankingChartAxis.labelWidth` wide and wraps
+/// to two lines.
+///
+/// The width function is pinned against its floor, its cap and the plot's minimum. The chart itself
+/// is DRAWN at the widths the issue names, and its bars are counted and measured in the pixels,
+/// because no property of the view reports how wide Swift Charts made its plot.
+///
+/// Version history:
+///   1.0 — #1473: initial implementation
+@Suite("Ranking chart axis")
+@MainActor
+struct RankingChartAxisTests {
+
+    @Test("A label takes 40% of the chart, raised to 120 pt and capped at 320 pt")
+    func labelWidthShareFloorAndCap() {
+        // The Mac window's 720 pt minimum, less the chart's 16 pt side padding: the share.
+        #expect(abs(RankingChartAxis.labelWidth(chartWidth: 688) - 275.2) < 0.001)
+        // A 320 pt Slide Over window less its padding: 115 pt raised to the floor, and the plot
+        // still keeps its minimum (288 − 120 = 168).
+        #expect(RankingChartAxis.labelWidth(chartWidth: 288) == 120)
+        // The exported figure's 1,144 pt plate less the padding: capped.
+        #expect(RankingChartAxis.labelWidth(chartWidth: 1112) == 320)
+    }
+
+    @Test("The plot keeps 160 pt, and the label gives way to it, down to nothing")
+    func plotKeepsItsMinimum() {
+        // Below 280 pt the floor would leave the plot under its minimum, so the label shrinks.
+        #expect(RankingChartAxis.labelWidth(chartWidth: 250) == 90)
+        #expect(RankingChartAxis.labelWidth(chartWidth: 160) == 0)
+        // Never negative.
+        #expect(RankingChartAxis.labelWidth(chartWidth: 100) == 0)
+        for width in stride(from: CGFloat(160), through: 1600, by: 8) {
+            let label = RankingChartAxis.labelWidth(chartWidth: width)
+            #expect(width - label >= RankingChartAxis.minimumPlotWidth, "at \(width) pt the plot keeps \(width - label) pt")
+            #expect(label <= RankingChartAxis.maximumLabelWidth)
+        }
+    }
+
+    /// Fifteen documents of the #1379 fixture's volumes, named as Cross-Reference Analytics names a
+    /// document that is not downloaded — "Document 1 — <volume title>" — which is what a reader
+    /// whose citations reach volumes they lack sees, and what the UI fixture's ranking shows.
+    private func fixtureRanking() throws -> [InDegreeRow] {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        return try UITestVolumeSeeder.crossReferenceMatrixVolumeIds.enumerated().map { index, volumeId in
+            let entry = try #require(entries.first { $0.volumeId == volumeId }, "\(volumeId) is not bundled")
+            return InDegreeRow(volumeId: volumeId, documentId: "d1", inDegree: 50 - index,
+                               label: CrossReferenceTargetLabel.text(facts: nil, documentId: "d1",
+                                                                     volumeTitle: entry.title),
+                               isIndexed: false)
+        }
+    }
+
+    /// The chart drawn `width` points wide, and the length in points of each bar it draws, top to
+    /// bottom. A bar is a band of pixel rows in the accent colour (system blue: the app ships no
+    /// accent asset); its length is the longest run of that colour in the band.
+    private func bars(width: CGFloat, ranking: [InDegreeRow]) throws -> (lengths: [CGFloat], image: CGImage) {
+        let inspector = AnalyticsChartTables.crossRefRankingTable(
+            title: "Most-Referenced Documents",
+            rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId, label: $0.label, inDegree: $0.inDegree) })
+        let scale: CGFloat = 2
+        let image = try RenderedText.image(of: CrossReferenceRankingChart(ranking: ranking, inspector: inspector),
+                                           width: width, scale: scale)
+        let pixels = try RenderedText.pixels(of: image)
+        var bands: [CGFloat] = []
+        var current: Int? = nil
+        for y in 0..<image.height {
+            var longest = 0, run = 0
+            for x in 0..<image.width {
+                let i = (y * image.width + x) * 4
+                let (r, g, b) = (pixels[i], pixels[i + 1], pixels[i + 2])
+                if r < 40, g > 100, g < 145, b > 235 { run += 1; longest = max(longest, run) } else { run = 0 }
+            }
+            // A row of a bar: more blue than a glyph's stroke could be.
+            if longest >= Int(4 * scale) {
+                current = max(current ?? 0, longest)
+            } else if let band = current {
+                bands.append(CGFloat(band) / scale)
+                current = nil
+            }
+        }
+        if let band = current { bands.append(CGFloat(band) / scale) }
+        return (bands, image)
+    }
+
+    @Test("At the Mac window's 720 pt and 820 pt, and on an iPhone, every bar is drawn with room to read",
+          arguments: [CGFloat(720), 820, 402])
+    func everyBarIsDrawn(width: CGFloat) throws {
+        let ranking = try fixtureRanking()
+        let (lengths, image) = try bars(width: width, ranking: ranking)
+        print("[RankingChartAxisTests] at \(width) pt the chart draws \(lengths.count) bars of "
+              + "\(lengths.map { String(format: "%.1f", $0) }.joined(separator: ", ")) pt")
+        #expect(lengths.count == ranking.count, """
+            At \(width) pt the chart draws \(lengths.count) bars for \(ranking.count) documents — \
+            #1473's titles taking the whole width and leaving the plot none.
+            """)
+        // The longest bar spans most of a plot that kept at least its minimum.
+        #expect((lengths.max() ?? 0) >= RankingChartAxis.minimumPlotWidth / 2, """
+            At \(width) pt the longest bar is \(lengths.max() ?? 0) pt: the plot has almost no room.
+            """)
+        #expect(CGFloat(image.width) / 2 == width, "the chart was drawn \(image.width / 2) pt wide, not \(width)")
+    }
+
+    @Test("At 720 pt every row's title is drawn, on up to two lines, with no row left blank")
+    func everyTitleIsDrawn() throws {
+        let ranking = try fixtureRanking()
+        let inspector = AnalyticsChartTables.crossRefRankingTable(
+            title: "Most-Referenced Documents",
+            rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId, label: $0.label, inDegree: $0.inDegree) })
+        let lines = try RenderedText.recognizedLines(
+            in: CrossReferenceRankingChart(ranking: ranking, inspector: inspector), width: 720)
+        print("[RankingChartAxisTests] at 720 pt Vision reads \(lines)")
+        // Each label opens "Document 1 —", so the lines that do are the labels drawn.
+        let opened = lines.filter { $0.hasPrefix("Document 1") }
+        #expect(opened.count == ranking.count, """
+            At 720 pt \(opened.count) of the \(ranking.count) titles are drawn: \(lines)
+            """)
+        // Two lines each: a title's second line is the other line with words in it. The bars'
+        // counts and the axis's ticks are numbers, so they are not counted.
+        let wrapped = lines.filter { !$0.hasPrefix("Document 1") && $0.rangeOfCharacter(from: .letters) != nil }
+        #expect(wrapped.count == ranking.count, "\(wrapped.count) titles take a second line, not \(ranking.count): \(lines)")
+    }
+}
+
+// MARK: - Rendering for the tests above
+
+/// Draws a view and reads it back — for tests that need what a layout DRAWS, which no property of
+/// the view reports.
+@MainActor
+enum RenderedText {
+
+    /// `view` drawn `width` points wide on white, in light mode.
+    ///
+    /// - Parameters:
+    ///   - view: The view to draw.
+    ///   - width: The width to propose to it, and to frame it at.
+    ///   - scale: The raster scale.
+    /// - Returns: The drawing.
+    static func image(of view: some View, width: CGFloat, scale: CGFloat) throws -> CGImage {
+        let renderer = ImageRenderer(content: view
+            .frame(width: width)
+            .background(Color.white)
+            .environment(\.colorScheme, .light))
+        renderer.scale = scale
+        renderer.proposedSize = ProposedViewSize(width: width, height: nil)
+        return try #require(renderer.cgImage, "ImageRenderer drew nothing")
+    }
+
+    /// The image's pixels as RGBA bytes, row by row from the top.
+    static func pixels(of image: CGImage) throws -> [UInt8] {
+        var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
+        let context = try #require(CGContext(
+            data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8,
+            bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return pixels
+    }
+
+    /// The lines Vision reads in `view` drawn `width` points wide with a 4 pt margin, top to bottom.
+    static func recognizedLines(in view: some View, width: CGFloat) throws -> [String] {
+        let image = try image(of: view.padding(4), width: width + 8, scale: 4)
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: image).perform([request])
+        return (request.results ?? [])
+            .sorted { $0.boundingBox.maxY > $1.boundingBox.maxY }
+            .compactMap { $0.topCandidates(1).first?.string }
     }
 }
 
