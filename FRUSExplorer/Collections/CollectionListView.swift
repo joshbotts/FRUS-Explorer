@@ -247,6 +247,14 @@ struct CollectionListView: View {
                 // hidden by the active-project filter; imported files carry no projectIds.
                 if let pid = appState.activeProjectId { imported.projectIds = [pid] }
                 try modelContext.save()
+                // The notes it brought are searchable at once, not at the next launch.
+                if let pipeline = appState.indexingPipeline {
+                    let context = modelContext
+                    Task {
+                        await NativeCollectionSerializer.indexImportedNotes(of: imported, in: context,
+                                                                            pipeline: pipeline)
+                    }
+                }
                 collectionToEdit = imported
             } catch {
                 importError = error.localizedDescription
@@ -430,9 +438,8 @@ private struct CollectionRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(collection.name.isEmpty
-                 ? String(localized: "collections.row.untitled", defaultValue: "Untitled Collection")
-                 : collection.name)
+            // The name as every list row reads it, trimmed and with the shared fallback (#1464).
+            Text(CollectionEditorNaming.listName(savedName: collection.name))
                 .font(.body)
 
             HStack(spacing: 6) {

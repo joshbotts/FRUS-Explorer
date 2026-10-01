@@ -915,7 +915,7 @@ struct ResearchRailView: View {
     ///   `.nullify`), and de-duplicates when a document has more than one entry in the same
     ///   collection. `memberships` arrives sorted by `CollectionEntry.sortOrder` — a *within*-
     ///   collection position, meaningless across collections — so the result is re-sorted by name for
-    ///   a stable, readable order (C1b review F7). Extracted as an internal `nonisolated` static so
+    ///   a stable, readable order (C1b review F7): the name each row prints, `listName` (#1464). Extracted as an internal `nonisolated` static so
     ///   the Phase-E unit tests can exercise it off the main actor without mounting the view.
     nonisolated static func distinctCollections(from memberships: [CollectionEntry]) -> [Collection] {
         var seen = Set<UUID>()
@@ -925,7 +925,12 @@ struct ResearchRailView: View {
             seen.insert(collection.id)
             result.append(collection)
         }
-        return result.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        // By the name each row prints (#1464): the raw name sorted a padded one by its spaces, and an unnamed one
+        // first while it read "Untitled Collection".
+        return result.sorted {
+            CollectionEditorNaming.listName(savedName: $0.name)
+                .localizedCompare(CollectionEditorNaming.listName(savedName: $1.name)) == .orderedAscending
+        }
     }
 
     // MARK: - Tile actions (macOS)

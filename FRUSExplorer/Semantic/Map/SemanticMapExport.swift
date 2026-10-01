@@ -137,7 +137,9 @@ enum SemanticMapExport {
                                              indexedVolumeCount: indexedVolumeCount),
             extraCaveats: (sliceDescription.map { [$0] } ?? [])
                 + caveats(index: index, lens: lens)
-                + frameCaveats(index: index, frame: frame))
+                + frameCaveats(index: index, frame: frame),
+            // PV-1: the volumes' documents, placed and grouped by this app's model (`semantic-map-index.json`).
+            sources: [.frusText, .appModel])
     }
 
     /// The corpus sentence, which has to say two different numbers that are easy to conflate: what

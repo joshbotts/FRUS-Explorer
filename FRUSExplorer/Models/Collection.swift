@@ -927,9 +927,12 @@ extension Collection {
 /// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
 /// `fieldAgrees` decides both directions of the iOS editor's name — its commit (`CollectionEditorCommit.name`) and its
 /// follow (`FrontMatterModelSync`) — and `CollectionDetailPane`'s own name follow.
-/// `CollectionPickerSheet`'s rows, the Research rail's Collections section and the word cloud's collection scope
-/// (`WordCloudScopeResolver`) print through `listName`, and so does every export's title
-/// (`CollectionExportNaming.title`, #1463).
+/// Every row that lists a collection by name prints through `listName` (#1464): `CollectionPickerSheet`'s rows, the
+/// Research rail's Collections section, the Collections list, the Mac window's picker label, Project Home's
+/// Collections section and its Manage sheet, the Research sidebar, its list rows and its list title, and the
+/// document change review. So do the word cloud's collection scope (`WordCloudScopeResolver`) and every export's
+/// title (`CollectionExportNaming.title`, #1463). The picker's search matches through `listNameMatches`, and the rail
+/// sorts by `listName`. `CollectionListNameTests` reads each row.
 ///
 /// It lives beside the model it names rather than in a view file, because the exporters' model layer reads `listName`
 /// and should not reach into a SwiftUI view for it.
@@ -941,6 +944,8 @@ extension Collection {
 ///   1.3 — #1415 / #1413: the iOS editor's name commit moved from `FrontMatterModelSync` to `CollectionEditorCommit`
 ///   1.4 — #1463 review, round 1: moved unchanged from `CollectionEditorView.swift`, so `CollectionExportMetadata`
 ///          no longer reaches into a SwiftUI view file for its title
+///   1.5 — #1464: eight more rows print through `listName`; `listNameMatches` for the picker's search; and
+///          `untitledSection`, the name the inspector and the preview give a Section heading with no text (#1465)
 enum CollectionEditorNaming {
 
     /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
@@ -967,6 +972,24 @@ enum CollectionEditorNaming {
     /// Printed bare, it was a blank row reading "0 documents" (#1359 review, round 2).
     static func listName(savedName: String) -> String {
         navigationTitle(savedName: savedName, isNewCollection: false)
+    }
+
+    /// Whether a search for `searchText` finds a collection saved under `savedName`: the name its row prints,
+    /// `listName`, contains the text, ignoring case.
+    ///
+    /// The Add to Collection picker's search read the raw name, so "untitled" found no unnamed collection though its
+    /// row read "Untitled Collection", and a name padded with spaces matched a search for its padding (the 2026-09-28
+    /// audit, from #1359's round 2). An empty search is the caller's to handle: it lists every collection.
+    static func listNameMatches(savedName: String, searchText: String) -> Bool {
+        listName(savedName: savedName).localizedCaseInsensitiveContains(searchText)
+    }
+
+    /// What the app calls a Section heading saved with no text: the entry inspector's identity row, and the live
+    /// preview, which shows the heading under this name so its author sees a section they made and have not named
+    /// (#1465). Every export leaves such a heading out instead (`CollectionContentResolver`, decision D4), and the
+    /// editor's own row keeps its "Section heading" prompt.
+    static var untitledSection: String {
+        String(localized: "collection.inspector.section.untitled", defaultValue: "Untitled section")
     }
 
     /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way

@@ -118,8 +118,9 @@ enum WordCloudExporter {
         }
     }
 
-    /// Default colour palette for exported clouds (system colours; adapt nowhere —
-    /// the export canvas is always light).
+    /// Default colour palette for exported clouds — system colours, which take their light values
+    /// because `WordCloudImageContent` pins its colour scheme to light (it did not until the
+    /// 2026-09-28 audit, so on a device in dark appearance the words took their dark tints).
     static let palette: [Color] = [
         .blue, .teal, .indigo, .purple, .pink, .orange, .green, .red, .cyan, .mint
     ]
@@ -201,10 +202,13 @@ enum WordCloudExporter {
 
 }
 
-/// Non-interactive word-cloud artwork used as the source for image exports.
+/// Non-interactive word-cloud artwork used as the source for image exports — the analytics plate and the cloud a
+/// collection's PDF and Word exports embed.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — the 2026-09-28 audit: the plate pins its colour scheme to light and draws its credit in an explicit ink,
+///          so it looks the same whatever appearance the device is in
 struct WordCloudImageContent: View {
     /// Pre-computed word placements (in the layout sub-rect above the caption).
     let placements: [PlacedWord]
@@ -259,9 +263,11 @@ struct WordCloudImageContent: View {
                         }
                     }
                     Spacer()
+                    // An explicit ink, as the analytics plate sets its lines: `.secondary` followed the device, and
+                    // in dark appearance resolved to a light grey on this near-white band.
                     Text(verbatim: "FRUS Explorer")
                         .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.black.opacity(0.55))
                 }
                 .padding(.horizontal, 28)
                 .frame(height: captionBand)
@@ -269,6 +275,10 @@ struct WordCloudImageContent: View {
             }
         }
         .frame(width: size.width, height: size.height)
+        // The plate is detached content and resolves the renderer's default appearance, which follows the device. Its
+        // canvas and band are fixed light colours, so pin light — as `AnalyticsFigureCanvas` does — or the system
+        // colours of `WordCloudExporter.palette` and every semantic style here take their dark-mode values.
+        .environment(\.colorScheme, .light)
     }
 
     /// Colour for a word: sentiment polarity when `sentimentColors` is set,

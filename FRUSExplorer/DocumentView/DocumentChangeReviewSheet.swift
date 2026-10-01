@@ -442,9 +442,9 @@ struct DocumentChangeReviewSheet: View {
         return VStack(alignment: .leading, spacing: 6) {
             Text(entry.text ?? "")
                 .lineLimit(4)
-            Text(entry.collection?.name.isEmpty == false
-                 ? entry.collection?.name ?? ""
-                 : String(localized: "research.list.untitledCollection", defaultValue: "Untitled Collection"))
+            // The collection's name as every list row reads it (#1464): trimmed, and "Untitled
+            // Collection" when it has none.
+            Text(CollectionEditorNaming.listName(savedName: entry.collection?.name ?? ""))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if let outcome, let lines {

@@ -179,3 +179,201 @@ struct ProvenanceStatementTests {
         #expect(p.plateCaveatLines.contains(p.corpusCaveat))
     }
 }
+
+// MARK: - AnalyticsExportSourcesTests (PV-1)
+
+/// Every analytics export states the sources its figures drew on (PV-1's analytics half).
+///
+/// `AnalyticsProvenance.sources` defaults to the volumes alone, and until the 2026-09-28 audit not one of the
+/// fourteen analytics builders passed anything else — so a word cloud, a semantic map, a regional-emphasis chart, a
+/// person ranking and a glossed class table each printed "Read from … the FRUS volumes, and from no other source"
+/// above figures this app computed, or joined to the Office of the Historian's or the State Department's data. The
+/// builders a test can call are driven here; the two whose statement is built inside a view (the word cloud's and
+/// Person Analytics') are pinned by `everyBuilderStatesItsSources`, which reads every call in the app. Runs on any
+/// destination.
+@Suite("Analytics exports state the sources their figures drew on (PV-1)")
+struct AnalyticsExportSourcesTests {
+
+    /// The method sentence a source's presence prints.
+    private func sentence(_ source: ProvenanceSource) -> String { source.methodSentence }
+
+    @Test("Regional emphasis states the subject taxonomy its regions come from")
+    func geographyStatesTheSubjectTaxonomy() {
+        let geography = SeriesAnalyticsExport.geography(
+            figureTitle: "Overall regional emphasis", axisLabel: "A", scopeLabel: nil, yearRange: nil,
+            volumeCount: 552)
+        #expect(geography.sources == [.frusText, .ohSubjects], "\(geography.sources)")
+        let csv = geography.csvPreambleLines.joined(separator: "\n")
+        #expect(csv.contains(sentence(.ohSubjects)), "the CSV does not name the subject taxonomy")
+        #expect(geography.plateCaveatLines.contains(sentence(.ohSubjects)), "the plate does not name it")
+    }
+
+    /// Controls: the other three About-the-Series builders read FRUS-derived aggregates only.
+    @Test("The other About-the-Series exports state the volumes alone")
+    func otherSeriesBuildersStateTheVolumes() {
+        let statements = [
+            SeriesAnalyticsExport.production(figureTitle: "P", axisLabel: "A", scopeLabel: nil,
+                                             yearRange: 1861...2026, volumeCount: 552),
+            SeriesAnalyticsExport.provenance(figureTitle: "S", axisLabel: "A", scopeLabel: nil,
+                                             yearRange: 1900...1993, volumeCount: 522, noteCount: 268_757,
+                                             hiddenCategories: []),
+            SeriesAnalyticsExport.administration(figureTitle: "D", axisLabel: "A", scopeLabel: nil,
+                                                 yearRange: 1861...2026, volumeCount: 552,
+                                                 includesEditorialNotes: false),
+        ]
+        for statement in statements {
+            #expect(statement.sources == [.frusText], "\(statement.figureTitle): \(statement.sources)")
+        }
+    }
+
+    /// The pointed-at class axis admits a decimal key only when it composes under the State Department's schedule
+    /// (`external-citation-index.json` is `.stateDeptSchedule` in `BundledArtifactProvenance`), so a ranking of
+    /// central-file classes by unprinted pointers is a join with that schedule.
+    @Test("A class ranking by unprinted pointers states the State Department's schedule")
+    func pointerClassRankingStatesTheSchedule() {
+        let ranking = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[1], lens: .centralFileClasses, weight: .unprintedPointers,
+            hiddenUmbrella: nil, unitsReached: 10, bandVolumeCount: 120, indexedVolumeCount: 5)
+        #expect(ranking.sources == [.frusText, .stateDeptSchedule], "\(ranking.sources)")
+        #expect(ranking.csvPreambleLines.joined(separator: "\n").contains(sentence(.stateDeptSchedule)))
+    }
+
+    /// Controls: the usage counts behind Documents and Volumes read authority clusters by identity, all FRUS-derived
+    /// (`BundledArtifactProvenance`'s §1a case), and the named-collections axis of the pointers index likewise.
+    @Test("A ranking that reads FRUS-derived counts states the volumes alone",
+          arguments: zip([ArchivalUnitLens.namedCollections, .namedCollections, .namedCollections,
+                          .centralFileClasses, .centralFileClasses],
+                         [ArchivalWeight.documents, .volumes, .unprintedPointers, .documents, .volumes]))
+    func frusOnlyRankingsStateTheVolumes(_ lens: ArchivalUnitLens, _ weight: ArchivalWeight) {
+        let ranking = ArchivalAnalyticsExport.ranking(
+            band: ArchivalEraBand.all[1], lens: lens, weight: weight,
+            hiddenUmbrella: nil, unitsReached: 10, bandVolumeCount: 120, indexedVolumeCount: 5)
+        #expect(ranking.sources == [.frusText], "\(lens) by \(weight): \(ranking.sources)")
+    }
+
+    /// The every-unit sheet writes each class's gloss into its CSV — words read from the State Department's
+    /// schedules (`decimal-class-labels.json`, `subject-numeric-labels.json`) — so that table states the schedule;
+    /// the ranking card's own table writes no gloss and does not.
+    @Test("The every-unit table states the State Department's schedule when it writes a class's gloss")
+    func glossedTableStatesTheSchedule() throws {
+        func ranking(glossesWritten: Bool) -> AnalyticsProvenance {
+            ArchivalAnalyticsExport.ranking(
+                band: ArchivalEraBand.all[1], lens: .centralFileClasses, weight: .documents,
+                hiddenUmbrella: nil, unitsReached: 10, bandVolumeCount: 120, indexedVolumeCount: 5,
+                rowCapApplied: false, glossesWritten: glossesWritten)
+        }
+        #expect(ranking(glossesWritten: true).sources == [.frusText, .stateDeptSchedule])
+        #expect(ranking(glossesWritten: false).sources == [.frusText])
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Analytics/ArchivalAllUnitsSheet.swift")
+        let text = try String(contentsOf: url, encoding: .utf8)
+        let call = try #require(text.range(of: "ArchivalAnalyticsExport.ranking("))
+        let arguments = try #require(WindowTargetingTests.balancedBlock(
+            in: text, from: text.index(before: call.upperBound), open: "(", close: ")"))
+        #expect(arguments.contains("glossesWritten: ranking.rows.contains { $0.gloss != nil }"),
+                "the every-unit sheet does not say when its CSV carries a gloss:\n\(arguments)")
+    }
+
+    /// What each `AnalyticsProvenance(` call in the app passes as `sources:`, in file order: `nil` where it passes
+    /// nothing and so states the volumes alone.
+    ///
+    /// A new analytics surface fails this until it is classified here, which is the point: the default is right for
+    /// a figure counted from the index and wrong for one that joined or computed anything.
+    static let expectedSources: [String: [String?]] = [
+        "Analytics/AnalyticsView.swift": [nil],
+        "Analytics/CrossReferenceAnalyticsView.swift": [nil],
+        "Analytics/PersonAnalyticsView.swift": ["[.frusText, .ohPeopleRegister]"],
+        "Analytics/WordCloud/WordCloudView.swift": ["[.frusText, .appWordLists]"],
+        "Semantic/Map/SemanticMapExport.swift": ["[.frusText, .appModel]"],
+        "SeriesAnalytics/SeriesAnalyticsExport.swift": [nil, "[.frusText, .ohSubjects]", nil, nil],
+        "Analytics/ArchivalAnalyticsExport.swift": [
+            "rankingSources(lens: lens, weight: weight, glossesWritten: glossesWritten)", nil, nil, nil, nil],
+    ]
+
+    @Test("Every analytics provenance builder in the app states the sources it drew on")
+    func everyBuilderStatesItsSources() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let app = root.appendingPathComponent("FRUSExplorer")
+        let files = try #require(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil))
+        var found: [String: [String?]] = [:]
+        var calls = 0
+        for case let url as URL in files where url.pathExtension == "swift" {
+            let source = try String(contentsOf: url, encoding: .utf8)
+            let relative = url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
+            var searchStart = source.startIndex
+            while let hit = source.range(of: "AnalyticsProvenance(", range: searchStart..<source.endIndex) {
+                searchStart = hit.upperBound
+                // A mention in a comment is not a call.
+                let lineStart = source[..<hit.lowerBound].lastIndex(of: "\n").map { source.index(after: $0) }
+                    ?? source.startIndex
+                if source[lineStart..<hit.lowerBound].contains("//") { continue }
+                let parenStart = source.index(before: hit.upperBound)
+                let arguments = try #require(WindowTargetingTests.balancedBlock(
+                    in: source, from: parenStart, open: "(", close: ")"),
+                    "an unbalanced AnalyticsProvenance( call in \(relative)")
+                calls += 1
+                var passed: String?
+                if let label = arguments.range(of: "sources: ") {
+                    let rest = String(arguments[label.upperBound...])
+                    passed = rest.hasPrefix("[")
+                        ? WindowTargetingTests.balancedBlock(in: rest, from: rest.startIndex,
+                                                             open: "[", close: "]").map(String.init)
+                        : WindowTargetingTests.balancedBlock(in: rest, from: rest.startIndex,
+                                                             open: "(", close: ")")
+                            .map { String(rest.prefix(while: { $0 != "(" })) + $0 }
+                }
+                found[relative, default: []].append(passed)
+            }
+        }
+        #expect(calls > 0, "read no AnalyticsProvenance( call at all: the scan is broken, not the tree clean")
+        #expect(calls == 14, "the app has \(calls) analytics provenance builders, not 14: classify the new one here")
+        for file in Set(found.keys).union(Self.expectedSources.keys).sorted() {
+            #expect(found[file] == Self.expectedSources[file],
+                    "\(file) passes sources \(found[file] ?? []), expected \(Self.expectedSources[file] ?? [])")
+        }
+    }
+}
+
+// MARK: - QueryMethodAppendixSourcesTests (PV-1)
+
+/// The query log's method appendix states its sources in every format, not only the CSV (PV-1's appendix half).
+///
+/// `preambleLines`, which builds the sources block, fed only the CSV, though its comment said both formats: the
+/// Markdown query log (`frus-query-log.md`) and the plain-text lines that collection PDF, HTML and Word exports embed
+/// stated no sources at all — the W-13 trap the provenance plan named. Runs on any destination.
+@Suite("The method appendix states its sources in Markdown and plain text too (PV-1)")
+struct QueryMethodAppendixSourcesTests {
+
+    /// A keyword search, and a Meaning search, whose scope signature names the semantic route.
+    private func appendix(semantic: Bool) -> QueryMethodAppendix {
+        var searches = [SearchHistoryEntry(queryText: "petroleum", resultCount: 41,
+                                           executedAt: Date(timeIntervalSince1970: 100), loadedCount: 41,
+                                           matchCount: 41, fetchLimit: 7_500, indexedVolumeCount: 552)]
+        if semantic {
+            searches.append(SearchHistoryEntry(queryText: "oil diplomacy", resultCount: 20,
+                                               executedAt: Date(timeIntervalSince1970: 200),
+                                               scopeSignature: "route=semantic"))
+        }
+        return QueryMethodAppendix.make(searches: searches, corpusNames: [:], projectName: nil,
+                                        researchQuestion: nil, generatedAt: Date(timeIntervalSince1970: 1_000))
+    }
+
+    @Test("Markdown and plain text carry the sources block the CSV carries", arguments: [false, true])
+    func everyFormatStatesTheSources(_ semantic: Bool) {
+        let appendix = appendix(semantic: semantic)
+        #expect(semantic == (appendix.semanticRowCount > 0), "the fixture's Meaning row was not read as one")
+        // Read as sentences, not as sources: the model and the word lists share one (computed) sentence.
+        let expected = ProvenanceStatement.block(for: semantic ? [.frusText, .appModel] : [.frusText])
+        let unexpected = Set(ProvenanceSource.allCases.map(\.methodSentence)).subtracting(expected)
+        #expect(expected.count == (semantic ? 3 : 2), "the heading and one sentence per source: \(expected)")
+        for (format, text) in [("CSV", appendix.csv), ("Markdown", appendix.markdown),
+                               ("plain text", appendix.plainTextLines.joined(separator: "\n"))] {
+            for line in expected {
+                #expect(text.contains(line), "the \(format) appendix omits: \(line)")
+            }
+            for sentence in unexpected {
+                #expect(!text.contains(sentence), "the \(format) appendix claims: \(sentence)")
+            }
+        }
+    }
+}

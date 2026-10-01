@@ -450,13 +450,13 @@ One of these searches returned nothing. A zero is a finding: it means the term i
 <!-- The Meaning route's own caveat (#1127): its counts are a ranked top-K, not a match total, and
      its zeros are not term absence — different claims than the keyword rows make. Both sentences
      are the caveat; neither may be dropped for brevity. -->
-<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | lines: 492–493 | key: appendix.caveat.semantic.one -->
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | lines: 515–516 | key: appendix.caveat.semantic.one -->
 
 One search ran by meaning (on-device model) rather than by keywords. Its count is the size of a ranked list, not a match total, and a zero there does not mean any term is absent.
 
 <!-- END SOURCE: appendix.caveat.semantic.one -->
 
-<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | lines: 494–495 | key: appendix.caveat.semantic.many %lld -->
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | lines: 517–518 | key: appendix.caveat.semantic.many %lld -->
 
 *Interpolated with a count — keep `\(semanticRowCount)` intact.*
 

@@ -334,6 +334,9 @@ enum NativeCollectionError: Error, LocalizedError {
 ///   1.9 — #1463: `writeTemporaryFile(_:)`, the export sheet's write, names the file through
 ///          `CollectionExportNaming` — `Untitled Collection.fruscollection` for an unnamed
 ///          collection, never a hidden file; no schema or format change
+///   1.10 — #1497: `apply` trims the name it imports; #1498: a file name too long for the file system
+///          is cut; and `indexImportedNotes`, which both import paths call, puts an import's notes into
+///          the search index at once (the 2026-09-28 audit). No schema or format change
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -622,7 +625,10 @@ enum NativeCollectionSerializer {
     /// - Returns: The newly inserted `Collection` (the caller saves the context).
     @discardableResult
     static func apply(_ file: FRUSCollectionFile, into context: ModelContext) -> Collection {
-        let collection = Collection(name: file.name, note: file.note)
+        // Trimmed, as both editors save a name (#1497): a file names its collection as it was, and a name of
+        // spaces, or one padded with them, came in verbatim.
+        let collection = Collection(name: file.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                                    note: file.note)
         collection.defaultBodyDepth = file.composition.defaultBodyDepth
         collection.footnoteStyle = file.composition.footnoteStyle
         // Phase 5 pair (absent in v1 / pre-Phase-5 files → nil, i.e. derive from the
@@ -745,5 +751,36 @@ enum NativeCollectionSerializer {
         let data = try Data(contentsOf: url)
         let file = try decode(data)
         return apply(file, into: context)
+    }
+
+    // MARK: - Index an import's notes
+
+    /// Puts the notes an import brought into the search index, so they are findable at once rather than
+    /// at the next launch's replay (the 2026-09-28 audit, from #1280's session log).
+    ///
+    /// `apply` recreates each note a file carries as a new `ResearchNote` linked to its entry, and both
+    /// import paths only saved, so search could not see an imported note until the app relaunched. Each
+    /// document an imported note sits on is rewritten through the column's one writer,
+    /// `ResearchNote.reindexNoteText`, which reads every note on the document — the reader's own as well
+    /// as the imported ones — so an import never narrows what the column held. Both import paths
+    /// (`CollectionListView` and the Mac collection window) call it after they save: that save is what
+    /// the writer's read sees.
+    ///
+    /// - Parameters:
+    ///   - collection: The collection `apply` made.
+    ///   - context: The context it was saved in.
+    ///   - pipeline: The index to write through.
+    @MainActor
+    static func indexImportedNotes(of collection: Collection, in context: ModelContext,
+                                   pipeline: IndexingPipeline) async {
+        var indexed = Set<String>()
+        let entries = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        for entry in entries where entry.entryKind == .document && !entry.selectedNoteIds.isEmpty {
+            let (volumeId, documentId) = (entry.volumeId, entry.documentId)
+            guard !volumeId.isEmpty, !documentId.isEmpty,
+                  indexed.insert("\(volumeId)/\(documentId)").inserted else { continue }
+            await ResearchNote.reindexNoteText(volumeId: volumeId, documentId: documentId,
+                                               in: context, pipeline: pipeline)
+        }
     }
 }

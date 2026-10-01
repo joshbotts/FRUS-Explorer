@@ -1474,6 +1474,8 @@ enum SourceNoteDisplay {
 /// Version history:
 ///   1.0 — #1463: initial implementation, replacing the five exporters' private `sanitized(_:)` and
 ///          the export sheet's inline copy of it for the native file
+///   1.1 — #1498: `fileName` cuts a stem too long for the file system (`ExportFileName`); #1497:
+///          `zoteroCollectionName`, the name of the Zotero collection a send creates
 enum CollectionExportNaming {
 
     /// The characters a file name may not carry here, each written as `-` — the set that the five
@@ -1491,12 +1493,47 @@ enum CollectionExportNaming {
     /// `suffix` (".html", "-zotero.ris"): its `title`, each hostile character written as `-`, with the
     /// dots and spaces that open it removed — so the file is never hidden. A title with nothing else
     /// in it names the file "Untitled Collection".
+    ///
+    /// A title too long for a file name is cut, on a whole character, so the name and its suffix fit
+    /// (`ExportFileName`, #1498): uncut, a name past 255 bytes of UTF-8 failed every format's write in
+    /// the temporary directory. The export's title, and a `.fruscollection` file's own name field, keep
+    /// the whole name; only the file's name is cut.
     static func fileName(savedName: String, suffix: String) -> String {
         let written = title(savedName: savedName)
             .components(separatedBy: hostileCharacters)
             .joined(separator: "-")
-        let stem = written.drop(while: { $0 == "." || $0.isWhitespace })
-        return (stem.isEmpty ? title(savedName: "") : String(stem)) + suffix
+        let stem = ExportFileName.fitting(String(written.drop(while: { $0 == "." || $0.isWhitespace })),
+                                          reserving: suffix.utf8.count)
+        return (stem.isEmpty ? title(savedName: "") : stem) + suffix
+    }
+
+    /// The name of the Zotero collection a collection saved under `savedName` becomes when the export
+    /// sheet sends it to the reader's Zotero library (#1497): the name trimmed, or "FRUS Explorer
+    /// Collection - yyyy-mm-dd" for a collection with no name — the owner's decision D16 (2026-09-28).
+    ///
+    /// The send passed the saved name through untrimmed, and no name at all when it was empty, so an
+    /// unnamed collection's items landed loose in the library, and a name of spaces made a Zotero
+    /// collection named with spaces. Only the Zotero send reads this: a file export keeps "Untitled
+    /// Collection" (`title`), while a send lands in a library that keeps every earlier one, where the
+    /// day tells two unnamed sends apart.
+    ///
+    /// - Parameters:
+    ///   - savedName: The collection's saved name, which may be empty or padded.
+    ///   - date: When the send is made.
+    ///   - timeZone: The zone the day is read in — the reader's own, so it is the day on their
+    ///     calendar.
+    static func zoteroCollectionName(savedName: String, on date: Date = Date(),
+                                     timeZone: TimeZone = .current) -> String {
+        let trimmed = savedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        return String(format: String(localized: "export.zotero.collection.untitled %@",
+                                     defaultValue: "FRUS Explorer Collection - %@"),
+                      formatter.string(from: date))
     }
 
     /// Where an export of a collection saved under `savedName` is written: `fileName(savedName:suffix:)`
@@ -1504,6 +1541,52 @@ enum CollectionExportNaming {
     static func temporaryFileURL(savedName: String, suffix: String) -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent(fileName(savedName: savedName, suffix: suffix))
+    }
+}
+
+// MARK: - ExportFileName
+
+/// An export's file name, cut to fit the file system (#1498).
+///
+/// APFS takes 255 bytes of UTF-8 in a name (`NAME_MAX`; the 2026-09-27 triage created a 255-byte name on
+/// the build Mac and saw a 256-byte one fail with errno 63, "File name too long", which is the error
+/// `CollectionExportNamingTests` met on the iOS simulator), and nothing capped the names the app
+/// writes: a collection's name became its
+/// export's stem whole, and an analytics figure's title its file's. Both now pass through here —
+/// `CollectionExportNaming.fileName`, which every collection exporter and the `.fruscollection` writer
+/// name their file through, and `AnalyticsExportDelivery.filenameStem`.
+///
+/// Version history:
+///   1.0 — #1498 and the 2026-09-28 audit's analytics stem: initial implementation
+enum ExportFileName {
+
+    /// The most UTF-8 bytes a file name may take here, suffix included: the file system's 255, less 15,
+    /// so a name the system lengthens when the reader keeps a second copy beside the first — Finder adds
+    /// " 2" — still fits.
+    static let maxBytes = 240
+
+    /// `stem` cut so that it, and `reservedBytes` more, fit within `maxBytes` — whole when it already
+    /// fits. The cut falls between two characters, never inside one (a combining accent stays on its
+    /// letter, a flag stays a flag), and any whitespace it leaves at the end is dropped.
+    ///
+    /// - Parameters:
+    ///   - stem: The name's own part.
+    ///   - reservedBytes: The bytes of what the caller puts around it — a suffix, a prefix and a date.
+    /// - Returns: The stem, cut to fit; empty when nothing fits.
+    static func fitting(_ stem: String, reserving reservedBytes: Int) -> String {
+        let budget = max(maxBytes - reservedBytes, 0)
+        guard stem.utf8.count > budget else { return stem }
+        var used = 0
+        var end = stem.startIndex
+        for index in stem.indices {
+            let size = stem[index].utf8.count
+            if used + size > budget { break }
+            used += size
+            end = stem.index(after: index)
+        }
+        var cut = String(stem[..<end])
+        while let last = cut.last, last.isWhitespace { cut.removeLast() }
+        return cut
     }
 }
 

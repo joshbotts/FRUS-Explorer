@@ -1513,3 +1513,26 @@ struct TripPacketExporterTests {
         #expect(!text.contains("Every series this packet cites is recorded as unrestricted"))
     }
 }
+
+// MARK: - The sources block (PV-1)
+
+extension TripPacketExporterTests {
+
+    /// The packet was the one archival export wave PV never reached: its own snapshot caveat names NARA's catalog,
+    /// but it carried no "Where this came from" block (the 2026-09-28 audit). Its targets are read from the volumes'
+    /// source notes and footnotes by the parser, and every one is looked up in the app's snapshot of NARA's catalog —
+    /// so the block names both, with the parse's residual, as a collection's archival-sources block does. It sits in
+    /// the coverage report, which prints with every export, scoped or not.
+    @Test("The packet's coverage report states where the packet came from (PV-1)")
+    func packetStatesItsSources() {
+        let block = ProvenanceStatement.block(for: [.frusText, .naraCatalog], restsOnSourceNoteParse: true)
+        #expect(block.count == 4, "the heading, two sources and the residual: \(block)")
+        for packet in [exporter(), TripPacketExporter(model: Self.libraryPlan(), projectName: "Libraries")] {
+            let report = packet.coverageReport
+            for line in block {
+                #expect(report.contains(line), "the coverage report omits: \(line)")
+            }
+            #expect(packet.export().contains(block[1]), "the exported packet omits the sources block")
+        }
+    }
+}

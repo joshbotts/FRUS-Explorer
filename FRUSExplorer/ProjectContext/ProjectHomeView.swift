@@ -529,9 +529,8 @@ struct ProjectHomeView: View {
             } else {
                 ForEach(members) { collection in
                     Label {
-                        Text(collection.name.isEmpty
-                             ? String(localized: "project.home.collections.untitled", defaultValue: "Untitled Collection")
-                             : collection.name)
+                        // The name as every list row reads it, trimmed and with the shared fallback (#1464).
+                        Text(CollectionEditorNaming.listName(savedName: collection.name))
                             .lineLimit(1)
                     } icon: {
                         Image(systemName: "tray.2").foregroundStyle(.secondary)
@@ -1427,9 +1426,8 @@ struct ProjectCollectionsEditor: View {
                 .map { "\($0.volumeId)/\($0.documentId)" }
         ).count
         VStack(alignment: .leading, spacing: 2) {
-            Text(collection.name.isEmpty
-                 ? String(localized: "project.collections.manage.untitled", defaultValue: "Untitled Collection")
-                 : collection.name)
+            // The name as every list row reads it, trimmed and with the shared fallback (#1464).
+            Text(CollectionEditorNaming.listName(savedName: collection.name))
                 .foregroundStyle(.primary)
             Text(docCount == 1
                  ? String(localized: "project.collections.manage.docCount.one", defaultValue: "1 document")

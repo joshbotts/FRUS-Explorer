@@ -299,3 +299,103 @@ Format, one entry per change:
 - **Proposed:** **Diagnostics** holds the redacted iCloud **Sync Log** (event types, timing, and error codes only — never your content), the **iCloud Schema** status, and **Language Analysis**: whether this device's language analysis is reducing words to their dictionary forms, telling parts of speech apart and recognizing names — *Working*, *Limited* (naming what is not working; the app checks again each time you come back to it), or *Checking* while it finds out.
 - **Why:** as for the Mac (#1539; `DataRecoveryView.swift:97`, `:725`). The iOS sentence also omits **Semantic Match Feedback**, which the same section shows on iPhone and iPad; that is older than this lane and is left to lane MANUALS.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## EXPORT — #1465, #1496, #1497, #1498, #1464
+
+*Lane EXPORT (2026-10-01) changes what an untitled Section heading does, how a collection is named in Zotero and in a file name, when an imported collection's notes become searchable, and what every analytics export, the method appendix and the Archives Visit packet say they were drawn from. Each entry quotes the manual as it stands at `origin/v2` f5625ca2. #1496 (a note inside a note in a Word export) and #1464 (list rows trimming the name) change nothing either manual says.*
+
+- **Manual / section:** Mac §12.3 Composing: Headings, Prose, Excerpts, and Apparatus (the **Section headings** bullet)
+- **Current:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
+- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
+- **Why:** #1465, decision D4: an export resolves with `dropsUntitledHeadings` (`FRUSExplorer/Collections/CollectionContentResolver.swift:452`), whose levels come from `CollectionOutline.exportLevels` (`FRUSExplorer/Collections/CollectionOutline.swift:155`) while the section cascades still run over the whole outline; the preview prints the heading through `headingText` (`FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift:257`). Before, every format printed an empty heading, and the preview's Contents a row of "1." and nothing.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.3 Section Headings and Prose (the **Section headings** bullet)
+- **Current:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
+- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
+- **Why:** as for the Mac (#1465; the same resolver and renderer serve both platforms).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export (the **Send to Zotero Library** bullet)
+- **Current:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected library over the Web API, with tags and research notes; with no account it falls back to an RIS file for desktop import.
+- **Proposed:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected library over the Web API — into a new Zotero collection named after it, or, for a collection with no name, *FRUS Explorer Collection -* and the day you send it (*FRUS Explorer Collection - 2026-10-01*) — with tags and research notes; with no account it falls back to an RIS file for desktop import.
+- **Why:** #1497, decision D16: the send names its Zotero collection through `CollectionExportNaming.zoteroCollectionName` (`FRUSExplorer/Collections/CollectionExportSheet.swift:749`, `FRUSExplorer/Collections/CollectionExporter.swift:1525`), trimmed; an unnamed collection's items used to land loose in the library, in no Zotero collection.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export (the **Send to Zotero Library** bullet)
+- **Current:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected Zotero library over the Web API, with tags and research notes; with no account connected it falls back to an RIS file for desktop import.
+- **Proposed:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected Zotero library over the Web API — into a new Zotero collection named after it, or, for a collection with no name, *FRUS Explorer Collection -* and the day you send it — with tags and research notes; with no account connected it falls back to an RIS file for desktop import.
+- **Why:** as for the Mac (#1497; one export sheet serves both).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export (the paragraph after the bullets)
+- **Current:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export.
+- **Proposed:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export. A name too long for a file name is shortened, at a whole character, in the file's name only; the export's title keeps it whole.
+- **Why:** #1498: `CollectionExportNaming.fileName` cuts the stem through `ExportFileName.fitting` (`FRUSExplorer/Collections/CollectionExporter.swift:1501`, `:1576`) so name and suffix fit within 240 bytes; a name past the file system's 255 failed every format's write with "Could not write export file".
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export (the paragraph after the bullets)
+- **Current:** Each file is named after the collection; a collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export.
+- **Proposed:** Each file is named after the collection; a collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export. A name too long for a file name is shortened, at a whole character, in the file's name only.
+- **Why:** as for the Mac (#1498).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export (the **Importing** bullet)
+- **Current:** **Importing.** **Import Collection…** in the window, or just **double-click a `.fruscollection` file** (or receive one by AirDrop) — the window opens with the import selected. Double-clicking a byte-identical file again during the same app session re-opens the collection it created; after a relaunch, opening the file imports a fresh copy.
+- **Proposed:** **Importing.** **Import Collection…** in the window, or just **double-click a `.fruscollection` file** (or receive one by AirDrop) — the window opens with the import selected. Research notes the file carries become notes of yours on those documents, searchable straight away. Double-clicking a byte-identical file again during the same app session re-opens the collection it created; after a relaunch, opening the file imports a fresh copy.
+- **Why:** the 2026-09-28 audit (from #1280's log): both import paths now index the notes an import brings (`NativeCollectionSerializer.indexImportedNotes`, `FRUSExplorer/Collections/NativeCollectionFormat.swift:774`, called at `FRUSExplorer/Collections/MacCollectionManagerView.swift:386` and `FRUSExplorer/Collections/CollectionListView.swift:254`); before, they became searchable only at the next launch.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export (the **Importing** bullet)
+- **Current:** **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
+- **Proposed:** **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Research notes the file carries become notes of yours on those documents, searchable straight away. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
+- **Why:** as for the Mac (`CollectionListView.swift:254`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.8 Exporting a Chart for Publication (the **What.** bullet)
+- **Current:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, then the table.
+- **Proposed:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, closing on what the numbers were drawn from, then the table. That last statement names the volumes alone for most charts, and says so where a chart joined them to other data or computed from them: a word cloud's word lists, the semantic map's model, Person Analytics' people register, the regional chart's subject taxonomy, and the State Department's filing schedule behind a class ranking's unprinted pointers or a class's gloss.
+- **Why:** PV-1 (the 2026-09-28 audit): every analytics export claimed "the FRUS volumes, and from no other source"; the builders now pass their sources (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:1224`, `FRUSExplorer/Semantic/Map/SemanticMapExport.swift:142`, `FRUSExplorer/Analytics/PersonAnalyticsView.swift:542`, `FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift:101`, `FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift:175`), and the plate prints the same statement.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.8 Exporting a Chart for Publication (the **What.** bullet)
+- **Current:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, then the table.
+- **Proposed:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, closing on what the numbers were drawn from (the volumes alone for most charts; the volumes joined to other data, or computed by the app, where a chart did that), then the table.
+- **Why:** as for the Mac (PV-1). The section's next bullet, **Before you publish a figure alone**, is already stale on iOS — the plate has printed every caveat since visual-marketing GATE C — and is left to lane MANUALS, which the planning audit records.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.8 Exporting a Chart for Publication (the last bullet)
+- **Current:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`), so repeat exports stay distinguishable in a downloads folder. If an export fails, the app says so rather than doing nothing.
+- **Proposed:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`), so repeat exports stay distinguishable in a downloads folder; a very long title — a word cloud of a volume with a long title — is shortened in the file name, never in the figure or the CSV. If an export fails, the app says so rather than doing nothing.
+- **Why:** the 2026-09-28 audit: `AnalyticsExportDelivery.filenameStem` (`FRUSExplorer/Analytics/Export/AnalyticsExportDelivery.swift:133`) cuts the title's part so prefix, date and extension fit; the longest volume title made a 515-byte name.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.8 Exporting a Chart for Publication (the last bullet)
+- **Current:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`), and the share sheet lets you save, AirDrop, or send them anywhere.
+- **Proposed:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`) — a very long title is shortened in the file name, never in the figure or the CSV — and the share sheet lets you save, AirDrop, or send them anywhere.
+- **Why:** as for the Mac; on iOS the uncut name failed the share sheet's write in the temporary directory.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §17.5 Data & Recovery (the **Export Query Log as a Method Appendix** paragraph)
+- **Current:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned.
+- **Proposed:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned. Both, and the query log a collection appends, close on what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
+- **Why:** PV-1's appendix half (the 2026-09-28 audit): only the CSV carried the sources block; `QueryMethodAppendix.sourceLines` (`FRUSExplorer/Export/QueryMethodAppendix.swift:484`) now feeds the Markdown and the plain-text lines a collection export embeds too.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §17.6 Data & Recovery (the **Export Query Log as a Method Appendix** paragraph)
+- **Current:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned.
+- **Proposed:** As for the Mac, append: Both, and the query log a collection appends, close on what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
+- **Why:** as for the Mac (`QueryMethodAppendix.swift:484`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.8 The Archives Visit Packet (the **coverage report** paragraph)
+- **Current:** A **coverage report** travels with every export, scoped or not — it is not optional, because an empty channel with no caveat reads as a clearance: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, and how much of the restriction picture is actually measured.
+- **Proposed:** A **coverage report** travels with every export, scoped or not — it is not optional, because an empty channel with no caveat reads as a clearance: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, how much of the restriction picture is actually measured, and — as every export ends — where the packet came from: the volumes' source notes and footnotes as the app read them, with the parser's measured miss rate, and the app's snapshot of NARA's catalog.
+- **Why:** PV-1 (the 2026-09-28 audit): the coverage report now ends on `TripPacketExporter.sourceLines` (`FRUSExplorer/TripPacket/TripPacketExporter.swift:776`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.8 The Archives Visit Packet (the **coverage report** paragraph)
+- **Current:** A **coverage report** closes every export: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, and how much of the restriction picture is actually measured.
+- **Proposed:** A **coverage report** closes every export: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, how much of the restriction picture is actually measured, and where the packet came from — the volumes' source notes and footnotes as the app read them, with the parser's measured miss rate, and the app's snapshot of NARA's catalog.
+- **Why:** as for the Mac (`TripPacketExporter.swift:776`).
+- **Owner:** ☐ approve ☐ edit ☐ reject

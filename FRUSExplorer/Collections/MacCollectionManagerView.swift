@@ -178,11 +178,10 @@ struct MacCollectionManagerView: View {
         allCollections.first { $0.id == selectedId }
     }
 
-    /// The display name for a collection, with a placeholder for an untitled one.
+    /// The display name for a collection: trimmed, and "Untitled Collection" for an untitled one — what every list
+    /// row reads (#1464).
     private func collectionDisplayName(_ c: Collection) -> String {
-        c.name.isEmpty
-            ? String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
-            : c.name
+        CollectionEditorNaming.listName(savedName: c.name)
     }
 
     /// Composer v2 (§B): the toolbar collection PICKER — the everyday switcher that replaces the
@@ -380,6 +379,14 @@ struct MacCollectionManagerView: View {
                 // hidden by the sidebar's active-project filter; imported files carry no projectIds.
                 if let pid = appState.activeProjectId { imported.projectIds = [pid] }
                 try modelContext.save()
+                // The notes it brought are searchable at once, not at the next launch.
+                if let pipeline = appState.indexingPipeline {
+                    let context = modelContext
+                    Task {
+                        await NativeCollectionSerializer.indexImportedNotes(of: imported, in: context,
+                                                                            pipeline: pipeline)
+                    }
+                }
                 selectedId = imported.id
             } catch {
                 importError = error.localizedDescription

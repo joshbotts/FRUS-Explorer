@@ -96,7 +96,9 @@ enum SeriesAnalyticsExport {
             datingRule: String(localized: "series.export.dating.geography",
                                defaultValue: "Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume’s own subject tags. So these figures count volumes concerned with a region, not documents about it."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
-            extraCaveats: [scopeCaveat(scopeLabel)].compactMap { $0 } + extra)
+            extraCaveats: [scopeCaveat(scopeLabel)].compactMap { $0 } + extra,
+            // PV-1: the regions come from the volume tag taxonomy, which folds into the OH subjects.
+            sources: [.frusText, .ohSubjects])
     }
 
     // MARK: - Archival sourcing over time (SA-3b)

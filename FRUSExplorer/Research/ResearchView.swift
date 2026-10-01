@@ -789,10 +789,8 @@ struct ResearchView: View {
                         sidebarRow(.collection(item.collection.id)) {
                             Label {
                                 HStack {
-                                    Text(item.collection.name.isEmpty
-                                         ? String(localized: "research.sidebar.collections.untitled",
-                                                  defaultValue: "Untitled Collection")
-                                         : item.collection.name)
+                                    // As every list row reads (#1464).
+                                    Text(CollectionEditorNaming.listName(savedName: item.collection.name))
                                     Spacer()
                                     Text("\(item.count)")
                                         .font(FRUSTheme.captionFont)
@@ -1056,10 +1054,8 @@ struct ResearchView: View {
                     ForEach(collectionRows, id: \.id) { row in
                         HStack(spacing: 2) {
                             Image(systemName: "tray.2")
-                            Text(row.name.isEmpty
-                                 ? String(localized: "research.row.untitledCollection",
-                                          defaultValue: "Untitled Collection")
-                                 : row.name)
+                            // As every list row reads (#1464).
+                            Text(CollectionEditorNaming.listName(savedName: row.name))
                         }
                         .font(.caption2)
                         .foregroundStyle(Color.secondary)
@@ -1523,10 +1519,7 @@ struct ResearchView: View {
                 ?? String(localized: "research.list.unknownTag", defaultValue: "Tag")
         case .collection(let id):
             let name = allCollections.first(where: { $0.id == id })?.name ?? ""
-            return name.isEmpty
-                ? String(localized: "research.list.untitledCollection",
-                         defaultValue: "Untitled Collection")
-                : name
+            return CollectionEditorNaming.listName(savedName: name)   // As every list row reads (#1464).
         case .highlightColor(let color):
             return color.displayName + " " + String(localized: "research.list.highlights",
                                                     defaultValue: "Highlights")

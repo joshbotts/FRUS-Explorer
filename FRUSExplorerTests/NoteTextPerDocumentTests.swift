@@ -668,3 +668,71 @@ struct NoteTextWriterScanTests {
             """)
     }
 }
+
+// MARK: - ImportedNoteIndexTests
+
+/// A `.fruscollection` import's notes are searchable at once (the 2026-09-28 audit, from #1280's session log).
+///
+/// `NativeCollectionSerializer.apply` recreates each note a shared file carries as a new `ResearchNote`, and both
+/// import paths only saved — nothing pushed the notes into `note_text`, so they became findable at the next launch's
+/// replay. The import now rewrites each affected document's column through the one writer, `reindexNoteText`, which
+/// reads the reader's own notes too. Driven through the real serializer, writer and search. Runs on any destination.
+@Suite("A collection import indexes the notes it brings")
+struct ImportedNoteIndexTests {
+
+    @MainActor
+    @Test("A note imported with a collection is findable at once, and the reader's own note on it stays findable")
+    func importedNotesAreSearchable() async throws {
+        let (dir, service, pipeline, _) = try await makeNoteFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        _ = makeNote("Kissinger backchannel.", on: "d1", in: context, createdAt: Date(timeIntervalSince1970: 1_000_000))
+        try context.save()
+        await ResearchNote.reindexNoteText(volumeId: "vol1", documentId: "d1", in: context, pipeline: pipeline)
+
+        // The shared file, as another reader exported it with notes on: d1 and d2, a note on each.
+        let sharerContainer = try ModelContainer.makeTestContainer()
+        let sharerContext = ModelContext(sharerContainer)
+        let shared = Collection(name: "Shared")
+        sharerContext.insert(shared)
+        for (index, id) in ["d1", "d2"].enumerated() {
+            let entry = CollectionEntry(collectionId: shared.id, documentId: id, volumeId: "vol1", sortOrder: index)
+            sharerContext.insert(entry)
+            entry.collection = shared
+        }
+        try sharerContext.save()
+        let file = NativeCollectionSerializer.makeFile(from: shared, includeNotes: true) { entry in
+            entry.documentId == "d1" ? ["Verify the dateline."] : ["Telegram routing slip."]
+        }
+        #expect(file.entries.compactMap(\.notes).flatMap { $0 }.count == 2, "the file carries no notes to import")
+
+        let imported = NativeCollectionSerializer.apply(file, into: context)
+        try context.save()
+        await NativeCollectionSerializer.indexImportedNotes(of: imported, in: context, pipeline: pipeline)
+
+        #expect(try await noteSearch(service, "dateline") == ["d1"], "an imported note is not findable")
+        #expect(try await noteSearch(service, "routing") == ["d2"], "an imported note is not findable")
+        #expect(try await noteSearch(service, "backchannel") == ["d1"], """
+            The import took the reader's own note on the same document out of the index: the column is per \
+            document, so it has to be rewritten from every note on it.
+            """)
+        withExtendedLifetime((container, sharerContainer)) {}
+    }
+
+    @Test("Both import paths index the notes they bring, after they save")
+    func bothImportPathsIndex() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["FRUSExplorer/Collections/CollectionListView.swift",
+                     "FRUSExplorer/Collections/MacCollectionManagerView.swift"] {
+            let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            let anchor = try #require(text.range(of: "private func importCollection(from result: Result<[URL], Error>)"),
+                                      "\(path) no longer has its import function")
+            let body = String(try #require(WindowTargetingTests.balancedBlock(in: text, from: anchor.lowerBound)))
+            let save = try #require(body.range(of: "try modelContext.save()"), "\(path)'s import no longer saves")
+            let index = try #require(body.range(of: "NativeCollectionSerializer.indexImportedNotes(of: imported"),
+                                     "\(path)'s import does not index the notes it brings:\n\(body)")
+            #expect(save.upperBound <= index.lowerBound, "\(path) indexes before it saves, so the read misses the notes")
+        }
+    }
+}

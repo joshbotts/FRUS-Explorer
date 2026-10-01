@@ -1995,3 +1995,46 @@ struct LanguageAnalysisRefusalCopyTests {
         #expect(text.hasSuffix("if it doesn’t, quitting and reopening FRUS Explorer may restore it."), "\(key): \(text)")
     }
 }
+
+// MARK: - WordCloudPlateAppearanceTests
+
+/// An exported word-cloud plate looks the same whatever appearance the device is in (the 2026-09-28 audit).
+///
+/// The plate's band is a near-white `Color(white: 0.96)` on a white canvas, but its "FRUS Explorer" credit was drawn
+/// in `.secondary` and its words in system colours, and nothing pinned the plate's colour scheme — so on a device in
+/// dark appearance the credit resolved to a light grey on that near-white band, and the words to their dark-mode
+/// tints. The analytics figure canvas has pinned light since D3 (`AnalyticsFigureCanvas`). The same view renders the
+/// cloud embedded in a collection's PDF and Word exports. The test renders the real `WordCloudImageContent` under a
+/// dark and a light environment through `ImageRenderer`, as the exporter does, and compares the pixels. Runs on any
+/// destination.
+@Suite("A word-cloud plate draws the same in dark appearance as in light")
+@MainActor
+struct WordCloudPlateAppearanceTests {
+
+    /// The plate's pixels when the surrounding environment is `scheme`.
+    private func pixels(_ scheme: ColorScheme) throws -> Data {
+        let size = CGSize(width: 480, height: 360)
+        let placements = WordCloudLayout.place(
+            terms: [TermCount(term: "embassy", count: 40), TermCount(term: "treaty", count: 25),
+                    TermCount(term: "neutrality", count: 12), TermCount(term: "tariff", count: 9)],
+            in: CGSize(width: size.width, height: size.height - 92), maxWords: 10, minFontSize: 16, maxFontSize: 64,
+            spacingScale: 1, widthFactor: 0.6)
+        #expect(!placements.isEmpty, "the layout placed nothing, so the words' colours are not compared")
+        let content = WordCloudImageContent(
+            placements: placements, title: "Berlin, 1948", size: size, captionBand: 92,
+            palette: WordCloudExporter.palette, provenanceLine: "Whole corpus · FRUS Explorer")
+            .environment(\.colorScheme, scheme)
+        let renderer = ImageRenderer(content: content)
+        renderer.scale = 1
+        let image = try #require(renderer.cgImage, "the plate did not render")
+        return try #require(image.dataProvider?.data as Data?, "the plate's pixels could not be read")
+    }
+
+    @Test("The plate's credit, band and words do not change with the device's appearance")
+    func plateIgnoresTheAppearance() throws {
+        let light = try pixels(.light)
+        #expect(try pixels(.light) == light, "two light renders differ, so a difference below would mean nothing")
+        #expect(try pixels(.dark) == light,
+                "the plate drew differently in dark appearance: its credit or its words follow the device")
+    }
+}

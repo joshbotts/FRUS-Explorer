@@ -355,6 +355,37 @@ struct AnalyticsExportDeliveryTests {
         #expect(stem.hasPrefix("FRUS-WordCloud-Berlin-Crisis-"))
         #expect(!stem.contains("Analytics"))
     }
+
+    /// The longest volume title in the manifest (`frus1865p4`) gave a word cloud's PNG a 515-byte file name, past the
+    /// 255 a file name may take, so the iOS share sheet's write in the temporary directory failed (the 2026-09-28
+    /// audit). Cut on a character, the stem keeps its family prefix and its date, and the file is written.
+    @Test("An overlong title is cut on a character, keeps its prefix and date, and the file is written")
+    func overlongTitleIsCutToFit() throws {
+        let stamp = "-2025-07-20"
+        for title in [String(repeating: "Diplomatic Correspondence ", count: 20),
+                      String(repeating: "外交", count: 120), String(repeating: "e\u{301}", count: 150)] {
+            let stem = AnalyticsExportDelivery.filenameStem(title: title, prefix: "FRUS-WordCloud", date: date)
+            #expect(stem.hasPrefix("FRUS-WordCloud-"), "the family prefix was cut: \(stem.prefix(20))")
+            #expect(stem.hasSuffix(stamp), "the date was cut: \(stem.suffix(20))")
+            let middle = String(stem.dropFirst("FRUS-WordCloud-".count).dropLast(stamp.count))
+            let whole = title.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: " ", with: "-")
+            #expect(!middle.isEmpty && whole.hasPrefix(middle), "the title's own opening was not kept: \(middle)")
+            #expect(!middle.hasSuffix("-"), "the cut left a dangling hyphen: \(middle.suffix(5))")
+            let perCharacter = try #require(whole.first).utf8.count
+            if whole.allSatisfy({ $0.utf8.count == perCharacter }) {
+                #expect(middle.utf8.count == middle.count * perCharacter, "cut inside a character: \(middle.suffix(3))")
+            }
+            for ext in ["png", "pdf", "csv"] {
+                let name = stem + "." + ext
+                #expect(name.utf8.count <= 255, "a \(name.utf8.count)-byte name")
+                let directory = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString, isDirectory: true)
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                defer { try? FileManager.default.removeItem(at: directory) }
+                try Data("x".utf8).write(to: directory.appendingPathComponent(name), options: .atomic)
+            }
+        }
+    }
 }
 
 // MARK: - PersonTrajectoryExportPeriodTests

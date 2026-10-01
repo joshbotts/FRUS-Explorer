@@ -536,7 +536,10 @@ struct PersonAnalyticsView: View {
                        defaultValue: "Population: person mentions are counted in dated documents only. The Corpus Analytics charts fall back to the volume’s start year for undated documents; these charts do not. Counts from the two views are therefore not directly comparable."),
                 String(localized: "personAnalytics.export.caveat.identity",
                        defaultValue: "Identity: mentions are grouped by the app’s person authority, so spelling variants and name forms for one individual merge into a single identity. The person id column is that grouped identity."),
-            ] + extra
+            ] + extra,
+            // PV-1: a person is a `person_rollup` cluster, consolidated through the Office of the Historian's people
+            // register (`person-authority-index.json`) — the join is the app's, as PV-5 badges it on screen.
+            sources: [.frusText, .ohPeopleRegister]
         )
     }
 

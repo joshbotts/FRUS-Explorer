@@ -1218,7 +1218,10 @@ struct WordCloudView: View {
             // written for, and nonsense above a word cloud, which has no periods and (under keyness)
             // no share column at all. The measure travels in `axisLabel` and the caveats instead.
             valueMode: nil,
-            extraCaveats: caveats
+            extraCaveats: caveats,
+            // PV-1: the volumes' words, counted through this app's lexicons and stopwords — and, for keyness, scored
+            // against its bundled reference (`keyness-baseline.json`, `.appWordLists`).
+            sources: [.frusText, .appWordLists]
         )
     }
 

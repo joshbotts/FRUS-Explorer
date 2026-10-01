@@ -44,6 +44,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — M-2 commit 3: initial implementation
+///   1.1 — PV-1 (the 2026-09-28 audit): the sources block (`sourceLines`) reaches the Markdown and the plain-text
+///          lines, not only the CSV
 struct QueryMethodAppendix: Sendable, Equatable {
 
     /// One recorded search, already resolved against the models it points at.
@@ -352,6 +354,12 @@ struct QueryMethodAppendix: Sendable, Equatable {
         lines.append("## " + String(localized: "appendix.method.heading",
                                     defaultValue: "How to read this table"))
         for caveat in caveats { lines.append("- \(caveat)") }
+        // PV-1: the same sources block the CSV carries, as a section of its own.
+        if let heading = sourceLines.first {
+            lines.append("")
+            lines.append("## " + heading)
+            for line in sourceLines.dropFirst() { lines.append("- \(line)") }
+        }
         lines.append("")
         lines.append(Self.corpusAttribution)
         return lines.joined(separator: "\n").appending("\n")
@@ -377,6 +385,13 @@ struct QueryMethodAppendix: Sendable, Equatable {
             lines.append("")
             lines.append(Self.coverageHeading)
             for line in coverage { lines.append(line) }
+        }
+        // PV-1: the sources block, a heading standing alone and its sentences after it — the lines a collection's
+        // PDF, HTML and Word exports print, where the colophon's own block names only the collection's items.
+        let sources = sourceLines
+        if !sources.isEmpty {
+            lines.append("")
+            lines.append(contentsOf: sources)
         }
         lines.append("")
         for row in rows {
@@ -427,7 +442,8 @@ struct QueryMethodAppendix: Sendable, Equatable {
 
     // MARK: - Shared prose
 
-    /// The header facts, shared by both formats.
+    /// The CSV's header facts, written as its `#` comment lines. (Markdown and plain text build their own headers,
+    /// and share only `sourceLines` and the caveats with it.)
     private var preambleLines: [String] {
         var lines: [String] = []
         lines.append(String(localized: "appendix.title", defaultValue: "Query log — method appendix"))
@@ -449,12 +465,7 @@ struct QueryMethodAppendix: Sendable, Equatable {
         lines.append("")
         lines.append(String(localized: "appendix.method.heading", defaultValue: "How to read this table"))
         for caveat in caveats { lines.append(caveat) }
-        // PV-1: what these counts were drawn from. A keyword search is the FTS5 index over FRUS's
-        // own text; a Meaning search additionally ran the on-device encoder, which is a different
-        // claim and is the reason the set is derived from the rows rather than fixed.
-        var sources: Set<ProvenanceSource> = [.frusText]
-        if semanticRowCount > 0 { sources.insert(.appModel) }
-        let sourceBlock = ProvenanceStatement.block(for: sources)
+        let sourceBlock = sourceLines
         if !sourceBlock.isEmpty {
             lines.append("")
             lines.append(contentsOf: sourceBlock)
@@ -462,6 +473,18 @@ struct QueryMethodAppendix: Sendable, Equatable {
         lines.append("")
         lines.append(Self.corpusAttribution)
         return lines
+    }
+
+    /// What these counts were drawn from (PV-1): the sources block, its heading first, shared by all three formats.
+    ///
+    /// A keyword search is the FTS5 index over FRUS's own text; a Meaning search additionally ran the on-device
+    /// encoder, which is a different claim and is the reason the set is derived from the rows rather than fixed. Only
+    /// the CSV carried it until the 2026-09-28 audit: the Markdown query log (`frus-query-log.md`) and the plain-text
+    /// lines a collection export embeds stated no sources at all, the W-13 trap the provenance plan named.
+    var sourceLines: [String] {
+        var sources: Set<ProvenanceSource> = [.frusText]
+        if semanticRowCount > 0 { sources.insert(.appModel) }
+        return ProvenanceStatement.block(for: sources)
     }
 
     /// The caveats that apply to *this* log. Conditional on purpose: an appendix that recited every
