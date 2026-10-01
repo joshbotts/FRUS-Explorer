@@ -243,7 +243,7 @@ struct VolumeSubjectVolumesSheet: View {
                 // fully owned by the ContentUnavailableView overlay (a "0 other volumes"
                 // header peeking out from behind it read as a glitch).
                 if !otherVolumeIds.isEmpty {
-                    Section {
+                    WrappingFooterSection {
                         ForEach(otherVolumeIds, id: \.self) { volumeId in
                             Button {
                                 open(volumeId)
@@ -320,7 +320,7 @@ struct VolumeSubjectVolumesSheet: View {
     @ViewBuilder
     private var archivalProfileSection: some View {
         if coveringVolumeIds.count > 1 {
-            Section {
+            WrappingFooterSection {
                 Button {
                     openArchivalProfile()
                 } label: {
@@ -351,7 +351,7 @@ struct VolumeSubjectVolumesSheet: View {
     /// one volume is exactly the kind the index is worth opening for.
     @ViewBuilder
     private var subjectExplorerSection: some View {
-        Section {
+        WrappingFooterSection {
             Button {
                 openSubjectExplorer()
             } label: {

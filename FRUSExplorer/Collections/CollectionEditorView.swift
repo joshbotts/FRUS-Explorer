@@ -2069,7 +2069,9 @@ struct CollectionEditorView: View {
 // MARK: - FrontMatterModelSync
 
 /// Keeps `CollectionEditorView`'s one-time `@State` copies of the collection's name, description, subtitle, author line
-/// and three front-matter flags in step with the model when something else writes them. It only ever FOLLOWS: it writes
+/// and three front-matter flags in step with the model when something else writes them — and, since MACCOL, the Mac
+/// Collections window detail pane's (`CollectionDetailPane`), whose copies of the same seven fields another writer
+/// changes through the Manage Collections sheet's rename or iCloud. It only ever FOLLOWS: it writes
 /// the editor's copies and never the collection, so following a change never saves anything (#1413).
 ///
 /// - **The description, subtitle, author line and flags (#1413):** a heading row's Section defaults sheet
@@ -2331,11 +2333,14 @@ final class NewCollectionSession {
 /// **Where they run.** The editor calls these from its fields' own bindings (`CollectionEditorView.committing`), as the
 /// reader edits, and records the edit — the active project and a save — when one returns `true`. Never from `onChange`:
 /// on the compact layout Collection settings is pushed OVER the editor, and a covered, pushed editor runs none (#1415).
+/// The Mac Collections window's detail pane (`CollectionDetailPane`) calls them the same way, from its ⚙ popover's
+/// controls, and saves when one returns `true` (MACCOL).
 ///
 /// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the editor calls.
 ///
 /// Version history:
 ///   1.0 — #1415 / #1413: initial implementation, replacing `CollectionEditorView.saveLive()`
+///   1.1 — MACCOL: the Mac detail pane commits through these too, replacing its `saveMetadata()`
 enum CollectionEditorCommit {
 
     /// Whether a text field and the optional value saved for it say the same thing: equal once both are trimmed, with

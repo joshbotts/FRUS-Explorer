@@ -277,7 +277,7 @@ struct DocumentChangeReviewSheet: View {
 
     /// What the re-index recorded, in the banner's own words, and the document-level disposition.
     private var changeSection: some View {
-        Section {
+        WrappingFooterSection {
             if !loaded {
                 Text(String(localized: "document.review.loading", defaultValue: "Reading the change record…"))
                     .foregroundStyle(.secondary)
@@ -317,7 +317,7 @@ struct DocumentChangeReviewSheet: View {
 
     /// Every highlight on the document, with its standing and its two actions.
     private var highlightsSection: some View {
-        Section {
+        WrappingFooterSection {
             ForEach(orderedHighlights) { highlight in
                 highlightRow(highlight)
             }
@@ -419,7 +419,7 @@ struct DocumentChangeReviewSheet: View {
     /// The quotations frozen from this document, each with what an exact search of the current
     /// text found and which version it was taken from.
     private var excerptsSection: some View {
-        Section {
+        WrappingFooterSection {
             ForEach(excerpts) { entry in
                 excerptRow(entry)
             }
@@ -520,7 +520,7 @@ struct DocumentChangeReviewSheet: View {
             visitDocuments.isEmpty ? nil : String(localized: "document.review.other.visit",
                                                   defaultValue: "in an archive-visit plan"),
         ].compactMap { $0 }
-        return Section {
+        return WrappingFooterSection {
             if parts.isEmpty {
                 Text(String(localized: "document.review.other.none", defaultValue: "No other annotations on this document."))
                     .foregroundStyle(.secondary)

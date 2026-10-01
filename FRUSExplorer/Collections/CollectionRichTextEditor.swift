@@ -210,6 +210,11 @@ enum ProseRichText {
 ///          Collection popover (measured in a second harness, with the popover open), and the
 ///          research note editor's body, whose ⌘Z the note it saves had missed the same way (in
 ///          neither harness).
+///   1.7 — MACCOL (#1448, #1477, #1449), macOS: a change to a RESTING block — the formatting bar's — counts its
+///          lines again, as a change of width does; a block being edited is measured at the width its text wraps at,
+///          less a legacy scroller; a block goes back to rest once focus has moved, not inside
+///          `resignFirstResponder`; and ``plainText``, a mode for a plain-text field — no formatting bar, no
+///          formatting — which the ⚙ Collection popover's Note uses.
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
@@ -218,6 +223,12 @@ struct RichTextEditor: View {
     /// The resting cap this editor opts into (#1360) — see ``RichTextRestingCap`` — or `nil` for a scrolling editor
     /// its caller sizes with a frame. An editor that opts in sizes itself, so its caller gives it no height frame.
     var restingCap: RichTextRestingCap? = nil
+    /// Whether this edits a PLAIN-TEXT field (#1449): no formatting bar (the Mac's above the text, iOS's over the
+    /// keyboard) and a text view that takes no formatting — on the Mac `isRichText` off, so a paste arrives as text;
+    /// on iOS no Bold, Italic or Underline in the edit menu. The caller saves the plain projection `onChange` hands it.
+    /// For a field whose model is a `String`, such as a collection's note, which a stored rich-text property would turn
+    /// into a CloudKit schema change.
+    var plainText: Bool = false
     /// Called on every edit with the new RTF and its plain-text projection.
     let onChange: (Data?, String) -> Void
 
@@ -231,9 +242,11 @@ struct RichTextEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            RichTextFormattingBar(controller: controller)
+            if !plainText {
+                RichTextFormattingBar(controller: controller)
+            }
             RichTextPlatformEditor(initialRTF: initialRTF, plainFallback: plainFallback,
-                                   restingCap: restingCap, sizingRevision: sizingRevision,
+                                   restingCap: restingCap, plainText: plainText, sizingRevision: sizingRevision,
                                    invalidateSizing: invalidateSizing,
                                    onChange: onChange, controller: controller)
         }
@@ -241,7 +254,7 @@ struct RichTextEditor: View {
     #else
     var body: some View {
         RichTextPlatformEditor(initialRTF: initialRTF, plainFallback: plainFallback,
-                               restingCap: restingCap, sizingRevision: sizingRevision,
+                               restingCap: restingCap, plainText: plainText, sizingRevision: sizingRevision,
                                invalidateSizing: invalidateSizing, onChange: onChange)
     }
     #endif
@@ -288,6 +301,7 @@ struct RichTextEditor: View {
 ///   1.1 — #1360 review, round 1: ``editingHeight(fitting:resting:)``. At an accessibility text size six resting lines
 ///          outgrow the editing height (292 pt at AX3 against 220), and beginning to edit used to SHRINK the block; it
 ///          now keeps at least its resting height.
+///   1.2 — #1449: ``noteInPopover``, for the Mac popover's Note
 struct RichTextRestingCap: Equatable, Sendable {
     /// The most lines drawn at rest; a text that runs past them ends its last line in an ellipsis.
     let lines: Int
@@ -305,6 +319,9 @@ struct RichTextRestingCap: Equatable, Sendable {
     /// A collection's introduction in the macOS manager's ⚙ Collection popover, which is shorter: six lines at rest,
     /// and while editing the 80–180 pt bounds of its old frame.
     static let introductionInPopover = RichTextRestingCap(lines: 6, minHeight: 80, editingMaxHeight: 180)
+    /// A collection's note in the macOS manager's ⚙ Collection popover (#1449): six lines at rest, like the
+    /// introduction below it, and while editing the 60–140 pt bounds of the `TextEditor` frame it replaces.
+    static let noteInPopover = RichTextRestingCap(lines: 6, minHeight: 60, editingMaxHeight: 140)
 
     /// The editor's height while it is edited, from its text's full height at some width (`fitting`) and the height it
     /// rests at at the same width (`resting`): `fitting`, no less than ``minHeight`` and no more than
@@ -612,13 +629,33 @@ enum RichTextRestingLayout {
         return (layout.usageBoundsForTextContainer.height + 2 * inset.height).rounded(.up)
     }
 
-    /// The size the representable hands SwiftUI: the offered width and ``height(of:width:cap:editing:)``, or `nil` —
-    /// SwiftUI's own sizing — when no finite width is offered.
+    /// The size the representable hands SwiftUI: the offered width and ``height(of:width:cap:editing:)`` measured at the
+    /// width the text wraps at in that frame (``textWidth(of:frameWidth:)``), or `nil` — SwiftUI's own sizing — when no
+    /// finite width is offered.
     static func size(for proposal: ProposedViewSize, of scrollView: NSScrollView,
                      cap: RichTextRestingCap, editing: Bool) -> CGSize? {
         guard let width = proposal.width, width.isFinite, width > 0,
               let textView = scrollView.documentView as? NSTextView else { return nil }
-        return CGSize(width: width, height: height(of: textView, width: width, cap: cap, editing: editing))
+        return CGSize(width: width, height: height(of: textView, width: textWidth(of: scrollView, frameWidth: width),
+                                                   cap: cap, editing: editing))
+    }
+
+    /// The width the text wraps at in `scrollView` were its frame `frameWidth` wide: the frame, less the vertical
+    /// scroller the scroll view draws, in the style it draws it (#1448).
+    ///
+    /// **Why.** While a block is edited its scroller is on (``lift(_:)``). An overlay scroller floats over the text and
+    /// takes no width, but a legacy one — System Settings' *Show scroll bars: Always*, or *Automatically* with a mouse
+    /// attached — takes its own width out of the clip view, so the text wraps narrower than the frame. Measured at the
+    /// frame's width, an edited block came out a line short and scrolled by that line: a block needing 76 pt was sized
+    /// 60 pt beside a 17 pt legacy scroller (the lane's Mac harness, macOS 27). At rest the scroller is off, and this is
+    /// the frame's width.
+    static func textWidth(of scrollView: NSScrollView, frameWidth: CGFloat) -> CGFloat {
+        NSScrollView.contentSize(forFrameSize: NSSize(width: frameWidth, height: max(scrollView.frame.height, 1)),
+                                 horizontalScrollerClass: nil,
+                                 verticalScrollerClass: scrollView.hasVerticalScroller ? NSScroller.self : nil,
+                                 borderType: scrollView.borderType,
+                                 controlSize: .regular,
+                                 scrollerStyle: scrollView.scrollerStyle).width
     }
 }
 
@@ -668,6 +705,8 @@ private struct RichTextPlatformEditor {
     let plainFallback: String
     /// The resting cap (#1360), or `nil` for an editor that always scrolls and is sized by its caller.
     let restingCap: RichTextRestingCap?
+    /// Whether the editor edits a plain-text field and offers no formatting (``RichTextEditor/plainText``, #1449).
+    let plainText: Bool
     /// ``RichTextEditor``'s sizing revision. Read nowhere: it is carried so that a bump is a change to this view, and
     /// SwiftUI asks it for its size again.
     let sizingRevision: Int
@@ -1068,20 +1107,25 @@ private struct RichTextFormattingBar: View {
 extension RichTextPlatformEditor: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let textView = RichTextFocusTextView()
-        textView.isRichText = true
+        // #1449: a plain-text field's view takes no formatting — a paste arrives as text.
+        textView.isRichText = !plainText
         textView.allowsUndo = true
         textView.font = .systemFont(ofSize: NSFont.systemFontSize)
         textView.textContainerInset = NSSize(width: 4, height: 6)
         textView.drawsBackground = false
         textView.textStorage?.setAttributedString(initialAttributed())
+        // A plain-text view draws all its text in one font; the loaded text carries none of its own.
+        if plainText { textView.font = .systemFont(ofSize: NSFont.systemFontSize) }
 
         // Hand the toolbar its text view, THEN wire the delegate last (v1.3): loading the
         // initial content above must not fire a delegate callback (textDidChange /
         // textViewDidChangeSelection → refreshSelectionState) while `controller.textView`
         // is still nil, which published @Published state during the SwiftUI view update
         // ("Publishing changes from within view updates"). Once the delegate is installed
-        // here, user-driven selection changes still refresh the toolbar live.
-        controller.textView = textView
+        // here, user-driven selection changes still refresh the toolbar live. A plain-text
+        // editor (#1449) has no toolbar, and keeps its view from the controller, so the shared
+        // colour panel — which follows the focused editor's controller — can never colour it.
+        if !plainText { controller.textView = textView }
         textView.delegate = context.coordinator
         // Defer the initial state publish out of the current view update.
         let controller = self.controller
@@ -1176,24 +1220,49 @@ extension RichTextPlatformEditor: NSViewRepresentable {
             self.invalidateSizing = invalidateSizing
         }
 
-        /// Lifts the cap when the text view takes focus and restores it, scrolled to the top, when focus goes. A no-op
-        /// for an editor with no cap.
+        /// Lifts the cap when the text view takes focus, and restores it, scrolled to the top, once focus has gone
+        /// (``scheduleRest(in:)``). A no-op for an editor with no cap.
         fileprivate func focusChanged(_ focused: Bool, in scrollView: NSScrollView) {
-            guard let restingCap else { return }
+            guard restingCap != nil else { return }
+            isEditing = focused
             if focused {
                 RichTextRestingLayout.lift(scrollView)
+                reportedHeight = nil
+                requestSizing()
             } else {
-                RichTextRestingLayout.rest(scrollView, cap: restingCap)
+                scheduleRest(in: scrollView)
             }
-            isEditing = focused
-            reportedHeight = nil
-            requestSizing()
+        }
+
+        /// Puts the block at rest on the next main-actor turn, once focus has moved — unless it has come back (#1477).
+        ///
+        /// **Why not at once.** Focus leaves from inside `resignFirstResponder`, before the window has moved its first
+        /// responder, and resting edits the text storage — every paragraph break drawn as a line break — then selects,
+        /// sizes and scrolls. Done there, an edit lands on a view that still counts as first responder, which by the
+        /// issue's reading re-arms its insertion point: the Mac by-eye check of 2026-09-25 saw a non-blinking caret stay
+        /// in a three-paragraph block (one whose rest edits its text) while another block held the live one, and not in
+        /// a one-paragraph block, whose rest edits nothing. The caret was not reproduced in a harness — an app launched
+        /// from a shell is never active, and draws no insertion point — so the check stays by eye.
+        private func scheduleRest(in scrollView: NSScrollView) {
+            Task { @MainActor [weak self, weak scrollView] in
+                guard let self, let scrollView, let restingCap = self.restingCap, !self.isEditing else { return }
+                RichTextRestingLayout.rest(scrollView, cap: restingCap)
+                self.reportedHeight = nil
+                self.requestSizing()
+            }
         }
 
         /// Counts again the lines a resting editor draws once its width has changed — after the layout pass that
         /// changed it, which is no time to change the container. A no-op for an editor with no cap or one being edited.
         fileprivate func widthChanged(in scrollView: NSScrollView) {
             guard restingCap != nil, !isEditing else { return }
+            scheduleRecount(in: scrollView)
+        }
+
+        /// Counts again, on the next main-actor turn, the lines a resting block draws — for a new width
+        /// (``widthChanged(in:)``) and for a change to its text at rest (``textChanged(_:)``, #1448) — unless the block
+        /// has been opened for editing meanwhile.
+        private func scheduleRecount(in scrollView: NSScrollView) {
             Task { @MainActor [weak self, weak scrollView] in
                 guard let self, let scrollView, let restingCap = self.restingCap, !self.isEditing else { return }
                 RichTextRestingLayout.recount(scrollView, cap: restingCap)
@@ -1210,15 +1279,21 @@ extension RichTextPlatformEditor: NSViewRepresentable {
         /// for a new size when a line came or went: for a typed change or a formatting bar action (``textDidChange(_:)``)
         /// and for an undo or a redo (``undoManagerDidUndoOrRedo(_:)``, #1447). Reporting clears an undo's mark, so a
         /// change is reported once whichever path saw it first.
+        ///
+        /// A capped block is measured at the width its text wraps at — the clip view's, less a legacy scroller while it
+        /// is edited (#1448). A change to a block AT REST — the formatting bar's buttons take no focus, so Bold can widen
+        /// a resting block's lines — also counts its resting lines again, as a change of width does (#1448): the cap
+        /// kept the count from the block's last rest and could fall on a blank line, which the Mac draws no ellipsis on.
         private func textChanged(_ textView: NSTextView) {
             guard let storage = textView.textStorage else { return }
             textChangedByUndo = false
             report(storage)
             controller.refreshSelectionState()
             // A capped editor follows its text's height — up to the editing height while it is edited (#1360).
-            guard let restingCap else { return }
-            let width = textView.enclosingScrollView?.frame.width ?? textView.frame.width
-            let height = RichTextRestingLayout.height(of: textView, width: width, cap: restingCap, editing: isEditing)
+            guard let restingCap, let scrollView = textView.enclosingScrollView else { return }
+            if !isEditing { scheduleRecount(in: scrollView) }
+            let height = RichTextRestingLayout.height(of: textView, width: scrollView.contentSize.width,
+                                                      cap: restingCap, editing: isEditing)
             if height != reportedHeight {
                 reportedHeight = height
                 requestSizing()
@@ -1287,7 +1362,8 @@ extension RichTextPlatformEditor: NSViewRepresentable {
 extension RichTextPlatformEditor: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
-        textView.allowsEditingTextAttributes = true   // Bold / Italic / Underline in the edit menu
+        // Bold / Italic / Underline in the edit menu — none for a plain-text field (#1449).
+        textView.allowsEditingTextAttributes = !plainText
         textView.isEditable = true
         textView.backgroundColor = .clear
         // Dynamic Type (A2): `.preferredFont(forTextStyle:)` is a metrics-scaled font, and
@@ -1301,7 +1377,7 @@ extension RichTextPlatformEditor: UIViewRepresentable {
         textView.delegate = context.coordinator
         textView.attributedText = initialAttributed()
         context.coordinator.textView = textView
-        textView.inputAccessoryView = context.coordinator.makeFormattingToolbar()
+        textView.inputAccessoryView = plainText ? nil : context.coordinator.makeFormattingToolbar()
         // #1360: an editor that opts into a resting cap starts at rest.
         if let restingCap { RichTextRestingLayout.rest(textView, cap: restingCap) }
         return textView

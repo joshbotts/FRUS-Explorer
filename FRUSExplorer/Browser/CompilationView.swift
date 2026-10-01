@@ -363,7 +363,7 @@ struct CompilationView: View {
 
     @ViewBuilder
     private var readSectionDirectlySection: some View {
-        Section {
+        WrappingFooterSection {
             Button {
                 let entry = DocumentBrowserEntry(
                     documentId: section.sectionId,

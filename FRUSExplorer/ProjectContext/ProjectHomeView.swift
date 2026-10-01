@@ -1339,7 +1339,7 @@ struct ProjectCollectionsEditor: View {
                                 }
                             }
                         }
-                        Section {
+                        WrappingFooterSection {
                             if others.isEmpty {
                                 Text(String(localized: "project.collections.manage.allAttached",
                                             defaultValue: "Every collection is already in this project."))
@@ -1506,7 +1506,7 @@ struct ProjectFocusTagsEditor: View {
                         )
                     } else {
                         List {
-                            Section {
+                            WrappingFooterSection {
                                 ForEach(allTags) { tag in
                                     row(tag, project: project)
                                 }

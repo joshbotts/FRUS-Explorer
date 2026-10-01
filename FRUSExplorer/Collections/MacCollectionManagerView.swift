@@ -116,6 +116,12 @@ import UniformTypeIdentifiers
 ///          own order; appends and renumbering go through the iOS editor's `CollectionEntryOrdering`, so
 ///          an append no longer shares a position with one made in another window of the Mac; the
 ///          inline New Note sheet names its entry by id, since the outline can now change under it
+///   1.21 — 2026-10-01 (MACCOL): the toolbar picker caps a long collection name at
+///          `collectionNameMaxWidth`, and its counts and Manage Collections' rows' print grouped (#1446); the
+///          ⚙ popover's Note rests capped in the shared editor's plain-text mode (#1449); and the detail pane
+///          commits only the field the reader edits and follows every field another writer changes — the iOS
+///          editor's `CollectionEditorCommit` and `FrontMatterModelSync` — where `saveMetadata()` wrote all seven
+///          fields from stale copies on every edit (#1413's shape on the Mac)
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -184,6 +190,18 @@ struct MacCollectionManagerView: View {
         CollectionEditorNaming.listName(savedName: c.name)
     }
 
+    /// The widest the toolbar picker draws the collection's name, in points; a longer name is cut at the tail and the
+    /// picker's menu still lists it whole (#1446).
+    ///
+    /// The toolbar gives each item its content's own width, so the picker grew with the name, point for point, and a
+    /// long name pushed Add, Sort, Collection settings, Export and the inspector toggle behind the overflow chevron. The
+    /// Archives Visits window had the same defect and measured this cap (#1378). Measured in this window too (MACCOL
+    /// review round 1, macOS 27: a scratch copy of the app reading `NSToolbar.visibleItems` as it widened the window
+    /// 2 pt at a time): with the 77-character name #1378 used, every item shows from 1,080 pt uncapped and 828 pt capped,
+    /// and from 1,102 and 854 pt with a 1,234-document count; uncapped, below 884 pt the picker itself went behind the
+    /// chevron. A 13- or 33-character name, under the cap, fits from 656 or 790 pt either way. The window opens at 1,180.
+    static let collectionNameMaxWidth: CGFloat = 260
+
     /// Composer v2 (§B): the toolbar collection PICKER — the everyday switcher that replaces the
     /// permanent sidebar. Its label shows the current collection + document count; the menu body is
     /// an inline Picker of collections (a ✓ marks the current) plus New / Import / Manage actions.
@@ -191,7 +209,7 @@ struct MacCollectionManagerView: View {
         Menu {
             Picker(selection: $selectedId) {
                 ForEach(filteredCollections) { c in
-                    Text(verbatim: "\(collectionDisplayName(c))  ·  \(c.documentCount)")
+                    Text(verbatim: "\(collectionDisplayName(c))  ·  \(c.documentCount.formatted())")
                         .tag(Optional(c.id))
                 }
             } label: { EmptyView() }
@@ -216,8 +234,13 @@ struct MacCollectionManagerView: View {
                 Text(selectedCollection.map(collectionDisplayName)
                      ?? String(localized: "collections.picker.title", defaultValue: "Collections"))
                     .fontWeight(.semibold)
+                    // One line, cut at the tail (#1446). The maximum width is what does the cutting: a toolbar
+                    // item is as wide as its content wants, so a line limit alone leaves a long name whole.
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: Self.collectionNameMaxWidth, alignment: .leading)
                 if let c = selectedCollection {
-                    Text(verbatim: "\(c.documentCount)")
+                    Text(verbatim: c.documentCount.formatted())
                         .foregroundStyle(.secondary)
                 }
             }
@@ -578,7 +601,7 @@ private struct ManageCollectionRow: View {
                       text: $collection.name)
                 .textFieldStyle(.plain)
             Spacer()
-            Text(verbatim: "\(collection.documentCount)")
+            Text(verbatim: collection.documentCount.formatted())
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -736,24 +759,29 @@ private struct CollectionDetailPane: View {
         }
         .navigationTitle(CollectionEditorNaming.navigationTitle(savedName: name, isNewCollection: false))
         .toolbar { toolbarContent }
-        .onChange(of: name) { _, _ in saveMetadata() }
-        .onChange(of: note) { _, _ in saveMetadata() }
-        .onChange(of: subtitle) { _, _ in saveMetadata() }
-        .onChange(of: authorLine) { _, _ in saveMetadata() }
-        .onChange(of: includeColophon) { _, _ in saveMetadata() }
-        .onChange(of: includeProjectProvenance) { _, _ in saveMetadata() }
-        .onChange(of: includeMethodAppendix) { _, _ in saveMetadata() }
-        // Composer v2 (§B): the Manage Collections sheet renames the model directly
-        // (`$collection.name`), a second writer of `collection.name` besides this pane's one-time
-        // `@State name` snapshot. Follow that external rename so the title / settings-popover field
-        // stay in sync AND the next `saveMetadata()` writes the new name — otherwise editing any
-        // other field would clobber the rename back to the stale snapshot. The guard is the iOS
-        // editor's rule, `CollectionEditorNaming.fieldAgrees` (#1359 review): it stops a feedback loop
-        // when our own `saveMetadata()` trims and rewrites `collection.name`, and — because it compares
-        // trimmed — that trimmed rewrite no longer deletes the whitespace of a pasted name under the cursor.
-        .onChange(of: collection.name) { _, newValue in
-            if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }
-        }
+        // Each field commits ITSELF, from its own control (`committing`, `commitNote`), through the iOS editor's
+        // rules (`CollectionEditorCommit`): only that field, and only when the edit changes what is saved. Before,
+        // seven `onChange` handlers each ran `saveMetadata()`, which wrote all seven fields from this pane's one-time
+        // `@State` copies — so any edit put stale copies back over a description, subtitle, author line or flag
+        // another writer had changed (iCloud bringing an edit from another device), and following a rename from the
+        // Manage Collections sheet wrote the other six back. That was #1413's shape, which the iOS editor shed.
+        // Follow every field another writer changes — the Manage Collections sheet's rename (`$collection.name`), iCloud
+        // — so a field the reader edits next starts from what the collection holds. `FrontMatterModelSync` only
+        // writes the pane's copies, never the collection, and compares text trimmed, so the pane's own trimmed commit
+        // comes back as a value the field already agrees with (the #1359 rule) and a space just typed stays put.
+        // Not while the ⚙ popover is open, for its Note and Introduction: each editor reads its text once, when the
+        // popover opens, so a change from another device reaches `note` (the Introduction has no copy here) and not the
+        // editor on screen, and the reader's next keystroke there writes the editor's text back over it. (Before MACCOL
+        // nothing followed the Note at all.)
+        .modifier(FrontMatterModelSync(
+            collectionName: $name,
+            collectionNote: $note,
+            collectionSubtitle: $subtitle,
+            collectionAuthorLine: $authorLine,
+            includeColophon: $includeColophon,
+            includeProjectProvenance: $includeProjectProvenance,
+            includeMethodAppendix: $includeMethodAppendix,
+            collection: collection))
         // #1416: the outline follows entries another writer adds, removes or moves — a document window's Add to
         // Collection, iCloud — so the rows, the live preview and the export sheet all see them.
         .modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))
@@ -943,23 +971,31 @@ private struct CollectionDetailPane: View {
     /// author / note), title-page front matter (rich-text introduction + colophon), and the presets
     /// + three grouped composition sections. Replaces the fixed header + inline Composition/Front-
     /// Matter disclosures (removed in Step 4). `presetsCompact: false` renders the 2×2 preset grid —
-    /// a popover is wide enough. Bound to the pane's live `@State`, so `saveMetadata` still fires.
+    /// a popover is wide enough. Each control commits its own field as it is edited (`committing`, `commitNote`).
     private var macCollectionSettingsForm: some View {
         Form {
             Section {
                 TextField(String(localized: "collection.editor.name.placeholder",
-                                 defaultValue: "Collection Name"), text: $name)
+                                 defaultValue: "Collection Name"),
+                          text: committing($name) { CollectionEditorCommit.name($0, to: collection) })
                 TextField(String(localized: "collection.frontmatter.subtitle.placeholder",
-                                 defaultValue: "Subtitle (title page)"), text: $subtitle)
-                TextField(authorPlaceholder, text: $authorLine)
+                                 defaultValue: "Subtitle (title page)"),
+                          text: committing($subtitle) { CollectionEditorCommit.text($0, to: \.subtitle, of: collection) })
+                TextField(authorPlaceholder,
+                          text: committing($authorLine) { CollectionEditorCommit.text($0, to: \.authorLine, of: collection) })
             } header: {
                 Text(String(localized: "collection.editor.settings.name", defaultValue: "Name"))
             }
 
             Section {
-                TextEditor(text: $note)
-                    .font(.body)
-                    .frame(minHeight: 60, maxHeight: 140)
+                // #1449: rests capped at six lines with an ellipsis, like the Introduction below it — the fixed
+                // 60–140 pt `TextEditor` it replaces scrolled a long note and cut it through a line. Plain-text mode,
+                // because the note is a plain `String?` on the model and a rich one would be a stored property, a
+                // CloudKit schema change. Loaded from `note` when the popover opens; edits commit through `commitNote`.
+                RichTextEditor(initialRTF: nil, plainFallback: note, restingCap: .noteInPopover,
+                               plainText: true) { _, plain in
+                    commitNote(plain)
+                }
             } header: {
                 Text(String(localized: "collection.editor.note", defaultValue: "Note"))
             }
@@ -971,13 +1007,19 @@ private struct CollectionDetailPane: View {
                     saveIntroduction(rtf: rtf, plain: plain)
                 }
                 Toggle(String(localized: "collection.frontmatter.colophon.toggle",
-                              defaultValue: "Include colophon"), isOn: $includeColophon)
+                              defaultValue: "Include colophon"),
+                       isOn: committing($includeColophon) { CollectionEditorCommit.flag($0, to: \.includeColophon, of: collection) })
                 Toggle(String(localized: "collection.frontmatter.projectProvenance.toggle",
-                              defaultValue: "Stamp active project on export"), isOn: $includeProjectProvenance)
+                              defaultValue: "Stamp active project on export"),
+                       isOn: committing($includeProjectProvenance) {
+                           CollectionEditorCommit.flag($0, to: \.includeProjectProvenance, of: collection)
+                       })
                 // M-2. Two `Text`s rather than one, because this is the only export toggle that
                 // puts the text of the researcher's own searches into a document they may be
                 // about to publish, and that has to be legible at the moment of the click.
-                Toggle(isOn: $includeMethodAppendix) {
+                Toggle(isOn: committing($includeMethodAppendix) {
+                    CollectionEditorCommit.flag($0, to: \.includeMethodAppendix, of: collection)
+                }) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(String(localized: "collection.frontmatter.methodAppendix.toggle",
                                     defaultValue: "Append the query log"))
@@ -1579,19 +1621,28 @@ private struct CollectionDetailPane: View {
         reindexEntries()
     }
 
-    private func saveMetadata() {
-        collection.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        collection.note = trimmed.isEmpty ? nil : trimmed
-        // Front matter (Phase 4): empty fields store nil so untouched collections keep
-        // exporting byte-identically to pre-Phase-4 output.
-        let trimmedSubtitle = subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        collection.subtitle = trimmedSubtitle.isEmpty ? nil : trimmedSubtitle
-        let trimmedAuthor = authorLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
-        collection.includeColophon = includeColophon
-        collection.includeProjectProvenance = includeProjectProvenance
-        collection.includeMethodAppendix = includeMethodAppendix
+    // MARK: - Committing edits (#1413's shape on the Mac)
+
+    /// A binding to one of the pane's own field copies whose setter also commits the reader's edit to the collection:
+    /// `commit` — a `CollectionEditorCommit` rule — writes that one field when the edit changes what is saved (trimmed,
+    /// `nil` when empty, for text) and says whether it did, and a write is then saved, so it survives the app being
+    /// closed. Only the reader's edits come through here: `FrontMatterModelSync` follows a change made elsewhere by
+    /// writing the copy directly, so following never commits anything. The iOS editor's `committing` is the same
+    /// shape; this one records no active project, which the Mac pane never added.
+    private func committing<Value>(_ field: Binding<Value>,
+                                   _ commit: @escaping (Value) -> Bool) -> Binding<Value> {
+        Binding(get: { field.wrappedValue }, set: { newValue in
+            field.wrappedValue = newValue
+            if commit(newValue) { try? modelContext.save() }
+        })
+    }
+
+    /// Commits the Note the popover's editor reports (#1449) — its plain text, the note being a plain `String?` — the
+    /// way `committing` commits a bound field: the pane's copy follows the editor, and the collection's note is written,
+    /// and saved, only when the edit changes it.
+    private func commitNote(_ plain: String) {
+        note = plain
+        if CollectionEditorCommit.text(plain, to: \.note, of: collection) { try? modelContext.save() }
     }
 }
 
@@ -1741,8 +1792,8 @@ private struct MacEntryRow: View {
 
     // MARK: - Helpers
 
-    /// The row's document label — "Document N" with the volume's printed number, else the raw
-    /// id (`CitableDocumentNumber.rowLabel`, #1406).
+    /// The row's document label — "Document N" with the volume's printed number, "Unnumbered (d710a-1)" for a
+    /// document the volume prints without one (#1493), else the raw id (`CitableDocumentNumber.rowLabel`, #1406).
     private var documentLabel: String {
         CitableDocumentNumber.rowLabel(printed: printedNumber, documentId: entry.documentId)
     }

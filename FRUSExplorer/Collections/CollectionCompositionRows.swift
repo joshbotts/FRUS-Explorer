@@ -332,22 +332,38 @@ struct CollectionCompositionRows: View {
 /// `CollectionCompositionRows`). Surfaced at the top of the per-entry inspector (#188-E) so
 /// these collection-level values stay reachable after the researcher focuses a document.
 ///
-/// Edits apply **live** to the model via `@Bindable`, matching `CollectionCompositionRows`.
-/// The introduction *prose* is deliberately excluded — it is authored in the main editor's
+/// Edits apply **live** to the model, and each is **saved** as it is made — every field's and toggle's binding writes
+/// the collection and then saves the context that holds it — so closing the app straight after an edit here loses
+/// nothing, as it loses nothing typed in the collection editor's own settings (#1415). Before, these rows left the save
+/// to the app's autosave; the one incidental save they used to get, the editor's old `saveLive()` run from its flag
+/// follow, went with #1413. The introduction *prose* is deliberately excluded — it is authored in the main editor's
 /// front-matter area (a rich-text editor with nil-on-empty save semantics), not an attribute.
 ///
 /// Version history:
 ///   1.0 — Collections editor UX (#188-E): persistent collection-attributes inspector section
+///   1.1 — MACCOL (the plan of record's "Section defaults save each write"): every edit is saved as it is made
+///         (`optional(_:)`, `saving(_:)`)
 struct CollectionAttributesRows: View {
 
     /// The collection whose identity attributes are being edited.
     @Bindable var collection: Collection
 
     /// Binds an optional string field, persisting `nil` when the text is emptied so exporters
-    /// treat "cleared" the same as "never set".
+    /// treat "cleared" the same as "never set", and saving each edit.
     private func optional(_ keyPath: ReferenceWritableKeyPath<Collection, String?>) -> Binding<String> {
         Binding(get: { collection[keyPath: keyPath] ?? "" },
-                set: { collection[keyPath: keyPath] = $0.isEmpty ? nil : $0 })
+                set: { collection[keyPath: keyPath] = $0.isEmpty ? nil : $0; save() })
+    }
+
+    /// Binds one of the collection's export toggles, saving each switch.
+    private func saving(_ keyPath: ReferenceWritableKeyPath<Collection, Bool>) -> Binding<Bool> {
+        Binding(get: { collection[keyPath: keyPath] },
+                set: { collection[keyPath: keyPath] = $0; save() })
+    }
+
+    /// Saves the context that holds the collection, so the edit just written survives the app being closed.
+    private func save() {
+        try? collection.modelContext?.save()
     }
 
     var body: some View {
@@ -367,19 +383,19 @@ struct CollectionAttributesRows: View {
 
         Toggle(String(localized: "collection.attributes.colophon",
                       defaultValue: "Append colophon page on export"),
-               isOn: $collection.includeColophon)
+               isOn: saving(\.includeColophon))
             .accessibilityIdentifier("collection.attributes.colophon.toggle")
 
         Toggle(String(localized: "collection.attributes.projectProvenance",
                       defaultValue: "Stamp active project on export"),
-               isOn: $collection.includeProjectProvenance)
+               isOn: saving(\.includeProjectProvenance))
 
         // M-2. The third surface. #617 added this toggle to `CollectionEditorView` only and #620
         // added it to `MacCollectionManagerView`; this view is the iOS/iPad document inspector's
         // copy, and it had the other two export toggles and not this one. Two `Text`s because it
         // is the only export option that puts the text of the researcher's own searches into a
         // document they may be about to publish.
-        Toggle(isOn: $collection.includeMethodAppendix) {
+        Toggle(isOn: saving(\.includeMethodAppendix)) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "collection.attributes.methodAppendix",
                             defaultValue: "Append the query log"))
