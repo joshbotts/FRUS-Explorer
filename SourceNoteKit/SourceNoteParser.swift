@@ -243,6 +243,12 @@ public enum ParsedSourceNote: Sendable, Equatable {
     /// agency, then a country or area element in capitals (`POL US–USSR`, `POL CHICOM -US`,
     /// `INCO -DRUGS TUR`, `POL IRAN-U.S.`). Nothing lower-case may follow, which is what keeps a
     /// folder title (`POL Files`) and prose out.
+    ///
+    /// So it also refuses four shapes the corpus prints, and those notes store no file: a country
+    /// not in capitals (`POL Laos`), a commodity joined to its category by a dash (`INCO–GRAINS
+    /// GATT`; only a numbered one, `INCO–WOOL 17`, is read), an agency with no country (`DEF(MLF)`)
+    /// and a title-case category (`Pol Port-US`) — 126 central-file notes in 11 volumes, measured
+    /// in #1514's review round 2.
     private static let digitlessSubjectNumericRegex: NSRegularExpression? = try? NSRegularExpression(
         pattern: #"^([A-Z]{1,5})(?:\s?\([A-Z0-9]{1,4}\))?\s+[-–—]?\s?[A-Z][A-Z .–—\-/&]*$"#,
         options: [])

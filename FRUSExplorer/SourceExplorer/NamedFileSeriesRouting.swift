@@ -330,10 +330,10 @@ enum NamedFileSeriesRouting {
     ///
     /// That page covers the central files, the post files and the lot files at the National
     /// Archives together, which is a real next step for a series cited by name alone. It is the
-    /// wrong one for a series whose name opens with the agency holding it: the Department's own
-    /// series the volumes cite this way are not at the National Archives on their own account —
-    /// frus1964-68v07's Sources describes the INR/IL Historical Files as "still under Department of
-    /// State custody" — and another agency's series (#353) are not State records at all. The
+    /// wrong one for a series whose name opens with the agency holding it: the citation places the
+    /// Department's own series with the Department — frus1964-68v07's Sources describes the INR/IL
+    /// Historical Files as "still under Department of State custody" — and does not say whether
+    /// any was accessioned since; another agency's series (#353) are not State records at all. The
     /// explainer above names the holder instead. In one place, so the two views cannot disagree.
     static func offersStateRecordsLink(seriesName: String) -> Bool {
         SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) == nil
