@@ -364,7 +364,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         container is no longer indexed and the breaks it leaves are written for the section after
 ///         them (`FRUSDocumentAST.carriedPages`), a `pg-seq` digit break is stored as
 ///         `other-pagination`, and a persons-list "until <event> in/on" year is an end (see the v63
-///         note).
+///         note). Review round 1: a document a whole-index pass stops emitting, or that leaves a
+///         row a different parse version wrote, is marked `vanished` with no change stamped
+///         (`auxMarkVanishedRevisions` takes the pass's `RevisionRecording`), and
+///         `vanishedDocumentKeys` returns stamped rows only.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1163,20 +1166,23 @@ public actor IndexingPipeline {
     /// - v62→63 — #1509, #1510, #1511, and #1370's left-open persons-list years. Measured over the
     ///   553 manifest volumes at corpus `550a8c5c5` (unchanged in `volumes/` through `8e5da08c1`) with
     ///   `tools/page-citations/v63.py`, which reads the parser's emission through `replica.py` under
-    ///   both rules, and the persons half through the app's own parser (DEVELOPMENT-PLAN, session
-    ///   2026-10-01).
-    ///   **`cross_references` (#1509).** Of several documents beginning on a cited page, the stored
-    ///   edge is the one the reference's footnote names — by a number it gives a document ("Doc. No.
-    ///   497"), else by a day ("July 7", "Oct. 9, 1909") — and the first only when it names neither
+    ///   both rules; the persons half was measured through the app's own parser by a harness that was
+    ///   not committed (DEVELOPMENT-PLAN, session 2026-10-01), so it cannot be re-run from a clone.
+    ///   **`cross_references` (#1509).** Of several documents a cited page names, the stored edge is
+    ///   the one the reference's footnote names — by a number it gives a document ("Doc. No. 497"),
+    ///   else by a day ("July 7", "Oct. 9, 1909") — and the first only when it names neither
     ///   (`PageSpanResolver.citedDocument`, which the reader's page link calls too). Of the 55,007
-    ///   same-volume arabic `pg_N` references inside documents in the 533 printed volumes, 12,749
-    ///   cite a page several documents begin on; the edge moves for 2,218 of them (2,210 by the day,
-    ///   8 by the number), and every other edge is unmoved. v62 stored the first, and the note named
-    ///   only a later one's day 1,825 times by the full-month measure #1509 counted. Beyond those, 10
+    ///   same-volume arabic `pg_N` references inside documents in the 533 printed volumes, the edge
+    ///   moves for 2,218 (2,210 by the day, 8 by the number), and every other edge is unmoved: 2,216
+    ///   of the 12,749 that cite a page several documents begin on, and 2 of the 12 that cite a page
+    ///   no document begins on and several are printed on (`frus1949v06` d175's telegram of May 19,
+    ///   p. 322, is d161, not d159). v62 stored the first, and of those 12,749 the note named only a
+    ///   later one's day 1,825 times by the full-month measure #1509 counted. Beyond those, 10
     ///   references made inside `frus1919Parisv13`'s sections, which v62 stored against a container
-    ///   #1510 leaves out, are stored against the section that begins on the page (the app's own
-    ///   parser and resolver, run over all 553 volumes, agree with the replica on every AST, every
-    ///   carried break and every one of these edges).
+    ///   #1510 leaves out, are stored against the section the page now names (`v63.py` prints all
+    ///   ten). The same uncommitted harness ran the app's own parser and resolver over all 553
+    ///   volumes and found them agreeing with the replica on every AST, every carried break and every
+    ///   one of these edges; that check, too, cannot be re-run from a clone.
     ///   **`document_cache` and `page_ranges` (#1510, owner decision D1).** A compilation, chapter or
     ///   subchapter holding a section the parser promotes and nothing of its own but a heading is no
     ///   longer indexed: 162 in 75 volumes (93 compilations, 61 chapters, 8 subchapters; 17 in
@@ -1188,9 +1194,10 @@ public actor IndexingPipeline {
     ///   followed by a document or by nothing). `frus1919Parisv13`'s 740 pages that named several
     ///   sections at once now name one, and the 20 printed pages a left-out container alone answered
     ///   are answered by the section its break went to (p. 57: the Preamble, which begins there), so
-    ///   #1510 takes no page's answer away. Each left-out container's
-    ///   `document_revisions` row is stamped `vanished`, as for any document a re-parse stops
-    ///   emitting (`auxMarkVanishedRevisions`).
+    ///   #1510 takes no page's answer away. Each left-out container's `document_revisions` row is
+    ///   marked `vanished` with no change stamped (`auxMarkVanishedRevisions`, review round 1): the
+    ///   re-index follows no file change, so the container is still in its volume and opens by id,
+    ///   and no update review, Research row or banner reports it removed.
     ///   **`page_ranges` (#1511).** A digit break whose `xml:id` is a `pg-seq` id is another
     ///   pagination (`PageNumber.otherPagination`), stored as `other-pagination` and read by no page
     ///   lookup: the page answer changes on 102 printed pages — `frus1871` 84, `frus1862` 9,
@@ -1199,15 +1206,15 @@ public actor IndexingPipeline {
     ///   contents) named the message's d1 alone and now name nothing.
     ///   **`persons` (#1370's left-open item).** A year after "until" or "till" and another event
     ///   ("until his resignation on April 22, 1959", "until country renamed in October 1964") is an
-    ///   end. Measured through the app's own persons parser over all 62,896 list entries: 19 in 14
-    ///   volumes change, every one from a start year to an end year (Dulles in `frus1958-60v03` reads
-    ///   "until 1959", not "1959"); 8 more print the shape beside an earlier year, so their spans
-    ///   were already right; no other entry moves. `currentPersonRollupVersion` is not bumped:
-    ///   the rollup's code is unchanged, and a rollup built against v62 is rebuilt once this re-index
-    ///   completes (`personRollupDateIndexVersionKey`, pinned by
-    ///   `rollupBuiltMidReindexIsRebuiltAfter`), where a version bump would add a rebuild over the
-    ///   un-re-parsed table at the first launch. No bundled artifact moves: no generator runs this
-    ///   parser, the page rule or the persons-list year rule.
+    ///   end. Measured through the app's own persons parser, by the uncommitted harness, over all
+    ///   62,896 list entries: 19 in 14 volumes change, every one from a start year to an end year
+    ///   (Dulles in `frus1958-60v03` reads "until 1959", not "1959"); 8 more print the shape beside
+    ///   an earlier year, so their spans were already right; no other entry moves.
+    ///   `currentPersonRollupVersion` is not bumped: the rollup's code is unchanged, and a rollup
+    ///   built against v62 is rebuilt once this re-index completes (`personRollupDateIndexVersionKey`,
+    ///   pinned by `rollupBuiltMidReindexIsRebuiltAfter`), where a version bump would add a rebuild
+    ///   over the un-re-parsed table at the first launch. No bundled artifact moves: no generator
+    ///   runs this parser, the page rule or the persons-list year rule.
     public static let currentDateIndexVersion: Int = 63
 
     /// UserDefaults key under which the installed date-index version is persisted.
@@ -5214,7 +5221,8 @@ public actor IndexingPipeline {
         // design's smallest change and its worst case — an annotation whose anchor no longer
         // exists — and until now the delete below computed exactly this set and said nothing.
         try auxMarkVanishedRevisions(volumeId: data.volumeId,
-                                     survivingDocumentIds: data.documentCache.map(\.documentId))
+                                     survivingDocumentIds: data.documentCache.map(\.documentId),
+                                     mode: revisions)
         try auxDeleteVanishedCacheRows(
             volumeId: data.volumeId,
             survivingDocumentIds: data.documentCache.map(\.documentId)
@@ -7381,41 +7389,63 @@ public actor IndexingPipeline {
     /// `temp_store=MEMORY`) so the `NOT IN` comparison is unbounded — chunking a
     /// `NOT IN` parameter list would change its semantics, and large compilation
     /// volumes exceed SQLite's 999-bind-variable limit.
-    /// Stamps `'vanished'` on the revision rows of documents the new TEI no longer contains — run
+    /// Marks `'vanished'` on the revision rows of documents the new parse no longer emits — run
     /// BEFORE `auxDeleteVanishedCacheRows`, which computes the same set and deletes it (R-5 P1).
     ///
     /// The row itself is kept, hashes and all: it is the only record that the document ever
-    /// existed on this device, and every annotation anchored to it is now an orphan the reader has
-    /// to be shown. A document that later reappears under the same id is handled by the upsert,
-    /// which resets the kind from its hashes.
+    /// existed on this device. A document that later reappears under the same id is handled by the
+    /// upsert, which resets the kind from its hashes.
     ///
-    /// ## Deliberately mode-blind — checked at R-1e, 2026-09-07, and NOT a defect
+    /// ## The mark in both modes — checked at R-1e, 2026-09-07
     /// This runs on a `.rebaseline` pass too, so a **parser** change that stops emitting a document
     /// marks it `'vanished'` even though no file changed. That was reported as data loss. It is not,
-    /// and suppressing it would be a regression — three facts settle it:
+    /// and dropping the mark would be a regression — three facts settle it:
     ///
     /// 1. **The cache row is deleted in both modes.** `auxDeleteVanishedCacheRows` runs
     ///    unconditionally on the same surviving-id set, immediately after this call. So the document
-    ///    really is gone from this device's index and every annotation anchored to it really is an
-    ///    orphan, whatever caused it. This mark is the only thing that says so — four surfaces read
-    ///    the kind (`ResearchView`, `VolumeUpdateReview`, `DocumentChangeBanner`, and
-    ///    `ExcerptVerifier`, which upgrades a `documentNotIndexed` miss to `documentVanished` only
-    ///    when the kind is exactly `"vanished"`). Suppress it and the reader gets silent orphans and
-    ///    an export report advising them to download a volume they already have.
-    /// 2. **Nothing is destroyed.** The row and its hashes are kept. `reviewed_at` is nulled
-    ///    deliberately — a review of the document is not a review of its disappearance, which
-    ///    `AnnotationReviewTests` pins.
+    ///    really is gone from this device's index, whatever caused it, and the mark is the only thing
+    ///    that says so: `ExcerptVerifier` upgrades a `documentNotIndexed` miss to `documentVanished`
+    ///    only when the kind is exactly `"vanished"`. Without it, an export report would advise the
+    ///    reader to download a volume they already have.
+    /// 2. **Nothing is destroyed.** The row and its hashes are kept.
     /// 3. **A parse regression cannot mass-stamp.** `storeIndexData` opens with
     ///    `guard !data.documentCache.isEmpty else { return }`, so a volume that parses to nothing
     ///    stamps nothing, and a volume that fails to parse never reaches storage.
     ///
-    /// What *was* wrong was copy, not control flow: four strings read "after an update", which
-    /// attributed to the Office of the Historian a row this function also stamps when OUR OWN
-    /// parser stops emitting a document. Fixed 2026-09-10 (R-1f) by deleting the attribution
-    /// rather than inventing a new phrase — three sibling strings already said only "no longer in
-    /// the volume", which is the whole of what two hashes prove. The review sheet, the one surface
-    /// with room and the one a reader lands on to act, names both causes.
-    private func auxMarkVanishedRevisions(volumeId: String, survivingDocumentIds: [String]) throws {
+    /// ## The stamp only on `.stamp` (#1510 review round 1)
+    /// What the mode decides is whether the disappearance is recorded as a CHANGE — `changed_at`
+    /// set and `reviewed_at` nulled, which is what puts a row in front of the reader:
+    /// `unreviewedDocumentRevisions` (the storage hubs' "Updates changed documents" and Research's
+    /// "Changed by an update"), `vanishedDocumentKeys` (Research's routing to the review sheet) and
+    /// `DocumentChangeBanner` all read only stamped rows.
+    ///
+    /// - `.stamp`, a volume update: the update removed the document from the file, every
+    ///   annotation anchored to it is now an orphan the reader has to be shown, and `reviewed_at`
+    ///   is nulled deliberately — a review of the document is not a review of its disappearance,
+    ///   which `AnnotationReviewTests` pins. Except for a row a different parse version wrote — a
+    ///   volume removed before a parse change and downloaded again after it (Q-9) — which is marked
+    ///   and not stamped, as the upsert rebaselines that row's hashes rather than stamp them
+    ///   (`vanishingAcrossAParseVersionStampsNoChange`).
+    /// - `.rebaseline`, a whole-index pass: it follows no file change, as the upsert's own
+    ///   `.rebaseline` arm assumes, so the document is still in its volume's file and still opens by
+    ///   id (`FRUSDocumentParser.parseDocument(documentId:volumeURL:)` finds any div by its
+    ///   `xml:id`). It left the index, not the volume, and its annotations are not orphans. The row
+    ///   is marked, and `changed_at` and `reviewed_at` are set NULL, the state a first index leaves:
+    ///   no change recorded, nothing to review. Index v63 is the case that found it (#1510): it
+    ///   leaves 162 heading-only containers in 75 volumes out of unchanged files, and stamping them
+    ///   made both hubs say "Updates changed documents … in N updated volumes" on every device
+    ///   holding those volumes, and an opened container say "This document is no longer in the
+    ///   volume." over its own text.
+    ///
+    /// A row already marked is left alone in both modes, so a later whole-index pass never
+    /// un-stamps a document an update removed (`reParseLeavingADocumentOutStampsNoChange`).
+    ///
+    /// R-1f (2026-09-10) fixed the copy that remained wrong when the stamp was mode-blind: four
+    /// strings read "after an update" about a row this function also stamped when OUR OWN parser
+    /// stopped emitting a document. They now say only "no longer in the volume", which is the whole
+    /// of what two hashes prove.
+    private func auxMarkVanishedRevisions(volumeId: String, survivingDocumentIds: [String],
+                                          mode: RevisionRecording) throws {
         try auxExec("CREATE TEMP TABLE IF NOT EXISTS surviving_doc_ids (d TEXT PRIMARY KEY)")
         try auxExec("DELETE FROM surviving_doc_ids")
         defer { try? auxExec("DELETE FROM surviving_doc_ids") }
@@ -7428,16 +7458,24 @@ public actor IndexingPipeline {
                 sqlite3_reset(insert)
             }
         }
+        // Marked, not stamped (see above): `changed_at` stays NULL on a `.rebaseline` pass, where `?2`
+        // is bound NULL, and for a row a different parse version wrote, as the upsert's Q-9 guard.
         let mark = try auxPrepare("""
             UPDATE document_revisions
-               SET change_kind = 'vanished', changed_at = ?, reviewed_at = NULL
-             WHERE volume_id = ?
+               SET change_kind = 'vanished',
+                   changed_at = CASE WHEN index_version IS ?1 THEN ?2 END,
+                   reviewed_at = NULL
+             WHERE volume_id = ?3
                AND document_id NOT IN (SELECT d FROM surviving_doc_ids)
                AND change_kind IS NOT 'vanished'
             """)
         defer { sqlite3_finalize(mark) }
-        sqlite3_bind_text(mark, 1, Self.isoNow(), -1, SQLITE_TRANSIENT_IP)
-        sqlite3_bind_text(mark, 2, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_int(mark, 1, Int32(Self.currentDateIndexVersion))
+        switch mode {
+        case .stamp:      sqlite3_bind_text(mark, 2, Self.isoNow(), -1, SQLITE_TRANSIENT_IP)
+        case .rebaseline: sqlite3_bind_null(mark, 2)
+        }
+        sqlite3_bind_text(mark, 3, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(mark)
     }
 
@@ -7593,12 +7631,17 @@ public actor IndexingPipeline {
     /// used to key on the UNREVIEWED set, so the moment a reader (or the hub's per-volume stamp)
     /// marked a vanished row reviewed, its only route to the sheet was lost and a tap landed on
     /// "Failed to Load". Same volume-grain guard as `unreviewedDocumentRevisions()`.
+    ///
+    /// **Stamped rows only (#1510 review round 1).** A document a whole-index pass stopped
+    /// emitting is marked `'vanished'` with no `changed_at` (`auxMarkVanishedRevisions`): no file
+    /// changed, so it is still in the volume and opens by id, and routing it to the review sheet as
+    /// removed would hide a document the reader can read.
     /// Returns `"volumeId/documentId"` keys, sorted.
     public func vanishedDocumentKeys() throws -> [String] {
         let stmt = try auxPrepare("""
             SELECT volume_id, document_id
               FROM document_revisions
-             WHERE change_kind = 'vanished'
+             WHERE change_kind = 'vanished' AND changed_at IS NOT NULL
                AND EXISTS (SELECT 1 FROM document_cache dc WHERE dc.volume_id = document_revisions.volume_id)
              ORDER BY volume_id, document_id
             """)
@@ -8475,10 +8518,12 @@ public actor IndexingPipeline {
     /// first-of-several choice was weaker: of the 12,749 references to a page several documents
     /// begin on, the note names the date of the first 2,502 times and of only a later one 1,825
     /// times (none of theirs, 8,422), so roughly two in five of the edges it could be checked on
-    /// pointed at a neighbour of the document meant. Since v63 the footnote decides (#1509): 2,218
-    /// of those edges move, 2,210 by the day the note names (the abbreviated months — "Oct. 9" —
-    /// among them) and 8 by a document number (`frus1888p1` d230's "printed as Doc. No. 497 post,
-    /// page 683" is d497, where the first was d496); `tools/page-citations/v63.py` reproduces both.
+    /// pointed at a neighbour of the document meant. Since v63 the footnote decides whenever the
+    /// page names several documents (#1509): 2,216 of those 12,749 edges move, and 2 more on pages
+    /// no document begins on and several are printed on — 2,210 of the 2,218 by the day the note
+    /// names (the abbreviated months — "Oct. 9" — among them) and 8 by a document number
+    /// (`frus1888p1` d230's "printed as Doc. No. 497 post, page 683" is d497, where the first was
+    /// d496); `tools/page-citations/v63.py` reproduces each figure.
     ///
     /// Called in `storeIndexData` after `auxInsertCrossReferences`, `auxInsertPageRanges` and
     /// `auxInsertDocumentDates` are complete for the volume, so all page data and each document's

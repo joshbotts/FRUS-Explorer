@@ -116,7 +116,8 @@ struct PageSpanResolverTests {
                        doc("d3", start: 271), doc("d4", start: 272), doc("d5", start: 273)]
         #expect(!PageSpanResolver.numbersPagesPerDocument(printed))
         // Nor one whose restarting rows are all a section's, which records no start: a compilation
-        // indexed beside the chapters it holds, as frus1919Parisv13's are.
+        // indexed beside the chapters it holds, as frus1919Parisv13's were until index v63 left its
+        // heading-only containers out (#1510). The rule must not depend on that.
         let sections = [doc("ch1", [4, 5, 6]), doc("comp1", [2, 3, 7]), doc("ch2", [8, 9]), doc("comp2", [7, 10])]
         #expect(!PageSpanResolver.numbersPagesPerDocument(sections))
         // The control: the same one restart in a volume of two documents is one in two.
@@ -249,8 +250,13 @@ struct CitedDocumentTieBreakTests {
         #expect(facts["d498"]?.day == nil)
     }
 
-    @Test("A claimant the facts do not hold — a section — is named by neither cue")
-    func aSectionHasNoFacts() {
+    /// A claimant missing from `facts` is matched by neither cue, whatever its id. That is not "a
+    /// section has no facts": `citedDocumentFactsSQL` reads `document_cache`, which holds every
+    /// promoted section, with a number its heading opens with and any day it prints. Over the
+    /// corpus no reference cites a page naming several claimants with a section among them
+    /// (`tools/page-citations/v63.py`: 0), so nothing yet depends on how a section's facts compare.
+    @Test("A claimant the facts do not hold is named by neither cue")
+    func aClaimantWithoutFactsIsNamedByNeither() {
         let mixed = PageSpanResolver.PageClaimants(claim: .begins, documents: [
             .init(documentId: "ch9", pages: 57...58), .init(documentId: "d497", pages: 683...684)])
         let hint = PageCitationHint(citingText: "Doc. No. 9, August 17")

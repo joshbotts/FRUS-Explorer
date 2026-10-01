@@ -28,11 +28,12 @@ promotes to quasi-documents; replica.py records those):
   date_win   - the raw <date> attribute IndexingPipeline's `winningMinDateAttribute` takes for the
                document's day — a dateline <date>'s @when, else its @from, else its @notBefore, else
                the first @when outside notes — or null (added for #1509: with `date`, it gives the day
-               `document_dates.date_iso` stores and its precision; xrefs_hint.py reads it)
+               `document_dates.date_iso` stores and its precision; v63.py reads both)
 and, per <ref target="#pg_N"> inside a document div: the source document, N's raw text, the
 text of the innermost enclosing <note> (or '' when the ref is in running text), and the ref's own
-text (`text`) with where it starts and ends in the note's text (`at`, `end`; both added for #1509);
-and, per volume,
+text (`text`) with where it starts and ends in the note's text (`at`, `end`; all three added for
+#1509: v63.py's `nearest_day` variant reads `at`, and `text` and `end` were read only by the lane's
+exploratory passes, which were not committed); and, per volume,
 pbs_outside, the @n of every <pb> outside every document div, in order (added for #1512 review
 round 1: rules_f.py counts the per-document volumes' page-1 breaks written between documents).
 
@@ -134,7 +135,7 @@ class H(xml.sax.ContentHandler):
             if self.notes: self.notes[-1][0].append(''.join(texts))
     def note_offset(self):
         # where the innermost open note's text has reached, in its whitespace-collapsed form: the
-        # coordinates of `note` (#1509: xrefs_hint.py reads the words before a ref, `at`..`end`)
+        # coordinates of `note` (#1509: v63.py's `nearest_day` reads the words before a ref, to `at`)
         return len(' '.join(''.join(self.notes[-1][0]).split()))
     def characters(self, content):
         if content.strip():

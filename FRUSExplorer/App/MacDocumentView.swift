@@ -1148,8 +1148,10 @@ struct MacDocumentView: View {
     /// implementation only stripped a *leading* `#`, so cross-volume targets
     /// (`frus1964-68v18#d65`) navigated to a bogus document ID, and it silently
     /// skipped printed-page references instead of resolving them. `citing` is what a page link's
-    /// footnote names (#1509), which decides among several documents beginning on the page.
-    private func handleCrossRefTap(target: String, volumeId: String?, citing: PageCitationHint? = nil) {
+    /// footnote names (#1509), which decides among several documents the page names. It has no
+    /// default, so a caller says what it carries (#1509 review round 1);
+    /// `readerViewsPassTheHintThrough` pins the chain to the store.
+    private func handleCrossRefTap(target: String, volumeId: String?, citing: PageCitationHint?) {
         switch FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId) {
         case .document(let targetVolumeId, let documentId):
             navigateToCrossRef(documentId: documentId,
@@ -1209,7 +1211,7 @@ struct MacDocumentView: View {
         #endif
     }
 
-    /// Opens the document a page reference names (#1503): of several beginning on it, the one its
+    /// Opens the document a page reference names (#1503): of several the page names, the one its
     /// footnote names by number or day, else the first (#1509) — the document the index stored the
     /// reference's edge against.
     private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {

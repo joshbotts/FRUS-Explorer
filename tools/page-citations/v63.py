@@ -18,14 +18,29 @@ id is another pagination, #1511) over REP63. A reference's stored target is, und
 document its page names; under v63, `PageSpanResolver.citedDocument(among:facts:citing:)` (#1509),
 mirrored below: a document number the note gives a document ("Doc. No. 497") that exactly one of
 them carries, else the first whose day the note names ("July 7", "Oct. 9, 1909" — a printed year must
-agree), else the first. A document's day is the one `document_dates.date_iso` stores (#1326: the
-dateline's own day where it names the same instant as `frus:doc-dateTime-min`), counted only at day
-precision; its number is its @n. A section has neither.
+agree), else the first. The tie-break applies whenever the page names several documents, whether
+several begin on it or, where none does, several are printed on it. A document's day is the one
+`document_dates.date_iso` stores (#1326: the dateline's own day where it names the same instant as
+`frus:doc-dateTime-min`), counted only at day precision; its number is its @n.
 
-Prints, in order: the emission (#1510), the printed volumes' pages (#1510, then #1511 alone), and
-the references (all three). Every count is over the 533 printed volumes — not the five microfiche
-supplements and not the fifteen that number their pages per document — except the emission's,
-which is over all 553.
+Sections are given no facts here, because the scan records documents only. In the app they can have
+both — `document_cache` holds every promoted section, its `document_number` from a heading like "1.
+…" and its day from any `<date when>` it holds — so this mirror agrees with the app only while no
+page a reference cites names several claimants with a section among them. The script counts those
+references ("refs to a page naming several, a section among them"): 0 at `550a8c5c5`.
+
+Prints the counters sorted by name, then volumes and examples: the emission (#1510), the printed
+volumes' pages (#1510, then #1511 alone), the references in documents (all three), and the
+references made inside sections whose v62 target was a container v63 leaves out. It also counts how
+often a variant the app does NOT ship would choose differently — the day named nearest before the
+reference rather than the first claimant whose day the note names anywhere (`nearest_day`) — for the
+owner to weigh; that is the one reader of the scan's `at` offset. Every count is over the 533
+printed volumes — not the five microfiche supplements and not the fifteen that number their pages
+per document — except the emission's, which is over all 553.
+
+Refuses to run unless REP62 was written with RULE=v62 and REP63 without it: the v63 replica records
+`carried_to` in every volume and the v62 replica in none, and a v62 replica passed twice would print
+a plausible report of no containers left out.
 
 Usage: v63.py REP62 REP63 SCAN
 """
@@ -89,6 +104,25 @@ def cited(ids, facts, h):
         if day and any(names(hd, day) for hd in days): return i, 'day'
     return ids[0], 'first'
 
+def nearest_day(ids, facts, h, note, at):
+    """A variant NOT shipped, measured for the owner (#1509 review round 1): the number cue as
+    shipped, then the claimant dated to the day the note names NEAREST BEFORE the reference
+    (`at`, the scan's offset into the note), else the shipped rule. A many-clause note can name
+    another clause's date first; this reads the reference's own clause first."""
+    if len(ids) < 2 or h is None or at is None: return cited(ids, facts, h)[0]
+    nums, _ = h
+    numbered = [i for i in ids if facts.get(i, (None, None))[0] and
+                any(n.lower() == facts[i][0].lower() for n in nums)]
+    if len(numbered) == 1: return numbered[0]
+    for m in reversed(list(DAY.finditer(note[:at]))):
+        d = int(m.group(2))
+        if not 1 <= d <= 31: continue
+        hd = (MONTHS.index(m.group(1)[:3]) + 1, d, int(m.group(3)) if m.group(3) else None)
+        for i in ids:
+            day = facts.get(i, (None, None))[1]
+            if day and names(hd, day): return i
+    return cited(ids, facts, h)[0]
+
 def tables(v, regime):
     t = ns.rows(v['docs'], regime); pd = ns.per_document(t)[0]
     return t, pd, {d['id']: ns.spans(d, pd) for d in t}
@@ -100,8 +134,26 @@ def answers(t, sp, pd, regime):
         if d['start'] is not None: pages.add(d['start'])
     return {p: ns.lookup(p, t, sp, pd, regime) for p in pages}
 
+def check_rules(R62, R63):
+    """Exits unless REP62 is a RULE=v62 replica and REP63 a v63 one: only v63 writes carried_to."""
+    names = sorted(fn for fn in os.listdir(R63) if fn.endswith('.json'))
+    if not names:
+        sys.exit('no replica volumes in %s: run replica.py first' % R63)
+    first62 = os.path.join(R62, names[0])
+    if not os.path.exists(first62):
+        sys.exit('%s is not in %s: the two replicas must cover the same volumes' % (names[0], R62))
+    if 'carried_to' in json.load(open(first62)):
+        sys.exit('%s was written under v63: REP62 must come from RULE=v62 replica.py' % R62)
+    if 'carried_to' not in json.load(open(os.path.join(R63, names[0]))):
+        sys.exit('%s was written under v62: REP63 must come from replica.py without RULE' % R63)
+
 def main(R62, R63, S):
+    check_rules(R62, R63)
     C = collections.Counter(); PV = collections.defaultdict(collections.Counter); EX = collections.defaultdict(list)
+    # Printed even at zero: each is a premise the mirror above or the v63 note rests on.
+    for k in ('refs to a page naming several, a section among them',
+              'section refs off a left-out container: page names several under v63'):
+        C[k] = 0
     for fn, v62 in ns.replica_volumes(R62):
         v63 = json.load(open(os.path.join(R63, fn)))
         vid = v62['volumeId']
@@ -154,6 +206,24 @@ def main(R62, R63, S):
                     if len(anF.get(p, ('none', []))[1]) > 1 and len(an63.get(p, ('none', []))[1]) == 1:
                         C['#1511: ... from several to one'] += 1
                     if not an63.get(p, ('none', []))[1]: C['#1511: ... to no answer'] += 1
+        # --- references made inside sections, off a container v63 leaves out (#1510) ---------------
+        # The scan records references inside documents only; a section's are in the replica, with
+        # no note text, so no hint: counted only where the v63 page names one claimant.
+        for d in v63['docs']:
+            if d['kind'] in ('document', 'editorialNote'): continue
+            for n in d['refs']:
+                if not re.match(r'^\d+$', n) or int(n) <= 0: continue
+                p = int(n)
+                ids62 = (an62.get(p) or ns.lookup(p, t62, sp62, pd62, 'F'))[1]
+                ids63 = (an63.get(p) or ns.lookup(p, t63, sp63, pd63, 'G'))[1]
+                if not ids62 or ids62[0] not in gone: continue
+                if len(ids63) > 1:
+                    C['section refs off a left-out container: page names several under v63'] += 1; continue
+                C['section refs off a left-out container: stored against %s' % (
+                    'the section the page names' if ids63 else 'nothing')] += 1
+                PV['section refs off a left-out container'][vid] += 1
+                if len(EX['section refs off a left-out container']) < 12:
+                    EX['section refs off a left-out container'].append((vid, d['id'], p, ids62[0], ids63))
         # --- references --------------------------------------------------------------------------
         sc = json.load(open(os.path.join(S, fn)))
         if not sc['refs']: continue
@@ -177,6 +247,21 @@ def main(R62, R63, S):
             else:
                 C['refs: moved by the page table'] += 1
                 if why != 'first': C['refs: ... and the tie-break, by the %s' % why] += 1
+            if len(ids63) > 1 and h and nearest_day(ids63, facts, h, r['note'], r.get('at')) != new:
+                C['refs to a page naming several: the nearest-day variant chooses differently'] += 1
+                if len(EX['nearest-day variant']) < 12:
+                    EX['nearest-day variant'].append((vid, r['src'], p, ids63, new,
+                                                      nearest_day(ids63, facts, h, r['note'], r.get('at')),
+                                                      r['note'][:200]))
+            if len(ids63) > 1 and any(kinds63[i] not in ('document', 'editorialNote') for i in ids63):
+                C['refs to a page naming several, a section among them'] += 1
+            if len(ids63) > 1 and k63 == 'printed':
+                # No document begins on the page and several are printed on it: the tie-break runs too.
+                C['refs to a page several are printed on, v63'] += 1
+                C['refs to a page several are printed on: chosen by the %s' % why] += 1
+                if why != 'first' and new != ids63[0]:
+                    C['refs to a page several are printed on: a later document chosen'] += 1
+                    EX['printed on, a later document chosen'].append((vid, r['src'], p, ids63, new, r['note'][:160]))
             if len(ids63) > 1 and k63 == 'begins':
                 C['refs to a page several begin on, v63'] += 1
                 C['refs to a page several begin on: chosen by the %s' % why] += 1

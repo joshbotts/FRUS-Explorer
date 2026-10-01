@@ -25,7 +25,8 @@ import Foundation
 ///   1.3 — #1503 review round 1: `startPage` is a document's or an editorial note's alone — `nil`
 ///          for a prose section the parser promotes to a quasi-document.
 ///   1.4 — #1510: `carriedPages`, the breaks a container left out of the index, or narrowed to its
-///          own text, gives the section that begins after them.
+///          own text, gives the section that begins after them. Review round 1:
+///          `applyingClassificationOverride` keeps them.
 public struct FRUSDocumentAST: Sendable {
     /// The value of the `xml:id` attribute on the `<div type="document">` element.
     /// e.g. `"d1"`, `"d42"`. Stable identifier used to locate documents within a volume.
@@ -101,10 +102,12 @@ public struct FRUSDocumentAST: Sendable {
     /// A compilation, chapter or subchapter that holds sections the parser promotes is a container:
     /// history.state.gov shows its page as a list of what it holds. One with nothing of its own but
     /// a heading is not indexed (owner decision D1), and one with text of its own keeps the breaks
-    /// within that text. The breaks either leaves — `frus1919Parisv13`'s comp3 holds `[56]` and 57
-    /// before the Preamble (ch9) begins on 57, and 69 before Part II (ch10) — are breaks between
-    /// sections, so each is given to the section that begins after it (`TEIParserDelegate.finishParse`).
-    /// `IndexingPipeline` stores them as that section's `page_ranges` rows.
+    /// within that text. The breaks either leaves are breaks between sections, so each is given to
+    /// the section whose div opens first after it (`TEIParserDelegate.finishParse`):
+    /// `frus1919Parisv13`'s comp3 holds `[56]` and 57 before the Preamble (ch9) begins on 57, which
+    /// takes both, and 69 before Part I (ch10), which holds only its heading and is left out too, so
+    /// 69 goes two levels down, to its first section, ch10subch1. `IndexingPipeline` stores them as
+    /// that section's `page_ranges` rows.
     public let carriedPages: [PageNumber]
 
     public init(
@@ -176,7 +179,8 @@ extension FRUSDocumentAST {
             dateTimeMax: dateTimeMax,
             isFrontMatter: isFrontMatter,
             printedNumber: printedNumber,
-            startPage: startPage)
+            startPage: startPage,
+            carriedPages: carriedPages)
     }
 }
 
@@ -490,9 +494,9 @@ public enum PageNumber: Sendable, Equatable {
     /// of page 31 finds the document that begins there (#1503).
     case unnumbered(Int)
     /// A page of another pagination the volume prints beside its own — `frus1871`'s second sequence
-    /// (`<pb n="20" xml:id="pg-seq1_20"/>`), the President's message `frus1862` and `frus1865p1` number
-    /// from 1 (`pg-seq-10` on `n="4"`) — which is not that page of the volume (#1511). The reader shows
-    /// the number as printed; the index stores it apart from the volume's arabic pages
+    /// (`<pb n="20" xml:id="pg-seq1_20"/>`), and the President's messages `frus1862` (`pg-seq-10` on
+    /// `n="4"`) and `frus1865p1` number from 1 — which is not that page of the volume (#1511). The
+    /// reader shows the number as printed; the index stores it apart from the volume's arabic pages
     /// (`page_number_type = 'other-pagination'`), so a citation of the volume's page 20 never names
     /// the message printed on the message's own page 20.
     case otherPagination(Int)
@@ -513,15 +517,18 @@ public enum PageNumber: Sendable, Equatable {
     /// **A digit number on a `pg-seq` break is ``otherPagination(_:)`` (#1511).** The same id says
     /// which numbering a printed number belongs to: `pg-seq` is the id the corpus gives a page outside
     /// the volume's own `pg_N` sequence, and in five volumes such a sequence prints numbers of its own
-    /// — `frus1871`'s `pg-seq1_20`…`pg-seq1_156`, the President's messages in `frus1862`, `frus1863p1`,
-    /// `frus1865p1` (`pg-seq-10` on `n="4"`) and `frus1866p1`. Read as the volume's pages, they made
-    /// the message, or `frus1871`'s d1–d6, an answer for a page of the volume that another document
-    /// is printed on. The rule is the id's shape, not "any id other than `pg_N`": two of the
-    /// volume's own pages carry a mistyped id of another shape, `frus1977-80v13`'s `pgg_655` (inside
-    /// d173) and `frus1884`'s `pg_13` on `n="12"`, and stay the volume's pages. Two `pg-seq` ids
-    /// are mistyped too — `frus1949v05`'s `pg-seq-1004` on `n="990"` and `frus1950v01`'s `pg-seq-938`
-    /// on `n="922"`, each the volume's own page — but both sit in `<back>` ahead of the index, outside
-    /// every document and section, so no answer reads them (measured: `tools/page-citations/brackets.py`).
+    /// — `frus1871`'s `pg-seq1_20`…`pg-seq1_156`, and the President's messages in `frus1862`
+    /// (`pg-seq-10` on `n="4"`), `frus1863p1`, `frus1865p1` and `frus1866p1`. In three of them —
+    /// `frus1871`, `frus1862` and `frus1865p1` — those breaks sit inside an AST, and read as the
+    /// volume's pages they made the message, or `frus1871`'s d1–d6, an answer for a page of the
+    /// volume that another document is printed on; in `frus1863p1` and `frus1866p1` they sit outside
+    /// every AST, so no answer read them (`tools/page-citations/brackets.py`, `v63.py`). The rule is
+    /// the id's shape, not "any id other than `pg_N`": two of the volume's own pages carry a mistyped
+    /// id of another shape, `frus1977-80v13`'s `pgg_655` (inside d173) and `frus1884`'s `pg_13` on
+    /// `n="12"`, and stay the volume's pages. Two `pg-seq` ids are mistyped too — `frus1949v05`'s
+    /// `pg-seq-1004` on `n="990"` and `frus1950v01`'s `pg-seq-938` on `n="922"`, each the volume's own
+    /// page — but both sit in `<back>` ahead of the index, outside every document and section, so no
+    /// answer reads them (measured: `tools/page-citations/brackets.py`).
     public static func parse(_ raw: String, xmlId: String?) -> PageNumber {
         let parsed = parse(raw)
         if case .arabic(let n) = parsed, let xmlId, xmlId.hasPrefix("pg-seq") {

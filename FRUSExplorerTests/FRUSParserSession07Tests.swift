@@ -211,7 +211,8 @@ struct PageBreakTests {
 
     @Test("PageNumber: a digit break with a pg-seq id is another pagination, and a mistyped id of any other shape is still the volume's page (#1511)")
     func pageBreakOtherPagination() {
-        // frus1871's second sequence and the President's messages of frus1862 / frus1865p1.
+        // frus1871's second sequence (pg-seq1_20 … pg-seq1_156), and frus1862's President's message,
+        // whose page 4 is pg-seq-10 (frus1865p1's message numbers its pages the same way).
         #expect(PageNumber.parse("20", xmlId: "pg-seq1_20") == .otherPagination(20))
         #expect(PageNumber.parse("4", xmlId: "pg-seq-10") == .otherPagination(4))
         #expect(PageNumber.parse(" 156 ", xmlId: "pg-seq1_156") == .otherPagination(156))

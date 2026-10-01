@@ -683,6 +683,14 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("data-page=\"[31]\""))
     }
 
+    /// `frus1871`'s d1–d6 and the President's messages of `frus1862` and `frus1865p1` show these
+    /// numbers in the reader: the message's own page 20 reads 20, as printed.
+    @Test("A page of another pagination shows the number it prints, without brackets (#1511 review round 1)")
+    func pageBreakOtherPagination() {
+        let out = html([.pageBreak(pageNumber: .otherPagination(20))])
+        #expect(out.contains("data-page=\"20\""), "\(out)")
+    }
+
     // MARK: - data-skip invariants (offset model correctness)
 
     @Test("lineBreak does NOT carry data-skip")

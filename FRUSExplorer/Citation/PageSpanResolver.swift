@@ -278,22 +278,27 @@ public enum PageSpanResolver {
     /// reader's page link (`PageRangeStore.document(forPage:inVolume:citing:)`) call, so the stored
     /// edge, the cited-by count and the document a tap opens are the same document (#1509).
     ///
-    /// When the page names one document, it. When it names several — several short documents begin
-    /// on it — the note the reference sits in usually says which:
+    /// When the page names one document, it. When it names several, whatever the claim — several
+    /// short documents begin on it, or, where none does, several are printed on it — the note the
+    /// reference sits in usually says which:
     /// 1. a document number it names as a document (`Doc. No. 497`, `document 131`) that exactly one
     ///    of them carries;
     /// 2. otherwise the documents whose day it names (`July 7`, `Oct. 9, 1909`; a printed year must
     ///    agree), the first of them in source order;
-    /// 3. otherwise the first in source order, the one at the top of the page — what every page link
-    ///    opened before #1509.
+    /// 3. otherwise the first in source order (the one at the top of the page, when several begin on
+    ///    it) — what every page link opened before #1509.
     ///
     /// Measured over the 55,007 same-volume arabic `pg_N` references inside documents in the 533
-    /// printed volumes at corpus `550a8c5c5` (`tools/page-citations/xrefs_hint.py`, which applies this
-    /// rule to a SAX replica of the parser): see `IndexingPipeline`'s v63 note for the figures. A
-    /// number counts only when the note calls it a document's: "No. N" alone is usually a telegram's
-    /// number — `frus1934v01` d397's "Telegram No. 391, July 7, 1 p.m., p. 467" cites d390, dated July
-    /// 7, while d391 begins on the same page. A day counts only for a document dated to the day
-    /// (``CitedDocumentFacts``): a month-precision date is stored as the month's first day.
+    /// printed volumes at corpus `550a8c5c5` (`tools/page-citations/v63.py`, which applies this rule
+    /// to the pages of a SAX replica of the parser and the notes of a SAX scan of the corpus): see
+    /// `IndexingPipeline`'s v63 note for the figures. A number counts only when the note calls it a
+    /// document's: "No. N" alone is usually a telegram's number — `frus1934v01` d397's "Telegram No.
+    /// 391, July 7, 1 p.m., p. 467" cites d390, dated July 7, while d391 begins on the same page. A
+    /// day counts only for a document dated to the day (``CitedDocumentFacts``): a month-precision
+    /// date is stored as the month's first day. A promoted section can carry facts too —
+    /// `document_cache` holds a number its heading opens with ("1. …") and `document_dates` a day it
+    /// prints — and is matched like a document; no reference in that population cites a page naming
+    /// several claimants with a section among them (`v63.py` counts them: 0).
     ///
     /// - Parameters:
     ///   - claimants: What the page names (``documents(onPage:in:)``). Never empty.

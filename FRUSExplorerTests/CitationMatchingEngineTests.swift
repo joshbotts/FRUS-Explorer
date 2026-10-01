@@ -2106,6 +2106,70 @@ struct CitationLookupIndexedTests {
         }
     }
 
+    /// Each reader view hands a page link's footnote hint on at every step from the web view to the
+    /// store (#1509 review round 1). `readersPageLinkOpensTheStoredDocument` drives the converter,
+    /// the serializer, the scheme handler and the store, but not the views' own closures, which no
+    /// unit test can host, and a view that dropped the hint at any of its three steps would still
+    /// build while its page links opened the first document on the page. Neither view's
+    /// `handleCrossRefTap` nor `resolvePageReference` defaults its `citing`, so a call that leaves
+    /// the argument out does not build; this reads each step's own call, by its balanced
+    /// parentheses, for the forms that would: a closure that ignores or replaces the hint, a default
+    /// put back, and a store call without it (`PageRangeStore.document(forPage:inVolume:citing:)`
+    /// keeps its default for callers outside a footnote).
+    @Test("Both reader views pass a page link's footnote hint from the web view to the store (#1509 review round 1)",
+          arguments: ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"])
+    func readerViewsPassTheHintThrough(_ path: String) throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer").appendingPathComponent(path)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        /// The argument list of every call of `function` inside `scope`.
+        func calls(of function: String, in scope: Substring) throws -> [Substring] {
+            var found: [Substring] = []
+            var from = scope.startIndex
+            while let call = source.range(of: function + "(", range: from..<scope.endIndex) {
+                let arguments = try #require(WindowTargetingTests.balancedBlock(
+                    in: source, from: source.index(before: call.upperBound), open: "(", close: ")"),
+                                             "\(path): unbalanced call of \(function)")
+                found.append(arguments)
+                from = arguments.endIndex
+            }
+            return found
+        }
+        /// `function`'s parameter list and body.
+        func declaration(of function: String) throws -> (parameters: Substring, body: Substring) {
+            let name = try #require(source.range(of: "func \(function)("), "\(path): no \(function)")
+            let parameters = try #require(WindowTargetingTests.balancedBlock(
+                in: source, from: source.index(before: name.upperBound), open: "(", close: ")"))
+            let body = try #require(WindowTargetingTests.balancedBlock(in: source, from: parameters.endIndex))
+            return (parameters, body)
+        }
+
+        // 1. The web view's callback binds the hint and hands it to `handleCrossRefTap`.
+        let tap = try #require(source.range(of: "onCrossRefTap: {"), "\(path): no onCrossRefTap closure")
+        let closure = try #require(WindowTargetingTests.balancedBlock(in: source, from: tap.lowerBound))
+        let header = closure.prefix { $0 != "\n" }.trimmingCharacters(in: .whitespaces)
+        #expect(header.hasSuffix(", citing in"), "\(path): the callback does not bind the hint: \(header)")
+        let handed = try calls(of: "handleCrossRefTap", in: closure)
+        #expect(handed.count == 1 && handed.allSatisfy { $0.contains("citing: citing") },
+                "\(path): the callback does not hand the hint on: \(handed)")
+
+        // 2. `handleCrossRefTap` takes it with no default and hands it to `resolvePageReference`.
+        let handler = try declaration(of: "handleCrossRefTap")
+        #expect(handler.parameters.contains("citing: PageCitationHint?") && !handler.parameters.contains("="),
+                "\(path): handleCrossRefTap(\(handler.parameters))")
+        let resolved = try calls(of: "resolvePageReference", in: handler.body)
+        #expect(resolved.count == 1 && resolved.allSatisfy { $0.contains("citing: citing") },
+                "\(path): the page case does not hand the hint on: \(resolved)")
+
+        // 3. `resolvePageReference` takes it with no default and asks the store with it.
+        let resolver = try declaration(of: "resolvePageReference")
+        #expect(resolver.parameters.contains("citing: PageCitationHint?") && !resolver.parameters.contains("="),
+                "\(path): resolvePageReference(\(resolver.parameters))")
+        let asked = try calls(of: "store.document", in: resolver.body)
+        #expect(asked.count == 1 && asked.allSatisfy { $0.contains("citing: citing") },
+                "\(path): the store is not asked with the hint: \(asked)")
+    }
+
     // MARK: - Another pagination's breaks (#1511)
 
     /// `frus1871`'s shape: the President's message (d1) opens on `[19]` of its own pagination and
@@ -2165,10 +2229,14 @@ struct CitationLookupIndexedTests {
 
     // MARK: - Containers (#1510)
 
-    /// `frus1919Parisv13`'s Part I, cut down: comp3 holds only its heading and its breaks `[56]` and
-    /// 57 before ch9 (the Preamble) begins on 57, and 69 before ch10 (Part II) begins there; ch10
-    /// holds its own text on 69 and, after it, the break 72 its subchapter begins on. No document
-    /// anywhere — the volume's two documents sit elsewhere.
+    /// A synthetic shape, both kinds of container in one tree, modelled on `frus1919Parisv13`'s comp3
+    /// but not that volume's data. As in the volume, comp3 holds only its heading and its breaks
+    /// `[56]` and 57 before ch9 (the Preamble) begins on 57, and 69 before ch10. Unlike it, ch10 here
+    /// holds text of its own on 69 and, after it, the break 72 its subchapter begins on: the real
+    /// ch10 (Part I, the Covenant) holds only its heading, is left out too, and its 69 goes to
+    /// ch10subch1, which `RealTEIPageCitationsV63Tests.parisv13Containers` checks against the volume.
+    /// The real narrowed container is ch12, whose own text is on 134 and whose trailing 135 goes to
+    /// ch12subch1 (`ContainerTests.proseContainerIsNarrowedToItsOwnText`). No document anywhere.
     private let partOne = """
         <?xml version="1.0" encoding="UTF-8"?>
         <TEI xmlns="http://www.tei-c.org/ns/1.0">

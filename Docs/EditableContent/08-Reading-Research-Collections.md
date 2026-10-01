@@ -99,42 +99,42 @@ recorded change (text, apparatus, gone) and on whether any stored highlight was 
 earlier rendering. The first key is the pre-existing highlight hedge, now declared here only.
 
 #### No recorded change, stale highlights
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 98–99 | key: highlight.stale.warning | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 104–105 | key: highlight.stale.warning | shared: iOS+macOS (single edit point) -->
 
 Some highlights may be misaligned — the document has been updated since they were created.
 
 <!-- END SOURCE: highlight.stale.warning -->
 
 #### Text changed
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 101–102 | key: document.changed.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 107–108 | key: document.changed.body | shared: iOS+macOS (single edit point) -->
 
 The text of this document changed in a volume update. Highlight positions may have moved.
 
 <!-- END SOURCE: document.changed.body -->
 
 #### Text changed, stale highlights
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 104–105 | key: document.changed.body.stale | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 110–111 | key: document.changed.body.stale | shared: iOS+macOS (single edit point) -->
 
 The text of this document changed in a volume update. Some highlights may be misaligned.
 
 <!-- END SOURCE: document.changed.body.stale -->
 
 #### Apparatus changed
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 107–108 | key: document.changed.apparatus | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 113–114 | key: document.changed.apparatus | shared: iOS+macOS (single edit point) -->
 
 Footnotes, the source note, or the heading changed in a volume update. The text did not.
 
 <!-- END SOURCE: document.changed.apparatus -->
 
 #### Apparatus changed, stale highlights
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 110–111 | key: document.changed.apparatus.stale | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 116–117 | key: document.changed.apparatus.stale | shared: iOS+macOS (single edit point) -->
 
 Footnotes, the source note, or the heading changed in a volume update, and some highlights may be misaligned.
 
 <!-- END SOURCE: document.changed.apparatus.stale -->
 
 #### No longer in the volume
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 113–114 | key: document.changed.vanished | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 119–120 | key: document.changed.vanished | shared: iOS+macOS (single edit point) -->
 
 This document is no longer in the volume.
 
@@ -177,7 +177,7 @@ from *Review Changes…* on a Research row. Lists what changed, every highlight 
 and its Confirm / Remove actions, and the other annotations the app cannot judge.
 
 #### Banner control
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 60–60 | key: document.changed.review | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 66–66 | key: document.changed.review | shared: iOS+macOS (single edit point) -->
 
 Review…
 
@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2245–2245 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2247–2247 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2246–2247 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2248–2249 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -707,7 +707,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2551–2552 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2553–2554 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -2067,7 +2067,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1439–1440 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1441–1442 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 

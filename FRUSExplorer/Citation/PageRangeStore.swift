@@ -74,9 +74,10 @@ import SQLite3
 ///          (`PageSpanResolver.numbersPagesPerDocument`); `documents(forPage:)` there answers
 ///          `.numberedPerDocument`, every document printed on a page of that number.
 ///   1.7 — #1509: `document(forPage:inVolume:citing:)` opens the document a page link's footnote
-///          names among several that begin on the page (`PageSpanResolver.citedDocument`), reading
-///          each one's number and day through `PageSpanResolver.citedDocumentFactsSQL`; the page
-///          rows are read through `PageSpanResolver.arabicPageRowsSQL`, the indexer's query.
+///          names among several the page names (`PageSpanResolver.citedDocument`), reading each
+///          one's number and day through `PageSpanResolver.citedDocumentFactsSQL`; the page rows are
+///          read through `PageSpanResolver.arabicPageRowsSQL`, the indexer's query. Review round 1:
+///          the facts are read only when the page names several and the link carries a hint.
 public actor PageRangeStore {
 
     // MARK: - State
@@ -129,20 +130,23 @@ public actor PageRangeStore {
     }
 
     /// The document a page reference means, or `nil` when the page names none — what a page link in
-    /// the reader opens (#1509). Where several documents begin on the page, the one the reference's
-    /// footnote names by its number or its day, else the first, the one at the top of the page:
+    /// the reader opens (#1509). Where the page names several documents — several begin on it, or,
+    /// where none does, several are printed on it — the one the reference's footnote names by its
+    /// number or its day, else the first in source order:
     /// ``PageSpanResolver/citedDocument(among:facts:citing:)``, the tie-break the index stored the
     /// reference's edge by, over the same page rows and the same facts
     /// (``PageSpanResolver/citedDocumentFactsSQL``), so a tap opens the document the cited-by count
-    /// credits.
+    /// credits. The facts are read only when they can decide: when the page names several and the
+    /// link carries a hint.
     ///
     /// - Parameter citing: What the link's footnote names (`PageCitationHint`, carried on the link by
     ///   `FRUSRenderNodeHTMLSerializer`), or `nil` for a reference outside every footnote.
     public func document(forPage pageNumber: Int, inVolume volumeId: String,
                          citing: PageCitationHint? = nil) throws -> String? {
         guard let claimants = try documents(forPage: pageNumber, inVolume: volumeId) else { return nil }
-        return PageSpanResolver.citedDocument(among: claimants, facts: citedDocumentFacts(volumeId),
-                                              citing: citing)
+        // The facts query reads the whole volume; with one claimant or no hint it cannot change the answer.
+        let facts = claimants.documents.count > 1 && citing != nil ? citedDocumentFacts(volumeId) : [:]
+        return PageSpanResolver.citedDocument(among: claimants, facts: facts, citing: citing)
     }
 
     /// The pages `documentId` of `volumeId` may be printed on, or `nil` when the index cannot tell
