@@ -34,14 +34,19 @@ import Foundation
 /// to the volume keeps the two together — delete the volume and its metadata goes with it, with no
 /// orphan row to reconcile.
 ///
-/// ## Why reconciliation is lazy rather than eager
-/// Volumes side-loaded before this shipped have no sidecar. Rather than parsing every unknown file
-/// at launch — which would put an XML parse per volume on the boot path — ``reconcile(in:known:)``
-/// parses only files that are unknown *and* unparsed, and it is called from the corpus-change
-/// refresh that side-loading already triggers. A first launch after updating pays once.
+/// ## Why reconciliation parses only what it has never parsed
+/// Volumes side-loaded before this shipped have no sidecar. ``reconcile(in:known:)`` parses only
+/// files that are unknown *and* unparsed, so each header is parsed once and its sidecar read after
+/// that. It runs on the boot path — synchronously, on the main actor, in `bootDownloadManager()`
+/// through `AppState.reconcileSideloadedVolumes()`, before the indexing pipeline is built — and
+/// from the corpus-change refresh that side-loading triggers. So the first launch after updating
+/// pays one header parse per volume side-loaded before #777, at boot, once; every launch pays a
+/// directory listing and a read of each sidecar. (Until lane STOR, 2026-10-01, it ran only from
+/// the refresh, so a side-loaded volume was listed by its raw id until something triggered one.)
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #777
+///   1.1 — Lane STOR (2026-10-01): reconciliation also runs at boot; the cost notes say so
 public struct LocalVolumeCatalog: Sendable {
 
     /// The sidecar's filename for a volume, e.g. `frus1969-76v01.frusmeta.json`.
@@ -158,9 +163,11 @@ public struct LocalVolumeCatalog: Sendable {
     /// Parses a sidecar for every volume on disk that the catalogue does not know and that has no
     /// sidecar yet, and returns the full local set.
     ///
-    /// This is what repairs volumes side-loaded before #777 shipped. It is deliberately not on the
-    /// boot path's critical section: it walks a directory listing, and only *parses* files that are
-    /// both unknown and unparsed, so the steady-state cost is one `contentsOfDirectory`.
+    /// This is what repairs volumes side-loaded before #777 shipped. It runs at boot, on the main
+    /// actor (`AppState.reconcileSideloadedVolumes()` in `bootDownloadManager()`), so it is kept to
+    /// what has changed: it walks a directory listing, reads the sidecars, and *parses* only files
+    /// that are both unknown and unparsed — once per volume side-loaded before #777. The
+    /// steady-state cost is one `contentsOfDirectory` and a read of each sidecar.
     ///
     /// - Parameters:
     ///   - directory: The volumes directory.
