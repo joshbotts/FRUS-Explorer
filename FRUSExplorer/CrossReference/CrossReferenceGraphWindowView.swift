@@ -315,7 +315,7 @@ struct CrossReferenceGraphWindowView: View {
 
     private func modeChoiceView(volumeId: String) -> some View {
         List {
-            Section {
+            WrappingFooterSection {
                 Button {
                     withAnimation { stage = volumeGraphStage(volumeId) }
                 } label: {
@@ -345,7 +345,7 @@ struct CrossReferenceGraphWindowView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section {
+            WrappingFooterSection {
                 Button {
                     Task { await loadDocuments(for: volumeId) }
                 } label: {

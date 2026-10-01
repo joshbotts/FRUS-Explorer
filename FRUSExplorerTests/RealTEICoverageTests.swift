@@ -337,7 +337,7 @@ private func groundTruthStats(rows: [SourceRow], lotFileNorm: String?, repositor
         .trimmingCharacters(in: .whitespaces)
     // The same first-13-distinct-forms window the production query binds
     // (`IndexingPipeline.collectionMatchFormCap`: canonical name + the artifact's
-    // 12-alias cap).
+    // 12-alias cap, which Indexed Central Files' 13th alias has exceeded since #1468).
     var seen: Set<String> = []
     var forms: [String] = []
     for form in names {

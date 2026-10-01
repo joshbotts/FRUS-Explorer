@@ -1078,3 +1078,80 @@ struct FRUSTagChip: View {
         )
     }
 }
+
+// MARK: - WrappingFooterSection (#1475)
+
+/// A `List` section whose footer wraps on the Mac (#1475): `Section`'s own trailing closures — content, an optional
+/// header, footer — so a call site changes one word.
+///
+/// **Why.** A macOS `List` draws a section footer on one line and cuts it with an ellipsis: the Topic sheet's Covering
+/// volumes note ended "…including volumes you have not do…" and Manage collections' "…doesn't re…". Measured in an
+/// offscreen harness hosting a `List` of the sheets' shape at 420 pt (macOS 27, the lane's `footer.swift`): whatever the
+/// footer's text carries — nothing, `.fixedSize(horizontal: false, vertical: true)` (#600's first attempt), or #1096's
+/// per-text `fixedSize` and full-width frame — it is laid out 14 pt tall, one line; with its line limit lifted too, the
+/// text grows but the footer's row does not, so a four-line footer shows its middle two lines. The same text as a ROW of
+/// a section of its own wraps — #600's idiom, the Working Corpora footer's — 39 pt for the Topic sheet's three sentences.
+///
+/// So on the Mac the footer is drawn as that row: footnote, secondary, the list's width, its own height, no separator,
+/// in a section after the content's — and only when the footer draws something. A footer that is an `if` with nothing
+/// to say (the Topic sheet's "Available once the index has finished preparing.", the History list's logging note)
+/// would otherwise leave an empty section: measured in review round 1's harness (`work/MACCOL/harness/r1/empty.swift` and
+/// `sub.swift`, macOS 27), 20 pt of blank list between the rows around it, 108 pt against 88 pt with no footer; read
+/// through `Group(subviews:)` it leaves none (88 pt), and a long footer still wraps (39 pt for the Topic sheet's three
+/// sentences), as does a footer of two texts, stacked. On iOS, where a `List` footer wraps, it stays in the footer slot.
+///
+/// Every footer the Mac draws in a `List` goes through this view — 43 when the #1475 review's round 1 converted the
+/// rest, among them the Clusters list's cluster note and the Changed by an update review sheet's four —
+/// and `WrappingFooterSourceTests.noMacListFooterIsLeftInTheFooterSlot` fails on one that does not. An `.id` on the
+/// view still scrolls to it (`proxy.scrollTo`, measured in the same harness), which the Chronology's two sections need.
+///
+/// Version history:
+///   1.0 — #1475: initial implementation, for the Topic sheet's two footers and Project Home's Manage collections and
+///         Focus Tags sheets
+///   1.1 — #1475 review, round 1: the footer's section is drawn only when the footer has subviews, and every other `List`
+///         footer the Mac draws uses the view
+struct WrappingFooterSection<Content: View, Header: View, Footer: View>: View {
+    /// The section's rows.
+    private let content: Content
+    /// The section's header; `EmptyView` for none.
+    private let header: Header
+    /// The section's footer.
+    private let footer: Footer
+
+    /// A section with a header and a footer.
+    init(@ViewBuilder content: () -> Content, @ViewBuilder header: () -> Header, @ViewBuilder footer: () -> Footer) {
+        self.content = content()
+        self.header = header()
+        self.footer = footer()
+    }
+
+    var body: some View {
+        #if os(macOS)
+        Section { content } header: { header }
+        // The footer's own section only when it draws something: an empty footer drawn as a section is a 20 pt band.
+        Group(subviews: footer) { subviews in
+            if !subviews.isEmpty {
+                Section {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(subviews) { subview in subview }
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .listRowSeparator(.hidden)
+                }
+            }
+        }
+        #else
+        Section { content } header: { header } footer: { footer }
+        #endif
+    }
+}
+
+extension WrappingFooterSection where Header == EmptyView {
+    /// A section with a footer and no header.
+    init(@ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer) {
+        self.init(content: content, header: { EmptyView() }, footer: footer)
+    }
+}

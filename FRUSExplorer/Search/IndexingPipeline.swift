@@ -260,7 +260,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///          clause `localCollectionStats` counts with (`collectionMatchClause` —
 ///          one clause, one truth; the Collection detail sheet total now always
 ///          equals the S5 count), and the form window widens 8 → 13
-///          (`collectionMatchFormCap`: canonical name + the artifact's 12-alias cap).
+///          (`collectionMatchFormCap`: canonical name + the artifact's 12-alias cap,
+///          which one record has exceeded since #1468 — see the constant).
 ///  4.11 — Source Explorer Phase 5 step 1 (Session 2026-07-04): no parse-output
 ///          change, so no index-version bump. Batched three-state neighbor counts:
 ///          `neighborCountKey(forLotFile:…)` is the single path-selection truth
@@ -10817,9 +10818,12 @@ public actor IndexingPipeline {
     }
 
     /// Maximum distinct name/alias forms folded into the record-level OR-union match
-    /// clause — covers a record's canonical name plus the artifact's full alias cap
-    /// (12), so the S5 counts and the record-level neighbors query never window the
-    /// alias list differently.
+    /// clause: a record's canonical name plus the artifact's 12-alias cap. The S5 counts
+    /// and the record-level neighbors query share this clause, so they never window the
+    /// alias list differently. Since #1468 one record exceeds the cap: Indexed Central
+    /// Files keeps the 2,150-character paragraph it was named by as a 13th alias, and
+    /// as the alphabetically last of its 14 forms that paragraph falls outside this
+    /// window. No source note's series begins with it, so neither count moves.
     private static let collectionMatchFormCap = 13
 
     /// Builds the record-level OR-union `WHERE` clause over `document_sources ds` for

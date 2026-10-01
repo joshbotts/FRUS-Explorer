@@ -534,7 +534,7 @@ struct CollectionDetailView: View {
 
     @ViewBuilder
     private var localSection: some View {
-        Section {
+        WrappingFooterSection {
             if let stats = localStats {
                 if stats.documentCount > 0 {
                     Text(String(format: String(
@@ -654,7 +654,7 @@ struct CollectionDetailView: View {
 
     @ViewBuilder
     private var relatedCollectionsSection: some View {
-        Section {
+        WrappingFooterSection {
             if let related {
                 if related.isEmpty {
                     Text(String(localized: "collection.detail.related.empty",
@@ -898,7 +898,7 @@ struct CollectionDetailView: View {
 
     @ViewBuilder
     private func dividedAtNARASection(_ claimants: [LotClaimant]) -> some View {
-        Section {
+        WrappingFooterSection {
             // Every value below is NARA's own assertion — a `variantControlNumber` on a series IS
             // the catalogue saying that series holds this lot — so the claimant titles, NAIDs and
             // HMS/MLR entry numbers are catalogue values, not readings of FRUS. The section's
@@ -993,7 +993,7 @@ struct CollectionDetailView: View {
     @ViewBuilder
     private var unprintedPointersSection: some View {
         let pointers = unprintedPointers
-        Section {
+        WrappingFooterSection {
             Text(String(format: String(
                 localized: "collection.detail.unprinted.counts %lld %lld",
                 defaultValue: "FRUS editors point at unprinted material here %lld times, across %lld volumes."),

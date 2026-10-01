@@ -50,7 +50,8 @@ public enum AuthorityBuilder {
     /// textual record ships when it recurs across at least this many volumes.
     static let docNoteOnlyVolumeThreshold = 2
 
-    /// Alias-list cap per record / sub-series.
+    /// Alias-list cap per record / sub-series. A shortened name's full text is kept past it (#1468,
+    /// `cappedAliases(_:excludingName:exempt:)`).
     static let aliasCap = 12
 
     // MARK: - Aggregation state
@@ -75,6 +76,11 @@ public enum AuthorityBuilder {
         /// Doc-note name votes (fallback canonical names).
         var docNameVotes: [String: Int] = [:]
         var aliases: Set<String> = []
+        /// Front-matter name votes as they were cast before the printed-title rule (#1468): an
+        /// item named by its title votes its whole text. Their winner is the name the record
+        /// carried before the rule, which the alias cap never drops; every whole text is an alias
+        /// like any other.
+        var formerNameVotes: [String: Int] = [:]
         var fmVolumes: Set<String> = []
         var docVolumes: Set<String> = []
         var children: [String: ChildAgg] = [:]
@@ -113,6 +119,9 @@ public enum AuthorityBuilder {
             case .frontMatter:
                 agg.fmVolumes.insert(ref.volumeId)
                 if let name = ref.displayName { agg.fmNameVotes[name, default: 0] += 1 }
+                if let former = ref.fullTextAlias ?? ref.displayName {
+                    agg.formerNameVotes[former, default: 0] += 1
+                }
             case .documentNote:
                 agg.docVolumes.insert(ref.volumeId)
                 if let name = ref.displayName ?? ref.leadingSegment
@@ -124,6 +133,7 @@ public enum AuthorityBuilder {
             if let alias = ref.seriesAlias { agg.aliases.insert(alias) }
             if let segment = ref.leadingSegment { agg.aliases.insert(segment) }
             if let name = ref.displayName { agg.aliases.insert(name) }
+            if let text = ref.fullTextAlias { agg.aliases.insert(text) }
 
             // Level 2. Textual children merge on the plural-folded segment form,
             // like level-1 keys ("Country File" ≡ "Country Files").
@@ -206,7 +216,8 @@ public enum AuthorityBuilder {
                 id: key, name: name, repository: repository, recordGroup: recordGroup,
                 lotFileNorm: agg.lotFileNorm,
                 naId: resolved?.naId, catalogURL: resolved?.catalogURL,
-                aliases: cappedAliases(agg.aliases, excludingName: name),
+                aliases: cappedAliases(agg.aliases, excludingName: name,
+                                       exempt: Set(topVote(agg.formerNameVotes).map { [$0] } ?? [])),
                 volumeIds: agg.fmVolumes.union(agg.docVolumes).sorted(),
                 children: children))
         }
@@ -225,7 +236,21 @@ public enum AuthorityBuilder {
     /// Sorted alias list with the canonical name (and its normal-form duplicates)
     /// removed, capped at `aliasCap` (kept deterministically: shortest-then-lexicographic,
     /// so compact citation forms survive the cap ahead of long descriptive texts).
-    static func cappedAliases(_ aliases: Set<String>, excludingName name: String) -> [String] {
+    ///
+    /// `exempt` is kept past the cap (#1468, decision D11): `build` passes the name the record
+    /// carried before the printed-title rule — the same front-matter vote, cast with each titled
+    /// item's whole text. The cap keeps the shortest forms, so that text — the longest — would be
+    /// the first one dropped, and on Indexed Central Files it was: the record already carried
+    /// twelve shorter forms. Its other paragraphs compete under the cap as they always did. An
+    /// exempt form that duplicates the name or a kept alias (in normal form) is not listed twice,
+    /// so a record whose name the rule did not change gains nothing.
+    /// - Parameters:
+    ///   - aliases: Every alias form observed.
+    ///   - name: The record's canonical name, which is never an alias.
+    ///   - exempt: Forms kept whatever the cap.
+    /// - Returns: The aliases, sorted.
+    static func cappedAliases(_ aliases: Set<String>, excludingName name: String,
+                              exempt: Set<String> = []) -> [String] {
         let nameNorm = ReferenceBuilder.normalized(name)
         var seen: Set<String> = [nameNorm]
         var distinct: [String] = []
@@ -235,6 +260,13 @@ public enum AuthorityBuilder {
             seen.insert(norm)
             distinct.append(alias)
         }
-        return Array(distinct.prefix(aliasCap)).sorted()
+        var kept = Array(distinct.prefix(aliasCap))
+        var keptNorms = Set(kept.map(ReferenceBuilder.normalized)).union([nameNorm])
+        for text in exempt.sorted() {
+            let norm = ReferenceBuilder.normalized(text)
+            guard !norm.isEmpty, keptNorms.insert(norm).inserted else { continue }
+            kept.append(text)
+        }
+        return kept.sorted()
     }
 }

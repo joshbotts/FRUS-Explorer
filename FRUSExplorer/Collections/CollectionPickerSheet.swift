@@ -61,9 +61,12 @@ struct CollectionPickerSheet: View {
     @State private var showNewCollection = false
     @State private var addedCollectionId: UUID? = nil
 
+    /// The collections the search lists: each whose row's name — not its raw saved name — holds the text (#1464).
     private var filtered: [Collection] {
         guard !searchText.isEmpty else { return collections }
-        return collections.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return collections.filter {
+            CollectionEditorNaming.listNameMatches(savedName: $0.name, searchText: searchText)
+        }
     }
 
     /// The sheet title — names the excerpt mode when active.

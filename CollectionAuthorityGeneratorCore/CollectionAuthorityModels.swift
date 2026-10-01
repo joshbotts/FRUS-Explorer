@@ -203,14 +203,18 @@ public struct CollectionReference: Sendable, Equatable {
     /// `Lot 64 D 199` in the citation) — the grain-mismatch bridge.
     public let seriesAlias: String?
     /// Preferred display-name candidate for the level-1 record (front-matter rows carry
-    /// the full descriptive item text here).
+    /// the full descriptive item text here, or its printed title when the text runs past
+    /// `ReferenceBuilder.printedTitleThreshold` — #1468).
     public let displayName: String?
+    /// The whole item text, when `displayName` is its printed title instead (#1468). It is
+    /// kept as an alias that the alias cap never drops (`AuthorityBuilder.cappedAliases`).
+    public let fullTextAlias: String?
 
     public init(volumeId: String, origin: Origin, repository: String? = nil,
                 recordGroup: String? = nil, lotFileNorm: String? = nil, rawLot: String? = nil,
                 leadingSegment: String? = nil, subSegment: String? = nil,
                 subDecimalClass: String? = nil, seriesAlias: String? = nil,
-                displayName: String? = nil) {
+                displayName: String? = nil, fullTextAlias: String? = nil) {
         self.volumeId = volumeId
         self.origin = origin
         self.repository = repository
@@ -222,5 +226,6 @@ public struct CollectionReference: Sendable, Equatable {
         self.subDecimalClass = subDecimalClass
         self.seriesAlias = seriesAlias
         self.displayName = displayName
+        self.fullTextAlias = fullTextAlias
     }
 }

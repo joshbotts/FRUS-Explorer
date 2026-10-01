@@ -123,7 +123,7 @@ struct ArchivalAllUnitsSheet: View {
     /// they are ranked by. Both platforms' chrome wrap this one list.
     private var unitList: some View {
         List {
-            Section {
+            WrappingFooterSection {
                 ForEach(Array(ranking.rows.enumerated()), id: \.element.id) { index, row in
                     rowView(index: index, row: row)
                 }
@@ -256,6 +256,8 @@ struct ArchivalAllUnitsSheet: View {
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount, indexedVolumeCount: indexedVolumeCount,
             noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue,
-            rowCapApplied: false, scopeLabel: scopeLabel)
+            rowCapApplied: false, scopeLabel: scopeLabel,
+            // PV-1: the table above writes each class's gloss, read from the State Department's schedule.
+            glossesWritten: ranking.rows.contains { $0.gloss != nil })
     }
 }

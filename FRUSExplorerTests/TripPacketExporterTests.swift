@@ -1281,6 +1281,25 @@ struct TripPacketExporterTests {
         #expect(document.numberOfPages >= 1)
     }
 
+    /// A long project name made a file name the file system refuses, so `render` returned `nil` and the sheet's Share
+    /// PDF control disappeared with no error (lane EXPORT review round 1, #1498's class). Each title is long enough that
+    /// the uncut name fails the write: by bytes and units alike, and — `ǖ` — by decomposed units alone.
+    @Test("A project name too long for a file name still renders a PDF, its name cut on a character")
+    func overlongTitleStillRenders() throws {
+        let text = exporter().export()
+        for title in [String(repeating: "Berlin Airlift ", count: 20), String(repeating: "\u{01D6}", count: 120)] {
+            let url = try #require(TripPacketPDFRenderer.render(packet: text, title: title),
+                                   "no PDF for a \(title.count)-character title")
+            defer { try? FileManager.default.removeItem(at: url) }
+            let name = url.lastPathComponent
+            #expect(ExportFileName.length(of: name) <= ExportFileName.maxLength, "a name of length \(name.count)")
+            #expect(name.hasPrefix("Archives Visit — ") && name.hasSuffix(".pdf"), "\(name.prefix(30))…")
+            let stem = String(name.dropFirst("Archives Visit — ".count).dropLast(".pdf".count))
+            #expect(!stem.isEmpty && title.hasPrefix(stem), "the title's own opening was not kept: \(stem.prefix(30))")
+            #expect(CGPDFDocument(url as CFURL) != nil, "the produced file is not a PDF")
+        }
+    }
+
     /// A packet a researcher emails to archivists should not say "1 claimants". Found by
     /// reading the output.
     @Test("Counted sentences agree in number")
@@ -1511,5 +1530,28 @@ struct TripPacketExporterTests {
         let text = Self.coverage(model)
         #expect(text.contains("3 documents cite no series this app could resolve"))
         #expect(!text.contains("Every series this packet cites is recorded as unrestricted"))
+    }
+}
+
+// MARK: - The sources block (PV-1)
+
+extension TripPacketExporterTests {
+
+    /// The packet was the one archival export wave PV never reached: its own snapshot caveat names NARA's catalog,
+    /// but it carried no "Where this came from" block (the 2026-09-28 audit). Its targets are read from the volumes'
+    /// source notes and footnotes by the parser, and every one is looked up in the app's snapshot of NARA's catalog —
+    /// so the block names both, with the parse's residual, as a collection's archival-sources block does. It sits in
+    /// the coverage report, which prints with every export, scoped or not.
+    @Test("The packet's coverage report states where the packet came from (PV-1)")
+    func packetStatesItsSources() {
+        let block = ProvenanceStatement.block(for: [.frusText, .naraCatalog], restsOnSourceNoteParse: true)
+        #expect(block.count == 4, "the heading, two sources and the residual: \(block)")
+        for packet in [exporter(), TripPacketExporter(model: Self.libraryPlan(), projectName: "Libraries")] {
+            let report = packet.coverageReport
+            for line in block {
+                #expect(report.contains(line), "the coverage report omits: \(line)")
+            }
+            #expect(packet.export().contains(block[1]), "the exported packet omits the sources block")
+        }
     }
 }

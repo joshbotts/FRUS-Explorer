@@ -48,7 +48,8 @@ import Foundation
 /// staff, and the appendix quotes NARA's own English guidance verbatim (an attributed quotation
 /// must not be translated). A localized packet would send NARA a letter in the researcher's UI
 /// language — so the EXPORTED document stays English by design, like `HTMLCollectionExporter`'s
-/// content, while everything the app itself shows around it is localized as usual.
+/// content, while everything the app itself shows around it is localized as usual. The one exception
+/// is the sources block (`sourceLines`), which prints the shared `ProvenanceStatement` sentences.
 ///
 /// ## Every section can be empty, and none of them lies about it
 /// The packet is generated before a trip is booked, from a reading list that may cite records the
@@ -100,6 +101,8 @@ import Foundation
 ///          every claimant of every divided lot to be measured and unrestricted, and (review round
 ///          1) a plan whose resolved series are flagged also says how many divided lots that count
 ///          leaves out
+///   2.6 — PV-1 (the 2026-09-28 audit): the coverage report ends on the sources block every other
+///          export carries (`sourceLines`) — the one place the packet's English-literal policy gives way
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -746,7 +749,32 @@ struct TripPacketExporter {
             }
         }
         while out.last == "" { out.removeLast() }
+
+        // PV-1: the sources block every other export carries (the 2026-09-28 audit). Here, because the coverage
+        // report prints with every export, scoped or not.
+        out.append("")
+        let sources = Self.sourceLines
+        if let heading = sources.first {
+            out.append("### " + heading)
+            out.append(contentsOf: sources.dropFirst())
+        }
         return out.joined(separator: "\n")
+    }
+
+    /// What the packet was drawn from (PV-1), its heading first: the standardized sentences every export carries.
+    ///
+    /// The same for every packet, and that is a fact about the packet rather than a shortcut. Its targets are read
+    /// from the volumes' source notes and footnotes by the app's parser — so the parse's residual is stated, as a
+    /// collection's archival-sources block states it (`CollectionColophon.sourceLines`) — and every target is looked up
+    /// in the app's snapshot of NARA's catalog, found or not, which the header's own caveat already says. Curated
+    /// resolutions are not claimed: a target resolves through `ArchivalResolver.documentResolution`, whose two
+    /// artifacts hold no curated row (`CuratedLotResolutionsTests`), as a collection's colophon argues.
+    ///
+    /// **The one exception to the packet's English-literal policy** (see the type doc): these sentences are the
+    /// localized `ProvenanceStatement` ones, so the packet says exactly what every other export says. The app ships no
+    /// localization, so they read as written; a localized build would have to choose between the two rules here.
+    static var sourceLines: [String] {
+        ProvenanceStatement.block(for: [.frusText, .naraCatalog], restsOnSourceNoteParse: true)
     }
 
     // MARK: - Truncation grammar
