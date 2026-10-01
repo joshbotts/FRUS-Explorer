@@ -262,6 +262,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          unattached collection beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_PROJECT`).
 ///   4.20 — #1522: the boot builds the citation engine over the volumes directory, which it reads at
 ///          each lookup, rather than over the ids the directory held at boot.
+///   4.21 — #1483: the Mac Find menu's Search… has a key of its own, `menu.find.search.mac`.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -3719,6 +3720,8 @@ struct DocumentMenuContent: View {
 /// free); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
 /// owners of their key equivalents (removed from the window scenes, mirroring #2).
 /// **Search Tips…** (#1299, no shortcut) fronts the Search window and opens its Tips panel.
+/// **Search…** has a key of its own, `menu.find.search.mac` (#1483): it opens a window, so it takes an
+/// ellipsis, where the iPad Find menu's `menu.find.search` switches to a tab and reads "Search".
 struct FindMenuContent: View {
 
     /// The key document window's commands (nil ⇒ the find-in-document items are disabled).
@@ -3751,7 +3754,7 @@ struct FindMenuContent: View {
 
         Divider()
 
-        Button(String(localized: "menu.find.search", defaultValue: "Search…")) {
+        Button(String(localized: "menu.find.search.mac", defaultValue: "Search…")) {
             // The user invoked Search to type a query, so put the caret where they expect it (#749).
             appState.searchQueryFocusToken &+= 1
             openWindow.fronting(id: "frus.search")

@@ -73,6 +73,8 @@ import WebKit
 ///          panel) to this view's existing actions in whichever window is key
 ///   2.3 — Session 7 / #240B: `onBrokenRefTap` presents `BrokenRefExplanationSheet`
 ///          for cross-references the broken-refs index degrades
+///   2.4 — 2026-10-01: #1483 — the not-downloaded cross-reference alert's message and the OK closing the
+///          person and glossary notices have Mac keys of their own (`….mac`), beside iOS's texts
 @MainActor
 struct MacDocumentView: View {
 
@@ -319,7 +321,7 @@ struct MacDocumentView: View {
                    defaultValue: "Person Information Unavailable"),
             isPresented: $showPersonNotFound
         ) {
-            Button(String(localized: "personNotFound.dismiss", defaultValue: "OK")) {}
+            Button(String(localized: "personNotFound.dismiss.mac", defaultValue: "OK")) {}
         } message: {
             Text(String(localized: "personNotFound.detail.v2",
                         defaultValue: "This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage."))
@@ -329,7 +331,7 @@ struct MacDocumentView: View {
                    defaultValue: "Term Definition Unavailable"),
             isPresented: $showGlossNotFound
         ) {
-            Button(String(localized: "glossNotFound.dismiss", defaultValue: "OK")) {}
+            Button(String(localized: "glossNotFound.dismiss.mac", defaultValue: "OK")) {}
         } message: {
             Text(String(localized: "glossNotFound.detail.v2",
                         defaultValue: "This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage."))
@@ -356,7 +358,8 @@ struct MacDocumentView: View {
             }
         } message: { volumeId in
             let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
-            Text(String(format: String(localized: "document.crossref.download.message %@",
+            // A key of its own (#1483): this alert has no View Connections button, so it does not offer the graph.
+            Text(String(format: String(localized: "document.crossref.download.message.mac %@",
                                         defaultValue: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document."),
                         title))
         }

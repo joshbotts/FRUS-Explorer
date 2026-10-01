@@ -2,9 +2,9 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 177 blocks · no ⚑ wording issues · five two-text keys still open for your decision (§18.15, no issue yet) · #1476 decided, awaiting lane STOR
+**In this file:** 182 blocks · no ⚑ wording issues · #1476 decided, awaiting lane STOR
 
-✓ #1476 decided at Volumes & Storage (Library) · open at: the five two-text keys (18.15 One key, one text (#1483), its last part)
+✓ #1476 decided at Volumes & Storage (Library) · ✓ the five two-text keys settled 2026-10-01 (18.15 One key, one text (#1483), its last part)
 
 ---
 
@@ -1033,31 +1033,30 @@ This volume carries notes, collections, or summaries and is never suggested for 
 <!-- END SOURCE: settings.hub.protected.help -->
 
 #### Empty state — Every published volume will be queued. Downloads run in the…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1512–1513 | key: settings.hub.browse.corpus.body | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1514–1515 | key: settings.hub.browse.corpus.body | shared: macOS only -->
 
 Every published volume will be queued. Downloads run in the background and resume across launches; you can start reading as soon as the first volume lands.
 
 <!-- END SOURCE: settings.hub.browse.corpus.body -->
 
-#### \(…) · \(…) of XML, plus roughly 2.8× that in search index. (macOS)
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1689–1690 | key: settings.hub.browse.corpus.detail | shared: macOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/Settings/VolumesStorageHubView.swift. Editing this block changes this file's text only. -->
+#### \(…) · \(…) of XML, plus roughly 2.8× that in search index.…
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1695–1696 | key: settings.hub.browse.corpus.detail | shared: iOS+macOS (one text on both hubs since #1483; VolumesStorageHubView.swift declares it too, in DownloadVolumesBrowseView.scopeFooter) | same text also in: FRUSExplorer/Settings/VolumesStorageHubView.swift -->
 
-\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index.
+\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.
 
 <!-- END SOURCE: settings.hub.browse.corpus.detail -->
 
-> The same key in `VolumesStorageHubView.swift` has its own block in §18.13, with its own text — edit each one you want to change.
+*The Entire Corpus card’s detail in the Mac’s download sheet, and the footer under the iPhone and iPad picker. The Mac took the second sentence on 2026-10-01: its downloads use the same background transfer and keep the volumes still waiting in their queue. That was checked in the code, not yet tried on a Mac, and a volume that is mid-download when the app quits comes back only if macOS kept that transfer going. On the Mac the panel below the card, the block above this one, says it too.*
 
 #### Select volumes to remove. Only volumes with no attached…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1823–1824 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1829–1830 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
 
 Select volumes to remove. Only volumes with no attached notes, collections, or summaries are shown.
 
 <!-- END SOURCE: settings.hub.freeUp.subtitle -->
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1842–1843 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1848–1849 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from “Show all” in Volumes & Storage.
 
@@ -1176,14 +1175,8 @@ Re-read the published list to refresh sizes and download links.
 <!-- END SOURCE: settings.hub.catalog.detail.v2 -->
 
 #### \(…) · \(…) of XML, plus roughly 2.8× that in search index.… (iOS)
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | DownloadVolumesBrowseView.scopeFooter | lines: 1659–1660 | key: settings.hub.browse.corpus.detail | shared: iOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/Settings/MacVolumesStorageHub.swift. Editing this block changes this file's text only. -->
 
-\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.
-
-<!-- END SOURCE: settings.hub.browse.corpus.detail -->
-
-> The same key in `MacVolumesStorageHub.swift` has its own block in §18.13, with its own text — edit each one you want to change.
+*One text on both hubs since #1483 (2026-10-01): its one block, `settings.hub.browse.corpus.detail`, is with the Mac hub’s earlier in §18.13, and an edit there is applied to this footer too.*
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
 <!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1781–1782 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
@@ -1342,7 +1335,7 @@ Indexed %@
 
 ### 18.15 One key, one text (#1483)
 
-*Added 2026-09-27 for this review and closed on 2026-09-30 with your choice, “all A”. Each key below was declared with two different texts. Each now carries one text, or its second text has a key of its own. Each block shows the text with every place it ships, by file and line after the close-out. The Source Explorer key of the same kind, `source.explorer.unrecognized.explanation`, is in §11.1. A test now fails when any key in the app is declared with two texts. It found five more, each an iPhone/iPad text beside a Mac one. They are listed at the end of this section for you to decide, and the test lets exactly those five through until you do.*
+*Added 2026-09-27 for this review and closed on 2026-09-30 with your choice, “all A”. Each key below was declared with two different texts. Each now carries one text, or its second text has a key of its own. Each block shows the text with every place it ships, by file and line after the close-out. The Source Explorer key of the same kind, `source.explorer.unrecognized.explanation`, is in §11.1. A test now fails when any key in the app is declared with two texts. It found five more, each an iPhone/iPad text beside a Mac one, and you settled those on 2026-10-01 with “all recommended” (the last part of this section). The test now lets no key through.*
 
 #### `analytics.export.column.occurrences`
 
@@ -1446,13 +1439,64 @@ Reset view
 
 *“Reset View” never shipped under this key (three other graphs ship it under keys of their own). It was the example in a code comment in `ControlHelp.swift`, which now says “Reset view” too.*
 
-#### Five more keys with two texts, for you to decide
+#### The five keys found after the ten
 
-*Found by the new test on 2026-09-30, after the ten above were settled. In each, iPhone and iPad show one text and the Mac another. They are not changed here. For each, say whether the two should match, or keep both (the Mac text then gets a key of its own).*
+*The new test found these five on 2026-09-30, after the ten above were settled. In each, iPhone and iPad showed one text and the Mac another. You settled them on 2026-10-01 with “all recommended”: one now has one text on both platforms, and in the other four the Mac’s text has a key of its own, ending `.mac`, beside the iPhone and iPad key.*
 
-- `document.crossref.download.message %@` — the alert for a link into a volume that is not downloaded. iPhone/iPad: “The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.” Mac: the same, ending “Download it to open the document.” Both blocks are in §18.10 of `08-Reading-Research-Collections.md`.
-- `settings.hub.browse.corpus.detail` — the size line for downloading the entire corpus, in Volumes & Storage. iPhone/iPad: “%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.” Mac: the first sentence only. Both blocks are in §18.13 of this file.
-- `glossNotFound.dismiss` and `personNotFound.dismiss` — the button that closes the notice shown when a glossary term’s or a person’s details are unavailable: “Done” in the iPhone/iPad sheet, “OK” in the Mac alert.
-- `menu.find.search` — the Find menu item that opens Search: “Search” in the iPad keyboard menu, “Search…” on the Mac, where it opens the Search window.
+#### `document.crossref.download.message %@` and `document.crossref.download.message.mac %@`
+
+*Two keys, each keeping its text. The alert for a link into a volume that is not downloaded offers View Connections on iPhone and iPad, and its message says so. The Mac’s alert offers Download Volume and Cancel only, so its message, “… Download it to open the document.”, now has the `.mac` key. Both blocks are in §18.10 of `08-Reading-Research-Collections.md`.*
+
+#### `settings.hub.browse.corpus.detail`
+
+*One text on both hubs, the iPhone and iPad one: the Mac’s size line for the entire corpus gained “Downloads run in the background and resume across launches.” The code bears that out on the Mac, which downloads through the same background transfer and keeps the volumes still waiting in its queue; it was not tried on a Mac, and a volume that is mid-download when the app quits comes back only if macOS kept that transfer going. Its one block is in §18.13 of this file.*
+
+#### `personNotFound.dismiss` and `personNotFound.dismiss.mac`
+
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1597–1598 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1597 -->
+
+Done
+
+<!-- END SOURCE: personNotFound.dismiss -->
+
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 324–324 | key: personNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:324 -->
+
+OK
+
+<!-- END SOURCE: personNotFound.dismiss.mac -->
+
+*What closes the notice that a person’s details are unavailable: the iPhone and iPad sheet’s Done, the Mac alert’s OK.*
+
+#### `glossNotFound.dismiss` and `glossNotFound.dismiss.mac`
+
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1630–1631 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1630 -->
+
+Done
+
+<!-- END SOURCE: glossNotFound.dismiss -->
+
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 334–334 | key: glossNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:334 -->
+
+OK
+
+<!-- END SOURCE: glossNotFound.dismiss.mac -->
+
+*What closes the notice that a glossary term’s definition is unavailable: the iPhone and iPad sheet’s Done, the Mac alert’s OK.*
+
+#### `menu.find.search` and `menu.find.search.mac`
+
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4254–4254 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4254 -->
+
+Search
+
+<!-- END SOURCE: menu.find.search -->
+
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3757–3757 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3757 -->
+
+Search…
+
+<!-- END SOURCE: menu.find.search.mac -->
+
+*The Find menu item that opens Search. In the keyboard menu on iPhone and iPad it switches to the Search tab and reads “Search”; on the Mac it opens the Search window, so it ends in an ellipsis.*
 
 ---

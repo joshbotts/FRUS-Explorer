@@ -95,6 +95,10 @@ import Foundation
 ///         still split, for the owner
 ///   1.8 — 2026-09-30: lane WB close-out review — the graph panel's close button is read for a
 ///         bare `.accessibilityLabel`, which declares no key and so no key scan sees (#1483)
+///   1.9 — 2026-10-01: #1483's five further keys — `oneTextBaseline` and its ceiling are gone, so
+///         the one-text gate admits no key; `settledKeys` pins the five and their four `.mac` keys,
+///         naming the declaring files of the split ones; and `findMenuSearchItemsKeepTheirKeys`
+///         places each Find menu's key inside its own menu
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -2456,46 +2460,16 @@ extension CodingStandardsAuditTests {
         return texts
     }
 
-    /// The keys still declared with two texts, each with the texts it carries: not one of #1483's
-    /// ten, all found by this gate's first run (lane WB's close-out, 2026-09-30) and reported for the
-    /// owner to word. Each is an iPhone/iPad text beside a Mac one, so the choice is the owner's —
-    /// one text for both, or a Mac key of its own — and they are listed rather than reworded here.
-    /// The list only shrinks: an entry whose key no longer carries exactly these texts fails the
-    /// gate, and so does a list whose size is not ``oneTextBaselineCeiling``.
-    static let oneTextBaseline: [String: Set<String>] = [
-        // iOS DocumentView.swift / Mac MacDocumentView.swift: the alert for a cross-reference into a
-        // volume not yet downloaded. The iOS alert also offers to show the link in the graph.
-        "document.crossref.download.message %@": [
-            "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.",
-            "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.",
-        ],
-        // iOS DocumentView.swift / Mac MacDocumentView.swift: what closes the notice that a glossary
-        // term's or a person's details are unavailable — the iOS sheet's Done, the Mac alert's OK.
-        "glossNotFound.dismiss": ["Done", "OK"],
-        "personNotFound.dismiss": ["Done", "OK"],
-        // FRUSExplorerApp.swift: the Mac's Find ▸ Search… opens the Search window; the iPad
-        // keyboard menu's Search switches to the Search tab.
-        "menu.find.search": ["Search", "Search…"],
-        // iOS VolumesStorageHubView.swift / Mac MacVolumesStorageHub.swift: the size line for
-        // downloading the entire corpus. Only the iOS text says downloads run in the background.
-        "settings.hub.browse.corpus.detail": [
-            "%@ · %@ of XML, plus roughly 2.8× that in search index.",
-            "%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.",
-        ],
-    ]
-
-    /// The size ``oneTextBaseline`` must have: lowered by one each time an entry goes.
-    static let oneTextBaselineCeiling = 5
-
     /// Every key declared with a `defaultValue:` carries one text wherever it is declared (#1483).
     ///
     /// The app ships no localization, so today each call site shows its own `defaultValue:`. A
     /// strings catalog holds one value per key, so once one exists a key declared with two texts
     /// shows one of them at both sites and the other disappears without an error. #1483 found ten
-    /// such keys; the owner gave each one text or split it into two keys, and this is the gate that
-    /// keeps an eleventh from arriving. It reads the whole tree through the copy scans' own lexer,
-    /// and compares texts as a catalog would read them (``LexedSource/Literal/catalogText``), so two
-    /// spellings of one text are not a collision and two texts are, whichever platform compiles each.
+    /// such keys and this gate's first run five more, each an iPhone/iPad text beside a Mac one; the
+    /// owner gave each one text or split it into two keys (2026-09-30 and 2026-10-01), so the gate
+    /// admits no exception. It reads the whole tree through the copy scans' own lexer, and compares
+    /// texts as a catalog would read them (``LexedSource/Literal/catalogText``), so two spellings of
+    /// one text are not a collision and two texts are, whichever platform compiles each.
     ///
     /// What it does not see: a key also used with no `defaultValue:` at all (`String(localized:
     /// "k")`, whose catalog value is the key itself), a key built at run time, and two interpolations
@@ -2505,33 +2479,23 @@ extension CodingStandardsAuditTests {
         let texts = Self.declaredTexts(in: try Self.lexedAppSources())
         #expect(texts.count > 3_000, "Read only \(texts.count) keys: the scan is broken, not the tree clean.")
         let split = texts.filter { $0.value.count > 1 }
-        let unlisted = split.keys.filter { Self.oneTextBaseline[$0] == nil }.sorted()
         var report: [String] = []
-        for key in unlisted {
+        for key in split.keys.sorted() {
             report.append(key)
             for (text, sites) in split[key, default: [:]].sorted(by: { $0.key < $1.key }) {
                 report.append("    \"\(text)\" at \(sites.joined(separator: ", "))")
             }
         }
-        #expect(unlisted.isEmpty, """
+        #expect(split.isEmpty, """
             Each of these keys is declared with more than one text, and a strings catalog keeps one \
-            (#1483). Give it one text, or give each text a key of its own — never list it in \
-            oneTextBaseline:
+            (#1483). Give it one text, or give each text a key of its own — #1483's Mac texts took \
+            a `.mac` key beside the iPhone/iPad one:
             \(report.joined(separator: "\n"))
             """)
-        for (key, listed) in Self.oneTextBaseline.sorted(by: { $0.key < $1.key }) {
-            let found = Set(split[key].map { Array($0.keys) } ?? [])
-            #expect(found == listed, """
-                oneTextBaseline lists \(key) with \(listed.sorted()), but the tree declares it with \
-                \(found.sorted()). If it now carries one text, delete its entry and lower \
-                oneTextBaselineCeiling by one; never add a text to an entry.
-                """)
-        }
-        #expect(Self.oneTextBaseline.count == Self.oneTextBaselineCeiling,
-                "oneTextBaseline has \(Self.oneTextBaseline.count) entries against a ceiling of \(Self.oneTextBaselineCeiling).")
     }
 
-    /// One key #1483 settled: the text the owner chose, and how many declarations carry it.
+    /// One key #1483 settled: the text the owner chose, how many declarations carry it, and — for a
+    /// key split by platform — the files that declare it.
     struct SettledKey: Sendable {
         /// The key.
         let key: String
@@ -2539,11 +2503,17 @@ extension CodingStandardsAuditTests {
         let text: String
         /// How many `defaultValue:`s declare it across the tree.
         let declarations: Int
+        /// The files, relative to `FRUSExplorer/` and sorted with one entry per declaration, that
+        /// declare it; `nil` where the decision did not turn on the platform. A split key names its
+        /// file so the iPhone/iPad text cannot trade places with the Mac's.
+        var files: [String]? = nil
     }
 
     /// #1483's ten keys and the two it added, each with the owner's text (lane WB's close-out,
-    /// 2026-09-30, "all A"). The counts are part of the decision: `graph.panel.close.a11y` is three
-    /// buttons with one name each, where the graph's panel had stacked a second.
+    /// 2026-09-30, "all A"), then the five this gate's first run found and the four `.mac` keys
+    /// they added (2026-10-01, "all recommended"). The counts are part of the decision:
+    /// `graph.panel.close.a11y` is three buttons with one name each, where the graph's panel had
+    /// stacked a second, and `settings.hub.browse.corpus.detail` is one text on both hubs.
     static let settledKeys: [SettledKey] = [
         SettledKey(key: "source.explorer.unrecognized.explanation",
                    text: "The source note format was not recognized. Its raw text is shown under Source Note. Automated NARA Catalog resolution is unavailable for this entry.",
@@ -2559,6 +2529,30 @@ extension CodingStandardsAuditTests {
         SettledKey(key: "series.provenance.trend.y", text: "Share of source notes", declarations: 4),
         SettledKey(key: "wordcloud.scope.corpus", text: "Entire Corpus", declarations: 3),
         SettledKey(key: "graph.resetView.a11y", text: "Reset view", declarations: 1),
+        // The five found after the ten. The cross-reference alert keeps its text on iOS, whose
+        // alert has a View Connections button; the Mac's has none.
+        SettledKey(key: "document.crossref.download.message %@",
+                   text: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.",
+                   declarations: 1, files: ["DocumentView/DocumentView.swift"]),
+        SettledKey(key: "document.crossref.download.message.mac %@",
+                   text: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.",
+                   declarations: 1, files: ["App/MacDocumentView.swift"]),
+        SettledKey(key: "settings.hub.browse.corpus.detail",
+                   text: "%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.",
+                   declarations: 2,
+                   files: ["Settings/MacVolumesStorageHub.swift", "Settings/VolumesStorageHubView.swift"]),
+        SettledKey(key: "glossNotFound.dismiss", text: "Done", declarations: 1,
+                   files: ["DocumentView/DocumentView.swift"]),
+        SettledKey(key: "glossNotFound.dismiss.mac", text: "OK", declarations: 1,
+                   files: ["App/MacDocumentView.swift"]),
+        SettledKey(key: "personNotFound.dismiss", text: "Done", declarations: 1,
+                   files: ["DocumentView/DocumentView.swift"]),
+        SettledKey(key: "personNotFound.dismiss.mac", text: "OK", declarations: 1,
+                   files: ["App/MacDocumentView.swift"]),
+        // Both menus are in FRUSExplorerApp.swift: the iPad's switches to the Search tab, the
+        // Mac's opens the Search window. Their texts tell them apart.
+        SettledKey(key: "menu.find.search", text: "Search", declarations: 1),
+        SettledKey(key: "menu.find.search.mac", text: "Search…", declarations: 1),
     ]
 
     /// Each key #1483 settled ships the owner's text at every declaration, and no more of them.
@@ -2572,6 +2566,13 @@ extension CodingStandardsAuditTests {
                     "\(settled.key) is declared with \(found.keys.sorted()), not the owner's \"\(settled.text)\"")
             #expect(found.values.map(\.count).reduce(0, +) == settled.declarations,
                     "\(settled.key): \(found.values.flatMap { $0 }.sorted())")
+            if let files = settled.files {
+                // A site reads `path:line`; the path is everything before the last colon.
+                let declaring = found.values.flatMap { $0 }
+                    .map { String($0[..<($0.lastIndex(of: ":") ?? $0.endIndex)]) }
+                    .sorted()
+                #expect(declaring == files, "\(settled.key) is declared in \(declaring), not \(files)")
+            }
         }
     }
 
@@ -2593,6 +2594,39 @@ extension CodingStandardsAuditTests {
                 "the graph panel's close button sets an accessibility label beside its .controlHelp name")
         #expect(button.ranges(of: ".controlHelp(").count == 1,
                 "the graph panel's close button does not take its one name from .controlHelp")
+    }
+
+    /// Each Find menu's Search item declares its own key inside its own menu (#1483).
+    ///
+    /// Both menus live in `FRUSExplorerApp.swift`, so `settledKeysShipTheOwnersTexts` cannot name a
+    /// file to tell them apart, and it would pass with the two keys traded between the menus — the
+    /// Mac's "Search…" under the iPad's key and the other way round. This places each key's
+    /// declaration inside the struct of the menu it belongs to.
+    @Test("CodingStandardsAudit: each Find menu's Search item carries its own key (#1483)")
+    func findMenuSearchItemsKeepTheirKeys() throws {
+        let path = "App/FRUSExplorerApp.swift"
+        let text = try String(contentsOf: Self.copyScanSourceRoot.appendingPathComponent(path), encoding: .utf8)
+        let lines = text.components(separatedBy: "\n")
+        /// The 1-based lines of the top-level struct `header` opens, through its closing brace.
+        func body(_ header: String) throws -> ClosedRange<Int> {
+            let opens = lines.indices.filter { lines[$0] == header }
+            try #require(opens.count == 1, "\(header) is not declared exactly once at the top level")
+            let close = try #require(lines[opens[0]...].firstIndex(of: "}"), "\(header) never closes")
+            return (opens[0] + 1)...(close + 1)
+        }
+        let texts = Self.declaredTexts(in: [(path, LexedSource(text))])
+        /// The lines declaring `key`, read from each site's `path:line`.
+        func sites(_ key: String) -> [Int] {
+            (texts[key] ?? [:]).values.flatMap { $0 }.compactMap { $0.split(separator: ":").last.flatMap { Int($0) } }
+        }
+        let mac = try body("struct FindMenuContent: View {")
+        let iPad = try body("struct IOSFindMenuContent: View {")
+        let macSites = sites("menu.find.search.mac")
+        let iPadSites = sites("menu.find.search")
+        #expect(macSites.count == 1 && macSites.allSatisfy { mac.contains($0) },
+                "menu.find.search.mac is declared at \(macSites), not once inside the Mac Find menu (\(mac))")
+        #expect(iPadSites.count == 1 && iPadSites.allSatisfy { iPad.contains($0) },
+                "menu.find.search is declared at \(iPadSites), not once inside the iPad Find menu (\(iPad))")
     }
 
     // MARK: Fixtures — one text per key

@@ -1260,14 +1260,14 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 ### The document reader's person and term popovers
 
 #### This volume was indexed before the app recorded definitio…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 334–335 | key: glossNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 336–337 | key: glossNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
 
 <!-- END SOURCE: glossNotFound.detail.v2 -->
 
 #### This volume was indexed before the app recorded details a…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 324–325 | key: personNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 326–327 | key: personNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
 
@@ -1658,21 +1658,20 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3045–3046 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3046–3047 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
 <!-- END SOURCE: deepLink.inAppOnly %@ -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (macOS)
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 359–360 | key: document.crossref.download.message %@ | shared: macOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/DocumentView/DocumentView.swift. Editing this block changes this file's text only. -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 362–363 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.
 
-<!-- END SOURCE: document.crossref.download.message %@ -->
+<!-- END SOURCE: document.crossref.download.message.mac %@ -->
 
-> The same key in `DocumentView.swift` has its own block in §18.10, with its own text — edit each one you want to change.
+*The Mac’s alert offers Download Volume and Cancel only, so its message does not mention the connections view the iPhone and iPad alert offers.*
 
 #### Apple Intelligence is not available on this device, so new…
 <!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | SummaryBlockView.body | lines: 283–284 | key: summary.unavailable.explanation | shared: macOS only -->
@@ -2059,14 +2058,13 @@ This document is in \(entry.volumeId), which is not on this device. Download the
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 833–834 | key: document.crossref.download.message %@ | shared: iOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/App/MacDocumentView.swift. Editing this block changes this file's text only. -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 833–834 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
 <!-- END SOURCE: document.crossref.download.message %@ -->
 
-> The same key in `MacDocumentView.swift` has its own block in §18.10, with its own text — edit each one you want to change.
+*The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1434–1435 | key: document.toolbar.panelMode.hint | shared: iOS only -->
