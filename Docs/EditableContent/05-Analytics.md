@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · 5 ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
+**In this file:** 213 blocks · 2 ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
 
 ⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
@@ -445,15 +445,9 @@ How dates are determined
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 297–298 | key: analytics.info.dating.body.v3 | shared: iOS+macOS (single edit point) -->
 
-Each document sits at the date it was written, as the editors date it, not at the volume’s publication date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Every stored date is a full day, so nothing is left out of By Month or By Day for want of a month or a day. What those two charts do leave out is a document with no stored date at all, chiefly front matter: By Year and By Decade keep it by falling back to the start year of its volume, in both the counts and the % denominator, and the sub-year charts have no such fallback.
+Each document sits at its editor-annotated date. Where the editors date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Volume content with no stored date, chiefly front matter, sits at the start year of its volume on By Year and By Decade and is left out of By Month and By Day.
 
 <!-- END SOURCE: analytics.info.dating.body.v3 -->
-
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: it drops “no stored date” and “denominator”, which `SearchTipsTests.datingRowDoesNotClaimAMonthDayExclusion` and `AnalyticsExportTests.exportCaveatAgreesWithTheOnScreenRow` require (the exclusion that is real — a document with no stored date, which By Year and By Decade keep and the sub-year charts do not — and its share of the % denominator), and “as the editors date it”, the phrase those tests read as the dating rule itself. To ship it as written, the owner decides and the lane changes the test with it.
-
-```text
-Each document sits at its editor-annotated date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years.
-```
 
 Note: replaces `analytics.info.dating.body.v2` (#1306), whose last two sentences — a document with no month left out of By Month, one with no day left out of By Day — #1299 had carried over unmeasured. Measured over the 553 manifest volumes at corpus `550a8c5c5`: all 314,571 `<div type="document">` carry a full `frus:doc-dateTime-min`, so every stored date is exactly ten characters and the two charts' length guards can never fire. Nothing is left out for want of a month or a day. What IS left out of those two charts, and had never been mentioned, is a document with no stored date at all — about 2,152 promoted front-matter sections — which By Year and By Decade keep through the volume-start-year fallback. The row also now gives the range rule's scale: 11,030 documents, 3.5%, sit at a range's first day, and 7,126 of those ranges run for more than a year. #1306 deliberately changed no chart: the skew its own issue predicted does not exist — 1 January holds 793 documents and ranks 324th of the 366 month-days, behind 31 December's 1,226 — because #1326 had already taken each day from the editors' own date. `.v2` itself replaced `analytics.info.dating.body` (#1299), whose "its TEI <date> attribute" was stale.
 
@@ -648,7 +642,7 @@ Citations between the \(Self.matrixVolumeLimit) volumes with the most references
 
 #### Corpus attribution — closes every export
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusAttribution | lines: 167–168 | key: analytics.export.attribution | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusAttribution | lines: 171–172 | key: analytics.export.attribution | shared: iOS+macOS (single edit point) -->
 
 Foreign Relations of the United States corpus published by the Office of the Historian, U.S. Department of State (history.state.gov). The corpus is in the public domain.
 
@@ -656,23 +650,17 @@ Foreign Relations of the United States corpus published by the Office of the His
 
 #### Dating rule
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 200–201 | key: analytics.export.caveat.dating.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 204–205 | key: analytics.export.caveat.dating.v2 | shared: iOS+macOS (single edit point) -->
 
-Dating: each document sits at the date it was written, as the editors date it, not at the volume’s publication date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
+Dating: each document sits at the editor-annotated date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
 
 <!-- END SOURCE: analytics.export.caveat.dating.v2 -->
-
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: it replaces “as the editors date it”, which `AnalyticsExportTests.datingCaveatDisclosesFallback`, `exportCaveatAgreesWithTheOnScreenRow`, `datingKeepsDateClaims` and `SeriesAnalyticsExportTests.datingRuleOverrides` read as the dating rule; the export and the popover row above must state it in the same words. To ship it as written, the owner decides and the lane changes the test with it.
-
-```text
-Dating: each document sits at the editor-annotated date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
-```
 
 Note: replaces `analytics.export.caveat.dating` (#1306) — the first time this string has moved, and it had drifted twice. It still named the `TEI <date>` the in-app row dropped at #1299, and it carried the same no-month/no-day exclusion that #1306 measured and refuted. It is the worse of the two surfaces to leave wrong: it is printed into every exported CSV preamble and figure caption, so it travels to a reader who cannot check it against the chart. The two surfaces state the same rule again.
 
 #### Corpus-coverage caveat
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusCaveat | lines: 209–210 | key: analytics.export.caveat.corpus %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.corpusCaveat | lines: 213–214 | key: analytics.export.caveat.corpus %@ | shared: iOS+macOS (single edit point) -->
 
 Corpus: counts cover only the %@ indexed on this device, not the entire FRUS series. *(Interpolated with the indexed volumes as a count and its noun — “12 volumes”, “1 volume” (#1374 review, round 1, where it read “1 volume(s)”).)*
 
@@ -680,7 +668,7 @@ Corpus: counts cover only the %@ indexed on this device, not the entire FRUS ser
 
 #### Value-mode caveat
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.valueModeCaveat | lines: 217–218 | key: analytics.export.caveat.values %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.valueModeCaveat | lines: 221–222 | key: analytics.export.caveat.values %@ | shared: iOS+macOS (single edit point) -->
 
 Values: %@. A share is that period’s matching documents divided by all indexed documents in the same period, so a growing corpus does not read as a rising term.
 
@@ -688,7 +676,7 @@ Values: %@. A share is that period’s matching documents divided by all indexed
 
 #### Year range — when the chart ignores it
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.yearRangeDescription | lines: 182–183 | key: analytics.export.range.notApplied | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.yearRangeDescription | lines: 186–187 | key: analytics.export.range.notApplied | shared: iOS+macOS (single edit point) -->
 
 Not applied — this breakdown covers the whole corpus span
 
@@ -701,7 +689,7 @@ Printed on every exported figure. It used to read "Full method, caveats, and the
 not merely omit the caveats, it asserted they had travelled with the image. It now says where the
 numbers can be got, which is true however the figure is published.
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateDataPointer | lines: 161–162 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateDataPointer | lines: 165–166 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
 
 The underlying numbers are available as a CSV export from FRUS Explorer, with the full method statement.
 
@@ -714,7 +702,7 @@ The credit an exported figure carries **on the image**. Before this existed a pl
 application for the U.S. government's documentary edition. This is the one-line form; the full
 sentence in the CSV preamble is `analytics.export.attribution`, and the two should agree.
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateAttribution | lines: 150–151 | key: analytics.export.plateAttribution | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateAttribution | lines: 154–155 | key: analytics.export.plateAttribution | shared: iOS+macOS (single edit point) -->
 
 Foreign Relations of the United States, published by the Office of the Historian, U.S. Department of State. Public domain.
 
@@ -1400,15 +1388,9 @@ An axis runs between two volumes, and both of these documents are in the same on
 #### Refused: the two volumes are too alike
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 774–775 | key: semanticMap.axis.tooAlike | shared: iOS+macOS (single edit point) -->
 
-These two volumes read so alike that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.
+These two volumes were measured as so similar that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.
 
 <!-- END SOURCE: semanticMap.axis.tooAlike -->
-
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: it drops the word “alike”, which `SemanticSliceGuidanceTests.reasonsAreDistinct` requires. The slice has three refusals, and the test keeps them telling three causes apart: only this one, the genuinely degenerate case, may speak of likeness, and the missing-summary refusal must not. “Similar” carries the same meaning, so shipping your wording is a one-word change to that test; say so and it ships.
-
-```text
-These two volumes were measured as so similar that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.
-```
 
 #### Refused: no summary for a volume
 <!-- Split from the message above in build 42. A missing summary is a property of the build, not of the volumes, and saying 'too alike' there sent the reader to change the wrong thing. -->

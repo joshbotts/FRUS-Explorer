@@ -295,7 +295,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
                     detail: String(localized: "analytics.info.dating.body.v3",
-                                   defaultValue: "Each document sits at the date it was written, as the editors date it, not at the volume’s publication date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Every stored date is a full day, so nothing is left out of By Month or By Day for want of a month or a day. What those two charts do leave out is a document with no stored date at all, chiefly front matter: By Year and By Decade keep it by falling back to the start year of its volume, in both the counts and the % denominator, and the sub-year charts have no such fallback.")),
+                                   defaultValue: "Each document sits at its editor-annotated date. Where the editors date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Volume content with no stored date, chiefly front matter, sits at the start year of its volume on By Year and By Decade and is left out of By Month and By Day.")),
             ]
         )
     }

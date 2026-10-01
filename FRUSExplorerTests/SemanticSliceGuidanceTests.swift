@@ -135,11 +135,13 @@ struct SemanticSliceGuidanceTests {
         #expect(Set([sameVolume, noSummary, tooAlike]).count == 3,
                 "two refusals share wording, so the reader cannot tell which one happened")
         // The build-state message must NOT blame the volumes for being alike — that was the bug.
-        #expect(!noSummary.lowercased().contains("alike"), """
+        // Both words are refused: the degenerate case has said "similar" since the owner's
+        // 2026-09-30 wording, and either one would send the reader to change the volumes.
+        #expect(!noSummary.lowercased().contains("alike") && !noSummary.lowercased().contains("similar"), """
             The missing-summary message describes the volumes as alike. That is a property of the \
             artifact, not of the volumes, and saying so sends the reader to change the wrong thing.
             """)
-        #expect(tooAlike.lowercased().contains("alike"),
+        #expect(tooAlike.lowercased().contains("alike") || tooAlike.lowercased().contains("similar"),
                 "the genuinely-degenerate case should be the one that mentions likeness")
     }
 

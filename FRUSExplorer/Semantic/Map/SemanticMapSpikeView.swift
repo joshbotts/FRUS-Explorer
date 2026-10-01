@@ -772,7 +772,7 @@ final class SemanticMapModel {
             if isPositive { poles.positive = nil } else { poles.negative = nil }
             axisNotice = String(
                 localized: "semanticMap.axis.tooAlike",
-                defaultValue: "These two volumes read so alike that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.")
+                defaultValue: "These two volumes were measured as so similar that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.")
             return
         }
         setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)

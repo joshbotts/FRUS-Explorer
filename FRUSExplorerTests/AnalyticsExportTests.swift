@@ -37,11 +37,12 @@ struct AnalyticsProvenanceTests {
     ///
     /// The marker moved at #1306. It used to be `"TEI <date>"`, a phrase this caveat had kept for a
     /// release after #1299 removed it from the in-app row — so the marker for "the default dating
-    /// rule is present" was itself the drift.
+    /// rule is present" was itself the drift. It moved again on 2026-09-30, from `"as the editors date
+    /// it"` to `"editor-annotated date"`, when the owner reworded both surfaces' opening clause.
     @Test("Dating caveat discloses the volume-start-year fallback")
     func datingCaveatDisclosesFallback() {
         let text = sample().datingCaveat
-        #expect(text.contains("as the editors date it"))
+        #expect(text.contains("editor-annotated date"))
         #expect(text.lowercased().contains("falls back to the start year of its volume"))
         #expect(text.lowercased().contains("denominator"))
     }
@@ -64,13 +65,19 @@ struct AnalyticsProvenanceTests {
     /// describe one rule, and for a release they did not: the row dropped `TEI <date>` and the
     /// caveat kept it. Pin the CLAIMS rather than the wording — the two are deliberately phrased
     /// differently, one as a sentence in a popover and one as a methods line.
+    ///
+    /// "denominator" is no longer a shared claim. The owner's 2026-09-30 popover says where volume
+    /// content with no stored date sits and which charts leave it out, but not that it also enters
+    /// the % denominator; the exported caveat still says so, and `datingCaveatDisclosesFallback`
+    /// pins it there. The popover's omission states nothing false: the % share exists only on By
+    /// Year and By Decade, the two charts the row says keep that content.
     @Test("The exported caveat and the on-screen row state the same rule")
     @MainActor
     func exportCaveatAgreesWithTheOnScreenRow() throws {
         let caveat = sample().datingCaveat
         let row = try #require(FeatureInfoButton.corpusAnalytics.items
             .first { $0.title == "How dates are determined" }?.detail)
-        for claim in ["as the editors date it", "first day", "no stored date", "denominator"] {
+        for claim in ["editor-annotated date", "first day", "no stored date"] {
             #expect(caveat.contains(claim) && row.contains(claim), """
                 Only one of the two dating surfaces states: \(claim)
                 export: \(caveat)
@@ -474,7 +481,7 @@ struct AnalyticsWordCloudExportTests {
     @Test("A non-dating export omits the dating rule and the year-range line")
     func nonDatingOmitsDateClaims() {
         let lines = cloudProvenance().csvPreambleLines
-        #expect(!lines.contains { $0.contains("as the editors date it") })
+        #expect(!lines.contains { $0.contains("editor-annotated date") })
         #expect(!lines.contains { $0.contains("Year range") })
         // Everything not about dating still has to be there.
         #expect(lines.contains { $0.contains("552") })
@@ -488,7 +495,7 @@ struct AnalyticsWordCloudExportTests {
         dated.appliesDocumentDating = true
         dated.yearRange = 1945...1949
         let lines = dated.csvPreambleLines
-        #expect(lines.contains { $0.contains("as the editors date it") })
+        #expect(lines.contains { $0.contains("editor-annotated date") })
         #expect(lines.contains { $0.contains("Year range") && $0.contains("1945") })
     }
 
