@@ -203,9 +203,10 @@ final class VolumeConnectionGraphViewModel {
     /// volume's, is cut hard and marked, since an id has no word boundary. The width costs labels,
     /// since `GraphNodeLabels.place(_:)` drops a label that would crowd another: over
     /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that suite's
-    /// estimate rather than a font, it keeps 18 labels on a 700 × 520 canvas and 11 on a
-    /// 360 × 420 one (pinned there), where ten characters kept 25 and 11 — but every one of those
-    /// 25 read "frus1969-…".
+    /// estimate rather than a font, it kept 18 labels on a 700 × 520 canvas and 11 on a
+    /// 360 × 420 one with one place per label, where ten characters kept 25 and 11 — but every one
+    /// of those 25 read "frus1969-…". With the place above a node (#1438) it keeps 31 and 19,
+    /// pinned there.
     static let labelLimit = 22
 
     /// The radius of the central volume's disc.

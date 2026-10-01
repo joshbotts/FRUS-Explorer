@@ -14,6 +14,7 @@
 
 import CoreGraphics
 import Foundation
+import SwiftUI
 import Testing
 @testable import FRUSExplorer
 
@@ -139,13 +140,13 @@ struct ArchivalNetworkBuilderTests {
         #expect(zero.sharedDocumentCount == 0)
         #expect(counted.sharedDocumentCount == 7)
 
-        let unknownText = ArchivalNetworkBuilder.cardDetail(for: unknown, focus: focus, usage: index)
+        let unknownText = ArchivalNetworkBuilder.cardDetail(for: unknown, in: graph, usage: index)
         #expect(!unknownText.contains("0 documents"), "\(unknownText)")
         #expect(unknownText.contains("No document source note resolves to this collection"),
                 "\(unknownText)")
-        let zeroText = ArchivalNetworkBuilder.cardDetail(for: zero, focus: focus, usage: index)
+        let zeroText = ArchivalNetworkBuilder.cardDetail(for: zero, in: graph, usage: index)
         #expect(zeroText.contains("jointly supplied 0 documents"), "\(zeroText)")
-        let countedText = ArchivalNetworkBuilder.cardDetail(for: counted, focus: focus, usage: index)
+        let countedText = ArchivalNetworkBuilder.cardDetail(for: counted, in: graph, usage: index)
         #expect(countedText.contains("jointly supplied 7 documents"), "\(countedText)")
         #expect(countedText.contains("the smaller of their two document counts"),
                 "the sentence must describe the measure, not read as a sum: \(countedText)")
@@ -164,7 +165,7 @@ struct ArchivalNetworkBuilderTests {
             minimumRelativeStrength: 0, expansion: .collapsed)
         let node = try #require(graph.nodes.first { $0.id == "p" })
         #expect(node.sharedDocumentCount == nil)
-        let text = ArchivalNetworkBuilder.cardDetail(for: node, focus: focus, usage: index)
+        let text = ArchivalNetworkBuilder.cardDetail(for: node, in: graph, usage: index)
         #expect(text.contains("No document source note resolves to Whitman File"), "\(text)")
         #expect(!text.contains("0 documents"), "\(text)")
     }
@@ -203,7 +204,7 @@ struct ArchivalNetworkBuilderTests {
             minimumRelativeStrength: 0, expansion: .collapsed)
         let node = try #require(graph.nodes.first { $0.id == "p" })
         #expect(node.sharedDocumentCount == nil)
-        let text = ArchivalNetworkBuilder.cardDetail(for: node, focus: focus, usage: nil)
+        let text = ArchivalNetworkBuilder.cardDetail(for: node, in: graph, usage: nil)
         #expect(text.contains("could not be loaded"), "\(text)")
         #expect(!text.contains("0 documents"), "\(text)")
     }
@@ -501,6 +502,77 @@ struct ArchivalNetworkBuilderTests {
             cannot be told apart, and the reader has no way to know which one they tapped.
             """)
         #expect(graph.nodes.allSatisfy { $0.name == "White House Central Files" })
+    }
+
+    // MARK: - A node that reads like the focus (#1437)
+
+    /// The graph around `focus` of `others`, each sharing all three of its volumes.
+    private func graph(focus: AuthorityCollectionRecord,
+                       _ others: [AuthorityCollectionRecord]) -> ArchivalNetworkGraph {
+        ArchivalNetworkBuilder.graph(focus: focus, in: [focus] + others, usage: nil,
+                                     measure: .sharedVolumes, minimumRelativeStrength: 0,
+                                     expansion: .collapsed)
+    }
+
+    @Test("A node with the focus's name and no repository draws its bare name, and the focus names its repository")
+    func aRepositoryLessNodeBesideTheFocus() throws {
+        // The Mac capture of 2026-09-25: focus Whitman File (Eisenhower Library) beside the
+        // repository-less record two microfiche supplements cite, both drawn "Whitman File".
+        let focus = record("txt:eisenhower library|whitman file", name: "Whitman File",
+                           repository: "Eisenhower Library", volumes: ["v1", "v2", "v3"])
+        let bare = record("txt:|whitman file", name: "Whitman File", volumes: ["v1", "v2", "v3"])
+        let g = graph(focus: focus, [bare])
+        let node = try #require(g.nodes.first)
+        #expect(g.focusLabel == "Whitman File · Eisenhower Library")
+        #expect(node.label == "Whitman File")
+        let drawn = ArchivalNetworkBuilder.drawnLabels(in: g)
+        #expect(drawn[focus.id] != drawn[node.id], "\(drawn)")
+    }
+
+    @Test("A node with the focus's name held elsewhere is qualified by its repository")
+    func aSameNamedNodeHeldElsewhere() {
+        // NSC Institutional Files is a record under Nixon, Ford and Carter.
+        let focus = record("txt:nixon|nsc institutional file", name: "NSC Institutional Files",
+                           repository: "Nixon", volumes: ["v1", "v2", "v3"])
+        let ford = record("txt:ford library|nsc institutional file", name: "NSC Institutional Files",
+                          repository: "Ford Library", volumes: ["v1", "v2", "v3"])
+        let g = graph(focus: focus, [ford])
+        #expect(g.nodes.map(\.label) == ["NSC Institutional Files · Ford Library"])
+        #expect(g.focusLabel == "NSC Institutional Files · Nixon")
+    }
+
+    @Test("A focus with no repository keeps its name, and a node with its name and none is qualified by its id")
+    func aRepositoryLessFocus() {
+        let focus = record("txt:|jcs record", name: "JCS Records", volumes: ["v1", "v2", "v3"])
+        let other = record("txt:|jcs records 2", name: "JCS Records", volumes: ["v1", "v2", "v3"])
+        let archives = record("txt:national archives|jcs record", name: "JCS Records",
+                              repository: "National Archives", volumes: ["v1", "v2", "v3"])
+        let g = graph(focus: focus, [other, archives])
+        #expect(g.focusLabel == "JCS Records")
+        #expect(Set(g.nodes.map(\.label))
+                == ["JCS Records · txt:|jcs records 2", "JCS Records · National Archives"])
+    }
+
+    @Test("A node with the focus's name and repository is qualified by its id")
+    func aNodeWithTheFocusRepository() {
+        let focus = record("txt:state|conference file", name: "Conference Files",
+                           repository: "Department of State", volumes: ["v1", "v2", "v3"])
+        let twin = record("txt:state|conference file 2", name: "Conference Files",
+                          repository: "Department of State", volumes: ["v1", "v2", "v3"])
+        let g = graph(focus: focus, [twin])
+        #expect(g.focusLabel == "Conference Files · Department of State")
+        #expect(g.nodes.map(\.label) == ["Conference Files · txt:state|conference file 2"])
+    }
+
+    @Test("With no node of its name the focus keeps its bare name")
+    func anUnsharedFocusNameIsBare() {
+        let focus = record("txt:eisenhower library|whitman file", name: "Whitman File",
+                           repository: "Eisenhower Library", volumes: ["v1", "v2", "v3"])
+        let dulles = record("txt:eisenhower library|dulles paper", name: "Dulles Papers",
+                            repository: "Eisenhower Library", volumes: ["v1", "v2", "v3"])
+        let g = graph(focus: focus, [dulles])
+        #expect(g.focusLabel == "Whitman File")
+        #expect(ArchivalNetworkBuilder.drawnLabel(for: focus.id, in: g) == "Whitman File")
     }
 
     // MARK: - Umbrella expansion
@@ -905,6 +977,10 @@ struct ArchivalNetworkSectorZoneTests {
 ///          every size, on the one plate, over the disc that lies under it at 390 × 300
 ///   1.2 — 2026-10-01: #1514's regenerated authority — the Whitman File's neighbourhood places 6
 ///          labels at 1000 × 640 and at 700 × 420
+///   1.3 — 2026-10-01: #1437 — the identifier-keeping and distinguishing cuts, and a sweep of the 200
+///          most widely cited foci for a node drawn like the focus or like another node; #1438 — the
+///          laid-out cases place through the captions and the class box as obstacles, with the place
+///          above, and an expanded-umbrella case
 struct ArchivalNetworkLabelTests {
 
     /// A node for the hand-made graphs below.
@@ -938,8 +1014,11 @@ struct ArchivalNetworkLabelTests {
         // Both halves cut, both marked.
         #expect(ArchivalNetworkBuilder.drawnLabel("Staff Secretary Records · Washington National Records Center")
                 == "Staff Secretar… · Washington National R…")
-        // A label naming one record is cut and marked, with no space left hanging before the mark.
+        // A label naming one record is cut and marked, with no space left hanging before the mark,
+        // and since #1437 its lot number is kept whole.
         #expect(ArchivalNetworkBuilder.drawnLabel("Secretary’s Memoranda of Conversation: Lot 65 D 330")
+                == "Secretary’s… Lot 65 D 330")
+        #expect(ArchivalNetworkBuilder.drawnLabel("Secretary’s Memoranda of Conversation and Staff Meetings")
                 == "Secretary’s Memoranda of…")
         #expect(ArchivalNetworkBuilder.drawnLabel("Whitman File") == "Whitman File")
         // Each half keeps to its limit, the mark included.
@@ -947,6 +1026,131 @@ struct ArchivalNetworkLabelTests {
                                                  limit: ArchivalNetworkBuilder.labelQualifierLimit).count
                 == ArchivalNetworkBuilder.labelQualifierLimit)
     }
+
+    @Test("A cut keeps a trailing lot or file number whole, so two lots of one series draw apart")
+    func aCutKeepsTheTrailingIdentifier() {
+        // #1437: the hard cut drew "Conference Files: Lot 64…" for both 64 D 559 and 64 D 560.
+        #expect(ArchivalNetworkBuilder.drawnLabel("Conference Files: Lot 64 D 559")
+                == "Conference F… Lot 64 D 559")
+        #expect(ArchivalNetworkBuilder.drawnLabel("Conference Files: Lot 64 D 560")
+                == "Conference F… Lot 64 D 560")
+        // The focus label "S/P – NSC Files: Lot 62 D…" lost its final "1".
+        #expect(ArchivalNetworkBuilder.drawnLabel("S/P – NSC Files: Lot 62 D 1")
+                == "S/P – NSC File… Lot 62 D 1")
+        // An accession, and a lot written run together.
+        #expect(ArchivalNetworkBuilder.drawnLabel("OSD Files: Executive Office: FRC 71 A 6682")
+                == "OSD Files… FRC 71 A 6682")
+        #expect(ArchivalNetworkBuilder.drawnLabel("Secretary’s Staff Meetings: Lot 63D75")
+                == "Secretary’s Sta… Lot 63D75")
+        // Every cut keeps to the limit.
+        for name in ["Conference Files: Lot 64 D 559", "S/P – NSC Files: Lot 62 D 1",
+                     "OSD Files: Executive Office: FRC 71 A 6682"] {
+            #expect(ArchivalNetworkBuilder.drawnLabel(name).count <= ArchivalNetworkBuilder.labelLimit)
+        }
+    }
+
+    @Test("A name that ends in no identifier, or only an identifier, is cut from the end")
+    func aCutWithoutAnIdentifierIsMarkedAtTheEnd() {
+        // Letters only after the last digit-free word: no identifier.
+        #expect(ArchivalNetworkBuilder.trailingIdentifier(of: "National Security Council Institutional Files (H-Files)") == nil)
+        #expect(ArchivalNetworkBuilder.drawnLabel("National Security Council Institutional Files (H-Files)")
+                == "National Security Council…")
+        // The whole name is the identifier: there is no head to cut.
+        #expect(ArchivalNetworkBuilder.trailingIdentifier(of: "Lot 64 D 199 65 D 330 66 D 110") == nil)
+        #expect(ArchivalNetworkBuilder.identifierKeepingCut("Lot 64 D 199 65 D 330 66 D 110", limit: 26)
+                == ArchivalNetworkBuilder.markedCut("Lot 64 D 199 65 D 330 66 D 110", limit: 26))
+        // A keyword with no number after it is not an identifier.
+        #expect(ArchivalNetworkBuilder.trailingIdentifier(of: "Records of the Office of the Lot") == nil)
+    }
+
+    @Test("Where the identifier leaves too little room for a head, the half draws it alone, marked")
+    func aShortHalfDrawsTheIdentifierAlone() {
+        // The name half of a qualified label is fifteen characters: "FRC 66 A 3542" leaves one.
+        #expect(ArchivalNetworkBuilder.drawnLabel("OSD Files: FRC 66 A 3542 · National Archives")
+                == "…FRC 66 A 3542 · National Archives")
+        #expect(ArchivalNetworkBuilder.drawnLabel("OSD Files: FRC 65 A 3464 · National Archives")
+                == "…FRC 65 A 3464 · National Archives")
+        // An identifier that cannot fit even alone falls back to the cut from the end.
+        #expect(ArchivalNetworkBuilder.identifierKeepingCut("Records: Lot 64 D 199", limit: 10)
+                == ArchivalNetworkBuilder.markedCut("Records: Lot 64 D 199", limit: 10))
+    }
+
+    @Test("A node a plain cut draws like the focus or another node is re-cut to show where it differs")
+    func alikeNodesShowTheirEnds() throws {
+        let focus = AuthorityCollectionRecord(id: "focus", name: "National Security Council Files",
+                                              repository: nil, lotFileNorm: nil, volumeIds: ["v1", "v2"])
+        let hFiles = node("h", label: "National Security Council Institutional Files (H-Files)", strength: 1)
+        let current = node("c", label: "Office of Current Intelligence Files", strength: 0.8)
+        let bare = node("b", label: "Office of Current Intelligence", strength: 0.6)
+        let g = ArchivalNetworkGraph(focus: focus, focusCategory: .otherInstitution,
+                                     nodes: [hFiles, current, bare], nodesAboveThreshold: 3,
+                                     partnersTotal: 3, strongestMeasureValue: 1, expandedUmbrella: nil)
+        // A plain cut draws all three pairs alike.
+        #expect(ArchivalNetworkBuilder.drawnLabel(hFiles.label) == ArchivalNetworkBuilder.drawnLabel(focus.name))
+        #expect(ArchivalNetworkBuilder.drawnLabel(current.label) == ArchivalNetworkBuilder.drawnLabel(bare.label))
+        let drawn = ArchivalNetworkBuilder.drawnLabels(in: g)
+        // The focus keeps its cut; each node shows its own ending.
+        #expect(drawn["focus"] == "National Security Council…")
+        #expect(drawn["h"] == "National Securi… (H-Files)")
+        #expect(drawn["c"] == "Office of Current I… Files")
+        #expect(drawn["b"] == "Office of Cu… Intelligence")
+        #expect(Set(drawn.values).count == 4, "\(drawn)")
+        #expect(drawn.values.allSatisfy { $0.count <= ArchivalNetworkBuilder.labelLimit }, "\(drawn)")
+        // The view draws what this says.
+        #expect(ArchivalNetworkBuilder.drawnLabel(for: "h", in: g) == drawn["h"])
+    }
+
+    @Test("Two qualified nodes a plain cut draws alike are re-cut in their name half")
+    func alikeQualifiedNodesShowTheirEnds() {
+        let a = node("a", label: "Office of Support Services, Directorate of Intelligence · Central Intelligence Agency", strength: 1)
+        let b = node("b", label: "Office of Support Services (DI) · Central Intelligence Agency", strength: 0.5)
+        let drawn = ArchivalNetworkBuilder.drawnLabels(in: graph([a, b]))
+        #expect(drawn["a"] != drawn["b"], "\(drawn)")
+        #expect(drawn["a"]?.hasSuffix(" · Central Intelligence…") == true, "\(drawn)")
+        #expect(drawn["b"]?.hasSuffix(" · Central Intelligence…") == true, "\(drawn)")
+    }
+
+    /// The 200 most widely cited foci (by citing volumes, then name) under both measures at the
+    /// default threshold, collapsed: the graphs #1437 was measured over.
+    private static func sweptGraphs() -> [ArchivalNetworkGraph] {
+        let records = CollectionAuthorityStore.shared?.collections ?? []
+        let foci = records.sorted {
+            $0.volumeIds.count != $1.volumeIds.count ? $0.volumeIds.count > $1.volumeIds.count
+                : $0.name < $1.name
+        }.prefix(200)
+        return foci.flatMap { focus in
+            ArchivalEdgeMeasure.allCases.map { measure in
+                ArchivalNetworkBuilder.graph(focus: focus, in: records,
+                                             usage: CollectionUsageIndexStore.shared,
+                                             measure: measure, minimumRelativeStrength: 0.25,
+                                             expansion: .collapsed)
+            }
+        }.filter { !$0.nodes.isEmpty }
+    }
+
+    @Test("Over the 200 most widely cited foci no node draws like the focus, and no two nodes draw alike")
+    func noNodeDrawsLikeTheFocusOrAnother() {
+        // Measured with the same sweep on v2 at f5625ca2, before #1437: a node drew exactly like
+        // the focus in 40 of 377 graphs (17 a same-named record held elsewhere, 23 a cut), and two
+        // nodes alike in 74.
+        let graphs = Self.sweptGraphs()
+        #expect(graphs.count == ArchivalNetworkLabelTests.sweptGraphCount, "swept \(graphs.count) graphs")
+        var likeFocus: [String] = []
+        var likeEachOther: [String] = []
+        for g in graphs {
+            let drawn = ArchivalNetworkBuilder.drawnLabels(in: g)
+            let nodeLabels = g.nodes.compactMap { drawn[$0.id] }
+            if let focus = drawn[g.focus.id], nodeLabels.contains(focus) {
+                likeFocus.append("\(g.focus.name): \(focus)")
+            }
+            if Set(nodeLabels).count < nodeLabels.count { likeEachOther.append(g.focus.name) }
+        }
+        #expect(likeFocus.isEmpty, "\(likeFocus.count) graph(s): \(likeFocus.prefix(5))")
+        #expect(likeEachOther.isEmpty, "\(likeEachOther.count) graph(s): \(likeEachOther.prefix(5))")
+    }
+
+    /// Graphs with a node among the 400 `sweptGraphs()` builds, on the authority this build bundles.
+    static let sweptGraphCount = 377
 
     @Test("Every repository in the bundled authority is still told from every other once drawn")
     func everyRepositoryStaysDistinctWhenDrawn() throws {
@@ -986,7 +1190,8 @@ struct ArchivalNetworkLabelTests {
                                                             sizes: sizes)
         #expect(requests.map(\.id) == ["focus", "class", "a"])
         // The focus's 26 pt; a node's 11 + 11 × strength, 3 pt more while selected.
-        #expect(requests.map(\.radius) == [ArchivalNetworkBuilder.focusRadius, 11 + 5.5 + 3, 22])
+        let radii: [CGFloat] = [ArchivalNetworkBuilder.focusRadius, 11 + 5.5 + 3, 22]
+        #expect(requests.map(\.radius) == radii)
         #expect(requests.map(\.shape) == [.disc, .square, .disc])
         // "a" has a position and no size.
         #expect(ArchivalNetworkBuilder.labelRequests(g, layout: layout, selectedNodeId: nil,
@@ -1001,28 +1206,36 @@ struct ArchivalNetworkLabelTests {
         let canvas: CGSize
         /// Labels placed there, the focus's counted.
         let placed: Int
+        /// Of them, labels in the place above their node (#1438).
+        let above: Int
         /// Whether a node's circle or square comes within the clearance of the focus's label —
         /// measured, and what #1384's rule would have dropped the focus's label for.
         let nodeUnderFocus: Bool
+        /// How the umbrella is drawn — decimal classes put the class box and its border on the canvas.
+        var expansion: ArchivalUmbrellaExpansion = .collapsed
         /// The case name Swift Testing shows.
         var testDescription: String {
-            "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)\(nodeUnderFocus ? ", a node under the focus" : "")"
+            "\(Int(canvas.width)) × \(Int(canvas.height))\(expansion == .collapsed ? "" : ", \(expansion.rawValue)") places \(placed), \(above) above\(nodeUnderFocus ? ", a node under the focus" : "")"
         }
     }
 
-    @Test("Over the Whitman File's real neighbourhood, the focus is labelled on its plate, and no partner label touches a label, the plate or a node",
-          // 6 and 6 since #1514's regenerated authority (7 and 5 after #1466/#1469's, 8 and 4 before
-          // it): each rebuild moved which partners the wedges draw, so which labels fit moved too.
-          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 6, nodeUnderFocus: false),
-                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 6, nodeUnderFocus: false),
-                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 2, nodeUnderFocus: true)])
+    @Test("Over the Whitman File's real neighbourhood, the focus is labelled on its plate, and no partner label touches a label, the plate, a node, a caption or the class box's border",
+          // Each authority rebuild moved which partners the wedges draw, so which labels fit moved
+          // too: 6 and 6 after #1514's, 7 and 5 after #1466/#1469's, 8 and 4 before. #1438 adds the
+          // place above and the obstacles; #1468's regenerated authority renames Indexed Central Files.
+          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 8, above: 2, nodeUnderFocus: false),
+                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 7, above: 1, nodeUnderFocus: false),
+                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 2, above: 1, nodeUnderFocus: true),
+                      LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 6, above: 1, nodeUnderFocus: false,
+                                 expansion: .decimalClasses)])
     func aLaidOutNeighbourhoodPlacesClearLabels(_ layoutCase: LayoutCase) throws {
         let records = CollectionAuthorityStore.shared?.collections ?? []
-        let whitman = try #require(records.first { $0.name == "Whitman File" })
+        let whitman = try #require(records.first { $0.name == "Whitman File" && $0.repository == "Eisenhower Library" })
         let g = ArchivalNetworkBuilder.graph(focus: whitman, in: records,
                                              usage: CollectionUsageIndexStore.shared,
                                              measure: .sharedVolumes, minimumRelativeStrength: 0.25,
-                                             expansion: .collapsed)
+                                             expansion: layoutCase.expansion)
+        #expect((g.expandedUmbrella != nil) == (layoutCase.expansion != .collapsed))
         let layout = ArchivalNetworkBuilder.layout(g, in: layoutCase.canvas)
         var sizes: [String: CGSize] = [:]
         for id in ArchivalNetworkBuilder.labelPriority(g, selectedNodeId: nil) {
@@ -1030,15 +1243,20 @@ struct ArchivalNetworkLabelTests {
                                                           fontSize: id == whitman.id ? 9 : 8)
         }
         let requests = ArchivalNetworkBuilder.labelRequests(g, layout: layout, selectedNodeId: nil, sizes: sizes)
-        let placed = GraphNodeLabels.place(requests)
+        let obstacles = ArchivalNetworkBuilder.labelObstacles(layout)
+        let placed = GraphNodeLabels.place(requests, avoiding: obstacles)
 
         #expect(requests.count == g.nodes.count + 1)
+        // Four custodian captions, and with the class box its caption and four border rects.
+        #expect(obstacles.count == (layoutCase.expansion == .collapsed ? 4 : 9), "\(obstacles.count) obstacles")
         // The layout the graph really produces collides: drawn as before #1384, every label under
         // its node, the labels break the placement's promise.
         let everyLabel = requests.reduce(into: [String: CGRect]()) { $0[$1.id] = GraphNodeLabels.labelRect(for: $1) }
         #expect(!GraphNodeLabelTests.clearanceViolations(placed: everyLabel, requests: requests).isEmpty)
         // Pinned, so the counts `Planning/DEVELOPMENT-PLAN.md` states cannot drift unnoticed.
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
+        let above = requests.dropFirst().filter { placed[$0.id] == GraphNodeLabels.labelRectAbove(for: $0) }
+        #expect(above.count == layoutCase.above, "\(above.count) above their node")
         // The focus is labelled at every size — at 390 × 300 over the node under it (the owner's
         // decision) — on the one plate, which no partner label overlaps.
         let focusRect = GraphNodeLabels.labelRect(for: requests[0])
@@ -1051,5 +1269,270 @@ struct ArchivalNetworkLabelTests {
         #expect(overlaps.isEmpty, "\(overlaps)")
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+        // #1438: no partner label comes within the clearance of a caption or the box's border.
+        let onObstacles = placed.filter { id, rect in
+            id != whitman.id && obstacles.contains { ArchivalNetworkBuilder.rectGap(rect, $0) < GraphNodeLabels.clearance }
+        }
+        #expect(onObstacles.isEmpty, "\(onObstacles)")
+    }
+}
+
+
+// MARK: - ArchivalNetworkCaptionTests (#1470, #1438)
+
+/// The custodian captions' reserved rects (#1470, owner decision D12) and the labels that keep clear
+/// of them (#1438), over real neighbourhoods at six canvas sizes.
+///
+/// Before #1470 a caption was drawn first, at 45° into its wedge and 0.93 × the outer radius, and
+/// the nodes, class squares and class box drawn after it covered it on a small canvas; nothing kept
+/// a label off it either ("JCS Records" ran into "OTHER INSTITUTIONS" on the Mac). The layout now
+/// reserves each caption's rect beyond every node, and the placement takes the captions and the box
+/// as obstacles. The sizes are the Mac's smallest and larger windows, an iPhone's portrait sheet and
+/// its compact-height landscape one; the graphs, the 100 most widely cited foci under each umbrella
+/// expansion that draws one.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1470, #1438
+@Suite("Archival network — reserved captions (#1470, #1438)")
+struct ArchivalNetworkCaptionTests {
+
+    /// The canvases swept.
+    static let canvases: [CGSize] = [CGSize(width: 390, height: 300), CGSize(width: 700, height: 420),
+                                     CGSize(width: 1000, height: 640), CGSize(width: 1300, height: 800),
+                                     CGSize(width: 402, height: 520), CGSize(width: 874, height: 180)]
+
+    /// The 100 most widely cited foci, collapsed and under each expansion that draws classes.
+    private static func graphs() -> [ArchivalNetworkGraph] {
+        let records = CollectionAuthorityStore.shared?.collections ?? []
+        let foci = records.sorted {
+            $0.volumeIds.count != $1.volumeIds.count ? $0.volumeIds.count > $1.volumeIds.count
+                : $0.name < $1.name
+        }.prefix(100)
+        // An expansion that drew no class leaves the collapsed graph, which is swept once.
+        return foci.flatMap { focus in
+            ArchivalUmbrellaExpansion.allCases.compactMap { expansion -> ArchivalNetworkGraph? in
+                let g = ArchivalNetworkBuilder.graph(focus: focus, in: records,
+                                                     usage: CollectionUsageIndexStore.shared,
+                                                     measure: .sharedVolumes, minimumRelativeStrength: 0.25,
+                                                     expansion: expansion)
+                return !g.nodes.isEmpty && g.expansion == expansion ? g : nil
+            }
+        }
+    }
+
+    @Test("Every custodian caption keeps clear of every node, the class box and its caption, inside the canvas",
+          arguments: canvases)
+    func captionsAreReservedClearOfEverything(_ canvas: CGSize) {
+        let graphs = Self.graphs()
+        #expect(graphs.count > 150, "swept \(graphs.count) graphs")
+        #expect(graphs.contains { $0.expansion != .collapsed }, "no graph drew the class box")
+        let clearance = GraphNodeLabels.clearance
+        var failures: [String] = []
+        var captionsChecked = 0
+        for g in graphs {
+            let layout = ArchivalNetworkBuilder.layout(g, in: canvas)
+            let bounds = CGRect(origin: .zero, size: canvas)
+            for category in ArchivalRepositoryCategory.ordered {
+                guard let caption = layout.captions[category] else {
+                    failures.append("\(g.focus.name): no \(category) caption")
+                    continue
+                }
+                captionsChecked += 1
+                let rect = caption.rect
+                #expect(caption.text == ArchivalNetworkBuilder.captionText(for: category))
+                if !bounds.contains(rect) { failures.append("\(g.focus.name) \(category): off the canvas") }
+                for node in g.nodes {
+                    guard let p = layout.positions[node.id] else { continue }
+                    // Selected: 3 pt larger, with its white ring 2 pt beyond, 1.5 pt wide.
+                    let reach = ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: true) + 2.75
+                    let gap = hypot(max(rect.minX - p.x, 0, p.x - rect.maxX), max(rect.minY - p.y, 0, p.y - rect.maxY))
+                    if gap < reach + clearance { failures.append("\(g.focus.name) \(category): under \(node.label)") }
+                }
+                if let hull = layout.classHull, g.expansion != .collapsed,
+                   ArchivalNetworkBuilder.rectGap(rect, hull) < clearance {
+                    failures.append("\(g.focus.name) \(category): on the class box")
+                }
+                if let hullCaption = layout.hullCaption,
+                   ArchivalNetworkBuilder.rectGap(rect, hullCaption.rect) < clearance {
+                    failures.append("\(g.focus.name) \(category): on the class box's caption")
+                }
+            }
+            let rects = layout.captions.values.map(\.rect)
+            for i in rects.indices {
+                for j in rects.indices where j > i && ArchivalNetworkBuilder.rectGap(rects[i], rects[j]) < clearance {
+                    failures.append("\(g.focus.name): two captions meet")
+                }
+            }
+        }
+        #expect(captionsChecked == graphs.count * 4)
+        #expect(failures.isEmpty, "\(failures.count) failure(s): \(failures.prefix(6))")
+    }
+
+    @Test("No partner label comes within the clearance of a caption or the class box's border",
+          arguments: canvases)
+    func labelsKeepClearOfTheCaptions(_ canvas: CGSize) {
+        var failures: [String] = []
+        var labelsChecked = 0
+        for g in Self.graphs() {
+            let layout = ArchivalNetworkBuilder.layout(g, in: canvas)
+            var sizes: [String: CGSize] = [:]
+            for id in ArchivalNetworkBuilder.labelPriority(g, selectedNodeId: nil) {
+                sizes[id] = GraphNodeLabelTests.estimatedSize(ArchivalNetworkBuilder.drawnLabel(for: id, in: g) ?? "",
+                                                              fontSize: id == g.focus.id ? 9 : 8)
+            }
+            let requests = ArchivalNetworkBuilder.labelRequests(g, layout: layout, selectedNodeId: nil, sizes: sizes)
+            let obstacles = ArchivalNetworkBuilder.labelObstacles(layout)
+            let placed = GraphNodeLabels.place(requests, avoiding: obstacles)
+            for (id, rect) in placed where id != g.focus.id {
+                labelsChecked += 1
+                if obstacles.contains(where: { ArchivalNetworkBuilder.rectGap(rect, $0) < GraphNodeLabels.clearance }) {
+                    failures.append("\(g.focus.name): \(id)")
+                }
+            }
+        }
+        #expect(labelsChecked > 100, "checked \(labelsChecked) placed labels")
+        #expect(failures.isEmpty, "\(failures.count) label(s) on an obstacle: \(failures.prefix(6))")
+    }
+
+    @Test("A caption is reserved beyond the farthest a node can reach")
+    func theNodeReachBoundsEveryNode() {
+        // Every strength from nothing to the strongest, selected, on a 700 × 420 canvas.
+        let focus = AuthorityCollectionRecord(id: "f", name: "Focus", repository: nil, lotFileNorm: nil,
+                                              volumeIds: ["v1", "v2"])
+        let nodes = stride(from: 0.0, through: 1.0, by: 0.05).map { s in
+            ArchivalNetworkNode(id: "n\(s)", label: "n", name: "n", kind: .collection,
+                                category: .otherInstitution, sharedVolumeCount: 2,
+                                sharedDocumentCount: nil, measureValue: s, relativeStrength: s)
+        }
+        let g = ArchivalNetworkGraph(focus: focus, focusCategory: .stateDepartment, nodes: nodes,
+                                     nodesAboveThreshold: nodes.count, partnersTotal: nodes.count,
+                                     strongestMeasureValue: 1, expandedUmbrella: nil)
+        let layout = ArchivalNetworkBuilder.layout(g, in: CGSize(width: 700, height: 420))
+        let reach = ArchivalNetworkBuilder.nodeReach(outerRadius: layout.outerRadius)
+        for node in nodes {
+            guard let p = layout.positions[node.id] else { continue }
+            let farthest = hypot(p.x - layout.center.x, p.y - layout.center.y)
+                + ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: true) + 2.75
+            #expect(farthest <= reach, "\(node.relativeStrength): \(farthest) past \(reach)")
+        }
+    }
+
+    @Test("On a canvas too small to clear every node, each caption still sits inside the canvas, in its own quadrant")
+    func aTinyCanvasKeepsEachCaptionInItsQuadrant() throws {
+        // 240 × 160: the outer radius is held at its 60 pt floor, so a node can reach 77 pt from the
+        // centre and no caption 70–125 pt wide clears it anywhere on its ray. The layout takes the
+        // point that comes closest instead.
+        let records = CollectionAuthorityStore.shared?.collections ?? []
+        let whitman = try #require(records.first { $0.name == "Whitman File" && $0.repository == "Eisenhower Library" })
+        let g = ArchivalNetworkBuilder.graph(focus: whitman, in: records, usage: CollectionUsageIndexStore.shared,
+                                             measure: .sharedVolumes, minimumRelativeStrength: 0.25,
+                                             expansion: .collapsed)
+        let canvas = CGSize(width: 240, height: 160)
+        let layout = ArchivalNetworkBuilder.layout(g, in: canvas)
+        let reach = ArchivalNetworkBuilder.nodeReach(outerRadius: layout.outerRadius)
+        for category in ArchivalRepositoryCategory.ordered {
+            let rect = try #require(layout.captions[category]?.rect)
+            #expect(CGRect(origin: .zero, size: canvas).contains(rect), "\(category): \(rect)")
+            let left = category == .stateDepartment || category == .otherInstitution
+            let top = category == .stateDepartment || category == .lotFile
+            #expect((rect.midX < layout.center.x) == left && (rect.midY < layout.center.y) == top,
+                    "\(category) at \(rect), centre \(layout.center)")
+            // Nothing cleared the nodes here: this is the fallback, not the rule.
+            let nearest = hypot(max(rect.minX - layout.center.x, 0, layout.center.x - rect.maxX),
+                                max(rect.minY - layout.center.y, 0, layout.center.y - rect.maxY))
+            #expect(nearest - reach < GraphNodeLabels.clearance, "\(category) cleared the nodes at \(nearest)")
+        }
+    }
+
+    @Test("The class box's caption is reserved above the box, and slides sideways only to clear a custodian's")
+    func theBoxCaptionSitsAboveTheBox() throws {
+        let records = CollectionAuthorityStore.shared?.collections ?? []
+        let whitman = try #require(records.first { $0.name == "Whitman File" && $0.repository == "Eisenhower Library" })
+        let g = ArchivalNetworkBuilder.graph(focus: whitman, in: records, usage: CollectionUsageIndexStore.shared,
+                                             measure: .sharedVolumes, minimumRelativeStrength: 0.25,
+                                             expansion: .decimalClasses)
+        #expect(g.expansion == .decimalClasses)
+        let layout = ArchivalNetworkBuilder.layout(g, in: CGSize(width: 1000, height: 640))
+        let hull = try #require(layout.classHull)
+        let caption = try #require(layout.hullCaption)
+        #expect(caption.text == ArchivalNetworkBuilder.hullCaptionText(for: .decimalClasses))
+        // Centred on the box, 8 pt above its top.
+        #expect(abs(caption.rect.midX - hull.midX) < 0.001)
+        #expect(abs(caption.rect.midY - (hull.minY - 8)) < 0.001)
+        // A collapsed graph draws no box and reserves no box caption.
+        let collapsed = ArchivalNetworkBuilder.graph(focus: whitman, in: records, usage: CollectionUsageIndexStore.shared,
+                                                     measure: .sharedVolumes, minimumRelativeStrength: 0.25,
+                                                     expansion: .collapsed)
+        #expect(ArchivalNetworkBuilder.layout(collapsed, in: CGSize(width: 1000, height: 640)).hullCaption == nil)
+    }
+}
+
+// MARK: - ArchivalNetworkNodeCardTests (#1468)
+
+/// The selected node's card (#1468): however long the name, the actions stay in the dock.
+///
+/// It hosts the card's own `lead` — the heading and the action row the dock must always show — at
+/// the dock's width and measures it, so it reads the real layout rather than a description of it.
+/// The dock is 168 pt (116 pt at compact height) with 16 pt of padding on each side; the width is an
+/// iPhone 17's 402 pt less that padding. The actions are the three a collection node offers.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1468
+@MainActor
+@Suite("Archival network — the selected node's card (#1468)")
+struct ArchivalNetworkNodeCardTests {
+
+    /// The 2,150-character front-matter paragraph Indexed Central Files was named by before #1468.
+    static let longName = String(repeating: "Indexed Central Files. The main source of documentation for these volumes was the Department of State’s indexed central files. ", count: 18)
+
+    /// The height the card's lead takes at the dock's width.
+    private func leadHeight(name: String, isCompact: Bool) -> CGFloat {
+        let card = ArchivalNetworkNodeCard(name: name, caption: "Department of State",
+                                           detail: "2 volumes cite both this and Whitman File.",
+                                           isCompact: isCompact) {
+            Button {} label: { Label("Explore This Collection", systemImage: "point.3.connected.trianglepath.dotted") }
+            Button {} label: { Label("Show Archival Neighbors", systemImage: "square.stack.3d.up") }
+            Button {} label: { Label("Open Collection", systemImage: "archivebox") }
+        }
+        let width: CGFloat = 402 - 32
+        #if canImport(UIKit)
+        let host = UIHostingController(rootView: card.lead.frame(width: width, alignment: .leading))
+        return host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude)).height
+        #else
+        let host = NSHostingController(rootView: card.lead.frame(width: width, alignment: .leading))
+        return host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude)).height
+        #endif
+    }
+
+    @Test("A 2,150-character name leaves the actions inside the dock, regular and compact")
+    func theActionsStayInTheDock() {
+        #expect(Self.longName.count > 2_000)
+        let regular = leadHeight(name: Self.longName, isCompact: false)
+        let compact = leadHeight(name: Self.longName, isCompact: true)
+        // The dock's height less its padding.
+        #expect(regular <= 168 - 32, "the lead takes \(regular) pt of the 136 the dock shows")
+        #expect(compact <= 116 - 32, "the lead takes \(compact) pt of the 84 the compact dock shows")
+        // The control: a short name takes one line, and the cap leaves it alone.
+        let short = leadHeight(name: "Whitman File", isCompact: false)
+        #expect(short < regular, "\(short) against \(regular)")
+    }
+
+    @Test("The panel's sentences cut a long focus name and keep a short one whole")
+    func sentencesCutALongName() {
+        #expect(ArchivalNetworkBuilder.sentenceName("Whitman File") == "Whitman File")
+        let cut = ArchivalNetworkBuilder.sentenceName(Self.longName)
+        #expect(cut.count <= ArchivalNetworkBuilder.sentenceNameLimit)
+        #expect(cut.hasSuffix("…"))
+        let focus = AuthorityCollectionRecord(id: "f", name: Self.longName, repository: nil,
+                                              lotFileNorm: nil, volumeIds: ["v1", "v2"])
+        let node = ArchivalNetworkNode(id: "n", label: "Partner", name: "Partner", kind: .collection,
+                                       category: .lotFile, sharedVolumeCount: 2, sharedDocumentCount: 3,
+                                       measureValue: 1, relativeStrength: 1)
+        let g = ArchivalNetworkGraph(focus: focus, focusCategory: .otherInstitution, nodes: [node],
+                                     nodesAboveThreshold: 1, partnersTotal: 1, strongestMeasureValue: 1,
+                                     expandedUmbrella: nil)
+        let detail = ArchivalNetworkBuilder.cardDetail(for: node, in: g, usage: nil)
+        #expect(detail.contains(cut), "\(detail)")
+        #expect(detail.count < 400, "\(detail.count) characters")
     }
 }

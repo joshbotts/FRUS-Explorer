@@ -132,6 +132,8 @@ public enum ReferenceBuilder {
         let rawLot: String?
         let leadingSegment: String?
         let displayName: String?
+        /// The item's whole text when `displayName` is its printed title (#1468).
+        var fullText: String?
     }
 
     private static func walk(_ nodes: [OutlineNode], volumeId: String,
@@ -236,6 +238,39 @@ public enum ReferenceBuilder {
         }
     }
 
+    /// The length past which a front-matter item's display name is its printed title (#1468).
+    static let printedTitleThreshold = 100
+
+    /// The printed title a long front-matter item opens with, to name its collection by
+    /// (#1468), or `nil` when the item's whole text stays its name.
+    ///
+    /// Some volumes print a collection's title and its description in one item, the title in a
+    /// `<hi>` (frus1961-63v17.xml:7481: `<hi rend="italic">Indexed Central Files.</hi> The main
+    /// source…`), and the whole item was the record's name: 2,150 characters for Indexed Central
+    /// Files. The rule is the owner's (decision D11, 2026-09-28), and narrow on purpose: an item
+    /// over ``printedTitleThreshold`` characters whose text opens with a `<hi>` and goes on after
+    /// it is named by that `<hi>`'s text, less the stop or colon it ends in. Measured on corpus
+    /// `8e5da08c1`, it renames 11 records; applied to every item that opens with a `<hi>` it would
+    /// rename 46, 19 of them onto another record's name or alias. A title that is empty, or an item
+    /// printed wholly as its title, keeps the whole text.
+    ///
+    /// Textual items only: `references(volumeId:frontRows:)` never asks for a lot item, whose
+    /// name must keep its lot number. The record's id is its leading segment, which this does not
+    /// touch, so no id moves.
+    /// - Parameter row: A front-matter item row.
+    /// - Returns: The title, or `nil`.
+    static func printedTitle(of row: FrontSourceRow) -> String? {
+        guard row.text.count > printedTitleThreshold, let lead = row.styledLead,
+              row.text.hasPrefix(lead) else { return nil }
+        var title = lead.trimmingCharacters(in: .whitespaces)
+        while let last = title.last, ".,:;".contains(last) || last.isWhitespace {
+            title.removeLast()
+        }
+        guard !title.isEmpty,
+              row.text.dropFirst(lead.count).contains(where: \.isLetter) else { return nil }
+        return title
+    }
+
     /// Emits a textual level-1 reference for `row`, returning the context for its
     /// children, or `nil` when the row is not clusterable. Handles the single-item
     /// `"Collection: CLASS"` shape by splitting on the colon.
@@ -248,11 +283,14 @@ public enum ReferenceBuilder {
             text: row.text, repository: repo, lotFileNorm: nil,
             decimalClass: row.decimalClass), let segment = identity.leadingSegment
         else { return nil }
-        // Display name: the colon-split lead when a class child split off, else the text.
+        // Display name: the colon-split lead when a class child split off, else the printed
+        // title of a long item (#1468), else the text. The context carries it too, so a
+        // sub-series under the item votes the same name.
+        let title = identity.decimalClass == nil ? printedTitle(of: row) : nil
         let leadText = identity.decimalClass != nil
             ? String(row.text[..<(row.text.firstIndex(of: ":") ?? row.text.endIndex)])
                 .trimmingCharacters(in: .whitespaces)
-            : row.text
+            : title ?? row.text
         // RG 59 defaults only when the central-files override actually re-bucketed
         // the row to Department of State — a library-held "Central Files…" row keeps
         // its library identity (and no State record group).
@@ -261,11 +299,13 @@ public enum ReferenceBuilder {
         let effectiveRG = central ? (row.recordGroup ?? "59") : row.recordGroup
         let context = Level1Context(repository: identity.repository, recordGroup: effectiveRG,
                                     lotFileNorm: nil, rawLot: nil,
-                                    leadingSegment: segment, displayName: leadText)
+                                    leadingSegment: segment, displayName: leadText,
+                                    fullText: title == nil ? nil : row.text)
         refs.append(CollectionReference(
             volumeId: volumeId, origin: .frontMatter, repository: identity.repository,
             recordGroup: effectiveRG, leadingSegment: segment,
-            subSegment: nil, subDecimalClass: identity.decimalClass, displayName: leadText))
+            subSegment: nil, subDecimalClass: identity.decimalClass, displayName: leadText,
+            fullTextAlias: title == nil ? nil : row.text))
         return context
     }
 
@@ -286,7 +326,8 @@ public enum ReferenceBuilder {
             recordGroup: level1.recordGroup ?? row.recordGroup,
             lotFileNorm: level1.lotFileNorm, rawLot: level1.rawLot,
             leadingSegment: level1.leadingSegment, subSegment: sub,
-            subDecimalClass: row.decimalClass, displayName: level1.displayName))
+            subDecimalClass: row.decimalClass, displayName: level1.displayName,
+            fullTextAlias: level1.fullText))
     }
 
     /// A series alias embedded in a lot item's own text: the distinctive tail after the

@@ -371,4 +371,127 @@ import SourceNoteKit
         #expect(refs["Whitman File"] == "Eisenhower Library")
         #expect(refs["Dulles Papers"] == "Princeton University")
     }
+
+    // MARK: A long item's printed title (#1468)
+
+    /// A Sources list under the Department of State holding one item, `item`, as XML.
+    private static func stateList(_ item: String) -> String {
+        """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="strong">Department of State</hi>
+            <list>
+              \(item)
+            </list>
+          </item>
+        </list></div></front></text></TEI>
+        """
+    }
+
+    /// frus1961-63v17.xml:7481's shape, shortened: the collection's title and its description share
+    /// one item, the title printed in italic. Before #1468 the whole paragraph — 2,150 characters
+    /// in the volume — was the record's name. The nested list is not in v17; it pins that a
+    /// sub-series under the item votes the parent's title too, or the paragraph would win the vote.
+    static let longTitledItem = stateList("""
+        <item><p><hi rend="italic">Indexed Central Files.</hi> The main source of documentation for \
+        <ref target="frus1961-63v17"><hi rend="italic">Foreign Relations</hi>, 1961–1963, Volumes \
+        XVII</ref> and <ref target="frus1961-63v18">XVIII</ref> was the Department of State’s \
+        indexed central files.</p><list><item>Telegrams to Saigon</item></list></item>
+        """)
+
+    /// Every reference the Sources list `xml` produces.
+    private func references(_ xml: String) -> [CollectionReference] {
+        ReferenceBuilder.references(volumeId: "v1",
+                                    frontRows: FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8)))
+    }
+
+    /// The one level-1 reference the Sources list `xml` produces.
+    private func level1(_ xml: String) throws -> CollectionReference {
+        let refs = references(xml).filter { $0.subSegment == nil && $0.subDecimalClass == nil }
+        #expect(refs.count == 1, "\(refs.count) level-1 references")
+        return try #require(refs.first)
+    }
+
+    @Test("A long item that opens with a printed title is named by the title and keeps its text as an alias")
+    func longItemIsNamedByItsPrintedTitle() throws {
+        let ref = try level1(Self.longTitledItem)
+        let text = try #require(ref.fullTextAlias)
+        #expect(ref.displayName == "Indexed Central Files")
+        #expect(text.hasPrefix("Indexed Central Files. The main source of documentation for Foreign Relations"))
+        #expect(text.count > ReferenceBuilder.printedTitleThreshold)
+        // The record is still the one it was: its key is its leading segment, not its name.
+        #expect(AuthorityBuilder.level1Key(for: ref) == "txt:department of state|indexed central file")
+    }
+
+    @Test("A sub-series under a titled item votes the parent's title, not its paragraph")
+    func subSeriesVoteTheTitle() {
+        let refs = references(Self.longTitledItem)
+        #expect(refs.count == 2, "\(refs.count) references")
+        #expect(refs.contains { $0.subSegment == "Telegrams to Saigon" })
+        #expect(refs.allSatisfy { $0.displayName == "Indexed Central Files" },
+                "names voted: \(refs.map { $0.displayName ?? "nil" })")
+        // Each carries the paragraph too, so the former name is counted as the name was.
+        #expect(refs.allSatisfy { $0.fullTextAlias?.hasPrefix("Indexed Central Files. The main source") == true })
+    }
+
+    @Test("An item of 100 characters or fewer keeps its whole text as its name, printed title or not")
+    func shortTitledItemKeepsItsText() throws {
+        // 99 characters: the title rule is for paragraphs, not for a title with a short gloss.
+        let item = #"<item><hi rend="italic">Subject-Numeric Central Files.</hi> The principal files consulted for this volume.</item>"#
+        let ref = try level1(Self.stateList(item))
+        let name = try #require(ref.displayName)
+        #expect(name.count <= ReferenceBuilder.printedTitleThreshold, "\(name.count) characters")
+        #expect(name.hasPrefix("Subject-Numeric Central Files. The principal files"))
+        #expect(ref.fullTextAlias == nil)
+    }
+
+    @Test("A long item with no printed title keeps its whole text as its name")
+    func longUntitledItemKeepsItsText() throws {
+        // frus1952-54v06p1.xml:12601's shape: a plain item, 818 characters in the volume.
+        let item = "<item>Files of the Office of the Director, International Security Affairs, Department of State, containing material for the years 1951 and 1952.</item>"
+        let ref = try level1(Self.stateList(item))
+        #expect(ref.displayName?.hasPrefix("Files of the Office of the Director, International Security Affairs") == true)
+        #expect((ref.displayName?.count ?? 0) > ReferenceBuilder.printedTitleThreshold)
+        #expect(ref.fullTextAlias == nil)
+    }
+
+    @Test("A long lot item keeps its whole text as its name, so its name keeps its lot number")
+    func longLotItemKeepsItsText() throws {
+        let item = #"<item><hi rend="italic">Conference Files.</hi> Lot 64 D 559, the records of the Executive Secretariat for the international conferences the Secretary attended, 1961–1963.</item>"#
+        let ref = try level1(Self.stateList(item))
+        #expect(ref.lotFileNorm == "64D559")
+        #expect(ref.displayName?.contains("Lot 64 D 559") == true, "\(ref.displayName ?? "nil")")
+        #expect(ref.fullTextAlias == nil)
+    }
+
+    @Test("A long item printed wholly as its title keeps its whole text as its name")
+    func wholeItemTitleKeepsItsText() throws {
+        // Nothing follows the title, so there is no description to cut away: only the closing
+        // full stop would go, and the name would still be the whole item.
+        let item = #"<item><hi rend="italic">Records of the Policy Planning Council, Subject Files on Atomic Energy, Outer Space and Disarmament Negotiations, 1957–1962.</hi></item>"#
+        let ref = try level1(Self.stateList(item))
+        #expect(ref.displayName?.hasPrefix("Records of the Policy Planning Council, Subject Files") == true)
+        #expect(ref.displayName?.hasSuffix("1957–1962.") == true, "\(ref.displayName ?? "nil")")
+        #expect(ref.fullTextAlias == nil)
+    }
+
+    @Test("A long item whose printed lead is empty keeps its whole text as its name")
+    func emptyLeadKeepsItsText() throws {
+        // A `<hi>` holding only a space opens the item without printing a title.
+        let item = #"<item><hi rend="italic"> </hi>Files of the Office of the Director, International Security Affairs, Department of State, containing material for the years 1951 and 1952.</item>"#
+        let ref = try level1(Self.stateList(item))
+        #expect(ref.displayName?.hasPrefix("Files of the Office of the Director, International Security Affairs") == true,
+                "\(ref.displayName ?? "nil")")
+        #expect(ref.fullTextAlias == nil)
+    }
+
+    @Test("A printed title the item's text does not begin with is not used")
+    func mismatchedLeadKeepsItsText() throws {
+        // A line break inside the title joins its words in the `<hi>`'s own text
+        // ("IndexedCentral Files.") but not in the item's, which spaces every element boundary.
+        let item = #"<item><p><hi rend="italic">Indexed<lb/>Central Files.</hi> The main source of documentation for these volumes, 1961–1963, was the indexed central files of the Department.</p></item>"#
+        let ref = try level1(Self.stateList(item))
+        #expect(ref.displayName?.hasPrefix("Indexed Central Files. The main source") == true,
+                "\(ref.displayName ?? "nil")")
+        #expect(ref.fullTextAlias == nil)
+    }
 }

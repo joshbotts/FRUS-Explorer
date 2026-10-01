@@ -1442,8 +1442,8 @@ struct VolumeConnectionLabelTests {
     }
 
     @Test("Over a layout the graph produces, the central volume is labelled on its plate, and no partner label touches a label, the plate or a disc",
-          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
-                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 11)])
+          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 31),
+                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 19)])
     func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) {
         // Forty-eight partners of one Nixon–Ford volume, half citing it and half cited by it, with the
         // corpus's commonest id length (14 characters) — the ids the ten-character cut drew as one.

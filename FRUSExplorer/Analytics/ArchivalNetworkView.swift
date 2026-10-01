@@ -41,6 +41,12 @@ import SwiftUI
 ///          and the repository half was its first ten characters, unmarked
 ///   1.4 — 2026-09-30: #1478 — the dock's first sentence is `dockSummarySentence`, in the owner's
 ///          wording, with both counts grouped and "node" singular at one
+///   1.5 — 2026-10-01: #1470 — each custodian's caption is drawn in the rect the layout reserves
+///          for it, clear of every node, and selects its wedge; #1438 — labels keep clear of the
+///          captions and the class box's border, and fall back to a place above their node;
+///          #1468 — the selected node's card is `ArchivalNetworkNodeCard`, the panel's sentences
+///          cut a long name, and the focus picker holds a name to three lines; #1437 — the export
+///          names the focus by its label
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -401,27 +407,28 @@ struct ArchivalNetworkView: View {
                 context.stroke(path, with: .color(category.color.opacity(0.45)),
                                style: StrokeStyle(lineWidth: 1))
             }
-            drawSectorLabel(&context, category: category, start: start, layout: layout)
+            drawSectorLabel(&context, category: category, layout: layout)
         }
     }
 
     /// The custodian's name in its own corner.
     ///
     /// The wedges have carried meaning since #765 and said so only in a legend below the canvas.
-    /// Now that a wedge is a tap target the name has to be *on* it, or the affordance is a
-    /// quarter of the screen that does something unexplained. Placed at 45° into the wedge, just
-    /// inside the outer radius, so it sits in the corner rather than over the nodes.
+    /// Now that a wedge is a tap target the name has to be by it, or the affordance is a quarter of
+    /// the screen that does something unexplained. It was drawn at 45° into the wedge, just inside
+    /// the outer radius, where on a small canvas the nodes drawn after it covered it (#1470); it is
+    /// now drawn in the rect the layout reserves for it in the corner of its quadrant
+    /// (`ArchivalNetworkLayout.captions`), clear of every node, and a tap on it selects the wedge
+    /// (`sectorZones(_:size:)`).
     private func drawSectorLabel(_ context: inout GraphicsContext,
                                  category: ArchivalRepositoryCategory,
-                                 start: Double, layout: ArchivalNetworkLayout) {
-        let angle = (start + 45) * .pi / 180
-        let radius = layout.outerRadius * 0.93
-        let point = CGPoint(x: layout.center.x + cos(angle) * radius,
-                            y: layout.center.y + sin(angle) * radius)
-        let text = Text(category.displayName.uppercased())
+                                 layout: ArchivalNetworkLayout) {
+        guard let caption = layout.captions[category] else { return }
+        let text = Text(verbatim: caption.text)
             .font(.system(size: 9, weight: .semibold))
             .foregroundStyle(category.color.opacity(selectedSector == category ? 0.95 : 0.55))
-        context.draw(context.resolve(text), at: point, anchor: .center)
+        context.draw(context.resolve(text), at: CGPoint(x: caption.rect.midX, y: caption.rect.midY),
+                     anchor: .center)
     }
 
     /// The dashed guide rings. Each marks a fraction of the *strongest* link in this graph, so
@@ -448,13 +455,14 @@ struct ArchivalNetworkView: View {
         context.stroke(Path(roundedRect: rect, cornerRadius: 18),
                        with: .color(ArchivalRepositoryCategory.stateDepartment.color.opacity(0.5)),
                        style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+        // In the rect the layout reserved (#1438): above the box, slid sideways only where a
+        // custodian's caption would otherwise meet it.
+        guard let caption = layout.hullCaption else { return }
         context.draw(
-            Text(String(format: String(localized: "archival.network.hull %@",
-                                       defaultValue: "Central Files — %@"),
-                        expansion.title.lowercased()))
+            Text(verbatim: caption.text)
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(ArchivalRepositoryCategory.stateDepartment.color),
-            at: CGPoint(x: rect.midX, y: rect.minY - 8), anchor: .center)
+            at: CGPoint(x: caption.rect.midX, y: caption.rect.midY), anchor: .center)
     }
 
     private func drawSpokes(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,
@@ -512,15 +520,19 @@ struct ArchivalNetworkView: View {
 
     /// The node and focus labels (#1384), drawn last: each measured as it will be drawn, then
     /// placed in priority order — the focus always, on a plate over whatever lies under it, then
-    /// the selected node and the others strongest first, each only where it keeps clear of the
-    /// labels already placed and of every other node's circle or square. Before #1384 every label
-    /// was drawn 8 pt under its node whatever lay there.
+    /// the selected node and the others strongest first, each under its node or else above it
+    /// (#1438), and only where it keeps clear of the labels already placed, of every other node's
+    /// circle or square, and of the captions and the class box's border
+    /// (`ArchivalNetworkBuilder.labelObstacles(_:)`, #1438). Before #1384 every label was drawn
+    /// 8 pt under its node whatever lay there.
     private func drawLabels(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,
                             layout: ArchivalNetworkLayout) {
         var resolved: [String: GraphicsContext.ResolvedText] = [:]
         var sizes: [String: CGSize] = [:]
+        // Every label at once, since a node's can depend on the others' (#1437).
+        let drawn = ArchivalNetworkBuilder.drawnLabels(in: graph)
         for id in ArchivalNetworkBuilder.labelPriority(graph, selectedNodeId: selectedNodeId) {
-            let text = context.resolve(labelText(for: id, in: graph))
+            let text = context.resolve(labelText(drawn[id] ?? "", isFocus: id == graph.focus.id))
             resolved[id] = text
             sizes[id] = text.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude,
                                                 height: .greatestFiniteMagnitude))
@@ -528,7 +540,8 @@ struct ArchivalNetworkView: View {
         let requests = ArchivalNetworkBuilder.labelRequests(graph, layout: layout,
                                                             selectedNodeId: selectedNodeId,
                                                             sizes: sizes)
-        let placed = GraphNodeLabels.place(requests)
+        let placed = GraphNodeLabels.place(requests,
+                                           avoiding: ArchivalNetworkBuilder.labelObstacles(layout))
         if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
             GraphNodeLabels.drawPlate(&context, in: plate)
         }
@@ -540,15 +553,15 @@ struct ArchivalNetworkView: View {
     }
 
     /// A node's label styled as the canvas draws it (#1384): the focus's in 9 pt semibold, a
-    /// node's in 8 pt secondary, each `ArchivalNetworkBuilder.drawnLabel(for:in:)`. The canvas
-    /// measures exactly this text before placing it.
+    /// node's in 8 pt secondary, each as `ArchivalNetworkBuilder.drawnLabels(in:)` draws it. The
+    /// canvas measures exactly this text before placing it.
     /// - Parameters:
-    ///   - id: A node's id, or the focus's.
-    ///   - graph: The graph as drawn.
+    ///   - label: The drawn label.
+    ///   - isFocus: Whether it is the focus's.
     /// - Returns: The styled label.
-    private func labelText(for id: String, in graph: ArchivalNetworkGraph) -> Text {
-        let text = Text(verbatim: ArchivalNetworkBuilder.drawnLabel(for: id, in: graph) ?? "")
-        return id == graph.focus.id
+    private func labelText(_ label: String, isFocus: Bool) -> Text {
+        let text = Text(verbatim: label)
+        return isFocus
             ? text.font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.primary)
             : text.font(.system(size: 8)).foregroundStyle(Color.secondary)
     }
@@ -571,7 +584,8 @@ struct ArchivalNetworkView: View {
             nodesAboveThreshold: graph.nodesAboveThreshold,
             partnersTotal: graph.partnersTotal,
             strongestMeasureValue: kept.map(\.measureValue).max() ?? graph.strongestMeasureValue,
-            expandedUmbrella: graph.expandedUmbrella)
+            expandedUmbrella: graph.expandedUmbrella,
+            expansion: graph.expansion)
     }
 
     // MARK: - Sector zones (#825f)
@@ -583,7 +597,9 @@ struct ArchivalNetworkView: View {
     /// quarter of the canvas and would otherwise swallow every node in it.
     ///
     /// The wedge is a **quadrant of the canvas**, matching `drawSectors`' four 90° arcs, so the
-    /// hit shape and the drawn shape are the same geometry rather than two descriptions of it.
+    /// hit shape and the drawn shape are the same geometry rather than two descriptions of it. The
+    /// custodian's caption, which the layout reserves just beyond the arc (#1470), is part of the
+    /// target too, so a tap on the name selects the wedge it names.
     @ViewBuilder
     private func sectorZones(_ layout: ArchivalNetworkLayout, size: CGSize) -> some View {
         let quadrants: [(ArchivalRepositoryCategory, Double)] = [
@@ -614,6 +630,7 @@ struct ArchivalNetworkView: View {
                                 startAngle: .degrees(start), endAngle: .degrees(start + 90),
                                 clockwise: false)
                     path.closeSubpath()
+                    if let caption = layout.captions[category] { path.addRect(caption.rect) }
                 })
             }
             .buttonStyle(.plain)
@@ -767,7 +784,9 @@ struct ArchivalNetworkView: View {
                 localized: "archival.network.group.detail %lld %lld %@ %@ %lld",
                 defaultValue: "%1$lld of this focus’s %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes."),
                 Int64(partners.count), Int64(graph.nodes.count),
-                category.displayName.lowercased(), strongest?.label ?? "",
+                category.displayName.lowercased(),
+                // Cut like every name inside a panel sentence (#1468).
+                ArchivalNetworkBuilder.sentenceName(strongest?.label ?? ""),
                 Int64(strongest?.sharedVolumeCount ?? 0)))
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -795,23 +814,20 @@ struct ArchivalNetworkView: View {
         }
     }
 
-    @ViewBuilder
+    /// The selected node's card (#1468): `ArchivalNetworkNodeCard`, which keeps the actions in the
+    /// dock however long the name is.
     private func selectedCard(_ node: ArchivalNetworkNode,
                               in graph: ArchivalNetworkGraph) -> some View {
-        Text(node.label).font(.headline)
-        Text(node.kind == .collection
-             ? node.category.displayName
-             : String(localized: "archival.network.class.caption",
-                      defaultValue: "Central-file class — a subject heading inside the State Department’s filing system, not a collection"))
-            .font(.caption).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-        Text(ArchivalNetworkBuilder.cardDetail(for: node, focus: graph.focus, usage: usage))
-            .font(.caption).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-        HStack(spacing: 12) { nodeActions(node) }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .labelStyle(.titleAndIcon)
+        ArchivalNetworkNodeCard(
+            name: node.label,
+            caption: node.kind == .collection
+                ? node.category.displayName
+                : String(localized: "archival.network.class.caption",
+                         defaultValue: "Central-file class — a subject heading inside the State Department’s filing system, not a collection"),
+            detail: ArchivalNetworkBuilder.cardDetail(for: node, in: graph, usage: usage),
+            isCompact: isShortScreen) {
+                nodeActions(node)
+            }
     }
 
     @ViewBuilder
@@ -946,7 +962,13 @@ struct ArchivalNetworkView: View {
                     isChoosingFocus = false
                 } label: {
                     VStack(alignment: .leading, spacing: 1) {
+                        // Three lines at most (#1468): 271 authority names run past 100
+                        // characters, up to several hundred; the whole name is the row's tooltip
+                        // and its accessibility label.
                         Text(record.name).font(.callout)
+                            .lineLimit(3)
+                            .help(record.name)
+                            .accessibilityLabel(record.name)
                         Text(String(format: String(
                             localized: "archival.network.picker.caption %@ %lld",
                             defaultValue: "%1$@ · cited by %2$lld volumes"),
@@ -1037,8 +1059,9 @@ struct ArchivalNetworkView: View {
     private func exportNeighbourhood(_ graph: ArchivalNetworkGraph) {
         let table = ChartInspectorData(
             id: "archival.network",
+            // The focus's label, which names its repository when a row carries its name (#1437).
             title: String(format: String(localized: "archival.export.title.network %@",
-                                         defaultValue: "Co-cited with %@"), graph.focus.name),
+                                         defaultValue: "Co-cited with %@"), graph.focusLabel),
             columns: [
                 String(localized: "archival.table.unit", defaultValue: "Archival unit"),
                 String(localized: "archival.export.column.kind", defaultValue: "Kind"),
@@ -1054,7 +1077,7 @@ struct ArchivalNetworkView: View {
         onExport(ArchivalExportRequest(
             table: table,
             provenance: ArchivalAnalyticsExport.network(
-                focusName: graph.focus.name, measure: measure, drawn: graph.nodes.count,
+                focusName: graph.focusLabel, measure: measure, drawn: graph.nodes.count,
                 aboveThreshold: graph.nodesAboveThreshold, partnersTotal: graph.partnersTotal,
                 indexedVolumeCount: indexedVolumeCount)))
     }
@@ -1080,5 +1103,77 @@ struct ArchivalNetworkView: View {
         guard !Task.isCancelled else { return }
         graph = built
         if !built.nodes.contains(where: { $0.id == selectedNodeId }) { selectedNodeId = nil }
+    }
+}
+
+// MARK: - ArchivalNetworkNodeCard
+
+/// The info dock's card for a selected node (#1468): its name, its actions, then what it is and
+/// the link's detail sentence — in that order, so no name can push the actions out of the dock.
+///
+/// The dock is a fixed height so the canvas never moves under a tap (CA-8 Win-6): 168 pt, and
+/// 116 pt at compact height. The name was drawn whole, as a `.headline` above everything else, and
+/// selecting Indexed Central Files drew its 2,150-character front-matter paragraph above the
+/// buttons, which fell below the fold. The data fix names that record by its printed title
+/// (#1468, decision D11), but many authority names still run past 100 characters, so the card
+/// holds the heading to `headingLineLimit` lines — one at compact height — cut at the end, and its
+/// whole text is the heading's `.help` and accessibility label.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1468
+struct ArchivalNetworkNodeCard<Actions: View>: View {
+
+    /// The node's label, whole.
+    let name: String
+    /// What the node is: its custodian, or the central-file class caption.
+    let caption: String
+    /// The link's detail sentence (`ArchivalNetworkBuilder.cardDetail(for:in:usage:)`).
+    let detail: String
+    /// Whether the dock is the compact-height one, which holds the heading to one line.
+    let isCompact: Bool
+    /// The node's actions.
+    @ViewBuilder let actions: () -> Actions
+
+    /// The most lines the heading takes in the regular dock.
+    static var headingLineLimit: Int { 3 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            lead
+            Text(caption)
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(detail)
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// The card from its top through its actions — what the dock must always show.
+    var lead: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(name)
+                .font(.headline)
+                .lineLimit(isCompact ? 1 : Self.headingLineLimit)
+                .truncationMode(.tail)
+                .help(name)
+                .accessibilityLabel(name)
+            // One line of buttons, scrolled sideways where the row is wider than the dock: at an
+            // iPhone's width the three titles did not fit one line, and under a one-line heading the
+            // lead measured 98 pt against the compact dock's 84 (`ArchivalNetworkNodeCardTests`).
+            ViewThatFits(in: .horizontal) {
+                actionRow
+                ScrollView(.horizontal, showsIndicators: false) { actionRow }
+            }
+        }
+    }
+
+    /// The actions, each on one line.
+    private var actionRow: some View {
+        HStack(spacing: 12) { actions() }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .labelStyle(.titleAndIcon)
+            .lineLimit(1)
     }
 }
