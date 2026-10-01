@@ -1226,7 +1226,9 @@ struct PersonCoMentionGraphView: View {
                 // context menu (#307): the same two actions the tap-selected info card
                 // offers, reachable without first pinning the card. Before `.position`, as the
                 // pointer modifiers are (#1518): written after it, the menu's view is the whole
-                // canvas, so on iOS a long press lifted the canvas and opened the menu at its corner.
+                // canvas. Measured on an iPhone 17 simulator (iOS 26.5): written after, a long press
+                // on a partner opened the menu under the canvas's bottom-left corner; before, beside
+                // the partner.
                 .contextMenu {
                     Button {
                         vm.recenterOn(rollupId: node.rollupId)

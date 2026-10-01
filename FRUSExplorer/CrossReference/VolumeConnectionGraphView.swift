@@ -535,7 +535,8 @@ final class VolumeConnectionGraphViewModel {
 ///          canvas calls `clearSelection()`. #1500: `init(vm:)`, a view model the host owns
 ///   2.4 — 2026-10-01: #1434, the partner labels wait for the settled layout; #1517, the empty
 ///          canvas takes hits on iOS too, so a drag, pinch or double-tap can start there (a tap
-///          clears nothing there; the Mac's click still clears)
+///          clears nothing there; the Mac's click still clears). Measured in review round 1, on
+///          the sheet in an iPhone 17 and an iPad Pro 13-inch (M5) simulator: see `emptyCanvas`
 struct VolumeConnectionGraphView: View {
 
     /// The graph's view model: this view's own (`init(volumeId:)`) or the host's (`init(vm:)`,
@@ -640,13 +641,15 @@ struct VolumeConnectionGraphView: View {
     ///
     /// On iOS it was left out until #1517, because the graph is a sheet with detents and a
     /// hit-testable canvas might change which of the sheet and the graph a drag moves. Measured on
-    /// `v2` @ `284f52c8` (iPad Pro 13-inch (M5) simulator, iOS 27.0), a drag across empty canvas
-    /// moved neither: the graph did not pan and the sheet did not move. With this canvas, the
-    /// document graph's sheet on an iPhone 17 simulator (iOS 26.5, the `.large` detent) still did
-    /// not pan on a one-finger drag that started on empty canvas, and did not move either, while a
-    /// pinch and a double-tap there zoomed and reset; this sheet was not re-measured. A tap here
-    /// clears nothing on iOS, as a click on empty canvas clears nothing in the document graph (the
-    /// owner's decision D8).
+    /// `v2` @ `284f52c8`, a drag across empty canvas moved neither: on an iPad Pro 13-inch (M5)
+    /// simulator (iOS 27.0) the graph did not pan and the sheet did not move, and on an iPhone 17
+    /// simulator (iOS 26.5), at the `.medium` detent, neither a sideways nor an upward drag panned
+    /// the graph or raised the sheet. With this canvas (review round 1, the same two simulators), a
+    /// drag across empty canvas pans the graph sideways and up or down, on the iPhone at `.medium`
+    /// and on the iPad, the sheet staying where it was, and a double-tap there resets the view; the
+    /// sheet still changes detent from its grabber and title bar (measured on the iPhone, an upward
+    /// drag there raised it to `.large`). A tap here clears nothing on iOS, as a click on empty
+    /// canvas clears nothing in the document graph (the owner's decision D8).
     private var emptyCanvas: some View {
         GraphEmptyCanvas()
             #if os(macOS)

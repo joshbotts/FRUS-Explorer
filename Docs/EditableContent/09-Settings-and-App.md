@@ -1475,7 +1475,7 @@ Partially Published
 
 #### `graph.panel.close.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1219, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1229, ReferenceListPanel.swift:357, ReferenceListPanel.swift:549 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
 
 Close details
 
@@ -1515,7 +1515,7 @@ Share of source notes
 
 #### `wordcloud.scope.corpus`
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2365, WordCloudView.swift:2506, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2387, WordCloudView.swift:2528, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
 
 Entire Corpus
 
@@ -1525,7 +1525,7 @@ Entire Corpus
 
 #### `graph.resetView.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1497 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1507 -->
 
 Reset view
 

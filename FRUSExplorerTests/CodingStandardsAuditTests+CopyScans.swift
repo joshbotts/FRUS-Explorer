@@ -101,6 +101,11 @@ import Foundation
 ///         places each Find menu's key inside its own menu
 ///   1.10 — 2026-10-01: lane GRAPH — the graph node menu's open item as a per-platform variant:
 ///         "View Document" on iOS, "Open in Main Window" kept on the Mac (#1481)
+///   1.11 — 2026-10-01: lane GRAPH review round 1 — `macClickVariantsStayOffIOS` reads every file
+///         for a Mac key compiled for iOS, where it read only each variant's own: the reference
+///         list's row menu declared `graph.contextMenu.openDocument` unconditionally, so iPhone and
+///         iPad still read "Open in Main Window" there; and
+///         `referenceListOpenItemSharesTheNodeMenuName` (#1481)
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -1393,8 +1398,11 @@ extension CodingStandardsAuditTests {
     }
 
     /// The Mac branches #1380 added where a control is named, each with the iOS text it must not
-    /// change: the iOS key keeps its text on iOS, the Mac key never compiles there, and on the Mac
-    /// the Mac key compiles once and the iOS key not at all.
+    /// change: the iOS key keeps its text on iOS, and on the Mac the Mac key compiles once and the
+    /// iOS key not at all, in the variant's own file; and the Mac key compiles for iOS in NO file of
+    /// the tree. That last read was the variant's own file alone until review round 1 of lane GRAPH,
+    /// which found the graph's Mac key, "Open in Main Window", compiled for iOS one file over, in
+    /// the reference list's row menu (`ReferenceListPanel.swift`).
     @Test("CodingStandardsAudit: #1380's Mac wording never reaches iOS, and iOS keeps its own")
     func macClickVariantsStayOffIOS() throws {
         var read = 0
@@ -1419,6 +1427,53 @@ extension CodingStandardsAuditTests {
                     "\(variant.file): the Mac still compiles \(variant.iOSKey), the iOS wording")
         }
         #expect(read == Self.macClickVariants.count, "Read \(read) iOS strings for \(Self.macClickVariants.count) variants.")
+        // Every file, not only the variant's own: a Mac key declared anywhere iOS compiles shows
+        // iPhone and iPad the Mac's wording (review round 1 of lane GRAPH).
+        let macKeys = Set(Self.macClickVariants.map(\.macKey))
+        var files = 0
+        var leaks: [String] = []
+        for (path, lexed) in try Self.lexedAppSources() {
+            files += 1
+            let iOS = CompilationBranches(masked: lexed.masked, platform: .iOS)
+            for literal in lexed.literals where literal.isDefaultValue
+                && macKeys.contains(lexed.key(of: literal)) && iOS.line(literal.line)?.compiled != false {
+                leaks.append("\(path):\(literal.line) \(lexed.key(of: literal))")
+            }
+        }
+        #expect(files >= 400, "Read only \(files) Swift file(s): the scan is broken, not the tree clean.")
+        #expect(leaks.isEmpty, """
+            A Mac key compiles for iOS, so iPhone and iPad show the Mac's wording; use the variant's \
+            per-platform name: \(leaks.joined(separator: ", "))
+            """)
+    }
+
+    /// The reference list's row menu names its open item as the graph's node menu does (#1481, the
+    /// owner's decision D9). Both call the same `openDocument`, which opens the document in the
+    /// main window on the Mac and pushes it inside the graph on iOS, so both take
+    /// `CrossReferenceGraphView.openDocumentActionName`: "Open in Main Window" on the Mac, "View
+    /// Document" on iPhone and iPad. The row read "Open in Main Window" on iOS too until review
+    /// round 1 of lane GRAPH (measured on an iPhone 17 simulator, iOS 26.5, in the graph sheet's
+    /// List mode).
+    ///
+    /// Version history:
+    ///   1.0 — 2026-10-01: lane GRAPH review round 1 (#1481)
+    @Test("CodingStandardsAudit: the reference list's open item takes the node menu's per-platform name (#1481)")
+    func referenceListOpenItemSharesTheNodeMenuName() throws {
+        /// The file's code, with its comments and string literals masked.
+        func code(_ file: String) throws -> String {
+            let url = Self.copyScanSourceRoot.appendingPathComponent(file)
+            return String(decoding: LexedSource(try String(contentsOf: url, encoding: .utf8)).masked,
+                          as: UTF8.self)
+        }
+        let list = try code("CrossReference/ReferenceListPanel.swift")
+        #expect(list.ranges(of: "Label(CrossReferenceGraphView.openDocumentActionName").count == 1, """
+            ReferenceListPanel's row menu does not label its open item \
+            `CrossReferenceGraphView.openDocumentActionName` once (#1481)
+            """)
+        let graph = try code("CrossReference/CrossReferenceGraphView.swift")
+        #expect(graph.ranges(of: "Label(Self.openDocumentActionName").count == 1, """
+            the graph's node menu does not label its open item `Self.openDocumentActionName` once
+            """)
     }
 
     /// One control-naming sentence with a Mac branch of its own.

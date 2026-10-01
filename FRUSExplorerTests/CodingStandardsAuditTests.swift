@@ -891,7 +891,10 @@ struct CodingStandardsAuditTests {
     /// corner, a long press on an archival-network node opened it at the canvas's top-right corner,
     /// and a long press on a word-cloud word lifted that word drawn some 120 pt to the left of where
     /// it sat. Written before `.position(_:)`, measured on the same iPad, each menu opens beside the
-    /// node or word that was pressed, and the word cloud lifts the word itself.
+    /// node or word that was pressed, and the word cloud lifts the word itself. The co-mention
+    /// graph's node, the fourth site, was measured in review round 1 on an iPhone 17 simulator, iOS
+    /// 26.5: on `v2` a long press on a partner opened the menu under the canvas's bottom-left
+    /// corner, and written before `.position(_:)` beside the partner.
     static let contextMenuModifiers: Set<String> = ["contextMenu"]
 
     /// A pointer modifier that follows a `.position(` in its modifier chain.
@@ -1227,6 +1230,9 @@ struct CodingStandardsAuditTests {
     ///
     /// Version history:
     ///   1.0 — 2026-10-01: #1518
+    ///   1.1 — 2026-10-01: review round 1 of lane GRAPH — nothing in the preview rotates. The first
+    ///          pattern read only the preview's first call, so a preview that went on to rotate the
+    ///          word passed it and drew the cut-off vertical word again
     @Test("CodingStandardsAudit: a word-cloud word's menu follows its rotation and previews it level (#1518)")
     func wordCloudMenuFollowsRotationAndPreviewsLevel() throws {
         let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(
@@ -1239,6 +1245,22 @@ struct CodingStandardsAuditTests {
         #expect(regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body)) == 1, """
             cloudCanvas does not write the word, then its rotation, then a context menu whose preview \
             is the word drawn level (`cloudWord(word)`) (#1518)
+            """)
+        // The whole preview, up to the `.position(word.center)` that follows it: the word, drawn
+        // level, with nothing rotating it after `cloudWord(word)` (review round 1).
+        let previewRegex = try NSRegularExpression(
+            pattern: #"preview:\s*\{([\s\S]*?)\}\s*\.position\(word\.center\)"#)
+        let previews = previewRegex.matches(in: body, range: NSRange(body.startIndex..., in: body))
+        try #require(previews.count == 1, """
+            cloudCanvas has \(previews.count) context-menu preview(s) closing just before \
+            `.position(word.center)`, not one (#1518)
+            """)
+        let previewRange = try #require(Range(previews[0].range(at: 1), in: body))
+        let preview = body[previewRange]
+        #expect(preview.contains("cloudWord(word)"), "the preview does not draw the word: \(preview)")
+        #expect(!preview.contains("rotationEffect"), """
+            the word's context-menu preview rotates the word, so iOS lifts a vertical word cut to \
+            its unrotated frame (#1518): \(preview)
             """)
     }
 
@@ -1284,9 +1306,9 @@ struct CodingStandardsAuditTests {
             """)
     }
 
-    /// One graph hit area whose pointer modifiers must precede its `.position(` (#1471), and since
-    /// #1518 its context menu too — or a word-cloud word, the one context menu over a canvas that is
-    /// not a graph's.
+    /// One hit area over a canvas whose pointer modifiers (#1471) or context menu (#1518) must
+    /// precede its `.position(`: a graph's node or edge, or a word-cloud word, the one context menu
+    /// over a canvas that is not a graph's.
     struct HitAreaPointerClaim: CustomTestStringConvertible, Sendable {
         /// The hit area, shown as the test case's name.
         let name: String
@@ -1308,9 +1330,11 @@ struct CodingStandardsAuditTests {
         var testDescription: String { name }
     }
 
-    /// The four graph hit areas #1471 found writing their pointer modifiers after `.position(pos)`,
-    /// and the four context menus #1518 found there: three of those hit areas' and a word-cloud
-    /// word's.
+    /// The four graph hit areas #1471 found writing their pointer modifiers after `.position(pos)` —
+    /// the volume graph's and the co-mention graph's nodes, and the document graph's edges and
+    /// nodes — and the four context menus #1518 found there: two of those hit areas' (the co-mention
+    /// and document graph nodes'), an archival network node's and a word-cloud word's. The volume
+    /// graph's node and the document graph's edge carry no context menu.
     static let hitAreaPointerClaims: [HitAreaPointerClaim] = [
         HitAreaPointerClaim(
             name: "a volume graph node",
@@ -1355,6 +1379,8 @@ struct CodingStandardsAuditTests {
     ///   1.2 — 2026-10-01: #1518 — each context menu over a canvas comes before `.position(` too: the
     ///          co-mention and document graph nodes', an archival network node's and a word's, whose
     ///          tap stays after it
+    ///   1.3 — 2026-10-01: review round 1 of lane GRAPH — a context menu out of place is reported
+    ///          with #1518's reason, iOS's lifted preview, rather than #1471's pointer region
     @Test("CodingStandardsAudit: each graph hit area takes the pointer at its disc",
           arguments: hitAreaPointerClaims)
     func graphHitAreasTakeThePointerAtTheirDisc(_ claim: HitAreaPointerClaim) throws {
@@ -1380,10 +1406,17 @@ struct CodingStandardsAuditTests {
         let before = body[..<positions[0].lowerBound]
         for modifier in claim.modifiers {
             let count = occurrences(of: modifier, in: before)
+            // A context menu is not a pointer modifier: the Mac finds it by hit-testing, which
+            // `.position` does not widen (#1471 measured it unaffected). Its place is iOS's reason.
+            let reason = Self.contextMenuModifiers.contains(modifier)
+                ? "On iOS a long press lifts the view the menu is written on and opens the menu "
+                    + "beside that view's frame; written after `.position(pos)`, that view is the "
+                    + "whole canvas, so `.\(modifier)` comes before it (#1518)."
+                : "The hit area must answer the pointer at its disc, so its `.\(modifier)` comes "
+                    + "before `.position(pos)` (#1471)."
             #expect(count == 1, """
                 \(claim.file), `\(claim.declaration)`: `.\(modifier)` occurs \(count) time(s) \
-                before `.position(`, not once. The hit area must answer the pointer at its disc, \
-                so its `.\(modifier)` comes before `.position(pos)` (#1471).
+                before `.position(`, not once. \(reason)
                 """)
         }
         let after = body[positions[0].upperBound...]
