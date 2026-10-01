@@ -25,6 +25,7 @@ import Foundation
 ///   1.2 — Session 2026-07-04 (Phase 4 adversarial review): step-3 guard pins
 ///          (generic leads and shadowed segments never bridge to the unattributed
 ///          bucket); phantom-repository pin (no Department-of-State NSF record)
+///   1.3 — 2026-10-01: #1468 — Indexed Central Files' printed title, and the name-length bound
 @Suite("CollectionAuthorityStore — bundled artifact lookups")
 struct CollectionAuthorityStoreTests {
 
@@ -460,5 +461,32 @@ struct CollectionAuthorityStoreTests {
         #expect(resolved?.name.hasPrefix("Dulles, Allen W.") != true,
                 "resolved to \(resolved?.id ?? "nil") — \(resolved?.name ?? "")")
         #expect(index.record(id: "txt:|dulle") == nil)
+    }
+
+    /// #1468, decision D11: a front-matter item over 100 characters that opens with a printed title
+    /// names its record by that title. Indexed Central Files was named by its 2,150-character
+    /// paragraph (frus1961-63v17 and v18), which the Archival network's panel drew as its heading;
+    /// the paragraph stays, as the one alias the 12-alias cap never drops.
+    @Test("Indexed Central Files is named by its printed title and keeps its paragraph as an alias (#1468)")
+    func indexedCentralFilesIsNamedByItsTitle() throws {
+        let index = try index()
+        let record = try #require(index.record(id: "txt:department of state|indexed central file"))
+        #expect(record.name == "Indexed Central Files")
+        let paragraph = try #require(record.aliases.first { $0.hasPrefix("Indexed Central Files. The main source of documentation") },
+                                     "the paragraph is no longer among \(record.aliases.count) aliases")
+        #expect(paragraph.count > 2_000, "\(paragraph.count) characters")
+        #expect(record.volumeIds.count == 23)
+    }
+
+    /// The printed-title rule shortens the names that have a title to cut at, and no top-level name
+    /// now runs past a thousand characters: before it two did (2,646 and 2,150 characters). Names
+    /// that print no title stay whole — the longest, 818 characters, is `Files of the Office of the
+    /// Director`, frus1952-54v06p1's plain item — and are the selected-node card's to cap (#1468).
+    @Test("No top-level authority name runs past a thousand characters (#1468)")
+    func noNameRunsPastAThousandCharacters() throws {
+        let index = try index()
+        let long = index.collections.filter { $0.name.count > 1_000 }
+        #expect(long.isEmpty, "\(long.map { "\($0.id): \($0.name.count)" })")
+        #expect(index.collections.count > 4_000, "read \(index.collections.count) records")
     }
 }

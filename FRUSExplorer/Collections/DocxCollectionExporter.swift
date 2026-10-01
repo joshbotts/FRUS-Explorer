@@ -172,6 +172,10 @@ import Foundation
 ///   1.21 — #1495: a table prints its caption as the paragraph before it (`tableCaptionDocxXML`),
 ///          italic and kept with the table, `FootnoteText` in a footnote; a footnote in the caption
 ///          prints its reference
+///   1.22 — #1496: a note inside another printed note gets no Word footnote of its own: its marker prints as its
+///          superscript label, and its text follows its outer note inside the outer note's entry, so
+///          `word/footnotes.xml` holds no `<w:footnoteReference>`. #1498: the file name is cut to fit the file system
+///          (`CollectionExportNaming.fileName`)
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -584,7 +588,7 @@ final class DocxCollectionExporter: CollectionExporter {
         if collection.includeColophon {
             body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
             // PV-1: the sources block travels with the colophon, in all three rich formats.
-            for line in CollectionColophon.sourceLines(for: items) {
+            for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudXML != nil) {
                 body += styledPara(escaped(line), styleId: "Colophon")
             }
         }
@@ -964,11 +968,17 @@ final class DocxCollectionExporter: CollectionExporter {
         // resolved to the same note. Dropping the fabricated label (part (a)) would have made it
         // worse, collapsing every unnumbered note in a document onto the key "" (2,128 documents
         // have two or more; one has 28).
+        //
+        // #1496: a note that only another note cites — one printed inside a source note or a footnote — gets no Word
+        // id. Word has no footnote in a footnote, so it prints inside its outer note's entry instead
+        // (`footnoteXML`'s `nested`).
+        let nested = Self.nestedFootnoteKeys(in: model)
         var footnoteIDMap: [String: Int] = [:]
         if includeFootnotes {
             for note in model.footnotes {
                 if case .footnoteBody(let id, _, _, let seq, _, _) = note {
-                    footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] = ctx.allocate()
+                    let key = FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)
+                    if !nested.contains(key) { footnoteIDMap[key] = ctx.allocate() }
                 }
             }
         }
@@ -980,10 +990,12 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Render footnote bodies and register with context — tracker: nil (see above).
         // With footnotes gated off the map is empty, so nothing registers.
+        // Only the notes no Word footnote holds print inside another: one the body cites has its own entry.
+        let nestedBodies = Self.footnoteBodiesByKey(model).filter { nested.contains($0.key) }
         for note in model.footnotes {
             if case .footnoteBody(let id, _, _, let seq, _, let children) = note,
                let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] {
-                ctx.addFootnote(footnoteXML(id: wordId, children: children, footnoteIDMap: footnoteIDMap))
+                ctx.addFootnote(footnoteXML(id: wordId, children: children, nested: nestedBodies))
             }
         }
 
@@ -1364,11 +1376,9 @@ final class DocxCollectionExporter: CollectionExporter {
             return "<w:r><w:br/></w:r>"
         case .footnoteMarker(let id, _, let seq, let label):
             guard let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] else {
-                // Fallback (footnotes gated off): render the label as superscript text. A note the
-                // volume printed unnumbered gets a bullet — an empty <w:t> would be an invisible
-                // run rather than a marker.
-                let sup = "<w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr>"
-                return "<w:r>\(sup)<w:t>\(xmlEscaped(label ?? "\u{2022}"))</w:t></w:r>"
+                // Fallback (footnotes gated off, or a marker inside a note, #1496): render the label as
+                // superscript text, a bullet for a note the volume printed unnumbered.
+                return superscriptLabelRun(label)
             }
             return "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr>"
                 + "<w:footnoteReference w:id=\"\(wordId)\"/></w:r>"
@@ -1494,16 +1504,123 @@ final class DocxCollectionExporter: CollectionExporter {
     /// other note: 8 notes open on whitespace. Five are bare words — one opening on the space itself, three inside an
     /// italic `<hi>` (` Ibid`) and one inside a `<ref>` (` Document 71`), since the trim cuts the first run whatever
     /// its formatting — and three open in their first `<p>`.
-    private func footnoteXML(id: Int, children: [FRUSRenderNode], footnoteIDMap: [String: Int]) -> String {
+    ///
+    /// **A note inside the note prints after it, in the same entry (#1496).** Word has no footnote in a footnote, and
+    /// this wrote one: the inner note had a Word id of its own, and its marker printed inside the outer note as a
+    /// `<w:footnoteReference>` in `word/footnotes.xml` — a footnote referenced only from another footnote. The
+    /// 2026-09-27 triage measured, over the 553 manifest volumes, 349 notes in 342 documents inside another printed
+    /// note, 343 of them inside a document's source note (`frus1951v01` d2's "President’s Secretary’s File."), the
+    /// other 6 inside a footnote (`frus1950v01` d1's source note sits in one). So the note's markers print
+    /// as their superscript labels — the note is printed with no footnote map, the arm's fallback — and each note
+    /// only notes cite (`nested`, keyed by DOM key) follows the outer note as paragraphs of its own, opening on its
+    /// superscript label, with any note inside IT after that. HTML and PDF are unchanged.
+    private func footnoteXML(id: Int, children: [FRUSRenderNode],
+                             nested: [String: (label: String?, children: [FRUSRenderNode])]) -> String {
         let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
         let paragraph = { (runs: String) in "        <w:p>\(DocxStory.footnotePPr)\(runs)</w:p>\n" }
+        // An empty map: a marker in a note never prints a reference, only its label (#1496).
         var content = paragraphsDocx(children, props: RunProps(), lead: refRun + spacer, story: .footnote,
-                                     footnoteIDMap: footnoteIDMap, tracker: nil, paragraph: paragraph)
+                                     footnoteIDMap: [:], tracker: nil, paragraph: paragraph)
         if !content.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("</w:p>") {
             content += paragraph("")
         }
+        // The notes this note cites and nothing else does, in the order it cites them, each followed by its own.
+        var printed = Set<String>()
+        func appendNested(citedIn nodes: [FRUSRenderNode]) {
+            for marker in Self.footnoteMarkers(in: nodes) where printed.insert(marker.key).inserted {
+                guard let inner = nested[marker.key] else { continue }
+                content += paragraphsDocx(inner.children, props: RunProps(),
+                                          lead: superscriptLabelRun(inner.label) + spacer, story: .footnote,
+                                          footnoteIDMap: [:], tracker: nil, paragraph: paragraph)
+                if !content.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("</w:p>") {
+                    content += paragraph("")
+                }
+                appendNested(citedIn: inner.children)
+            }
+        }
+        appendNested(citedIn: children)
         return "      <w:footnote w:id=\"\(id)\">\n" + content + "      </w:footnote>\n"
+    }
+
+    /// A footnote's label as a superscript run, the way a marker with no Word footnote prints — and, since #1496, the
+    /// way a note printed inside another opens: the number the volume printed, or a bullet for a note it printed
+    /// unnumbered (an empty `<w:t>` would be an invisible run rather than a marker).
+    private func superscriptLabelRun(_ label: String?) -> String {
+        "<w:r><w:rPr><w:vertAlign w:val=\"superscript\"/></w:rPr><w:t>\(xmlEscaped(label ?? "\u{2022}"))</w:t></w:r>"
+    }
+
+    /// Every footnote body in `model`, by its DOM key, with the label it prints (#1496).
+    static func footnoteBodiesByKey(_ model: FRUSDocumentRenderModel)
+        -> [String: (label: String?, children: [FRUSRenderNode])] {
+        var bodies: [String: (label: String?, children: [FRUSRenderNode])] = [:]
+        for note in model.footnotes {
+            if case .footnoteBody(let id, _, _, let seq, let label, let children) = note {
+                bodies[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] = (label, children)
+            }
+        }
+        return bodies
+    }
+
+    /// The DOM keys of the notes in `model` that only another note cites (#1496): a marker inside some note's body,
+    /// and none in the document's own text. Such a note gets no Word footnote of its own; it prints inside the note
+    /// that cites it. A note the body cites keeps its footnote even where a note cites it too.
+    static func nestedFootnoteKeys(in model: FRUSDocumentRenderModel) -> Set<String> {
+        let citedByTheBody = Set(footnoteMarkers(in: model.bodyNodes).map(\.key))
+        var citedByANote = Set<String>()
+        for note in model.footnotes {
+            if case .footnoteBody(_, _, _, _, _, let children) = note {
+                citedByANote.formUnion(footnoteMarkers(in: children).map(\.key))
+            }
+        }
+        return citedByANote.subtracting(citedByTheBody)
+    }
+
+    /// Every footnote marker in `nodes`, in reading order, with its DOM key and the label it prints — through every
+    /// container a marker can sit in: inline formatting, links, a table's caption and cells, a list's heading, labels
+    /// and items. A footnote body's own children are not walked, since its markers are that note's. Exhaustive on
+    /// purpose, as `printsAsRuns` is, so a new render node has to be placed.
+    static func footnoteMarkers(in nodes: [FRUSRenderNode]) -> [(key: String, label: String?)] {
+        var markers: [(key: String, label: String?)] = []
+        func walk(_ nodes: [FRUSRenderNode]) {
+            for node in nodes {
+                switch node {
+                case .footnoteMarker(let id, _, let seq, let label):
+                    markers.append((FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq), label))
+                case .heading(let c), .dateline(let c), .letterOpener(let c), .letterCloser(let c),
+                     .salutation(let c), .paragraph(let c), .boldText(let c), .italicText(let c),
+                     .smallCapsText(let c), .underlineText(let c), .termText(let c), .editorialNoteBlock(let c),
+                     .suppliedText(let c), .sicText(let c), .corrText(let c), .titlePageBlock(let c),
+                     .attachmentHeading(let c):
+                    walk(c)
+                case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, _, let c),
+                     .attachmentBlock(_, let c), .unknown(_, let c):
+                    walk(c)
+                case .tableBlock(let caption, let rows):
+                    walk(caption ?? [])
+                    for row in rows { for cell in row { walk(cell.children) } }
+                case .listBlock(_, let heading, let items, let trailing):
+                    walk(heading ?? [])
+                    for item in items {
+                        for lead in item.lead {
+                            switch lead {
+                            case .label(let c), .other(let c): walk(c)
+                            }
+                        }
+                        walk(item.children)
+                    }
+                    for lead in trailing {
+                        switch lead {
+                        case .label(let c), .other(let c): walk(c)
+                        }
+                    }
+                case .footnoteBody, .plainText, .formulaText, .lineBreak, .pageBreak, .figureBlock:
+                    break
+                }
+            }
+        }
+        walk(nodes)
+        return markers
     }
 
     /// Builds `word/footnotes.xml` from collected footnote XML fragments.

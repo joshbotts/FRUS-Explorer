@@ -396,10 +396,10 @@ struct CollectionEntryInspector: View {
         Section {
             LabeledContent(String(localized: "collection.inspector.section.heading",
                                   defaultValue: "Section"),
-                           value: (entry.text?.isEmpty == false)
+                           value: (entry.text?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
                                ? (entry.text ?? "")
-                               : String(localized: "collection.inspector.section.untitled",
-                                        defaultValue: "Untitled section"))
+                               // One owner for the name, and the test the preview and exports apply (#1465).
+                               : CollectionEditorNaming.untitledSection)
         }
     }
 

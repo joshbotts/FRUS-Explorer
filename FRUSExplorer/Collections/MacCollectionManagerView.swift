@@ -184,11 +184,10 @@ struct MacCollectionManagerView: View {
         allCollections.first { $0.id == selectedId }
     }
 
-    /// The display name for a collection, with a placeholder for an untitled one.
+    /// The display name for a collection: trimmed, and "Untitled Collection" for an untitled one — what every list
+    /// row reads (#1464).
     private func collectionDisplayName(_ c: Collection) -> String {
-        c.name.isEmpty
-            ? String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
-            : c.name
+        CollectionEditorNaming.listName(savedName: c.name)
     }
 
     /// The widest the toolbar picker draws the collection's name, in points; a longer name is cut at the tail and the
@@ -403,6 +402,14 @@ struct MacCollectionManagerView: View {
                 // hidden by the sidebar's active-project filter; imported files carry no projectIds.
                 if let pid = appState.activeProjectId { imported.projectIds = [pid] }
                 try modelContext.save()
+                // The notes it brought are searchable at once, not at the next launch.
+                if let pipeline = appState.indexingPipeline {
+                    let context = modelContext
+                    Task {
+                        await NativeCollectionSerializer.indexImportedNotes(of: imported, in: context,
+                                                                            pipeline: pipeline)
+                    }
+                }
                 selectedId = imported.id
             } catch {
                 importError = error.localizedDescription
@@ -1386,10 +1393,13 @@ private struct CollectionDetailPane: View {
                             modelContext: modelContext) else { return }
                         planPickerRequest = PlanPickerRequest(
                             documents: docs, includeSource: true, includeExternalRefs: true,
+                            // The collection as every list row names it, and the plan after its trimmed name — an
+                            // unnamed one makes an untitled plan (#1464 review, round 1).
                             basis: String(format: String(
                                 localized: "archiveVisit.basis.collection %@",
-                                defaultValue: "from the collection “%@”"), collection.name),
-                            suggestedName: collection.name)
+                                defaultValue: "from the collection “%@”"),
+                                CollectionEditorNaming.listName(savedName: collection.name)),
+                            suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
                     }
                 } label: {
                     Label(String(localized: "collection.addToVisit",

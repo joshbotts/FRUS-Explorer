@@ -1120,6 +1120,8 @@ struct VolumeConnectionHoverSelectionTests {
 ///   1.0 — 2026-09-26: #1500, #1471
 ///   1.1 — 2026-09-26: review round 1 — the empty canvas must be hit-testable, not only call
 ///          `clearSelection()`
+///   1.2 — 2026-10-01: #1517 — the empty canvas is laid on both platforms, as the shared
+///          `GraphEmptyCanvas`, and only the Mac's clears on a click
 @MainActor
 struct VolumeConnectionGraphRecentreTests {
 
@@ -1318,18 +1320,22 @@ struct VolumeConnectionGraphRecentreTests {
         let emptyCanvas = try Self.body("private var emptyCanvas: some View {", in: view)
         // A clear view takes no hits without a content shape, and `graphCanvas` takes none at all,
         // so the click, drag and double-click reach empty canvas only through a clear view given a
-        // content shape, with nothing turning its hits off (review round 1).
-        #expect(try Self.matches(#"Color\.clear\s*\.contentShape\(Rectangle\(\)\)\s*\.onTapGesture\s*\{\s*vm\.clearSelection\(\)\s*\}"#,
+        // content shape, with nothing turning its hits off (review round 1). Since #1517 that view
+        // is the graphs' shared `GraphEmptyCanvas` (`CodingStandardsAuditTests` pins its body), on
+        // both platforms; the click that clears is the Mac's alone, so a tap on an iPhone or iPad
+        // clears nothing, as in the document graph (the owner's decision D8).
+        #expect(try Self.matches(#"GraphEmptyCanvas\(\)\s*#if\s+os\(macOS\)\s*\.onTapGesture\s*\{\s*vm\.clearSelection\(\)\s*\}\s*#endif"#,
                                  in: emptyCanvas) == 1,
-                "the empty canvas is not Color.clear.contentShape(Rectangle()).onTapGesture { vm.clearSelection() }")
+                "the empty canvas is not GraphEmptyCanvas() with a Mac-only .onTapGesture { vm.clearSelection() }")
         #expect(Self.count("allowsHitTesting", in: emptyCanvas) == 0,
                 "the empty canvas turns its hits off, so no click, drag or double-click reaches it")
         let graphContent = try Self.body("private var graphContent: some View {", in: view)
         // After the pan offset, so the empty canvas stays under the window however far the graph
-        // is panned; before the gestures, so a drag or double-click on it still pans or resets.
-        #expect(try Self.matches(#"\.offset\(vm\.panOffset\)\s*#if\s+os\(macOS\)\s*\.background\s*\{\s*emptyCanvas\s*\}\s*#endif\s*\.gesture\(magnificationGesture\)"#,
+        // is panned; before the gestures, so a drag or double-click on it still pans or resets; and
+        // on both platforms (#1517).
+        #expect(try Self.matches(#"\.offset\(vm\.panOffset\)\s*\.background\s*\{\s*emptyCanvas\s*\}\s*\.gesture\(magnificationGesture\)"#,
                                  in: graphContent) == 1,
-                "the Mac canvas does not lay emptyCanvas behind the graph, between .offset and the gestures")
+                "the canvas does not lay emptyCanvas behind the graph on both platforms, between .offset and the gestures")
     }
 
     // MARK: - Source reading
@@ -1370,6 +1376,8 @@ struct VolumeConnectionGraphRecentreTests {
 ///          and pin their counts
 ///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the central label is always
 ///          placed, on the one plate, which no partner label overlaps
+///   1.3 — 2026-10-01: #1434 — an animated layout labels only the central volume until its last
+///          pass (`GraphLayoutFrames`), and a layout settled at once never holds the labels back
 @MainActor
 struct VolumeConnectionLabelTests {
 
@@ -1442,8 +1450,8 @@ struct VolumeConnectionLabelTests {
     }
 
     @Test("Over a layout the graph produces, the central volume is labelled on its plate, and no partner label touches a label, the plate or a disc",
-          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
-                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 11)])
+          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 31),
+                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 19)])
     func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) {
         // Forty-eight partners of one Nixon–Ford volume, half citing it and half cited by it, with the
         // corpus's commonest id length (14 characters) — the ids the ten-character cut drew as one.
@@ -1486,6 +1494,63 @@ struct VolumeConnectionLabelTests {
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
     }
+
+    /// A view model over the 49-node graph of `aLaidOutGraphPlacesClearLabels`, not yet laid out.
+    private func fortyNinePartnerGraph() -> VolumeConnectionGraphViewModel {
+        let central = "frus1969-76v17"
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: central)
+        let partners = (1...48).map { String(format: "frus1969-76v%02d", $0 + 17) }
+        vm.inboundEdges = partners.prefix(24).enumerated().map {
+            VolumeConnectionEdge(sourceVolumeId: $0.element, targetVolumeId: central, count: 48 - $0.offset)
+        }
+        vm.outboundEdges = partners.suffix(24).enumerated().map {
+            VolumeConnectionEdge(sourceVolumeId: central, targetVolumeId: $0.element, count: 24 - $0.offset)
+        }
+        return vm
+    }
+
+    @Test("While the layout animates only the central volume is labelled; its last pass places the settled labels (#1434)")
+    func anAnimatedLayoutLabelsOnlyTheCentreUntilItSettles() async throws {
+        let vm = fortyNinePartnerGraph()
+        let central = vm.centralVolumeId
+        var sizes: [String: CGSize] = [:]
+        for id in vm.allVolumeIds {
+            sizes[id] = GraphNodeLabelTests.estimatedSize(vm.label(for: id), fontSize: id == central ? 9 : 8)
+        }
+        // What the canvas places on a frame drawn now: its own call, with the flag it reads.
+        func drawn() -> [String: CGRect] {
+            GraphNodeLabels.place(vm.labelRequests(sizes: sizes), settling: vm.isLayoutSettling)
+        }
+
+        // Reduce Motion off and 49 nodes: the layout animates, as it does after a load, an Explore
+        // connections, a Back or a resize.
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: false)
+        let tracked = try await GraphLayoutFrames.track(settling: { vm.isLayoutSettling },
+                                                        positions: { vm.nodePositions },
+                                                        drawn: { Set(drawn().keys) })
+        #expect(tracked.framesWhileSettling >= 3,
+                "saw \(tracked.framesWhileSettling) layout pass(es) while settling: the sample missed the animation")
+        #expect(tracked.labelsWhileSettling == [[central]], "labelled while settling: \(tracked.labelsWhileSettling)")
+        #expect(tracked.movedAfterSettling == false, "the layout kept moving after it said it had settled")
+        let settled = drawn()
+        #expect(settled == GraphNodeLabels.place(vm.labelRequests(sizes: sizes)))
+        #expect(settled.count > 1, "only \(settled.count) label(s) placed on the settled layout")
+    }
+
+    @Test("A layout settled at once never holds the labels back, and it ends an animated one (#1434)")
+    func aLayoutSettledAtOnceIsNeverSettling() async throws {
+        let vm = fortyNinePartnerGraph()
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: true)
+        #expect(!vm.isLayoutSettling)
+        vm.onCanvasSizeChanged(CGSize(width: 640, height: 480), reduceMotion: false)
+        #expect(vm.isLayoutSettling)
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: true)
+        #expect(!vm.isLayoutSettling)
+        let resting = vm.nodePositions
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(!vm.isLayoutSettling)
+        #expect(vm.nodePositions == resting, "the cancelled layout went on publishing")
+    }
 }
 
 // MARK: - The info popover's gestures (#1481)
@@ -1499,6 +1564,9 @@ struct VolumeConnectionLabelTests {
 ///   1.0 — 2026-09-30: #1481
 ///   1.1 — 2026-09-30: #1481 review, round 1 — the touch text taps and says no click at all, and
 ///         does not promise the main window its long-press menu does not open
+///   1.2 — 2026-10-01: #1481 (lane GRAPH, the owner's decision D9) — the long-press menu's open item
+///         reads "View Document" on iOS; `CodingStandardsAuditTests.macClickVariantsStayOffIOS`
+///         holds the Mac's "Open in Main Window" apart
 @Suite("Cross-reference graph — interaction help")
 struct CrossReferenceGraphHelpTests {
 
@@ -1511,8 +1579,21 @@ struct CrossReferenceGraphHelpTests {
         #expect(help.contains("pinch-to-zoom"), "\(help)")
         #expect(help.range(of: "click", options: .caseInsensitive) == nil,
                 "the touch text names a Mac gesture: \(help)")
-        // On iOS "Open in Main Window" pushes the document inside the graph's own stack
+        // On iOS the long-press menu's open item pushes the document inside the graph's own stack
         // (`nodeContextMenuItems`), so the help may not promise the main window.
         #expect(!help.contains("main window"), "the touch text promises a window it does not open: \(help)")
+    }
+
+    @Test("On iOS the node menu's open item names what it does, as the info panel's button does (#1481)")
+    @MainActor
+    func theOpenItemNamesWhatItDoes() {
+        // The item pushes the document inside the graph's own navigation stack, as the info panel's
+        // "View Document" button does; it used to read "Open in Main Window", which the Mac's does.
+        let name = CrossReferenceGraphView.openDocumentActionName
+        #expect(name == "View Document", "\(name)")
+        #expect(name.range(of: "window", options: .caseInsensitive) == nil,
+                "the iOS item promises a window it does not open: \(name)")
+        // The help that names the menu ("…or open it") still describes it.
+        #expect(CrossReferenceGraphView.interactHelp.contains("or open it"))
     }
 }

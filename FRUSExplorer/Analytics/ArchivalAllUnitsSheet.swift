@@ -256,6 +256,8 @@ struct ArchivalAllUnitsSheet: View {
             hiddenUmbrella: ranking.hiddenUmbrellaValue, unitsReached: ranking.unitsReached,
             bandVolumeCount: ranking.bandVolumeCount, indexedVolumeCount: indexedVolumeCount,
             noteCount: ranking.bandNoteCount, shownValue: ranking.shownValue,
-            rowCapApplied: false, scopeLabel: scopeLabel)
+            rowCapApplied: false, scopeLabel: scopeLabel,
+            // PV-1: the table above writes each class's gloss, read from the State Department's schedule.
+            glossesWritten: ranking.rows.contains { $0.gloss != nil })
     }
 }

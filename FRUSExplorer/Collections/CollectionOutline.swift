@@ -43,6 +43,8 @@ import Foundation
 ///          it. The resolver runs the same core once per override field (highlights,
 ///          notes, source note, footnotes, summary prompt, related documents), so every
 ///          per-section default cascades by exactly the body-depth rule
+///   1.3 — #1465: `exportLevels(_:untitled:)` — the levels an export emits once it leaves out every heading saved
+///          with no text, each named heading under one lifted a level
 enum CollectionOutline {
 
     /// The maximum heading nesting depth (locked decision A6: cap at 3, enforced in the
@@ -128,6 +130,50 @@ enum CollectionOutline {
             }
         }
         return depths
+    }
+
+    // MARK: - Export levels (#1465)
+
+    /// The level each position takes in an EXPORT, which leaves out every heading saved with no text (#1465).
+    ///
+    /// The owner's decision D4 (2026-09-28): the live preview shows such a heading as "Untitled section", every
+    /// export drops it — whether or not documents sit under it — and a named heading under it moves up one level. So
+    /// a heading's export level is its resolved level less the number of dropped headings among its ancestors, and a
+    /// dropped heading has none. It runs over the resolved depths, never the stored levels, so it inherits the clamp
+    /// and the orphan-jump correction; and since a dropped heading lifts everything it owns by the same one level,
+    /// what it returns has no orphan jump either.
+    ///
+    /// Only the emitted levels change. The resolver still runs the section cascades
+    /// (`sectionOverrideValues(_:headingValues:)`) over the whole outline, so the documents under a dropped heading
+    /// keep the Section defaults it set.
+    ///
+    /// - Parameters:
+    ///   - refs: Structural facts in collection order.
+    ///   - untitled: For each position, whether it is a heading the export drops; ignored for any other entry.
+    /// - Returns: One level per position: `nil` for a dropped heading, the lifted level for every other heading, and
+    ///   for any other entry its owning heading's lifted level (`0` when no kept heading owns it).
+    static func exportLevels(_ refs: [StructuralRef], untitled: [Bool]) -> [Int?] {
+        let depths = resolvedDepths(refs)
+        // The headings open above the current position, outermost first: each one's resolved level and whether the
+        // export drops it.
+        var open: [(level: Int, dropped: Bool)] = []
+        var levels: [Int?] = []
+        levels.reserveCapacity(refs.count)
+        for (index, ref) in refs.enumerated() {
+            let depth = depths[index]
+            if ref.isHeading {
+                while let innermost = open.last, innermost.level >= depth { open.removeLast() }
+                let lift = open.filter(\.dropped).count
+                let dropped = untitled.indices.contains(index) && untitled[index]
+                open.append((level: depth, dropped: dropped))
+                levels.append(dropped ? nil : max(depth - lift, 1))
+            } else {
+                // Owned by the innermost open heading, so lifted by every dropped heading open above it — that one
+                // included, when it is dropped.
+                levels.append(max(depth - open.filter(\.dropped).count, 0))
+            }
+        }
+        return levels
     }
 
     // MARK: - Normalize

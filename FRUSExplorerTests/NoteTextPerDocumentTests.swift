@@ -668,3 +668,107 @@ struct NoteTextWriterScanTests {
             """)
     }
 }
+
+// MARK: - ImportedNoteIndexTests
+
+/// A `.fruscollection` import's notes are searchable at once (the 2026-09-28 audit, from #1280's session log).
+///
+/// `NativeCollectionSerializer.apply` recreates each note a shared file carries as a new `ResearchNote`, and all three
+/// import paths only saved — nothing pushed the notes into `note_text`, so they became findable at the next launch's
+/// replay. The import now rewrites each affected document's column through the one writer, `reindexNoteText`, which
+/// reads the reader's own notes too. The indexer is driven through the real serializer, writer and search; the paths
+/// that call it are read from the source, found by their call to the serializer. Runs on any destination.
+@Suite("A collection import indexes the notes it brings")
+struct ImportedNoteIndexTests {
+
+    @MainActor
+    @Test("A note imported with a collection is findable at once, and the reader's own note on it stays findable")
+    func importedNotesAreSearchable() async throws {
+        let (dir, service, pipeline, _) = try await makeNoteFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        _ = makeNote("Kissinger backchannel.", on: "d1", in: context, createdAt: Date(timeIntervalSince1970: 1_000_000))
+        try context.save()
+        await ResearchNote.reindexNoteText(volumeId: "vol1", documentId: "d1", in: context, pipeline: pipeline)
+
+        // The shared file, as another reader exported it with notes on: d1 and d2, a note on each.
+        let sharerContainer = try ModelContainer.makeTestContainer()
+        let sharerContext = ModelContext(sharerContainer)
+        let shared = Collection(name: "Shared")
+        sharerContext.insert(shared)
+        for (index, id) in ["d1", "d2"].enumerated() {
+            let entry = CollectionEntry(collectionId: shared.id, documentId: id, volumeId: "vol1", sortOrder: index)
+            sharerContext.insert(entry)
+            entry.collection = shared
+        }
+        try sharerContext.save()
+        let file = NativeCollectionSerializer.makeFile(from: shared, includeNotes: true) { entry in
+            entry.documentId == "d1" ? ["Verify the dateline."] : ["Telegram routing slip."]
+        }
+        #expect(file.entries.compactMap(\.notes).flatMap { $0 }.count == 2, "the file carries no notes to import")
+
+        let imported = NativeCollectionSerializer.apply(file, into: context)
+        try context.save()
+        await NativeCollectionSerializer.indexImportedNotes(of: imported, in: context, pipeline: pipeline)
+
+        #expect(try await noteSearch(service, "dateline") == ["d1"], "an imported note is not findable")
+        #expect(try await noteSearch(service, "routing") == ["d2"], "an imported note is not findable")
+        #expect(try await noteSearch(service, "backchannel") == ["d1"], """
+            The import took the reader's own note on the same document out of the index: the column is per \
+            document, so it has to be rewritten from every note on it.
+            """)
+        withExtendedLifetime((container, sharerContainer)) {}
+    }
+
+    /// Every import path is found by its call, not named in a list: each function in the app that calls
+    /// `NativeCollectionSerializer.apply(` or `NativeCollectionSerializer.importCollection(from:` must save and then
+    /// index. The list this replaced named the two Import Collection… functions and could not see the third path — a
+    /// file opened from Files, Mail, AirDrop or Finder (`FRUSExplorerApp.importOpenedCollection`), which saved and never
+    /// indexed (review round 1).
+    @Test("Every import path indexes the notes it brings, after it saves")
+    func everyImportPathIndexes() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let files = try #require(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil))
+        var read = 0
+        var paths: [String] = []
+        for case let url as URL in files where url.pathExtension == "swift" {
+            read += 1
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let relative = url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
+            for needle in ["NativeCollectionSerializer.apply(", "NativeCollectionSerializer.importCollection(from:"] {
+                for hit in text.ranges(of: needle) {
+                    // A call, not a comment that names one (`FRUSExplorerApp`'s own doc comments do).
+                    let lineStart = text[..<hit.lowerBound].lastIndex(of: "\n").map { text.index(after: $0) }
+                        ?? text.startIndex
+                    let line = text[lineStart..<hit.lowerBound].trimmingCharacters(in: .whitespaces)
+                    if line.hasPrefix("//") || line.hasPrefix("*") { continue }
+                    let function = try #require(text[..<hit.lowerBound].range(of: "func ", options: .backwards),
+                                                "\(relative) calls \(needle) outside a function")
+                    let body = try #require(WindowTargetingTests.balancedBlock(in: text, from: function.lowerBound),
+                                            "no balanced body for the function around \(relative)'s \(needle)")
+                    #expect(body.endIndex > hit.upperBound, "\(relative): the call is not inside the function found")
+                    let name = text[function.upperBound...].prefix { $0 != "(" }
+                    paths.append("\(relative) \(name)")
+                    let after = String(text[hit.upperBound..<body.endIndex])
+                    let save = try #require(after.range(of: #"try \w*[cC]ontext\.save\(\)"#, options: .regularExpression),
+                                            "\(relative) \(name) does not save the import")
+                    let index = after.range(of: "NativeCollectionSerializer.indexImportedNotes(of: imported")
+                    #expect(index != nil, "\(relative) \(name) does not index the notes it brings:\n\(body)")
+                    if let index {
+                        #expect(save.upperBound <= index.lowerBound,
+                                "\(relative) \(name) indexes before it saves, so the read misses the notes")
+                    }
+                }
+            }
+        }
+        #expect(read > 400, "read \(read) Swift files: the scan is broken, not the tree clean")
+        // Counted, so a needle that stopped matching cannot pass by finding nothing.
+        for expected in ["App/FRUSExplorerApp.swift importOpenedCollection",
+                         "Collections/CollectionListView.swift importCollection",
+                         "Collections/MacCollectionManagerView.swift importCollection"] {
+            #expect(paths.contains(expected), "the scan did not find \(expected): it found \(paths)")
+        }
+    }
+}
