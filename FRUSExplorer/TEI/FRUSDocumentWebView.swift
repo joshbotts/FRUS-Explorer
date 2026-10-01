@@ -12,7 +12,7 @@ import WebKit
 // MARK: - SelectionPayload
 
 /// A live text selection reported to `onSelectionChanged` — offsets, text, footnote block, and
-/// the bounding geometry that anchors the floating selection bar. A struct (not a positional
+/// the bounding geometry that anchors the Mac's floating selection bar. A struct (not a positional
 /// tuple) so the growing payload stays readable.
 struct SelectionPayload: Equatable {
     /// Flat-text UTF-16 start offset, or `-1` for an out-of-document (footnote) selection.
@@ -24,10 +24,12 @@ struct SelectionPayload: Equatable {
     /// The enclosing footnote body for a footnote selection, else `""` (#269).
     let blockText: String
     /// The selection's bounding rect in the web view's own point space (viewport CSS px at
-    /// `scale == 1`), or `nil` when unavailable — anchors the floating selection bar.
+    /// `scale == 1`), or `nil` when unavailable — anchors the Mac's floating selection bar. Nothing
+    /// on iPhone or iPad reads it since #1540 retired the bar there.
     let rect: CGRect?
-    /// `visualViewport.scale` at capture (`1` when unavailable / unzoomed), so iOS can correct
-    /// for pinch zoom (macOS never magnifies).
+    /// `visualViewport.scale` at capture (`1` when unavailable / unzoomed). The iPhone and iPad bar
+    /// read it to hide while pinch-zoomed; since #1540 retired that bar nothing reads it, and macOS
+    /// never magnifies.
     let scale: CGFloat
 
     /// Creates a payload. `blockText`/`rect`/`scale` default so tests and in-document callers stay terse.
@@ -412,7 +414,7 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
             onSelectionCleared?()
         case .selection(let payload):
             // In-document (`payload.hasOffsets`) or footnote selection; the payload carries
-            // the offsets/text/blockText plus the rect/scale that anchor the floating bar.
+            // the offsets/text/blockText plus the rect/scale that anchor the Mac's floating bar.
             liveSelection = payload
             onSelectionChanged?(payload)
         }
@@ -811,6 +813,14 @@ enum SelectionEditMenu {
 /// then clears the selection: a new highlight is hidden under the selection's own tint until it
 /// goes, and a selection left behind would offer the menu again for a passage already handled —
 /// the retired bar's tap cleared it the same way.
+///
+/// The report is a script message, so it arrives asynchronously, while UIKit builds the menu once
+/// per presentation from WebKit's own selection. A menu built before the report lands has no app
+/// items (when nothing was reported before), or items gated on the PREVIOUS selection (after a
+/// direct change from one selection to another), so a footnote selection can be offered a colour
+/// and Excerpt: the reader keeps no range for one, so a colour does nothing and Excerpt captures
+/// the text without anchors. Either lasts until the menu is shown again. Only the UI suite's 1.2 s
+/// press has been measured; a report that the colours are sometimes missing points here.
 ///
 /// Version history:
 ///   1.0 — #1540: initial implementation

@@ -904,7 +904,12 @@ final class ResearchSidebarSelectionTests: XCTestCase {
 ///   Highlight" section lists a colour only while the store holds a highlight of it (the UI-test store is
 ///   in memory, so every launch starts with none).
 /// - Look Up in NARA is observed in the sheet it opens: "Look Up in NARA Catalog", with the selected
-///   word in its query field.
+///   word in its query field. Excerpt and Note are observed the same way, in the sheets they open:
+///   "Add Excerpt to Collection" and "New Research Note".
+/// - That the selection is CLEARED after an item is chosen is not observable here: UIKit dismisses an
+///   edit menu whenever one of its items is chosen, whether or not the page's selection survives, so
+///   a menu that goes away proves nothing about the selection. `SelectionEditMenuItemTests` pins the
+///   clear in the unit target, through the real selection bridge.
 ///
 /// ## Fixture
 /// The same as `ResearchReadingDepthTests`: the seeded note sits on `d1` of the seeded volume, whose
@@ -914,11 +919,26 @@ final class ResearchSidebarSelectionTests: XCTestCase {
 /// iPhone 17 selected something with none, and the menu offered only Look Up in NARA and Note.
 ///
 /// ## Where it fails
-/// Measured on iPhone 17 and iPad Pro 13-inch (M5), both iOS 26.5: before #1540 both tests fail on each
-/// (the menu read Copy, Find Selection, Look Up — and Translate on the iPad — beside the bar's buttons).
+/// Measured on iPhone 17 and iPad Pro 13-inch (M5), both iOS 26.5: before #1540 the first three tests
+/// fail on each (the menu read Copy, Find Selection, Look Up — and Translate on the iPad — beside the
+/// bar's buttons). The fourth, `testExcerptAndNoteFromTheEditMenuOpenTheirSheets`, was added in review
+/// round 1 and measured against the reader's Excerpt and Note branches swapped instead; it failed on
+/// iPhone 17, naming the sheet Excerpt opened. The first test's check that the menu's first page
+/// OPENS with "Highlight Yellow" was measured against an extra item put ahead of the app's, on the
+/// same device: the row read ["Probe", "Highlight Yellow", …], and the check before it, which reads
+/// only the app's items, passed.
+///
+/// ## Running it
+/// The suite lives in this file but is not `ResearchReadingStaysInTabTests`, so
+/// `-only-testing FRUSExplorerUITests/ResearchReadingStaysInTabTests` runs none of it: name
+/// `FRUSExplorerUITests/SelectionEditMenuTests`. Run it on an iPhone AND an iPad — the menu pages
+/// differently on each, so Look Up in NARA is in the row on one and behind › on the other (see
+/// `CLAUDE.md`).
 ///
 /// Version history:
 ///   1.0 — #1540: initial implementation
+///   1.1 — #1540 review round 1: Excerpt and Note are driven to their sheets; the first page must open
+///          with the app's first item; the colour test no longer claims to see the selection cleared
 @MainActor
 final class SelectionEditMenuTests: XCTestCase {
     /// Resolves tab destinations across every representation, including the floating iPad bar when
@@ -951,7 +971,9 @@ final class SelectionEditMenuTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        // The look-up test closes its own sheet; this catches one a failure left open.
+        // The sheet tests close their own sheets; this catches a lookup a failure left open. It does
+        // not press the excerpt picker's Cancel or the composer's Discard, but those sheets are the
+        // reader's `activeSheet`, plain view state that no launch restores.
         UITestPresentation.dismissAnyPresentation(in: app)
         XCUIDevice.shared.orientation = .portrait
         app = nil
@@ -976,7 +998,11 @@ final class SelectionEditMenuTests: XCTestCase {
         let firstPage = pageLabels()
         let leading = Array(firstPage.prefix { Self.appItems.contains($0) })
         XCTAssertEqual(leading, Array(Self.appItems.prefix(leading.count)),
-                       "#1540: the menu's first page does not open with the app's actions, in order: \(firstPage)")
+                       "#1540: the app's actions on the menu's first page are out of order: \(firstPage)")
+        // The check above compares an empty prefix with an empty prefix when the row opens with
+        // anything else, so the row's first item is asked for by name.
+        XCTAssertEqual(firstPage.first, Self.appItems.first,
+                       "#1540: the menu's first page does not open with the app's actions: \(firstPage)")
 
         let items = wholeMenu()
         print("[#1540] edit menu: first page \(firstPage); whole menu \(items)")
@@ -989,7 +1015,10 @@ final class SelectionEditMenuTests: XCTestCase {
         attachScreenshot("Edit menu, whole")
     }
 
-    /// Choosing a colour from the menu makes a highlight, and the selection goes away so it shows.
+    /// Choosing a colour from the menu makes a highlight.
+    ///
+    /// The menu going away after the tap is UIKit's doing, not the app's: it does not show that the
+    /// selection was cleared (see the suite's oracles).
     func testAColourFromTheEditMenuMakesAHighlight() throws {
         try openTheSeededDocument()
         selectTheFirstWord()
@@ -998,10 +1027,8 @@ final class SelectionEditMenuTests: XCTestCase {
         XCTAssertTrue(yellow.waitForExistence(timeout: 8),
                       "#1540: the edit menu has no \"Highlight Yellow\" item. On screen: \(pageLabels())")
         yellow.tap()
-        XCTAssertTrue(waitUntil(5) { app.menuItems.count == 0 }, """
-            The menu stayed up after a colour was chosen: \(pageLabels()). The selection should be \
-            cleared so the new highlight shows.
-            """)
+        XCTAssertTrue(waitUntil(5) { app.menuItems.count == 0 },
+                      "The menu stayed up after a colour was chosen: \(pageLabels())")
         attachScreenshot("After Highlight Yellow")
 
         // Back to the Research root, where a highlight adds a row under "By Highlight".
@@ -1050,7 +1077,50 @@ final class SelectionEditMenuTests: XCTestCase {
         XCTAssertTrue(waitUntil(5) { !sheet.exists }, "the lookup's Close did not close it")
     }
 
+    /// Excerpt opens the collection picker for an excerpt of the selection, and Note opens the note
+    /// composer: the reader's other two branches for a chosen item (`DocumentView.performSelectionVerb`).
+    func testExcerptAndNoteFromTheEditMenuOpenTheirSheets() throws {
+        try openTheSeededDocument()
+
+        selectTheFirstWord()
+        chooseFromTheMenu("Excerpt")
+        let picker = app.navigationBars["Add Excerpt to Collection"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), """
+            #1540: Excerpt did not open the collection picker for an excerpt. Navigation bars: \
+            \(navigationBarNames())
+            """)
+        attachScreenshot("Excerpt")
+        picker.buttons["Cancel"].tap()
+        XCTAssertTrue(waitUntil(5) { !picker.exists }, "the picker's Cancel did not close it")
+
+        selectTheFirstWord()
+        chooseFromTheMenu("Note")
+        let composer = app.navigationBars["New Research Note"]
+        XCTAssertTrue(composer.waitForExistence(timeout: 10), """
+            #1540: Note did not open the note composer. Navigation bars: \(navigationBarNames())
+            """)
+        attachScreenshot("Note")
+        composer.buttons["Discard"].tap()
+        XCTAssertTrue(waitUntil(5) { !composer.exists }, "the composer's Discard did not close it")
+    }
+
     // MARK: - Steps
+
+    /// Chooses the item named `name` from the edit menu: from its row when the row shows it, else
+    /// from the list the menu's › opens.
+    private func chooseFromTheMenu(_ name: String) {
+        XCTAssertTrue(app.menuItems["Highlight Yellow"].waitForExistence(timeout: 8),
+                      "#1540: the edit menu does not open with the app's actions. On screen: \(pageLabels())")
+        var item = app.menuItems[name]
+        if !(item.exists && item.isHittable), forward.exists {
+            forward.tap()
+            Thread.sleep(forTimeInterval: 0.5)
+            item = app.cells.buttons[name].firstMatch
+        }
+        XCTAssertTrue(item.exists && item.isHittable,
+                      "#1540: no \"\(name)\" in the edit menu. Whole menu: \(listLabels())")
+        item.tap()
+    }
 
     /// Opens Research ▸ All Research Documents ▸ the seeded note, which reads the fixture's first document.
     private func openTheSeededDocument() throws {
@@ -1131,6 +1201,11 @@ final class SelectionEditMenuTests: XCTestCase {
 
     /// The navigation bar's Back button.
     private var backButton: XCUIElement { app.buttons["BackButton"].firstMatch }
+
+    /// The identifiers of the navigation bars on screen, which name the screens and sheets showing.
+    private func navigationBarNames() -> [String] {
+        app.navigationBars.allElementsBoundByIndex.map(\.identifier)
+    }
 
     /// Attaches a screenshot the reviewer keeps.
     private func attachScreenshot(_ name: String) {

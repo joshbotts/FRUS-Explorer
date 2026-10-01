@@ -162,6 +162,32 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
 ```
 
+**`SelectionEditMenuTests` (#1540) must run on an iPhone AND an iPad, and it lives in
+`ResearchReadingStaysInTabTests.swift` — so `-only-testing FRUSExplorerUITests/ResearchReadingStaysInTabTests` runs a
+different suite and none of these, while reporting green. Name the type.** It long-presses a word in the reader and reads
+the system edit menu, which leads with the app's four colours, Excerpt, Look Up in NARA and Note. The menu shows what
+fits and puts the rest behind ›, and the two idioms split it differently: at the default text size an iPhone 17's row
+holds the dots and Excerpt, an iPad Pro 13-inch's the dots, Excerpt and Look Up in NARA, so Look Up in NARA is reached
+through › on one and from the row on the other. The suite skips on neither. Expect **4 tests, 0 skipped, on each**
+(measured on iPhone 17 and iPad Pro 13-inch (M5), iOS 26.5, with the iOS 27 timeout flags; iOS 27 itself is unmeasured).
+Its unit half is `FRUSExplorerTests/SelectionEditMenuItemTests`, which also pins the clear that follows a chosen item.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/SelectionEditMenuTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/SelectionEditMenuTests
+```
+
 **`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The iPad command for
 `UIObstructionTests` further up is scoped to that suite, so it never runs this one. #1273's test turns a page and rotates across Research's
 820 pt two-pane gate, which needs an iPad whose PORTRAIT canvas is under the gate: iPad mini (744 pt). On

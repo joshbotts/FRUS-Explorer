@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2209–2209 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2215–2215 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2210–2211 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2216–2217 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2515–2516 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2521–2522 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 

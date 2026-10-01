@@ -1797,7 +1797,9 @@ struct DocumentView: View {
     /// Performs one of the selection's verbs, chosen from the start of the system edit menu
     /// (`SelectionEditMenu`) — the iPhone and iPad home of what the retired floating selection bar
     /// offered, and what the Mac's bar still does. Every verb reads the blur-surviving
-    /// `lastValidSelectionRange`/`webKitSelectedText`, as the bar's did.
+    /// `lastValidSelectionRange`/`webKitSelectedText`, as the bar's did. The range is dropped
+    /// afterwards: the web view then clears the page's selection, and the iPad's Highlight Selection
+    /// (⌘⇧H) must not stay enabled for the passage just handled.
     /// - Parameters:
     ///   - verb: The chosen verb. The menu offers a colour and Excerpt only for a selection in the
     ///     document body; a footnote selection gets Look Up in NARA and Note.
@@ -1825,6 +1827,10 @@ struct DocumentView: View {
             // the linked path.
             activeSheet = .noteEditor
         }
+        // `onSelectionCleared` keeps `lastValidSelectionRange` through a blur's false clear; the clear
+        // that follows a verb is real, so the range goes here, or ⌘⇧H would highlight it again.
+        webKitSelectionRange = nil
+        lastValidSelectionRange = nil
     }
 
     // MARK: - Edge-Tap Document Navigation (Read mode "page-turn")
