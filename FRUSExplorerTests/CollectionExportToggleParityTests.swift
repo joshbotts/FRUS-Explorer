@@ -53,6 +53,8 @@ import Testing
 ///         `CollectionEditorView` writes its toggles from #1415 on
 ///   1.2 — #1415 review, round 1: the write-back check reads code only, so a comment quoting either shape cannot
 ///         satisfy it
+///   1.3 — MACCOL: the inspector's copy (`CollectionAttributesRows`) binds each toggle through `saving(\.x)`, which
+///         writes the model and saves each switch, instead of `$collection.x`, which left the save to autosave
 @Suite("Collection export toggle parity")
 struct CollectionExportToggleParityTests {
 
@@ -91,11 +93,12 @@ struct CollectionExportToggleParityTests {
         for (path, _) in Self.surfaces {
             let text = try Self.source(path)
             for toggle in Self.toggles {
-                // A `$`-bound control, not merely a mention: `isOn: $includeColophon` on a
-                // state-mirroring surface, or `isOn: $collection.includeColophon` on a directly
-                // bound one. A doc comment naming the property would otherwise satisfy a bare
+                // A bound control, not merely a mention: `isOn: $includeColophon` on a state-mirroring
+                // surface, or `isOn: saving(\.includeColophon)` on the directly bound one (`$collection.x`
+                // before MACCOL). A doc comment naming the property would otherwise satisfy a bare
                 // substring search — which is exactly how a missing control could keep passing.
-                #expect(text.contains("$\(toggle)") || text.contains("$collection.\(toggle)"),
+                #expect(text.contains("$\(toggle)") || text.contains("$collection.\(toggle)")
+                            || text.contains("saving(\\.\(toggle))"),
                         """
                         \(path) has no control bound to `\(toggle)`. Every per-collection export \
                         option must be reachable on every platform; #617 shipped one that was not, \
@@ -132,16 +135,22 @@ struct CollectionExportToggleParityTests {
         }
     }
 
-    /// A directly-bound surface must bind the MODEL, not a local copy — `$collection.x`, not `$x`.
-    /// A stray `@State` there would edit a value nothing ever reads back.
-    @Test("Directly-bound surfaces bind the model itself")
+    /// A directly-bound surface must bind the MODEL, not a local copy — and, since MACCOL, save each switch as it is
+    /// made: `saving(\.x)`, whose setter writes `collection[keyPath:]` and saves, not `$x` (a stray `@State` there would
+    /// edit a value nothing ever reads back) and not `$collection.x` (which writes the model and leaves the save to
+    /// autosave, so a foreground kill could lose the switch). `SectionDefaultsSaveTests` switches each toggle in the
+    /// hosted rows; this pins that every toggle goes through the saving binding.
+    @Test("Directly-bound surfaces bind the model itself, and save each switch")
     func directSurfacesBindTheModel() throws {
         for (path, mirrorsState) in Self.surfaces where !mirrorsState {
             let text = try Self.source(path)
             for toggle in Self.toggles {
-                #expect(text.contains("$collection.\(toggle)"),
-                        "\(path) must bind `$collection.\(toggle)` directly")
+                #expect(text.contains("saving(\\.\(toggle))"),
+                        "\(path) must bind `\(toggle)` through `saving(\\.\(toggle))`, which writes the model and saves")
             }
+            let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            #expect(collapsed.contains("set: { collection[keyPath: keyPath] = $0; save() }"),
+                    "\(path)'s saving(_:) does not write the collection and save in its setter")
         }
     }
 

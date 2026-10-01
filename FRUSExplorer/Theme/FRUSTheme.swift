@@ -1078,3 +1078,61 @@ struct FRUSTagChip: View {
         )
     }
 }
+
+// MARK: - WrappingFooterSection (#1475)
+
+/// A `List` section whose footer wraps on the Mac (#1475): `Section`'s own trailing closures — content, an optional
+/// header, footer — so a call site changes one word.
+///
+/// **Why.** A macOS `List` draws a section footer on one line and cuts it with an ellipsis: the Topic sheet's Covering
+/// volumes note ended "…including volumes you have not do…" and Manage collections' "…doesn't re…". Measured in an
+/// offscreen harness hosting a `List` of the sheets' shape at 420 pt (macOS 27, the lane's `footer.swift`): whatever the
+/// footer's text carries — nothing, `.fixedSize(horizontal: false, vertical: true)` (#600's first attempt), or #1096's
+/// per-text `fixedSize` and full-width frame — it is laid out 14 pt tall, one line; with its line limit lifted too, the
+/// text grows but the footer's row does not, so a four-line footer shows its middle two lines. The same text as a ROW of
+/// a section of its own wraps — #600's idiom, the Working Corpora footer's — 39 pt for the Topic sheet's three sentences.
+///
+/// So on the Mac the footer is drawn as that row: footnote, secondary, the list's width, its own height, no separator,
+/// in a section after the content's. On iOS, where a `List` footer wraps, it stays in the footer slot, unchanged.
+///
+/// Version history:
+///   1.0 — #1475: initial implementation, for the Topic sheet's two footers and Project Home's Manage collections and
+///         Focus Tags sheets
+struct WrappingFooterSection<Content: View, Header: View, Footer: View>: View {
+    /// The section's rows.
+    private let content: Content
+    /// The section's header; `EmptyView` for none.
+    private let header: Header
+    /// The section's footer.
+    private let footer: Footer
+
+    /// A section with a header and a footer.
+    init(@ViewBuilder content: () -> Content, @ViewBuilder header: () -> Header, @ViewBuilder footer: () -> Footer) {
+        self.content = content()
+        self.header = header()
+        self.footer = footer()
+    }
+
+    var body: some View {
+        #if os(macOS)
+        Section { content } header: { header }
+        Section {
+            footer
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .listRowSeparator(.hidden)
+        }
+        #else
+        Section { content } header: { header } footer: { footer }
+        #endif
+    }
+}
+
+extension WrappingFooterSection where Header == EmptyView {
+    /// A section with a footer and no header.
+    init(@ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer) {
+        self.init(content: content, header: { EmptyView() }, footer: footer)
+    }
+}

@@ -48,6 +48,8 @@ import SwiftData
 ///   (file) UI audit A4 (2026-07-04): shared Move Up / Move Down helpers
 ///          (`entryMoveContextMenuItems`, `View.entryMoveControls`) added beside
 ///          `structuralDeleteButton`; every row type gained the optional closures
+///   1.5 — #1477: the title field's "Section heading" prompt is drawn at the row's background
+///          prominence (`CollectionChipStyle.prompt`), so it reads on a selected Mac row
 struct CollectionHeadingRow: View {
     @Binding var entry: CollectionEntry
     /// Deletes the heading entry ONLY — its contents stay and any sub-headings bubble up
@@ -97,6 +99,9 @@ struct CollectionHeadingRow: View {
     @State private var showSectionInspector = false
 
     @Environment(AppState.self) private var appState
+    /// Whether the row is drawn selected — `.increased` on a selected Mac outline row, where the title field's prompt
+    /// would otherwise keep its own placeholder colour on the accent fill (#1477).
+    @Environment(\.backgroundProminence) private var backgroundProminence
 
     /// The section's body-depth override (`nil` = documents follow the collection default).
     private var sectionDepth: Binding<String?> {
@@ -143,7 +148,10 @@ struct CollectionHeadingRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextField(String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
-                          text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }))
+                          text: Binding(get: { entry.text ?? "" }, set: { entry.text = $0 }),
+                          prompt: CollectionChipStyle.prompt(
+                              String(localized: "collection.heading.placeholder", defaultValue: "Section heading"),
+                              on: backgroundProminence))
                     .font(titleFont)
                     .focused($titleFocused)
                 if isCollapsed && sectionEntryCount > 0 {
@@ -287,24 +295,68 @@ func structuralDeleteButton(_ onDelete: (() -> Void)?) -> some View {
 ///
 /// Version history:
 ///   1.0 — Composer v2 §D: labeled Configure trigger replaces the info-glyph editor openers
+///   1.1 — #1477: drawn at the row's background prominence (``CollectionChipStyle``), so it reads on a selected Mac row
 struct ConfigurePill: View {
     /// The pill's label — "Configure" on a document row, "Section defaults" on a heading row.
     var label: String = String(localized: "collection.entry.configure", defaultValue: "Configure")
     /// Opens the per-entry inspector for the row.
     let action: () -> Void
+    /// Whether the row behind the pill is drawn selected — `.increased` on a selected Mac outline row (#1477).
+    @Environment(\.backgroundProminence) private var backgroundProminence
 
     var body: some View {
+        let colors = CollectionChipStyle.colors(on: backgroundProminence)
         Button(action: action) {
             Label(label, systemImage: "slider.horizontal.3")
                 .font(.system(size: 12, weight: .semibold))
                 .labelStyle(.titleAndIcon)
-                .foregroundStyle(FRUSTheme.overrideChipForeground)
+                .foregroundStyle(colors.foreground)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(FRUSTheme.overrideChipBackground, in: RoundedRectangle(cornerRadius: 8))
+                .background(colors.background, in: RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
+    }
+}
+
+// MARK: - CollectionChipStyle (#1477)
+
+/// The colours a collection row's accent chips — ``ConfigurePill`` and ``EntryStatusChip`` — and its heading's prompt
+/// are drawn in, by the background prominence of the row they sit on (#1477).
+///
+/// **Why.** On the Mac a selected row of the Collections window's outline is filled with the accent colour, and SwiftUI
+/// tells the row's content so through `backgroundProminence` (`.increased`). The chips were drawn in fixed theme colours
+/// — accent on accent at 12 % — and the heading's "Section heading" prompt in the field's own placeholder colour, so on
+/// a selected heading or document row they were dark on the blue fill and hard to read (the Mac by-eye check of
+/// 2026-09-25). Text in `.primary` and `.secondary` styles adapts to the selection by itself; these colours did not.
+///
+/// At `.increased` prominence the chips are white on a white tint and the prompt a lighter white; at any other they
+/// keep the theme's colours and the field's own placeholder colour (`nil`), so a row drawn at standard prominence looks
+/// as it did. The rows are shared with iOS, and the rule is too: an iOS list that raises a row's prominence gets the
+/// same white. Pure, so `CollectionChipStyleTests` calls the rule the views call; `CollectionRowChipContrastSourceTests`
+/// pins that the views call it at their row's prominence.
+///
+/// Version history:
+///   1.0 — #1477: initial implementation
+enum CollectionChipStyle {
+    /// A chip's label and fill on a row drawn at `prominence`.
+    static func colors(on prominence: BackgroundProminence) -> (foreground: Color, background: Color) {
+        prominence == .increased
+            ? (Color.white, Color.white.opacity(0.22))
+            : (FRUSTheme.overrideChipForeground, FRUSTheme.overrideChipBackground)
+    }
+
+    /// The colour of a heading field's prompt on a row drawn at `prominence`, or `nil` to keep the field's own
+    /// placeholder colour.
+    static func promptColor(on prominence: BackgroundProminence) -> Color? {
+        prominence == .increased ? Color.white.opacity(0.75) : nil
+    }
+
+    /// The heading field's prompt — `text`, in ``promptColor(on:)`` when that is not the field's own.
+    static func prompt(_ text: String, on prominence: BackgroundProminence) -> Text {
+        guard let color = promptColor(on: prominence) else { return Text(text) }
+        return Text(text).foregroundStyle(color)
     }
 }
 
@@ -820,20 +872,24 @@ struct UnrecognizedEntryRow: View {
 ///
 /// Version history:
 ///   1.0 — Collections Manager M2 (D3): initial implementation
+///   1.1 — #1477: drawn at the row's background prominence (``CollectionChipStyle``), so it reads on a selected Mac row
 struct EntryStatusChip: View {
     /// The chip's short localized label.
     let text: String
+    /// Whether the row behind the chip is drawn selected — `.increased` on a selected Mac outline row (#1477).
+    @Environment(\.backgroundProminence) private var backgroundProminence
 
     var body: some View {
+        let colors = CollectionChipStyle.colors(on: backgroundProminence)
         // Text-only accent-tinted pill (Composer v2 §3): a *labeled* override chip, never an icon
         // tile — the word alone ("Summary", "7 notes", "Headnote") carries the meaning, matching the
         // redesign's managed-disclosure rule that document rows show only labeled chips.
         Text(text)
             .font(.caption2)
-            .foregroundStyle(FRUSTheme.overrideChipForeground)
+            .foregroundStyle(colors.foreground)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .background(FRUSTheme.overrideChipBackground, in: RoundedRectangle(cornerRadius: 5))
+            .background(colors.background, in: RoundedRectangle(cornerRadius: 5))
             .accessibilityElement(children: .combine)
     }
 }

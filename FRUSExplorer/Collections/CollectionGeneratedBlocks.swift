@@ -627,11 +627,7 @@ enum CollectionGeneratedBlocks {
                 let refs = documents
                     .filter { identity.documentKeys.contains(documentKey($0)) }
                     .map { referenceToken($0, multiVolume: multiVolume, numbers: numbers) }
-                let refList = refs.count == 1
-                    ? String(localized: "collection.generated.persons.document",
-                             defaultValue: "Document \(refs[0])")
-                    : String(localized: "collection.generated.persons.documents",
-                             defaultValue: "Documents \(refs.joined(separator: ", "))")
+                let refList = referenceListText(refs)
                 let detail = identity.description ?? identity.role
                 let secondary = [detail, refList].compactMap { $0 }.joined(separator: " — ")
                 return CollectionGeneratedRow(text: identity.name, secondaryText: secondary)
@@ -713,25 +709,60 @@ enum CollectionGeneratedBlocks {
         Set(documents.map(\.volumeId)).count > 1
     }
 
-    /// A short reference token for inline lists: the printed document number (else the raw
-    /// id — a document the volume prints without a number, or one not indexed whose id is not
-    /// `d` + a number), volume-qualified when the collection spans volumes (e.g.
-    /// `"12 (frus1969-76v01)"`, `"373a"`).
+    /// How an inline list names one document: its `text`, and whether it is a NUMBER — a printed number, or the
+    /// raw id of a document whose number this device has not read — which a list puts after "Document"; or the
+    /// "Unnumbered (id)" label of a document the volume prints without a number (#1493), which stands alone.
+    private struct ReferenceToken {
+        /// What the list prints for the document.
+        let text: String
+        /// Whether `text` is read after "Document" / "Documents".
+        let isNumber: Bool
+    }
+
+    /// A short reference token for inline lists: the printed document number (else the raw id of a
+    /// document not indexed whose id is not `d` + a number), volume-qualified when the collection spans
+    /// volumes (e.g. `"12 (frus1969-76v01)"`, `"373a"`). A document the volume prints WITHOUT a number reads
+    /// "Unnumbered (d710a-1)", or "Unnumbered (d710a-1, frus1945Berlinv02)" across volumes (#1493, decision
+    /// D5) — it used to read as its id dressed as a number, "Document d710a-1".
     private static func referenceToken(
         _ doc: (volumeId: String, documentId: String), multiVolume: Bool,
         numbers: [String: String]
-    ) -> String {
+    ) -> ReferenceToken {
+        if documentNumber(doc, numbers: numbers) == nil,
+           CitableDocumentNumber.isUnnumbered(printed: numbers[documentKey(doc)]) {
+            return ReferenceToken(
+                text: CitableDocumentNumber.unnumberedLabel(documentId: doc.documentId,
+                                                            volumeId: multiVolume ? doc.volumeId : nil),
+                isNumber: false)
+        }
         let base = documentNumber(doc, numbers: numbers) ?? doc.documentId
-        return multiVolume ? "\(base) (\(doc.volumeId))" : base
+        return ReferenceToken(text: multiVolume ? "\(base) (\(doc.volumeId))" : base, isNumber: true)
     }
 
-    /// A short reference row for indent-1 document lists (sources & thematic blocks):
-    /// "Document 12", volume-qualified when the collection spans volumes.
+    /// A short reference row for indent-1 document lists (sources & thematic blocks): "Document 12",
+    /// volume-qualified when the collection spans volumes — or, for a document the volume prints without a
+    /// number, its "Unnumbered (id)" label alone (#1493).
     private static func referenceRowText(
         _ doc: (volumeId: String, documentId: String), multiVolume: Bool,
         numbers: [String: String]
     ) -> String {
-        String(localized: "collection.generated.documentRef",
-               defaultValue: "Document \(referenceToken(doc, multiVolume: multiVolume, numbers: numbers))")
+        let token = referenceToken(doc, multiVolume: multiVolume, numbers: numbers)
+        guard token.isNumber else { return token.text }
+        return String(localized: "collection.generated.documentRef",
+                      defaultValue: "Document \(token.text)")
+    }
+
+    /// An inline list of documents — a Persons index entry's: "Document 12" or "Documents 12, 373a", in the
+    /// order given. The word goes before the list only when it names at least one number (#1493): a list of
+    /// unnumbered documents alone reads "Unnumbered (d710a-1), Unnumbered (d710a-2)", since "Documents
+    /// Unnumbered (…)" says nothing true; a mixed list keeps it, "Documents 373, Unnumbered (d710a-1)".
+    private static func referenceListText(_ tokens: [ReferenceToken]) -> String {
+        let joined = tokens.map(\.text).joined(separator: ", ")
+        guard tokens.contains(where: \.isNumber) else { return joined }
+        return tokens.count == 1
+            ? String(localized: "collection.generated.persons.document",
+                     defaultValue: "Document \(joined)")
+            : String(localized: "collection.generated.persons.documents",
+                     defaultValue: "Documents \(joined)")
     }
 }

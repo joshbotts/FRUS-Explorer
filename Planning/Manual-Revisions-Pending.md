@@ -299,3 +299,43 @@ Format, one entry per change:
 - **Proposed:** **Diagnostics** holds the redacted iCloud **Sync Log** (event types, timing, and error codes only — never your content), the **iCloud Schema** status, and **Language Analysis**: whether this device's language analysis is reducing words to their dictionary forms, telling parts of speech apart and recognizing names — *Working*, *Limited* (naming what is not working; the app checks again each time you come back to it), or *Checking* while it finds out.
 - **Why:** as for the Mac (#1539; `DataRecoveryView.swift:97`, `:725`). The iOS sentence also omits **Semantic Match Feedback**, which the same section shows on iPhone and iPad; that is older than this lane and is left to lane MANUALS.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## MACCOL — #1446, #1448, #1449, #1477, #1493, #1475
+
+*Lane MACCOL polishes the Mac Collections window and folds in two save fixes: the Mac detail pane writes only the field the reader edits and follows the others, and a heading's Section defaults saves each edit. These are the manual sentences that work makes incomplete or too cautious. Each quotes the manual as it stands at `origin/v2` f5625ca2. #1448 (the resting cap after a formatting change, and the edited height beside a legacy scroller), #1475 (List footers that wrap) and #1477 (no stale caret; legible chips on a selected row) change drawing the manuals do not describe, and need no change.*
+
+- **Manual / section:** Mac §12.1 The Collections Window (the collection picker sentence)
+- **Current:** The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count, plus **New Collection…** (⌥⌘N), …
+- **Proposed:** The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count (a long name is cut short on the toolbar, and listed whole in the menu), plus **New Collection…** (⌥⌘N), …
+- **Why:** #1446: the picker's label keeps the name to one line within `MacCollectionManagerView.collectionNameMaxWidth`, 260 pt (`FRUSExplorer/Collections/MacCollectionManagerView.swift:202`), so a long name no longer pushes the toolbar's items behind its overflow chevron; the menu's rows are unchanged.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.3 Composing, the **Prose blocks** bullet
+- **Current:** …click it to edit the whole block, and it goes back to its opening lines when you click another row or field. The introduction in the ⚙ Collection popover works the same way.
+- **Proposed:** …click it to edit the whole block, and it goes back to its opening lines when you click another row or field. The introduction in the ⚙ Collection popover works the same way, and so does the popover's **Note** above it, which is plain text and has no formatting bar.
+- **Why:** #1449: the Note is the shared capped editor in its plain-text mode (`RichTextEditor(…, restingCap: .noteInPopover, plainText: true)`, `MacCollectionManagerView.swift:982`), where it was a fixed-height field that scrolled a long note and cut it through a line. It stays plain because the collection's note is a plain `String?`; a rich note would be a stored property, a CloudKit schema change.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.3 Composing, the **Apparatus blocks** bullet (a sentence added after the list of the five blocks)
+- **Current:** (no sentence)
+- **Proposed:** Where these blocks list documents, each reads by its printed number — *Document 373a* — and one the volume prints without a number, such as the unnumbered documents of the Potsdam volume, reads *Unnumbered (d710a-1)*, by its history.state.gov identifier.
+- **Why:** #1493, the owner's decision D5: `CitableDocumentNumber.unnumberedLabel` (`FRUSExplorer/Citation/CitationFormatter.swift:255`) through the blocks' list tokens (`CollectionGeneratedBlocks.referenceToken` and `referenceListText`, `FRUSExplorer/Collections/CollectionGeneratedBlocks.swift:727`, `:759`). They used to print the id as though it were the number — "Document d710a-1".
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.5 Document Rows and the Inspector (first sentence)
+- **Current:** Each document row is a scannable report — title, volume, date, and small labeled chips — …
+- **Proposed:** Each document row is a scannable report — the document's printed number (*Document 373a*, or *Unnumbered (d710a-1)* for a document the volume prints without one), title, volume, date, and small labeled chips — …
+- **Why:** #1493: the row's label is `CitableDocumentNumber.rowLabel` (`CitationFormatter.swift:234`, called at `MacCollectionManagerView.swift:1782`), which showed such a document's bare id. A document whose volume is not indexed on this Mac still shows its id: with no number stored, the app cannot tell an unnumbered document from one whose number it has not read.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.5 Apparatus Blocks (a sentence added after the list of the five blocks)
+- **Current:** (no sentence)
+- **Proposed:** Where these blocks list documents, each reads by its printed number — *Document 373a* — and one the volume prints without a number, such as the unnumbered documents of the Potsdam volume, reads *Unnumbered (d710a-1)*, by its history.state.gov identifier.
+- **Why:** as for the Mac (#1493; `CitationFormatter.swift:255`, `CollectionGeneratedBlocks.swift:727`, `:759`); the blocks are the same on every platform, in the preview and in every export.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.1 The Manager on iPad (its first paragraph, the save sentences)
+- **Current:** Collection settings saves each edit as you make it, so leaving by Back, by another tab, or by closing the app loses nothing. Section defaults puts each edit on the collection at once, so leaving the sheet or the editor loses nothing, and the app saves it with its regular saves.
+- **Proposed:** Collection settings saves each edit as you make it, and Section defaults saves each change to the collection's description, subtitle, author line and three export switches the same way, so leaving by Back, by another tab, or by closing the app loses none of them. Section defaults puts its other changes on the collection at once too, and the app saves them with its regular saves.
+- **Why:** the plan of record's fold-in "Section defaults save each write": `CollectionAttributesRows` — the sheet's description, subtitle, author line and three toggles — now saves in every field's and toggle's binding (`optional(_:)` and `saving(_:)`, `FRUSExplorer/Collections/CollectionCompositionRows.swift:353`, `:359`), where it left the save to the app's autosave. Pinned by `SectionDefaultsSaveTests`, which types into each field and switches each toggle with autosave off. The sheet's other controls — the composition rows (`CollectionCompositionRows`) and the section's own export defaults (`CollectionEntryInspector.overrideControls`) — still leave the save to autosave, so the proposal promises nothing for them.
+- **Owner:** ☐ approve ☐ edit ☐ reject

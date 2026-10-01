@@ -5989,12 +5989,17 @@ struct CollectionEditorNamingTests {
         #expect(titles == [".navigationTitle(CollectionEditorNaming.navigationTitle(savedName: name, isNewCollection: false))"],
                 "CollectionDetailPane's title is not the shared rule for a collection it opened: \(titles)")
 
-        let follow = try #require(code.firstIndex(of: ".onChange(of: collection.name) { _, newValue in"),
-                                  "CollectionDetailPane no longer follows collection.name")
-        #expect(code.filter { $0.hasPrefix(".onChange(of: collection.name)") }.count == 1,
-                "CollectionDetailPane follows collection.name more than once")
-        #expect(code[follow + 1] == "if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }",
-                "CollectionDetailPane's name follow does not compare through fieldAgrees: \(code[follow + 1])")
+        // Since MACCOL the pane follows its name — and its other six fields — through the iOS editor's own follow,
+        // `FrontMatterModelSync`, whose name follow compares through `fieldAgrees` (hosted and driven in this suite).
+        // `MacCollectionsWindowSourceTests.thePaneFollowsEveryField` reads all seven of its bindings.
+        let sync = try #require(code.firstIndex(of: ".modifier(FrontMatterModelSync("),
+                                "CollectionDetailPane no longer follows its fields through FrontMatterModelSync")
+        #expect(code.filter { $0.hasPrefix(".modifier(FrontMatterModelSync(") }.count == 1,
+                "CollectionDetailPane applies FrontMatterModelSync more than once")
+        #expect(code[sync + 1] == "collectionName: $name,",
+                "CollectionDetailPane's name is not the copy FrontMatterModelSync follows: \(code[sync + 1])")
+        #expect(!code.contains { $0.hasPrefix(".onChange(of: collection.name)") },
+                "CollectionDetailPane follows collection.name a second way, beside FrontMatterModelSync")
     }
 
     /// The blank row (#1359 review, round 2). While a new collection's editor waits in the Collections tab, the
@@ -7626,6 +7631,247 @@ private final class FollowHost {
 }
 #endif
 
+#if os(iOS)
+// MARK: - SectionDefaultsSaveTests (MACCOL)
+
+/// A heading's Section defaults sheet SAVES each edit to the collection's description, subtitle, author line and three
+/// export toggles as it is made, so closing the app at once loses nothing typed there.
+///
+/// Before this, `CollectionAttributesRows` wrote the model and left the save to the app's autosave: the collection
+/// editor saves each of its own edits (#1415), and the one incidental save Section defaults used to get — the editor's
+/// old `saveLive()`, run from its flag follow — went with #1413, so a foreground kill could lose an edit made there.
+/// That was recorded as an open item at #1413's review and folded into the 2026-09-28 plan of record (lane MACCOL).
+///
+/// Each test hosts the REAL rows in a `Form`, in a window of the test host's scene, over an in-memory container whose
+/// autosave is OFF — so nothing but an explicit save can clear `hasChanges` — and drives each control through UIKit:
+/// `insertText` for a field, the switch's own value-changed action for a toggle. Before each edit the context is saved,
+/// so each assertion is about that edit alone. The value landing on the collection is the positive signal that the edit
+/// reached the model; `hasChanges` being false after it is the save.
+///
+/// Version history:
+///   1.0 — MACCOL: initial implementation
+@Suite("Section defaults saves each edit as it is made", .serialized)
+@MainActor
+struct SectionDefaultsSaveTests {
+
+    /// A text field edit lands on the collection and is saved: the subtitle and the author line (`UITextField`s), and
+    /// the description (a vertical `TextField`, drawn by a `UITextView`). One edit per field, each against a saved
+    /// context, so one field that does not save cannot hide behind another that does.
+    @Test("A description, subtitle or author line typed in Section defaults is saved as it is typed")
+    func eachTextFieldSavesItsEdit() async throws {
+        try await Self.withHostedRows { collection, host, context in
+            try context.save()
+            let subtitle = try #require(host.textField(placeholder: "Subtitle"), "Section defaults shows no Subtitle field")
+            try #require(host.type("Draft", into: subtitle), "The Subtitle field would not take focus")
+            #expect(collection.subtitle == "Draft", "the subtitle typed never reached the collection: \(String(describing: collection.subtitle))")
+            #expect(!context.hasChanges, "the subtitle typed in Section defaults was written and not saved")
+
+            try context.save()
+            let author = try #require(host.textField(placeholder: "Author line"), "Section defaults shows no Author line field")
+            try #require(host.type("J. Smith", into: author), "The Author line field would not take focus")
+            #expect(collection.authorLine == "J. Smith", "the author line typed never reached the collection")
+            #expect(!context.hasChanges, "the author line typed in Section defaults was written and not saved")
+
+            try context.save()
+            let description = try #require(host.textView(holding: "A working note"),
+                                           "Section defaults shows no Description field holding the collection's note")
+            try #require(host.type(", revised", into: description), "The Description field would not take focus")
+            #expect(collection.note == "A working note, revised", "the description typed never reached the collection")
+            #expect(!context.hasChanges, "the description typed in Section defaults was written and not saved")
+        }
+    }
+
+    /// A toggle lands on the collection and is saved — each of the three, against a saved context.
+    @Test("A toggle switched in Section defaults is saved as it is switched")
+    func eachToggleSavesItsEdit() async throws {
+        try await Self.withHostedRows { collection, host, context in
+            let switches = host.switches
+            try #require(switches.count == 3, "Section defaults draws \(switches.count) switches, expected its three toggles")
+            let flags: [(String, () -> Bool)] = [("colophon", { collection.includeColophon }),
+                                                 ("project provenance", { collection.includeProjectProvenance }),
+                                                 ("method appendix", { collection.includeMethodAppendix })]
+            for (toggle, (name, flag)) in zip(switches, flags) {
+                try context.save()
+                let before = flag()
+                toggle.setOn(!toggle.isOn, animated: false)
+                toggle.sendActions(for: .valueChanged)
+                #expect(await Self.settle { flag() != before }, "switching the \(name) toggle never reached the collection")
+                #expect(!context.hasChanges, "the \(name) toggle switched in Section defaults was written and not saved")
+            }
+        }
+    }
+
+    // MARK: Fixtures
+
+    /// Containers whose host outlived its window, kept so their models stay valid (see `CollectionEditorNamingTests`).
+    private static var parkedContainers: [ModelContainer] = []
+
+    /// Hosts `CollectionAttributesRows` in a `Form` over a saved collection whose note is "A working note", in a context
+    /// with autosave off; runs `body`; then takes the host down before the container goes.
+    private static func withHostedRows(
+        _ body: @MainActor (Collection, AttributesRowsHost, ModelContext) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        context.autosaveEnabled = false
+        let collection = Collection(name: "Berlin Crisis")
+        collection.note = "A working note"
+        context.insert(collection)
+        try context.save()
+        let host = try AttributesRowsHost(collection: collection, container: container)
+        var failure: (any Error)?
+        do { try await body(collection, host, context) } catch { failure = error }
+        if !(await host.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted rows outlived their window; the container is kept so its models stay valid")
+        } else {
+            // A host a test types into can leave a view behind it (see `CollectionEditorNamingTests.withRealEditor`).
+            parkedContainers.append(container)
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+
+    /// Pumps the main run loop until `condition` holds or 5 s pass, and reports whether it held.
+    private static func settle(until condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        while clock.now < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+}
+
+/// Hosts the real ``CollectionAttributesRows`` in a `Form`, in a window of the test host's scene, and reaches its
+/// controls through UIKit.
+@MainActor
+private final class AttributesRowsHost {
+    /// The window hosting the rows; `nil` once closed.
+    private var window: UIWindow?
+
+    init(collection: Collection, container: ModelContainer) throws {
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the rows in")
+        let rows = Form { CollectionAttributesRows(collection: collection) }.modelContainer(container)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: rows)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
+    }
+
+    /// The text field whose placeholder is `placeholder`.
+    func textField(placeholder: String) -> UITextField? {
+        window.flatMap { Self.all(UITextField.self, in: $0).first { $0.placeholder == placeholder } }
+    }
+
+    /// The multi-line text view whose text is `text`.
+    func textView(holding text: String) -> UITextView? {
+        window.flatMap { Self.all(UITextView.self, in: $0).first { $0.text == text } }
+    }
+
+    /// Every switch the rows draw, top to bottom.
+    var switches: [UISwitch] {
+        guard let window else { return [] }
+        return Self.all(UISwitch.self, in: window).sorted {
+            $0.convert($0.bounds, to: window).minY < $1.convert($1.bounds, to: window).minY
+        }
+    }
+
+    /// Types `text` at the end of `field`, as the keyboard does. Returns whether the field took focus.
+    func type(_ text: String, into field: UITextField) -> Bool {
+        window?.makeKey()
+        guard field.becomeFirstResponder() else { return false }
+        field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
+        field.insertText(text)
+        return true
+    }
+
+    /// Types `text` at the end of `textView`, as the keyboard does. Returns whether the view took focus.
+    func type(_ text: String, into textView: UITextView) -> Bool {
+        window?.makeKey()
+        guard textView.becomeFirstResponder() else { return false }
+        textView.selectedRange = NSRange(location: (textView.text as NSString).length, length: 0)
+        textView.insertText(text)
+        return true
+    }
+
+    /// Every `View` in `view`'s tree, `view` included, outermost first.
+    private static func all<View: UIView>(_ type: View.Type, in view: UIView) -> [View] {
+        var found: [View] = []
+        if let match = view as? View { found.append(match) }
+        for subview in view.subviews { found += all(type, in: subview) }
+        return found
+    }
+
+    /// Ends any editing, takes the window down, and waits for the hosting controller to deallocate. Returns whether it
+    /// went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.endEditing(true)
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+#endif
+
+// MARK: - CollectionChipStyleTests (#1477)
+
+/// The colours a collection row's accent chips — the Configure / Section defaults pill and the status chips — and the
+/// heading's prompt are drawn in, by the row's background prominence (#1477). On a selected Mac row the selection is
+/// the accent colour, and the chips were drawn accent on accent-at-12 % over it, the heading's prompt dark on it, so
+/// both were hard to read. At `.increased` prominence they are drawn in white instead; at `.standard` they keep the
+/// theme's colours, so an unselected row — and every iOS row — looks as it did.
+///
+/// Colours are compared RESOLVED, in a default environment, so the test reads what would be drawn rather than how the
+/// `Color` was spelled. `CollectionRowChipContrastSourceTests` pins that the views ask this function at their row's
+/// prominence; this suite pins what it answers.
+///
+/// Version history:
+///   1.0 — #1477: initial implementation
+@Suite("A collection row's chips and heading prompt stay legible on a selected row (#1477)")
+@MainActor
+struct CollectionChipStyleTests {
+
+    @Test("On a selected row the chips are white on a white tint, and the heading's prompt is a lighter white")
+    func selectedRowsDrawInWhite() throws {
+        let environment = EnvironmentValues()
+        let colors = CollectionChipStyle.colors(on: .increased)
+        let label = colors.foreground.resolve(in: environment)
+        let fill = colors.background.resolve(in: environment)
+        #expect(label.red == 1 && label.green == 1 && label.blue == 1 && label.opacity == 1,
+                "the chip's label on a selected row resolves to \(label), not white")
+        #expect(fill.red == 1 && fill.green == 1 && fill.blue == 1 && fill.opacity > 0 && fill.opacity < 0.5,
+                "the chip's fill on a selected row resolves to \(fill), not a white tint")
+        let prompt = try #require(CollectionChipStyle.promptColor(on: .increased),
+                                  "the heading's prompt on a selected row keeps the field's own colour")
+        let resolved = prompt.resolve(in: environment)
+        #expect(resolved.red == 1 && resolved.green == 1 && resolved.blue == 1
+                    && resolved.opacity > 0.5 && resolved.opacity < 1,
+                "the heading's prompt on a selected row resolves to \(resolved), not a lighter white")
+    }
+
+    @Test("On an unselected row the chips keep the theme's accent, and the prompt the field's own colour")
+    func standardRowsKeepTheTheme() {
+        let environment = EnvironmentValues()
+        let colors = CollectionChipStyle.colors(on: .standard)
+        #expect(colors.foreground.resolve(in: environment) == FRUSTheme.overrideChipForeground.resolve(in: environment))
+        #expect(colors.background.resolve(in: environment) == FRUSTheme.overrideChipBackground.resolve(in: environment))
+        #expect(CollectionChipStyle.promptColor(on: .standard) == nil,
+                "an unselected row's heading prompt must keep the text field's own placeholder colour")
+    }
+}
+
 // MARK: - ListExportTests (#1371)
 
 /// The DOCX and PDF exporters read the same `.listBlock` the reader does, and both hard-coded a
@@ -8879,7 +9125,7 @@ struct CollectionExportNamingTests {
 /// was cut through a line at the frame's edge, and one typed in place was left scrolled to its END, because the text
 /// view follows the caret and nothing scrolled it back.
 ///
-/// Every test but the two that read the Mac's code from source (no test target hosts the Mac) hosts the REAL
+/// Every test but those that read the Mac's code from source (no test target hosts the Mac) hosts the REAL
 /// ``RichTextEditor`` in a key window of the test host's own scene and drives it through UIKit's own focus and typing
 /// calls — and the formatting bar's own actions — so the delegate wiring and SwiftUI's sizing are what is under test,
 /// not a copy of them. The measurements not taken from the code under test come from probe text views given the same
@@ -8897,6 +9143,8 @@ struct CollectionExportNamingTests {
 ///          and resting wiring, which no test target hosts, are read from the source
 ///   1.3 — #1447: the Mac's undo follow is read from the source, and the Mac report path is read from `textChanged(_:)`,
 ///          where `textDidChange` and an undo or redo both arrive
+///   1.4 — MACCOL (#1448, #1477, #1449): a change at rest recounts; an edited block is measured at its text's width;
+///          a block rests once focus has moved; the plain-text mode, read from the Mac's source and hosted on iOS
 @MainActor
 @Suite("A capped rich-text editor rests on its opening lines and lifts the cap to edit (#1360)", .serialized)
 struct RichTextRestingCapTests {
@@ -9316,8 +9564,12 @@ struct RichTextRestingCapTests {
         let onWidth = try Self.body(of: "textView.onWidthChange = ", in: make)
         #expect(onWidth.contains("coordinator.widthChanged(in: scroll)"),
                 "The Mac editor does not hand a change of width to its coordinator")
+        // Since #1448 the recount a new width schedules is shared with a change at rest (`scheduleRecount(in:)`), so the
+        // call is read through it: the width change schedules it, and the scheduled body recounts.
         let widthChanged = try Self.body(of: "fileprivate func widthChanged(in scrollView: NSScrollView)", in: code)
-        #expect(widthChanged.contains("RichTextRestingLayout.recount(scrollView, cap: restingCap)"),
+        let scheduled = try Self.body(of: "private func scheduleRecount(in scrollView: NSScrollView)", in: code)
+        #expect(widthChanged.contains("scheduleRecount(in: scrollView)")
+                    && scheduled.contains("RichTextRestingLayout.recount(scrollView, cap: restingCap)"),
                 "A change of width does not recount a resting block's lines")
         let recount = try Self.body(of: "static func recount(_ scrollView: NSScrollView, cap: RichTextRestingCap)",
                                     in: code)
@@ -9374,6 +9626,108 @@ struct RichTextRestingCapTests {
         let typed = Self.uncommented(try Self.body(of: "func textDidChange(_ notification: Notification)", in: code))
         #expect(Self.calls(of: "textChanged", in: typed) == 1 && Self.calls(of: "report", in: typed) == 0,
                 "A typed change does not take the same path an undo takes")
+    }
+
+    /// #1448 (1). The Mac's formatting bar sits above every block and its buttons take no focus, so Bold can widen a
+    /// RESTING block's lines; the change arrives through `textDidChange`, which never counted the resting lines again,
+    /// so the cap kept the count from the last rest and could fall on a blank line with no ellipsis. A change to a block
+    /// at rest now schedules the same deferred recount a change of width does. Measured in the lane's Mac harness
+    /// (`work/MACCOL/harness/editor/main.swift`, macOS 27): bolding a resting block's first paragraph left 6 lines
+    /// drawn where a fresh count gave 5 on `v2`, and 5 and 5 with this change.
+    @Test("On the Mac a change to a resting block counts its lines again, as a change of width does (#1448)")
+    func theMacRecountsARestingBlockAfterAChange() throws {
+        let code = try Self.editorSource()
+        let changed = Self.uncommented(try Self.body(of: "private func textChanged(_ textView: NSTextView)", in: code))
+        #expect(Self.calls(of: "scheduleRecount", in: changed) == 1 && changed.contains("!isEditing"),
+                "A change to a block at rest does not schedule a recount of its resting lines")
+        let width = Self.uncommented(try Self.body(of: "fileprivate func widthChanged(in scrollView: NSScrollView)", in: code))
+        #expect(Self.calls(of: "scheduleRecount", in: width) == 1,
+                "A change of width no longer takes the recount a change at rest takes")
+        let schedule = Self.uncommented(try Self.body(of: "private func scheduleRecount(in scrollView: NSScrollView)",
+                                                      in: code))
+        #expect(schedule.contains("Task { @MainActor") && schedule.contains("!self.isEditing")
+                    && schedule.contains("RichTextRestingLayout.recount(scrollView, cap: restingCap)"),
+                "The scheduled recount does not run later, at rest only")
+    }
+
+    /// #1448 (2). With legacy, always-shown scrollers a block being edited wraps at its scroll view's width LESS the
+    /// scroller, but its height was measured at the whole width, so it came out a line short and scrolled by that line.
+    /// Measured in the lane's Mac harness with a legacy scroller (17 pt): a block whose text needs 76 pt was sized 60 pt
+    /// on `v2`. Both measurements — the size SwiftUI asks for and the height a change asks again for — now take the
+    /// width the text wraps at.
+    @Test("On the Mac an edited block is measured at the width its text wraps at, scroller excluded (#1448)")
+    func theMacMeasuresAtTheTextWidth() throws {
+        let code = try Self.editorSource()
+        let changed = Self.uncommented(try Self.body(of: "private func textChanged(_ textView: NSTextView)", in: code))
+        #expect(changed.contains("scrollView.contentSize.width") && !changed.contains("enclosingScrollView?.frame.width"),
+                "A change measures the block's height at its frame's width, not the width its text wraps at")
+        let size = Self.uncommented(try Self.body(
+            of: "static func size(for proposal: ProposedViewSize, of scrollView: NSScrollView,", in: code))
+        #expect(size.contains("textWidth(of: scrollView, frameWidth: width)"),
+                "The size SwiftUI asks for is measured at the offered width, not the width the text wraps at")
+        let textWidth = Self.uncommented(try Self.body(
+            of: "static func textWidth(of scrollView: NSScrollView, frameWidth: CGFloat) -> CGFloat", in: code))
+        #expect(textWidth.contains("NSScrollView.contentSize(forFrameSize:")
+                    && textWidth.contains("scrollView.hasVerticalScroller")
+                    && textWidth.contains("scrollerStyle: scrollView.scrollerStyle"),
+                "The text width does not take the scroller the block draws, in the style it draws it")
+    }
+
+    /// #1477. A capped Mac block used to go back to rest from INSIDE `resignFirstResponder`, editing its text storage
+    /// before the window had moved its first responder — which, by the issue's reading, re-arms the insertion point of
+    /// a view that is about to lose focus, and left a non-blinking caret in a three-paragraph block while another held
+    /// the live one. The rest now runs once focus has moved, and not at all if focus came back first. No harness could
+    /// show the caret: an app launched from a shell is never active, and an inactive app draws no insertion point; the
+    /// check is by eye on a Mac.
+    @Test("On the Mac a block goes back to rest once focus has moved, never inside resignFirstResponder (#1477)")
+    func theMacRestsAfterFocusHasMoved() throws {
+        let code = try Self.editorSource()
+        let focus = Self.uncommented(try Self.body(
+            of: "fileprivate func focusChanged(_ focused: Bool, in scrollView: NSScrollView)", in: code))
+        #expect(!focus.contains("RichTextRestingLayout.rest("),
+                "A focus change still puts the block at rest synchronously, inside resignFirstResponder")
+        #expect(Self.calls(of: "scheduleRest", in: focus) == 1, "Losing focus does not schedule the block's rest")
+        let schedule = Self.uncommented(try Self.body(of: "private func scheduleRest(in scrollView: NSScrollView)",
+                                                      in: code))
+        #expect(schedule.contains("Task { @MainActor") && schedule.contains("!self.isEditing")
+                    && schedule.contains("RichTextRestingLayout.rest(scrollView, cap: restingCap)"),
+                "The scheduled rest does not run later, and only if focus has not come back")
+    }
+
+    /// #1449. The Mac's ⚙ Collection popover rests the collection's Note capped like the Introduction beside it, in the
+    /// shared editor's plain-text mode: the note is a plain `String?` on the model, and a rich-text one would be a stored
+    /// property — a CloudKit schema change. On the Mac that mode draws no formatting bar and its text view takes no
+    /// formatting; the colour panel, which follows the focused editor, is never handed one.
+    @Test("On the Mac a plain-text editor draws no formatting bar and its text view takes no formatting (#1449)")
+    func theMacPlainTextEditorTakesNoFormatting() throws {
+        let code = try Self.editorSource()
+        let editor = Self.uncommented(try Self.body(of: "struct RichTextEditor: View", in: code))
+        let bar = try #require(editor.range(of: "RichTextFormattingBar(controller: controller)"),
+                               "The Mac editor no longer draws a formatting bar at all")
+        let guardRange = try #require(editor.range(of: "if !plainText {"),
+                                      "The Mac editor draws its formatting bar whatever its mode")
+        #expect(guardRange.upperBound <= bar.lowerBound, "The formatting bar is not inside the plain-text guard")
+        let make = Self.uncommented(try Self.body(of: "func makeNSView(context: Context) -> NSScrollView", in: code))
+        #expect(make.contains("textView.isRichText = !plainText"), "A plain-text Mac editor's text view takes formatting")
+        #expect(make.contains("if !plainText { controller.textView = textView }"),
+                "A plain-text Mac editor hands its text view to the formatting controller, and so to the colour panel")
+    }
+
+    /// The same mode on iOS, hosted: no formatting in the edit menu and no formatting bar over the keyboard. (No iOS
+    /// surface opts in today — the iOS note is a growing `TextField` — but the mode is the editor's, on both platforms.)
+    @Test("A plain-text editor offers no formatting on iOS (#1449)")
+    func aPlainTextEditorOffersNoFormattingOnIOS() async throws {
+        let rich = try RestingCapEditorHost(text: "A note.", cap: Self.cap, width: Self.width)
+        let plain = try RestingCapEditorHost(text: "A note.", cap: Self.cap, width: Self.width, plainText: true)
+        let richView = try #require(rich.textView, "The rich editor drew no text view")
+        let plainView = try #require(plain.textView, "The plain editor drew no text view")
+        #expect(richView.allowsEditingTextAttributes && richView.inputAccessoryView != nil,
+                "The control: a rich editor offers formatting in its edit menu and over the keyboard")
+        #expect(!plainView.allowsEditingTextAttributes, "A plain-text editor offers formatting in its edit menu")
+        #expect(plainView.inputAccessoryView == nil, "A plain-text editor draws a formatting bar over the keyboard")
+        let richClosed = await rich.close()
+        let plainClosed = await plain.close()
+        #expect(richClosed && plainClosed, "A hosting controller outlived the test")
     }
 
     /// `code` with every `//` comment cut from its line, so a commented-out call is not read as one. (The bodies it is
@@ -9445,14 +9799,16 @@ private final class RestingCapEditorHost {
     private var window: UIWindow?
 
     /// Hosts an editor over `text`, capped by `cap` (or not, for `nil`), in a frame `width` wide and — when `height`
-    /// is given — that tall; `onReport` receives each edit's RTF and plain-text projection.
-    init(text: String, cap: RichTextRestingCap?, width: CGFloat, height: CGFloat? = nil,
+    /// is given — that tall, in its plain-text mode when `plainText` is set (#1449); `onReport` receives each edit's RTF
+    /// and plain-text projection.
+    init(text: String, cap: RichTextRestingCap?, width: CGFloat, height: CGFloat? = nil, plainText: Bool = false,
          onReport: @escaping (Data?, String) -> Void = { _, _ in }) throws {
         let scene = try #require(
             UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
             "The test host has no window scene to host the editor in")
         let editor = VStack(spacing: 0) {
-            RichTextEditor(initialRTF: nil, plainFallback: text, restingCap: cap) { rtf, plain in onReport(rtf, plain) }
+            RichTextEditor(initialRTF: nil, plainFallback: text, restingCap: cap,
+                           plainText: plainText) { rtf, plain in onReport(rtf, plain) }
                 .frame(width: width, height: height)
             Spacer(minLength: 0)
         }

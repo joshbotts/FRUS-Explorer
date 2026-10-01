@@ -175,13 +175,22 @@ public struct FRUSDocumentMetadata: Sendable {
 ///    prints WITHOUT a number — the 217 Potsdam documents, the only bracketed `@n` in the corpus.
 ///    Such a document is cited in the formatter's number-less form, ending at the publication
 ///    clause, exactly as an editorial note without a number is; the id is never substituted in a
-///    citation, because `d710a-1` is not a locator anyone printed. (Two places still show it, and
-///    neither is a citation: a generated block's list token, "Document d710a-1"
-///    (`CollectionGeneratedBlocks.referenceToken`, unchanged by #1406), and the Mac collection
-///    row, which shows the bare id — ``rowLabel(printed:documentId:)``.)
+///    citation, because `d710a-1` is not a locator anyone printed. Where a LIST names it — a
+///    generated block's list token and the Mac collection row — it reads "Unnumbered (d710a-1)"
+///    (``unnumberedLabel(documentId:volumeId:)``, #1493, the owner's decision D5): the id is the
+///    document's history.state.gov locator, so it identifies the document, and "Unnumbered" says
+///    why no number stands there. Before #1493 those two places printed the id as though it were
+///    the number — "Document d710a-1", and the bare id.
 /// 3. When the index stores nothing — the document's volume is not indexed on this device — the
 ///    id stands in only where it is the number: `d12` → `12`, `d373a` → `373a` (right for all 83
-///    lettered ids measured). Any other shape stays number-less until its volume is indexed.
+///    lettered ids measured). Any other shape stays number-less until its volume is indexed, and a
+///    list names it by its id: with nothing stored, the app cannot tell an unnumbered document
+///    from one whose number it has not read (`eta_d1` prints ETA–1), so it calls none unnumbered.
+///
+/// Version history:
+///   1.0 — #1406: initial implementation
+///   1.1 — #1493: ``isUnnumbered(printed:)`` and ``unnumberedLabel(documentId:volumeId:)``; the row label reads
+///         "Unnumbered (id)" for a document the volume prints without a number
 enum CitableDocumentNumber {
 
     /// The number to cite for a document.
@@ -218,13 +227,38 @@ enum CitableDocumentNumber {
     }
 
     /// A document row's label where a list names documents by number — the Mac collection
-    /// manager's rows: "Document 373a" when there is a number to cite, else the document's id,
-    /// which is what the row showed for every such document before (and what the iOS row's caption
-    /// shows for all of them).
+    /// manager's rows: "Document 373a" when there is a number to cite; "Unnumbered (d710a-1)" for a
+    /// document the volume prints without one (#1493); else — a number this device has not read —
+    /// the document's id, which is what the row showed for every such document before (and what the
+    /// iOS row's caption shows for all of them).
     static func rowLabel(printed: String?, documentId: String) -> String {
-        guard let number = resolve(printed: printed, documentId: documentId) else { return documentId }
-        return String(format: String(localized: "collection.entry.documentLabel %@",
-                                     defaultValue: "Document %@"), number)
+        if let number = resolve(printed: printed, documentId: documentId) {
+            return String(format: String(localized: "collection.entry.documentLabel %@",
+                                         defaultValue: "Document %@"), number)
+        }
+        return isUnnumbered(printed: printed) ? unnumberedLabel(documentId: documentId) : documentId
+    }
+
+    /// Whether the number the index stores for a document says the volume prints it WITHOUT one: a
+    /// bracketed `@n`, the editors' description (rule 2). `false` when nothing is stored — the app
+    /// cannot tell an unnumbered document from one whose number it has not read.
+    static func isUnnumbered(printed: String?) -> Bool {
+        guard let stored = printed?.trimmingCharacters(in: .whitespacesAndNewlines), !stored.isEmpty else { return false }
+        return isEditorialDescription(stored)
+    }
+
+    /// How a list names a document the volume prints without a number (#1493, the owner's decision
+    /// D5): "Unnumbered (d710a-1)" — its id, the history.state.gov locator, in place of the number
+    /// it does not have. With `volumeId`, for a list spanning volumes, the volume follows the id
+    /// inside the parentheses — "Unnumbered (d710a-1, frus1945Berlinv02)" — as a numbered
+    /// document's token is followed by its volume ("12 (frus1969-76v01)").
+    static func unnumberedLabel(documentId: String, volumeId: String? = nil) -> String {
+        guard let volumeId else {
+            return String(format: String(localized: "document.unnumbered.label %@",
+                                         defaultValue: "Unnumbered (%@)"), documentId)
+        }
+        return String(format: String(localized: "document.unnumbered.label.volume %@ %@",
+                                     defaultValue: "Unnumbered (%1$@, %2$@)"), documentId, volumeId)
     }
 }
 

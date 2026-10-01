@@ -569,14 +569,21 @@ struct CitableDocumentNumberTests {
                 "\(id) names a record, not a printed number")
     }
 
-    /// The Mac collection row's label — both branches.
-    @Test("The row label reads \"Document N\" when there is a number, else the id")
+    /// The Mac collection row's label — all three branches. A document the volume prints WITHOUT a number reads
+    /// "Unnumbered (d710a-1)" (#1493, the owner's decision D5), where it used to read as its bare id; a document whose
+    /// number this device does not know — its volume not indexed, its id not a number — still reads as its id, because
+    /// calling it unnumbered would be false (`eta_d1` prints ETA–1).
+    @Test("The row label reads \"Document N\" with a number, \"Unnumbered (id)\" when the volume prints none, else the id")
     func rowLabel() {
         #expect(CitableDocumentNumber.rowLabel(printed: "373a", documentId: "d373a") == "Document 373a")
         #expect(CitableDocumentNumber.rowLabel(printed: "ETA–1", documentId: "eta_d1") == "Document ETA–1")
         #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "d12") == "Document 12")
-        #expect(CitableDocumentNumber.rowLabel(printed: Self.potsdamN, documentId: "d710a-1") == "d710a-1")
-        #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "eta_d1") == "eta_d1")
+        #expect(CitableDocumentNumber.rowLabel(printed: Self.potsdamN, documentId: "d710a-1") == "Unnumbered (d710a-1)",
+                "a document the volume prints without a number must not read as its bare id (#1493)")
+        #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "eta_d1") == "eta_d1",
+                "a number this device does not know is not \"unnumbered\"")
+        #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "d710a-1") == "d710a-1",
+                "with nothing stored, even a Potsdam-shaped id is not known to be unnumbered")
     }
 }
 
@@ -991,8 +998,8 @@ struct GeneratedBlockNumberTests {
             dataSource: source)
         #expect(sources.rows.map(\.text).contains("Document 373a"), "\(sources.rows.map(\.text))")
         #expect(sources.rows.map(\.text).contains("Document ETA–1"), "\(sources.rows.map(\.text))")
-        #expect(sources.rows.map(\.text).contains("Document d710a-1"), """
-            a document the volume prints without a number keeps its id in a token, as before: \
+        #expect(sources.rows.map(\.text).contains("Unnumbered (d710a-1)"), """
+            a document the volume prints without a number reads "Unnumbered (id)", never "Document <id>" (#1493): \
             \(sources.rows.map(\.text))
             """)
 
@@ -1005,5 +1012,68 @@ struct GeneratedBlockNumberTests {
             type: .thematicIndex, documents: Self.docs(["d373a", "eta_d1"]), dataSource: source)
         #expect(thematic.rows.map(\.text) == ["Slave trade", "Document 373a", "Document ETA–1"],
                 "\(thematic.rows.map(\.text))")
+    }
+
+    /// #1493, the owner's decision D5: a document the volume prints WITHOUT a number — its `@n` the editors' bracketed
+    /// description — reads "Unnumbered (d710a-1)" in every generated block's list, where it used to read as its id
+    /// dressed as a number ("Document d710a-1", "Documents 12, d710a-1"). One fixture per rule the list applies:
+    /// - an indent-1 row (Sources, Thematic Index) is the label alone, with no "Document" before it;
+    /// - a Persons list keeps "Document"/"Documents" when it names at least one number, and drops the word when every
+    ///   document it names is unnumbered — "Documents Unnumbered (…)" would say nothing true;
+    /// - a collection spanning volumes names the volume inside the parentheses, after the id;
+    /// - a document whose number this device does not know (no number stored, an id that is not one) is NOT called
+    ///   unnumbered, which would be false — it keeps the form it had.
+    @Test("An unnumbered document reads \"Unnumbered (id)\" in every generated list (#1493)")
+    func unnumberedDocumentsReadAsUnnumbered() async {
+        let potsdam = CitableDocumentNumberTests.potsdamN
+        let numbers = Self.numbers.merging(["v/d710a-2": potsdam, "w/d12": "12", "w/d710a-1": potsdam]) { $1 }
+        let mention = { (volume: String, id: String, person: String) in
+            CollectionGeneratedBlocks.PersonMention(identityKey: person, name: person, description: nil, role: nil,
+                                                    volumeId: volume, documentId: id)
+        }
+        let source = NumberedBlockSource(
+            numbers: numbers,
+            sources: [CollectionGeneratedBlocks.SourceRecord(
+                volumeId: Self.volume, documentId: "d710a-1", repository: nil, recordGroup: "59",
+                lotFile: "63 D 351", seriesName: nil, rawText: "Lot 63 D 351", citationEra: "lot_file")],
+            mentions: [mention("v", "d373", "Byrnes"), mention("v", "d710a-1", "Byrnes"),
+                       mention("v", "d710a-1", "Stalin"), mention("v", "d710a-2", "Stalin"),
+                       mention("v", "d710a-1", "Truman")],
+            tags: [.init(name: "Potsdam", documents: Self.docs(["d710a-1", "appB"]))])
+
+        let sources = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources, documents: Self.docs(["d710a-1"]), dataSource: source)
+        #expect(sources.rows.map(\.text).contains("Unnumbered (d710a-1)"), "\(sources.rows.map(\.text))")
+        #expect(!sources.rows.map(\.text).contains { $0.contains("Document d710a-1") }, "\(sources.rows.map(\.text))")
+
+        let persons = await CollectionGeneratedBlocks.resolve(
+            type: .personsIndex, documents: Self.docs(["d373", "d710a-1", "d710a-2"]), dataSource: source)
+        let lists = Dictionary(uniqueKeysWithValues: persons.rows.map { ($0.text, $0.secondaryText ?? "") })
+        #expect(lists["Byrnes"] == "Documents 373, Unnumbered (d710a-1)", "a mixed list keeps its word: \(lists)")
+        #expect(lists["Stalin"] == "Unnumbered (d710a-1), Unnumbered (d710a-2)",
+                "a list of unnumbered documents only drops \"Documents\": \(lists)")
+        #expect(lists["Truman"] == "Unnumbered (d710a-1)", "one unnumbered document drops \"Document\": \(lists)")
+
+        let thematic = await CollectionGeneratedBlocks.resolve(
+            type: .thematicIndex, documents: Self.docs(["d710a-1", "appB"]), dataSource: source)
+        #expect(thematic.rows.map(\.text) == ["Potsdam", "Unnumbered (d710a-1)", "Document appB"], """
+            an unnumbered document reads "Unnumbered (id)", and one whose number this device does not know keeps its \
+            id: \(thematic.rows.map(\.text))
+            """)
+
+        let spanning = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources,
+            documents: [(volumeId: "v", documentId: "d710a-1"), (volumeId: "w", documentId: "d12"),
+                        (volumeId: "w", documentId: "d710a-1")],
+            dataSource: NumberedBlockSource(numbers: numbers, sources: ["v/d710a-1", "w/d12", "w/d710a-1"].map {
+                let parts = $0.split(separator: "/").map(String.init)
+                return CollectionGeneratedBlocks.SourceRecord(
+                    volumeId: parts[0], documentId: parts[1], repository: nil, recordGroup: "59",
+                    lotFile: "63 D 351", seriesName: nil, rawText: "Lot 63 D 351", citationEra: "lot_file")
+            }))
+        let spanningRows = spanning.rows.map(\.text)
+        #expect(spanningRows.contains("Unnumbered (d710a-1, v)") && spanningRows.contains("Unnumbered (d710a-1, w)"),
+                "across volumes the volume goes inside the parentheses, after the id: \(spanningRows)")
+        #expect(spanningRows.contains("Document 12 (w)"), "a numbered document keeps its form: \(spanningRows)")
     }
 }

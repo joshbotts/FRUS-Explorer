@@ -2743,6 +2743,359 @@ struct ArchiveVisitMacToolbarFitTests {
     }
 }
 
+// MARK: - MacCollectionsWindowSourceTests
+
+/// Source gate for the Mac Collections window's polish lane (MACCOL): **the toolbar picker caps a long collection
+/// name (#1446), the ⚙ Collection popover's Note rests capped like the Introduction beside it (#1449), and the detail
+/// pane writes only the field the reader edits and follows the others (#1413's shape on the Mac).**
+///
+/// ## The defects it stops
+/// - **#1446.** The picker's label was the collection's whole name with no line limit, and a toolbar item is as wide
+///   as its content, so a long name pushed Add, Sort, Collection settings, Export and the inspector toggle behind the
+///   overflow chevron — the defect #1378 fixed in the Archives Visits window. Its counts printed ungrouped ("12345").
+/// - **#1449.** The Note was a plain `TextEditor` in a 60–140 pt frame: a note past about seven lines scrolled inside
+///   it and was cut through a line, while the Introduction directly below rested capped with an ellipsis.
+/// - **The detail pane (#1413's shape).** Seven `onChange` handlers each called `saveMetadata()`, which wrote all seven
+///   fields from the pane's `@State` copies, and the pane followed only the name. So any edit put the pane's stale
+///   copies over a description, subtitle, author line or flag another writer had changed — iCloud bringing an edit from
+///   another device — and following a rename from the Manage Collections sheet wrote the other six back.
+///
+/// ## How it reads
+/// `MacCollectionManagerView.swift` as the Mac compiles it, through `MaskedSwift`, comments and string literals
+/// blanked; every match is a whole call with its balanced parentheses and braces, never a window of lines.
+///
+/// ## Where it can fail
+/// These are source scans: they give the same answer on every test destination, and none can see the Mac draw (no
+/// test target runs on macOS). The toolbar's fit with a long name, the Note's ellipsis and an edit surviving a change
+/// from another device are the owner's checks on a Mac, through `tools/mac-check-copy` (listed in the 2026-10-01
+/// entry of `Planning/DEVELOPMENT-PLAN.md`). The rules the pane commits and follows by — `CollectionEditorCommit`,
+/// `FrontMatterModelSync` — are the iOS editor's, which `CollectionEditorNamingTests` drives in a hosted editor.
+///
+/// Version history:
+///   1.0 — MACCOL (#1446, #1449, and the detail pane's per-field commit): initial implementation
+struct MacCollectionsWindowSourceTests {
+
+    /// The Collections window, from the app's source root.
+    static let managerPath = "Collections/MacCollectionManagerView.swift"
+
+    /// The seven fields the detail pane holds as `@State` copies of the collection's, by the pane's own names, with the
+    /// collection property each one is.
+    static let paneFields: [(state: String, property: String)] = [
+        ("name", "name"), ("note", "note"), ("subtitle", "subtitle"), ("authorLine", "authorLine"),
+        ("includeColophon", "includeColophon"), ("includeProjectProvenance", "includeProjectProvenance"),
+        ("includeMethodAppendix", "includeMethodAppendix"),
+    ]
+
+    /// The window's file as the Mac compiles it, its unmasked bytes, and one declared type's members by name.
+    fileprivate struct Reading {
+        let code: MaskedSwift
+        let raw: [UInt8]
+        let typeBody: Range<Int>
+        let members: [String: Range<Int>]
+
+        /// The unmasked source in `range`.
+        func unmasked(_ range: Range<Int>) -> String { String(decoding: raw[range], as: UTF8.self) }
+    }
+
+    /// Reads `type` in the window's file as the Mac compiles it.
+    fileprivate static func read(_ type: String) throws -> Reading {
+        let raw = try ArchiveVisitMacToolbarFitTests.source(managerPath)
+        #expect(raw.utf8.count > 10_000, "\(managerPath) read \(raw.utf8.count) bytes; the scan read nothing")
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        let declarations = code.typeDeclarations(file: 0).filter { $0.name == type && !$0.isExtension }
+        try #require(declarations.count == 1, "found \(declarations.count) \(type) declarations in \(managerPath)")
+        let members = code.members(in: declarations[0].body)
+        return Reading(code: code, raw: Array(raw.utf8), typeBody: declarations[0].body,
+                       members: Dictionary(members.map { ($0.name, $0.body) }, uniquingKeysWith: { first, _ in first }))
+    }
+
+    // MARK: - #1446
+
+    /// The picker's name keeps to one line, cut at the tail, within the Archives picker's measured cap — a line limit
+    /// alone narrows nothing in a toolbar (#1378 measured it) — and every count it prints is grouped.
+    @Test("#1446: the collection picker's name keeps to one line, cut at the tail, within a fixed width")
+    func theCollectionPickerLabelIsCapped() throws {
+        let reading = try Self.read("MacCollectionManagerView")
+        let code = reading.code
+        let picker = try #require(reading.members["collectionPickerMenu"],
+                                  "MacCollectionManagerView has no collectionPickerMenu — re-derive this test")
+        let menus = code.wordOffsets("Menu", in: picker).compactMap { code.call(named: "Menu", at: $0) }
+        try #require(menus.count == 1, "collectionPickerMenu makes \(menus.count) Menu calls, expected one")
+        let label = try #require(menus[0].labelledClosures.first { $0.label == "label" }?.range,
+                                 "the collection picker's Menu has no label: closure")
+        let names = code.wordOffsets("Text", in: label)
+            .compactMap { code.call(named: "Text", at: $0) }
+            .filter { $0.arguments.map { code.text($0).contains("collectionDisplayName") } == true }
+        try #require(names.count == 1, "the picker's label holds \(names.count) Texts of the collection's name, expected one")
+        let chain = code.modifierChain(after: names[0].end)
+        let modifiers = chain.map { "\($0.name)\($0.arguments.map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) } ?? "")" }
+        #expect(modifiers.contains("lineLimit(1)"), "the collection's name has no .lineLimit(1): its modifiers are \(modifiers)")
+        #expect(modifiers.contains("truncationMode(.tail)"),
+                "the collection's name is not cut at the tail (.truncationMode(.tail)): its modifiers are \(modifiers)")
+        let caps = chain.filter { $0.name == "frame" }
+            .compactMap { $0.arguments.flatMap { code.topLevelArgument("maxWidth", in: $0) } }
+            .map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
+        try #require(caps.count == 1, "the collection's name must carry one .frame(maxWidth:), found \(caps)")
+        let cap = try #require(ArchiveVisitMacToolbarFitTests.literalWidth(caps[0], in: code),
+                               "the name's maximum width «\(caps[0])» is neither a number nor a static let set to one")
+        #expect(cap == ArchiveVisitMacToolbarFitTests.measuredPlanNameMaxWidth, """
+            The picker caps the collection's name at \(cap) pt; the Archives picker's measured cap is \
+            \(ArchiveVisitMacToolbarFitTests.measuredPlanNameMaxWidth) pt. A wider cap widens the toolbar, so a new \
+            value needs measuring on a Mac.
+            """)
+        // Every count the picker prints is grouped: in its label and in each row of its menu. The rows print theirs in
+        // a string interpolation, which the masked code blanks, so the counts are read from the unmasked body with
+        // each line's `//` comment cut.
+        let body = reading.unmasked(picker).components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
+        let counts = body.components(separatedBy: "documentCount").count - 1
+        let grouped = body.components(separatedBy: "documentCount.formatted()").count - 1
+        #expect(counts >= 2, "the picker prints \(counts) counts; its label and its rows each print one")
+        #expect(grouped == counts, "the picker prints \(counts - grouped) of its \(counts) document counts ungrouped")
+    }
+
+    // MARK: - #1449
+
+    /// The Note rests capped like the Introduction: the popover's form holds no `TextEditor`, and its Note is the shared
+    /// capped editor in its plain-text mode — no formatting bar, because the collection's note is a plain `String?`
+    /// and a stored rich-text field would be a CloudKit schema change — committing the field it edits.
+    @Test("#1449: the popover's Note is the capped editor in plain-text mode, not a fixed-height TextEditor")
+    func thePopoverNoteRestsCapped() throws {
+        let reading = try Self.read("CollectionDetailPane")
+        let code = reading.code
+        let form = try #require(reading.members["macCollectionSettingsForm"],
+                                "CollectionDetailPane has no macCollectionSettingsForm — re-derive this test")
+        let editors = code.wordOffsets("TextEditor", in: form).compactMap { code.call(named: "TextEditor", at: $0) }
+        #expect(editors.isEmpty, "the popover still draws \(editors.count) TextEditor(s), at lines \(editors.map { code.line(at: $0.start) })")
+        let capped = code.wordOffsets("RichTextEditor", in: form)
+            .compactMap { code.call(named: "RichTextEditor", at: $0) }
+            .filter { $0.arguments.map { code.text($0).contains(".noteInPopover") } == true }
+        try #require(capped.count == 1, "the popover holds \(capped.count) RichTextEditor(s) capped .noteInPopover, expected one")
+        let arguments = try #require(capped[0].arguments)
+        let plain = code.topLevelArgument("plainText", in: arguments).map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
+        #expect(plain == "true", "the Note's editor is not in plain-text mode (plainText: \(plain ?? "absent"))")
+        let report = try #require(capped[0].trailingClosure, "the Note's editor hands its edits to nothing")
+        #expect(code.memberReferences(in: report).contains("commitNote"),
+                "the Note's edits do not reach commitNote: «\(ArchiveVisitMacToolbarFitTests.collapse(code.text(report)))»")
+        let commitNote = try #require(reading.members["commitNote"], "CollectionDetailPane has no commitNote")
+        #expect(ArchiveVisitMacToolbarFitTests.collapse(code.text(commitNote))
+                    .contains("CollectionEditorCommit.text(plain, to: \\.note, of: collection)"),
+                "commitNote does not commit the note through CollectionEditorCommit.text")
+    }
+
+    // MARK: - The detail pane's per-field commit (#1413's shape)
+
+    /// Each field commits only itself, from its own control: no member of the pane writes two of the seven fields,
+    /// none of them is saved from an `onChange`, and each control's binding is `committing($field)` handing the matching
+    /// `CollectionEditorCommit` rule its own field.
+    @Test("The detail pane writes only the field the reader edits, from that field's control")
+    func eachPaneFieldCommitsOnlyItself() throws {
+        let reading = try Self.read("CollectionDetailPane")
+        let code = reading.code
+        #expect(reading.members["saveMetadata"] == nil,
+                "CollectionDetailPane still declares saveMetadata(), which wrote all seven fields from stale copies")
+        for (member, body) in reading.members {
+            let written = Self.paneFields.filter { field in
+                !code.wordOffsets(field.property, in: body).filter { offset in
+                    let before = code.text(max(body.lowerBound, offset - 11)..<offset)
+                    let after = code.text(offset..<min(body.upperBound, offset + field.property.utf8.count + 3))
+                    return before.hasSuffix("collection.")
+                        && after.trimmingCharacters(in: .whitespaces).dropFirst(field.property.count)
+                            .trimmingCharacters(in: .whitespaces).hasPrefix("=")
+                        && !after.contains("==")
+                }.isEmpty
+            }
+            #expect(written.count <= 1, "\(member) writes \(written.map(\.property)) on the collection: one edit writes one field")
+        }
+        let onChanges = code.wordOffsets("onChange", in: reading.typeBody).compactMap { offset -> String? in
+            guard let call = code.call(named: "onChange", at: offset), let arguments = call.arguments,
+                  let of = code.topLevelArgument("of", in: arguments) else { return nil }
+            return ArchiveVisitMacToolbarFitTests.collapse(code.text(of))
+        }
+        let saved = onChanges.filter { value in Self.paneFields.contains { $0.state == value } }
+        #expect(saved.isEmpty, "the pane reacts to its own field copies with onChange(of:) \(saved); each commits from its control")
+        for field in Self.paneFields where field.state != "note" {
+            let bindings = code.wordOffsets("committing", in: reading.typeBody)
+                .compactMap { code.call(named: "committing", at: $0) }
+                .filter { $0.arguments.map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) } == "($\(field.state))" }
+            try #require(bindings.count == 1, "\(field.state) is bound through committing($\(field.state)) \(bindings.count) times, expected once")
+            let commit = try #require(bindings[0].trailingClosure, "committing($\(field.state)) names no commit")
+            let rule = ArchiveVisitMacToolbarFitTests.collapse(code.text(commit))
+            let expected = field.state == "name"
+                ? "CollectionEditorCommit.name($0, to: collection)"
+                : field.state.hasPrefix("include")
+                    ? "CollectionEditorCommit.flag($0, to: \\.\(field.property), of: collection)"
+                    : "CollectionEditorCommit.text($0, to: \\.\(field.property), of: collection)"
+            #expect(rule == "{ \(expected) }", "committing($\(field.state)) commits «\(rule)», expected «{ \(expected) }»")
+        }
+        let committing = try #require(reading.members["committing"], "CollectionDetailPane has no committing(_:_:)")
+        let setter = ArchiveVisitMacToolbarFitTests.collapse(code.text(committing))
+        #expect(setter.contains("field.wrappedValue = newValue") && setter.contains("if commit(newValue)"),
+                "committing(_:_:) does not set the field and commit only when the rule wrote: «\(setter)»")
+    }
+
+    /// The pane follows every field another writer changes — the iOS editor's `FrontMatterModelSync`, given all seven
+    /// of the pane's copies — so the field the reader edits next starts from what the collection holds, and following
+    /// writes nothing (the modifier has no way to).
+    @Test("The detail pane follows every field another writer changes")
+    func thePaneFollowsEveryField() throws {
+        let reading = try Self.read("CollectionDetailPane")
+        let code = reading.code
+        let syncs = code.wordOffsets("FrontMatterModelSync", in: reading.typeBody)
+            .compactMap { code.call(named: "FrontMatterModelSync", at: $0) }
+        try #require(syncs.count == 1, "the pane applies FrontMatterModelSync \(syncs.count) times, expected once")
+        let arguments = try #require(syncs[0].arguments)
+        let labels = ["collectionName", "collectionNote", "collectionSubtitle", "collectionAuthorLine",
+                      "includeColophon", "includeProjectProvenance", "includeMethodAppendix"]
+        for (label, field) in zip(labels, Self.paneFields) {
+            let bound = code.topLevelArgument(label, in: arguments).map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
+            #expect(bound == "$\(field.state)", "FrontMatterModelSync's \(label) is bound to «\(bound ?? "nothing")», not $\(field.state)")
+        }
+        let collection = code.topLevelArgument("collection", in: arguments).map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
+        #expect(collection == "collection", "FrontMatterModelSync follows «\(collection ?? "nothing")», not the pane's collection")
+    }
+}
+
+// MARK: - WrappingFooterSourceTests
+
+/// Source gate for #1475: **on the Mac, the footer under a `List` section wraps instead of ending mid-word.**
+///
+/// ## The defect it stops
+/// A macOS `List` section footer is drawn on one line and cut with an ellipsis: the Topic sheet's Covering volumes note
+/// ("…including volumes you have not do…") and Manage collections' ("…doesn't re…"). Measured in an offscreen harness
+/// that hosts a `List` of the shape these sheets use at 420 pt on macOS 27 (`work/MACCOL/harness/footer.swift` in the
+/// lane's durable folder): the footer slot draws its text on one line whatever modifiers the text carries — bare, with
+/// `.fixedSize(horizontal: false, vertical: true)` (#600's failed first attempt), and with #1096's per-text
+/// `fixedSize` plus a full-width frame, each 14 pt tall and cut — and with a line limit lifted as well the text grows
+/// but the footer's row does not, so a four-line footer shows its middle two lines. The text moved into a section ROW
+/// of its own (#600's idiom) wraps: 39 pt for the Topic sheet's three-sentence footer, 26 pt for Manage collections'.
+///
+/// ## What it pins
+/// `WrappingFooterSection` is a `Section` with the same trailing closures — content, header, footer — that draws its
+/// footer in the footer slot on iOS, where footers wrap, and on the Mac as a row of a section of its own, styled as a
+/// footer, with no separator. The four footers #1475 names are each in one.
+///
+/// ## Where it can fail
+/// Source scans, so the same answer on every destination. Whether each footer wraps at its sheet's minimum width — the
+/// Topic sheet 420 pt, Manage collections 460 pt, Focus Tags 420 pt — is the owner's check on a Mac.
+///
+/// Version history:
+///   1.0 — #1475: initial implementation
+struct WrappingFooterSourceTests {
+
+    /// Each footer #1475 puts in a `WrappingFooterSection`: its file under the app's source root, and its key.
+    static let footers: [(path: String, key: String)] = [
+        ("Browser/SubjectIndexView.swift", "subjects.detail.footer"),
+        ("Browser/SubjectIndexView.swift", "subjects.detail.volumes.footer"),
+        ("ProjectContext/ProjectHomeView.swift", "project.collections.manage.footer"),
+        ("ProjectContext/ProjectHomeView.swift", "project.focusTags.footer"),
+    ]
+
+    /// Where `WrappingFooterSection` is declared.
+    static let declarationPath = "Theme/FRUSTheme.swift"
+
+    @Test("#1475: each footer the issue names sits in a WrappingFooterSection's footer", arguments: footers.indices)
+    func footerIsWrapped(_ index: Int) throws {
+        let (path, key) = Self.footers[index]
+        let raw = try ArchiveVisitMacToolbarFitTests.source(path)
+        let bytes = Array(raw.utf8)
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        let quoted = "\"\(key)\""
+        let sections = code.wordOffsets("WrappingFooterSection").compactMap { code.call(named: "WrappingFooterSection", at: $0) }
+        let holding = sections.filter { section in
+            section.labelledClosures.contains { $0.label == "footer" && String(decoding: bytes[$0.range], as: UTF8.self).contains(quoted) }
+        }
+        let uses = raw.components(separatedBy: quoted).count - 1
+        try #require(uses == 1, "\(path) names \(key) \(uses) times; this test reads exactly one footer")
+        #expect(holding.count == 1, """
+            \(key) (\(path)) is not the footer of a WrappingFooterSection, so on the Mac it is a List footer, drawn on one \
+            line and cut mid-word (#1475). \(sections.count) WrappingFooterSection(s) in the file.
+            """)
+    }
+
+    @Test("#1475: on the Mac the footer is a row of its own section; on iOS it stays in the footer slot")
+    func theSectionDrawsItsFooterAsARowOnTheMac() throws {
+        let raw = try ArchiveVisitMacToolbarFitTests.source(Self.declarationPath)
+        for platform in [ArchiveVisitMacToolbarFitTests.Platform.macOS, .iOS] {
+            let code = MaskedSwift(raw).compiled(for: platform).code
+            let declarations = code.typeDeclarations(file: 0).filter { $0.name == "WrappingFooterSection" && !$0.isExtension }
+            try #require(declarations.count == 1, "\(platform): \(declarations.count) WrappingFooterSection declarations")
+            let body = try #require(code.members(in: declarations[0].body).first { $0.name == "body" }?.body,
+                                    "\(platform): WrappingFooterSection has no body")
+            let sections = code.wordOffsets("Section", in: body).compactMap { code.call(named: "Section", at: $0) }
+            let slotted = sections.filter { $0.labelledClosures.contains { $0.label == "footer" } }
+            let rows = sections.filter { section in
+                section.trailingClosure.map { code.wordOffsets("footer", in: $0).isEmpty == false } == true
+            }
+            switch platform {
+            case .macOS:
+                #expect(slotted.isEmpty, "macOS: the footer is still drawn in a Section's footer slot, which cuts it")
+                try #require(rows.count == 1, "macOS: \(rows.count) Sections draw the footer as a row, expected one")
+                let row = try #require(rows[0].trailingClosure)
+                let modifiers = code.modifierChain(after: code.wordOffsets("footer", in: row)[0] + "footer".utf8.count)
+                    .map { "\($0.name)\($0.arguments.map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) } ?? "")" }
+                #expect(modifiers.contains("fixedSize(horizontal: false, vertical: true)")
+                            && modifiers.contains("frame(maxWidth: .infinity, alignment: .leading)"),
+                        "macOS: the footer row does not take the list's width and its own height: \(modifiers)")
+                #expect(modifiers.contains("listRowSeparator(.hidden)"), "macOS: the footer row draws a separator: \(modifiers)")
+            case .iOS:
+                #expect(slotted.count == 1 && rows.isEmpty, "iOS: the footer left the footer slot, where iOS wraps it")
+            }
+        }
+    }
+}
+
+// MARK: - CollectionRowChipContrastSourceTests
+
+/// Source gate for #1477's contrast half: **the collection row's accent chips and the heading's prompt read the row's
+/// background prominence**, so on a selected Mac row they are drawn by ``CollectionChipStyle``'s selected colours
+/// rather than accent on the accent selection. `CollectionChipStyleTests` drives the style function itself; a scan
+/// alone would pass a view that read the value and ignored it, and a style test alone a view that never asked.
+///
+/// Version history:
+///   1.0 — #1477: initial implementation
+struct CollectionRowChipContrastSourceTests {
+
+    static let rowsPath = "Collections/CollectionEntryRows.swift"
+
+    @Test("#1477: ConfigurePill and EntryStatusChip draw through CollectionChipStyle at the row's prominence",
+          arguments: ["ConfigurePill", "EntryStatusChip"])
+    func chipReadsProminence(_ type: String) throws {
+        let raw = try ArchiveVisitMacToolbarFitTests.source(Self.rowsPath)
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        let declarations = code.typeDeclarations(file: 0).filter { $0.name == type && !$0.isExtension }
+        try #require(declarations.count == 1, "found \(declarations.count) \(type) declarations")
+        let text = ArchiveVisitMacToolbarFitTests.collapse(code.text(declarations[0].body))
+        #expect(text.contains("@Environment(\\.backgroundProminence) private var backgroundProminence"),
+                "\(type) does not read the row's background prominence")
+        #expect(text.contains("CollectionChipStyle.colors(on: backgroundProminence)"),
+                "\(type) does not ask CollectionChipStyle for its colours at that prominence")
+        #expect(!text.contains("FRUSTheme.overrideChip"),
+                "\(type) still draws a fixed theme colour, accent on the accent selection of a selected row")
+    }
+
+    @Test("#1477: the heading's prompt is drawn at the row's prominence")
+    func headingPromptReadsProminence() throws {
+        let raw = try ArchiveVisitMacToolbarFitTests.source(Self.rowsPath)
+        let bytes = Array(raw.utf8)
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        let declarations = code.typeDeclarations(file: 0).filter { $0.name == "CollectionHeadingRow" && !$0.isExtension }
+        try #require(declarations.count == 1, "found \(declarations.count) CollectionHeadingRow declarations")
+        let fields = code.wordOffsets("TextField", in: declarations[0].body)
+            .compactMap { code.call(named: "TextField", at: $0) }
+            .filter { $0.arguments.map { String(decoding: bytes[$0], as: UTF8.self).contains("\"collection.heading.placeholder\"") } == true }
+        try #require(fields.count == 1, "CollectionHeadingRow has \(fields.count) heading fields, expected one")
+        let arguments = try #require(fields[0].arguments)
+        let prompt = code.topLevelArgument("prompt", in: arguments).map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
+        #expect(prompt?.contains("backgroundProminence") == true,
+                "the heading's prompt is not drawn at the row's prominence (prompt: \(prompt ?? "absent"))")
+        let text = ArchiveVisitMacToolbarFitTests.collapse(code.text(declarations[0].body))
+        #expect(text.contains("@Environment(\\.backgroundProminence) private var backgroundProminence"),
+                "CollectionHeadingRow does not read the row's background prominence")
+    }
+}
+
 // MARK: - ArchiveVisitMacEntryPointTests
 
 /// Source gate for #1462: **on the Mac, Project Home's Plan a Visit and Review Changes' Open the plan
