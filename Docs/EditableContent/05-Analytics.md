@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · 6 ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
+**In this file:** 213 blocks · 5 ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
 
 ⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
@@ -26,21 +26,9 @@ What the graph shows
 
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1524–1525 | key: graph.info.what.body -->
 
-Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
+Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 
 <!-- END SOURCE: graph.info.what.body -->
-
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB because it describes the graph’s colours the other way round, and calls the archival nodes light blue where the app draws them teal, which the plan of record’s D9 rules out (in-app text must describe the controls that exist). In the app a **blue** node is a document that *cites* the central one — an incoming reference — and an **orange** node is one the central document *cites*, an outgoing reference (`CrossReferenceGraphView` draws `.inbound` blue and `.outbound` orange; the legend under the graph reads **Cites** for blue and **Cited by** for orange). Your *Timeline and Network layouts* text agrees with the app: outgoing references sit to the left because they are earlier. Your edit, with “refenced” corrected:
-
-```text
-Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent outgoing cross-references to other FRUS documents. Orange nodes represent incoming cross-references from other FRUS documents. Light blue nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
-```
-
-*The same edit with the two directions swapped and the archival nodes teal, which matches the app — the graph fills archival nodes teal (`CrossReferenceGraphView` draws `.unit` and `.centralFileClass` in `.teal`, its legend’s *Not printed* swatch is teal, and *Navigating the graph* below says “Teal nodes are archival material”). Adopt it by pasting it over the block, or write your own:*
-
-```text
-Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
-```
 
 #### Edge context
 

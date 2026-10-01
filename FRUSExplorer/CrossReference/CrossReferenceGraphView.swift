@@ -1522,7 +1522,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.what.title",
                               defaultValue: "What the graph shows"),
                 body:  String(localized: "graph.info.what.body",
-                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
+                              defaultValue: "Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.edges.title",

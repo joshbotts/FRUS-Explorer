@@ -22,7 +22,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
 | [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | “open source model” |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
-| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 121 KB | 213 | 7 | #1478 |
+| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 121 KB | 213 | 6 | #1478 |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 125 KB | 264 | 0 | #1483 |
 | [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 103 KB | 216 | 2 | — |
 | [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 142 KB | 281 | 0 | #1422, #1478 |
@@ -99,6 +99,7 @@ record. Block by block: a block you changed is your text in the app; a block you
 
 - **A1, §3.5 *Narrow Without Losing Count* — shipped, re-revised.** Your text with provenance named as the one facet that is descriptive only; the subjects-facet sentence is gone, so `CorrectedClaimsTests` and `ResearchGuideCoverageTests` pin the facet list (“archival provenance and subjects. Most of those become a filter”) instead.
 - **A2, §3.6 *The Language Itself* — shipped with the repair.** Your text with the stray “the words most” deleted.
+- **A3, §5 *What the graph shows* (`graph.info.what.body`) — shipped with the repair.** Your text with the two directions swapped (blue incoming, orange outgoing), the archival nodes teal, and “with a document icon” dropped, since a blue node whose volume is not downloaded shows a cloud icon instead.
 
 ## Wording issues you can close here (⚑)
 
