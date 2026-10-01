@@ -20,7 +20,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 |---|---|---|---|---|---|
 | [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 0 | — |
 | [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
-| [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | “open source model” |
+| [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | — |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
 | [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 121 KB | 213 | 0 | #1478 |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 125 KB | 264 | 0 | #1483 |
@@ -105,6 +105,7 @@ record. Block by block: a block you changed is your text in the app; a block you
 - **B1, §5 the graph’s touch help (`graph.info.interact.body.ios`) — confirmed as shipped.** “Tap a node” and “or open it”, as lane WB changed them. With it every step of #1481 is done on this branch; relabelling the iOS **Open in Main Window** menu item stays lane GRAPH’s (D9).
 - **B2 + B3, §7 Meaning search’s not-downloading sentences (#1527) — confirmed, with “in Settings” added to the empty state.** Both name **Download Vectors for Every Volume**, the one button that fetches files for volumes you have not downloaded, and both now say where it is.
 - **C1, §2.1 onboarding Step 2’s captions — closed.** Entire Corpus: “≈ 3.5 GB — the entire series, fully offline. Recommended for full functionality.” Subseries: “A coherent editorial era — recommended if you want to start smaller.” The size counts the 553 match files a whole-series download fetches with Download With Volumes on: 3,338,778,538 bytes of volumes and 162,354,028 of match files, 3.50 GB.
+- **C2, §8 the repository README’s semantic-features sentence — closed.** “Semantic features rely on vector embeddings generated ahead of time with Google’s EmbeddingGemma model; searching by meaning runs the same model on your device.” It no longer calls the model open source, which the README’s License section and `NOTICE` contradict (the weights are under the Gemma Terms of Use); the License section keeps the terms.
 - **A4 + A5, the dating rule — shipped.** *How dates are determined* (`analytics.info.dating.body.v3`) is your two sentences with “they” made “the editors”, plus “Volume content with no stored date, chiefly front matter, sits at the start year of its volume on By Year and By Decade and is left out of By Month and By Day.” The export caveat (`analytics.export.caveat.dating.v2`) is your text as written. The tests read “editor-annotated date” as the rule’s marker now, and “denominator” is checked on the export only.
 - **A6, §13 *the two volumes are too alike* (`semanticMap.axis.tooAlike`) — shipped as you wrote it.** “were measured as so similar”. `SemanticSliceGuidanceTests` now accepts “similar” for this message and refuses both “alike” and “similar” in the no-summary one, which is the build-42 guard.
 - **A7, §13.7 the frame-sequence sentence (`semanticMap.frames.grain`) — shipped, re-revised.** “Each frame lights every mapped document in the volumes published so far — whole volumes, whatever each document is about.” Your rewording keeps both facts the map design requires (a frame is the volumes published so far, lit whole) without claiming the lit documents are never about one subject, since some volumes are. `SemanticMapFrameSequenceTests` pins “whatever each document is about” in place of “never the documents about”.
@@ -112,10 +113,6 @@ record. Block by block: a block you changed is your text in the app; a block you
 ## Wording issues you can close here (⚑)
 
 *Each ⚑ box states the problem, gives the options and says how your wording will be applied. Where the fix needs a string that does not exist yet, a “✎ New string needed” box beside it holds the current text as a starting point.*
-
-**New from lane WB’s review, round 1** — one question your 2026-09-30 edits raise, with no issue filed (the other, onboarding’s two recommendations, is closed: C1 above):
-
-- the README calls the embedding model open source, which its own Gemma Terms paragraph contradicts: §8
 
 **Still open** — you left each of these untouched on 2026-09-30:
 
