@@ -46,8 +46,9 @@ settings:
     # adopting rather than taken on Xcode's word:
     #   - ENABLE_USER_SCRIPT_SANDBOXING is the one that can break a build, by denying a
     #     run-script phase access to files outside its declared inputs/outputs. This project
-    #     has exactly ONE shell-script phase, the archive-only "Embed llama dSYM" on both app
-    #     targets (see the iOS target's postBuildScripts), and it declares what it reads.
+    #     has exactly TWO shell-script phases, both archive-only and both on both app targets —
+    #     "Check CloudKit schema" (the iOS target's preBuildScripts, #1531) and "Embed llama
+    #     dSYM" (its postBuildScripts) — and each declares what it reads.
     #   - STRING_CATALOG_GENERATE_SYMBOLS is a no-op today (no `.xcstrings` ships) and is
     #     adopted for whenever one does.
     #   - ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS turns
@@ -237,6 +238,29 @@ targets:
       # slices are deliberately built unsigned).
       - framework: Vendor/llama.xcframework
         embed: true
+    preBuildScripts:
+      # Archive-only, and FIRST, so a refused archive fails in seconds rather than after a full
+      # Release compile: the CloudKit Production schema gate (#1531). It fails the archive unless
+      # the last live read of Production — `Scripts/check_cloudkit_schema.py`, run by hand or by
+      # notarize.sh, which needs a CloudKit management token — holds every identifier this
+      # build's CloudKitSchemaInventory says a record can carry. Builds 45–48 went to TestFlight
+      # from Xcode carrying a field Production had never been taught; this is the check that
+      # would have refused them. The phase cannot reach the token or the network under the
+      # script sandbox, so it knows Production only through the file that live read wrote; see
+      # the script's header.
+      - name: Check CloudKit schema
+        script: '/usr/bin/python3 -B "$SRCROOT/Scripts/check_cloudkit_schema.py" --archive-phase'
+        shell: /bin/bash
+        runOnlyWhenInstalling: true
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        # Declared for ENABLE_USER_SCRIPT_SANDBOXING: the three files the phase reads, the last
+        # one gitignored and written by the live read. Measured in a sandboxed probe project
+        # with this layout: undeclared, the record is refused ("Operation not permitted").
+        inputFiles:
+          - $(SRCROOT)/Scripts/check_cloudkit_schema.py
+          - $(SRCROOT)/FRUSExplorer/Models/CloudKitSchemaInventory.swift
+          - $(SRCROOT)/.cache/cloudkit-schema-gate/production-schema.txt
     postBuildScripts:
       # Archive-only: copy the embedded llama.framework slice's dSYM into the archive, so the
       # TestFlight / App Store upload stops warning that the archive "did not include a dSYM
@@ -392,6 +416,19 @@ targets:
       # llama.cpp as a binary xcframework (V-5 s2) — see the iOS target's entry.
       - framework: Vendor/llama.xcframework
         embed: true
+    preBuildScripts:
+      # Archive-only CloudKit Production schema gate (#1531) — see the iOS target's entry. Same
+      # phase, same script, same three inputs; notarize.sh's DMG archive runs it too.
+      - name: Check CloudKit schema
+        script: '/usr/bin/python3 -B "$SRCROOT/Scripts/check_cloudkit_schema.py" --archive-phase'
+        shell: /bin/bash
+        runOnlyWhenInstalling: true
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        inputFiles:
+          - $(SRCROOT)/Scripts/check_cloudkit_schema.py
+          - $(SRCROOT)/FRUSExplorer/Models/CloudKitSchemaInventory.swift
+          - $(SRCROOT)/.cache/cloudkit-schema-gate/production-schema.txt
     postBuildScripts:
       # Archive-only llama.framework dSYM — see the iOS target's entry. Same phase, same
       # script; PLATFORM_NAME selects the macOS slice.

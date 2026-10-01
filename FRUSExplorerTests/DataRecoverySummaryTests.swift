@@ -143,3 +143,65 @@ struct SyncLogSummaryTests {
         #expect(summary.lastEvent == hoursAgo(1))
     }
 }
+
+// MARK: - Fix iCloud Sync while an upload is unrecovered (#1531)
+
+/// Fix iCloud Sync deletes this device's store and downloads iCloud's copy, so while an upload has
+/// failed with none succeeding since it discards real work — in #1531, everything a Mac made in the
+/// week its uploads were refused. Each place the action is offered says so then, and says nothing
+/// new otherwise. These drive the three functions the view renders. Idiom-agnostic.
+@Suite("Fix iCloud Sync warning (#1531)")
+@MainActor
+struct FixICloudSyncWarningTests {
+
+    private let run = UnrecoveredExport(
+        firstFailedAt: Date(timeIntervalSince1970: 1_790_000_000),
+        lastFailedAt: Date(timeIntervalSince1970: 1_790_003_600), firstLaunchID: UUID(),
+        message: "CKErrorDomain partialFailure", schemaIdentifiers: nil)
+
+    /// The owner's confirmation text (lane WB, 2026-09-30), which ships unchanged in both states.
+    private let ownerMessage = "This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it."
+
+    @Test("With nothing unrecovered the confirmation is the owner's message alone")
+    func healthyConfirmationIsUnchanged() {
+        #expect(DataRecoveryView.fixSyncMessage(unrecovered: nil) == ownerMessage)
+    }
+
+    @Test("While an upload is unrecovered the confirmation warns first, then says the same")
+    func confirmationWarnsFirst() {
+        let message = DataRecoveryView.fixSyncMessage(unrecovered: run)
+        #expect(message.hasSuffix("\n\n" + ownerMessage), "the owner's message was changed or dropped")
+        #expect(message.hasPrefix("Warning:"))
+        #expect(message.contains(SyncStoppedCopy.since(run)), "the warning does not say since when")
+        #expect(message.contains("Fix iCloud Sync would discard them"))
+    }
+
+    /// The row and the footer are seen BEFORE the dialog; the footer's "deletes nothing" is false
+    /// of Fix iCloud Sync in this state.
+    @Test("The row and the ladder's footer warn too, and only while an upload is unrecovered")
+    func rowAndFooter() {
+        #expect(DataRecoveryView.fixSyncRowDetail(unrecovered: nil) == "Re-download from iCloud at next launch")
+        #expect(DataRecoveryView.fixSyncRowDetail(unrecovered: run) == "Would discard changes not yet in iCloud")
+        let healthy = DataRecoveryView.recoveryFooter(unrecovered: nil)
+        #expect(healthy.contains("deletes nothing"))
+        let warned = DataRecoveryView.recoveryFooter(unrecovered: run)
+        #expect(!warned.contains("deletes nothing"),
+                "the footer still calls Fix iCloud Sync the rung that deletes nothing")
+        #expect(warned.contains("Fix iCloud Sync would discard them"))
+    }
+
+    /// The view renders those three functions and reads the run from `AppState` — not from the
+    /// status summary, which shows a failure begun THIS launch as `.failed` and would have hidden
+    /// the warning then. Read with comments and strings masked.
+    @Test("Data & Recovery renders the three from AppState.unrecoveredExport")
+    func viewReadsTheRun() throws {
+        let code = String(decoding: CodingStandardsAuditTests.maskedCode(
+            try DebugStoreSeparationTests.appSource("FRUSExplorer/Settings/DataRecoveryView.swift")),
+            as: UTF8.self)
+        for call in ["Text(Self.fixSyncMessage(unrecovered: appState.unrecoveredExport))",
+                     "detail: Self.fixSyncRowDetail(unrecovered: appState.unrecoveredExport)",
+                     "Text(Self.recoveryFooter(unrecovered: appState.unrecoveredExport))"] {
+            #expect(code.contains(call), Comment(rawValue: "DataRecoveryView no longer renders \(call)"))
+        }
+    }
+}

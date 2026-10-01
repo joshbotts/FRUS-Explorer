@@ -8,6 +8,7 @@
 
 import CloudKit
 import Foundation
+import OSLog
 
 // MARK: - CloudKitErrorInspection
 
@@ -317,5 +318,111 @@ enum CloudKitErrorInspector {
             // buckets of equal size came out in dictionary order — a dump that differed between
             // runs of the same failure.
             .sorted { $0.count != $1.count ? $0.count > $1.count : $0.code < $1.code }
+    }
+}
+
+// MARK: - SystemLogSchemaScan
+
+/// Reads this process's own system log for the schema identifiers a failed sync named (#1531).
+///
+/// ## Why the error is not enough
+/// In #1531 the app's own record of the failure read `partialDict=none visited=1 schema=` all four
+/// times: the `NSError` the event carries is thinner than the one Core Data logs. Core Data's copy,
+/// in this process's system log, carried the server's sentence — "Cannot create or modify field
+/// 'CD_sourceContentHash' in record 'CD_GeneratedSummary' in production schema" — which is the
+/// whole diagnosis, and which had to be read off the Mac with `log show` to be found at all. So
+/// after a failed event the app reads its own log and keeps what that sentence names.
+///
+/// ## What escapes
+/// Exactly what escapes ``CloudKitErrorInspector/schemaIdentifiers(in:)``: `CD_…` and `_pcs_data`
+/// tokens, the names this app's own schema defines. Every line is read and discarded; record
+/// names, zone and owner ids and field values cannot match the grammar. The log's text is Apple's
+/// private format and can change in any release, so the scan is best-effort by construction: a
+/// line it cannot read yields nothing, never a guess.
+///
+/// ## Which lines
+/// Lines from Core Data and CloudKit (``subsystemPrefixes``) within ``slack`` seconds of the
+/// failed event, at error or fault level — where Core Data reports a failed export and its "fatal
+/// errors" — or at any level when the line carries the server's own rejection
+/// (``rejectionCues``). Nothing from the app's own subsystem, whose lines this scan would only
+/// echo back.
+///
+/// Version history:
+///   1.0 — #1531
+enum SystemLogSchemaScan {
+
+    /// One log line, reduced to what the scan reads — so the selection rule is testable without a
+    /// log store.
+    struct Line: Sendable, Equatable {
+        /// When the line was logged.
+        let date: Date
+        /// Its subsystem, e.g. `com.apple.coredata`.
+        let subsystem: String
+        /// Whether it was logged at error or fault level.
+        let isError: Bool
+        /// Its composed text. Read and discarded; only allow-listed identifiers escape.
+        let message: String
+    }
+
+    /// The subsystems whose lines describe a CloudKit mirroring failure.
+    static let subsystemPrefixes = ["com.apple.coredata", "com.apple.cloudkit"]
+
+    /// Phrases that mark a line as the server's own rejection of a schema change, whatever level it
+    /// was logged at — the two halves of the sentence #1531 was diagnosed from.
+    static let rejectionCues = ["Cannot create or modify field", "production schema"]
+
+    /// How many seconds before the event's start and after its end a line may sit and still count.
+    static let slack: TimeInterval = 5
+
+    /// The identifiers named by the lines that describe a failure between `start` and `end`,
+    /// capped as the inspector caps them. Pure.
+    ///
+    /// The server's own rejection comes first: the names on lines carrying a rejection cue, sorted,
+    /// then the names on the other error lines, sorted. A plain sort would let a window crowded with
+    /// record types cut the one name #1531 needed, because in ASCII order every `CD_<RecordType>`
+    /// sorts before every `CD_<field>`: twelve types on Core Data's error lines, and the field the
+    /// rejection named would be the one dropped.
+    static func identifiers(in lines: some Sequence<Line>, from start: Date, to end: Date) -> [String] {
+        let earliest = start.addingTimeInterval(-slack)
+        let latest = end.addingTimeInterval(slack)
+        var rejected: Set<String> = []
+        var other: Set<String> = []
+        for line in lines {
+            guard line.date >= earliest, line.date <= latest else { continue }
+            guard subsystemPrefixes.contains(where: { line.subsystem.hasPrefix($0) }) else { continue }
+            let isRejection = rejectionCues.contains(where: { line.message.contains($0) })
+            guard line.isError || isRejection else { continue }
+            let names = CloudKitErrorInspector.schemaIdentifiers(in: line.message)
+            if isRejection {
+                rejected.formUnion(names)
+            } else {
+                other.formUnion(names)
+            }
+        }
+        let ranked = rejected.sorted() + other.subtracting(rejected).sorted()
+        return Array(ranked.prefix(CloudKitErrorInspector.maxSchemaIdentifiers))
+    }
+
+    /// Reads this process's own log between `start` and `end` (with ``slack``) and returns what
+    /// ``identifiers(in:from:to:)`` finds — or `nil` when the log could not be opened or read, so a
+    /// caller can tell "read it and found nothing" from "could not read it".
+    ///
+    /// Synchronous and potentially slow (it walks the process's log from `start`): call it off the
+    /// main actor. Needs no entitlement — a process may always read its own log.
+    static func scanCurrentProcess(from start: Date, to end: Date) -> [String]? {
+        do {
+            let store = try OSLogStore(scope: .currentProcessIdentifier)
+            let position = store.position(date: start.addingTimeInterval(-slack))
+            let entries = try store.getEntries(at: position)
+            let lines = entries.lazy.compactMap { entry -> Line? in
+                guard let log = entry as? OSLogEntryLog else { return nil }
+                return Line(date: log.date, subsystem: log.subsystem,
+                            isError: log.level == .error || log.level == .fault,
+                            message: log.composedMessage)
+            }
+            return identifiers(in: lines, from: start, to: end)
+        } catch {
+            return nil
+        }
     }
 }

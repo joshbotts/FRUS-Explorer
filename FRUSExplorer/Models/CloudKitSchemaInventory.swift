@@ -48,7 +48,10 @@ import SwiftData
 ///   impossible to skip, by pinning `installed − awaiting` to a count and a digest. Add an
 ///   identifier and you must either list it in ``identifiersAwaitingDeploy`` (honest: not
 ///   deployed yet) or restate the baseline (a claim that you deployed it). Both are explicit acts
-///   in the diff; neither happens by accident.
+///   in the diff; neither happens by accident. Since #1531 the claim is also CHECKED, outside the
+///   app: `Scripts/check_cloudkit_schema.py` reads Production's schema with a CloudKit management
+///   token, and every archive runs it as the archive-only "Check CloudKit schema" phase, which
+///   fails until a read of Production has shown every identifier this build can write.
 ///
 /// ## Cost at launch
 /// The runtime check is `identifiersAwaitingDeploy.isEmpty` — one already-materialised array
@@ -84,14 +87,34 @@ import SwiftData
 ///          ``identifiersAwaitingDeploy``; the baseline is deliberately NOT restated.
 ///   1.7 — The NINTH promotion ran (2026-09-03, build 44): the owner exercised the review
 ///          ledger and the summary's source hash on a Development build and deployed. NINE of
-///          the ten identifiers are attested; `CD_AnnotationReview.CD_annotationId` stays in
+///          the ten identifiers were attested; `CD_AnnotationReview.CD_annotationId` stays in
 ///          ``identifiersAwaitingDeploy`` because no build has written a non-nil value, so
 ///          CloudKit never created the field to promote. Baseline 260 → 269 with the digest
 ///          the suite printed; `deployedThroughBuild` 43 → 44, `deployedOn` → 2026-09-03.
+///          **Corrected at 1.9: the promotion carried eight, not nine.** The summary's source
+///          hash was not in it; Production first accepted it on 2026-09-28 (#1531).
 ///   1.8 — The TENTH promotion ran (2026-09-13, build 47): the owner deployed #1275's
 ///          `CD_ResearchNote.CD_richText` and `CD_SyncedPreferences.CD_listOrderJSON`, and
 ///          ``identifiersAwaitingDeploy`` is empty again. Baseline 269 → 271 with the digest the
 ///          suite printed; `deployedThroughBuild` 44 → 47, `deployedOn` → 2026-09-13.
+///   1.9 — **1.7's attestation was wrong for one identifier, and #1531 is what it cost.**
+///          `CD_GeneratedSummary.CD_sourceContentHash` was NOT in Production after the 2026-09-03
+///          promotion: Production rejected it with "Cannot create or modify field
+///          'CD_sourceContentHash' in record 'CD_GeneratedSummary' in production schema" on
+///          2026-09-27 and 09-28 (the owner's Mac's system log), and every build since 45 writes it
+///          on each summary of an indexed document. So the 09-03 promotion carried EIGHT of the ten
+///          identifiers, not nine. The owner deployed the field on 2026-09-28 (build 48 current).
+///          What showed it took: exports that had failed on that field succeeded afterwards, on the
+///          Mac by its system log and on the iPhone by its Sync Log. That shows Production now
+///          holds this one field. It does not show that Production holds every other identifier
+///          in the baseline, or what else the 09-28 deploy carried: Production's schema was not
+///          read, because no CloudKit management token was saved. So the baseline — count and
+///          digest — is unchanged and is still the owner's attestation, now with this one
+///          correction; `deployedThroughBuild` 47 → 48, `deployedOn` → 2026-09-28. The lesson is
+///          the gate: `Scripts/check_cloudkit_schema.py` reads Production's schema and compares
+///          it with this inventory, and every archive — from Xcode as well as notarize.sh — fails
+///          at its "Check CloudKit schema" phase until a read has passed.
+///          ``identifiersNotStoredAsFields`` is new for that script.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -379,7 +402,7 @@ enum CloudKitSchemaInventory {
 
     /// The build at which the Production CloudKit schema was last promoted.
     ///
-    /// Build 37. Five promotions are recorded here. Issue #488's closing comment — *"Resolved by
+    /// Build 48. Every promotion since #488 is recorded here. Issue #488's closing comment — *"Resolved by
     /// deploying the missing CloudKit schema"* (2026-07-26) — brought Production level with the
     /// build-35 additions. The second, the same day, promoted `CD_ExportHistoryEntry` and its six
     /// fields for Wave R-2a. The third (2026-07-31) promoted `CD_WorkingCorpus` and its nine fields
@@ -399,13 +422,17 @@ enum CloudKitSchemaInventory {
     /// three plan record types (32), W-4's `CD_DocumentClassificationOverride` (7), and W-5's two
     /// `CD_SavedSearch` fields — the deliberate one-Dashboard-visit block the owner reserved when
     /// Phase 2 shipped its schema ahead of its deploy. The ninth (2026-09-03, build 44) promoted
-    /// nine of R-5 P3b-2's ten identifiers, and the tenth (2026-09-13, build 47) promoted #1275's
-    /// rich-text note body and the reader's synced tag and project order.
-    static let deployedThroughBuild = "47"
+    /// eight of R-5 P3b-2's ten identifiers — it was recorded as nine, and #1531 found the one it
+    /// missed — and the tenth (2026-09-13, build 47) promoted #1275's rich-text note body and the
+    /// reader's synced tag and project order. The eleventh (2026-09-28, build 48 current)
+    /// deployed `CD_GeneratedSummary.CD_sourceContentHash`, the identifier the ninth had missed,
+    /// and ended the #1531 outage; what else it carried was not read. It changed nothing in the
+    /// inventory, so the baseline below did not move.
+    static let deployedThroughBuild = "48"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-09-13"
+    static let deployedOn = "2026-09-28"
 
     /// How many identifiers **this build mirrors that are attested deployed**. Pinned by the
     /// test against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the
@@ -455,8 +482,11 @@ enum CloudKitSchemaInventory {
     static let identifiersAwaitingDeploy: [String] = [
         // Empty since the TENTH promotion (2026-09-13, build 47), which carried #1275's two
         // identifiers: `CD_ResearchNote.CD_richText` and `CD_SyncedPreferences.CD_listOrderJSON`.
-        // The NINTH (2026-09-03, build 44) carried nine of R-5 P3b-2's ten identifiers; the tenth
-        // of those moved to ``identifiersAwaitingWriter`` below, because no deploy is possible for it.
+        // The NINTH (2026-09-03, build 44) was recorded as carrying nine of R-5 P3b-2's ten
+        // identifiers and carried eight: `CD_GeneratedSummary.CD_sourceContentHash` reached
+        // Production only with the ELEVENTH (2026-09-28), after #1531. It was never listed here in
+        // between, which is why nothing in the app said so. The tenth of those ten moved to
+        // ``identifiersAwaitingWriter`` below, because no deploy is possible for it.
     ]
 
     /// Identifiers this build mirrors that **cannot be deployed yet, because nothing writes them**.
@@ -490,6 +520,23 @@ enum CloudKitSchemaInventory {
         // `UUID? = nil` and the two call sites (`VolumeUpdateReviewSection`,
         // `DocumentChangeReviewSheet`) both pass `kind: .document` without it.
         "CD_AnnotationReview.CD_annotationId",
+    ]
+
+    /// Inventory identifiers that name the TO-MANY side of a relationship, which CloudKit is not
+    /// expected to hold as a field (#1531's release gate).
+    ///
+    /// `NSPersistentCloudKitContainer` stores a one-to-many relationship on its to-one side: each
+    /// `ArchiveVisitDocument` record carries `CD_plan`, naming its plan's record, and the plan's own
+    /// record has no `CD_documents` to carry. ``mirroredIdentifiers(of:)`` lists every stored
+    /// property, relationships included, so these three are in ``installedIdentifiers`` all the same.
+    /// `Scripts/check_cloudkit_schema.py` reads this list so that it does not REQUIRE them of
+    /// Production (it reports them either way), and `CloudKitSchemaInventoryTests` derives the list
+    /// from the live `Schema`, so a new to-many relationship cannot be missed. Not measured against
+    /// an exported Production schema: no management token was saved on the machine that wrote it.
+    static let identifiersNotStoredAsFields: [String] = [
+        "CD_ArchiveVisitPlan.CD_documents",
+        "CD_ArchiveVisitPlan.CD_targets",
+        "CD_Collection.CD_documentEntries",
     ]
 
     // MARK: - Derived state

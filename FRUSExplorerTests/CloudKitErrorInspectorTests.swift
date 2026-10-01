@@ -407,3 +407,89 @@ struct CloudKitDiagnosticTests {
         #expect(!diag.message.contains("3F2504E0"))
     }
 }
+
+// MARK: - SystemLogSchemaScan (#1531)
+
+/// Which lines of this process's own log the post-failure read takes, and what escapes them.
+///
+/// The fixture lines are #1531's: the server's sentence as CloudKit's operation log carried it, and
+/// Core Data's fatal-error line, both on 2026-09-27 on the owner's Mac. One fixture per rule the
+/// selection applies — the window, the subsystem, the level, the rejection cue — and one for the
+/// allow-list, which is what keeps a record name out of the Sync Log. Idiom-agnostic.
+@Suite("System log schema scan (#1531)")
+struct SystemLogSchemaScanTests {
+
+    private let failedAt = Date(timeIntervalSince1970: 1_790_000_000)
+
+    /// The server's own sentence, with the record id it named — which must never escape.
+    private let serverSentence = """
+        <CKError "Invalid Arguments" (12/2006); "Cannot create or modify field 'CD_sourceContentHash' \
+        in record 'CD_GeneratedSummary' in production schema"> record 7E6EED27-30DA-42A9-A047-16907DEBF21B
+        """
+
+    private func line(_ message: String, at offset: TimeInterval = 0,
+                      subsystem: String = "com.apple.coredata", error: Bool = true) -> SystemLogSchemaScan.Line {
+        .init(date: failedAt.addingTimeInterval(offset), subsystem: subsystem, isError: error,
+              message: message)
+    }
+
+    private func scan(_ lines: [SystemLogSchemaScan.Line]) -> [String] {
+        SystemLogSchemaScan.identifiers(in: lines, from: failedAt, to: failedAt.addingTimeInterval(1))
+    }
+
+    @Test("#1531's error line yields the record type and the field, and nothing else")
+    func theOutageLine() {
+        let found = scan([line(serverSentence)])
+        #expect(found == ["CD_GeneratedSummary", "CD_sourceContentHash"])
+        #expect(!found.contains { $0.contains("7E6EED27") }, "a record id escaped the allow-list")
+    }
+
+    @Test("A line outside the event's window is not read")
+    func windowBounds() {
+        let slack = SystemLogSchemaScan.slack
+        #expect(scan([line(serverSentence, at: -slack - 1)]).isEmpty)
+        #expect(scan([line(serverSentence, at: 1 + slack + 1)]).isEmpty)
+        #expect(!scan([line(serverSentence, at: -slack + 0.5)]).isEmpty)
+        #expect(!scan([line(serverSentence, at: 1 + slack - 0.5)]).isEmpty)
+    }
+
+    /// The app's own CloudKit lines name schema identifiers too (`schema=…`); reading them would
+    /// only echo what the error already said. Only Core Data's and CloudKit's lines count.
+    @Test("Only Core Data's and CloudKit's lines are read")
+    func subsystemFilter() {
+        #expect(scan([line(serverSentence, subsystem: "bottsywattsy.FRUS-Explorer")]).isEmpty)
+        #expect(!scan([line(serverSentence, subsystem: "com.apple.cloudkit")]).isEmpty)
+    }
+
+    /// Core Data names every entity at setup, at default level; those lines are not a failure. An
+    /// error-level line is, and so is any line carrying the server's rejection, whatever its level.
+    @Test("A routine line is skipped; an error, or the server's rejection at any level, is read")
+    func levelAndCue() {
+        let routine = "Mirroring entity CD_ResearchNote with 0 pending records"
+        #expect(scan([line(routine, error: false)]).isEmpty, "a routine setup line was read")
+        #expect(scan([line(routine, error: true)]) == ["CD_ResearchNote"])
+        #expect(scan([line(serverSentence, error: false)])
+                == ["CD_GeneratedSummary", "CD_sourceContentHash"],
+                "the server's own rejection was skipped for its level")
+    }
+
+    @Test("The result is capped as the inspector caps it")
+    func capped() {
+        let many = (0..<30).map { "CD_Type\($0)" }.joined(separator: " ")
+        #expect(scan([line(many)]).count == CloudKitErrorInspector.maxSchemaIdentifiers)
+    }
+
+    /// The cap must not cut the name the scan exists to find. Core Data's error lines around a
+    /// failed batch can name many record types, and in ASCII order every `CD_<RecordType>` sorts
+    /// before `CD_sourceContentHash` — so a plain sort-then-cap kept twelve types and dropped the
+    /// field. The rejection's own names come first.
+    @Test("A rejection's names survive a window crowded with record types")
+    func rejectionOutranksTheCrowd() {
+        let crowd = (0..<14).map { String(format: "CD_Type%02d", $0) }.joined(separator: " ")
+        let found = scan([line("Failed to export batch: \(crowd)"), line(serverSentence)])
+        #expect(found.count == CloudKitErrorInspector.maxSchemaIdentifiers)
+        #expect(Array(found.prefix(2)) == ["CD_GeneratedSummary", "CD_sourceContentHash"],
+                "the server's rejection was cut, or not put first: \(found)")
+        #expect(found.dropFirst(2).allSatisfy { $0.hasPrefix("CD_Type") })
+    }
+}

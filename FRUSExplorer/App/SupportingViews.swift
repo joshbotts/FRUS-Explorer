@@ -359,12 +359,16 @@ struct SummaryBlockView: View {
 ///          keeps its banner-driven education sheet (`IndexingQueueBannerView`).
 ///   1.3 — the iCloud chip is ONE label resolved by `ICloudStatusSummary`; a signed-out Mac
 ///          showed "Sync Error", "Zone Missing" and "Not Signed In" side by side
+///   1.4 — #1531: **Sync Stopped**, a button like Sync Error, for an upload failure remembered
+///          across launches
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
     @State private var showQueuePopover = false
     /// Whether the sync-failure popover is showing (M-11).
     @State private var showsSyncErrorDetail = false
+    /// Whether the stopped-sync popover is showing (#1531).
+    @State private var showsSyncStoppedDetail = false
 
     var body: some View {
         HStack(spacing: 16) {
@@ -584,8 +588,10 @@ struct StatusBarView: View {
     /// Renders ONE compact sync-state label for the right side of the status bar.
     ///
     /// Shows "Local Only" when CloudKit init failed, "Not Signed In" for an unavailable account,
-    /// "Zone Missing" when the private zone is gone, the failure (a button opening its detail)
-    /// when the most recent event failed, a spinning indicator while a sync event is in flight,
+    /// "Zone Missing" when the private zone is gone, "Sync Stopped" (a button opening its detail)
+    /// when an upload failed in an earlier launch and none has succeeded since (#1531), the
+    /// failure (also a button) when the most recent event failed or an upload has not recovered
+    /// since one failed earlier in this launch, a spinning indicator while a sync event is in flight,
     /// and the plain "iCloud Sync" label when no events have fired yet (all is well and quiet).
     ///
     /// Which one is `ICloudStatusSummary`'s decision, not this view's. The chip used to add a
@@ -679,6 +685,31 @@ struct StatusBarView: View {
             .help(String(localized: "statusBar.sync.synced.help",
                          defaultValue: "iCloud sync completed successfully"))
 
+        case .stopped(let run):
+            // #1531: an upload failed in an earlier launch and none has succeeded since. A button
+            // for the same reason Sync Error is one (M-11), red like Zone Missing: nothing this Mac
+            // writes is reaching iCloud. The popover says since when and why, in selectable text.
+            let detail = SyncStoppedCopy.fullDetail(run)
+            Button {
+                showsSyncStoppedDetail = true
+            } label: {
+                Label(
+                    String(localized: "statusBar.sync.stopped", defaultValue: "Sync Stopped"),
+                    systemImage: "exclamationmark.icloud.fill"
+                )
+                .font(.subheadline)
+                .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
+            .help(SyncStoppedCopy.detail(run))
+            .popover(isPresented: $showsSyncStoppedDetail, arrowEdge: .bottom) {
+                syncDetailPopover(
+                    title: String(localized: "statusBar.sync.stopped.title",
+                                  defaultValue: "iCloud Sync Stopped"),
+                    systemImage: "exclamationmark.icloud.fill",
+                    text: detail)
+            }
+
         case .failed(let message):
             // A BUTTON, not a passive label (UI review M-11): the failure state's only detail
             // was a hover tooltip, on the one place a sync failure is announced — while the app
@@ -697,31 +728,40 @@ struct StatusBarView: View {
             .buttonStyle(.plain)
             .help(message)
             .popover(isPresented: $showsSyncErrorDetail, arrowEdge: .bottom) {
-                NavigationStack {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label(String(localized: "statusBar.sync.error.title",
-                                 defaultValue: "iCloud Sync Failed"),
-                          systemImage: "exclamationmark.icloud")
-                        .font(.headline)
-                    Text(verbatim: message)
-                        .font(.callout)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                    NavigationLink {
-                        SyncDiagnosticsView()
-                            .environment(appState)
-                    } label: {
-                        Label(String(localized: "statusBar.sync.error.diagnostics",
-                                     defaultValue: "Open Sync Diagnostics"),
-                              systemImage: "stethoscope")
-                    }
-                }
-                .padding()
-                }
-                .frame(minWidth: 280, maxWidth: 360, minHeight: 160)
-                .presentationCompactAdaptation(.popover)
+                syncDetailPopover(
+                    title: String(localized: "statusBar.sync.error.title",
+                                  defaultValue: "iCloud Sync Failed"),
+                    systemImage: "exclamationmark.icloud",
+                    text: message)
             }
         }
+    }
+
+    /// The popover behind the Sync Error and Sync Stopped chips: a title, the explanation in
+    /// selectable text, and the way into Sync Diagnostics. One function, so the two popovers cannot
+    /// drift apart and the diagnostics link's text is declared once.
+    private func syncDetailPopover(title: String, systemImage: String, text: String) -> some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(title, systemImage: systemImage)
+                    .font(.headline)
+                Text(verbatim: text)
+                    .font(.callout)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                NavigationLink {
+                    SyncDiagnosticsView()
+                        .environment(appState)
+                } label: {
+                    Label(String(localized: "statusBar.sync.error.diagnostics",
+                                 defaultValue: "Open Sync Diagnostics"),
+                          systemImage: "stethoscope")
+                }
+            }
+            .padding()
+        }
+        .frame(minWidth: 280, maxWidth: 360, minHeight: 160)
+        .presentationCompactAdaptation(.popover)
     }
 
     @ViewBuilder

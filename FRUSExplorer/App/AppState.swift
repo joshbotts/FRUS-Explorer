@@ -169,6 +169,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          it goes through `markVolumeIndexed` / `markVolumeUnindexed` / `clearIndexedVolumeIds`,
 ///          which journal while a re-read is in flight, and `reconcileSideloadedVolumes()` reads the
 ///          side-loaded volumes' sidecars, which boot now calls
+///   4.19 — #1531: `unrecoveredExport`, an upload failure remembered across launches, which the
+///          status summary resolves to `.stopped` and Fix iCloud Sync warns about
 
 // MARK: - CloudKitSyncState
 
@@ -377,6 +379,21 @@ final class AppState {
     /// state surfaces the error message in the macOS status bar and iOS Settings so
     /// developers and users can see exactly what is preventing data from syncing.
     var cloudKitSyncState: CloudKitSyncState = .unknown
+
+    /// An upload that failed with no upload succeeding since, remembered across launches (#1531).
+    ///
+    /// The mirror of ``SyncExportFailureMemory``'s stored run, which ``SyncEventMonitor`` writes
+    /// from the moment the container starts — before this object exists. `FRUSExplorerApp` reads
+    /// it in when it attaches to the monitor, and the monitor hands it over again whenever the run
+    /// changes: after each ended export, which starts, extends or ends it, and when a system-log
+    /// read adds names to it. Imports, setups and started events leave it as it was. A container
+    /// that fell back to local-only reads it once instead. `nil` until then, and on every test
+    /// `AppState`, which never reads the device's memory.
+    ///
+    /// Views read it through `iCloudStatusSummary` — a run begun in an earlier launch resolves to
+    /// `.stopped` — except Data & Recovery, whose Fix iCloud Sync warning reads it directly, since a
+    /// run begun in THIS launch puts the same unsent changes at risk.
+    var unrecoveredExport: UnrecoveredExport? = nil
 
     /// True once the first CloudKit **import** has finished this launch, so the local `Project`
     /// store is stable. Until then the macOS "Switch Project" menu shows a "Syncing…" placeholder
