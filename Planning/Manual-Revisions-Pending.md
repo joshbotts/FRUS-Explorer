@@ -25,13 +25,13 @@ Format, one entry per change:
 - **Manual / section:** Mac §17.5 Data & Recovery (the recovery-ladder table, **Fix iCloud Sync** row)
 - **Current:** | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — iCloud is untouched |
 - **Proposed:** | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Changes made on this Mac that have not reached iCloud yet; iCloud itself is untouched |
-- **Why:** #1531: the owner's confirmation now says "Nothing in iCloud is deleted, but unsynced local data could be lost" (`FRUSExplorer/Settings/DataRecoveryView.swift:284`, `settings.dataRecovery.fixSync.message`), and the reset clears exports that never uploaded; the table's "Nothing" contradicts the dialog the reader is about to confirm. Lane SYNC may add a warning while an export is unrecovered; this row should follow whatever it ships.
+- **Why:** #1531: the owner's confirmation now says "Nothing in iCloud is deleted, but unsynced local data could be lost" (`FRUSExplorer/Settings/DataRecoveryView.swift:286`, `settings.dataRecovery.fixSync.message`), and the reset clears exports that never uploaded; the table's "Nothing" contradicts the dialog the reader is about to confirm. Lane SYNC may add a warning while an export is unrecovered; this row should follow whatever it ships.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §17.6 Data & Recovery (the recovery-ladder table, **Fix iCloud Sync** row)
 - **Current:** | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Nothing — iCloud is untouched |
 - **Proposed:** | **Fix iCloud Sync** | Clears the local copy so the app re-downloads from iCloud | Changes made on this device that have not reached iCloud yet; iCloud itself is untouched |
-- **Why:** as for the Mac row above (#1531, `DataRecoveryView.swift:284`, shared by both platforms).
+- **Why:** as for the Mac row above (#1531, `DataRecoveryView.swift:286`, shared by both platforms).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §7.12 Search by Meaning (Experimental), "Match files warm up over a few searches"
@@ -175,7 +175,7 @@ Format, one entry per change:
 - **Manual / section:** Mac §17.5 Data & Recovery (the sentence before the recovery-ladder table), and iOS §17.6 Data & Recovery (the same sentence)
 - **Current:** **Recovery** is a ladder ordered by cost, each rung stating what it deletes:
 - **Proposed:** **Recovery** is a ladder ordered by cost, each rung stating what it deletes. While an upload from this device has failed with none succeeding since, **Fix iCloud Sync** would discard those changes, and the screen says so: the row reads *Would discard changes not yet in iCloud*, the confirmation opens with a warning naming when uploads stopped, and the footer no longer calls it the rung that deletes nothing. **Reset This Device** does not touch them.
-- **Why:** #1531: `DataRecoveryView.fixSyncMessage`, `fixSyncRowDetail` and `recoveryFooter` (`FRUSExplorer/Settings/DataRecoveryView.swift:283`, `:296`, `:307`) read `AppState.unrecoveredExport`; `ResetService.resetLocalData` removes volumes and the index only, never the SwiftData store. WB's two proposed Fix iCloud Sync rows stand as written.
+- **Why:** #1531: `DataRecoveryView.fixSyncMessage`, `fixSyncRowDetail` and `recoveryFooter` (`FRUSExplorer/Settings/DataRecoveryView.swift:285`, `:298`, `:309`) read `AppState.unrecoveredExport`; `ResetService.resetLocalData` removes volumes and the index only, never the SwiftData store. WB's two proposed Fix iCloud Sync rows stand as written.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §17.5 Data & Recovery (the **Sync Log** in Diagnostics)
@@ -258,4 +258,44 @@ Format, one entry per change:
 - **Current:** the Provenance Types lens captured with build 48's counts.
 - **Proposed:** recapture once build 49 ships the regenerated artifact (owner step).
 - **Why:** the lens counts document source notes from the bundled `collection-usage-index.json` (`FRUSExplorer/Browser/ArchivesBrowseView.swift`), whose category counts move (measured on the regenerated artifact): Central Decimal File 601 notes fewer and 50 fewer volumes (410 → 360 — every central-file note those volumes had was a Department series or the reading room), Named File Series 567 more (221 → 265 volumes), Previously Published 35 more (132 → 142), Presidential Library 8 more, Unrecognized 6 fewer, Central Foreign Policy File 3 fewer, Intelligence 1 fewer, Lot File 1 more (#1514).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## LANG — #1539
+
+*Lane LANG makes the app check its language analysis again each time it returns to the foreground (and when an answer it had stopped waiting for arrives), starts the iPhone and iPad warm-up on the first foreground rather than at launch, and adds a read-only **Language Analysis** row to Data & Recovery. These are the manual sentences that change makes wrong or incomplete. Each quotes the manual as it stands at `origin/v2` 95bfc706.*
+
+- **Manual / section:** Mac §15.2 Word Cloud, the **Lenses** bullet
+- **Current:** …the lens says it is unavailable instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed), and quitting and reopening the app may restore it.
+- **Proposed:** …the lens says it is unavailable instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed). The app checks the analysis again each time you switch back to it, and the cloud redraws by itself if it has recovered; if it has not, quitting and reopening the app may restore it.
+- **Why:** #1539 step B. `NaturalLanguageReadinessEngine.applicationDidBecomeActive()` (`WordCloudKit/NaturalLanguageReadiness.swift:1058`) re-checks a verdict that lacks a capability on every activation (`LanguageAnalysisLifecycle`, `FRUSExplorer/App/FRUSExplorerApp.swift:4497`), and the Word Cloud's load is keyed on the adopted verdict's revision (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:656`). The two refusals now say so (`wordcloud.lens.unavailable.names %@ %@` and `.classes %@ %@`, `WordCloudView.swift:386`, `:390`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.2 Word Cloud, the **Lenses** bullet (its last sentence)
+- **Current:** …so Distinctive is withheld for the whole cloud rather than word by word; the Collocates reading steps aside for the same reason, and a related document's shared-word chips are left out.
+- **Proposed:** …so Distinctive is withheld for the whole cloud rather than word by word; the Collocates reading steps aside for the same reason, and a related document's shared-word chips are left out. When a later check finds the analysis working, the cloud — and a comparison column — is counted again in dictionary forms and an open Collocates panel rebuilds without your doing anything.
+- **Why:** #1539. A count made as printed is no longer reused from memory once the verdict changes (`WordFrequencyService.isReusableInMemory`, `FRUSExplorer/Analytics/WordCloud/WordFrequencyService.swift:247`), the Word Cloud's load and each comparison column's load are keyed on the revision (`WordCloudView.swift:656`; `FRUSExplorer/Analytics/WordCloud/WordCloudComparisonView.swift:113`, since review round 1), and the Collocates panel's rebuild key carries it too (`CollocationRebuildKey.language`, `FRUSExplorer/Search/CollocationView.swift:377`; the Mac window's task at `FRUSExplorer/App/SearchSheet.swift:603`). The Distinctive refusal says so (`wordcloud.keyness.unavailable.languageAnalysis`, `WordCloudView.swift:1020`) and so does the Collocates one (`search.collocation.unavailable.languageAnalysis`, `CollocationView.swift:251`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.2 Word Cloud, the **Lenses** bullet
+- **Current:** …the lens says it is unavailable on this device instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed), and quitting and reopening the app may restore it.
+- **Proposed:** …the lens says it is unavailable on this device instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed). The app checks the analysis again each time you come back to it — from the Home Screen or another app — and the cloud redraws by itself if it has recovered; if it has not, quitting and reopening the app may restore it.
+- **Why:** as for the Mac (#1539; `NaturalLanguageReadiness.swift:1058`, `FRUSExplorerApp.swift:4497`, `WordCloudView.swift:656`, `:386`, `:390`). On iPhone and iPad the app also no longer starts this check in a background launch (a CloudKit push, a background task, a finished download), which is the cause the owner's force-quit result points to (`FRUSExplorerApp.swift:510`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.2 Word Cloud, the **Lenses** bullet (its last sentence)
+- **Current:** …so Distinctive is withheld for the whole cloud rather than word by word; the Collocates reading (Section 7.6) steps aside for the same reason, and a related document's shared-word chips are left out.
+- **Proposed:** …so Distinctive is withheld for the whole cloud rather than word by word; the Collocates reading (Section 7.6) steps aside for the same reason, and a related document's shared-word chips are left out. When a later check finds the analysis working, the cloud — and a comparison column — is counted again in dictionary forms and an open Collocates panel rebuilds without your doing anything.
+- **Why:** as for the Mac (#1539; `WordFrequencyService.swift:247`, `WordCloudComparisonView.swift:113`, `CollocationView.swift:377`, the iOS Search tab's task at `FRUSExplorer/Search/SearchView.swift:621`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §17.5 Data & Recovery, the **Diagnostics** sentence
+- **Current:** **Diagnostics** holds the redacted iCloud **Sync Log** (…), **Semantic Match Feedback** — (…) — and the **iCloud Schema** status (…).
+- **Proposed:** **Diagnostics** holds the redacted iCloud **Sync Log** (…), **Semantic Match Feedback** — (…) — the **iCloud Schema** status (…), and **Language Analysis**: whether this Mac's language analysis is reducing words to their dictionary forms, telling parts of speech apart and recognizing names — *Working*, *Limited* (naming what is not working; the app checks again each time you switch back to it), or *Checking* while it finds out.
+- **Why:** #1539 step A: `LanguageAnalysisRow` in the Diagnostics section (`FRUSExplorer/Settings/DataRecoveryView.swift:97`, its wording at `:725`), one view on both platforms.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §17.6 Data & Recovery, the **Diagnostics** sentence
+- **Current:** **Diagnostics** holds the redacted iCloud **Sync Log** (event types, timing, and error codes only — never your content) and the **iCloud Schema** status.
+- **Proposed:** **Diagnostics** holds the redacted iCloud **Sync Log** (event types, timing, and error codes only — never your content), the **iCloud Schema** status, and **Language Analysis**: whether this device's language analysis is reducing words to their dictionary forms, telling parts of speech apart and recognizing names — *Working*, *Limited* (naming what is not working; the app checks again each time you come back to it), or *Checking* while it finds out.
+- **Why:** as for the Mac (#1539; `DataRecoveryView.swift:97`, `:725`). The iOS sentence also omits **Semantic Match Feedback**, which the same section shows on iPhone and iPad; that is older than this lane and is left to lane MANUALS.
 - **Owner:** ☐ approve ☐ edit ☐ reject

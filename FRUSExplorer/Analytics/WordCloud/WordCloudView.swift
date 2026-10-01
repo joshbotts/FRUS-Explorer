@@ -376,19 +376,19 @@ enum WordCloudDisplayState: Equatable {
     ///
     /// Two messages because two taggers fail independently, and the lens decides which one it
     /// needed: the entity lenses read the name recogniser and the part-of-speech lenses the lexical
-    /// classes. The advice to quit and reopen is measured, not hopeful: the failure is sticky within
-    /// a process, and on the iOS 27.0 simulators the next process's warm-up restored every tagger
-    /// each time it was tried.
+    /// classes. Since #1539 the app re-checks on every return to the foreground and the cloud reloads
+    /// when a re-check adopts a better verdict; quitting stays as the fallback because on the iOS 27.0
+    /// simulators the failure was sticky within a process and only the next process restored it.
     static func lensUnavailableDetail(for lens: WordCloudLens, health: NaturalLanguageHealth) -> String {
         let working = lensesStillWorking(under: health).map(\.label).formatted(.list(type: .and))
         return lens.isEntity
             ? String(format: String(
                 localized: "wordcloud.lens.unavailable.names %@ %@",
-                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it."),
+                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. FRUS Explorer checks again each time you come back to it, and the cloud updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it."),
                 lens.label, working)
             : String(format: String(
                 localized: "wordcloud.lens.unavailable.classes %@ %@",
-                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it."),
+                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. FRUS Explorer checks again each time you come back to it, and the cloud updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it."),
                 lens.label, working)
     }
 }
@@ -652,8 +652,8 @@ struct WordCloudView: View {
         #if os(macOS)
         .frame(minWidth: 640, minHeight: 520)
         #endif
-        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate,
-                          lens: lens, settings: settingsToken)) {
+        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate, lens: lens,
+                          settings: settingsToken, language: LanguageAnalysisMonitor.shared.revision)) {
             // Supersede any manual reload (e.g. "Show hidden words") still in
             // flight; this criteria-driven load owns the view state from here.
             loadTask?.cancel()
@@ -1018,7 +1018,7 @@ struct WordCloudView: View {
                 Self.mismatchDescription(mismatches))
         case .languageAnalysisUnavailable:
             detail = String(localized: "wordcloud.keyness.unavailable.languageAnalysis",
-                            defaultValue: "These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead, or quit and reopen FRUS Explorer and try again.")
+                            defaultValue: "These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead. FRUS Explorer checks again each time you come back to it, and the cloud is counted again if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.")
         case .noTermsAboveFloor(let minimum):
             detail = String(format: String(
                 localized: "wordcloud.keyness.unavailable.floor %lld",
@@ -1777,7 +1777,7 @@ struct WordCloudView: View {
         progressModel.fraction = nil
         hiddenWords = WordCloudOverrides.hidden(for: scope.signature)
 
-        // The tagger's verdict first (#1373), awaited: the warm-up started at launch may still be
+        // The tagger's verdict first (#1373), awaited on every load: the warm-up may still be
         // waiting on its assets. A lens the tagger cannot serve is not computed; tokenising
         // a scope to count what it cannot find would take the full time and yield zero. The last
         // lens's result is cleared so nothing downstream (keyness, exports) reads it as this one's.
@@ -2162,12 +2162,14 @@ struct WordCloudView: View {
         let languageAnalysis: NaturalLanguageHealth?
     }
 
-    /// Drives a reload when the scope, stopword policy, lens, or criteria change.
+    /// Drives a reload when the scope, stopword policy, lens, or criteria change — or when a
+    /// re-check adopts a better language-analysis verdict (`language`, #1539).
     private struct TaskKey: Equatable {
         let signature: String
         let exclude: Bool
         let lens: WordCloudLens
         let settings: String
+        let language: Int
     }
 
     /// Drives a spiral relayout when the canvas size, scope, policy, or lens changes.

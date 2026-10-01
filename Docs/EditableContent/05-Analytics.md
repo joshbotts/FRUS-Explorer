@@ -1038,11 +1038,11 @@ Nothing here is used more than it is across the corpus. This scope’s vocabular
 
 #### This device counted the words as printed
 
-*Added by #1373. Shown under Distinctive when the scope's words were counted without the device's lemmatiser.*
+*Added by #1373. Shown under Distinctive when the scope's words were counted without the device's lemmatiser. Reworded by #1539: the app checks again each time it becomes active, and the cloud is counted again when a check finds the lemmatiser working.*
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1020–1021 | key: wordcloud.keyness.unavailable.languageAnalysis -->
 
-These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead, or quit and reopen FRUS Explorer and try again.
+These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead. FRUS Explorer checks again each time you come back to it, and the cloud is counted again if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
 
 <!-- END SOURCE: wordcloud.keyness.unavailable.languageAnalysis -->
 
@@ -1144,11 +1144,11 @@ Lens Unavailable on This Device
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-*Added by #1373; re-keyed in its review round 3. Shown for People, Places or Organizations when the device's name recognizer failed its check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only names failing, All terms, Topics (nouns), Actions (verbs), Descriptors (adjectives), Concepts, and Sentiment; with the word classes failing too, All terms, Concepts, and Sentiment.*
+*Added by #1373; re-keyed in its review round 3. Shown for People, Places or Organizations when the device's name recognizer failed its check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only names failing, All terms, Topics (nouns), Actions (verbs), Descriptors (adjectives), Concepts, and Sentiment; with the word classes failing too, All terms, Concepts, and Sentiment. Reworded by #1539: the app checks again each time it becomes active, and the cloud reloads when a check finds names working.*
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 386–387 | key: wordcloud.lens.unavailable.names %@ %@ -->
 
-This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it.
+This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. FRUS Explorer checks again each time you come back to it, and the cloud updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
 
 <!-- END SOURCE: wordcloud.lens.unavailable.names %@ %@ -->
 
@@ -1158,11 +1158,11 @@ This device’s language analysis isn’t recognizing names right now, so the �
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-*Added by #1373; re-keyed in its review round 3. Shown for Topics, Actions or Descriptors when the device's word classes failed their check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only the word classes failing, All terms, People, Places, Organizations, Concepts, and Sentiment; with names failing too, All terms, Concepts, and Sentiment.*
+*Added by #1373; re-keyed in its review round 3. Shown for Topics, Actions or Descriptors when the device's word classes failed their check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only the word classes failing, All terms, People, Places, Organizations, Concepts, and Sentiment; with names failing too, All terms, Concepts, and Sentiment. Reworded by #1539: the app checks again each time it becomes active, and the cloud reloads when a check finds the word classes working.*
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 390–391 | key: wordcloud.lens.unavailable.classes %@ %@ -->
 
-This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it.
+This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. FRUS Explorer checks again each time you come back to it, and the cloud updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
 
 <!-- END SOURCE: wordcloud.lens.unavailable.classes %@ %@ -->
 
@@ -1298,7 +1298,7 @@ Counted as printed: this device isn’t reducing words to their dictionary forms
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2235–2236 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2237–2238 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 

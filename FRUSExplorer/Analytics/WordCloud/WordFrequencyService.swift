@@ -46,6 +46,8 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///          at (`WordCloudResult.indexVersion`), and the disk cache reuses one only while that is
 ///          still the installed version — a re-index that rewrites every body keeps the count the
 ///          key fingerprints
+///   1.4 — #1539: the in-memory cache reuses a count not made as designed only under the verdict it
+///          was counted under (`isReusableInMemory`), since a re-check can now replace the verdict
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -119,13 +121,14 @@ actor WordFrequencyService {
         // began on, and the next open counts again.
         let indexVersion = pipeline.installedDateIndexVersion
         let extrasToken = Self.extrasToken(extraStopwords)
-        // Fold the lens into the signature so non-default lenses get their own cache
-        // entries while `.allTerms` keeps its existing (precomputed) keys.
-        let effectiveSignature = lens == .allTerms ? signature : "\(signature)|lens=\(lens.rawValue)"
+        let effectiveSignature = Self.effectiveSignature(signature, lens: lens)
         let cacheKey = Self.cacheKey(signature: effectiveSignature, limit: limit,
                                      includeDiplomatic: includeDiplomaticStopwords,
                                      extras: extrasToken, tuning: tuning.cacheToken)
-        if let cached = cache[cacheKey] {
+        // A count this process made earlier answers again only while it is still the count this
+        // process would make (#1539): a re-check can replace the verdict it was counted under.
+        if let cached = cache[cacheKey],
+           Self.isReusableInMemory(cached, for: lens, countedUnder: languageAnalysis) {
             progress?(cached.documentCount, cached.documentCount)
             return cached
         }
@@ -188,7 +191,8 @@ actor WordFrequencyService {
         // The disk cache outlives this process, and the next one's tagger may work: persisting a
         // cloud counted without the tagger this lens reads would hand it a stored zero, or a
         // cloud of printed forms, for as long as the index fingerprint holds. The in-memory
-        // entry above stays, because this process's verdict cannot change.
+        // entry above stays, but answers again only under the verdict it was counted under
+        // (`isReusableInMemory`), since a re-check can replace that verdict (#1539).
         if let diskKey, Self.isPersistable(countedUnder: languageAnalysis, lens: lens) {
             WordCloudDiskCache.save(result, key: diskKey)
         }
@@ -226,6 +230,45 @@ actor WordFrequencyService {
                            indexVersion: Int) -> Bool {
         isReusable(stored, for: lens) && stored.indexVersion == indexVersion
     }
+
+    /// Whether a count this process made earlier, held in the in-memory cache, may answer a request
+    /// counted under `current` — this process's verdict now (#1539).
+    ///
+    /// A count made as designed always may (``isReusable(_:for:)``): it is what any verdict that
+    /// works would count. One that was not — printed forms, or a zero for a lens whose tagger
+    /// failed — only while `current` is still the verdict it was counted under. Before #1539 the
+    /// verdict could not change within a process and the memory cache needed no rule; now a return
+    /// to the foreground can adopt a better one, and the same scope would then count differently.
+    ///
+    /// - Parameters:
+    ///   - cached: The result the memory cache holds for the request's key.
+    ///   - lens: The lens the caller is counting under.
+    ///   - current: This process's verdict as the request begins.
+    static func isReusableInMemory(_ cached: WordCloudResult, for lens: WordCloudLens,
+                                   countedUnder current: NaturalLanguageHealth) -> Bool {
+        isReusable(cached, for: lens) || cached.languageAnalysis == current
+    }
+
+    /// The memory and disk caches' signature for `signature` under `lens`: `.allTerms` keeps the
+    /// scope's own signature, and every other lens folds its name in, so each lens has its own
+    /// entries.
+    private static func effectiveSignature(_ signature: String, lens: WordCloudLens) -> String {
+        lens == .allTerms ? signature : "\(signature)|lens=\(lens.rawValue)"
+    }
+
+    #if DEBUG
+    /// Test seam (#1539): puts `result` in the in-memory cache under the key ``topTerms(signature:keys:limit:includeDiplomaticStopwords:extraStopwords:lens:tuning:persistent:progress:)``
+    /// builds for the same arguments, so a test can drive the memory cache's reuse rule through the
+    /// service. `WordFrequencyServiceStampWiringTests`' three #1539 memory-cache tests are its only callers.
+    func storeInMemoryForTesting(_ result: WordCloudResult, signature: String, limit: Int,
+                                 includeDiplomaticStopwords: Bool, lens: WordCloudLens = .allTerms,
+                                 tuning: WordCloudTuning = .standard) {
+        let key = Self.cacheKey(signature: Self.effectiveSignature(signature, lens: lens), limit: limit,
+                                includeDiplomatic: includeDiplomaticStopwords,
+                                extras: Self.extrasToken([]), tuning: tuning.cacheToken)
+        store(result, for: key)
+    }
+    #endif
 
     /// Whether a result counted under `languageAnalysis` may be written to the disk cache.
     ///
