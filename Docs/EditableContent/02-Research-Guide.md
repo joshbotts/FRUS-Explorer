@@ -241,7 +241,7 @@ FRUS Explorer is designed to help you find what you need in the series, regardle
 
 **Narrow Without Losing Count**
 
-Whatever a search returns, you can see its shape before you read a page of it: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap, and the subjects facet narrows a result set to a single topic area; archival provenance is the exception — it is descriptive only, because the search has no provenance filter to narrow to, and the panel says so where it is shown. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the series can be sliced. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
+Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap; archival provenance is the exception — it is descriptive only. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets you choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
 
 <!-- section-id: honest-arithmetic -->
 
@@ -262,12 +262,6 @@ Finding does not wait for downloading. Semantic similarity, subjects, series-wid
 To delve into the details about search screens, filters, and syntax, visit the User Manual — linked from the About screen. It will walk you through how the app delivers these capabilities.
 
 <!-- END SOURCE: page finding-documents -->
-
-> ✎ **Your 2026-09-30 edit to *Narrow Without Losing Count* — held, not in the app.** Held by lane WB: it drops “the subjects facet narrows a result set to a single topic area” and “archival provenance is the exception — it is descriptive only”. `ResearchGuideCoverageTests.guideCoversTheWave` requires “subjects facet” or “topic area” somewhere in the guide (no other page has either), and `CorrectedClaimsTests.educationDoesNotClaimProvenanceNarrows` requires both clauses, because without the second “Most of those become a filter” reads as covering provenance, which cannot narrow. The subjects-facet clause was held from your 2026-09-04 pass for the same reason, and #1418 restored the provenance clause after it. Your other three sections on this page are in the app.
-
-```text
-Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets users choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
-```
 
 ---
 
