@@ -10,6 +10,11 @@
 // target (project.yml), the same arrangement as FTS5Store and WordCloudKit.
 import CoreGraphics
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - ArchivalNetworkNode
 
@@ -67,6 +72,8 @@ struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — 2026-10-01: #1437 — `focusLabel`, the focus's name qualified when a node shares it;
+///          #1438 — `expansion`, which the Central Files box's caption names
 struct ArchivalNetworkGraph: Sendable, Equatable {
 
     /// Nodes drawn per custodian wedge.
@@ -105,6 +112,13 @@ struct ArchivalNetworkGraph: Sendable, Equatable {
     let strongestMeasureValue: Double
     /// The umbrella record, when it was replaced by classes.
     let expandedUmbrella: AuthorityCollectionRecord?
+    /// What the classes drawn in place of the umbrella are — decimal classes or subject-numeric
+    /// families — and `.collapsed` when none are drawn. The Central Files box's caption names it.
+    var expansion: ArchivalUmbrellaExpansion = .collapsed
+
+    /// The focus's label: its name, qualified by its repository when a drawn node carries the
+    /// same name (#1437) — `ArchivalNetworkBuilder.focusLabel(_:nodes:)`.
+    var focusLabel: String { ArchivalNetworkBuilder.focusLabel(focus, nodes: nodes) }
 
     /// Nodes the sector caps withheld.
     var withheldCount: Int { max(nodesAboveThreshold - nodes.count, 0) }
@@ -124,11 +138,25 @@ struct ArchivalNetworkGraph: Sendable, Equatable {
 
 // MARK: - ArchivalNetworkLayout
 
+/// A caption the network canvas draws — a custodian's name, or the Central Files box's — and the
+/// rect reserved for it (#1438, #1470).
+struct ArchivalNetworkCaption: Sendable, Equatable {
+    /// The text as drawn.
+    let text: String
+    /// Where it is drawn: the measured text, padded, centred in this rect.
+    let rect: CGRect
+}
+
 /// Where each node sits, in canvas coordinates.
 ///
 /// Deterministic and physics-free (design direction 2a): the sector is decided by custodian and
 /// the radius by strength, so the same focus always draws the same picture and two readers
 /// comparing screens are comparing the same thing.
+///
+/// Version history:
+///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — 2026-10-01: #1470 — `captions`, each custodian's reserved clear of every node, the
+///          class box and its caption; #1438 — `hullCaption`
 struct ArchivalNetworkLayout: Sendable, Equatable {
     /// Node id → centre point.
     let positions: [String: CGPoint]
@@ -148,6 +176,12 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
     /// happen to fall inside it, and a hull labelled "Central Files" drawn around a presidential
     /// library is precisely the unit confusion the shapes exist to prevent.
     let classHull: CGRect?
+    /// Each custodian's caption, in the corner of its quadrant, reserved where no node, no class
+    /// square, no class box and no other caption is drawn (#1470) — see
+    /// `ArchivalNetworkBuilder.layout(_:in:captionSize:)`.
+    var captions: [ArchivalRepositoryCategory: ArchivalNetworkCaption] = [:]
+    /// The class box's caption, above the box, when the box is drawn (#1438).
+    var hullCaption: ArchivalNetworkCaption?
 }
 
 // MARK: - ArchivalNetworkBuilder
@@ -166,6 +200,12 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
 ///   1.2 — 2026-09-25 (#1467): a partner's joint document count is `nil` when either collection
 ///          has no usage row; `cardDetail(for:focus:usage:)` words the panel sentence after the
 ///          measure and names the uncounted side, and `exportCells(for:)` leaves its cell empty
+///   1.3 — 2026-10-01: #1437 — `disambiguate(_:in:focus:)` qualifies a node that carries the
+///          focus's name, `focusLabel(_:nodes:)` the focus, and `identifierKeepingCut(_:limit:)`
+///          keeps a trailing lot or file number whole; #1468 — `cardDetail(for:in:usage:)` names
+///          the focus through `sentenceName(_:)`; #1470 and #1438 — the layout reserves each
+///          caption's rect beyond `nodeReach(outerRadius:)`, which bounds a class square's corner
+///          from the drawing constants the canvas draws with, and `labelObstacles(_:)`
 enum ArchivalNetworkBuilder {
 
     /// Volumes a partner must share with the focus before it is a neighbour at all.
@@ -317,9 +357,10 @@ enum ArchivalNetworkBuilder {
 
         return ArchivalNetworkGraph(
             focus: focus, focusCategory: ArchivalRepositoryCategory.from(focus),
-            nodes: disambiguate(nodes, in: collections),
+            nodes: disambiguate(nodes, in: collections, focus: focus),
             nodesAboveThreshold: ranked.count, partnersTotal: partnersTotal,
-            strongestMeasureValue: strongest, expandedUmbrella: umbrella)
+            strongestMeasureValue: strongest, expandedUmbrella: umbrella,
+            expansion: classesDrawn > 0 ? expansion : .collapsed)
     }
 
     // MARK: - Words for one link (#1467)
@@ -336,37 +377,56 @@ enum ArchivalNetworkBuilder {
     ///
     /// - Parameters:
     ///   - node: The selected partner.
-    ///   - focus: The graph's focus record.
+    ///   - graph: The graph it is drawn in: the focus it names, by `focusLabel` (#1437) and through
+    ///     `sentenceName(_:)` (#1468).
     ///   - usage: The usage index the graph was built against — it decides which side is uncounted.
     ///
     /// The volume phrase goes through `CountCopy`; its verb is always the plural "cite", because a
     /// partner shares at least ``minimumSharedVolumes`` (two) volumes with the focus or it is not a
     /// node at all.
-    static func cardDetail(for node: ArchivalNetworkNode, focus: AuthorityCollectionRecord,
+    static func cardDetail(for node: ArchivalNetworkNode, in graph: ArchivalNetworkGraph,
                            usage: CollectionUsageIndex?) -> String {
         let volumes = CountCopy.volumes(node.sharedVolumeCount)
+        let focus = sentenceName(graph.focusLabel)
         if let documents = node.sharedDocumentCount {
             return String(format: String(
                 localized: "archival.network.card.detail.counted %@ %@ %@",
                 defaultValue: "%1$@ cite both this and %2$@. In those volumes the two jointly supplied %3$@ — for each volume, the smaller of their two document counts, summed."),
-                volumes, focus.name, CountCopy.documents(documents))
+                volumes, focus, CountCopy.documents(documents))
         }
         guard let usage else {
             return String(format: String(
                 localized: "archival.network.card.detail.noIndex %@ %@",
                 defaultValue: "%1$@ cite both this and %2$@. The documents they supplied are not counted, because the document-usage index could not be loaded."),
-                volumes, focus.name)
+                volumes, focus)
         }
-        if !usage.hasRow(forCollectionId: focus.id) {
+        if !usage.hasRow(forCollectionId: graph.focus.id) {
             return String(format: String(
                 localized: "archival.network.card.detail.focusUncounted %@ %@",
                 defaultValue: "%1$@ cite both this and %2$@. No document source note resolves to %2$@, so the documents the two supplied are not counted."),
-                volumes, focus.name)
+                volumes, focus)
         }
         return String(format: String(
             localized: "archival.network.card.detail.partnerUncounted %@ %@",
             defaultValue: "%1$@ cite both this and %2$@. No document source note resolves to this collection, so the documents it supplied are not counted."),
-            volumes, focus.name)
+            volumes, focus)
+    }
+
+    /// The most characters a collection's name keeps inside one of the panel's sentences (#1468).
+    ///
+    /// The detail sentence named the focus in full, so with Indexed Central Files at the centre it
+    /// ran to 570 pt in an iPhone's portrait dock (measured for decision D11). Eighty characters
+    /// keep a name whole in 3,635 of the shipped authority's 4,051 records.
+    static let sentenceNameLimit = 80
+
+    /// A collection's name as the panel's sentences print it (#1468): whole up to
+    /// ``sentenceNameLimit`` characters, otherwise cut at a word boundary and marked with "…"
+    /// (`GraphNodeLabels.shortLabel(_:limit:)`). The selected node's heading shows the name whole
+    /// up to three lines, and in its `.help` and accessibility label.
+    /// - Parameter name: A collection's name or label.
+    /// - Returns: The name as a sentence prints it.
+    static func sentenceName(_ name: String) -> String {
+        GraphNodeLabels.shortLabel(name, limit: sentenceNameLimit)
     }
 
     /// One exported row of the drawn neighbourhood: unit, kind, custodian, shared volumes, jointly
@@ -441,22 +501,35 @@ enum ArchivalNetworkBuilder {
         }
     }
 
-    /// Makes labels unique within the graph.
+    /// Makes labels unique within the graph, the focus's included (#1437).
     ///
     /// Measured on the shipped authority, 17 names are carried by more than one record among the
     /// 1,108 that appear in the flow vocabulary alone — `White House Central Files` is six
     /// distinct nodes across six repositories. Two identically-labelled circles in the same
     /// sector are indistinguishable, and the reader has no way to tell which one they tapped.
+    ///
+    /// A node that carries the FOCUS's name is qualified too. Before #1437 the focus was never
+    /// compared, so the Whitman File at the centre drew a partner labelled "Whitman File" — the
+    /// repository-less record two microfiche supplements cite — and the reader could take it for a
+    /// collection linked to itself. Such a node is qualified by its repository as any repeated
+    /// name is, and the focus by its own (`focusLabel(_:nodes:)`), which is what tells the two
+    /// apart when the node has none. The focus's label is taken first, so no node is given it.
+    /// - Parameters:
+    ///   - nodes: The drawn nodes, strongest first.
+    ///   - collections: Every authority record, for the repositories.
+    ///   - focus: The graph's focus.
+    /// - Returns: The nodes, each with a label no other node and not the focus draws.
     static func disambiguate(_ nodes: [ArchivalNetworkNode],
-                             in collections: [AuthorityCollectionRecord])
+                             in collections: [AuthorityCollectionRecord],
+                             focus: AuthorityCollectionRecord)
         -> [ArchivalNetworkNode] {
-        var seen = Set<String>()
+        var seen: Set<String> = [focus.name]
         var repeated = Set<String>()
         for node in nodes where !seen.insert(node.name).inserted { repeated.insert(node.name) }
         guard !repeated.isEmpty else { return nodes }
         var records: [String: AuthorityCollectionRecord] = [:]
         for record in collections where repeated.contains(record.name) { records[record.id] = record }
-        var used = Set<String>()
+        var used: Set<String> = [focusLabel(focus, nodes: nodes)]
         return nodes.map { node in
             guard repeated.contains(node.name) else {
                 used.insert(node.label)
@@ -476,15 +549,55 @@ enum ArchivalNetworkBuilder {
         }
     }
 
+    /// The focus's label (#1437): its name, or `name · repository` when a node in `nodes` carries
+    /// the same name and the focus has a repository. A focus with none keeps its bare name, which
+    /// no same-named node then draws: `disambiguate(_:in:focus:)` qualifies each of them, by its
+    /// repository or else by its id.
+    /// - Parameters:
+    ///   - focus: The graph's focus.
+    ///   - nodes: The nodes drawn around it.
+    /// - Returns: The label the centre is drawn and named with.
+    static func focusLabel(_ focus: AuthorityCollectionRecord, nodes: [ArchivalNetworkNode]) -> String {
+        guard let repository = focus.repository, nodes.contains(where: { $0.name == focus.name })
+        else { return focus.name }
+        return "\(focus.name) · \(repository)"
+    }
+
     // MARK: - Layout
 
-    /// Places every node in a canvas of the given size.
+    /// Places every node in a canvas of the given size, and reserves the captions' space (#1470).
     ///
     /// Sector by custodian, radius by strength, angle by rank within the sector — no physics, so
     /// the picture is reproducible. Class squares take their own sub-arc at the trailing end of
     /// the State wedge, which both keeps them off the State collections and lets the hull that
     /// names them enclose nothing else.
-    static func layout(_ graph: ArchivalNetworkGraph, in size: CGSize) -> ArchivalNetworkLayout {
+    ///
+    /// ## Captions (#1470, owner decision D12)
+    /// Each custodian's caption was drawn first, at 45° into its wedge and 0.93 × the outer radius,
+    /// where the layout also puts nodes: a wedge with an odd number of nodes puts one on that
+    /// diagonal, and a weak node sits near the outer ring. On a small canvas the discs, the class
+    /// squares and the dashed box drawn after it covered it. The captions stay on the bottom layer
+    /// and their space is reserved instead — but not inside the wedge, which cannot hold it. A
+    /// caption runs horizontally, 78–119 pt wide at 9 pt (measured on the Mac); at 390 × 300, where
+    /// a wedge's outer radius is 106 pt, the 119 pt one on its diagonal comes within the clearance
+    /// of a node of the default threshold's weakest strength anywhere from 32° into the wedge to its
+    /// far edge at 82° (computed from the layout's constants), so a gap in the node arc that cleared
+    /// it would leave the nodes 24° of the wedge's 74°. So each caption goes in the corner of its
+    /// own quadrant, beyond every node: on the ray from
+    /// the centre toward the canvas corner, at the first point where it keeps
+    /// `GraphNodeLabels.clearance` from the farthest a node can reach (`nodeReach(outerRadius:)`),
+    /// from the class box and its caption, and from the captions reserved before it, kept inside
+    /// the canvas. Where no point on the ray clears all of them — a canvas too small to — it takes
+    /// the point that comes closest. Its rect is then an obstacle the node labels keep clear of
+    /// (#1438, `labelObstacles(_:)`).
+    /// - Parameters:
+    ///   - graph: The graph to lay out.
+    ///   - size: The canvas.
+    ///   - captionSize: The size a caption's text draws at; `measuredCaptionSize(_:)` unless a test
+    ///     passes an estimate.
+    /// - Returns: The layout.
+    static func layout(_ graph: ArchivalNetworkGraph, in size: CGSize,
+                       captionSize: (String) -> CGSize = measuredCaptionSize) -> ArchivalNetworkLayout {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
         let outer = max(min(size.width, size.height) / 2 - 44, 60)
         let inner = min(70, outer * 0.35)
@@ -538,9 +651,212 @@ enum ArchivalNetworkBuilder {
         let rings: [CGFloat] = ringFractions.map { fraction in
             inner + CGFloat(1 - fraction) * (outer - inner)
         }
-        return ArchivalNetworkLayout(positions: positions, center: center, ringRadii: rings,
-                                     ringFractions: ringFractions, outerRadius: outer,
-                                     classHull: hull)
+        var layout = ArchivalNetworkLayout(positions: positions, center: center, ringRadii: rings,
+                                           ringFractions: ringFractions, outerRadius: outer,
+                                           classHull: hull)
+        reserveCaptions(in: &layout, graph: graph, size: size, captionSize: captionSize)
+        return layout
+    }
+
+    // MARK: - Captions (#1438, #1470)
+
+    /// The space added on each side of a caption's measured text when its rect is reserved, so a
+    /// caption drawn a point wider than measured is still inside it.
+    static let captionPadding = CGSize(width: 2, height: 1)
+
+    /// The least space kept between the canvas's edge and a caption.
+    static let captionInset: CGFloat = 4
+
+    /// The caption the canvas draws in `category`'s quadrant: the custodian's name in capitals.
+    /// - Parameter category: The custodian.
+    /// - Returns: The caption's text.
+    static func captionText(for category: ArchivalRepositoryCategory) -> String {
+        category.displayName.uppercased()
+    }
+
+    /// The class box's caption: which classes it holds (`expansion`).
+    /// - Parameter expansion: How the umbrella is drawn.
+    /// - Returns: The caption's text.
+    static func hullCaptionText(for expansion: ArchivalUmbrellaExpansion) -> String {
+        String(format: String(localized: "archival.network.hull %@",
+                              defaultValue: "Central Files — %@"),
+               expansion.title.lowercased())
+    }
+
+    /// The point size a caption is drawn at, semibold: the canvas's `captionFont` and
+    /// `measuredCaptionSize(_:)` both read it.
+    static let captionPointSize: CGFloat = 9
+
+    /// The size a caption's text draws at — the system font at `captionPointSize` semibold, which
+    /// the canvas's `captionFont` resolves to (`ArchivalNetworkCaptionTests` measures the two
+    /// against each other) — rounded up to whole points.
+    /// - Parameter text: The caption.
+    /// - Returns: Its size.
+    static func measuredCaptionSize(_ text: String) -> CGSize {
+        #if canImport(UIKit)
+        let font = UIFont.systemFont(ofSize: captionPointSize, weight: .semibold)
+        #else
+        let font = NSFont.systemFont(ofSize: captionPointSize, weight: .semibold)
+        #endif
+        let size = (text as NSString).size(withAttributes: [.font: font])
+        return CGSize(width: ceil(size.width), height: ceil(size.height))
+    }
+
+    /// The farthest a node's outline reaches from the centre, for an outer radius, whatever the
+    /// node's shape.
+    ///
+    /// A node's centre lies `inner + (1 − s) × (outer − inner)` out, and it is drawn at
+    /// `11 + 11 × s` (`radius(forStrength:)`), `selectionGrowth` more while selected, with a white
+    /// ring `selectionRingGap` outside it, `selectionRingWidth` wide. A collection is a disc, which
+    /// reaches its radius and the ring past its centre. A class is a rounded square, which reaches
+    /// farthest at a corner: with the ring's outer edge `h` from the centre on each side and its
+    /// corner radius `c` (`selectedClassCornerFraction` of the radius, plus half the ring),
+    /// `(h − c) × √2 + c` — 21.06 pt for the weakest node selected, where its disc reaches 16.75.
+    /// Moving out by `outer − inner`, at least 39, outruns what either shape gains with strength
+    /// (11 a disc, 13.7 a square), so the farthest is a selected class of no strength on the outer
+    /// ring, its corner on the ray: `outer + 21.06`. Before #1470's review this bound only the
+    /// disc, `outer + 17`, which a selected class's corner could pass by up to 4 pt.
+    /// - Parameter outerRadius: The layout's outer radius.
+    /// - Returns: The reach, in points from the centre.
+    static func nodeReach(outerRadius: CGFloat) -> CGFloat {
+        let r = radius(forStrength: 0) + selectionGrowth
+        let ring = selectionRingGap + selectionRingWidth / 2
+        let disc = r + ring
+        let corner = r * selectedClassCornerFraction + selectionRingWidth / 2
+        let square = (r + ring - corner) * 2.squareRoot() + corner
+        return outerRadius + max(disc, square)
+    }
+
+    /// Every rect a partner label keeps clear of (#1438): each custodian's caption, the class box's
+    /// caption, and the box's border as four thin rects — so a class label sits wholly inside the
+    /// box or wholly outside it, never across its line.
+    /// - Parameter layout: The layout as drawn.
+    /// - Returns: The obstacles for `GraphNodeLabels.place(_:avoiding:settling:)`.
+    static func labelObstacles(_ layout: ArchivalNetworkLayout) -> [CGRect] {
+        var rects = ArchivalRepositoryCategory.ordered.compactMap { layout.captions[$0]?.rect }
+        if let caption = layout.hullCaption { rects.append(caption.rect) }
+        if let hull = layout.classHull {
+            rects += [CGRect(x: hull.minX, y: hull.minY - 0.5, width: hull.width, height: 1),
+                      CGRect(x: hull.minX, y: hull.maxY - 0.5, width: hull.width, height: 1),
+                      CGRect(x: hull.minX - 0.5, y: hull.minY, width: 1, height: hull.height),
+                      CGRect(x: hull.maxX - 0.5, y: hull.minY, width: 1, height: hull.height)]
+        }
+        return rects
+    }
+
+    /// The canvas corner `category`'s quadrant opens toward: State top left, lot files top right,
+    /// presidential libraries bottom right, other institutions bottom left (`layout`'s compass).
+    private static func corner(of category: ArchivalRepositoryCategory, in size: CGSize) -> CGPoint {
+        switch category {
+        case .stateDepartment: return .zero
+        case .lotFile: return CGPoint(x: size.width, y: 0)
+        case .presidentialLibrary: return CGPoint(x: size.width, y: size.height)
+        case .otherInstitution: return CGPoint(x: 0, y: size.height)
+        }
+    }
+
+    /// Fills in `layout`'s captions (see `layout(_:in:captionSize:)`): the class box's above the
+    /// box, centred on it; then each custodian's in its quadrant's corner, clear of the box and its
+    /// caption. Where a custodian's corner has no such point — on a 390 × 300 canvas the State
+    /// corner can be where a centred box caption falls — the box's caption slides sideways, a point
+    /// at a time and nearest first, until it keeps `GraphNodeLabels.clearance` from every
+    /// custodian's.
+    private static func reserveCaptions(in layout: inout ArchivalNetworkLayout,
+                                        graph: ArchivalNetworkGraph, size: CGSize,
+                                        captionSize: (String) -> CGSize) {
+        let bounds = CGRect(origin: .zero, size: size)
+            .insetBy(dx: captionInset, dy: captionInset)
+        var taken: [CGRect] = []
+        var hullCaption: ArchivalNetworkCaption?
+        if let hull = layout.classHull, graph.expansion != .collapsed {
+            let text = hullCaptionText(for: graph.expansion)
+            let rect = clamped(paddedRect(captionSize(text),
+                                          centredOn: CGPoint(x: hull.midX, y: hull.minY - 8)),
+                               into: bounds)
+            hullCaption = ArchivalNetworkCaption(text: text, rect: rect)
+            taken = [hull, rect]
+        }
+        let reach = nodeReach(outerRadius: layout.outerRadius)
+        for category in ArchivalRepositoryCategory.ordered {
+            let text = captionText(for: category)
+            let rect = reservedRect(size: captionSize(text), center: layout.center,
+                                    toward: corner(of: category, in: size), reach: reach,
+                                    avoiding: taken, bounds: bounds)
+            layout.captions[category] = ArchivalNetworkCaption(text: text, rect: rect)
+            taken.append(rect)
+        }
+        guard let hullCaption else { return }
+        let custodians = layout.captions.values.map(\.rect)
+        let clear = { (rect: CGRect) in
+            custodians.allSatisfy { rectGap(rect, $0) >= GraphNodeLabels.clearance }
+        }
+        var chosen = hullCaption.rect
+        if !clear(chosen) {
+            for step in 1...max(Int(size.width), 1) {
+                if let moved = [CGFloat(step), -CGFloat(step)]
+                    .map({ clamped(hullCaption.rect.offsetBy(dx: $0, dy: 0), into: bounds) })
+                    .first(where: clear) {
+                    chosen = moved
+                    break
+                }
+            }
+        }
+        layout.hullCaption = ArchivalNetworkCaption(text: hullCaption.text, rect: chosen)
+    }
+
+    /// The rect for a caption of `textSize`: the first point on the ray from `center` toward
+    /// `corner`, a point at a time, whose rect — kept inside `bounds` — keeps
+    /// `GraphNodeLabels.clearance` from the circle of radius `reach` and from every `avoiding`
+    /// rect; else the point that came closest to it.
+    private static func reservedRect(size textSize: CGSize, center: CGPoint, toward corner: CGPoint,
+                                     reach: CGFloat, avoiding taken: [CGRect],
+                                     bounds: CGRect) -> CGRect {
+        let dx = corner.x - center.x, dy = corner.y - center.y
+        let length = max(hypot(dx, dy), 1)
+        var best: (gap: CGFloat, rect: CGRect)?
+        var step: CGFloat = 0
+        while step <= length {
+            let point = CGPoint(x: center.x + dx / length * step, y: center.y + dy / length * step)
+            let rect = clamped(paddedRect(textSize, centredOn: point), into: bounds)
+            let fromNodes = distance(from: center, to: rect) - reach
+            let gap = taken.reduce(fromNodes) { min($0, rectGap(rect, $1)) }
+            if gap >= GraphNodeLabels.clearance { return rect }
+            if best.map({ gap > $0.gap }) ?? true { best = (gap, rect) }
+            step += 1
+        }
+        return best?.rect ?? clamped(paddedRect(textSize, centredOn: corner), into: bounds)
+    }
+
+    /// A caption's rect: its text's size plus ``captionPadding`` on each side, centred on `point`.
+    private static func paddedRect(_ textSize: CGSize, centredOn point: CGPoint) -> CGRect {
+        let width = textSize.width + 2 * captionPadding.width
+        let height = textSize.height + 2 * captionPadding.height
+        return CGRect(x: point.x - width / 2, y: point.y - height / 2, width: width, height: height)
+    }
+
+    /// `rect` moved, not resized, to lie inside `bounds` — or against its leading edge when wider.
+    private static func clamped(_ rect: CGRect, into bounds: CGRect) -> CGRect {
+        var moved = rect
+        moved.origin.x = max(min(rect.minX, bounds.maxX - rect.width), bounds.minX)
+        moved.origin.y = max(min(rect.minY, bounds.maxY - rect.height), bounds.minY)
+        return moved
+    }
+
+    /// The distance from `point` to the nearest point of `rect`, 0 inside it.
+    private static func distance(from point: CGPoint, to rect: CGRect) -> CGFloat {
+        hypot(max(rect.minX - point.x, 0, point.x - rect.maxX),
+              max(rect.minY - point.y, 0, point.y - rect.maxY))
+    }
+
+    /// The gap between two rects along whichever axis separates them more — negative when they
+    /// overlap. Two rects keep `GraphNodeLabels.clearance` from each other exactly when this is at
+    /// least the clearance: it is the measure the label placement's own test applies.
+    /// - Parameters:
+    ///   - a: One rect.
+    ///   - b: The other.
+    /// - Returns: The gap, in points.
+    static func rectGap(_ a: CGRect, _ b: CGRect) -> CGFloat {
+        max(a.minX - b.maxX, b.minX - a.maxX, a.minY - b.maxY, b.minY - a.maxY)
     }
 
     /// The drawn radius of one node, in points.
@@ -548,8 +864,30 @@ enum ArchivalNetworkBuilder {
     /// Range 11…22, so the weakest neighbour is still a comfortable tap target once the
     /// transparent hit button around it is counted.
     static func radius(for node: ArchivalNetworkNode) -> CGFloat {
-        11 + 11 * CGFloat(node.relativeStrength)
+        radius(forStrength: node.relativeStrength)
     }
+
+    /// The drawn radius of a node of relative strength `strength`: `radius(for:)`'s rule.
+    /// - Parameter strength: The node's relative strength, 0…1.
+    /// - Returns: The radius in points.
+    static func radius(forStrength strength: Double) -> CGFloat {
+        11 + 11 * CGFloat(strength)
+    }
+
+    /// How much larger a selected node is drawn.
+    static let selectionGrowth: CGFloat = 3
+
+    /// The gap between a selected node's outline and the white ring drawn around it.
+    static let selectionRingGap: CGFloat = 2
+
+    /// The width of the white ring around a selected node.
+    static let selectionRingWidth: CGFloat = 1.5
+
+    /// A class square's corner radius, as a fraction of its radius (half its side).
+    static let classCornerFraction: CGFloat = 0.35
+
+    /// The corner radius of a selected class square's ring, as a fraction of its radius.
+    static let selectedClassCornerFraction: CGFloat = 0.4
 
     // MARK: - Labels (#1384)
 
@@ -558,13 +896,13 @@ enum ArchivalNetworkBuilder {
     static let focusRadius: CGFloat = 26
 
     /// The radius a node is drawn at, which the canvas and the label placement both read:
-    /// `radius(for:)`, 3 pt more while the node is selected. A class square's is half its side.
+    /// `radius(for:)`, `selectionGrowth` more while it is selected. A class square's is half its side.
     /// - Parameters:
     ///   - node: The node.
     ///   - isSelected: Whether it is the selected node, which the canvas enlarges and rings.
     /// - Returns: The radius in points.
     static func drawnRadius(for node: ArchivalNetworkNode, isSelected: Bool) -> CGFloat {
-        radius(for: node) + (isSelected ? 3 : 0)
+        radius(for: node) + (isSelected ? selectionGrowth : 0)
     }
 
     /// The most characters a label naming one record may have, the "…" of a cut included —
@@ -598,30 +936,177 @@ enum ArchivalNetworkBuilder {
     /// Before #1384 the repository half was its first ten characters with no mark, and the name
     /// half ended in "…" whether it was cut or not ("Dulles Papers… · Eisenhower").
     ///
-    /// The cut is `markedCut(_:limit:)`'s — a hard one — rather than the word-boundary cut the
-    /// co-mention and volume graphs share (`GraphNodeLabels.shortLabel(_:limit:)`), because a
-    /// record here is often told from its neighbours by a lot or file number at the END of its name
-    /// ("Conference Files: Lot 65 D 110"), and backing up to a word boundary drops more of it.
+    /// The cut is `identifierKeepingCut(_:limit:)`'s — a hard one, which keeps a trailing lot or
+    /// file number whole — rather than the word-boundary cut the co-mention and volume graphs share
+    /// (`GraphNodeLabels.shortLabel(_:limit:)`), because a record here is often told from its
+    /// neighbours by a lot or file number at the END of its name ("Conference Files: Lot 65 D
+    /// 110"), and backing up to a word boundary drops more of it.
+    ///
     /// Measured over the 200 most widely cited foci (by citing volumes, then name) under both
-    /// measures — 400 graphs, 376 with a node — the word-boundary cut draws two of a graph's nodes
-    /// alike in 89, and this cut in 67, as many as before #1384. The placement draws fewer of them
-    /// together: two placed node labels read alike in no graph at 390 × 300 or 700 × 420, in 4 at
-    /// 1000 × 640 and in 12 at 1300 × 800. A node can also draw like the focus: in 42 graphs, 21 of
-    /// them because it is a same-named record held elsewhere, which `disambiguate` does not
-    /// qualify since it never compares a node with the focus, and 21 because this cut ends two
-    /// different names alike, 15 of them at a lot number. The focus's label is always drawn, so the
-    /// two are on screen together in 4, 6, 19 and 26 graphs at those sizes.
-    /// - Parameter label: The node's label (`ArchivalNetworkNode.label`), or the focus's name.
+    /// measures — 400 graphs, 377 with a node — on `v2` at f5625ca2, before #1437, a node drew
+    /// exactly like the focus in 40 graphs: 17 because it was a same-named record held elsewhere,
+    /// which `disambiguate` did not qualify since it never compared a node with the focus, and 23
+    /// because a cut from the end made two different names alike ("Conference Files: Lot 64…"
+    /// stood for both 64 D 559 and 64 D 560); two nodes drew alike in 74. (#1437's own 42 of 376
+    /// came from an older authority.) `ArchivalNetworkLabelTests` sweeps the same 400 graphs and
+    /// holds this rule's figures, none and none.
+    /// - Parameter label: The node's label (`ArchivalNetworkNode.label`), or the focus's
+    ///   (`ArchivalNetworkGraph.focusLabel`).
     /// - Returns: The label to draw.
     static func drawnLabel(_ label: String) -> String {
         guard label.count > labelLimit else { return label }
         guard let separator = label.range(of: " · ") else {
-            return markedCut(label, limit: labelLimit)
+            return identifierKeepingCut(label, limit: labelLimit)
         }
         let name = String(label[label.startIndex..<separator.lowerBound])
         let qualifier = String(label[separator.upperBound...])
-        return markedCut(name, limit: labelNameLimit) + " · "
+        return identifierKeepingCut(name, limit: labelNameLimit) + " · "
             + markedCut(qualifier, limit: labelQualifierLimit)
+    }
+
+    /// The fewest characters of a name's head an `identifierKeepingCut(_:limit:)` keeps before its
+    /// "…"; with less room it cuts from the end like `markedCut(_:limit:)`.
+    static let minimumHeadKept = 4
+
+    /// `text` whole when it has at most `limit` characters; otherwise, when it ends in an
+    /// identifier (`trailingIdentifier(of:)`), its head cut and marked and the identifier whole —
+    /// "Conference F… Lot 64 D 559" — and else `markedCut(_:limit:)`. Never more than `limit`
+    /// characters (#1437).
+    /// - Parameters:
+    ///   - text: The name to cut.
+    ///   - limit: The most characters the result may have, the "…" included.
+    /// - Returns: The text as drawn.
+    static func identifierKeepingCut(_ text: String, limit: Int) -> String {
+        guard text.count > limit else { return text }
+        guard let tail = trailingIdentifier(of: text) else { return markedCut(text, limit: limit) }
+        var head = String(text[..<tail.lowerBound])
+        while let last = head.last, last.isWhitespace || ",;:".contains(last) { head.removeLast() }
+        let identifier = String(text[tail])
+        // Room for the head and its "…", with a space before the identifier.
+        let room = limit - identifier.count - 1
+        guard room - 1 >= minimumHeadKept, !head.isEmpty else {
+            // Too little room for a head: the identifier alone, marked, when it fits — the name
+            // half of "OSD Files: FRC 66 A 3542 · National Archives" draws "…FRC 66 A 3542".
+            return identifier.count < limit ? "…" + identifier : markedCut(text, limit: limit)
+        }
+        // The head always ends in "…", which marks the words, or the separator, the cut took.
+        var kept = String(head.prefix(room - 1))
+        while let last = kept.last, last.isWhitespace || ",;:".contains(last), kept.count > 1 {
+            kept.removeLast()
+        }
+        return kept + "… " + identifier
+    }
+
+    /// `text` cut to show its END (#1437): its head cut and marked, then its last words — the
+    /// fewest that no label in `others` also ends with — so a label a plain cut drew like another
+    /// shows where the two differ: "National Securi… (H-Files)" beside the focus's "National
+    /// Security Council…". `nil` when no such ending leaves room for ``minimumHeadKept``
+    /// characters of the head, or `text` fits whole.
+    /// - Parameters:
+    ///   - text: The full label (or the name half of a qualified one).
+    ///   - others: The full labels it was drawn like.
+    ///   - limit: The most characters the result may have.
+    /// - Returns: The cut, or `nil`.
+    static func distinguishingCut(_ text: String, from others: [String], limit: Int) -> String? {
+        guard text.count > limit else { return nil }
+        let words = text.split(separator: " ", omittingEmptySubsequences: true)
+        let otherWords = others.map { $0.split(separator: " ", omittingEmptySubsequences: true) }
+        for count in 1..<words.count {
+            let ending = words.suffix(count)
+            guard otherWords.allSatisfy({ Array($0.suffix(count)) != Array(ending) }) else { continue }
+            let tail = ending.joined(separator: " ")
+            let room = limit - tail.count - 2
+            guard room >= minimumHeadKept else { return nil }
+            var kept = String(words.dropLast(count).joined(separator: " ").prefix(room))
+            while let last = kept.last, last.isWhitespace || ",;:".contains(last), kept.count > 1 {
+                kept.removeLast()
+            }
+            return kept + "… " + tail
+        }
+        return nil
+    }
+
+    /// Every label the graph draws, by id (#1384, #1437): the focus's — of `focusLabel` — and each
+    /// node's `drawnLabel(_:)`, except that a NODE whose drawn label reads like the focus's or
+    /// another node's is re-cut to show where its name differs (`distinguishingCut(_:from:limit:)`),
+    /// in its name half when it is qualified. The focus's label is never re-cut.
+    ///
+    /// The cut from the end made two different names alike, and a node then drew exactly like the
+    /// focus: "National Security Council Institutional Files (H-Files)" beside a focus named
+    /// "National Security Council Files" both drew "National Security Council…".
+    /// - Parameter graph: The graph as drawn.
+    /// - Returns: The drawn label of the focus and of every node.
+    static func drawnLabels(in graph: ArchivalNetworkGraph) -> [String: String] {
+        let focusLabel = graph.focusLabel
+        var full: [String: String] = [graph.focus.id: focusLabel]
+        var drawn: [String: String] = [graph.focus.id: drawnLabel(focusLabel)]
+        for node in graph.nodes {
+            full[node.id] = node.label
+            drawn[node.id] = drawnLabel(node.label)
+        }
+        let groups = Dictionary(grouping: drawn.keys, by: { drawn[$0] ?? "" }).filter { $0.value.count > 1 }
+        for (_, ids) in groups {
+            for id in ids where id != graph.focus.id {
+                guard let label = full[id] else { continue }
+                let others = ids.filter { $0 != id }.compactMap { full[$0] }
+                if let separator = label.range(of: " · ") {
+                    let name = String(label[..<separator.lowerBound])
+                    let qualifier = String(label[separator.upperBound...])
+                    let otherNames = others.map { $0.components(separatedBy: " · ").first ?? $0 }
+                    if let cut = distinguishingCut(name, from: otherNames, limit: labelNameLimit) {
+                        drawn[id] = cut + " · " + markedCut(qualifier, limit: labelQualifierLimit)
+                    }
+                } else if let cut = distinguishingCut(label, from: others, limit: labelLimit) {
+                    drawn[id] = cut
+                }
+            }
+        }
+        return drawn
+    }
+
+    /// Words that open an identifier when they come just before its numbers ("Lot 64 D 559",
+    /// "FRC 71 A 6682", "Entry 5280").
+    private static let identifierKeywords: Set<String> = ["lot", "lots", "frc", "entry", "no", "accession"]
+
+    /// The identifier `text` ends in, if any (#1437): its trailing words that each hold a digit or
+    /// are one or two capital letters — "64 D 559", "64D199", "1947–1953" — with a keyword just
+    /// before them ("Lot", "FRC") taken along. At least one word must hold a digit, so a name
+    /// ending in "Files (H-Files)" ends in none.
+    /// - Parameter text: A name.
+    /// - Returns: The identifier's range in `text`, or `nil`.
+    static func trailingIdentifier(of text: String) -> Range<String.Index>? {
+        let punctuation = CharacterSet(charactersIn: "()[],.;:")
+        func bare(_ word: Substring) -> String {
+            String(word).trimmingCharacters(in: punctuation)
+        }
+        func isIdentifierWord(_ word: String) -> Bool {
+            if word.contains(where: \.isNumber) { return true }
+            return (1...2).contains(word.count) && word.allSatisfy { $0.isUppercase && $0.isLetter }
+        }
+        var start: String.Index?
+        var holdsDigit = false
+        var cursor = text.endIndex
+        // Walk the words back from the end.
+        while cursor > text.startIndex {
+            var wordStart = cursor
+            while wordStart > text.startIndex, !text[text.index(before: wordStart)].isWhitespace {
+                wordStart = text.index(before: wordStart)
+            }
+            let word = bare(text[wordStart..<cursor])
+            if !word.isEmpty, isIdentifierWord(word) {
+                holdsDigit = holdsDigit || word.contains(where: \.isNumber)
+                start = wordStart
+            } else {
+                if holdsDigit, identifierKeywords.contains(word.lowercased()) { start = wordStart }
+                break
+            }
+            cursor = wordStart
+            while cursor > text.startIndex, text[text.index(before: cursor)].isWhitespace {
+                cursor = text.index(before: cursor)
+            }
+        }
+        guard holdsDigit, let start, start > text.startIndex else { return nil }
+        return start..<text.endIndex
     }
 
     /// `text` whole when it has at most `limit` characters; otherwise its first `limit - 1`
@@ -643,12 +1128,12 @@ enum ArchivalNetworkBuilder {
     ///   - graph: The graph as drawn.
     /// - Returns: The label to draw, or `nil` for an id the graph does not hold.
     static func drawnLabel(for id: String, in graph: ArchivalNetworkGraph) -> String? {
-        if id == graph.focus.id { return drawnLabel(graph.focus.name) }
-        return graph.nodes.first { $0.id == id }.map { drawnLabel($0.label) }
+        drawnLabels(in: graph)[id]
     }
 
-    /// The order the labels are placed in (#1384): the focus — which `GraphNodeLabels.place(_:)`
-    /// always places, on a plate — then the selected node, then the others strongest first
+    /// The order the labels are placed in (#1384): the focus — which
+    /// `GraphNodeLabels.place(_:avoiding:settling:)` always places, on a plate — then the selected
+    /// node, then the others strongest first
     /// (`graph.nodes` order): the co-mention graph's rule, with the selected node in place of the
     /// displayed partner, since nothing here hovers.
     /// - Parameters:
@@ -663,8 +1148,9 @@ enum ArchivalNetworkBuilder {
     }
 
     /// One placement request per drawn node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:)` (#1384). A class node is a `.square`; a node with no position
-    /// or no measured size is left out, since the canvas draws neither its shape nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:settling:)` (#1384). A class node is a `.square`; a node
+    /// with no position or no measured size is left out, since the canvas draws neither its shape
+    /// nor its label.
     /// - Parameters:
     ///   - graph: The graph as drawn.
     ///   - layout: Its layout.

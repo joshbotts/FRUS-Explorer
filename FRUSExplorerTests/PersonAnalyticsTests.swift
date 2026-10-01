@@ -1092,12 +1092,14 @@ struct PersonNetworkFocusTests {
 /// "Bruce, David K" and "Truman, Harry" were drawn end to end as one string and "Kennan, George"
 /// over "Bohlen, Charle". So the cut has three fixtures (a name that fits, a cut at a word
 /// boundary, and the hard cut when no boundary falls within the limit), and the placement has one
-/// per rule: two labels that overlap place one, and it is the higher-ranked; two that merely touch
-/// count as overlapping, while two a few points apart do not; a label that would cover another
-/// node's disc yields even to a lower-ranked node; the first label — the centre's — is placed over
-/// a disc, on the one plate, which no partner label overlaps; a square node is kept clear of its
-/// corners, which a disc of its radius leaves out; and a label is never blocked by its own node,
-/// even where the arithmetic that measures the gap rounds it inside the clearance.
+/// per rule: of two labels that overlap the higher-ranked keeps its place under its node and the
+/// other goes above its own (#1438), or is not drawn when that place is taken too; two that merely
+/// touch count as overlapping, while two a few points apart do not; a label that would cover
+/// another node's disc yields even to a lower-ranked node; the first label — the centre's — is
+/// placed over a disc, on the one plate, which no partner label overlaps; a square node is kept
+/// clear of its corners, which a disc of its radius leaves out; a label is never blocked by its own
+/// node, even where the arithmetic that measures the gap rounds it inside the clearance; and a
+/// label keeps clear of an obstacle, under its node and above it (#1438).
 ///
 /// The fixtures here are hand-made so each isolates one rule. The claim over a real layout is in
 /// `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests` and `ArchivalNetworkLabelTests`, which
@@ -1112,6 +1114,10 @@ struct PersonNetworkFocusTests {
 ///          over a disc again, on a plate: its fixture, `discsUnder(_:of:requests:)`,
 ///          `plateOverlaps(placed:requests:)`, and a helper that exempts the first label from
 ///          the disc rule only
+///   1.3 — 2026-10-01: #1434 — while the layout settles only the first label is placed
+///   1.4 — 2026-10-01: #1438 — a label falls back to a place above its node (owner decision D10),
+///          and keeps clear of obstacles: the fixtures that pinned "skipped, not moved" now pin
+///          the place above, and drop a label only when both places are taken
 struct GraphNodeLabelTests {
 
     /// A label's size as the canvas would measure it, estimated at 0.55 em a character and 1.25 em
@@ -1211,20 +1217,81 @@ struct GraphNodeLabelTests {
 
     // MARK: place
 
-    @Test("Two nodes at the same height closer than their labels are wide place one label, the higher-ranked")
-    func sameHeightNeighboursPlaceTheHigherRankedLabel() {
+    /// The row above both nodes of the same-height fixtures, as an obstacle: it takes the place
+    /// above each node (y 75…85), so only the places under them compete.
+    private static let rowAbove = CGRect(x: 0, y: 60, width: 400, height: 20)
+
+    @Test("Of two nodes at the same height closer than their labels are wide, the higher-ranked label goes under its node and the other above its own")
+    func sameHeightNeighboursSplitUnderAndAbove() {
         // Labels 80 pt wide under nodes 50 pt apart: 60…140 against 110…190.
         let a = request("a", x: 100, y: 100), b = request("b", x: 150, y: 100)
-        #expect(Set(GraphNodeLabels.place([a, b]).keys) == ["a"])
-        #expect(Set(GraphNodeLabels.place([b, a]).keys) == ["b"])
+        let ab = GraphNodeLabels.place([a, b])
+        #expect(ab["a"] == GraphNodeLabels.labelRect(for: a))
+        #expect(ab["b"] == GraphNodeLabels.labelRectAbove(for: b), "\(ab)")
+        let ba = GraphNodeLabels.place([b, a])
+        #expect(ba["b"] == GraphNodeLabels.labelRect(for: b))
+        #expect(ba["a"] == GraphNodeLabels.labelRectAbove(for: a), "\(ba)")
         // The same pair ranked behind a far first label: the order still decides between two
         // partners, not only between the first label and the rest.
         let first = request("first", x: 600, y: 600)
-        #expect(Set(GraphNodeLabels.place([first, a, b]).keys) == ["first", "a"])
-        #expect(Set(GraphNodeLabels.place([first, b, a]).keys) == ["first", "b"])
-        // The control: the same two nodes 200 pt apart keep both labels.
+        #expect(GraphNodeLabels.place([first, a, b])["b"] == GraphNodeLabels.labelRectAbove(for: b))
+        #expect(GraphNodeLabels.place([first, b, a])["a"] == GraphNodeLabels.labelRectAbove(for: a))
+        // With the place above taken too, the lower-ranked label is not drawn.
+        #expect(Set(GraphNodeLabels.place([a, b], avoiding: [Self.rowAbove]).keys) == ["a"])
+        #expect(Set(GraphNodeLabels.place([first, b, a], avoiding: [Self.rowAbove]).keys) == ["first", "b"])
+        // The control: the same two nodes 200 pt apart keep both labels under their nodes.
         let far = request("b", x: 300, y: 100)
-        #expect(Set(GraphNodeLabels.place([a, far]).keys) == ["a", "b"])
+        #expect(GraphNodeLabels.place([a, far])["b"] == GraphNodeLabels.labelRect(for: far))
+    }
+
+    @Test("The place above a node is the mirror of the place under it")
+    func thePlaceAboveMirrorsThePlaceUnder() {
+        let node = GraphLabelRequest(id: "n", center: CGPoint(x: 100, y: 200), radius: 20,
+                                     size: CGSize(width: 60, height: 10))
+        #expect(GraphNodeLabels.labelRect(for: node)
+                == CGRect(x: 70, y: 200 + 20 + GraphNodeLabels.spacing, width: 60, height: 10))
+        #expect(GraphNodeLabels.labelRectAbove(for: node)
+                == CGRect(x: 70, y: 200 - 20 - GraphNodeLabels.spacing - 10, width: 60, height: 10))
+    }
+
+    @Test("A partner label keeps clear of an obstacle under its node and above it, and is not drawn when both are taken")
+    func aLabelKeepsClearOfObstacles() {
+        let first = request("first", x: 600, y: 600)
+        let node = request("n", x: 100, y: 100)                  // under: y 115…125; above: y 75…85
+        let under = CGRect(x: 90, y: 127, width: 20, height: 5)   // 2 pt below the place under
+        let above = CGRect(x: 90, y: 68, width: 20, height: 5)    // 2 pt above the place above
+        #expect(GraphNodeLabels.place([first, node])["n"] == GraphNodeLabels.labelRect(for: node))
+        #expect(GraphNodeLabels.place([first, node], avoiding: [under])["n"]
+                == GraphNodeLabels.labelRectAbove(for: node))
+        #expect(GraphNodeLabels.place([first, node], avoiding: [under, above])["n"] == nil)
+        // 4 pt away is clear.
+        let clearUnder = under.offsetBy(dx: 0, dy: 2)
+        #expect(GraphNodeLabels.place([first, node], avoiding: [clearUnder])["n"]
+                == GraphNodeLabels.labelRect(for: node))
+        // The first label is placed whatever lies under it, an obstacle included.
+        let focusUnder = CGRect(x: 590, y: 615, width: 20, height: 5)
+        #expect(GraphNodeLabels.place([first, node], avoiding: [focusUnder])["first"]
+                == GraphNodeLabels.labelRect(for: first))
+    }
+
+    @Test("A border passed as thin rects keeps a label from crossing it, not from sitting inside it")
+    func aBorderIsCrossedByNoLabel() {
+        let first = request("first", x: 600, y: 600)
+        // A box from y 50 to 122, whose bottom edge runs through the place under the node (y 115…125).
+        let box = CGRect(x: 40, y: 50, width: 120, height: 72)
+        let border = [CGRect(x: box.minX, y: box.minY - 0.5, width: box.width, height: 1),
+                      CGRect(x: box.minX, y: box.maxY - 0.5, width: box.width, height: 1),
+                      CGRect(x: box.minX - 0.5, y: box.minY, width: 1, height: box.height),
+                      CGRect(x: box.maxX - 0.5, y: box.minY, width: 1, height: box.height)]
+        let node = request("n", x: 100, y: 100)
+        // Across the bottom edge under the node; wholly inside the box above it.
+        #expect(GraphNodeLabels.place([first, node], avoiding: border)["n"]
+                == GraphNodeLabels.labelRectAbove(for: node))
+        // A box whose bottom edge clears the place under leaves the label there.
+        let roomy = CGRect(x: 40, y: 50, width: 120, height: 90)
+        let roomyBottom = [CGRect(x: roomy.minX, y: roomy.maxY - 0.5, width: roomy.width, height: 1)]
+        #expect(GraphNodeLabels.place([first, node], avoiding: roomyBottom)["n"]
+                == GraphNodeLabels.labelRect(for: node))
     }
 
     /// Two labels side by side, `gap` points apart, and how many the placement keeps.
@@ -1240,10 +1307,11 @@ struct GraphNodeLabelTests {
     @Test("Labels that touch end to end count as overlapping; labels a few points apart do not",
           arguments: [GapCase(gap: 0, placed: 1), GapCase(gap: 2, placed: 1), GapCase(gap: 4, placed: 2)])
     func touchingLabelsCountAsOverlapping(_ gapCase: GapCase) {
-        // "Bruce, David KTruman, Harry": two labels drawn end to end read as one string.
+        // "Bruce, David KTruman, Harry": two labels drawn end to end read as one string. The row
+        // above is taken, so only the places under the nodes decide.
         let a = request("a", x: 100, y: 100)                         // label 60…140
         let b = request("b", x: 180 + gapCase.gap, y: 100)           // label 140+gap…
-        #expect(GraphNodeLabels.place([a, b]).count == gapCase.placed)
+        #expect(GraphNodeLabels.place([a, b], avoiding: [Self.rowAbove]).count == gapCase.placed)
     }
 
     /// A node under another's label, `gap` points below it, and whether the upper label is kept.
@@ -1256,20 +1324,25 @@ struct GraphNodeLabelTests {
         var testDescription: String { "a disc \(gap) pt under a label \(upperPlaced ? "keeps" : "drops") it" }
     }
 
-    @Test("A partner's label that would cover another node's disc is dropped, even when that node ranks lower",
+    @Test("A partner's label that would cover another node's disc goes above its own node, even when that node ranks lower",
           arguments: [DiscCase(gap: -5, upperPlaced: false), DiscCase(gap: 2, upperPlaced: false),
                       DiscCase(gap: 4, upperPlaced: true)])
     func aLabelYieldsToAnotherNodesDisc(_ discCase: DiscCase) {
-        // The upper label spans y 115…125; the lower node's 12 pt disc sits `gap` below it. The two
-        // labels are far apart vertically, so only the disc can decide. A first label far away
-        // takes the focus's rank, so `upper` is a partner that outranks the node it yields to.
+        // The upper label spans y 115…125 under its node; the lower node's 12 pt disc sits `gap`
+        // below it. The two labels are far apart vertically, so only the disc can decide. A first
+        // label far away takes the focus's rank, so `upper` is a partner that outranks the node it
+        // yields to. `upperPlaced` is whether it keeps the place under its node.
         let first = request("first", x: 600, y: 600)
         let upper = request("upper", x: 100, y: 100)
         let lower = request("lower", x: 100, y: 125 + 12 + discCase.gap)
         let placed = GraphNodeLabels.place([first, upper, lower])
-        #expect((placed["upper"] != nil) == discCase.upperPlaced)
+        #expect(placed["upper"] == (discCase.upperPlaced ? GraphNodeLabels.labelRect(for: upper)
+                                                         : GraphNodeLabels.labelRectAbove(for: upper)))
         #expect(placed["lower"] != nil)
         #expect(placed["first"] != nil)
+        // With the place above taken, a label that would cover the disc is not drawn at all.
+        let blocked = GraphNodeLabels.place([first, upper, lower], avoiding: [Self.rowAbove])
+        #expect((blocked["upper"] != nil) == discCase.upperPlaced)
     }
 
     @Test("The first label is placed over another node's disc, on the one plate, which no partner label overlaps")
@@ -1295,14 +1368,18 @@ struct GraphNodeLabelTests {
         #expect(GraphNodeLabels.plate(for: [GraphLabelRequest<String>](), placed: [:]) == nil)
         // The partner's own label, under its own disc, keeps clear of the focus's and is placed.
         #expect(placed["below"] != nil)
-        // A partner whose label would come within 1 pt of the focus's, over the plate, is dropped,
-        // however high it ranks; 2 pt further right its label touches the plate's side without
-        // overlapping it, and is placed.
+        // A partner whose label would come within 1 pt of the focus's, over the plate, is not drawn
+        // there, however high it ranks: it goes above its node, clear of the plate (#1438); with
+        // that place taken it is not drawn. 2 pt further right its label touches the plate's side
+        // without overlapping it, and keeps the place under its node.
         let beside = request("beside", x: 381, y: 114)          // label x 341…421, y 129…139
-        #expect(GraphNodeLabels.place([focus, beside, below])["beside"] == nil)
+        #expect(GraphNodeLabels.place([focus, beside, below])["beside"]
+                == GraphNodeLabels.labelRectAbove(for: beside))
+        #expect(GraphNodeLabels.place([focus, beside, below],
+                                      avoiding: [CGRect(x: 330, y: 80, width: 100, height: 22)])["beside"] == nil)
         let touching = request("beside", x: 383, y: 114)        // label x 343…423
         let kept = GraphNodeLabels.place([focus, touching, below])
-        #expect(kept["beside"] != nil)
+        #expect(kept["beside"] == GraphNodeLabels.labelRect(for: touching))
         #expect(Self.plateOverlaps(placed: kept, requests: [focus, touching, below]).isEmpty)
         #expect(Self.clearanceViolations(placed: kept, requests: [focus, touching, below]).isEmpty)
     }
@@ -1376,6 +1453,107 @@ struct GraphNodeLabelTests {
         #expect(Self.clearanceViolations(placed: corner, requests: [square]).count == 1)
         #expect(Self.clearanceViolations(placed: corner, requests: [round]).isEmpty)
     }
+
+    @Test("While the layout settles only the first label is placed, over a disc as ever; settled, every label that fits (#1434)")
+    func whileTheLayoutSettlesOnlyTheFirstLabelIsPlaced() {
+        // Four labels, each clear of every other label and of every other disc but one: the disc of
+        // `under` lies under the first label, which is placed over it either way — the centre's
+        // exemption holds while the layout settles too. A settled layout places all four.
+        let first = request("first", x: 100, y: 100)            // label x 60…140, y 115…125
+        let under = request("under", x: 100, y: 130)            // disc y 118…142, label y 145…155
+        let a = request("a", x: 400, y: 300)
+        let b = request("b", x: 700, y: 500)
+        let requests = [first, a, b, under]
+        let settled = GraphNodeLabels.place(requests)
+        #expect(Set(settled.keys) == ["first", "a", "b", "under"],
+                "the fixture's labels no longer all fit: \(settled.keys.sorted())")
+        #expect(!Self.discsUnder(GraphNodeLabels.labelRect(for: first), of: "first", requests: requests).isEmpty,
+                "no disc lies under the first label any more")
+        // The default is a settled layout: the archival network, whose layout never animates,
+        // passes nothing.
+        #expect(GraphNodeLabels.place(requests, settling: false) == settled)
+        let settling = GraphNodeLabels.place(requests, settling: true)
+        #expect(Array(settling.keys) == ["first"], "placed while settling: \(settling.keys.sorted())")
+        #expect(settling["first"] == GraphNodeLabels.labelRect(for: first))
+        // The one plate is still the first label's.
+        #expect(GraphNodeLabels.plate(for: requests, placed: settling)
+                == GraphNodeLabels.plateRect(behind: GraphNodeLabels.labelRect(for: first)))
+        // Nothing to place is nothing placed.
+        #expect(GraphNodeLabels.place([GraphLabelRequest<String>](), settling: true).isEmpty)
+    }
+}
+
+// MARK: - GraphLayoutFrames (#1434)
+
+/// Watches an animated graph layout from the moment it starts until it settles (#1434), the way the
+/// canvas sees it: every 2 ms it reads the view model's positions and asks what the canvas would
+/// label on a frame drawn then, and once the view model says the layout has settled it watches
+/// 300 ms more for any pass published after that.
+///
+/// The co-mention and volume graphs' label suites drive their real view models through it; the
+/// layout runs on the main actor, so each 2 ms sleep is a turn for its task.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1434
+@MainActor
+enum GraphLayoutFrames {
+
+    /// What one animated layout looked like while it ran and after it settled.
+    struct Tracked<ID: Hashable> {
+        /// How many times the positions changed while the view model said the layout was settling —
+        /// the passes the sample saw. A sample that saw none watched no animation.
+        var framesWhileSettling = 0
+        /// Each distinct set of labels the canvas would have drawn while the layout was settling, in
+        /// the order first seen.
+        var labelsWhileSettling: [Set<ID>] = []
+        /// Whether any node moved in the 300 ms after the view model said the layout had settled.
+        var movedAfterSettling = false
+    }
+
+    /// The layout did not settle within the time allowed.
+    struct NeverSettled: Error, CustomStringConvertible {
+        /// The time allowed.
+        let timeout: Duration
+        /// Says how long it waited.
+        var description: String { "the layout was still settling after \(timeout)" }
+    }
+
+    /// Samples an animated layout until it settles, then watches it 300 ms more.
+    /// - Parameters:
+    ///   - settling: The view model's `isLayoutSettling`.
+    ///   - positions: The view model's `nodePositions`.
+    ///   - drawn: The ids the canvas would label on a frame drawn now.
+    ///   - timeout: How long the layout may take to settle before the sample gives up.
+    /// - Returns: What the sample saw.
+    /// - Throws: `NeverSettled` when the layout is still settling after `timeout`.
+    static func track<ID: Hashable, Positions: Equatable>(
+        settling: () -> Bool,
+        positions: () -> Positions,
+        drawn: () -> Set<ID>,
+        timeout: Duration = .seconds(10)
+    ) async throws -> Tracked<ID> {
+        var tracked = Tracked<ID>()
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        var last = positions()
+        while settling() {
+            guard clock.now < deadline else { throw NeverSettled(timeout: timeout) }
+            let now = positions()
+            if now != last {
+                tracked.framesWhileSettling += 1
+                last = now
+            }
+            let labels = drawn()
+            if !tracked.labelsWhileSettling.contains(labels) {
+                tracked.labelsWhileSettling.append(labels)
+            }
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        let settled = positions()
+        try await Task.sleep(for: .milliseconds(300))
+        tracked.movedAfterSettling = positions() != settled
+        return tracked
+    }
 }
 
 // MARK: - PersonCoMentionLabelTests (#1384)
@@ -1391,6 +1569,9 @@ struct GraphNodeLabelTests {
 ///          pinned, and the laid-out graphs' focus label held to the disc rule with their counts
 ///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the laid-out graphs' focus is
 ///          labelled over the disc under it, on the one plate, which no partner label overlaps
+///   1.3 — 2026-10-01: #1434 — an animated layout labels only the focus until its last pass, and a
+///          layout settled at once (Reduce Motion) never holds the labels back. These run the view
+///          model's real layout task, so they fail the same way on any destination
 @MainActor
 struct PersonCoMentionLabelTests {
 
@@ -1492,8 +1673,8 @@ struct PersonCoMentionLabelTests {
     }
 
     @Test("Over a layout the graph produces, the focus is labelled over the disc under it, and no partner label touches a label, the plate or a disc",
-          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
-                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 17)])
+          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 21),
+                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 19)])
     func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) async throws {
         let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -1530,6 +1711,63 @@ struct PersonCoMentionLabelTests {
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+    }
+
+    @Test("While the layout animates only the focus is labelled; its last pass places the settled labels (#1434)")
+    func anAnimatedLayoutLabelsOnlyTheFocusUntilItSettles() async throws {
+        let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: Self.focusName)
+        await vm.load(from: store)
+        #expect(vm.partners.count == 24)
+        var sizes: [Int: CGSize] = [:]
+        for id in vm.allRollupIds {
+            sizes[id] = GraphNodeLabelTests.estimatedSize(vm.label(for: id), fontSize: id == 1 ? 9 : 8)
+        }
+        // What the canvas places on a frame drawn now: its own call, with the flag it reads.
+        func drawn() -> [Int: CGRect] {
+            GraphNodeLabels.place(vm.labelRequests(sizes: sizes), settling: vm.isLayoutSettling)
+        }
+
+        // Reduce Motion off and 25 nodes: the layout animates, as it does after a load, a re-centre
+        // or a resize.
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: false)
+        let tracked = try await GraphLayoutFrames.track(settling: { vm.isLayoutSettling },
+                                                        positions: { vm.nodePositions },
+                                                        drawn: { Set(drawn().keys) })
+        // Every frame drawn while it moved — the layout's own published passes, sampled every 2 ms —
+        // labelled the focus alone, so no partner label came and went.
+        #expect(tracked.framesWhileSettling >= 3,
+                "saw \(tracked.framesWhileSettling) layout pass(es) while settling: the sample missed the animation")
+        #expect(tracked.labelsWhileSettling == [[1]], "labelled while settling: \(tracked.labelsWhileSettling)")
+        // The flag clears on the last pass, not before: nothing moves after it.
+        #expect(tracked.movedAfterSettling == false, "the layout kept moving after it said it had settled")
+        // Settled, the canvas places what a layout that never animated places from the same positions.
+        let settled = drawn()
+        #expect(settled == GraphNodeLabels.place(vm.labelRequests(sizes: sizes)))
+        #expect(settled.count > 1, "only \(settled.count) label(s) placed on the settled layout")
+    }
+
+    @Test("A layout settled at once never holds the labels back, and it ends an animated one (#1434)")
+    func aLayoutSettledAtOnceIsNeverSettling() async throws {
+        let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: Self.focusName)
+        await vm.load(from: store)
+        // Reduce Motion: settled at once.
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: true)
+        #expect(!vm.isLayoutSettling)
+        // An animated layout, then a Reduce Motion one before it rests (a resize under Reduce
+        // Motion, say): the second is settled at once, and the first, cancelled, neither moves a
+        // node nor sets the flag again.
+        vm.onCanvasSizeChanged(CGSize(width: 640, height: 480), reduceMotion: false)
+        #expect(vm.isLayoutSettling)
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: true)
+        #expect(!vm.isLayoutSettling)
+        let resting = vm.nodePositions
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(!vm.isLayoutSettling)
+        #expect(vm.nodePositions == resting, "the cancelled layout went on publishing")
     }
 
     // MARK: - Fixture

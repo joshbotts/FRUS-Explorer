@@ -4,9 +4,9 @@ volumes parsed:            502
 document notes parsed:     264552
 authority records:         4051 (lot-keyed: 1718, with NAID: 1014)
 sub-series children:       7594
-alias forms:               5243
+alias forms:               5253
 unclusterable references:  0
-artifact size:             1851151 bytes
+artifact size:             1851991 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
   lot-keyed:   4261/4261 (100.0%)
