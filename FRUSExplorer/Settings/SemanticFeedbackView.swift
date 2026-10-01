@@ -100,9 +100,10 @@ struct SemanticFeedbackView: View {
                 Text(String(
                     localized: "settings.semanticFeedback.privacy",
                     defaultValue: """
-                        Stored only on this device and never synced to iCloud. Each verdict records \
-                        the two documents, your judgement, the match score, and which release of the \
-                        vectors it applies to.
+                        Stored on-device and not synced to iCloud. Each verdict records the two \
+                        documents, your judgement, the match score, which release of the vectors it \
+                        applies to, and when you gave it. The app sends none of it: to share your \
+                        verdicts, choose Prepare Feedback File, then Share Feedback File.
                         """))
             }
 

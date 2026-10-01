@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · 1 ✎ edit held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
+**In this file:** 213 blocks · no ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
 
 ⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
@@ -1650,7 +1650,7 @@ admission is a defect. Short chrome not carried: `settings.semanticFeedback.abou
 `.clear.confirm`, `.clear.confirmAction`, `.era.unknown`.*
 
 #### Window title
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 137–138 | key: settings.semanticFeedback.title -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 138–139 | key: settings.semanticFeedback.title -->
 
 Semantic Match Feedback
 
@@ -1678,17 +1678,11 @@ Long-press (or right-click) any related document that shows the magnifier icon, 
 <!-- END SOURCE: settings.semanticFeedback.how -->
 
 #### The privacy footer
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 101–106 | key: settings.semanticFeedback.privacy -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 101–107 | key: settings.semanticFeedback.privacy -->
 
-Stored only on this device and never synced to iCloud. Each verdict records the two documents, your judgement, the match score, and which release of the vectors it applies to.
+Stored on-device and not synced to iCloud. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you gave it. The app sends none of it: to share your verdicts, choose Prepare Feedback File, then Share Feedback File.
 
 <!-- END SOURCE: settings.semanticFeedback.privacy -->
-
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: the sentence you added, “NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.”, reads as a note asking for a feature (a way to send verdicts voluntarily) rather than as text for the app. There is no such method yet, so the footer keeps what the app does today. No test holds this footer; it waits on the feature. The request is recorded in the plan (`Planning/DEVELOPMENT-PLAN.md`, lane WB’s *Still open*), and once a way to send verdicts exists this footer can say how.
-
-```text
-Stored only on this device and never synced to iCloud. Each verdict records the two documents, your judgement, the match score, and which release of the vectors it applies to. NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.
-```
 
 ---
 
