@@ -6,14 +6,26 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
-"""Self-test for tools/oh-report: the readers, the simulated repair, and each scan rule, driven over
-small synthetic volumes written to a temporary directory. No corpus needed.
+"""Self-test for tools/oh-report: the readers, the simulated repair, the report check, and the
+pagination, part, date, transcription and Sources-list scans, driven over small synthetic volumes
+written to a temporary directory. No corpus needed.
 
     python3 tools/oh-report/selftest.py
 
-Every rule of the pagination and date scans has one fixture that it alone should catch and the test
-names the row it expects, so a rule that stops firing, or starts firing on a neighbour's fixture,
-fails by name. Prints the number of checks and exits 1 on the first failure.
+What it covers, and what it does not:
+
+- Each rule of those five scans has a fixture the rule should catch, and the test names the row it
+  expects. Each condition a rule is narrowed by has a control beside it: a fixture one step outside
+  the rule, which must give no row (a list's "1)" beside a stray ")", small capitals splitting
+  "Department of State" beside a real misspelling, a microfiche supplement beside a printed volume).
+  A condition with no control is one a change can drop unnoticed; the round-1 review dropped
+  seventeen that way, and the mutants it ran are the controls added here.
+- `--check`: the whole-figure match, Part A alone, and the arguments.
+- NOT covered: the cross-reference scan, the header scan, the missing-documents check and the
+  adjudicated structure rows. They read the corpus, or name its files and lines, and are checked
+  only by a run over it.
+
+Prints the number of checks and exits 1 on the first failure.
 """
 import os
 import sys
@@ -49,10 +61,10 @@ FOOTER = '</body></text></TEI>\n'
 # A chapter whose closing tag is written after the chapter that follows it: ch2 sits inside ch1.
 DISPLACED = HEADER + '''<div type="compilation" xml:id="comp1">
 <head>Compilation</head>
-<!-- a comment that mentions <div type="chapter" xml:id="ghost"> and </div> -->
+<!-- a comment that mentions <div type="chapter" xml:id="ghost"> and </div> and <pb n="9" xml:id="pg_ghost" facs="0009"/> -->
 <div type="chapter" subtype="x" xml:id="ch1">
 <head>One</head>
-<div type="document" xml:id="d1" n="1"><p>text</p></div>
+<div type="document" xml:id="d1" n="1"><pb n="1" xml:id="pg_1" facs="0001"/><p>text</p></div>
 <div type="chapter" xml:id="ch2">
 <head>Two</head>
 <div type="subchapter" xml:id="ch2subch1">
@@ -99,6 +111,25 @@ def test_readers_and_repair():
     check(v.children('ch2') and [n['id'] for n in v.children('ch2')] == ['ch2subch1', 'ch2subch2'], 'children in order')
     check([n['id'] for n in v.children('ch1')] == ['ch2'] and len(v.children('ch1', documents=True)) == 2,
           'documents are left out of children unless asked for')
+    check([p['id'] for p in v.pbs] == ['pg_1'], 'a page break named only in a comment is not read: %s' % v.pbs)
+    check('pg_1' in v.ids() and 'ch1' in v.ids() and 'pg_ghost' not in v.ids() and 'ghost' not in v.ids(),
+          'an id named only in a comment is not an id of the file')
+
+
+def test_plain():
+    # A quote must be the file's text. An inline tag adds no space; a block tag is one.
+    check(ohlib.plain(b'D<hi rend="smallcaps">epartment of</hi> S<hi rend="smallcaps">tate</hi>, Washington')
+          == 'Department of State, Washington', 'small capitals that split a word leave the word whole')
+    check(ohlib.plain(b'<hi rend="smallcaps">Department of Stat</hi>e,') == 'Department of State,',
+          'a letter left outside the small capitals stays on its word')
+    check(ohlib.plain(b'Department of State,<gloss target="#t_NEA1">NEA</gloss>/IAI Files') == 'Department of State,NEA/IAI Files',
+          'a space the file lacks is not supplied: the glued gloss reads glued')
+    check(ohlib.plain(b'The Charg\xc3\xa9 in Israel (<persName corresp="#p_R1">Russell</persName>) to the Department<note n="1">x</note>.')
+          == 'The Charg\u00e9 in Israel (Russell) to the Department.', 'no space inside the parentheses or before the stop')
+    check(ohlib.plain(b'7slK 5-<gloss target="#t_MSP1">MSP</gloss>/6-2861 Secret; <gloss target="#t_N1">Niact</gloss>. Drafted')
+          == '7slK 5-MSP/6-2861 Secret; Niact. Drafted', 'a file number keeps its shape')
+    check(ohlib.plain(b'<p>One</p><p>Two</p> line<lb/>break  and\n  <item>three</item>') == 'One Two line break and three',
+          'a block tag separates words and whitespace is collapsed')
 
 
 def pb(n, xml_id, facs):
@@ -154,20 +185,73 @@ def test_pagination(directory):
           doc('d1', pb(90, 'pg_90', '0100') + pb(93, 'pg_93', '0103') + pb(94, 'pg-94', '0104') + pb(95, 'pg_95', '0105'))
           + doc('d2', pb(3, 'pg_d2-3', 'd2-4') + pb(4, 'pg_d2-4', 'd2-4'))
           + doc('d3', pb('XXX', 'pg_XXX', '0031') + pb('XXXI', 'pg_XXXI', '0031') + pb(1, 'pg_1', '0032')))
+    # CONTROLS: each is one step outside a rule and must give no row.
+    # A microfiche supplement is not paginated like a book: a reversed pair, numbers out of order and a
+    # Roman id without its prefix are all left alone there.
+    write(directory, 'frus1909mSupp.xml',
+          doc('d1', pb(10, 'pg_10', '0020')) + doc('d2', pb(12, 'pg_12', '0022')) + doc('d3', pb(11, 'pg_11', '0021'))
+          + doc('d4', pb(30, 'pg_30', '0040') + pb(32, 'pg_32', '0041') + pb(31, 'pg_31', '0042') + pb(33, 'pg_33', '0043'))
+          + doc('d5', pb('VIII', 'VIII', '0102')))
+    # A second pagination (pg-seq1_N) may run against the first: numbers out of order need pg_ ids.
+    write(directory, 'frus1912.xml',
+          doc('d1', pb(30, 'pg-seq1_30', '0040') + pb(32, 'pg-seq1_32', '0041') + pb(31, 'pg-seq1_31', '0042')
+              + pb(33, 'pg-seq1_33', '0043')))
+    # A plate between two numbered pages carries a pg-seq id and one neighbour's number: it is malformed
+    # only when BOTH neighbours say its own pg_N is missing. Here pg_8 follows, and there pg_21 is absent.
+    write(directory, 'frus1917.xml',
+          doc('d1', pb(7, 'pg_7', '0010') + pb(8, 'pg-seq-11', '0011') + pb(8, 'pg_8', '0012') + pb(9, 'pg_9', '0013'))
+          + doc('d2', pb(20, 'pg_20', '0030') + pb(22, 'pg-seq-31', '0031') + pb(23, 'pg_23', '0032')))
+    # Image names of three digits throughout are the volume's own usage, not a wrong @facs.
+    write(directory, 'frus1918.xml', doc('d1', pb(1, 'pg_1', '001') + pb(2, 'pg_2', '002') + pb(3, 'pg_3', '003')))
+    # THE EDGES OF TWO RULES.
+    # Three reversed pairs, to tell the two editorial-note counters apart: in the first two only the
+    # FIRST division is an editorial note; in the third only the SECOND is, and a division with no page
+    # break of its own (d8) stands between the two.
+    write(directory, 'frus1910.xml',
+          doc('d1', pb(12, 'pg_12', '0022'), 'editorial-note') + doc('d2', pb(11, 'pg_11', '0021'))
+          + doc('d3', pb(32, 'pg_32', '0042'), 'editorial-note') + doc('d4', pb(31, 'pg_31', '0041'))
+          + doc('d5', pb(40, 'pg_40', '0050') + pb(41, 'pg_41', '0051'))
+          + doc('d6', pb(42, 'pg_42', '0052'))
+          + doc('d7', pb(52, 'pg_52', '0062')) + doc('d8', '<p>no break</p>', 'editorial-note')
+          + doc('d9', pb(51, 'pg_51', '0061'), 'editorial-note'))
+    # Five pages without a break are still within the rule (a question); eight are past it.
+    write(directory, 'frus1916.xml',
+          doc('d1', pb(10, 'pg_10', '0020') + pb(16, 'pg_16', '0026') + pb(17, 'pg_17', '0027') + pb(26, 'pg_26', '0036')))
 
+    first_eight = {'frus190%d' % k for k in range(0, 8)}
     ohlib.VOLUMES_DIR = directory
     report._VOLUMES.clear()
     counts, rows = {}, []
     report.pagination(counts, rows)
     check(not [r for r in rows if r['volume'] == 'frus1900'], 'a clean volume gives no row')
-    everything, rows = rows, [r for r in rows if r['volume'] != 'frus1908']  # frus1908 is read at the end
+    for control, why in (('frus1909mSupp', 'a microfiche supplement is not read for page order or Roman ids'),
+                         ('frus1912', 'a second pagination is not numbers out of order'),
+                         ('frus1917', 'a pg-seq plate is malformed only when both neighbours say so'),
+                         ('frus1918', 'three-digit image names throughout are the volume\'s usage')):
+        check(not [r for r in rows if r['volume'] == control],
+              '%s: %s' % (why, [(r['class'], r['pb_xml_id']) for r in rows if r['volume'] == control]))
+    everything, rows = rows, [r for r in rows if r['volume'] in first_eight]  # the others are read at the end
 
     pair = rows_of(rows, 'reversed-pair')
     check(len(pair) == 1 and pair[0]['volume'] == 'frus1901' and pair[0]['pb_xml_id'] == 'pg_11'
           and pair[0]['document'] == 'd3' and 'd2, which holds the later page' in pair[0]['what_is_wrong'],
           'the reversed pair is reported once, at the break that runs backwards: %s' % pair)
-    check(counts['pagination']['reversedPairsBothEditorialNotes'] == 1
-          and counts['pagination']['reversedPairsSecondIsEditorialNote'] == 1, 'both divisions are counted as editorial notes')
+    edges = {r['pb_xml_id']: r for r in everything if r['volume'] == 'frus1910'}
+    check(sorted(edges) == ['pg_11', 'pg_31', 'pg_51'] and all(r['class'] == 'reversed-pair' for r in edges.values()),
+          'three reversed pairs in frus1910: %s' % sorted(edges))
+    check(counts['pagination']['reversedPairsSecondIsEditorialNote'] == 2,
+          'the SECOND division is an editorial note in two pairs (frus1901, and frus1910 d9), not in the two '
+          'whose first is: %d' % counts['pagination']['reversedPairsSecondIsEditorialNote'])
+    check(counts['pagination']['reversedPairsBothEditorialNotes'] == 1,
+          'both are editorial notes in frus1901 alone: %d' % counts['pagination']['reversedPairsBothEditorialNotes'])
+    check('Between them stands d8, which holds no page break' in edges['pg_51']['what_is_wrong']
+          and 'd7, which holds the later page' in edges['pg_51']['what_is_wrong']
+          and edges['pg_51']['correction'].startswith('Put the three divisions back'),
+          'a division between the pair is named, and the correction counts it: %s' % edges['pg_51'])
+    check('Between them' not in edges['pg_11']['what_is_wrong'] and edges['pg_11']['correction'].startswith('Put the two divisions back')
+          and 'Between them' not in pair[0]['what_is_wrong'], 'an adjacent pair says nothing of a third division')
+    check(counts['pagination']['reversedPairsWithADivisionBetween'] == 1 and counts['pagination']['reversedPairsAdjacent'] == 3,
+          'one pair of the four has a division between it')
 
     order = rows_of(rows, 'numbers-out-of-order')
     check(len(order) == 1 and order[0]['volume'] == 'frus1902' and order[0]['pb_xml_id'] == 'pg_31',
@@ -183,8 +267,11 @@ def test_pagination(directory):
     check(len(missing) == 1 and missing[0]['volume'] == 'frus1904' and 'page 71' in missing[0]['what_is_wrong']
           and '<pb facs="0081" n="71" xml:id="pg_71"/>' in missing[0]['correction'] and missing[0]['confidence'] == 'confirmed',
           'one missing break, with the tag to insert: %s' % missing)
-    check(counts['pagination']['missingPages'] == 3, 'pages 73-75 with images 0083-0084 are not a missing break: '
-          'one page here and two in frus1908')
+    check(counts['pagination']['missingPages'] == 8, 'pages 73-75 with images 0083-0084 are not a missing break: '
+          'one page here, two in frus1908 and five in frus1916: %d' % counts['pagination']['missingPages'])
+    wide = [r for r in everything if r['volume'] == 'frus1916']
+    check(len(wide) == 1 and wide[0]['class'] == 'missing-break' and 'pages 11, 12, 13, 14, 15' in wide[0]['what_is_wrong']
+          and wide[0]['confidence'] == 'question', 'five pages without a break are reported, eight (pp. 18-25) are not: %s' % wide)
 
     malformed = {r['pb_xml_id']: r for r in rows_of(rows, 'malformed-id')}
     check(sorted(malformed) == ['VIII', 'VIIII', 'pg-seq-14', 'pgg_2'], 'four malformed ids: %s' % sorted(malformed))
@@ -273,15 +360,158 @@ def test_dates(directory):
           + dated('d5', '1949-04-04', 'April 4, 1949', 'Central Files, 611.00/3–450')   # another day: not the same date
           + dated('d6', '1950-03-05', 'March 5, 1950', low='1950-03-05T12:00:00-05:00', high='1950-03-05T10:00:00-05:00')
           + dated('d7', '1950-03-06', 'March 6, 1950', low='1950-03-06T12:35:00-03:00', high='1950-03-06T10:43:00-05:00')
-          + dated('d8', '1950-03-07', 'undated'))
+          + dated('d8', '1950-03-07', 'undated')
+          # a date that prints two years agrees with either of them
+          + dated('d9', '1950-01-02', 'December 31, 1949\u2013January 2, 1950')
+          # a document that only wraps another has no dateline of its own: the inner one's is not read twice
+          + '<div type="document" subtype="historical-document" xml:id="d10" n="10"><p>cover</p>\n'
+          + dated('d11', '1951-03-08', 'March 8, 1950') + '</div>\n'
+          # the file number's own year is outside the volume too: it settles nothing
+          + dated('d12', '1949-03-09', 'March 9, 1949', 'Central Files, 611.00/3\u2013948')
+          # no year is printed: the encoded date is the editors' inference, and the row says so
+          + dated('d13', '1951-03-11', 'undated', 'Central Files, 611.00/3\u20131150'))
+    # A volume of two years: a date inside them is not contradicted by a file number of the other year.
+    # Its chapter carries a range that ends before it begins.
+    write(directory, 'frus1950-51v02.xml',
+          '<div type="chapter" xml:id="ch1" frus:doc-dateTime-min="1950-05-01T00:00:00-05:00" '
+          'frus:doc-dateTime-max="1950-04-01T00:00:00-05:00">\n<head>Chapter</head>\n'
+          + dated('d1', '1950-03-10', 'March 10, 1950', 'Central Files, 611.00/3\u20131051') + '</div>\n')
     report._VOLUMES.clear()
     counts, rows = {}, []
     report.dates(counts, rows)
-    by = {(r['class'], r['element']) for r in rows}
-    check(by == {('year-contradicts-text', 'd2'), ('year-contradicts-file-number', 'd3'), ('range-inverted', 'd6')},
-          'three rows, one per rule: %s' % sorted(by))
-    check(counts['dates']['invertedDocuments'] == 1 and counts['dates']['invertedDivisions'] == 0,
-          'd7 is not inverted: 12:35 at -03:00 is 10:35 Eastern, before 10:43')
+    by = {(r['class'], r['volume'], r['element']) for r in rows}
+    one = 'frus1950v01'
+    check(by == {('year-contradicts-text', one, 'd2'), ('year-contradicts-file-number', one, 'd3'), ('range-inverted', one, 'd6'),
+                 ('year-contradicts-text', one, 'd11'), ('year-contradicts-file-number', one, 'd13'),
+                 ('range-inverted', 'frus1950-51v02', 'ch1')},
+          'six rows and no other: d4, d5, d9, d10, d12 and the two-year volume\'s d1 are controls: %s' % sorted(by))
+    check(counts['dates']['invertedDocuments'] == 1 and counts['dates']['invertedDivisions'] == 1,
+          'd7 is not inverted (12:35 at -03:00 is 10:35 Eastern, before 10:43); the chapter is, and is counted as a division')
+    filed = {r['element']: r for r in rows if r['class'] == 'year-contradicts-file-number'}
+    check(filed['d3']['what_is_wrong'].startswith('The document is dated 1949')
+          and filed['d13']['what_is_wrong'].startswith('The dateline prints "undated", with no year; the date encoded for it is 1951')
+          and filed['d13']['what_is_wrong'].endswith('The page prints no year to settle it.'),
+          'an undated document is not said to be dated: %s' % filed['d13']['what_is_wrong'])
+    check(counts['dates']['fileNumberRowsPrintingTheEncodedYear'] == 1 and counts['dates']['fileNumberRowsPrintingNoYear'] == 1
+          and counts['dates']['byClass']['year-contradicts-file-number']['rows'] == 2
+          and 'file-number-no-year-printed' not in counts['dates']['byClass'],
+          'the two kinds of file-number row are counted apart, inside one class')
+    check(counts['dates']['rows'] == 6 and counts['dates']['volumes'] == 2, 'the totals the report states')
+
+
+def note(xml_id, text, source=False):
+    return '<note n="%s"%s xml:id="%s">%s</note>' % (xml_id[-1], ' type="source"' if source else '', xml_id, text)
+
+
+def test_transcription(directory):
+    for name in os.listdir(directory):
+        os.remove(os.path.join(directory, name))
+    files = 'Source: Department of State, Central Files, '
+    write(directory, 'frus1961v01.xml',
+          # a list's "1)" is not a parenthesis: this note is balanced, "))" and all
+          doc('d1', note('d1fn1', 'The telegram set out three points: 1) the first; 2) the second (Memorandum by Mr. A to '
+                               'Mr. B (ibid.)); and 3) the third.'))
+          # one ")" too many
+          + doc('d2', note('d2fn1', 'Not printed. (Ibid., 611.00/1-261))'))
+          # nested and balanced
+          + doc('d3', note('d3fn1', 'See telegram 5 (ibid., 611.00/1-361 (not printed)) and its reply.'))
+          # the stray one is not the doubled one: the quotation must end at the stray
+          + doc('d4', note('d4fn0', files + '737.56361/11-562). Top Secret. A copy is in another file (ibid. (Lot 62 D 1)).', True))
+          # a lost "(" with no "))" in the note is outside this class
+          + doc('d5', note('d5fn1', 'Printed ante, p. 427.)'))
+          # "S VIEI", and no stop before the classification; beside it the same note read correctly
+          + doc('d6', note('d6fn0', files + '<gloss target="#t_POL1">POL</gloss> 27 <gloss target="#t_S1">S</gloss> VIEI Secret; Priority.', True))
+          + doc('d7', note('d7fn0', files + '<gloss target="#t_POL1">POL</gloss> 27 <gloss target="#t_S1">S</gloss> VIET. Secret; Priority.', True))
+          # the year glued to the label, and the label spaced
+          + doc('d8', note('d8fn0', 'Source: National Archives, <gloss target="#t_RG1">RG</gloss> 59, Central\n   Files1970-73, POL 12 IRAQ. Confidential.', True))
+          + doc('d9', note('d9fn0', 'Source: National Archives, <gloss target="#t_RG1">RG</gloss> 59, Central Files 1970-73, POL 12 IRAQ. Confidential.', True))
+          # a doubled full stop, and an ellipsis, which is not one
+          + doc('d10', note('d10fn0', files + 'IRAN-U.S.. Secret.', True))
+          + doc('d11', note('d11fn0', files + '611.00/1-1161. Secret. The text ends "and so on..." in the original.', True))
+          # no space after the stop: in the text, and where only a tag separates the two
+          + doc('d12', note('d12fn0', files + 'US/A/M(SR)/1\u2014.Confidential. Drafted by X.', True))
+          + doc('d13', note('d13fn0', files + '611.00/1-1361.<gloss target="#t_S2">Secret</gloss>; Priority.', True))
+          + doc('d14', note('d14fn0', files + '611.00/1-1461. <gloss target="#t_S2">Secret</gloss>; Priority.', True))
+          # the label misspelt
+          + doc('d15', note('d15fn0', 'Source: Department of State, Centrals Files, 611.00/1-1561. Secret.', True))
+          # tags glued to the punctuation before them
+          + doc('d16', note('d16fn0', 'Source: Department of State,<gloss target="#t_NEA1">NEA</gloss>/IAI Files: Lot 63 D 351,'
+                                 '<gloss target="#t_NSC1">NSC</gloss>;<gloss target="#t_X1">X</gloss>, by Mr.,<persName>Y</persName>. Secret.', True))
+          # a misspelt dateline in a volume after 1905 is outside the scan
+          + doc('d17', '<dateline>Departmrnt of State, Washington, <date when="1961-01-17">January 17, 1961</date></dateline>')
+          # "S VIEI" in prose, outside any source note
+          + '<div type="section" xml:id="sources"><p>the file is SOC 14-1 <gloss\n target="#t_S1">S</gloss> VIEI SOC is the general category</p></div>\n')
+    caps = 'D<hi rend="smallcaps">%s of</hi> S<hi rend="smallcaps">tate</hi>, Washington'
+
+    def line(text):
+        return '<dateline>%s, <date when="1865-03-13">March 13, 1865</date>.</dateline><p>x</p>' % text
+    write(directory, 'frus1865p2.xml',
+          # small capitals split the words: the text reads "Department of State"
+          doc('d1', line('<placeName>' + caps % 'epartment' + '</placeName>'))
+          + doc('d2', line('<hi rend="smallcaps">Department of Stat</hi>e, Washington'))
+          # the same markup over a real misspelling
+          + doc('d3', line(caps % 'epartmrnt'))
+          + doc('d4', line('Department op State, Washington'))
+          + doc('d5', line('Legation of the United States, Paris')))
+    report._VOLUMES.clear()
+    counts, rows, glued = {}, [], []
+    report.transcription(counts, rows, glued)
+    by = {(r['class'], r['volume'], r['element']) for r in rows}
+    one, two = 'frus1961v01', 'frus1865p2'
+    check(by == {('unbalanced-parenthesis', one, 'd2fn1'), ('unbalanced-parenthesis', one, 'd4fn0'),
+                 ('viei-for-viet', one, 'd6fn0'), ('no-stop-before-classification', one, 'd6fn0'),
+                 ('viei-for-viet', one, 'sources'), ('central-files-year-glued', one, 'd8fn0'),
+                 ('doubled-full-stop', one, 'd10fn0'), ('no-space-before-classification', one, 'd12fn0'),
+                 ('no-space-before-classification', one, 'd13fn0'), ('central-files-label', one, 'd15fn0'),
+                 ('department-of-state-misspelt', two, 'd3'), ('department-of-state-misspelt', two, 'd4')},
+          'twelve rows and no other; d1, d3, d5, d7, d9, d11, d14, d17 and the datelines d1, d2, d5 are controls: %s' % sorted(by))
+    text = {(r['class'], r['element']): r['text'] for r in rows}
+    check(text[('unbalanced-parenthesis', 'd2fn1')].endswith('611.00/1-261))'), 'the quotation ends at the ")" that closes nothing')
+    stray = text[('unbalanced-parenthesis', 'd4fn0')]
+    check(stray.endswith('Central Files, 737.56361/11-562)') and 'Lot 62' not in stray,
+          'where the doubled ")" is balanced, the stray one is quoted, not the doubled one: %s' % stray)
+    check(counts['transcription']['notesWithAnUnmatchedCloser'] == {'notes': 3, 'volumes': 1, 'reported': 2},
+          'a lost "(" with no "))" is counted and not listed: %s' % counts['transcription']['notesWithAnUnmatchedCloser'])
+    check(text[('department-of-state-misspelt', 'd3')].startswith('Departmrnt of State, Washington, March 13, 1865.'),
+          'the dateline is quoted as the file reads it: %s' % text[('department-of-state-misspelt', 'd3')])
+    check('RG 59, Central Files1970-73, POL 12 IRAQ.' in text[('central-files-year-glued', 'd8fn0')],
+          'the glued year is quoted with the text round it: %s' % text[('central-files-year-glued', 'd8fn0')])
+    check(text[('viei-for-viet', 'd6fn0')].startswith('Source: Department of State, Central Files, POL 27 S VIEI Secret; Priority.')
+          and text[('viei-for-viet', 'sources')].endswith('SOC 14-1 S VIEI SOC is the general category'),
+          'a quotation holds no space the file lacks: %s' % text[('viei-for-viet', 'sources')])
+    check(counts['transcription']['vieiSourceNotes'] == 1 and counts['transcription']['vieiElsewhere'] == 1,
+          'the misreading in prose is counted apart from the source notes')
+    check(glued == [{'volume': one, 'file': one + '.xml', 'comma_then_gloss': 2, 'comma_then_persName': 1, 'semicolon_then_gloss': 1}],
+          'the glued tags of one file: %s' % glued)
+    check(counts['transcription']['rows'] == 12 and counts['transcription']['noStopInTopTwoVolumes'] == 1, 'the totals the report states')
+
+
+def test_sources_lists(directory):
+    for name in os.listdir(directory):
+        os.remove(os.path.join(directory, name))
+    archives = 'National Archives and Records Administration, College Park, Maryland'
+    write(directory, 'frus1970v01.xml',
+          '<div type="section" subtype="sources" xml:id="sources"><list>\n'
+          '<item><hi rend="strong">' + archives + '</hi>\n<list>\n'
+          '<item>Record Group 59</item>\n'
+          # a repository's heading inside another repository's list
+          '<item><hi rend="strong">Central Intelligence Agency</hi><list><item>Job 80</item></list></item>\n'
+          # the same words in an entry that is not a heading
+          '<item>Central Intelligence Agency, records cited from the Archives\' copies</item>\n'
+          # a presidential library under the Archives is where it belongs
+          '<item><hi rend="strong">Lyndon B. Johnson Library, Austin, Texas</hi></item>\n'
+          '</list></item>\n'
+          # a heading at the top level is nested in nothing
+          '<item><hi rend="strong">Library of Congress, Washington, D.C.</hi></item>\n'
+          '</list></div>\n')
+    report._VOLUMES.clear()
+    counts, rows = {}, []
+    report.sources_lists(counts, rows)
+    check(len(rows) == 1 and rows[0]['nested_heading'] == 'Central Intelligence Agency' and rows[0]['inside_heading'] == archives
+          and rows[0]['line'] == 6,
+          'one heading nested in another\'s list; the plain entry, the library and the top-level heading are controls: %s'
+          % [(r['line'], r['nested_heading']) for r in rows])
+    check(counts['sourcesLists'] == {'divisionsRead': 1, 'rows': 1, 'volumes': 1}, 'the totals the report states')
 
 
 def test_predicates():
@@ -292,11 +522,21 @@ def test_predicates():
     check(report._from_roman('XXVIII') == 28 and report._to_roman(28) == 'XXVIII' and report._from_roman('XVIIII') is None
           and report._from_roman('') is None, 'Roman numerals')
     for wrong in ('Department op State, Washington, May 21, 1864.', 'Departmrnt of State, Washington',
-                  'D epartment of S tate , Washington', 'Department of Stats , Washington'):
+                  'Dapartment of State, Washington', 'Department of Stats, Washington'):
         check(report._department_misspelling(wrong) is not None, 'misspelt: %s' % wrong)
+    # "Dept. of State" is an abbreviation, 0.81 like the name: under the 0.86 the rule asks for.
     for right in ('Department of State, Washington', 'Executive Department, State of Louisiana, Baton Rouge',
-                  'Department of the Interior, Washington', 'Legation of the United States, Paris'):
+                  'Department of the Interior, Washington', 'Legation of the United States, Paris',
+                  'Dept. of State, Washington'):
         check(report._department_misspelling(right) is None, 'not a misspelling: %s' % right)
+    walk = report._stray_closers
+    check(walk('(a (b)) c') == [] and walk('x (y)) z') == [5] and walk('a) x (y)) z') == [8] and walk('none') == [],
+          'the parentheses are walked in order; a leading "a)" is an enumerator')
+    check(walk('notes: 1) one; 2) two (see (ibid.)); and 3) three') == [] and walk('reads: \u201c1) Return (now)\u201d') == []
+          and walk('of two kinds, iv) the last') == [], 'enumerators after a colon, a semicolon, a quotation mark or a comma')
+    check(walk('Central Files, 737.56361/11-562). Top Secret') == [31] and walk('p. 427.)') == [7]
+          and walk('la)r people') == [2] and walk('CCS 383.21 Korea 3\u201319\u201345)') == [24] and walk('March 1945)') == [10],
+          'a ")" after a file number, a stop, a year or inside a word is not an enumerator')
     check(report._NEVER_HELD.match('Central Intelligence Agency, Langley, Virginia')
           and report._NEVER_HELD.match('Department of State')
           and not report._NEVER_HELD.match('Department of State, Record Group 84, Files of U.S. Foreign Service Posts')
@@ -304,17 +544,59 @@ def test_predicates():
           'the Sources-list rule reports four repositories and not a record group under one')
 
 
+REPORT = '''# Report
+Run it with `--check` and it stops when one of 4 figure sentences here no longer matches.
+
+# Part A
+The scan read 744 files. 11 files carry no date; 34 datelines in 23 volumes; 1,213 sites in 40 files.
+It is the only gap among the 22 pairs.
+
+# Part B
+The audit had 9 datelines in 23 volumes.
+'''
+
+
+def test_check(directory):
+    absent = lambda sentences, text=REPORT: report.missing_figures(sentences, text)  # noqa: E731
+    carried = ['11 files carry', '34 datelines in 23 volumes', '1,213 sites in 40 files', 'the only gap among the 22']
+    check(absent(carried) == ([], None), 'every figure of the run is in Part A: %s' % (absent(carried),))
+    # A stale report must not pass because the run's smaller figure is the tail, or the head, of its own.
+    for stale in ('1 files carry', '4 datelines in 23 volumes', '213 sites in 40 files', '13 sites in 40 files',
+                  'the only gap among the 2', '34 datelines in 2 volumes'):
+        check(absent([stale] + carried[1:])[0] == [stale], 'a figure inside a longer number is not carried: %s' % stale)
+    check(absent(['9 datelines in 23 volumes'] + carried[1:])[0] == ['9 datelines in 23 volumes'],
+          'a figure that stands only in Part B is not carried')
+    check(absent(carried[:3])[0] == ['3 figure sentences (in the lines above Part A)'],
+          'the lines above Part A must say how many sentences there are')
+    check(absent(carried, REPORT.replace('# Part B', '# Annex'))[0] is None and absent(carried, REPORT.replace('# Part A', '# One'))[0] is None,
+          'a report without the two headings is not checked against the whole file')
+    path = os.path.join(directory, 'report.md')
+    with open(path, 'w', encoding='utf-8') as handle:
+        handle.write(REPORT)
+    tool = 'build_oh_report.py'
+    check(report.report_to_check([tool]) is None and report.report_to_check([tool, '--check', path]) == REPORT,
+          'no argument means no check; --check FILE reads the file')
+    for wrong in ([tool, '--check'], [tool, path, '--check'], [tool, path], [tool, '--check', path + '.missing'],
+                  [tool, '--chek', path], [tool, '--check', path, path]):
+        raises(SystemExit, lambda: report.report_to_check(wrong), 'refused before the corpus is read: %s' % wrong[1:])
+    os.remove(path)
+
+
 def main():
     test_readers_and_repair()
+    test_plain()
     test_predicates()
     saved = ohlib.VOLUMES_DIR
     with tempfile.TemporaryDirectory() as directory:
         try:
+            test_check(directory)
             test_pagination(directory)
             for name in os.listdir(directory):
                 os.remove(os.path.join(directory, name))
             test_parts(directory)
             test_dates(directory)
+            test_transcription(directory)
+            test_sources_lists(directory)
         finally:
             ohlib.VOLUMES_DIR = saved
             report._VOLUMES.clear()

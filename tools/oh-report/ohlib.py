@@ -28,6 +28,10 @@ _PB = re.compile(rb'<pb\b([^>]*?)/?>', re.S)
 _HEAD = re.compile(rb'<head\b[^>]*>(.*?)</head>', re.S)
 _NOTE = re.compile(rb'<note\b.*?</note>', re.S)
 _TAG = re.compile(rb'<[^>]+>')
+# The phrase-level elements of the corpus: one of these inside a word, or against a comma, adds no
+# space to the text the file reads. Every other tag (<p>, <lb/>, <item>, <cell>, ...) separates words.
+_INLINE_TAG = re.compile(rb'</?(?:hi|gloss|persName|placeName|orgName|name|date|ref|seg|term|del|title'
+                         rb'|affiliation|unclear)\b[^>]*>')
 
 
 def volume_files():
@@ -41,8 +45,13 @@ def attrs(raw):
 
 
 def plain(raw):
-    """Tag-free, whitespace-collapsed text of a byte fragment (footnotes removed)."""
-    text = _TAG.sub(b' ', _NOTE.sub(b' ', raw)).decode('utf-8', 'replace')
+    """The text of a byte fragment as the file reads it, whitespace collapsed.
+
+    A footnote and an inline tag leave nothing behind, so `D<hi>epartment</hi>` reads "Department" and
+    `State,<gloss>NEA</gloss>` reads "State,NEA": a quote built from this holds no space the file
+    lacks. Any other tag reads as a space.
+    """
+    text = _TAG.sub(b' ', _INLINE_TAG.sub(b'', _NOTE.sub(b'', raw))).decode('utf-8', 'replace')
     return re.sub(r'\s+', ' ', text).strip()
 
 

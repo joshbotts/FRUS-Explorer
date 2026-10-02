@@ -12,9 +12,13 @@ its CSVs.
 Each class is either a SCAN (a rule run over all of volumes/*.xml, whose rows are whatever the rule
 finds) or an ADJUDICATED table (rows written by hand in this file, each one re-verified here: a
 structural correction is applied to a copy of the file, re-parsed, and its stated before and after
-nesting asserted; a suggested cross-reference target must exist). The run exits 1, writing nothing,
-when an adjudicated row no longer holds, when a scan finds nothing, or when the regenerated
-broken-reference CSV and the corpus disagree.
+nesting asserted; a suggested cross-reference target must exist). The run exits 1, writing nothing
+and printing "NOT WRITTEN", when an adjudicated row no longer holds, when a scan finds nothing, when
+the regenerated broken-reference CSV and the corpus disagree, when CORPUS_COMMIT is missing, and
+when its arguments are anything but none or `--check FILE`.
+
+Every quotation in the CSVs is the file's own text: ohlib.plain() adds no space where an inline tag
+stands, so a quotation can be compared with the file character for character.
 
     CORPUS_COMMIT   required: the corpus revision every line number is relative to
     VOLUMES_DIR     the corpus' volumes/ directory (default ~/Development/frus/volumes)
@@ -25,8 +29,8 @@ broken-reference CSV and the corpus disagree.
     GENERATED_DATE  the date stamped into counts.json (default today)
 
     build_oh_report.py                 write the CSVs and counts.json
-    build_oh_report.py --check FILE    also require every figure sentence in FILE (the report) to
-                                       match this run
+    build_oh_report.py --check FILE    also require Part A of FILE (the report) to carry every figure
+                                       sentence of this run, each as a whole figure (missing_figures)
 """
 import collections
 import csv
@@ -595,6 +599,9 @@ def _from_roman(text):
     return total
 
 
+_SPELLED = {3: 'three', 4: 'four'}
+
+
 def _surface(v, xml_id):
     """' and <surface start="#ID"> at line N' when the facsimile repeats a page id, else ''."""
     m = re.search(rb'<surface\b[^>]*\bstart="#' + re.escape(xml_id.encode()) + rb'"', v.blanked)
@@ -606,6 +613,7 @@ def pagination(counts, rows):
     vols = collections.defaultdict(set)
     files = missing_pages = 0
     reversed_notes = collections.Counter()
+    reversed_between = []
 
     def add(kind, v, pb, wrong, correction, confidence, document=''):
         c[kind] += 1
@@ -634,18 +642,27 @@ def pagination(counts, rows):
             doc = v.enclosing_div(p['off'], 'document')
             doc_id = doc['id'] if doc else ''
 
-            # (1) two adjacent divisions in reverse page order
+            # (1) two divisions in reverse page order. The rule compares two page breaks that follow one
+            # another, so the divisions holding them need not: one with no break of its own may stand between.
             if (prev and not fiche and _num(n) is not None and _num(prev['n']) is not None
                     and _num(facs) is not None and _num(prev['facs']) is not None
                     and _num(n) < _num(prev['n']) and _num(facs) < _num(prev['facs'])):
                 before = v.enclosing_div(prev['off'], 'document')
                 reversed_notes['second'] += 1 if doc and doc['subtype'] == 'editorial-note' else 0
                 reversed_notes['both'] += 1 if (doc and before and doc['subtype'] == before['subtype'] == 'editorial-note') else 0
+                between = [d['id'] for d in v.divs if d['type'] == 'document' and before and doc
+                           and before['close_off'] < d['off'] and d['close_off'] < doc['off']]
+                reversed_notes['between'] += 1 if between else 0
+                if between:
+                    reversed_between.append('%s: %s, then %s, then %s' % (v.vid, before['id'], ' and '.join(between), doc_id))
                 add('reversed-pair', v, p,
                     'Page %s (image %s) follows page %s (image %s) in the file: %s, which holds the later page, is '
-                    'written before %s, which holds the earlier one.'
-                    % (n, facs, prev['n'], prev['facs'], before['id'] if before else '?', doc_id or '?'),
-                    'Put the two divisions back in page order (the text as well as the breaks), after checking the images.',
+                    'written before %s, which holds the earlier one.%s'
+                    % (n, facs, prev['n'], prev['facs'], before['id'] if before else '?', doc_id or '?',
+                       ' Between them stands %s, which holds no page break: the images must say on which side '
+                       'of the pair it belongs.' % ' and '.join(between) if between else ''),
+                    'Put the %s divisions back in page order (the text as well as the breaks), after checking the images.'
+                    % ('two' if not between else _SPELLED.get(len(between) + 2, str(len(between) + 2))),
                     'confirmed', doc_id)
             # (2) the numbers run backwards while the images run forwards
             elif (prev and not fiche and _num(n) is not None and _num(prev['n']) is not None
@@ -758,6 +775,9 @@ def pagination(counts, rows):
     counts['pagination']['missingPages'] = missing_pages
     counts['pagination']['reversedPairsSecondIsEditorialNote'] = reversed_notes['second']
     counts['pagination']['reversedPairsBothEditorialNotes'] = reversed_notes['both']
+    counts['pagination']['reversedPairsWithADivisionBetween'] = reversed_notes['between']
+    counts['pagination']['reversedPairsAdjacent'] = c['reversed-pair'] - reversed_notes['between']
+    counts['pagination']['reversedPairsWithADivisionBetweenWhere'] = reversed_between
 
 
 def parts(counts, rows):
@@ -1017,6 +1037,7 @@ def cross_references(counts, rows, xref_csv, manifest_path):
         'independentScanBroken': len(mine), 'independentScanBeyondCSV': len(extra),
         'independentScanBeyondCSVNotShipped': len(not_shipped),
         'confirmedWithTarget': sum(1 for r in rows if r['suggested_target'] and r['confidence'] == 'confirmed'),
+        'pageNumberTyposWithALikelyPage': sum(1 for r in rows if r['cause'] == 'page-number-typo' and r['suggested_target']),
     }
     counts['crossReferences']['independentScanBeyondCSVSample'] = ['%s@%d %s' % e for e in extra[:12]]
     require(len(extra) == len(not_shipped), 'the independent scan finds broken references the CSV lacks: %s'
@@ -1104,12 +1125,22 @@ def dates(counts, rows):
                 kind = 'year-contradicts-file-number'
                 c[kind] += 1
                 vols[kind].add(v.vid)
+                # A row reaches here with its printed year equal to the encoded one (the rule above took the
+                # rest), or with no year printed at all: "undated", where @when is the editors' inference.
+                if printed:
+                    wrong = 'The document is dated %s, outside the volume\'s years, while its own file number ' \
+                            '(%s) carries the same month and day in %d.' % (when[:4], filed.group(0)[1:], year)
+                else:
+                    c['file-number-no-year-printed'] += 1
+                    ana = attrs(date.group(1)).get('ana')
+                    wrong = 'The dateline prints "%s", with no year; the date encoded for it%s is %s, outside the ' \
+                            'volume\'s years, while the document\'s own file number (%s) carries the same month and ' \
+                            'day in %d. The page prints no year to settle it.' \
+                            % (text[:40], ' (ana="%s")' % ana if ana else '', when[:4], filed.group(0)[1:], year)
                 rows.append({
                     'class': kind, 'volume': v.vid, 'element': d['id'], 'element_type': 'document', 'file': v.name,
                     'line': line, 'encoded': 'when="%s"' % when, 'printed': text[:60],
-                    'what_is_wrong': 'The document is dated %s, outside the volume\'s years, while its own file number '
-                                     '(%s) carries the same month and day in %d.' % (when[:4], filed.group(0)[1:], year),
-                    'confidence': 'question',
+                    'what_is_wrong': wrong, 'confidence': 'question',
                 })
     require(documents > 0 and c['year-contradicts-text'] > 0 and c['range-inverted'] > 0, 'the date scan read nothing')
     contradicted = [r for r in rows if r['class'] == 'year-contradicts-text']
@@ -1117,7 +1148,11 @@ def dates(counts, rows):
     if 'frus1891.xml' in volume_files():  # the report's sentence about this volume, asserted when it is read
         require(in_1891 and all(r['encoded'].startswith('when="1891') for r in in_1891),
                 'frus1891: a contradicted date is no longer encoded 1891')
-    counts['dates'] = {'documentsRead': documents,
+    by_file_number = c['year-contradicts-file-number']
+    no_year = c.pop('file-number-no-year-printed', 0)
+    counts['dates'] = {'documentsRead': documents, 'rows': len(rows), 'volumes': len({r['volume'] for r in rows}),
+                       'fileNumberRowsPrintingTheEncodedYear': by_file_number - no_year,
+                       'fileNumberRowsPrintingNoYear': no_year,
                        'yearContradictsTextTopVolumes': collections.Counter(r['volume'] for r in contradicted).most_common(6),
                        'yearContradictsTextInFrus1891': len(in_1891),
                        'byClass': {k: {'rows': c[k], 'volumes': len(vols[k])} for k in sorted(c)},
@@ -1151,9 +1186,46 @@ def _department_misspelling(text):
     return best[1] if best else None
 
 
+_ENUMERATOR = re.compile(r'(?:^|(?<=[\s;:,.\u201c\u2018"\'\[]))(?:\d{1,2}|[A-Za-z]|[ivxIVX]{1,4})$')
+
+
+def _stray_closers(text):
+    """The offset of each ")" in a text that closes nothing, list enumerators left out.
+
+    The parentheses are walked in order, so "(a (b))" leaves none and "1) x (y)) z" leaves the one
+    after "(y)". An enumerator is a number of one or two digits, one letter or a short Roman numeral
+    that stands at the start of the text or after a space, an opening quotation mark, a bracket or
+    one of ; : , . and is closed by a ")" that has no "(" to match: the "1)" and "2)" of a list.
+    Counting the two signs instead reads every such list as that many parentheses too many. A dash
+    does not introduce one: the "45" of the file number "3–19–45)" is not a list item.
+    """
+    depth, out = 0, []
+    for k, sign in enumerate(text):
+        if sign == '(':
+            depth += 1
+        elif sign == ')':
+            if depth:
+                depth -= 1
+            elif not _ENUMERATOR.search(text, max(0, k - 8), k):
+                out.append(k)
+    return out
+
+
+def _around(data, start, end, before=160, after=40):
+    """plain() of the bytes around a span, cut so that it neither begins nor ends inside a tag."""
+    chunk = data[max(0, start - before):end + after]
+    closes, opens = chunk.find(b'>'), chunk.find(b'<')
+    if closes >= 0 and (opens < 0 or closes < opens):
+        chunk = chunk[closes + 1:]
+    if chunk.rfind(b'<') > chunk.rfind(b'>'):
+        chunk = chunk[:chunk.rfind(b'<')]
+    return plain(chunk)
+
+
 def transcription(counts, rows, glued_rows):
     c = collections.Counter()
     vols = collections.defaultdict(set)
+    stray_notes, stray_volumes = 0, set()
     glued_total = collections.Counter()
     glued_files = collections.Counter()
     files = 0
@@ -1179,19 +1251,33 @@ def transcription(counts, rows, glued_rows):
             glued_rows.append({'volume': v.vid, 'file': v.name, 'comma_then_gloss': per_file.get('comma', 0),
                                'comma_then_persName': per_file.get('comma_persName', 0),
                                'semicolon_then_gloss': per_file.get('semicolon', 0)})
+        source_notes = []
         for m in _INNER_NOTE.finditer(b):
-            text = re.sub(r'\s+', ' ', re.sub(rb'<[^>]+>', b'', m.group(0)).decode('utf-8', 'replace')).strip()
+            opening = m.group(0)[:m.group(0).find(b'>')]
+            shown = plain(m.group(0)[len(opening) + 1:-len(b'</note>')])
             line = v.line(m.start())
-            note_id = attrs(m.group(0)[:m.group(0).find(b'>')]).get('xml:id', '')
-            if '))' in text and text.count(')') > text.count('('):
-                at = text.find('))')
-                add('unbalanced-parenthesis', v, line, note_id, text[max(0, at - 80):at + 12],
-                    'The note holds "))" and more closing than opening parentheses: one ")" too many, or a "(" lost.')
-            if not re.search(rb'type="source"', m.group(0)[:m.group(0).find(b'>')]):
+            note_id = attrs(opening).get('xml:id', '')
+            stray = _stray_closers(shown) if ')' in shown else []
+            if stray:
+                stray_notes += 1
+                stray_volumes.add(v.vid)
+            # Reported only where the note also holds "))": without that condition the rule finds the far
+            # larger class of a "(" lost, which nobody has read row by row (counted below, not listed).
+            if stray and '))' in shown:
+                at = stray[0]
+                add('unbalanced-parenthesis', v, line, note_id, shown[max(0, at - 90):at + 1],
+                    'The ")" that ends this quotation closes nothing: walking the note\'s parentheses in order, '
+                    'with list enumerators such as "1)" set aside, leaves it unmatched. One ")" too many, or a "(" lost.')
+            if not re.search(rb'type="source"', opening):
                 continue
-            shown = plain(m.group(0)[m.group(0).find(b'>') + 1:-len(b'</note>')])
+            source_notes.append((m.start(), m.end()))
             if re.search(r'\bS VIEI\b', shown):
+                c['viei-in-source-note'] += 1
                 add('viei-for-viet', v, line, note_id, shown[:110], '"S VIEI" for "S VIET" in the file designation.')
+            glued = re.search(r'Central Files(\d{4})', shown)
+            if glued:
+                add('central-files-year-glued', v, line, note_id, shown[max(0, glued.start() - 60):glued.end() + 46],
+                    'No space between "Central Files" and "%s".' % glued.group(1))
             hit = re.search(r'Central Files,[^.]{3,60}?[A-Za-z0-9/)–-] (' + _MARKING + r')\b[;.]', shown)
             if hit:
                 add('no-stop-before-classification', v, line, note_id, shown[:110],
@@ -1206,6 +1292,15 @@ def transcription(counts, rows, glued_rows):
             label = re.search(r'Centrals Files|Central piles', shown)
             if label:
                 add('central-files-label', v, line, note_id, shown[:110], '"%s" for "Central Files".' % label.group(0))
+        # The same misreading outside a source note (a Sources list glosses the designation in prose).
+        for m in re.finditer(rb'\bVIEI\b', b):
+            if any(start <= m.start() < end for start, end in source_notes):
+                continue
+            shown = _around(b, m.start(), m.end())
+            if re.search(r'\bS VIEI\b', shown):
+                inside = v.enclosing_div(m.start())
+                add('viei-for-viet', v, v.line(m.start()), inside['id'] if inside else '', shown[-110:],
+                    '"S VIEI" for "S VIET", outside a source note.')
         year = re.match(r'frus(\d{4})', v.vid)
         if year and int(year.group(1)) < 1906:
             for d in v.divs:
@@ -1220,20 +1315,37 @@ def transcription(counts, rows, glued_rows):
                 if wrong:
                     add('department-of-state-misspelt', v, v.line(d['off'] + dateline.start()), d['id'], shown[:110],
                         '"Department of State" is misspelt in the dateline.')
-    # One misprint met in a chapter heading while reading section 1's volume; asserted, not scanned for.
-    v = volume('frus1952-54v09p1')
-    require('Hashe\u2013Mite Kingdom' in re.sub(r'\s+', ' ', v.line_text(67638) + v.line_text(67639)),
-            'frus1952-54v09p1: the ch4 heading no longer reads Hashe-Mite')
-    add('heading-misprint', v, 67638, 'ch4', 'United States Relations with Israel, the Hashe\u2013Mite Kingdom of Jordan',
-        '"Hashe\u2013Mite" for "Hashemite" in the chapter heading.')
+    # Three statements the report makes about one volume each, asserted where that volume is read. The
+    # self-test's synthetic corpus holds none of them; main() refuses a corpus that lacks one (NAMED).
+    # The heading is one misprint met while reading section 1's volume; it is asserted, not scanned for.
+    if 'frus1952-54v09p1.xml' in volume_files():
+        v = volume('frus1952-54v09p1')
+        require('Hashe\u2013Mite Kingdom' in re.sub(r'\s+', ' ', v.line_text(67638) + v.line_text(67639)),
+                'frus1952-54v09p1: the ch4 heading no longer reads Hashe-Mite')
+        add('heading-misprint', v, 67638, 'ch4', 'United States Relations with Israel, the Hashe\u2013Mite Kingdom of Jordan',
+            '"Hashe\u2013Mite" for "Hashemite" in the chapter heading.')
     require(files > 0 and rows and glued_rows, 'the transcription scan read nothing')
     for kind in ('unbalanced-parenthesis', 'viei-for-viet', 'no-stop-before-classification', 'doubled-full-stop',
-                 'department-of-state-misspelt'):
+                 'department-of-state-misspelt', 'central-files-year-glued', 'no-space-before-classification',
+                 'central-files-label'):
         require(c[kind] > 0, 'the transcription scan found no %s' % kind)
-    v16 = [r for r in rows if r['class'] == 'unbalanced-parenthesis' and r['volume'] == 'frus1981-88v16']
-    require(len(v16) == 1 and v16[0]['element'] == 'd395fn4', 'frus1981-88v16 d395fn4 no longer holds the doubled )')
+    if 'frus1981-88v16.xml' in volume_files():
+        v16 = [r for r in rows if r['class'] == 'unbalanced-parenthesis' and r['volume'] == 'frus1981-88v16']
+        require(len(v16) == 1 and v16[0]['element'] == 'd395fn4', 'frus1981-88v16 d395fn4 no longer holds the doubled )')
+    if 'frus1961-63v03.xml' in volume_files():  # section 6.3 names the two volumes
+        top = collections.Counter(r['volume'] for r in rows if r['class'] == 'no-stop-before-classification')
+        require({name for name, _ in top.most_common(2)} == {'frus1961-63v03', 'frus1961-63v04'},
+                'the notes with no stop before the classification are no longer mostly in frus1961-63v03 and v04')
+    viei_notes = c.pop('viei-in-source-note', 0)
+    stop = [r for r in rows if r['class'] == 'no-stop-before-classification']
+    stop_top = collections.Counter(r['volume'] for r in stop).most_common(2)
     counts['transcription'] = {
-        'filesRead': files, 'byClass': {k: {'rows': c[k], 'volumes': len(vols[k])} for k in sorted(c)},
+        'filesRead': files, 'rows': len(rows),
+        'byClass': {k: {'rows': c[k], 'volumes': len(vols[k])} for k in sorted(c)},
+        'vieiSourceNotes': viei_notes, 'vieiElsewhere': c['viei-for-viet'] - viei_notes,
+        'noStopTopTwoVolumes': [name for name, _ in stop_top], 'noStopInTopTwoVolumes': sum(n for _, n in stop_top),
+        'notesWithAnUnmatchedCloser': {'notes': stray_notes, 'volumes': len(stray_volumes),
+                                       'reported': c['unbalanced-parenthesis']},
         'gluedCommaGloss': {'sites': glued_total['comma'], 'files': glued_files['comma']},
         'gluedCommaPersName': {'sites': glued_total['comma_persName'], 'files': glued_files['comma_persName']},
         'gluedSemicolonGloss': {'sites': glued_total['semicolon'], 'files': glued_files['semicolon']},
@@ -1292,19 +1404,25 @@ def headers(counts, rows):
 # ---------------------------------------------------------------------------------------------
 
 def figure_sentences(n):
+    """Every sentence of Part A that states a figure of the run, as the run would write it."""
     x, p, s, d, t = n['crossReferences'], n['pagination']['byClass'], n['structure'], n['dates'], n['transcription']
-    tc = t['byClass']
+    g, tc, cause = n['gap'], t['byClass'], x['byCause']
+    first_missing, last_missing = int(g['lastDocument'][1:]) + 1, int(g['part2FirstDocument'][1:]) - 1
     return [
         '%d files' % n['filesRead'],
-        'Documents 900–946',
+        'Documents %d–%d' % (first_missing, last_missing),
+        'The last %d documents' % (last_missing - first_missing + 1),
         '%d of the %d broken references' % (x['gapRows'], x['generatorRows']),
         '%d distinct pages' % x['gapDistinctPages'],
         '%d edits in %d volumes' % (s['edits'], s['volumes']),
         '%d confirmed in %d volumes' % (s['confirmed'], s['confirmedVolumes']),
         '%d questions in %d volumes' % (s['questions'], s['questionVolumes']),
         '%d Sources lists' % n['sourcesLists']['volumes'],
+        '`sources-lists.csv` has the %d rows' % n['sourcesLists']['rows'],
         '%d rows in %d volumes' % (n['pagination']['rows'], n['pagination']['volumes']),
-        '%d adjacent pairs in %d volumes' % (p['reversed-pair']['rows'], p['reversed-pair']['volumes']),
+        '%d pairs in %d volumes' % (p['reversed-pair']['rows'], p['reversed-pair']['volumes']),
+        'In %d the two divisions are adjacent' % n['pagination']['reversedPairsAdjacent'],
+        'In the other %d' % n['pagination']['reversedPairsWithADivisionBetween'],
         'an editorial note in all %d' % n['pagination']['reversedPairsSecondIsEditorialNote'],
         'both are editorial notes in %d' % n['pagination']['reversedPairsBothEditorialNotes'],
         'the only gap among the %d' % n['parts']['continuousPairs'],
@@ -1312,20 +1430,66 @@ def figure_sentences(n):
                                                 p['missing-break']['volumes']),
         '%d page ids in %d volumes' % (p['malformed-id']['rows'], p['malformed-id']['volumes']),
         '%d breaks in %d volumes' % (p['wrong-facs']['rows'], p['wrong-facs']['volumes']),
+        '`cross-references.csv` has %d rows' % (x['defects'] + x['notDefects']),
         '%d references to %d index ids' % (x['indexIdRows'], x['indexIdDistinctTargets']),
         '%d rows are defects' % x['defects'],
         '%d are not defects' % x['notDefects'],
+        'The wrong volume | %d |' % cause['wrong-volume'],
+        'A mistyped page number | %d |' % cause['page-number-typo'],
+        'names the likely page for %d' % x['pageNumberTyposWithALikelyPage'],
+        'A page past the end of the volume cited | %d |' % cause['page-beyond-volume'],
+        'A target with no `#` | %d |' % cause['missing-hash'],
+        '`dates.csv` has %d rows in %d volumes' % (d['rows'], d['volumes']),
         '%d documents in %d volumes' % (d['byClass']['year-contradicts-text']['rows'],
                                         d['byClass']['year-contradicts-text']['volumes']),
         '%d of them are in frus1891' % d['yearContradictsTextInFrus1891'],
         '%d more documents' % d['byClass']['year-contradicts-file-number']['rows'],
+        'In %d of them the text and the attribute agree' % d['fileNumberRowsPrintingTheEncodedYear'],
+        'In %d the dateline prints no year' % d['fileNumberRowsPrintingNoYear'],
         '%d document and %d divisions' % (d['invertedDocuments'], d['invertedDivisions']),
-        '%d notes in %d volumes' % (tc['unbalanced-parenthesis']['rows'], tc['unbalanced-parenthesis']['volumes']),
+        '`transcription.csv` has %d rows' % t['rows'],
         '%s sites in %d files' % (format(t['gluedCommaGloss']['sites'], ','), t['gluedCommaGloss']['files']),
+        'occurs %d times in %d files' % (t['gluedSemicolonGloss']['sites'], t['gluedSemicolonGloss']['files']),
+        'each of the %d files' % t['gluedFiles'],
+        '%d source notes in %d volumes' % (tc['central-files-year-glued']['rows'], tc['central-files-year-glued']['volumes']),
+        '%d notes in %d volumes' % (tc['unbalanced-parenthesis']['rows'], tc['unbalanced-parenthesis']['volumes']),
+        '%d source notes have no full stop' % tc['no-stop-before-classification']['rows'],
+        '%d of the %d are in these two volumes' % (t['noStopInTopTwoVolumes'], tc['no-stop-before-classification']['rows']),
+        '%d source notes read "S VIEI"' % t['vieiSourceNotes'],
+        'stands %d more time' % t['vieiElsewhere'],
+        '%d source notes have a doubled full stop' % tc['doubled-full-stop']['rows'],
+        '%d have no space between the full stop' % tc['no-space-before-classification']['rows'],
+        '%d misspell the label' % tc['central-files-label']['rows'],
         '%d datelines in %d volumes' % (tc['department-of-state-misspelt']['rows'],
                                         tc['department-of-state-misspelt']['volumes']),
+        '`headers.csv` has %d rows' % (n['headers']['publishedChangeUndated'] + n['headers']['appendixTitleRows']),
         '%d files carry' % n['headers']['publishedChangeUndated'],
+        'The other %d that have' % n['headers']['publishedChangeDated'],
     ]
+
+
+def missing_figures(sentences, report):
+    """The figure sentences the report does not carry, and the reason when it cannot be read at all.
+
+    Each sentence is looked for in PART A only (Part B repeats some figures, and a figure standing
+    only there is not one the Office of the Historian will read), and as a whole figure: where a
+    sentence begins or ends with a number, a longer number that merely contains it does not count,
+    so "1 files carry" is not found in "11 files carry", nor "4 datelines" in "34 datelines", nor
+    "13 sites" in "1,213 sites". The preamble above Part A must state how many sentences there are.
+    """
+    opens, closes = report.find('\n# Part A'), report.find('\n# Part B')
+    if opens < 0 or closes < opens:
+        return None, 'the report has no "# Part A" heading followed by a "# Part B" heading'
+    preamble, part_a = report[:opens], report[opens:closes]
+
+    def carried(sentence, text):
+        return re.search(r'(?<![\d,.])' + re.escape(sentence) + r'(?![\d])(?![,.]\d)', text) is not None
+
+    absent = [sentence for sentence in sentences if not carried(sentence, part_a)]
+    stated = '%d figure sentences' % len(sentences)
+    if not carried(stated, preamble):
+        absent.append(stated + ' (in the lines above Part A)')
+    return absent, None
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1339,10 +1503,36 @@ def write_csv(path, rows, columns=None):
             writer.writerow(row)
 
 
+USAGE = 'usage: build_oh_report.py [--check REPORT.md]'
+
+# Volumes a scan asserts a sentence of the report about, each "if the file is read". A corpus without
+# one would skip that assertion in silence, so the run requires them all before it scans.
+NAMED = ('frus1891', 'frus1952-54v09p1', 'frus1961-63v03', 'frus1981-88v16')
+
+
+def report_to_check(argv):
+    """The text of the report named by `--check FILE`, or None when no argument is given.
+
+    Anything else stops the run before it reads the corpus: `--check` with no file, the file before
+    the flag, a file that does not exist, an unknown flag. Each used to run to the end with no check
+    made and no word said.
+    """
+    arguments = argv[1:]
+    if not arguments:
+        return None
+    if len(arguments) != 2 or arguments[0] != '--check':
+        sys.exit('NOT WRITTEN: unrecognised arguments %s\n%s' % (arguments, USAGE))
+    if not os.path.isfile(arguments[1]):
+        sys.exit('NOT WRITTEN: --check names no file: %s\n%s' % (arguments[1], USAGE))
+    return open(arguments[1], encoding='utf-8').read()
+
+
 def main(argv):
+    report = report_to_check(argv)
     commit = os.environ.get('CORPUS_COMMIT')
     if not commit:
-        sys.exit('CORPUS_COMMIT is required: every line number in the report is relative to one corpus revision.')
+        sys.exit('NOT WRITTEN: CORPUS_COMMIT is required: every line number in the report is relative to one '
+                 'corpus revision.')
     out_dir = os.environ.get('OUT_DIR', os.path.join(REPO, 'Planning', 'OH-Report-2026-10-01'))
     xref_csv = os.environ.get('XREF_CSV', os.path.join(REPO, 'Planning', 'cross-ref-validation', 'broken-refs-report.csv'))
     manifest = os.environ.get('MANIFEST', os.path.join(REPO, 'FRUSExplorer', 'Resources', 'manifest.json'))
@@ -1352,6 +1542,8 @@ def main(argv):
     withdrawn = []
     try:
         require(counts['filesRead'] > 0, 'no volumes under %s' % ohlib.VOLUMES_DIR)
+        absent = [name for name in NAMED if name + '.xml' not in volume_files()]
+        require(not absent, 'the corpus under %s lacks %s, which the report names' % (ohlib.VOLUMES_DIR, absent))
         gap(counts, tables['gap'])
         structure(counts, tables['structure'], withdrawn)
         sources_lists(counts, tables['sources'])
@@ -1373,11 +1565,13 @@ def main(argv):
         sys.exit('NOT WRITTEN: %s' % failure)
     counts['structure']['withdrawn'] = [{'volume': a, 'element': b, 'reason': c} for a, b, c in withdrawn]
     sentences = figure_sentences(counts)
-    if len(argv) > 2 and argv[1] == '--check':
-        report = open(argv[2], encoding='utf-8').read()
-        absent = [s for s in sentences if s not in report]
+    counts['figureSentences'] = len(sentences)
+    if report is not None:
+        absent, unreadable = missing_figures(sentences, report)
+        if unreadable:
+            sys.exit('NOT WRITTEN: %s' % unreadable)
         if absent:
-            sys.exit('NOT WRITTEN: the report does not carry these figures of this run: %s' % absent)
+            sys.exit('NOT WRITTEN: Part A of the report does not carry these figures of this run: %s' % absent)
     os.makedirs(out_dir, exist_ok=True)
     if tables['gap']:
         write_csv(os.path.join(out_dir, 'missing-documents.csv'), tables['gap'])
@@ -1393,7 +1587,7 @@ def main(argv):
         json.dump(counts, handle, indent=2, sort_keys=True, ensure_ascii=False)
         handle.write('\n')
     print(json.dumps(counts, indent=2, sort_keys=True, ensure_ascii=False))
-    print('\nFigure sentences of this run:')
+    print('\nFigure sentences of this run%s:' % ('' if report is None else ', each found in Part A of the report'))
     for sentence in sentences:
         print('  ' + sentence)
 

@@ -36,6 +36,7 @@
     "indexIdDistinctTargets": 93,
     "indexIdRows": 248,
     "notDefects": 8,
+    "pageNumberTyposWithALikelyPage": 13,
     "refTargetsScanned": 2714283
   },
   "dates": {
@@ -54,8 +55,12 @@
       }
     },
     "documentsRead": 314571,
+    "fileNumberRowsPrintingNoYear": 1,
+    "fileNumberRowsPrintingTheEncodedYear": 12,
     "invertedDivisions": 19,
     "invertedDocuments": 1,
+    "rows": 205,
+    "volumes": 89,
     "yearContradictsTextInFrus1891": 48,
     "yearContradictsTextTopVolumes": [
       [
@@ -84,6 +89,7 @@
       ]
     ]
   },
+  "figureSentences": 53,
   "filesRead": 744,
   "gap": {
     "documentsBefore": 946,
@@ -147,8 +153,14 @@
     },
     "filesRead": 552,
     "missingPages": 13,
+    "reversedPairsAdjacent": 18,
     "reversedPairsBothEditorialNotes": 18,
     "reversedPairsSecondIsEditorialNote": 20,
+    "reversedPairsWithADivisionBetween": 2,
+    "reversedPairsWithADivisionBetweenWhere": [
+      "frus1949v06: d196, then d197, then d198",
+      "frus1949v06: d1063, then d1064, then d1065"
+    ],
     "rows": 73,
     "volumes": 51
   },
@@ -206,13 +218,17 @@
         "rows": 2,
         "volumes": 2
       },
+      "central-files-year-glued": {
+        "rows": 5,
+        "volumes": 2
+      },
       "department-of-state-misspelt": {
-        "rows": 34,
-        "volumes": 23
+        "rows": 30,
+        "volumes": 22
       },
       "doubled-full-stop": {
-        "rows": 8,
-        "volumes": 6
+        "rows": 10,
+        "volumes": 8
       },
       "heading-misprint": {
         "rows": 1,
@@ -227,11 +243,11 @@
         "volumes": 4
       },
       "unbalanced-parenthesis": {
-        "rows": 22,
-        "volumes": 17
+        "rows": 16,
+        "volumes": 14
       },
       "viei-for-viet": {
-        "rows": 13,
+        "rows": 14,
         "volumes": 2
       }
     },
@@ -248,7 +264,20 @@
     "gluedSemicolonGloss": {
       "files": 57,
       "sites": 327
-    }
+    },
+    "noStopInTopTwoVolumes": 83,
+    "noStopTopTwoVolumes": [
+      "frus1961-63v03",
+      "frus1961-63v04"
+    ],
+    "notesWithAnUnmatchedCloser": {
+      "notes": 247,
+      "reported": 16,
+      "volumes": 140
+    },
+    "rows": 169,
+    "vieiElsewhere": 1,
+    "vieiSourceNotes": 13
   },
   "wellFormedFiles": 744
 }

@@ -17,23 +17,23 @@ wrong-volume,confirmed,frus1913,,frus1913.xml,73227,5119370,frus1906p1#pg_1432,"
 page-beyond-volume,question,frus1913,d1456,frus1913.xml,123414,8941679,frus1897#pg_1076,"1897, page 1076",frus1887#pg_1076,"frus1897 ends at p. 610. Bayard to Kloss, on the protection of Swiss citizens, is on p. 1076 of 1887."
 wrong-volume,confirmed,frus1913,,frus1913.xml,142750,10468909,frus1888#pg_1544,"For. Rel. 1888, p. 1544",frus1888p2#pg_1544,No frus1888 exists; p. 1544 is in Part 2.
 page-number-typo,question,frus1913,,frus1913.xml,147788,10820480,#pg_3413,3413,frus1913#pg_1413,The range reads 1375-3413; the volume ends at p. 1444.
-wrong-volume,confirmed,frus1914-20v02,d92,frus1914-20v02.xml,18056,1167863,frus1917Supp01v01#pg_805,"Ibid. , p. 805",frus1918Supp01v01#pg_805,"Ibid. follows a citation of Foreign Relations, 1918, supp. 1, vol. I; telegram 1635 is on this page."
+wrong-volume,confirmed,frus1914-20v02,d92,frus1914-20v02.xml,18056,1167863,frus1917Supp01v01#pg_805,"Ibid., p. 805",frus1918Supp01v01#pg_805,"Ibid. follows a citation of Foreign Relations, 1918, supp. 1, vol. I; telegram 1635 is on this page."
 page-number-typo,question,frus1917Supp02v02,,frus1917Supp02v02.xml,51834,3790644,#pg_1518,1518,frus1917Supp02v02#pg_1158,The range reads 1154-1518; the volume ends at p. 1323.
 letter-case,confirmed,frus1918,,frus1918.xml,96252,7309936,#pg_xviii,xviii,frus1918#pg_XVIII,The id is pg_XVIII; the target writes pg_xviii.
 page-number-typo,question,frus1919Parisv07,,frus1919Parisv07.xml,61717,5019474,#pg_5921,5921,frus1919Parisv07#pg_592,The range reads 590-5921.
-not-a-defect-forward-reference,not-a-defect,frus1919Parisv12,d10,frus1919Parisv12.xml,12581,766661,frus1900-18Index#pg_420,"Foreign Relations , General Index, 1900–1918, p. 420",,The target volume is not yet digitized: its file holds no documents and no pages.
-wrong-volume,confirmed,frus1923v01,d125,frus1923v01.xml,27921,2058302,frus1907p1#pg_1239,"Foreign Relations , 1907, pt. 1, p. 1239",frus1907p2#pg_1239,"The text reads ""pt. 1"", which ends at p. 587; the Hague convention cited is on p. 1239 of Part 2."
-wrong-volume,question,frus1923v02,d775,frus1923v02.xml,69576,5648987,frus1873p2v3#pg_1100,"Pt. ii , pp. 1100",frus1873p1v2#pg_1100,"frus1873p2v3 ends at p. 424. In the other two citations of ""1873, part 2"" the page is in frus1873p1v2."
-page-beyond-volume,question,frus1928v02,d931,frus1928v02.xml,72156,5928518,frus1910#pg_1000,"Foreign Relations , 1910, p. 1000",,frus1910 ends at p. 884; the instruction cited is dated 1912.
-wrong-volume,confirmed,frus1928v02,d937,frus1928v02.xml,72875,5991397,frus1907p2#pg_548,"Ibid ., 1907, pt. ii , p. 548",frus1907p1#pg_548,Part 2 begins at p. 589; the Borneo correspondence cited is on p. 548 of Part 1.
-not-a-defect-forward-reference,not-a-defect,frus1932v05,d597,frus1932v05.xml,59638,4202662,frus1900-18Index#pg_202,"Foreign Relations , General Index, 1900–1918, p. 202",,The target volume is not yet digitized: its file holds no documents and no pages.
+not-a-defect-forward-reference,not-a-defect,frus1919Parisv12,d10,frus1919Parisv12.xml,12581,766661,frus1900-18Index#pg_420,"Foreign Relations, General Index, 1900–1918, p. 420",,The target volume is not yet digitized: its file holds no documents and no pages.
+wrong-volume,confirmed,frus1923v01,d125,frus1923v01.xml,27921,2058302,frus1907p1#pg_1239,"Foreign Relations, 1907, pt. 1, p. 1239",frus1907p2#pg_1239,"The text reads ""pt. 1"", which ends at p. 587; the Hague convention cited is on p. 1239 of Part 2."
+wrong-volume,question,frus1923v02,d775,frus1923v02.xml,69576,5648987,frus1873p2v3#pg_1100,"Pt. ii, pp. 1100",frus1873p1v2#pg_1100,"frus1873p2v3 ends at p. 424. In the other two citations of ""1873, part 2"" the page is in frus1873p1v2."
+page-beyond-volume,question,frus1928v02,d931,frus1928v02.xml,72156,5928518,frus1910#pg_1000,"Foreign Relations, 1910, p. 1000",,frus1910 ends at p. 884; the instruction cited is dated 1912.
+wrong-volume,confirmed,frus1928v02,d937,frus1928v02.xml,72875,5991397,frus1907p2#pg_548,"Ibid., 1907, pt. ii, p. 548",frus1907p1#pg_548,Part 2 begins at p. 589; the Borneo correspondence cited is on p. 548 of Part 1.
+not-a-defect-forward-reference,not-a-defect,frus1932v05,d597,frus1932v05.xml,59638,4202662,frus1900-18Index#pg_202,"Foreign Relations, General Index, 1900–1918, p. 202",,The target volume is not yet digitized: its file holds no documents and no pages.
 page-number-typo,question,frus1933v03,,frus1933v03.xml,59782,4809317,#pg_878,878,frus1933v03#pg_378,The range reads 377-878; the volume ends at p. 794.
 page-number-typo,question,frus1933v03,,frus1933v03.xml,61613,4977797,#pg_871,871,frus1933v03#pg_371,The range reads 370-871; the volume ends at p. 794.
-not-a-defect-forward-reference,not-a-defect,frus1933v04,d56,frus1933v04.xml,17649,1199452,frus1900-18Index#pg_202,"Foreign Relations , General Index, 1900–1918, p. 202",,The target volume is not yet digitized: its file holds no documents and no pages.
-not-a-defect-forward-reference,not-a-defect,frus1933v04,d56,frus1933v04.xml,17982,1229112,frus1900-18Index#pg_202,"Foreign Relations , General Index, 1900–1918, p. 202",,The target volume is not yet digitized: its file holds no documents and no pages.
-not-a-defect-forward-reference,not-a-defect,frus1933v04,d68,frus1933v04.xml,23365,1725479,frus1900-18Index#pg_420,"ibid. , General Index, 1900–1918, p. 420",,The target volume is not yet digitized: its file holds no documents and no pages.
+not-a-defect-forward-reference,not-a-defect,frus1933v04,d56,frus1933v04.xml,17649,1199452,frus1900-18Index#pg_202,"Foreign Relations, General Index, 1900–1918, p. 202",,The target volume is not yet digitized: its file holds no documents and no pages.
+not-a-defect-forward-reference,not-a-defect,frus1933v04,d56,frus1933v04.xml,17982,1229112,frus1900-18Index#pg_202,"Foreign Relations, General Index, 1900–1918, p. 202",,The target volume is not yet digitized: its file holds no documents and no pages.
+not-a-defect-forward-reference,not-a-defect,frus1933v04,d68,frus1933v04.xml,23365,1725479,frus1900-18Index#pg_420,"ibid., General Index, 1900–1918, p. 420",,The target volume is not yet digitized: its file holds no documents and no pages.
 page-number-typo,question,frus1937v04,,frus1937v04.xml,62946,5275865,#pg_920,920,frus1937v04#pg_820,"The run reads 819-920, 821, 822; the volume ends at p. 911."
-page-beyond-volume,question,frus1939v04,,frus1939v04.xml,34788,2838795,frus1938v04#pg_662,"Foreign Relations , 1938, vol. iv , pp. 662",,frus1938v04 ends at p. 638.
+page-beyond-volume,question,frus1939v04,,frus1939v04.xml,34788,2838795,frus1938v04#pg_662,"Foreign Relations, 1938, vol. iv, pp. 662",,frus1938v04 ends at p. 638.
 page-number-typo,question,frus1944v03,,frus1944v03.xml,113649,9081272,#pg_4276,4276,frus1944v03#pg_1276,The range reads 1275-4276.
 page-number-typo,question,frus1944v04,,frus1944v04.xml,104529,8212392,#pg_12227,12227,frus1944v04#pg_1227,The range reads 1226-12227.
 index-id-never-assigned,confirmed,frus1945-50Intel,,frus1945-50Intel.xml,73807,5873574,#in3,Joint Chiefs of Staff,,"An index ""See"" reference to an entry id the index does not carry."
@@ -124,9 +124,9 @@ index-id-never-assigned,confirmed,frus1945-50Intel,,frus1945-50Intel.xml,78467,6
 index-id-never-assigned,confirmed,frus1945-50Intel,,frus1945-50Intel.xml,78723,6287843,#in9,Intelligence Advisory Board,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1945-50Intel,,frus1945-50Intel.xml,78724,6287925,#in3,Joint Chiefs of Staff,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1945-50Intel,,frus1945-50Intel.xml,78725,6288001,#in41,Strategic Services Unit,,"An index ""See"" reference to an entry id the index does not carry."
-not-a-defect-forward-reference,not-a-defect,frus1945v01,d310,frus1945v01.xml,114070,9074545,frus1900-18Index#pg_316,"Foreign Relations , General Index, 1900–1918, p. 316",,The target volume is not yet digitized: its file holds no documents and no pages.
-wrong-volume,confirmed,frus1946v08,,frus1946v08.xml,55372,4549612,frus1946v06#pg_1158,"Foreign Relations , 1946, vol. vi , pp. 1158",frus1945v06#pg_1158,"The text reads 1946, vol. VI, which ends at p. 993; the Netherlands East Indies compilation the note calls ""previous documentation"" begins on p. 1158 of 1945, vol. VI."
-page-beyond-volume,question,frus1951v02,d764,frus1951v02.xml,102281,8117828,frus1950v01#pg_1245,"vol. i , pp. 1245",,frus1950v01 ends at p. 952.
+not-a-defect-forward-reference,not-a-defect,frus1945v01,d310,frus1945v01.xml,114070,9074545,frus1900-18Index#pg_316,"Foreign Relations, General Index, 1900–1918, p. 316",,The target volume is not yet digitized: its file holds no documents and no pages.
+wrong-volume,confirmed,frus1946v08,,frus1946v08.xml,55372,4549612,frus1946v06#pg_1158,"Foreign Relations, 1946, vol. vi, pp. 1158",frus1945v06#pg_1158,"The text reads 1946, vol. VI, which ends at p. 993; the Netherlands East Indies compilation the note calls ""previous documentation"" begins on p. 1158 of 1945, vol. VI."
+page-beyond-volume,question,frus1951v02,d764,frus1951v02.xml,102281,8117828,frus1950v01#pg_1245,"vol. i, pp. 1245",,frus1950v01 ends at p. 952.
 missing-hash,confirmed,frus1951v03p2,,frus1951v03p2.xml,68023,5418206,pg_1602,1602,frus1951v03p2#pg_1602,"target=""pg_1602"" lacks the #."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,99148,8424343,#in1,“The Chance for Peace” speech,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,99181,8427047,#in2,Disarmament,,"An index ""See"" reference to an entry id the index does not carry."
@@ -150,7 +150,7 @@ index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,104153,8852
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,104234,8859415,#in50,Labor Service Organization,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,104234,8859469,#in49,Volunteer Freedom Corps,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,104426,8876289,#in27,“Doctors’ plot”,,"An index ""See"" reference to an entry id the index does not carry."
-index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,104459,8879308,#in28,Stalin ’s illness and death,,"An index ""See"" reference to an entry id the index does not carry."
+index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,104459,8879308,#in28,Stalin’s illness and death,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,105050,8930873,#in30,Balkan Pact,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,105052,8931039,#in30,Balkan Pact,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1952-54v08,,frus1952-54v08.xml,105055,8931253,#in30,Balkan Pact,,"An index ""See"" reference to an entry id the index does not carry."
@@ -192,7 +192,7 @@ target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64528,5
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64594,5387209,frus1952-54v09p1#pg_1668,1668,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64595,5387305,frus1952-54v09p1#pg_1669,1669,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64758,5399596,frus1952-54v09p1#pg_1732,1732,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64798,5402320,frus1952-54v09p1#pg_1727,1727 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64798,5402320,frus1952-54v09p1#pg_1727,1727n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64865,5407120,frus1952-54v09p1#pg_1724,1724,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64866,5407200,frus1952-54v09p1#pg_1725,1725,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,64926,5411796,frus1952-54v09p1#pg_1667,1667,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
@@ -207,12 +207,12 @@ target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,65836,5
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,65979,5496172,frus1952-54v09p1#pg_1715,1715,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,65980,5496260,frus1952-54v09p1#pg_1717,1717,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,65999,5497872,frus1952-54v09p1#pg_1663,1663,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66000,5497973,frus1952-54v09p1#pg_1680,1680 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66000,5497973,frus1952-54v09p1#pg_1680,1680n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66002,5498148,frus1952-54v09p1#pg_1692,1692,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66075,5504573,frus1952-54v09p1#pg_1707,1707,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66102,5506927,frus1952-54v09p1#pg_1666,1666,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66103,5507023,frus1952-54v09p1#pg_1668,1668,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66104,5507118,frus1952-54v09p1#pg_1703,1703 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66104,5507118,frus1952-54v09p1#pg_1703,1703n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66106,5507286,frus1952-54v09p1#pg_1738,1738,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66107,5507382,frus1952-54v09p1#pg_1739,1739,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,66108,5507477,frus1952-54v09p1#pg_1741,1741,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
@@ -309,8 +309,8 @@ target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68121,5
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68122,5670235,frus1952-54v09p1#pg_1680,1680,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68123,5670331,frus1952-54v09p1#pg_1682,1682,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68124,5670427,frus1952-54v09p1#pg_1692,1692,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68156,5673219,frus1952-54v09p1#pg_1692,1692 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68157,5673343,frus1952-54v09p1#pg_1693,1693 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68156,5673219,frus1952-54v09p1#pg_1692,1692n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68157,5673343,frus1952-54v09p1#pg_1693,1693n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 index-id-never-assigned,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68356,5689872,#in6,Israel,,"An index ""See"" reference to an entry id the index does not carry."
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68375,5691587,frus1952-54v09p1#pg_1662,1662,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68376,5691674,frus1952-54v09p1#pg_1680,1680,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
@@ -320,16 +320,16 @@ target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68475,5
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68763,5723615,frus1952-54v09p1#pg_1661,1661,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68764,5723694,frus1952-54v09p1#pg_1679,1679,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68811,5727397,frus1952-54v09p1#pg_1692,1692,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68812,5727484,frus1952-54v09p1#pg_1703,1703 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68812,5727484,frus1952-54v09p1#pg_1703,1703n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,68913,5735133,frus1952-54v09p1#pg_1721,1721,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69158,5754117,frus1952-54v09p1#pg_1706,1706,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69159,5754197,frus1952-54v09p1#pg_1707,1707,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69160,5754276,frus1952-54v09p1#pg_1727,1727 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69160,5754276,frus1952-54v09p1#pg_1727,1727n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69331,5767675,frus1952-54v09p1#pg_1741,1741,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69565,5785250,frus1952-54v09p1#pg_1708,1708 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69565,5785250,frus1952-54v09p1#pg_1708,1708n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69589,5787197,frus1952-54v09p1#pg_1672,1672,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69589,5787249,frus1952-54v09p1#pg_1674,1674,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69687,5794830,frus1952-54v09p1#pg_1676,1676 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69687,5794830,frus1952-54v09p1#pg_1676,1676n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69689,5794961,frus1952-54v09p1#pg_1719,1719,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69689,5795012,frus1952-54v09p1#pg_1723,1723,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,69737,5798345,frus1952-54v09p1#pg_1731,1731,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
@@ -353,8 +353,8 @@ target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70619,5
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70620,5870264,frus1952-54v09p1#pg_1700,1700,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70621,5870360,frus1952-54v09p1#pg_1707,1707,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70622,5870457,frus1952-54v09p1#pg_1714,1714,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70644,5872475,frus1952-54v09p1#pg_1692,1692 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70645,5872599,frus1952-54v09p1#pg_1693,1693 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70644,5872475,frus1952-54v09p1#pg_1692,1692n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70645,5872599,frus1952-54v09p1#pg_1693,1693n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70823,5887357,frus1952-54v09p1#pg_1736,1736,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70824,5887454,frus1952-54v09p1#pg_1737,1737,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,70916,5895351,frus1952-54v09p1#pg_1727,1727,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
@@ -510,7 +510,7 @@ target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,77978,6
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,77979,6462068,frus1952-54v09p1#pg_1718,1718,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78008,6464493,frus1952-54v09p1#pg_1727,1727,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78009,6464581,frus1952-54v09p1#pg_1730,1730,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
-target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78212,6480030,frus1952-54v09p1#pg_1727,1727 n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
+target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78212,6480030,frus1952-54v09p1#pg_1727,1727n,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 missing-hash,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78230,6481433,pg_1743,1743,frus1952-54v09p2#pg_1743,"target=""pg_1743"" lacks the #."
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78429,6496691,frus1952-54v09p1#pg_1683,1683,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
 target-in-missing-pages,confirmed,frus1952-54v09p2,,frus1952-54v09p2.xml,78430,6496779,frus1952-54v09p1#pg_1685,1685,,Resolves once Documents 900-946 are restored to frus1952-54v09p1.
@@ -647,8 +647,8 @@ index-id-never-assigned,confirmed,frus1961-63v10,,frus1961-63v10.xml,76867,62376
 index-id-never-assigned,confirmed,frus1961-63v10,,frus1961-63v10.xml,76894,6239970,#in2,Latin American support,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1961-63v10,,frus1961-63v10.xml,76905,6240846,#in26,Propaganda,,"An index ""See"" reference to an entry id the index does not carry."
 index-id-never-assigned,confirmed,frus1961-63v10,,frus1961-63v10.xml,77018,6250092,#in16,Bay of Pigs operation,,"An index ""See"" reference to an entry id the index does not carry."
-not-a-defect-forward-reference,not-a-defect,frus1961-63v24,d6,frus1961-63v24.xml,11060,635126,frus1958-60v15-16mSupp2#d702,"Foreign Relations , 1958–1960, vol. XV/XVI, Microfiche Supplement, Part 2, Document 702",,The target volume is not yet digitized: its file holds no documents and no pages.
+not-a-defect-forward-reference,not-a-defect,frus1961-63v24,d6,frus1961-63v24.xml,11060,635126,frus1958-60v15-16mSupp2#d702,"Foreign Relations, 1958–1960, vol. XV/XVI, Microfiche Supplement, Part 2, Document 702",,The target volume is not yet digitized: its file holds no documents and no pages.
 not-a-defect-forward-reference,not-a-defect,frus1964-68v21,d54,frus1964-68v21.xml,17427,1178771,frus1961-63v17-21mSupp#d289,"Document 289 in the microfiche supplement for Foreign Relations, 1961–1963: Near East; Africa",,The target volume is not yet digitized: its file holds no documents and no pages.
-wrong-volume,confirmed,frus1981-88v01,d303,frus1981-88v01.xml,92377,7803861,frus1981-88v40#d17,"Foreign Relations , 1969–1976, vol. XL, Germany and Berlin, 1969–1972, Document 17",frus1969-76v40#d17,"The text cites Foreign Relations, 1969-1976, vol. XL; the target names 1981-88."
-wrong-volume,confirmed,frus1981-88v11,d247,frus1981-88v11.xml,75139,6124771,frus1981-88v32#d316,"Foreign Relations , 1969–1976, vol. XXXII, SALT I, 1969–1972, Document 316",frus1969-76v32#d316,"The text cites Foreign Relations, 1969-1976, vol. XXXII; the target names 1981-88."
-missing-underscore,confirmed,frus1955-57v11,,frus1955-57v11.xml,52316,4324895,#pg101,101 n,frus1955-57v11#pg_101,"The underscore is missing. FRUS Explorer reads pgN as pg_N, so the link works there."
+wrong-volume,confirmed,frus1981-88v01,d303,frus1981-88v01.xml,92377,7803861,frus1981-88v40#d17,"Foreign Relations, 1969–1976, vol. XL, Germany and Berlin, 1969–1972, Document 17",frus1969-76v40#d17,"The text cites Foreign Relations, 1969-1976, vol. XL; the target names 1981-88."
+wrong-volume,confirmed,frus1981-88v11,d247,frus1981-88v11.xml,75139,6124771,frus1981-88v32#d316,"Foreign Relations, 1969–1976, vol. XXXII, SALT I, 1969–1972, Document 316",frus1969-76v32#d316,"The text cites Foreign Relations, 1969-1976, vol. XXXII; the target names 1981-88."
+missing-underscore,confirmed,frus1955-57v11,,frus1955-57v11.xml,52316,4324895,#pg101,101n,frus1955-57v11#pg_101,"The underscore is missing. FRUS Explorer reads pgN as pg_N, so the link works there."
