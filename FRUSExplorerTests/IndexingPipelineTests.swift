@@ -2493,11 +2493,13 @@ struct W17RouteArmsTests {
 /// first shows the fallback had something to serve — the anchor resolves to the "Central Files"
 /// record in the BUNDLED authority, and that record's names match the comma-worded documents —
 /// so an empty answer is the rule's doing, not a fixture the fallback could never have reached.
-/// The controls are a library collection and a named series, which get their alias neighbours as
-/// before. The last test asks `aliasFallbackServes` itself, one note per arm.
+/// The controls are a library collection, a named series and a lot file, which get their alias
+/// neighbours as before. The last test asks `aliasFallbackServes` itself, one note per arm.
 ///
 /// Version history:
 ///   1.0 — 2026-10-02 (#1543, landing round 2): initial implementation
+///   1.1 — 2026-10-02 (#1543, landing round 3): the lot-file control, end to end; until it the
+///          lot file had only its two fixtures in the rule by arm
 @Suite("IndexingPipeline — the alias fallback and the central files (#1543)")
 struct AliasFallbackCentralFilesTests {
 
@@ -2661,6 +2663,64 @@ struct AliasFallbackCentralFilesTests {
                 forVolumeId: "frus1946v01", documentId: "d1")
             #expect(result.documents.map(\.documentId) == ["d2"])
             #expect(result.basis == "SWNCC Files (collection authority)")
+        }
+    }
+
+    /// The third control: a lot file. A control, so it passes with the gate and without it; it
+    /// fails when the gate refuses a lot file, which is the mistake it is here to catch.
+    ///
+    /// The anchor is `frus1947v07`'s wording of the State-War-Navy Coordinating Committee's lot,
+    /// alone in its lot on this index, so the direct route (`relatedByLotFile`) finds nothing. The
+    /// bundled authority's record for the lot carries the name the committee's files are cited by
+    /// where no lot is printed (`SWNCC Files`, the whole of 22 source notes in five volumes, six
+    /// of them in `frus1945Berlinv02`), and the fallback reaches that document by it. The third
+    /// document cites another lot and is not reached.
+    @Test("A lot file alone in its lot still reaches its neighbours through an authority alias")
+    func lotFileAliasFallbackIsUnmoved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let anchor = "SWNCC Files, Lot 52M45"
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1947v07.xml"),
+                volumeId: "frus1947v07",
+                documents: [
+                    ("d1", "<head>1. Telegram</head><note type=\"source\">\(anchor)</note><p>A.</p>"),
+                ])
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1945Berlinv02.xml"),
+                volumeId: "frus1945Berlinv02",
+                documents: [
+                    ("d2", "<head>1. Memorandum</head><note type=\"source\">SWNCC Files</note><p>B.</p>"),
+                    ("d3", "<head>2. Telegram</head><note type=\"source\">Marshall Mission Files, Lot 54–D270: Telegram</note><p>C.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1947v07")
+            try await pipeline.indexVolume("frus1945Berlinv02")
+
+            // The anchor is a lot file, its lot has a record in the bundled authority that
+            // carries the alias, the gate serves it, and its direct route finds nothing.
+            let parsed = SourceNoteParser().parse(anchor)
+            guard case .lotFile(_, let lot, _) = parsed else {
+                Issue.record("the anchor parsed as \(parsed), not a lot file")
+                return
+            }
+            #expect(SourceNoteParser.lotFileNorm(lot) == "52M45")
+            let record = try #require(
+                CollectionAuthorityStore.shared?.record(forParsed: parsed, note: anchor),
+                "the anchor resolves to no authority record, so no fallback could run")
+            #expect(record.id == "lot:52M45")
+            #expect(IndexingPipeline.CollectionAliasFallback(record: record).names.contains("SWNCC Files"))
+            #expect(IndexingPipeline.aliasFallbackServes(parsed, note: anchor))
+            let direct = try await pipeline.relatedDocuments(
+                for: parsed, excludingVolumeId: "frus1947v07", excludingDocumentId: "d1", rawCitation: anchor)
+            #expect(direct.totalCount == 0, "no other indexed document is in the lot")
+
+            let result = try await pipeline.archivalNeighborsWithCohort(
+                forVolumeId: "frus1947v07", documentId: "d1")
+            #expect(result.documents.map(\.compositeKey) == ["frus1945Berlinv02/d2"])
+            #expect(result.basis == "SWNCC Files (collection authority)",
+                    "the alias form that matched names the basis")
+            #expect(result.cohortCount == 2)
         }
     }
 
