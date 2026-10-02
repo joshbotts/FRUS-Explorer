@@ -37,6 +37,9 @@ import Charts
 ///   1.6 — 2026-10-02 (#1543, landing round 2): the charts' colour scale — each older category
 ///          keeps the colour the default cycle drew it in, read from the scale and from drawn
 ///          charts, and every chart that colours by category takes the one scale
+///   1.7 — 2026-10-02 (#1543, landing round 3): the share rows are dense — every category in
+///          every decade, zero where it has no notes — the listed rows are the rows as they
+///          were, and the trend chart, drawn, has no hole in its stack
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -142,9 +145,12 @@ struct SourceProvenanceDataTests {
         let cdf = data.shareByDecade.first { $0.decade == 1950 && $0.category == .centralDecimalFile }
         #expect(cdf != nil)
         #expect(abs((cdf?.share ?? 0) - 0.5) < 1e-9)
-        // naraCollection has no row in 1950 (share would be 0).
+        // naraCollection has no notes in 1950: its row is there, with a share of 0 (#1543, so
+        // that the category's band has a point in the decade), and a table does not list it.
         let nara = data.shareByDecade.first { $0.decade == 1950 && $0.category == .naraCollection }
-        #expect(nara == nil)
+        #expect(nara?.share == 0)
+        #expect(!SourceProvenanceData.listed(data.shareByDecade)
+            .contains { $0.decade == 1950 && $0.category == .naraCollection })
     }
 
     @Test("SourceProvenanceData: an unknown category key is ignored, not counted")
@@ -591,6 +597,229 @@ struct SourceProvenanceDataTests {
             index = source.index(after: index)
         }
         return nil
+    }
+
+    // MARK: Dense share rows, and the stack with no hole (#1543, landing round 3)
+
+    /// The rows the trend chart and its table had before the share rows were dense, computed here
+    /// from the index's own counts: one row for each category with notes in a decade from 1900 on.
+    private func rowsWithNotes(in index: SourceProvenanceIndex) -> [(id: String, share: Double)] {
+        index.byDecade
+            .filter { $0.decade >= SourceProvenanceData.trendStartDecade && $0.totalNotes > 0 }
+            .sorted { $0.decade < $1.decade }
+            .flatMap { decade in
+                SourceProvenanceCategory.ordered.compactMap { category -> (id: String, share: Double)? in
+                    let count = decade.count(for: category)
+                    guard count > 0 else { return nil }
+                    return ("\(decade.decade)-\(category.rawValue)", Double(count) / Double(decade.totalNotes))
+                }
+            }
+    }
+
+    /// A category with no notes in a decade had no row there, so its band in the stacked chart had
+    /// no point in the decade before it began or after it ended: the Subject-Numeric File's band
+    /// began as a vertical edge at 1960 and left a white wedge under Lot Files back to 1950. Each
+    /// category now has a row in every decade, zero where it has no notes.
+    ///
+    /// The second half is that nothing else moved. The rows with notes are the rows as they were
+    /// (65 of them, 267,209 notes), each with the share its count gives, and `listed(_:)` returns
+    /// exactly those.
+    @Test("Over the bundled index every category has a share row in every decade, zero where it has no notes")
+    func bundledSharesAreDense() throws {
+        let index = try bundledIndex()
+        let data = SourceProvenanceData(index: index)
+        let rows = data.shareByDecade
+        let decades = [1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980]
+
+        // Categories × decades, each pair once, by decade and then in display order.
+        #expect(rows.count == 99, "\(rows.count) rows for 9 decades of 11 categories")
+        let wanted = decades.flatMap { decade in
+            SourceProvenanceCategory.ordered.map { "\(decade)-\($0.rawValue)" }
+        }
+        #expect(rows.map(\.id) == wanted)
+
+        // Each decade still sums to 1.
+        for decade in decades {
+            let sum = rows.filter { $0.decade == decade }.reduce(0.0) { $0 + $1.share }
+            #expect(abs(sum - 1.0) < 1e-9, "the \(decade)s sum to \(sum)")
+        }
+
+        // The zeros that close the three holes: the Subject-Numeric File before and after its two
+        // decades, the Central Foreign Policy File before its first.
+        func share(_ decade: Int, _ category: SourceProvenanceCategory) -> Double? {
+            rows.first { $0.decade == decade && $0.category == category }?.share
+        }
+        #expect(share(1950, .subjectNumericFile) == 0)
+        #expect(share(1980, .subjectNumericFile) == 0)
+        #expect(share(1960, .centralForeignPolicyFile) == 0)
+        #expect((share(1960, .subjectNumericFile) ?? 0) > 0.27)
+        #expect(rows.filter { $0.share == 0 }.count == 34)
+
+        // The rows with notes are the rows as they were, share for share.
+        let before = rowsWithNotes(in: index)
+        #expect(before.count == 65)
+        let withNotes = rows.filter { $0.share > 0 }
+        #expect(withNotes.map(\.id) == before.map(\.id))
+        #expect(withNotes.map(\.share) == before.map(\.share))
+        #expect(data.shownNoteCount == 267_209)
+        // And they are what a table lists.
+        #expect(SourceProvenanceData.listed(rows) == withNotes)
+        #expect(SourceProvenanceData.listed(data.shareByDecade(in: 1861...1993, excluding: [])) == withNotes)
+    }
+
+    /// The same under the category filter, where the rows are re-based over what is shown: every
+    /// shown category has a row in every decade, and `listed(_:)` gives what the filter returned
+    /// before — the categories with notes, and for a decade the filter leaves with none, its zero
+    /// rows (Session 3's review: they are what says the decade is empty).
+    @Test("category filter: every shown category has a row in every decade, and the listed rows are the rows as they were")
+    func categoryFilterRowsAreDense() {
+        let data = SourceProvenanceData(index: fixture())
+        let shown = SourceProvenanceCategory.ordered.filter { $0 != .presidentialLibrary }
+
+        let filtered = data.shareByDecade(in: allDecades, excluding: [.presidentialLibrary])
+        #expect(filtered.count == 30, "\(filtered.count) rows for 3 decades of 10 shown categories")
+        #expect(filtered.map(\.id) == [1910, 1950, 1970].flatMap { decade in
+            shown.map { "\(decade)-\($0.rawValue)" }
+        })
+        // 1910: the decimal file alone. 1950: 40 and 20 of the 60 shown. 1970: the 10 that are
+        // not presidential-library notes.
+        let listed = SourceProvenanceData.listed(filtered)
+        #expect(listed.map(\.id) == [
+            "1910-centralDecimalFile", "1950-centralDecimalFile", "1950-lotFile",
+            "1970-centralForeignPolicyFile",
+        ])
+        #expect(listed.map(\.share) == [1.0, 40.0 / 60.0, 20.0 / 60.0, 1.0])
+
+        // Hiding the decimal file leaves 1910 with no shown notes. Its ten zero rows are listed;
+        // the zero rows of 1950 and 1970, which have notes, are not.
+        let emptied = data.shareByDecade(in: allDecades, excluding: [.centralDecimalFile])
+        #expect(emptied.count == 30)
+        let listedEmptied = SourceProvenanceData.listed(emptied)
+        #expect(listedEmptied.filter { $0.decade == 1910 }.count == 10)
+        #expect(listedEmptied.filter { $0.decade == 1910 }.allSatisfy { $0.share == 0 })
+        #expect(listedEmptied.filter { $0.decade != 1910 }.map(\.id) == [
+            "1950-lotFile", "1950-presidentialLibrary",
+            "1970-centralForeignPolicyFile", "1970-presidentialLibrary",
+        ])
+        #expect(SourceProvenanceData.listed([]).isEmpty)
+    }
+
+    /// What a column scan of the drawn trend chart found.
+    private struct StackScan {
+        /// The plot's height in pixels: the longest unbroken run of chart colour in any column.
+        var plotHeight = 0
+        /// How many pixel columns the stack covers.
+        var columns = 0
+        /// The most background pixels inside the stack in any one column, and that column.
+        var worstHole = 0
+        var worstColumn = 0
+        /// How many columns have any background pixel inside the stack.
+        var columnsWithAHole = 0
+    }
+
+    /// Draws the dashboard's own trend chart over the bundled index, 700 points wide at 2×, and
+    /// scans every pixel column of the stack for the colour the chart is laid on.
+    ///
+    /// The plot's top and bottom rows are those of the longest unbroken run of chart colour in
+    /// any column: at a decade's own x the bands sum to 100% with the rows dense or not, so that
+    /// run is the plot's full height. A column belongs to the stack when at least half of it
+    /// between those rows is chart colour. Background is white, or the pale grey of a grid line:
+    /// no channel under 200 and the three within 12 of each other. No blend of two of the
+    /// chart's colours at a band's edge is that pale.
+    @MainActor
+    private func scanOfTheDrawnStack(hiding hidden: Set<SourceProvenanceCategory>) throws -> StackScan {
+        let data = SourceProvenanceData(index: try bundledIndex())
+        let domain = effectiveDomain(userStart: SeriesChartKind.floorYear,
+                                     userEnd: SeriesChartKind.coverageCeilingYear, kind: .coverage)
+        let chart = SourceProvenanceDashboard.provenanceMixChart(
+            data.shareByDecade(in: domain, excluding: hidden), domain: domain)
+        let image = try RenderedText.image(of: chart, width: 700, scale: 2)
+        let pixels = try RenderedText.pixels(of: image)
+        let width = image.width, height = image.height
+
+        func isBackground(_ x: Int, _ y: Int) -> Bool {
+            let i = (y * width + x) * 4
+            let r = Int(pixels[i]), g = Int(pixels[i + 1]), b = Int(pixels[i + 2])
+            return min(r, g, b) >= 200 && max(r, g, b) - min(r, g, b) <= 12
+        }
+        /// A chart colour: far from grey, which leaves out the axis text and the grid.
+        func isChartColour(_ x: Int, _ y: Int) -> Bool {
+            let i = (y * width + x) * 4
+            let r = Int(pixels[i]), g = Int(pixels[i + 1]), b = Int(pixels[i + 2])
+            return max(r, g, b) - min(r, g, b) >= 40
+        }
+
+        // The plot's rows.
+        var top = 0, bottom = -1
+        for x in 0..<width {
+            var start: Int?
+            for y in 0...height {
+                if y < height, isChartColour(x, y) {
+                    if start == nil { start = y }
+                } else if let from = start {
+                    if y - from > bottom - top + 1 { top = from; bottom = y - 1 }
+                    start = nil
+                }
+            }
+        }
+        var scan = StackScan()
+        scan.plotHeight = bottom - top + 1
+        try #require(scan.plotHeight > 200, "the plot was read as \(scan.plotHeight) pixels high")
+
+        for x in 0..<width {
+            let coloured = (top...bottom).filter { isChartColour(x, $0) }
+            guard coloured.count * 2 >= scan.plotHeight,
+                  let first = coloured.first, let last = coloured.last else { continue }
+            scan.columns += 1
+            let hole = (first...last).filter { isBackground(x, $0) }.count
+            if hole > 0 { scan.columnsWithAHole += 1 }
+            if hole > scan.worstHole { scan.worstHole = hole; scan.worstColumn = x }
+        }
+        return scan
+    }
+
+    /// The defect as it was seen: white holes in "Archival provenance over time" where a band
+    /// begins or ends — under the Lot Files from 1950 to 1960 where the Subject-Numeric File
+    /// begins (27% of the plot's height just before 1960), from 1960 to 1970 where the Central
+    /// Foreign Policy File begins, and after 1970 where the Subject-Numeric File ends. The chart
+    /// is the dashboard's own, drawn over the bundled index with no category hidden and with one
+    /// hidden, since the filter builds its rows on another path.
+    @MainActor
+    @Test("Drawn, the trend chart's stack has no hole where a band begins or ends",
+          arguments: [[], [SourceProvenanceCategory.unrecognized]])
+    func drawnStackHasNoHole(hidden: [SourceProvenanceCategory]) throws {
+        let scan = try scanOfTheDrawnStack(hiding: Set(hidden))
+        // The scan read a chart: the stack runs from the 1900s to the 1980s, 80 of the axis's
+        // 132 years, on a plot some 600 points wide at 2×.
+        #expect(scan.columns > 400, "the stack was read as \(scan.columns) columns wide")
+        #expect(scan.worstHole == 0, """
+            the stack has a hole \(scan.worstHole) pixels high at column \(scan.worstColumn), \
+            \(scan.worstHole * 100 / max(scan.plotHeight, 1))% of the plot's \(scan.plotHeight); \
+            \(scan.columnsWithAHole) of \(scan.columns) columns have one
+            """)
+    }
+
+    /// What the tests above cannot reach, read from the dashboard's source: the card draws the
+    /// chart they draw, over the rows it hands the table, and the zero rows are hidden from
+    /// VoiceOver, which would otherwise gain a "Subject-Numeric File, 1950s, 0%" for each. A
+    /// source scan, since the card's body cannot be run here; whether VoiceOver reads the chart
+    /// as it did is a check by ear.
+    @Test("The dashboard's card draws the tested chart over the table's rows and hides the zero rows from VoiceOver")
+    func dashboardDrawsTheTestedChart() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
+            encoding: .utf8)
+        // One set of rows, read once; the card's chart and its table are both built from it.
+        #expect(Self.calls(in: source, opening: "data.shareByDecade(") == ["in:domain,excluding:hiddenCategories"])
+        #expect(Self.calls(in: source, opening: "Self.provenanceMixChart(") == ["shares,domain:domain"])
+        #expect(Self.calls(in: source, opening: "ChartInspectorAdapters.provenanceMixTable(") == ["shares"])
+        // The file's one area chart is the static one.
+        #expect(source.components(separatedBy: "AreaMark(").count - 1 == 1)
+        #expect(source.components(separatedBy: "static func provenanceMixChart(").count - 1 == 1)
+        // The rows a table lists are the rows VoiceOver is given.
+        #expect(Self.calls(in: source, opening: "let listed = Set(") == ["SourceProvenanceData.listed(shares).map(\\.id)"])
+        #expect(Self.calls(in: source, opening: ".accessibilityHidden(") == ["!listed.contains(point.id)"])
     }
 
     // MARK: Category filter (#236)

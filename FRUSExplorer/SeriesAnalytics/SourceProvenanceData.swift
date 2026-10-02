@@ -298,6 +298,11 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
 ///   1.3 — Session 3 review: a filtered decade whose shown categories sum to zero
 ///          emits explicit zero-share rows instead of being dropped (an interior
 ///          x-gap made the stacked `AreaMark` interpolate fabricated shares)
+///   1.4 — 2026-10-02 (#1543, landing round 3): the share rows are dense — a row for every
+///          shown category in every decade, zero where the category has no notes — so a band
+///          of the stacked area starts and ends at zero instead of leaving a hole;
+///          `listed(_:)` gives the rows a table and an export list, which are the rows as
+///          they were
 struct SourceProvenanceData: Sendable {
 
     /// The decade at which the over-time trend begins; earlier decades are the
@@ -307,7 +312,8 @@ struct SourceProvenanceData: Sendable {
     // MARK: Point types
 
     /// One category's fractional share within one shown decade — a stacked-area
-    /// datum. Shares within a decade sum to `1.0` across all categories present.
+    /// datum. Shares within a decade sum to `1.0` across the categories. A category with no
+    /// notes in the decade has a row too, with a share of `0` (see ``shareByDecade``).
     struct CategoryDecadeShare: Identifiable, Sendable, Hashable {
         /// The coverage decade (e.g. `1940` for the 1940s).
         let decade: Int
@@ -348,9 +354,20 @@ struct SourceProvenanceData: Sendable {
 
     /// Per-decade, per-category fractional shares for the stacked-area trend.
     /// Sorted ascending by decade, then by category display order. Within each
-    /// decade the shares sum to `1.0` (subject to floating-point rounding); a
-    /// category absent from a decade simply has no row. Only decades `>=
-    /// trendStartDecade` appear.
+    /// decade the shares sum to `1.0` (subject to floating-point rounding). Only decades
+    /// `>= trendStartDecade` that have notes appear.
+    ///
+    /// **Every category has a row in every such decade**, with a share of `0` where it has no
+    /// notes (#1543, landing round 3). The bundled counts omit zeros, and until then so did
+    /// these rows: a category had no point in the decade before its first notes or after its
+    /// last. A stacked `AreaMark` draws each band only between its own points, while the
+    /// bands above it are stacked on what is present at each decade, so a band that began in
+    /// the 1960s began there as a vertical edge and the stack was left open, as a white wedge,
+    /// back to the 1950s. The Subject-Numeric File's wedge was 27% of the plot's height just
+    /// before 1960, and the Central Foreign Policy File's had been there since the chart
+    /// shipped. With a zero row the band's edge runs from zero and the stack is closed.
+    ///
+    /// A table lists ``listed(_:)`` of these rows, not the rows themselves.
     let shareByDecade: [CategoryDecadeShare]
 
     /// Overall composition — total notes and share per category across all shown
@@ -465,9 +482,10 @@ struct SourceProvenanceData: Sendable {
         for decade in shownDecades {
             guard decade.totalNotes > 0 else { continue }
             let divisor = Double(decade.totalNotes)
+            // Every category, a zero share where it has no notes: the row is what gives the
+            // category's band a point in this decade (see `shareByDecade`).
             for category in SourceProvenanceCategory.ordered {
                 let count = decade.count(for: category)
-                guard count > 0 else { continue }
                 shares.append(
                     CategoryDecadeShare(
                         decade: decade.decade,
@@ -540,9 +558,31 @@ struct SourceProvenanceData: Sendable {
     /// the range filter for the (coverage-valued) provenance-mix stacked area.
     ///
     /// - Parameter domain: The inclusive coverage-year range to keep decades within.
-    /// - Returns: The in-range decade shares, order preserved.
+    /// - Returns: The in-range decade shares, order preserved: a row for every category in
+    ///   every in-range decade.
     func shareByDecade(in domain: ClosedRange<Int>) -> [CategoryDecadeShare] {
         shareByDecade.filter { domain.contains($0.decade) }
+    }
+
+    /// The rows a table, an export or a screen reader lists, from the rows the chart draws.
+    ///
+    /// The chart needs a row for every category in every decade (``shareByDecade``). A reader
+    /// does not: "Subject-Numeric File, 1950s, 0.0%" says nothing the missing line did not, and
+    /// the provenance table has never printed one. So a zero share is left out — unless every
+    /// share of its decade is zero, which happens only under the category filter, when the
+    /// shown categories have no notes there; those rows are what says the decade is empty, and
+    /// the filtered table has printed them since Session 3's review.
+    ///
+    /// That is what `shareByDecade(in:)` and `shareByDecade(in:excluding:)` returned before the
+    /// rows were dense, so the table, its CSV and the chart's VoiceOver elements are what they
+    /// were. (One case differs, and no artifact has it: a decade whose notes are all in
+    /// categories this build does not know had no rows unfiltered, and now has its zero rows.)
+    ///
+    /// - Parameter shares: Rows from `shareByDecade(in:)` or `shareByDecade(in:excluding:)`.
+    /// - Returns: The rows to list, order preserved.
+    static func listed(_ shares: [CategoryDecadeShare]) -> [CategoryDecadeShare] {
+        let decadesWithNotes = Set(shares.lazy.filter { $0.share > 0 }.map(\.decade))
+        return shares.filter { $0.share > 0 || !decadesWithNotes.contains($0.decade) }
     }
 
     /// `notesByDecade` restricted to points whose *decade* falls within `domain` —
@@ -567,10 +607,17 @@ struct SourceProvenanceData: Sendable {
     /// linearly interpolated by the stacked `AreaMark`, fabricating shares the data
     /// does not contain.
     ///
+    /// Like the unfiltered rows, these are dense: every shown category has a row in every
+    /// decade, zero where it has no notes, so no band leaves a hole in the stack
+    /// (``shareByDecade``). Until #1543's third landing round only the all-zero decade had its
+    /// zero rows, and a category hidden or not, the Central Foreign Policy File's band began as
+    /// a vertical edge.
+    ///
     /// - Parameters:
     ///   - domain: The inclusive coverage-year range to keep decades within.
     ///   - hidden: The categories to exclude.
-    /// - Returns: The in-range, renormalized decade shares in decade then display order.
+    /// - Returns: The in-range, renormalized decade shares in decade then display order: a row
+    ///   for every shown category in every in-range decade.
     func shareByDecade(
         in domain: ClosedRange<Int>,
         excluding hidden: Set<SourceProvenanceCategory>
@@ -582,13 +629,12 @@ struct SourceProvenanceData: Sendable {
             let shownTotal = counts.reduce(0) { $0 + (hidden.contains($1.key) ? 0 : $1.value) }
             for category in SourceProvenanceCategory.ordered where !hidden.contains(category) {
                 let count = counts[category] ?? 0
-                // A decade whose shown categories sum to zero still emits explicit
-                // zero-share rows: dropping the decade would leave an interior x-gap
-                // that the stacked `AreaMark` linearly interpolates across, rendering
-                // a fabricated band between its neighbours (e.g. presidential-library
-                // notes are zero in the 1920s–30s between non-zero 1910s and 1940s).
-                // Zero rows collapse the band honestly to zero instead.
-                guard count > 0 || shownTotal == 0 else { continue }
+                // Every shown category has a row, zero where it has no notes. A decade
+                // whose shown categories sum to zero is all zero rows: dropping the decade
+                // would leave an interior x-gap that the stacked `AreaMark` linearly
+                // interpolates across, rendering a fabricated band between its neighbours
+                // (e.g. presidential-library notes are zero in the 1920s–30s between
+                // non-zero 1910s and 1940s). Zero rows collapse the band honestly to zero.
                 let share = shownTotal > 0 ? Double(count) / Double(shownTotal) : 0
                 out.append(CategoryDecadeShare(decade: decade, category: category, share: share))
             }

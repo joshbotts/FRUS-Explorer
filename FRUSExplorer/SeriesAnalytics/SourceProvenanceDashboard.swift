@@ -68,6 +68,9 @@ import Charts
 ///   1.10 — 2026-10-02 (#1543, landing round 2): the two charts take their colours from
 ///         `provenanceCategoryColorScale()`, declared at the foot of this file, instead of Swift
 ///         Charts' seven-colour cycle by position
+///   1.11 — 2026-10-02 (#1543, landing round 3): the trend chart is `provenanceMixChart(_:domain:)`,
+///         static so a test draws it, over rows that give every category a point in every decade;
+///         the rows added for that are hidden from VoiceOver
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -404,46 +407,66 @@ struct SourceProvenanceDashboard: View {
                 yearRange: domain.lowerBound...domain.upperBound),
             figureHeight: 300
         ) {
-            Chart {
-                ForEach(shares) { point in
-                    AreaMark(
-                        x: .value(
-                            String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
-                            point.decade
-                        ),
-                        y: .value(
-                            String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
-                            point.share
-                        )
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
-                        point.category.displayName
-                    ))
-                    .accessibilityLabel(Text(String(
-                        localized: "series.provenance.trend.a11y.label",
-                        defaultValue: "\(point.category.displayName), \(String(point.decade))s"
-                    )))
-                    .accessibilityValue(Text(point.share, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))))
-                }
-            }
-            .provenanceCategoryColorScale()
-            .chartXScale(domain: domain.lowerBound...domain.upperBound)
-            .chartYScale(domain: 0...1)
-            .chartXAxis {
-                AxisMarks { value in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
-                }
-            }
-            .chartYAxis {
-                AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
-            }
-            .chartXAxisLabel(String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"))
-            .chartYAxisLabel(String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"))
-            .frame(height: 300)
+            Self.provenanceMixChart(shares, domain: domain)
         }
+    }
+
+    /// The trend chart itself: one stacked band per category over the coverage decades. Static and
+    /// internal so a test draws the chart the card shows.
+    ///
+    /// `shares` holds a row for every shown category in every decade, zero where the category has
+    /// no notes, which is what closes the stack: a band with no point in the decade before its
+    /// first notes began as a vertical edge and left a white wedge under the bands above it
+    /// (`SourceProvenanceData.shareByDecade`). The zero rows are drawn and not read out. VoiceOver
+    /// is given the rows the table lists (`SourceProvenanceData.listed(_:)`), so it has no
+    /// "Subject-Numeric File, 1950s, 0%" that it did not have before the rows were added.
+    ///
+    /// - Parameters:
+    ///   - shares: `SourceProvenanceData.shareByDecade(in:excluding:)`'s rows.
+    ///   - domain: The coverage years the x axis spans.
+    static func provenanceMixChart(_ shares: [SourceProvenanceData.CategoryDecadeShare],
+                                   domain: ClosedRange<Int>) -> some View {
+        let listed = Set(SourceProvenanceData.listed(shares).map(\.id))
+        return Chart {
+            ForEach(shares) { point in
+                AreaMark(
+                    x: .value(
+                        String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
+                        point.decade
+                    ),
+                    y: .value(
+                        String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
+                        point.share
+                    )
+                )
+                .foregroundStyle(by: .value(
+                    String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
+                    point.category.displayName
+                ))
+                .accessibilityLabel(Text(String(
+                    localized: "series.provenance.trend.a11y.label",
+                    defaultValue: "\(point.category.displayName), \(String(point.decade))s"
+                )))
+                .accessibilityValue(Text(point.share, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))))
+                .accessibilityHidden(!listed.contains(point.id))
+            }
+        }
+        .provenanceCategoryColorScale()
+        .chartXScale(domain: domain.lowerBound...domain.upperBound)
+        .chartYScale(domain: 0...1)
+        .chartXAxis {
+            AxisMarks { value in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
+        }
+        .chartXAxisLabel(String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"))
+        .chartYAxisLabel(String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"))
+        .frame(height: 300)
     }
 
     // MARK: - Chart 2: Overall provenance composition

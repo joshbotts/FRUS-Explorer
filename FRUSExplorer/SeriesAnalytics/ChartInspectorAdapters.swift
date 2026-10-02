@@ -15,7 +15,8 @@ import Foundation
 ///
 /// Every adapter takes the *same* array its chart draws — for the range-filtered
 /// time-series charts the caller passes the in-domain array, so the table tracks
-/// the visible chart and the editable year range. Formatting is fixed here:
+/// the visible chart and the editable year range. (The provenance-mix table leaves out
+/// the zero rows its chart draws only to close its bands.) Formatting is fixed here:
 /// years/decades as plain integers without comma grouping, shares as one-decimal
 /// percents, counts plain. Display-name resolution (eras, regions, provenance,
 /// countries) is done by the caller and either baked into the point types or
@@ -28,6 +29,9 @@ import Foundation
 ///   1.2 — 2026-09-30: #1483 — the region-trend table's share column reads "Share of volumes",
 ///          and the provenance-mix and composition tables' "Share of source notes", each its
 ///          chart's axis text under the same key
+///   1.3 — 2026-10-02 (#1543, landing round 3): the provenance-mix table lists
+///          `SourceProvenanceData.listed(_:)` of its chart's rows, which now hold a zero row
+///          for every category with no notes in a decade
 enum ChartInspectorAdapters {
 
     // MARK: Formatting
@@ -253,9 +257,14 @@ enum ChartInspectorAdapters {
     // MARK: - SA-3: Archival Sourcing
 
     /// The provenance-mix trend's table: one row per in-range (decade, category)
-    /// share.
+    /// share that a reader is told — `SourceProvenanceData.listed(_:)` of the chart's rows.
     ///
-    /// - Parameter shares: The range-filtered shares (`data.shareByDecade(in:)`).
+    /// The chart's rows give every category a point in every decade, zero where it has no notes,
+    /// so that its bands close (#1543). The table leaves those out here, whatever the caller
+    /// hands it: a category with no notes in a decade has no line, as it never had, and a decade
+    /// the category filter leaves with no notes keeps its `0.0%` lines.
+    ///
+    /// - Parameter shares: The chart's rows (`data.shareByDecade(in:excluding:)`).
     /// - Returns: A `[Decade, Provenance, Share]` table.
     static func provenanceMixTable(_ shares: [SourceProvenanceData.CategoryDecadeShare]) -> ChartInspectorData {
         ChartInspectorData(
@@ -266,7 +275,7 @@ enum ChartInspectorAdapters {
                 String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
                 String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
             ],
-            rowCells: shares.map { share in
+            rowCells: SourceProvenanceData.listed(shares).map { share in
                 [plain(share.decade), share.category.displayName, percent(share.share)]
             }
         )
