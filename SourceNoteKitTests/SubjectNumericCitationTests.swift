@@ -279,7 +279,9 @@ struct SubjectNumericCitationTests {
         "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis.",
         // frus1969-76v26/d292 — a dash after the letter.
         "Source: National Archives, RG 59, Central Foreign Policy Files, P–860122–0281. Secret. The meeting was held at Ambassador Helms’s residence.",
-        // Constructed from frus1969-76v22/d51 (`D740218–0840`): a space after the letter.
+        // A space after the letter, the number as frus1969-76ve09p1/d36's note prints it ("Central
+        // Foreign Policy Files, D 750010–1075. Secret; Niact Immediate; Exdis."), set in
+        // frus1969-76v22/d51's sentence in place of that note's own `D740218–0840`.
         "Source: National Archives, RG 59, Central Foreign Policy File, D 750010–1075. Secret; Flash; Exdis.",
         // frus1969-76v21/d331
         "Source: National Archives, RG 59, Central Foreign Policy File, [no film number]. Secret; Immediate; Exdis.",
@@ -298,22 +300,25 @@ struct SubjectNumericCitationTests {
     /// The film-form gate, one fixture per alternative of `filmFormRegex`. Every note is
     /// CONSTRUCTED from frus1969-76ve09p2/d78's citation sentence, which the rule reads as
     /// Subject-Numeric by its designation, with one of the Central Foreign Policy File's own forms
-    /// added as a last segment — so the form is the only thing the gate can refuse it for. Each
-    /// form is spelled as the corpus prints it (the document beside it), except `P-Reel` and
-    /// `D-Reel`, which no source note prints.
+    /// added as a last segment — so the form is the only thing the gate can refuse it for. Nine of
+    /// the thirteen forms are spelled as a source note prints them (the document beside each). Four
+    /// are not, and say so: the N number is constructed, on a shape source notes print; the film
+    /// number with spaces round its dash is constructed, and no source note spaces one so;
+    /// `P-Reel Index` is the words of the volumes' Sources lists, which no source note prints; and
+    /// `DReel 12` is in no volume.
     @Test("Each film form refuses a citation sentence that carries a designation", arguments: [
         "P840114–1808",                       // frus1969-76v22/d17 — a film number
         "P–860122–0281",                      // frus1969-76v26/d292 — a dash after the letter
-        "D 750010–1075",                      // a space after the letter (constructed)
-        "N770003-0421",                       // an N number with an ASCII hyphen (constructed)
-        "D810025 – 1157",                     // spaces around the dash (constructed from frus1981-88v01's D810025–1157)
+        "D 750010–1075",                      // frus1969-76ve09p1/d36 — a space after the letter
+        "N770003-0421",                       // constructed: an N number with an ASCII hyphen, the shape of frus1977-80v24/d173's N780004-0260
+        "D810025 – 1157",                     // constructed from frus1981-88v01/d19's D810025–1157: spaces round the dash, which no source note prints
         "[no film number]",                   // frus1969-76v21/d331
-        "[no N number]",                      // frus1981-88v04
-        "No reel number available",           // frus1977-80v26 — a capital, and no bracket
-        "Electronic Telegrams",               // frus1981-88v01
-        "P-Reel Index",                       // constructed
-        "DReel 12",                           // constructed: no hyphen
-        "reel # N/A",                         // frus1977-80v26
+        "[no N number]",                      // frus1981-88v05/d61
+        "No reel number available",           // frus1977-80v26/d243 — a capital, and no bracket
+        "Electronic Telegrams",               // frus1981-88v01/d19
+        "P-Reel Index",                       // a Sources list's words (frus1969-76v16's front matter), in no source note
+        "DReel 12",                           // constructed: no hyphen, and in no volume (frus1969-76ve11p1's front matter prints `D-Reel` once)
+        "reel # N/A",                         // frus1977-80v26/d143
         "STARS, Document Number 89170489",    // frus1989-92v31/d20
     ])
     func eachFilmFormRefusesADesignation(form: String) {
