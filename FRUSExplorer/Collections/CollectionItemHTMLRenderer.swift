@@ -117,6 +117,11 @@ struct CollectionItemHTMLRenderer {
     /// export output never contains the placeholder.
     var showsSummaryPlaceholders: Bool = false
 
+    /// Where a figure's image comes from (#1516): the page embeds each one's bytes, so an
+    /// exported file carries its images and the preview draws them without the reader's scheme
+    /// handler. The app's store; a test sets its own.
+    var figureImages: FigureImageStore = .shared
+
     /// `true` when any preview-only affordance is configured — the gate for emitting the
     /// preview-only card stylesheet (`previewCSS`). Exporters set neither property, so
     /// exported HTML stays byte-identical to the pre-preview output.
@@ -314,7 +319,12 @@ struct CollectionItemHTMLRenderer {
                 // branch restarts at `n-1` per document because each gets its own converter — so
                 // without a per-document scope two footnotes on one exported page share an id and
                 // every marker for the second opens the first.
-                body += FRUSRenderNodeHTMLSerializer(idScope: "\(Self.anchorId(doc: doc))-").serialize(
+                // #1516: a figure's image is embedded in the page, from the device's figure store.
+                let images = figureImages
+                body += FRUSRenderNodeHTMLSerializer(
+                    idScope: "\(Self.anchorId(doc: doc))-",
+                    figureImages: .embedded(load: { images.data(for: $0) })
+                ).serialize(
                     model,
                     includeFootnotes: includeFootnotes,
                     highlights: applyHighlights ? doc.highlights : []

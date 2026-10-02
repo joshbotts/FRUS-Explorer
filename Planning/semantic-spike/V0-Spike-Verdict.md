@@ -7,6 +7,11 @@ analysis half). Full machine-readable results: `spike-gates.json` in this folder
 **What remains of V-0:** the owner keys `blind-panel.csv` (100 rows — judge it BEFORE
 opening `blind-panel-key.csv`, which names the model and scores and would unblind you),
 and reads the Gemma licence terms. Those two acts close V-0 and green-light Phase 3.
+**How that ended (recorded 2026-10-01):** Phase 3 ran without either. The panel was retired as a
+gate on 2026-08-12 (`Phase3-Store-Assessment.md` §0a) and is still staged un-keyed beside this
+file — the only pre-1900 quality instrument there is, for an axis that has been on by default
+since 2026-09-10. The licence gate was resolved on 2026-08-28 (`DEVELOPMENT-PLAN.md`, session
+2026-08-28G).
 **Related:** `Planning/Vector-Embeddings-Semantic-Design.md` §8 (the gates), §10 (the open
 questions this answers), `tools/semantic-harvest/README.md` (the runbook this executes),
 `Planning/M2-Semantic-Pipeline-Ride-Along.md` §4 (the cost model this tightens).

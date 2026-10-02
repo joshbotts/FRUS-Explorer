@@ -235,13 +235,16 @@ function rangeEndpointToOffset(node, localOffset) {
 // is what routes a footnote selection to NARA Lookup.
 // #1495: a table's caption is drawn under data-skip above the table, and a drag that starts on it
 // moves the same way, to the first cell's first letter — under the same scope.
+// #1516: a figure — its head, its image and its captions — and the space drawn between two inline
+// elements are data-skip too, and move the same way: a drag that starts on a caption starts at the
+// first letter after the figure, and one that ends on a drawn space ends before the next word.
 function drawnPartHolding(node) {
   const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  const part = el && el.closest('.list-heading, .list-label, .list-aside, .list-trailing, .table-caption');
+  const part = el && el.closest('.list-heading, .list-label, .list-aside, .list-trailing, .table-caption, .frus-figure, .element-space');
   if (!part || !part.closest('.frus-document')) return null;
   // Inside a skipped element that is not itself one of these parts — a footnote popover — it stays -1.
   const outer = part.parentElement && part.parentElement.closest(
-    '[data-skip="1"]:not(.list-heading):not(.list-label):not(.list-aside):not(.list-trailing):not(.table-caption)');
+    '[data-skip="1"]:not(.list-heading):not(.list-label):not(.list-aside):not(.list-trailing):not(.table-caption):not(.frus-figure):not(.element-space)');
   return outer ? null : part;
 }
 // The first mapped character after `el` in document order, or the end of the flat text when

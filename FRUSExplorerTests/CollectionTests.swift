@@ -7969,7 +7969,7 @@ struct ListExportTests {
         let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
         let xml = try await docxText(model)
         for printed in ["Recommendations:", "By desire and on behalf of the meeting:",
-                        ">a.<", ">b.<", "Henry A. Kissinger", "[Figure: figure_0732]"] {
+                        ">a.<", ">b.<", "Henry A. Kissinger", ">[Figure]<"] {
             #expect(xml.contains(printed), "DOCX does not print \(printed)")
         }
         // Two <pb/>s sit between items b. and c. A page break inside an item has always been
@@ -7980,7 +7980,13 @@ struct ListExportTests {
         let third = try #require(xml.range(of: "Third item text."))
         #expect(second.upperBound < third.lowerBound)
         let between = xml[second.upperBound..<third.lowerBound]
-        #expect(between.contains("[Figure: figure_0732]"), "the figure between the page breaks must print")
+        #expect(between.contains(">[Figure]<"), "the figure between the page breaks must print")
+        // #1516: on a line of its own between the two items, not opening the third item's line.
+        #expect(!between.contains("figure_0732"), "the image's file name is printed: \(between)")
+        let figureAt = try #require(between.range(of: ">[Figure]<"))
+        let closesAfter = try #require(between.range(of: "</w:p>", range: figureAt.upperBound..<between.endIndex))
+        #expect(!between[figureAt.upperBound..<closesAfter.lowerBound].contains("<w:t"),
+                "the figure's paragraph must hold nothing after it: \(between)")
         #expect(!between.contains("<w:br w:type=\"page\"/>"), "a <pb/> between two items broke the page: \(between)")
         let text = try await pdfText(model)
         for printed in ["Recommendations:", "By desire and on behalf of the meeting:",
@@ -8466,6 +8472,714 @@ struct TableCaptionExportTests {
     }
 }
 
+// MARK: - FigureExportTests (#1516)
+
+/// A figure's printed head and paragraphs, and the place of its image, in the Word and PDF exports (#1516).
+///
+/// Both exporters printed the image's file name — `[figure_1162]` in PDF, `[Figure: figure_1162]` in Word — and
+/// dropped the figure's own text, as the reader did. These tests export corpus markup (`FigureFixtures`) with no image
+/// on the device, so each figure that names one prints the placeholder; `FigureImageExportTests` below embeds real
+/// image bytes. The PDF cases read `bodyAttributedString`, the step the export itself calls, because PDFKit reads a
+/// page's text back but not where a line ends.
+@Suite("A figure's head, paragraphs and placeholder print in Word and PDF, never its file name (#1516)")
+struct FigureExportTests {
+
+    /// Exports `model` as one collection document and returns the DOCX package bytes as text — the exporter writes the
+    /// package stored (uncompressed), so its parts are searchable in the archive bytes.
+    @MainActor
+    static func docxPackage(_ model: FRUSDocumentRenderModel, volumeId: String,
+                            exporter: DocxCollectionExporter = DocxCollectionExporter(),
+                            highlights: [ExportHighlight] = []) async throws -> String {
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: volumeId, sortOrder: 1,
+            title: "Fixture document", bodyText: "", renderModel: model, highlights: highlights)
+        var options = CollectionExportOptions()
+        options.applyHighlights = !highlights.isEmpty
+        // A name of its own: the tests run in parallel, and each writes a file named after its collection.
+        let url = try await exporter.export(
+            metadata: CollectionExportMetadata(name: "Export \(UUID().uuidString)", note: nil),
+            items: [.document(doc)], options: options)
+        defer { try? FileManager.default.removeItem(at: url) }
+        return String(decoding: try Data(contentsOf: url), as: UTF8.self)
+    }
+
+    /// `word/document.xml`'s body in `package`.
+    static func body(of package: String) throws -> String {
+        let start = try #require(package.range(of: "<w:body>"), "the package has no <w:body>")
+        let end = try #require(package.range(of: "</w:body>", range: start.upperBound..<package.endIndex))
+        return String(package[start.lowerBound..<end.upperBound])
+    }
+
+    /// The text of each `<w:p>` of `xml` that prints any, in order.
+    static func paragraphTexts(_ xml: String) -> [String] {
+        xml.matches(of: /<w:p>[\s\S]*?<\/w:p>|<w:p\/>/).map { paragraph in
+            paragraph.output.matches(of: /<w:t(?: xml:space="preserve")?>([^<]*)<\/w:t>/)
+                .map { String($0.output.1) }.joined()
+        }.filter { !$0.isEmpty }
+    }
+
+    /// The printed lines of a PDF body, each with its whitespace collapsed, empty lines left out.
+    static func lines(_ body: NSAttributedString) -> [String] {
+        body.string.components(separatedBy: "\n")
+            .map { $0.split(whereSeparator: \.isWhitespace).joined(separator: " ") }
+            .filter { !$0.isEmpty }
+    }
+
+    @Test("PDF prints d587's map titles on lines of their own above the placeholder, then the table's rows")
+    @MainActor
+    func pdfPrintsTheHeadAndThePlaceholder() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d587)
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [], includeFootnotes: false)
+        let lines = Self.lines(body)
+        let title = try #require(lines.firstIndex(of: "Locations at Which Military Air Transit Rights Are Desired"),
+                                 "the map's title must make a line of its own: \(lines)")
+        #expect(Array(lines[title...].prefix(3)) == ["Locations at Which Military Air Transit Rights Are Desired",
+                                                     "[Figure]", "Location | Rights desired"], "\(lines)")
+        #expect(lines.contains("Revised, 21 January 1946"), "the head's line break was lost: \(lines)")
+        #expect(!body.string.contains("figure_116"), "an image's file name is printed: \(lines)")
+    }
+
+    @Test("PDF prints d289's captions under the placeholder, a mark in a cell inside its row, and nothing for an empty figure")
+    @MainActor
+    func pdfPrintsCaptionsInlineFiguresAndNothingForAnEmptyOne() async throws {
+        let exporter = PDFCollectionExporter()
+        let d289 = Self.lines(exporter.bodyAttributedString(
+            for: try await ListShapeFixtures.renderModel(FigureFixtures.d289), highlights: [], includeFootnotes: false))
+        let first = try #require(d289.firstIndex(of: "[Figure]"), "\(d289)")
+        #expect(Array(d289[first...].prefix(4)) == ["[Figure]", "Secretary of State Dean Acheson", "[Figure]",
+                                                    "W. Averell Harriman"], "\(d289)")
+
+        let d178 = Self.lines(exporter.bodyAttributedString(
+            for: try await ListShapeFixtures.renderModel(FigureFixtures.d178), highlights: [], includeFootnotes: false))
+        #expect(d178 == ["Jan. 11 | 1 piece of bacon (short fat backs). | Case [Figure] 17"], "\(d178)")
+
+        let d143 = Self.lines(exporter.bodyAttributedString(
+            for: try await ListShapeFixtures.renderModel(FigureFixtures.d143), highlights: [], includeFootnotes: false))
+        #expect(d143.count == 1 && d143[0].contains("the characters “to correspond officially” should be used"), "\(d143)")
+        #expect(!d143.joined().contains("[Figure]"), "an empty figure printed a placeholder: \(d143)")
+    }
+
+    @Test("Word prints d587's map titles, the placeholder and no file name, and a mark in a cell inside the cell's paragraph")
+    func docxPrintsTheHeadAndThePlaceholder() async throws {
+        let package = try await Self.docxPackage(
+            try await ListShapeFixtures.renderModel(FigureFixtures.d587), volumeId: "frus1946v01")
+        let paragraphs = Self.paragraphTexts(try Self.body(of: package))
+        let title = try #require(
+            paragraphs.firstIndex(of: "Locations at Which Military Air Transit Rights Are Desired"),
+            "the map's title must make a paragraph of its own: \(paragraphs)")
+        #expect(Array(paragraphs[title...].prefix(3)) == ["Locations at Which Military Air Transit Rights Are Desired",
+                                                          "[Figure]", "Location"], "\(paragraphs)")
+        let printsAFileName = package.contains("figure_116")
+        #expect(!printsAFileName, "an image's file name is printed: \(paragraphs)")
+
+        let cell = Self.paragraphTexts(try Self.body(of: try await Self.docxPackage(
+            try await ListShapeFixtures.renderModel(FigureFixtures.d178), volumeId: "frus1897")))
+        #expect(cell.contains("Case [Figure] 17"), "the mark must stay inside its cell's paragraph: \(cell)")
+    }
+
+    @Test("Word prints d289's captions under the placeholder, and nothing for an empty figure")
+    func docxPrintsCaptionsAndNothingForAnEmptyFigure() async throws {
+        let d289 = Self.paragraphTexts(try Self.body(of: try await Self.docxPackage(
+            try await ListShapeFixtures.renderModel(FigureFixtures.d289), volumeId: "frus1951v03p1")))
+        let first = try #require(d289.firstIndex(of: "[Figure]"), "\(d289)")
+        #expect(Array(d289[first...].prefix(4)) == ["[Figure]", "Secretary of State Dean Acheson", "[Figure]",
+                                                    "W. Averell Harriman"], "\(d289)")
+
+        let d143 = Self.paragraphTexts(try Self.body(of: try await Self.docxPackage(
+            try await ListShapeFixtures.renderModel(FigureFixtures.d143), volumeId: "frus1881")))
+        let sentence = try #require(d143.first { $0.contains("the characters") }, "\(d143)")
+        #expect(sentence.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            .contains("the characters “to correspond officially” should be used"),
+                "an empty figure split its sentence: \(d143)")
+        #expect(!d143.joined().contains("Figure"), "an empty figure printed a placeholder: \(d143)")
+    }
+}
+
+// MARK: - FigureImageExportTests (#1516)
+
+/// A figure's image embedded in the PDF, Word and HTML exports, from a figure store of the
+/// test's own (#1516, owner decision D3 option (f)4), and the export's fetch of the images that
+/// are not on the device.
+///
+/// What PDFKit cannot read back — whether an image was drawn, and where — is read from the page
+/// itself, rendered to pixels: the fixture image is one flat red, which no text or rule on the
+/// page is. Each test exports corpus markup (`FigureFixtures`) through the real exporter; the
+/// suite runs on any iOS destination.
+@Suite("A figure's image is embedded in PDF, Word and the HTML export, and an export fetches the ones it lacks (#1516)")
+@MainActor
+struct FigureImageExportTests {
+
+    private static let map = FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162")
+
+    /// d587 converted as the resolver converts it: in its volume.
+    private func d587() async throws -> FRUSDocumentRenderModel {
+        try await ListShapeFixtures.renderModel(
+            FigureFixtures.d587, converter: ASTToRenderNodeConverter(volumeId: "frus1946v01"))
+    }
+
+    /// The character index of each image in `body`, with the box it carries.
+    private func images(in body: NSAttributedString) -> [(index: Int, box: PDFCollectionExporter.FigureImageBox)] {
+        var found: [(Int, PDFCollectionExporter.FigureImageBox)] = []
+        body.enumerateAttribute(PDFCollectionExporter.figureImageAttrKey,
+                                in: NSRange(location: 0, length: body.length)) { value, range, _ in
+            if let box = value as? PDFCollectionExporter.FigureImageBox { found.append((range.location, box)) }
+        }
+        return found
+    }
+
+    @Test("PDF sets the image under its head at two pixels to the point, and the placeholder for the two that are absent")
+    func pdfSetsTheImageUnderItsHead() async throws {
+        try await FigureTestImages.withLibrary { library in
+            #expect(library.store(try FigureTestImages.png(width: 300, height: 200),
+                                  volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let exporter = PDFCollectionExporter()
+            exporter.figureImages = FigureImageStore(library: library)
+            let body = exporter.bodyAttributedString(for: try await d587(), highlights: [], includeFootnotes: false)
+            let found = images(in: body)
+            #expect(found.count == 1, "one of d587's three images is on the device")
+            let image = try #require(found.first)
+            #expect(image.box.size == CGSize(width: 150, height: 100))
+            #expect(image.box.image.width == 300 && image.box.image.height == 200)
+            // On a line of its own, between the head and the table's first row.
+            let lines = body.string.components(separatedBy: "\n")
+            let at = try #require(lines.firstIndex(of: "\u{FFFC}"), "the image is not on a line of its own: \(lines)")
+            #expect(lines[at - 1] == "Locations at Which Military Air Transit Rights Are Desired")
+            #expect(lines[at + 1] == "Location | Rights desired")
+            #expect(FigureExportTests.lines(body).filter { $0 == "[Figure]" }.count == 2)
+            // The run delegate reserves the image's place: the line it sits on is as tall as it is.
+            let frame = CTFramesetterCreateFrame(
+                CTFramesetterCreateWithAttributedString(body), CFRangeMake(0, 0),
+                CGPath(rect: CGRect(x: 0, y: 0, width: 468, height: 4_000), transform: nil), nil)
+            let line = try #require((CTFrameGetLines(frame) as? [CTLine])?.first {
+                let range = CTLineGetStringRange($0)
+                return range.location <= image.index && image.index < range.location + range.length
+            })
+            var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
+            let width = CTLineGetTypographicBounds(line, &ascent, &descent, &leading)
+            #expect(ascent >= 100 && ascent < 104, "the image's line is \(ascent) points tall")
+            #expect(width >= 150 && width < 154, "the image's line is \(width) points wide")
+        }
+    }
+
+    @Test("An image larger than the page prints scaled to fit it, keeping its shape, and never taller than a page's text")
+    func pdfFitsALargeImage() {
+        // A page's scan: 3,000 by 4,000 pixels is 1,500 by 2,000 points at two pixels to the point.
+        let tall = PDFCollectionExporter.figureDisplaySize(pixelWidth: 3_000, pixelHeight: 4_000)
+        #expect(abs(tall.height - 560) < 0.01 && abs(tall.width - 420) < 0.01, "\(tall)")
+        let wide = PDFCollectionExporter.figureDisplaySize(pixelWidth: 4_000, pixelHeight: 1_000)
+        #expect(abs(wide.width - 468) < 0.01 && abs(wide.height - 117) < 0.01, "\(wide)")
+        // A small mark keeps its size: it is not enlarged to the column.
+        #expect(PDFCollectionExporter.figureDisplaySize(pixelWidth: 60, pixelHeight: 40) == CGSize(width: 30, height: 20))
+    }
+
+    /// The red pixels of `page`, rendered at one pixel to the point: how many, and the box they fill
+    /// in the page's own coordinates (origin at its lower left).
+    private func redPixels(of page: PDFPage) throws -> (count: Int, bounds: CGRect) {
+        let width = 612, height = 792
+        let context = try #require(CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        page.draw(with: .mediaBox, to: context)
+        let stride = context.bytesPerRow
+        let pixels = try #require(context.data).bindMemory(to: UInt8.self, capacity: stride * height)
+        var count = 0
+        var minX = width, maxX = -1, minY = height, maxY = -1
+        for row in 0..<height {
+            for column in 0..<width {
+                let i = row * stride + column * 4
+                guard pixels[i] > 200, pixels[i + 1] < 70, pixels[i + 2] < 70 else { continue }
+                count += 1
+                // The bitmap's first row is the page's top.
+                let y = height - 1 - row
+                minX = min(minX, column); maxX = max(maxX, column)
+                minY = min(minY, y); maxY = max(maxY, y)
+            }
+        }
+        guard count > 0 else { return (0, .null) }
+        return (count, CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1))
+    }
+
+    @Test("The exported PDF draws the image on the page, in the text column, and its head above it")
+    func pdfDrawsTheImage() async throws {
+        try await FigureTestImages.withLibrary { library in
+            #expect(library.store(try FigureTestImages.png(width: 300, height: 200),
+                                  volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let model = try await d587()
+            func export(with store: FigureImageStore) async throws -> PDFDocument {
+                let exporter = PDFCollectionExporter()
+                exporter.figureImages = store
+                let doc = CollectionExportDocument(
+                    documentId: model.documentId, volumeId: "frus1946v01", sortOrder: 1,
+                    title: "Fixture document", bodyText: "", renderModel: model)
+                let url = try await exporter.export(
+                    metadata: CollectionExportMetadata(name: "Export \(UUID().uuidString)", note: nil),
+                    items: [.document(doc)])
+                defer { try? FileManager.default.removeItem(at: url) }
+                return try #require(PDFDocument(data: try Data(contentsOf: url)))
+            }
+            let pdf = try await export(with: FigureImageStore(library: library))
+            var drawn: [(count: Int, bounds: CGRect)] = []
+            for index in 0..<pdf.pageCount {
+                let red = try redPixels(of: try #require(pdf.page(at: index)))
+                if red.count > 0 { drawn.append(red) }
+            }
+            #expect(drawn.count == 1, "the image must be drawn on exactly one page: \(drawn)")
+            let image = try #require(drawn.first)
+            // 150 by 100 points, from the left edge of the text column (the page's 72-point margin).
+            #expect(abs(image.bounds.width - 150) <= 2 && abs(image.bounds.height - 100) <= 2, "\(image.bounds)")
+            #expect(abs(image.bounds.minX - 72) <= 2, "the image is not in the text column: \(image.bounds)")
+            #expect(image.count > 14_000 && image.count < 16_000, "\(image.count) red pixels")
+            let text = (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+            #expect(text.contains("Locations at Which Military Air Transit Rights Are Desired"))
+            #expect(FigureFixtures.count("[Figure]", in: text) == 2, "the two absent images print their placeholders")
+
+            // With no image on the device nothing is drawn, and all three print the placeholder.
+            let without = try await export(with: FigureImageStore())
+            for index in 0..<without.pageCount {
+                #expect(try redPixels(of: try #require(without.page(at: index))).count == 0)
+            }
+            let plain = (0..<without.pageCount).compactMap { without.page(at: $0)?.string }.joined(separator: "\n")
+            #expect(FigureFixtures.count("[Figure]", in: plain) == 3)
+        }
+    }
+
+    @Test("Word stores the image once as word/media/figure1.png and draws it in the paragraph under its head")
+    func docxEmbedsTheImage() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 300, height: 200)
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let exporter = DocxCollectionExporter()
+            exporter.figureImages = FigureImageStore(library: library)
+            // d587, and after it the same map again inside a paragraph.
+            let model = try await ListShapeFixtures.renderModel(
+                FigureFixtures.d587.replacing("</div>", with: "<p>Again: <figure><graphic url=\"figure_1162\"/></figure> as above.</p></div>"),
+                converter: ASTToRenderNodeConverter(volumeId: "frus1946v01"))
+            let doc = CollectionExportDocument(
+                documentId: model.documentId, volumeId: "frus1946v01", sortOrder: 1,
+                title: "Fixture document", bodyText: "", renderModel: model)
+            let url = try await exporter.export(
+                metadata: CollectionExportMetadata(name: "Export \(UUID().uuidString)", note: nil),
+                items: [.document(doc)], options: CollectionExportOptions())
+            defer { try? FileManager.default.removeItem(at: url) }
+            let data = try Data(contentsOf: url)
+            let package = String(decoding: data, as: UTF8.self)
+
+            // The part, its bytes, its content type and its relationship.
+            #expect(FigureFixtures.count("word/media/figure1.png", in: package) == 2,
+                    "one local header and one central-directory entry")
+            #expect(!package.contains("word/media/figure2.png"), "the same image was stored twice")
+            #expect(data.range(of: png) != nil, "the image's bytes are not in the package")
+            #expect(package.contains("<Default Extension=\"png\" ContentType=\"image/png\"/>"))
+            #expect(package.contains("<Relationship Id=\"rIdFigure1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/figure1.png\"/>"))
+            #expect(package.contains("xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\""))
+
+            // Drawn twice — under its head, and inside the sentence that names it again — at
+            // 150 by 100 points (12,700 EMU to the point).
+            let body = try FigureExportTests.body(of: package)
+            #expect(FigureFixtures.count("<a:blip r:embed=\"rIdFigure1\"/>", in: body) == 2)
+            #expect(FigureFixtures.count("<wp:extent cx=\"1905000\" cy=\"1270000\"/>", in: body) == 2)
+            #expect(body.contains("descr=\"Locations at Which Military Air Transit Rights Are Desired\""))
+            let head = try #require(body.range(of: "Locations at Which Military Air Transit Rights Are Desired</w:t>"))
+            let drawing = try #require(body.range(of: "<w:drawing>", range: head.upperBound..<body.endIndex))
+            let table = try #require(body.range(of: "<w:tbl>", range: head.upperBound..<body.endIndex))
+            #expect(drawing.lowerBound < table.lowerBound, "the image must come between its head and the table")
+            #expect(FigureFixtures.count("</w:p>", in: String(body[head.upperBound..<drawing.lowerBound])) == 1,
+                    "the image is in the paragraph after its head's")
+            // The second, inside its sentence: one paragraph holding the words either side of it.
+            let sentence = try #require(body.matches(of: /<w:p>(?:(?!<\/w:p>)[\s\S])*Again: [\s\S]*?<\/w:p>/).first).output
+            #expect(sentence.contains("<w:drawing>") && sentence.contains(" as above."),
+                    "an image alone must stay in its line: \(sentence.prefix(400))")
+            // The two absent maps print the placeholder.
+            #expect(FigureFixtures.count(">[Figure]<", in: body) == 2)
+        }
+    }
+
+    @Test("In a Word footnote an image prints as its placeholder, and the footnotes part names no relationship")
+    func docxFootnoteImageIsThePlaceholder() async throws {
+        try await FigureTestImages.withLibrary { library in
+            #expect(library.store(try FigureTestImages.png(width: 30, height: 20), volumeId: "v", fileName: "mark.png"))
+            let exporter = DocxCollectionExporter()
+            exporter.figureImages = FigureImageStore(library: library)
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>Body <figure><graphic url="mark"/></figure> text.<note n="1" xml:id="d1fn1">A note with a mark <figure><graphic url="mark"/></figure> and a video.<figure><head>Reel 1</head><iframe src="//players.brightcove.net/x"/></figure></note></p>
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let package = try await FigureExportTests.docxPackage(model, volumeId: "v", exporter: exporter)
+            let body = try FigureExportTests.body(of: package)
+            #expect(FigureFixtures.count("<w:drawing>", in: body) == 1, "the body's mark is drawn")
+            let start = try #require(package.range(of: "<w:footnotes "))
+            let end = try #require(package.range(of: "</w:footnotes>", range: start.upperBound..<package.endIndex))
+            let footnotes = String(package[start.lowerBound..<end.upperBound])
+            #expect(footnotes.contains("A note with a mark"), "the note was not printed")
+            #expect(footnotes.contains(">[Figure]<"), "the note's mark prints no placeholder: \(footnotes)")
+            #expect(!footnotes.contains("<w:drawing>") && !footnotes.contains("r:embed") && !footnotes.contains("r:id"),
+                    "word/footnotes.xml has no relationships part: \(footnotes)")
+            // The video's link prints as words and its page's address.
+            #expect(footnotes.contains("Watch on history.state.gov ↗ https://history.state.gov/historicaldocuments/v/d1"),
+                    "\(footnotes)")
+        }
+    }
+
+    @Test("Word links an embedded video to its page")
+    func docxLinksAVideo() async throws {
+        let model = try await ListShapeFixtures.renderModel(
+            FigureFixtures.appendix1, converter: ASTToRenderNodeConverter(volumeId: "frus1917-72PubDipv06"))
+        let package = try await FigureExportTests.docxPackage(model, volumeId: "frus1917-72PubDipv06")
+        let body = try FigureExportTests.body(of: package)
+        let link = try #require(body.firstMatch(of: /<w:hyperlink r:id="(rId[0-9]+)">(?:(?!<\/w:hyperlink>)[\s\S])*Watch on history\.state\.gov ↗/),
+                                "the video's link is not a hyperlink: \(FigureExportTests.paragraphTexts(body))")
+        #expect(package.contains("<Relationship Id=\"\(link.output.1)\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink\" Target=\"https://history.state.gov/historicaldocuments/frus1917-72PubDipv06/appendix-1\" TargetMode=\"External\"/>"))
+        let paragraphs = FigureExportTests.paragraphTexts(body)
+        let reel = try #require(paragraphs.firstIndex(of: "Reel 1"), "\(paragraphs)")
+        #expect(paragraphs[reel + 1] == "Watch on history.state.gov ↗", "\(paragraphs)")
+        #expect(!package.contains("brightcove"), "the player's markup is printed")
+    }
+
+    @Test("PDF prints an embedded video's head, then its link's words and its page's address")
+    func pdfPrintsAVideosAddress() async throws {
+        let model = try await ListShapeFixtures.renderModel(
+            FigureFixtures.appendix1, converter: ASTToRenderNodeConverter(volumeId: "frus1917-72PubDipv06"))
+        let lines = FigureExportTests.lines(PDFCollectionExporter().bodyAttributedString(
+            for: model, highlights: [], includeFootnotes: false))
+        let reel = try #require(lines.firstIndex(of: "Reel 1"), "\(lines)")
+        #expect(lines[reel + 1]
+                == "Watch on history.state.gov ↗ https://history.state.gov/historicaldocuments/frus1917-72PubDipv06/appendix-1",
+                "\(lines)")
+    }
+
+    @Test("The HTML export embeds the image's bytes and carries the figure's styles")
+    func htmlExportEmbedsTheImage() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 300, height: 200)
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let exporter = HTMLCollectionExporter()
+            exporter.figureImages = FigureImageStore(library: library)
+            let model = try await d587()
+            let doc = CollectionExportDocument(
+                documentId: model.documentId, volumeId: "frus1946v01", sortOrder: 1,
+                title: "Fixture document", bodyText: "", renderModel: model)
+            let url = try await exporter.export(
+                metadata: CollectionExportMetadata(name: "Export \(UUID().uuidString)", note: nil),
+                items: [.document(doc)], options: CollectionExportOptions())
+            defer { try? FileManager.default.removeItem(at: url) }
+            let html = try String(contentsOf: url, encoding: .utf8)
+            #expect(html.contains("src=\"data:image/png;base64,\(png.base64EncodedString())\""), "the image is not embedded")
+            #expect(FigureFixtures.count("<img class=\"figure-image\"", in: html) == 1)
+            #expect(FigureFixtures.count("<span class=\"figure-missing\">[Figure]</span>", in: html) == 2)
+            #expect(html.contains(".frus-figure img.figure-image"), "the export's stylesheet has no figure rules")
+            #expect(!html.contains("frusexplorer://figure"), "an exported file cannot load from the app's scheme")
+        }
+    }
+
+    @Test("A highlight after a figure paints exactly its words in Word and PDF: the figure is no flat text")
+    func aHighlightAfterAFigureKeepsItsWords() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d289)
+        let flat = buildFlatText(from: model)
+        let target = "General Marshall"
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        let highlight = ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow)
+
+        let package = try await FigureExportTests.docxPackage(model, volumeId: "frus1951v03p1", highlights: [highlight])
+        let runs = package.matches(of: /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/)
+        #expect(runs.map { String($0.output.1) }.joined() == target, "Word's tracker counted a figure's text")
+
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [highlight], includeFootnotes: false)
+        var painted = ""
+        body.enumerateAttribute(PDFCollectionExporter.highlightAttrKey,
+                                in: NSRange(location: 0, length: body.length)) { value, range, _ in
+            if value != nil { painted += (body.string as NSString).substring(with: range) }
+        }
+        #expect(painted == target, "the PDF's tracker counted a figure's text: shaded \"\(painted)\"")
+
+        // The same for the space drawn between two inline elements.
+        let d2 = try await ListShapeFixtures.renderModel(FigureFixtures.d2)
+        let d2Flat = buildFlatText(from: d2)
+        let word = try #require(d2Flat.range(of: "in extenso"))
+        let at = d2Flat.utf16.distance(from: d2Flat.utf16.startIndex, to: word.lowerBound)
+        let late = ExportHighlight(startOffset: at, endOffset: at + 10, color: .yellow)
+        let d2Package = try await FigureExportTests.docxPackage(d2, volumeId: "frus1861", highlights: [late])
+        let d2Runs = d2Package.matches(of: /<w:highlight w:val="yellow"\/>(?:<[^>]*>)*<\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/)
+        #expect(d2Runs.map { String($0.output.1) }.joined() == "in extenso", "Word's tracker counted a drawn space")
+        let d2Body = PDFCollectionExporter().bodyAttributedString(for: d2, highlights: [late], includeFootnotes: false)
+        var d2Painted = ""
+        d2Body.enumerateAttribute(PDFCollectionExporter.highlightAttrKey,
+                                  in: NSRange(location: 0, length: d2Body.length)) { value, range, _ in
+            if value != nil { d2Painted += (d2Body.string as NSString).substring(with: range) }
+        }
+        #expect(d2Painted == "in extenso", "the PDF's tracker counted a drawn space: shaded \"\(d2Painted)\"")
+        // And both print the space.
+        #expect(d2Body.string.contains("Washington, February 28, 1861."), "\(FigureExportTests.lines(d2Body))")
+        let d2Text = FigureExportTests.paragraphTexts(try FigureExportTests.body(of: d2Package))
+        #expect(d2Text.contains { $0.contains("Washington, February 28, 1861.") }, "\(d2Text)")
+        #expect(d2Text.contains { $0.contains("read by SecState Rusk") }, "\(d2Text)")
+    }
+
+    /// Makes `resolver` — built by `make` over `library`'s volumes — record each image it is asked
+    /// to fetch in `asked`, fetching none, and collect its progress messages in `status`.
+    private func fetchRecordingResolver(
+        library: FigureImageLibrary, context: ModelContext, asked: FigureTestImages.Counter, status: StatusLog,
+        make: (AppState, ModelContext, @escaping (String?) -> Void) -> CollectionContentResolver = {
+            CollectionContentResolver(appState: $0, modelContext: $1, onPreparingStatus: $2)
+        }
+    ) -> CollectionContentResolver {
+        let appState = AppState()
+        appState.downloadManager = DownloadManager(
+            volumesDirectory: library.volumesDirectory,
+            downloadTask: { _ in throw URLError(.cancelled) },
+            onStateChanged: { _ in })
+        let resolver = make(appState, context) { status.messages.append($0) }
+        resolver.figureImages = FigureImageStore(library: library) { volumeId, fileName in
+            await asked.add("\(volumeId)/\(fileName)")
+            return false
+        }
+        return resolver
+    }
+
+    /// The progress messages a resolve reported, in order; `nil` clears the line.
+    @MainActor
+    private final class StatusLog {
+        var messages: [String?] = []
+    }
+
+    /// The three maps of d587, as an export asks for them.
+    private static let d587Maps = ["frus1946v01/figure_1162.png", "frus1946v01/figure_1163.png",
+                                   "frus1946v01/figure_1166.png"]
+
+    @Test("A PDF, Word or HTML export fetches the figure images that are not on the device; the preview, BibTeX, RIS and the Zotero send fetch none")
+    func anExportFetchesAbsentImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Figures")
+            context.insert(coll)
+            let entry = CollectionEntry(collectionId: coll.id, documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)
+            context.insert(entry)
+            try context.save()
+
+            let asked = FigureTestImages.Counter()
+            let status = StatusLog()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: status)
+            let preview = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview,
+                                                     printsFigureImages: true)
+            let askedByThePreview = await asked.values
+            #expect(askedByThePreview.isEmpty, "a .preview resolve must fetch nothing: \(askedByThePreview)")
+            // The preview's model still names each image by its volume, so one on the device is drawn.
+            let previewed = try #require(preview.compactMap { item -> CollectionExportDocument? in
+                if case .document(let document) = item { return document }
+                return nil
+            }.first, "the preview resolved no document")
+            #expect(previewed.renderModel?.figureImages.first == Self.map)
+
+            // BibTeX takes the same resolve as PDF, Word and HTML, and prints citations: it says
+            // it prints no image, and none is fetched. RIS and the Zotero send resolve documents only.
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export,
+                                           printsFigureImages: ExportFormat.bibtex.printsFigureImages)
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export)
+            _ = try await resolver.resolveDocuments(collection: coll, entries: [entry], allNotes: [], purpose: .export)
+            let askedForCitations = await asked.values
+            #expect(askedForCitations.isEmpty, "a citation export fetched figure images: \(askedForCitations)")
+            #expect(status.messages.isEmpty, "\(status.messages)")
+
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export,
+                                           printsFigureImages: ExportFormat.pdf.printsFigureImages)
+            #expect(await asked.values == Self.d587Maps)
+            // The export sheet's line says what the wait is for, and is cleared afterwards.
+            #expect(status.messages == ["Fetching figure images…", nil], "\(status.messages)")
+        }
+    }
+
+    @Test("Each export format says whether it prints a figure's image, and the export sheet hands the resolver its format's answer")
+    func onlyTheFormatsThatPrintImagesFetchThem() throws {
+        #expect(ExportFormat.allCases.filter(\.printsFigureImages) == [.pdf, .html, .docx])
+        #expect(ExportFormat.allCases.filter { !$0.printsFigureImages } == [.zoteroJSON, .bibtex, .fruscollection])
+
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionExportSheet.swift"), encoding: .utf8)
+        // The one rendered-format resolve, in `runExport`: PDF, HTML, Word and BibTeX all take it.
+        #expect(source.components(separatedBy: "makeResolver().resolve(").count == 2, "the sheet resolves items once")
+        let call = try #require(source.range(of: "makeResolver().resolve"))
+        let arguments = try #require(WindowTargetingTests.balancedBlock(in: source, from: call.upperBound, open: "(", close: ")"))
+        #expect(arguments.contains("purpose: .export"), "\(arguments)")
+        #expect(arguments.contains("printsFigureImages: selectedFormat.printsFigureImages"),
+                "the export sheet does not tell the resolver whether its format prints images: \(arguments)")
+        // RIS and the Zotero send resolve documents only, which fetches none.
+        #expect(source.components(separatedBy: "makeResolver().resolveDocuments(").count == 2)
+    }
+
+    @Test("An export fetches no image of a document it prints without its body")
+    func anIndexEntryFetchesNoImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Figures")
+            context.insert(coll)
+            // d587, with three maps, as an index entry — citation and date, no body — and d588,
+            // which draws the first of them again, in full.
+            let outline = CollectionEntry(collectionId: coll.id, documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)
+            outline.bodyDepthOverride = CollectionBodyDepth.index.rawValue
+            let full = CollectionEntry(collectionId: coll.id, documentId: "d588", volumeId: "frus1946v01", sortOrder: 1)
+            context.insert(outline)
+            context.insert(full)
+            try context.save()
+
+            let asked = FigureTestImages.Counter()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: StatusLog())
+            let items = try await resolver.resolve(collection: coll, entries: [outline, full], allNotes: [],
+                                                   purpose: .export, printsFigureImages: true)
+            #expect(items.documents.map(\.bodyDepth) == [.index, .full])
+            #expect(await asked.values == ["frus1946v01/figure_1162.png"],
+                    "only the document printed in full has its image fetched")
+            #expect(CollectionContentResolver.printedFigureImages(in: items) == [Self.map])
+        }
+    }
+
+    @Test("An image already on the device is not asked for, and an export with nothing to fetch says nothing")
+    func nothingToFetchSaysNothing() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            for name in ["figure_1162.png", "figure_1163.png", "figure_1166.png"] {
+                #expect(library.store(png, volumeId: "frus1946v01", fileName: name))
+            }
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Figures")
+            context.insert(coll)
+            let entry = CollectionEntry(collectionId: coll.id, documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)
+            context.insert(entry)
+            try context.save()
+            let asked = FigureTestImages.Counter()
+            let status = StatusLog()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: status)
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export,
+                                           printsFigureImages: true)
+            #expect(await asked.values.isEmpty)
+            #expect(status.messages.isEmpty, "\(status.messages)")
+        }
+    }
+
+    /// A smart collection's export goes through the saved search, not the entries: a resolver
+    /// whose search returns d587 stands in for one, since no search service runs here.
+    private final class SmartSearchStubResolver: CollectionContentResolver {
+        override func smartRefs(for collection: Collection) async throws -> [SmartDocumentRef] {
+            [SmartDocumentRef(documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)]
+        }
+    }
+
+    @Test("A smart collection's PDF, Word or HTML export fetches its documents' absent images too")
+    func aSmartCollectionsExportFetchesAbsentImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Smart figures")
+            coll.savedSearchId = UUID()
+            context.insert(coll)
+            try context.save()
+            let asked = FigureTestImages.Counter()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: StatusLog()) {
+                SmartSearchStubResolver(appState: $0, modelContext: $1, onPreparingStatus: $2)
+            }
+            _ = try await resolver.resolve(collection: coll, entries: [], allNotes: [], purpose: .preview,
+                                           printsFigureImages: true)
+            #expect(await asked.values.isEmpty, "a smart collection's preview fetched images")
+            let items = try await resolver.resolve(collection: coll, entries: [], allNotes: [], purpose: .export,
+                                                   printsFigureImages: true)
+            #expect(items.documents.map(\.documentId) == ["d587"], "the smart path resolved \(items.documents.map(\.documentId))")
+            #expect(await asked.values == Self.d587Maps)
+        }
+    }
+
+    /// The header an export prints above a document is read by the resolver's plain-text walk
+    /// (`renderNodePlainText`), not by an exporter's body walk, so a space the parser keeps in a
+    /// dateline has to be printed there too. The header reads a dateline that is the document's
+    /// own child — not one inside an `<opener>`, which prints with the body. Measured 2026-10-01
+    /// over the 553 manifest volumes: of the datelines holding a whitespace-only run between two
+    /// inline elements, 43 are a document's own child (43 documents), 13,692 sit in an opener, 742
+    /// in a closer and 9 in an attachment. `frus1865p4` d493 is one of the 43.
+    @Test("An exported document's dateline keeps the space between two of its inline elements")
+    func theExportedDatelineKeepsItsSpace() async throws {
+        #expect(CollectionContentResolver.renderNodePlainText(
+            [.plainText("Washington,"), .elementSpace, .plainText("February 28, 1861")]) == "Washington, February 28, 1861")
+        try await FigureTestImages.withLibrary { library in
+            // d493's own head and dateline; its text is cut to a line.
+            try """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+                  <div type="document" subtype="historical-document" n="493" xml:id="d493">
+                    <head>Methodist New Connection Conference at Lynden, Canada West</head>
+                    <dateline>
+                        <hi rend="smallcaps">Methodist New Connexion Conference</hi>, <lb/>
+                        <hi rend="italic">Assembled at <placeName>Lynden, C. W.</placeName>,</hi>
+                        <date calendar="gregorian" when="1865-06-13"><hi rend="italic">June</hi>,
+                            13, 1865</date>.</dateline>
+                    <p>Resolution 109.</p>
+                  </div>
+                </body></text></TEI>
+                """.write(to: library.volumesDirectory.appendingPathComponent("frus1865p4.xml"), atomically: true, encoding: .utf8)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Datelines")
+            context.insert(coll)
+            let entry = CollectionEntry(collectionId: coll.id, documentId: "d493", volumeId: "frus1865p4", sortOrder: 0)
+            context.insert(entry)
+            try context.save()
+            let resolver = fetchRecordingResolver(library: library, context: context,
+                                                  asked: FigureTestImages.Counter(), status: StatusLog())
+            let items = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+            let document = try #require(items.documents.first, "d493 did not resolve")
+            let dateline = try #require(document.dateline, "d493 resolved with no dateline")
+            #expect(dateline.hasSuffix("Assembled at Lynden, C. W., June, 13, 1865."), "\(dateline)")
+            #expect(!dateline.contains("C. W.,June"), "the space between the place and the date is not printed: \(dateline)")
+        }
+    }
+
+    @Test("Word draws an image wider than its column or taller than its page scaled to fit, in its shape")
+    func docxFitsALargeImage() async throws {
+        // The widest and the tallest images history.state.gov serves (read 2026-10-01), a map
+        // over both limits, and the largest size that needs no scaling: 936 by 1,152 pixels is
+        // the 6.5-inch column by the 8-inch page at two pixels to the point.
+        let cases: [(width: Int, height: Int, extent: String)] = [
+            (19_043, 800, "cx=\"5943600\" cy=\"249691\""),      // frus1958-60v03mSupp eq_03.png
+            (2_580, 4_321, "cx=\"4367788\" cy=\"7315200\""),    // frus1894app2 figure_1074.png
+            (10_568, 5_536, "cx=\"5943600\" cy=\"3113528\""),   // frus1946v01 figure_1166.png
+            (936, 1_152, "cx=\"5943600\" cy=\"7315200\""),
+            (300, 200, "cx=\"1905000\" cy=\"1270000\""),
+        ]
+        for (width, height, extent) in cases {
+            let run = DocxCollectionExporter.figureDrawingRunXML(index: 0, widthPx: width, heightPx: height, description: "")
+            #expect(run.contains("<wp:extent \(extent)/>"), "\(width) by \(height): \(run.prefix(260))")
+            #expect(run.contains("<a:ext \(extent)/>"), "the picture's own size differs from its place's")
+        }
+
+        // And through the exporter, from the PNGs' own headers: one too wide, one too tall.
+        try await FigureTestImages.withLibrary { library in
+            #expect(library.store(try FigureTestImages.png(width: 1_300, height: 200), volumeId: "v", fileName: "wide.png"))
+            #expect(library.store(try FigureTestImages.png(width: 200, height: 1_300), volumeId: "v", fileName: "tall.png"))
+            let exporter = DocxCollectionExporter()
+            exporter.figureImages = FigureImageStore(library: library)
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>Wide:</p><figure><graphic url="wide"/></figure>
+                  <p>Tall:</p><figure><graphic url="tall"/></figure>
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let body = try FigureExportTests.body(of: try await FigureExportTests.docxPackage(model, volumeId: "v", exporter: exporter))
+            let extents = body.matches(of: /<wp:extent cx="(\d+)" cy="(\d+)"\/>/).map { "\($0.output.1) by \($0.output.2)" }
+            // 1,300 px is 650 pt, over the 468 pt column: 468 by 72. 1,300 px tall is over the
+            // 576 pt page: 88.6 by 576.
+            #expect(extents == ["5943600 by 914400", "1125415 by 7315200"], "\(extents)")
+        }
+    }
+}
+
 // MARK: - FootnoteBlockDocxTests (#1414)
 
 /// Real footnotes that hold a block, for `FootnoteBlockDocxTests` (#1414).
@@ -8898,7 +9612,7 @@ struct FootnoteBlockDocxTests {
         // the end close the cell that ends in a table and the note that ends in one.
         #expect(paragraphs.map(\.text) == ["Lead words.", "A quoted paragraph.", "A heading in a note",
                                            "A dateline in a note", "Heads:", "By desire:", "a. One.", "b.",
-                                           "[Figure: figure_0001]", "", "An attachment heading",
+                                           "[Figure]", "", "An attachment heading",
                                            "Loose attachment words.", "Attachment words.", "Outer cell", "Inner cell",
                                            "", ""],
                 "\(paragraphs)")
@@ -9499,8 +10213,8 @@ struct NestedFootnoteDocxTests {
 /// untrimmed; six more rows (the Collections list, the Mac window's picker label, three Research rows and the document
 /// change review) used the shared key but tested the name untrimmed too; the Add to Collection picker's search and the
 /// Research rail's collection sort read the raw name. Review round 1 found the word cloud's Collection scope and Compare
-/// menus printing a fallback of their own ("Untitled", untrimmed), the unpresented `GlobalContextView` printing the raw
-/// name, the Archives Visit picker's "from the collection" line quoting it raw, and five lists that print `listName`
+/// menus printing a fallback of their own ("Untitled", untrimmed), the unpresented `GlobalContextView` (since deleted)
+/// printing the raw name, the Archives Visit picker's "from the collection" line quoting it raw, and five lists that print `listName`
 /// still sorting by the raw name. So the lower-case half of `theFallbackIsSpelledOnlyWhereACollectionIsNamed` is a
 /// control at this lane's base, not a guard; its sites half is what fails there. No test target hosts these views (the
 /// picker's own row test says why), so the rows are read from the source, call by call; what `listName` prints is
@@ -9543,12 +10257,12 @@ struct CollectionListNameTests {
         ("Research/ResearchView.swift", "case .collection(let id):\n", "name"),
         ("DocumentView/DocumentChangeReviewSheet.swift", "Text(entry.text ?? \"\")",
          "entry.collection?.name ?? \"\""),
-        // Review round 1: the word cloud's two menus, and the unpresented `GlobalContextView`'s row.
+        // Review round 1: the word cloud's two menus. (It also listed the unpresented `GlobalContextView`'s row,
+        // until lane HYG deleted that view on 2026-10-01.)
         ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.compare.collections\"",
          "collection.name"),
         ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.scope.collection\"",
          "collection.name"),
-        ("ProjectContext/GlobalContextView.swift", "private struct CollectionRowView: View {", "collection.name"),
     ]
 
     @Test("Each row that prints a collection's name prints it through listName", arguments: rows.indices)

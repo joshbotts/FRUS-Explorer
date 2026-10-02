@@ -59,7 +59,11 @@ import SwiftUI
 ///          language tagger's warm-up off the main thread
 ///   1.10 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
 ///          writes `Untitled Collection.html` rather than a hidden `.html`
+///   1.11 — #1516: a figure's image is embedded in the page (`figureImages`, handed to the renderer)
 final class HTMLCollectionExporter: CollectionExporter {
+
+    /// Where figure images come from (#1516). The app's store; a test sets its own.
+    var figureImages: FigureImageStore = .shared
 
     // MARK: - CollectionExporter
 
@@ -75,7 +79,8 @@ final class HTMLCollectionExporter: CollectionExporter {
                 texts: items.documents.map(\.bodyText), title: metadata.name
             )?.pngBase64
         }
-        let renderer = CollectionItemHTMLRenderer(options: options)
+        var renderer = CollectionItemHTMLRenderer(options: options)
+        renderer.figureImages = figureImages
         let html = renderer.pageHTML(metadata: metadata, items: items,
                                      wordCloudPNGBase64: cloudBase64)
         let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".html")

@@ -801,7 +801,7 @@ struct CitationLookupFields: Equatable, Sendable {
 /// Content for the macOS **Citation Lookup window** (`frus.citationLookup`, ⌘⇧F —
 /// UI audit B4): `CitationLookupView` behind a boot-readiness guard.
 ///
-/// A window, not a sheet, for the same reason full-text Search (⌘F) is one — both
+/// A window, not a sheet, for the same reason full-text Search (⌥⌘F) is one — both
 /// are "find a document" flows whose results are worked through one by one, and the
 /// modal died with its matches on every Done.
 ///

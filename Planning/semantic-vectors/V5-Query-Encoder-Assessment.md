@@ -1,5 +1,11 @@
 # V-5 — the query encoder, assessed
 
+**Outcome, recorded 2026-10-01: V-5 was built and shipped in build 44**, after the measurement
+this assessment asked for was made (`eval-2026-08-27/VERDICT.md`: the owner's 25 queries, 435
+judged rows). The recommendation below — "do not build V-5 next" — is the 2026-08-16 position and
+was discharged by that evaluation, not overruled. This file is the record of how the phase was
+decided; nothing sequences from it any longer.
+
 **Status:** assessed 2026-08-16, **revised the same day (v1.1)** after a five-reader investigation
 returned measurements that correct two claims in v1.0 and remove the re-embed from V-5's critical
 path. Recommendation is unchanged: **do not build V-5 next.** The blocking item is not the encoder —

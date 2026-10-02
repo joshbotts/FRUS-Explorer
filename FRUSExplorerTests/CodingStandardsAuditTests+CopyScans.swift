@@ -829,7 +829,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 293
+    static let countCopyBaselineCeiling = 291
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -865,7 +865,9 @@ extension CodingStandardsAuditTests {
     /// Archival ranking export's Scope sentence go through `CountCopy` in the owner's wording, and
     /// the Cited Over Time export's timeline sentence states no era count. #1506 took it to 293: the
     /// Citation Lookup Batch summary was rebuilt with a best-guess bucket (`BatchCitationOutcome.summary`),
-    /// its citation and best-guess counts through `CountCopy`.
+    /// its citation and best-guess counts through `CountCopy`. Lane HYG took it to 291 by deleting two
+    /// views nothing constructed, each with one listed string: `GlobalContextView`'s documents-accessed
+    /// label and `PromptsListView`'s summary count (#1484).
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -1035,7 +1037,6 @@ extension CodingStandardsAuditTests {
         #"Models/ResearchSessionsSummary.swift | settings.sessions.count.many %lld"#,
         #"Models/ResearchSessionsSummary.swift | settings.sessions.events.many %lld"#,
         #"Models/WorkingCorpusResolver.swift | workingCorpus.coverage %lld %lld"#,
-        #"ProjectContext/GlobalContextView.swift | global.context.summary.totalDocs.a11y"#,
         #"ProjectContext/ProjectFocusSubjectsEditor.swift | project.focus.volumeCount.other"#,
         #"ProjectContext/ProjectHomeView.swift | project.collections.manage.docCount.other"#,
         #"ProjectContext/ProjectHomeView.swift | project.home.search.results"#,
@@ -1150,7 +1151,6 @@ extension CodingStandardsAuditTests {
         #"Summarization/BackgroundSummarizationService.swift | bg.summarizer.failed.allFailed"#,
         #"Summarization/BackgroundSummarizationService.swift | bg.summarizer.failed.unavailable"#,
         #"Summarization/BackgroundSummarizationSettingsView.swift | bg.summarizer.scope.customScope.downloaded %lld %lld"#,
-        #"Summarization/PromptsListView.swift | prompts.list.row.summaryCount.plural"#,
         #"Summarization/SummarizationPaneModel.swift | settings.summarization.lastRun.doc.many %lld"#,
         #"Summarization/SummarizationPaneModel.swift | settings.summarization.prompt.count.many %lld"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.claim.drawnFrom.header %lld"#,
@@ -1330,7 +1330,9 @@ extension CodingStandardsAuditTests {
         // Each exception's check ran on at least one site, and the construction matcher found the
         // excused types where they are built: measured in review round 1, seven sites — CorpusView
         // four times in BrowserView, EdgeTapNavigationTip twice in DocumentView and once in the
-        // registry's allTips, PromptsListView nowhere.
+        // registry's allTips, PromptsListView nowhere. Six since lane HYG (2026-10-01), which
+        // deleted PromptsListView with its exception (#1484) and `BrowserView.splitLayout`, the
+        // fourth CorpusView construction.
         #expect(checked >= Self.macTapExceptions.count,
                 "Checked \(checked) exception site(s) for \(Self.macTapExceptions.count) exceptions.")
         #expect(constructions.values.joined().count > 0, """
@@ -1363,9 +1365,6 @@ extension CodingStandardsAuditTests {
         "Settings/SettingsView.swift | settings.display.reading.footer.iphone": MacTapException(
             reason: "it is drawn only inside `if isPhone {`, and isPhone's Mac branch is `false`",
             holds: .drawnOnlyWhen("isPhone")),
-        "Summarization/PromptsListView.swift | prompts.list.user.empty": MacTapException(
-            reason: "no code the Mac compiles constructs PromptsListView — nothing constructs it",
-            holds: .neverConstructedOnMac("PromptsListView")),
         "CrossReference/CrossReferenceGraphView.swift | graph.info.edges.body": MacTapException(
             reason: "\"Hover over or tap the middle of a line\" names the Mac's gesture beside the "
                 + "touch one, so it reads right on both (#1380 says so)",

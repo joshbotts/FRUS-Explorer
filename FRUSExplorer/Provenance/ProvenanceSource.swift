@@ -20,7 +20,7 @@ import Foundation
 /// colour a chip is but *may I write "FRUS shows X", or must I write something weaker* — so the
 /// tier answers how far from FRUS, and ``ProvenanceSource`` names the partner, because that is the
 /// first half of the sentence they are about to write. See
-/// `Planning/Provenance-Tiers-Development-Plan.md` (wave PV).
+/// `Planning/Completed/Provenance-Tiers-Development-Plan.md` (wave PV).
 ///
 /// Version history:
 ///   1.0 — PV-0: initial implementation

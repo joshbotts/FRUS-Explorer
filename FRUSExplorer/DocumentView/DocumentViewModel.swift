@@ -557,7 +557,7 @@ public final class DocumentViewModel {
             // name (case-insensitive) so abbreviations without an explicit @ref still
             // render as tappable dotted-underline links.
             var converter = ASTToRenderNodeConverter(
-                personLookup: { [pByRef] ref in pByRef[ref] },
+                volumeId: entry.volumeId, personLookup: { [pByRef] ref in pByRef[ref] },
                 glossLookup:  { [tByRef] ref in tByRef[ref] },
                 abbrLookup:   { [tByText] text in tByText[text.lowercased()] },
                 // Degrade dead cross-references (issue #240). Volume-scoped: brokenness is

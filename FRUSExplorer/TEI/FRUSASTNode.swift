@@ -202,6 +202,8 @@ extension FRUSDocumentAST {
 ///   1.2 — Session 36: `.date` case added for structured date attribute extraction
 ///   1.2 — Session 42: `.footnote` gains `printedNumber: String?` for TEI `@n` attribute
 ///   1.3 — Session 78: `.attachment` added for `<frus:attachment>` sub-document blocks
+///   1.4 — #1516 fold-in: `.elementSpace`, the whitespace-only run between two inline elements
+///          the parser used to discard. It carries no text, so nothing the index stores moves.
 public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Document Structure
@@ -348,6 +350,20 @@ public indirect enum FRUSASTNode: Sendable {
 
     /// `<lb>` — a line break within flowing text.
     case lineBreak
+
+    // MARK: Spaces between inline elements (#1516 fold-in)
+
+    /// A whitespace-only run between two inline elements — `<placeName>Washington,</placeName>`,
+    /// a line break, `<date>February 28, 1861</date>` — which the page prints as a space.
+    ///
+    /// The parser discards whitespace-only character data, which is right between two blocks and
+    /// wrong here: `frus1861` d2's dateline read "Washington,February 28, 1861". This node marks
+    /// where it dropped one (`TEIParserDelegate.keepsElementSpace`). **It is no text.**
+    /// `PrintedText` appends nothing for it, so `body_text`, the title, the dateline and every
+    /// other string the index stores are what they were (they already spaced such a seam by the
+    /// printed rule), and the converter emits a render leaf that every renderer draws as a space
+    /// and no offset walker counts, so `renderingVersion` and `body_hash` do not move either.
+    case elementSpace
 
     // MARK: Attachments (Session 78)
 

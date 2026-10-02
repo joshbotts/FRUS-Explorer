@@ -1,6 +1,6 @@
 # W-15: geographic analytics and historical toponymy — assessment
 
-**Status:** ASSESSED, 2026-09-01. Session C-2 of `Plan-Of-Record-2026-08-28.md` §4, covering
+**Status:** ASSESSED, 2026-09-01. Session C-2 of `Completed/Plan-Of-Record-2026-08-28.md` §4, covering
 `BigPicture-Analytics-CorpusVsSeries.md`'s postponed priorities **8, 10, 11 and 12** together, with
 era-correct place names reconciling to stable places as the owner's stated first-class requirement.
 

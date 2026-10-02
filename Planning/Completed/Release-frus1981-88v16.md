@@ -1,6 +1,13 @@
 # Release: FRUS 1981–1988, Volume XVI, South America
 
-**Live record of the ingestion run.** Executes `New-Volume-Release-Plan.md` against OH's PR #460,
+**Closed, and archived here on 2026-10-01.** The volume shipped in build 47 (Phase F, 2026-09-10)
+and OH's in-place corrections were absorbed on 2026-09-19. What the run left open is carried by the
+live plan of record's list of archived residue: Phase E (subject tags and the person crosswalk for
+this volume, deferred by the owner until the upstream drops include it), lot `95D407`, which NARA's
+catalogue does not answer, the re-harvest of this volume's shard at its next document-count
+change, and the doubled `)` in d395, which belongs to the Office of the Historian report (#1309).
+
+**Written as the live record of the ingestion run.** Executes `New-Volume-Release-Plan.md` against OH's PR #460,
 merged into the corpus clone as `13a56f8e5`. Started 2026-09-09. Every number below was read off a
 regenerated artifact or a generator's own log, not carried over from the plan.
 

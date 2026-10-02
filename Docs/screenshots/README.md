@@ -21,7 +21,9 @@ Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has
 
 A screenshot is evidence about a build, so every `ipad/` and `macos/` file is accounted for here.
 **This sweep closes #1081 except for three frames**: the macOS Archives Visit packet with its
-Options menu and Share buttons, which build 48 does not draw on the Mac (#1377); and the two
+Options menu and Share buttons, which the branch these captures came from did not draw on the Mac
+(#1377 — fixed before build 48 was tagged, so the shipped build does; see "Stale after build 48"
+below); and the two
 known-hard shots the issue always listed, the Chronology hover magnifier and the Live Activity.
 
 - **Owner, physical iPad, build 47, 2026-09-13** (3180×2384; `cross-reference-graph` is a
@@ -96,6 +98,40 @@ capture on the current build:
   #1370/#1441 (roles, lifespans, and overlapping or unmarked network labels).
 - Still a placeholder, not a capture: §7.11's `[SCREENSHOT: the Search window's zero-result state
   with the semantic matches section beneath the query decomposition.]`
+
+### Not re-checked after the build-49 wave (2026-10-01)
+
+The wave's fifteen merged lanes (thirteen when this list was written; HYG and READ landed on
+2026-10-02, and the last bullet is theirs) changed what several captured surfaces draw, and **no capture was retaken
+or compared against the new build**. This list is drawn from what each lane changed, not from
+looking at the app, so treat every line but the first as a candidate:
+
+- `ipad/crossref-analytics.png` — **stale, by measurement**: its longest Most-Referenced label
+  runs about 525 pt on one line, and since #1473 a label is capped at 320 pt and wraps to a second
+  line (`RankingChartAxis.labelWidth`). `macos/crossref-analytics.png` is already listed above.
+- `ipad/browse-archives-provenance.png` — lane NOTE recorded it in
+  `../../Planning/Manual-Revisions-Pending.md` (#1514 moved notes between provenance categories).
+- `ipad/archival-analytics.png`, `macos/archival-analytics.png`, and the
+  `ipad/browse-archives*` set — their counts predate the collection authority's regenerations of
+  2026-09-25 (#1466, #1469) and 2026-10-01 (#1514, #1468).
+- `ipad/trip-packet.png`, `ipad/trip-packet-options.png` — #1514 and #1515 changed the packet's
+  crib and divided-lot lines.
+- `ipad/cross-reference-graph.png`, `macos/cross-reference-graph.png`, `macos/person-analytics-network.png`
+  — #1438 gave every graph's labels a second place above their node, so a re-capture names more
+  nodes; #1481 renamed the iPad node menu's item to *View Document*.
+- `macos/collections.png` (already listed) — #1446 also caps a long name in the collection picker.
+- Any capture of Volumes & Storage, Data & Recovery, Citation Lookup's Batch mode, or a text
+  selection in the iPad reader: lanes STOR, SYNC, LANG, CITE and SEL changed those screens. No
+  capture named for one of them is embedded in either manual today; a future one should be taken
+  on build 49 or later.
+- Added 2026-10-02, from what lanes READ and HYG changed: a document that prints a figure now
+  draws its image where it printed the file's name, and the **Storage used** bar gains a
+  **Figures** segment once an image is on the device (#1516); the Mac main window's empty state
+  names ⌥⌘F under "Select a document to begin", and its Search tooltip does too. No capture was
+  opened to see whether it shows one of these.
+
+Three `[SCREENSHOT` placeholders remain: `../iOS-User-Manual.md` has two (the Search Tips sheet;
+the zero-result "Search by meaning" offer) and `../macOS-User-Manual.md` one (above).
 
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 

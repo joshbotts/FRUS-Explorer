@@ -2428,34 +2428,15 @@ public actor IndexingPipeline {
         )
     }
 
-    /// Updates research note content and user tag IDs for a document in `document_cache`.
-    ///
-    /// The `user_content` FTS5 sync trigger re-indexes the note text; `user_tag_ids`
-    /// is `UNINDEXED` so its new value is visible to queries immediately without any
-    /// index maintenance. Use this overload when the `ResearchNote` SwiftData model
-    /// cannot safely cross actor boundaries (e.g. boot-time or post-download sync
-    /// from a background `ModelContext`). Convert the note's `[UUID]` tag array to
-    /// the space-separated string format before calling.
-    func updateNoteText(
-        volumeId: String,
-        documentId: String,
-        bodyText: String,
-        userTagIds: String?
-    ) async throws {
-        try updateCacheColumns(
-            volumeId: volumeId, documentId: documentId, label: "updateNoteText",
-            assignments: [("note_text", bodyText), ("user_tag_ids", userTagIds)]
-        )
-    }
-
     /// Updates a document's note text and **nothing else**.
     ///
-    /// Use this whenever the caller has no authoritative tag string to write. The
-    /// `userTagIds:` overload sets `user_tag_ids` to whatever it is passed, so passing `nil`
-    /// there *erases* the document's tags — and `user_tag_ids` is per **document**, not per
-    /// note, so a note that carries no tags of its own would wipe tags contributed by
-    /// another note on the same document. A new note has no tags to contribute, so it must
-    /// not speak for the column at all.
+    /// The `user_content` FTS5 sync trigger re-indexes the note text. This is the only
+    /// `updateNoteText`. Until lane HYG (2026-10-01) there was a second overload taking
+    /// `userTagIds:`, which set `user_tag_ids` to whatever it was passed, so passing `nil`
+    /// *erased* the document's tags — and `user_tag_ids` is per **document**, not per note, so a
+    /// note that carried no tags of its own wiped tags contributed by another note on the same
+    /// document (#1275's defect). No app code had called it since #1280; it was deleted rather
+    /// than left for the next caller to pick by mistake. ``updateUserTagIds`` writes that column.
     func updateNoteText(
         volumeId: String,
         documentId: String,
@@ -12493,7 +12474,7 @@ extension FRUSASTNode {
              .editorialNote, .titlePage, .figure, .attachment:
             return true
         case .document, .date, .persName, .gloss, .crossReference, .emphasis, .term, .text,
-             .pageBreak, .supplied, .sic, .corr, .formula, .lineBreak, .unknown:
+             .pageBreak, .supplied, .sic, .corr, .formula, .lineBreak, .elementSpace, .unknown:
             return false
         }
     }
@@ -12501,7 +12482,7 @@ extension FRUSASTNode {
     /// Direct and indirect child nodes (used for recursive cross-reference and page-range extraction).
     var children: [FRUSASTNode] {
         switch self {
-        case .text, .formula, .lineBreak, .pageBreak: return []
+        case .text, .formula, .lineBreak, .pageBreak, .elementSpace: return []
         case .document(_, _, let c): return c
         case .head(let c), .dateline(let c), .paragraph(let c),
              .opener(let c), .closer(let c), .salute(let c),
@@ -12583,7 +12564,10 @@ struct PrintedText {
             append(s)
         case .lineBreak:
             append(" ")
-        case .pageBreak, .document:
+        case .pageBreak, .document, .elementSpace:
+            // `.elementSpace` (#1516 fold-in) is no text: the seam it marks was always spaced by
+            // the printed rule below, and appending a space for it would add one after an opening
+            // bracket or before a stop, where the rule leaves none — moving stored text.
             return
         case .footnote where excludingFootnotes:
             return

@@ -50,6 +50,10 @@ enum CrossRefDestination: Equatable {
 /// error. The handler silently ignores any scheme task that arrives after `.cancel`
 /// from `decidePolicyFor` (belt-and-suspenders guard).
 ///
+/// A fourth pattern is not a link but an image the page loads (#1516):
+/// `frusexplorer://figure/{volumeId}/{fileName}` is answered with the figure image's bytes from
+/// the device's figure store (`FigureImageStore`), or with a failure when it is not there.
+///
 /// ## Person and gloss resolution
 /// `onPersonTap` and `onGlossTap` receive the fully resolved `PersonEntry?` /
 /// `GlossEntry?` rather than a raw ref string. Call `register(model:)` after each
@@ -70,6 +74,10 @@ enum CrossRefDestination: Equatable {
 ///          on macOS, which is why in-document person/term links never fired.
 ///   1.2 — #1509: `onCrossRefTap` also receives what a page link's footnote names
 ///          (`PageCitationHint`), read back from the link's query.
+///   1.3 — #1516: `frusexplorer://figure/…` requests are answered with the figure's image, and
+///          the links in a figure's head and captions are registered.
+///   1.4 — #1516 review, round 1: an image fetched after the page asked for it brings a revealed
+///          footnote back into view once it has loaded (`figureRetryScript`).
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -250,6 +258,12 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     // MARK: - WKURLSchemeHandler
 
     func webView(_ webView: WKWebView, start urlSchemeTask: any WKURLSchemeTask) {
+        // #1516: a figure's image is a subresource of the page, not a navigation, so it does
+        // start here — and is answered with the image's bytes, or with a failure.
+        if let url = urlSchemeTask.request.url, url.host == Self.figureHost {
+            respondWithFigure(at: url, to: urlSchemeTask, in: webView)
+            return
+        }
         // Respond with an empty 200 so WebKit never reports a load error if it ever
         // does start this task. The actual tap dispatch happens in the navigation
         // delegate's decidePolicyFor (see `dispatch(url:)`), because cancelling the
@@ -258,6 +272,94 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: any WKURLSchemeTask) {}
+
+    // MARK: - Figure images (#1516)
+
+    /// The host of a figure image's URL: `frusexplorer://figure/{volumeId}/{fileName}`.
+    nonisolated static let figureHost = "figure"
+
+    /// Where the reader's figure images come from. The app's store by default; a test sets its own.
+    var figureImages: FigureImageStore = .shared
+
+    /// The URL the reader's page names `image` by, or `nil` when its volume is unknown or its
+    /// name is no file name — in which case the page prints the placeholder.
+    nonisolated static func figureURL(for image: FigureImageName) -> URL? {
+        guard let volumeId = image.volumeId, let fileName = image.fileName,
+              FigureImageLibrary.isSafeComponent(volumeId) else { return nil }
+        var components = URLComponents()
+        components.scheme = "frusexplorer"
+        components.host = figureHost
+        components.path = "/\(volumeId)/\(fileName)"
+        return components.url
+    }
+
+    /// The volume and file name a figure URL names, or `nil` when `url` is not one. The query is
+    /// ignored: a retry adds one so the page asks again.
+    nonisolated static func figureImage(from url: URL) -> (volumeId: String, fileName: String)? {
+        guard url.scheme == "frusexplorer", url.host == figureHost else { return nil }
+        let parts = url.pathComponents.filter { $0 != "/" }
+        guard parts.count == 2,
+              FigureImageLibrary.isSafeComponent(parts[0]),
+              FigureImageLibrary.isSafeComponent(parts[1]) else { return nil }
+        return (parts[0], parts[1])
+    }
+
+    /// The page's global holding the `id` of the footnote entry the reader was last brought to
+    /// (`_FRUSWebViewCoordinator.revealFootnote`), or `null` once the reader has scrolled, tapped
+    /// or typed for themselves. ``figureRetryScript(for:)`` reads it.
+    nonisolated static let revealedFootnoteGlobal = "FRUSRevealedFootnote"
+
+    /// The script that makes the page ask again for the image at `url`, once it has been fetched:
+    /// every `<img>` naming it drops its figure's `missing` mark and reloads.
+    ///
+    /// An image that arrives this way is laid out after the page was, and pushes everything
+    /// below it down by its height — a map's, where the placeholder was one line. If the reader
+    /// was brought to a footnote (#988) and has not moved since, the footnote is brought back
+    /// into view when the image has loaded: the reveal's own scroll ran before the image had a
+    /// size, and its `scroll-margin-block` is no match for a map.
+    nonisolated static func figureRetryScript(for url: URL) -> String {
+        var base = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        base?.query = nil
+        let address = base?.url?.absoluteString ?? url.absoluteString
+        let literal = (try? JSONEncoder().encode(address)).map { String(decoding: $0, as: UTF8.self) } ?? "\"\""
+        return "(function(){var u=\(literal);"
+            + "document.querySelectorAll('img.figure-image').forEach(function(i){"
+            + "if(i.getAttribute('src').split('?')[0]===u){"
+            + "i.addEventListener('load',function(){"
+            + "var id=window.\(revealedFootnoteGlobal);var li=id&&document.getElementById(id);"
+            + "if(li){li.scrollIntoView({block:'center',behavior:'auto'});}},{once:true});"
+            + "i.parentNode.classList.remove('missing');i.src=u+'?retry=1';}});return true;})()"
+    }
+
+    /// Answers a figure image's request: with its bytes when it is on the device, and otherwise
+    /// with a failure — so the page shows the placeholder at once — while the image is fetched;
+    /// when that fetch succeeds, the page is told to ask again.
+    ///
+    /// The request is never held open for the network: the page's `load` event waits for its
+    /// images, and the reader paints highlights and reveals a footnote on it.
+    private func respondWithFigure(at url: URL, to task: any WKURLSchemeTask, in webView: WKWebView) {
+        guard let (volumeId, fileName) = Self.figureImage(from: url) else {
+            task.didFailWithError(URLError(.badURL))
+            return
+        }
+        let store = figureImages
+        if let data = store.data(volumeId: volumeId, fileName: fileName) {
+            task.didReceive(URLResponse(url: url, mimeType: "image/png",
+                                        expectedContentLength: data.count, textEncodingName: nil))
+            task.didReceive(data)
+            task.didFinish()
+            return
+        }
+        task.didFailWithError(URLError(.fileDoesNotExist))
+        // Only the first request for an image fetches it: the retry's own request, should the
+        // file have vanished again, must not start a loop.
+        guard url.query == nil else { return }
+        let script = Self.figureRetryScript(for: url)
+        Task { @MainActor [weak webView] in
+            guard await store.fetchIfAbsent(volumeId: volumeId, fileName: fileName) else { return }
+            _ = try? await webView?.evaluateJavaScript(script)
+        }
+    }
 
     // MARK: - Private helpers
 
@@ -339,9 +441,18 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
                 }
                 scan(nodes: Self.nodes(in: trailing), persons: &persons, gloss: &gloss, broken: &broken)
 
+            case .figureBlock(let figure):
+                // #1516: a figure's head and captions carry links too — `frus1951v03p1` d289
+                // captions each photograph with a linked name — and a link the reader draws must
+                // resolve when it is tapped.
+                scan(nodes: figure.head ?? [], persons: &persons, gloss: &gloss, broken: &broken)
+                for caption in figure.captions {
+                    scan(nodes: caption, persons: &persons, gloss: &gloss, broken: &broken)
+                }
+
             default:
                 // Leaf nodes: plainText, formulaText, lineBreak, pageBreak,
-                // footnoteMarker, figureBlock — no refs to collect.
+                // footnoteMarker, elementSpace — no refs to collect.
                 break
             }
         }

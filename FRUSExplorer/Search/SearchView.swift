@@ -688,12 +688,19 @@ struct SearchView: View {
                     GlossaryLookupView()
                         .environment(\.sceneID, sceneID)
                 }
+                // iOS only, like the one action that sets the target (a result row's context-menu
+                // Archival Neighbors…, inside `#if os(iOS)`): the Mac compiled this presenter with
+                // nothing to present, and it was the one Mac `.sheet(` reaching
+                // `ArchivalNeighborsSheet`, whose title sits at `.principal`, a placement #1377's
+                // rule does not admit in a Mac sheet. The Mac opens Archival Neighbors as a window.
+                #if os(iOS)
                 .sheet(item: $archivalNeighborsTarget) { key in
                     ArchivalNeighborsSheet(appState: appState, docKey: key)
                         .environment(appState)
                         // #338 step 4: address THIS window for the sheet's open-document action.
                         .environment(\.sceneID, sceneID)
                 }
+                #endif
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
                     // #377 Phase 5 follow-up: a document opened from Search results also keeps the

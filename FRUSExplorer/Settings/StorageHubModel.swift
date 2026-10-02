@@ -76,17 +76,20 @@ struct StorageRemovalPlan: Equatable, Sendable {
         let volumeId: String
         /// Size of the XML file on disk.
         let volumeFileBytes: Int
+        /// Size of the volume's figure images on disk (#1516), which go with it.
+        var figureBytes: Int = 0
         /// When the volume was last opened, or `nil` if never.
         let lastOpened: Date?
 
         var id: String { volumeId }
 
-        /// XML plus its estimated search-index contribution.
+        /// XML plus its estimated search-index contribution, plus its figure images.
         ///
         /// The index factor is `StorageReport.indexOverheadFactor` (2.8×), the cross-platform mean
         /// measured against a full 552-volume download. Always present this prefixed with "~".
+        /// It multiplies the XML alone: an image is not indexed, so its bytes are counted once.
         var estimatedBytes: Int {
-            volumeFileBytes + Int(Double(volumeFileBytes) * StorageReport.indexOverheadFactor)
+            volumeFileBytes + Int(Double(volumeFileBytes) * StorageReport.indexOverheadFactor) + figureBytes
         }
     }
 
@@ -121,7 +124,7 @@ struct StorageRemovalPlan: Equatable, Sendable {
             .filter { redownloadableVolumeIds.contains($0.volumeId) }
             .map { entry in
                 Candidate(volumeId: entry.volumeId,
-                          volumeFileBytes: entry.volumeFileBytes,
+                          volumeFileBytes: entry.volumeFileBytes, figureBytes: entry.figureBytes,
                           lastOpened: lastOpenedByVolumeId[entry.volumeId])
             }
             .sorted { a, b in
@@ -447,8 +450,9 @@ final class DownloadedVolumesListModel {
 
     /// Size · index state · last opened, in one line — or size · *removing…* while the volume's
     /// removal is under way. Both lists draw this line, so the two cannot word a row differently.
+    /// The size is the volume's XML and its figure images together (#1516).
     func statusLine(for entry: VolumeStorageEntry) -> String {
-        let size = ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes),
+        let size = ByteCountFormatter.string(fromByteCount: Int64(entry.totalBytes),
                                              countStyle: .file)
         let indexState: String
         switch self.indexState(of: entry.volumeId) {

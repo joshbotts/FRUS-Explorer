@@ -8,10 +8,15 @@
 > depth-repair recipe in §4, and the `CREATOR_AUTHORITY=1` route in §5. They are left in place
 > because they are correct for a store that exists.
 >
-> Worse than inoperative in one case: with no raw store the runner skips every group and its
-> writers run **before** the emptiness check, so a `PROJECT_ONLY=1` pass **rewrites the committed
-> run-wide artifacts to describe zero groups** and only then exits non-zero. Git-recoverable, and
-> still destructive. See "The raw NDJSON is not scratch".
+> **Inoperative, and since 2026-10-01 no longer destructive.** With no raw store for any planned
+> group — neither `raw/rg_<N>.ndjson` nor `raw-api/rg_<N>.ndjson` — a `PROJECT_ONLY=1` pass now
+> **refuses before it writes anything** (`RunnerError.noRawStore`): it exits 1 naming the cache
+> directory it looked in, and the manifest, censuses, sample and report are untouched. Until then
+> the runner skipped every group and its writers ran **before** the emptiness check, so the pass
+> **rewrote the committed run-wide artifacts to describe zero groups** and only then exited
+> non-zero. A store for SOME of the planned groups is not refused: those project, each of the
+> rest gets a review note, and the run-wide artifacts are rewritten over the groups found (the
+> subset rule in Step 4a). See "The raw NDJSON is not scratch".
 
 
 `RecordGroupCatalogGenerator` builds an offline index of **all available description data** for the
@@ -492,7 +497,15 @@ roughly 18×, and the build only survived because the machine had the RAM. The c
 `CatalogIndexBuilder` accumulates a group's entire projection in an array, and `writeShard` then encodes
 that whole array to a single `Data` before writing — for RG 59 that is 236,480 records twice over. It
 completed in 8 minutes here, but it would swap or be killed on a 16 GB machine, and `DEPTH=all` would
-not finish at all. **Streaming the shard write is the fix and has not been done.**
+not finish at all. ~~**Streaming the shard write is the fix and has not been done.**~~ **Done as
+P-2 (PR #1244, 2026-09-07), and it is a partial fix.** `writeShard` now encodes one record at a time
+(`RecordGroupCatalogWriter.swift`), which cut the peak footprint 2.14–2.36× over the four shards that
+could be measured (rg_239, rg_469, rg_306, rg_84). The records array itself is still resident and
+still linear in group size — the shard is sorted by NAID and walked again for the sample — so
+`DEPTH=all` is not made to finish by this; that needs an external sort, which is separate work.
+The full RG 59 build was not re-measured, because the raw store it reads no longer exists
+("The raw NDJSON is not scratch"). `CLAUDE.md`'s `RecordGroupCatalogGenerator` entry has the
+measurement.
 
 #### The “37 file units” gap: a NAID-counting artifact, resolved
 
@@ -836,7 +849,9 @@ Written under `OUTPUT_DIR`:
 > (manifest, censuses, creators, series-sample, api-survey, `series/rg_*.json`), with no `raw/`
 > and no `checkpoints/`. **Every `PROJECT_ONLY=1` promise in this runbook is therefore currently
 > false**, and the paragraph below records the reasoning that was not followed rather than a
-> live instruction.
+> live instruction. What a `PROJECT_ONLY=1` run does in this state changed on 2026-10-01: it
+> refuses before writing (`RunnerError.noRawStore`) where it used to rewrite the committed
+> run-wide artifacts to describe zero groups — the header of this runbook has the detail.
 
 `CACHE_DIR` sits under `.cache/`, which `.gitignore` describes as regenerable harvest scratch. True of
 the bytes — but regenerating them costs the entire 22 GB download again, and they are:

@@ -69,7 +69,7 @@ private func containsCase(in nodes: [FRUSASTNode], where predicate: (FRUSASTNode
             children = c
         case .list(_, let c):
             children = c
-        case .text, .lineBreak, .pageBreak, .formula:
+        case .text, .lineBreak, .pageBreak, .formula, .elementSpace:
             children = []
         }
         if containsCase(in: children, where: predicate) { return true }
@@ -103,7 +103,7 @@ private func extractAllText(from nodes: [FRUSASTNode]) -> String {
             result += extractAllText(from: c)
         case .list(_, let c):
             result += extractAllText(from: c)
-        case .lineBreak, .pageBreak:
+        case .lineBreak, .pageBreak, .elementSpace:
             break
         }
     }
@@ -412,7 +412,7 @@ struct TEIParserTests {
                     children = c
                 case .list(_, let c):
                     children = c
-                case .text, .lineBreak, .pageBreak, .formula:
+                case .text, .lineBreak, .pageBreak, .formula, .elementSpace:
                     children = []
                 }
                 if hasWhitespaceOnlyText(children) { return true }

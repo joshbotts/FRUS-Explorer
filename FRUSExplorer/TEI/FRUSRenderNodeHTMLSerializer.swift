@@ -32,7 +32,8 @@ import Foundation
 /// |--------------------|------------------------------------|
 /// | `.pageBreak`       | `<span data-skip="1" …>`           |
 /// | `.footnoteMarker`  | `<button data-skip="1" …>`         |
-/// | `.figureBlock`     | `<figure data-skip="1" …>`         |
+/// | `.figureBlock`     | `<figure class="frus-figure" data-skip="1">`, or inside a line `<span class="frus-figure in-line" data-skip="1">` |
+/// | `.elementSpace`    | `<span class="element-space" data-skip="1">` |
 /// | `.footnoteBody`    | `<aside data-skip="1" …>`          |
 /// | a list's heading   | `<div class="list-heading" data-skip="1">` |
 /// | an item's label    | `<span class="list-label" data-skip="1">`  |
@@ -110,7 +111,28 @@ import Foundation
 ///   1.8 — #1509: a page link inside a footnote carries what the footnote names as its query
 ///          (`PageCitationHint.queryItems`), and a page of another pagination (#1511) shows its
 ///          printed number.
+///   1.9 — #1516: a figure draws its image, its head above it and its captions under it, where
+///          it drew the image's file name as a `<figcaption>`. Where the image comes from is the
+///          caller's choice (``FigureImages``): the reader names it by a `frusexplorer://figure/`
+///          URL its scheme handler serves, the HTML export embeds its bytes, and with neither the
+///          figure prints the placeholder. A figure in a paragraph, a cell or an item is a
+///          `<span>`, since a `<figure>` start tag would close the paragraph around it. The
+///          fold-in: `.elementSpace` draws one space. Both under `data-skip="1"`, as before.
 public struct FRUSRenderNodeHTMLSerializer {
+
+    /// Where a figure's image comes from (#1516).
+    public enum FigureImages: Sendable {
+        /// No image: a figure that names one prints ``FigureBlock/missingImageLabel``. The default,
+        /// so a serializer built without an image source reads no file and names no URL.
+        case placeholder
+        /// The reader: `<img src="frusexplorer://figure/{volume}/{file}">`, which
+        /// `FRUSURLSchemeHandler` answers from the device's figure store. The placeholder is in
+        /// the page too, hidden until the image fails to load.
+        case reader
+        /// The HTML export and its preview: the image's bytes as a `data:` URL, from `load`; the
+        /// placeholder when `load` returns `nil`.
+        case embedded(load: @Sendable (FigureImageName) -> Data?)
+    }
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
     /// (see the version-1.1 note above). Reading views pass `true`; exports keep
@@ -127,6 +149,9 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// converter. Empty by default, so the reading view's ids are unprefixed.
     private let idScope: String
 
+    /// Where a figure's image comes from (#1516). Default ``FigureImages/placeholder``.
+    private let figureImages: FigureImages
+
     /// Creates a serializer.
     ///
     /// - Parameters:
@@ -134,9 +159,12 @@ public struct FRUSRenderNodeHTMLSerializer {
     ///     classification-markings chip. Default `false` (exports).
     ///   - idScope: A per-document prefix for footnote DOM ids, for multi-document pages.
     ///     Default `""`.
-    public init(annotateSourceClassification: Bool = false, idScope: String = "") {
+    ///   - figureImages: Where a figure's image comes from. Default `.placeholder`.
+    public init(annotateSourceClassification: Bool = false, idScope: String = "",
+                figureImages: FigureImages = .placeholder) {
         self.annotateSourceClassification = annotateSourceClassification
         self.idScope = idScope
+        self.figureImages = figureImages
     }
 
     // MARK: - Footnote affordance (#985)
@@ -260,9 +288,7 @@ public struct FRUSRenderNodeHTMLSerializer {
         // omitted to keep the DOM clean.
         var html = "<div class=\"frus-document\">"
 
-        for node in model.bodyNodes {
-            html += nodeToHTML(node)
-        }
+        html += block(model.bodyNodes)
 
         if includeFootnotes {
             // Footnote popovers (inline popup behavior) — inside .frus-document,
@@ -737,12 +763,15 @@ public struct FRUSRenderNodeHTMLSerializer {
             let label = pageLabel(number)
             return "<span class=\"page-break\" data-skip=\"1\" data-page=\"\(escaped(label))\"></span>"
 
-        case .figureBlock(let altText):
-            if let alt = altText, !alt.isEmpty {
-                return "<figure data-skip=\"1\"><figcaption>\(escaped(alt))</figcaption></figure>"
-            } else {
-                return "<figure data-skip=\"1\"></figure>"
-            }
+        case .figureBlock(let figure):
+            // Reached from an inline context — a paragraph, a cell, an item: `block(_:)` draws a
+            // figure that stands between blocks.
+            return figureHTML(figure, asBlock: false)
+
+        case .elementSpace:
+            // #1516 fold-in: the space the TEI encodes between two inline elements. Drawn, and
+            // not flat text, so data-skip — the offset engine and `injectHighlights` pass over it.
+            return "<span class=\"element-space\" data-skip=\"1\"> </span>"
 
         case .footnoteMarker(let id, let type, let seq, let label):
             // data-skip="1" — marker text is excluded from flat-text offset count.
@@ -904,9 +933,81 @@ public struct FRUSRenderNodeHTMLSerializer {
         nodes.map { nodeToHTML($0) }.joined()
     }
 
-    /// Renders an array of nodes as concatenated HTML (block context, no separator).
+    /// Renders an array of nodes as concatenated HTML (block context, no separator): the document
+    /// body, an attachment, an editorial note, a title page, a footnote's blocks. A figure here
+    /// stands between blocks and is drawn as a `<figure>` (#1516); anywhere else it is a `<span>`.
     private func block(_ nodes: [FRUSRenderNode]) -> String {
-        nodes.map { nodeToHTML($0) }.joined()
+        nodes.map { node -> String in
+            if case .figureBlock(let figure) = node { return figureHTML(figure, asBlock: true) }
+            return nodeToHTML(node)
+        }.joined()
+    }
+
+    // MARK: - Figures (#1516)
+
+    /// Draws a figure: its head, its image (or the placeholder), its captions and a video's link.
+    ///
+    /// All of it under `data-skip="1"`: none of it is flat text, so neither the offset engine nor
+    /// `injectHighlights` may count it.
+    ///
+    /// - Parameter asBlock: `true` between blocks, where the figure is a `<figure>`. `false` inside
+    ///   a paragraph, a table cell or a list item, where it must be a `<span>`: a `<figure>` start
+    ///   tag closes an open `<p>` when the page is parsed, so the rest of the sentence would fall
+    ///   out of its paragraph (32 figures with a graphic sit in a `<p>` in the corpus's documents,
+    ///   45 in a cell).
+    private func figureHTML(_ figure: FigureBlock, asBlock: Bool) -> String {
+        let container = asBlock ? "figure" : "span"
+        let part = asBlock ? "div" : "span"
+        var html = "<\(container) class=\"frus-figure\(asBlock ? "" : " in-line")\" data-skip=\"1\">"
+        if let head = figure.head {
+            html += "<\(part) class=\"figure-head\">\(inline(head))</\(part)>"
+        }
+        if let image = figure.image {
+            html += figureImageHTML(image, figure: figure)
+        }
+        var lines = figure.captions.map { "<\(part) class=\"figure-caption\">\(inline($0))</\(part)>" }
+        if let url = figure.videoURL {
+            lines.append("<\(part) class=\"figure-caption\">\(videoLinkHTML(url))</\(part)>")
+        }
+        if !lines.isEmpty {
+            html += asBlock ? "<figcaption>\(lines.joined())</figcaption>" : lines.joined()
+        }
+        return html + "</\(container)>"
+    }
+
+    /// The image of a figure, by ``figureImages``: an `<img>`, the placeholder, or — in the
+    /// reader — both, the placeholder hidden until the image fails to load.
+    private func figureImageHTML(_ image: FigureImageName, figure: FigureBlock) -> String {
+        let missing = "<span class=\"figure-missing\">\(escaped(FigureBlock.missingImageLabel))</span>"
+        let headText = figure.head.map { flatText(of: $0) } ?? ""
+        let alt = escaped(figure.imageDescription
+            ?? (headText.isEmpty ? FigureBlock.genericImageDescription : headText))
+        switch figureImages {
+        case .placeholder:
+            return missing
+        case .reader:
+            guard let url = FRUSURLSchemeHandler.figureURL(for: image) else { return missing }
+            // The handler answers with the image when it is on the device and with a failure
+            // when it is not; `onerror` then shows the placeholder in the image's place.
+            return "<img class=\"figure-image\" src=\"\(escaped(url.absoluteString))\" alt=\"\(alt)\" "
+                + "onerror=\"this.parentNode.classList.add('missing')\">" + missing
+        case .embedded(let load):
+            guard let data = load(image) else { return missing }
+            return "<img class=\"figure-image\" src=\"data:image/png;base64,\(data.base64EncodedString())\" "
+                + "alt=\"\(alt)\">"
+        }
+    }
+
+    /// The link an embedded video prints. In the reader it is a `frusexplorer://doc/` link, which
+    /// the app opens in the browser as it opens every external reference; anywhere else it is the
+    /// page's own address, since an exported file is read outside the app.
+    private func videoLinkHTML(_ url: URL) -> String {
+        let label = escaped(FigureBlock.videoLinkLabel)
+        if case .reader = figureImages {
+            return "<a class=\"cross-ref figure-video\" "
+                + "href=\"frusexplorer://doc/\(urlComponentEncoded(url.absoluteString))\">\(label)</a>"
+        }
+        return "<a class=\"cross-ref figure-video\" href=\"\(escaped(url.absoluteString))\">\(label)</a>"
     }
 
     // MARK: - Type Helpers

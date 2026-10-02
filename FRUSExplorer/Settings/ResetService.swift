@@ -21,7 +21,8 @@ import SwiftData
 /// local/full and iOS full reset paths.
 ///
 /// ## What this clears
-/// - Every downloaded volume `.xml` file (`DownloadManager.volumesDirectory`).
+/// - Every downloaded volume `.xml` file (`DownloadManager.volumesDirectory`), and every
+///   volume's figure images beside it (#1516, `FigureImageLibrary.removeAllImages()`).
 /// - The full-text search index (`frus.db`), via
 ///   `IndexingPipeline.removeAllVolumesFromIndex()`.
 /// - `AppState.hasCompletedOnboarding`, returning the app to onboarding so a
@@ -154,6 +155,9 @@ struct ResetService {
                     try? FileManager.default.removeItem(at: file)
                 }
             }
+            // #1516: each volume's figure images sit in a folder beside its XML, removed with it
+            // by `DownloadManager.deleteVolume` — which this path does not call.
+            dm.figureLibrary.removeAllImages()
         }
 
         // Semantic shards live in their own directory and are deleted per volume by

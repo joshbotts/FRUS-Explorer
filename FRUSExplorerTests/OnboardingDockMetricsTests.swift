@@ -79,8 +79,15 @@ struct OnboardingDockMetricsTests {
 /// one of the height it reaches at the largest accessibility size. The rule must answer
 /// differently to the two, or it is a step check wearing a measurement's clothes.
 ///
+/// The zone is taken at the PHONE's metrics, by name (#1412). Left to the default it was this
+/// device's: on an iPad host the 176 pt tile's zone, on the iPhone 17 box these fixtures measure,
+/// reached the 230 pt dock, and the default-size test failed there while passing on every iPhone.
+/// There is no iPad fixture beside it, because the dock's two heights are an iPhone's and nobody
+/// has measured an iPad's. `SplashDriftTests.geometryFixturesNameTheirIdiom` reads this file.
+///
 /// Version history:
 ///   1.0 — the app icon in the launch → splash → onboarding handover
+///   1.1 — #1412 (lane HYG): the zone is the phone's, on any test host
 @Suite("Onboarding identity placement")
 @MainActor
 struct OnboardingIdentityPlacementTests {
@@ -97,7 +104,7 @@ struct OnboardingIdentityPlacementTests {
 
     @Test("At the default type size the welcome dock clears the block and the block is shown")
     func defaultSizeShowsTheBlock() {
-        let zone = LaunchSplashView.identityZone(in: phone, safeAreaInsets: insets)
+        let zone = LaunchSplashView.identityZone(in: phone, safeAreaInsets: insets, metrics: .phone)
         // Measured: page dots + title + two-line body + a large button + 28 pt bottom inset.
         #expect(OnboardingIdentityPlacement.showsIdentity(
             isWelcomeStep: true, identityZone: zone, dockZone: dock(height: 230)))
@@ -105,7 +112,7 @@ struct OnboardingIdentityPlacementTests {
 
     @Test("At an accessibility size the dock reaches the block and the block hides")
     func accessibilitySizeHidesTheBlock() {
-        let zone = LaunchSplashView.identityZone(in: phone, safeAreaInsets: insets)
+        let zone = LaunchSplashView.identityZone(in: phone, safeAreaInsets: insets, metrics: .phone)
         // At AX5 the body wraps to six lines and the button doubles; the dock runs to ~430 pt.
         #expect(!OnboardingIdentityPlacement.showsIdentity(
             isWelcomeStep: true, identityZone: zone, dockZone: dock(height: 430)))

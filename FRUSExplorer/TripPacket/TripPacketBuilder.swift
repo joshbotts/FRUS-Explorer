@@ -75,6 +75,12 @@ enum TripPacketBuilder {
 
     /// Builds the packet model for a document set — both channels over the same list.
     ///
+    /// **No app code calls this since #1423**: the packet sheet's document-list and collection
+    /// seeds were its only callers, nothing constructed either, and both are deleted. A plan's
+    /// packet goes through the two-list entry below, from `ArchiveVisitDerivation`, with no
+    /// question. It is kept because the builder's tests drive the model through it; a new app
+    /// caller should make a plan instead, or it brings back a topic seeded at render time.
+    ///
     /// - Parameters:
     ///   - documents: the reading list — a project's engaged set, or a collection's documents.
     ///   - researchQuestion: seeds the inquiry's topic sentence (D8).
@@ -97,8 +103,8 @@ enum TripPacketBuilder {
     /// notes feed the drawn-from channel, and the documents whose footnotes feed the
     /// pointed-at channel. The flags are resolved HERE, at the boundary, never threaded
     /// through the build loops — #783's separation held at the seam rather than by
-    /// discipline inside it. The one-list entry above is the ephemeral packet's case:
-    /// both lists are the same reading list.
+    /// discipline inside it. The one-list entry above is the case where both lists are the
+    /// same reading list, which only the tests now build.
     static func build(
         sourceDocuments: [(volumeId: String, documentId: String)],
         referenceDocuments: [(volumeId: String, documentId: String)],

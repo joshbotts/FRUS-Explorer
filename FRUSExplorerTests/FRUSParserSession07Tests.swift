@@ -69,7 +69,7 @@ private func containsCase(in nodes: [FRUSASTNode],
             children = c
         case .list(_, let c):
             children = c
-        case .text, .lineBreak, .pageBreak, .formula:
+        case .text, .lineBreak, .pageBreak, .formula, .elementSpace:
             children = []
         }
         if containsCase(in: children, where: predicate) { return true }
@@ -834,7 +834,7 @@ struct ListHeadsAndLabelsTests {
             ">a.", "popovertarget=\"fn-x-d1fn2\"", "First item text.", // label, and its note
             "<br>",                                                    // lb between items
             ">b.<", "popovertarget=\"fn-x-d1fn3\"", "Second item text.", // note between label and item
-            "data-page=\"[map]\"", "<figcaption>figure_0732</figcaption>", "data-page=\"1241\"",
+            "data-page=\"[map]\"", "<span class=\"figure-missing\">[Figure]</span>", "data-page=\"1241\"",
             "<em>c</em>.", "Third item text.",
             "data-element-name=\"gap\"", "Henry A. Kissinger",        // gap and closer after the last item
             "Closing paragraph.",
@@ -1608,5 +1608,733 @@ struct RegressionTests {
         #expect(containsCase(in: docs.flatMap(\.nodes)) {
             if case .footnote(_, .source, _, _) = $0 { return true }; return false
         })
+    }
+}
+
+// MARK: - Figures (#1516)
+
+/// Real corpus figures, shared by `FigureCaptionTests` and `ElementSpaceTests` below, the web-view
+/// tests in `FRUSOffsetEngineTests.swift` (`FigureReaderTests`), `FigureExportTests` in
+/// `CollectionTests.swift` and the image-store tests in `DownloadManagerTests.swift`, so those
+/// suites measure the same markup.
+///
+/// Measured at corpus `8e5da08c1` over the 553 manifest volumes (lxml; the scripts are in the
+/// session's `durable/w49/work/READ/`): 1,035 `<figure>`s, 532 of them inside a
+/// `div[@type="document"]` — 426 a graphic alone, 50 a head and a graphic, 32 a graphic and
+/// paragraphs, 20 empty, 2 a graphic and a `<figDesc>`, 1 paragraphs alone, 1 a head and a
+/// paragraph with no graphic. Of the 503 outside a document, 403 sit on a title page, which no
+/// surface of the app draws, and 20 hold an embedded video player (three public-diplomacy
+/// volumes). No figure holds two graphics, none is nested in another and none holds a `<note>`.
+///
+/// Each fixture is the volume's own markup, trimmed: prose is cut, and the source XML's
+/// hard-wrapped indentation is joined onto single lines, which the parser's whitespace
+/// normalisation makes equivalent.
+enum FigureFixtures {
+
+    /// `frus1946v01/d587`, Annex “A”: a map whose `<head>` is its printed title and also titles
+    /// the table after it, then Appendix “B”'s two maps — the second head broken over two lines.
+    /// Until #1516 the reader printed `figure_1162` where the title belongs.
+    static let d587 = """
+    <div type="document" subtype="historical-document" n="587" xml:id="d587">
+      <head>587. Memorandum by the Joint Chiefs of Staff</head>
+      <frus:attachment>
+        <head><hi rend="smallcaps">Appendix</hi> “A”</head>
+        <p rend="center">Annex “A” to Appendix “A”</p>
+        <figure>
+          <head><hi rend="smallcaps">Locations at Which Military Air Transit Rights Are Desired</hi></head>
+          <graphic url="figure_1162"/>
+        </figure>
+        <table cols="2">
+          <row><cell>Location</cell><cell>Rights desired</cell></row>
+          <row><cell>Azores</cell><cell>Transit and technical stop</cell></row>
+        </table>
+      </frus:attachment>
+      <frus:attachment>
+        <head><hi rend="smallcaps">[Appendix “B”]</hi></head>
+        <figure>
+          <head>Military Air Transit Requirements (Eastern Hemisphere)</head>
+          <graphic url="figure_1163"/>
+        </figure>
+        <pb facs="1166" n="[]" xml:id="pg-seq-1166"/>
+        <figure>
+          <head>Military Air Transit Requirements (Western Hemisphere – Pacific) <lb/> Revised, 21 January 1946</head>
+          <graphic url="figure_1166"/>
+        </figure>
+      </frus:attachment>
+    </div>
+    """
+
+    /// `d587` with every figure removed — the markup whose flat text restoring the captions must
+    /// not move.
+    static var d587WithoutFigures: String { removingFigures(from: d587) }
+
+    /// `frus1951v03p1/d289`: two of its nine photo plates, each captioned by a `<p>` naming its
+    /// subject — the second by a linked name alone.
+    static let d289 = """
+    <div type="document" subtype="historical-document" n="289" xml:id="d289">
+      <p>The President has asked me to go to Europe and discuss with you the situation that has developed in Washington with respect to the Command problem.</p>
+      <figure>
+        <graphic url="figure_0584"/>
+        <p>Secretary of State <persName corresp="#p_ADG1">Dean Acheson</persName></p>
+      </figure>
+      <pb facs="0585" n="[547]" xml:id="pg_547"/>
+      <figure>
+        <graphic url="figure_0585"/>
+        <p><persName corresp="#p_HWA1">W. Averell Harriman</persName></p>
+      </figure>
+      <p>I have discussed the matter fully with General Marshall.</p>
+    </div>
+    """
+
+    /// `d289` with its figures removed.
+    static var d289WithoutFigures: String { removingFigures(from: d289) }
+
+    /// `frus1864p1/d9`: a sketch the sentence before it points at ("thus:"), a graphic alone — 426
+    /// of the 532 figures in documents are.
+    static let d9 = """
+    <div type="document" subtype="historical-document" n="9" xml:id="d9">
+      <p>There are besides four diagonal pieces to strengthen the former and keep it in its place, thus:</p>
+      <figure n="1" xml:id="figure1">
+        <graphic url="figure1"/>
+      </figure>
+      <p>The said tranverse beam and diagonals are made movable so they can be taken out and replaced at pleasure.</p>
+    </div>
+    """
+
+    /// `frus1881/d143`: an empty `<figure/>` standing for printed Chinese characters inside a
+    /// sentence — 15 of the corpus's 20 empty figures are in this volume. history.state.gov prints
+    /// nothing for one, and so does the app (owner decision D3c).
+    static let d143 = """
+    <div type="document" subtype="historical-document" n="143" xml:id="d143">
+      <p>Without regard to actual superiority or inferiority of relative rank, the characters <figure/> “to correspond officially” should be used, the idea being to avoid the appearance of subordination.</p>
+    </div>
+    """
+
+    /// `frus1897/d178`: a shipper's mark drawn inside a table cell (24 in the document, 45 figures
+    /// in cells corpus-wide).
+    static let d178 = """
+    <div type="document" subtype="historical-document" n="178" xml:id="d178">
+      <table cols="3">
+        <row>
+          <cell role="num">Jan. 11</cell>
+          <cell>1 piece of bacon (short fat backs).</cell>
+          <cell>Case <figure><graphic url="figure_0222"/></figure> 17</cell>
+        </row>
+      </table>
+    </div>
+    """
+
+    /// `frus1969-76ve16/d77`: a chart INSIDE a paragraph's sentence, captioned by a `<p>`, and a
+    /// later figure that is a caption alone ("Figure 2", its graphic not encoded).
+    static let d77 = """
+    <div type="document" subtype="historical-document" n="77" xml:id="d77">
+      <p>2. <persName corresp="#p_AGS_1">Allende</persName>’s policies have largely succeeded, thereby boosting the administration’s popular support. <pb facs="0427" n="387" xml:id="pg_387"/>
+        <figure xml:id="d77_fig01">
+          <graphic url="frus1969-76ve16_d77_fig01"/>
+          <p>CHILE: Cost of Living Indexes</p>
+        </figure> A strict price freeze and wage increases have sharply increased consumer demand.</p>
+      <pb facs="0428" n="388" xml:id="pg_388"/>
+      <figure>
+        <p>CHILE: Trends in Money Supply, Central Bank Credit<lb/>to the Public Sector, and Consumer Prices Figure 2</p>
+      </figure>
+      <p>4. <persName corresp="#p_AGS_1">Allende</persName> has emphasized rapid expropriation of the remaining large farms.</p>
+    </div>
+    """
+
+    /// `d77` with its figures removed.
+    static var d77WithoutFigures: String { removingFigures(from: d77) }
+
+    /// `frus1943CairoTehran/d278`: a facsimile described by a `<figDesc>` — 2 of the figures in
+    /// documents carry one.
+    static let d278 = """
+    <div type="document" subtype="historical-document" n="278" xml:id="d278">
+      <p>The Generalissimo raised the question of the Chinese-Soviet frontier.</p>
+      <pb facs="0468" n="[Note]" xml:id="pg-seq-0468"/>
+      <figure>
+        <graphic url="figure_0468"/>
+        <figDesc>Notes by Hopkins of a Conversation With Chiang at Cairo (see facing page)</figDesc>
+      </figure>
+      <pb facs="0469" n="367" xml:id="pg_367"/>
+    </div>
+    """
+
+    /// `frus1917-72PubDipv06`, Appendix A.1: a title frame (a graphic alone), then the Online
+    /// Video Supplement — a figure whose `<head>` is "Reel 1" and whose content is an XHTML
+    /// Brightcove player. The corpus holds 20 such players, in three volumes, all in sections
+    /// like this one rather than in document divs. The app cannot play them.
+    static let appendix1 = """
+    <div type="section" subtype="historical-document" xml:id="appendix-1">
+      <head>Appendix A.1 <hi rend="italic">Invitation to Pakistan</hi></head>
+      <figure>
+        <graphic url="Appendix A.1" width="26pc"/>
+      </figure>
+      <div type="online-supplement">
+        <head>Online Video Supplement</head>
+        <figure>
+          <head>Reel 1</head>
+          <div style="position: relative; display: block; max-width: 530px;" xmlns="http://www.w3.org/1999/xhtml">
+            <div style="padding-top: 56.25%;">
+              <iframe allowfullscreen="allowfullscreen" src="//players.brightcove.net/1705665025/HJ8lQG1Eg_default/index.html?videoId=5625814201001" style="position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px; width: 100%; height: 100%;"/>
+            </div>
+          </div>
+        </figure>
+      </div>
+      <div type="online-supplement">
+        <head>Transcript</head>
+        <p>[MUSIC PLAYING]</p>
+      </div>
+    </div>
+    """
+
+    /// `frus1861/d2`'s head and dateline, as the volume wraps them — `<placeName>` and `<date>`
+    /// with only a line break between them — and a sentence in two of the corpus's commonest
+    /// shapes: a `<gloss>` then a `<persName>` in a paragraph (4,439 runs), and a `<note>` then an
+    /// inline element (in a paragraph: 3,417 before a `<persName>`, 836 before a `<hi>`).
+    static let d2 = """
+    <div type="document" subtype="historical-document" n="2" xml:id="d2">
+      <head><hi rend="italic">Mr. <persName type="from">Black</persName></hi> (<hi rend="italic">Secretary of State</hi>) <hi rend="italic">to all the <gloss type="to">ministers of the United States</gloss>.</hi></head>
+      <opener><dateline rendition="#right"><hi rend="smallcaps">Department of State</hi>,<lb/><placeName><hi rend="italic">Washington</hi>,</placeName>
+          <date calendar="gregorian" when="1861-02-28"><hi rend="italic">February</hi> 28, 1861</date>.</dateline></opener>
+      <p rend="center">CIRCULAR.</p>
+      <p>The telegram was read by <gloss target="#t_SecState_1">SecState</gloss>
+          <persName corresp="#p_RD_1">Rusk</persName><note n="1" xml:id="d2fn1">See Document 1.</note>
+          <hi rend="italic">in extenso</hi>.</p>
+    </div>
+    """
+
+    /// `d2` with the whitespace between its sibling elements removed: the markup the reader's
+    /// flat text has always been equivalent to.
+    static var d2Glued: String {
+        d2.replacing(/>\s+</, with: "><")
+    }
+
+    /// `xml` without its `<figure>` elements (none in the corpus nests another).
+    static func removingFigures(from xml: String) -> String {
+        xml.replacing(/<figure\b[^>]*\/>/, with: "")
+            .replacing(/<figure\b[^>]*>[\s\S]*?<\/figure>/, with: "")
+    }
+
+    /// What a reader sees of `html`: its text with every tag removed — a block's edge read as a
+    /// space, an inline element's as nothing — footnote popovers and the Footnotes list left out,
+    /// and whitespace collapsed as a browser collapses it.
+    static func visibleText(_ html: String) -> String {
+        html.replacing(/<aside\b[\s\S]*?<\/aside>/, with: "")
+            .replacing(/<section class="footnotes-section">[\s\S]*<\/section>/, with: "")
+            .replacing(/<br>/, with: "\n")
+            .replacing(/<\/?(p|div|figure|figcaption|h2|h3|table|caption|tr|td|ul|ol|li|section)\b[^>]*>/, with: " ")
+            .replacing(/<[^>]+>/, with: "")
+            .replacing("&amp;", with: "&").replacing("&#39;", with: "'").replacing("&quot;", with: "\"")
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// How many times `needle` occurs in `text`.
+    static func count(_ needle: String, in text: String) -> Int {
+        text.components(separatedBy: needle).count - 1
+    }
+}
+
+/// #1516: the converter kept a `<figure>`'s graphic name and dropped everything else it holds, so
+/// the reader printed the image's FILE NAME as its caption on 510 figures (`figure_1162`) and
+/// lost 51 printed heads, 36 caption paragraphs and 2 descriptions.
+///
+/// Every test runs the real parser, converter and serializer over corpus markup, with the
+/// serializer's default image mode — no image store — so each figure that names an image prints
+/// the placeholder the reader shows while the image is not on the device. A figure's text is
+/// drawn under `data-skip` and is not flat text (owner decision D3a): the flat text — hashed into
+/// `renderingVersion` and stored as `body_hash` — must not move, so nothing re-indexes and no
+/// stored highlight goes stale. `body_text` already held the words, since the index reads the AST.
+@Suite("A figure prints its head and paragraphs as captions, never its file name (#1516)")
+struct FigureCaptionTests {
+
+    private func html(_ model: FRUSDocumentRenderModel) -> String {
+        FRUSRenderNodeHTMLSerializer().serialize(model)
+    }
+
+    /// Asserts the figures of `fixture` are no flat text: its hash is the one the document has
+    /// with every figure removed, in the reader's space and in the index's.
+    private func expectFlatTextUnmoved(_ fixture: String, without: String) async throws {
+        #expect(fixture != without, "the control fixture is the fixture itself")
+        let model = try await ListShapeFixtures.renderModel(fixture)
+        let baseline = try await ListShapeFixtures.renderModel(without)
+        #expect(ASTToRenderNodeConverter.kVersion == "1.2")
+        #expect(buildFlatText(from: model) == buildFlatText(from: baseline))
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
+                == ASTToRenderNodeConverter.renderingVersion(for: baseline))
+        #expect(IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(fixture))
+                == IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(without)))
+    }
+
+    @Test("d587's maps print their printed titles above the image's place, and no file name")
+    func headIsTheCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d587)
+        let out = html(model)
+        let text = FigureFixtures.visibleText(out)
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "Annex “A” to Appendix “A”",
+            "Locations at Which Military Air Transit Rights Are Desired", "[Figure]",
+            "Location", "Azores",
+            "Military Air Transit Requirements (Eastern Hemisphere)", "[Figure]",
+            "Military Air Transit Requirements (Western Hemisphere – Pacific)", "Revised, 21 January 1946", "[Figure]",
+        ], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from d587, or out of order: \(text)")
+        #expect(!out.contains("figure_116"), "an image's file name is printed: \(out)")
+        // The head keeps its small capitals and its line break.
+        #expect(out.contains("<span class=\"small-caps\">Locations at Which Military Air Transit Rights Are Desired</span>"))
+        #expect(out.contains("(Western Hemisphere – Pacific) <br> Revised, 21 January 1946"), "\(out)")
+        // Drawn, and no flat text.
+        let flat = buildFlatText(from: model)
+        #expect(flat.contains("Azores"), "the table's cells must still be flat text")
+        #expect(!flat.contains("Locations at Which"), "a figure's head entered the flat text")
+        #expect(!flat.contains("[Figure]"), "the placeholder entered the flat text")
+        try await expectFlatTextUnmoved(FigureFixtures.d587, without: FigureFixtures.d587WithoutFigures)
+    }
+
+    @Test("d289's photographs print their paragraphs as captions under the image's place, the linked name still a link")
+    func paragraphsAreCaptions() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d289)
+        let out = html(model)
+        let text = FigureFixtures.visibleText(out)
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "with respect to the Command problem.",
+            "[Figure]", "Secretary of State Dean Acheson",
+            "[Figure]", "W. Averell Harriman",
+            "I have discussed the matter fully",
+        ], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from d289, or out of order: \(text)")
+        #expect(!out.contains("figure_058"), "an image's file name is printed: \(out)")
+        #expect(out.contains("<a class=\"pers-name\" href=\"frusexplorer://person/p_HWA1\">W. Averell Harriman</a>"),
+                "the caption's name must stay a link: \(out)")
+        let flat = buildFlatText(from: model)
+        #expect(!flat.contains("Harriman") && !flat.contains("Acheson"), "a caption entered the flat text: \(flat)")
+        try await expectFlatTextUnmoved(FigureFixtures.d289, without: FigureFixtures.d289WithoutFigures)
+        // The index always held the words (it reads the AST), so search finds what the reader now shows.
+        let body = IndexingPipeline.extractBodyText(from: try await ListShapeFixtures.ast(FigureFixtures.d289).nodes)
+        #expect(body.contains("W. Averell Harriman"), "body_text: \(body)")
+    }
+
+    /// `documentXML` converted with lookups that resolve every person and term it links. Built
+    /// off the main actor, so no main-actor closure crosses into the parse.
+    private static func modelWithLookups(_ documentXML: String) async throws -> FRUSDocumentRenderModel {
+        let converter = ASTToRenderNodeConverter(
+            personLookup: { ref in PersonEntry(ref: ref, name: "Person \(ref)") },
+            glossLookup: { ref in GlossEntry(ref: ref, term: "Term \(ref)", definition: nil) })
+        return try await ListShapeFixtures.renderModel(documentXML, converter: converter)
+    }
+
+    /// The reader draws a caption's name as a link, and a link resolves only if the scheme handler
+    /// saw it when the model was registered: without the handler's `.figureBlock` case the page
+    /// above is unchanged and the tap finds no one.
+    @Test("A person or term linked in a figure's caption or head resolves when tapped")
+    @MainActor
+    func aLinkInACaptionResolvesWhenTapped() async throws {
+        // d289's two photographs, each captioned with a linked name, and a figure whose head
+        // links a term: nothing else in the document names these three.
+        let model = try await Self.modelWithLookups(FigureFixtures.d289.replacing("</div>", with: """
+            <figure><head>Chart of <gloss target="#t_NATO1">NATO</gloss> commands</head><graphic url="chart"/></figure></div>
+            """))
+        let handler = FRUSURLSchemeHandler()
+        handler.register(model: model)
+        var persons: [PersonEntry?] = []
+        var glosses: [GlossEntry?] = []
+        handler.onPersonTap = { persons.append($0) }
+        handler.onGlossTap = { glosses.append($0) }
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://person/p_ADG1")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://person/p_HWA1")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://gloss/t_NATO1")))
+        #expect(persons.map { $0?.ref } == ["p_ADG1", "p_HWA1"], "a caption's person did not resolve: \(persons)")
+        #expect(glosses.map { $0?.ref } == ["t_NATO1"], "a figure head's term did not resolve: \(glosses)")
+    }
+
+    @Test("A graphic alone prints the placeholder where the sketch belongs, once, and not its file name")
+    func graphicAlonePrintsThePlaceholder() async throws {
+        let out = html(try await ListShapeFixtures.renderModel(FigureFixtures.d9))
+        let text = FigureFixtures.visibleText(out)
+        #expect(text.contains("keep it in its place, thus: [Figure] The said tranverse beam"), "\(text)")
+        #expect(FigureFixtures.count("[Figure]", in: text) == 1, "\(text)")
+        #expect(!text.contains("figure1"), "the file name is printed: \(text)")
+    }
+
+    @Test("An empty figure prints nothing: the sentence around it reads on")
+    func emptyFigurePrintsNothing() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d143)
+        let out = html(model)
+        #expect(!out.contains("figure"), "an empty figure left markup behind: \(out)")
+        let text = FigureFixtures.visibleText(out)
+        #expect(text.contains("the characters “to correspond officially” should be used"), "\(text)")
+        #expect(!text.contains("[Figure]"), "an empty figure printed a placeholder: \(text)")
+    }
+
+    @Test("A figure in a table cell or inside a sentence is drawn inline, so the cell and the paragraph stay whole")
+    func figureInsideALineStaysInline() async throws {
+        let cell = html(try await ListShapeFixtures.renderModel(FigureFixtures.d178))
+        #expect(FigureFixtures.visibleText(cell).contains("Case [Figure] 17"), "\(cell)")
+        #expect(!cell.contains("<figure"), "a block <figure> inside a cell: \(cell)")
+
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d77)
+        let out = html(model)
+        // A <figure> start tag closes an open <p> when the page is parsed, so the sentence's second
+        // half would fall out of its paragraph: inside one, the figure is a <span>.
+        let paragraph = try #require(out.firstMatch(of: /<p class="body">2\. [\s\S]*?<\/p>/)).output
+        #expect(!paragraph.contains("<figure"), "a block <figure> inside a paragraph: \(paragraph)")
+        #expect(paragraph.contains("A strict price freeze"), "the sentence's second half left its paragraph: \(paragraph)")
+        let text = FigureFixtures.visibleText(out)
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "popular support.", "[Figure]", "CHILE: Cost of Living Indexes", "A strict price freeze",
+            "CHILE: Trends in Money Supply, Central Bank Credit", "to the Public Sector, and Consumer Prices Figure 2",
+            "4. Allende has emphasized",
+        ], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from d77, or out of order: \(text)")
+        // The caption-only figure names no image, so it prints no placeholder.
+        #expect(FigureFixtures.count("[Figure]", in: text) == 1, "\(text)")
+        try await expectFlatTextUnmoved(FigureFixtures.d77, without: FigureFixtures.d77WithoutFigures)
+    }
+
+    @Test("A figure's description prints as its caption")
+    func descriptionIsACaption() async throws {
+        let out = html(try await ListShapeFixtures.renderModel(FigureFixtures.d278))
+        let text = FigureFixtures.visibleText(out)
+        #expect(text.contains("[Figure] Notes by Hopkins of a Conversation With Chiang at Cairo (see facing page)"), "\(text)")
+        #expect(!text.contains("figure_0468"), "\(text)")
+    }
+
+    @Test("An embedded video prints its head, and none of the player's markup")
+    func videoPrintsItsHead() async throws {
+        let out = html(try await ListShapeFixtures.renderModel(FigureFixtures.appendix1))
+        let text = FigureFixtures.visibleText(out)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["Appendix A.1", "[Figure]", "Online Video Supplement", "Reel 1", "Transcript", "[MUSIC PLAYING]"],
+            in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from Appendix A.1, or out of order: \(text)")
+        #expect(!out.contains("brightcove") && !out.contains("iframe"), "the player's markup is printed: \(out)")
+        // The title frame names an image; the player names none, so it prints no placeholder.
+        #expect(FigureFixtures.count("[Figure]", in: text) == 1, "\(text)")
+    }
+}
+
+/// The READ lane's fold-in: the parser discards a whitespace-only run, which is right between two
+/// blocks and wrong between two inline elements — `frus1861` d2's dateline read
+/// "Washington,February 28, 1861". Measured at corpus `8e5da08c1` over the 553 manifest volumes:
+/// 54,025 such runs sit between two inline elements inside documents — 14,193 of them a
+/// `<placeName>` then a `<date>` in a dateline, in 9,884 documents; 4,439 a `<gloss>` then a
+/// `<persName>` in a paragraph — and 7,337 more between a `<note>` and the inline element after it.
+///
+/// The space is drawn and is NOT flat text — the contract a list's label has (#1371) — so no
+/// stored highlight goes stale and nothing re-indexes; `body_text`, the title and the dateline
+/// already spaced these seams (`PrintedText`).
+@Suite("A space between two inline elements is drawn, outside the flat text (READ fold-in)")
+struct ElementSpaceTests {
+
+    @Test("d2's dateline reads Washington, February 28, 1861 and its sentence SecState Rusk in extenso")
+    func theSpaceIsDrawn() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d2)
+        let out = FRUSRenderNodeHTMLSerializer().serialize(model)
+        let text = FigureFixtures.visibleText(out)
+        #expect(text.contains("Washington, February 28, 1861."), "\(text)")
+        #expect(text.contains("read by SecState Rusk"), "\(text)")
+        // The space after a footnote's marker is kept too: the marker's own label is not text.
+        #expect(out.contains("</button><span class=\"element-space\" data-skip=\"1\"> </span><em>in extenso</em>"), "\(out)")
+        // A line break needs no space after it, and the head's spaces were always in its text.
+        #expect(!out.contains("<br><span class=\"element-space\""), "\(out)")
+        #expect(text.contains("Mr. Black (Secretary of State) to all the ministers of the United States."), "\(text)")
+    }
+
+    @Test("The drawn spaces are no flat text: the hashes are the ones d2 has with the whitespace removed")
+    func theFlatTextDoesNotMove() async throws {
+        #expect(FigureFixtures.d2Glued != FigureFixtures.d2)
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d2)
+        let glued = try await ListShapeFixtures.renderModel(FigureFixtures.d2Glued)
+        let flat = buildFlatText(from: model)
+        #expect(flat.contains("Washington,February 28, 1861."), "the flat text moved: \(flat)")
+        #expect(flat == buildFlatText(from: glued))
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
+                == ASTToRenderNodeConverter.renderingVersion(for: glued))
+        let ast = try await ListShapeFixtures.ast(FigureFixtures.d2)
+        let gluedAST = try await ListShapeFixtures.ast(FigureFixtures.d2Glued)
+        #expect(IndexingPipeline.bodyHash(for: ast) == IndexingPipeline.bodyHash(for: gluedAST))
+        // What the index stores is built from the same AST and does not move either.
+        #expect(IndexingPipeline.extractBodyText(from: ast.nodes) == IndexingPipeline.extractBodyText(from: gluedAST.nodes))
+        #expect(IndexingPipeline.extractHeader(from: ast.nodes) == IndexingPipeline.extractHeader(from: gluedAST.nodes))
+        #expect(IndexingPipeline.extractDateline(from: ast.nodes) == IndexingPipeline.extractDateline(from: gluedAST.nodes))
+        #expect(IndexingPipeline.extractDateline(from: ast.nodes) == "Department of State, Washington, February 28, 1861.")
+    }
+}
+
+// MARK: - Figure images in the page (#1516)
+
+extension FigureFixtures {
+
+    /// `frus1917-72PubDip`, Appendix A.5: the older player — an `<object>` between two
+    /// `<script>`s, opened by a hidden `<div>` holding the player's size. 12 of the corpus's 20
+    /// embedded videos are encoded this way, all in this volume. The parser passes an XHTML
+    /// `<div>`'s content up to the figure, so the size reaches it as loose text.
+    static let appendix5 = """
+    <div type="section" subtype="historical-document" xml:id="appendix-5">
+      <head>A.5. Movie Still</head>
+      <figure>
+        <graphic url="Document A.5" width="26pc"/>
+      </figure>
+      <div type="online-supplement">
+        <head>Online Video Supplement</head>
+        <figure>
+          <head>Reel 1</head>
+          <!-- Start of Brightcove Player -->
+          <div style="display:none" xmlns="http://www.w3.org/1999/xhtml"> 298x530 </div>
+          <script language="JavaScript" src="https://sadmin.brightcove.com/js/BrightcoveExperiences.js" type="text/javascript" xmlns="http://www.w3.org/1999/xhtml"/>
+          <object class="BrightcoveExperience" id="myExperience3652221451001" xmlns="http://www.w3.org/1999/xhtml">
+            <param name="bgcolor" value="#FFFFFF"/>
+            <param name="playerID" value="1336128750001"/>
+            <param name="@videoPlayer" value="3652221451001"/>
+          </object>
+          <script type="text/javascript" xmlns="http://www.w3.org/1999/xhtml">brightcove.createExperiences();</script>
+          <!-- End of Brightcove Player -->
+        </figure>
+      </div>
+    </div>
+    """
+}
+
+/// Where a figure's image comes from, and what an embedded video prints, by who draws the page
+/// (#1516): the reader names the image by a `frusexplorer://figure/` URL, the HTML export embeds
+/// its bytes, and a serializer given neither prints the placeholder.
+@Suite("The reader names a figure's image by its volume, an export embeds it, and a video links to its page (#1516)")
+struct FigureImageMarkupTests {
+
+    private func model(_ fixture: String, volume: String?) async throws -> FRUSDocumentRenderModel {
+        try await ListShapeFixtures.renderModel(fixture, converter: ASTToRenderNodeConverter(volumeId: volume))
+    }
+
+    @Test("In the reader each image is an <img> served by the scheme handler, described by its head, its placeholder beside it")
+    func theReaderNamesTheImage() async throws {
+        let out = FRUSRenderNodeHTMLSerializer(figureImages: .reader)
+            .serialize(try await model(FigureFixtures.d587, volume: "frus1946v01"))
+        #expect(out.contains(
+            "<img class=\"figure-image\" src=\"frusexplorer://figure/frus1946v01/figure_1162.png\" "
+            + "alt=\"Locations at Which Military Air Transit Rights Are Desired\" "
+            + "onerror=\"this.parentNode.classList.add('missing')\">"
+            + "<span class=\"figure-missing\">[Figure]</span>"), "\(out)")
+        #expect(FigureFixtures.count("<img class=\"figure-image\"", in: out) == 3)
+        // The reader's page is what HTMLTemplate builds.
+        let page = HTMLTemplate.build(model: try await model(FigureFixtures.d587, volume: "frus1946v01"),
+                                      colorScheme: .light)
+        #expect(page.contains("src=\"frusexplorer://figure/frus1946v01/figure_1166.png\""), "the reader's page names no image")
+        #expect(page.contains(".frus-figure.missing img.figure-image"), "the reader's stylesheet has no figure rules")
+
+        // A name with a space is one path component; the description, when there is one, is the alt text.
+        let appendix = FRUSRenderNodeHTMLSerializer(figureImages: .reader)
+            .serialize(try await model(FigureFixtures.appendix1, volume: "frus1917-72PubDipv06"))
+        #expect(appendix.contains("src=\"frusexplorer://figure/frus1917-72PubDipv06/Appendix%20A.1.png\" alt=\"Figure\""),
+                "\(appendix)")
+        let described = FRUSRenderNodeHTMLSerializer(figureImages: .reader)
+            .serialize(try await model(FigureFixtures.d278, volume: "frus1943CairoTehran"))
+        #expect(described.contains(
+            "alt=\"Notes by Hopkins of a Conversation With Chiang at Cairo (see facing page)\""), "\(described)")
+    }
+
+    @Test("A figure whose volume is unknown, or whose name is no file name, prints the placeholder and names no URL")
+    func noURLWithoutAVolumeOrAFileName() async throws {
+        let unknownVolume = FRUSRenderNodeHTMLSerializer(figureImages: .reader)
+            .serialize(try await model(FigureFixtures.d9, volume: nil))
+        #expect(!unknownVolume.contains("<img") && unknownVolume.contains("<span class=\"figure-missing\">[Figure]</span>"),
+                "\(unknownVolume)")
+        let unsafe = FRUSRenderNodeHTMLSerializer(figureImages: .reader).serialize(try await model("""
+            <div type="document" xml:id="d1"><p>Text.</p><figure><graphic url="../../frus1946v01"/></figure></div>
+            """, volume: "frus1946v01"))
+        #expect(!unsafe.contains("<img") && unsafe.contains("[Figure]"), "\(unsafe)")
+        #expect(FRUSURLSchemeHandler.figureURL(for: FigureImageName(volumeId: "..", graphic: "figure1")) == nil)
+        // And the handler reads back exactly the names it wrote, ignoring a retry's query.
+        let url = try #require(FRUSURLSchemeHandler.figureURL(
+            for: FigureImageName(volumeId: "frus1917-72PubDip", graphic: "Document A.1")))
+        #expect(url.absoluteString == "frusexplorer://figure/frus1917-72PubDip/Document%20A.1.png")
+        let retried = try #require(URL(string: url.absoluteString + "?retry=1"))
+        let named = try #require(FRUSURLSchemeHandler.figureImage(from: retried))
+        #expect(named.volumeId == "frus1917-72PubDip" && named.fileName == "Document A.1.png")
+        for notAFigure in ["frusexplorer://figure/only-one", "frusexplorer://doc/a/b.png",
+                           "frusexplorer://figure/a/%2E%2E", "https://figure/a/b.png"] {
+            let other = try #require(URL(string: notAFigure))
+            #expect(FRUSURLSchemeHandler.figureImage(from: other) == nil, "\(notAFigure) was read as a figure's image")
+        }
+    }
+
+    @Test("An export embeds the image's bytes, and prints the placeholder for one that is not on the device")
+    func anExportEmbedsTheImage() async throws {
+        let bytes = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01, 0x02])
+        let out = FRUSRenderNodeHTMLSerializer(figureImages: .embedded(load: { image in
+            image == FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162") ? bytes : nil
+        })).serialize(try await model(FigureFixtures.d587, volume: "frus1946v01"))
+        #expect(out.contains("<img class=\"figure-image\" src=\"data:image/png;base64,\(bytes.base64EncodedString())\" "
+                             + "alt=\"Locations at Which Military Air Transit Rights Are Desired\">"), "\(out)")
+        #expect(FigureFixtures.count("<img", in: out) == 1, "only the image on the device is embedded")
+        #expect(FigureFixtures.count("<span class=\"figure-missing\">[Figure]</span>", in: out) == 2)
+        #expect(!out.contains("frusexplorer://figure"), "an exported file cannot load from the app's scheme")
+        #expect(!out.contains("onerror"), "an exported file runs no script")
+    }
+
+    @Test("A video links to its section's page on history.state.gov: through the app in the reader, directly in an export")
+    func aVideoLinksToItsPage() async throws {
+        let page = "https://history.state.gov/historicaldocuments/frus1917-72PubDipv06/appendix-1"
+        let appendix = try await model(FigureFixtures.appendix1, volume: "frus1917-72PubDipv06")
+        let reader = FRUSRenderNodeHTMLSerializer(figureImages: .reader).serialize(appendix)
+        let link = try #require(reader.firstMatch(of: /<a class="cross-ref figure-video" href="([^"]+)">Watch on history\.state\.gov ↗<\/a>/),
+                                "the reader draws no link: \(reader)")
+        // The reader's link is a frusexplorer link, and the app hands its target to the browser.
+        let href = try #require(URL(string: String(link.output.1)))
+        #expect(href.scheme == "frusexplorer" && href.host == "doc")
+        let tapped = await MainActor.run { () -> String? in
+            let handler = FRUSURLSchemeHandler()
+            var target: String?
+            handler.onCrossRefTap = { tappedTarget, _, _ in target = tappedTarget }
+            handler.dispatch(url: href)
+            return target
+        }
+        #expect(tapped == page)
+        let pageURL = try #require(URL(string: page))
+        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget(tapped ?? "", volumeId: nil) == .external(pageURL))
+        let exported = FRUSRenderNodeHTMLSerializer().serialize(appendix)
+        #expect(exported.contains("<a class=\"cross-ref figure-video\" href=\"\(page)\">Watch on history.state.gov ↗</a>"),
+                "\(exported)")
+        let text = FigureFixtures.visibleText(exported)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["Online Video Supplement", "Reel 1", "Watch on history.state.gov ↗", "Transcript"], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing, or out of order: \(text)")
+
+        // Without its volume the link has no address, and the figure prints its head alone.
+        let unplaced = FRUSRenderNodeHTMLSerializer().serialize(try await model(FigureFixtures.appendix1, volume: nil))
+        #expect(!unplaced.contains("Watch on history.state.gov") && unplaced.contains("Reel 1"), "\(unplaced)")
+    }
+
+    @Test("The older <object> player prints its head and its link, and none of its hidden text or script")
+    func theObjectPlayerPrintsNothingOfItsOwn() async throws {
+        let out = FRUSRenderNodeHTMLSerializer().serialize(
+            try await model(FigureFixtures.appendix5, volume: "frus1917-72PubDip"))
+        let text = FigureFixtures.visibleText(out)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["A.5. Movie Still", "[Figure]", "Online Video Supplement", "Reel 1", "Watch on history.state.gov ↗"], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing, or out of order: \(text)")
+        for leaked in ["298x530", "brightcove", "createExperiences", "BrightcoveExperience"] {
+            #expect(!out.contains(leaked), "the player's own \(leaked) is printed: \(text)")
+        }
+        #expect(out.contains("href=\"https://history.state.gov/historicaldocuments/frus1917-72PubDip/appendix-5\""))
+    }
+
+    @Test("A document's figure images are listed once each, in reading order, for an export to fetch")
+    func aDocumentListsItsImages() async throws {
+        let d587 = try await model(FigureFixtures.d587, volume: "frus1946v01")
+        #expect(d587.figureImages == [
+            FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162"),
+            FigureImageName(volumeId: "frus1946v01", graphic: "figure_1163"),
+            FigureImageName(volumeId: "frus1946v01", graphic: "figure_1166"),
+        ])
+        // In a cell, in a list between two items, and twice over: found wherever a figure can sit.
+        let nested = try await model("""
+            <div type="document" xml:id="d1">
+              <table><row><cell>Case <figure><graphic url="mark"/></figure> 17</cell></row></table>
+              <list><item>One</item><figure><graphic url="between"/></figure><item>Two <figure><graphic url="mark"/></figure></item></list>
+              <p>Text<note n="1" xml:id="d1fn1">A note <figure><graphic url="in_a_note"/><p>Its caption.</p></figure></note>.</p>
+            </div>
+            """, volume: "v")
+        #expect(nested.figureImages.map(\.graphic) == ["mark", "between", "in_a_note"])
+        #expect(try await model(FigureFixtures.d143, volume: "frus1881").figureImages.isEmpty)
+    }
+}
+
+/// Where the parser keeps the whitespace between two elements, and where it must not
+/// (`TEIParserDelegate.keepsElementSpace`): one fixture for each clause of the rule.
+@Suite("The parser keeps a whitespace-only run only between two inline elements (READ fold-in)")
+struct ElementSpaceRuleTests {
+
+    /// How many `.elementSpace` nodes `body`'s document holds, at any depth.
+    private func spaces(_ body: String) async throws -> Int {
+        let ast = try await ListShapeFixtures.ast("<div type=\"document\" xml:id=\"d1\">\(body)</div>")
+        func count(_ nodes: [FRUSASTNode]) -> Int {
+            nodes.reduce(0) { total, node in
+                if case .elementSpace = node { return total + 1 }
+                return total + count(node.children)
+            }
+        }
+        return count(ast.nodes)
+    }
+
+    /// The reader's visible text for `body`'s document.
+    private func text(_ body: String) async throws -> String {
+        let model = try await ListShapeFixtures.renderModel("<div type=\"document\" xml:id=\"d1\">\(body)</div>")
+        return FigureFixtures.visibleText(FRUSRenderNodeHTMLSerializer().serialize(model))
+    }
+
+    @Test("Kept between two inline elements, whatever they are, and after a footnote")
+    func keptBetweenInlineElements() async throws {
+        #expect(try await spaces("<p><hi rend=\"italic\">a</hi>\n  <hi rend=\"italic\">b</hi></p>") == 1)
+        #expect(try await spaces("<p><placeName>Paris,</placeName> <date when=\"1861-02-28\">February 28</date></p>") == 1)
+        #expect(try await spaces("<p><del>one</del> <del>two</del> <del>three</del></p>") == 2)
+        #expect(try await spaces("<p>Text<note n=\"1\" xml:id=\"fn1\">Note.</note> <persName>Rusk</persName></p>") == 1)
+        #expect(try await text("<p><gloss target=\"#t_A\">SecState</gloss>\n<persName corresp=\"#p_R\">Rusk</persName></p>")
+                == "SecState Rusk")
+    }
+
+    @Test("Not kept between two blocks, beside a block, or where text already carries the space")
+    func notKeptBesideABlockOrText() async throws {
+        #expect(try await spaces("<p>One.</p>\n<p>Two.</p>") == 0)
+        #expect(try await spaces("<p><hi>a</hi>\n<quote><p>b</p></quote></p>") == 0, "a block after")
+        #expect(try await spaces("<closer><signed>A</signed>\n<signed>B</signed></closer>") == 0, "two blocks")
+        #expect(try await spaces("<p><hi>a</hi> and <hi>b</hi></p>") == 0, "the text between carries its own spaces")
+        #expect(try await spaces("<p>\n  <hi>a</hi></p>") == 0, "nothing precedes the run")
+        #expect(try await spaces("<p><hi>a</hi>\n</p>") == 0, "nothing follows the run")
+    }
+
+    /// The rule's backward walk: what precedes the run. Every fixture here has an inline element
+    /// on the right, so the `next` guard lets the run through and only the left side can refuse it
+    /// — which the "beside a block" fixtures above, all refused at that guard, never reach.
+    @Test("Not kept after a block, whether the parser knows the block by type or only by name")
+    func notKeptAfterABlock() async throws {
+        // Blocks the parser builds as nodes of their own: a paragraph, a list, a table.
+        #expect(try await spaces("<p>Text<note n=\"1\" xml:id=\"fn1\"><p>One.</p>\n<hi>b</hi></note></p>") == 0, "a paragraph before")
+        #expect(try await spaces("<p><list><item>One</item></list>\n<hi>b</hi></p>") == 0, "a list before")
+        #expect(try await spaces("<p><table><row><cell>a</cell></row></table>\n<hi>b</hi></p>") == 0, "a table before")
+        // Blocks it knows only by name (`.unknown`): a quotation, a signature.
+        #expect(try await spaces("<p><quote>q</quote>\n<hi>b</hi></p>") == 0, "a quote before")
+        #expect(try await spaces("<closer><signed>A</signed>\n<hi>b</hi></closer>") == 0, "a signature before")
+        // And the same right-hand element after an inline one, known by type or only by name, is kept.
+        #expect(try await spaces("<p><persName>A</persName>\n<hi>b</hi></p>") == 1)
+        #expect(try await spaces("<p><placeName>A</placeName>\n<hi>b</hi></p>") == 1, "an inline element known only by name")
+    }
+
+    @Test("Not kept beside a line break, and kept once across a page break")
+    func lineBreaksAndPageBreaks() async throws {
+        #expect(try await spaces("<p><hi>a</hi>\n<lb/>\n<hi>b</hi></p>") == 0)
+        // </hi> ws <pb/> ws <hi>: the first run is the space; the second would double it.
+        #expect(try await spaces("<p><hi>a</hi>\n<pb n=\"2\" xml:id=\"pg_2\"/>\n<hi>b</hi></p>") == 1)
+        #expect(try await text("<p><hi>a</hi>\n<pb n=\"2\" xml:id=\"pg_2\"/>\n<hi>b</hi></p>") == "a b")
+        // Text, a break, then whitespace before an element: the break took the text's space with it.
+        #expect(try await spaces("<p>word<pb n=\"2\" xml:id=\"pg_2\"/> <hi>b</hi></p>") == 1)
+        #expect(try await text("<p>word<pb n=\"2\" xml:id=\"pg_2\"/> <hi>b</hi></p>") == "word b")
+        // …but not when the text before the break already ends in one.
+        #expect(try await spaces("<p>word <pb n=\"2\" xml:id=\"pg_2\"/> <hi>b</hi></p>") == 0)
+    }
+
+    @Test("Not kept in a container whose children are picked by position: a choice, a list, a table, a figure")
+    func notKeptInPositionalContainers() async throws {
+        // buildNode takes a choice's first child that is not a <sic>: a marker there would become it.
+        #expect(try await spaces("<p>the <choice><sic>frist</sic> <abbr>first</abbr></choice> word</p>") == 0)
+        #expect(try await text("<p>the <choice><sic>frist</sic> <abbr>first</abbr></choice> word</p>") == "the first word")
+        #expect(try await spaces("<list><label>(1)</label> <item>One</item> <label>(2)</label> <item>Two</item></list>") == 0)
+        #expect(try await spaces("<table><row><cell>a</cell> <cell>b</cell></row> <row><cell>c</cell></row></table>") == 0)
+        #expect(try await spaces("<figure><graphic url=\"a\"/> <figDesc>d</figDesc></figure>") == 0)
+        #expect(try await spaces("<frus:attachment><note n=\"1\" xml:id=\"fn1\">N.</note> <pb n=\"2\" xml:id=\"pg_2\"/><p>P.</p></frus:attachment>") == 0)
+        // Inside a cell or an item, between two inline elements, it is kept.
+        #expect(try await spaces("<table><row><cell><hi>a</hi> <hi>b</hi></cell></row></table>") == 1)
+        #expect(try await spaces("<list><item><gloss target=\"#t\">A</gloss> <persName>B</persName></item></list>") == 1)
+    }
+
+    @Test("A kept space is no text: the index stores what it stored, and the highlight space does not move")
+    func aKeptSpaceIsNoText() async throws {
+        let spaced = "<div type=\"document\" xml:id=\"d1\"><p>(<hi>a</hi> <hi>b</hi> <hi>.</hi>)</p></div>"
+        let glued = "<div type=\"document\" xml:id=\"d1\"><p>(<hi>a</hi><hi>b</hi><hi>.</hi>)</p></div>"
+        let ast = try await ListShapeFixtures.ast(spaced)
+        let gluedAST = try await ListShapeFixtures.ast(glued)
+        // The printed rule spaces "a b" and glues the stop, whether or not the run was kept: adding a
+        // space for the marker would store "a b ." where the index has always stored "a b.".
+        #expect(IndexingPipeline.extractBodyText(from: ast.nodes) == "(a b.)")
+        #expect(IndexingPipeline.extractBodyText(from: ast.nodes) == IndexingPipeline.extractBodyText(from: gluedAST.nodes))
+        #expect(IndexingPipeline.bodyHash(for: ast) == IndexingPipeline.bodyHash(for: gluedAST))
+        #expect(buildFlatText(from: try await ListShapeFixtures.renderModel(spaced)) == "(ab.)")
     }
 }

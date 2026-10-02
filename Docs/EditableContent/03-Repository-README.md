@@ -57,8 +57,8 @@ More in [`Docs/screenshots/`](Docs/screenshots).
   search term), and collocates (the words that keep company with it).
 - **Inspect the query** — the Query Inspector shows the FTS5 expression your search actually became,
   each term's index form, and its corpus-wide versus in-scope counts.
-- **Facet** — break a result set down by year, volume, person, document type, and archival
-  provenance; sort, page, and filter each breakdown; tap a row to narrow.
+- **Facet** — break a result set down by year, volume, person, document type, archival
+  provenance, and subject; sort, page, and filter each breakdown; tap a row to narrow.
 - **Analyze** — corpus, series, person, and cross-reference dashboards; a chronology view; and a
   word cloud with keyness and collocation.
 - **Trace sources** — Source Explorer resolves FRUS source notes to NARA record groups, lot files,
@@ -162,7 +162,7 @@ The optional natural-language search feature downloads Google's EmbeddingGemma m
 
 ## Contributing
 
-Read [`CLAUDE.md`](CLAUDE.md) for the architecture, build commands, and coding standards, and [`Planning/DEVELOPMENT-PLAN.md`](Planning/DEVELOPMENT-PLAN.md) for the session sequence. Both app targets must build and the full test suite must pass before a change lands. Update `FRUS-API.openapi.yaml` when you touch a stored or queryable data surface — that one is mechanically enforced.
+Read [`CLAUDE.md`](CLAUDE.md) for the architecture, build commands, and coding standards, and [`Planning/DEVELOPMENT-PLAN.md`](Planning/DEVELOPMENT-PLAN.md) for the session sequence. Both app targets must build and the full test suite must pass before a change lands. Update `FRUS-API.openapi.yaml` when you touch a stored or queryable data surface. The test suite checks that file's structure (OpenAPI 3.1.0, its required paths and schemas, no `nullable: true`), not that it describes your change, so keeping it current is yours to do.
 
 <!-- END SOURCE: repo.readme -->
 

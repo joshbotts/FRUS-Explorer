@@ -551,7 +551,7 @@ struct MacSearchWindowView: View {
             await Task.yield()
             queryFieldFocused = true
         }
-        // And again on every ⌘S / toolbar-Search re-summon. Re-fronting a singleton window runs no
+        // And again on every ⌥⌘F / toolbar-Search re-summon. Re-fronting a singleton window runs no
         // code inside it and never resets first responder, so without this the caret stayed on
         // whatever was last focused — typing a query drove the result-list selection instead. Same
         // shape as `DocumentFindBar`'s `focusToken` (the established in-repo pattern).
@@ -740,7 +740,7 @@ struct MacSearchWindowView: View {
 
             Button {
                 // B4: Citation Lookup is its own window (⌘⇧F) — the sibling find
-                // flow to this Search window (⌘F).
+                // flow to this Search window (⌥⌘F).
                 openWindow.fronting(id: "frus.citationLookup")
             } label: {
                 Label(

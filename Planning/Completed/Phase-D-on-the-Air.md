@@ -150,7 +150,8 @@ GENERATED_DATE=2026-09-09 \
 swift run -c release SemanticVectorsGenerator
 ```
 
-Two guards in one line. `DIMS=512` because the generator's own default is still 256 and packing at
+Two guards in one line. `DIMS=512` because the generator's own default was still 256 when this was
+run (it is 512 since 2026-10-01, so the variable now only says which width is meant) and packing at
 half width takes every consumer to `.provenanceMismatch`; `EXPECT_DIGEST` because the runner then
 refuses to write **anything** under a different provenance, which is the 162 MB-re-download
 failure the whole of §4.2 is about.

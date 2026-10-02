@@ -576,6 +576,16 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Whether an export in this format prints a figure's image (#1516): PDF, Word and HTML do.
+    /// BibTeX and RIS print citations, and the native file carries the collection's source, so
+    /// an export in one of those fetches no image.
+    var printsFigureImages: Bool {
+        switch self {
+        case .pdf, .html, .docx: return true
+        case .zoteroJSON, .bibtex, .fruscollection: return false
+        }
+    }
+
     /// Returns a fresh exporter instance for this format, or `nil` for `.fruscollection`,
     /// which is produced by `NativeCollectionSerializer` (it serializes the collection's
     /// source rather than rendering resolved content) and handled directly by the export flow.

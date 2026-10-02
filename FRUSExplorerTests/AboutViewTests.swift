@@ -42,32 +42,6 @@ struct AboutViewTests {
 
     // MARK: - EmptyStateTest
 
-    @Test("EmptyStateTest: GlobalContextViewModel with no data reports zero counts")
-    @MainActor
-    func emptyGlobalContextReportsZeroCounts() {
-        let vm = GlobalContextViewModel()
-        #expect(vm.allNotes.isEmpty)
-        #expect(vm.allCollections.isEmpty)
-        #expect(vm.allHistory.isEmpty)
-        #expect(vm.totalDocumentsAccessed == 0)
-        #expect(vm.untaggedNotesCount == 0)
-        #expect(vm.untaggedHistoryCount == 0)
-        #expect(vm.filteredNotes.isEmpty)
-        #expect(vm.filteredCollections.isEmpty)
-        #expect(vm.perProjectBreakdown.isEmpty)
-        #expect(vm.perVolumeBreakdown.isEmpty)
-    }
-
-    @Test("EmptyStateTest: GlobalContextViewModel with no data and active filters still returns empty")
-    @MainActor
-    func emptyGlobalContextWithFiltersReturnsEmpty() {
-        let vm = GlobalContextViewModel()
-        vm.selectedProjectFilter = UUID()
-        vm.selectedUserTagFilter = UUID()
-        #expect(vm.filteredNotes.isEmpty)
-        #expect(vm.filteredCollections.isEmpty)
-    }
-
     @Test("EmptyStateTest: ProjectContextViewModel with no data has empty projects list")
     @MainActor
     func emptyProjectContextReportsZeroProjects() throws {

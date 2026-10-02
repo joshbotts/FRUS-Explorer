@@ -272,6 +272,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          so a scene restored in a background launch cannot start the warm-up either.
 ///   4.25 — Lane EXPORT review round 1: `importOpenedCollection` indexes the notes an opened
 ///          `.fruscollection` brings (`NativeCollectionSerializer.indexImportedNotes`), as the in-app imports do.
+///   4.26 — Lane READ (#1516) and its review round 1: `bootDownloadManager()` configures the app's
+///          figure store (`FigureImageStore.shared`) — not in a unit test's host — and, once downloads
+///          are resumed at launch and on each reconnect, starts the pass that brings the volumes already
+///          on the device up to their figure images (`fetchMissingFigureImages(with:appState:)`).
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -874,7 +878,7 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 820, height: 680)
-        // #363 #5: Search's key equivalent is now ⌘S, owned by the Find command menu
+        // #363 #5: Search's key equivalent (⌥⌘F since M-14) is owned by the Find command menu
         // (FindMenuContent) — ⌘F was remapped to Find in Document. Removed from the scene so
         // there is a single owner (mirrors the #2 duplicate-binding fix).
 
@@ -904,7 +908,7 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 700)
-        // ⌘⇧B lives on the Research-menu item, NOT here (#749 / audit L-37). A shortcut declared on
+        // ⌘⇧B lives on the Find menu's item, NOT here (#749 / audit L-37). A shortcut declared on
         // a Window scene runs no app code — AppState.bindTool relies on exactly that — so it cannot
         // call `bringMacWindowToFront`, leaving the only keyboard route to Browse unable to raise an
         // open-but-buried browser. It also put the shortcut on no visible menu item, so nothing
@@ -1781,6 +1785,7 @@ struct FRUSExplorerApp: App {
                     Task {
                         if isOnline {
                             await dm.resumeQueuedDownloads()
+                            Self.fetchMissingFigureImages(with: dm, appState: appState)
                         } else {
                             await dm.suspend()
                         }
@@ -1991,15 +1996,15 @@ struct FRUSExplorerApp: App {
             // `.modelContainer` feeds the embedded History submenu's @Query; appState/
             // openWindow are explicit init params (mirroring the surrounding CommandGroup
             // blocks) rather than relying on @Environment propagation into .commands.
-            // Corpus Browser lives in the WINDOW menu, not Research. It opens a window and does
-            // nothing else — the Research menu's other items each act on research state (bind a
-            // project, open a collection), and grouping "show me this window" with them made the
-            // menu a list of two unlike things.
+            // Corpus Browser is not in this menu. It opens a window and does nothing else — the
+            // Research menu's other items each act on research state (bind a project, open a
+            // collection), and grouping "show me this window" with them made the menu a list of
+            // two unlike things. Its item is in the Find menu (`FindMenuContent`), which says why
+            // it is not in the Window menu either (#822).
             //
-            // ⌘⇧B stays on this Button rather than moving back to the `Window` scene: a
-            // scene-level shortcut runs no app code, so it cannot front a buried browser, and it
-            // appears on no menu at all (#749 / audit L-37). That is the defect this item exists
-            // to have fixed, and it is independent of which menu the item sits in.
+            // ⌘⇧B is on that item's Button, not on the `Window` scene: a scene-level shortcut runs
+            // no app code, so it cannot front a buried browser, and it appears on no menu at all
+            // (#749 / audit L-37). That is independent of which menu the item sits in.
             CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
                 ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
                     .modelContainer(modelContainer)
@@ -2130,6 +2135,22 @@ struct FRUSExplorerApp: App {
         return ((try? context.fetchCount(descriptor)) ?? 0) > 0
     }
 
+    /// Starts the pass that brings the volumes already on the device up to their figure images
+    /// (#1516 review, round 1; `DownloadManager.fetchMissingFigureImages(among:)`): the volumes
+    /// downloaded before figure images existed, and whatever an earlier run could not fetch.
+    ///
+    /// Called once the download manager is running, at launch and each time the device comes
+    /// back online. It does not hold its caller: the pass reads each volume's XML and fetches
+    /// one image at a time. Only catalogue volumes are passed — a side-loaded one has no address
+    /// on history.state.gov (#777) — and nothing is started in a unit test's host, where the
+    /// volumes are the simulator's own and the transfer is the network's.
+    @MainActor
+    static func fetchMissingFigureImages(with dm: DownloadManager, appState: AppState) {
+        guard !FigureImageStore.isUnitTestHost(ProcessInfo.processInfo.environment) else { return }
+        let catalogue = DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)
+        Task(priority: .utility) { await dm.fetchMissingFigureImages(among: catalogue) }
+    }
+
     /// Creates the DownloadManager the first time `.task` fires, then immediately
     /// resumes any queue that was persisted from the previous app session.
     @MainActor
@@ -2140,7 +2161,7 @@ struct FRUSExplorerApp: App {
     /// `appState.searchService`, and it was awaited from ONE place: a `.task` on the primary
     /// `WindowGroup`. Every standalone macOS window — Search, Corpus Browser, People, the
     /// analytics windows — boots nothing. So an app that came up showing only the Search window
-    /// (a restored session, or ⌘S before the main window) had `searchService == nil` for the
+    /// (a restored session, or ⌥⌘F before the main window) had `searchService == nil` for the
     /// whole session: every query returned zero, Facets stayed disabled, and the Advanced
     /// popover rendered an empty box. Silently — search reported "No Results" over an index
     /// holding 316,839 documents.
@@ -2722,6 +2743,24 @@ struct FRUSExplorerApp: App {
         )
         appState.downloadManager = dm
 
+        // #1516: the reader's scheme handler and the exports draw a figure's image from this store.
+        // An image the pass over the library (`fetchMissingFigureImages`, below) has not yet
+        // fetched is fetched the first time it is asked for — a catalogue volume's only (a
+        // side-loaded one has no address on history.state.gov, #777), and only while online.
+        // Not in a unit test's host: the tests run inside this app, and a store pointed at the
+        // simulator's volumes and at the network would be every test's default.
+        if !FigureImageStore.isUnitTestHost(ProcessInfo.processInfo.environment) {
+            FigureImageStore.shared.configure(library: dm.figureLibrary) { [appState] volumeId, fileName in
+                let allowed = await MainActor.run {
+                    FigureImageStore.mayFetch(
+                        volumeId: volumeId, isOnline: appState.isOnline,
+                        catalogueVolumeIds: DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore))
+                }
+                guard allowed else { return false }
+                return await dm.fetchFigureImage(volumeId: volumeId, fileName: fileName)
+            }
+        }
+
         #if DEBUG
         // #1301 round 4: finish the seeded fixture's "download" after a delay, through the manager's
         // own completion router, so a UI test can stand on a compilation while the automatic
@@ -2738,6 +2777,7 @@ struct FRUSExplorerApp: App {
 
         if appState.isOnline {
             await dm.resumeQueuedDownloads()
+            Self.fetchMissingFigureImages(with: dm, appState: appState)
         }
 
         // If onboarding completed before DownloadManager booted, a scope was parked in
@@ -3717,9 +3757,9 @@ struct DocumentMenuContent: View {
 /// Groups the three "finding" flows: **Find in Document** (⌘F — the focused
 /// document's in-page find bar, driven through `\.documentCommands`, so it targets
 /// the key document window and is disabled when no document surface is key), plus
-/// **Find Next** (⌘G) / **Find Previous** (⌘⇧G); full-text **Search** (⌘S — moved
-/// off ⌘F, which Find in Document now owns; the app has no Save command, so ⌘S was
-/// free); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
+/// **Find Next** (⌘G) / **Find Previous** (⌘⇧G); full-text **Search** (⌥⌘F — moved
+/// off ⌘F, which Find in Document now owns, to ⌘S, and off ⌘S at M-14 because that
+/// is Save everywhere else); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
 /// owners of their key equivalents (removed from the window scenes, mirroring #2).
 /// **Search Tips…** (#1299, no shortcut) fronts the Search window and opens its Tips panel.
 /// **Search…** has a key of its own, `menu.find.search.mac` (#1483): it opens a window, so it takes an

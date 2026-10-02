@@ -364,14 +364,114 @@ struct RunnerEndToEndTests {
         #expect(result.isTrustworthy)
     }
 
-    @Test("PROJECT_ONLY with no stored records says so instead of writing an empty index")
-    func reportsMissingRawStore() async throws {
+    /// Until lane HYG (2026-10-01) this test was "…says so instead of writing an empty index", and
+    /// what it pinned was the defect: the run RETURNED, with an empty manifest and a review note,
+    /// having written that empty manifest, five census CSVs, the sample and the report on the way.
+    /// It now pins the refusal: the error, no transport call, and an output directory the run
+    /// never created.
+    @Test("PROJECT_ONLY with no stored records refuses before it writes anything")
+    func refusesWithNoRawStore() async throws {
         let sandbox = try Sandbox()
         defer { sandbox.destroy() }
         let offline = ScriptedTransport(bodies: [:])
-        let result = try await run(sandbox, transport: offline, mode: .init(projectOnly: true))
-        #expect(result.manifest.recordGroups.isEmpty)
-        #expect(result.manifest.reviewNotes.contains { $0.contains("no raw store") })
+
+        var thrown: (any Error)?
+        do {
+            _ = try await run(sandbox, transport: offline, mode: .init(projectOnly: true))
+        } catch {
+            thrown = error
+        }
+        guard case RecordGroupCatalogRunner.RunnerError.noRawStore(let cache, let groups)? = thrown else {
+            Issue.record("expected noRawStore, got \(String(describing: thrown))")
+            return
+        }
+        #expect(cache == sandbox.cache.path)
+        #expect(groups == [486])
+        #expect(offline.requests.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: sandbox.output.path),
+                "the refused run created its output directory")
+        // The message is the operator's only guide, so it names where it looked and what is safe.
+        let message = String(describing: try #require(thrown))
+        #expect(message.contains(sandbox.cache.path))
+        #expect(message.contains("Nothing was written"))
+    }
+
+    /// **The case that cost something**: committed artifacts on disk, the raw store gone, and a
+    /// bare `PROJECT_ONLY=1`. That is this repository's state since `.cache/nara-rg-catalog` was
+    /// deleted, and before the refusal the pass rewrote `manifest.json`, the census CSVs,
+    /// `series-sample.json` and `harvest-report.txt` to describe zero groups before it exited
+    /// non-zero. Every file must come through byte-identical.
+    @Test("PROJECT_ONLY over a deleted raw store leaves the existing artifacts byte-identical")
+    func deletedStoreLeavesTheArtifactsAlone() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        try await run(sandbox, transport: Self.transport())
+        let before = try sandbox.outputFiles()
+        #expect(before.count >= 9, "expected the full artifact set, got \(before.count) files")
+
+        try FileManager.default.removeItem(at: sandbox.cache)
+
+        await #expect(throws: RecordGroupCatalogRunner.RunnerError.self) {
+            _ = try await run(sandbox, transport: ScriptedTransport(bodies: [:]),
+                              mode: .init(projectOnly: true))
+        }
+        let after = try sandbox.outputFiles()
+        #expect(Set(after.keys) == Set(before.keys))
+        for key in before.keys.sorted() {
+            #expect(after[key] == before[key], "\(key) was rewritten by the refused run")
+        }
+    }
+
+    /// The refusal is for NO store at all. A store for some of the planned groups still projects
+    /// those and leaves a review note for each of the rest — the interim look a partial harvest
+    /// is allowed — and that branch is not to be swept up in the refusal.
+    @Test("PROJECT_ONLY with a store for one of two planned groups projects it and notes the other")
+    func partialStoreStillProjects() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        try await run(sandbox, transport: Self.transport())
+
+        let twoGroups = RecordGroupHarvestPlan(groups: [
+            RecordGroupPlan(number: 486, depth: .series),
+            RecordGroupPlan(number: 59, depth: .series),
+        ])
+        let offline = ScriptedTransport(bodies: [:])
+        let result = try await run(sandbox, transport: offline, plan: twoGroups,
+                                   mode: .init(projectOnly: true))
+        #expect(offline.requests.isEmpty)
+        #expect(result.manifest.recordGroups.map(\.recordGroup) == [486])
+        #expect(result.manifest.recordGroups[0].harvestedSeriesCount == 3)
+        #expect(result.manifest.reviewNotes.contains {
+            $0.contains("RG 59: PROJECT_ONLY found no raw store")
+        })
+    }
+
+    /// One fixture per conjunct of `Mode.reprojectsStoredRecords`: `PROJECT_ONLY` alone re-projects,
+    /// and each of the three modes that takes the run elsewhere switches the refusal off.
+    @Test("The refusal applies to PROJECT_ONLY alone, not beside a mode that reads no store")
+    func refusalIsScopedToReprojection() {
+        typealias Mode = RecordGroupCatalogRunner.Mode
+        #expect(Mode(projectOnly: true).reprojectsStoredRecords)
+        #expect(!Mode().reprojectsStoredRecords)
+        #expect(!Mode(probe: true, projectOnly: true).reprojectsStoredRecords)
+        #expect(!Mode(projectOnly: true, apiSurvey: true).reprojectsStoredRecords)
+        #expect(!Mode(projectOnly: true, apiOnly: true).reprojectsStoredRecords)
+        // The two that leave it on: neither changes where a group's records come from.
+        #expect(Mode(projectOnly: true, creatorAuthority: true).reprojectsStoredRecords)
+        #expect(Mode(projectOnly: true, apiRefresh: true).reprojectsStoredRecords)
+    }
+
+    /// `PROBE` beside `PROJECT_ONLY` reads no store, so it must not be refused for lacking one:
+    /// the probe runs, and fetches its one shard.
+    @Test("PROBE beside PROJECT_ONLY is not refused for having no raw store")
+    func probeIsNotRefused() async throws {
+        let sandbox = try Sandbox()
+        defer { sandbox.destroy() }
+        let transport = Self.transport()
+        let result = try await run(sandbox, transport: transport,
+                                   mode: .init(probe: true, projectOnly: true))
+        #expect(!transport.requests.isEmpty, "the probe fetched nothing")
+        #expect(result.manifest.recordGroups.map(\.recordGroup) == [486])
     }
 
     @Test("REFRESH plus a deeper depth re-harvests and picks up the file units")

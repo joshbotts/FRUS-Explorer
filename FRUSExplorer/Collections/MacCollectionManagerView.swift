@@ -805,8 +805,8 @@ private struct CollectionDetailPane: View {
         }
         .transientToast($addDocumentsToast)
         .sheet(item: $planPickerRequest) { request in
-            // Membership resolved through the SAME `TripPacketSeed.resolve` rule the packet
-            // uses, so the three collection surfaces cannot describe different sets.
+            // Membership resolved through the ONE `TripPacketSeed.resolve` rule the iOS editor's
+            // two menus use, so the three collection surfaces cannot describe different sets.
             PlanPickerSheet(request: request)
                 .environment(appState)
         }

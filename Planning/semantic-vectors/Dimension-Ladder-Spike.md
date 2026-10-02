@@ -1,6 +1,9 @@
 # The 256 / 512 dimension ladder — measured
 
-**Status:** spike complete, 2026-08-16. Decision open.
+**Status:** spike complete, 2026-08-16. ~~Decision open.~~ **Decided the same day: 512 for
+everyone**, not a user option, with the old shards cleared automatically (`512-Migration-Runbook.md`,
+COMPLETE). One thing this spike said was owed is still owed: the oldest-device latency
+measurement has never been run, so the timings below remain M1 Max figures.
 
 Run to answer one question: is 512 worth shipping, and if so, as a user option or as the default?
 Every number below was produced on this corpus by re-running the shipping generator; nothing is
