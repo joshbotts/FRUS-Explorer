@@ -108,6 +108,8 @@ import SwiftUI
 ///           Landing: an empty Archival Neighbors list under the panel says the note cites the
 ///           Subject-Numeric File (`relatedEmptyState(for:note:)`, two new sentences), where it
 ///           said the note cites no recognized central file.
+///           Landing round 3: a Department-led designation alone in its file has that sentence
+///           too, where it had the one every keyed note has; one situation, one sentence.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -2971,7 +2973,8 @@ struct SourceExplorerView: View {
     enum RelatedEmptyState: Equatable, Sendable {
         /// The note has a key the neighbour query matches on, and no other indexed document has it.
         case noNeighbors
-        /// A Subject-Numeric citation whose neighbours are matched on its class key, with none found.
+        /// A Subject-Numeric citation whose neighbours are matched on its file — the stored
+        /// designation or the class key — with none found.
         case subjectNumericNoNeighbors
         /// A Subject-Numeric citation the neighbour query has no key for.
         case subjectNumericUnkeyed
@@ -2988,27 +2991,38 @@ struct SourceExplorerView: View {
     /// of its own, because the list is empty for two reasons (documents, of the 9,443 that cite the
     /// file, counted by this rule over the corpus's 264,552 document notes):
     ///
-    /// - **Matched on its class key, and nothing found** (`.subjectNumericNoNeighbors`): the note
-    ///   is worded through the National Archives, its stored series names the central files, and
-    ///   `SourceNoteParser.decimalClassLocation(inCitation:)` reads a class key. That is the one
-    ///   arm of `IndexingPipeline.relatedDocuments` that matches with no parse-level key
-    ///   (`relatedByDecimalClass`, on the stored `decimal_class`), so `supportsArchivalNeighbors`
-    ///   is false although a query ran. 4,083 documents can reach it; 399 of them cite a class no
-    ///   other document in the corpus stores, and the rest reach it only while the volumes that
-    ///   share the class are not indexed.
-    /// - **Nothing to match on** (`.subjectNumericUnkeyed`): 1,518 documents. The same wording with
-    ///   no class key (1,302: a designation the class grammar refuses, with no subject number —
-    ///   `POL FR-US`, 902 — or with one — `ORG 4–COMM`, 393 — and 7 that give only their block of
+    /// - **Matched on its file, and nothing found** (`.subjectNumericNoNeighbors`), in both
+    ///   wordings, 7,740 documents:
+    ///   - worded through the Department, with a designation the parse stored (3,657):
+    ///     `relatedByDecimal` matches the stored file number. A designation with no subject number
+    ///     is among them when the parse stored it (`POL US–USSR`), since that route matches the
+    ///     stored file number whole. Until the landing's third round these read `.noNeighbors`,
+    ///     the sentence of every keyed note, so `frus1964-68v01/d359` and `frus1969-76v30/d6`,
+    ///     each alone in its file, had two different sentences. The sentence says "was matched",
+    ///     which holds here too: this route finds the Department-led documents of the file and
+    ///     not the ones worded through the National Archives (237 designations are cited both
+    ///     ways; one neighbour set per file is in the lane's out-of-scope list).
+    ///   - worded through the National Archives, with a stored series that names the central files
+    ///     and a class key `SourceNoteParser.decimalClassLocation(inCitation:)` reads (4,083).
+    ///     That is the one arm of `IndexingPipeline.relatedDocuments` that matches with no
+    ///     parse-level key (`relatedByDecimalClass`, on the stored `decimal_class`), so
+    ///     `supportsArchivalNeighbors` is false although a query ran. 399 of these cite a class no
+    ///     other document in the corpus stores, and the rest reach the state only while the
+    ///     volumes that share the class are not indexed.
+    /// - **Nothing to match on** (`.subjectNumericUnkeyed`): 1,518 documents. The second wording
+    ///   with no class key (1,302: a designation the class grammar refuses, with no subject number
+    ///   — `POL FR-US`, 902 — or with one — `ORG 4–COMM`, 393 — and 7 that give only their block of
     ///   years), a Department-led note with no stored identifier (`AID (US) S VIET`, 184) or one the
     ///   file-number route cannot read (3), a note parsed as the Central Foreign Policy File (19),
     ///   and a National-Archives-led note whose parse kept no series (10). `relatedDocuments` has
     ///   no arm for any of them.
     ///
-    /// The other 3,842 have a key and are `.noNeighbors`, as before: a Department-led designation
-    /// the parse stored (3,657), a National-Archives-led note whose series does not name the
-    /// central files (182), and 3 whose remark carries a film number. A designation with no subject
-    /// number is among the first when the Department-led parse stored it (`POL US–USSR`):
-    /// `relatedByDecimal` matches the stored file number whole.
+    /// The other 185 have a key that is **not their file**, and are `.noNeighbors`, the sentence
+    /// every keyed note has: a National-Archives-led note whose series does not name the central
+    /// files (182; `RG 59, Records of the Department of State, Central Files, 1964–66, …`, matched
+    /// by `relatedByCollection` on that series), and 3 parsed as the Central Foreign Policy File
+    /// whose remark carries a film number (`relatedByCFPFFilm`). "No other indexed document was
+    /// matched to the same file" would be untrue of them: the query did not ask about the file.
     ///
     /// A central-files citation's list is empty exactly when its direct route finds nothing: the
     /// collection authority's alias fallback does not serve one
@@ -3016,8 +3030,14 @@ struct SourceExplorerView: View {
     /// documents matched by the central files' name.
     static func relatedEmptyState(for parsed: ParsedSourceNote?, note: String) -> RelatedEmptyState {
         guard let parsed else { return .unmatched }
-        if parsed.supportsArchivalNeighbors { return .noNeighbors }
-        guard CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) else { return .unmatched }
+        let citesTheFile = CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note)
+        if parsed.supportsArchivalNeighbors {
+            // A Department-led designation: its key is the stored file number, which is the file.
+            // The other two keyed shapes are keyed by a series and by a film number.
+            if citesTheFile, case .centralFiles = parsed { return .subjectNumericNoNeighbors }
+            return .noNeighbors
+        }
+        guard citesTheFile else { return .unmatched }
         // `relatedDocuments`' arm for a series that names the central files. The series is not
         // tested again: a parse with any other series has a key of its own, and left above.
         if case .naraCollection(_, _?, nil, _) = parsed,

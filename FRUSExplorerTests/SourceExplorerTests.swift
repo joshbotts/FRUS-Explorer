@@ -1139,6 +1139,9 @@ struct VolumeSourcesResolutionTests {
 ///          skip and its place, and wants a call of the panel; a lot fixture
 ///   1.2 — 2026-10-02 (#1543, landing): the empty Archival Neighbors list — the state both views
 ///          ask for, driven, and each view's sentence for each state, scanned
+///   1.3 — 2026-10-02 (#1543, landing round 3): a Department-led designation alone in its file has
+///          the Subject-Numeric sentence, as the same file cited through the National Archives
+///          has; the two keyed shapes whose key is not the file keep the generic one, a fixture each
 @Suite("Source Explorer — the Subject-Numeric File (#1543)")
 @MainActor
 struct SubjectNumericExplorerTests {
@@ -1507,15 +1510,42 @@ struct SubjectNumericExplorerTests {
     /// Under the Subject-Numeric panel an empty list read "This source note doesn’t cite a
     /// recognized lot file, central file, or presidential library", for every citation whose parse
     /// has no neighbour key. It has two states of its own now, and which one follows the route
-    /// `IndexingPipeline.relatedDocuments` takes: matched on the class key with nothing found, or
+    /// `IndexingPipeline.relatedDocuments` takes: matched on the file with nothing found, or
     /// nothing to match on. One fixture for each way into each state, every note the corpus's own
     /// (cut after its classification where it runs on).
+    ///
+    /// The file is matched in both wordings, and both have the one sentence (landing round 3).
+    /// Until then a Department-led designation had the sentence of every keyed note, so
+    /// `frus1964-68v01/d359` and `frus1969-76v30/d6`, each alone in its file, read differently.
     @Test("An empty neighbour list under the Subject-Numeric panel is one of the file's two states")
     func emptyNeighbourStates() {
-        // Matched on its class key (frus1964-68v14/d93): the one route with no parse-level key.
-        let keyed = "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis."
-        #expect(!SourceNoteParser().parse(keyed).supportsArchivalNeighbors, "the parse has no key; the route reads the class")
-        #expect(emptyState(keyed) == .subjectNumericNoNeighbors)
+        // Matched on its class key: the one route with no parse-level key (frus1964-68v14/d93,
+        // and frus1969-76v30/d6, which the second by-eye pass looked at).
+        for keyed in [
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+            "Source: National Archives, RG 59, Central Files 1970–73, POL 14 GREECE. Confidential; No Foreign Dissem.",
+        ] {
+            #expect(!SourceNoteParser().parse(keyed).supportsArchivalNeighbors, "the parse has no key; the route reads the class")
+            #expect(emptyState(keyed) == .subjectNumericNoNeighbors, "\(keyed)")
+        }
+
+        // Matched on the designation the parse stored, which `relatedByDecimal` matches whole: with
+        // a subject number (frus1964-68v01/d359, the document the pass looked at, and d5), without
+        // one (frus1961-63v15/d177), and with a stop in it, which the dotted arm takes
+        // (frus1964-68v22/d111). Each has a key, and the key is the file.
+        let stored: [(note: String, key: String)] = [
+            ("Source: Department of State, Central Files, POL 13 VIET S. Secret; Priority; Limdis. Repeated to CINCPAC.", "POL 13 VIET S"),
+            ("Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy.", "POL 27 VIET S"),
+            ("Source: Department of State, Central Files, POL US–USSR. Secret; Priority.", "POL US–USSR"),
+            ("Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN. Confidential. Repeated to Karachi.", "DEF 19–8 U.S.-IRAN"),
+        ]
+        for (note, key) in stored {
+            let parsed = SourceNoteParser().parse(note)
+            if case .centralFiles = parsed {} else { Issue.record("\(note) is no longer a central-files parse") }
+            #expect(parsed.archivalNeighborKey == key, "\(note)")
+            #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note), "\(note)")
+            #expect(emptyState(note) == .subjectNumericNoNeighbors, "\(note)")
+        }
 
         // Nothing to match on. The same wording with a designation the class grammar refuses:
         // no subject number (frus1964-68v12/d34), a number and a commodity (frus1961-63v25/d59),
@@ -1556,22 +1586,36 @@ struct SubjectNumericExplorerTests {
         #expect(emptyState(unstored) == .subjectNumericUnkeyed)
     }
 
-    /// The states the change must not move. A Subject-Numeric citation with a key keeps the
-    /// sentence every keyed note has: a Department-led designation the parse stored, with a
-    /// subject number (frus1964-68v01/d5) or without one (frus1961-63v15/d177), and a
-    /// National-Archives-led note whose series does not name the central files
-    /// (frus1964-68v34/d1). A note that is no Subject-Numeric citation keeps its own two.
-    @Test("A keyed Subject-Numeric citation, and every other note, keep the state they had")
+    /// The states that are not the file's. A Subject-Numeric citation whose key is NOT its file
+    /// keeps the sentence every keyed note has, because the query asked about something else and
+    /// "no other indexed document was matched to the same file" would be untrue of it. There are
+    /// two such shapes, a fixture each: a National-Archives-led note whose series does not name
+    /// the central files, matched by collection on that series (frus1964-68v34/d1), and a note
+    /// parsed as the Central Foreign Policy File whose remark carries a film number, matched on
+    /// the film (frus1969-76ve09p2/d84, without the `Summary:` sentence the volume prints first).
+    /// A note that is no Subject-Numeric citation keeps its own two.
+    @Test("A Subject-Numeric citation keyed by something other than its file, and every other note, keep the generic sentence")
     func otherEmptyStatesAreUnmoved() {
-        for note in [
-            "Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy.",
-            "Source: Department of State, Central Files, POL US–USSR. Secret; Priority.",
-            "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, SCI 3 OECD. Limited Official Use; Priority. Passed to the White House.",
-        ] {
-            let parsed = SourceNoteParser().parse(note)
-            #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note), "\(note)")
-            #expect(emptyState(note) == .noNeighbors, "\(note)")
+        let bySeries = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, SCI 3 OECD. Limited Official Use; Priority. Passed to the White House."
+        let seriesParse = SourceNoteParser().parse(bySeries)
+        if case .naraCollection(_, let series?, nil, _) = seriesParse {
+            #expect(!ParsedSourceNote.seriesNamesCentralFiles(series), "\(series) names the central files")
+        } else {
+            Issue.record("frus1964-68v34/d1 no longer parses as a collection with a series")
         }
+        #expect(seriesParse.archivalNeighborKey == "RG 59: Records of the Department of State")
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: seriesParse, note: bySeries))
+        #expect(emptyState(bySeries) == .noNeighbors)
+
+        let byFilm = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL Iran-Saudi Arabia. Secret. Drafted by Brooks Wrampelmeier (NEA/ARP); cleared in NEA/IRN, NEA/ARP, and NEA; approved by Atherton. Repeated to Tehran, Kuwait City, London, and Sana’a. Brackets are in the original. Telegrams 1450 from Jidda, April 9, and 2372 from Tehran, April 12, are in the National Archives, RG 59, Central Foreign Policy File, [no film number]. The difficulties of Iranian-Saudi cooperation were discussed in INR study RNAS–6, April 12, “Iran and Saudi Arabia—The Odd Couple.” (Ibid.) Both Ambassadors attempted to facilitate discussions during the spring of 1973 while emphasizing the difficulty of encouraging trust between King Faisal and the Shah, reported in telegram 2450 from Tehran, April 16, and telegram 1618 from Jidda, April 20. (Ibid., [no film number] and D760430–0677)"
+        let filmParse = SourceNoteParser().parse(byFilm)
+        if case .cfpfFile = filmParse {} else {
+            Issue.record("frus1969-76ve09p2/d84 no longer parses as the Central Foreign Policy File")
+        }
+        #expect(filmParse.archivalNeighborKey == "CFPF film D760430")
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: filmParse, note: byFilm))
+        #expect(emptyState(byFilm) == .noNeighbors)
+
         // A decimal number and a lot have a key (frus1961-63v11/d301; a lot of the Conference Files).
         #expect(emptyState("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.") == .noNeighbors)
         #expect(SourceExplorerView.relatedEmptyState(
