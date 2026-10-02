@@ -554,7 +554,7 @@ struct SourceProvenanceDashboard: View {
 
     // MARK: - Cross-link
 
-    /// The #795 rider: a pointer from this dashboard's ten provenance *categories* to the named
+    /// The #795 rider: a pointer from this dashboard's eleven provenance *categories* to the named
     /// collections behind them.
     ///
     /// **On iOS it is withheld mid-onboarding** (#798, owner decision (a)). The Mac has no

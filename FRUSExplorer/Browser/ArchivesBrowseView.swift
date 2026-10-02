@@ -16,7 +16,7 @@ import SwiftUI
 /// coverage block, never copied from doc comments (several in-code figures are stale).
 ///
 /// ## The settled shape (owner decision, 2026-08-22): SIBLING LENSES, never nested
-/// The axis offers two ways in side by side — ten provenance-type doors drilling straight
+/// The axis offers two ways in side by side — eleven provenance-type doors drilling straight
 /// to volume lists, and the collection index (grouped by repository, record group, or not at all) — because **no shipped
 /// data maps a collection to a provenance category**. The join was measured many-to-many
 /// against the export sample (decimal-file parses land on `txt:` records 76×), the

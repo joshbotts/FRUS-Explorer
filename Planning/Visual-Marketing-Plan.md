@@ -198,7 +198,7 @@ it, and the first is not the fix the review proposed:
   what is missing beside it: **`accessibilityDifferentiateWithoutColor` appears nowhere under
   `Semantic/`**, though it is honoured with a documented rationale at `WordCloudView.swift:101`
   (consumed `:609`/`:612`/`:640`) on a surface far *less* colour-dependent than a map whose cluster
-  lens is an even hue sweep and whose provenance lens is a ten-hue legend.
+  lens is an even hue sweep and whose provenance lens is an eleven-hue legend (ten until #1543).
 
 **M-3 · Lens dip — M.** The fade lever exists end to end and is unused: `Uniforms.alpha` is declared,
 consumed by the shader, and **hardcoded to 1.0 at both call sites**. Drive 1.0 → ~0.25 → 1.0 across
@@ -384,8 +384,11 @@ draft; this is the best of them.
 
 The winning draft asserted that the Central Foreign Policy File being *"literally zero in every
 decade before 1970"* shows *"the 1963 renumbering, visible as a discontinuity."* **Strike that
-sentence.** `ProvenanceCategory.swift:33-36` defines `centralForeignPolicyFile` as *"CFPF,
-**1973–1979** — the P/D/N-reel and AAD Electronic Telegrams format"*, reached only via `.cfpfFile`.
+sentence.** `ProvenanceCategory.swift` defined `centralForeignPolicyFile` as *"CFPF,
+**1973–1979** — the P/D/N-reel and AAD Electronic Telegrams format"*, reached only via `.cfpfFile`
+(the comment as it stood at `:33-36` before #1543; it is now at
+`SourceProvenanceIndexGeneratorCore/ProvenanceCategory.swift:46-48` and reads "from July 1973 — …
+less the notes whose citation sentence gives a Subject-Numeric file").
 The 1963 renumbering produced **subject-numeric designators** (`POL 27 VIET S`), which the shared
 grammar filed under `centralDecimalFile` when the Department led the note and under `naraCollection`
 when the National Archives did. **Until #1543 the 1963 renumbering was by construction invisible in

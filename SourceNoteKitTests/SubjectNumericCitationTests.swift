@@ -18,13 +18,30 @@ import Testing
 /// the generators' provenance category, the index's `citation_era` and Source Explorer's panel all
 /// read it.
 ///
-/// Every note is copied from the corpus (several cut after their classification sentence), with
-/// its document id beside it, except where a case says it is constructed. One fixture per gate
-/// conjunct and per kind of evidence, each asserting what the rule answers AND, for a refusal, that
-/// the neighbouring admitted note differs from it in that one conjunct.
+/// The notes are the corpus's text at `8e5da08c1`, each with its document id beside it, except
+/// where a case says it is constructed. They are CUT, three ways, and no cut changes a result:
+/// - most stop after their classification sentence or after their first remark, and
+///   `frus1964-68v28/d366` is cut inside a sentence;
+/// - the e-volume notes (`frus1969-76ve09p2` d33, d78 and d85; `frus1969-76ve11p1` d393 and d429)
+///   drop the `Summary: …` sentence the corpus prints before `Source:`. The rule reads the
+///   citation sentence, which is selected after that sentence, and `RealTEISubjectNumericTests`
+///   indexes `frus1969-76ve09p2` whole;
+/// - `frus1969-76ve11p1` d393 and d429 keep the remark that makes the parse `.cfpfFile` and drop
+///   or shorten the sentences before it.
+///
+/// One fixture per kind of evidence and per gate conjunct. A refusal that isolates its conjunct
+/// has a control beside it that differs in that conjunct alone. Three refusals do NOT, and each
+/// says so where it stands: the Central Foreign Policy File's own forms (`filmFormsAreNil`) give no
+/// evidence of any kind, so the film-form gate is tested by `eachFilmFormRefusesADesignation`; and
+/// two of the record-group notes (`Paris Peace Conf. 182/1`, the RG 429 `Central File`) stay
+/// unread with the record-group gate removed, so that gate is tested by the RG 330 note and the
+/// constructed RG-256 identifier.
 ///
 /// Version history:
 ///   1.0 — 2026-10-02: #1543
+///   1.1 — 2026-10-02 (#1543, review round 1): `eachFilmFormRefusesADesignation`, one fixture per
+///          alternative of the film-form gate; the header says how the notes are cut and which
+///          refusals isolate a conjunct; `frus1969-76v22/d16` carries its own film number
 @Suite("Central-files citations are placed by their form (#1543)")
 struct SubjectNumericCitationTests {
 
@@ -252,6 +269,11 @@ struct SubjectNumericCitationTests {
         #expect(!CollectionKeying.isSubjectNumericCitation(parsed: parser.parse(note), note: note))
     }
 
+    /// A PIN, not a guard for the film-form gate: these notes carry no class key, no designation
+    /// and no block, so the rule answers `nil` for them with or without that gate (measured: with
+    /// `!matches(filmFormRegex, scope)` deleted, this test still passes). What it holds is that the
+    /// Central Foreign Policy File's own citations give the rule nothing to read. The gate's own
+    /// test is `eachFilmFormRefusesADesignation`.
     @Test("The Central Foreign Policy File's own forms stay out", arguments: [
         // frus1969-76v22/d17 — a film number.
         "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis.",
@@ -265,23 +287,57 @@ struct SubjectNumericCitationTests {
         "Source: Department of State, Central Foreign Policy File, STARS, Document Number 89170489. Secret; Exdis.",
     ])
     func filmFormsAreNil(note: String) {
-        // The control: under the same name, a designation in place of the film form is read
-        // (frus1969-76ve09p2/d85).
+        // The rule is running: under the same name, a designation is read (frus1969-76ve09p2/d85).
+        // This note differs from the fixtures by HAVING a designation, not by lacking a film form.
         #expect(reading("Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 2 Saudi Arabia. Secret.")?
             .form == .subjectNumeric)
         #expect(parseCase(note) == "cfpfFile")
         #expect(reading(note) == nil)
     }
 
-    @Test("A film form refuses even a citation sentence that carries a designation")
+    /// The film-form gate, one fixture per alternative of `filmFormRegex`. Every note is
+    /// CONSTRUCTED from frus1969-76ve09p2/d78's citation sentence, which the rule reads as
+    /// Subject-Numeric by its designation, with one of the Central Foreign Policy File's own forms
+    /// added as a last segment — so the form is the only thing the gate can refuse it for. Each
+    /// form is spelled as the corpus prints it (the document beside it), except `P-Reel` and
+    /// `D-Reel`, which no source note prints.
+    @Test("Each film form refuses a citation sentence that carries a designation", arguments: [
+        "P840114–1808",                       // frus1969-76v22/d17 — a film number
+        "P–860122–0281",                      // frus1969-76v26/d292 — a dash after the letter
+        "D 750010–1075",                      // a space after the letter (constructed)
+        "N770003-0421",                       // an N number with an ASCII hyphen (constructed)
+        "D810025 – 1157",                     // spaces around the dash (constructed from frus1981-88v01's D810025–1157)
+        "[no film number]",                   // frus1969-76v21/d331
+        "[no N number]",                      // frus1981-88v04
+        "No reel number available",           // frus1977-80v26 — a capital, and no bracket
+        "Electronic Telegrams",               // frus1981-88v01
+        "P-Reel Index",                       // constructed
+        "DReel 12",                           // constructed: no hyphen
+        "reel # N/A",                         // frus1977-80v26
+        "STARS, Document Number 89170489",    // frus1989-92v31/d20
+    ])
+    func eachFilmFormRefusesADesignation(form: String) {
+        // The control differs from the fixture in the film form alone, and is read.
+        let sentence = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli"
+        let control = "\(sentence). Confidential."
+        #expect(reading(control) == CentralFilesReading(
+            form: .subjectNumeric, evidence: .designation, designation: "POL 27–14 Arab-Israeli", lead: "POL"))
+
+        let note = "\(sentence), \(form). Confidential."
+        #expect(parseCase(note) == "cfpfFile")
+        #expect(reading(note) == nil, "\(form) did not refuse the citation")
+        #expect(!CollectionKeying.isSubjectNumericCitation(parsed: parser.parse(note), note: note))
+    }
+
+    @Test("A film form refuses in the citation sentence, and not in a remark")
     func filmFormOutranksADesignation() {
         // Constructed from frus1969-76ve09p2/d78: the same sentence with a film number in it.
         let withFilm = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli, P840114–1808. Confidential."
         #expect(parseCase(withFilm) == "cfpfFile")
         #expect(reading(withFilm) == nil)
         // The film form in a REMARK does not refuse: only the citation sentence is read
-        // (frus1969-76v22/d16).
-        let filmInRemark = "Source: National Archives, RG 59, Central Files 1970–73, POL 33–3 PAN. No classification marking. Drafted by Shlaudeman and Bell. (National Archives, RG 59, Central Foreign Policy File, P840114–1808)"
+        // (frus1969-76v22/d16, cut after its first remark).
+        let filmInRemark = "Source: National Archives, RG 59, Central Files 1970–73, POL 33–3 PAN. No classification marking. Drafted by Shlaudeman and Bell. The letter was transmitted in telegram 156307 to Panama City, August 8. (National Archives, RG 59, Central Foreign Policy File, P840114–1802)"
         #expect(parseCase(filmInRemark) == "cfpfFile")
         #expect(reading(filmInRemark)?.form == .subjectNumeric)
     }
@@ -318,7 +374,9 @@ struct SubjectNumericCitationTests {
 
     @Test("Only record group 59 is read")
     func otherRecordGroupsAreRefused() {
-        // frus1919Parisv01/d17 — the Paris Peace Conference's decimal file is RG 256.
+        // frus1919Parisv01/d17 — the Paris Peace Conference's decimal file is RG 256. A pin and
+        // not the gate's guard: `182/1` has no class key the grammar reads, so this note stays
+        // unread with the record-group gate removed.
         let paris = "Paris Peace Conf. 182/1"
         guard case .centralFiles(let recordGroup, _) = parser.parse(paris) else {
             Issue.record("expected .centralFiles, got \(parser.parse(paris))")
@@ -327,7 +385,11 @@ struct SubjectNumericCitationTests {
         #expect(recordGroup == "RG-256")
         #expect(reading(paris) == nil)
 
-        // frus1969-76v36/d347 — a `Central File` in RG 429.
+        // frus1969-76v36/d347 — a `Central File` in RG 429. Also a pin: its lead is not clean
+        // (`Records of the Council on International Economic Policy` is between the record group
+        // and the anchor) and it gives no form, so it too stays unread with the gate removed. The
+        // RG 330 note below and the RG-256 identifier in `identifierIsReadWithoutAnAnchor` are the
+        // fixtures only the record group refuses.
         let council = "Source: National Archives, RG 429, Records of the Council on International Economic Policy, 1971–77, Central File 1972–77, Box 54, File 53508, Memcon major oil firms. No classification marking."
         #expect(parseCase(council) == "naraCollection")
         #expect(reading(council) == nil)

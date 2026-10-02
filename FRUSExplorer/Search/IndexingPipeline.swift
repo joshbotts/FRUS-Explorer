@@ -11028,7 +11028,7 @@ public actor IndexingPipeline {
     /// with no source note contribute no row, which is why that total is smaller than the
     /// indexed document count and must never be described as one.
     ///
-    /// Grouped rather than returned per row because the grain is bounded — volumes × eight
+    /// Grouped rather than returned per row because the grain is bounded — volumes × nine
     /// citation forms × repositories — while the underlying table runs to a quarter of a million
     /// rows on a full index.
     ///

@@ -1228,7 +1228,7 @@ struct SemanticMapSpikeView: View {
     // honest response is to leave it alone, and to say so where the next reader looks.
     //
     // `accessibilityDifferentiateWithoutColor` is a REAL gap here and is deliberately not closed in
-    // this change: the cluster lens is an even hue sweep and the provenance lens a ten-hue legend,
+    // this change: the cluster lens is an even hue sweep and the provenance lens an eleven-hue legend,
     // so colour is load-bearing on a surface where `WordCloudView` honours the setting on far less.
     // Closing it needs a second channel (shape, or a labelled sub-selection), which is a design
     // question and not a contract to state. Recorded in the plan rather than half-answered here.
@@ -3172,7 +3172,7 @@ struct SemanticMapSpikeView: View {
     ///
     /// **The enum has declared a `legend` since V-4 and nothing has ever drawn it.** That was
     /// survivable while the lenses were regions (named on the map itself), a two-state download flag
-    /// and an ordered era ramp; it is not survivable for a categorical lens over ten archival
+    /// and an ordered era ramp; it is not survivable for a categorical lens over eleven archival
     /// vocabularies, where an unlabelled colour is decoration. Drawn from the same
     /// `SemanticMapColouring.palette` the GPU gets, so a swatch cannot drift from its points.
     @ViewBuilder

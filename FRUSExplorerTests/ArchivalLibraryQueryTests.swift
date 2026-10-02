@@ -307,7 +307,7 @@ struct ArchivalAnalyticsEntryPointTests {
 
     @Test("The SA-3 dashboard points at it, on both platforms, and not mid-onboarding")
     func seriesDashboardCrossLink() throws {
-        // The #765 D-1 rider: the provenance dashboard's ten categories are the coarse view of
+        // The #765 D-1 rider: the provenance dashboard's eleven categories are the coarse view of
         // what Archival Analytics names collection by collection.
         let source = try Self.source("SeriesAnalytics/SourceProvenanceDashboard.swift")
         #expect(source.contains("openWindow.fronting(id: \"frus.archivalAnalytics\")"),

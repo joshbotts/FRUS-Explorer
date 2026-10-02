@@ -1127,13 +1127,16 @@ struct VolumeSourcesResolutionTests {
 
 /// Source Explorer's Subject-Numeric panel (#1543): what `SourceExplorerView.subjectNumericCitation`
 /// reads from a note, the filing-period table both twins and the NARA Lookup sheet draw, and a
-/// scan that both hand-written twins call the reader and carry the panel's six strings.
+/// scan that both hand-written twins call the reader, draw the panel from it, carry the panel's
+/// six strings and return from `load()` before the query switch.
 ///
 /// Every note is copied from the corpus with its document id beside it, except where a case says
 /// it is constructed.
 ///
 /// Version history:
 ///   1.0 — 2026-10-02: #1543
+///   1.1 — 2026-10-02 (#1543, review round 1): the twin scan reads each view's `load()` for the
+///          skip and its place, and wants a call of the panel; a lot fixture
 @Suite("Source Explorer — the Subject-Numeric File (#1543)")
 @MainActor
 struct SubjectNumericExplorerTests {
@@ -1255,7 +1258,7 @@ struct SubjectNumericExplorerTests {
     }
 
     /// The panel is the Subject-Numeric File's alone.
-    @Test("A decimal number, a film number and a lot get no Subject-Numeric panel")
+    @Test("A decimal number, a film number, an office file and a lot get no Subject-Numeric panel")
     func otherCitationsGetNoPanel() {
         // The control: the reader is answering.
         #expect(citation("Source: Department of State, Central Files, POL 27 VIET S. Secret.", day: nil) != nil)
@@ -1271,6 +1274,13 @@ struct SubjectNumericExplorerTests {
         // frus1969-76ve08/d15 — an office file under the heading.
         #expect(citation("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis.",
                          day: day(1974, 11, 1)) == nil)
+        // frus1969-76ve11p1/d393, cut after its classification — a lot under the heading, with a
+        // designation after it and a block before it.
+        let lot = "Source: National Archives, RG 59, Central Files, 1970–1973, ARA/CAR, Lot 75D393, POL 7 Visits and Meetings. Confidential."
+        #expect(citation(lot, day: day(1973, 4, 10)) == nil)
+        // The same sentence without the lot is the file's, so the nil above is the lot's.
+        let withoutLot = "Source: National Archives, RG 59, Central Files, 1970–1973, POL 7 Visits and Meetings. Confidential."
+        #expect(citation(withoutLot, day: day(1973, 4, 10))?.block == "1970–73")
         #expect(SourceExplorerView.subjectNumericCitation(parsed: nil, note: "", documentDay: nil) == nil)
     }
 
@@ -1339,12 +1349,12 @@ struct SubjectNumericExplorerTests {
         return nil
     }
 
-    /// Every CALL of `subjectNumericCitation(` in `code` — the declaration excluded — with the
-    /// arguments inside its own parentheses.
-    private static func callSites(in code: String) -> [Substring] {
+    /// Every CALL of `name(` in `code` — the declaration excluded — with the arguments inside its
+    /// own parentheses.
+    private static func callSites(of name: String = "subjectNumericCitation", in code: String) -> [Substring] {
         var calls: [Substring] = []
         var search = code.startIndex
-        while let hit = code.range(of: "subjectNumericCitation(", range: search..<code.endIndex) {
+        while let hit = code.range(of: name + "(", range: search..<code.endIndex) {
             search = hit.upperBound
             let before = code[..<hit.lowerBound]
             if before.hasSuffix("func ") { continue }
@@ -1354,11 +1364,54 @@ struct SubjectNumericExplorerTests {
         return calls
     }
 
+    /// The body of the function declared `signature` in `code`: the text between the brace that
+    /// opens it and the one that closes it, or `nil`. Braces inside string literals are not
+    /// skipped; neither view's `load()` has one.
+    private static func body(of signature: String, in code: String) -> Substring? {
+        guard let hit = code.range(of: signature),
+              let open = code[hit.upperBound...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var index = open
+        while index < code.endIndex {
+            switch code[index] {
+            case "{": depth += 1
+            case "}":
+                depth -= 1
+                if depth == 0 { return code[code.index(after: open)..<index] }
+            default: break
+            }
+            index = code.index(after: index)
+        }
+        return nil
+    }
+
+    /// The statement that skips the keyed catalog search for a Subject-Numeric citation.
+    private static let searchSkip =
+        "if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote) { return }"
+
+    /// Whether `code`'s `load()` returns for a Subject-Numeric citation BEFORE its query switch:
+    /// the body holds `searchSkip` once, whole, and nothing but whitespace stands between it and
+    /// the first `switch note {` — the switch whose arms run the keyed searches. `code` is a
+    /// twin's source without its comment lines.
+    private static func loadSkipsTheKeyedSearch(_ code: String) -> Bool {
+        guard let load = body(of: "private func load() async", in: code),
+              load.components(separatedBy: searchSkip).count - 1 == 1,
+              let skip = load.range(of: searchSkip),
+              let query = load.range(of: "switch note {"),
+              skip.upperBound <= query.lowerBound else { return false }
+        return load[skip.upperBound..<query.lowerBound].allSatisfy(\.isWhitespace)
+    }
+
     /// The two Source Explorer views are hand-written per platform, and a change has reached one
     /// and missed the other before. Each must call the reader with the raw note and the document's
-    /// day — the iOS view once, in `provenanceSection`; the Mac view in both of its boxes — and
-    /// each must carry the panel's six strings.
-    @Test("Both twins call the Subject-Numeric reader and carry the panel's six strings")
+    /// day — the iOS view once, in `provenanceSection`; the Mac view in both of its boxes — draw
+    /// the panel from it, carry the panel's six strings, and return from its own `load()` before
+    /// the query switch.
+    ///
+    /// This is a source scan: it shows each view is WRITTEN to skip the search, at the statement
+    /// and in the place that does it. No test runs a view's `load()`; the rule both views ask,
+    /// `CatalogQueryEvidence.forNote`, has its runtime test in `CatalogQueryEvidenceTests`.
+    @Test("Both twins call the Subject-Numeric reader, draw its panel and skip the keyed search")
     func bothTwinsDrawThePanel() throws {
         var read = 0
         for path in Self.twins {
@@ -1374,11 +1427,14 @@ struct SubjectNumericExplorerTests {
             for key in Self.panelKeys {
                 #expect(code.contains("\"\(key)\""), "\(path) lacks \(key)")
             }
-            #expect(code.contains("subjectNumericPanel(") || code.contains("subjectNumericBox("),
-                    "\(path) draws no Subject-Numeric panel")
+            // A CALL of the panel, not its declaration alone, and handed the citation just read.
+            let panel = path.hasSuffix("MacSourceExplorerView.swift") ? "subjectNumericBox" : "subjectNumericPanel"
+            let draws = Self.callSites(of: panel, in: code)
+            #expect(!draws.isEmpty, "\(path) declares \(panel)( and never calls it")
+            #expect(draws.allSatisfy { $0 == "subjectNumeric" }, "\(path) draws the panel from \(draws)")
             // The keyed catalog search is skipped for these notes, in the view's own `load()`.
-            #expect(code.contains("CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote)"),
-                    "\(path) still runs the keyed search on a Subject-Numeric citation")
+            #expect(Self.loadSkipsTheKeyedSearch(code),
+                    "\(path): load() does not return before its query switch for a Subject-Numeric citation")
         }
         #expect(read == 2)
     }
@@ -1393,10 +1449,50 @@ struct SubjectNumericExplorerTests {
             let b = SourceExplorerView.subjectNumericCitation(
                 parsed: p,
                 note: rawSourceNote, documentDay: documentDay)
+            private func subjectNumericPanel(_ citation: SubjectNumericCitation) -> some View { EmptyView() }
             """
         let calls = Self.callSites(in: sample)
         #expect(calls.count == 2, "the declaration is not a call; got \(calls.count)")
         #expect(calls.first == "parsed: p, note: f(x, (y)), documentDay: d")
         #expect(calls.last?.contains("note: rawSourceNote, documentDay: documentDay") == true)
+        // A panel that is declared and never called is no call.
+        #expect(Self.callSites(of: "subjectNumericPanel", in: sample).isEmpty)
+        #expect(Self.callSites(of: "subjectNumericPanel", in: sample + "\nsubjectNumericPanel(subjectNumeric)")
+                == ["subjectNumeric"])
+    }
+
+    /// The `load()` scan against the shapes it must refuse: the predicate without its `return`,
+    /// the skip below the query switch, the skip in another function, and a statement between the
+    /// skip and the switch.
+    @Test("The load scan wants the return, before the query switch, in load() itself")
+    func loadScanReadsTheSkipInPlace() {
+        func view(load: String, other: String = "") -> String {
+            """
+            struct V {
+                private func load() async {
+                    catalogEvidence = nil
+            \(load)
+                }
+                private func loadRelatedDocuments(for note: ParsedSourceNote) async {
+            \(other)
+                }
+            }
+            """
+        }
+        let skip = Self.searchSkip
+        #expect(Self.loadSkipsTheKeyedSearch(view(load: "\(skip)\n\n        switch note { case .lotFile: break }")))
+        // The predicate with no return: the search runs.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(
+            load: "if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote) { }\nswitch note { }")))
+        // The skip after the switch that runs the searches.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(load: "switch note { case .lotFile: break }\n\(skip)")))
+        // The skip in another function.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(load: "switch note { }", other: skip)))
+        // A statement between the skip and the switch.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(load: "\(skip)\nawait fetchResults { [] }\nswitch note { }")))
+        // No `load()` at all.
+        #expect(!Self.loadSkipsTheKeyedSearch("struct V { }"))
+        #expect(Self.body(of: "private func load() async", in: view(load: "let a = { 1 }"))?
+            .contains("let a = { 1 }") == true)
     }
 }

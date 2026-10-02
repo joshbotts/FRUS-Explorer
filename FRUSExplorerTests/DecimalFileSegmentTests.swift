@@ -563,15 +563,48 @@ struct SourceExplorerBasisLineTests {
                 == "Same Subject-Numeric file — POL 27 VIET S")
     }
 
-    /// What this lane leaves alone: a decimal number worded through the National Archives, an
-    /// office file under the heading, and a lot keep the lines v2 gave them.
+    /// A designation with a stop in it (`U.S.`) reached the decimal arm, which tests the stored
+    /// identifier for a `.`: 34 documents (27 of them in frus1964-68v22) read "Same decimal file —
+    /// DEF 19–8 U.S.-IRAN" under the Subject-Numeric panel. It has no line, like every other
+    /// Department-led designator (frus1964-68v22/d111).
+    @Test("A Department-led Subject-Numeric file with a stop in its designation gets no decimal line")
+    func dottedDepartmentLedDesignationGetsNoLine() throws {
+        let note = "Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN. Confidential. Repeated to Karachi."
+        let parsed = SourceNoteParser().parse(note)
+        // The premises: the parse keeps an identifier with a stop in it — what the decimal arm
+        // tests — and the rule reads the note as Subject-Numeric.
+        guard case .centralFiles(_, let identifier) = parsed else {
+            Issue.record("expected .centralFiles, got \(parsed)")
+            return
+        }
+        #expect(try #require(identifier).contains("."))
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note))
+        let line = basis(note, year: 1966)
+        #expect(line == nil, "got \(line ?? "nil")")
+        // The control: a decimal number, which also has a stop in it, keeps its line — so the nil
+        // above is the form's and not the arm's removal (frus1961-63v11/d301's number).
+        #expect(basis("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.", year: 1963)
+                == "Same decimal file — 611.61, 1960–January 1963")
+    }
+
+    /// What this lane leaves alone: a decimal number worded through the National Archives and an
+    /// office file under the heading keep the lines v2 gave them.
+    ///
+    /// The first of them is a PIN of a line that misdescribes its list, not an endorsement of it.
+    /// A decimal number worded through the National Archives stores a series that names the
+    /// central files, so its neighbours come from the class route
+    /// (`IndexingPipeline.relatedByDecimalClass`): the list is class `399.731`'s documents, and the
+    /// line says "Same collection — RG 59, Central Files 1960–63". That is the mismatch
+    /// `archivalNeighborBasis` corrects for a Subject-Numeric citation; for the 356 decimal
+    /// numbers cited this way it is left as v2 had it, and the session entry lists it as out of
+    /// scope.
     @Test("Other record-group citations keep their lines")
     func otherRecordGroupCitationsKeepTheirLines() {
         // The control: under the same heading, a Subject-Numeric file is named as one, so the
         // collection lines below are kept for what is not one.
         #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4 US. Confidential.", year: 1963)
                 == "Same Subject-Numeric file — ORG 4 US")
-        // frus1961-63v25/d494
+        // frus1961-63v25/d494 — the line v2 gave it, over a list drawn by class (see above).
         #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.", year: 1961)
                 == "Same collection — RG 59, Central Files 1960–63")
         // frus1969-76ve08/d15

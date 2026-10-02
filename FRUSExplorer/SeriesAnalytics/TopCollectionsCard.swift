@@ -14,7 +14,7 @@ import SwiftUI
 /// Sourcing page (#835).
 ///
 /// ## Why the narrative lives here and the instrument does not
-/// The page above this card answers *what kind* of record FRUS drew on, in ten broad provenance
+/// The page above this card answers *what kind* of record FRUS drew on, in eleven broad provenance
 /// categories. It has never been able to name one. This card names them — and stops there. The
 /// query-driven instrument (era switching, unit lens, weights, co-citation, flows) stays in
 /// Archival Analytics: §8's assessment of the owner's relocation question was **relocate no,

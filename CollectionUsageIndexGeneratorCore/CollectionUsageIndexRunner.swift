@@ -179,7 +179,7 @@ public enum CollectionUsageIndexRunner {
     /// Interns one accumulator into sorted ``CollectionUsageIndex/UsageRow`` values.
     ///
     /// Keys with no documents are dropped rather than stored empty — the category vocabulary is
-    /// fixed at ten, and a category the corpus never uses should not occupy a row.
+    /// fixed at eleven, and a category the corpus never uses should not occupy a row.
     private static func rows(_ accumulator: [String: [String: Int]], keys: [String],
                              volumeIndex: [String: Int]) -> [CollectionUsageIndex.UsageRow] {
         keys.enumerated().compactMap { keyIndex, key in

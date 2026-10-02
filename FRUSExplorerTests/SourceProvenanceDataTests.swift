@@ -30,6 +30,8 @@ import Foundation
 ///   1.3 — Regenerated after OH's 2026-09-14 correction to frus1981-88v16: 269,248 → 269,242
 ///   1.4 — 2026-10-02 (#1543): eleven categories; the bundled index places the Subject-Numeric
 ///          File in the 1960s and 1970s and nowhere else; the Categories menu's count is derived
+///   1.5 — 2026-10-02 (#1543, review round 1): the count test reads the call's two arguments,
+///          so a literal total fails it
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -294,6 +296,11 @@ struct SourceProvenanceDataTests {
 
     /// The Central Foreign Policy File began in July 1973. No note is placed in it before the
     /// decade its first volumes cover.
+    ///
+    /// The first two assertions are a PIN, not a guard for #1543: they held on the artifact
+    /// before the change too (it had 2,466 such notes in the 1970s, 712 in the 1980s and none
+    /// earlier). Only the last one depends on #1543 — in the 1960s the Subject-Numeric File
+    /// holds more notes than Other NARA Collections, which held those citations before.
     @Test("The bundled index places no Central Foreign Policy File note before the 1970s")
     func foreignPolicyFileStartsInTheSeventies() throws {
         let index = try bundledIndex()
@@ -312,6 +319,12 @@ struct SourceProvenanceDataTests {
 
     /// The Categories menu's VoiceOver value read "%lld of 10 shown" from a literal. It is now
     /// the count of `SourceProvenanceCategory.ordered` (#1543).
+    ///
+    /// The value is built inside a view body, so this reads the CALL that builds it: the text
+    /// between the parentheses of the `String(format:` that carries the key, with its whitespace
+    /// removed. Both arguments must be the enum's count — a literal `11` there reads the same on
+    /// screen today and is the defect again at the twelfth category, and no runtime check can
+    /// tell the two apart.
     @Test("The dashboard's category count is derived, not the literal ten")
     func dashboardCategoryCountIsDerived() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -320,11 +333,62 @@ struct SourceProvenanceDataTests {
             encoding: .utf8)
         #expect(!source.isEmpty)
         #expect(!source.contains("of 10 shown"), "the literal count is back")
-        #expect(source.contains("\"%1$lld of %2$lld shown\""), "the two-argument text is missing")
-        #expect(source.contains("series.provenance.filter.a11y.count %lld %lld"))
         #expect(!source.contains("ten broad categories"), "the archival link still counts ten")
+        #expect(!source.contains("ten provenance"), "a comment still counts ten categories")
         #expect(source.components(separatedBy: "eleven broad categories").count - 1 == 2,
                 "both platform arms of the archival link carry the sentence")
+
+        let opening = "String(format: String(localized: \"series.provenance.filter.a11y.count %lld %lld\""
+        #expect(source.components(separatedBy: opening).count - 1 == 1, "the count text is built once")
+        let call = try #require(Self.call(in: source, opening: opening))
+        let wanted = "format:String(localized:\"series.provenance.filter.a11y.count%lld%lld\","
+            + "defaultValue:\"%1$lldof%2$lldshown\"),"
+            + "Int64(SourceProvenanceCategory.ordered.count-hiddenCategories.count),"
+            + "Int64(SourceProvenanceCategory.ordered.count)"
+        #expect(call == wanted, "the count text's arguments are \(call)")
+    }
+
+    /// The scan's own reader, against the two mutants it exists for and a call split another way.
+    @Test("The call scan reads the whole call and tells a literal total from the derived one")
+    func callScanReadsTheArguments() throws {
+        let opening = "String(format: String(localized: \"k %lld %lld\""
+        let derived = """
+            .accessibilityValue(String(format: String(localized: "k %lld %lld",
+                                                      defaultValue: "%1$lld of %2$lld shown"),
+                                       Int64(Category.ordered.count - hidden.count),
+                                       Int64(Category.ordered.count)))
+            """
+        #expect(try #require(Self.call(in: derived, opening: opening))
+                == "format:String(localized:\"k%lld%lld\",defaultValue:\"%1$lldof%2$lldshown\"),"
+                + "Int64(Category.ordered.count-hidden.count),Int64(Category.ordered.count)")
+        let literal = derived.replacingOccurrences(of: "Int64(Category.ordered.count)))", with: "Int64(11)))")
+        #expect(try #require(Self.call(in: literal, opening: opening)).hasSuffix(",Int64(11)"))
+        #expect(Self.call(in: "no such call", opening: opening) == nil)
+        #expect(Self.call(in: opening + ", unclosed", opening: opening) == nil)
+    }
+
+    /// The arguments of the call that begins with `opening` — everything between the parenthesis
+    /// `opening` first opens and the one that closes it — with all whitespace removed, or `nil`
+    /// when `source` has no such call or never closes it. Parentheses inside string literals are
+    /// not skipped: the texts this reads carry none.
+    private static func call(in source: String, opening: String) -> String? {
+        guard let hit = source.range(of: opening),
+              let open = source[hit].firstIndex(of: "(") else { return nil }
+        var depth = 0
+        var index = open
+        while index < source.endIndex {
+            switch source[index] {
+            case "(": depth += 1
+            case ")":
+                depth -= 1
+                if depth == 0 {
+                    return String(source[source.index(after: open)..<index].filter { !$0.isWhitespace })
+                }
+            default: break
+            }
+            index = source.index(after: index)
+        }
+        return nil
     }
 
     // MARK: Category filter (#236)

@@ -103,6 +103,8 @@ import SwiftUI
 ///           archivist. No keyed catalog search runs for it. The basis line names the file for a
 ///           citation worded through the National Archives. The filing-period table gains the
 ///           1973–1979 row and names the Subject-Numeric File. Mirrored by MacSourceExplorerView 1.14.
+///           Review round 1: a Department-led designation with a stop in it (`DEF 19–8 U.S.-IRAN`)
+///           gets no basis line, where the decimal arm had captioned it "Same decimal file".
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -2837,9 +2839,14 @@ struct SourceExplorerView: View {
     /// used to name the block every file of three years sits in ("Same collection — RG 59, Central
     /// Files 1964–66"). The arm is the route's own: the stored series names the central files
     /// (`ParsedSourceNote.seriesNamesCentralFiles`), and with no class key that route finds
-    /// nothing, so there is no line. A Department-led designator keeps no line, as before: its
-    /// route, `relatedByDecimal`, matches the stored file number and finds Department-led siblings
-    /// only, so it must not carry a sentence that promises the whole file.
+    /// nothing, so there is no line. A Department-led designator has no line: its route,
+    /// `relatedByDecimal`, matches the stored file number and finds Department-led siblings only,
+    /// so it must not carry a sentence that promises the whole file. That holds for a designation
+    /// with a stop in it too (`DEF 19–8 U.S.-IRAN`, frus1964-68v22/d111): the decimal arm below
+    /// tests for a `.`, and until review round 1 of #1543 it captioned 34 such documents "Same
+    /// decimal file — DEF 19–8 U.S.-IRAN" under the Subject-Numeric panel.
+    ///
+    /// This is the iOS view's line. `MacSourceExplorerView` draws no basis line.
     static func archivalNeighborBasis(for parsed: ParsedSourceNote?, note: String, documentYear: Int?,
                                       documentDay: DecimalFileSegment.DocumentDay?) -> String? {
         if let parsed, case .naraCollection(_, let series?, nil, _) = parsed,
@@ -2848,6 +2855,10 @@ struct SourceExplorerView: View {
             guard let classKey = SourceNoteParser.decimalClassLocation(inCitation: note) else { return nil }
             return String(localized: "source.explorer.related.basis.subjectNumeric",
                           defaultValue: "Same Subject-Numeric file — \(classKey)")
+        }
+        if let parsed, case .centralFiles = parsed,
+           CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) {
+            return nil
         }
         switch parsed {
         case .lotFile(_, let lot, _):
