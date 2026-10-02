@@ -871,6 +871,42 @@ struct ChronologyVolumeLabelTests {
         #expect(tag(label("frus1969-76ve14p1", "1969-76", "")) == "1969-76 vE-14 pt.1")
     }
 
+    /// The topic kept "Volume E–13" before #1472 — the removal matched only a Roman numeral — so
+    /// every E-volume's label said its number twice, in the topic and in the tag.
+    @Test("An E-volume's topic does not repeat its number, which the tag already gives (#1472)")
+    func eVolumeTopicDropsItsNumber() {
+        #expect(label("frus1969-76ve13", "1969-76",
+                      "Foreign Relations of the United States, 1969–1976, Volume E–13, Documents on China, 1969–1972")
+                == "Documents on China · 1969-76 vE-13")
+        // The manifest's own title holds a raw newline after "Volume"; the two parts of one volume.
+        #expect(label("frus1969-76ve05p1", "1969-76",
+                      "Foreign Relations of the United States, 1969–1976, Volume\n                    E–5, Part 1, Documents on Sub-Saharan Africa, 1969–1972")
+                == "Documents on Sub-Saharan Africa · 1969-76 vE-5 pt.1")
+        // A hyphen where the manifest prints an en dash.
+        #expect(label("frus1969-76ve13", "1969-76",
+                      "Foreign Relations of the United States, 1969–1976, Volume E-13, Documents on China, 1969–1972")
+                == "Documents on China · 1969-76 vE-13")
+    }
+
+    @Test("No bundled volume's topic begins with its volume number (#1472)")
+    @MainActor
+    func noBundledTopicBeginsWithItsNumber() throws {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        var eVolumes = 0
+        var offenders: [String] = []
+        for entry in entries {
+            if entry.title.range(of: "Volume\\s+E[–-][0-9]", options: .regularExpression) != nil { eVolumes += 1 }
+            let topic = ChronologyViewModel.distilledVolumeLabelParts(
+                volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title).topic
+            if topic.range(of: "^Volumes?\\b", options: .regularExpression) != nil {
+                offenders.append("\(entry.volumeId): '\(topic)'")
+            }
+        }
+        #expect(eVolumes > 0, "the sweep visited no E-volume, so it says nothing about them")
+        #expect(offenders.isEmpty, "\(offenders.count) topics begin with their volume number: \(offenders)")
+    }
+
     /// The shape table below reads only bundled ids, whose subseries always prefixes the id, so
     /// no row of it reaches `volumeTag`'s verbatim fallback. The app does: ChronologyView and the
     /// Cross-Reference matrix pass `entry?.subseries ?? ""` for a volume the manifest lacks.

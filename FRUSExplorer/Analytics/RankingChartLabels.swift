@@ -63,19 +63,22 @@ func disambiguatedRankingLabels(
 /// cell instead of a rotated, truncated volume id.
 ///
 /// Each code is the volume's coverage span in apostrophe form plus a distinguisher:
-///  - a volume's Roman numeral, taken **verbatim** from its manifest title — e.g. `'55–57 II`;
-///  - or, when the title carries no "Volume <N>" numeral, its first distinctive topic word
+///  - a volume's number, taken **verbatim** from its manifest title — a Roman numeral, e.g.
+///    `'55–57 II`, or a 1969–76 E-volume's E-number, e.g. `'69–76 E–13` (#1472);
+///  - or, when the title carries no "Volume <N>" number, its first distinctive topic word
 ///    truncated to ≤6 characters — e.g. `'58–60 Wester`;
 ///  - a bare span/year when neither is available (the early annual volumes) — e.g. `'63`.
 ///
 /// Two columns whose base codes would collide are escalated: first by appending more topic words
-/// (`'61–63 Berlin`), then — as a guaranteed-unique last resort — by appending the volume-id suffix
-/// (`'63 p1` vs `'63 p2`), so no two columns ever render the same code. The full title still rides in
-/// each label's `.help()`/VoiceOver text (supplied by the caller); this is only the visible glyph.
+/// (`'61–63 Berlin`, or the two parts of an E-volume, `'69–76 E–5 Sub` and `'69–76 E–5 North`),
+/// then — as a guaranteed-unique last resort — by appending the volume-id suffix (`'63 p1` vs
+/// `'63 p2`), so no two columns ever render the same code. The full title still rides in each
+/// label's `.help()`/VoiceOver text (supplied by the caller); this is only the visible glyph.
 ///
 /// - Parameter columns: each column's stable `id` (e.g. `"frus1955-57v2"`), its `subseries` span
-///   (`"1955-57"` or a single `"1861"`), the full manifest `title` (source of the Roman numeral),
-///   and its distilled `topic` (empty for the early annual "Papers Relating…" volumes).
+///   (`"1955-57"` or a single `"1861"`), the full manifest `title` (source of the volume number),
+///   and its distilled `topic` (empty for the early annual "Papers Relating…" volumes). The view
+///   builds each through `HeatMatrixColumnAxis.column(volumeId:entry:)`.
 /// - Returns: a map from volume id to its rendered column code.
 func matrixColumnCodes(
     _ columns: [(id: String, subseries: String, title: String, topic: String)]
@@ -152,11 +155,16 @@ private func matrixYearCode(_ subseries: String) -> String {
     return "\u{2019}\(subseries.suffix(2))"
 }
 
-/// The first "Volume <roman>" numeral in a manifest title, verbatim (`"…, Volume II"` → `"II"`), or
+/// The first "Volume <N>" number in a manifest title, verbatim (`"…, Volume II"` → `"II"`), or
 /// `nil` when the title carries none (the early annual "Papers Relating…" volumes). Matches the
 /// singular or plural token and captures the first Roman run only (`"Volumes II/III"` → `"II"`).
+///
+/// A 1969–76 E-volume's number is an E-designator, `"…, Volume E–13, Documents on China…"` →
+/// `"E–13"`, kept with its own dash (#1472). `E` is not a Roman digit, so until #1472 these 22
+/// titles matched nothing, and their codes fell back to the topic's first word — which was
+/// "Volume", since the topic kept the designator: every E-volume read `'69–76 Volume`.
 private func firstVolumeNumeral(in title: String) -> String? {
-    guard let regex = try? NSRegularExpression(pattern: "Volumes?\\s+([IVXLCDM]+)\\b") else { return nil }
+    guard let regex = try? NSRegularExpression(pattern: "Volumes?\\s+(E[–-][0-9]+|[IVXLCDM]+)\\b") else { return nil }
     let ns = title as NSString
     guard let m = regex.firstMatch(in: title, range: NSRange(location: 0, length: ns.length)),
           m.numberOfRanges > 1 else { return nil }
@@ -166,13 +174,69 @@ private func firstVolumeNumeral(in title: String) -> String? {
 /// The distinctive words of a distilled topic — dropping leading articles/prepositions and any
 /// trailing ellipsis — so the first word chosen for a column code is meaningful
 /// (`"The Far East…"` → `["Far", "East"]`).
-private func matrixTopicWords(_ topic: String) -> [String] {
+///
+/// A leading "Documents on" is dropped too, when a word follows it (#1472). Every 1969–76
+/// E-volume's topic opens with it — "Documents on Sub-Saharan Africa", "Documents on North
+/// Africa" — and no other bundled title does, so as a first word it tells two parts of one
+/// E-volume apart no better than their shared number: both read `'69–76 E–5 Docume`, and the
+/// id-suffix fallback took over. Without it they read `'69–76 E–5 Sub` and `'69–76 E–5 North`.
+///
+/// - Parameter topic: A distilled volume topic, possibly ending in "…".
+/// - Returns: Its words of two characters or more, from the first distinctive one.
+func matrixTopicWords(_ topic: String) -> [String] {
     let stop: Set<String> = ["the", "of", "and", "to", "a", "an", "in", "on", "for"]
     let tokens = topic
         .replacingOccurrences(of: "…", with: " ")
         .components(separatedBy: CharacterSet.alphanumerics.inverted)
         .filter { $0.count >= 2 }
-    return Array(tokens.drop { stop.contains($0.lowercased()) })
+    let words = Array(tokens.drop { stop.contains($0.lowercased()) })
+    guard words.count >= 2, words[0].lowercased() == "documents", words[1].lowercased() == "on" else {
+        return words
+    }
+    // "Documents on the United Nations" → "United": the words after "on", less their own articles.
+    let rest = Array(words.dropFirst(2).drop { stop.contains($0.lowercased()) })
+    return rest.isEmpty ? words : rest
+}
+
+/// The heat matrix's column axis: what `matrixColumnCodes` is given for each volume (#1472).
+///
+/// The view used to build this inline, so a test could reach `matrixColumnCodes` only with
+/// hand-written titles and topics, and none of them was an E-volume's. Factored out, it is what
+/// `MatrixColumnCodeTests` sweeps over every bundled manifest entry.
+///
+/// Version history:
+///   1.0 — #1472: initial implementation, moved out of `CrossReferenceAnalyticsView.matrixLabels`
+///   1.1 — #1472 review round 1: `column`'s doc states what a code reads of the cut topic, as
+///          measured with "Documents on" skipped, and a test pins it
+enum HeatMatrixColumnAxis {
+
+    /// One column's input to `matrixColumnCodes`.
+    typealias Column = (id: String, subseries: String, title: String, topic: String)
+
+    /// A volume's column, from its manifest entry.
+    ///
+    /// The topic is the joined `distilledVolumeLabel`'s topic half, as the matrix has always read
+    /// it, so it is cut to 40 characters, and no code reads as far as the cut. A code reads at most
+    /// two of the topic's distinctive words (`matrixTopicWords`, which skips a leading "Documents
+    /// on"), and six characters of each: two words in a column with no volume number, one after a
+    /// numeral, when `matrixColumnCodes` escalates a collision. Measured over the bundled manifest
+    /// on 2026-10-01: those characters end by the topic's 23rd in every topic ("United", in the
+    /// E-volume "Documents on the United Nations", is among the last), each of the 71 cut topics
+    /// keeps at least 28, and even two words in every column read the same from the cut topic as
+    /// from the whole one, which `MatrixColumnCodeTests.codesReadTheSameFromTheCutTopic` pins. A
+    /// volume the manifest lacks is titled by its id, as before.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume's id.
+    ///   - entry: The volume's manifest entry, or `nil` when the manifest lacks it.
+    /// - Returns: The column's id, subseries, title and topic.
+    static func column(volumeId: String, entry: VolumeManifestEntry?) -> Column {
+        let subseries = entry?.subseries ?? ""
+        let title = entry?.title ?? volumeId
+        let distilled = ChronologyViewModel.distilledVolumeLabel(volumeId: volumeId, subseries: subseries, title: title)
+        let topic = distilled.contains(" · ") ? String(distilled.components(separatedBy: " · ").first ?? "") : ""
+        return (id: volumeId, subseries: subseries, title: title, topic: topic)
+    }
 }
 
 // MARK: - Heat-matrix row axis (#1379)
@@ -194,10 +258,20 @@ private func matrixTopicWords(_ topic: String) -> [String] {
 /// empty. The column now takes what the window leaves beside the cells, from the old 150 pt up to
 /// the figure's 320 pt.
 ///
+/// ## Why the tag can drop below the topic (XREF fold-in, 2026-10-01)
+/// Beside a long tag in a narrow column the topic had a sliver of its own, and its first word
+/// broke mid-word over its two lines: at a phone's 150 pt the microfiche supplement read "Microfi"
+/// over "che S…", and the Potsdam volume "The" over "Conference o…". The tag now sits beside the
+/// topic only where ``tagSitsBesideTopic(columnWidth:tagWidth:firstWordWidth:)`` says it leaves
+/// the topic room; elsewhere the topic takes the column's whole width on the first line and the
+/// tag the second.
+///
 /// Version history:
 ///   1.0 — #1379: initial implementation
 ///   1.1 — #1379 review round 1: doc comments only — the minimum width's reach, and the identifier
 ///          pin, stated as they are
+///   1.2 — XREF fold-in: ``tagSitsBesideTopic(columnWidth:tagWidth:firstWordWidth:)`` and
+///          ``firstWord(of:)``, the rule for when a row label's tag drops below its topic
 enum HeatMatrixRowAxis {
 
     /// The label column's width in the exported figure, and the widest it gets on screen. Sized so
@@ -261,5 +335,102 @@ enum HeatMatrixRowAxis {
         // No entry, no title: an empty title yields an empty topic, and the tag reads the id alone.
         ChronologyViewModel.distilledVolumeLabelParts(volumeId: volumeId, subseries: entry?.subseries ?? "",
                                                       title: entry?.title ?? "")
+    }
+
+    /// Whether a row label's tag sits beside its topic — on the baseline of the topic's last line —
+    /// rather than on a line of its own below it.
+    ///
+    /// Beside the tag the topic has two lines of the width the tag leaves; below it, one line of the
+    /// whole column. So the tag sits beside the topic only when both hold:
+    ///  - the room it leaves is at least half the column, so the topic's two lines beside it hold at
+    ///    least as much as one line across — at 150 pt the Potsdam volume's tag left it less than
+    ///    half, and it read "The" over "Conference o…";
+    ///  - the room it leaves holds the topic's first word, so that word is never broken across the
+    ///    lines — the microfiche supplement read "Microfi" over "che S…".
+    ///
+    /// - Parameters:
+    ///   - columnWidth: The label column's width.
+    ///   - tagWidth: The tag's width, with the separator that joins it to the topic.
+    ///   - firstWordWidth: The width of the topic's first word (``firstWord(of:)``).
+    /// - Returns: `true` to set the tag beside the topic, `false` to set it on a line below.
+    static func tagSitsBesideTopic(columnWidth: CGFloat, tagWidth: CGFloat, firstWordWidth: CGFloat) -> Bool {
+        let room = columnWidth - tagWidth
+        return room >= columnWidth / 2 && room >= firstWordWidth
+    }
+
+    /// A topic's first word: what precedes its first space, or the whole topic when it has none.
+    ///
+    /// - Parameter topic: A row label's topic.
+    /// - Returns: The first word, `""` for an empty topic.
+    static func firstWord(of topic: String) -> String {
+        String(topic.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true).first ?? "")
+    }
+}
+
+// MARK: - Ranking chart axis (#1473)
+
+/// The y-axis label column of a horizontal ranking bar chart — Cross-Reference Analytics'
+/// Most-Referenced Documents.
+///
+/// ## Why the column has a width (#1473)
+/// A row's axis label is the document's full title — its printed head, or "Document N — <volume
+/// title>" for a document not downloaded — and it was set as a bare `Text`, which Swift Charts lays
+/// out at its whole one-line width. The label column took that, and the plot got what was left: at
+/// the Mac window's 720 pt minimum and its default ~820 pt, nothing, so the chart drew only titles
+/// running off its right edge and no bars. Now a label is at most ``labelWidth(chartWidth:)`` wide
+/// and wraps to ``labelLines`` lines, cut at its tail; the full title stays in the table display
+/// and in each bar's VoiceOver label.
+///
+/// Version history:
+///   1.0 — #1473: initial implementation
+///   1.1 — #1473 review round 1: ``maximumLabelWidth`` is `HeatMatrixRowAxis.figureLabelWidth`, not
+///          a second 320; ``chartHeight(rows:)``, which the chart and its exported figure share
+enum RankingChartAxis {
+
+    /// The share of the chart's width a label may take before the floor and the cap.
+    static let labelShare: CGFloat = 0.4
+
+    /// The narrowest the label column gets while the plot keeps ``minimumPlotWidth``.
+    static let minimumLabelWidth: CGFloat = 120
+
+    /// The widest the label column gets, so a wide window gives its width to the bars and not to the
+    /// titles — the heat matrix's widest row-label column (`HeatMatrixRowAxis.figureLabelWidth`).
+    static let maximumLabelWidth: CGFloat = HeatMatrixRowAxis.figureLabelWidth
+
+    /// The width the plot — the bars and their counts — keeps, which the label gives way to.
+    static let minimumPlotWidth: CGFloat = 160
+
+    /// The lines a label may take. A row is ``rowHeight`` tall, and two lines of axis type fit in it at
+    /// the default text size: drawn at 720 pt, all fifteen titles of a ranking show both their lines
+    /// (`RankingChartAxisTests.everyTitleIsDrawn`).
+    static let labelLines = 2
+
+    /// The height of one ranked row.
+    static let rowHeight: CGFloat = 30
+
+    /// The chart's height for `rows` ranked rows: ``rowHeight`` each, and 40 pt for the x-axis.
+    ///
+    /// The chart frames itself at this height, and its exported figure gives it the same. Until
+    /// #1473's review the figure gave it 26 pt a row, so a 15-row chart framed itself 490 pt tall
+    /// in the plate's 430 pt chart area, whose frame does not clip it.
+    ///
+    /// - Parameter rows: The number of ranked rows.
+    /// - Returns: The chart's height.
+    static func chartHeight(rows: Int) -> CGFloat {
+        CGFloat(rows) * rowHeight + 40
+    }
+
+    /// The label column's width for a chart `chartWidth` points wide.
+    ///
+    /// ``labelShare`` of the width, raised to ``minimumLabelWidth`` and capped at
+    /// ``maximumLabelWidth`` — and then lowered, if it must be, so the plot keeps
+    /// ``minimumPlotWidth``. The plot's minimum wins over the label's: a label can be read in the
+    /// table and from VoiceOver, and a bar cannot. Never negative.
+    ///
+    /// - Parameter chartWidth: The width the chart lays out in: its labels and its plot together.
+    /// - Returns: The widest a label may be.
+    static func labelWidth(chartWidth: CGFloat) -> CGFloat {
+        let share = min(max(chartWidth * labelShare, minimumLabelWidth), maximumLabelWidth)
+        return max(min(share, chartWidth - minimumPlotWidth), 0)
     }
 }

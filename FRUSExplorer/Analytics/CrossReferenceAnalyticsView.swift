@@ -74,7 +74,9 @@ enum CrossReferenceTargetLabel {
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
 ///   1.1 — #1372: carries its `CrossReferenceTargetLabel` rather than a raw header
-private struct InDegreeRow: Identifiable, Equatable {
+///   1.2 — #1473: internal, not private, so `CrossReferenceRankingChart` — and the test that draws
+///          it — can take a ranking
+struct InDegreeRow: Identifiable, Equatable {
     let volumeId: String
     let documentId: String
     let inDegree: Int
@@ -177,6 +179,11 @@ private struct HeatCell: Identifiable, Equatable {
 ///          with no 480 pt cap, and the row labels stand outside it — and a row label is its topic,
 ///          cut at the tail over up to two lines, beside a tag that is never cut, in a column the
 ///          window sizes from 150 pt up to the figure's 320 pt
+///   1.6 — #1472, #1473, XREF fold-in: the Most-Referenced chart is `CrossReferenceRankingChart`,
+///          its labels at most `RankingChartAxis.labelWidth` wide on two lines, so its bars keep
+///          their room at the Mac's 720–820 pt, and its exported figure gives it its own height; a
+///          matrix row label is `HeatMatrixRowLabel`, its tag below its topic where beside it would
+///          leave the topic too little room; the column input is `HeatMatrixColumnAxis.column`
 /// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
 ///
 /// ## An empty marker, deliberately — and the assessment that chose it
@@ -672,7 +679,7 @@ struct CrossReferenceAnalyticsView: View {
                         figureTitle: title,
                         axisLabel: String(localized: "crossRefAnalytics.export.axis.inDegree",
                                           defaultValue: "Ranked by inbound references")),
-                      chartHeight: max(240, CGFloat(ranking.count) * 26 + 40)) {
+                      chartHeight: max(240, RankingChartAxis.chartHeight(rows: ranking.count))) {
             rankingChart
         }
     }
@@ -879,62 +886,10 @@ struct CrossReferenceAnalyticsView: View {
         }
     }
 
+    /// The Most-Referenced Documents chart, on screen and in the exported figure — its own view
+    /// since #1473, so a test can draw it at a given width (`CrossReferenceRankingChart`).
     private var rankingChart: some View {
-        // Key each bar on the row's UNIQUE id (volumeId/documentId), never its title. FRUS reuses
-        // generic titles ("Department of State Minutes", "Mr. Adams to Mr. Seward") across many
-        // distinct documents, and Swift Charts SUMS a `BarMark`'s x-values whenever rows share a
-        // categorical y — so a title-keyed y silently merged several documents into one oversized
-        // bar (e.g. four "Department of State Minutes" documents at in-degrees 48/43/42/39 rendered
-        // as a single 172-long bar) while the annotation and table still showed one document's count
-        // (#243-followup). Ids are unique → one bar per document, correct length. An explicit domain
-        // preserves the in-degree-descending order (a categorical scale otherwise reorders the axis),
-        // and a lookup renders the human title — disambiguated when a title is shared — on the axis.
-        let axisLabels = disambiguatedRankingLabels(
-            ranking.map { row in
-                (id: row.id,
-                 name: row.label,
-                 shortSuffix: row.documentId)
-            }
-        )
-        return Chart(ranking) { row in
-            BarMark(
-                x: .value(String(localized: "crossRefAnalytics.axis.inDegree", defaultValue: "Inbound citations"),
-                          row.inDegree),
-                y: .value(String(localized: "crossRefAnalytics.axis.document", defaultValue: "Document"),
-                          row.id)
-            )
-            .foregroundStyle(Color.accentColor)
-            .annotation(position: .trailing) {
-                Text(row.inDegree, format: .number)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            // The bar is keyed on the opaque id for correct geometry, so restore a meaningful
-            // VoiceOver announcement: the human document label + its inbound-citation count.
-            .accessibilityLabel(Text(axisLabels[row.id] ?? row.label))
-            .accessibilityValue(Text(String(localized: "crossRefAnalytics.axis.inDegreeValue",
-                                             defaultValue: "\(row.inDegree) inbound citations")))
-        }
-        // Highest in-degree at the top: `ranking` is sorted descending, and the first domain
-        // element is placed at the top of a horizontal-bar categorical y-axis.
-        .chartYScale(domain: ranking.map(\.id))
-        // #268: label = "Document", value = "Inbound references". The default (0, 1) reads
-        // (Rank, Document) — Rank parses, sonifying rank positions as values silently.
-        .axChartDescriptor(inspector: rankingInspectorTable,
-                           title: String(localized: "crossRefAnalytics.ranking.heading",
-                                         defaultValue: "Most-Referenced Documents"),
-                           labelColumn: 1, valueColumn: 4)
-        .chartYAxis {
-            AxisMarks(preset: .aligned) { value in
-                AxisValueLabel {
-                    if let id = value.as(String.self) {
-                        Text(axisLabels[id] ?? id)
-                    }
-                }
-            }
-        }
-        .frame(height: CGFloat(ranking.count) * 30 + 40)
-        .padding(.horizontal)
+        CrossReferenceRankingChart(ranking: ranking, inspector: rankingInspectorTable)
     }
 
     private var rankingTable: some View {
@@ -1084,15 +1039,9 @@ struct CrossReferenceAnalyticsView: View {
     /// Resolves the matrix's column codes, row labels, and full titles from the manifest.
     private var matrixLabels: MatrixLabels {
         let entries = matrixVolumes.map { (id: $0, entry: appState.manifestStore.entry(forVolumeId: $0)) }
-        let columns: [(id: String, subseries: String, title: String, topic: String)] = entries.map { id, entry in
-            let subseries = entry?.subseries ?? ""
-            let title = entry?.title ?? id
-            let distilled = ChronologyViewModel.distilledVolumeLabel(volumeId: id, subseries: subseries, title: title)
-            // A column code reads only the topic's first two words, so the codes keep the joined
-            // label's topic half, as they always have; the row labels read the whole topic.
-            let topic = distilled.contains(" · ") ? String(distilled.components(separatedBy: " · ").first ?? "") : ""
-            return (id: id, subseries: subseries, title: title, topic: topic)
-        }
+        // A column code reads only the topic's first two words, so the codes keep the joined
+        // label's topic half, as they always have; the row labels read the whole topic.
+        let columns = entries.map { HeatMatrixColumnAxis.column(volumeId: $0.id, entry: $0.entry) }
         return MatrixLabels(
             codes: matrixColumnCodes(columns),
             rows: Dictionary(uniqueKeysWithValues: entries.map { id, entry in
@@ -1162,7 +1111,7 @@ struct CrossReferenceAnalyticsView: View {
         VStack(alignment: .trailing, spacing: 1) {
             Color.clear.frame(width: width, height: Self.matrixFigureHeaderHeight)
             ForEach(matrixVolumes, id: \.self) { source in
-                let rowLabel = matrixRowLabel(labels.rows[source] ?? HeatMatrixRowAxis.label(volumeId: source, entry: nil))
+                let rowLabel = HeatMatrixRowLabel(parts: labels.rows[source] ?? HeatMatrixRowAxis.label(volumeId: source, entry: nil))
                     .frame(width: width, height: cellSize, alignment: .trailing)
                 if interactive {
                     Button { openVolume(source) } label: { rowLabel }
@@ -1175,37 +1124,6 @@ struct CrossReferenceAnalyticsView: View {
                 }
             }
         }
-    }
-
-    /// One row's label: the topic, cut at its TAIL, beside the tag, which is never cut (#1379).
-    ///
-    /// It used to be the joined `distilledVolumeLabel` on one line, cut at its HEAD to keep the
-    /// tag, which dropped a topic's first words — "…chev Exchanges · 1961-63 v6" — and, since the
-    /// joined label had already cut a long topic to 40 characters, cut the two Potsdam volumes'
-    /// labels at both ends: "…rlin (The Potsdam… · 1945 v1". As two texts, the topic keeps its
-    /// first words and gives way at its end over up to two lines, while the tag — which tells every
-    /// bundled volume apart since #1388 (`distilledLabelUniqueAcrossBundledCorpus`) — takes the
-    /// width it needs. The topic comes uncut from `HeatMatrixRowAxis.label`, so this is the only
-    /// cut it gets. The tag sits on the baseline of the topic's last line.
-    ///
-    /// - Parameter parts: The label's topic (`""` for a volume with none) and tag.
-    private func matrixRowLabel(_ parts: VolumeLabelParts) -> some View {
-        HStack(alignment: .lastTextBaseline, spacing: 0) {
-            if parts.topic.isEmpty {
-                Text(verbatim: parts.tag)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-            } else {
-                Text(verbatim: parts.topic)
-                    .lineLimit(HeatMatrixRowAxis.labelLines)
-                    .truncationMode(.tail)
-                    .multilineTextAlignment(.trailing)
-                Text(verbatim: " · \(parts.tag)")
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-            }
-        }
-        .font(.system(size: 10))
     }
 
     /// The heat matrix's cells under their column codes, shared by the on-screen sideways scroll
@@ -1571,5 +1489,264 @@ struct CrossReferenceAnalyticsView: View {
         }
 
         isLoading = false
+    }
+}
+
+// MARK: - Most-referenced documents chart (#1473)
+
+/// The Most-Referenced Documents bar chart, shared by the screen and the D3 figure export.
+///
+/// ## Why the axis labels have a width (#1473)
+/// Each bar's axis label is its document's full title, and it was a bare `Text`, which Swift
+/// Charts lays out at its whole one-line width: the label column took that and the plot got what
+/// was left. At the Mac window's 720 pt minimum and its default ~820 pt that was nothing — only
+/// titles, running off the right edge, and no bars. A label is now at most
+/// `RankingChartAxis.labelWidth` of the chart's width, wraps to two lines and is cut at its tail
+/// (`RankingAxisLabelLayout`). The chart reads its width with a `GeometryReader` rather than a
+/// measurement kept in `@State`: the exported figure renders this view once, at the plate's width,
+/// and a width stored from the screen would size the figure's labels for the window instead.
+///
+/// ## Why it keys bars on ids
+/// Each bar is keyed on its row's UNIQUE id (volumeId/documentId), never its title. FRUS reuses
+/// generic titles ("Department of State Minutes", "Mr. Adams to Mr. Seward") across many distinct
+/// documents, and Swift Charts SUMS a `BarMark`'s x-values whenever rows share a categorical y — so
+/// a title-keyed y silently merged several documents into one oversized bar (e.g. four "Department
+/// of State Minutes" documents at in-degrees 48/43/42/39 rendered as a single 172-long bar) while
+/// the annotation and table still showed one document's count (#243-followup). Ids are unique → one
+/// bar per document, correct length. An explicit domain preserves the in-degree-descending order (a
+/// categorical scale otherwise reorders the axis), and a lookup renders the human title —
+/// disambiguated when a title is shared — on the axis.
+///
+/// Version history:
+///   1.0 — #1473: moved out of `CrossReferenceAnalyticsView.rankingChart`; the axis labels take at
+///          most `RankingChartAxis.labelWidth` and wrap to two lines
+///   1.1 — #1473 review round 1: its height is `RankingChartAxis.chartHeight(rows:)`, which the
+///          exported figure now gives it too
+struct CrossReferenceRankingChart: View {
+
+    /// The ranked rows, highest in-degree first.
+    let ranking: [InDegreeRow]
+
+    /// The ranking as a table, for the chart's audio graph (#268).
+    let inspector: ChartInspectorData
+
+    var body: some View {
+        let axisLabels = disambiguatedRankingLabels(
+            ranking.map { row in
+                (id: row.id,
+                 name: row.label,
+                 shortSuffix: row.documentId)
+            }
+        )
+        // The width the labels and the plot share, which sizes the label column.
+        GeometryReader { proxy in
+            chart(axisLabels: axisLabels, labelWidth: RankingChartAxis.labelWidth(chartWidth: proxy.size.width))
+        }
+        .frame(height: RankingChartAxis.chartHeight(rows: ranking.count))
+        .padding(.horizontal)
+    }
+
+    /// The chart, with its axis labels at most `labelWidth` wide.
+    ///
+    /// - Parameters:
+    ///   - axisLabels: Row id → the label its axis shows.
+    ///   - labelWidth: The widest a label may be.
+    private func chart(axisLabels: [String: String], labelWidth: CGFloat) -> some View {
+        Chart(ranking) { row in
+            BarMark(
+                x: .value(String(localized: "crossRefAnalytics.axis.inDegree", defaultValue: "Inbound citations"),
+                          row.inDegree),
+                y: .value(String(localized: "crossRefAnalytics.axis.document", defaultValue: "Document"),
+                          row.id)
+            )
+            .foregroundStyle(Color.accentColor)
+            .annotation(position: .trailing) {
+                Text(row.inDegree, format: .number)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            // The bar is keyed on the opaque id for correct geometry, so restore a meaningful
+            // VoiceOver announcement: the human document label + its inbound-citation count.
+            .accessibilityLabel(Text(axisLabels[row.id] ?? row.label))
+            .accessibilityValue(Text(String(localized: "crossRefAnalytics.axis.inDegreeValue",
+                                             defaultValue: "\(row.inDegree) inbound citations")))
+        }
+        // Highest in-degree at the top: `ranking` is sorted descending, and the first domain
+        // element is placed at the top of a horizontal-bar categorical y-axis.
+        .chartYScale(domain: ranking.map(\.id))
+        // #268: label = "Document", value = "Inbound references". The default (0, 1) reads
+        // (Rank, Document) — Rank parses, sonifying rank positions as values silently.
+        .axChartDescriptor(inspector: inspector,
+                           title: String(localized: "crossRefAnalytics.ranking.heading",
+                                         defaultValue: "Most-Referenced Documents"),
+                           labelColumn: 1, valueColumn: 4)
+        .chartYAxis {
+            AxisMarks(preset: .aligned) { value in
+                AxisValueLabel {
+                    if let id = value.as(String.self) {
+                        RankingAxisLabelLayout(maximumWidth: labelWidth) {
+                            Text(axisLabels[id] ?? id)
+                                .lineLimit(RankingChartAxis.labelLines)
+                                .truncationMode(.tail)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Sets one ranking axis label at its own width up to `maximumWidth`, and wraps it past that (#1473).
+///
+/// Swift Charts sizes an axis label from what it asks for unconstrained — a bare title's whole
+/// one-line width, which is #1473. A `.frame(maxWidth:)` caps the width but answers with its
+/// child's one-line height, so every title drew on one cut line; a fixed `.frame(width:)` wraps,
+/// but gives every label, however short, the whole column. This answers with the label's own width
+/// where it is narrower than the cap, and otherwise with the cap and the height the label wraps to
+/// there. Measured in `ImageRenderer` drawings of a chart 688 pt wide with 275 pt labels, on macOS
+/// 27 and on iOS 26.5: `.frame(maxWidth:)` drew one line per title and this drew two, and both left
+/// the bars 340–341 pt (`RankingChartAxisTests.everyTitleIsDrawn` fails on the first).
+///
+/// Version history:
+///   1.0 — #1473: initial implementation
+private struct RankingAxisLabelLayout: Layout {
+
+    /// The widest the label may be.
+    let maximumWidth: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let label = subviews.first else { return .zero }
+        let width = min(label.sizeThatFits(.unspecified).width, maximumWidth, proposal.width ?? .infinity)
+        return CGSize(width: width, height: label.sizeThatFits(ProposedViewSize(width: width, height: nil)).height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+    }
+}
+
+// MARK: - Heat matrix row label (#1379, XREF fold-in)
+
+/// One heat-matrix row's label: the volume's topic, cut at its TAIL, and its tag, which is never
+/// cut (#1379) — beside the topic where the column leaves the topic room, on a line below it where
+/// it does not.
+///
+/// It used to be the joined `distilledVolumeLabel` on one line, cut at its HEAD to keep the tag,
+/// which dropped a topic's first words — "…chev Exchanges · 1961-63 v6" — and, since the joined
+/// label had already cut a long topic to 40 characters, cut the two Potsdam volumes' labels at both
+/// ends: "…rlin (The Potsdam… · 1945 v1". As two texts, the topic keeps its first words and gives
+/// way at its end, while the tag — which tells every bundled volume apart since #1388
+/// (`distilledLabelUniqueAcrossBundledCorpus`) — takes the width it needs. The topic comes uncut
+/// from `HeatMatrixRowAxis.label`, so this is the only cut it gets.
+///
+/// Beside the tag, the topic takes up to two lines and the tag sits on the baseline of its last
+/// one. Below it, the topic takes one line of the column's whole width. Which one is
+/// `HeatMatrixRowAxis.tagSitsBesideTopic`'s: at a phone's 150 pt a long tag left the topic a sliver
+/// whose first word broke over its two lines ("Microfi" over "che S…").
+///
+/// Version history:
+///   1.0 — #1379: `CrossReferenceAnalyticsView.matrixRowLabel`, the topic and the tag side by side
+///   1.1 — XREF fold-in: a view of its own, so a test can draw it; the tag drops below the topic
+///          where `HeatMatrixRowAxis.tagSitsBesideTopic` says it would leave the topic too little room
+struct HeatMatrixRowLabel: View {
+
+    /// The label's topic (`""` for a volume with none) and tag.
+    let parts: VolumeLabelParts
+
+    var body: some View {
+        label.font(.system(size: 10))
+    }
+
+    /// The tag alone for a volume with no topic; otherwise the topic and the tag, arranged.
+    @ViewBuilder
+    private var label: some View {
+        if parts.topic.isEmpty {
+            Text(verbatim: parts.tag)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+        } else {
+            HeatMatrixRowLabelLayout {
+                Text(verbatim: parts.topic)
+                    .lineLimit(HeatMatrixRowAxis.labelLines)
+                    .truncationMode(.tail)
+                    .multilineTextAlignment(.trailing)
+                Text(verbatim: " · \(parts.tag)")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                // Measured and never drawn: the tag stays beside the topic only where this fits.
+                Text(verbatim: HeatMatrixRowAxis.firstWord(of: parts.topic))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .hidden()
+            }
+        }
+    }
+}
+
+/// Lays out a heat-matrix row label's three texts — its topic, its tag with the separator, and its
+/// topic's first word, which it measures and never shows — with the tag beside the topic or on a
+/// line below it, as `HeatMatrixRowAxis.tagSitsBesideTopic` decides for the column's width.
+///
+/// It decides from the width it is OFFERED, not the width it is placed in: the row's frame places
+/// it at the size it reported, so its bounds are already the arrangement's, and deciding from them
+/// again would read a narrower column than the row has — a prototype that did set every label's tag
+/// below its topic, "China" included.
+///
+/// Version history:
+///   1.0 — XREF fold-in: initial implementation
+private struct HeatMatrixRowLabelLayout: Layout {
+
+    /// Where each text goes in a column of a given width.
+    private struct Arrangement {
+        /// Whether the tag sits beside the topic.
+        let beside: Bool
+        /// The topic's size where it is placed.
+        let topic: CGSize
+        /// The tag's size.
+        let tag: CGSize
+        /// How far below the label's top the tag's top is.
+        let tagTop: CGFloat
+        /// The label's size.
+        let size: CGSize
+    }
+
+    /// The arrangement for a column `width` wide (`nil`: as wide as the label wants), or `nil`
+    /// unless there are exactly the three texts.
+    private func arrangement(width: CGFloat?, subviews: Subviews) -> Arrangement? {
+        guard subviews.count == 3 else { return nil }
+        let topicView = subviews[0], tagView = subviews[1], wordView = subviews[2]
+        let tag = tagView.sizeThatFits(.unspecified)
+        let word = wordView.sizeThatFits(.unspecified)
+        let beside = width.map {
+            HeatMatrixRowAxis.tagSitsBesideTopic(columnWidth: $0, tagWidth: tag.width, firstWordWidth: word.width)
+        } ?? true
+        if beside {
+            let topic = topicView.sizeThatFits(ProposedViewSize(width: width.map { $0 - tag.width }, height: nil))
+            // The tag on the baseline of the topic's last line.
+            let tagTop = topicView.dimensions(in: ProposedViewSize(topic))[VerticalAlignment.lastTextBaseline]
+                - tagView.dimensions(in: .unspecified)[VerticalAlignment.lastTextBaseline]
+            return Arrangement(beside: true, topic: topic, tag: tag, tagTop: tagTop,
+                               size: CGSize(width: topic.width + tag.width,
+                                            height: max(topic.height, tagTop + tag.height)))
+        }
+        // One line of the whole column: a height of one line holds the topic to one.
+        let topic = topicView.sizeThatFits(ProposedViewSize(width: width, height: word.height))
+        return Arrangement(beside: false, topic: topic, tag: tag, tagTop: topic.height,
+                           size: CGSize(width: max(topic.width, tag.width), height: topic.height + tag.height))
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        arrangement(width: proposal.width, subviews: subviews)?.size ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard let layout = arrangement(width: proposal.width ?? bounds.width, subviews: subviews) else { return }
+        let topicX = layout.beside ? bounds.maxX - layout.tag.width - layout.topic.width
+                                   : bounds.maxX - layout.topic.width
+        subviews[0].place(at: CGPoint(x: topicX, y: bounds.minY), proposal: ProposedViewSize(layout.topic))
+        subviews[1].place(at: CGPoint(x: bounds.maxX - layout.tag.width, y: bounds.minY + layout.tagTop),
+                          proposal: ProposedViewSize(layout.tag))
+        subviews[2].place(at: bounds.origin, proposal: .unspecified)
     }
 }
