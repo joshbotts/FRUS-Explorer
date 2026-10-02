@@ -664,3 +664,12 @@ Format, one entry per change:
 - **Proposed:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. In the chart a long title takes up to two lines and is cut at its end; the table, and VoiceOver on each bar, give the title whole.
 - **Why:** as for the Mac (#1473; the same `CrossReferenceRankingChart` on every platform, `CrossReferenceAnalyticsView.swift:1525`). On an iPhone the bug was worse than on the Mac: on `v2`, iPhone 17, the plot was squeezed to 1 pt at x 977 of a 402 pt window, and 5 of the 12 rows on screen showed no title at all. Optional, like the Mac sentence.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## OH — #1309 report (P4)
+
+*Lane OH compiled the report to the Office of the Historian (`Planning/OH-Report-2026-10-01.md`). It changes no app behaviour and no app copy, so it makes no manual change necessary. Both manuals were searched for statements the report bears on; the two that touch it stay true as written:*
+
+- *Mac §8.2 and iOS §8.2, cross-references that cannot be followed (`Docs/macOS-User-Manual.md:508`, `Docs/iOS-User-Manual.md:640`): "occasionally … cites a page, document, or volume that does not exist in the digital corpus." The report finds that 352 of the 652 such references point at pages missing from one file, `frus1952-54v09p1`, and 8 at volumes not yet digitized. The sentence covers both.*
+- *Mac §17.5 and iOS §17.6, **Reports → Broken Cross-References** (`Docs/macOS-User-Manual.md:1196`, `Docs/iOS-User-Manual.md:1301`): the export is unchanged. The bundled index was not regenerated (the regenerated CSV is byte-identical to the committed one).*
+
+**No entry for the owner to approve.** If the Office of the Historian restores `frus1952-54v09p1`'s Documents 900–946, the count the app shows falls by 352 at the next corpus refresh; neither manual states a count.

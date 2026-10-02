@@ -1,0 +1,14 @@
+class,volume,file,line,what_is_wrong,confidence
+published-change-without-when,frus1861-99Index,frus1861-99Index.xml,45,"<change corresp=""#frus1861-99Index"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1900-18Index,frus1900-18Index.xml,44,"<change corresp=""#frus1900-18Index"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1958-60v05mSupp,frus1958-60v05mSupp.xml,5734,"<change corresp=""#frus1958-60v05mSupp"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1958-60v11mSupp,frus1958-60v11mSupp.xml,71,"<change corresp=""#frus1958-60v11mSupp"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1958-60v15-16mSupp1,frus1958-60v15-16mSupp1.xml,65,"<change corresp=""#frus1958-60v15-16mSupp1"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1958-60v15-16mSupp2,frus1958-60v15-16mSupp2.xml,65,"<change corresp=""#frus1958-60v15-16mSupp2"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1958-60v17-18mSupp,frus1958-60v17-18mSupp.xml,54,"<change corresp=""#frus1958-60v17-18mSupp"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1958-60v19mSupp,frus1958-60v19mSupp.xml,53,"<change corresp=""#frus1958-60v19mSupp"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1961-63v13-15mSupp,frus1961-63v13-15mSupp.xml,64,"<change corresp=""#frus1961-63v13-15mSupp"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1961-63v17-21mSupp,frus1961-63v17-21mSupp.xml,78,"<change corresp=""#frus1961-63v17-21mSupp"" status=""published""/> carries no @when.",question
+published-change-without-when,frus1961-63v22-24mSupp,frus1961-63v22-24mSupp.xml,59,"<change corresp=""#frus1961-63v22-24mSupp"" status=""published""/> carries no @when.",question
+appendix-title,frus1877app,frus1877app.xml,6,"The titleStmt is word for word that of frus1877: no title names the Appendix, and the volume-number title is empty.",question
+appendix-title,frus1894app2,frus1894app2.xml,6,"The complete title stops at ""Foreign Relations of the United States, 1894""; that of frus1894app1 goes on to name Appendix I and its contents.",question

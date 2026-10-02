@@ -1,0 +1,206 @@
+class,volume,element,element_type,file,line,encoded,printed,what_is_wrong,confidence
+year-contradicts-text,frus1864p3,d186,document,frus1864p3.xml,19871,"when=""1864-08-09""","August 9, 1846.",The date is encoded 1864 and prints 1846 (the volume covers 1864).,confirmed
+year-contradicts-text,frus1864p4,d171,document,frus1864p4.xml,23449,"when=""1864-04-20""","April 20, 1884",The date is encoded 1864 and prints 1884 (the volume covers 1864).,confirmed
+year-contradicts-text,frus1865p4,d737,document,frus1865p4.xml,49966,"when=""1865-06-10""","June 10, 1856",The date is encoded 1865 and prints 1856 (the volume covers 1865).,confirmed
+year-contradicts-text,frus1865p4,d982,document,frus1865p4.xml,61274,"when=""1865-05-03""","May 3, 1866",The date is encoded 1865 and prints 1866 (the volume covers 1865).,confirmed
+year-contradicts-text,frus1867p1,d36,document,frus1867p1.xml,15536,"when=""1867-02-15""","February 15, 1857",The date is encoded 1867 and prints 1857 (the volume covers 1867).,confirmed
+year-contradicts-text,frus1872p2v1,d268,document,frus1872p2v1.xml,70010,"when=""1869-04-03""","April 3, 1896",The date is encoded 1869 and prints 1896 (the volume covers 1872).,confirmed
+year-contradicts-text,frus1872p2v1,d420,document,frus1872p2v1.xml,76995,"when=""1869-07-15""","July 15, 1809",The date is encoded 1869 and prints 1809 (the volume covers 1872).,confirmed
+year-contradicts-text,frus1872p2v2,d17,document,frus1872p2v2.xml,10580,"when=""1863-06-15T12:00:00+00:09""","June 15, 1864—noon",The date is encoded 1863 and prints 1864 (the volume covers 1872).,confirmed
+year-contradicts-text,frus1872p2v5,d66,document,frus1872p2v5.xml,8928,"when=""1978""",1798,The date is encoded 1978 and prints 1798 (the volume covers 1872).,confirmed
+year-contradicts-text,frus1875v02,d171,document,frus1875v02.xml,28547,"when=""1875-10-27""","October 27, 1874",The date is encoded 1875 and prints 1874 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d184,document,frus1875v02.xml,30077,"when=""1875-09-12""","Sept , 12, 1874",The date is encoded 1875 and prints 1874 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d185,document,frus1875v02.xml,30112,"when=""1875-09-16""","Sept . 16, 1874",The date is encoded 1875 and prints 1874 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d216,document,frus1875v02.xml,35093,"when=""1875-06-24""","June 24, 1874.",The date is encoded 1875 and prints 1874 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d248,document,frus1875v02.xml,40245,"when=""1875-12-30""","December 30, 1873",The date is encoded 1875 and prints 1873 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d254,document,frus1875v02.xml,40755,"when=""1875-12-30""","December 30, 1873",The date is encoded 1875 and prints 1873 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d354,document,frus1875v02.xml,56063,"when=""1874-01-01""","January 1, 1875",The date is encoded 1874 and prints 1875 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d360,document,frus1875v02.xml,56728,"when=""1874-03-24""","March 24, 1875",The date is encoded 1874 and prints 1875 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d365,document,frus1875v02.xml,57228,"when=""1874-06-24""","June 24,1875",The date is encoded 1874 and prints 1875 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d373,document,frus1875v02.xml,57759,"when=""1875-09-15""","September 15, 1874",The date is encoded 1875 and prints 1874 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1875v02,d393,document,frus1875v02.xml,59535,"when=""1874-06-04""","June 4, 1875",The date is encoded 1874 and prints 1875 (the volume covers 1875).,confirmed
+year-contradicts-text,frus1881,d86,document,frus1881.xml,25826,"when=""1881-11-23""","November 23, 1880",The date is encoded 1881 and prints 1880 (the volume covers 1881).,confirmed
+year-contradicts-text,frus1881,d87,document,frus1881.xml,26159,"when=""1881-11-30""","November 30, 1880",The date is encoded 1881 and prints 1880 (the volume covers 1881).,confirmed
+year-contradicts-text,frus1881,d144,document,frus1881.xml,33440,"when=""1881-12-29""","December 29, 1880",The date is encoded 1881 and prints 1880 (the volume covers 1881).,confirmed
+year-contradicts-text,frus1881,d286,document,frus1881.xml,50072,"when=""1881-12-20""","December 20, 1880",The date is encoded 1881 and prints 1880 (the volume covers 1881).,confirmed
+year-contradicts-text,frus1881,d458,document,frus1881.xml,73526,"when=""1881-06-16""","June 16, 1811",The date is encoded 1881 and prints 1811 (the volume covers 1881).,confirmed
+year-contradicts-text,frus1890,d90,document,frus1890.xml,19605,"when=""1890-09-10""","September 10, 1891",The date is encoded 1890 and prints 1891 (the volume covers 1890).,confirmed
+year-contradicts-text,frus1891,d38,document,frus1891.xml,15909,"when=""1891-11-03""","November 3, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d272,document,frus1891.xml,34065,"when=""1891-01-08""","January 8, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d277,document,frus1891.xml,34178,"when=""1891-01-13""","January 13, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d280,document,frus1891.xml,34244,"when=""1891-01-16""","January 16, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d281,document,frus1891.xml,34265,"when=""1891-01-17""","January 17,1892 .",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d284,document,frus1891.xml,34360,"when=""1891-01-18""","January 18, 1892 .",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d288,document,frus1891.xml,35740,"when=""1891-01-21""","January 21, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d289,document,frus1891.xml,35843,"when=""1891-01-21""","January 21, 1892 .",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d292,document,frus1891.xml,36162,"when=""1891-01-30""","January 30, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d338,document,frus1891.xml,38876,"when=""1891-01-22""","January 22, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d340,document,frus1891.xml,39097,"when=""1891-01-27""","January 27, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d425,document,frus1891.xml,47931,"when=""1891-12-17""","December 17, 1890 .",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d442,document,frus1891.xml,49774,"when=""1891-09-08""","September 8, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d462,document,frus1891.xml,51695,"when=""1891-02-19""","March 19, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d542,document,frus1891.xml,57848,"when=""1891-02-04""","February 4, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d543,document,frus1891.xml,57876,"when=""1891-02-04""","February 4, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d545,document,frus1891.xml,57943,"when=""1891-02-06""","February 6, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d547,document,frus1891.xml,58094,"when=""1891-02-09""","February 9, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d549,document,frus1891.xml,58157,"when=""1891-02-12""","February 12, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d553,document,frus1891.xml,58266,"when=""1891-02-24""","February 24, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d554,document,frus1891.xml,58311,"when=""1891-02-26""","February 26, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d555,document,frus1891.xml,58334,"when=""1891-02-27""","February 27, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d559,document,frus1891.xml,58728,"when=""1891-03-08""","March 8, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d561,document,frus1891.xml,58992,"when=""1891-03-22""","March 22, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d564,document,frus1891.xml,59240,"when=""1891-04-07""","April 7, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d565,document,frus1891.xml,59389,"when=""1891-04-14""","April 14, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d569,document,frus1891.xml,59770,"when=""1891-04-20""","April 20, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d570,document,frus1891.xml,59791,"when=""1891-04-20""","April 20, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d571,document,frus1891.xml,59823,"when=""1891-04-23""","April 23, 1892.",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d572,document,frus1891.xml,59846,"when=""1891-04-28""","April 28, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d573,document,frus1891.xml,59917,"when=""1891-04-29""","April 29, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d576,document,frus1891.xml,59992,"when=""1891-05-12""","May 12, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d577,document,frus1891.xml,60023,"when=""1891-05-21""","May 21, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d579,document,frus1891.xml,60118,"when=""1891-06-06""","June 6, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d581,document,frus1891.xml,60165,"when=""1891-06-15""","_____, _____, 1892.",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d582,document,frus1891.xml,60235,"when=""1891-06-16""","June 16, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d602,document,frus1891.xml,61264,"when=""1891-10-21""","October 21, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d603,document,frus1891.xml,61284,"when=""1891-10-28""","October 28, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d604,document,frus1891.xml,61300,"when=""1891-10-29""","October 29, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d606,document,frus1891.xml,61432,"when=""1891-11-21""","November 21, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d608,document,frus1891.xml,61530,"when=""1891-12-02""","December 2, 1890 .",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d609,document,frus1891.xml,61572,"when=""1891-12-04""","December 4, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d610,document,frus1891.xml,61596,"when=""1891-12-09""","December 9, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d611,document,frus1891.xml,61629,"when=""1891-12-09""","December 9, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d613,document,frus1891.xml,61690,"when=""1891-12-15""","December 15, 1890 .",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d614,document,frus1891.xml,61763,"when=""1891-12-17""","December 17, 1890",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d661,document,frus1891.xml,66705,"when=""1891-04-12""","April 12, 1892",The date is encoded 1891 and prints 1892 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1891,d665,document,frus1891.xml,66927,"when=""1891-12-23""","December 23, 1890 .",The date is encoded 1891 and prints 1890 (the volume covers 1891).,confirmed
+year-contradicts-text,frus1894app2,d483,document,frus1894app2.xml,127700,"when=""1894-02-12""","February 12, 1884",The date is encoded 1894 and prints 1884 (the volume covers 1894).,confirmed
+year-contradicts-text,frus1894app2,d517,document,frus1894app2.xml,134593,"when=""1894-01-11""","January 11, 1895",The date is encoded 1894 and prints 1895 (the volume covers 1894).,confirmed
+year-contradicts-text,frus1897,d548,document,frus1897.xml,47829,"when=""1897-03-10""","March 10, 1891",The date is encoded 1897 and prints 1891 (the volume covers 1897).,confirmed
+year-contradicts-text,frus1898,d246,document,frus1898.xml,50155,"when=""1898-06-03""","June 3, 1899",The date is encoded 1898 and prints 1899 (the volume covers 1898).,confirmed
+year-contradicts-text,frus1898,d546,document,frus1898.xml,77825,"when=""1898-03-18""","March 18, 1899",The date is encoded 1898 and prints 1899 (the volume covers 1898).,confirmed
+year-contradicts-text,frus1906p1,d340,document,frus1906p1.xml,43405,"when=""1906-11-08""","November 8, 1908",The date is encoded 1906 and prints 1908 (the volume covers 1906).,confirmed
+year-contradicts-text,frus1906p2,d37,document,frus1906p2.xml,16422,"when=""1906-12-27""","December 27, 1996",The date is encoded 1906 and prints 1996 (the volume covers 1906).,confirmed
+year-contradicts-text,frus1907p2,d119,document,frus1907p2.xml,15730,"when=""1907-10-09""","October 9, 1908",The date is encoded 1907 and prints 1908 (the volume covers 1907).,confirmed
+year-contradicts-text,frus1907p2,d408,document,frus1907p2.xml,45118,"when=""1907-04-13""","April 13, 1909",The date is encoded 1907 and prints 1909 (the volume covers 1907).,confirmed
+year-contradicts-text,frus1910,d91,document,frus1910.xml,27003,"when=""1910-02-05""","February 5, 1914",The date is encoded 1910 and prints 1914 (the volume covers 1910).,confirmed
+year-contradicts-text,frus1913,d1346,document,frus1913.xml,117540,"when=""1913-09-04""","September 4, 1919",The date is encoded 1913 and prints 1919 (the volume covers 1913).,confirmed
+year-contradicts-text,frus1913,d1350,document,frus1913.xml,117784,"when=""1913-09-19""","September 19, 1919",The date is encoded 1913 and prints 1919 (the volume covers 1913).,confirmed
+year-contradicts-text,frus1913,d1351,document,frus1913.xml,117824,"when=""1913-10-02""","October 2, 1919",The date is encoded 1913 and prints 1919 (the volume covers 1913).,confirmed
+year-contradicts-text,frus1913,d1513,document,frus1913.xml,126196,"when=""1913-07-23""","July 23, 1918",The date is encoded 1913 and prints 1918 (the volume covers 1913).,confirmed
+year-contradicts-text,frus1914-20v01,d210,document,frus1914-20v01.xml,28128,"when=""1915-10-27T18:00:00-05:00""","October 27, 1916—6 p. m.",The date is encoded 1915 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v01,d541,document,frus1914-20v01.xml,51351,"when=""1917-10-02""","October 2, 1916 .",The date is encoded 1917 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v01,d542,document,frus1914-20v01.xml,51410,"when=""1917-10-06""","October 6, 1916 .",The date is encoded 1917 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v01,d543,document,frus1914-20v01.xml,51449,"when=""1917-10-16""","October 16, 1916 .",The date is encoded 1917 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v01,d545,document,frus1914-20v01.xml,51527,"when=""1917-11-22""","November 22, 1916 .",The date is encoded 1917 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v01,d546,document,frus1914-20v01.xml,51572,"when=""1917-11-23""","November 23, 1916 .",The date is encoded 1917 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v01,d547,document,frus1914-20v01.xml,51623,"when=""1917-12-08""","December 8, 1916 .",The date is encoded 1917 and prints 1916 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914-20v02,d394,document,frus1914-20v02.xml,43644,"when=""1916-08-16""","16 August, 1915",The date is encoded 1916 and prints 1915 (the volume covers 1914-1920).,confirmed
+year-contradicts-text,frus1914,d93,document,frus1914.xml,38620,"when=""1914-05-16""","May 16, 1911",The date is encoded 1914 and prints 1911 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d94,document,frus1914.xml,38651,"when=""1914-05-25""","May 25, 1911",The date is encoded 1914 and prints 1911 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d98,document,frus1914.xml,38836,"when=""1914-12-19""","December 19, 1918",The date is encoded 1914 and prints 1918 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d405,document,frus1914.xml,54510,"when=""1914-11-28""","November 28, 1913",The date is encoded 1914 and prints 1913 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d440,document,frus1914.xml,56053,"when=""1914-12-18""","December 18, 1913",The date is encoded 1914 and prints 1913 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d441,document,frus1914.xml,56095,"when=""1914-12-24""","December 24, 1913",The date is encoded 1914 and prints 1913 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d442,document,frus1914.xml,56169,"when=""1914-12-27T15:00:00-05:00""","December 27, 1913, 3 p.m.",The date is encoded 1914 and prints 1913 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d602,document,frus1914.xml,64483,"when=""1914-02-11""","February 11, 1907",The date is encoded 1914 and prints 1907 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d612,document,frus1914.xml,65274,"when=""1914-11-04""","November 4, 1913",The date is encoded 1914 and prints 1913 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914,d638,document,frus1914.xml,68434,"when=""1914-07-11""","July 11, 1913",The date is encoded 1914 and prints 1913 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1914Supp,d483,document,frus1914Supp.xml,70419,"when=""1914-09-28""","September 28, 2014",The date is encoded 1914 and prints 2014 (the volume covers 1914).,confirmed
+year-contradicts-text,frus1916Supp,d705,document,frus1916Supp.xml,90722,"when=""1916-12-14T18:00:00+01:00""","December 14, 1915, 6 p. m.",The date is encoded 1916 and prints 1915 (the volume covers 1916).,confirmed
+year-contradicts-text,frus1917,d244,document,frus1917.xml,42277,"when=""1917-04-16""","April 16, 1918",The date is encoded 1917 and prints 1918 (the volume covers 1917).,confirmed
+year-contradicts-text,frus1929v02,d1030,document,frus1929v02.xml,78297,"when=""1929-09-18T10:00:00+01:00""","September 18, 1829—10 a.m.",The date is encoded 1929 and prints 1829 (the volume covers 1929).,confirmed
+year-contradicts-text,frus1932v05,d779,document,frus1932v05.xml,72757,"when=""1932-06-18""","June 18, 1931",The date is encoded 1932 and prints 1931 (the volume covers 1932).,confirmed
+year-contradicts-text,frus1933v01,d503,document,frus1933v01.xml,60560,"when=""1933-07-02T18:00:00-06:00""","July 2, 1936—6 p.m.",The date is encoded 1933 and prints 1936 (the volume covers 1933).,confirmed
+year-contradicts-text,frus1934v03,d250,document,frus1934v03.xml,32651,"when=""1934-12-24""","December 24, 1935",The date is encoded 1934 and prints 1935 (the volume covers 1934).,confirmed
+year-contradicts-text,frus1935v04,d781,document,frus1935v04.xml,60577,"when=""1935-04-05""","April 5, 1945",The date is encoded 1935 and prints 1945 (the volume covers 1935).,confirmed
+year-contradicts-text,frus1935v04,d921,document,frus1935v04.xml,69060,"when=""1935-11-15T13:00:00-05:00""","November 15, 1930—1 p.m.",The date is encoded 1935 and prints 1930 (the volume covers 1935).,confirmed
+year-contradicts-text,frus1937v03,d221,document,frus1937v03.xml,20769,"when=""1937-07-20T18:00:00-04:00""","July 20, 1947—6 p.m.",The date is encoded 1937 and prints 1947 (the volume covers 1937).,confirmed
+range-inverted,frus1938v02,ch21,chapter,frus1938v02.xml,48026,min 1938-03-31T23:59:59-05:00 / max 1938-03-31T00:00:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1938v02,ch21subch1,subchapter,frus1938v02.xml,48029,min 1938-03-31T23:59:59-05:00 / max 1938-03-31T00:00:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1939v02,ch20subch9,subchapter,frus1939v02.xml,38794,min 1939-07-15T23:59:59-05:00 / max 1939-07-15T00:00:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1939v05,d554,document,frus1939v05.xml,43582,"when=""1938-12-18""","December 18, 1939",The date is encoded 1938 and prints 1939 (the volume covers 1939).,confirmed
+range-inverted,frus1941v03,ch1subch1,subchapter,frus1941v03.xml,7569,min 1941-12-22T00:00:00-05:00 / max 1941-01-14T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1942v01,ch14subch1,subchapter,frus1942v01.xml,38584,min 1941-12-01T00:00:00-05:00 / max 1941-06-30T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1942v01,ch16subch5,subchapter,frus1942v01.xml,42349,min 1942-03-28T00:00:00-05:00 / max 1942-03-20T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1943,d309,document,frus1943.xml,68936,"when=""1943-08-09""",9 August 1948,The date is encoded 1943 and prints 1948 (the volume covers 1943).,confirmed
+range-inverted,frus1943,ch8subsubch27,subchapter,frus1943.xml,90149,min 1943-08-21T13:30:00-05:00 / max 1943-08-21T13:00:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1943,ch11subsubch12,subchapter,frus1943.xml,114005,min 1943-09-08T16:00:00-05:00 / max 1943-09-08T12:00:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1943v03,ch3subch8,subchapter,frus1943v03.xml,16864,min 1943-11-05T00:00:00-04:00 / max 1943-01-17T23:59:59-04:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1943v04,d695,document,frus1943v04.xml,51943,"when=""1945-08-09""","August 9, 1943",The date is encoded 1945 and prints 1943 (the volume covers 1943).,confirmed
+year-contradicts-text,frus1943v04,d767,document,frus1943v04.xml,56600,"when=""1943-10-14""","October 14, 1963",The date is encoded 1943 and prints 1963 (the volume covers 1943).,confirmed
+range-inverted,frus1943v05,ch36,chapter,frus1943v05.xml,54781,min 1942-11-27T00:00:00-04:00 / max 1942-04-14T23:59:59-04:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1944v07,d503,document,frus1944v07.xml,48028,"when=""1944-10-18T18:00:00-04:00""","October 18, 1964—6 p.m.",The date is encoded 1944 and prints 1964 (the volume covers 1944).,confirmed
+year-contradicts-text,frus1945Malta,d273,document,frus1945Malta.xml,47896,"when=""1945-11-27T19:00:00+03:00""","November 27, 1944—7 p. m.",The date is encoded 1945 and prints 1944 (the volume covers 1945).,confirmed
+year-contradicts-file-number,frus1945v01,d262,document,frus1945v01.xml,87937,"when=""1946-05-31T12:25:00-04:00""","May 31, 1946, 12:25 p.m.","The document is dated 1946, outside the volume's years, while its own file number (5–3145) carries the same month and day in 1945.",question
+year-contradicts-file-number,frus1945v01,d338,document,frus1945v01.xml,118568,"when=""1946-10-12T12:00:00+00:00""","October 12, 1946—noon","The document is dated 1946, outside the volume's years, while its own file number (10–1245) carries the same month and day in 1945.",question
+range-inverted,frus1945v02,comp22,compilation,frus1945v02.xml,104813,min 1945-11-26T00:00:00+00:00 / max 1945-08-11T23:59:59+00:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-file-number,frus1945v03,d168,document,frus1945v03.xml,25943,"when=""1944-04-03T12:00:00-04:00""","April 3, 1944—noon","The document is dated 1944, outside the volume's years, while its own file number (4–345) carries the same month and day in 1945.",question
+year-contradicts-text,frus1945v03,d1045,document,frus1945v03.xml,103051,"when=""1946-11-14T00:00:00+01:00""","November 14, 1945—midnight.",The date is encoded 1946 and prints 1945 (the volume covers 1945).,confirmed
+year-contradicts-text,frus1945v08,d630,document,frus1945v08.xml,53279,"when=""1945-08-30T19:00:00-04:00""","August 30, 1947—7 p.m.",The date is encoded 1945 and prints 1947 (the volume covers 1945).,confirmed
+year-contradicts-text,frus1945v08,d1052,document,frus1945v08.xml,82007,"when=""1945-05-21""","May 21, 1915",The date is encoded 1945 and prints 1915 (the volume covers 1945).,confirmed
+year-contradicts-text,frus1945v09,d506,document,frus1945v09.xml,52591,"when=""1945-03-15""","March 15, 1915",The date is encoded 1945 and prints 1915 (the volume covers 1945).,confirmed
+year-contradicts-text,frus1946v05,d516,document,frus1946v05.xml,55949,"when=""1946-05-27T19:00:00-04:00""","May 27, 1945—7 p.m.",The date is encoded 1946 and prints 1945 (the volume covers 1946).,confirmed
+year-contradicts-text,frus1946v10,d477,document,frus1946v10.xml,55285,"when=""1946-01-06""","January 6, 1947",The date is encoded 1946 and prints 1947 (the volume covers 1946).,confirmed
+year-contradicts-file-number,frus1947v04,d156,document,frus1947v04.xml,22078,"when=""1946-06-25T18:00:00+02:00""","June 25, 1946—6 p. m.","The document is dated 1946, outside the volume's years, while its own file number (6–2547) carries the same month and day in 1947.",question
+year-contradicts-text,frus1947v04,d447,document,frus1947v04.xml,49297,"when=""1947-01-08""","January 8, 1948",The date is encoded 1947 and prints 1948 (the volume covers 1947).,confirmed
+year-contradicts-text,frus1947v05,d110,document,frus1947v05.xml,20282,"when=""1947-04-14T18:00:00+02:00""","April 14, 1967—6 p. m.",The date is encoded 1947 and prints 1967 (the volume covers 1947).,confirmed
+year-contradicts-text,frus1947v05,d718,document,frus1947v05.xml,76447,"when=""1947-01-31T17:00:00+00:00""","January 31, 1946—5 p. m.",The date is encoded 1947 and prints 1946 (the volume covers 1947).,confirmed
+year-contradicts-file-number,frus1947v06,d425,document,frus1947v06.xml,44364,"when=""1948-10-09""",undated,"The document is dated 1948, outside the volume's years, while its own file number (10–947) carries the same month and day in 1947.",question
+range-inverted,frus1947v08,ch47,chapter,frus1947v08.xml,55800,min 1947-04-07T23:59:59-05:00 / max 1947-03-04T00:00:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1948v03,comp3,compilation,frus1948v03.xml,47301,min 1948-11-22T00:00:00+01:00 / max 1948-10-26T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1948v03,ch5,chapter,frus1948v03.xml,47315,min 1948-11-22T00:00:00+01:00 / max 1948-10-26T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1948v09,ch13,chapter,frus1948v09.xml,24338,min 1948-10-06T00:00:00-05:00 / max 1948-01-30T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1948v09,ch16subch3,subchapter,frus1948v09.xml,25045,min 1947-12-15T00:00:00-05:00 / max 1947-07-14T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+range-inverted,frus1948v09,ch16subch4,subchapter,frus1948v09.xml,25073,min 1948-12-15T00:00:00-03:00 / max 1948-07-20T23:59:59-03:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1949v06,d43,document,frus1949v06.xml,23334,"when=""1948-06-01T08:00:00+03:30""","June 1, 1949—8 a. m.",The date is encoded 1948 and prints 1949 (the volume covers 1949).,confirmed
+year-contradicts-text,frus1949v07p1,d86,document,frus1949v07p1.xml,13294,"when=""1949-12-11T14:00:00+01:00""","December 11, 1948—2 p. m.",The date is encoded 1949 and prints 1948 (the volume covers 1949).,confirmed
+year-contradicts-file-number,frus1949v08,d698,document,frus1949v08.xml,50270,"when=""1948-11-28T14:00:00+08:00""","November 28, 1948—2 p. m.","The document is dated 1948, outside the volume's years, while its own file number (11–2849) carries the same month and day in 1949.",question
+year-contradicts-text,frus1949v08,d1563,document,frus1949v08.xml,93634,"when=""1949-07-14T22:00:00+08:00""","July 14, 1919—10 p. m.",The date is encoded 1949 and prints 1919 (the volume covers 1949).,confirmed
+year-contradicts-text,frus1949v09,d28,document,frus1949v09.xml,12350,"when=""1949-05-19T18:00:00+01:00""","May 19, 1919—6 p. m.",The date is encoded 1949 and prints 1919 (the volume covers 1949).,confirmed
+year-contradicts-text,frus1949v09,d674,document,frus1949v09.xml,55961,"when=""1949-09-16""","September 16, 1919",The date is encoded 1949 and prints 1919 (the volume covers 1949).,confirmed
+year-contradicts-file-number,frus1949v09,d811,document,frus1949v09.xml,64756,"when=""1947-06-22T19:00:00-04:00""","June 22, 1947—7 p. m.","The document is dated 1947, outside the volume's years, while its own file number (6–2249) carries the same month and day in 1949.",question
+year-contradicts-text,frus1950v01,d323,document,frus1950v01.xml,61352,"when=""1951-11-13""","November 13, 1950",The date is encoded 1951 and prints 1950 (the volume covers 1950).,confirmed
+year-contradicts-file-number,frus1950v03,d312,document,frus1950v03.xml,52759,"when=""1951-12-14T00:00:00+00:00""","December 14, 1951—midnight","The document is dated 1951, outside the volume's years, while its own file number (12–1450) carries the same month and day in 1950.",question
+year-contradicts-file-number,frus1950v04,d765,document,frus1950v04.xml,101512,"when=""1949-01-24T20:00:00-05:00""","January 24, 1949—8 p. m.","The document is dated 1949, outside the volume's years, while its own file number (1–2450) carries the same month and day in 1950.",question
+year-contradicts-file-number,frus1950v05,d282,document,frus1950v05.xml,56348,"when=""1951-10-21T16:00:00+03:30""","October 21, 1951—4 p. m.","The document is dated 1951, outside the volume's years, while its own file number (10–2150) carries the same month and day in 1950.",question
+year-contradicts-text,frus1951v01,d676,document,frus1951v01.xml,112254,"when=""1951-10-06T18:00:00-05:00""","October 6, 1950—6 p. m",The date is encoded 1951 and prints 1950 (the volume covers 1951).,confirmed
+year-contradicts-text,frus1951v01,d677,document,frus1951v01.xml,112356,"when=""1951-10-11T18:00:00-05:00""","October 11, 1950—6 p. m",The date is encoded 1951 and prints 1950 (the volume covers 1951).,confirmed
+year-contradicts-text,frus1951v01,d678,document,frus1951v01.xml,112436,"when=""1951-10-16T18:00:00+01:00""","October 16, 1950—6 p. m",The date is encoded 1951 and prints 1950 (the volume covers 1951).,confirmed
+year-contradicts-text,frus1951v01,d679,document,frus1951v01.xml,112629,"when=""1951-10-18T18:00:00-05:00""","October 18, 1950—6 p. m",The date is encoded 1951 and prints 1950 (the volume covers 1951).,confirmed
+year-contradicts-text,frus1951v04p1,d416,document,frus1951v04p1.xml,72158,"when=""1951-12-29T16:00:00+00:00""","December 29, 1950—4 p.m.",The date is encoded 1951 and prints 1950 (the volume covers 1951).,confirmed
+year-contradicts-text,frus1951v06p1,d414,document,frus1951v06p1.xml,61379,"when=""1951-09-25""","September 25, 1950",The date is encoded 1951 and prints 1950 (the volume covers 1951).,confirmed
+year-contradicts-text,frus1952-54v07p2,d845,document,frus1952-54v07p2.xml,43211,"when=""1953-02-05T12:00:00+01:00""","February 5, 1976—noon.",The date is encoded 1953 and prints 1976 (the volume covers 1952-1954).,confirmed
+range-inverted,frus1955-57v03mSupp,about-this-digital-edition,section,frus1955-57v03mSupp.xml,41435,min 1957-12-23T00:00:00-05:00 / max 1955-07-29T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1955-57v03mSupp,d278,document,frus1955-57v03mSupp.xml,68406,"when=""1959-10-10""","October 10, 1955",The date is encoded 1959 and prints 1955 (the volume covers 1955-1957).,confirmed
+year-contradicts-file-number,frus1955-57v12,d395,document,frus1955-57v12.xml,62650,"when=""1951-03-19T18:00:00+03:30""","March 19, 1951—6 p.m.","The document is dated 1951, outside the volume's years, while its own file number (3–1957) carries the same month and day in 1957.",question
+year-contradicts-file-number,frus1955-57v15,d334,document,frus1955-57v15.xml,44123,"when=""1965-05-04T00:00:00+01:00""","May 4, 1965—midnight","The document is dated 1965, outside the volume's years, while its own file number (5–456) carries the same month and day in 1956.",question
+year-contradicts-text,frus1955-57v17,d43,document,frus1955-57v17.xml,13586,"when=""1957-01-28T20:00:00-05:00""","January 28, 1978—8 p.m.",The date is encoded 1957 and prints 1978 (the volume covers 1955-1957).,confirmed
+year-contradicts-text,frus1958-60v03mSupp,d258,document,frus1958-60v03mSupp.xml,117365,"when=""1959-08-09""","August 9, 1960",The date is encoded 1959 and prints 1960 (the volume covers 1958-1960).,confirmed
+year-contradicts-text,frus1958-60v03mSupp,d279,document,frus1958-60v03mSupp.xml,121960,"when=""1959-12-09""","December 9, 1960",The date is encoded 1959 and prints 1960 (the volume covers 1958-1960).,confirmed
+year-contradicts-text,frus1958-60v03mSupp,d486,document,frus1958-60v03mSupp.xml,149977,"when=""1958-08-10""","August 10–11, 1959",The date is encoded 1958 and prints 1959 (the volume covers 1958-1960).,confirmed
+year-contradicts-file-number,frus1958-60v10p2,d237,document,frus1958-60v10p2.xml,41826,"when=""1956-03-28T17:00:00+02:00""","March 28, 1956, 5 p.m.","The document is dated 1956, outside the volume's years, while its own file number (3–2858) carries the same month and day in 1958.",question
+year-contradicts-text,frus1958-60v16,d483,document,frus1958-60v16.xml,70591,"when=""1960-12-10T17:39:00-05:00""","December 10, 1969—5:39 p.m.",The date is encoded 1960 and prints 1969 (the volume covers 1958-1960).,confirmed
+year-contradicts-text,frus1961-63v23,d23,document,frus1961-63v23.xml,13458,"when=""1961-03-06T00:00:00+07:00""","March 6, 1962, midnight",The date is encoded 1961 and prints 1962 (the volume covers 1961-1963).,confirmed
+year-contradicts-text,frus1964-68v03,d266,document,frus1964-68v03.xml,49982,"when=""1965-12-29""","December 29, 1925",The date is encoded 1965 and prints 1925 (the volume covers 1964-1968).,confirmed
+year-contradicts-text,frus1964-68v23,d502,document,frus1964-68v23.xml,47724,"when=""1964-07-03T12:35:00+00:00""","July 3, 1967, 1235Z",The date is encoded 1964 and prints 1967 (the volume covers 1964-1968).,confirmed
+year-contradicts-text,frus1964-68v32,d232,document,frus1964-68v32.xml,47219,"when=""1964-02-07T12:15:00-04:00""","February 07, 1974, 12:15 p.m.",The date is encoded 1964 and prints 1974 (the volume covers 1964-1968).,confirmed
+year-contradicts-text,frus1964-68v32,d433,document,frus1964-68v32.xml,70154,"when=""1967-06-05""","June 5, 1968",The date is encoded 1967 and prints 1968 (the volume covers 1964-1968).,confirmed
+year-contradicts-text,frus1964-68v32,d439,document,frus1964-68v32.xml,70921,"when=""1967-11-21""","November 21, 1968",The date is encoded 1967 and prints 1968 (the volume covers 1964-1968).,confirmed
+year-contradicts-text,frus1969-76v05,d39,document,frus1969-76v05.xml,15745,"when=""1970-01-04T00:05:00+00:00""","January 4, 1972, 0005Z",The date is encoded 1970 and prints 1972 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76v05,d262,document,frus1969-76v05.xml,43352,"when=""1970-02-18""","February 18, 1972",The date is encoded 1970 and prints 1972 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76v05,d453,document,frus1969-76v05.xml,73419,"when=""1970-08-19T17:00:00+00:00""","August 9, 1972, 1700Z",The date is encoded 1970 and prints 1972 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76v26,d153,document,frus1969-76v26.xml,39559,"when=""1974-03-20""","March 20, 1975",The date is encoded 1974 and prints 1975 (the volume covers 1969-1976).,confirmed
+range-inverted,frus1969-76v27,d25,document,frus1969-76v27.xml,14476,min 1973-07-24T10:43:00-05:00 / max 1973-07-24T10:35:00-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1969-76v31,d23,document,frus1969-76v31.xml,17849,"when=""1971-03-04T23:25:00+00:00""","March 4, 1973, 2325Z",The date is encoded 1971 and prints 1973 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve10,d46,document,frus1969-76ve10.xml,37076,"when=""1973-08-10""","August 10, 1971",The date is encoded 1973 and prints 1971 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve10,d47,document,frus1969-76ve10.xml,37523,"when=""1973-08-11""","August 11, 1971",The date is encoded 1973 and prints 1971 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve10,d107,document,frus1969-76ve10.xml,45146,"when=""1973-08-19T10:15:00-04:00""","August 19, 1971, 10:15 a.m.",The date is encoded 1973 and prints 1971 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve10,d168,document,frus1969-76ve10.xml,52256,"when=""1972-02-27T21:34:00+00:00""","February 27, 1969, 2134Z",The date is encoded 1972 and prints 1969 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve11p2,d243,document,frus1969-76ve11p2.xml,50981,"when=""1973-08-25""","August 25, 1976",The date is encoded 1973 and prints 1976 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve12,d142,document,frus1969-76ve12.xml,42977,"when=""1976-12-06T12:00:00+00:00""","December 6, 1975, 1200Z",The date is encoded 1976 and prints 1975 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1969-76ve14p1,d62,document,frus1969-76ve14p1.xml,21595,"when=""1973-03-28T21:23:00+00:00""","March 28, 1974, 2123Z",The date is encoded 1973 and prints 1974 (the volume covers 1969-1976).,confirmed
+year-contradicts-text,frus1977-80v20,d254,document,frus1977-80v20.xml,57669,"when=""1979-03-08T11:00:00-05:00""","March 8, 1978, 11 a.m.",The date is encoded 1979 and prints 1978 (the volume covers 1977-1980).,confirmed
+range-inverted,frus1977-80v24,ch3,chapter,frus1977-80v24.xml,32686,min 1980-11-21T00:00:00-05:00 / max 1980-10-03T23:59:59-05:00,,frus:doc-dateTime-min is later than frus:doc-dateTime-max.,confirmed
+year-contradicts-text,frus1981-88v11,appE,document,frus1981-88v11.xml,98868,"when=""1985-10-12""","October 12, 1986",The date is encoded 1985 and prints 1986 (the volume covers 1981-1988).,confirmed
+year-contradicts-text,frus1981-88v11,appF,document,frus1981-88v11.xml,98906,"when=""1985-10-12""","October 12, 1986",The date is encoded 1985 and prints 1986 (the volume covers 1981-1988).,confirmed
+year-contradicts-text,frus1981-88v11,appG,document,frus1981-88v11.xml,98924,"when=""1985-10-12""","October 12, 1986",The date is encoded 1985 and prints 1986 (the volume covers 1981-1988).,confirmed

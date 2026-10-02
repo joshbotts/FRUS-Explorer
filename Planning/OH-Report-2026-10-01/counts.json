@@ -1,0 +1,254 @@
+{
+  "corpusCommit": "550a8c5c5",
+  "crossReferences": {
+    "byCause": {
+      "index-id-never-assigned": 248,
+      "letter-case": 1,
+      "missing-hash": 3,
+      "missing-underscore": 1,
+      "not-a-defect-forward-reference": 8,
+      "page-beyond-volume": 4,
+      "page-number-typo": 14,
+      "target-in-missing-pages": 352,
+      "wrong-volume": 22
+    },
+    "confirmedWithTarget": 26,
+    "defects": 645,
+    "gapDistinctPages": 71,
+    "gapRows": 352,
+    "generatorRows": 652,
+    "independentScanBeyondCSV": 0,
+    "independentScanBeyondCSVNotShipped": 0,
+    "independentScanBeyondCSVSample": [],
+    "independentScanBroken": 652,
+    "indexIdByVolume": {
+      "frus1945-50Intel": 88,
+      "frus1952-54v08": 39,
+      "frus1952-54v09p2": 22,
+      "frus1961-63v10": 99
+    },
+    "indexIdDistinctByVolume": {
+      "frus1945-50Intel": 34,
+      "frus1952-54v08": 23,
+      "frus1952-54v09p2": 7,
+      "frus1961-63v10": 29
+    },
+    "indexIdDistinctTargets": 93,
+    "indexIdRows": 248,
+    "notDefects": 8,
+    "refTargetsScanned": 2714283
+  },
+  "dates": {
+    "byClass": {
+      "range-inverted": {
+        "rows": 20,
+        "volumes": 14
+      },
+      "year-contradicts-file-number": {
+        "rows": 13,
+        "volumes": 12
+      },
+      "year-contradicts-text": {
+        "rows": 172,
+        "volumes": 69
+      }
+    },
+    "documentsRead": 314571,
+    "invertedDivisions": 19,
+    "invertedDocuments": 1,
+    "yearContradictsTextInFrus1891": 48,
+    "yearContradictsTextTopVolumes": [
+      [
+        "frus1891",
+        48
+      ],
+      [
+        "frus1875v02",
+        11
+      ],
+      [
+        "frus1914",
+        10
+      ],
+      [
+        "frus1914-20v01",
+        7
+      ],
+      [
+        "frus1881",
+        5
+      ],
+      [
+        "frus1913",
+        4
+      ]
+    ]
+  },
+  "filesRead": 744,
+  "gap": {
+    "documentsBefore": 946,
+    "documentsInPart1": 899,
+    "errataLine": 113082,
+    "historyChecked": true,
+    "lastDocument": "d899",
+    "lastDocumentLine": 113036,
+    "lastPage": 1660,
+    "lastPageBefore": 1741,
+    "lastPageLine": 113010,
+    "laterCitationLine": 9356,
+    "part2FirstDocument": "d947",
+    "part2FirstDocumentLine": 10612,
+    "part2FirstPage": 1743,
+    "part2FirstPageLine": 10591,
+    "sourceCommit": "d7c15c90c",
+    "tocLinkLine": 13897
+  },
+  "generated": "2026-10-01",
+  "headers": {
+    "appendixTitleRows": 2,
+    "noPublishedChange": 180,
+    "publishedChangeDated": 553,
+    "publishedChangeUndated": 11
+  },
+  "pagination": {
+    "byClass": {
+      "id-disagrees-with-n": {
+        "rows": 1,
+        "volumes": 1
+      },
+      "malformed-id": {
+        "rows": 25,
+        "volumes": 18
+      },
+      "missing-break": {
+        "rows": 8,
+        "volumes": 5
+      },
+      "numbered-as-next-part": {
+        "rows": 2,
+        "volumes": 2
+      },
+      "numbers-out-of-order": {
+        "rows": 2,
+        "volumes": 2
+      },
+      "reversed-pair": {
+        "rows": 20,
+        "volumes": 11
+      },
+      "wrong-facs": {
+        "rows": 14,
+        "volumes": 12
+      },
+      "zero-padded-ids": {
+        "rows": 1,
+        "volumes": 1
+      }
+    },
+    "filesRead": 552,
+    "missingPages": 13,
+    "reversedPairsBothEditorialNotes": 18,
+    "reversedPairsSecondIsEditorialNote": 20,
+    "rows": 73,
+    "volumes": 51
+  },
+  "paginationDetail": {
+    "zeroPaddedIds": 99
+  },
+  "parts": {
+    "continuousPairs": 22,
+    "gaps": [
+      {
+        "lastPage": 1660,
+        "nextPartFirstPage": 1743,
+        "volume": "frus1952-54v09p1"
+      }
+    ],
+    "overlaps": [
+      "frus1952-54v02p1",
+      "frus1952-54v05p1"
+    ]
+  },
+  "sourcesLists": {
+    "divisionsRead": 262,
+    "rows": 32,
+    "volumes": 21
+  },
+  "structure": {
+    "confirmed": 17,
+    "confirmedVolumes": 13,
+    "edits": 19,
+    "questionVolumes": 2,
+    "questions": 2,
+    "sweepRowsWithdrawn": 3,
+    "volumes": 15,
+    "withdrawn": [
+      {
+        "element": "ch17",
+        "reason": "The editors' own comment at lines 47404-47406 says the nesting is deliberate: \"tagged as a chapter, but is technically a subchapter of the Chili chapter. It is nested correctly here, but we've not changed the type or xml:id to prevent the URL from changing.\"",
+        "volume": "frus1866p2"
+      },
+      {
+        "element": "ch33",
+        "reason": "All 8 legations of this volume are nested inside their countries; ch33 \"Peruvian legation.\" differs only in being typed chapter, the case the frus1866p2 comment says is left alone to keep the URL.",
+        "volume": "frus1868p2"
+      },
+      {
+        "element": "persons",
+        "reason": "The nesting matches the book: the contents list gives the Introductory Note pp. 1-9 and Chapter I from p. 10, and the list of persons begins on p. 5, inside the note.",
+        "volume": "frus1945v01"
+      }
+    ]
+  },
+  "transcription": {
+    "byClass": {
+      "central-files-label": {
+        "rows": 2,
+        "volumes": 2
+      },
+      "department-of-state-misspelt": {
+        "rows": 34,
+        "volumes": 23
+      },
+      "doubled-full-stop": {
+        "rows": 8,
+        "volumes": 6
+      },
+      "heading-misprint": {
+        "rows": 1,
+        "volumes": 1
+      },
+      "no-space-before-classification": {
+        "rows": 6,
+        "volumes": 5
+      },
+      "no-stop-before-classification": {
+        "rows": 85,
+        "volumes": 4
+      },
+      "unbalanced-parenthesis": {
+        "rows": 22,
+        "volumes": 17
+      },
+      "viei-for-viet": {
+        "rows": 13,
+        "volumes": 2
+      }
+    },
+    "filesRead": 744,
+    "gluedCommaGloss": {
+      "files": 40,
+      "sites": 1213
+    },
+    "gluedCommaPersName": {
+      "files": 2,
+      "sites": 265
+    },
+    "gluedFiles": 77,
+    "gluedSemicolonGloss": {
+      "files": 57,
+      "sites": 327
+    }
+  },
+  "wellFormedFiles": 744
+}
