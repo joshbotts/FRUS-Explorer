@@ -264,13 +264,13 @@ that fails keeps the last figures beside that row. A measured library that reall
 “downloaded” nor “not yet indexed” but in their own clause, after the index clause and before the
 attention clause: “29 of 553 downloaded · all indexed · 1 being removed · nothing needs attention”.*
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | LibraryStatusSummary.text | lines: 139–140 | key: settings.hub.summary.removing.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | LibraryStatusSummary.text | lines: 143–144 | key: settings.hub.summary.removing.one | shared: iOS+macOS (single edit point) -->
 
 1 being removed
 
 <!-- END SOURCE: settings.hub.summary.removing.one -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | LibraryStatusSummary.text | lines: 142–143 | key: settings.hub.summary.removing %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsComponents.swift | LibraryStatusSummary.text | lines: 146–147 | key: settings.hub.summary.removing %lld | shared: iOS+macOS (single edit point) -->
 
 %lld being removed
 
@@ -282,13 +282,13 @@ Measuring…
 
 <!-- END SOURCE: settings.hub.loading -->
 
-<!-- SOURCE: FRUSExplorer/Settings/StorageHubModel.swift | StorageHeroContent.unmeasuredValue | lines: 199–199 | key: settings.hub.hero.unmeasured | shared: iOS+macOS (single edit point) — the hero's size before a measurement, or after one fails with no earlier one -->
+<!-- SOURCE: FRUSExplorer/Settings/StorageHubModel.swift | StorageHeroContent.unmeasuredValue | lines: 202–202 | key: settings.hub.hero.unmeasured | shared: iOS+macOS (single edit point) — the hero's size before a measurement, or after one fails with no earlier one -->
 
 —
 
 <!-- END SOURCE: settings.hub.hero.unmeasured -->
 
-<!-- SOURCE: FRUSExplorer/Settings/StorageHubModel.swift | DownloadedVolumesListModel.heroContent | lines: 404–405 | key: settings.hub.measureFailed | the hero's sentence after a measurement fails with no earlier one, and what VoiceOver reads for its dash then | same text also in: FRUSExplorer/Settings/VolumesStorageHubView.swift, FRUSExplorer/Settings/MacVolumesStorageHub.swift (the failure row's label) -->
+<!-- SOURCE: FRUSExplorer/Settings/StorageHubModel.swift | DownloadedVolumesListModel.heroContent | lines: 407–408 | key: settings.hub.measureFailed | the hero's sentence after a measurement fails with no earlier one, and what VoiceOver reads for its dash then | same text also in: FRUSExplorer/Settings/VolumesStorageHubView.swift, FRUSExplorer/Settings/MacVolumesStorageHub.swift (the failure row's label) -->
 
 Could not measure storage
 
@@ -1664,13 +1664,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4256–4256 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4256 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4296–4296 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3759–3759 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3759 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3799–3799 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
 
 Search…
 

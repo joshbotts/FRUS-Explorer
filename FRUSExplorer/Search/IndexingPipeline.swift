@@ -12474,7 +12474,7 @@ extension FRUSASTNode {
              .editorialNote, .titlePage, .figure, .attachment:
             return true
         case .document, .date, .persName, .gloss, .crossReference, .emphasis, .term, .text,
-             .pageBreak, .supplied, .sic, .corr, .formula, .lineBreak, .unknown:
+             .pageBreak, .supplied, .sic, .corr, .formula, .lineBreak, .elementSpace, .unknown:
             return false
         }
     }
@@ -12482,7 +12482,7 @@ extension FRUSASTNode {
     /// Direct and indirect child nodes (used for recursive cross-reference and page-range extraction).
     var children: [FRUSASTNode] {
         switch self {
-        case .text, .formula, .lineBreak, .pageBreak: return []
+        case .text, .formula, .lineBreak, .pageBreak, .elementSpace: return []
         case .document(_, _, let c): return c
         case .head(let c), .dateline(let c), .paragraph(let c),
              .opener(let c), .closer(let c), .salute(let c),
@@ -12564,7 +12564,10 @@ struct PrintedText {
             append(s)
         case .lineBreak:
             append(" ")
-        case .pageBreak, .document:
+        case .pageBreak, .document, .elementSpace:
+            // `.elementSpace` (#1516 fold-in) is no text: the seam it marks was always spaced by
+            // the printed rule below, and appending a space for it would add one after an opening
+            // bracket or before a stop, where the rule leaves none — moving stored text.
             return
         case .footnote where excludingFootnotes:
             return

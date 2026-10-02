@@ -18,6 +18,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — S-2a: initial implementation
+///   1.1 — #1516: a Figures segment, the volumes' figure images, beside the XML
 struct StorageUsageBreakdown: Equatable, Sendable {
 
     /// One labelled slice of the bar.
@@ -47,22 +48,25 @@ struct StorageUsageBreakdown: Equatable, Sendable {
     /// replaced by an empty state rather than rendered as an empty track.
     var isEmpty: Bool { totalBytes <= 0 }
 
-    /// Builds the breakdown from the three figures `StorageReport` measures.
+    /// Builds the breakdown from the figures `StorageReport` measures.
     ///
     /// - Parameters:
     ///   - volumeBytes: Downloaded volume XML.
     ///   - indexBytes: The FTS5 search index.
     ///   - summaryBytes: Stored AI summaries.
+    ///   - vectorBytes: Semantic-vector files.
+    ///   - figureBytes: The volumes' figure images (#1516), drawn after the XML they belong to.
     /// - Returns: The breakdown, with zero-byte segments omitted and shares summing to 1 (or all
     ///   zero when nothing is stored).
     static func make(volumeBytes: Int, indexBytes: Int, summaryBytes: Int,
-                     vectorBytes: Int = 0) -> StorageUsageBreakdown {
+                     vectorBytes: Int = 0, figureBytes: Int = 0) -> StorageUsageBreakdown {
         // The vectors segment exists only since the walk stopped double-counting
         // (#926 item 2): #925 deliberately declined to add it while the index figure
         // silently contained the same bytes, because a segment then would have drawn
         // the same storage twice. Count once, draw once.
         let raw: [(id: String, label: String, bytes: Int)] = [
             ("xml", String(localized: "settings.storage.segment.xml", defaultValue: "XML"), max(0, volumeBytes)),
+            ("figures", String(localized: "settings.storage.segment.figures", defaultValue: "Figures"), max(0, figureBytes)),
             ("index", String(localized: "settings.storage.segment.index", defaultValue: "Index"), max(0, indexBytes)),
             ("summaries", String(localized: "settings.storage.segment.summaries", defaultValue: "Summaries"), max(0, summaryBytes)),
             ("vectors", String(localized: "settings.storage.segment.vectors", defaultValue: "Vectors"), max(0, vectorBytes)),
@@ -187,6 +191,7 @@ struct SettingsUsageBar: View {
     private func color(for id: String) -> Color {
         switch id {
         case "xml":       return .accentColor
+        case "figures":   return .orange
         case "index":     return .teal
         case "summaries": return .purple
         default:          return .secondary

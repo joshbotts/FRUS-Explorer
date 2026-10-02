@@ -156,13 +156,16 @@ struct FRUSOffsetEngineTests {
     func figureBlock() async throws {
         let m = model(body: [
             .paragraph([.plainText("Before figure.")]),
-            .figureBlock(altText: "Map of South-East Asia"),
+            .figureBlock(FigureBlock(image: FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162"),
+                                     head: [.plainText("Map of South-East Asia")],
+                                     captions: [[.plainText("Scale 1:1,000,000")]])),
             .paragraph([.plainText("After figure.")])
         ])
         let swift = buildFlatText(from: m)
         let js    = try await jsFlatText(for: m)
-        // Figure alt text must NOT appear in flat text
-        #expect(!swift.contains("Map"))
+        // A figure's head, placeholder and caption must NOT appear in flat text
+        #expect(!swift.contains("Map") && !swift.contains("Scale") && !swift.contains("Figure"))
+        #expect(swift == "Before figure.After figure.")
         #expect(swift == js)
     }
 
@@ -330,7 +333,7 @@ struct FRUSOffsetEngineTests {
                     .footnoteMarker(id: nil, type: .footnote, sequentialNumber: 1, displayLabel: "1"), // invisible
                     .plainText("here.")
                 ]),
-                .figureBlock(altText: "Invisible figure")   // invisible
+                .figureBlock(FigureBlock(head: [.plainText("Invisible figure")]))   // invisible
             ],
             footnotes: [footnoteBody]                        // invisible
         )
@@ -994,15 +997,24 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
     /// ``selectionPayload(timeout:after:)``. Nothing else in the harness reads it.
     let coordinator: _FRUSWebViewCoordinator
 
-    /// Builds an 800×600 web view on the production configuration, delegating to `self`.
-    override init() {
+    /// Builds an 800×600 web view on the production configuration, delegating to `self`, whose
+    /// scheme handler serves no figure image and fetches none: an empty store of its own, never
+    /// the app's (#1516), so no test reaches the device's figures or the network through it.
+    override convenience init() {
+        self.init(figureImages: FigureImageStore())
+    }
+
+    /// Builds the web view with a scheme handler that serves figure images from `figureImages`.
+    init(figureImages: FigureImageStore) {
         // A coordinator with no callbacks set satisfies the messageHandler requirement; a test
         // that wants the selection payload sets `onSelectionChanged` through
         // `selectionPayload(timeout:after:)`.
         let stubCoordinator = _FRUSWebViewCoordinator()
         coordinator = stubCoordinator
+        let handler = FRUSURLSchemeHandler()
+        handler.figureImages = figureImages
         let config = WKWebViewConfiguration.frusExplorerConfiguration(
-            schemeHandler:  FRUSURLSchemeHandler(),
+            schemeHandler:  handler,
             messageHandler: stubCoordinator
         )
         // Give the web view a concrete frame so WebKit allocates a proper
@@ -1821,5 +1833,410 @@ struct TextNodeEndSelectionTests {
         let selection = try #require(payload, "the selection bridge posted nothing")
         #expect(!selection.hasOffsets,
                 "a footnote endpoint must stay unmapped: start \(selection.start), end \(selection.end)")
+    }
+}
+
+// MARK: - FigureReaderTests (#1516)
+
+/// The reader's own page, in a real web view, drawing figures: the image through the scheme
+/// handler, the placeholder for an image that is not on the device, and the parts of the page —
+/// a figure's text, the space between two inline elements — that are drawn outside the flat text.
+///
+/// Every test loads `HTMLTemplate.build`, the page the reader loads, into the production web-view
+/// configuration with a scheme handler whose figure store is the test's own folder. Nothing here
+/// reads the device's figures or reaches the network. The suite runs on any iOS destination.
+@Suite("The reader draws a figure's image from the device, and its text outside the flat text (#1516)")
+@MainActor
+struct FigureReaderTests {
+
+    /// What the page drew for one figure.
+    private struct DrawnFigure: Decodable {
+        /// The `<img>`'s `src`, or `nil` when the figure has no image element.
+        let src: String?
+        /// The image's decoded width in pixels: 0 until, or unless, it loads.
+        let naturalWidth: Int
+        /// Whether the image element is displayed.
+        let imageShown: Bool
+        /// Whether the placeholder is displayed.
+        let placeholderShown: Bool
+        /// The figure's visible text.
+        let text: String
+    }
+
+    private static let figuresScript = """
+    JSON.stringify(Array.from(document.querySelectorAll('.frus-figure')).map(f => {
+      const i = f.querySelector('img.figure-image');
+      const m = f.querySelector('.figure-missing');
+      return {
+        src: i ? i.getAttribute('src') : null,
+        naturalWidth: i ? i.naturalWidth : 0,
+        imageShown: !!i && getComputedStyle(i).display !== 'none',
+        placeholderShown: !!m && getComputedStyle(m).display !== 'none',
+        text: f.innerText
+      };
+    }))
+    """
+
+    /// What the page drew for each figure, in document order.
+    private func figures(_ harness: OffsetEngineTestHarness) async throws -> [DrawnFigure] {
+        let raw = try #require(try await harness.evaluateString(Self.figuresScript), "the page returned nothing")
+        return try JSONDecoder().decode([DrawnFigure].self, from: Data(raw.utf8))
+    }
+
+    /// d587 converted in its volume. That the reader's own load converts a document in its
+    /// volume is ``theReadersLoadNamesImagesByItsVolume()``'s to show; this is the fixture.
+    private func d587() async throws -> FRUSDocumentRenderModel {
+        try await ListShapeFixtures.renderModel(
+            FigureFixtures.d587, converter: ASTToRenderNodeConverter(volumeId: "frus1946v01"))
+    }
+
+    /// The reader shows an image only because `DocumentViewModel.load` tells the converter its
+    /// document's volume: without it every figure is named with no volume, the page gets no
+    /// `<img>` for it, and "[Figure]" prints for every image in every document. Driven through
+    /// the real load, since a test that builds its own converter cannot see that line.
+    @Test("The reader's own load names each figure's image by the document's volume, and the page draws it")
+    func theReadersLoadNamesImagesByItsVolume() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            #expect(library.store(try FigureTestImages.png(width: 120, height: 80),
+                                  volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let viewModel = DocumentViewModel(
+                entry: DocumentBrowserEntry(documentId: "d587", volumeId: "frus1946v01", header: ""),
+                volumeEntry: nil, parser: FRUSDocumentParser())
+            await viewModel.load(volumeURL: library.volumesDirectory.appendingPathComponent("frus1946v01.xml"))
+            let model = try #require(viewModel.renderModel, "d587 did not load: \(String(describing: viewModel.loadError))")
+            #expect(model.figureImages == [
+                FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162"),
+                FigureImageName(volumeId: "frus1946v01", graphic: "figure_1163"),
+                FigureImageName(volumeId: "frus1946v01", graphic: "figure_1166"),
+            ])
+
+            let harness = OffsetEngineTestHarness(figureImages: FigureImageStore(library: library))
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+            let first = try #require(try await figures(harness).first, "the page drew no figure")
+            #expect(first.src == "frusexplorer://figure/frus1946v01/figure_1162.png")
+            #expect(first.naturalWidth == 120 && first.imageShown && !first.placeholderShown, "\(first)")
+        }
+    }
+
+    /// Where the page is scrolled to, and where a footnote's entry sits in the window.
+    private struct FootnotePlace: Decodable {
+        let scrollY: Double
+        let top: Double
+        let bottom: Double
+        let windowHeight: Double
+        /// Whether the whole entry is inside the window.
+        var inView: Bool { top >= 0 && bottom <= windowHeight }
+    }
+
+    private func footnotePlace(_ harness: OffsetEngineTestHarness, id: String) async throws -> FootnotePlace {
+        let raw = try #require(try await harness.evaluateString("""
+            (() => {
+              const r = document.getElementById("\(id)").getBoundingClientRect();
+              return JSON.stringify({ scrollY: window.scrollY, top: r.top, bottom: r.bottom, windowHeight: window.innerHeight });
+            })()
+            """), "the page has no element \(id)")
+        return try JSONDecoder().decode(FootnotePlace.self, from: Data(raw.utf8))
+    }
+
+    /// #988 brings the reader to a footnote when the page has loaded. An image that is not on the
+    /// device is fetched after that and laid out when it lands, which pushes everything under it —
+    /// the footnotes among it — down by its height. The reader must still be at the footnote.
+    @Test("An image fetched after the reader was brought to a footnote leaves that footnote in view")
+    func aLateImageKeepsARevealedFootnoteInView() async throws {
+        try await FigureTestImages.withLibrary { library in
+            // Three windows tall: nothing a scroll margin could absorb.
+            let png = try FigureTestImages.png(width: 400, height: 1_800)
+            let gate = FigureTestImages.Gate()
+            let store = FigureImageStore(library: library) { volumeId, fileName in
+                await gate.wait()
+                return library.store(png, volumeId: volumeId, fileName: fileName)
+            }
+            let paragraphs = (1...60).map { "<p>Paragraph \($0) of a document long enough to scroll.</p>" }.joined()
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>A map:</p><figure><graphic url="map"/></figure>
+                  <p>A sentence with a note.<note n="1" xml:id="d1fn1">The note the reader is brought to.</note></p>
+                  \(paragraphs)
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let harness = OffsetEngineTestHarness(figureImages: store)
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+
+            // The reader arrives at the note while the map is still its placeholder.
+            harness.coordinator.pendingFootnoteAnchor = "d1fn1"
+            #expect(await harness.coordinator.revealFootnote(on: harness.webView), "the note is not on the page")
+            let before = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            #expect(before.inView && before.scrollY > 0, "the reveal did not bring the note into view: \(before)")
+
+            // The map lands, and is drawn.
+            await gate.open()
+            var drawn = try await figures(harness).first
+            for _ in 0..<400 where drawn?.naturalWidth != 400 {
+                try await Task.sleep(for: .milliseconds(50))
+                drawn = try await figures(harness).first
+            }
+            #expect(drawn?.naturalWidth == 400, "the fetched image was never drawn: \(String(describing: drawn))")
+            var after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            for _ in 0..<40 where !after.inView {
+                try await Task.sleep(for: .milliseconds(50))
+                after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            }
+            #expect(after.inView, "the map pushed the note out of view: it is \(after.top) pt down a \(after.windowHeight) pt window")
+            #expect(after.scrollY > before.scrollY + 1_000, "the page did not follow the note down past the map: \(before) then \(after)")
+        }
+    }
+
+    @Test("A late image does not bring the reader back to a footnote they have since scrolled away from")
+    func aLateImageLeavesAReaderWhoMovedOn() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 400, height: 1_800)
+            let gate = FigureTestImages.Gate()
+            let store = FigureImageStore(library: library) { volumeId, fileName in
+                await gate.wait()
+                return library.store(png, volumeId: volumeId, fileName: fileName)
+            }
+            let paragraphs = (1...60).map { "<p>Paragraph \($0) of a document long enough to scroll.</p>" }.joined()
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>A map:</p><figure><graphic url="map"/></figure>
+                  <p>A sentence with a note.<note n="1" xml:id="d1fn1">The note the reader is brought to.</note></p>
+                  \(paragraphs)
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let harness = OffsetEngineTestHarness(figureImages: store)
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+            harness.coordinator.pendingFootnoteAnchor = "d1fn1"
+            #expect(await harness.coordinator.revealFootnote(on: harness.webView))
+            // The reader turns the wheel and goes back to the top of the document.
+            _ = try await harness.evaluateString("""
+                (() => { window.dispatchEvent(new WheelEvent("wheel", { deltaY: -400 })); window.scrollTo(0, 0); return "ok"; })()
+                """)
+            await gate.open()
+            var drawn = try await figures(harness).first
+            for _ in 0..<400 where drawn?.naturalWidth != 400 {
+                try await Task.sleep(for: .milliseconds(50))
+                drawn = try await figures(harness).first
+            }
+            #expect(drawn?.naturalWidth == 400, "the fetched image was never drawn")
+            try await Task.sleep(for: .milliseconds(300))
+            let after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            #expect(after.scrollY == 0, "the page was scrolled back to a note the reader had left: \(after)")
+        }
+    }
+
+    @Test("An image on the device is drawn through the scheme handler; one that is not shows the placeholder in its place")
+    func imageOnTheDeviceIsDrawn() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 120, height: 80)
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let harness = OffsetEngineTestHarness(figureImages: FigureImageStore(library: library))
+            try await harness.load(HTMLTemplate.build(model: try await d587(), colorScheme: .light))
+
+            let drawn = try await figures(harness)
+            #expect(drawn.count == 3, "d587 has three figures: \(drawn)")
+            let first = try #require(drawn.first)
+            #expect(first.src == "frusexplorer://figure/frus1946v01/figure_1162.png")
+            #expect(first.naturalWidth == 120, "the image did not load: \(first)")
+            #expect(first.imageShown && !first.placeholderShown, "\(first)")
+            #expect(!first.text.contains("[Figure]"), "the placeholder shows beside a loaded image: \(first.text)")
+            #expect(first.text.localizedCaseInsensitiveContains("Locations at Which Military Air Transit Rights Are Desired"))
+
+            // figure_1163 is one of the 13 names history.state.gov does not serve.
+            let second = drawn[1]
+            #expect(second.src == "frusexplorer://figure/frus1946v01/figure_1163.png")
+            #expect(second.naturalWidth == 0)
+            #expect(!second.imageShown && second.placeholderShown, "\(second)")
+            #expect(second.text.contains("[Figure]"), "\(second.text)")
+            #expect(second.text.contains("Military Air Transit Requirements (Eastern Hemisphere)"))
+        }
+    }
+
+    @Test("An image fetched after the page asked for it replaces its placeholder without a reload, asked for once")
+    func imageFetchedLaterIsDrawn() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 64, height: 48)
+            let asked = FigureTestImages.Counter()
+            let store = FigureImageStore(library: library) { volumeId, fileName in
+                await asked.add("\(volumeId)/\(fileName)")
+                switch fileName {
+                // As history.state.gov answers: this volume's first map, and not its third.
+                case "figure_1162.png": return library.store(png, volumeId: volumeId, fileName: fileName)
+                // An image reported fetched that is then not there (removed with its volume, say):
+                // the page asks once more, and that request must not start a fetch of its own.
+                case "figure_1163.png": return true
+                default: return false
+                }
+            }
+            let harness = OffsetEngineTestHarness(figureImages: store)
+            try await harness.load(HTMLTemplate.build(model: try await d587(), colorScheme: .light))
+
+            // Up to twenty seconds, here and below (#1516 review, round 1): a five-second wait
+            // of this shape timed out once in the first run of a newly built test host.
+            var first: DrawnFigure?
+            for _ in 0..<400 {
+                first = try await figures(harness).first
+                if first?.naturalWidth == 64 { break }
+                try await Task.sleep(for: .milliseconds(50))
+            }
+            let drawn = try #require(first)
+            #expect(drawn.naturalWidth == 64, "the fetched image was never drawn: \(drawn)")
+            #expect(drawn.imageShown && !drawn.placeholderShown, "\(drawn)")
+            // The second was asked for again by the page, found absent, and is back to its placeholder.
+            var all = try await figures(harness)
+            for _ in 0..<400 where !(all[1].src?.hasSuffix("?retry=1") == true && all[1].placeholderShown) {
+                try await Task.sleep(for: .milliseconds(50))
+                all = try await figures(harness)
+            }
+            #expect(all[1].src == "frusexplorer://figure/frus1946v01/figure_1163.png?retry=1", "\(all[1])")
+            // The third was refused and never asked for again. Both keep their placeholders.
+            #expect(all[2].src == "frusexplorer://figure/frus1946v01/figure_1166.png", "\(all[2])")
+            #expect(all.dropFirst().allSatisfy { !$0.imageShown && $0.placeholderShown }, "\(all)")
+            // Each image asked for once: the retry's own request starts no second fetch.
+            #expect(await asked.values.sorted() == [
+                "frus1946v01/figure_1162.png", "frus1946v01/figure_1163.png", "frus1946v01/figure_1166.png",
+            ])
+        }
+    }
+
+    /// `renderingVersion` hashes only the converter's flat text, so it cannot see a caption, a
+    /// placeholder or a drawn space that reaches the DOM outside a `data-skip` element: the hash
+    /// would stay put while the offset engine counted the text, and every highlight after it would
+    /// be misplaced. Only this parity catches that.
+    @Test("Swift and JS agree on the flat text of real figures and of the drawn spaces, which are drawn under data-skip")
+    func flatTextParity() async throws {
+        let cases: [(fixture: String, volume: String, drawn: [String], flat: String)] = [
+            (FigureFixtures.d587, "frus1946v01", ["Locations at Which Military Air Transit", "[Figure]"], "Azores"),
+            (FigureFixtures.d289, "frus1951v03p1", ["W. Averell Harriman", "[Figure]"], "General Marshall"),
+            (FigureFixtures.d77, "frus1969-76ve16", ["CHILE: Cost of Living Indexes", "Figure 2"], "A strict price freeze"),
+            (FigureFixtures.d278, "frus1943CairoTehran", ["Notes by Hopkins"], "Generalissimo"),
+            (FigureFixtures.d178, "frus1897", ["[Figure]"], "Case  17"),
+            (FigureFixtures.appendix1, "frus1917-72PubDipv06", ["Reel 1", "Watch on history.state.gov"], "[MUSIC PLAYING]"),
+            (FigureFixtures.d2, "frus1861", [], "Washington,February 28, 1861."),
+        ]
+        for (fixture, volume, drawn, flatNeedle) in cases {
+            let model = try await ListShapeFixtures.renderModel(
+                fixture, converter: ASTToRenderNodeConverter(volumeId: volume))
+            let harness = OffsetEngineTestHarness()
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+            let swift = buildFlatText(from: model)
+            let js = try await harness.evalFlatText()
+            #expect(swift == js, "Swift/JS flat text diverged on \(model.documentId) of \(volume)")
+            #expect(swift.contains(flatNeedle), "\(flatNeedle) must be flat text in \(model.documentId): \(swift)")
+            let skipped = try #require(try await harness.evaluateString("""
+                Array.from(document.querySelectorAll('.frus-document [data-skip="1"]')).map(e => e.textContent).join('\\u0001')
+                """))
+            for text in drawn {
+                #expect(skipped.contains(text), "\(text) is not drawn under data-skip in \(model.documentId)")
+                #expect(!swift.contains(text), "\(text) entered the Swift flat text of \(model.documentId)")
+            }
+        }
+        // d2's three drawn spaces — after a place name, a term and a footnote's marker.
+        let d2 = try await ListShapeFixtures.renderModel(FigureFixtures.d2)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: d2, colorScheme: .light))
+        let spaces = try await harness.evaluateString(
+            "String(document.querySelectorAll('.frus-document span.element-space[data-skip]').length)")
+        #expect(spaces == "3", "d2 draws a space after Washington, after SecState and after its footnote's marker")
+        let line = try await harness.evaluateString("document.querySelector('p.dateline').innerText")
+        #expect(line?.contains("Washington, February 28, 1861.") == true, "\(line ?? "")")
+    }
+
+    @Test("A figure inside a sentence leaves its paragraph whole when the page is parsed")
+    func figureInsideAParagraphDoesNotSplitIt() async throws {
+        let model = try await ListShapeFixtures.renderModel(
+            FigureFixtures.d77, converter: ASTToRenderNodeConverter(volumeId: "frus1969-76ve16"))
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        // Parsed, not serialized: a <figure> start tag inside the <p> would have closed it, leaving
+        // "A strict price freeze" outside every paragraph.
+        let report = try await harness.evaluateString("""
+            JSON.stringify(Array.from(document.querySelectorAll('.frus-document > p.body')).map(p => p.textContent))
+            """)
+        let paragraphs = try JSONDecoder().decode([String].self, from: Data((report ?? "[]").utf8))
+        #expect(paragraphs.count == 2, "d77 has two paragraphs: \(paragraphs)")
+        let first = try #require(paragraphs.first)
+        #expect(first.contains("popular support.") && first.contains("A strict price freeze"),
+                "the sentence was split around its figure: \(paragraphs)")
+        let loose = try await harness.evaluateString("""
+            Array.from(document.querySelector('.frus-document').childNodes)
+              .filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.nodeValue).join('|')
+            """)
+        #expect(loose == "", "text fell out of its paragraph: \(loose ?? "")")
+    }
+
+    /// The UTF-16 offset of `needle` in `flat`.
+    private func offset(of needle: String, in flat: String) throws -> Int {
+        let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+        return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+    }
+
+    /// Sets the page's selection between two JS-expressed boundary points and returns the payload
+    /// the production bridge posts.
+    ///
+    /// The wait is 20 seconds, not the harness's 5: it starts before the script runs, and in the
+    /// first run of a newly built test host, with twelve suites running, 5 was not enough once
+    /// (iPhone 17, iOS 26.4: "the selection bridge posted nothing"; the next three runs passed).
+    private func select(_ harness: OffsetEngineTestHarness, from start: String, _ startOffset: String,
+                        to end: String, _ endOffset: String) async throws -> SelectionPayload? {
+        try await harness.selectionPayload(timeout: .seconds(20)) {
+            let result = try await harness.evaluateString("""
+                (() => {
+                  const a = \(start);
+                  const b = \(end);
+                  if (!a || !b) return 'an endpoint node is not on the page';
+                  getSelection().removeAllRanges();
+                  getSelection().setBaseAndExtent(a, \(startOffset), b, \(endOffset));
+                  return 'ok';
+                })()
+                """)
+            #expect(result == "ok", "\(result ?? "the script returned nothing")")
+        }
+    }
+
+    /// A JS expression: the first text node holding `needle` anywhere in the document's body.
+    private func textNode(_ needle: String) -> String {
+        """
+        (() => {
+          const walker = document.createTreeWalker(document.querySelector('.frus-document'), NodeFilter.SHOW_TEXT);
+          let t = walker.nextNode();
+          while (t && !t.nodeValue.includes('\(needle)')) t = walker.nextNode();
+          return t;
+        })()
+        """
+    }
+
+    @Test("A selection that starts on a figure's caption starts at the first letter after the figure, highlightably")
+    func selectionStartingOnACaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d289)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let flat = buildFlatText(from: model)
+        let payload = try await select(harness, from: textNode("W. Averell Harriman"), "3",
+                                       to: textNode("I have discussed"), "16")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        let after = try offset(of: "I have discussed the matter", in: flat)
+        #expect(selection.start == after, "a start on a caption must move to the first letter after its figure")
+        #expect(selection.end == after + 16)
+    }
+
+    @Test("A selection that ends on the space drawn between two inline elements ends before the next word")
+    func selectionEndingOnADrawnSpace() async throws {
+        let model = try await ListShapeFixtures.renderModel(FigureFixtures.d2)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let flat = buildFlatText(from: model)
+        let space = "document.querySelector('p.dateline span.element-space').firstChild"
+        let payload = try await select(harness, from: textNode("Washington"), "0", to: space, "1")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "start \(selection.start), end \(selection.end) for \"\(selection.text)\": took the footnote branch")
+        #expect(selection.start == (try offset(of: "Washington,", in: flat)))
+        #expect(selection.end == (try offset(of: "February 28, 1861", in: flat)),
+                "the drawn space is no flat text: the selection ends at the next word's first letter")
+        // What the reader copies has the space; what a highlight stores is the flat text.
+        #expect(selection.text == "Washington, ")
     }
 }

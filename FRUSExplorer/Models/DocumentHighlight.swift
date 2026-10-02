@@ -20,7 +20,7 @@ import SwiftUI
 /// `[start, end)`) within the **flat text string** produced by a deterministic
 /// depth-first traversal of `FRUSDocumentRenderModel.bodyNodes`. The traversal
 /// concatenates `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes; all
-/// other leaf types (`.pageBreak`, `.footnoteMarker`, `.figureBlock`) contribute
+/// other leaf types (`.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.elementSpace`) contribute
 /// no characters. Container nodes recurse into their children in array order.
 /// Footnote bodies (`FRUSDocumentRenderModel.footnotes`) are excluded from the
 /// body offset space.

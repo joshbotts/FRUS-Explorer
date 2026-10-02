@@ -195,17 +195,43 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("data-page=\"42\""))
     }
 
-    @Test("Figure block emits figure with data-skip=1")
+    @Test("Figure block emits a figure with data-skip=1: its head, the placeholder for its image, its captions")
     func figureBlock() {
-        let out = html([.figureBlock(altText: "Map of the region")])
-        #expect(out.contains("<figure data-skip=\"1\">"))
-        #expect(out.contains("<figcaption>Map of the region</figcaption>"))
+        let out = html([.figureBlock(FigureBlock(
+            image: FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162"),
+            head: [.plainText("Map of the region")],
+            captions: [[.plainText("Scale 1:1,000,000")], [.plainText("Drawn in 1946")]]))])
+        #expect(out.contains(
+            "<figure class=\"frus-figure\" data-skip=\"1\">"
+            + "<div class=\"figure-head\">Map of the region</div>"
+            + "<span class=\"figure-missing\">[Figure]</span>"
+            + "<figcaption><div class=\"figure-caption\">Scale 1:1,000,000</div>"
+            + "<div class=\"figure-caption\">Drawn in 1946</div></figcaption></figure>"), "\(out)")
+        // The default serializer has no image source: it names no URL and embeds no bytes.
+        #expect(!out.contains("<img"), "\(out)")
+        #expect(!out.contains("figure_1162"), "the image's file name is printed: \(out)")
     }
 
-    @Test("Figure block with nil alt text emits empty figure with data-skip=1")
-    func figureBlockNilAlt() {
-        let out = html([.figureBlock(altText: nil)])
-        #expect(out.contains("<figure data-skip=\"1\"></figure>"))
+    @Test("A figure inside a paragraph is a span with data-skip=1, so the paragraph is not split")
+    func figureBlockInsideAParagraph() {
+        let out = html([.paragraph([
+            .plainText("Case "),
+            .figureBlock(FigureBlock(image: FigureImageName(volumeId: "frus1897", graphic: "figure_0222"),
+                                     captions: [[.plainText("A mark")]])),
+            .plainText(" 17"),
+        ])])
+        #expect(out.contains(
+            "<p class=\"body\">Case <span class=\"frus-figure in-line\" data-skip=\"1\">"
+            + "<span class=\"figure-missing\">[Figure]</span>"
+            + "<span class=\"figure-caption\">A mark</span></span> 17</p>"), "\(out)")
+    }
+
+    @Test("A figure with no image prints no placeholder")
+    func figureBlockWithoutAnImage() {
+        let out = html([.figureBlock(FigureBlock(head: [.plainText("Figure 2")]))])
+        #expect(out.contains("<figure class=\"frus-figure\" data-skip=\"1\">"
+                             + "<div class=\"figure-head\">Figure 2</div></figure>"), "\(out)")
+        #expect(!out.contains("figure-missing"), "\(out)")
     }
 
     @Test("Footnote marker emits button.fn-marker with data-skip=1, popovertarget, and aria-label")
@@ -714,8 +740,8 @@ struct FRUSRenderNodeHTMLSerializerTests {
 
     @Test("figureBlock carries data-skip=1")
     func figureBlockHasSkip() {
-        let out = html([.figureBlock(altText: "alt")])
-        #expect(out.contains("data-skip=\"1\""))
+        let out = html([.figureBlock(FigureBlock(head: [.plainText("alt")]))])
+        #expect(out.contains("<figure class=\"frus-figure\" data-skip=\"1\">"))
     }
 
     @Test("footnoteBody aside carries data-skip=1")
@@ -1142,14 +1168,17 @@ struct HighlightInjectionTests {
 
     @Test("A highlight after a figure caption ignores the caption text")
     func highlightAfterFigcaption() {
-        // Flat text = "After text" — the figcaption "Map of X" is offset-invisible.
+        // Flat text = "After text" — the figure's head and caption are offset-invisible.
         let body: [FRUSRenderNode] = [
-            .figureBlock(altText: "Map of X"),
+            .figureBlock(FigureBlock(image: FigureImageName(volumeId: "v", graphic: "figure_1"),
+                                     head: [.plainText("Map of X")],
+                                     captions: [[.plainText("After the war")]])),
             .paragraph([.plainText("After text")])
         ]
         let out = highlighted(body, mark: "After")
-        // The caption text survives verbatim, un-marked …
-        #expect(out.contains("<figcaption>Map of X</figcaption>"))
+        // The head and caption survive verbatim, un-marked …
+        #expect(out.contains("<div class=\"figure-head\">Map of X</div>"))
+        #expect(out.contains("<figcaption><div class=\"figure-caption\">After the war</div></figcaption>"))
         // … and the mark lands on the real word after the figure.
         #expect(out.contains("<mark class=\"hl-yellow\">After</mark> text"))
         #expect(!out.contains("<mark class=\"hl-yellow\">Map"))
