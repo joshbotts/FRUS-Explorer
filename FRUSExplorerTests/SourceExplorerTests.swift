@@ -1137,6 +1137,8 @@ struct VolumeSourcesResolutionTests {
 ///   1.0 — 2026-10-02: #1543
 ///   1.1 — 2026-10-02 (#1543, review round 1): the twin scan reads each view's `load()` for the
 ///          skip and its place, and wants a call of the panel; a lot fixture
+///   1.2 — 2026-10-02 (#1543, landing): the empty Archival Neighbors list — the state both views
+///          ask for, driven, and each view's sentence for each state, scanned
 @Suite("Source Explorer — the Subject-Numeric File (#1543)")
 @MainActor
 struct SubjectNumericExplorerTests {
@@ -1494,5 +1496,203 @@ struct SubjectNumericExplorerTests {
         #expect(!Self.loadSkipsTheKeyedSearch("struct V { }"))
         #expect(Self.body(of: "private func load() async", in: view(load: "let a = { 1 }"))?
             .contains("let a = { 1 }") == true)
+    }
+
+    // MARK: The empty Archival Neighbors list
+
+    private func emptyState(_ note: String) -> SourceExplorerView.RelatedEmptyState {
+        SourceExplorerView.relatedEmptyState(for: SourceNoteParser().parse(note), note: note)
+    }
+
+    /// Under the Subject-Numeric panel an empty list read "This source note doesn’t cite a
+    /// recognized lot file, central file, or presidential library", for every citation whose parse
+    /// has no neighbour key. It has two states of its own now, and which one follows the route
+    /// `IndexingPipeline.relatedDocuments` takes: matched on the class key with nothing found, or
+    /// nothing to match on. One fixture for each way into each state, every note the corpus's own
+    /// (cut after its classification where it runs on).
+    @Test("An empty neighbour list under the Subject-Numeric panel is one of the file's two states")
+    func emptyNeighbourStates() {
+        // Matched on its class key (frus1964-68v14/d93): the one route with no parse-level key.
+        let keyed = "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis."
+        #expect(!SourceNoteParser().parse(keyed).supportsArchivalNeighbors, "the parse has no key; the route reads the class")
+        #expect(emptyState(keyed) == .subjectNumericNoNeighbors)
+
+        // Nothing to match on. The same wording with a designation the class grammar refuses:
+        // no subject number (frus1964-68v12/d34), a number and a commodity (frus1961-63v25/d59),
+        // and the block alone (frus1964-68v29p1/d368).
+        for note in [
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964-66, POL FR-US. Confidential. Drafted by Schaetzel.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
+        ] {
+            #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == nil, "\(note) has a class key")
+            #expect(emptyState(note) == .subjectNumericUnkeyed, "\(note)")
+        }
+        // A parse that kept no series, though the note has a class key (frus1964-68v19/d505, which
+        // prints no comma after the record group): the class route is the series arm's.
+        let noSeries = "Source: National Archives and Records Administration, RG 59 Central Files 1967–69, POL 27–14 ARAB–ISR. Secret; Priority; Nodis."
+        if case .naraCollection(_, let series, _, _) = SourceNoteParser().parse(noSeries) {
+            #expect(series == nil)
+        } else {
+            Issue.record("frus1964-68v19/d505 no longer parses as a collection")
+        }
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: noSeries) == "POL 27-14 ARAB-ISR")
+        #expect(emptyState(noSeries) == .subjectNumericUnkeyed)
+        // A note parsed as the Central Foreign Policy File, though it has a class key
+        // (frus1969-76ve08/d126, whose remark names the "Central Foreign Policy Files").
+        let foreignPolicy = "Source: National Archives, RG 59, Central Files 1970–73, POL 15–1 PAK. Confidential. It was repeated to Kabul, Karachi, Lahore, New Delhi, and Tehran. The Embassy had reported on the ratification process in telegrams 2903, April 10 (Ibid.), 2993, April 12, (Ibid., Central Foreign Policy Files), and 3017, April 13, (Ibid., Central Files 1970–73, POL 15–5 PAK) all from Islamabad."
+        if case .cfpfFile = SourceNoteParser().parse(foreignPolicy) {} else {
+            Issue.record("frus1969-76ve08/d126 no longer parses as the Central Foreign Policy File")
+        }
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: foreignPolicy) == "POL 15-1 PAK")
+        #expect(emptyState(foreignPolicy) == .subjectNumericUnkeyed)
+        // A Department-led note whose designation the parse did not store (frus1961-63v03/d53).
+        let unstored = "Source: Department of State, Central Files, AID (US) S VIET. Confidential. Repeated to CINCPAC."
+        if case .centralFiles(_, let identifier) = SourceNoteParser().parse(unstored) {
+            #expect(identifier == nil)
+        } else {
+            Issue.record("frus1961-63v03/d53 no longer parses as a central-files note")
+        }
+        #expect(emptyState(unstored) == .subjectNumericUnkeyed)
+    }
+
+    /// The states the change must not move. A Subject-Numeric citation with a key keeps the
+    /// sentence every keyed note has: a Department-led designation the parse stored, with a
+    /// subject number (frus1964-68v01/d5) or without one (frus1961-63v15/d177), and a
+    /// National-Archives-led note whose series does not name the central files
+    /// (frus1964-68v34/d1). A note that is no Subject-Numeric citation keeps its own two.
+    @Test("A keyed Subject-Numeric citation, and every other note, keep the state they had")
+    func otherEmptyStatesAreUnmoved() {
+        for note in [
+            "Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy.",
+            "Source: Department of State, Central Files, POL US–USSR. Secret; Priority.",
+            "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, SCI 3 OECD. Limited Official Use; Priority. Passed to the White House.",
+        ] {
+            let parsed = SourceNoteParser().parse(note)
+            #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note), "\(note)")
+            #expect(emptyState(note) == .noNeighbors, "\(note)")
+        }
+        // A decimal number and a lot have a key (frus1961-63v11/d301; a lot of the Conference Files).
+        #expect(emptyState("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.") == .noNeighbors)
+        #expect(SourceExplorerView.relatedEmptyState(
+            for: .lotFile(recordGroup: "RG-59", lotNumber: "63 D 123", fileIdentifier: nil), note: "") == .noNeighbors)
+        // A note with no archival key, and no note at all, are unmatched and not the file's.
+        #expect(emptyState("Source: see footnote 3") == .unmatched)
+        #expect(SourceExplorerView.relatedEmptyState(
+            for: .previouslyPublished(citation: "FRUS 1958-60, vol. X"), note: "") == .unmatched)
+        #expect(SourceExplorerView.relatedEmptyState(for: nil, note: "") == .unmatched)
+    }
+
+    /// Each state with the key of the sentence a view prints for it.
+    private static let emptySentences: [(state: String, key: String)] = [
+        ("noNeighbors", "source.explorer.related.empty.noNeighbors"),
+        ("subjectNumericNoNeighbors", "source.explorer.related.empty.subjectNumeric"),
+        ("subjectNumericUnkeyed", "source.explorer.related.empty.subjectNumeric.unkeyed"),
+        ("unmatched", "source.explorer.related.empty.unmatched"),
+    ]
+
+    /// What is wrong with `code`'s empty-list sentence, or an empty list when nothing is. `code` is
+    /// a view's source without its comment lines. The view must draw `relatedEmptyMessage`; that
+    /// property must switch over ONE call of `SourceExplorerView.relatedEmptyState(`, handed the
+    /// parse and the raw note; and each state's arm — the text from its `case .state:` to the next
+    /// `case .` — must hold that state's key, quoted, and none of the other three.
+    private static func emptySentenceFaults(in code: String) -> [String] {
+        var faults: [String] = []
+        if code.components(separatedBy: "Text(relatedEmptyMessage)").count - 1 != 1 {
+            faults.append("relatedEmptyMessage is not drawn exactly once")
+        }
+        guard let message = body(of: "private var relatedEmptyMessage: String", in: code).map(String.init) else {
+            return faults + ["no relatedEmptyMessage"]
+        }
+        let calls = callSites(of: "SourceExplorerView.relatedEmptyState", in: message)
+        if calls.map(String.init) != ["for: parsed, note: rawSourceNote"] {
+            faults.append("relatedEmptyState( is called with \(calls)")
+        }
+        let arms = message.components(separatedBy: "case .").dropFirst()
+        if arms.count != emptySentences.count { faults.append("\(arms.count) arms") }
+        for (state, key) in emptySentences {
+            guard let arm = arms.first(where: { $0.hasPrefix(state + ":") }) else {
+                faults.append("no arm for .\(state)")
+                continue
+            }
+            if !arm.contains("String(localized: \"\(key)\"") { faults.append(".\(state) does not print \(key)") }
+            for (_, other) in emptySentences where other != key && arm.contains("\"\(other)\"") {
+                faults.append(".\(state) prints \(other)")
+            }
+        }
+        return faults
+    }
+
+    /// Both views print the sentence for the state the shared rule gives, and the two sentences
+    /// for the Subject-Numeric File name it. The rule has its runtime test above; this is a source
+    /// scan of the property each view draws, since neither view's body can be run here. That a
+    /// key's text is the same in both views is `CodingStandardsAuditTests.everyKeyCarriesOneText`.
+    @Test("Both twins print each empty state's own sentence, chosen by the shared rule")
+    func bothTwinsSayWhyTheListIsEmpty() throws {
+        var read = 0
+        for path in Self.twins {
+            let code = try Self.code(path)
+            read += 1
+            #expect(Self.emptySentenceFaults(in: code).isEmpty, "\(path): \(Self.emptySentenceFaults(in: code))")
+            let message = try #require(Self.body(of: "private var relatedEmptyMessage: String", in: code))
+            for arm in message.components(separatedBy: "case .").dropFirst() where arm.hasPrefix("subjectNumeric") {
+                #expect(arm.contains("Subject-Numeric File"), "\(path): \(arm.prefix(40)) does not name the file")
+                #expect(!arm.contains("doesn’t cite a recognized"), "\(path): \(arm.prefix(40)) denies the central file")
+            }
+        }
+        #expect(read == 2)
+    }
+
+    /// The scan against the shapes it must refuse: the sentence chosen by the old test of the
+    /// parse, two states' keys traded, an arm missing, a second note handed to the rule, and a
+    /// property nothing draws.
+    @Test("The empty-sentence scan wants the shared rule's call and each state's own key")
+    func emptySentenceScanReadsEachArm() {
+        func view(message: String, draws: String = "Text(relatedEmptyMessage)") -> String {
+            """
+            struct V {
+                var body: some View { \(draws) }
+                private var relatedEmptyMessage: String {
+            \(message)
+                }
+            }
+            """
+        }
+        func arms(_ pairs: [(String, String)], call: String = "SourceExplorerView.relatedEmptyState(for: parsed, note: rawSourceNote)") -> String {
+            "switch \(call) {\n" + pairs.map { "case .\($0.0):\n    return String(localized: \"\($0.1)\", defaultValue: \"x\")" }
+                .joined(separator: "\n") + "\n}"
+        }
+        let right = Self.emptySentences.map { ($0.state, $0.key) }
+        #expect(Self.emptySentenceFaults(in: view(message: arms(right))).isEmpty)
+        // The property as it was: the parse's own test, and two sentences.
+        let old = """
+            if parsed?.supportsArchivalNeighbors == true {
+                return String(localized: "source.explorer.related.empty.noNeighbors", defaultValue: "x")
+            } else {
+                return String(localized: "source.explorer.related.empty.unmatched", defaultValue: "x")
+            }
+            """
+        #expect(!Self.emptySentenceFaults(in: view(message: old)).isEmpty)
+        // Two states' keys traded: the short key is a prefix of the long one, so the quote counts.
+        var traded = right
+        traded[1].1 = right[2].1
+        traded[2].1 = right[1].1
+        #expect(Self.emptySentenceFaults(in: view(message: arms(traded))) == [
+            ".subjectNumericNoNeighbors does not print source.explorer.related.empty.subjectNumeric",
+            ".subjectNumericNoNeighbors prints source.explorer.related.empty.subjectNumeric.unkeyed",
+            ".subjectNumericUnkeyed does not print source.explorer.related.empty.subjectNumeric.unkeyed",
+            ".subjectNumericUnkeyed prints source.explorer.related.empty.subjectNumeric",
+        ])
+        // An arm missing.
+        #expect(Self.emptySentenceFaults(in: view(message: arms(Array(right.dropLast()))))
+                == ["3 arms", "no arm for .unmatched"])
+        // The rule handed another note.
+        let otherNote = Self.emptySentenceFaults(in: view(message: arms(
+            right, call: "SourceExplorerView.relatedEmptyState(for: parsed, note: documentHeader)")))
+        #expect(otherNote.count == 1)
+        #expect(otherNote.first?.hasPrefix("relatedEmptyState( is called with") == true)
+        // A property nothing draws.
+        #expect(Self.emptySentenceFaults(in: view(message: arms(right), draws: "EmptyView()"))
+                == ["relatedEmptyMessage is not drawn exactly once"])
     }
 }

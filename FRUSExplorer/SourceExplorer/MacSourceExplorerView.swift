@@ -85,6 +85,8 @@ import AppKit
 ///           twin's `SourceExplorerView.subjectNumericCitation(parsed:note:documentDay:)`. No keyed
 ///           catalog search runs for it and no manual search field is offered
 ///           (`CatalogQueryEvidence.offersManualSearch`). Mirrors SourceExplorerView 1.15.
+///           Landing: an empty Archival Neighbors list under those rows says the note cites the
+///           Subject-Numeric File, by the iOS twin's `SourceExplorerView.relatedEmptyState(for:note:)`.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -2575,13 +2577,21 @@ struct MacSourceExplorerView: View {
         }
     }
 
-    /// Explains an empty related-documents result: an unmatched note type vs. a matched key
-    /// with no neighbors in the indexed volumes.
+    /// Explains an empty related-documents result: a matched key with no neighbors in the indexed
+    /// volumes, a Subject-Numeric citation in either of its two states, or an unmatched note type.
+    /// The state is the iOS twin's rule, `SourceExplorerView.relatedEmptyState(for:note:)`.
     private var relatedEmptyMessage: String {
-        if parsed?.supportsArchivalNeighbors == true {
+        switch SourceExplorerView.relatedEmptyState(for: parsed, note: rawSourceNote) {
+        case .noNeighbors:
             return String(localized: "source.explorer.related.empty.noNeighbors",
                           defaultValue: "No other indexed documents cite this archival source. Index more volumes to surface related documents.")
-        } else {
+        case .subjectNumericNoNeighbors:
+            return String(localized: "source.explorer.related.empty.subjectNumeric",
+                          defaultValue: "This source note cites the Subject-Numeric File. No other indexed document was matched to the same file. Index more volumes to surface related documents.")
+        case .subjectNumericUnkeyed:
+            return String(localized: "source.explorer.related.empty.subjectNumeric.unkeyed",
+                          defaultValue: "This source note cites the Subject-Numeric File, but not in a form the app can match on, so documents from the same file can’t be matched.")
+        case .unmatched:
             return String(localized: "source.explorer.related.empty.unmatched",
                           defaultValue: "This source note doesn’t cite a recognized lot file, central file, or presidential library, so related documents can’t be matched.")
         }
