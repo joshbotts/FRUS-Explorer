@@ -520,8 +520,8 @@ public struct FRUSDocumentRenderModel: Sendable {
 public extension FRUSDocumentRenderModel {
 
     /// Every image the document's figures name, in reading order — in the body and in its
-    /// footnotes — each once: what an export fetches before it prints, so a volume downloaded
-    /// before figure images existed exports with them.
+    /// footnotes — each once. A PDF, Word or HTML export fetches the ones not on the device
+    /// before it prints, for its full-body documents only (`CollectionContentResolver`).
     var figureImages: [FigureImageName] {
         var images: [FigureImageName] = []
         var seen = Set<FigureImageName>()

@@ -11,8 +11,8 @@
          The figure images (#1516) are requested without being asked for: after a volume
          downloads, at launch and on reconnect for the volumes already on the device, and for
          one image when a document or a PDF, Word or HTML export needs it before then. Each
-         request names a volume and an image file and carries no identifier of the app's; the
-         session is ephemeral, so no cookie or cache outlives the process.
+         request names a volume and an image file and carries no identifier of the user or the
+         device; the session is ephemeral, so no cookie or cache outlives the process.
          The App Store Connect nutrition label must say the same thing this file says. -->
     <key>NSPrivacyTracking</key>
     <false/>
