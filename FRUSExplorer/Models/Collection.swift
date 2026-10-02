@@ -809,7 +809,7 @@ extension Collection {
     /// six documents under two headings with one prose block was listed as "9 documents" (#1358);
     /// the macOS manager's picker, picker label and Manage Collections rows printed the same
     /// number. The Collections list row, the Add to Collection picker and those three macOS sites
-    /// read this instead (so does the unpresented `GlobalContextView`), and
+    /// read this instead (so did `GlobalContextView`, deleted unpresented by lane HYG), and
     /// `CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses a raw entry count
     /// under `Collections/` and `ProjectContext/`.
     ///
@@ -931,7 +931,7 @@ extension Collection {
 /// Every row that lists a collection by name prints through `listName` (#1464): `CollectionPickerSheet`'s rows, the
 /// Research rail's Collections section, the Collections list, the Mac window's picker label, Project Home's
 /// Collections section and its Manage sheet, the Research sidebar, its list rows and its list title, the document
-/// change review, the word cloud's Collection scope and Compare menus, and the unpresented `GlobalContextView`'s rows.
+/// change review, and the word cloud's Collection scope and Compare menus (`GlobalContextView`'s rows went with the view).
 /// So do the word cloud's collection scope heading (`WordCloudScopeResolver`), the Archives Visit picker's "from the
 /// collection" line, and every export's title (`CollectionExportNaming.title`, #1463). The picker's search matches
 /// through `listNameMatches`, and every list of them that sorts by name sorts by what its rows print —

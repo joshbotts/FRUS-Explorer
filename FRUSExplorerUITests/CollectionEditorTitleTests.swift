@@ -80,6 +80,8 @@ import XCTest
 ///   1.2 — #1359 review, round 2: says which destination guards the push-over (the iPhone's)
 ///   1.3 — #1415 / #1413: edits in Collection settings survive the Collections tab; Section defaults' description,
 ///         subtitle and toggle survive the editor and show in it
+///   1.4 — #1450: `addSectionHeading()` opens the Add menu through `CollectionEditorAddMenu`, which also looks in
+///         the toolbar's ⋯ overflow, where a narrow iPad puts it
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 
@@ -95,9 +97,6 @@ final class CollectionEditorTitleTests: XCTestCase {
     private static let emptyListTitle = "No Collections"
     /// The settings screen's (iPhone) and sheet's (iPad) navigation title.
     private static let settingsTitle = "Collection settings"
-    /// The compact editor's Add menu, by its accessibility label; the regular-width one reads "Add".
-    private static let compactAddMenu =
-        "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"
     /// The description the tests give a collection — its note, which Collection settings and a heading's Section
     /// defaults both edit.
     private static let note = "A working note"
@@ -348,12 +347,13 @@ final class CollectionEditorTitleTests: XCTestCase {
     }
 
     /// Adds a section heading, so the collection has content and is kept when its editor goes.
+    ///
+    /// The Add menu is opened wherever the layout put it (`CollectionEditorAddMenu.open`). Until #1450 this looked for
+    /// it in the bar alone, so on an iPad narrow enough to fold ＋ Add into the toolbar's ⋯ overflow — measured by lane
+    /// K3 on iPad Air 11-inch (M4) in portrait, iOS 26.5 — it failed here with "The editor has no Add menu" before the
+    /// test had tested anything. The two devices this suite documents never fold it, which is why it had never failed.
     private func addSectionHeading() {
-        let compact = app.buttons[Self.compactAddMenu].firstMatch
-        let regular = app.buttons["Add"].firstMatch
-        XCTAssertTrue(waitUntil { compact.exists || regular.exists },
-                      "The editor has no Add menu. Buttons: \(visibleButtonLabels())")
-        (compact.exists ? compact : regular).tap()
+        CollectionEditorAddMenu.open(in: app)
         let heading = app.buttons["Add Section Heading"].firstMatch
         XCTAssertTrue(heading.waitForExistence(timeout: 5),
                       "The Add menu has no Add Section Heading. Buttons: \(visibleButtonLabels())")
@@ -567,6 +567,85 @@ final class CollectionEditorTitleTests: XCTestCase {
     }
 }
 
+// MARK: - CollectionEditorAddMenu
+
+/// Opens the collection editor's Add menu wherever the layout on screen put it, for both suites in this file.
+///
+/// There are three places. The compact editor draws one navigation-bar menu, named by ``compactLabel``. The
+/// regular-width editor draws a toolbar ＋ Add. And where that toolbar is too narrow for its items, iPadOS folds ＋ Add
+/// into the toolbar's ⋯ overflow menu: measured by lane K3 (#1360) on iPad Air 11-inch (M4) in portrait at the default
+/// text size, iOS 26.5 — and not at AX3 on the same device, nor on iPad Pro 13-inch.
+///
+/// `CollectionProseRowRestTests` had the three-way lookup from the start. `CollectionEditorTitleTests` looked in the
+/// bar alone, so the four of its tests that add a section heading failed on that iPad before reaching what they test
+/// (#1450). One function now serves both, so the next place the layout puts the menu is learned once.
+///
+/// **Which devices can show the third place.** Neither device `CollectionEditorTitleTests` documents (iPhone 17, iPad
+/// Pro 13-inch) folds the menu, so on those two a run takes the first or second branch and says nothing about the
+/// third. Each call prints the branch it took, `[CollectionEditorAddMenu] opened from …`, so a log shows which.
+/// Lane HYG had those two devices only and tried to narrow the iPad's editor by showing the tab sidebar: on iPad Pro
+/// 13-inch (M5), iOS 27.0, in portrait, the sidebar is an overlay there (content area 752 pt while it shows), and the
+/// first tap on the Collections list dismissed it, so the editor opened at full width with ＋ Add in the toolbar. So
+/// #1450's own failure, and the overflow branch in THIS suite, still want a run on iPad Air 11-inch in portrait.
+///
+/// Version history:
+///   1.0 — #1450 (lane HYG): lifted from `CollectionProseRowRestTests.openAddMenu()`, unchanged in what it does
+@MainActor
+enum CollectionEditorAddMenu {
+
+    /// The compact editor's Add menu, by its accessibility label; the regular-width one reads "Add".
+    static let compactLabel =
+        "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"
+
+    /// Where the layout put the Add menu.
+    enum Place: String {
+        /// The compact editor's navigation-bar menu.
+        case compactBar = "the compact navigation-bar menu"
+        /// The regular-width editor's toolbar ＋ Add.
+        case toolbar = "the toolbar's Add"
+        /// Inside the toolbar's ⋯ overflow menu.
+        case overflow = "the toolbar's overflow menu"
+    }
+
+    /// Opens the Add menu and returns where it was. Fails the test when the editor offers none.
+    @discardableResult
+    static func open(in app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) -> Place? {
+        let compact = app.buttons[compactLabel].firstMatch
+        let regular = app.buttons["Add"].firstMatch
+        let overflow = app.navigationBars.buttons["More"].firstMatch
+        let deadline = Date().addingTimeInterval(10)
+        while !(compact.exists || regular.exists || overflow.exists), Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        }
+        let place: Place
+        if compact.exists {
+            compact.tap()
+            place = .compactBar
+        } else if regular.exists {
+            regular.tap()
+            place = .toolbar
+        } else if overflow.exists {
+            overflow.tap()
+            let nested = app.buttons["Add"].firstMatch
+            guard nested.waitForExistence(timeout: 5) else {
+                XCTFail("The toolbar's overflow menu holds no Add menu", file: file, line: line)
+                return nil
+            }
+            nested.tap()
+            place = .overflow
+        } else {
+            let labels = app.buttons.allElementsBoundByIndex.prefix(30).map(\.label).filter { !$0.isEmpty }
+            XCTFail("""
+                The collection editor has neither an Add menu nor a toolbar overflow menu. Buttons: \
+                \(labels.joined(separator: " | "))
+                """, file: file, line: line)
+            return nil
+        }
+        print("[CollectionEditorAddMenu] opened from \(place.rawValue)")
+        return place
+    }
+}
+
 // MARK: - CollectionProseRowRestTests
 
 /// A long note block in the collection editor's outline — and a long introduction in Collection settings — once the
@@ -626,9 +705,6 @@ final class CollectionProseRowRestTests: XCTestCase {
         together they show a government working quickly with partial information and changing its mind more than once \
         before it settled on a course it would defend for years afterward.
         """
-    /// The compact editor's Add menu, by its accessibility label; the regular-width one reads "Add".
-    private static let compactAddMenu =
-        "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"
     /// A new, unnamed collection's editor title (#1359).
     private static let newCollectionTitle = "New Collection"
     /// Collection settings' navigation title — the iPad sheet's and the iPhone screen's.
@@ -891,25 +967,9 @@ final class CollectionProseRowRestTests: XCTestCase {
         return firstLineHeight
     }
 
-    /// Opens the editor's Add menu wherever the layout on screen put it: the compact nav-bar menu, the regular-width
-    /// toolbar's ＋ Add, or — measured on iPad Air 11-inch in portrait at the default text size, where the toolbar is
-    /// too narrow for it — inside the toolbar's overflow (⋯) menu.
+    /// Opens the editor's Add menu wherever the layout on screen put it (`CollectionEditorAddMenu.open`).
     private func openAddMenu() {
-        let compact = app.buttons[Self.compactAddMenu].firstMatch
-        let regular = app.buttons["Add"].firstMatch
-        let overflow = app.navigationBars.buttons["More"].firstMatch
-        XCTAssertTrue(waitUntil(10) { compact.exists || regular.exists || overflow.exists },
-                      "The collection editor has neither an Add menu nor a toolbar overflow menu")
-        if compact.exists {
-            compact.tap()
-        } else if regular.exists {
-            regular.tap()
-        } else {
-            overflow.tap()
-            let nested = app.buttons["Add"].firstMatch
-            XCTAssertTrue(nested.waitForExistence(timeout: 5), "The toolbar's overflow menu holds no Add menu")
-            nested.tap()
-        }
+        CollectionEditorAddMenu.open(in: app)
     }
 
     /// Scrolls the list holding `editor` until it sits just under `topBar` (and the compact editor's Outline | Preview

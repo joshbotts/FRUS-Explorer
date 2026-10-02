@@ -16,6 +16,7 @@ import CryptoKit
 import Foundation
 import GeneratorKit
 import SemanticVectorsKit
+import WordCloudKit
 
 /// Stage 2 of the semantic-vectors pipeline: the deterministic packer.
 ///
@@ -39,6 +40,10 @@ import SemanticVectorsKit
 ///         volume and subseries centroids). The Tier-0 map layer — 2-D coordinates and cluster
 ///         labels — waits on the UMAP/HDBSCAN stage, which needs a pinned non-stdlib Python
 ///         environment and ships as its own artifact.
+///   1.1 — lane HYG (2026-10-01): `DIMS` defaults to the width the bundle ships
+///         (``defaultShippingDims``, 512), where it defaulted to 256 and a regeneration that forgot
+///         the variable repacked the bundle at half width; and #1439 — every refusal the map pass
+///         can make is made before the first write (``run(environment:languageAnalysis:)``)
 public enum SemanticVectorsRunner {
 
     /// Artifact schema version for `semantic-vectors-index.json`.
@@ -62,6 +67,17 @@ public enum SemanticVectorsRunner {
     /// document, which is exactly why a wrong number here would be the one believed. A width with no
     /// corpus-scale measurement is refused rather than shipped with a borrowed one.
     public static let measuredRecallAt10: [Int: Double] = [256: 0.7449, 512: 0.8510]
+
+    /// The width a run packs at when `DIMS` is unset: the width the bundle ships.
+    ///
+    /// It was 256 for as long as the bundle shipped 256, and stayed 256 after #933 / build 42 took
+    /// the bundle to 512 — so every regeneration had to remember `DIMS=512`, and one that forgot
+    /// repacked the bundle at half its shipping width and took every consumer to
+    /// `.provenanceMismatch` (the width is in the provenance digest). `EXPECT_DIGEST` catches that
+    /// when the operator sets it; this removes the trap when they do not.
+    /// `SemanticVectorsArtifactTests.defaultWidthIsTheShippedWidth` holds it to the
+    /// committed index's `provenance.shippingDims`, so the next width change moves both or fails.
+    public static let defaultShippingDims = 512
 
     /// Everything that can stop a pack.
     public enum RunError: Error, CustomStringConvertible {
@@ -120,8 +136,33 @@ public enum SemanticVectorsRunner {
     }
 
     /// Runs the packer, honouring the environment overrides documented in `CLAUDE.md`.
+    ///
+    /// The process's own environment and tagger verdict, handed to
+    /// ``run(environment:languageAnalysis:)``, which is the whole run.
     public static func run() throws {
-        let env = ProcessInfo.processInfo.environment
+        try run(environment: ProcessInfo.processInfo.environment,
+                languageAnalysis: { NaturalLanguageReadiness.health })
+    }
+
+    /// The run, with its two process-wide inputs supplied by the caller so a test can drive it.
+    ///
+    /// ## Nothing is written until every refusal that can be made first has been made
+    /// In order: the shipping width, the model pin, `EXPECT_DIGEST`, the manifest, and — when
+    /// `LAYOUT_DIR/layout.bin` exists, so a map pass will follow — everything that pass can refuse
+    /// on (`SemanticMapPacker.preflight`, #1439). Only then are the output directories created.
+    /// Before #1439 the map pass made its refusals after the vector artifacts were on disk, which
+    /// left new vectors beside the previous map. `RunWriteOrderTests` pins the order in this body.
+    ///
+    /// - Parameters:
+    ///   - env: The environment overrides (`STORE`, `MANIFEST`, `OUTPUT_DIR`, `SHARDS_DIR`, `DIMS`,
+    ///     `EXPECT_DIGEST`, `LAYOUT_DIR`, `LEXICONS`, `STOPWORDS`, `GENERATED_DATE`).
+    ///   - languageAnalysis: This process's tagger verdict. A closure, because the vector pack
+    ///     never reads the tagger: it is asked only when there is a layout to label, so a run with
+    ///     no `layout.bin` does not wait on the tagger's warm-up.
+    static func run(
+        environment env: [String: String],
+        languageAnalysis: () -> NaturalLanguageHealth
+    ) throws {
         let storeURL = URL(
             fileURLWithPath: (env["STORE"] as NSString?)?.expandingTildeInPath
                 ?? ("~/frus-semantic-raw" as NSString).expandingTildeInPath)
@@ -135,7 +176,7 @@ public enum SemanticVectorsRunner {
         // Validated before anything is read or written. Left unchecked, a plausible typo reached a
         // `precondition` deep in the quantizer — and preconditions keep their teeth but lose their
         // messages in a release build, so `DIMS=7` exited 133 with no diagnostic at all, while
-        // `DIMS=abc` silently packed at 256 as though the variable had never been set.
+        // `DIMS=abc` silently packed at the default width as though the variable had never been set.
         let shippingDims = try resolveShippingDims(env["DIMS"], native: runManifest.dim)
         guard runManifest.modelFileSHA256.count == 64 else {
             throw RunError.unpinnedModel(runManifest.modelFileSHA256)
@@ -166,6 +207,32 @@ public enum SemanticVectorsRunner {
         generatorLog("manifest: \(volumes.count) volumes | store: \(storeURL.path)")
         generatorLog("model \(provenance.model) | \(provenance.nativeDims) -> \(shippingDims) dims "
             + "| digest \(provenance.digestHex.prefix(12))…")
+
+        // Tier 0, the map, is a SEPARATE pass and skippable: its layout comes from a 15-minute
+        // Python stage, and a packer that refused to emit vectors because no layout existed would
+        // hold the shipping feature hostage to an experimental one. But when a layout IS there the
+        // map pass will run, after the vectors are written — so everything it can refuse on is
+        // checked here, while a refusal still leaves the previous artifacts exactly as they were
+        // (#1439). The document count it checks is the sum of the store's volume heads, which is
+        // what the vector pass is about to pool.
+        let layoutDir = URL(fileURLWithPath: env["LAYOUT_DIR"] ?? "Planning/semantic-map")
+        let lexiconsPath = env["LEXICONS"] ?? "FRUSExplorer/Resources/word-cloud-lexicons.json"
+        let stopwordsPath = env["STOPWORDS"] ?? "FRUSExplorer/Resources/word-cloud-stopwords.json"
+        let packsMap = FileManager.default.fileExists(
+            atPath: layoutDir.appendingPathComponent("layout.bin").path)
+        if packsMap {
+            var documentsInStore = 0
+            for volume in volumes {
+                guard let head = SemanticRawStore.head(for: volume.id, at: storeURL) else {
+                    throw RunError.volumeMissingFromStore(volume.id)
+                }
+                documentsInStore += head.docs
+            }
+            try SemanticMapPacker.preflight(
+                layoutDir: layoutDir, expectedDocumentCount: documentsInStore,
+                lexiconsPath: lexiconsPath, stopwordsPath: stopwordsPath,
+                health: languageAnalysis())
+        }
 
         try FileManager.default.createDirectory(
             at: shardsDir, withIntermediateDirectories: true)
@@ -301,20 +368,17 @@ public enum SemanticVectorsRunner {
         }
         if pruned > 0 { generatorLog("pruned \(pruned) shard(s) not published by this run") }
 
-        // Tier 0, the map — a SEPARATE pass, and skippable. Its layout comes from a 15-minute
-        // Python stage, and a packer that refused to emit vectors because no layout existed would
-        // hold the shipping feature hostage to an experimental one.
-        let layoutDir = URL(fileURLWithPath: env["LAYOUT_DIR"] ?? "Planning/semantic-map")
-        if FileManager.default.fileExists(
-            atPath: layoutDir.appendingPathComponent("layout.bin").path) {
+        // Tier 0, the map. Whether it runs was decided before the first write, where its refusals
+        // were made (`packsMap`, above).
+        if packsMap {
             let eras = try loadVolumeEras(manifestPath)
             let packed = try SemanticMapPacker.pack(
                 layoutDir: layoutDir,
                 index: SemanticVectorIndex(file: index),
                 storeURL: storeURL,
                 eraForVolume: { eras[$0] ?? "unknown" },
-                lexiconsPath: env["LEXICONS"] ?? "FRUSExplorer/Resources/word-cloud-lexicons.json",
-                stopwordsPath: env["STOPWORDS"] ?? "FRUSExplorer/Resources/word-cloud-stopwords.json",
+                lexiconsPath: lexiconsPath,
+                stopwordsPath: stopwordsPath,
                 generated: generated)
             try packed.binary.write(
                 to: outputDir.appendingPathComponent("semantic-map.bin"), options: .atomic)
@@ -348,12 +412,22 @@ public enum SemanticVectorsRunner {
     /// - Parameters:
     ///   - raw: The `DIMS` environment value, if set.
     ///   - native: The store's native embedding width.
-    /// - Returns: The validated width, defaulting to 256.
+    /// - Returns: The validated width, defaulting to ``defaultShippingDims``.
     /// - Throws: `RunError.unusableDims` for anything unparseable, unrepresentable, wider than the
     ///   store, not byte-aligned, or without a corpus-scale measurement.
     static func resolveShippingDims(_ raw: String?, native: Int) throws -> Int {
-        guard let raw, !raw.isEmpty else { return 256 }
-        guard let dims = Int(raw) else { throw RunError.unusableDims("is not a number: \(raw)") }
+        // The default goes through every check below, like a width the operator typed: at 512 it
+        // is no longer narrower than every store, and an unchecked default on a 256- or 384-wide
+        // one would reach the quantizer's precondition instead of this function's message.
+        let dims: Int
+        if let raw, !raw.isEmpty {
+            guard let parsed = Int(raw) else {
+                throw RunError.unusableDims("is not a number: \(raw)")
+            }
+            dims = parsed
+        } else {
+            dims = defaultShippingDims
+        }
         guard dims > 0 else { throw RunError.unusableDims("must be positive, got \(dims)") }
         guard dims <= native else {
             throw RunError.unusableDims("(\(dims)) exceeds the store's native width \(native)")

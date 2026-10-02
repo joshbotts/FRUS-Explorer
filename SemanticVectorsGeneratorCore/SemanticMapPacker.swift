@@ -29,6 +29,8 @@ import WordCloudKit
 ///   1.0 — V-4: initial implementation
 ///   1.1 — #1373 review round 3: `pack` refuses first, before reading anything, when this process's
 ///          tagger has no lemmatiser (`ClusterLabeller.requireLanguageAnalysis`)
+///   1.2 — #1439: `preflight`, every refusal a map pass can make that needs no vector artifact, so
+///          the runner can make them before it writes a byte; `readLayoutMeta` is shared with `pack`
 public enum SemanticMapPacker {
 
     /// Artifact schema version for `semantic-map-index.json`.
@@ -42,6 +44,10 @@ public enum SemanticMapPacker {
         case unreadableMeta(String)
         /// The layout describes a different corpus than the vectors do.
         case documentCountMismatch(layout: Int, artifact: Int)
+        /// The layout describes a different corpus than the raw store's volume heads add up to —
+        /// ``preflight(layoutDir:expectedDocumentCount:lexiconsPath:stopwordsPath:health:)``'s
+        /// form of ``documentCountMismatch(layout:artifact:)``, raised before anything is written.
+        case storeCountMismatch(layout: Int, store: Int)
         /// Every document came back unclustered, so there is nothing to label or draw regions from.
         case noClusters
 
@@ -54,6 +60,12 @@ public enum SemanticMapPacker {
             case .documentCountMismatch(let layout, let artifact):
                 return "layout places \(layout) documents, the vector artifact has \(artifact) — "
                     + "these are different corpora and their rows do not correspond"
+            case .storeCountMismatch(let layout, let store):
+                return "layout places \(layout) documents, the raw store's volume heads total "
+                    + "\(store) — the layout was built over a different corpus and its rows would "
+                    + "not correspond. Nothing was written. Re-run tools/semantic-map/build_layout.py "
+                    + "over this store, or point LAYOUT_DIR at a directory with no layout.bin to "
+                    + "pack the vectors without a map"
             case .noClusters:
                 return "the layout produced no clusters; refusing to write a map with no regions"
             }
@@ -110,6 +122,74 @@ public enum SemanticMapPacker {
         }
     }
 
+    /// Reads the layout stage's metadata.
+    ///
+    /// - Parameter layoutDir: Directory holding `layout-meta.json`.
+    /// - Returns: The decoded metadata.
+    /// - Throws: `PackError.unreadableMeta` when the file is absent or does not decode.
+    static func readLayoutMeta(in layoutDir: URL) throws -> LayoutMeta {
+        let metaURL = layoutDir.appendingPathComponent("layout-meta.json")
+        guard let metaData = try? Data(contentsOf: metaURL),
+              let layoutMeta = try? JSONDecoder().decode(LayoutMeta.self, from: metaData)
+        else { throw PackError.unreadableMeta(metaURL.path) }
+        return layoutMeta
+    }
+
+    /// Makes every refusal a map pass can make without the vector artifact, so the runner can make
+    /// them **before it writes anything** (#1439).
+    ///
+    /// ## Why it exists
+    /// The map pass runs after the vector artifacts are written, because it keys its rows through
+    /// the index the vector pass builds. So a map pass that refused — no lemmatiser in this process
+    /// (#1373), a layout built over another corpus — left the NEW `semantic-vectors-*` artifacts
+    /// beside the PREVIOUS `semantic-map*` ones, and in a run that also moved the provenance digest
+    /// or the document count `SemanticMapCommittedTests.mapAgreesWithVectors` failed until the map
+    /// was packed again. `SemanticVectorsRunner.run` calls this first when `layout.bin` exists.
+    ///
+    /// ## What it checks, in ``pack(layoutDir:index:storeURL:eraForVolume:lexiconsPath:stopwordsPath:generated:)``'s order
+    /// 1. the tagger verdict lemmatises (`ClusterLabeller.requireLanguageAnalysis`);
+    /// 2. `layout-meta.json` reads;
+    /// 3. the layout places `expectedDocumentCount` documents;
+    /// 4. `layout.bin` is that many rows;
+    /// 5. at least one row is clustered;
+    /// 6. the stopword and lexicon payloads read (`ClusterLabeller.makeTokenizer`).
+    ///
+    /// That is every `throw` in `pack`. `pack` keeps its own, because its count is the exact one —
+    /// the rows the vector pass really pooled — where the runner hands this the sum of the store's
+    /// volume heads. The two agreed on all 553 volumes of the shipped store (measured 2026-10-01:
+    /// 314,571 by either count), so a store whose heads misstate its documents is the one case
+    /// that can still refuse after the vectors are written.
+    ///
+    /// - Parameters:
+    ///   - layoutDir: Directory holding `layout.bin` and `layout-meta.json`.
+    ///   - expectedDocumentCount: How many documents the vector pass will place.
+    ///   - lexiconsPath: Path to the word-cloud lexicons.
+    ///   - stopwordsPath: Path to the word-cloud stopwords.
+    ///   - health: The tagger verdict the labels would be counted under.
+    /// - Throws: `ClusterLabeller.LabelError` or `PackError`, in the order above.
+    static func preflight(
+        layoutDir: URL,
+        expectedDocumentCount: Int,
+        lexiconsPath: String,
+        stopwordsPath: String,
+        health: NaturalLanguageHealth
+    ) throws {
+        try ClusterLabeller.requireLanguageAnalysis(health)
+        let layoutMeta = try readLayoutMeta(in: layoutDir)
+        guard layoutMeta.documents == expectedDocumentCount else {
+            throw PackError.storeCountMismatch(
+                layout: layoutMeta.documents, store: expectedDocumentCount)
+        }
+        let placements = try readPlacements(
+            at: layoutDir.appendingPathComponent("layout.bin"),
+            expectedCount: expectedDocumentCount)
+        guard placements.contains(where: { $0.cluster != SemanticMapArtifacts.unclustered }) else {
+            throw PackError.noClusters
+        }
+        _ = try ClusterLabeller.makeTokenizer(
+            lexiconsPath: lexiconsPath, stopwordsPath: stopwordsPath)
+    }
+
     /// Packs the map artifacts.
     ///
     /// - Parameters:
@@ -124,7 +204,9 @@ public enum SemanticMapPacker {
     /// - Throws: `PackError` or a labelling error — first of all
     ///   `ClusterLabeller.LabelError.languageAnalysisUnavailable` when this process's tagger has no
     ///   lemmatiser, checked before anything is read, so the runner writes no map and the previous
-    ///   map artifacts stay as they were (#1373).
+    ///   map artifacts stay as they were (#1373). The runner has made each of these refusals once
+    ///   already, before it wrote the vectors (``preflight(layoutDir:expectedDocumentCount:lexiconsPath:stopwordsPath:health:)``,
+    ///   #1439); they stay here because this function's document count is the exact one.
     public static func pack(
         layoutDir: URL,
         index: SemanticVectorIndex,
@@ -137,10 +219,7 @@ public enum SemanticMapPacker {
         // The labels are counted through the app's tokenizer, which reads the lemmatiser: refuse
         // before reading anything rather than label every cluster in printed forms.
         try ClusterLabeller.requireLanguageAnalysis(NaturalLanguageReadiness.health)
-        let metaURL = layoutDir.appendingPathComponent("layout-meta.json")
-        guard let metaData = try? Data(contentsOf: metaURL),
-              let layoutMeta = try? JSONDecoder().decode(LayoutMeta.self, from: metaData)
-        else { throw PackError.unreadableMeta(metaURL.path) }
+        let layoutMeta = try readLayoutMeta(in: layoutDir)
         guard layoutMeta.documents == index.documentCount else {
             throw PackError.documentCountMismatch(
                 layout: layoutMeta.documents, artifact: index.documentCount)

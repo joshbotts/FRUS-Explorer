@@ -446,17 +446,56 @@ struct R1FollowUpFixTests {
         let tag = "AAAAAAAA-0000-0000-0000-000000000001"
         try await pipeline.updateUserTagIds(volumeId: "vol1", documentId: "d1", userTagIds: tag)
 
-        // The text-only overload — what the new-note path now calls.
+        // The note writer — the only one, since lane HYG deleted the overload that took tags.
         try await pipeline.updateNoteText(volumeId: "vol1", documentId: "d1",
                                           bodyText: "a note with no tags of its own")
         let after = try await pipeline.userTagIdsForTesting(volumeId: "vol1", documentId: "d1")
         #expect(after == tag, "the tag must survive a note-text update. Got \(after ?? "nil")")
 
-        // And the overload that DOES take tags still owns the column, deliberately.
-        try await pipeline.updateNoteText(volumeId: "vol1", documentId: "d1",
-                                          bodyText: "still a note", userTagIds: nil)
+        // And the column's own writer still clears it when a caller has the real value.
+        try await pipeline.updateUserTagIds(volumeId: "vol1", documentId: "d1", userTagIds: nil)
         #expect(try await pipeline.userTagIdsForTesting(volumeId: "vol1", documentId: "d1") == nil,
-                "the tag-bearing overload is still authoritative when a caller has the real value")
+                "updateUserTagIds is the pipeline function that writes the document tag column, and nil clears it")
+        // …and a later note-text update leaves the cleared column cleared.
+        try await pipeline.updateNoteText(volumeId: "vol1", documentId: "d1", bodyText: "still a note")
+        #expect(try await pipeline.userTagIdsForTesting(volumeId: "vol1", documentId: "d1") == nil)
+    }
+
+    /// The overload that took `userTagIds:` is gone, and must stay gone: it wrote the per-DOCUMENT
+    /// tag column from a per-NOTE caller, so a note with no tags passed `nil` and erased every tag
+    /// on the document (#1275). #1280 moved every app caller to the text-only writer; lane HYG
+    /// deleted the overload so the next caller cannot pick it. Read from the source, each
+    /// declaration's parameter list by its balanced parentheses — a caller is a compile error, but
+    /// a re-added declaration compiles and nothing else would say so.
+    @Test("IndexingPipeline declares one updateNoteText, and it takes no tags")
+    func noteWriterTakesNoTags() throws {
+        let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Search/IndexingPipeline.swift")
+        let source = try String(contentsOf: path, encoding: .utf8)
+        var parameterLists: [Substring] = []
+        var searched = source[...]
+        while let declaration = searched.range(of: "func updateNoteText(") {
+            let open = source.index(before: declaration.upperBound)
+            var depth = 0
+            var close = open
+            for index in source[open...].indices {
+                if source[index] == "(" { depth += 1 }
+                if source[index] == ")" { depth -= 1 }
+                if depth == 0 { close = index; break }
+            }
+            try #require(close > open, "an updateNoteText declaration's parameter list never closes")
+            parameterLists.append(source[open...close])
+            searched = source[close...]
+        }
+        #expect(parameterLists.count == 1,
+                "IndexingPipeline declares \(parameterLists.count) updateNoteText overloads, not one")
+        for parameters in parameterLists {
+            #expect(!parameters.contains("userTagIds"), """
+                An updateNoteText overload takes tags again: \(parameters). `user_tag_ids` is one \
+                column per document, and `updateUserTagIds` is the pipeline function that writes it.
+                """)
+            #expect(parameters.contains("bodyText: String"))
+        }
     }
 
     /// iOS held tag ids in a `Set<UUID>` and its narrowing summary had no tag case, so a tag

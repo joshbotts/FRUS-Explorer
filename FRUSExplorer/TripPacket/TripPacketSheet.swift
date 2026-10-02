@@ -25,15 +25,17 @@ import AppKit
 
 /// Presents a generated research-trip packet (#830 T-2).
 ///
-/// ## One sheet, both entry points
-/// The scope doc says Project Home and a collection's overflow menu "feed the same aggregation".
-/// They feed the same VIEW too — a second presenter would be a second place for the packet's
-/// honesty rules to be applied differently, and those rules are the whole point of the feature.
+/// ## One sheet, one way in
+/// The Archives Visit editor's Export packet presents it, over the plan it is editing, and
+/// nothing else does (`TripPacketEntryPointParityTests`). Project Home makes or opens the
+/// project's plan, and a collection's menus add its documents to one; neither opens a packet of
+/// its own — a second presenter would be a second place for the packet's honesty rules to be
+/// applied differently, and those rules are the whole point of the feature.
 ///
 /// ## Scoping is a render filter, never a rebuild
 /// The repository scope and the citation-appendix toggle re-run the exporter over the model
 /// already in hand (the export-scoping amendment: "a scoped export is a render filter, not a
-/// second pipeline"). Only the seed changing rebuilds.
+/// second pipeline"). The packet is built once, when the sheet opens.
 ///
 /// ## Platform-split chrome
 /// iOS keeps the `NavigationStack` and its toolbar. macOS is a plain `VStack` that lays its buttons
@@ -82,30 +84,36 @@ import AppKit
 ///          includes a target at (`TripPacketExporter.offeredRepositories`, review round 1),
 ///          presidential libraries included, and a copied draft applies the plan's exclusions
 ///          (`TripPacketExporter.copiedInquiryDraft`)
+///   1.9 — #1423: the sheet takes its `ArchiveVisitPlan` directly. `TripPacketSeed`'s `.documents`
+///          and `.collection` cases, `resolveSeedDocuments()`, the non-plan half of `rebuild()`
+///          and the smart-search empty state they alone could reach are deleted: nothing
+///          constructed either seed, and on those paths the project's question seeded the topic
+///          at render time, which #1366 had stopped on the plan path
 
-/// What a packet is built over (Phase 0).
+/// How a collection becomes a reading list — the one membership rule the add-to-plan flows share.
 ///
-/// The `collection` case exists so that resolution happens INSIDE the one sheet: a smart
+/// A namespace, with no cases. Through Phase 3 it was the packet sheet's seed, with three:
+/// `.documents` (an explicit reading list), `.collection` (resolved inside the sheet) and `.plan`.
+/// The first two were constructed nowhere once the Archives Visit editor became the sheet's only
+/// presenter, and on those paths the project's research question still seeded the inquiry's topic
+/// without the topic field showing it — the mismatch #1366 fixed on the plan path. #1423 deleted
+/// them, and the sheet now takes its ``ArchiveVisitPlan`` directly (`TripPacketSheet.plan`). A new
+/// entry point makes a plan (`ArchiveVisitPlan.make`) and presents that, so it follows the same
+/// seed-at-creation rule; it does not get a second way into the sheet.
+///
+/// What is left is what the collection surfaces call before they make a plan: a smart
 /// collection's membership comes from its saved search (matching export behavior — the editor
 /// itself tells the user "static entries are ignored"), and a static collection contributes its
 /// document entries AND its excerpts, whose `volumeId`/`documentId` provenance is a real
 /// document reference the old filter dropped.
 enum TripPacketSeed {
-    /// An explicit reading list (Project Home's engaged set).
-    case documents([(volumeId: String, documentId: String)])
-    /// A collection, resolved at build time (smart → saved search; static → documents + excerpts).
-    case collection(Collection)
-    /// A persistent Archive Visit plan (Phase 3): seeds resolve through the plan's own
-    /// contribution flags via `ArchiveVisitDerivation` — the same derivation the editor
-    /// renders from — and the sheet's topic edits and deliverable toggles PERSIST to the
-    /// plan rather than living for the sheet's lifetime.
-    case plan(ArchiveVisitPlan)
 
-    /// Resolves a collection to its reading list — the ONE membership rule every surface
-    /// shares (Phase 3 factored it out of the sheet so the add-to-plan flows resolve the
-    /// same set the packet does): smart → the export's own `smartRefs`; static → documents
-    /// + excerpts through ``staticSeedDocuments(from:)``. Returns `nil` when a smart
-    /// collection's search cannot run yet.
+    /// Resolves a collection to its reading list — the ONE membership rule every add-to-plan
+    /// flow shares (Phase 3 factored it out of the sheet): smart → the export's own
+    /// `smartRefs`; static → documents + excerpts through ``staticSeedDocuments(from:)``.
+    /// Returns `nil` when a smart collection's search cannot run yet. All three callers then
+    /// return without a word, so the menu item does nothing; the sheet's own message for this
+    /// state was reachable only from the `.collection` seed #1423 deleted.
     @MainActor
     static func resolve(collection: Collection, appState: AppState,
                         modelContext: ModelContext)
@@ -140,14 +148,16 @@ enum TripPacketSeed {
 
 struct TripPacketSheet: View {
 
-    /// What the packet is built over.
-    let seed: TripPacketSeed
+    /// The Archives Visit plan the packet is built over. Its seeds resolve through the plan's own
+    /// contribution flags via `ArchiveVisitDerivation` — the derivation the editor renders from —
+    /// and the sheet's topic edits and deliverable toggles PERSIST to it rather than living for
+    /// the sheet's lifetime. The only thing a packet is built over, since #1423.
+    let plan: ArchiveVisitPlan
     /// Names the packet, and seeds nothing else.
     let title: String
-    /// The project's research question. For a document or collection seed it seeds the inquiry's
-    /// topic sentence (D8; `nil` yields the placeholder). For a `.plan` seed it seeds nothing —
-    /// the plan's own `inquiryText` is the topic (#1366) — and only decides the caption, which
-    /// says "Seeded from your project’s research question" while the field still reads it.
+    /// The project's research question. It seeds nothing — the plan's own `inquiryText` is the
+    /// topic (#1366) — and only decides the caption, which says "Seeded from your project’s
+    /// research question" while the field still reads it.
     let researchQuestion: String?
 
     @Environment(AppState.self) private var appState
@@ -156,12 +166,10 @@ struct TripPacketSheet: View {
 
     /// Why there is no packet, when there is none — each state names its actual cause.
     enum UnavailableReason {
-        /// The seed resolved to zero documents.
+        /// The plan holds no documents.
         case noDocuments
         /// `appState.indexingPipeline` is nil — nothing can be read.
         case indexUnavailable
-        /// A smart collection's saved search could not run (no search service).
-        case smartSearchUnavailable
     }
 
     @State private var packet: String?
@@ -177,12 +185,11 @@ struct TripPacketSheet: View {
     /// The repository scope — `nil` renders the whole plan (the default and the master
     /// reference); a facility name renders that repository's self-contained slice.
     @State private var facilityScope: String?
-    /// The deliverable toggles in force. For an EPHEMERAL packet this is sheet-local state
-    /// (defaults per §3b); for a `.plan` seed it mirrors the plan's stored toggles, and
-    /// every change writes back through ``persistDeliverablesIfPlan()`` so the choice
-    /// travels with the plan (1f: part of the plan, not an app preference).
+    /// The deliverable toggles in force. It mirrors the plan's stored toggles, and every change
+    /// writes back through ``persistDeliverables()`` so the choice travels with the plan (1f:
+    /// part of the plan, not an app preference).
     @State private var deliverables = ArchiveVisitDeliverables()
-    /// The plan's stored per-target state, derived alongside the model for a `.plan` seed.
+    /// The plan's stored per-target state, derived alongside the model.
     @State private var overlay: ArchiveVisitOverlay?
     /// The plan's seed-coverage numbers, for the 1h documents line.
     @State private var seedCoverage: (seeded: Int, indexed: Int)?
@@ -280,14 +287,6 @@ struct TripPacketSheet: View {
                         description: Text(String(
                             localized: "packet.empty.noIndex.message",
                             defaultValue: "The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.")))
-                case .smartSearchUnavailable:
-                    ContentUnavailableView(
-                        String(localized: "packet.empty.smart.title",
-                               defaultValue: "This collection’s search can’t run yet"),
-                        systemImage: "doc.text.magnifyingglass",
-                        description: Text(String(
-                            localized: "packet.empty.smart.message",
-                            defaultValue: "This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.")))
                 case .noDocuments, nil:
                     ContentUnavailableView(
                         String(localized: "packet.empty.title", defaultValue: "Nothing to plan yet"),
@@ -300,11 +299,11 @@ struct TripPacketSheet: View {
         }
         .task { await rebuild() }
         // Scope and deliverables are render filters over the model already in hand — the
-        // export-scoping amendment's whole point. Only the seed changing rebuilds. A plan's
-        // deliverable change also persists (1f).
+        // export-scoping amendment's whole point. Neither rebuilds. A deliverable change also
+        // persists to the plan (1f).
         .onChange(of: facilityScope) { _, _ in if let model { render(model) } }
         .onChange(of: deliverables) { _, _ in
-            persistDeliverablesIfPlan()
+            persistDeliverables()
             if let model { render(model) }
         }
     }
@@ -370,24 +369,18 @@ struct TripPacketSheet: View {
                     }
                 }
             }
-            if seededPlan != nil {
-                // 1f: the full per-plan deliverables — what to include travels WITH the plan.
-                Section(String(localized: "packet.deliverables.section",
-                               defaultValue: "What to Include")) {
-                    Toggle(String(localized: "packet.deliverables.links",
-                                  defaultValue: "Repository visit-planning links"),
-                           isOn: $deliverables.includeLinks)
-                    Toggle(String(localized: "packet.deliverables.targets",
-                                  defaultValue: "Target list"),
-                           isOn: $deliverables.includeTargets)
-                    Toggle(String(localized: "packet.deliverables.inquiry",
-                                  defaultValue: "Inquiry email drafts"),
-                           isOn: $deliverables.includeInquiry)
-                    Toggle(String(localized: "packet.appendix.crib",
-                                  defaultValue: "Include NARA citation guidance"),
-                           isOn: $deliverables.includeCitationCrib)
-                }
-            } else {
+            // 1f: the full per-plan deliverables — what to include travels WITH the plan.
+            Section(String(localized: "packet.deliverables.section",
+                           defaultValue: "What to Include")) {
+                Toggle(String(localized: "packet.deliverables.links",
+                              defaultValue: "Repository visit-planning links"),
+                       isOn: $deliverables.includeLinks)
+                Toggle(String(localized: "packet.deliverables.targets",
+                              defaultValue: "Target list"),
+                       isOn: $deliverables.includeTargets)
+                Toggle(String(localized: "packet.deliverables.inquiry",
+                              defaultValue: "Inquiry email drafts"),
+                       isOn: $deliverables.includeInquiry)
                 Toggle(String(localized: "packet.appendix.crib",
                               defaultValue: "Include NARA citation guidance"),
                        isOn: $deliverables.includeCitationCrib)
@@ -459,18 +452,16 @@ struct TripPacketSheet: View {
     }
 
     /// Writes the draft into the model's `edited` slot and re-renders — no rebuild, the model
-    /// is already assembled; only the export string and its PDF change. For a `.plan` seed the
-    /// edit also PERSISTS to `plan.inquiryText` — the whole reason the plan carries the field:
-    /// the draft survives the sheet, and re-opens identically on another device.
+    /// is already assembled; only the export string and its PDF change. The edit also PERSISTS
+    /// to `plan.inquiryText` — the whole reason the plan carries the field: the draft survives
+    /// the sheet, and re-opens identically on another device.
     private func applyTopicEdit() {
         guard var model else { return }
         let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         model.topicSentence.edited = trimmed.isEmpty ? nil : topicDraft
         self.model = model
-        if let plan = seededPlan {
-            plan.inquiryText = trimmed.isEmpty ? nil : topicDraft
-            try? modelContext.save()
-        }
+        plan.inquiryText = trimmed.isEmpty ? nil : topicDraft
+        try? modelContext.save()
         render(model)
     }
 
@@ -491,41 +482,19 @@ struct TripPacketSheet: View {
     }
 
     /// Writes the sheet's deliverable toggles back to the plan (1f: they are part of the
-    /// plan, not an app preference). A no-op for ephemeral packets.
-    private func persistDeliverablesIfPlan() {
-        guard let plan = seededPlan else { return }
+    /// plan, not an app preference).
+    private func persistDeliverables() {
         plan.deliverables = deliverables
         try? modelContext.save()
     }
 
-    /// The plan behind a `.plan` seed, or `nil`.
-    private var seededPlan: ArchiveVisitPlan? {
-        if case .plan(let plan) = seed { return plan }
-        return nil
-    }
-
-    /// Resolves the seed to a reading list. A smart collection resolves through the SAME
-    /// resolver its exports use (`CollectionContentResolver.smartRefs`), so the packet and the
-    /// export cannot describe different membership; a static collection contributes documents
-    /// and excerpts through ``TripPacketSeed/staticSeedDocuments(from:)``. A `.plan` seed never
-    /// reaches this — `rebuild()` derives it through `ArchiveVisitDerivation` instead, so the
-    /// sheet and the plan editor cannot disagree about a plan's targets.
-    private func resolveSeedDocuments() async -> [(volumeId: String, documentId: String)]? {
-        switch seed {
-        case .documents(let docs):
-            return docs
-        case .plan:
-            return nil   // unreachable — rebuild() branches before calling this
-        case .collection(let collection):
-            guard let docs = await TripPacketSeed.resolve(
-                collection: collection, appState: appState, modelContext: modelContext) else {
-                unavailableReason = .smartSearchUnavailable
-                return nil
-            }
-            return docs
-        }
-    }
-
+    /// Builds the packet from the plan.
+    ///
+    /// One path, since #1423: the plan derives through `ArchiveVisitDerivation`, the derivation
+    /// the editor renders from, so the sheet and the plan editor cannot disagree about a plan's
+    /// targets. There was a second half, for a document-list or collection seed, that built
+    /// through `TripPacketBuilder.build(documents:researchQuestion:)` and so let the project's
+    /// question seed the topic at render time; nothing constructed either seed.
     private func rebuild() async {
         isBuilding = true
         defer { isBuilding = false }
@@ -546,71 +515,36 @@ struct TripPacketSheet: View {
             manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
                                     uniquingKeysWith: { first, _ in first }))
 
-        // A plan derives through the ONE derivation path the editor renders from, and its
+        // The plan derives through the ONE derivation path the editor renders from, and its
         // stored toggles and inquiry text load into the sheet's state.
-        if let plan = seededPlan {
-            deliverables = plan.deliverables
-            guard !(plan.documents ?? []).isEmpty else {
-                packet = nil
-                packetPDF = nil
-                model = nil
-                unavailableReason = .noDocuments
-                return
-            }
-            let derived = await ArchiveVisitDerivation.derive(
-                plan: plan,
-                indexedVolumeIds: Set(appState.indexedVolumeIds),
-                dataSource: dataSource)
-            overlay = derived.overlay
-            seedCoverage = (seeded: derived.seededDocumentCount,
-                            indexed: derived.indexedDocumentCount)
-            var planModel = derived.model
-            // A live sheet edit wins over the stored text until committed (the rebuild-
-            // preserves-the-edit rule below); with no live edit, mirror the stored text — and
-            // only that: `researchQuestion` is not a seed here (#1366). The rule is the
-            // model's, so a test can drive it.
-            let opened = planModel.topicSentence.openPlanDraft(draft: topicDraft,
-                                                               stored: plan.inquiryText)
-            if opened != topicDraft { topicDraft = opened }
-            model = planModel
-            if let scope = facilityScope, !facilities.contains(scope) { facilityScope = nil }
-            render(planModel)
-            return
-        }
-
-        guard let documents = await resolveSeedDocuments() else {
-            packet = nil
-            packetPDF = nil
-            model = nil
-            return   // resolveSeedDocuments set the reason
-        }
-        guard !documents.isEmpty else {
+        deliverables = plan.deliverables
+        guard !(plan.documents ?? []).isEmpty else {
             packet = nil
             packetPDF = nil
             model = nil
             unavailableReason = .noDocuments
             return
         }
-        var built = await TripPacketBuilder.build(
-            documents: documents, researchQuestion: researchQuestion,
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: plan,
+            indexedVolumeIds: Set(appState.indexedVolumeIds),
             dataSource: dataSource)
-        guard !built.targets.isEmpty || built.triage.unresolvedDocumentCount > 0 else {
-            // Unreachable in practice (a note-less reading list lands in the help-me-locate
-            // branch), kept as a guard: an empty page must never render as a packet.
-            packet = nil
-            packetPDF = nil
-            model = nil
-            unavailableReason = .noDocuments
-            return
-        }
-        // A rebuild must not discard the researcher's edit.
-        let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty { built.topicSentence.edited = topicDraft }
-        model = built
-        // A re-resolved seed can lose the scoped facility; falling back to the whole plan
-        // beats rendering an empty slice under a stale heading.
+        overlay = derived.overlay
+        seedCoverage = (seeded: derived.seededDocumentCount,
+                        indexed: derived.indexedDocumentCount)
+        var planModel = derived.model
+        // A live sheet edit wins over the stored text until committed, so a rebuild does not
+        // discard what the researcher is typing; with no live edit, mirror the stored text — and
+        // only that: `researchQuestion` is not a seed here (#1366). The rule is the model's, so
+        // a test can drive it.
+        let opened = planModel.topicSentence.openPlanDraft(draft: topicDraft,
+                                                           stored: plan.inquiryText)
+        if opened != topicDraft { topicDraft = opened }
+        model = planModel
+        // A re-derived plan can lose the scoped facility; falling back to the whole plan beats
+        // rendering an empty slice under a stale heading.
         if let scope = facilityScope, !facilities.contains(scope) { facilityScope = nil }
-        render(built)
+        render(planModel)
     }
 }
 

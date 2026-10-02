@@ -271,7 +271,7 @@ struct MainWindowView: View {
     private var trailingTools: some View {
         HStack(spacing: 6) {
 
-            // Search — shortcut owned by the "frus.search" Window scene (⌘F).
+            // Search — its shortcut, ⌥⌘F, is owned by the Find menu (`FindMenuContent`), not here.
             // Every tool launch below stamps this window's identity as the tool's
             // provenance (bindTool), so the tool's document opens route back HERE.
             Button {
@@ -286,7 +286,7 @@ struct MainWindowView: View {
             // though its labelled siblings force `.titleAndIcon`.
             .labelStyle(.iconOnly)
             .help(String(localized: "mainwindow.tools.search.help",
-                         defaultValue: "Open the full-text search window (⌘F)"))
+                         defaultValue: "Open the full-text search window (⌥⌘F)"))
 
             Divider().frame(height: 20)
 
@@ -488,10 +488,11 @@ private struct DocumentPlaceholderView: View {
             Text("Select a document to begin")
                 .font(.title3)
                 .foregroundStyle(.secondary)
-            // ⌘S, not ⌘F: Search moved to ⌘S in #363 #5 and ⌘F became Find in Document. This
-            // string kept the old shortcut — the same stale claim #749 corrected in the manual,
-            // still wrong in the app itself.
-            Text("Use Search (⌘S) or open the Corpus Browser (⇧⌘B)")
+            // ⌥⌘F: Search left ⌘F for ⌘S in #363 #5, when ⌘F became Find in Document, and left ⌘S
+            // for ⌥⌘F at M-14. This string went on saying ⌘S until lane HYG; the two shortcuts it
+            // names are the ones `FindMenuContent` registers, and `MacShortcutCopyTests` holds them.
+            Text(String(localized: "mainwindow.placeholder.hint",
+                        defaultValue: "Use Search (⌥⌘F) or open the Corpus Browser (⇧⌘B)"))
                 .font(.callout)
                 .foregroundStyle(.tertiary)
 

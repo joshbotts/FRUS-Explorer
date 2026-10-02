@@ -259,10 +259,23 @@ struct ShippingDimsTests {
         }
     }
 
-    @Test("Unset or empty DIMS defaults to 256")
-    func defaultsTo256() throws {
-        #expect(try SemanticVectorsRunner.resolveShippingDims(nil, native: 768) == 256)
-        #expect(try SemanticVectorsRunner.resolveShippingDims("", native: 768) == 256)
+    /// 512 since lane HYG (2026-10-01): the default is the width the bundle ships, where it was
+    /// 256 and a regeneration that forgot `DIMS=512` repacked the bundle at half width.
+    /// `SemanticVectorsArtifactTests.defaultWidthIsTheShippedWidth` holds the constant to the
+    /// committed artifact; this pins that both spellings of "unset" reach it.
+    @Test("Unset or empty DIMS defaults to the shipping width, 512")
+    func defaultsToTheShippingWidth() throws {
+        #expect(SemanticVectorsRunner.defaultShippingDims == 512)
+        #expect(try SemanticVectorsRunner.resolveShippingDims(nil, native: 768) == 512)
+        #expect(try SemanticVectorsRunner.resolveShippingDims("", native: 768) == 512)
+    }
+
+    /// The default is validated like any other width: a store narrower than it is refused, not
+    /// packed at a width it does not have.
+    @Test("The default is refused on a store narrower than it")
+    func defaultIsRefusedOnANarrowerStore() {
+        Self.expectRefused(nil, native: 256)
+        Self.expectRefused("", native: 384)
     }
 
     @Test("Measured widths are accepted")
@@ -271,7 +284,7 @@ struct ShippingDimsTests {
         #expect(try SemanticVectorsRunner.resolveShippingDims("512", native: 768) == 512)
     }
 
-    @Test("A non-numeric DIMS is refused rather than silently packing at 256")
+    @Test("A non-numeric DIMS is refused rather than silently packing at the default")
     func nonNumericRefused() {
         Self.expectRefused("abc")
         Self.expectRefused("256.0")

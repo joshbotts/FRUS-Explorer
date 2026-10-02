@@ -363,17 +363,15 @@ enum DiscoveryTipRegistry {
 
     /// Files a tip may **never** be anchored in, with the reason.
     ///
-    /// Each of these renders in no shipping build, so a `.popoverTip` placed there would satisfy a
-    /// naive "does the file contain the modifier?" check while displaying to nobody — reproducing
-    /// exactly how `ExploreCrossReferencesTip` died. The audit refuses them by name.
-    static let forbiddenAnchors: [String: String] = [
-        "FRUSExplorer/ProjectContext/GlobalContextView.swift":
-            "unpresented dead code — the view constructs a collection editor but is never shown "
-            + "(see its own doc comment)",
-        "FRUSExplorer/Browser/BrowserView.swift":
-            "contains `splitLayout`, unreferenced since #238 Fix B routed every size class through "
-            + "`stackLayout`; its ProjectPickerMenu sits ~52 lines above the live copy and looks "
-            + "identical. If a tip ever belongs in this file, anchor it in `stackLayout` and "
-            + "narrow this entry rather than deleting it"
-    ]
+    /// A file listed here renders in no shipping build, so a `.popoverTip` placed there would
+    /// satisfy a naive "does the file contain the modifier?" check while displaying to nobody —
+    /// reproducing exactly how `ExploreCrossReferencesTip` died. The audit refuses them by name.
+    ///
+    /// **Empty since lane HYG (2026-10-01), which deleted both views it named** rather than go on
+    /// warning about them: `GlobalContextView`, which nothing presented, and `BrowserView`'s
+    /// `splitLayout`, unreferenced since #238 Fix B, whose `ProjectPickerMenu` sat about 52 lines
+    /// above the live copy and looked identical. `BrowserView.swift` is therefore a legitimate
+    /// anchor again. The list and its two audits stay for the next view that is kept unpresented:
+    /// add its file here with the reason, and `denylistIsCurrent` will say when it is gone.
+    static let forbiddenAnchors: [String: String] = [:]
 }

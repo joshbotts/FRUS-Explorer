@@ -1185,6 +1185,8 @@ struct SegmentedPickerAccessibilityAuditTests {
 ///          ``archivalAllUnitsSheetMacBodyHoldsItsControls()`` pins that body's Export menu and Done;
 ///          the `ChartDataInspectorView` and `InAppBrowserView` entries record the same Mac check,
 ///          and the list's contract names its second state, checked and kept
+///   1.4 — lane HYG (2026-10-01): `ArchivalNeighborsSheet` leaves `pendingMacChecks` —
+///          `SearchView`'s presenter of it is `#if os(iOS)` now, so no Mac sheet reaches it
 struct MacSheetToolbarPlacementAuditTests {
 
     /// The platforms the scanner reads for; only the Mac's reading is judged.
@@ -1217,16 +1219,18 @@ struct MacSheetToolbarPlacementAuditTests {
         let reason: String
     }
 
-    /// The views the scan flags that #1377 left for the owner to confirm on a Mac first; two of the
-    /// three have been checked and kept (the last paragraph).
+    /// The views the scan flags that #1377 left for the owner to confirm on a Mac first; both that
+    /// remain have been checked and kept (the last paragraph).
     ///
     /// The first is one of the two #1377 names. The other, `ArchivalAllUnitsSheet`, left the list
     /// when #1461 gave it a Mac body, after the owner's Mac check found its Export menu undrawn
     /// (``archivalAllUnitsSheetMacBodyHoldsItsControls()`` pins that the body kept the menu). The
-    /// last two were found by this scan and are not in the issue; a third, `ArchiveVisitEditorView`,
-    /// left the list when #1462 moved both its Mac presenters to the Archives Visits window
-    /// (``windowHostedViews`` now keeps it out of every Mac sheet). The `ArchivalNeighborsSheet`
-    /// entry's reason is the one that rests on its presenters alone, which is why every entry
+    /// second was found by this scan and is not in the issue, as were two that have left:
+    /// `ArchiveVisitEditorView`, when #1462 moved both its Mac presenters to the Archives Visits
+    /// window (``windowHostedViews`` now keeps it out of every Mac sheet), and
+    /// `ArchivalNeighborsSheet`, when lane HYG (2026-10-01) gated its one Mac presenter,
+    /// `SearchView`'s, to iOS — the Mac compiled that `.sheet(` and nothing on the Mac could set
+    /// its target. That entry's reason rested on its presenters alone, which is why every entry
     /// records them: a new Mac presenter of a listed view fails the suite rather than widening a
     /// pending defect, or falsifying a reason, in silence.
     ///
@@ -1264,12 +1268,6 @@ struct MacSheetToolbarPlacementAuditTests {
                 + "ToolbarItemGroup with no placement, and About, Full Notices and the Research Guide "
                 + "present the browser in a sheet — if the sheet draws none of them it has no Close. "
                 + "Checked on a Mac 2026-09-25 (#1461), in About's browser sheet: all four were drawn"),
-        PendingMacCheck(
-            type: "ArchivalNeighborsSheet", placements: ["principal"],
-            presenters: ["Search/SearchView.swift"],
-            reason: "found by this scan: its title and archival-basis subtitle sit at .principal; the "
-                + "Mac compiles SearchView's presenter, but only the iOS MainTabView mounts SearchView, "
-                + "and the Mac opens Archival Neighbors as a window"),
     ]
 
     // MARK: - Tree tests
@@ -4221,6 +4219,226 @@ struct CompilationBranches {
             default: return nil
             }
         }
+    }
+}
+
+// MARK: - UnconstructedViewAuditTests
+
+/// Source-tree gate for #1484: **every `View` the app declares is named by code somewhere besides
+/// its own declaration.**
+///
+/// ## The defect it stops
+/// `PromptsListView` was a complete Settings screen that nothing constructed: the iOS and Mac
+/// prompt managers had replaced it, and the file stayed, compiling, with an empty state telling a
+/// reader to "Tap +" on a screen no reader could reach. `GlobalContextView` was the same shape
+/// for longer, and carried a filter defect two other doc comments had to warn about. A view that
+/// nothing names costs more than its lines: it is swept by every copy scan, quoted by every doc
+/// comment that says "as X does", and repaired by lanes that cannot tell it is dead (#1358 fixed
+/// `GlobalContextView`'s document count). Both were found by reading. This finds the next one.
+///
+/// ## The rule
+/// Every Swift file under `FRUSExplorer/` is read with comments and string literals blanked and
+/// with EVERY `#if` branch kept, since a view the Mac alone constructs is still constructed. A
+/// type whose header names `View` must then be named by at least one identifier that is not its
+/// own `struct` (or `class` / `enum` / `actor`) declaration and not an `extension` of it.
+///
+/// ## What it cannot see
+/// - A view named only inside its own body or extension — a recursive row, a `Self`-less static.
+/// - A view constructed only by code that is itself dead: `SubseriesListView` was constructed by
+///   `BrowserView.splitLayout`, which nothing called, and this scan passed it.
+/// - Two types of one name (`private struct Row` in two files): a use of either counts for both.
+/// - A view named only inside a string interpolation, which is blanked with its string.
+/// So a pass says nothing is unnamed, not that nothing is dead.
+///
+/// ## Known and not yet deleted
+/// ``knownUnnamed`` lists the views this scan found that lane HYG did not delete, because the
+/// lane's text named the views it was to delete. It is not permission. The list is exact: a
+/// listed view that is deleted, or named again, fails the suite until the list says so.
+///
+/// Version history:
+///   1.0 — #1484 (lane HYG, 2026-10-01): initial implementation
+struct UnconstructedViewAuditTests {
+
+    /// A source file handed to the scan.
+    typealias SourceFile = MacSheetToolbarPlacementAuditTests.SourceFile
+
+    private static let sourceRoot: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSExplorer")
+
+    /// The views no code names, each with the file that declares it and what it is.
+    ///
+    /// Both were found by this scan on 2026-10-01 and are reported in lane HYG's return as dead
+    /// code to delete; neither is in the lane's text, and each brings strings of its own
+    /// (`search.filter.chip.clear.*`, `document.crossProject.*`) that a deletion has to follow
+    /// into the copy scans.
+    static let knownUnnamed: [String: String] = [
+        "FilterChip": "App/SearchSheet.swift — a filter chip with a clear button that the Mac "
+            + "Search window's chips no longer use",
+        "CrossProjectNoteIndicator": "DocumentView/DocumentView.swift — the disclosure for notes "
+            + "filed under other projects, and the only user of `CrossProjectNoteRow` beside it",
+    ]
+
+    /// What the scan read.
+    struct Census: Sendable {
+        /// How many files were read.
+        let filesRead: Int
+        /// Every type whose header names `View`, by name, with the path of each file declaring it.
+        let declared: [String: [String]]
+        /// The declared names no identifier names outside the type's own declarations.
+        let unnamed: [String]
+    }
+
+    /// Reads `files` together.
+    static func census(of files: [SourceFile]) -> Census {
+        var declared: [String: [String]] = [:]
+        var mentions: [String: Int] = [:]
+        var ownMentions: [String: Int] = [:]
+        for (index, file) in files.enumerated() {
+            let code = MaskedSwift(file.source)
+            for declaration in code.typeDeclarations(file: index) {
+                // The name after `struct` or `extension` is the type naming itself.
+                ownMentions[declaration.name, default: 0] += 1
+                if declaration.conformsToView, !declaration.isExtension {
+                    declared[declaration.name, default: []].append(file.path)
+                }
+            }
+            for (word, count) in code.capitalizedWordCounts() {
+                mentions[word, default: 0] += count
+            }
+        }
+        let unnamed = declared.keys
+            .filter { mentions[$0, default: 0] <= ownMentions[$0, default: 0] }
+            .sorted()
+        return Census(filesRead: files.count, declared: declared, unnamed: unnamed)
+    }
+
+    /// Why `census` and `known` disagree, one line per view; empty when they agree.
+    static func violations(in census: Census, known: [String: String]) -> [String] {
+        var out: [String] = []
+        for name in census.unnamed where known[name] == nil {
+            out.append("\(name) (\((census.declared[name] ?? []).joined(separator: ", "))): no code names it "
+                       + "outside its own declaration — construct it, or delete it with its strings")
+        }
+        for name in known.keys.sorted() where !census.unnamed.contains(name) {
+            out.append(census.declared[name] == nil
+                       ? "\(name): listed in knownUnnamed, and the tree no longer declares it — drop the entry"
+                       : "\(name): listed in knownUnnamed, and code names it now — drop the entry")
+        }
+        return out
+    }
+
+    @Test("UnconstructedView: every View the app declares is named by code besides its own declaration")
+    func everyDeclaredViewIsNamed() throws {
+        let files = try FileManager.default
+            .subpathsOfDirectory(atPath: Self.sourceRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+            .map { SourceFile(path: $0, source: try String(contentsOf: Self.sourceRoot.appendingPathComponent($0),
+                                                           encoding: .utf8)) }
+        let census = Self.census(of: files)
+        // Anti-vacuity, in the test it guards: a scan that reads nothing finds nothing unnamed.
+        // Measured 2026-10-01 with lane HYG's deletions in: 480 files, 394 types whose header names
+        // View (401 in 483 files before them). The floors are loose so they catch a scanner that
+        // stops matching, not a tree that loses a few.
+        print("[UnconstructedView] \(census.filesRead) files, \(census.declared.count) types naming View, "
+              + "unnamed: \(census.unnamed)")
+        #expect(census.filesRead > 400, "Read only \(census.filesRead) Swift files under \(Self.sourceRoot.path)")
+        #expect(census.declared.count > 300, "Found only \(census.declared.count) types whose header names View")
+        #expect(census.declared["TripPacketSheet"] == ["TripPacket/TripPacketSheet.swift"],
+                "TripPacketSheet is not among the views the scan declared, so the scan is not reading headers")
+
+        let violations = Self.violations(in: census, known: Self.knownUnnamed)
+        #expect(violations.isEmpty, Comment(rawValue: """
+            A view nothing constructs is a screen no reader can reach, kept compiling and swept by \
+            every copy scan (#1484: PromptsListView, GlobalContextView):
+
+            \(violations.joined(separator: "\n"))
+            """))
+    }
+
+    // MARK: Fixtures (one per rule the scan applies)
+
+    /// A fixture: files, and the views the scan must report unnamed.
+    struct Fixture: Sendable, CustomTestStringConvertible {
+        let name: String
+        let files: [String]
+        let unnamed: [String]
+        var testDescription: String { name }
+    }
+
+    static let fixtures: [Fixture] = [
+        Fixture(name: "a view constructed in another file is named",
+                files: ["struct Screen: View { var body: some View { Text(verbatim: \"x\") } }",
+                        "struct Host: View { var body: some View { Screen() } }\nlet host = Host()"],
+                unnamed: []),
+        Fixture(name: "a view nothing constructs is reported",
+                files: ["struct Screen: View { var body: some View { EmptyView() } }",
+                        "struct Host: View { var body: some View { EmptyView() } }\nlet host = Host()"],
+                unnamed: ["Screen"]),
+        Fixture(name: "a comment or a string naming a view is not code naming it",
+                files: ["""
+                    struct Screen: View { var body: some View { EmptyView() } }
+                    // Screen() is what Settings used to push.
+                    /* Screen */
+                    let path = "Views/Screen.swift"
+                    let note = \"\"\"
+                        Screen()
+                        \"\"\"
+                    """],
+                unnamed: ["Screen"]),
+        Fixture(name: "a view's own extension does not name it",
+                files: ["struct Screen: View { var body: some View { EmptyView() } }",
+                        "extension Screen { static let title = 1 }"],
+                unnamed: ["Screen"]),
+        Fixture(name: "a type that is not a View is not this scan's to report",
+                files: ["struct Model { let id: Int }\nfinal class Store: NSObject {}\nenum Kind { case a }"],
+                unnamed: []),
+        Fixture(name: "a generic view built with a trailing closure is named",
+                files: ["struct Box<Content: View>: View { let content: Content; var body: some View { content } }",
+                        "struct Host: View { var body: some View { Box { EmptyView() } } }\nlet host = Host()"],
+                unnamed: []),
+        Fixture(name: "a view only one platform constructs is named",
+                files: ["struct MacPane: View { var body: some View { EmptyView() } }",
+                        "struct Host: View {\n    var body: some View {\n        #if os(macOS)\n        MacPane()\n"
+                            + "        #else\n        EmptyView()\n        #endif\n    }\n}\nlet host = Host()"],
+                unnamed: []),
+        Fixture(name: "a view named as a type, not constructed, is still named",
+                files: ["struct Screen: View { var body: some View { EmptyView() } }",
+                        "let kind: any View.Type = Screen.self"],
+                unnamed: []),
+    ]
+
+    @Test("UnconstructedView: the scan reports exactly the unnamed views", arguments: fixtures)
+    func scanReportsTheUnnamed(_ fixture: Fixture) {
+        let files = fixture.files.enumerated().map { SourceFile(path: "File\($0.offset).swift", source: $0.element) }
+        #expect(Self.census(of: files).unnamed == fixture.unnamed)
+    }
+
+    @Test("UnconstructedView: knownUnnamed is exact — a listed view that is named or gone fails")
+    func knownListIsExact() {
+        let dead = SourceFile(path: "Dead.swift", source: "struct Dead: View { var body: some View { EmptyView() } }")
+        let used = SourceFile(path: "Used.swift",
+                              source: "struct Used: View { var body: some View { EmptyView() } }\nlet used = Used()")
+        let census = Self.census(of: [dead, used])
+        #expect(Self.violations(in: census, known: ["Dead": "kept"]).isEmpty)
+        #expect(Self.violations(in: census, known: [:]).map { String($0.prefix(18)) } == ["Dead (Dead.swift):"])
+        #expect(Self.violations(in: census, known: ["Dead": "kept", "Used": "kept"])
+                == ["Used: listed in knownUnnamed, and code names it now — drop the entry"])
+        #expect(Self.violations(in: census, known: ["Dead": "kept", "Gone": "kept"])
+                == ["Gone: listed in knownUnnamed, and the tree no longer declares it — drop the entry"])
+    }
+}
+
+extension MaskedSwift {
+    /// How many times each capitalized identifier occurs in the file — every type name it spells.
+    func capitalizedWordCounts() -> [String: Int] {
+        var counts: [String: Int] = [:]
+        for word in words() where Self.isUppercase(bytes[word.lowerBound]) {
+            counts[text(word), default: 0] += 1
+        }
+        return counts
     }
 }
 

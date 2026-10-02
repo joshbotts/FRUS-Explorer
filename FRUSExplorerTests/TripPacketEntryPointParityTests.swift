@@ -618,20 +618,35 @@ struct TripPacketEntryPointParityTests {
     /// `TripPacketTopicSentence.openPlanDraft`, driven at runtime by
     /// `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic`. This pins that the rebuild
     /// calls it with the plan's stored topic and sets the field only from what it returns, and that
-    /// the sheet names `researchQuestion` in exactly three places — its declaration, the caption's
-    /// comparison and the ephemeral builder's seed — so no other path can read the question.
-    @Test("The packet sheet opens a plan's topic from the plan alone (#1366)")
+    /// the sheet names `researchQuestion` in exactly two places — its declaration and the caption's
+    /// comparison — so no path can read the question as a seed.
+    ///
+    /// **Two, where it was three, since #1423.** The third was the ephemeral builder's seed: the
+    /// half of `rebuild()` that served a document-list or collection seed passed the question to
+    /// `TripPacketBuilder.build(documents:researchQuestion:)`, so on those paths it still seeded
+    /// the topic at render time without the field showing it. Nothing constructed either seed, and
+    /// this test counted that call as permitted. It now requires that the sheet builds through no
+    /// `TripPacketBuilder.build` at all, and that `rebuild()` is one path with no seed to branch
+    /// on. Measured on `v2` @ dc17d945, before the deletion: it failed on both.
+    @Test("The packet sheet opens a plan's topic from the plan alone (#1366, #1423)")
     func packetSheetOpensThePlansOwnTopic() throws {
         let sheet = Self.strippingComments(
             try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
         let rebuild = try #require(Self.body(after: "private func rebuild() async", in: sheet),
                                    "the sheet's rebuild() is gone — re-derive this test")
-        let header = try #require(sheet.range(of: "if let plan = seededPlan", range: rebuild),
-                                  "rebuild() no longer branches on a plan seed")
-        let planBranch = String(sheet[try #require(Self.body(from: header.upperBound, in: sheet))])
+        let planBranch = String(sheet[rebuild])
+        for seedBranch in ["seededPlan", "switch seed", "case .documents", "case .collection",
+                           "resolveSeedDocuments"] {
+            #expect(!sheet.contains(seedBranch), """
+                TripPacketSheet.swift names `\(seedBranch)` — the packet is built from its plan and \
+                nothing else (#1423); a second seed is a second path the question can seed.
+                """)
+        }
+        #expect(sheet.contains("let plan: ArchiveVisitPlan"),
+                "the sheet no longer takes its plan directly — re-derive this test")
         #expect(!planBranch.contains("researchQuestion"), """
-            The `.plan` branch of rebuild() names the project's question — it must open the topic \
-            from the plan alone (#1366, §4 item 1): \(planBranch)
+            rebuild() names the project's question — it must open the topic from the plan alone \
+            (#1366, §4 item 1): \(planBranch)
             """)
         let opens = Self.calls(of: "planModel.topicSentence.openPlanDraft", in: planBranch)
         #expect(opens.count == 1, "expected the plan branch's one openPlanDraft call, found \(opens.count)")
@@ -656,14 +671,16 @@ struct TripPacketEntryPointParityTests {
         var rest = sheet
         let captions = Self.calls(of: "TripPacketTopicSentence.showsSeededCaption", in: sheet)
         let builds = Self.calls(of: "TripPacketBuilder.build", in: sheet)
-        #expect(captions.count == 1 && builds.count == 1, """
-            Expected one caption comparison and one ephemeral build, found \(captions.count) and \
-            \(builds.count).
+        #expect(captions.count == 1, "Expected one caption comparison, found \(captions.count).")
+        #expect(builds.isEmpty, """
+            The sheet builds a packet through TripPacketBuilder.build \(builds.count) time(s). A \
+            plan's packet derives through ArchiveVisitDerivation; a build here is an ephemeral \
+            packet, which seeds its topic from the question at render time (#1423): \(builds)
             """)
-        for call in captions + builds {
+        for call in captions {
             #expect(Self.argument("researchQuestion", in: call) == "researchQuestion")
         }
-        for permitted in ["let researchQuestion: String?"] + captions + builds {
+        for permitted in ["let researchQuestion: String?"] + captions {
             guard let range = rest.range(of: permitted) else {
                 Issue.record("`\(permitted)` is not in the sheet — re-derive this test")
                 continue
@@ -675,9 +692,9 @@ struct TripPacketEntryPointParityTests {
             .compactMap { Range($0.range, in: rest) }
             .map { rest[..<$0.lowerBound].components(separatedBy: "\n").count }
         #expect(stray.isEmpty, """
-            TripPacketSheet.swift names `researchQuestion` outside its declaration, the caption and \
-            the ephemeral build, at line(s) \(stray) — a path that could seed a plan's topic from \
-            the project's question at render time (#1366).
+            TripPacketSheet.swift names `researchQuestion` outside its declaration and the caption, \
+            at line(s) \(stray) — a path that could seed a plan's topic from the project's question \
+            at render time (#1366, #1423).
             """)
     }
 

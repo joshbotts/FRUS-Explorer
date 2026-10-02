@@ -874,7 +874,7 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 820, height: 680)
-        // #363 #5: Search's key equivalent is now ⌘S, owned by the Find command menu
+        // #363 #5: Search's key equivalent (⌥⌘F since M-14) is owned by the Find command menu
         // (FindMenuContent) — ⌘F was remapped to Find in Document. Removed from the scene so
         // there is a single owner (mirrors the #2 duplicate-binding fix).
 
@@ -2140,7 +2140,7 @@ struct FRUSExplorerApp: App {
     /// `appState.searchService`, and it was awaited from ONE place: a `.task` on the primary
     /// `WindowGroup`. Every standalone macOS window — Search, Corpus Browser, People, the
     /// analytics windows — boots nothing. So an app that came up showing only the Search window
-    /// (a restored session, or ⌘S before the main window) had `searchService == nil` for the
+    /// (a restored session, or ⌥⌘F before the main window) had `searchService == nil` for the
     /// whole session: every query returned zero, Facets stayed disabled, and the Advanced
     /// popover rendered an empty box. Silently — search reported "No Results" over an index
     /// holding 316,839 documents.
@@ -3717,9 +3717,9 @@ struct DocumentMenuContent: View {
 /// Groups the three "finding" flows: **Find in Document** (⌘F — the focused
 /// document's in-page find bar, driven through `\.documentCommands`, so it targets
 /// the key document window and is disabled when no document surface is key), plus
-/// **Find Next** (⌘G) / **Find Previous** (⌘⇧G); full-text **Search** (⌘S — moved
-/// off ⌘F, which Find in Document now owns; the app has no Save command, so ⌘S was
-/// free); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
+/// **Find Next** (⌘G) / **Find Previous** (⌘⇧G); full-text **Search** (⌥⌘F — moved
+/// off ⌘F, which Find in Document now owns, to ⌘S, and off ⌘S at M-14 because that
+/// is Save everywhere else); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
 /// owners of their key equivalents (removed from the window scenes, mirroring #2).
 /// **Search Tips…** (#1299, no shortcut) fronts the Search window and opens its Tips panel.
 /// **Search…** has a key of its own, `menu.find.search.mac` (#1483): it opens a window, so it takes an

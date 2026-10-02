@@ -23,13 +23,49 @@ import SwiftUI
 /// splash — was on the static `Text` renderer, while the two drifting surfaces passed no zones.
 /// So the path was written, reviewed, and shipped unexecuted, with a real bug in it.
 ///
+/// ## Every fixture names its idiom (#1412)
+/// The identity block's sizes are per idiom (`LaunchIdentityMetrics`), and `identityZones` takes
+/// this device's by default. The geometry tests here used that default against a phone-sized
+/// canvas, so on an iPad test host they measured the iPad's 176 pt tile on a 393 pt canvas, and
+/// three of them failed there — two here and one in `OnboardingIdentityPlacementTests` — while
+/// passing on every iPhone. Each now passes the metrics its canvas belongs to, and
+/// ``Idiom/all`` runs the pure-geometry ones over the iPad's and the Mac's as well, so the iPad's
+/// geometry is tested from an iPhone host and the reverse.
+/// ``geometryFixturesNameTheirIdiom()`` keeps a host-dependent reading from coming back.
+///
 /// Version history:
 ///   1.0 — visual-marketing plan §3.2 M-4: initial implementation
+///   1.1 — #1412 (lane HYG): no fixture reads the test host's idiom; the zone tests run per idiom
 @Suite("Launch splash — drift and exclusion")
 struct SplashDriftTests {
 
     /// A phone at the width the composition review is asked for.
     private let phone = CGSize(width: 393, height: 852)
+
+    /// One idiom's identity block on a canvas of that idiom.
+    struct Idiom: Sendable, CustomTestStringConvertible {
+        /// The idiom's name, for the test's report.
+        let name: String
+        /// A full canvas of the idiom, in points.
+        let canvas: CGSize
+        /// The identity block's sizes on it.
+        let metrics: LaunchIdentityMetrics
+
+        var testDescription: String { name }
+
+        /// An iPhone at the width the composition review is asked for.
+        static let phone = Idiom(name: "iPhone, 393 × 852",
+                                 canvas: CGSize(width: 393, height: 852), metrics: .phone)
+        /// An iPad Pro 11-inch in portrait.
+        static let pad = Idiom(name: "iPad, 834 × 1194",
+                               canvas: CGSize(width: 834, height: 1_194), metrics: .pad)
+        /// The Mac's splash window (`LaunchIdentityMetrics.mac`'s doc gives its size).
+        static let mac = Idiom(name: "Mac, 560 × 540",
+                               canvas: CGSize(width: 560, height: 540), metrics: .mac)
+
+        /// Every idiom the app ships a splash on.
+        static let all = [phone, pad, mac]
+    }
 
     // MARK: - The clamp defect
 
@@ -155,11 +191,17 @@ struct SplashDriftTests {
     /// `push` returns early on an empty list) and once with the real one. Any future change to
     /// `expansion`, `fillFactor` or the tuning that quietly stops carrying words into the zone
     /// fails here instead of going green.
-    @Test("No word settles on the identity block — and the sweep really reaches it")
+    ///
+    /// **Per idiom, on that idiom's own canvas (#1412).** It used to take the zones at the test
+    /// host's metrics over the phone canvas, so on an iPad host the 176 pt tile's zones sat on a
+    /// 393 pt canvas: the probes no longer fitted inside the anchors' reach, and a word settled on
+    /// a block that canvas could not hold (`SplashDriftTests.swift:203` and `:237` at the time).
+    @Test("No word settles on the identity block — and the sweep really reaches it",
+          arguments: [Idiom.phone, Idiom.pad])
     @MainActor
-    func nothingSettlesOnTheIdentityBlock() {
-        let size = phone
-        let zones = LaunchSplashView.identityZones(in: size)
+    func nothingSettlesOnTheIdentityBlock(_ idiom: Idiom) {
+        let size = idiom.canvas
+        let zones = LaunchSplashView.identityZones(in: size, metrics: idiom.metrics)
         let fill = WordCloudBackdropView.fillFactor(for: size)
         #expect(fill > 1, "the splash must be a full-bleed surface for this test to mean anything")
 
@@ -260,19 +302,21 @@ struct SplashDriftTests {
     /// zone and passes for any zone at all — shrinking `identityZone` to 40 pt tall left it green.
     /// This checks the zone against the identity block's own layout constants instead, so a zone
     /// too small to cover the wordmark fails here rather than on a store screenshot.
-    @Test("The exclusion zone covers the identity block it protects")
+    @Test("The exclusion zone covers the identity block it protects", arguments: Idiom.all)
     @MainActor
-    func zoneCoversTheIdentityBlock() {
-        for size in [phone, CGSize(width: 1_280, height: 800)] {
-            let zone = LaunchSplashView.identityZone(in: size)
-            #expect(zone.height >= LaunchSplashView.identityBlockMinimumHeight,
-                    "the zone is \(zone.height) tall at \(size), and the block needs \(LaunchSplashView.identityBlockMinimumHeight)")
-            #expect(zone.width >= LaunchSplashView.tileSize,
+    func zoneCoversTheIdentityBlock(_ idiom: Idiom) {
+        let metrics = idiom.metrics
+        // The idiom's own canvas, and a wide one: the zone is centred whatever the canvas is.
+        for size in [idiom.canvas, CGSize(width: 1_280, height: 800)] {
+            let zone = LaunchSplashView.identityZone(in: size, metrics: metrics)
+            #expect(zone.height >= metrics.identityBlockMinimumHeight,
+                    "the zone is \(zone.height) tall at \(size), and the block needs \(metrics.identityBlockMinimumHeight)")
+            #expect(zone.width >= metrics.tileSize,
                     "the zone is narrower than the app tile at \(size)")
             // The glass backplate is drawn OUTSIDE the block's layout (see `LaunchIdentityBlock`),
             // reaching `backplateInset` above the icon; the zone's slack must absorb it, or the
             // plate's rim would sit over words the zone was meant to clear.
-            #expect(zone.height >= LaunchSplashView.identityBlockMinimumHeight
+            #expect(zone.height >= metrics.identityBlockMinimumHeight
                         + 2 * LaunchIdentityBlock.backplateInset,
                     "the zone has no room for the backplate at \(size)")
             // Centred on the block, which is centred in the frame — to within the line-height
@@ -285,31 +329,45 @@ struct SplashDriftTests {
     /// The two zones hug the block: the tile's square is centred on the tile and just wider than
     /// the glass plate, and the text strip starts below the tile — which is what lets words reach
     /// the plate's rim instead of stopping at a rect around the whole block.
-    @Test("The tile zone is a square around the glass, and the text zone sits below it")
+    @Test("The tile zone is a square around the glass, and the text zone sits below it", arguments: Idiom.all)
     @MainActor
-    func zonesHugTheBlock() throws {
-        let zones = LaunchSplashView.identityZones(in: phone)
+    func zonesHugTheBlock(_ idiom: Idiom) throws {
+        let canvas = idiom.canvas
+        let zones = LaunchSplashView.identityZones(in: canvas, metrics: idiom.metrics)
         try #require(zones.count == 2)
         let tile = zones[0], text = zones[1]
-        let plate = LaunchSplashView.tileSize + 2 * LaunchIdentityBlock.backplateInset
+        let plate = idiom.metrics.tileSize + 2 * LaunchIdentityBlock.backplateInset
         #expect(abs(tile.width - tile.height) < 0.001, "the tile zone is a square")
         #expect(tile.width == plate + 2 * LaunchSplashView.zoneMargin)
-        #expect(abs(tile.midX - phone.width / 2) < 0.001)
+        #expect(abs(tile.midX - canvas.width / 2) < 0.001)
         #expect(text.minY > tile.midY, "the text strip must not reach up past the tile's centre")
         #expect(text.minY < tile.maxY, "…but must start inside the tile's clearance, leaving no gap")
         #expect(text.width > tile.width, "the caption is wider than the tile")
-        // Together they cover less than the old 340 x 260 rect did — that is the point.
-        let union = LaunchSplashView.identityZone(in: phone)
-        #expect(union.height < 260)
+        // The union is the two zones and nothing more: as tall as the span from the tile's top to
+        // the text strip's foot.
+        let union = LaunchSplashView.identityZone(in: canvas, metrics: idiom.metrics)
+        #expect(union == tile.union(text))
     }
 
-    @Test("The glass backplate stops short of the wordmark")
+    /// On a phone the two zones together cover less than the single 340 x 260 rect they replaced
+    /// — that was the point of splitting it. A phone's number: the iPad's 176 pt tile makes its
+    /// block taller than 260 pt by itself, which is the bound an iPad test host failed here
+    /// (#1412) while the phone it described was unchanged.
+    @Test("On a phone the two zones cover less than the single rect they replaced")
     @MainActor
-    func backplateStaysInTheGap() {
+    func phoneZonesAreSmallerThanTheOldRect() {
+        let union = LaunchSplashView.identityZone(in: phone, metrics: .phone)
+        #expect(union.height < 260)
+        #expect(union.width <= 340)
+    }
+
+    @Test("The glass backplate stops short of the wordmark", arguments: Idiom.all)
+    @MainActor
+    func backplateStaysInTheGap(_ idiom: Idiom) {
         // Drawn as a background, the plate borrows from the gap below the icon. It must leave some
         // of that gap, or the wordmark would sit on the plate's rim.
-        #expect(LaunchIdentityBlock.backplateInset < LaunchSplashView.blockSpacing,
-                "the plate reaches \(LaunchIdentityBlock.backplateInset) pt into a \(LaunchSplashView.blockSpacing) pt gap")
+        #expect(LaunchIdentityBlock.backplateInset < idiom.metrics.blockSpacing,
+                "the plate reaches \(LaunchIdentityBlock.backplateInset) pt into a \(idiom.metrics.blockSpacing) pt gap")
         #expect(LaunchIdentityBlock.backplateInset > 0)
     }
 
@@ -415,19 +473,83 @@ struct SplashDriftTests {
         let insets = EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)
         // The block is centred in the SAFE-AREA box, which sits `insets.top` down the canvas, so
         // every zone is the inset-free zone shifted by exactly (leading, top).
-        let bare = LaunchSplashView.identityZones(in: safeArea)
-        let shifted = LaunchSplashView.identityZones(in: safeArea, safeAreaInsets: insets)
+        // A phone's safe area and insets, so a phone's metrics (#1412).
+        let bare = LaunchSplashView.identityZones(in: safeArea, metrics: .phone)
+        let shifted = LaunchSplashView.identityZones(in: safeArea, safeAreaInsets: insets, metrics: .phone)
+        #expect(bare.count == 2 && shifted.count == 2, "expected the tile zone and the text zone")
         for (a, b) in zip(bare, shifted) {
             #expect(b == a.offsetBy(dx: insets.leading, dy: insets.top),
                     "zone \(b) is not \(a) moved by the insets")
         }
-        let zone = LaunchSplashView.identityZone(in: safeArea, safeAreaInsets: insets)
+        let zone = LaunchSplashView.identityZone(in: safeArea, safeAreaInsets: insets, metrics: .phone)
         #expect(abs(zone.midX - (insets.leading + safeArea.width / 2)) < 0.001)
         // Landscape: the insets are horizontal, and the same rule has to carry it.
         let landscape = CGSize(width: 750, height: 382)
         let sideInsets = EdgeInsets(top: 0, leading: 62, bottom: 20, trailing: 62)
-        let rotated = LaunchSplashView.identityZone(in: landscape, safeAreaInsets: sideInsets)
+        let rotated = LaunchSplashView.identityZone(in: landscape, safeAreaInsets: sideInsets, metrics: .phone)
         #expect(abs(rotated.midX - (62 + landscape.width / 2)) < 0.001)
+    }
+
+    // MARK: - No fixture reads the host (#1412)
+
+    /// **A geometry fixture names its idiom; it does not ask the simulator it happens to run on.**
+    ///
+    /// `LaunchSplashView.identityZones` and `identityZone` default their `metrics:` to this
+    /// device's, and `LaunchSplashView.tileSize` and its siblings read this device's too. A test
+    /// that leaves the default in measures an iPad's block on an iPad host and a phone's on an
+    /// iPhone host, against whatever canvas the fixture hard-codes. That is how three tests came
+    /// to fail on every iPad host and pass on every iPhone (#1412) — and since the wave's unit
+    /// runs are on an iPhone, a new one would not be seen. So this reads the three files that
+    /// build identity zones and refuses a call without `metrics:` and any read of the host's
+    /// metrics. Same result on every destination; the failure it prevents shows on an iPad host.
+    @Test("No splash or onboarding geometry fixture reads the test host's idiom (#1412)")
+    func geometryFixturesNameTheirIdiom() throws {
+        let directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        // Spelled in two pieces so this file does not hold the text it refuses.
+        let view = "LaunchSplash" + "View."
+        let hostReads = ["tileSize", "wordmarkSize", "captionSize", "blockSpacing", "identityBlockMinimumHeight"]
+            .map { view + $0 } + ["LaunchIdentity" + "Metrics.current", "metrics: " + ".current"]
+        var calls = 0
+        var failures: [String] = []
+        for name in ["SplashDriftTests.swift", "OnboardingDockMetricsTests.swift", "LaunchArtworkTests.swift"] {
+            // Comment lines blanked, line count kept: the doc comments here name what they refuse.
+            let source = try String(contentsOf: directory.appendingPathComponent(name), encoding: .utf8)
+                .components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : $0 }
+                .joined(separator: "\n")
+            for read in hostReads where source.contains(read) {
+                failures.append("\(name) reads \(read), which is the test host's")
+            }
+            for function in ["identityZones(", "identityZone("] {
+                var searched = source[...]
+                while let call = searched.range(of: view + function) {
+                    // The call's own argument list, by its balanced parentheses.
+                    let open = source.index(before: call.upperBound)
+                    var depth = 0
+                    var close = open
+                    for index in source[open...].indices {
+                        if source[index] == "(" { depth += 1 }
+                        if source[index] == ")" { depth -= 1 }
+                        if depth == 0 { close = index; break }
+                    }
+                    try #require(close > open, "\(name): an \(function) call never closes")
+                    calls += 1
+                    let arguments = source[open...close]
+                    if !arguments.contains("metrics:") {
+                        let line = source[..<call.lowerBound].components(separatedBy: "\n").count
+                        failures.append("\(name):\(line) calls \(function)…) without metrics: — \(arguments)")
+                    }
+                    searched = source[close...]
+                }
+            }
+        }
+        // Measured 2026-10-01: 12 calls across the three files. A scan that finds none passes.
+        #expect(calls >= 10, "found only \(calls) identity-zone call(s) in the three files")
+        #expect(failures.isEmpty, """
+            A fixture takes the identity block's sizes from the simulator hosting the tests, so it \
+            passes or fails by host (#1412). Pass `metrics:` for the idiom the canvas belongs to:
+            \(failures.joined(separator: "\n"))
+            """)
     }
 
     // MARK: - Wiring

@@ -25,8 +25,8 @@ import SwiftData
 /// (`any` / `unfiled` / `id`) rather than inventing a fourth convention, and — like it —
 /// spells "no project" as its own case instead of a sentinel UUID. The sentinel form is a
 /// recorded defect in this codebase twice over: the old Notes pane tagged its "Untagged"
-/// item with the all-zeros UUID and matched nothing, and `GlobalContextView` mints a fresh
-/// `UUID()` per render so the selection cannot even stick.
+/// item with the all-zeros UUID and matched nothing, and `GlobalContextView` (deleted, lane HYG)
+/// minted a fresh `UUID()` per render so the selection could not even stick.
 enum HistoryScope: Hashable, Sendable {
 
     /// Every entry, whatever project was active when it was recorded. The default (D4:

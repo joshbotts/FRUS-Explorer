@@ -199,8 +199,8 @@ struct NotesPaneSnapshot: Equatable, Sendable {
     /// `unfiled` is its own case rather than a sentinel UUID. The old pane tagged its "Untagged"
     /// menu item with the all-zeros UUID and then asked whether a note's `projectIds` *contained*
     /// it — which no note ever does, so selecting it always produced zero results and the
-    /// "no notes match" empty state. (`GlobalContextView` has the same defect in a worse form:
-    /// it mints a fresh `UUID()` per render, so the selection cannot even stick.)
+    /// "no notes match" empty state. (`GlobalContextView`, since deleted, had it in a worse form:
+    /// it minted a fresh `UUID()` per render, so the selection could not even stick.)
     enum ProjectFilter: Hashable, Sendable {
         /// No project constraint.
         case any
