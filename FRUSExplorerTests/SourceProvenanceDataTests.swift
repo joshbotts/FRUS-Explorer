@@ -8,6 +8,8 @@
 
 import Testing
 import Foundation
+import SwiftUI
+import Charts
 @testable import FRUSExplorer
 
 // MARK: - SourceProvenanceDataTests
@@ -32,6 +34,9 @@ import Foundation
 ///          File in the 1960s and 1970s and nowhere else; the Categories menu's count is derived
 ///   1.5 — 2026-10-02 (#1543, review round 1): the count test reads the call's two arguments,
 ///          so a literal total fails it
+///   1.6 — 2026-10-02 (#1543, landing round 2): the charts' colour scale — each older category
+///          keeps the colour the default cycle drew it in, read from the scale and from drawn
+///          charts, and every chart that colours by category takes the one scale
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -346,6 +351,203 @@ struct SourceProvenanceDataTests {
             + "Int64(SourceProvenanceCategory.ordered.count-hiddenCategories.count),"
             + "Int64(SourceProvenanceCategory.ordered.count)"
         #expect(call == wanted, "the count text's arguments are \(call)")
+    }
+
+    // MARK: The charts' colour scale (#1543, landing round 2)
+
+    /// The ten categories the charts had before the Subject-Numeric File, in the order they had:
+    /// `SourceProvenanceCategory.ordered` on the base this lane was cut from.
+    private static let categoriesBeforeSubjectNumeric: [SourceProvenanceCategory] = [
+        .centralDecimalFile, .centralForeignPolicyFile, .lotFile, .presidentialLibrary,
+        .naraCollection, .intelligence, .namedFileSeries, .foreignArchive, .previouslyPublished,
+        .unrecognized,
+    ]
+
+    /// Swift Charts' default cycle, which a chart with a domain and no range takes by position.
+    /// Measured by drawing one: on macOS 27.0 and the iOS 26.4 and 26.5 simulators the sixth
+    /// colour is `Color.teal` (0, 195, 208 in light mode), not `.cyan` (0, 192, 232).
+    private static let defaultCycle: [Color] = [.blue, .green, .orange, .purple, .red, .teal, .yellow]
+
+    /// Until this scale the charts passed a domain and no range, so an eleventh category in second
+    /// place moved every later category one colour along the cycle, and Named File Series took
+    /// the Central Decimal File's blue.
+    @Test("Each older category keeps the colour its position gave it, and the new one has its own")
+    func olderCategoriesKeepTheirColours() {
+        let older = Self.categoriesBeforeSubjectNumeric
+        #expect(older.count == 10)
+        #expect(Set(older).union([.subjectNumericFile]) == Set(SourceProvenanceCategory.allCases),
+                "the ten older categories and the Subject-Numeric File are every category")
+        for (position, category) in older.enumerated() {
+            #expect(category.chartColor == Self.defaultCycle[position % Self.defaultCycle.count],
+                    "\(category.rawValue) is no longer the colour of position \(position + 1) of ten")
+        }
+
+        let new = SourceProvenanceCategory.subjectNumericFile.chartColor
+        #expect(new == .brown)
+        for category in older {
+            #expect(category.chartColor != new, "\(category.rawValue) shares the new category's colour")
+        }
+        #expect(!Self.defaultCycle.contains(new), "the new category's colour is one the cycle uses")
+
+        // The scale the charts read: eleven entries, the enum's order, each category's colour.
+        let scale = SourceProvenanceCategory.chartColorScale
+        #expect(scale.domain.count == 11 && scale.range.count == 11)
+        #expect(scale.domain == SourceProvenanceCategory.ordered.map(\.displayName))
+        #expect(scale.range == SourceProvenanceCategory.ordered.map(\.chartColor))
+        #expect(scale.domain[1] == "Subject-Numeric File", "the legend's second entry")
+        #expect(scale.range[1] == .brown)
+    }
+
+    /// One bar of `category`, coloured by its display name the way the provenance charts colour
+    /// theirs: through the scale they call, or through the ten-name domain with no range that
+    /// they passed before the Subject-Numeric File.
+    @MainActor @ViewBuilder
+    private static func bar(of category: SourceProvenanceCategory, statedScale: Bool) -> some View {
+        let chart = Chart {
+            BarMark(x: .value("Provenance", category.displayName), y: .value("Source notes", 1))
+                .foregroundStyle(by: .value("Provenance", category.displayName))
+        }
+        .chartLegend(.hidden)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        if statedScale {
+            chart.provenanceCategoryColorScale()
+        } else {
+            chart.chartForegroundStyleScale(domain: categoriesBeforeSubjectNumeric.map(\.displayName))
+        }
+    }
+
+    /// The colour at the middle of that bar, drawn 60 points square.
+    @MainActor
+    private static func drawnColour(of category: SourceProvenanceCategory, statedScale: Bool,
+                                    scheme: ColorScheme) throws -> [UInt8] {
+        let view = bar(of: category, statedScale: statedScale)
+            .frame(width: 60, height: 60)
+            .environment(\.colorScheme, scheme)
+        let image = try RenderedText.image(of: view, width: 60, scale: 1)
+        let pixels = try RenderedText.pixels(of: image)
+        let middle = ((image.height / 2) * image.width + image.width / 2) * 4
+        return Array(pixels[middle..<middle + 3])
+    }
+
+    /// The same claim read off drawn charts, so it does not rest on the cycle this file states:
+    /// each older category, drawn through the scale, is the colour a ten-category chart with no
+    /// range draws it in. That reference chart is what the app shipped.
+    @MainActor
+    @Test("Drawn, each older category is the colour a ten-category chart with no range gave it",
+          arguments: [ColorScheme.light, ColorScheme.dark])
+    func drawnColoursAreTheDefaultCycle(scheme: ColorScheme) throws {
+        var drawn: [SourceProvenanceCategory: [UInt8]] = [:]
+        for category in Self.categoriesBeforeSubjectNumeric {
+            let before = try Self.drawnColour(of: category, statedScale: false, scheme: scheme)
+            let now = try Self.drawnColour(of: category, statedScale: true, scheme: scheme)
+            #expect(now == before, "\(category.rawValue) was \(before) and is \(now)")
+            drawn[category] = now
+        }
+        // The drawing drew: ten bars in the cycle's seven colours, none of them the white the
+        // image is laid on.
+        #expect(drawn.count == 10)
+        #expect(Set(drawn.values).count == 7, "the ten bars are in \(Set(drawn.values).count) colours")
+        #expect(!drawn.values.contains([255, 255, 255]))
+
+        let new = try Self.drawnColour(of: .subjectNumericFile, statedScale: true, scheme: scheme)
+        #expect(new != [255, 255, 255])
+        for (category, colour) in drawn {
+            #expect(colour != new, "\(category.rawValue) is drawn in the Subject-Numeric File's colour")
+        }
+    }
+
+    /// Every chart that colours its marks by provenance category calls the one scale, and none
+    /// states a scale of its own.
+    ///
+    /// The marks are found by the legend key their `.foregroundStyle(by:)` call carries — the
+    /// dashboard's and Your Library's — and counted against the calls of
+    /// `.provenanceCategoryColorScale()` in the same file. Nothing ties one mark to one call but
+    /// the count, so a chart added without the scale, or a scale left on a chart that lost its
+    /// marks, moves one count and not the other.
+    @Test("Every chart coloured by provenance category takes the one scale")
+    func everyProvenanceChartTakesTheScale() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let legendKeys = ["\"series.provenance.category.legend\"", "\"archival.table.provenance\""]
+        let expected = [
+            "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift": 2,
+            "FRUSExplorer/Analytics/ArchivalAnalyticsView.swift": 2,
+        ]
+
+        var marksByFile: [String: Int] = [:]
+        var ownScales: [String] = []
+        var filesRead = 0
+        let appRoot = root.appending(path: "FRUSExplorer")
+        let walker = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            filesRead += 1
+            let source = try String(contentsOf: url, encoding: .utf8)
+            let path = "FRUSExplorer/" + url.path.dropFirst(appRoot.path.count + 1)
+            let marks = Self.calls(in: source, opening: ".foregroundStyle(by:")
+                .filter { call in legendKeys.contains { call.contains($0) } }
+            if !marks.isEmpty { marksByFile[path] = marks.count }
+            for call in Self.calls(in: source, opening: ".chartForegroundStyleScale(")
+            where call.contains("SourceProvenanceCategory") {
+                ownScales.append("\(path): \(call)")
+            }
+        }
+        #expect(filesRead > 300, "read \(filesRead) Swift files under FRUSExplorer/")
+        #expect(marksByFile == expected, "marks coloured by provenance category are in \(marksByFile)")
+        #expect(ownScales.isEmpty, "a chart states its own scale over the categories: \(ownScales)")
+
+        for (path, charts) in expected {
+            let source = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            let calls = source.components(separatedBy: ".provenanceCategoryColorScale()").count - 1
+            #expect(calls == charts, "\(path) applies the scale \(calls) times to \(charts) charts")
+        }
+    }
+
+    /// The scan's reader against a mark, a scale of its own, and an unclosed call.
+    @Test("The chart scan reads each call's arguments")
+    func chartScanReadsEachCall() {
+        let source = """
+            Chart {
+                BarMark(x: .value("x", item.name))
+                    .foregroundStyle(by: .value(
+                        String(localized: "archival.table.provenance", defaultValue: "Provenance"),
+                        item.category.displayName))
+            }
+            .chartForegroundStyleScale(
+                domain: SourceProvenanceCategory.ordered.map(\\.displayName))
+            .foregroundStyle(by: .value("Custodian", row.category.displayName))
+            """
+        let marks = Self.calls(in: source, opening: ".foregroundStyle(by:")
+        #expect(marks.count == 2)
+        #expect(marks.filter { $0.contains("\"archival.table.provenance\"") }.count == 1)
+        let scales = Self.calls(in: source, opening: ".chartForegroundStyleScale(")
+        #expect(scales == ["domain:SourceProvenanceCategory.ordered.map(\\.displayName)"])
+        #expect(Self.calls(in: ".foregroundStyle(by: .value(\"k\", x)", opening: ".foregroundStyle(by:").isEmpty,
+                "an unclosed call is not a call")
+    }
+
+    /// The arguments of every call in `source` that begins with `opening`, whitespace removed.
+    /// `opening` ends at or after the call's opening parenthesis; an unclosed call is left out.
+    private static func calls(in source: String, opening: String) -> [String] {
+        var found: [String] = []
+        var from = source.startIndex
+        while let hit = source.range(of: opening, range: from..<source.endIndex) {
+            from = hit.upperBound
+            guard let open = source[hit].lastIndex(of: "(") else { continue }
+            var depth = 0
+            var index = open
+            var close: String.Index?
+            while index < source.endIndex {
+                if source[index] == "(" { depth += 1 }
+                if source[index] == ")" {
+                    depth -= 1
+                    if depth == 0 { close = index; break }
+                }
+                index = source.index(after: index)
+            }
+            guard let close else { continue }
+            found.append(String(source[source.index(after: open)..<close].filter { !$0.isWhitespace }))
+        }
+        return found
     }
 
     /// The scan's own reader, against the two mutants it exists for and a call split another way.

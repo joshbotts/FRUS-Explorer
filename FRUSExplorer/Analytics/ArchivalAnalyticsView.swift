@@ -1409,8 +1409,7 @@ struct ArchivalAnalyticsView: View {
                         percentString(item.documentCount, of: profile.noteCount))))
                 }
             }
-            .chartForegroundStyleScale(
-                domain: SourceProvenanceCategory.ordered.map(\.displayName))
+            .provenanceCategoryColorScale()
             .chartYAxis(.hidden)
             .frame(height: 120)
         }
@@ -1456,8 +1455,7 @@ struct ArchivalAnalyticsView: View {
                     }
                 }
             }
-            .chartForegroundStyleScale(
-                domain: SourceProvenanceCategory.ordered.map(\.displayName))
+            .provenanceCategoryColorScale()
             .chartXAxisLabel(String(localized: "archival.filter.era", defaultValue: "Era"))
             .chartYAxisLabel(String(localized: "archival.table.documents",
                                     defaultValue: "Documents"))

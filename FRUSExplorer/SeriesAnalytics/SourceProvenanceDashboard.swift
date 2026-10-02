@@ -65,6 +65,9 @@ import Charts
 ///         `presentationContext` and presented locally rather than through the tab shell
 ///   1.9 — 2026-09-30: #1483 — the trend's AreaMark names its value "Share of source notes",
 ///         the axis's text under the same key
+///   1.10 — 2026-10-02 (#1543, landing round 2): the two charts take their colours from
+///         `provenanceCategoryColorScale()`, declared at the foot of this file, instead of Swift
+///         Charts' seven-colour cycle by position
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -424,7 +427,7 @@ struct SourceProvenanceDashboard: View {
                     .accessibilityValue(Text(point.share, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))))
                 }
             }
-            .chartForegroundStyleScale(domain: SourceProvenanceCategory.ordered.map(\.displayName))
+            .provenanceCategoryColorScale()
             .chartXScale(domain: domain.lowerBound...domain.upperBound)
             .chartYScale(domain: 0...1)
             .chartXAxis {
@@ -483,7 +486,7 @@ struct SourceProvenanceDashboard: View {
                     .accessibilityValue(Text(item.noteCount, format: .number))
                 }
             }
-            .chartForegroundStyleScale(domain: SourceProvenanceCategory.ordered.map(\.displayName))
+            .provenanceCategoryColorScale()
             .chartLegend(.hidden)
             .chartXAxis {
                 AxisMarks { value in
@@ -696,5 +699,68 @@ struct SourceProvenanceDashboard: View {
             },
             content: content
         )
+    }
+}
+
+// MARK: - The provenance colour scale (#1543)
+
+extension SourceProvenanceCategory {
+
+    /// The colour every provenance chart draws this category in.
+    ///
+    /// Until #1543 the charts gave Swift Charts a domain and no range, so each category took the
+    /// default cycle's colour for its POSITION: blue, green, orange, purple, red, teal, yellow,
+    /// then blue again. (Measured on macOS 27.0 and an iOS 26.4 simulator, in light and dark: the
+    /// sixth is `Color.teal`, not `.cyan`.) Seven colours for ten categories already drew three
+    /// pairs alike, and an eleventh category in second place moved every later one a slot: the
+    /// Central Decimal File's twin became Named File Series, a visible band of the same blue.
+    ///
+    /// So the colours are stated. The ten categories the charts had before the Subject-Numeric
+    /// File keep exactly the colour the cycle gave them then, by their position among those ten,
+    /// and the Subject-Numeric File takes brown, which the cycle never uses. Brown rather than
+    /// indigo, pink or mint because those three sit beside the cycle's blue and purple, red, and
+    /// teal. The three older pairs are still drawn alike (the decimal file and Foreign Archives,
+    /// the Central Foreign Policy File and Previously Published, Lot Files and Other /
+    /// Unclassified); giving them colours of their own is a change to every one of these charts
+    /// and is not made here.
+    ///
+    /// The semantic map's provenance lens has its own palette (`SemanticMapLens`), read by
+    /// position in `allCases`. This is the charts' alone.
+    var chartColor: Color {
+        switch self {
+        case .centralDecimalFile: return .blue
+        case .subjectNumericFile: return .brown
+        case .centralForeignPolicyFile: return .green
+        case .lotFile: return .orange
+        case .presidentialLibrary: return .purple
+        case .naraCollection: return .red
+        case .intelligence: return .teal
+        case .namedFileSeries: return .yellow
+        case .foreignArchive: return .blue
+        case .previouslyPublished: return .green
+        case .unrecognized: return .orange
+        }
+    }
+
+    /// The charts' colour scale: every category's display name, in `ordered`'s order, and its
+    /// colour. The one source `provenanceCategoryColorScale()` reads, so the legend's order is the
+    /// enum's and a category has one colour on every chart.
+    static var chartColorScale: (domain: [String], range: [Color]) {
+        (ordered.map(\.displayName), ordered.map(\.chartColor))
+    }
+}
+
+extension View {
+
+    /// Colours a chart whose marks are styled by a provenance category's display name
+    /// (`.foregroundStyle(by: .value(…, category.displayName))`) from
+    /// `SourceProvenanceCategory.chartColorScale`.
+    ///
+    /// Every chart that colours by provenance category calls this and passes no scale of its own:
+    /// the two on the Archival Sourcing dashboard and the two on Archival Analytics ▸ Your
+    /// Library. `SourceProvenanceDataTests` scans for a chart that states its own.
+    func provenanceCategoryColorScale() -> some View {
+        let scale = SourceProvenanceCategory.chartColorScale
+        return chartForegroundStyleScale(domain: scale.domain, range: scale.range)
     }
 }
