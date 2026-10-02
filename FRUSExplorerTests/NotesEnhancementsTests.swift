@@ -268,6 +268,12 @@ struct NotesEnhancementsTests {
     /// Asserted by reading the source, because the damage is a write that should not happen: no
     /// runtime assertion over the pipeline can distinguish "did not write" from "wrote the same
     /// value", and the call sites are in views a unit test cannot drive.
+    ///
+    /// Since lane HYG (2026-10-01) the overload that took tags is deleted, so a caller passing
+    /// `userTagIds:` no longer compiles and the argument check below cannot fail on a building
+    /// tree; `R1FollowUpFixTests.noteWriterTakesNoTags` is what fails if the overload comes back.
+    /// What this test still guards is its `calls > 0` half: that the two files it reads are where
+    /// the note-to-index push lives.
     @Test("No note-grained caller writes the document's tag column")
     func noteWritersDoNotSpeakForTheDocumentTagColumn() throws {
         let root = URL(fileURLWithPath: #filePath)

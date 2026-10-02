@@ -664,3 +664,25 @@ Format, one entry per change:
 - **Proposed:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. In the chart a long title takes up to two lines and is cut at its end; the table, and VoiceOver on each bar, give the title whole.
 - **Why:** as for the Mac (#1473; the same `CrossReferenceRankingChart` on every platform, `CrossReferenceAnalyticsView.swift:1525`). On an iPhone the bug was worse than on the Mac: on `v2`, iPhone 17, the plot was squeezed to 1 pt at x 977 of a 402 pt window, and 5 of the 12 rows on screen showed no title at all. Optional, like the Mac sentence.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## HYG — #1412, #1439, #1423, #1450, #1484
+
+*Lane HYG is developer hygiene: test fixtures (#1412, #1450), a generator's write order (#1439), dead code (#1423, #1484, and the plan's fold-ins), two generator defaults, a license scan and comments. It changes two strings a reader sees, both on the Mac's main window, and deletes one screen state no reader could reach. **It makes no manual change necessary.** The three things checked, against both manuals as they stand at `origin/v2` dc17d945, are listed so the owner can see why, with one optional sentence offered.*
+
+- **Manual / section:** Mac §4.3 The Document View
+- **Current:** The central area displays the open document ("Select a document to begin" when none is).
+- **Proposed:** no change needed. Optional, if the hint is worth quoting whole: The central area displays the open document; when none is open it reads "Select a document to begin" over a hint, "Use Search (⌥⌘F) or open the Corpus Browser (⇧⌘B)".
+- **Why:** the hint under that sentence read "Use Search (⌘S)…" in the app, a key the app binds to nothing since UI review M-14 moved Search to ⌥⌘F, and the toolbar's Search tooltip read "Open the full-text search window (⌘F)", which is Find in Document. Both now name ⌥⌘F (`FRUSExplorer/App/MainWindowView.swift:289`, `:494`–`495`; the shortcut is registered at `FRUSExplorer/App/FRUSExplorerApp.swift:3767`). The manual already gives ⌥⌘F everywhere it names the Search shortcut (lines 104, 124, 140, 196, 344, 1278) and quotes neither string, so the manual was right and the app was wrong. Nothing to correct; the optional sentence only quotes the hint now that it agrees with the manual.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.8 The Archives Visit Packet, the packet sheet's empty states (iOS §14.8 likewise)
+- **Current:** neither manual describes them.
+- **Proposed:** no change.
+- **Why:** #1423 deleted the packet sheet's third empty state, "This collection’s search can’t run yet", with the path that showed it. That path was a packet built straight from a smart collection, and no screen could open one: the Archives Visit editor's **Export packet** is the sheet's one presenter (`FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift:276`), and it hands the sheet a plan. So no reader has seen the state, and neither manual mentions it. Recorded here because the lane found, and did not fix, what the state would have explained: **Add to Archives Visit…** on a smart collection whose saved search cannot run yet does nothing and says nothing (`FRUSExplorer/Collections/CollectionEditorView.swift:1378`, `:1459`; `FRUSExplorer/Collections/MacCollectionManagerView.swift:1391` — each returns when `TripPacketSeed.resolve` gives `nil`). If that is fixed, its message is new copy and may want a manual sentence then.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §13.2 Prompts and iOS §13.2 Prompts
+- **Current:** each says where your own prompts are created (the Mac's: "**Your own prompts** are created in **Settings → Research → Summarization**").
+- **Proposed:** no change.
+- **Why:** #1484 deleted `PromptsListView`, an older prompts screen nothing constructed; prompts are managed where the manuals say, in `SummarizationPromptsSettingsView` (iOS) and the Mac's Summarization pane (`FRUSExplorer/Settings/SettingsView.swift`, `FRUSExplorer/Settings/FRUSSettingsView.swift`). The lane's other deletions (`GlobalContextView`, `BrowserView.splitLayout`, `SubseriesListView`) were also screens nothing presented, and neither manual describes them.
+- **Owner:** ☐ approve ☐ edit ☐ reject

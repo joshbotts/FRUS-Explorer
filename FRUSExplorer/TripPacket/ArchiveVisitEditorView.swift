@@ -273,7 +273,7 @@ struct ArchiveVisitEditorView: View {
         .sheet(isPresented: $showShare) {
             // The plan's project's CURRENT question — not a seed (the topic is the plan's own
             // `inquiryText`), only what the sheet's caption compares the field against (#1366).
-            TripPacketSheet(seed: .plan(plan), title: plan.displayName,
+            TripPacketSheet(plan: plan, title: plan.displayName,
                             researchQuestion: plan.owningProject(in: modelContext)?.researchQuestion)
                 .environment(appState)
         }

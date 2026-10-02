@@ -61,6 +61,9 @@ import Foundation
 ///          an empty fresh read, and a superseded read writes nothing (``planVisitKeepsTheGatesPromise()``)
 ///   2.7 — The merge of #1456 with #1458: what the editor and the list row re-derive on their plan's
 ///          inputs is what `ArchiveVisitCounts` counts (``reDerivedModelIsWhatTheCountsRead()``)
+///   2.8 — #1423 review, round 1: the app constructs the packet sheet in exactly one place, the
+///          Archives Visit editor (``onlyTheEditorPresentsThePacketSheet()``); the sheet's header
+///          cited this suite for that, and it had read only two files
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -611,6 +614,56 @@ struct TripPacketEntryPointParityTests {
         }
     }
 
+    /// **Nothing but the Archives Visit editor presents the packet sheet** (#1423 review, round 1).
+    /// `TripPacketSheet`'s header says so and cites this suite, which pinned two narrower facts:
+    /// the editor constructs the sheet once (``packetSheetCaptionIsWired()``) and Project Home does
+    /// not (``projectHomeIsCreateOrOpen()``). No test read the rest of the app, so a collection
+    /// screen presenting `TripPacketSheet(plan:title:researchQuestion:)` with some other question
+    /// passed every test, and #1366's rule — the caption compares the field with the plan's own
+    /// project's question — went unpinned for the new presenter.
+    ///
+    /// It walks every Swift file under `FRUSExplorer/`, comments removed, as
+    /// ``everyPlanIsCreatedThroughTheFactory()`` does, and requires exactly one `TripPacketSheet(`
+    /// or `TripPacketSheet.init(`, in `ArchiveVisitEditorView.swift`. A construction spelled any
+    /// other way — through a typealias, say — is out of its reach; none exists.
+    @Test("Nothing but the Archives Visit editor constructs the packet sheet (#1423)")
+    func onlyTheEditorPresentsThePacketSheet() throws {
+        let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        #expect(paths.count > 100,
+                "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
+
+        let construction = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])TripPacketSheet(\.init)?\("#)
+        var sites: [String] = []
+        var unterminated: [String] = []
+        for path in paths {
+            let relative = "FRUSExplorer/\(path)"
+            let stripped = Self.stripComments(try Self.source(relative))
+            if stripped.endsInBlockComment { unterminated.append(relative) }
+            let code = stripped.code
+            for match in construction.matches(in: code, range: NSRange(code.startIndex..., in: code)) {
+                guard let range = Range(match.range, in: code) else {
+                    Issue.record("\(relative): a match did not map back to the source")
+                    continue
+                }
+                sites.append("\(relative):\(code[..<range.lowerBound].components(separatedBy: "\n").count)")
+            }
+        }
+        let editor = "FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift:"
+        let onlyTheEditor = sites.count == 1 && sites.allSatisfy { $0.hasPrefix(editor) }
+        #expect(onlyTheEditor, """
+            The app constructs TripPacketSheet at \(sites.count) place(s): \(sites). The one \
+            presenter is the Archives Visit editor's Export packet, which passes the plan's own \
+            project's question (#1366); a second presenter is a second place for the packet's rules \
+            to be applied differently (#1423). Zero means the scan stopped reading the editor.
+            """)
+        #expect(unterminated.isEmpty,
+                "the comment stripper ended \(unterminated) inside a block comment, hiding the rest from this scan")
+    }
+
     /// **The packet sheet opens a plan's topic from the plan alone** (#1366 review, round 2). The
     /// editor hands the sheet the project's question for its caption, so only this scan stops the
     /// `.plan` rebuild from filling an empty field with it: the round-1 check's mutant, reading
@@ -618,20 +671,35 @@ struct TripPacketEntryPointParityTests {
     /// `TripPacketTopicSentence.openPlanDraft`, driven at runtime by
     /// `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic`. This pins that the rebuild
     /// calls it with the plan's stored topic and sets the field only from what it returns, and that
-    /// the sheet names `researchQuestion` in exactly three places — its declaration, the caption's
-    /// comparison and the ephemeral builder's seed — so no other path can read the question.
-    @Test("The packet sheet opens a plan's topic from the plan alone (#1366)")
+    /// the sheet names `researchQuestion` in exactly two places — its declaration and the caption's
+    /// comparison — so no path can read the question as a seed.
+    ///
+    /// **Two, where it was three, since #1423.** The third was the ephemeral builder's seed: the
+    /// half of `rebuild()` that served a document-list or collection seed passed the question to
+    /// `TripPacketBuilder.build(documents:researchQuestion:)`, so on those paths it still seeded
+    /// the topic at render time without the field showing it. Nothing constructed either seed, and
+    /// this test counted that call as permitted. It now requires that the sheet builds through no
+    /// `TripPacketBuilder.build` at all, and that `rebuild()` is one path with no seed to branch
+    /// on. Measured on `v2` @ dc17d945, before the deletion: it failed on both.
+    @Test("The packet sheet opens a plan's topic from the plan alone (#1366, #1423)")
     func packetSheetOpensThePlansOwnTopic() throws {
         let sheet = Self.strippingComments(
             try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
         let rebuild = try #require(Self.body(after: "private func rebuild() async", in: sheet),
                                    "the sheet's rebuild() is gone — re-derive this test")
-        let header = try #require(sheet.range(of: "if let plan = seededPlan", range: rebuild),
-                                  "rebuild() no longer branches on a plan seed")
-        let planBranch = String(sheet[try #require(Self.body(from: header.upperBound, in: sheet))])
+        let planBranch = String(sheet[rebuild])
+        for seedBranch in ["seededPlan", "switch seed", "case .documents", "case .collection",
+                           "resolveSeedDocuments"] {
+            #expect(!sheet.contains(seedBranch), """
+                TripPacketSheet.swift names `\(seedBranch)` — the packet is built from its plan and \
+                nothing else (#1423); a second seed is a second path the question can seed.
+                """)
+        }
+        #expect(sheet.contains("let plan: ArchiveVisitPlan"),
+                "the sheet no longer takes its plan directly — re-derive this test")
         #expect(!planBranch.contains("researchQuestion"), """
-            The `.plan` branch of rebuild() names the project's question — it must open the topic \
-            from the plan alone (#1366, §4 item 1): \(planBranch)
+            rebuild() names the project's question — it must open the topic from the plan alone \
+            (#1366, §4 item 1): \(planBranch)
             """)
         let opens = Self.calls(of: "planModel.topicSentence.openPlanDraft", in: planBranch)
         #expect(opens.count == 1, "expected the plan branch's one openPlanDraft call, found \(opens.count)")
@@ -656,14 +724,16 @@ struct TripPacketEntryPointParityTests {
         var rest = sheet
         let captions = Self.calls(of: "TripPacketTopicSentence.showsSeededCaption", in: sheet)
         let builds = Self.calls(of: "TripPacketBuilder.build", in: sheet)
-        #expect(captions.count == 1 && builds.count == 1, """
-            Expected one caption comparison and one ephemeral build, found \(captions.count) and \
-            \(builds.count).
+        #expect(captions.count == 1, "Expected one caption comparison, found \(captions.count).")
+        #expect(builds.isEmpty, """
+            The sheet builds a packet through TripPacketBuilder.build \(builds.count) time(s). A \
+            plan's packet derives through ArchiveVisitDerivation; a build here is an ephemeral \
+            packet, which seeds its topic from the question at render time (#1423): \(builds)
             """)
-        for call in captions + builds {
+        for call in captions {
             #expect(Self.argument("researchQuestion", in: call) == "researchQuestion")
         }
-        for permitted in ["let researchQuestion: String?"] + captions + builds {
+        for permitted in ["let researchQuestion: String?"] + captions {
             guard let range = rest.range(of: permitted) else {
                 Issue.record("`\(permitted)` is not in the sheet — re-derive this test")
                 continue
@@ -675,9 +745,9 @@ struct TripPacketEntryPointParityTests {
             .compactMap { Range($0.range, in: rest) }
             .map { rest[..<$0.lowerBound].components(separatedBy: "\n").count }
         #expect(stray.isEmpty, """
-            TripPacketSheet.swift names `researchQuestion` outside its declaration, the caption and \
-            the ephemeral build, at line(s) \(stray) — a path that could seed a plan's topic from \
-            the project's question at render time (#1366).
+            TripPacketSheet.swift names `researchQuestion` outside its declaration and the caption, \
+            at line(s) \(stray) — a path that could seed a plan's topic from the project's question \
+            at render time (#1366, #1423).
             """)
     }
 

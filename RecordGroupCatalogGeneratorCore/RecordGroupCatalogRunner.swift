@@ -30,10 +30,12 @@ import GeneratorKit
 /// | `PROBE` | off | Fetch **one** shard per group, write the censuses only, no index. |
 /// | `PROJECT_ONLY` | off | No network: rebuild everything from the stored raw NDJSON. |
 /// |  | | **The store at `CACHE_DIR` was deleted (checked 2026-09-06), so this is currently |
-/// |  | | unavailable.** With neither `raw/` nor `raw-api/` present every group is skipped |
-/// |  | | with a review note, and the writers run BEFORE the `summaries.isEmpty` check — so |
-/// |  | | the pass rewrites the committed run-wide artifacts to describe zero groups and |
-/// |  | | only then exits non-zero. Git-recoverable, and still destructive. |
+/// |  | | unavailable.** With neither `raw/` nor `raw-api/` holding a store for ANY planned |
+/// |  | | group, the run now refuses before it writes anything (`RunnerError.noRawStore`, |
+/// |  | | lane HYG, 2026-10-01) and exits non-zero with the committed artifacts untouched. |
+/// |  | | Until then the writers ran before the `summaries.isEmpty` check, so the pass |
+/// |  | | rewrote the run-wide artifacts to describe zero groups first. A store for SOME |
+/// |  | | of the planned groups still projects those and notes the rest, as before. |
 /// | `CREATOR_AUTHORITY` | off | Also resolve `creators[].naId` against NARA's authority records. |
 /// | `REFRESH` | off | Discard the store and checkpoints and re-harvest. |
 /// | `MAX_BYTES` | unlimited | Byte budget for this run; exceeding it checkpoints and exits 0. |
@@ -50,6 +52,8 @@ import GeneratorKit
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-29: initial implementation
+///   1.1 — lane HYG (2026-10-01): `PROJECT_ONLY` with no raw store for any planned group throws
+///         `RunnerError.noRawStore` before the writer creates a directory or a file
 public struct RecordGroupCatalogRunner {
 
     /// Default artifact root, relative to the project root.
@@ -150,6 +154,12 @@ public struct RecordGroupCatalogRunner {
         /// Whether this mode talks to the API at all.
         var usesAPI: Bool { apiRefresh || apiSurvey || apiOnly }
 
+        /// Whether this run re-projects each group from its stored raw records and fetches
+        /// nothing for it: `PROJECT_ONLY`, unless a mode that takes the run elsewhere is also set.
+        /// `API_SURVEY` and `PROBE` each return before the per-group loop, and `API_ONLY` takes
+        /// the loop's first branch, so under any of the three a `PROJECT_ONLY` reads no store.
+        var reprojectsStoredRecords: Bool { projectOnly && !apiSurvey && !probe && !apiOnly }
+
         init(env: [String: String]) {
             self.init(probe: isTruthy(env["PROBE"]),
                       projectOnly: isTruthy(env["PROJECT_ONLY"]),
@@ -174,11 +184,22 @@ public struct RecordGroupCatalogRunner {
     /// A runner failure.
     public enum RunnerError: Error, CustomStringConvertible {
         case untrustworthyHarvest([String])
+        /// `PROJECT_ONLY` was asked to re-project and no planned group has a raw store, in `raw/`
+        /// or in `raw-api/`. Thrown before anything is written.
+        case noRawStore(cacheDirectory: String, recordGroups: [Int])
 
         public var description: String {
             switch self {
             case .untrustworthyHarvest(let failures):
                 return "Harvest failed its own checks: " + failures.joined(separator: "; ")
+            case .noRawStore(let cacheDirectory, let recordGroups):
+                return "PROJECT_ONLY found no raw store for any of the \(recordGroups.count) "
+                    + "planned record group(s) under \(cacheDirectory) — neither raw/rg_<N>.ndjson "
+                    + "nor raw-api/rg_<N>.ndjson exists. Nothing was written: the manifest, the "
+                    + "censuses, the sample and the report are as they were. PROJECT_ONLY "
+                    + "re-projects a harvest already on disk, so harvest first (API_ONLY=1 with a "
+                    + "CATALOG_API_KEY, or the keyless bulk stream), or point CACHE_DIR at the "
+                    + "directory that holds the store"
             }
         }
     }
@@ -246,6 +267,23 @@ public struct RecordGroupCatalogRunner {
         // diff against, so every record would otherwise be classified as an addition and the changelog
         // would be 20,000 lines of noise.
         let apiBuilder = CatalogIndexBuilder(rawStore: apiStore)
+
+        // PROJECT_ONLY re-projects records already on disk. With no store for ANY planned group
+        // there is nothing to re-project — and every writer below would run all the same, over
+        // censuses the loop never fed, replacing the committed manifest, census CSVs, sample and
+        // report with a description of zero groups before the emptiness check failed the run.
+        // That is what a bare `PROJECT_ONLY=1` did after the store at `.cache/nara-rg-catalog` was
+        // deleted. So it is refused here, before `prepare()` creates so much as a directory.
+        // A store for SOME of the planned groups is not refused: those project, and the loop
+        // leaves a review note for each of the rest, as it always has.
+        if mode.reprojectsStoredRecords,
+           !plan.groups.contains(where: {
+               rawStore.exists(recordGroup: $0.number) || apiStore.exists(recordGroup: $0.number)
+           }) {
+            throw RunnerError.noRawStore(cacheDirectory: cacheDirectory.path,
+                                         recordGroups: plan.groups.map(\.number))
+        }
+
         let writer = RecordGroupCatalogWriter(outputDirectory: outputDirectory,
                                               sampleEvery: sampleEvery)
         try writer.prepare()

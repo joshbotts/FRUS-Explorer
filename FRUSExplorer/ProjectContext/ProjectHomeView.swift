@@ -66,8 +66,8 @@ struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
 /// activity summary (collections / notes / documents visited / searches), a reserved
 /// slot for the Phase-3 "Project Leads" discovery feed, recent activity, and quick jumps.
 ///
-/// Data comes from reactive `@Query`s filtered to the active project in memory (the
-/// same approach `GlobalContextViewModel` uses, since SwiftData `#Predicate` support
+/// Data comes from reactive `@Query`s filtered to the active project in memory (in
+/// memory rather than in the fetch, since SwiftData `#Predicate` support
 /// for "`[UUID]` contains" is unreliable), so counts refresh live while the window is
 /// open. Presented as the `frus.projectHome` window on macOS (Research ▸ Project
 /// Home, ⌘P) and as a screen on iOS/iPadOS.

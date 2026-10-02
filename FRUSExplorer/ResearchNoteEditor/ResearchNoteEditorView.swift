@@ -341,7 +341,7 @@ struct ResearchNoteEditorView: View {
     /// Every caller must have saved first — `reindexNoteText` re-reads the document's notes, and the
     /// read is what includes the note just written and excludes the one just deleted.
     ///
-    /// **Text only, and the `userTagIds:` overload must never be reached from here.**
+    /// **Text only. The `userTagIds:` overload this once called is deleted (lane HYG).**
     /// `user_tag_ids` is a per-DOCUMENT column whose authoritative writer is
     /// `UserTagPickerSheet.saveAndDismiss`, which sends the document's whole assigned set. This
     /// editor knows only ONE note's tags, so passing them wrote a narrower set over a wider one —
