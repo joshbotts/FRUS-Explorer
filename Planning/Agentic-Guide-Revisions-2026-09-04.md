@@ -1944,7 +1944,7 @@ The drift is measured: one author, three scripts, 24 hours — byte-identical, o
 
 **4. The two refusals were about audience, dependency and over-claimed enforcement.** MCP: "An MCP
 server would be the first artifact in the wave that works only for users of MCP-capable clients"
-(`Planning/MCP-Server-Assessment-2026-08-31.md:69–70`); "adding this package's first external
+(`Planning/Completed/MCP-Server-Assessment-2026-08-31.md:69–70`); "adding this package's first external
 dependency across 94 targets" (`:72–73`); "**A tool description is prose with exactly the authority of
 §12's prose.** Only implementations bind" (`:131–132`); "'House rules built into the tool
 descriptions' overstates what descriptions do" (`:154`); and the flip clause — "If the block alone
@@ -2241,7 +2241,7 @@ Every run file this document cites, by location. Paths under `RUN` =
 `check-M5-artifact-surfaces/verdict.md`; `check-M6-skill-feasibility/verdict.md`.
 
 **Repository files.** `Docs/Agentic-Analysis-Guide.md` (v1.10, 1,869 lines); `CLAUDE.md`;
-`Planning/Agentic-Loop-Development-Plan.md`; `Planning/MCP-Server-Assessment-2026-08-31.md`;
+`Planning/Agentic-Loop-Development-Plan.md`; `Planning/Completed/MCP-Server-Assessment-2026-08-31.md`;
 `Planning/C0-Falsifier-2026-08-31.md`; `Planning/C2-Long-Session-2026-08-31.md`;
 `Planning/c2-long-session/house-rules-block-v1.10.txt`; `Planning/c2-long-session/RUBRIC.md`;
 `Planning/c0-falsifier/workflow.mjs`; `Planning/nara-record-group-catalog-runbook.md`;

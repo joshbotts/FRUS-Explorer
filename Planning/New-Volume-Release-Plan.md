@@ -6,12 +6,21 @@ end of 2026. Every claim below about the current tree was verified by reading th
 beside it; every number carried over from a shipped artifact is cited to `CLAUDE.md` or to the
 artifact's own provenance block and is marked where it is an estimate rather than a measurement.
 
+**Refreshed 2026-10-01** against `v2` `dc17d945`, after this plan's first use (vol. XVI, build 47;
+the run is recorded in `Completed/Release-frus1981-88v16.md`): the inventory counts in §3, the
+version and line references in §3 and §9, the test-target count in §8, and Phase D and Phase F of
+§10, which now cover a **corrected** volume and the build-bump steps the README, the TestFlight
+notes and the encoder's debug symbols add. Where a passage below still says 552, it is describing
+the tree this plan was written against. The line references that refresh rewrote, and step 12's
+#1439 note, were read again at `v2` `1d6fc032` on 2026-10-02, after lanes HYG and READ had merged.
+
 **What this document is for.** When OH publishes a volume, the work is not "add a row to the
-manifest". It is a **release**: 36 bundled data resources, 47 MB of them, of which 18 are
+manifest". It is a **release**: 38 bundled data resources, 48.9 MB of them (36 when this was
+written — `accession-series-index.json` and `subject-numeric-labels.json` have joined), of which 18 are
 derived from the corpus and rebuilt every release; one owner-run neural harvest on a second machine;
 one Python layout stage; a shard published to a *different repository*; a set of artifact-pinned
-tests that will fail by design; and ten strings of user-visible copy that hard-code `552`, nine of
-which become false the day the 553rd volume ships. This plan enumerates all of it, in the order it has to happen, with the
+tests that will fail by design; and — when this was written — ten strings of user-visible copy
+that hard-coded `552` (§7.1: all nine that would have gone false now derive their numbers). This plan enumerates all of it, in the order it has to happen, with the
 traps found by reading the code rather than by assuming.
 
 ---
@@ -78,7 +87,8 @@ not a discovery. See D-4.
 
 ## 3. The artifact inventory
 
-36 bundled data resources. Classified by what a new volume does to them.
+38 bundled data resources (36 `.json`, 2 `.bin`; counted in `FRUSExplorer/Resources` on
+2026-10-01). Classified by what a new volume does to them.
 
 ### Tier 1 — corpus-derived, must be regenerated (18 artifacts, 12 generator runs)
 
@@ -87,7 +97,7 @@ not a discovery. See D-4.
 | `manifest.json` | `ManifestGenerator` (needs `GITHUB_TOKEN`) | The gate. Defines the shippable set for every generator below. Sorted by `volumeId` — see §5. |
 | `volume-sources-index.json` | `VolumeSourcesIndexGenerator` | Corpus front-matter Sources + offline lot resolution against `central-files-index.json`. Needs `CATALOG_API_KEY` only if the new volume names lots the bundle cannot answer. |
 | `collection-authority.json` (+ report) | `CollectionAuthorityGenerator -c release` | Re-clusters the whole cross-volume authority. **Ids can move** — #696's `president's `→`presidential ` fold once killed 28 collection ids covering 2,040 documents. Everything downstream must be rebuilt from the *new* authority, never from a stale export. |
-| `collection-usage-index.json` | `CollectionUsageIndexGenerator -c release` | Reads the authority. 629 KB today. |
+| `collection-usage-index.json` | `CollectionUsageIndexGenerator -c release` | Reads the authority. 645,052 bytes today (630 KiB, the figure `CLAUDE.md` gives as "630KB"). |
 | `external-citation-index.json` | `ExternalCitationIndexGenerator -c release` | Reads the authority **and** `decimal-class-labels.json`. |
 | `provenance-flow-index.json` | `ProvenanceFlowIndexGenerator -c release` | Reads the authority. |
 | `resolved-edge-index.json` | `ResolvedEdgeIndexGenerator -c release` | **Changes for existing volumes too**: cross-volume citations *into* the new volume become resolvable, and the new volume's own outbound citations add inbound edges to documents in volumes already shipped. |
@@ -109,15 +119,24 @@ degrades to a tag the Browser cannot name rather than to a broken surface. The o
 ones that can hold up a feature for the new volume alone.
 
 Regenerating the person authority **changes rollup outcomes for ~90 of 62,818 records**, so
-`IndexingPipeline.currentPersonRollupVersion` (currently 9, `IndexingPipeline.swift:832`) must be
+`IndexingPipeline.currentPersonRollupVersion` (currently 10, `IndexingPipeline.swift:1351`) must be
 bumped in the same commit. That forces a one-time re-consolidation on every device.
 
-### Tier 3 — NARA-derived; touch only if the new volume cites something new (9)
+### Tier 3 — NARA-derived; touch only if the new volume cites something new (11)
 
 `central-files-index.json`, `lot-claimants-index.json`, `series-facts-index.json`,
 `presidential-library-catalog.json`, `digitized-ranges-index.json`, `roll-scans-index.json`,
-`curated-lot-resolutions.json`, `curated-library-resolutions.json`, `decimal-class-labels.json`.
-See §6.
+`curated-lot-resolutions.json`, `curated-library-resolutions.json`, `decimal-class-labels.json`,
+and the two this list did not carry until 2026-10-01: `accession-series-index.json` (#1203; read
+from the record-group harvest, and nothing in the app reads it) and `subject-numeric-labels.json`
+(#1251; parsed from the Department's 1963 and 1965 handbooks, with its reach floors measured
+against `collection-usage-index.json`). See §6.
+
+**Two cross-tier dependencies a regeneration must respect.** `external-citation-index.json`
+(Tier 1) pins a digest of `decimal-class-labels.json`'s class and country keys, so a change to
+those keys forces it to be regenerated in the same commit; and `SubjectNumericLabelGenerator`
+refuses to write when a schedule's corpus reach falls under its floor, which it measures against
+the *current* `collection-usage-index.json` — so run it after that index, never before.
 
 ### Tier 4 — static; never (4 data files, plus the JS/CSS/text payloads)
 
@@ -418,7 +437,7 @@ What actually failed, in the order it surfaced:
 Find the rest mechanically, after regeneration, by running both suites:
 
 ```
-swift test                                        # 33 generator/kit test targets
+swift test                                        # 37 generator/kit test targets (swift package describe, 2026-10-01)
 xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17"
 xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
@@ -449,9 +468,9 @@ one-time rebuild on every device, not just for the new volume:
 
 | Trigger | Effect |
 |---|---|
-| `document-subject-index.json` `generated` or vocabulary digest changes | `applyDocumentSubjectsIfNeeded` wipes and repopulates `document_subjects` + `document_subject_refs` for every indexed volume (`IndexingPipeline.swift:6796`). Measured ~0.8 s for the bucket table alone; no reindex. |
-| `broken-refs-index.json` `generated` changes | `applyBrokenRefsIndexIfNeeded` resets every `is_broken` flag and re-marks in one transaction (`:6944`). |
-| `currentPersonRollupVersion` bumped | Full person-rollup re-consolidation; any surface holding a rollup id must re-resolve (`AppState.swift:913`). |
+| `document-subject-index.json` `generated` or vocabulary digest changes | `applyDocumentSubjectsIfNeeded` wipes and repopulates `document_subjects` + `document_subject_refs` for every indexed volume (`IndexingPipeline.swift:8786`). Measured ~0.8 s for the bucket table alone; no reindex. |
+| `broken-refs-index.json` `generated` changes | `applyBrokenRefsIndexIfNeeded` resets every `is_broken` flag and re-marks in one transaction (`:8934`). |
+| `currentPersonRollupVersion` bumped | Full person-rollup re-consolidation; any surface holding a rollup id must re-resolve (`AppState.swift:1138`). |
 | Semantic provenance digest **unchanged** | Downloaded shards survive. **This is the outcome to protect** — see §4.2. |
 | CloudKit | **Nothing.** No `@Model` and no stored property changes, so the #488 Production-deploy gate is not engaged. Confirm by running `CloudKitSchemaInventoryTests` — it fails the moment the mirrored set changes. |
 
@@ -490,8 +509,32 @@ Steps marked **[owner]** cannot be done from this repository.
     exact Phase-3 command; diff the manifest; transfer and `shasum -c SHA256SUMS`.
 11. `pool_docs.py` → `build_layout.py` → `DIMS=512 … SemanticVectorsGenerator`.
 12. Verify the provenance digest is unchanged. Review the new cluster labels properly.
+    **The language analysis is checked before step 11 writes anything** (#1439, closed by lane
+    HYG, PR #1558, 2026-10-02): the map pass refuses without a lemmatiser, and that refusal, with
+    every other the map pass can make, now comes from `SemanticMapPacker.preflight` before the
+    vector artifacts are written. Until then it came after them, so a refusal in a run that also
+    changed the digest left new `semantic-vectors-*` files beside the old map. If it refuses,
+    re-run in a new process. One case can still refuse after the vectors are written, a store
+    whose heads misstate its documents; `CLAUDE.md`'s `SemanticVectorsGenerator` entry has it.
 13. **[owner]** Push the new `.vec` shard(s) to `joshbotts/frus-semantic-vectors`, `main`,
     `shards/`. **Before** the app build ships.
+
+**Phase D for a CORRECTED volume** (added 2026-10-01; §13's release rule, which steps 10–13 did
+not cover because they name only new shards). The harvester skips any volume whose `head.json`
+exists and has no force option, so a correction is invisible to it until its store entry is gone:
+- **D-c1.** Delete the corrected volume's entry from the raw store (its vectors, text and
+  `head.json`) on the harvest machine, then run step 10. Snapshot `run-manifest.json` first, as
+  for a new volume (§4.2).
+- **D-c2.** Step 11 as written. The volume's shard changes its SHA-256 in
+  `semantic-shards-manifest.json`, and its length only if its document count moved.
+- **D-c3.** **[owner]** Push the re-packed shard over the old one, before the build ships.
+- **D-c4.** Confirm a device holding the old shard re-fetches it: R-1c's per-shard purge compares
+  each on-disk shard with the manifest's SHA-256 at launch
+  (`SemanticShardStore.purgeShardsFailingBundledDigest`, called from `FRUSExplorerApp.swift:1707`).
+  Check it on one device rather than assuming it.
+- **When it is not worth doing:** measure first. vol. XVI's 2026-09-14 correction moved 14 of
+  3,145,710 top-10 slots and was waived with those numbers (`Completed/Release-frus1981-88v16.md`,
+  "Semantic tier"); it is to be re-harvested at its next document-count change.
 
 **Phase E — gated extras** (ship without them if the drops have not landed; see D-4)
 14. `DocumentSubjectIndexGenerator` + `VolumeSubjectProfilesGenerator`, if the OH export includes
@@ -502,12 +545,17 @@ Steps marked **[owner]** cannot be done from this repository.
 **Phase F — code, tests, release**
 16. §7's copy fixes; §7.2 only if a 1993+ volume is in the release.
 17. `swift test` and the `xcodebuild test` runs in §8; re-measure every failing pin.
-18. Bump `CURRENT_PROJECT_VERSION` (44 → 45) **by editing `project.yml` and `project.pbxproj`
-    directly — do not run `xcodegen generate`**. No new bundled resource names, so no enrollment is
-    needed; if that ever changes, `xcodegen generate` must be followed by
-    `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.
-19. Update `Planning/Store-Listing-Draft.md` — it states 552 volumes in five places and 316,839
-    documents as its Gate-B evidence (lines 44, 51, 88, 118–120, 149, 172–174, 198).
+18. Bump `CURRENT_PROJECT_VERSION` (48 today; it was 44 → 45 when this was written) **by editing
+    `project.yml` and `project.pbxproj` directly — do not run `xcodegen generate`**, and move
+    `README.md`'s "Current build:" line with it (`CodingStandardsAuditTests.readmeStatesCurrentBuild`
+    fails otherwise). No new bundled resource names, so no enrollment is needed; if that ever
+    changes, `xcodegen generate` must be followed by
+    `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`. `CLAUDE.md`'s build-bump
+    section has the whole list, including the TestFlight notes and `Scripts/fetch-llama-dsyms.sh`.
+19. Update `Planning/Store-Listing-Draft.md`: the volume count in its subtitle alternate, promo
+    text, description and §6 script, and every row of its §5 figures table, each re-measured from
+    the regenerated artifact (done for 553 volumes on 2026-10-01; the indexed-document count there
+    still waits on a device census).
 20. **[owner]** TestFlight, then `TEAM_ID=… ./Scripts/notarize.sh` for the Mac build.
 21. Update `Planning/DEVELOPMENT-PLAN.md` with what actually happened, including anything this
     plan got wrong.
@@ -576,7 +624,8 @@ dark for everyone).
   device. `VolumeUpdateChecker` compares the live git blob SHA against the local file and surfaces
   updatable volumes in both storage hubs. What happens to a reader's notes and highlights anchored
   into a document whose text moved is **now designed** —
-  `Volume-Update-Annotation-Integrity-Design.md`, written 2026-09-02 — and its P1 (record the
+  `Completed/Volume-Update-Annotation-Integrity-Design.md`, written 2026-09-02 and since shipped
+  whole (R-5, P1–P3b) — and its P1 (record the
   per-document change set at re-index time) is worth shipping **in the same release as the next
   volume batch**, because a revision table that starts recording before the first correction lands
   is one that can answer the question the first time it is asked.
@@ -630,10 +679,13 @@ dark for everyone).
   a removed one still occupies a row and is cut at `limit` **before** the `document_cache` fence, so
   each phantom silently *shortens* a neighbour list rather than yielding to the next real candidate.
   **This window cannot be fixed, only disclosed** — the vectors for the corrected text do not exist
-  until someone re-runs the harvest.
+  until someone re-runs the harvest. *(The disclosure is still unwritten: neither manual says it.
+  A sentence for each is proposed in `Manual-Revisions-Pending.md` under "PLAN", 2026-10-01.)*
 
   ***The release rule this produces:*** a corrected volume's shard must be re-published **and devices
-  must be made to re-fetch it**. Today nothing does.
+  must be made to re-fetch it**. ~~Today nothing does.~~ Since R-1c the per-shard purge does
+  (`SemanticShardStore.purgeShardsFailingBundledDigest`), and §10's "Phase D for a CORRECTED
+  volume" is the runbook for the publishing half.
 - **A volume that will not parse.** `LocalVolumeCatalog.entry` returns `nil` rather than inventing
   a title, and the volume goes unlisted. Fine for side-load; unexamined for the catalogue path.
 - **The `newlyAvailable` doc-comment defect** is recorded here (§1) but not filed. It should be an

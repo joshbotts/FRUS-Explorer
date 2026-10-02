@@ -497,7 +497,15 @@ roughly 18×, and the build only survived because the machine had the RAM. The c
 `CatalogIndexBuilder` accumulates a group's entire projection in an array, and `writeShard` then encodes
 that whole array to a single `Data` before writing — for RG 59 that is 236,480 records twice over. It
 completed in 8 minutes here, but it would swap or be killed on a 16 GB machine, and `DEPTH=all` would
-not finish at all. **Streaming the shard write is the fix and has not been done.**
+not finish at all. ~~**Streaming the shard write is the fix and has not been done.**~~ **Done as
+P-2 (PR #1244, 2026-09-07), and it is a partial fix.** `writeShard` now encodes one record at a time
+(`RecordGroupCatalogWriter.swift`), which cut the peak footprint 2.14–2.36× over the four shards that
+could be measured (rg_239, rg_469, rg_306, rg_84). The records array itself is still resident and
+still linear in group size — the shard is sorted by NAID and walked again for the sample — so
+`DEPTH=all` is not made to finish by this; that needs an external sort, which is separate work.
+The full RG 59 build was not re-measured, because the raw store it reads no longer exists
+("The raw NDJSON is not scratch"). `CLAUDE.md`'s `RecordGroupCatalogGenerator` entry has the
+measurement.
 
 #### The “37 file units” gap: a NAID-counting artifact, resolved
 

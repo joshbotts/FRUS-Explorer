@@ -1,5 +1,9 @@
 # Open-issues resolution plan — 2026-09-23
 
+**Discharged, and archived here on 2026-10-01.** Its lanes shipped as build 48 (2026-09-27, index
+v62). What it left — the owner's by-eye checks, the issues its own fixes turned up — was planned
+again in `Plan-Of-Record-2026-09-28.md`, which is the live plan.
+
 Base: `v2` @ `b5175801` · index **v54** (`IndexingPipeline.swift:870`) · person rollup **v9**
 (`:924`) · build **48** · **no open PRs** · corpus pinned at `550a8c5c5`.
 
