@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+import SwiftUI
 import Testing
 @testable import FRUSExplorer
 
@@ -92,6 +93,8 @@ struct StoredProvenanceCategoryTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
+///   1.1 — 2026-10-02 (#1543, landing round 2): the composition chart is drawn at an iPhone's
+///          width and a wide one, and its bar measured
 @Suite("Archival analytics — your library profile")
 struct ArchivalLibraryProfileTests {
 
@@ -295,5 +298,90 @@ struct ArchivalLibraryProfileTests {
             With no authority the list is empty for a reason the footer states, rather than \
             implying the reader's library cites nothing recognisable.
             """)
+    }
+
+    // MARK: The composition chart's height (#1543, landing round 2)
+
+    /// A library with a source note in every one of the eleven categories, the heaviest first as
+    /// `make` orders them. The first segment is a quarter of the bar, so a column a tenth of the
+    /// way across is inside it at any width.
+    private static let everyCategoryProfile = ArchivalLibraryProfile(
+        noteCount: 400, volumeCount: 5,
+        composition: SourceProvenanceCategory.ordered.enumerated().map { index, category in
+            ArchivalLibraryCategoryCount(category: category, documentCount: index == 0 ? 100 : 30)
+        },
+        bands: [], collections: [], centralFileNoteCount: 0, unresolvedCollectionNoteCount: 0)
+
+    /// The composition chart drawn `width` points wide at its own height: the drawing's height,
+    /// and the height of the bar — the longest run of coloured pixels down the column a tenth of
+    /// the way across. A legend swatch is a dot some eight points high, so a run of twenty or
+    /// more is the bar.
+    @MainActor
+    private static func drawnComposition(width: CGFloat) throws -> (height: Int, bar: Int) {
+        let chart = ArchivalAnalyticsView.libraryCompositionChart(everyCategoryProfile)
+        let image = try RenderedText.image(of: chart, width: width, scale: 1)
+        let pixels = try RenderedText.pixels(of: image)
+        let column = image.width / 10
+        var longest = 0, run = 0
+        for row in 0..<image.height {
+            let at = (row * image.width + column) * 4
+            let channels = [Int(pixels[at]), Int(pixels[at + 1]), Int(pixels[at + 2])]
+            if channels.max()! - channels.min()! > 60 {
+                run += 1
+                longest = max(longest, run)
+            } else {
+                run = 0
+            }
+        }
+        return (image.height, longest)
+    }
+
+    /// The chart's height was fixed at 120 points with its legend inside it. At an iPhone's width
+    /// the eleven legend entries wrap to six rows and took all of it: the bar was a line one or
+    /// two pixels high. 345 points is the card's width on an iPhone 17 (402 points wide).
+    @MainActor
+    @Test("At an iPhone's width the composition bar keeps its height under the legend")
+    func compositionBarKeepsItsHeightUnderTheLegend() throws {
+        let narrow = try Self.drawnComposition(width: 345)
+        #expect(narrow.bar >= 20, "the bar is \(narrow.bar) points high in a chart of \(narrow.height)")
+        #expect(narrow.height > 120, "the chart did not grow for its legend: \(narrow.height) points")
+    }
+
+    /// Where the legend leaves the plot its forty points the chart is the 120 points it was, so
+    /// the Mac's and a full-width iPad's cards are unmoved.
+    @MainActor
+    @Test("At a wide width the composition chart rests at the height it had")
+    func compositionChartRestsAtItsOldHeightWhenWide() throws {
+        let wide = try Self.drawnComposition(width: 1000)
+        #expect(wide.height == 120, "the chart is \(wide.height) points high at 1,000 wide")
+        #expect(wide.bar >= 20, "the bar is \(wide.bar) points high")
+    }
+
+    /// The card draws the chart the two tests above draw, once, and that chart's height is a
+    /// floor on its plot and a floor on itself: no fixed height bounds the legend.
+    @MainActor
+    @Test("The composition card draws the measured chart, and nothing fixes its height")
+    func compositionCardDrawsTheMeasuredChart() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/Analytics/ArchivalAnalyticsView.swift"),
+            encoding: .utf8)
+        #expect(source.components(separatedBy: "Self.libraryCompositionChart(profile)").count - 1 == 1,
+                "the card draws the chart once")
+
+        let opening = "static func libraryCompositionChart(_ profile: ArchivalLibraryProfile) -> some View {"
+        let start = try #require(source.range(of: opening))
+        let end = try #require(source.range(of: "\n    }\n", range: start.upperBound..<source.endIndex))
+        let body = String(source[start.upperBound..<end.lowerBound]).filter { !$0.isWhitespace }
+        #expect(body.contains(".chartPlotStyle{plotin"
+                              + "plot.frame(minHeight:libraryCompositionMinimumPlotHeight,"
+                              + "idealHeight:libraryCompositionMinimumPlotHeight,"
+                              + "maxHeight:.infinity)}"),
+                "the plot's floor is gone")
+        #expect(body.hasSuffix(".frame(minHeight:libraryCompositionRestingHeight)"),
+                "the chart's last modifier is not its resting height")
+        #expect(!body.contains(".frame(height:"), "a fixed height bounds the chart and its legend again")
+        #expect(ArchivalAnalyticsView.libraryCompositionMinimumPlotHeight == 40)
+        #expect(ArchivalAnalyticsView.libraryCompositionRestingHeight == 120)
     }
 }

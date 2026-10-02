@@ -61,6 +61,9 @@ import Charts
 ///   1.11 — #1368: Done and the collection sheet's citing-volume hand-off close through
 ///         `AuxWindowClose`, so in the iPad window closing brings a main window forward instead
 ///         of leaving the reader on the Home Screen
+///   1.12 — 2026-10-02 (#1543, landing round 2): the two Your Library charts take their colours
+///         from `provenanceCategoryColorScale()`, and the composition chart keeps a plot of 40
+///         points under a legend of any height (`libraryCompositionChart(_:)`)
 private struct ArchivalAllUnitsPresentation: Identifiable {
     /// Fresh per presentation, which is all `.sheet(item:)` needs.
     let id = UUID()
@@ -1390,29 +1393,58 @@ struct ArchivalAnalyticsView: View {
                 exportControl(table: libraryCompositionTable(profile), provenance: provenance)
             }
         ) {
-            Chart {
-                ForEach(profile.composition) { item in
-                    BarMark(
-                        x: .value(String(localized: "archival.table.documents",
-                                         defaultValue: "Documents"), item.documentCount),
-                        y: .value(String(localized: "archival.library.composition.y",
-                                         defaultValue: "Your library"), "")
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "archival.table.provenance", defaultValue: "Provenance"),
-                        item.category.displayName))
-                    .accessibilityLabel(Text(item.category.displayName))
-                    .accessibilityValue(Text(String(
-                        format: String(localized: "archival.library.composition.a11y %lld %@",
-                                       defaultValue: "%1$lld documents, %2$@"),
-                        Int64(item.documentCount),
-                        percentString(item.documentCount, of: profile.noteCount))))
-                }
-            }
-            .provenanceCategoryColorScale()
-            .chartYAxis(.hidden)
-            .frame(height: 120)
+            Self.libraryCompositionChart(profile)
         }
+    }
+
+    /// The least height of the composition bar's plot area, in points.
+    ///
+    /// Forty is the plot the card drew at about 700 points wide while its height was fixed, so at
+    /// that width and wider the card is the height it was.
+    static let libraryCompositionMinimumPlotHeight: CGFloat = 40
+
+    /// The composition chart's height while its legend leaves the plot at least
+    /// `libraryCompositionMinimumPlotHeight`.
+    static let libraryCompositionRestingHeight: CGFloat = 120
+
+    /// The Your Library composition chart: one stacked bar, a segment per provenance category,
+    /// over the legend of all eleven.
+    ///
+    /// The chart's height was fixed at 120 points, legend included. On an iPhone the legend wraps
+    /// to six rows and took all of it, so the bar was a line one or two pixels high (#1543,
+    /// landing round 2). The floor is now on the PLOT: the chart rests at 120 points wherever the
+    /// legend leaves the plot 40 or more, and grows by what the legend needs wherever it does not —
+    /// a narrow window, or a large text size at any width.
+    ///
+    /// Static and internal so `ArchivalLibraryProfileTests` draws this chart, not a copy of it.
+    static func libraryCompositionChart(_ profile: ArchivalLibraryProfile) -> some View {
+        Chart {
+            ForEach(profile.composition) { item in
+                BarMark(
+                    x: .value(String(localized: "archival.table.documents",
+                                     defaultValue: "Documents"), item.documentCount),
+                    y: .value(String(localized: "archival.library.composition.y",
+                                     defaultValue: "Your library"), "")
+                )
+                .foregroundStyle(by: .value(
+                    String(localized: "archival.table.provenance", defaultValue: "Provenance"),
+                    item.category.displayName))
+                .accessibilityLabel(Text(item.category.displayName))
+                .accessibilityValue(Text(String(
+                    format: String(localized: "archival.library.composition.a11y %lld %@",
+                                   defaultValue: "%1$lld documents, %2$@"),
+                    Int64(item.documentCount),
+                    percentString(item.documentCount, of: profile.noteCount))))
+            }
+        }
+        .provenanceCategoryColorScale()
+        .chartYAxis(.hidden)
+        .chartPlotStyle { plot in
+            plot.frame(minHeight: libraryCompositionMinimumPlotHeight,
+                       idealHeight: libraryCompositionMinimumPlotHeight,
+                       maxHeight: .infinity)
+        }
+        .frame(minHeight: libraryCompositionRestingHeight)
     }
 
     private func libraryBandsCard(_ profile: ArchivalLibraryProfile) -> some View {
@@ -1476,7 +1508,7 @@ struct ArchivalAnalyticsView: View {
             ],
             rowCells: profile.composition.map {
                 [$0.category.displayName, "\($0.documentCount)",
-                 percentString($0.documentCount, of: profile.noteCount)]
+                 Self.percentString($0.documentCount, of: profile.noteCount)]
             })
     }
 
@@ -1633,7 +1665,7 @@ struct ArchivalAnalyticsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func percentString(_ value: Int, of total: Int) -> String {
+    private static func percentString(_ value: Int, of total: Int) -> String {
         guard total > 0 else { return "0%" }
         return (Double(value) / Double(total))
             .formatted(.percent.precision(.fractionLength(0...1)))
