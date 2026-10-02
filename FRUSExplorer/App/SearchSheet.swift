@@ -122,6 +122,8 @@ import SwiftUI
 ///          `searchError`, so a refused query, the empty-scope guard and the Meaning-mode errors all fell through to
 ///          an empty result list. Since the view shows any standing error, a rebuilt index clears it with the results
 ///          and the field (#1299 follow-up).
+///   1.20 — #1491 review round 1: a result row names a document the volume prints without a number "Unnumbered
+///          (d710a-1)" (`CitableDocumentNumber.captionLabel`), where it printed "Doc [Unnumbered document following …]"
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -2458,11 +2460,16 @@ private struct SearchResultRow: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 // "Doc N" is withheld when the header below already opens with N (X-2 / M-6);
-                // the volume id half stays, since nothing else on the row carries it.
+                // the volume id half stays, since nothing else on the row carries it. A document
+                // the volume prints without a number reads "Unnumbered (d710a-1)" (#1491).
                 Text(DocumentHeaderDisplay.headerRepeatsNumber(
                         result.header, number: result.documentNumber)
                      ? result.volumeId
-                     : "\(result.volumeId) · Doc \(result.documentNumber ?? result.documentId)")
+                     : String(format: String(localized: "search.result.location %@ %@",
+                                             defaultValue: "%1$@ · %2$@"),
+                              result.volumeId,
+                              CitableDocumentNumber.captionLabel(printed: result.documentNumber,
+                                                                 documentId: result.documentId)))
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(Color.accentColor)
 

@@ -63,9 +63,6 @@ public struct ParsedTEIHeader: Sendable, Equatable {
     /// Latest document date in the volume's declared coverage range.
     public var latestDate: String? = nil
 
-    /// How many `<div type="document">` elements the header's own counting reports.
-    public var documentCount: Int = 0
-
     /// The volume's subject tags.
     public var tags: [String] = []
 

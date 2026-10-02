@@ -530,6 +530,64 @@ struct CitationParserTests {
         #expect(try words("FRUS, 1952–1954, Iran, 1951–1954, doc. 5").prefix(6)
                 == ["foreign", "relations", "of", "the", "united", "states"])
     }
+
+    /// The cited volume numeral leaves the title fragment as a whole word, with the "Volume" or
+    /// "vol." printed before it — never out of the title's own words (#1524). Until #1524 it was a
+    /// substring replace: Volume V's "Volume" became "olume" and "Vietnam" "ietnam", and a Volume I
+    /// citation lost every capital I ("Iran" → "ran"), so the fragment carried words no title has.
+    @Test("CitationParserTest: the cited volume numeral leaves the title fragment as a whole word, with its Volume or vol., and the title's words keep their letters (#1524)")
+    func volumeNumeralLeavesTheTitlesWords() throws {
+        func words(_ text: String) throws -> [String] {
+            let fragment = try #require(parser.parse(text).titleFragment, "\(text)")
+            return fragment.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        }
+        // Volume V, as frus1964-68v05's own citation prints it: "Vietnam" whole, and neither the
+        // numeral, nor "Volume", nor what the substring replace left of it.
+        let five = try words("Foreign Relations of the United States, 1964–1968, Volume V, Vietnam, 1967, Document 1.")
+        #expect(five.contains("vietnam"), "\(five)")
+        for gone in ["v", "volume", "olume", "ietnam"] {
+            #expect(!five.contains(gone), "\(gone) in \(five)")
+        }
+        // Volume I: every capital I of the title's words stays.
+        let one = try words("FRUS, 1969–1976, Volume I, Iran and India, doc. 3")
+        #expect(one.contains("iran") && one.contains("india"), "\(one)")
+        for gone in ["i", "volume", "ran", "ndia"] {
+            #expect(!one.contains(gone), "\(gone) in \(one)")
+        }
+        // An Arabic number, which the parser reads as V: the text holds "5", and "Vietnam" keeps
+        // its V while "vol. 5" goes whole.
+        let arabic = try words("FRUS, 1964–68, vol. 5, Vietnam, doc. 3")
+        #expect(arabic.contains("vietnam") && !arabic.contains("ietnam"), "\(arabic)")
+        #expect(!arabic.contains("vol") && !arabic.contains("5"), "\(arabic)")
+        // A bare numeral after the years, with no "Volume" before it, goes as a whole word too.
+        let bare = try words("FRUS, 1969–76, I, Instruments of Foreign Policy, doc. 15")
+        #expect(bare.contains("instruments") && !bare.contains("nstruments") && !bare.contains("i"), "\(bare)")
+
+        // The fixtures above print the numeral once, so none of them can tell the shipped rule from
+        // the ones #1524 measured against it (review round 1). These three can, one rule each.
+        //
+        // Only the phrase goes: a title that prints the numeral again keeps it. frus1872p2v2's own
+        // citation keeps "Part II", where stripping the numeral as a word everywhere — the
+        // alternative #1524 measured and rejected — left "Part".
+        let partTwo = try words("Papers Relating to the Foreign Relations of the United States, Transmitted to Congress with the Annual Message of the President, December 2, 1872, Part II, Volume II, doc. 5")
+        #expect(Array(partTwo.suffix(2)) == ["part", "ii"], "\(partTwo)")
+        #expect(!partTwo.contains("volume"), "\(partTwo)")
+        // A phrase that runs into a word is not one. A real footnote clause: the parser reads D out
+        // of "this volume. Documentation", and the strip passes that phrase over, so both
+        // "documentation"s and "Debt" keep their D; the whole phrase it takes is "vol. XXXVI".
+        let runOnText = "The Williamsburg Summit took place May 28–30. For documentation on the Summit, see the International Debt compilation of this volume. Documentation is also scheduled for publication in Foreign Relations, 1981–1988, vol. XXXVI, Trade"
+        #expect(parser.parse(runOnText).volumeNumber == "D")
+        let runOn = try words(runOnText)
+        #expect(runOn.filter { $0 == "documentation" }.count == 2 && runOn.contains("debt"), "\(runOn)")
+        #expect(!runOn.contains("ocumentation") && !runOn.contains("xxxvi"), "\(runOn)")
+        // The bare numeral goes once: its first whole-word occurrence, here the "I" after the year,
+        // which the parser read as the volume. The later "I" stays — the one fragment of the 30,204
+        // footnote clauses that removing every occurrence changed.
+        let memoText = "In regard to the publication of the meetings in Paris in 1919, I am still not satisfied that I should publish them."
+        #expect(parser.parse(memoText).volumeNumber == "I")
+        let memo = try words(memoText)
+        #expect(memo.filter { $0 == "i" }.count == 1 && memo.contains("paris") && memo.contains("should"), "\(memo)")
+    }
 }
 
 // MARK: - CitationLookupFieldsTests
@@ -792,5 +850,69 @@ struct CitationLookupViewWiringTests {
         let body = try #require(Self.body(after: "private func batchOutcomeLabel(_ row: BatchCitationRow)",
                                           in: try Self.viewSource()))
         #expect(body.contains("Label(row.loneCandidateLabel ?? String(format:"), "\(body)")
+    }
+
+    /// Batch parses each pasted note on its own and never reads the Parsed Fields, so the form does
+    /// not show them there (#1506): it showed them in every mode, holding the last paste's values,
+    /// and a reader who edited one saw no effect on the batch. The section is one property, mounted
+    /// only where the mode reads it (`CitationLookupMode.showsParsedFields`) — its one use, beside
+    /// its declaration — and its header is declared nowhere else.
+    @Test("Batch mode does not mount the Parsed Fields (#1506)")
+    func batchDoesNotMountTheParsedFields() throws {
+        let source = try Self.viewSource()
+        let input = try #require(Self.body(after: "private var inputSection: some View", in: source))
+        #expect(input.contains("if mode.showsParsedFields { parsedFieldsSection }"), "\(input)")
+        #expect(!input.contains("citation.fields.header"), "\(input)")
+        let fields = try #require(Self.body(after: "private var parsedFieldsSection: some View", in: source))
+        #expect(fields.contains(#"Text(String(localized: "citation.fields.header", defaultValue: "Parsed Fields"))"#),
+                "\(fields)")
+        #expect(source.ranges(of: #"localized: "citation.fields.header""#).count == 1)
+        // The section is named twice in the file: where it is declared, and the one use inside the
+        // gate. A second use — beside `inputSection` in the form, say — would show it in Batch again
+        // and pass every check above (review round 1).
+        let uses = source.ranges(of: "parsedFieldsSection").count
+        #expect(uses == 2, "parsedFieldsSection is named \(uses) times; its declaration and the gated use are 2")
+    }
+
+    /// The two rules the wiring above calls, each mode its own fixture: only Batch hides the
+    /// Parsed Fields, and each mode starts in the field it reads (#1506).
+    @Test("Only Batch hides the Parsed Fields, and each mode starts in the field it reads (#1506)")
+    func modeRules() {
+        #expect(!CitationLookupMode.batch.showsParsedFields)
+        #expect(CitationLookupMode.paste.showsParsedFields)
+        #expect(CitationLookupMode.structured.showsParsedFields)
+        #expect(CitationLookupFocus.initial(for: .batch) == .batch)
+        #expect(CitationLookupFocus.initial(for: .paste) == .paste)
+        #expect(CitationLookupFocus.initial(for: .structured) == .subseries)
+    }
+
+    /// Entering Batch put the focus on the Subseries field, which Batch never reads — on iOS it
+    /// raised the keyboard over a field the mode ignores, and the footnote editor had no focus
+    /// binding at all (#1506). The editor takes the focus now, through the one rule the opening
+    /// nudge and every mode change share.
+    @Test("Batch mode focuses its footnote editor, through the rule every focus change uses (#1506)")
+    func batchFocusesItsEditor() throws {
+        let source = try Self.viewSource()
+        let input = try #require(Self.body(after: "private var inputSection: some View", in: source))
+        #expect(input.contains("TextEditor(text: $pasteText)"), "\(input)")
+        #expect(input.contains(".focused($focusedField, equals: .batch)"), "\(input)")
+        let modeChange = try #require(Self.body(after: ".onChange(of: mode)", in: source))
+        #expect(modeChange.contains("focusedField = CitationLookupFocus.initial(for: newMode)"), "\(modeChange)")
+        let opening = try #require(Self.body(after: ".task", in: source))
+        #expect(opening.contains("focusedField = CitationLookupFocus.initial(for: mode)"), "\(opening)")
+        // The rule is the only way focus is chosen by mode: no hand-written ternary is left.
+        #expect(!source.contains("== .paste ? .paste : .subseries"))
+    }
+
+    /// The Batch summary is built by `BatchCitationOutcome.summary(of:)`, which counts a best guess
+    /// in a bucket of its own (#1506, owner decision D17), and the view shows that summary whole.
+    @Test("The Batch summary is the shared summary of the rows' outcomes (#1506)")
+    func batchSummaryIsTheSharedOne() throws {
+        let source = try Self.viewSource()
+        let summary = try #require(Self.body(after: "private var batchSummary: String", in: source))
+        #expect(summary == #"{ BatchCitationOutcome.summary(of: batchRows.map(\.outcome)) }"#, "\(summary)")
+        let label = try #require(Self.body(after: "private func batchOutcomeLabel(_ row: BatchCitationRow)",
+                                           in: source))
+        #expect(label.contains("case .bestGuess:"), "\(label)")
     }
 }

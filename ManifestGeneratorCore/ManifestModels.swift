@@ -24,11 +24,12 @@ import Foundation
 /// for volumes predating the tagging system — it is not an error or missing data.
 /// Slugs resolve against `volume-tag-taxonomy.json` for display names and hierarchy.
 ///
-/// `documentCount` is set to 0 when not available from the `<teiHeader>` alone (full-body
-/// parsing is required for an accurate count and is out of scope for the generator tool).
+/// The entry carries no document count: the `<teiHeader>` cannot say how many documents a volume
+/// holds, and the always-zero `documentCount` it carried until #1504 is removed (owner decision D6).
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — #1504: `documentCount` removed
 public struct VolumeManifestEntry: Codable, Sendable, Equatable {
     public let volumeId: String
     public let filename: String
@@ -39,14 +40,13 @@ public struct VolumeManifestEntry: Codable, Sendable, Equatable {
     public let status: VolumeStatus         // .published | .partiallyPublished | .planned
     public let editors: [String]
     public let generalEditor: String?
-    public let documentCount: Int           // 0 when not extractable from teiHeader alone
     public let sizeBytes: Int               // GitHub API size, or the local file's in overlay mode
     public let tags: [String]              // Volume-level tag slugs; [] is valid
 
     public init(
         volumeId: String, filename: String, subseries: String, title: String,
         dateRange: DateRange, publicationDate: String?, status: VolumeStatus,
-        editors: [String], generalEditor: String?, documentCount: Int,
+        editors: [String], generalEditor: String?,
         sizeBytes: Int, tags: [String]
     ) {
         self.volumeId = volumeId
@@ -58,7 +58,6 @@ public struct VolumeManifestEntry: Codable, Sendable, Equatable {
         self.status = status
         self.editors = editors
         self.generalEditor = generalEditor
-        self.documentCount = documentCount
         self.sizeBytes = sizeBytes
         self.tags = tags
     }

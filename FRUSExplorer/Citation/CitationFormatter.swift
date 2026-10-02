@@ -135,10 +135,29 @@ public struct FRUSDocumentMetadata: Sendable {
         self.dateline = dateline
     }
 
-    public init(_ entry: DocumentBrowserEntry) {
+    /// The metadata an in-app citation of `entry` carries: its number through
+    /// `CitableDocumentNumber.resolve`, the rule every export already applies (#1491).
+    ///
+    /// The reader's Copy Citation and its share, BibTeX, RIS and Zotero rows, the Mac citation and
+    /// share popovers, and the Research-notes Markdown export build their citations here. Until
+    /// #1491 they passed the stored number to the formatter as it was, so a document
+    /// `frus1945Berlinv02` prints without a number was cited "…, Document [Unnumbered document
+    /// following Document 710 (#1)]." in the app and with no number in an export — and the in-app
+    /// form, pasted into Citation Lookup, read as document 710.
+    ///
+    /// It is the only initializer that starts from an entry. The one that passed
+    /// `entry.documentNumber` through unresolved — the route #1491 retired, and the shorter call a
+    /// new caller would reach for — is gone (#1491 review round 1), so no citation is built from an
+    /// entry without the rule.
+    ///
+    /// - Parameters:
+    ///   - entry: The document cited.
+    ///   - printedNumber: The number the caller holds for it — the entry's, the index's or the
+    ///     parse's, in the caller's own order of preference — or `nil` when it holds none.
+    public init(citing entry: DocumentBrowserEntry, printedNumber: String?) {
         self.init(
             documentId: entry.documentId,
-            documentNumber: entry.documentNumber,
+            documentNumber: CitableDocumentNumber.resolve(printed: printedNumber, documentId: entry.documentId),
             header: entry.header,
             dateline: entry.dateline
         )
@@ -148,7 +167,15 @@ public struct FRUSDocumentMetadata: Sendable {
 // MARK: - CitableDocumentNumber
 
 /// The document number an exported citation names, for the sites that start from a document's
-/// id — the one rule they all call (#1406).
+/// id — the one rule they all call (#1406). Since #1491 every in-app citation calls it too,
+/// through `FRUSDocumentMetadata.init(citing:printedNumber:)`, so the app cites a document the
+/// way its exports do. The captions that name a document by its number — the Mac reader's header,
+/// previous and next buttons and toolbar centre, the citation popover, the Mac Search row and the
+/// breadcrumb — call it as well (#1491 review round 1): they name a document the volume prints
+/// without a number "Unnumbered (d710a-1)" (``unnumberedLabel(documentId:volumeId:)``, the owner's
+/// decision D5 — the one label the Mac collection row and a generated block's list token read
+/// too), never by its bracketed `@n` (``captionLabel(printed:documentId:)``,
+/// ``headerLabel(printed:documentId:)``).
 ///
 /// ## Why not the id
 /// Six sites — the trip packet's citations (`TripPacketDataSource`), a collection export's
@@ -175,13 +202,32 @@ public struct FRUSDocumentMetadata: Sendable {
 ///    prints WITHOUT a number — the 217 Potsdam documents, the only bracketed `@n` in the corpus.
 ///    Such a document is cited in the formatter's number-less form, ending at the publication
 ///    clause, exactly as an editorial note without a number is; the id is never substituted in a
-///    citation, because `d710a-1` is not a locator anyone printed. (Two places still show it, and
-///    neither is a citation: a generated block's list token, "Document d710a-1"
-///    (`CollectionGeneratedBlocks.referenceToken`, unchanged by #1406), and the Mac collection
-///    row, which shows the bare id — ``rowLabel(printed:documentId:)``.)
+///    citation, because `d710a-1` is not a locator anyone printed. Where a LIST names it — a
+///    generated block's list token and the Mac collection row — it reads "Unnumbered (d710a-1)"
+///    (``unnumberedLabel(documentId:volumeId:)``, #1493, the owner's decision D5): the id is the
+///    document's history.state.gov locator, so it identifies the document, and "Unnumbered" says
+///    why no number stands there. Before #1493 those two places printed the id as though it were
+///    the number — "Document d710a-1", and the bare id. The captions that name a document by its
+///    number read the same label through the same function (#1491).
 /// 3. When the index stores nothing — the document's volume is not indexed on this device — the
 ///    id stands in only where it is the number: `d12` → `12`, `d373a` → `373a` (right for all 83
-///    lettered ids measured). Any other shape stays number-less until its volume is indexed.
+///    lettered ids measured). Any other shape stays number-less until its volume is indexed, and is
+///    named by its id — bare on the Mac row, "Document d710a-1" in a block's list: with nothing
+///    stored, nothing the app has read says the volume prints no number (`eta_d1` prints ETA–1),
+///    so it calls none unnumbered, and it does not infer it from the id's shape. That shape would
+///    be right on today's corpus — every document id like `d710a-1` is one of
+///    `frus1945Berlinv02`'s 217 unnumbered documents (the only other `xml:id`s of that shape are
+///    434 facsimile page anchors in the two 1961–63 microfiche supplements; measured at corpus
+///    8e5da08c1) — but it is the encoders' convention, not a printed fact. So #1493's defect
+///    remains on a Potsdam document whose volume this device has not indexed.
+///
+/// Version history:
+///   1.0 — #1406: initial implementation
+///   1.1 — #1493: ``isUnnumbered(printed:)`` and ``unnumberedLabel(documentId:volumeId:)``; the row label reads
+///         "Unnumbered (id)" for a document the volume prints without a number
+///   1.2 — #1491: ``captionLabel(printed:documentId:)`` and ``headerLabel(printed:documentId:)``, so
+///         the Mac reader's captions, the citation popover, the Mac Search row and the breadcrumb
+///         name an unnumbered document through the same ``unnumberedLabel(documentId:volumeId:)``
 enum CitableDocumentNumber {
 
     /// The number to cite for a document.
@@ -218,13 +264,75 @@ enum CitableDocumentNumber {
     }
 
     /// A document row's label where a list names documents by number — the Mac collection
-    /// manager's rows: "Document 373a" when there is a number to cite, else the document's id,
-    /// which is what the row showed for every such document before (and what the iOS row's caption
-    /// shows for all of them).
+    /// manager's rows: "Document 373a" when there is a number to cite; "Unnumbered (d710a-1)" for a
+    /// document the volume prints without one (#1493); else — a number this device has not read —
+    /// the document's id, which is what the row showed for every such document before (and what the
+    /// iOS row's caption shows for all of them).
     static func rowLabel(printed: String?, documentId: String) -> String {
-        guard let number = resolve(printed: printed, documentId: documentId) else { return documentId }
-        return String(format: String(localized: "collection.entry.documentLabel %@",
-                                     defaultValue: "Document %@"), number)
+        if let number = resolve(printed: printed, documentId: documentId) {
+            return String(format: String(localized: "collection.entry.documentLabel %@",
+                                         defaultValue: "Document %@"), number)
+        }
+        return isUnnumbered(printed: printed) ? unnumberedLabel(documentId: documentId) : documentId
+    }
+
+    /// Whether the number the index stores for a document says the volume prints it WITHOUT one: a
+    /// bracketed `@n`, the editors' description (rule 2). `false` when nothing is stored — the app
+    /// cannot tell an unnumbered document from one whose number it has not read.
+    static func isUnnumbered(printed: String?) -> Bool {
+        guard let stored = printed?.trimmingCharacters(in: .whitespacesAndNewlines), !stored.isEmpty else { return false }
+        return isEditorialDescription(stored)
+    }
+
+    /// How a list or a caption names a document the volume prints without a number (#1493, the
+    /// owner's decision D5): "Unnumbered (d710a-1)" — its id, the history.state.gov locator, in place
+    /// of the number it does not have. The one implementation of D5: the Mac collection row, a
+    /// generated block's list token, and since #1491 the Mac reader's captions, the citation
+    /// popover, the Mac Search row and the breadcrumb all read it. With `volumeId`, for a list spanning volumes, the volume follows the id
+    /// inside the parentheses — "Unnumbered (d710a-1, frus1945Berlinv02)" — as a numbered
+    /// document's token is followed by its volume ("12 (frus1969-76v01)").
+    static func unnumberedLabel(documentId: String, volumeId: String? = nil) -> String {
+        guard let volumeId else {
+            return String(format: String(localized: "document.unnumbered.label %@",
+                                         defaultValue: "Unnumbered (%@)"), documentId)
+        }
+        return String(format: String(localized: "document.unnumbered.label.volume %@ %@",
+                                     defaultValue: "Unnumbered (%1$@, %2$@)"), documentId, volumeId)
+    }
+
+    /// How a caption names a document by its number — "Doc 12" — where the caption has always
+    /// fallen back to the id: the Mac reader's previous and next buttons and the position between
+    /// them, the citation popover's identity line and the Mac Search row (#1491 review round 1).
+    ///
+    /// The number is the one a citation of the document prints (``resolve(printed:documentId:)``),
+    /// so a caption and the citation beside it agree; a document the volume prints without a
+    /// number reads ``unnumberedLabel(documentId:volumeId:)``; and a document whose number neither
+    /// the index nor its id gives is named by its id, as each of these captions named it before ("Doc
+    /// eta_d1" in a volume this device has not indexed). Until review round 1 each printed the
+    /// stored `@n` as it was: "Doc [Unnumbered document following Document 710 (#1)]".
+    ///
+    /// - Parameters:
+    ///   - printed: The number the caller holds for the document, or `nil` when it holds none.
+    ///   - documentId: The document's `xml:id`.
+    /// - Returns: The caption's text.
+    static func captionLabel(printed: String?, documentId: String) -> String {
+        if isUnnumbered(printed: printed) { return unnumberedLabel(documentId: documentId) }
+        return String(format: String(localized: "document.caption.number %@", defaultValue: "Doc %@"),
+                      resolve(printed: printed, documentId: documentId) ?? documentId)
+    }
+
+    /// How the Mac reader's header names a document it holds a number for: "Document 475", or
+    /// ``unnumberedLabel(documentId:volumeId:)`` for one the volume prints without a number (#1491
+    /// review round 1; until then "Document [Unnumbered document following Document 710 (#1)]").
+    ///
+    /// - Parameters:
+    ///   - printed: The number stored for the document; the header names none when there is none.
+    ///   - documentId: The document's `xml:id`, named in place of a number the volume does not print.
+    /// - Returns: The header's text.
+    static func headerLabel(printed: String, documentId: String) -> String {
+        if isUnnumbered(printed: printed) { return unnumberedLabel(documentId: documentId) }
+        return String(format: String(localized: "document.header.number %@", defaultValue: "Document %@"),
+                      printed.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 }
 

@@ -270,6 +270,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          `LanguageAnalysisLifecycle.install()` starts it on the first foreground and re-checks on each.
 ///   4.24 — #1539 review round 1: on iOS `install()` also defers a first use to the first foreground,
 ///          so a scene restored in a background launch cannot start the warm-up either.
+///   4.25 — Lane EXPORT review round 1: `importOpenedCollection` indexes the notes an opened
+///          `.fruscollection` brings (`NativeCollectionSerializer.indexImportedNotes`), as the in-app imports do.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2041,7 +2043,9 @@ struct FRUSExplorerApp: App {
     /// macOS gave no feedback at all, so users re-opened the file and minted silent,
     /// CloudKit-synced duplicates). Re-opening a byte-identical file this session re-surfaces
     /// the collection it already created (see `openedCollectionImports`) instead of importing
-    /// a duplicate. Failures present the `collectionOpenError` alert on the main window.
+    /// a duplicate. The notes an import brings are indexed after the save
+    /// (`NativeCollectionSerializer.indexImportedNotes`), as the in-app imports' are. Failures
+    /// present the `collectionOpenError` alert on the main window.
     @MainActor
     private func importOpenedCollection(_ url: URL, from sceneID: SceneID?) {
         // A file, and only a file. Before the `frusexplorer://` scheme was registered this was
@@ -2070,6 +2074,14 @@ struct FRUSExplorerApp: App {
             let imported = NativeCollectionSerializer.apply(file, into: context)
             if let pid = appState.activeProjectId { imported.projectIds = [pid] }
             try context.save()
+            // The notes it brought are searchable at once, as an Import Collection… import's are. This is the path a
+            // shared file most often arrives by, and it was the one left out (the 2026-09-28 audit, review round 1).
+            if let pipeline = appState.indexingPipeline {
+                Task {
+                    await NativeCollectionSerializer.indexImportedNotes(of: imported, in: context,
+                                                                        pipeline: pipeline)
+                }
+            }
             openedCollectionImports[digest] = imported.id
             surfaceOpenedCollection(imported.id, from: sceneID)
         } catch {
@@ -3406,8 +3418,8 @@ struct DocumentCommandActions: Equatable {
     /// strip's "Add note" button).
     let addNote: @MainActor () -> Void
 
-    /// Saves the current selection as a highlight of the given color (the floating
-    /// selection bar's colour dots).
+    /// Saves the current selection as a highlight of the given color (the Mac selection bar's
+    /// colour dots; on iPhone and iPad the edit menu's colours, #1540).
     let highlightSelection: @MainActor (DocumentHighlight.Color) -> Void
 
     /// Toggles the Research rail (⌘⇧R / the titlebar + document-window rail toggles).

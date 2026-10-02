@@ -75,6 +75,10 @@ import WebKit
 ///          for cross-references the broken-refs index degrades
 ///   2.4 — 2026-10-01: #1483 — the not-downloaded cross-reference alert's message and the OK closing the
 ///          person and glossary notices have Mac keys of their own (`….mac`), beside iOS's texts
+///   2.5 — 2026-10-01: #1491 review round 1 — the header, the previous and next buttons and the
+///          position between them name a document the volume prints without a number "Unnumbered
+///          (d710a-1)", through `CitableDocumentNumber.headerLabel` / `.captionLabel`, where they
+///          printed its bracketed `@n`
 @MainActor
 struct MacDocumentView: View {
 
@@ -625,17 +629,17 @@ struct MacDocumentView: View {
 
     // MARK: - Floating Selection Bar (Research-rail Phase B2)
 
-    /// The macOS floating selection bar overlay: the shared ``FloatingSelectionBar`` anchored
-    /// *above* the selection (D3 — macOS has no system selection callout to compete with) on the
-    /// web view. The dots create a highlight; Excerpt/Look Up/Note reuse the same actions the
-    /// Research rail and Document menu drive.
+    /// The macOS floating selection bar overlay: the ``FloatingSelectionBar`` anchored *above* the
+    /// selection (D3 — macOS shows its system menu only on a right-click, so nothing competes for
+    /// that space) on the web view. iPhone and iPad retired their bar for the edit menu (#1540). The
+    /// dots create a highlight; Excerpt/Look Up in NARA/Note reuse the same actions the Research rail
+    /// and Document menu drive.
     @ViewBuilder
     private var macFloatingSelectionBarOverlay: some View {
         GeometryReader { proxy in
             if let anchor = selectionBar.anchor {
                 FloatingSelectionBar(
                     atFootnote: selectionBar.atFootnote,
-                    compact: false,
                     onHighlight: { color in
                         createWebKitHighlight(color: color)
                         selectionBar.hideNow()
@@ -920,8 +924,10 @@ struct MacDocumentView: View {
 
     private var documentIdentityView: some View {
         HStack(spacing: 8) {
+            // "Document 475", or "Unnumbered (d710a-1)" for a document the volume prints without a
+            // number, never its bracketed description (#1491).
             if let docNum = entry.documentNumber {
-                Text("Document \(docNum)")
+                Text(CitableDocumentNumber.headerLabel(printed: docNum, documentId: entry.documentId))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                 Text("·")
@@ -1007,7 +1013,8 @@ struct MacDocumentView: View {
                     navigationPath.append(prev)
                 } label: {
                     Label(
-                        "Doc \(prev.documentNumber ?? prev.documentId)",
+                        CitableDocumentNumber.captionLabel(printed: prev.documentNumber,
+                                                           documentId: prev.documentId),
                         systemImage: "chevron.left"
                     )
                     .font(.subheadline)
@@ -1023,10 +1030,13 @@ struct MacDocumentView: View {
             Spacer()
 
             // Just the document's own identifier — no "of N in this volume" suffix.
-            // `volumeEntry.documentCount` doesn't reflect the volume's true document
-            // count (it read 0 for every volume), so that phrasing was always wrong;
-            // the identifier alone is the part that's actually useful here.
-            Text(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)
+            // The manifest's document count, which that phrasing read, was 0 for every
+            // volume (and is gone since #1504), so it was always wrong; the identifier
+            // alone is the part that's actually useful here. "Doc 475", "Unnumbered
+            // (d710a-1)" (#1491), or the bare id when no number is stored.
+            Text(entry.documentNumber.map {
+                CitableDocumentNumber.captionLabel(printed: $0, documentId: entry.documentId)
+            } ?? entry.documentId)
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
 
@@ -1037,7 +1047,8 @@ struct MacDocumentView: View {
                     navigationPath.append(next)
                 } label: {
                     Label(
-                        "Doc \(next.documentNumber ?? next.documentId)",
+                        CitableDocumentNumber.captionLabel(printed: next.documentNumber,
+                                                           documentId: next.documentId),
                         systemImage: "chevron.right"
                     )
                     .font(.subheadline)

@@ -26,6 +26,8 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — #1372: extracted from the view's `targetLabel`, keyed on membership
+///   1.1 — #1491 (#1492's hardening): the not-downloaded form names a document number only where
+///          the id spells one, and shows any other id whole rather than as "Document 710a-1"
 enum CrossReferenceTargetLabel {
 
     /// The label for one target.
@@ -38,7 +40,12 @@ enum CrossReferenceTargetLabel {
     static func text(facts: CrossReferenceStore.DocumentTitleFacts?,
                      documentId: String, volumeTitle: String) -> String {
         if let facts { return DocumentDisplayTitle.text(facts, documentId: documentId) }
-        let number = documentId.hasPrefix("d") ? String(documentId.dropFirst()) : documentId
+        // A number only where the id spells one (`CitableDocumentNumber.fromDocumentId`, the
+        // exports' rule; the #1492 hardening, carried by #1491): `d710a-1`, `eta_d1` and `appA`
+        // name no printed number, and are shown as the ids they are.
+        guard let number = CitableDocumentNumber.fromDocumentId(documentId) else {
+            return "\(documentId) — \(volumeTitle)"
+        }
         let prefix = String(localized: "crossRefAnalytics.row.documentPrefix", defaultValue: "Document")
         return "\(prefix) \(number) — \(volumeTitle)"
     }

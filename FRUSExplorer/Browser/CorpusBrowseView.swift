@@ -201,7 +201,7 @@ struct CorporaIndexView: View {
                     )
                 }
             } else {
-                Section {
+                WrappingFooterSection {
                     ForEach(corpora) { corpus in
                         row(corpus)
                     }

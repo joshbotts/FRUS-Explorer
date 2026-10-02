@@ -36,7 +36,6 @@ private func makeManifestEntry(volumeId: String) -> VolumeManifestEntry {
         status: .published,
         editors: [],
         generalEditor: nil,
-        documentCount: 0,
         sizeBytes: 1_000,
         tags: []
     )

@@ -136,7 +136,7 @@ struct LocalVolumeCatalogTests {
         let entry = VolumeManifestEntry(
             volumeId: "frus1969-76v01", filename: "frus1969-76v01.xml", subseries: "1969-76",
             title: "T", dateRange: DateRange(earliest: nil, latest: nil), publicationDate: nil,
-            status: .published, editors: [], generalEditor: nil, documentCount: 0,
+            status: .published, editors: [], generalEditor: nil,
             sizeBytes: 0, tags: [])
         #expect(entry.provenance == .publishedCatalogue,
                 "the default must be the catalogue, or manifest.json's 552 entries lose their URLs")
@@ -232,6 +232,104 @@ struct LocalVolumeCatalogTests {
         #expect(resolved.title == "A side-loaded volume")
         #expect(resolved.provenance == .sideloaded)
         #expect(resolved.downloadUrl == nil)
+    }
+
+    // MARK: - Citation resolution refuses it (#1523)
+
+    /// Owner decision D7 (#1523): Citation Lookup and Add Documents refuse a side-loaded volume —
+    /// they resolve citations against the bundled catalogue only, which knows a published volume's
+    /// numbering and a side-loaded one's not — and the import says so. This pins the refusal through
+    /// the real engine over a side-loaded volume that is on disk, in the browse universe, and
+    /// titled, so an engine widened to `browsableEntries` fails each half (measured, by that
+    /// mutant): a link to it, the same link pasted into Add Documents, and the app's own citation
+    /// of it (which `entry(forVolumeId:)` lets Copy Citation build).
+    ///
+    /// The citation half asks an engine that counts no volume downloaded, because there a
+    /// resolution that reached the volume would show as a row naming it, offered for download; an
+    /// engine reading the file on disk with no index behind it answers a citation of it with
+    /// nothing either way, so it could not tell a refusal from a resolution (the first draft of
+    /// this test passed under the mutant for that reason).
+    @MainActor
+    @Test("Citation Lookup and Add Documents refuse a side-loaded volume's link and citation, though it is on disk and browsable (#1523)")
+    func citationResolutionRefusesASideloadedVolume() async throws {
+        let dir = try directory(with: ["frus1969-76v99": volumeXML()])
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = ManifestStore()
+        store.refreshLocalEntries(volumesDirectory: dir)
+        let sideloaded = try #require(store.entry(forVolumeId: "frus1969-76v99"),
+                                      "the fixture must be a browsable side-loaded volume, or the test proves nothing")
+        #expect(sideloaded.provenance == .sideloaded)
+        #expect(store.browsableEntries.contains { $0.volumeId == "frus1969-76v99" })
+
+        let onDisk = CitationMatchingEngine(manifestStore: store, searchService: nil, pageRangeStore: nil,
+                                            volumesDirectory: dir)
+        let parser = CitationParser()
+        let link = "https://history.state.gov/historicaldocuments/frus1969-76v99/d1"
+        let linked = try await onDisk.match(input: parser.parse(link))
+        #expect(linked.isEmpty, "a link to the side-loaded volume answered \(linked.map(\.volumeId))")
+
+        let addDocuments = CollectionCitationLineResolver(parse: { parser.parse($0) },
+                                                          match: { try await onDisk.match(input: $0) })
+        let outcome = await addDocuments.resolve(line: link)
+        let noMatch = String(localized: "collection.addDocs.citations.noMatch",
+                             defaultValue: "No match found in the local manifest or index")
+        #expect(outcome == .unresolved(reason: noMatch), "Add Documents answered the side-loaded volume's link: \(outcome)")
+
+        let ownCitation = HistoryAtStateCitationFormatter().format(
+            document: FRUSDocumentMetadata(documentId: "d1", documentNumber: "1", header: "Header", dateline: nil),
+            volume: FRUSVolumeMetadata(sideloaded))
+        let catalogueOnly = CitationMatchingEngine(manifestStore: store, searchService: nil, pageRangeStore: nil,
+                                                   downloadedVolumeIds: [])
+        let cited = try await catalogueOnly.match(input: parser.parse(ownCitation))
+        #expect(!cited.isEmpty, "the citation must reach some volume, or the check below is vacuous: \(ownCitation)")
+        #expect(!cited.contains { $0.volumeId == "frus1969-76v99" }, "\(ownCitation) → \(cited.map(\.volumeId))")
+    }
+
+    /// The other half of D7 (#1523): when the reader side-loads a volume, the import tells them that
+    /// such volumes are left out of the features that rely on the bundled publication data. The two
+    /// storage hubs are hand-maintained twins (one per platform, and the iOS test host compiles
+    /// only its own), so each is read: its import handler collects the ids it imported and asks
+    /// `SideloadCatalogueNotice.applies` with the catalogue citation resolution reads, and its
+    /// outcome row is followed by the notice.
+    @Test("Both storage hubs tell the reader after a side-load that citation resolution leaves the volume out (#1523)",
+          arguments: ["FRUSExplorer/Settings/VolumesStorageHubView.swift",
+                      "FRUSExplorer/Settings/MacVolumesStorageHub.swift"])
+    func hubsShowTheCatalogueNotice(_ path: String) throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        let handler = try #require(CitationLookupViewWiringTests.body(
+            after: "private func handleSideload(_ result: Result<[URL], Error>) async", in: source),
+            "\(path): no import handler")
+        #expect(handler.contains("importedIds.append(volumeId)"), "\(path): \(handler)")
+        // Compared with every space removed, so the call may wrap as it likes.
+        let unspaced = handler.filter { !$0.isWhitespace }
+        #expect(unspaced.contains(#"sideloadNoticeShown=SideloadCatalogueNotice.applies(importedVolumeIds:importedIds,citableVolumeIds:Set(appState.manifestStore.citableEntries.map(\.volumeId)))"#),
+                "\(path): \(handler)")
+        let collapsed = source.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        #expect(collapsed.contains("if let outcome = sideloadOutcome { sideloadOutcomeRow(outcome) } if sideloadNoticeShown { SideloadCatalogueNoticeRow() }"),
+                "\(path): the outcome row is not followed by the notice")
+    }
+
+    /// The rule the hubs call, one fixture per answer: an import of a volume the catalogue lacks
+    /// draws the notice, one named after a catalogue volume does not (that file IS the catalogue's
+    /// volume, which citation resolution answers for), a mixed import does, and an import that
+    /// added no volume does not. The catalogue is the real `citableEntries`, which holds no
+    /// side-loaded volume.
+    @MainActor
+    @Test("The side-load notice is drawn by a volume the catalogue lacks, and only by one (#1523)")
+    func catalogueNoticeRule() throws {
+        let dir = try directory(with: ["frus1969-76v99": volumeXML()])
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = ManifestStore()
+        store.refreshLocalEntries(volumesDirectory: dir)
+        let citable = Set(store.citableEntries.map(\.volumeId))
+        #expect(citable.count >= 553, "the catalogue read \(citable.count) volumes")
+        #expect(!citable.contains("frus1969-76v99"), "a side-loaded volume must not be citable")
+        #expect(SideloadCatalogueNotice.applies(importedVolumeIds: ["frus1969-76v99"], citableVolumeIds: citable))
+        #expect(!SideloadCatalogueNotice.applies(importedVolumeIds: ["frus1969-76v01"], citableVolumeIds: citable))
+        #expect(SideloadCatalogueNotice.applies(importedVolumeIds: ["frus1969-76v01", "frus1969-76v99"],
+                                                citableVolumeIds: citable))
+        #expect(!SideloadCatalogueNotice.applies(importedVolumeIds: [], citableVolumeIds: citable))
     }
 
     /// The catalogue must be untouched by any of this.

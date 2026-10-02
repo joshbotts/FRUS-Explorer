@@ -8,6 +8,72 @@
 
 import SwiftUI
 
+// MARK: - SelectionVerb
+
+/// One of the reader's actions on a text selection: a highlight in one of the four colours, Excerpt,
+/// Look Up in NARA, or Note (#1540).
+///
+/// Two surfaces offer these, one per platform. On the Mac it is the ``FloatingSelectionBar``. On
+/// iPhone and iPad it is the system edit menu, which leads with them (`SelectionEditMenu`): the bar
+/// was retired there because UIKit can draw its menu where the bar was, covering it. Each verb's name
+/// is written once, here, so the two surfaces cannot call one action by two names.
+///
+/// Version history:
+///   1.0 — #1540: initial implementation; "Look Up" becomes "Look Up in NARA" on both platforms,
+///          since the system menu has a Look Up of its own (the dictionary)
+enum SelectionVerb: Hashable, Sendable {
+    /// Highlights the selection in `color`.
+    case highlight(DocumentHighlight.Color)
+    /// Freezes the selection into a collection excerpt.
+    case excerpt
+    /// Hands the selected text to the NARA Catalog lookup.
+    case lookUpInNARA
+    /// Opens the note composer (a document-level note).
+    case note
+
+    /// Every verb in the order both surfaces offer them: the four colours, then Excerpt, Look Up in
+    /// NARA and Note.
+    static var allInOrder: [SelectionVerb] {
+        DocumentHighlight.Color.allCases.map(SelectionVerb.highlight) + [.excerpt, .lookUpInNARA, .note]
+    }
+
+    /// Whether the verb needs a selection inside the document body, which has text offsets. A
+    /// footnote selection has none, so it offers only Look Up in NARA and Note.
+    var needsDocumentOffsets: Bool {
+        switch self {
+        case .highlight, .excerpt: true
+        case .lookUpInNARA, .note: false
+        }
+    }
+
+    /// The verb's name: its label on the Mac bar, its title in the iPhone and iPad menu, and what
+    /// VoiceOver reads on both. A colour is drawn as a dot, so for one this is only what VoiceOver
+    /// reads.
+    var title: String {
+        switch self {
+        case .highlight(let color):
+            String(localized: "selectionBar.highlightColor.a11y",
+                   defaultValue: "Highlight \(color.displayName)")
+        case .excerpt:
+            String(localized: "selectionBar.excerpt", defaultValue: "Excerpt")
+        case .lookUpInNARA:
+            String(localized: "selectionBar.lookUpInNARA", defaultValue: "Look Up in NARA")
+        case .note:
+            String(localized: "selectionBar.note", defaultValue: "Note")
+        }
+    }
+
+    /// The verb's SF Symbol, or `nil` for a colour, which is drawn as a dot of that colour.
+    var systemImage: String? {
+        switch self {
+        case .highlight: nil
+        case .excerpt: "text.quote"
+        case .lookUpInNARA: "magnifyingglass.circle"
+        case .note: "note.text.badge.plus"
+        }
+    }
+}
+
 // MARK: - SelectionBarState
 
 /// Visibility and anchor state for the ``FloatingSelectionBar`` (Research-rail Phase B).
@@ -28,7 +94,7 @@ final class SelectionBarState {
     private(set) var anchor: CGRect?
 
     /// `true` when the selection is a footnote / out-of-document selection (sentinel offsets): the
-    /// highlight dots and Excerpt are unavailable there, leaving Look Up + Note.
+    /// highlight dots and Excerpt are unavailable there, leaving Look Up in NARA + Note.
     private(set) var atFootnote = false
 
     /// The pending debounced-hide task, cancelled by `present`/`hideNow` (not observed).
@@ -72,25 +138,26 @@ final class SelectionBarState {
 // MARK: - FloatingSelectionBar
 
 /// The floating selection bar (Research-rail Phase B): four highlight-colour dots · Excerpt ·
-/// Look Up · Note, shown anchored at the text selection on every platform and mode.
+/// Look Up in NARA · Note, shown anchored above the text selection in the Mac reader.
 ///
-/// This view is presentation-only — the anchoring geometry and action wiring live in each document
-/// view (``DocumentView`` on iOS, `MacDocumentView` on macOS). The four dots create a highlight in
-/// the tapped colour; Excerpt freezes the passage into a collection; Look Up hands the text to the
-/// NARA Source Explorer; Note opens the note composer. For a footnote/out-of-document selection
-/// there are no flat-text offsets, so the dots and Excerpt are disabled, leaving Look Up + Note.
+/// **macOS only since #1540.** iPhone and iPad offer the same ``SelectionVerb``s at the start of the
+/// system edit menu instead (`SelectionEditMenu`), because UIKit can draw that menu where the bar was
+/// anchored, covering it. The view still compiles on iOS, so its geometry and state stay under the
+/// unit tests, which run there; nothing on iOS mounts it.
 ///
-/// `compact` (iPhone) drops the verb labels, leaving icons only. Fonts are Dynamic-Type-relative
-/// and each control carries an enlarged hit target so the compact pill stays reachably tappable.
+/// This view is presentation-only — the anchoring geometry and action wiring live in
+/// `MacDocumentView`. The four dots create a highlight in the clicked colour; Excerpt freezes the
+/// passage into a collection; Look Up in NARA hands the text to the NARA Source Explorer; Note opens
+/// the note composer. For a footnote/out-of-document selection there are no flat-text offsets, so
+/// the dots and Excerpt are disabled, leaving Look Up in NARA + Note.
+///
+/// Fonts are Dynamic-Type-relative and each control carries an enlarged hit target.
 struct FloatingSelectionBar: View {
 
     /// `true` for a footnote/out-of-document selection: the dots and Excerpt are disabled.
     let atFootnote: Bool
 
-    /// iPhone layout: icon-only verbs (no text labels).
-    let compact: Bool
-
-    /// Creates a highlight of the tapped colour from the current selection.
+    /// Creates a highlight of the clicked colour from the current selection.
     let onHighlight: (DocumentHighlight.Color) -> Void
 
     /// Freezes the selection into a collection excerpt.
@@ -100,8 +167,8 @@ struct FloatingSelectionBar: View {
     let onLookUp: () -> Void
 
     /// Opens the note composer (a document-level note). The highlight-linked path lives on the
-    /// separate transient "Add Note to Highlight" affordance shown after a highlight is created
-    /// (the research rail's Notes accordion on macOS, the document toolbar on iOS).
+    /// separate transient "Add Note to Highlight" affordance in the research rail's Notes accordion,
+    /// shown after a highlight is created.
     let onNote: () -> Void
 
     var body: some View {
@@ -122,31 +189,14 @@ struct FloatingSelectionBar: View {
                 .buttonStyle(.plain)
                 .disabled(atFootnote)
                 .opacity(atFootnote ? 0.3 : 1)
-                .accessibilityLabel(Text(String(
-                    localized: "selectionBar.highlightColor.a11y",
-                    defaultValue: "Highlight \(color.displayName)")))
+                .accessibilityLabel(Text(SelectionVerb.highlight(color).title))
             }
 
             separator
 
-            verbButton(
-                title: String(localized: "selectionBar.excerpt", defaultValue: "Excerpt"),
-                systemImage: "text.quote",
-                enabled: !atFootnote,
-                action: onExcerpt
-            )
-            verbButton(
-                title: String(localized: "selectionBar.lookUp", defaultValue: "Look Up"),
-                systemImage: "magnifyingglass.circle",
-                enabled: true,
-                action: onLookUp
-            )
-            verbButton(
-                title: String(localized: "selectionBar.note", defaultValue: "Note"),
-                systemImage: "note.text.badge.plus",
-                enabled: true,
-                action: onNote
-            )
+            verbButton(.excerpt, enabled: !atFootnote, action: onExcerpt)
+            verbButton(.lookUpInNARA, enabled: true, action: onLookUp)
+            verbButton(.note, enabled: true, action: onNote)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
@@ -171,33 +221,25 @@ struct FloatingSelectionBar: View {
             .padding(.horizontal, 4)
     }
 
-    /// A single verb button — icon + label (or icon only when `compact`), dimmed when disabled.
+    /// A single verb button — icon + label, dimmed when disabled.
     /// - Parameters:
-    ///   - title: The localised verb label, also used as the accessibility label.
-    ///   - systemImage: SF Symbol name.
+    ///   - verb: The verb, which names the button (its label and accessibility label) and its icon.
     ///   - enabled: `false` dims and disables the button (e.g. Excerpt on a footnote selection).
-    ///   - action: Invoked on tap.
+    ///   - action: Invoked on click.
     @ViewBuilder
     private func verbButton(
-        title: String,
-        systemImage: String,
+        _ verb: SelectionVerb,
         enabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Group {
-                if compact {
+            HStack(spacing: 4) {
+                if let systemImage = verb.systemImage {
                     Image(systemName: systemImage)
-                        .font(.body)
-                        .frame(minWidth: 34)
-                } else {
-                    HStack(spacing: 4) {
-                        Image(systemName: systemImage)
-                        Text(title)
-                    }
-                    .font(.subheadline.weight(.medium))
                 }
+                Text(verb.title)
             }
+            .font(.subheadline.weight(.medium))
             // A 40 pt-tall hit target (Dynamic-Type-relative fonts still keep the row reachable).
             .frame(minHeight: 40)
             .contentShape(Rectangle())
@@ -206,7 +248,7 @@ struct FloatingSelectionBar: View {
         .foregroundStyle(.white)
         .disabled(!enabled)
         .opacity(enabled ? 1 : 0.3)
-        .accessibilityLabel(Text(title))
+        .accessibilityLabel(Text(verb.title))
     }
 
     // MARK: - Geometry
@@ -222,8 +264,9 @@ struct FloatingSelectionBar: View {
     ///   - selection: The selection's bounding rect.
     ///   - barSize: The measured size of the bar.
     ///   - container: The size of the coordinate space the bar is positioned within.
-    ///   - below: `true` anchors the bar *below* the selection (iOS — leaves room above for the
-    ///     system edit menu); `false` anchors it *above* (macOS).
+    ///   - below: `true` anchors the bar *below* the selection; `false` anchors it *above*, which is
+    ///     what the Mac passes. iOS passed `true` until #1540 retired its bar; the flip uses both
+    ///     sides whichever is preferred.
     ///   - gap: Vertical gap between the selection edge and the bar (default 8 pt).
     /// - Returns: The centre point to pass to `.position(x:y:)`.
     static func anchorCenter(
@@ -262,7 +305,7 @@ struct FloatingSelectionBar: View {
 // MARK: - Positioner
 
 /// Measures the bar's intrinsic size and positions it centre-clamped over a selection rect within
-/// a container. Shared by both document views; `below` selects the anchoring side.
+/// a container. `MacDocumentView` is its one caller since #1540; `below` selects the anchoring side.
 struct FloatingSelectionBarPositioner: ViewModifier {
 
     /// The selection's bounding rect in the container's coordinate space.
@@ -271,11 +314,10 @@ struct FloatingSelectionBarPositioner: ViewModifier {
     /// The size of the coordinate space the bar is positioned within.
     let container: CGSize
 
-    /// `true` anchors below the selection (iOS); `false` above (macOS).
+    /// `true` anchors below the selection; `false` above (what the Mac passes).
     let below: Bool
 
-    /// Vertical gap between the selection edge and the bar. iOS passes a larger value to clear the
-    /// WKWebView selection drag-handle that hangs below the selection.
+    /// Vertical gap between the selection edge and the bar.
     var gap: CGFloat = 8
 
     /// The bar's measured intrinsic size (`.zero` until the first layout pass).

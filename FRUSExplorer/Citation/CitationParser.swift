@@ -87,6 +87,8 @@ import Foundation
 ///          place the series is named is tried, and otherwise a range is read before a bare year;
 ///          #1505: the title fragment keeps the series' name and drops the editors and a
 ///          Turabian publication statement, so the app's own citations reach their own volumes
+///   1.8 — #1524: the title fragment loses the cited volume as the phrase it was printed in, or
+///          its bare numeral as a whole word, never as a substring of the title's own words
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -277,11 +279,7 @@ public struct CitationParser: Sendable {
     /// the numeral cannot be parsed.
     public func extractVolumeNumber(from text: String) -> String? {
         // Explicit prefix patterns first (most reliable)
-        let prefixPatterns = [
-            #"(?:vol(?:ume)?\.?\s+)([IVXLCDMivxlcdm]+|\d+)"#,
-            #"(?:v\.\s*)([IVXLCDMivxlcdm]+|\d+)"#,
-        ]
-        for pattern in prefixPatterns {
+        for pattern in Self.volumePhrasePatterns {
             if let raw = firstCapture(pattern: pattern, in: text) {
                 return normalizeVolumeNumber(raw)
             }
@@ -295,6 +293,20 @@ public struct CitationParser: Sendable {
 
         return nil
     }
+
+    /// The phrases a citation prints its volume in — `Volume XIV`, `vol. I`, `vol. 5`, `v. II` —
+    /// each capturing the numeral: what `extractVolumeNumber(from:)` reads first, and what
+    /// `extractTitleFragment(from:subseries:volumeNumber:)` takes out of the fragment (#1524).
+    ///
+    /// The two do not read them alike. The strip requires the numeral to end the phrase — not run
+    /// into a word — and the reader does not, so in "this volume. Documentation … vol. XXXVI" the
+    /// reader takes D from "Documentation" and the strip, passing that phrase over, removes
+    /// "vol. XXXVI" (a volume read from a word's first letter in 10 of the 30,204 footnote clauses
+    /// measured for #1524).
+    static let volumePhrasePatterns = [
+        #"(?:vol(?:ume)?\.?\s+)([IVXLCDMivxlcdm]+|\d+)"#,
+        #"(?:v\.\s*)([IVXLCDMivxlcdm]+|\d+)"#,
+    ]
 
     // MARK: - Part Extraction
 
@@ -513,9 +525,32 @@ public struct CitationParser: Sendable {
             working = working.replacingOccurrences(of: enDashVariant, with: "")
         }
 
-        // Strip volume number references
+        // Strip the volume as the citation printed it (#1524): the first volume phrase that stands
+        // whole — "Volume V", "vol. 5", "v. II", never "volume. D" out of "volume. Documentation" —
+        // or, with none, the first whole-word occurrence of the bare numeral, ordinarily the one
+        // after the years ("FRUS, 1969–76, I"). Only that one goes, so a title printing the numeral
+        // again keeps it: "Part II, Volume II" leaves "Part II", where stripping the numeral as a
+        // word everywhere left "Part". The phrase removed is not always the one the numeral was
+        // read from (`volumePhrasePatterns`: the reader requires no closing boundary). The bare
+        // numeral goes once too: over the 30,204 footnote clauses, removing every occurrence
+        // changed one fragment, a quoted memorandum's later "I", and no answer. Until #1524 the
+        // numeral was removed as a substring wherever it stood: Volume V's "Volume" became "olume"
+        // and "Vietnam" "ietnam", and Volume I lost every capital I, so the fragment carried words
+        // no title has.
         if let vol = volumeNumber {
-            working = working.replacingOccurrences(of: vol, with: "")
+            var phrase: Range<String.Index>?
+            for pattern in Self.volumePhrasePatterns where phrase == nil {
+                // Whole: a phrase that runs into a word ("volume. Documentation") is not one.
+                phrase = working.range(of: pattern + #"(?![A-Za-z0-9])"#,
+                                       options: [.regularExpression, .caseInsensitive])
+            }
+            if let phrase {
+                working.removeSubrange(phrase)
+            } else if let bare = working.range(
+                of: #"(?<![A-Za-z0-9])"# + NSRegularExpression.escapedPattern(for: vol) + #"(?![A-Za-z0-9])"#,
+                options: .regularExpression) {
+                working.removeSubrange(bare)
+            }
         }
 
         // Strip doc/page references and publication info

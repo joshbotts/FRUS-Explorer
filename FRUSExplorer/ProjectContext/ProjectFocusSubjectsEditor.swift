@@ -100,7 +100,7 @@ struct ProjectFocusSubjectsEditor: View {
             }
 
             if searchText.isEmpty && !suggestions.isEmpty {
-                Section {
+                WrappingFooterSection {
                     ForEach(suggestions) { subject in
                         subjectRow(subject, isSelected: false, project: project)
                     }

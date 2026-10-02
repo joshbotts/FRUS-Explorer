@@ -529,9 +529,8 @@ struct ProjectHomeView: View {
             } else {
                 ForEach(members) { collection in
                     Label {
-                        Text(collection.name.isEmpty
-                             ? String(localized: "project.home.collections.untitled", defaultValue: "Untitled Collection")
-                             : collection.name)
+                        // The name as every list row reads it, trimmed and with the shared fallback (#1464).
+                        Text(CollectionEditorNaming.listName(savedName: collection.name))
                             .lineLimit(1)
                     } icon: {
                         Image(systemName: "tray.2").foregroundStyle(.secondary)
@@ -1328,8 +1327,11 @@ struct ProjectCollectionsEditor: View {
                     )
                 } else {
                     List {
-                        let members = allCollections.filter { $0.projectIds.contains(projectId) }
-                        let others = allCollections.filter { !$0.projectIds.contains(projectId) }
+                        // In the order the rows read — `listName`, not the raw name the query sorts by, which put an
+                        // unnamed collection first while it read "Untitled Collection" (#1464 review, round 1).
+                        let listed = CollectionEditorNaming.sortedByListName(allCollections)
+                        let members = listed.filter { $0.projectIds.contains(projectId) }
+                        let others = listed.filter { !$0.projectIds.contains(projectId) }
                         if !members.isEmpty {
                             Section(String(localized: "project.collections.manage.attached", defaultValue: "In this project")) {
                                 ForEach(members) { collection in
@@ -1337,7 +1339,7 @@ struct ProjectCollectionsEditor: View {
                                 }
                             }
                         }
-                        Section {
+                        WrappingFooterSection {
                             if others.isEmpty {
                                 Text(String(localized: "project.collections.manage.allAttached",
                                             defaultValue: "Every collection is already in this project."))
@@ -1427,9 +1429,8 @@ struct ProjectCollectionsEditor: View {
                 .map { "\($0.volumeId)/\($0.documentId)" }
         ).count
         VStack(alignment: .leading, spacing: 2) {
-            Text(collection.name.isEmpty
-                 ? String(localized: "project.collections.manage.untitled", defaultValue: "Untitled Collection")
-                 : collection.name)
+            // The name as every list row reads it, trimmed and with the shared fallback (#1464).
+            Text(CollectionEditorNaming.listName(savedName: collection.name))
                 .foregroundStyle(.primary)
             Text(docCount == 1
                  ? String(localized: "project.collections.manage.docCount.one", defaultValue: "1 document")
@@ -1505,7 +1506,7 @@ struct ProjectFocusTagsEditor: View {
                         )
                     } else {
                         List {
-                            Section {
+                            WrappingFooterSection {
                                 ForEach(allTags) { tag in
                                     row(tag, project: project)
                                 }

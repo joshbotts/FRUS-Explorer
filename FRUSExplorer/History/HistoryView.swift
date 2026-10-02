@@ -194,7 +194,7 @@ struct HistoryView: View {
     }
 
     private var documentsSection: some View {
-        Section {
+        WrappingFooterSection {
             if visibleDocuments.isEmpty {
                 emptyState(
                     title: isFiltering

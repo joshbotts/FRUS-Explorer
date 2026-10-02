@@ -43,7 +43,7 @@ import Testing
 /// both files can be read.
 ///
 /// ## What is pinned, and what is deliberately not
-/// Pinned: for each toggle, that **both** files bind it, and that both write it back on save.
+/// Pinned: for each toggle, that **every** surface binds it, and that each writes it back from its own control.
 /// Not pinned: layout, ordering, or wording beyond the localized key — those are design choices
 /// that should be free to differ per platform. The invariant is *reachability*, not sameness.
 ///
@@ -53,6 +53,11 @@ import Testing
 ///         `CollectionEditorView` writes its toggles from #1415 on
 ///   1.2 — #1415 review, round 1: the write-back check reads code only, so a comment quoting either shape cannot
 ///         satisfy it
+///   1.3 — MACCOL: the inspector's copy (`CollectionAttributesRows`) binds each toggle through `saving(\.x)`, which
+///         writes the model and saves each switch, instead of `$collection.x`, which left the save to autosave
+///   1.4 — MACCOL review, round 1: the write-back check accepts only the per-control commit. The Mac window's
+///         `saveMetadata()` was the last surface to copy its mirrors onto the model (`collection.x = x`), all seven fields
+///         on every edit, and MACCOL removed it; the docs no longer describe it as current
 @Suite("Collection export toggle parity")
 struct CollectionExportToggleParityTests {
 
@@ -69,9 +74,10 @@ struct CollectionExportToggleParityTests {
     /// The files that must each offer every toggle, and how each binds its controls.
     ///
     /// Two binding styles are in use and both are legitimate, so the assertions below branch on
-    /// this rather than demanding one shape. A `@State` mirror must be separately seeded from the
-    /// model and written back on save; a direct `$collection.x` binding is inherently both, and
-    /// requiring a `collection.x = x` line from it would be asserting a bug.
+    /// this rather than demanding one shape. A `@State` mirror (`true`: the iOS editor and the Mac
+    /// window) must be seeded from the model and committed from its own control; the inspector's
+    /// copy binds the model itself through `saving(\.x)`, which writes and saves, so it needs
+    /// neither, and asking it for a mirror's seed would be asserting a bug.
     private static let surfaces: [(path: String, mirrorsState: Bool)] = [
         ("FRUSExplorer/Collections/CollectionEditorView.swift", true),
         ("FRUSExplorer/Collections/MacCollectionManagerView.swift", true),
@@ -91,11 +97,12 @@ struct CollectionExportToggleParityTests {
         for (path, _) in Self.surfaces {
             let text = try Self.source(path)
             for toggle in Self.toggles {
-                // A `$`-bound control, not merely a mention: `isOn: $includeColophon` on a
-                // state-mirroring surface, or `isOn: $collection.includeColophon` on a directly
-                // bound one. A doc comment naming the property would otherwise satisfy a bare
+                // A bound control, not merely a mention: `isOn: $includeColophon` on a state-mirroring
+                // surface, or `isOn: saving(\.includeColophon)` on the directly bound one (`$collection.x`
+                // before MACCOL). A doc comment naming the property would otherwise satisfy a bare
                 // substring search — which is exactly how a missing control could keep passing.
-                #expect(text.contains("$\(toggle)") || text.contains("$collection.\(toggle)"),
+                #expect(text.contains("$\(toggle)") || text.contains("$collection.\(toggle)")
+                            || text.contains("saving(\\.\(toggle))"),
                         """
                         \(path) has no control bound to `\(toggle)`. Every per-collection export \
                         option must be reachable on every platform; #617 shipped one that was not, \
@@ -107,14 +114,15 @@ struct CollectionExportToggleParityTests {
 
     /// A control that never writes back is worse than no control: it moves, and nothing happens.
     ///
-    /// Two write-back shapes are legitimate. The macOS Collections window copies its mirror onto the model when it
-    /// saves (`collection.x = x`). `CollectionEditorView` commits each change from the control's OWN binding (#1415):
-    /// `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of: collection) }` — because on the iPhone its
-    /// settings screen covers the editor, and a covered, pushed editor runs none of the `onChange` a save would hang
-    /// from. The second shape is matched as that whole call, whitespace collapsed. Both are looked for in CODE: every
-    /// line that is a `//` or `///` comment is blanked first, so a comment quoting either shape — a doc comment
-    /// describing the call, say — cannot stand in for a control that makes it. (A `/* */` block comment is not
-    /// stripped; neither surface has one.)
+    /// One write-back shape is legitimate: each change committed from the control's OWN binding,
+    /// `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of: collection) }`, which writes that one field. The
+    /// iOS editor took it at #1415, because on the iPhone its settings screen covers the editor and a covered, pushed
+    /// editor runs none of the `onChange` a save would hang from; the Mac window took it at MACCOL. The Mac window had
+    /// copied its mirror onto the model in `saveMetadata()` (`collection.x = x`) — all seven fields, from copies that
+    /// were stale whenever another writer had changed one — and this check accepted that shape until MACCOL removed it.
+    /// The shape is matched as that whole call, whitespace collapsed, in CODE: every line that is a `//` or `///` comment
+    /// is blanked first, so a comment quoting it — a doc comment describing the call, say — cannot stand in for a
+    /// control that makes it. (A `/* */` block comment is not stripped; neither surface has one.)
     @Test("Every toggle is written back to the model on every state-mirroring surface")
     func everyToggleIsPersisted() throws {
         for (path, mirrorsState) in Self.surfaces where mirrorsState {
@@ -124,30 +132,36 @@ struct CollectionExportToggleParityTests {
                 .joined(separator: "\n")
             let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
             for toggle in Self.toggles {
-                let saved = text.contains("collection.\(toggle) = \(toggle)")
                 let committed = collapsed.contains(
                     "committing($\(toggle)) { CollectionEditorCommit.flag($0, to: \\.\(toggle), of: collection) }")
-                #expect(saved || committed, "\(path) binds `\(toggle)` but never saves it")
+                #expect(committed, "\(path) binds `\(toggle)` but does not commit it from its own control")
             }
         }
     }
 
-    /// A directly-bound surface must bind the MODEL, not a local copy — `$collection.x`, not `$x`.
-    /// A stray `@State` there would edit a value nothing ever reads back.
-    @Test("Directly-bound surfaces bind the model itself")
+    /// A directly-bound surface must bind the MODEL, not a local copy — and, since MACCOL, save each switch as it is
+    /// made: `saving(\.x)`, whose setter writes `collection[keyPath:]` and saves, not `$x` (a stray `@State` there would
+    /// edit a value nothing ever reads back) and not `$collection.x` (which writes the model and leaves the save to
+    /// autosave, so a foreground kill could lose the switch). `SectionDefaultsSaveTests` switches each toggle in the
+    /// hosted rows; this pins that every toggle goes through the saving binding.
+    @Test("Directly-bound surfaces bind the model itself, and save each switch")
     func directSurfacesBindTheModel() throws {
         for (path, mirrorsState) in Self.surfaces where !mirrorsState {
             let text = try Self.source(path)
             for toggle in Self.toggles {
-                #expect(text.contains("$collection.\(toggle)"),
-                        "\(path) must bind `$collection.\(toggle)` directly")
+                #expect(text.contains("saving(\\.\(toggle))"),
+                        "\(path) must bind `\(toggle)` through `saving(\\.\(toggle))`, which writes the model and saves")
             }
+            let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            #expect(collapsed.contains("set: { collection[keyPath: keyPath] = $0; save() }"),
+                    "\(path)'s saving(_:) does not write the collection and save in its setter")
         }
     }
 
     /// And seeded from the model when the surface opens, or the control shows `false` for a
-    /// collection that has the option on — and the first edit to any other field silently turns it
-    /// off again.
+    /// collection that has the option on. (Until MACCOL the Mac window's first edit to any other
+    /// field then wrote that `false` back; each control now commits only itself, so a wrong seed
+    /// misleads without writing.)
     @Test("Every toggle is seeded from the model on every state-mirroring surface")
     func everyToggleIsSeeded() throws {
         for (path, mirrorsState) in Self.surfaces where mirrorsState {

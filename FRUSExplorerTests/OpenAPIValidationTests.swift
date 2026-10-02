@@ -213,4 +213,34 @@ struct OpenAPIValidationTests {
         #expect(!content.contains("nullable: true"),
                 "Found 'nullable: true' which is OpenAPI 3.0 syntax. Use 'type: [\"...\", \"null\"]' in 3.1")
     }
+
+    // MARK: - Citation Lookup (#1504)
+
+    /// The nearest-document strategy and the manifest's `documentCount` it read are deleted (#1504,
+    /// owner decision D6): the count was 0 in every row, so the strategy never answered, and the spec
+    /// described a `fuzzyDocumentNumber` result and a `documentCount` field the app never produced.
+    @Test("OpenAPIValidationTest: the spec names no nearest-document strategy and no manifest documentCount (#1504)")
+    func noNearestDocumentStrategy() throws {
+        let content = try loadDocument()
+        #expect(content.contains("  VolumeManifestEntry:"), "The VolumeManifestEntry schema is gone: the check is vacuous")
+        #expect(content.contains("  /citation-lookup:"), "The /citation-lookup path is gone: the check is vacuous")
+        for retired in ["fuzzyDocumentNumber", "documentCount", "fuzzy document number"] {
+            #expect(!content.contains(retired), "The spec still names \(retired)")
+        }
+    }
+
+    /// A volume row the engine labels a best guess keeps `manifestOnly` — it names no document to
+    /// guess at — so the strategy alone cannot say it is one; `CitationMatch.volumeIsBestGuess` does,
+    /// and Batch counts it with the other best guesses (#1506 review round 1). The spec's
+    /// `CitationMatch` names the field, in the schema rather than anywhere in the file.
+    @Test("OpenAPIValidationTest: CitationMatch declares volumeIsBestGuess (#1506)")
+    func citationMatchDeclaresVolumeIsBestGuess() throws {
+        let content = try loadDocument()
+        let start = try #require(content.range(of: "\n    CitationMatch:\n"), "The CitationMatch schema is gone")
+        let rest = content[start.upperBound...]
+        let end = rest.range(of: "\n    [A-Za-z]", options: .regularExpression)?.lowerBound ?? rest.endIndex
+        let schema = rest[..<end]
+        #expect(schema.contains("        volumeIsBestGuess:\n          type: boolean\n          default: false"),
+                "\(schema)")
+    }
 }

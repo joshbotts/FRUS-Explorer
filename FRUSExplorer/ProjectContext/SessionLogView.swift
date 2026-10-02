@@ -117,7 +117,7 @@ struct SessionLogView: View {
     /// The oldest session on screen is the only one that can be partial — everything newer than it
     /// is complete by construction — so that is what the note says.
     private var showMoreSection: some View {
-        Section {
+        WrappingFooterSection {
             Button {
                 pageLimit += SessionLogSnapshot.pageIncrement
                 refresh()

@@ -1462,7 +1462,7 @@ private struct SubjectCategoryFacetPicker: View {
     /// child applies the whole category and whose remaining children apply each sub-category.
     private var catalogList: some View {
         List {
-            Section {
+            WrappingFooterSection {
                 ForEach(categories) { category in
                     DisclosureGroup {
                         // NO "All of <category>" row (#1040): a category is a heading here, not a
@@ -1485,8 +1485,8 @@ private struct SubjectCategoryFacetPicker: View {
             } footer: {
                 Text(String(localized: "search.subject.facet.picker.footer",
                             defaultValue: "Detected topics (experimental). These are inferred from the text, not editorial subject headings, so some are wrong. A volume appears when any document in it carries the topic — mentioned is enough. Categories are headings, not filters — every one of them reaches most of the series — so open a category and choose a sub-category, and check the volume count beside each. For finer topics, browse the Topic index."))
-                    // Let the long explanation wrap to its full height rather than truncating to
-                    // one clipped line in the macOS inset list footer (#361).
+                    // #361's fixedSize did not stop the Mac's List footer cutting it to one line; the
+                    // WrappingFooterSection draws it as a row there, where it wraps (#1475).
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

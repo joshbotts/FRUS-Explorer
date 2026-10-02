@@ -291,7 +291,8 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
 
 // `CorpusStats` — removed #1051 B-1. Its display left in Session 130 (CorpusView 1.3), and its
 // `totalDocuments` summed the manifest's structurally-dead `documentCount` field (0 in all 553
-// entries — the header parser cannot compute it), so the value was a permanently-zero lie.
+// entries — the header parser could not compute it; #1504 removed the field), so the value was a
+// permanently-zero lie.
 // Per-volume document counts now come from `AdministrationProfilesStore.documentCount(forVolumeId:)`
 // (R-2), the one named seam over the bundled `volumeTotals` table.
 

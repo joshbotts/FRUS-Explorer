@@ -56,6 +56,7 @@ import Foundation
 ///         exclusion that measurement refuted. The two surfaces state the same rule again.
 ///   1.3 — owner's 2026-09-30 wording: the caveat opens "each document sits at the editor-annotated
 ///         date", and the tests' marker for the default rule follows it
+///   1.4 — PV-1 (the 2026-09-28 audit): documentation only — `sources` says what each builder now passes
 struct AnalyticsProvenance: Sendable, Equatable {
 
     /// The figure's own title, e.g. `"sovereignty", "independence" — by Year`.
@@ -110,9 +111,13 @@ struct AnalyticsProvenance: Sendable, Equatable {
     /// What this figure's numbers were drawn from (PV-1).
     ///
     /// Defaults to the volumes alone, which is true of most analytics — the counts come from the
-    /// corpus index. A surface joining anything else must say so: the archival family adds nothing
-    /// (it reads authority clusters by identity, all FRUS-derived — see
-    /// `BundledArtifactProvenance`), while a subject or person breakdown does.
+    /// corpus index. A surface joining or computing anything else must say so, and until the
+    /// 2026-09-28 audit none did. Now the word cloud adds this app's word lists, the semantic map its
+    /// model, Person Analytics the OH people register, regional emphasis the OH subjects, and a class
+    /// ranking the State Department's schedule where it reads it
+    /// (`ArchivalAnalyticsExport.rankingSources`). The rest of the archival family adds nothing: it
+    /// reads authority clusters by identity, all FRUS-derived (see `BundledArtifactProvenance`).
+    /// `AnalyticsExportSourcesTests.everyBuilderStatesItsSources` reads every call that builds one.
     var sources: Set<ProvenanceSource> = [.frusText]
     /// The caveats an exported *figure* prints on the image, when the full set is too much for a
     /// plate.

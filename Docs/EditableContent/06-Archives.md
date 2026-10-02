@@ -1173,7 +1173,7 @@ The source note format was not recognized. Its raw text is shown under Source No
 
 #### The macOS window with no document selected
 
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 2154–2155 | key: source.explorer.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 2158–2159 | key: source.explorer.window.empty.detail -->
 
 *#1380: it said “tap Sources in the toolbar”. On the Mac the reader clicks, and Sources is a tile in the document’s Research rail, not a toolbar item.*
 
@@ -1748,7 +1748,7 @@ This source note doesn’t cite a recognized lot file, central file, or presiden
 ### Archival analytics — the three weights
 
 #### The three weights count different things. A document coun…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 332–333 | key: archival.export.caveat.weight.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 353–354 | key: archival.export.caveat.weight.v2 -->
 
 The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 

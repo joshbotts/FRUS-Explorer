@@ -169,9 +169,17 @@ struct CrossReferenceTargetLabelTests {
                 == "Document 245 — \(title)")
     }
 
-    @Test("A not-downloaded id without the d prefix is printed whole")
-    func notIndexedUnprefixedId() {
-        #expect(CrossReferenceTargetLabel.text(facts: nil, documentId: "ch3", volumeTitle: title)
-                == "Document ch3 — \(title)")
+    /// The not-downloaded form names a document by number only where its id spells the number
+    /// (`CitableDocumentNumber.fromDocumentId`, the #1492 hardening carried by #1491): `d373a` is
+    /// Document 373a, and an id of any other shape — Potsdam's unnumbered `d710a-1`, the microfiche
+    /// supplement's `eta_d1` (printed ETA–1), an appendix's `appA`, a section's `ch3` — is shown as
+    /// the id it is, not as "Document 710a-1", a number no volume prints. (No shipped edge reaches
+    /// this branch with such an id, #1492's close found; the rule is the exports'.)
+    @Test("A not-downloaded id names a document number only where it spells one, and is printed whole otherwise",
+          arguments: [("d373a", "Document 373a"), ("d710a-1", "d710a-1"), ("eta_d1", "eta_d1"),
+                      ("appA", "appA"), ("ch3", "ch3")])
+    func notIndexedIdShapes(_ documentId: String, _ name: String) {
+        #expect(CrossReferenceTargetLabel.text(facts: nil, documentId: documentId, volumeTitle: title)
+                == "\(name) — \(title)")
     }
 }

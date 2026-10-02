@@ -96,19 +96,19 @@ Format, one entry per change:
 - **Manual / section:** Mac §17.2 Volumes & Storage
 - **Current:** It opens with a **Storage used** bar split into **XML**, **Index**, **Summaries**, and **Vectors**, a status line, and the two ways in — **Download from GitHub…** and **Sideload XML File…**.
 - **Proposed:** It opens with a **Storage used** bar split into **XML**, **Index**, **Summaries**, and **Vectors**, a status line, and the two ways in — **Download from GitHub…** and **Sideload XML File…**. Until the pane has measured the library the size reads "—" and the status line *Measuring…*; if measuring fails, *Could not measure storage*, with the reason in a row beneath (a re-measure that fails keeps the last figures). While volumes are being removed the status line counts them separately — *1 being removed* — rather than as downloaded.
-- **Why:** #1476, the owner's 2026-09-30 wording. Both hubs draw `DownloadedVolumesListModel.heroContent(catalogCount:interruptedCount:)` (`FRUSExplorer/Settings/StorageHubModel.swift`, the hero at `FRUSExplorer/Settings/MacVolumesStorageHub.swift:270`), and the Mac now measures through `DownloadedVolumesListModel.measure(_:)`, which keeps the error instead of `try?` and the last report on a failure; the failure row is new on the Mac (`MacVolumesStorageHub.swift:289`). The clause is `settings.hub.summary.removing.one` / `settings.hub.summary.removing %lld` (`FRUSExplorer/Settings/SettingsComponents.swift:139`).
+- **Why:** #1476, the owner's 2026-09-30 wording. Both hubs draw `DownloadedVolumesListModel.heroContent(catalogCount:interruptedCount:)` (`FRUSExplorer/Settings/StorageHubModel.swift`, the hero at `FRUSExplorer/Settings/MacVolumesStorageHub.swift:273`), and the Mac now measures through `DownloadedVolumesListModel.measure(_:)`, which keeps the error instead of `try?` and the last report on a failure; the failure row is new on the Mac (`MacVolumesStorageHub.swift:292`). The clause is `settings.hub.summary.removing.one` / `settings.hub.summary.removing %lld` (`FRUSExplorer/Settings/SettingsComponents.swift:139`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §17.2 Volumes & Storage
 - **Current:** Opens with a **Storage used** bar split into XML and index, and a status line.
 - **Proposed:** Opens with a **Storage used** bar split into XML and index, and a status line. Until the pane has measured the library the size reads "—" and the status line *Measuring…*; if measuring fails, *Could not measure storage*, with the reason in a row beneath. While volumes are being removed the status line counts them separately — *1 being removed* — rather than as downloaded.
-- **Why:** #1476, as for the Mac (`DownloadedVolumesListModel.heroContent`, `FRUSExplorer/Settings/StorageHubModel.swift`; the iOS hero at `FRUSExplorer/Settings/VolumesStorageHubView.swift:251`). The sentence "split into XML and index" is also short of the four segments the bar draws, which is not this lane's change.
+- **Why:** #1476, as for the Mac (`DownloadedVolumesListModel.heroContent`, `FRUSExplorer/Settings/StorageHubModel.swift`; the iOS hero at `FRUSExplorer/Settings/VolumesStorageHubView.swift:254`). The sentence "split into XML and index" is also short of the four segments the bar draws, which is not this lane's change.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §17.2 Volumes & Storage (the **Storage & Index** item)
 - **Current:** **Free Up Space…**, which lists only volumes with nothing of yours attached, ordered by what you'd recover, and asks first;
 - **Proposed:** **Free Up Space…**, which lists only volumes with nothing of yours attached, ordered by what you'd recover, and asks first — while it removes, its rows are dimmed and cannot be ticked or unticked;
-- **Why:** #1432: the rows used to stay tappable mid-removal, toggling a checkmark and the recovery estimate that changed nothing being removed. `FreeUpSpaceSheet.candidateRow` now carries `.disabled(isRemoving)` (`FRUSExplorer/Settings/VolumesStorageHubView.swift:1875`); the Mac's sheet already blocked its rows, by covering them with an overlay while it removes (`MacVolumesStorageHub.swift:1935`). Optional: the manual says nothing about the removal's progress at all.
+- **Why:** #1432: the rows used to stay tappable mid-removal, toggling a checkmark and the recovery estimate that changed nothing being removed. `FreeUpSpaceSheet.candidateRow` now carries `.disabled(isRemoving)` (`FRUSExplorer/Settings/VolumesStorageHubView.swift:1889`); the Mac's sheet already blocked its rows, by covering them with an overlay while it removes (`MacVolumesStorageHub.swift:1949`). Optional: the manual says nothing about the removal's progress at all.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 ## PAGE — #1509, #1510, #1511
@@ -118,13 +118,13 @@ Format, one entry per change:
 - **Manual / section:** Mac §8.5 The Cross-Reference Graph (the last bullet, and the `OPEN #1509` comment under it)
 - **Current:** Page-number references ("see p. 427") resolve to the document that begins on the cited page — when several begin on it, the first of them, and when none does, the document printed on it — and references confirmed unresolvable (8.2) are excluded — every edge you see leads to a real document.
 - **Proposed:** Page-number references ("see p. 427") resolve to the document that begins on the cited page, or, when none does, the document printed on it — and when the page names several, to the one the footnote names by its document number (*Doc. No. 497*) or its date (*telegram of July 7*), or the first of them when it names neither — and references confirmed unresolvable (8.2) are excluded — every edge you see leads to a real document. Clicking the page link in the document opens the same document the graph draws. *(Delete the `OPEN #1509` comment.)*
-- **Why:** #1509: the stored edge and the reader's page link now both go through `PageSpanResolver.citedDocument(among:facts:citing:)` (`FRUSExplorer/Citation/PageSpanResolver.swift:310`), called by `IndexingPipeline.resolvePageBasedCrossReferences` (`FRUSExplorer/Search/IndexingPipeline.swift:8662`) and by the Mac reader's `resolvePageReference` through `PageRangeStore.document(forPage:inVolume:citing:)` (`FRUSExplorer/App/MacDocumentView.swift:1217`). The footnote's numbers and dates come from `PageCitationHint(citingText:)` (`PageSpanResolver.swift:429`). It runs whenever the page names several, whatever the claim: of the 2,218 edges it moves, 2,216 cite a page several documents begin on and 2 a page none begins on and several are printed on (`tools/page-citations/v63.py`).
+- **Why:** #1509: the stored edge and the reader's page link now both go through `PageSpanResolver.citedDocument(among:facts:citing:)` (`FRUSExplorer/Citation/PageSpanResolver.swift:310`), called by `IndexingPipeline.resolvePageBasedCrossReferences` (`FRUSExplorer/Search/IndexingPipeline.swift:8662`) and by the Mac reader's `resolvePageReference` through `PageRangeStore.document(forPage:inVolume:citing:)` (`FRUSExplorer/App/MacDocumentView.swift:1228`). The footnote's numbers and dates come from `PageCitationHint(citingText:)` (`PageSpanResolver.swift:429`). It runs whenever the page names several, whatever the claim: of the 2,218 edges it moves, 2,216 cite a page several documents begin on and 2 a page none begins on and several are printed on (`tools/page-citations/v63.py`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §8.6 The Cross-Reference Graph (the bullet beginning "Nodes in undownloaded volumes")
 - **Current:** References confirmed unresolvable (Section 8.2) are excluded rather than drawn as dead ends, and page-number references ("see p. 427") resolve to their true target documents.
 - **Proposed:** References confirmed unresolvable (Section 8.2) are excluded rather than drawn as dead ends, and page-number references ("see p. 427") resolve to the document that begins on the cited page, or, when none does, the one printed on it — of several, the one the footnote names by its document number or its date, otherwise the first — which is also the document tapping the link opens.
-- **Why:** #1509, as above; the iPhone and iPad reader's page link is `DocumentView.resolvePageReference` (`FRUSExplorer/DocumentView/DocumentView.swift:1372`). "Their true target documents" claimed more than either the old rule (the first) or the new one (the footnote's choice, else the first) can know.
+- **Why:** #1509, as above; the iPhone and iPad reader's page link is `DocumentView.resolvePageReference` (`FRUSExplorer/DocumentView/DocumentView.swift:1369`). "Their true target documents" claimed more than either the old rule (the first) or the new one (the footnote's choice, else the first) can know.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §15.4 Cross-Reference Analytics (the paragraph beginning "A **Scope** bar")
@@ -136,7 +136,7 @@ Format, one entry per change:
 - **Manual / section:** Mac §11.4 Citation Lookup (the labels table, the last sentence of the **Possible match — one of *N* documents that begin on page *P*** row)
 - **Current:** A section that is not a document — a chapter reading only *[Printed under Russia, p. 807.]*, a list of errata — is never the answer to a page it begins on
 - **Proposed:** A section that is not a document — a chapter reading only *[Printed under Russia, p. 807.]*, a list of errata — never answers a page just by beginning on it: a page finds it only where the section is printed, by a page break inside it or by the break printed just before it, when the chapter or compilation around it has nothing of its own on that page but a heading. That is how page 57 of the *Paris Peace Conference* Volume XIII finds the Preamble, which begins there, and page 135 Section I of Part III, which begins there after Part III's own notes end on page 134
-- **Why:** #1510 (owner decision D1, review rounds 1 and 2): a section still records no start, but `TEIParserDelegate.finishParse` (`FRUSExplorer/TEI/FRUSDocumentParser.swift:1167`) gives the section that begins after them the breaks a container leaves — every break of a compilation, chapter or subchapter holding nothing but its heading, which is not indexed, and the breaks one with text of its own prints after that text, before or between the sections it holds (`FRUSDocumentAST.carriedPages`) — and the index stores them as that section's `page_ranges` rows (`FRUSExplorer/Search/IndexingPipeline.swift:4977`), which `PageSpanResolver.documents(onPage:in:)` reads as pages the section is printed on. 41 such breaks reach 37 sections, 19 of them given up by the 15 chapters with text of their own, all in `frus1919Parisv13` (`tools/page-citations/v63.py`), so those sections can answer pages they begin on: in `frus1919Parisv13`, p. 57 is ch9, the Preamble, from the heading-only comp3, and p. 135 is ch12subch1, Section I of Part III, from ch12, whose own notes end on p. 134 (`RealTEIPageCitationsV63Tests.parisv13Containers`; `ContainerTests.proseContainerIsNarrowedToItsOwnText` on a fixture). Citation Lookup reports either as a page match through `matchByPageRange` (`FRUSExplorer/Citation/CitationMatchingEngine.swift:1023`). Before #1510 p. 57 answered comp3 alone, and p. 135 ch12 and comp3 together (measured with the container rule off). A container's heading may share the page, which is why the clause allows one: ch10, Part I, left out too, prints only its heading on p. 69, and p. 69 is its first section, ch10subch1. Review round 2 widened the clause, which as first proposed named only the container holding nothing but its heading and so was false for the 19 breaks the chapters with text give up.
+- **Why:** #1510 (owner decision D1, review rounds 1 and 2): a section still records no start, but `TEIParserDelegate.finishParse` (`FRUSExplorer/TEI/FRUSDocumentParser.swift:1167`) gives the section that begins after them the breaks a container leaves — every break of a compilation, chapter or subchapter holding nothing but its heading, which is not indexed, and the breaks one with text of its own prints after that text, before or between the sections it holds (`FRUSDocumentAST.carriedPages`) — and the index stores them as that section's `page_ranges` rows (`FRUSExplorer/Search/IndexingPipeline.swift:4977`), which `PageSpanResolver.documents(onPage:in:)` reads as pages the section is printed on. 41 such breaks reach 37 sections, 19 of them given up by the 15 chapters with text of their own, all in `frus1919Parisv13` (`tools/page-citations/v63.py`), so those sections can answer pages they begin on: in `frus1919Parisv13`, p. 57 is ch9, the Preamble, from the heading-only comp3, and p. 135 is ch12subch1, Section I of Part III, from ch12, whose own notes end on p. 134 (`RealTEIPageCitationsV63Tests.parisv13Containers`; `ContainerTests.proseContainerIsNarrowedToItsOwnText` on a fixture). Citation Lookup reports either as a page match through `matchByPageRange` (`FRUSExplorer/Citation/CitationMatchingEngine.swift:1010`). Before #1510 p. 57 answered comp3 alone, and p. 135 ch12 and comp3 together (measured with the container rule off). A container's heading may share the page, which is why the clause allows one: ch10, Part I, left out too, prints only its heading on p. 69, and p. 69 is its first section, ch10subch1. Review round 2 widened the clause, which as first proposed named only the container holding nothing but its heading and so was false for the 19 breaks the chapters with text give up.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §11.4 Citation Lookup, in Both Directions (the paragraph beginning "A citation that names a page but no document")
@@ -222,7 +222,7 @@ Format, one entry per change:
 - **Manual / section:** Mac §14.8 — the **coverage report** paragraph (`Docs/macOS-User-Manual.md:943`)
 - **Current:** "… the digitized-substitute denominators, and how much of the restriction picture is actually measured."
 - **Proposed:** "… the digitized-substitute denominators, and how much of the restriction picture is actually measured — a divided lot's claimant series included, so a plan is never called unrestricted while one of them is restricted or has no recorded status."
-- **Why:** the audit's divided-lot fold-in: the access block now opens on divided lots as well as on the triage, and its all-clear sentence waits for them (`FRUSExplorer/TripPacket/TripPacketExporter.swift:689`).
+- **Why:** the audit's divided-lot fold-in: the access block now opens on divided lots as well as on the triage, and its all-clear sentence waits for them (`FRUSExplorer/TripPacket/TripPacketExporter.swift:692`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §14.2 What Resolves, and How — the **Named file series** bullet (`Docs/iOS-User-Manual.md:1018`)
@@ -268,7 +268,7 @@ Format, one entry per change:
 - **Manual / section:** Mac §15.2 Word Cloud, the **Lenses** bullet
 - **Current:** …the lens says it is unavailable instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed), and quitting and reopening the app may restore it.
 - **Proposed:** …the lens says it is unavailable instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed). The app checks the analysis again each time you switch back to it, and the cloud redraws by itself if it has recovered; if it has not, quitting and reopening the app may restore it.
-- **Why:** #1539 step B. `NaturalLanguageReadinessEngine.applicationDidBecomeActive()` (`WordCloudKit/NaturalLanguageReadiness.swift:1058`) re-checks a verdict that lacks a capability on every activation (`LanguageAnalysisLifecycle`, `FRUSExplorer/App/FRUSExplorerApp.swift:4497`), and the Word Cloud's load is keyed on the adopted verdict's revision (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:659`). The two refusals now say so (`wordcloud.lens.unavailable.names %@ %@` and `.classes %@ %@`, `WordCloudView.swift:386`, `:390`).
+- **Why:** #1539 step B. `NaturalLanguageReadinessEngine.applicationDidBecomeActive()` (`WordCloudKit/NaturalLanguageReadiness.swift:1058`) re-checks a verdict that lacks a capability on every activation (`LanguageAnalysisLifecycle`, `FRUSExplorer/App/FRUSExplorerApp.swift:4509`), and the Word Cloud's load is keyed on the adopted verdict's revision (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:659`). The two refusals now say so (`wordcloud.lens.unavailable.names %@ %@` and `.classes %@ %@`, `WordCloudView.swift:386`, `:390`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §15.2 Word Cloud, the **Lenses** bullet (its last sentence)
@@ -280,7 +280,7 @@ Format, one entry per change:
 - **Manual / section:** iOS §15.2 Word Cloud, the **Lenses** bullet
 - **Current:** …the lens says it is unavailable on this device instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed), and quitting and reopening the app may restore it.
 - **Proposed:** …the lens says it is unavailable on this device instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed). The app checks the analysis again each time you come back to it — from the Home Screen or another app — and the cloud redraws by itself if it has recovered; if it has not, quitting and reopening the app may restore it.
-- **Why:** as for the Mac (#1539; `NaturalLanguageReadiness.swift:1058`, `FRUSExplorerApp.swift:4497`, `WordCloudView.swift:659`, `:386`, `:390`). On iPhone and iPad the app also no longer starts this check in a background launch (a CloudKit push, a background task, a finished download), which is the cause the owner's force-quit result points to (`FRUSExplorerApp.swift:510`).
+- **Why:** as for the Mac (#1539; `NaturalLanguageReadiness.swift:1058`, `FRUSExplorerApp.swift:4509`, `WordCloudView.swift:659`, `:386`, `:390`). On iPhone and iPad the app also no longer starts this check in a background launch (a CloudKit push, a background task, a finished download), which is the cause the owner's force-quit result points to (`FRUSExplorerApp.swift:512`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §15.2 Word Cloud, the **Lenses** bullet (its last sentence)
@@ -379,6 +379,274 @@ Format, one entry per change:
 - **Current:** …each with its canonical name, the variant forms volumes actually print, its NARA catalog record where one resolved offline, and every citing volume.
 - **Proposed:** …each with its canonical name, the variant forms volumes actually print, its NARA catalog record where one resolved offline, and every citing volume. Where a volume prints a collection's title and a paragraph about it as one entry, the title is the name and the paragraph one of its variant forms (*Indexed Central Files*).
 - **Why:** as for the Mac (#1468; `ReferenceBuilder.swift:268`, `AuthorityBuilder.swift:252`). The same paragraph's "~4,400 archival collections" predates #1469 and #1514 (the artifact holds 4,051; the Mac manual says ~4,100), which lane MANUALS or DOCS-2 can take with it.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## EXPORT — #1465, #1496, #1497, #1498, #1464
+
+*Lane EXPORT (2026-10-01) changes what an untitled Section heading does, how a collection is named in Zotero and in a file name, when an imported collection's notes become searchable, and what every analytics export, the method appendix and the Archives Visit packet say they were drawn from. Each entry quotes the manual as it stands at `origin/v2` f5625ca2. #1496 (a note inside a note in a Word export) and #1464 (list rows trimming the name) change nothing either manual says.*
+
+- **Manual / section:** Mac §12.3 Composing: Headings, Prose, Excerpts, and Apparatus (the **Section headings** bullet)
+- **Current:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
+- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every PDF, HTML and Word export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
+- **Why:** #1465, decision D4: an export resolves with `dropsUntitledHeadings` (`FRUSExplorer/Collections/CollectionContentResolver.swift:452`), whose levels come from `CollectionOutline.exportLevels` (`FRUSExplorer/Collections/CollectionOutline.swift:155`) while the section cascades still run over the whole outline; the preview prints the heading through `headingText` (`FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift:257`). Before, every format printed an empty heading, and the preview's Contents a row of "1." and nothing.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.3 Section Headings and Prose (the **Section headings** bullet)
+- **Current:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents.
+- **Proposed:** … dragging a heading moves its **entire section as one block**. Exports mirror the nesting with stepped heading sizes and an indented table of contents. A heading you leave without text shows in the live preview as *Untitled section*, in grey italics, and is left out of every PDF, HTML and Word export, whether or not documents sit under it; a heading nested under it moves up a level, and its documents keep the section defaults it sets.
+- **Why:** as for the Mac (#1465; the same resolver and renderer serve both platforms).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export (the **Send to Zotero Library** bullet)
+- **Current:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected library over the Web API, with tags and research notes; with no account it falls back to an RIS file for desktop import.
+- **Proposed:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected library over the Web API — into a new Zotero collection named after it, or, for a collection with no name, *FRUS Explorer Collection -* and the day you send it (*FRUS Explorer Collection - 2026-10-01*) — with tags and research notes; with no account it falls back to an RIS file for desktop import.
+- **Why:** #1497, decision D16: the send names its Zotero collection through `CollectionExportNaming.zoteroCollectionName` (`FRUSExplorer/Collections/CollectionExportSheet.swift:749`, `FRUSExplorer/Collections/CollectionExporter.swift:1539`), trimmed; an unnamed collection's items used to land loose in the library, in no Zotero collection.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export (the **Send to Zotero Library** bullet)
+- **Current:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected Zotero library over the Web API, with tags and research notes; with no account connected it falls back to an RIS file for desktop import.
+- **Proposed:** **Send to Zotero Library**, below the grid, pushes the whole collection into your connected Zotero library over the Web API — into a new Zotero collection named after it, or, for a collection with no name, *FRUS Explorer Collection -* and the day you send it — with tags and research notes; with no account connected it falls back to an RIS file for desktop import.
+- **Why:** as for the Mac (#1497; one export sheet serves both).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export (the paragraph after the bullets)
+- **Current:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export.
+- **Proposed:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export. A name too long for a file name is shortened, at a whole character, in the file's name only; the export's title keeps it whole.
+- **Why:** #1498: `CollectionExportNaming.fileName` cuts the stem through `ExportFileName.fitting` (`FRUSExplorer/Collections/CollectionExporter.swift:1515`, `:1611`) so name and suffix fit within 240 UTF-8 bytes of the name's decomposed form, which bounds the UTF-16 units of that form the file system counts; uncut, a name past the file system's 255 units failed every format's write with "Could not write export file".
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export (the paragraph after the bullets)
+- **Current:** Each file is named after the collection; a collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export.
+- **Proposed:** Each file is named after the collection; a collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export. A name too long for a file name is shortened, at a whole character, in the file's name only.
+- **Why:** as for the Mac (#1498).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export (the **Importing** bullet)
+- **Current:** **Importing.** **Import Collection…** in the window, or just **double-click a `.fruscollection` file** (or receive one by AirDrop) — the window opens with the import selected. Double-clicking a byte-identical file again during the same app session re-opens the collection it created; after a relaunch, opening the file imports a fresh copy.
+- **Proposed:** **Importing.** **Import Collection…** in the window, or just **double-click a `.fruscollection` file** (or receive one by AirDrop) — the window opens with the import selected. Research notes the file carries become notes of yours on those documents, searchable straight away. Double-clicking a byte-identical file again during the same app session re-opens the collection it created; after a relaunch, opening the file imports a fresh copy.
+- **Why:** the 2026-09-28 audit (from #1280's log): all three import paths now index the notes an import brings (`NativeCollectionSerializer.indexImportedNotes`, `FRUSExplorer/Collections/NativeCollectionFormat.swift:776`, called by Import Collection… at `FRUSExplorer/Collections/MacCollectionManagerView.swift:409` and `FRUSExplorer/Collections/CollectionListView.swift:254`, and for a double-clicked or AirDropped file at `FRUSExplorer/App/FRUSExplorerApp.swift:2081`); before, they became searchable only at the next launch.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export (the **Importing** bullet)
+- **Current:** **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
+- **Proposed:** **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Research notes the file carries become notes of yours on those documents, searchable straight away. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
+- **Why:** as for the Mac — Import Collection… at `CollectionListView.swift:254`, and a file opened from Files, Mail or AirDrop at `FRUSExplorerApp.swift:2081`.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.8 Exporting a Chart for Publication (the **What.** bullet)
+- **Current:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, then the table.
+- **Proposed:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, closing on what the numbers were drawn from, then the table. That last statement names the volumes alone for most charts, and says so where a chart joined them to other data or computed from them: a word cloud's word lists, the semantic map's model, Person Analytics' people register, the regional chart's subject taxonomy, and the State Department's filing schedule behind a class ranking's unprinted pointers or a class's gloss.
+- **Why:** PV-1 (the 2026-09-28 audit): every analytics export claimed "the FRUS volumes, and from no other source"; the builders now pass their sources (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:1227`, `FRUSExplorer/Semantic/Map/SemanticMapExport.swift:142`, `FRUSExplorer/Analytics/PersonAnalyticsView.swift:542`, `FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift:101`, `FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift:175`), and the plate prints the same statement.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.8 Exporting a Chart for Publication (the **What.** bullet)
+- **Current:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, then the table.
+- **Proposed:** The **CSV is the complete artifact**: a `#`-commented preamble naming the figure, your terms, the grouping, the scope, the year range, the value mode, the app version, and the export date — followed by the full method and caveats, closing on what the numbers were drawn from (the volumes alone for most charts; the volumes joined to other data, or computed by the app, where a chart did that), then the table.
+- **Why:** as for the Mac (PV-1). The section's next bullet, **Before you publish a figure alone**, is already stale on iOS — the plate has printed every caveat since visual-marketing GATE C — and is left to lane MANUALS, which the planning audit records.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.8 Exporting a Chart for Publication (the last bullet)
+- **Current:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`), so repeat exports stay distinguishable in a downloads folder. If an export fails, the app says so rather than doing nothing.
+- **Proposed:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`), so repeat exports stay distinguishable in a downloads folder; a very long title — a word cloud of a volume with a long title — is shortened in the file name, never in the figure or the CSV. If an export fails, the app says so rather than doing nothing.
+- **Why:** the 2026-09-28 audit: `AnalyticsExportDelivery.filenameStem` (`FRUSExplorer/Analytics/Export/AnalyticsExportDelivery.swift:133`) cuts the title's part so prefix, date and extension fit; the longest volume title made a 515-byte name.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.8 Exporting a Chart for Publication (the last bullet)
+- **Current:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`), and the share sheet lets you save, AirDrop, or send them anywhere.
+- **Proposed:** Files are named for the chart and dated (`FRUS-Analytics-Berlin-By-Year-2026-07-24.csv`) — a very long title is shortened in the file name, never in the figure or the CSV — and the share sheet lets you save, AirDrop, or send them anywhere.
+- **Why:** as for the Mac; on iOS the uncut name failed the share sheet's write in the temporary directory.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §17.5 Data & Recovery (the **Export Query Log as a Method Appendix** paragraph)
+- **Current:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned.
+- **Proposed:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned. Both, and the query log a collection appends, say what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
+- **Why:** PV-1's appendix half (the 2026-09-28 audit): only the CSV carried the sources block; `QueryMethodAppendix.sourceLines` (`FRUSExplorer/Export/QueryMethodAppendix.swift:484`) now feeds the Markdown and the plain-text lines a collection export embeds too.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §17.6 Data & Recovery (the **Export Query Log as a Method Appendix** paragraph)
+- **Current:** **Export Query Log as a Method Appendix** writes the same trail as a methods statement rather than as data: a Markdown table you can paste into a paper, and a CSV to re-derive from. Each row is one search with the scope it ran under, how many volumes were indexed at the time, and what it returned.
+- **Proposed:** As for the Mac, append: Both, and the query log a collection appends, say what the counts were drawn from: the volumes' text, and the app's search model where a Meaning search is listed.
+- **Why:** as for the Mac (`QueryMethodAppendix.swift:484`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.8 The Archives Visit Packet (the **coverage report** paragraph)
+- **Current:** A **coverage report** travels with every export, scoped or not — it is not optional, because an empty channel with no caveat reads as a clearance: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, and how much of the restriction picture is actually measured.
+- **Proposed:** A **coverage report** travels with every export, scoped or not — it is not optional, because an empty channel with no caveat reads as a clearance: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, how much of the restriction picture is actually measured, and — as every export ends — where the packet came from: the volumes' source notes and footnotes as the app read them, with the parser's measured miss rate, and the app's snapshot of NARA's catalog.
+- **Why:** PV-1 (the 2026-09-28 audit): the coverage report now ends on `TripPacketExporter.sourceLines` (`FRUSExplorer/TripPacket/TripPacketExporter.swift:776`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.8 The Archives Visit Packet (the **coverage report** paragraph)
+- **Current:** A **coverage report** closes every export: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, and how much of the restriction picture is actually measured.
+- **Proposed:** A **coverage report** closes every export: how many targets resolved, how far the footnote scan reached (…), the digitized-substitute denominators, how much of the restriction picture is actually measured, and where the packet came from — the volumes' source notes and footnotes as the app read them, with the parser's measured miss rate, and the app's snapshot of NARA's catalog.
+- **Why:** as for the Mac (`TripPacketExporter.swift:776`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## MACCOL — #1446, #1448, #1449, #1477, #1493, #1475
+
+*Lane MACCOL polishes the Mac Collections window and folds in two save fixes: the Mac detail pane writes only the field the reader edits and follows the others, and a heading's Section defaults saves each edit. These are the manual sentences that work makes incomplete or too cautious. Each quotes the manual as it stands at `origin/v2` f5625ca2. #1448 (the resting cap after a formatting change, and the edited height beside a legacy scroller), #1475 (List footers that wrap) and #1477 (no stale caret; legible chips on a selected row) change drawing the manuals do not describe, and need no change.*
+
+- **Manual / section:** Mac §12.1 The Collections Window (the collection picker sentence)
+- **Current:** The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count, plus **New Collection…** (⌥⌘N), …
+- **Proposed:** The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count (a long name is cut short on the toolbar, and listed whole in the menu), plus **New Collection…** (⌥⌘N), …
+- **Why:** #1446: the picker's label keeps the name to one line within `MacCollectionManagerView.collectionNameMaxWidth`, 260 pt (`FRUSExplorer/Collections/MacCollectionManagerView.swift:203`), so a long name no longer pushes the toolbar's items behind its overflow chevron; the menu's rows still list the name whole. Every count the picker prints — its label's and its rows' — and Manage Collections' rows' now prints grouped (*1,234*), where all three printed *1234*; the manual quotes no count, so this needs no sentence.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.3 Composing, the **Prose blocks** bullet
+- **Current:** …click it to edit the whole block, and it goes back to its opening lines when you click another row or field. The introduction in the ⚙ Collection popover works the same way.
+- **Proposed:** …click it to edit the whole block, and it goes back to its opening lines when you click another row or field. The introduction in the ⚙ Collection popover works the same way, and so does the popover's **Note** above it, which is plain text and has no formatting bar.
+- **Why:** #1449: the Note is the shared capped editor in its plain-text mode (`RichTextEditor(…, restingCap: .noteInPopover, plainText: true)`, `MacCollectionManagerView.swift:995`), where it was a fixed-height field that scrolled a long note and cut it through a line. It stays plain because the collection's note is a plain `String?`; a rich note would be a stored property, a CloudKit schema change.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.3 Composing, the **Apparatus blocks** bullet (a sentence added after the list of the five blocks)
+- **Current:** (no sentence)
+- **Proposed:** Where these blocks list documents, each reads by its printed number — *Document 373a* — and one the volume prints without a number, such as the unnumbered documents of the Potsdam volume, reads *Unnumbered (d710a-1)*, by its history.state.gov identifier.
+- **Why:** #1493, the owner's decision D5: `CitableDocumentNumber.unnumberedLabel` (`FRUSExplorer/Citation/CitationFormatter.swift:294`) through the blocks' list tokens (`CollectionGeneratedBlocks.referenceToken` and `referenceListText`, `FRUSExplorer/Collections/CollectionGeneratedBlocks.swift:727`, `:759`). They used to print the id as though it were the number — "Document d710a-1".
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.5 Document Rows and the Inspector (first sentence)
+- **Current:** Each document row is a scannable report — title, volume, date, and small labeled chips — …
+- **Proposed:** Each document row is a scannable report — the document's printed number (*Document 373a*, or *Unnumbered (d710a-1)* for a document the volume prints without one), title, volume, date, and small labeled chips — …
+- **Why:** #1493: the row's label is `CitableDocumentNumber.rowLabel` (`CitationFormatter.swift:271`, called at `MacCollectionManagerView.swift:1798`), which showed such a document's bare id. A document whose volume is not indexed on this Mac still shows its id, and an apparatus block that lists it reads *Document d710a-1*: with no number stored, nothing the app has read says the volume prints none, and it does not guess from the identifier's shape.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.5 Apparatus Blocks (a sentence added after the list of the five blocks)
+- **Current:** (no sentence)
+- **Proposed:** Where these blocks list documents, each reads by its printed number — *Document 373a* — and one the volume prints without a number, such as the unnumbered documents of the Potsdam volume, reads *Unnumbered (d710a-1)*, by its history.state.gov identifier.
+- **Why:** as for the Mac (#1493; `CitationFormatter.swift:294`, `CollectionGeneratedBlocks.swift:727`, `:759`); the blocks are the same on every platform, in the preview and in every export.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.1 The Manager on iPad (its first paragraph, the save sentences)
+- **Current:** Collection settings saves each edit as you make it, so leaving by Back, by another tab, or by closing the app loses nothing. Section defaults puts each edit on the collection at once, so leaving the sheet or the editor loses nothing, and the app saves it with its regular saves.
+- **Proposed:** Collection settings saves each edit as you make it, and Section defaults saves each change to the collection's description, subtitle, author line and three export switches the same way, so leaving by Back, by another tab, or by closing the app loses none of them. Section defaults puts its other changes on the collection at once too, and the app saves them with its regular saves.
+- **Why:** the plan of record's fold-in "Section defaults save each write": `CollectionAttributesRows` — the sheet's description, subtitle, author line and three toggles — now saves in every field's and toggle's binding (`optional(_:)` and `saving(_:)`, `FRUSExplorer/Collections/CollectionCompositionRows.swift:353`, `:359`), where it left the save to the app's autosave. Pinned by `SectionDefaultsSaveTests`, which types into each field and switches each toggle with autosave off. The sheet's other controls — the composition rows (`CollectionCompositionRows`) and the section's own export defaults (`CollectionEntryInspector.overrideControls`) — still leave the save to autosave, so the proposal promises nothing for them.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## SEL — #1540
+
+*Lane SEL retires the iPhone and iPad floating selection bar: its four color dots, Excerpt, Look Up and Note now open the system edit menu, before Copy, as the owner chose on 2026-09-29 (option a). The Mac keeps its bar. On both platforms "Look Up" is now **Look Up in NARA**, because the iPhone and iPad menu has a Look Up of its own (the dictionary). Measured on the simulators (iOS 26.5): an iPhone 17's menu shows the four dots and **Excerpt**, then **›**, which opens the whole menu as a list (Look Up in NARA, Note, then Copy, Find Selection, Look Up, Translate…); an iPad Pro 13-inch's shows the dots, Excerpt and Look Up in NARA before its **›**. Only those two devices were measured, at the default text size; how many items fit before **›** changes with the width and the text size, so no proposal below names a device. A selection inside a footnote offers only Look Up in NARA and Note, where the bar showed the dots and Excerpt dimmed. Each entry quotes the manual as it stands at `origin/v2` f5625ca2. The code: `SelectionEditMenu` and `_FRUSEditMenuWebView.buildMenu(with:)` in `FRUSExplorer/TEI/FRUSDocumentWebView.swift:745`, `:835`; the verbs and their names in `SelectionVerb`, `FRUSExplorer/DocumentView/FloatingSelectionBar.swift:24`; the reader's handling in `DocumentView.performSelectionVerb`, `FRUSExplorer/DocumentView/DocumentView.swift:1808`.*
+
+- **Manual / section:** iOS §3 A First Session, step 3
+- **Current:** **Highlight a passage.** Select a sentence with your finger or Apple Pencil. A dark pill — the **floating selection bar** — appears just below the selection. Tap one of its four **color dots** and the passage is highlighted in that color, permanently and across your devices. There is no separate highlight mode to enter or leave.
+- **Proposed:** **Highlight a passage.** Select a sentence with your finger or Apple Pencil. The edit menu that appears beside the selection begins with four **color dots**. Tap one and the passage is highlighted in that color, permanently and across your devices. There is no separate highlight mode to enter or leave.
+- **Why:** #1540: the bar is gone and the dots lead the system edit menu (`_FRUSEditMenuWebView.buildMenu(with:)`, `FRUSDocumentWebView.swift:835`, inserting `SelectionEditMenu`'s group at the start of the menu). UIKit places the menu above or below the selection, so "beside" rather than "below".
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §3 A First Session, step 4
+- **Current:** **Attach a note.** With text selected, tap **Note** on the same bar and type a thought. The note is saved to this document, filed under your active project, and searchable later.
+- **Proposed:** **Attach a note.** With text selected, choose **Note** from the same menu — if it is not on the menu's first page, tap **›** to reach it — and type a thought. The note is saved to this document, filed under your active project, and searchable later.
+- **Why:** #1540 (as above). On an iPhone 17 and an iPad Pro 13-inch (iOS 26.5, default text size) Note is in the list **›** opens; on a wider window or at a smaller text size it may fit on the first page, so the step does not name a device (review round 1).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §4.3 The Floating Selection Bar (heading and the paragraph and list under it)
+- **Current:** ### 4.3 The Floating Selection Bar / Select any passage in the document body and a dark pill appears just below it with the actions that operate on a selection: / - Four **color dots** — tap one to highlight the selection in that color (Section 9.1). / - **Excerpt** — capture the selection as a verbatim quotation into a collection (Section 12.4). / - **Look Up** — run a NARA Catalog lookup on the selected text (Section 14.2). / - **Note** — attach a research note (Section 9.2).
+- **Proposed:** ### 4.3 Actions on a Selection / Select any passage in the document body and the edit menu that appears beside it begins with FRUS Explorer's own actions, ahead of the system's (Copy, Look Up, Translate and the rest): / - Four **color dots** — tap one to highlight the selection in that color (Section 9.1). / - **Excerpt** — capture the selection as a verbatim quotation into a collection (Section 12.4). / - **Look Up in NARA** — run a NARA Catalog lookup on the selected text (Section 14.2). The system's own **Look Up**, later in the menu, is the dictionary. / - **Note** — attach a research note (Section 9.2). / The menu shows as many of its items as fit and puts the rest behind **›**; how many fit depends on the device and the text size. Choosing one of these actions clears the selection. VoiceOver reads each dot by its name, such as "Highlight Yellow".
+- **Why:** #1540. The section describes a control that no longer exists on iPhone or iPad. The order is `SelectionVerb.allInOrder` (`FloatingSelectionBar.swift:36`); the selection is cleared by `_FRUSEditMenuWebView.clearSelection()` (`FRUSDocumentWebView.swift:861`); the dots' spoken names are their images' accessibility labels (`SelectionEditMenu.action(for:perform:)`, `FRUSDocumentWebView.swift:774`), read by `SelectionEditMenuTests` from the menu's accessibility tree on iPhone 17 and iPad Pro 13-inch (M5). The row's contents were measured only on those two devices at iOS 26.5 and the default text size, so the paragraph names no device (review round 1). A selection that ends at the end of a paragraph, or just before a footnote marker, keeps the colors and Excerpt since review round 1 (`rangeEndpointToOffset`, `FRUSExplorer/Resources/frus-selection.js:69`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §4.3, the paragraph after the list (its first sentence)
+- **Current:** For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available.
+- **Proposed:** For a selection inside a footnote, the menu offers only Look Up in NARA and Note.
+- **Why:** #1540: `SelectionEditMenu.verbs(hasDocumentOffsets:)` (`FRUSDocumentWebView.swift:754`) leaves out the colours and Excerpt for a selection with no document offsets, where the bar showed them dimmed. The rest of the paragraph (list labels, table captions) is unchanged.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §9.1 Highlights, first paragraph
+- **Current:** Select a passage (finger or Apple Pencil) and tap one of the four **color dots** on the floating selection bar — yellow, green, blue, or pink.
+- **Proposed:** Select a passage (finger or Apple Pencil) and tap one of the four **color dots** at the start of the edit menu — yellow, green, blue, or pink.
+- **Why:** #1540 (as for §4.3).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §9.2 Research Notes, first sentence
+- **Current:** Attach a free-form note from the floating selection bar's **Note** (with a passage selected) or from the **Notes** accordion in the Research rail.
+- **Proposed:** Attach a free-form note from **Note** in the edit menu (with a passage selected) or from the **Notes** accordion in the Research rail.
+- **Why:** #1540 (as for §4.3).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.4 Excerpts
+- **Current:** …select a passage while reading and tap **Excerpt** on the floating selection bar; or tap **Insert as Excerpt** on any highlight row in a document's inspector.
+- **Proposed:** …select a passage while reading and choose **Excerpt** from the edit menu; or tap **Insert as Excerpt** on any highlight row in a document's inspector.
+- **Why:** #1540 (as for §4.3).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.2 What Resolves, and How, the **Free-text lookup** paragraph
+- **Current:** …and tap **Look Up** on the floating selection bar for a NARA Catalog query pre-populated with your selection, with a choice of search strategies.
+- **Proposed:** …and choose **Look Up in NARA** from the edit menu for a NARA Catalog query pre-populated with your selection, with a choice of search strategies. (The menu's plain **Look Up** is the system dictionary.)
+- **Why:** #1540: the verb is renamed on both platforms (`selectionBar.lookUpInNARA`, `FloatingSelectionBar.swift:60`) and moved into the edit menu on iPhone and iPad.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §19.1 Where Do I…?, four rows
+- **Current:** | Highlight a passage | Select text → a color dot on the floating selection bar | / | Attach a note to a passage | Select text → **Note** on the floating selection bar | / | Capture a quotation for a collection | Select text → **Excerpt** | / | Look up selected text in the NARA catalog | Select text → **Look Up** |
+- **Proposed:** | Highlight a passage | Select text → a color dot in the edit menu | / | Attach a note to a passage | Select text → **Note** in the edit menu | / | Capture a quotation for a collection | Select text → **Excerpt** in the edit menu | / | Look up selected text in the NARA catalog | Select text → **Look Up in NARA** in the edit menu |
+- **Why:** #1540 (as for §4.3 and §14.2).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §4.2 The Research Rail, the **Highlighting is not a rail button** paragraph
+- **Current:** …plus **Excerpt** (freeze the passage into a collection, Section 12.3), **Look Up** (hand the text to Source Explorer, Section 14.2), and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available. … The same bar, with the same behavior, appears on iPad and iPhone.
+- **Proposed:** …plus **Excerpt** (freeze the passage into a collection, Section 12.3), **Look Up in NARA** (hand the text to Source Explorer, Section 14.2), and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up in NARA and Note remain available. … On iPad and iPhone the same actions open the system edit menu instead of a bar.
+- **Why:** #1540: the Mac bar's verb is now "Look Up in NARA" (`FloatingSelectionBar` reads `SelectionVerb.lookUpInNARA.title`, `FloatingSelectionBar.swift:198`), and iPhone and iPad no longer draw the bar (`DocumentView.swift` mounts none; `SelectionBarRetirementTests` pins that).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §4.5 Separate Windows, and How They Behave, the **Source Explorer** row of the table
+- **Current:** | Source Explorer | Research rail **Sources** tile (one window per document); **Look Up** on the selection bar, or **Window ▸ Source Explorer** (Section 14) |
+- **Proposed:** | Source Explorer | Research rail **Sources** tile (one window per document); **Look Up in NARA** on the selection bar, or **Window ▸ Source Explorer** (Section 14) |
+- **Why:** #1540, the rename (`FloatingSelectionBar.swift:60`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14 Source Explorer: From Source Note to Archive, the opening paragraph
+- **Current:** …**Look Up** on the selection bar opens the same window's **NARA Lookup** view (Section 14.2).
+- **Proposed:** …**Look Up in NARA** on the selection bar opens the same window's **NARA Lookup** view (Section 14.2).
+- **Why:** #1540, the rename (as above).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.2 Free-Text Lookup, first sentence
+- **Current:** Select any text in a document body — a lot number, a decimal identifier, an archival keyword — and choose **Look Up** on the floating selection bar: …
+- **Proposed:** Select any text in a document body — a lot number, a decimal identifier, an archival keyword — and choose **Look Up in NARA** on the floating selection bar: …
+- **Why:** #1540, the rename (as above).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## CITE — #1504, #1506, #1523, #1524, #1491
+
+*Lane CITE deletes Citation Lookup's nearest-document strategy and the manifest's `documentCount` (#1504, D6); hides the Parsed Fields in Batch and counts a best guess in a bucket of its own (#1506, D17); keeps refusing side-loaded volumes in Citation Lookup and Add Documents and says so at side-load time (#1523, D7); takes the cited volume numeral out of the title fragment as a whole word (#1524, no reader-visible change); and cites the Potsdam volume's unnumbered documents in the app with no number, as the exports do (#1491). These are the manual sentences that change makes wrong, incomplete or stale. Each quotes the manual as it stands at `origin/v2` f5625ca2.*
+
+- **Manual / section:** Mac §5.1a Side-Loaded Volumes, the list's lead-in and the paragraph after it
+- **Current:** Four things are deliberately different, and each is the honest consequence of the file not being the catalog's: … One more difference is not a design rule but where the app stands today: **Citation Lookup** and **Add Documents ▸ Citations** find volumes in the bundled catalog only, so they do not resolve a citation or history.state.gov link to a side-loaded volume (11.4, 12.2). `<!-- OPEN #1523: side-loaded volumes are refused by citation and link resolution; revisit this paragraph when the owner decides. -->`
+- **Proposed:** Five things are deliberately different, and each is the honest consequence of the file not being the catalog's: … (a fifth bullet:) **Citation Lookup** and **Add Documents ▸ Citations** resolve citations against the bundled catalog only, so they do not resolve a citation or history.state.gov link to a side-loaded volume, even one on this Mac and indexed (11.4, 12.2); open it from Browse or find it with Search. When you side-load a volume the catalog does not list, Volumes & Storage says so under the import's result: **Not in the bundled catalogue**. (Delete the "One more difference…" paragraph and its OPEN comment.)
+- **Why:** #1523, owner decision D7 — refuse, and tell the reader at side-load time. The engine reads `ManifestStore.citableEntries`, the bundled catalogue (`FRUSExplorer/Models/Manifest/ManifestStore.swift:156`; `FRUSExplorer/Citation/CitationMatchingEngine.swift:413`, `:743`), and both storage hubs show `SideloadCatalogueNoticeRow` when an import adds a volume outside it (`FRUSExplorer/Settings/SettingsView.swift:494`; `MacVolumesStorageHub.swift:332`). A file named after a catalogue volume is that volume and draws no notice.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §5.1a Side-Loaded Volumes, the list of differences
+- **Current:** Four things are deliberately different, and each is the honest consequence of the file not being the catalog's: (four bullets; the iOS section never mentions Citation Lookup)
+- **Proposed:** Five things are deliberately different, and each is the honest consequence of the file not being the catalog's: … (a fifth bullet:) **Find by citation** and **Add Documents ▸ Citations** resolve citations against the bundled catalog only, so they do not resolve a citation or history.state.gov link to a side-loaded volume, even one on this device and indexed; open it from Browse or find it with Search. When you side-load a volume the catalog does not list, Volumes & Storage says so under the import's result: **Not in the bundled catalogue**.
+- **Why:** as for the Mac (#1523; `VolumesStorageHubView.swift:358`). The iOS manual has never documented the refusal, which the Mac manual does; this brings DOCS-2 parity.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §11.4 Citation Lookup, the **Batch** bullet
+- **Current:** The result is a table — **Resolved**, **N possible documents**, or **No match** per note — with a running count of resolved, ambiguous, and unresolved citations. A note is **Resolved** only when its one answer is a document the lookup vouches for; a note whose one answer is a best guess, a volume still to download, or a volume still to be indexed, shows that answer's own label instead and counts as ambiguous.
+- **Proposed:** The result is a table — **Resolved**, **N possible documents**, a best guess's own label, or **No match** per note — with a running count of resolved, ambiguous, best-guess and unresolved citations (*12 citations · 7 resolved · 2 ambiguous · 2 best guesses · 1 unresolved*). A note is **Resolved** only when its one answer is a document the lookup vouches for. A note whose one answer the lookup labels a best guess — a document from a volume the citation does not name, or not on the cited page, or a volume still to download or to be indexed that does not match a part, volume or year the citation names — shows that label and counts as a best guess; **Needs work first** sorts best guesses after the notes that found nothing and before the ambiguous ones, because a best guess reads like an answer. A note whose one answer is a volume still to download or still to be indexed that matches everything the citation names shows that label and counts as ambiguous. Batch hides the Parsed Fields, which it never reads — each note is parsed on its own.
+- **Why:** #1506, owner decision D17. `BatchCitationOutcome.classify` gives a lone row the engine labels a best guess its own outcome (`FRUSExplorer/Citation/CitationBlockSplitter.swift:205`, reading `CitationMatch.isBestGuess` at `CitationModels.swift:392`; a volume row is marked by the engine at `CitationMatchingEngine.swift:714`), `triageOrder` puts it third (`:238`), and `summary(of:locale:)` counts it apart (`:262`); the form mounts the Parsed Fields only where the mode reads them (`CitationLookupView.swift:258`, `CitationLookupMode.showsParsedFields` at `CitationModels.swift:480`), and Batch focuses its footnote editor (`CitationLookupFocus.initial(for:)`, `CitationLookupView.swift:673`). The common volume case is #1474's own example, *FRUS, 1961–1963, vol. V, pt. 2, doc. 84*, with Volume V not downloaded: its row reads "Best guess — this volume does not match the cited part 2", and the count says so.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §11.4 Citation Lookup, in Both Directions — the end of the paragraph on volumes not yet indexed
+- **Current:** …and in **Batch** that note counts as ambiguous. A document the volume already holds is found as usual, and a citation naming only the volume is answered as it will be once the volume is indexed.
+- **Proposed:** …and in **Batch** that note counts as ambiguous. A document the volume already holds is found as usual, and a citation naming only the volume is answered as it will be once the volume is indexed. **Batch** counts a note whose one answer the lookup labels a best guess — a document, or a volume still to download or to be indexed, that does not match something the citation names — as a best guess, apart from the ambiguous notes (*… · 2 ambiguous · 2 best guesses · …*), and hides the Parsed Fields, which it never reads; entering it puts the cursor in the footnote box.
+- **Why:** #1506, as for the Mac (`CitationBlockSplitter.swift:205`, `:262`; `CitationLookupView.swift:258`, `:673`). On iPhone, entering Batch used to focus the Subseries field and raise the keyboard over a field Batch ignores. The not-yet-indexed note the sentence before describes stays ambiguous, because its label is **Volume identified — …**; one whose volume does not match the citation is labelled a best guess, and is counted as one.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §11.4 Citation Lookup, the comment under the label table
+- **Current:** `<!-- OPEN #1504: a nearest-document label ("Possible match — document N not found; nearest is document M") exists in code but never appears, because every manifest row carries documentCount 0. Restore a row here only if #1504 supplies the counts. -->`
+- **Proposed:** (delete the comment; the label table needs no row)
+- **Why:** #1504, owner decision D6: the strategy, its two labels and the manifest's `documentCount` are deleted (`CitationMatchingEngine.swift` header, version 2.1; `FRUSExplorer/Resources/manifest.json`, 553 rows). A document number a volume does not hold now finds nothing in it, as it always did on the shipped manifest.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §11.4 Citation Lookup, the paragraph after the table
+- **Current:** Lookup finds volumes in the app's bundled catalog only, so a citation or history.state.gov link naming a **side-loaded** volume (5.1a) is not resolved to it, even when the volume is on this Mac and indexed. `<!-- OPEN #1523: owner decision — widen volume resolution to side-loaded volumes, or keep this refusal documented in both manuals. -->`
+- **Proposed:** Lookup resolves citations against the app's bundled catalog only, by design, so a citation or history.state.gov link naming a **side-loaded** volume (5.1a) is not resolved to it, even when the volume is on this Mac and indexed. (Delete the OPEN comment.)
+- **Why:** #1523: the owner decided to keep the refusal (D7), so the paragraph is now the documented behaviour (`CitationMatchingEngine.swift:413`, `:743`; `ManifestStore.swift:156`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §11.1 (the **Cite** tile paragraph) and iOS §11.1 (the **Cite** paragraph)
+- **Current:** Mac: From any open document, the rail's **Cite** tile opens the citation popover: the formatted citation in your chosen style (switchable per view), with **Copy citation**, **Copy URL**, and a **Copy as…** menu (BibTeX / RIS, or **Save as .bib**). Paste into a footnote and move on. iOS: From any open document, tap **Cite** in the Research rail: the fully formatted citation, with **Copy Citation** and **Copy as…** BibTeX or RIS. Paste into a footnote and move on.
+- **Proposed:** (append to each:) A document the volume prints without a number — the Potsdam volume's 217 unnumbered documents, which the Office of the Historian's data numbers with an editorial description such as *[Unnumbered document following Document 710 (#1)]* — is cited without one, ending at the publication details, exactly as a collection export or a trip packet cites it. (Mac only, after it:) Above the citation, and in the document's header, its previous and next buttons and the window's toolbar, such a document is named *Unnumbered (d710a-1)* — its history.state.gov identifier.
+- **Why:** #1491: every in-app citation route — Copy Citation, its share message, BibTeX, RIS and Zotero on iOS (`FRUSExplorer/DocumentView/DocumentViewModel.swift:215`), the Mac citation and share popovers (`FRUSExplorer/App/SupportingViews.swift:1084`, and the popover's **Document no.** row at `:1310`) and the Research-notes Markdown export (`FRUSExplorer/Export/ResearchDataExporter.swift:941`) — now resolves the number through `CitableDocumentNumber.resolve` (`FRUSDocumentMetadata.init(citing:printedNumber:)`, `FRUSExplorer/Citation/CitationFormatter.swift:157`). Before, the app printed "…, Document [Unnumbered document following Document 710 (#1)]." and Citation Lookup read that paste as document 710. Review round 1 named the captions too: the popover's identity line (`SupportingViews.swift:1253`), the Mac reader's header, previous and next buttons and position (`MacDocumentView.swift`, `CitableDocumentNumber.headerLabel` / `.captionLabel`, `CitationFormatter.swift:318`, `:332`), its standalone window's toolbar (`MacDocumentTitle.swift`), the Mac Search row and the breadcrumb, each of which printed "Doc [Unnumbered document following Document 710 (#1)]". Optional: the manuals never described the old form, so this is a clarification, not a correction.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 ## XREF — #1472, #1473

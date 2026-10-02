@@ -22,6 +22,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — #1504: the per-volume document count removed. No generator ever filled it — the TEI
+///          header cannot say how many documents a volume holds — so it was 0 in all 553 rows, and
+///          its one reader, Citation Lookup's nearest-document strategy, never answered (owner
+///          decision D6). A volume's document count is
+///          `AdministrationProfilesStore.documentCount(forVolumeId:)`.
 public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
     /// Unique identifier derived from the volume filename without extension.
     /// e.g. `"frus1969-76v01"`. Acts as the stable primary key across all data layers.
@@ -54,9 +59,6 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
 
     /// The general editor of the subseries, if listed.
     public let generalEditor: String?
-
-    /// Number of documents in the volume. `0` when not determinable from the TEI header alone.
-    public let documentCount: Int
 
     /// File size in bytes as reported by the GitHub API. Used for download size estimates.
     public let sizeBytes: Int
@@ -136,7 +138,6 @@ extension VolumeManifestEntry {
         status          = try c.decode(VolumeStatus.self, forKey: .status)
         editors         = try c.decode([String].self, forKey: .editors)
         generalEditor   = try c.decodeIfPresent(String.self, forKey: .generalEditor)
-        documentCount   = try c.decode(Int.self, forKey: .documentCount)
         sizeBytes       = try c.decode(Int.self, forKey: .sizeBytes)
         let rawTags     = try c.decode([String].self, forKey: .tags)
         tags            = rawTags.reduce(into: [String]()) { seen, slug in

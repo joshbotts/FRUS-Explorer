@@ -51,7 +51,6 @@ struct OnboardingViewModelTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: sizeBytes,
             tags: []
         )

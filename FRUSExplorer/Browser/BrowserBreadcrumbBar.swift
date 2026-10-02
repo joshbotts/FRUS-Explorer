@@ -40,6 +40,9 @@ import SwiftUI
 ///   1.4 — Session 1 / #237: individual crumbs are width-capped (tail-truncated) so a
 ///          paragraph-length volume title can't blow up the flow layout; the full label
 ///          stays available to VoiceOver
+///   1.5 — #1491 review round 1: a document crumb names a document the volume prints without a
+///          number "Unnumbered (d710a-1)" (`CitableDocumentNumber.unnumberedLabel`), where it
+///          printed "Doc. [Unnumbered document following …]"
 struct BrowserBreadcrumbBar: View {
 
     let path: [BrowserViewModel.BrowserLevel]
@@ -259,6 +262,11 @@ extension BrowserViewModel.BrowserLevel {
             return section.title
         case .document(let entry):
             if let num = entry.documentNumber {
+                // A document the volume prints without a number: "Unnumbered (d710a-1)", never its
+                // bracketed description (#1491).
+                if CitableDocumentNumber.isUnnumbered(printed: num) {
+                    return CitableDocumentNumber.unnumberedLabel(documentId: entry.documentId)
+                }
                 return String(localized: "browser.breadcrumb.doc",
                               defaultValue: "Doc. \(num)")
             }

@@ -202,7 +202,6 @@ struct CitationFormatterTests {
             status: .published,
             editors: ["Test Editor"],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: []
         )
@@ -222,7 +221,6 @@ struct CitationFormatterTests {
             status: .published,
             editors: ["Test Editor"],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: []
         )
@@ -242,7 +240,6 @@ struct CitationFormatterTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: []
         )
@@ -569,14 +566,21 @@ struct CitableDocumentNumberTests {
                 "\(id) names a record, not a printed number")
     }
 
-    /// The Mac collection row's label — both branches.
-    @Test("The row label reads \"Document N\" when there is a number, else the id")
+    /// The Mac collection row's label — all three branches. A document the volume prints WITHOUT a number reads
+    /// "Unnumbered (d710a-1)" (#1493, the owner's decision D5), where it used to read as its bare id; a document whose
+    /// number this device does not know — its volume not indexed, its id not a number — still reads as its id, because
+    /// calling it unnumbered would be false (`eta_d1` prints ETA–1).
+    @Test("The row label reads \"Document N\" with a number, \"Unnumbered (id)\" when the volume prints none, else the id")
     func rowLabel() {
         #expect(CitableDocumentNumber.rowLabel(printed: "373a", documentId: "d373a") == "Document 373a")
         #expect(CitableDocumentNumber.rowLabel(printed: "ETA–1", documentId: "eta_d1") == "Document ETA–1")
         #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "d12") == "Document 12")
-        #expect(CitableDocumentNumber.rowLabel(printed: Self.potsdamN, documentId: "d710a-1") == "d710a-1")
-        #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "eta_d1") == "eta_d1")
+        #expect(CitableDocumentNumber.rowLabel(printed: Self.potsdamN, documentId: "d710a-1") == "Unnumbered (d710a-1)",
+                "a document the volume prints without a number must not read as its bare id (#1493)")
+        #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "eta_d1") == "eta_d1",
+                "a number this device does not know is not \"unnumbered\"")
+        #expect(CitableDocumentNumber.rowLabel(printed: nil, documentId: "d710a-1") == "d710a-1",
+                "with nothing stored, even a Potsdam-shaped id is not known to be unnumbered")
     }
 }
 
@@ -969,7 +973,7 @@ struct GeneratedBlockNumberTests {
         #expect(block.rows.map(\.text).contains("v/d373a n=373a"), "the undated row beside it")
     }
 
-    @Test("Sources, persons and thematic rows name the printed number; a number-less document keeps its id")
+    @Test("Sources, persons and thematic rows name the printed number; an unnumbered document reads \"Unnumbered (id)\"")
     func referenceTokens() async {
         let record = { (id: String) in
             CollectionGeneratedBlocks.SourceRecord(
@@ -991,8 +995,8 @@ struct GeneratedBlockNumberTests {
             dataSource: source)
         #expect(sources.rows.map(\.text).contains("Document 373a"), "\(sources.rows.map(\.text))")
         #expect(sources.rows.map(\.text).contains("Document ETA–1"), "\(sources.rows.map(\.text))")
-        #expect(sources.rows.map(\.text).contains("Document d710a-1"), """
-            a document the volume prints without a number keeps its id in a token, as before: \
+        #expect(sources.rows.map(\.text).contains("Unnumbered (d710a-1)"), """
+            a document the volume prints without a number reads "Unnumbered (id)", never "Document <id>" (#1493): \
             \(sources.rows.map(\.text))
             """)
 
@@ -1005,5 +1009,323 @@ struct GeneratedBlockNumberTests {
             type: .thematicIndex, documents: Self.docs(["d373a", "eta_d1"]), dataSource: source)
         #expect(thematic.rows.map(\.text) == ["Slave trade", "Document 373a", "Document ETA–1"],
                 "\(thematic.rows.map(\.text))")
+    }
+
+    /// #1493, the owner's decision D5: a document the volume prints WITHOUT a number — its `@n` the editors' bracketed
+    /// description — reads "Unnumbered (d710a-1)" in every generated block's list, where it used to read as its id
+    /// dressed as a number ("Document d710a-1", "Documents 12, d710a-1"). One fixture per rule the list applies:
+    /// - an indent-1 row (Sources, Thematic Index) is the label alone, with no "Document" before it;
+    /// - a Persons list keeps "Document"/"Documents" when it names at least one number, and drops the word when every
+    ///   document it names is unnumbered — "Documents Unnumbered (…)" would say nothing true;
+    /// - a collection spanning volumes names the volume inside the parentheses, after the id;
+    /// - a document whose number this device does not know (no number stored, an id that is not one) is NOT called
+    ///   unnumbered, which would be false — it keeps the form it had.
+    @Test("An unnumbered document reads \"Unnumbered (id)\" in every generated list (#1493)")
+    func unnumberedDocumentsReadAsUnnumbered() async {
+        let potsdam = CitableDocumentNumberTests.potsdamN
+        let numbers = Self.numbers.merging(["v/d710a-2": potsdam, "w/d12": "12", "w/d710a-1": potsdam]) { $1 }
+        let mention = { (volume: String, id: String, person: String) in
+            CollectionGeneratedBlocks.PersonMention(identityKey: person, name: person, description: nil, role: nil,
+                                                    volumeId: volume, documentId: id)
+        }
+        let source = NumberedBlockSource(
+            numbers: numbers,
+            sources: [CollectionGeneratedBlocks.SourceRecord(
+                volumeId: Self.volume, documentId: "d710a-1", repository: nil, recordGroup: "59",
+                lotFile: "63 D 351", seriesName: nil, rawText: "Lot 63 D 351", citationEra: "lot_file")],
+            mentions: [mention("v", "d373", "Byrnes"), mention("v", "d710a-1", "Byrnes"),
+                       mention("v", "d710a-1", "Stalin"), mention("v", "d710a-2", "Stalin"),
+                       mention("v", "d710a-1", "Truman")],
+            tags: [.init(name: "Potsdam", documents: Self.docs(["d710a-1", "appB"]))])
+
+        let sources = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources, documents: Self.docs(["d710a-1"]), dataSource: source)
+        #expect(sources.rows.map(\.text).contains("Unnumbered (d710a-1)"), "\(sources.rows.map(\.text))")
+        #expect(!sources.rows.map(\.text).contains { $0.contains("Document d710a-1") }, "\(sources.rows.map(\.text))")
+
+        let persons = await CollectionGeneratedBlocks.resolve(
+            type: .personsIndex, documents: Self.docs(["d373", "d710a-1", "d710a-2"]), dataSource: source)
+        let lists = Dictionary(uniqueKeysWithValues: persons.rows.map { ($0.text, $0.secondaryText ?? "") })
+        #expect(lists["Byrnes"] == "Documents 373, Unnumbered (d710a-1)", "a mixed list keeps its word: \(lists)")
+        #expect(lists["Stalin"] == "Unnumbered (d710a-1), Unnumbered (d710a-2)",
+                "a list of unnumbered documents only drops \"Documents\": \(lists)")
+        #expect(lists["Truman"] == "Unnumbered (d710a-1)", "one unnumbered document drops \"Document\": \(lists)")
+
+        let thematic = await CollectionGeneratedBlocks.resolve(
+            type: .thematicIndex, documents: Self.docs(["d710a-1", "appB"]), dataSource: source)
+        #expect(thematic.rows.map(\.text) == ["Potsdam", "Unnumbered (d710a-1)", "Document appB"], """
+            an unnumbered document reads "Unnumbered (id)", and one whose number this device does not know keeps its \
+            id: \(thematic.rows.map(\.text))
+            """)
+
+        let spanning = await CollectionGeneratedBlocks.resolve(
+            type: .archivalSources,
+            documents: [(volumeId: "v", documentId: "d710a-1"), (volumeId: "w", documentId: "d12"),
+                        (volumeId: "w", documentId: "d710a-1")],
+            dataSource: NumberedBlockSource(numbers: numbers, sources: ["v/d710a-1", "w/d12", "w/d710a-1"].map {
+                let parts = $0.split(separator: "/").map(String.init)
+                return CollectionGeneratedBlocks.SourceRecord(
+                    volumeId: parts[0], documentId: parts[1], repository: nil, recordGroup: "59",
+                    lotFile: "63 D 351", seriesName: nil, rawText: "Lot 63 D 351", citationEra: "lot_file")
+            }))
+        let spanningRows = spanning.rows.map(\.text)
+        #expect(spanningRows.contains("Unnumbered (d710a-1, v)") && spanningRows.contains("Unnumbered (d710a-1, w)"),
+                "across volumes the volume goes inside the parentheses, after the id: \(spanningRows)")
+        #expect(spanningRows.contains("Document 12 (w)"), "a numbered document keeps its form: \(spanningRows)")
+    }
+}
+
+// MARK: - InAppCitationNumberTests (#1491)
+
+/// The app's in-app citation routes cite a document the way its exports do: through
+/// `CitableDocumentNumber.resolve` (#1491).
+///
+/// Until #1491 the exports resolved the number (#1406) and the in-app routes — the reader's Copy
+/// Citation and its share, BibTeX, RIS and Zotero rows, the Mac citation and share popovers, and
+/// the Research-notes Markdown export — passed the stored `@n` straight to the formatter. So the
+/// 217 documents `frus1945Berlinv02` prints without a number were cited in the app as "…,
+/// Document [Unnumbered document following Document 710 (#1)]." and in an export of the same
+/// document with no number; and the in-app form, pasted back into Citation Lookup, read 710 and
+/// found d710, a different document.
+///
+/// Every test drives a real route — the view model, the exporter, or (for the Mac-only popovers,
+/// which no iOS test host compiles) the source of the one builder every Mac route calls.
+@Suite("In-app citations of an unnumbered document (#1491)")
+@MainActor
+struct InAppCitationNumberTests {
+
+    /// A reader's document entry in the fixture volume.
+    static func entry(_ documentId: String, number: String?) -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: documentId, volumeId: PrintedDocumentNumberExportTests.volumeId,
+                             documentNumber: number, header: "Joint Chiefs of Staff Minutes")
+    }
+
+    /// The reader's view model over `entry`, with the bundled manifest's `frus1865p1` row.
+    static func viewModel(_ entry: DocumentBrowserEntry) throws -> DocumentViewModel {
+        DocumentViewModel(entry: entry, volumeEntry: try PrintedDocumentNumberExportTests.manifestEntry(),
+                          parser: FRUSDocumentParser())
+    }
+
+    /// Every in-app artifact the reader's view model builds, as text.
+    static func artifacts(_ vm: DocumentViewModel) throws -> [(name: String, text: String)] {
+        let item = try #require(vm.zoteroItem(tags: [], notes: []))
+        return [("Copy Citation", try #require(vm.formattedCitation)),
+                ("plain Copy Citation", try #require(vm.plainTextFormattedCitation)),
+                ("BibTeX", try #require(vm.bibtexCitation)),
+                ("RIS", try #require(vm.risCitation)),
+                ("Zotero", RISExporter().export(zoteroItem: item))]
+    }
+
+    @Test("The reader's citation routes cite the unnumbered document with no number, from the entry's number or the parsed one")
+    func readerRoutesCiteNoDescription() throws {
+        // The entry carries the stored number (a document opened from Browse or Search)…
+        let fromEntry = try Self.viewModel(Self.entry("d710a-1", number: CitableDocumentNumberTests.potsdamN))
+        // …or carries none and the parse supplies it (a cross-reference tap).
+        let fromParse = try Self.viewModel(Self.entry("d710a-1", number: nil))
+        fromParse.resolvedDocumentNumber = CitableDocumentNumberTests.potsdamN
+        for (route, vm) in [("entry", fromEntry), ("parse", fromParse)] {
+            let built = try Self.artifacts(vm)
+            #expect(built.count == 5)
+            for (name, text) in built {
+                #expect(!text.contains("Unnumbered"), "\(route) \(name) cites the description: \(text)")
+            }
+            // The number-less form ends at the publication clause, in whichever style the reader
+            // chose (`CitationStyle.current`, which another suite may be switching meanwhile):
+            // "(…, 1866)." in history.state.gov and Chicago form, "…, 1866." in Turabian's.
+            let citation = try #require(vm.formattedCitation)
+            #expect(citation.hasSuffix("1866).") || citation.hasSuffix("1866."),
+                    "\(route): the number-less form ends at the publication clause: \(citation)")
+            #expect(!citation.contains("Document"), "\(route): \(citation)")
+        }
+    }
+
+    /// The round trip the issue predicted from reading the parser: the in-app citation printed
+    /// "Document [Unnumbered document following Document 710 (#1)]", whose first "Document <digits>"
+    /// is 710, so Citation Lookup took it for document 710 — a different document.
+    @Test("The reader's citation of the unnumbered document, pasted into Citation Lookup, names no document number")
+    func inAppCitationDoesNotReadAsAnotherDocument() throws {
+        let vm = try Self.viewModel(Self.entry("d710a-1", number: CitableDocumentNumberTests.potsdamN))
+        let citation = try #require(vm.plainTextFormattedCitation)
+        #expect(CitationParser().parse(citation).documentNumber == nil, "\(citation)")
+    }
+
+    /// One fixture per rule of `CitableDocumentNumber`: a printed number is cited as printed, and
+    /// with none stored the id stands in only where it spells the number — as every export does.
+    /// The first two are controls. The third is not: on `v2` a reader's citation of a document for
+    /// which neither the entry nor the parse held a number printed no number at all, and since
+    /// #1491 its id stands in ("Document 12") on Copy Citation, BibTeX, RIS and Zotero, as rule 3
+    /// has had every export do since #1406. Measured: the unstored case failed on `v2`, once per
+    /// artifact, and the other two passed.
+    @Test("Numbered documents keep their numbers on the reader's routes, and an id that spells one stands in")
+    func numberedDocumentsKeepTheirNumbers() throws {
+        let lettered = try Self.viewModel(Self.entry("d373a", number: "373a"))
+        let supplement = try Self.viewModel(Self.entry("eta_d1", number: "ETA–1"))
+        let unstored = try Self.viewModel(Self.entry("d12", number: nil))
+        for (vm, number) in [(lettered, "373a"), (supplement, "ETA–1"), (unstored, "12")] {
+            for (name, text) in try Self.artifacts(vm) {
+                #expect(text.contains("Document \(number)"), "\(name) lost Document \(number): \(text)")
+            }
+        }
+    }
+
+    /// The Research-notes Markdown export's front matter cites the noted document through the real
+    /// index and the real exporter.
+    @Test("A research note's Markdown export cites the unnumbered document with no number")
+    func researchNoteExportCitesNoDescription() async throws {
+        let dir = PrintedDocumentNumberExportTests.tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (pipeline, _) = try await PrintedDocumentNumberExportTests.indexedPipeline(in: dir)
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let unnumbered = ResearchNote(documentId: "d710a-1", volumeId: PrintedDocumentNumberExportTests.volumeId,
+                                      bodyText: "Potsdam.")
+        let lettered = ResearchNote(documentId: "d373a", volumeId: PrintedDocumentNumberExportTests.volumeId,
+                                    bodyText: "Seward.")
+        context.insert(unnumbered)
+        context.insert(lettered)
+        let appState = AppState()
+        appState.indexingPipeline = pipeline
+        let exports = await ResearchDataExporter.markdownExports(notes: [unnumbered, lettered], tags: [],
+                                                                 appState: appState)
+        let potsdam = try #require(exports.first { $0.id == unnumbered.id }).content
+        let seward = try #require(exports.first { $0.id == lettered.id }).content
+        #expect(potsdam.contains(PrintedDocumentNumberExportTests.publication),
+                "the note's front matter carries a citation at all: \(potsdam)")
+        #expect(!potsdam.contains("Unnumbered"), "\(potsdam)")
+        #expect(seward.contains("Document 373a"), "control: \(seward)")
+    }
+
+    /// The Mac citation and share popovers build every artifact — the formatted citation and its
+    /// share message, BibTeX, RIS and Zotero — through `DocumentExportSupport.docMeta`, which the
+    /// iOS test host cannot compile (`SupportingViews.swift` is macOS-only), so its source is read:
+    /// that builder resolves the number, and the popover's "Document no." row shows the same one.
+    @Test("The Mac popovers' one metadata builder, and their Document no. row, resolve the number")
+    func macPopoversResolveTheNumber() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/App/SupportingViews.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let builder = try #require(CitationLookupViewWiringTests.body(
+            after: "static func docMeta(entry: DocumentBrowserEntry, documentNumber: String?) -> FRUSDocumentMetadata",
+            in: source))
+        #expect(builder == "{ FRUSDocumentMetadata(citing: entry, printedNumber: documentNumber ?? entry.documentNumber) }",
+                "\(builder)")
+        // Every Mac citation artifact goes through that builder: no other site builds the metadata.
+        #expect(source.ranges(of: "FRUSDocumentMetadata(").count == 1,
+                "SupportingViews builds FRUSDocumentMetadata \(source.ranges(of: "FRUSDocumentMetadata(").count) times")
+        let cited = try #require(CitationLookupViewWiringTests.body(
+            after: "private var citedDocumentNumber: String?", in: source))
+        #expect(cited == "{ CitableDocumentNumber.resolve(printed: effectiveDocumentNumber, documentId: entry.documentId) }",
+                "\(cited)")
+        #expect(source.contains("if let docNum = citedDocumentNumber {"))
+        #expect(!source.contains("if let docNum = effectiveDocumentNumber {"))
+    }
+
+    // MARK: Captions (#1491 review round 1)
+
+    /// The rules the captions call. A caption names a document by the number its citation prints;
+    /// one the volume prints without a number reads "Unnumbered (d710a-1)" (the owner's decision D5)
+    /// — never its bracketed `@n`, which every one of these captions printed until review round 1
+    /// ("Doc [Unnumbered document following Document 710 (#1)] · frus1945Berlinv02" above a
+    /// citation with no number); and with nothing stored, each falls back as it always did.
+    @Test("A caption names an unnumbered document \"Unnumbered (id)\", and a numbered one by the number its citation prints")
+    func captionsNameAnUnnumberedDocument() {
+        let potsdam = CitableDocumentNumberTests.potsdamN
+        #expect(CitableDocumentNumber.isUnnumbered(printed: potsdam))
+        #expect(!CitableDocumentNumber.isUnnumbered(printed: "373a"))
+        #expect(!CitableDocumentNumber.isUnnumbered(printed: nil), "nothing stored says nothing")
+        #expect(!CitableDocumentNumber.isUnnumbered(printed: "  "))
+        #expect(CitableDocumentNumber.unnumberedLabel(documentId: "d710a-1") == "Unnumbered (d710a-1)")
+
+        // "Doc N" captions: the popover, the Mac reader's previous/next and position, Mac Search.
+        #expect(CitableDocumentNumber.captionLabel(printed: potsdam, documentId: "d710a-1") == "Unnumbered (d710a-1)")
+        #expect(CitableDocumentNumber.captionLabel(printed: "12", documentId: "d12") == "Doc 12")
+        #expect(CitableDocumentNumber.captionLabel(printed: "ETA–1", documentId: "eta_d1") == "Doc ETA–1")
+        #expect(CitableDocumentNumber.captionLabel(printed: "151 ", documentId: "d151") == "Doc 151")
+        #expect(CitableDocumentNumber.captionLabel(printed: nil, documentId: "d373a") == "Doc 373a",
+                "with nothing stored, an id that spells the number gives it, as the citation does")
+        #expect(CitableDocumentNumber.captionLabel(printed: nil, documentId: "eta_d1") == "Doc eta_d1",
+                "with nothing stored and no number in the id, the caption names the id, as before")
+        #expect(CitableDocumentNumber.captionLabel(printed: nil, documentId: "d710a-1") == "Doc d710a-1",
+                "nothing stored, so nothing says the volume prints no number")
+
+        // The Mac reader's header.
+        #expect(CitableDocumentNumber.headerLabel(printed: potsdam, documentId: "d710a-1") == "Unnumbered (d710a-1)")
+        #expect(CitableDocumentNumber.headerLabel(printed: "475", documentId: "d475") == "Document 475")
+        #expect(CitableDocumentNumber.headerLabel(printed: "151 ", documentId: "d151") == "Document 151")
+
+        // The Mac standalone window's toolbar centre.
+        #expect(MacDocumentTitle.principalLabel(volumeLabel: "Potsdam · 1945 Berlin v02", documentNumber: potsdam,
+                                                documentId: "d710a-1")
+                == "Potsdam · 1945 Berlin v02 · Unnumbered (d710a-1)")
+        #expect(MacDocumentTitle.principalLabel(volumeLabel: "Potsdam · 1945 Berlin v02", documentNumber: "710",
+                                                documentId: "d710")
+                == "Potsdam · 1945 Berlin v02 · Doc 710")
+
+        // The breadcrumb's document crumb.
+        let unnumbered = DocumentBrowserEntry(documentId: "d710a-1", volumeId: "frus1945Berlinv02",
+                                              documentNumber: potsdam, header: "Joint Chiefs of Staff Minutes")
+        #expect(BrowserViewModel.BrowserLevel.document(unnumbered).breadcrumbLabel == "Unnumbered (d710a-1)")
+        let numbered = DocumentBrowserEntry(documentId: "d710", volumeId: "frus1945Berlinv02",
+                                            documentNumber: "710", header: "Joint Chiefs of Staff Minutes")
+        #expect(BrowserViewModel.BrowserLevel.document(numbered).breadcrumbLabel == "Doc. 710")
+    }
+
+    /// The Mac-only captions — the citation popover's identity line, the Mac reader's header and the
+    /// previous/next buttons and position beneath it, and the Mac Search row — call the rules above.
+    /// The iOS test host compiles none of their files, so their source is read, each scoped to its
+    /// own view; a caption still printing the stored number, `"Doc \(…documentNumber…)"`, fails.
+    @Test("The Mac captions call the caption rules rather than printing the stored number")
+    func macCaptionsCallTheRules() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        func source(_ path: String) throws -> String {
+            try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+        }
+        let body = { (anchor: String, path: String) throws -> String in
+            try #require(CitationLookupViewWiringTests.body(after: anchor, in: try source(path)), "\(path): \(anchor)")
+        }
+
+        let popover = try source("FRUSExplorer/App/SupportingViews.swift")
+        let popoverBody = try body("struct CitationPopoverView: View", "FRUSExplorer/App/SupportingViews.swift")
+        #expect(popoverBody.contains("CitableDocumentNumber.captionLabel(printed: effectiveDocumentNumber, documentId: entry.documentId)"),
+                "\(popoverBody)")
+        #expect(!popover.contains("Text(\"Doc \\("), "SupportingViews still prints a stored number after \"Doc\"")
+
+        let header = try body("private var documentIdentityView: some View", "FRUSExplorer/App/MacDocumentView.swift")
+        #expect(header.contains("Text(CitableDocumentNumber.headerLabel(printed: docNum, documentId: entry.documentId))"),
+                "\(header)")
+        #expect(!header.contains("Document \\("), "\(header)")
+        let navigation = try body("private var volumeNavigationView: some View", "FRUSExplorer/App/MacDocumentView.swift")
+        for (number, id) in [("prev.documentNumber", "prev.documentId"), ("$0", "entry.documentId"),
+                             ("next.documentNumber", "next.documentId")] {
+            #expect(navigation.contains("CitableDocumentNumber.captionLabel(printed: \(number), documentId: \(id))"),
+                    "\(number): \(navigation)")
+        }
+        #expect(!navigation.contains("Doc \\("), "\(navigation)")
+        #expect(try source("FRUSExplorer/App/MacDocumentView.swift").contains(
+            "MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,"),
+                "the toolbar centre goes through MacDocumentTitle, whose rule is tested above")
+
+        let row = try body("private struct SearchResultRow: View", "FRUSExplorer/App/SearchSheet.swift")
+        #expect(row.contains("CitableDocumentNumber.captionLabel(printed: result.documentNumber, documentId: result.documentId)"),
+                "\(row)")
+        #expect(!row.contains("Doc \\("), "\(row)")
+    }
+
+    /// `FRUSDocumentMetadata` builds from an entry only through `init(citing:printedNumber:)`. The
+    /// initializer that passed `entry.documentNumber` to the formatter unresolved — the route
+    /// #1491 retired, left with no caller — is deleted, so a new caller cannot reach for it and
+    /// cite the bracketed `@n` again (review round 1).
+    @Test("No FRUSDocumentMetadata initializer takes an entry's stored number unresolved")
+    func noUnresolvedEntryInitializer() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Citation/CitationFormatter.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("public init(citing entry: DocumentBrowserEntry, printedNumber: String?)"),
+                "the resolving initializer is gone: the check is vacuous")
+        #expect(source.ranges(of: "entry: DocumentBrowserEntry").count == 1,
+                "CitationFormatter.swift declares another initializer from an entry")
+        #expect(!source.contains("documentNumber: entry.documentNumber"))
     }
 }

@@ -52,6 +52,8 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///   1.3 — Session 2026-08-11: #827 — the ranking's scope reaches the label and the caveats
 ///   1.4 — 2026-09-30: #1478 — the ranking's Scope sentence counts in the unit lens's own noun,
 ///          and the timeline's states its buckets as the code draws them, with no era count
+///   1.5 — PV-1 (the 2026-09-28 audit): a class ranking states the State Department's schedule
+///          where it reads it (`rankingSources`)
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -86,11 +88,13 @@ enum ArchivalAnalyticsExport {
     ///     weight, before the row cap, less a withheld umbrella (`ArchivalRanking.unitsReached`).
     ///   - bandVolumeCount: Volumes covering the era, within the scope when there is one.
     ///   - indexedVolumeCount: Volumes indexed on this device.
+    ///   - glossesWritten: Whether the table writes a class's gloss beside it — the every-unit sheet's
+    ///     CSV does, the ranking card's does not (see `rankingSources`).
     static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
                         hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
                         indexedVolumeCount: Int, noteCount: Int = 0,
                         shownValue: Int = 0, rowCapApplied: Bool = true,
-                        scopeLabel: String? = nil) -> AnalyticsProvenance {
+                        scopeLabel: String? = nil, glossesWritten: Bool = false) -> AnalyticsProvenance {
         var caveats = [weight.measuresPrintedMaterial ? baseCaveat : pointerBaseCaveat,
                        weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
@@ -155,7 +159,24 @@ enum ArchivalAnalyticsExport {
             appliesDocumentDating: false,
             valueMode: nil,
             countingUnit: weight.title,
-            extraCaveats: caveats)
+            extraCaveats: caveats,
+            sources: rankingSources(lens: lens, weight: weight, glossesWritten: glossesWritten))
+    }
+
+    /// What a ranking's figures drew on (PV-1): the volumes alone, and the State Department's schedule where the
+    /// ranking reads it.
+    ///
+    /// The usage counts behind Documents and Volumes are authority clusters read by identity, all FRUS-derived
+    /// (`BundledArtifactProvenance`'s §1a case), and so is the pointers index's named-collections axis. Two things
+    /// join the schedule: the pointers index's CLASS axis, which admits a decimal key only when it composes under the
+    /// schedule (`external-citation-index.json` is `.stateDeptSchedule`, as Source Explorer badges a class citation),
+    /// and a class's gloss, which the every-unit sheet writes beside it (`decimal-class-labels.json`,
+    /// `subject-numeric-labels.json`).
+    static func rankingSources(lens: ArchivalUnitLens, weight: ArchivalWeight,
+                               glossesWritten: Bool) -> Set<ProvenanceSource> {
+        lens == .centralFileClasses && (weight == .unprintedPointers || glossesWritten)
+            ? [.frusText, .stateDeptSchedule]
+            : [.frusText]
     }
 
     /// One collection's Cited Over Time statement (#832b).

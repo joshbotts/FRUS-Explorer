@@ -119,6 +119,9 @@ struct CitationBlockSplitterTests {
 ///   1.0 — Session 2026-08-10: #263 (F-10)
 ///   1.1 — #1474 review round 1: a lone candidate the engine does not vouch for is not resolved
 ///   1.2 — #1474 review round 2: one fixture per conjunct of the vouching guard
+///   1.3 — #1506: a lone best guess has a bucket of its own, and the summary counts it apart
+///   1.4 — #1506 review round 1: a lone volume row the engine labels a best guess, and the row a
+///          subseries no volume has gets, count as best guesses too
 @Suite("Batch citation outcome (#263)")
 struct BatchCitationOutcomeTests {
 
@@ -150,10 +153,10 @@ struct BatchCitationOutcomeTests {
         #expect(lone(.exactDocumentNumber) == .resolved)
         #expect(lone(.superimposedDocumentNumber) == .resolved)
         #expect(lone(.pageRange) == .resolved)
-        // A best guess (the commonest lone shape: the fallbacks keep one volume), a nearest-document
-        // substitution, a volume to download, and a link's volume with no document in it.
-        #expect(lone(.bestGuess(explanation: "this volume does not match the cited part 2")) == .ambiguous(count: 1))
-        #expect(lone(.fuzzyDocumentNumber(nearest: 85)) == .ambiguous(count: 1))
+        // A best guess (the commonest lone shape: the fallbacks keep one volume) counts on its own
+        // since #1506 — `loneBestGuessHasItsOwnBucket` below; a volume to download that carries every
+        // cited field, and a link's volume with no document in it, are still ambiguous.
+        #expect(lone(.bestGuess(explanation: "this volume does not match the cited part 2")) == .bestGuess)
         #expect(lone(.manifestOnly, documentId: "", requiresDownload: true) == .ambiguous(count: 1))
         #expect(lone(.manifestOnly, documentId: "") == .ambiguous(count: 1))
         // Each of the guard's two conjuncts alone, on a strategy it would otherwise vouch for
@@ -170,15 +173,85 @@ struct BatchCitationOutcomeTests {
         #expect(BatchCitationOutcome.classify(matches: many) == .ambiguous(count: 12))
     }
 
+    /// Owner decision D17 (#1506): a lone row the engine labels a best guess is counted on its own,
+    /// not as ambiguous, so the summary's word and the row's "Best guess — …" label agree. One
+    /// fixture per shape the engine gives such a row: a document from a volume the citation does
+    /// not name, or not on the cited page (`.bestGuess`); a volume row — offered for download, or
+    /// not yet indexed — whose volume fails a cited field, which keeps `.manifestOnly` and is marked
+    /// `volumeIsBestGuess`; and the `.bestGuess` row a citation whose subseries no volume has gets,
+    /// which names no document. Until review round 1 the last two were counted as ambiguous. The
+    /// controls: the same volume rows unmarked stay ambiguous, and several candidates stay
+    /// ambiguous whatever their strategy.
+    @Test("Every lone row the engine labels a best guess — a document, a volume, or no volume at all — has a bucket of its own (#1506)")
+    func loneBestGuessHasItsOwnBucket() {
+        let explanation = "this volume does not match the cited volume XX"
+        let guess = CitationMatch(documentId: "d84", volumeId: "frus1961-63v05", rank: 1,
+                                  matchStrategy: .bestGuess(explanation: explanation),
+                                  confidenceLabel: ConfidenceLabels.bestGuess(explanation))
+        #expect(BatchCitationOutcome.classify(matches: [guess]) == .bestGuess)
+        let row = BatchCitationRow(entry: .init(index: 1, marker: "1", text: "FRUS"), outcome: .bestGuess,
+                                   matches: [guess])
+        #expect(row.loneCandidateLabel == ConfidenceLabels.bestGuess(explanation),
+                "the row shows the guess's own label, which says what it does not match")
+
+        // A volume row the engine labels a best guess, offered for download and not yet indexed.
+        for (requiresDownload, awaitingIndex) in [(true, false), (false, true)] {
+            let volumeGuess = CitationMatch(documentId: "", volumeId: "frus1961-63v05", rank: 1,
+                                            matchStrategy: .manifestOnly,
+                                            confidenceLabel: ConfidenceLabels.bestGuess(explanation),
+                                            requiresDownload: requiresDownload, awaitingIndex: awaitingIndex,
+                                            volumeIsBestGuess: true)
+            #expect(volumeGuess.isBestGuess)
+            #expect(BatchCitationOutcome.classify(matches: [volumeGuess]) == .bestGuess,
+                    "download \(requiresDownload), awaiting index \(awaitingIndex)")
+            let volumeRow = BatchCitationRow(entry: .init(index: 1, marker: "1", text: "FRUS"), outcome: .bestGuess,
+                                             matches: [volumeGuess])
+            #expect(volumeRow.loneCandidateLabel == ConfidenceLabels.bestGuess(explanation))
+            // The control: the same row, carrying every cited field, is the plain volume row.
+            let plain = CitationMatch(documentId: "", volumeId: "frus1961-63v05", rank: 1,
+                                      matchStrategy: .manifestOnly,
+                                      confidenceLabel: awaitingIndex ? ConfidenceLabels.notYetIndexed
+                                                                     : ConfidenceLabels.manifestOnly,
+                                      requiresDownload: requiresDownload, awaitingIndex: awaitingIndex)
+            #expect(!plain.isBestGuess)
+            #expect(BatchCitationOutcome.classify(matches: [plain]) == .ambiguous(count: 1))
+        }
+        let noVolume = CitationMatch(documentId: "", volumeId: "", rank: 1,
+                                     matchStrategy: .bestGuess(explanation: "No volumes found for subseries '1999-00'"),
+                                     confidenceLabel: ConfidenceLabels.bestGuess("No FRUS volumes match"))
+        #expect(BatchCitationOutcome.classify(matches: [noVolume]) == .bestGuess)
+        let second = CitationMatch(documentId: "d84", volumeId: "frus1961-63v14", rank: 2,
+                                   matchStrategy: .bestGuess(explanation: explanation),
+                                   confidenceLabel: ConfidenceLabels.bestGuess(explanation))
+        #expect(BatchCitationOutcome.classify(matches: [guess, second]) == .ambiguous(count: 2))
+    }
+
     @Test("Triage order puts what needs work first")
     func triageOrder() {
         let ordered: [BatchCitationOutcome] = [
-            .failed(reason: "x"), .missing, .ambiguous(count: 2), .resolved,
+            .failed(reason: "x"), .missing, .bestGuess, .ambiguous(count: 2), .resolved,
         ]
-        #expect(ordered.map(\.triageOrder) == [0, 1, 2, 3])
+        #expect(ordered.map(\.triageOrder) == [0, 1, 2, 3, 4])
         // The whole point of the table is finding what needs attention; resolved rows sort last.
         #expect(BatchCitationOutcome.resolved.triageOrder
                 > BatchCitationOutcome.missing.triageOrder)
+    }
+
+    /// The summary names every bucket, best guesses apart (#1506), with each count grouped and the
+    /// two nouns singular at one. Before #1506 it read "1 citations · 0 resolved · 1 ambiguous · 0
+    /// unresolved" for a lone best guess, ungrouped through `String(format:)`.
+    @Test("The Batch summary counts best guesses apart, groups its counts, and says 1 citation and 1 best guess (#1506)")
+    func summaryCountsBestGuessesApart() {
+        let locale = Locale(identifier: "en_US")
+        let mixed: [BatchCitationOutcome] = [.resolved, .resolved, .ambiguous(count: 3), .bestGuess, .bestGuess,
+                                             .missing, .failed(reason: "x")]
+        #expect(BatchCitationOutcome.summary(of: mixed, locale: locale)
+                == "7 citations · 2 resolved · 1 ambiguous · 2 best guesses · 2 unresolved")
+        #expect(BatchCitationOutcome.summary(of: [.bestGuess], locale: locale)
+                == "1 citation · 0 resolved · 0 ambiguous · 1 best guess · 0 unresolved")
+        let many = Array(repeating: BatchCitationOutcome.resolved, count: 1_200)
+        #expect(BatchCitationOutcome.summary(of: many, locale: locale)
+                == "1,200 citations · 1,200 resolved · 0 ambiguous · 0 best guesses · 0 unresolved")
     }
 
     @Test("Failed is not missing")
@@ -210,10 +283,10 @@ struct BatchTriageSortTests {
             .map(\.offset)
     }
 
-    @Test("Unresolved rows come first, resolved last")
+    @Test("Unresolved rows come first, then best guesses, then ambiguous rows, resolved last")
     func worstFirst() {
-        let order = triageSorted([.resolved, .missing, .ambiguous(count: 2), .failed(reason: "x")])
-        #expect(order == [3, 1, 2, 0], "got \(order)")
+        let order = triageSorted([.resolved, .missing, .ambiguous(count: 2), .failed(reason: "x"), .bestGuess])
+        #expect(order == [3, 1, 4, 2, 0], "got \(order)")
     }
 
     @Test("Rows in the same bucket keep paste order")
