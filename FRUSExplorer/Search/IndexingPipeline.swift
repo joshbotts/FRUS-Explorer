@@ -382,6 +382,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         designation or its block of years in either wording, and a decimal number cited through
 ///         the National Archives is stored `decimal` (see the v65 note). `relatedByDecimal` reads
 ///         both forms.
+///  4.28 — 2026-10-02 (#1543, landing round 2): the collection authority's alias fallback no
+///         longer fills the neighbour list of a document that cites the central files
+///         (`aliasFallbackServes`). A query rule: nothing stored changes, so no index version.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -9718,7 +9721,10 @@ public actor IndexingPipeline {
         // returns the same OTHER documents whichever surface opened it. Fires only when
         // every direct path returned zero; the authority record resolves 100% offline
         // from the bundled index; the anchor stays excluded throughout.
+        //
+        // Never for a citation to the central files (#1543): see `aliasFallbackServes`.
         if result.totalCount == 0,
+           Self.aliasFallbackServes(parsed, note: raw),
            let record = CollectionAuthorityStore.shared?.record(forParsed: parsed, note: raw) {
             let fallback = IndexingPipeline.CollectionAliasFallback(record: record)
             let keys = Self.directKeys(for: parsed)
@@ -9746,6 +9752,43 @@ public actor IndexingPipeline {
         let scoped = Self.applyScope(result, scopeVolumeIds: scopeVolumeIds, limit: limit,
                                      ordering: .stratified)
         return (scoped.documents, scoped.totalCount, basis, cohortCount)
+    }
+
+    /// Whether the collection authority's alias fallback may fill an anchored document's empty
+    /// neighbour list (#1543, landing round 2). It may not for a citation to the State Department's
+    /// central files: a decimal file number, or a Subject-Numeric file designation or its block of
+    /// years, in any wording.
+    ///
+    /// The neighbours of such a citation are the documents in the same FILE, and the direct routes
+    /// match on it (`relatedByDecimal`, `relatedByDecimalClass`). The authority record the
+    /// citation resolves to is the filing system — "Central Files", cited by 157 volumes, or one
+    /// of its blocks of years — and the fallback matches a record's names against `series_name`
+    /// with no test of the file. So a document alone in its file listed every indexed document
+    /// whose note words the central files with a comma after the name
+    /// (`National Archives, RG 59, Central Files, 1970–73, POL 23 Oman`, stored series
+    /// `Central Files`). On a five-volume index `frus1964-68v01/d359`, the only document in
+    /// `POL 13 VIET S`, showed two documents of 1961–62 and four of 1973, and a decimal document
+    /// showed the same six under "Same decimal file".
+    ///
+    /// Measured over the corpus's 264,552 document notes with this rule and the bundled authority:
+    /// 17,543 Department-led documents resolve to the "Central Files" record, at least 998 of them
+    /// alone in their file (no other document stores the number before the slash), and 71
+    /// documents in 23 volumes store a series that record's name matches. Another 11
+    /// Department-led documents resolve to a block's record (`Central Files 1967–69`), whose name
+    /// matches every National-Archives-led document of the block.
+    ///
+    /// The test is the anchor's, not the record's. A `.centralFiles` parse is a file-number
+    /// citation by construction. `CollectionKeying.centralFilesReading(parsed:note:)` reads the
+    /// other wordings: a National-Archives-led RG 59 note, and a note parsed as the Central Foreign
+    /// Policy File that gives a Subject-Numeric designation. A note it does not read keeps the
+    /// fallback as it was: a lot file, a library collection, a named series, a record-group
+    /// series, and a library-led note the parser read as the Central Foreign Policy File from a
+    /// remark.
+    ///
+    /// `nonisolated static` so `AliasFallbackCentralFilesTests` asks the rule the query asks.
+    nonisolated static func aliasFallbackServes(_ parsed: ParsedSourceNote, note: String) -> Bool {
+        if case .centralFiles = parsed { return false }
+        return CollectionKeying.centralFilesReading(parsed: parsed, note: note) == nil
     }
 
     /// Returns archival neighbors for a **volume-level source entry** (a row in a
