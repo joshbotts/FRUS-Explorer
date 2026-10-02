@@ -10213,8 +10213,8 @@ struct NestedFootnoteDocxTests {
 /// untrimmed; six more rows (the Collections list, the Mac window's picker label, three Research rows and the document
 /// change review) used the shared key but tested the name untrimmed too; the Add to Collection picker's search and the
 /// Research rail's collection sort read the raw name. Review round 1 found the word cloud's Collection scope and Compare
-/// menus printing a fallback of their own ("Untitled", untrimmed), the unpresented `GlobalContextView` printing the raw
-/// name, the Archives Visit picker's "from the collection" line quoting it raw, and five lists that print `listName`
+/// menus printing a fallback of their own ("Untitled", untrimmed), the unpresented `GlobalContextView` (since deleted)
+/// printing the raw name, the Archives Visit picker's "from the collection" line quoting it raw, and five lists that print `listName`
 /// still sorting by the raw name. So the lower-case half of `theFallbackIsSpelledOnlyWhereACollectionIsNamed` is a
 /// control at this lane's base, not a guard; its sites half is what fails there. No test target hosts these views (the
 /// picker's own row test says why), so the rows are read from the source, call by call; what `listName` prints is
@@ -10257,12 +10257,12 @@ struct CollectionListNameTests {
         ("Research/ResearchView.swift", "case .collection(let id):\n", "name"),
         ("DocumentView/DocumentChangeReviewSheet.swift", "Text(entry.text ?? \"\")",
          "entry.collection?.name ?? \"\""),
-        // Review round 1: the word cloud's two menus, and the unpresented `GlobalContextView`'s row.
+        // Review round 1: the word cloud's two menus. (It also listed the unpresented `GlobalContextView`'s row,
+        // until lane HYG deleted that view on 2026-10-01.)
         ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.compare.collections\"",
          "collection.name"),
         ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.scope.collection\"",
          "collection.name"),
-        ("ProjectContext/GlobalContextView.swift", "private struct CollectionRowView: View {", "collection.name"),
     ]
 
     @Test("Each row that prints a collection's name prints it through listName", arguments: rows.indices)

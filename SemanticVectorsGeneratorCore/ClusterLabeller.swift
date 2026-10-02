@@ -61,6 +61,8 @@ import WordCloudKit
 ///   1.0 — V-4: initial implementation
 ///   1.1 — #1373 review round 3: `requireLanguageAnalysis(_:)`, the refusal to label without a
 ///          lemmatiser, which `SemanticMapPacker.pack` makes before it reads anything
+///   1.2 — #1439 review, round 1: the refusal's message says nothing was written and how to pack
+///          the vectors alone, as `SemanticMapPacker.PackError.storeCountMismatch`'s does
 public enum ClusterLabeller {
 
     /// How many terms a cluster's label carries.
@@ -245,10 +247,16 @@ public enum ClusterLabeller {
                 return "Stopword payload empty or unreadable at \(path) — every cluster would be "
                     + "named after the same function words"
             case .languageAnalysisUnavailable(let health):
+                // The run makes this refusal before its first write (#1439), so the message says
+                // so: until the review of #1439 it read "refusing to write the map. The vector
+                // artifacts do not read the tagger", which described the state #1439 removed —
+                // new vectors on disk beside the previous map.
                 return "NLTagger failed its canary in this process (lemmas: \(health.lemmatizes)). "
                     + "Labelling now would name every cluster in printed forms rather than the "
-                    + "dictionary forms every cloud counts in; refusing to write the map. The vector "
-                    + "artifacts do not read the tagger. Re-run in a new process."
+                    + "dictionary forms every cloud counts in, so the run refused before its first "
+                    + "write. Nothing was written: neither the vector artifacts nor the map. Re-run "
+                    + "in a new process, or point LAYOUT_DIR at a directory with no layout.bin to "
+                    + "pack the vectors alone, which do not read the tagger."
             }
         }
     }

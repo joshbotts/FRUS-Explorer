@@ -123,6 +123,9 @@ import SwiftData
 ///   2.18 — #1363 review round 1: a collection's expanded lists join the per-level memory, and
 ///          `CorpusView`'s search is the view model's `rootSearch`, so the list pane dropped beside
 ///          a document, or rebuilt across the gate, comes back holding it
+///   2.19 — lane HYG (2026-10-01): `splitLayout` and the `SubseriesListView` / `SubseriesRowView`
+///          it alone drew are deleted. Nothing had called them since 2.4 kept them "for easy
+///          revert"; F-2's `twoPaneLayout` is the iPad layout that revert would have restored
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -197,8 +200,8 @@ struct BrowserView: View {
                 // the shape Apple documents for `.sidebarAdaptable`: the tab sidebar remains the
                 // persistent rail and the subseries list is the stack root (`CorpusView`).
                 //
-                // `splitLayout` / `SubseriesListView` are retained (currently unreferenced) so
-                // this change can be reverted by restoring the `sizeClass == .regular` branch.
+                // The `NavigationSplitView` layout this replaced (`splitLayout`, with its
+                // `SubseriesListView`) was kept unreferenced for a revert until lane HYG deleted it.
                 // See Planning/Completed/Issues-233-243-Plan.md Session 1 and Planning/Completed/BigPicture-iPadMacParity.md.
                 //
                 // **F-2**: where there is genuinely room, that stack becomes the DETAIL half of a
@@ -589,50 +592,7 @@ struct BrowserView: View {
     }
     #endif
 
-    // MARK: - Layout Variants
-
-    /// The iPad/regular-width two-column layout.
-    ///
-    /// **Currently unreferenced (#238 Fix B):** `body` routes every size class through
-    /// `stackLayout` because nesting this `NavigationSplitView` inside the `.sidebarAdaptable`
-    /// TabView overlaid content in the collapsed top-tab-bar representation. It is kept intact
-    /// so the change is a one-line revert (restore the `sizeClass == .regular` branch in `body`).
-    @ViewBuilder
-    private func splitLayout(vm: BrowserViewModel) -> some View {
-        NavigationSplitView {
-            SubseriesListView(vm: vm)
-                .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
-                .toolbar {
-                    // iPad split layout: Search and Citation Lookup are persistent
-                    // tabs, so only the project picker and download filter appear here.
-                    ToolbarItem(placement: .primaryAction) {
-                        ProjectPickerMenu {
-                            appState.openTab(.research, from: sceneID)
-                        }
-                    }
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            appState.filterDownloadedOnly.toggle()
-                        } label: {
-                            // R-8: named `Label`, not a bare `Image` — the iPadOS toolbar
-                            // overflow re-derives the row's name from this closure.
-                            Label(downloadFilterName, systemImage: downloadFilterSymbol)
-                        }
-                        .accessibilityLabel(downloadFilterName)
-                        .help(downloadFilterHelp)
-                    }
-                    analyticsToolbarItems
-                }
-        } detail: {
-            if let last = vm.navigationPath.last {
-                levelView(for: last, vm: vm)
-            } else {
-                CorpusView(vm: vm)
-            }
-        }
-    }
-
-    // MARK: - Two-pane (F-2)
+    // MARK: - Layout Variants: two-pane (F-2)
 
     /// Whether this container is wide enough for two panes.
     ///
@@ -1016,8 +976,8 @@ struct BrowserView: View {
     /// `DocumentView.swift:445-455`. `CompilationView` never got it, which is #1301: on iPad,
     /// stepping compilation → chapter → subchapter left the reader on "Loading documents…" for
     /// ever, with a tab round-trip as the only escape. #253 ("some volumes get stuck", closed
-    /// not-planned after a re-index) is the same report on the build where `splitLayout` rendered
-    /// the path in place, and both volumes it named are this shape.
+    /// not-planned after a re-index) is the same report on the build where the since-deleted
+    /// `splitLayout` rendered the path in place, and both volumes it named are this shape.
     ///
     /// `CompilationView`'s two front-matter subviews (`VolumeSourcesView`,
     /// `FrontMatterPersonsView`) keep bare tasks deliberately: they are not levels, they load per
@@ -1353,56 +1313,6 @@ struct BrowserView: View {
         #if DEBUG
         print("[BrowserView] BrowserViewModel created.")
         #endif
-    }
-}
-
-// MARK: - SubseriesListView (shared sidebar / root list)
-
-/// The subseries list used as the sidebar content in split layouts and as the root
-/// in stack layouts (via `CorpusView`).
-private struct SubseriesListView: View {
-    let vm: BrowserViewModel
-
-    var body: some View {
-        List(vm.allSubseriesGroups) { group in
-            Button {
-                vm.navigationPath = [.subseries(group)]
-            } label: {
-                SubseriesRowView(group: group)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(
-                "Subseries \(group.subseries), ^[\(group.totalVolumes) volume](inflect: true)"
-            )
-        }
-        .listStyle(.insetGrouped)
-    }
-}
-
-// MARK: - SubseriesRowView
-
-private struct SubseriesRowView: View {
-    let group: SubseriesGroup
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(group.subseries)
-                .font(.headline)
-            // Inflected: the browse screenshot in the UI review shows "1989–92 · 1 volumes"
-            // (F-23). The automatic-grammar form fixes singular and plural in every locale that
-            // supports it rather than hand-branching English.
-            Text("^[\(group.totalVolumes) volume](inflect: true)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 2)
-        // #312 follow-up: full-row tap target. BOTH modifiers, in this order — the frame widens
-        // this VStack (whose intrinsic width is only its longest line) to the row, and
-        // contentShape makes the widened area hit-testable, since the enclosing
-        // `.buttonStyle(.plain)` Button hit-tests only opaque content. See `CorpusView` for the
-        // A/B measurement behind "both, in this order".
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
     }
 }
 

@@ -279,7 +279,7 @@ enum ArchiveVisitDerivation {
             researchQuestion: nil,
             dataSource: dataSource)
         // The plan's persistent inquiry text is the edited topic sentence — the same slot the
-        // ephemeral sheet writes, so the exporter's forExport rule needs no second reader.
+        // packet sheet's field writes, so the exporter's forExport rule needs no second reader.
         if let inquiryText = plan.inquiryText,
            !inquiryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             model.topicSentence.edited = inquiryText

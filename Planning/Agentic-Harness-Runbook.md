@@ -152,6 +152,13 @@ shell form at all**, which is what invited the invention — and that gap is now
 its first query on a broken command. Both arms carried it equally, so those comparisons stand — but
 `Planning/c0b-falsifier/workflow.mjs` is the corrected template to copy from.
 
+**Marked 2026-10-01.** Both files now open with a `BROKEN INVOCATION` banner, after `meta` and before
+their prompts, that says the flag does not exist, gives the two forms that work, and points at the
+c0b template. The eight prompts in each are unchanged: they are the record of what was measured,
+and rewriting them would change it. `CodingStandardsAuditTests.brokenSqliteInvocationsAreMarked`
+fails if a `workflow.mjs` under `Planning/` prints `… ?mode=ro" -uri` in a prompt without that banner,
+so a copy of either file made without reading it cannot land unmarked.
+
 ## 6. Quota and burst limits
 
 **[FROM THE RUN]** 45 of round 1's 141 sessions died without output — session quota twice, HTTP 429

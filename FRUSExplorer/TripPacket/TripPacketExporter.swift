@@ -113,13 +113,13 @@ struct TripPacketExporter {
     /// The value is a `ResearchFacility.chapterHeading`.
     var facilityScope: String? = nil
     /// The per-plan deliverable toggles (§3b) — (a)/(b)/(c) on by default, the citation
-    /// appendix off. An ephemeral packet renders with the defaults; a plan's stored toggles
+    /// appendix off. A caller that sets none renders with the defaults; a plan's stored toggles
     /// travel with it, so the same plan renders the same artifact on every device.
     var deliverables: ArchiveVisitDeliverables = ArchiveVisitDeliverables()
     /// A plan's stored per-target state, joined at render time (Archive Visits Phase 3):
     /// exclusions filter the rendered targets, tier assignments group and order them within
     /// each repository (Unprioritized last), notes ride the rows, and the stored-row
-    /// accounting feeds the coverage report. `nil` for an ephemeral packet.
+    /// accounting feeds the coverage report. `nil` excludes nothing and adds no tier or note.
     var overlay: ArchiveVisitOverlay? = nil
     /// When the export was generated, for the header's snapshot caveat. Optional so tests
     /// stay deterministic without injecting a calendar.
@@ -1178,7 +1178,7 @@ struct TripPacketExporter {
     ///
     /// - Parameters:
     ///   - model: The built packet.
-    ///   - overlay: The plan's stored state, `nil` for an ephemeral packet.
+    ///   - overlay: The plan's stored state; `nil` excludes nothing.
     /// - Returns: The repository headings, in section order.
     static func offeredRepositories(model: TripPacketModel,
                                     overlay: ArchiveVisitOverlay?) -> [String] {
@@ -1198,7 +1198,7 @@ struct TripPacketExporter {
     /// - Parameters:
     ///   - model: The built packet.
     ///   - projectName: The plan's name.
-    ///   - overlay: The plan's stored state, `nil` for an ephemeral packet.
+    ///   - overlay: The plan's stored state; `nil` excludes nothing.
     ///   - repository: The repository heading whose draft to copy.
     /// - Returns: The draft text.
     static func copiedInquiryDraft(model: TripPacketModel, projectName: String,

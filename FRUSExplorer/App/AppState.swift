@@ -1522,7 +1522,7 @@ final class AppState {
     var pendingCollectionSelectionScene: Handoff<UUID>? = nil
     #endif
 
-    /// Bumped when the user asks to **type a new query** — ⌘S (Find ▸ Search…) or the main
+    /// Bumped when the user asks to **type a new query** — ⌥⌘F (Find ▸ Search…) or the main
     /// window's titlebar Search button (#749 / audit L-35).
     ///
     /// The macOS Search window is a singleton, so re-summoning it runs no code inside it and
