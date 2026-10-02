@@ -48,8 +48,10 @@ def plain(raw):
     """The text of a byte fragment as the file reads it, whitespace collapsed.
 
     A footnote and an inline tag leave nothing behind, so `D<hi>epartment</hi>` reads "Department" and
-    `State,<gloss>NEA</gloss>` reads "State,NEA": a quote built from this holds no space the file
-    lacks. Any other tag reads as a space.
+    `State,<gloss>NEA</gloss>` reads "State,NEA": a quote built from this holds no space at an inline
+    tag that the file lacks. Any other tag reads as a space, whether or not the file has whitespace
+    there: `State</hi>,<lb/><hi>Washington` reads "State, Washington". So a quote is the file's text
+    with its whitespace collapsed, less any footnote, plus one space at each such tag.
     """
     text = _TAG.sub(b' ', _INLINE_TAG.sub(b'', _NOTE.sub(b'', raw))).decode('utf-8', 'replace')
     return re.sub(r'\s+', ' ', text).strip()

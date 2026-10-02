@@ -17,8 +17,10 @@ and printing "NOT WRITTEN", when an adjudicated row no longer holds, when a scan
 the regenerated broken-reference CSV and the corpus disagree, when CORPUS_COMMIT is missing, and
 when its arguments are anything but none or `--check FILE`.
 
-Every quotation in the CSVs is the file's own text: ohlib.plain() adds no space where an inline tag
-stands, so a quotation can be compared with the file character for character.
+Every quotation in the CSVs is the file's own text as ohlib.plain() reads it: runs of whitespace are
+one space, a footnote inside it is left out, and no space is added where an inline tag stands. A space
+IS added at any other tag, so `State</hi>,<lb/><hi>Washington` is quoted "State, Washington" where
+the file has no whitespace: a quotation matches the file character for character except there.
 
     CORPUS_COMMIT   required: the corpus revision every line number is relative to
     VOLUMES_DIR     the corpus' volumes/ directory (default ~/Development/frus/volumes)
@@ -1404,12 +1406,18 @@ def headers(counts, rows):
 # ---------------------------------------------------------------------------------------------
 
 def figure_sentences(n):
-    """Every sentence of Part A that states a figure of the run, as the run would write it."""
+    """Every sentence of Part A that states a figure of the run, as the run would write it.
+
+    A sentence is found anywhere in Part A, so one that is only a number and a common word ("744
+    files") can be satisfied by another passage that happens to say the same. Each therefore carries
+    enough of its own passage to stand in one place; a figure the report states twice (the summary
+    table and the section) is still pinned once, by whichever copy matches.
+    """
     x, p, s, d, t = n['crossReferences'], n['pagination']['byClass'], n['structure'], n['dates'], n['transcription']
     g, tc, cause = n['gap'], t['byClass'], x['byCause']
     first_missing, last_missing = int(g['lastDocument'][1:]) + 1, int(g['part2FirstDocument'][1:]) - 1
     return [
-        '%d files' % n['filesRead'],
+        'all %d files in `volumes/`' % n['filesRead'],
         'Documents %d–%d' % (first_missing, last_missing),
         'The last %d documents' % (last_missing - first_missing + 1),
         '%d of the %d broken references' % (x['gapRows'], x['generatorRows']),
@@ -1422,7 +1430,7 @@ def figure_sentences(n):
         '%d rows in %d volumes' % (n['pagination']['rows'], n['pagination']['volumes']),
         '%d pairs in %d volumes' % (p['reversed-pair']['rows'], p['reversed-pair']['volumes']),
         'In %d the two divisions are adjacent' % n['pagination']['reversedPairsAdjacent'],
-        'In the other %d' % n['pagination']['reversedPairsWithADivisionBetween'],
+        'In the other %d a third division' % n['pagination']['reversedPairsWithADivisionBetween'],
         'an editorial note in all %d' % n['pagination']['reversedPairsSecondIsEditorialNote'],
         'both are editorial notes in %d' % n['pagination']['reversedPairsBothEditorialNotes'],
         'the only gap among the %d' % n['parts']['continuousPairs'],
@@ -1433,7 +1441,7 @@ def figure_sentences(n):
         '`cross-references.csv` has %d rows' % (x['defects'] + x['notDefects']),
         '%d references to %d index ids' % (x['indexIdRows'], x['indexIdDistinctTargets']),
         '%d rows are defects' % x['defects'],
-        '%d are not defects' % x['notDefects'],
+        'and %d are not defects. The %d point into' % (x['notDefects'], x['notDefects']),
         'The wrong volume | %d |' % cause['wrong-volume'],
         'A mistyped page number | %d |' % cause['page-number-typo'],
         'names the likely page for %d' % x['pageNumberTyposWithALikelyPage'],
@@ -1443,7 +1451,7 @@ def figure_sentences(n):
         '%d documents in %d volumes' % (d['byClass']['year-contradicts-text']['rows'],
                                         d['byClass']['year-contradicts-text']['volumes']),
         '%d of them are in frus1891' % d['yearContradictsTextInFrus1891'],
-        '%d more documents' % d['byClass']['year-contradicts-file-number']['rows'],
+        'contradicts its own file number — %d more documents' % d['byClass']['year-contradicts-file-number']['rows'],
         'In %d of them the text and the attribute agree' % d['fileNumberRowsPrintingTheEncodedYear'],
         'In %d the dateline prints no year' % d['fileNumberRowsPrintingNoYear'],
         '%d document and %d divisions' % (d['invertedDocuments'], d['invertedDivisions']),

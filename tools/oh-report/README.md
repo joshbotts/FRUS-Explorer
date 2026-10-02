@@ -47,8 +47,10 @@ Two kinds of class, and the script says which is which:
 
 The run **writes nothing, prints `NOT WRITTEN` and exits 1** when a re-check fails, when `CORPUS_COMMIT` is
 missing, when its arguments are anything but none or `--check FILE` (the flag alone, the file before the
-flag, a file that does not exist: each is refused before the corpus is read), or, with `--check`, when the
-report does not carry a figure sentence this run produced.
+flag, a file that does not exist: each is refused before the corpus is read), when the corpus holds no
+volume or lacks one of the four the report makes a statement about by name (`NAMED`: a scan asserts each
+such statement only where it reads that file), or, with `--check`, when the report does not carry a figure
+sentence this run produced.
 
 The **figure sentences** are how the report's numbers are tied to the corpus: 53 of them, printed at the end
 of every run (`figure_sentences`). `--check` looks for each one:
@@ -62,11 +64,24 @@ of every run (`figure_sentences`). `--check` looks for each one:
 
 A figure in Part A that no sentence states is not checked. The sentences cover every class's total and
 each count in section 6; the per-volume examples (for instance "`frus1875v02` has 11") are not among them.
+A sentence is looked for anywhere in Part A, and one occurrence is enough: each carries enough of its own
+passage to stand in one place ("all 744 files in `volumes/`", not "744 files"), but a figure the report
+states twice (the summary table and its section) is pinned once, by whichever copy matches.
 
-Every quotation in the CSVs is the file's own text. `ohlib.plain()` puts nothing where an inline tag stands
-(`<hi>`, `<gloss>`, `<persName>` and the like) and a space where any other tag does, so
-`D<hi rend="smallcaps">epartment of</hi> S<hi rend="smallcaps">tate</hi>` is quoted, and read by the
-rules, as "Department of State".
+Every quotation in the CSVs is the file's text as `ohlib.plain()` reads it:
+
+- a run of whitespace (a line wrap and its indentation) is one space, and a footnote inside the text is
+  left out;
+- nothing stands where an inline tag does (`<hi>`, `<gloss>`, `<persName>` and the like), so
+  `D<hi rend="smallcaps">epartment of</hi> S<hi rend="smallcaps">tate</hi>` is quoted, and read by the
+  rules, as "Department of State";
+- a space stands where any other tag does, whether or not the file has whitespace there. So
+  `State</hi>,<lb/><hi …>Washington` is quoted "State, Washington". This is the one place a quotation
+  holds a character the file lacks. At `550a8c5c5` it is 19 of `transcription.csv`'s 169 quotations, all of
+  them section 6.5's datelines at an `<lb/>`. Every other quotation there, and every one in the other
+  quotation columns (`dates.csv` `printed`, `cross-references.csv` `printed_reference`, both headings of
+  `sources-lists.csv`, `missing-documents.csv` `heading`), matches its file with the tags stripped to nothing
+  and whitespace collapsed. That was measured in review round 2 by a scratch script, not by this tool.
 
 The broken cross-references come from `CrossRefValidationGenerator`'s CSV. The script checks each of its rows
 at its byte offset, then runs its own scan of every `<ref target>` by the same resolution rule
@@ -82,7 +97,7 @@ which the generator tallies and does not list; anything else it finds beyond the
 | `ohlib.py` | Byte-scan readers: the div tree, page breaks, ids; the simulated repair (`move_close_tags`, `retype_div`) |
 | `build_oh_report.py` | The classes, the adjudicated tables, the CSVs, `counts.json`, `--check` |
 | `check_urls.sh`, `urls.txt` | The public-site checks, with their controls |
-| `selftest.py` | The readers, the simulated repair, `--check`, and the pagination, part, date, transcription and Sources-list rules, over synthetic volumes in a temporary directory: a fixture for each rule and a control (one step outside the rule, which must give no row) for each condition that narrows it. The cross-reference scan, the header scan, the missing-documents check and the structure rows are checked only against the corpus |
+| `selftest.py` | The readers, the simulated repair, `--check`, `main()`'s three refusals that need no corpus, and the pagination, part, date, transcription and Sources-list rules, over synthetic volumes in a temporary directory: a fixture for each rule, and controls (one step outside the rule, which must give no row) for the conditions that narrow it. The controls are the ones a mutant has asked for (two reviews' and a sweep's, listed in the session's `DEVELOPMENT-PLAN.md` entry); a condition nobody has mutated may have none. The cross-reference scan, the header scan, the missing-documents check and the structure rows are checked only against the corpus |
 
 ## When the corpus moves
 
