@@ -23,7 +23,7 @@ the tree at `v2` `dc17d945`.
 
 **Already carried by the plan of record** (`Planning/Plan-Of-Record-2026-09-28.md` §4, "Designed
 but unbuilt (recommend parking)"), so nothing more is owed here:
-- **F-22** — a reader that follows the system text size (`HTMLTemplate.swift:110` still pins
+- **F-22** — a reader that follows the system text size (`HTMLTemplate.swift:170` still pins
   `-webkit-text-size-adjust: none`).
 - **P-6** — an iPhone rail peek strip. **P-10** — an immersive Read mode.
 - **O-1, O-2** — links between the map and Search and Related. **O-3** — a region-share chart.
@@ -38,7 +38,7 @@ but unbuilt (recommend parking)"), so nothing more is owed here:
 - **F-8** — drag and drop. The app has no `.draggable`, `.dropDestination`, `.onDrop`, `.onDrag`
   or `Transferable` site; the pass was deferred at CW-6 and not picked up again.
 - **F-16** — the reader shows a document's title twice, in the navigation bar and as the
-  `h2.doc-heading` at the top of the text (`FRUSRenderNodeHTMLSerializer.swift:622`). It conflicts
+  `h2.doc-heading` at the top of the text (`FRUSRenderNodeHTMLSerializer.swift:648`). It conflicts
   with #888's deliberate wrapped title, so it is a decision before it is a fix.
 - **PR-6** — the phone-identity work: "works best on iPad or Mac" copy on the surfaces that do not
   fit a phone, and Handoff from the analytics and graph surfaces (`.userActivity` exists only on
@@ -204,7 +204,7 @@ sharpest surface. What remains:
   ~~**Cross-Reference Analytics was not covered by that decision and remains a sheet**~~ — it has no
   mode enum of its own, so option 2 has nothing to key on there and only option 1 applies. **Option 1
   shipped in #917 (CW-9e)**: `CrossReferenceAnalyticsRequest` is the empty marker, and the surface
-  is a window on iPad (`FRUSExplorerApp.swift:1633`).
+  is a window on iPad (`FRUSExplorerApp.swift:1637`).
 - ~~**M-2, rescoped by measurement.**~~ COMPLETE (graph #920, Source Explorer W-2b). The word
   cloud stayed out (app-level, not per-document). W-2b's conversion follows the graph's shape —
   `WindowGroup(id:for:)`, nil request = the #363 tri-mode cold default, the rail opens by value —

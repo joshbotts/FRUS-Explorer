@@ -2740,12 +2740,13 @@ SEMANTIC VECTORS
   shipped and `42`/`74` absent, where the file has carried three schedules since #1250, and their
   287 / 252 / 263 countries and `countryAlternates` since #1256. The row now says to choose
   the schedule by the document's date and what the two later schedules do not carry. **A row is
-  added for `subject-numeric-labels.json`** (#1251), which the guide had never named. (These are
-  the PRs the work merged in. The generators' doc comments and `CLAUDE.md` call the same work
-  #1210, #1211 and #1257, which on GitHub are three other PRs.) The prose
+  added for `subject-numeric-labels.json`** (#1251), which the guide had never named. (#1250,
+  #1251 and #1256 are the PRs the work merged in. The generators' doc comments and `CLAUDE.md`
+  call the same work #1210, #1211 and #1257, which on GitHub are three other PRs.) The prose
   those changes made false is corrected with the table: §4.4's "the only gloss in the stack" for
   1950–63 keys (true now of a key's subject only), §14.11's sentence that the projection drops the
-  coverage dates and the records-center transfer numbers (both ship, #1202 and #1203), the range
+  coverage dates and the records-center transfer numbers (both ship: issues #1202 and #1203,
+  merged as PRs #1229 and #1230), the range
   of the bundle's stamps, and "11 of 695 bundled series" (698). **§12's block is deliberately untouched**: it is the measured instrument (C-0d), and
   what it says about these files is incomplete or a count behind rather than wrong in kind — it
   does not say to choose the decimal schedule by `scheduleId`, it calls the `series-facts` span

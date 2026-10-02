@@ -128,7 +128,8 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     sibling now names it under `Completed/` (the marketing plan, the agentic-loop plan, the
     guide-revisions record, the vector design, the OS-27 sketch and the W-15 assessment), and so
     does `Plan-Of-Record-2026-08-23.md`'s status line here. The live plan of record names them
-    bare in its P5 decision and its §4a, both of which say they are archived. Dated records were
+    bare in its Status line, its P5 decision and its §4a: the Status line and §4a say they are
+    archived, and P5 says only that the 2026-09-06 plan is SUPERSEDED. Dated records were
     left as written, with the path they had on their day: the #234 feasibility assessment (two
     sites) and its generator script, which name `Planning/Plan-Of-Record-2026-09-06.md` and
     `-08-28.md`; `DEVELOPMENT-PLAN.md`'s earlier entries; and five sites inside four archived

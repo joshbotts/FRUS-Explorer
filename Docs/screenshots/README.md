@@ -101,7 +101,8 @@ capture on the current build:
 
 ### Not re-checked after the build-49 wave (2026-10-01)
 
-The wave's thirteen merged lanes changed what several captured surfaces draw, and **no capture was retaken
+The wave's fifteen merged lanes (thirteen when this list was written; HYG and READ landed on
+2026-10-02, and the last bullet is theirs) changed what several captured surfaces draw, and **no capture was retaken
 or compared against the new build**. This list is drawn from what each lane changed, not from
 looking at the app, so treat every line but the first as a candidate:
 
@@ -123,6 +124,11 @@ looking at the app, so treat every line but the first as a candidate:
   selection in the iPad reader: lanes STOR, SYNC, LANG, CITE and SEL changed those screens. No
   capture named for one of them is embedded in either manual today; a future one should be taken
   on build 49 or later.
+- Added 2026-10-02, from what lanes READ and HYG changed: a document that prints a figure now
+  draws its image where it printed the file's name, and the **Storage used** bar gains a
+  **Figures** segment once an image is on the device (#1516); the Mac main window's empty state
+  names ⌥⌘F under "Select a document to begin", and its Search tooltip does too. No capture was
+  opened to see whether it shows one of these.
 
 Three `[SCREENSHOT` placeholders remain: `../iOS-User-Manual.md` has two (the Search Tips sheet;
 the zero-result "Search by meaning" offer) and `../macOS-User-Manual.md` one (above).

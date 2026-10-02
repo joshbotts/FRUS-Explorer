@@ -4,7 +4,7 @@
 
 **Scope.** 49 issues are open. #234 is deferred indefinitely, and #1309 is used only to hold the report to the Office of the Historian. This plan covers the other **47**.
 
-**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01; §0a says where the wave stands and what remains.**
+**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG and READ of Tier 3 on 2026-10-02; §0a says where the wave stands and what remains.**
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14. (This is the Visual-Marketing-Plan §7 steps that are done, carried unchanged from the 2026-09-06 plan and checked by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`.)
 
@@ -134,11 +134,11 @@ The owner's answers, as they bind the lanes. §3 and §3a keep the original opti
 
 The release (build 49, one re-index) follows the tiers the owner chooses to land. The staged launch files are listed in the plan's session entry in `Planning/DEVELOPMENT-PLAN.md`.
 
-## 0a. Where the wave stands — 2026-10-01
+## 0a. Where the wave stands — 2026-10-02
 
-Recorded by lane PLAN against `v2` @ `dc17d945`. It changes nothing in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** and the rollup at **v10**.
+Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v2` @ `1d6fc032` when the lane landed on 2026-10-02, after HYG and READ had merged. It changes nothing in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** and the rollup at **v10**.
 
-**Landed: WB, all of Tier 1 and all of Tier 2** (thirteen lanes, merged 2026-10-01 in this order).
+**Landed: WB, all of Tier 1, all of Tier 2, and HYG and READ of Tier 3** (fifteen lanes, in this order: the first thirteen merged on 2026-10-01, HYG and READ on 2026-10-02).
 
 | Lane | PR | Issues closed | Notes |
 |---|---|---|---|
@@ -155,29 +155,49 @@ Recorded by lane PLAN against `v2` @ `dc17d945`. It changes nothing in §0. The 
 | SEL | #1555 | #1540 | Option (a). |
 | CITE | #1556 | #1504, #1506, #1523, #1524, #1491 | |
 | XREF | #1557 | #1472, #1473 | The ◦ fold-in. |
+| HYG | #1558 | #1412, #1439, #1423, #1450, #1484 | All five ◦ fold-ins. Adds a gate for a view nothing constructs (`UnconstructedViewAuditTests`), and #1412's known-failure exemption is dropped: the unit target runs with none. |
+| READ | #1559 | #1516 | D3 option (f)4, and the ◦ fold-in. The index stays at **v64**: no stored text moved. D3's sub-choices (a)–(d) shipped as §0 recommends and wait on the owner's confirmation (below). |
 
-**Count.** The plan covers 50 issues: the 47 of §1 and #1538, #1539 and #1540. **44 are closed**: the 43 in the table and #1430 (D14). **Six are open**, all Tier 3: #1516 (READ) and #1412, #1423, #1439, #1450 and #1484 (HYG).
+**Count.** The plan covers 50 issues: the 47 of §1 and #1538, #1539 and #1540. **All 50 are closed**: the 49 in the table and #1430 (D14), each read with `gh issue view` on 2026-10-02. **Six issues are open in the repository**, and none is one of the 50: #234 (deferred), #1309 (it holds the OH report) and the four under "Not placed" below, #1535, #1536, #1543 and #1545.
 
 **What remains, in order.**
-1. **READ** — #1516, as D3 settles it (figure images downloaded with their volume), with its ◦ fold-in.
-2. **HYG** — the five issues above and its ◦ fold-ins.
-3. **PLAN** — this lane: the planning housekeeping of P3 (b). Its session entry in `Planning/DEVELOPMENT-PLAN.md` lists what it archived and corrected.
-4. **OH** — the #1309 report (§5), one post (P4). The lanes added items for it: PAGE's five page-id defects (its notes are in the session's durable folder) and NOTE's two volumes that nest a library's sources inside another holder's list.
-5. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which now holds a section for each landed lane and one for PLAN, with an index at its head.
-6. **DOCS-2** — the iOS manual: the whole re-read, parity with the Mac manual, and the owner's Mac edits.
-7. **Optional tail, LANG-D** — only if LANG's release log shows the lemma verdict still failing on foreground launches (§0, Lane order 5).
+1. **PLAN** — this lane's PR: the planning housekeeping of P3 (b). Its session entry in `Planning/DEVELOPMENT-PLAN.md` lists what it archived and corrected.
+2. **OH** — the #1309 report (§5), one post (P4). The lanes added items for it: PAGE's five page-id defects (its notes are in the session's durable folder) and NOTE's two volumes that nest a library's sources inside another holder's list.
+3. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which holds sixteen sections — one for each of the fifteen landed lanes and one for PLAN — with an index at its head.
+4. **DOCS-2**, after the same hand-back — the iOS manual: the whole re-read, parity with the Mac manual, and the owner's Mac edits.
+5. **Optional tail, LANG-D** — only if LANG's release log shows the lemma verdict still failing on foreground launches (§0, Lane order 5).
+6. **The release steps** — the next paragraph.
 
 **The release (build 49, one re-index, v62 → v64).** §2's list stands. The wave added to it:
 - **The CloudKit schema gate (SYNC).** Every archive now runs a "Check CloudKit schema" phase, and it fails until `Scripts/check_cloudkit_schema.py` has read Production's schema on this Mac. That needs a CloudKit management token (`xcrun cktool save-token --type management`), and none was saved when SYNC landed. Nothing awaits deploy: `identifiersAwaitingDeploy` is empty.
 - **SYNC's device check.** The Development-device A/B with an unpublished field, and the Mac and iPhone system logs, were not run.
 - **LANG's release log**, on the owner's devices. It decides whether LANG-D is needed.
-- **The owner's by-eye checks**, listed under "Still open" in each lane's entry in `Planning/DEVELOPMENT-PLAN.md`: the Mac's research-database export from a sandboxed build (STOR); the Archival network on the Mac and an iPhone (ARCH); Cross-Reference Analytics at 720 and 820 pt on the Mac (XREF); Batch and the side-load notice (CITE); one Word export holding `frus1951v01` d2 (EXPORT); the Mac Collections window's list in MACCOL's entry ("Owner's Mac checks"); VoiceOver on the iOS edit menu (SEL); and the Settings row for language analysis (LANG). No entry records the Mac app being run by eye: GRAPH's Mac half rests on an in-process replay and MACCOL's on a harness.
+- **The owner's by-eye checks**, listed under "Still open" in each lane's entry in `Planning/DEVELOPMENT-PLAN.md`: the Mac's research-database export from a sandboxed build (STOR); the Archival network on the Mac and an iPhone (ARCH); Cross-Reference Analytics at 720 and 820 pt on the Mac (XREF); Batch and the side-load notice (CITE); one Word export holding `frus1951v01` d2 (EXPORT); the Mac Collections window's list in MACCOL's entry ("Owner's Mac checks"); VoiceOver on the iOS edit menu (SEL); the Settings row for language analysis (LANG); the Mac's Search tooltip and the hint under "Select a document to begin" (HYG); and figures in the Mac's reader and storage bar, with one Word export opened in Word itself (READ). No entry records the Mac app being run by eye: GRAPH's Mac half rests on an in-process replay and MACCOL's on a harness, and HYG and READ built the Mac app without running it.
+- **READ's owner decisions** (PR #1559, "Owner items"). Four bear on the release: D3's sub-choices, which §0 left to that PR's review; whether the pass that fetches figure images for volumes already on a device stays automatic (a full library downloaded before build 49 fetches up to 141 MB at its first launch); whether the App Store Connect privacy label changes, now that the app asks `static.history.state.gov` unasked; and onboarding's "≈ 3.5 GB", which is 141 MB short of a full download with images.
 - **The earlier Mac check's five steps**, still owed since 2026-09-25 (`Planning/Completed/Mac-Check-2026-09-25.md`): hover, a trackpad swipe, dark appearance, and one judgement.
 
 **Not placed.** Open issues and defects that no lane holds. None is designed here.
 - **#1535** — Browse cannot open a prose-only chapter, subchapter or compilation. **#1536** — text printed at a container's own level is discarded. Both are D1's side gaps. §0 puts them in scope "only if P1 allows", and the owner has not added them.
 - **#1543** — treat the Subject-Numeric file as its own filing era, apart from the Central Foreign Policy File, in archival analytics and Source Explorer. Filed by the owner during the wave (2026-09-30).
 - **#1545** — Semantic Match Feedback has a way to share its file and no destination. An owner decision; filed from WB's close-out.
+- **Found by the Tier 3 lanes and not filed.** Each is described under "Filed rather than fixed here" in the PR named:
+  - **PR #1558 (HYG):** `RichTextRestingCapTests` crashes the test host on an iPad Pro 13-inch (M5) on iOS 27.0, so an iPad host there cannot finish the unit target.
+  - **PR #1558:** two views nothing constructs, `FilterChip` and `CrossProjectNoteIndicator`.
+  - **PR #1558:** **Add to Archives Visit…** on a smart collection whose search cannot run yet does nothing and says nothing.
+  - **PR #1558:** code only tests call (`TripPacketBuilder.build(documents:researchQuestion:dataSource:)`, `ProjectContextViewModel`, `CollectionFootnoteStyle`).
+  - **PR #1558:** 14 Swift files with no license header, outside every target.
+  - **PR #1558:** ⚙ Collection on an iPad narrower than the Air, where the test helper has no overflow branch. Not measured.
+  - **PR #1558:** `PROJECT_ONLY` with a store for some of the planned groups still rewrites the run-wide artifacts.
+  - **PR #1558:** a vector pack with no layout writes a volume's shard before it finds a later volume missing.
+  - **PR #1558:** the map preflight counts by the store's heads, so a store whose heads misstate its documents can still refuse after the vectors are written.
+  - **PR #1559 (READ):** two images are fetched that no document draws.
+  - **PR #1559:** `body_text` of the 12 `frus1917-72PubDip` film sections holds the player's hidden text and script. Read from the code, not from an index.
+  - **PR #1559:** the export header takes no dateline from an `<opener>`.
+  - **PR #1559:** an image that arrives late still moves the page under a reader who is not at a footnote.
+  - **PR #1559:** an image in flight when an update drops its name is stored after the prune.
+  - **PR #1559:** two things read in passing and not verified, in `cancelDownload` and `PDFCollectionExporter.drawFrameWithHighlights`.
+  - **PR #1559:** the figure fetch's run-level de-duplication has no test.
+- **Left for HYG by lane PLAN, and not taken** (the two lanes were developed on the same base, so HYG never saw the note): the comment-only fixes in four Swift files (`Project.swift`, `SimilarityModel.swift`, `ProvenanceSource.swift`'s `curatedDisclosure`, `TripPacketSheet.swift`), and the citations of #1210, #1211 and #1257 in `CLAUDE.md` and in 22 Swift files' doc comments, where the work merged as PRs #1250, #1251 and #1256. PLAN's session entry has both.
 - **Found by lane PLAN while re-measuring, not filed:**
   - **The provenance lens's caption is two volumes out.** `semanticMap.lens.provenance.caption.v2` says the winning category is a plurality "for 73 of the 499 volumes it colors". Recomputed from `source-provenance-index.json` as NOTE regenerated it, it is **75 of 499**: `frus1961-63v03` and `frus1961-63v21` joined. The string, its EditableContent block, three doc comments and both manuals' §15.6 state 73, and no test compares the caption with the artifact.
   - **`subject-numeric-labels.json` describes itself out of date.** Its `coverage.measured` block counts 1,362 subject-numeric keys; `collection-usage-index.json` has held 1,370 since its 2026-09-25 regeneration. Its `coverage.note` says the country element is not read, though the file has carried `areas` since #1254. Regenerating it needs the owner's local handbooks.
@@ -187,7 +207,7 @@ Recorded by lane PLAN against `v2` @ `dc17d945`. It changes nothing in §0. The 
 
 ## 1. Where the 47 issues stand
 
-*(As of 2026-09-28. §0a has the count at 2026-10-01.)*
+*(As of 2026-09-28. §0a has the count at 2026-10-02.)*
 
 - **Four show users wrong data.**
   - #1509: a "p. N" reference goes to the first of several documents beginning on that page. At least 1,825 of these are wrong.
@@ -517,7 +537,7 @@ Lane PLAN moved twelve finished documents and one folder to `Planning/Completed/
 
 ## Appendix — every open issue
 
-*(The 50 issues as planned on 2026-09-28 and 2026-09-29. Forty-four have closed since; §0a lists them by lane.)*
+*(The 50 issues as planned on 2026-09-28 and 2026-09-29. All fifty have closed since; §0a lists them by lane.)*
 
 **WB** = the owner's EditableContent wording, applied by the write-back lane.
 

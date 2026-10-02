@@ -12,13 +12,15 @@ Format, one entry per change:
 
 <!-- Lanes append below this line, one "## <LANE KEY> — <issues>" heading each. -->
 
-**Index, 2026-10-01** *(added by lane PLAN; no entry below was edited).* Fourteen sections, in the
-order the lanes landed: **WB**, **STOR**, **PAGE**, **SYNC**, **NOTE**, **LANG**, **GRAPH**,
-**ARCH**, **EXPORT**, **MACCOL**, **SEL**, **CITE**, **XREF**, and **PLAN** at the end, which
+**Index, 2026-10-02** *(added by lane PLAN on 2026-10-01 and brought to the merged file when the
+lane landed; no entry below was edited).* Sixteen sections, in the order the lanes landed:
+**WB**, **STOR**, **PAGE**, **SYNC**, **NOTE**, **LANG**, **GRAPH**, **ARCH**, **EXPORT**,
+**MACCOL**, **SEL**, **CITE**, **XREF**, **HYG**, **READ**, and **PLAN** at the end, which
 holds manual sentences the 2026-09-27 planning audit found wrong rather than ones a lane's code
-changed. Each entry is self-contained; three things are worth knowing before applying them.
+changed. **HYG**'s three entries propose no change; one offers an optional sentence. Each entry
+is self-contained; three things are worth knowing before applying them.
 
-- **Two pairs of lanes propose changes to the same sentences.** Lanes GRAPH and ARCH both
+- **Five pairs of lanes propose changes to the same sentences.** Lanes GRAPH and ARCH both
   rewrite Mac §8.5's **Volume Connections** bullet and the **Network** paragraph of Mac §15.3
   Person Analytics (GRAPH's entry covers iOS §15.3 too, and ARCH has an iOS §15.3 entry of its
   own). They do not conflict: GRAPH appends sentences (only the centre is named while the graph
@@ -26,14 +28,24 @@ changed. Each entry is self-contained; three things are worth knowing before app
   goes (under its node, or above it). Apply both to the same text. Lanes NOTE and EXPORT likewise
   both extend the last clause of the **coverage report** paragraph in Mac §14.8 and iOS §14.8
   (NOTE: divided lots; EXPORT: where the packet came from); they compose the same way.
+  Lane READ's entries meet three earlier lanes' on the same text, and each says so itself:
+  - **Mac §5.1a and iOS §5.1a, the list's lead-in** (READ, CITE). Each changes "Four things" to
+    "Five things" and adds a fifth bullet of its own (CITE: citation lookup leaves a side-loaded
+    volume out; READ: its figures read **[Figure]**). Applied together the list has six items,
+    and the lead-in's count follows.
+  - **Mac §17.2 and iOS §17.2, the first sentence** (READ, STOR). READ adds the figure images to
+    the bar's segments, inside the sentence; STOR adds sentences after it.
+  - **Mac §12.9 and iOS §12.10, the paragraph after the bullets** (READ, EXPORT). EXPORT adds a
+    sentence about a name too long for a file name; READ adds the sentences about figures.
 - **One entry is superseded.** WB's entry for the iOS graph's **Gestures** bullet is marked so in
   place; lane GRAPH's entry for that bullet (iOS §8.6) replaces it, with the item's shipped name,
   *View Document*.
 - **Several sections collect entries from more than one lane, on different sentences**: Mac §17.5
   and iOS §17.6 Data & Recovery (WB, SYNC, LANG, EXPORT), Mac §11.4 and iOS §11.4 Citation Lookup
   (PAGE, CITE), Mac §8.5 (PAGE, GRAPH, ARCH), Mac §12.3 (EXPORT, MACCOL), Mac §14.8 (WB, NOTE,
-  EXPORT), iOS §14.2 (NOTE, SEL), iOS §15.4 (PAGE, XREF), and Mac §15.6 and iOS §15.6 (PLAN only,
-  but waiting on a code fix — see its entry). Reading a section's entries together is quicker
+  EXPORT; HYG's entry there and for iOS §14.8 proposes no change), iOS §14.2 (NOTE, SEL), iOS
+  §15.4 (PAGE, XREF), iOS §5.3 Managing Storage (READ, PLAN), and Mac §15.6 and iOS §15.6 (PLAN
+  only, but waiting on a code fix — see its entry). Reading a section's entries together is quicker
   than taking the lanes in order.
 
 ## WB — #1422, #1464, #1476, #1478, #1481, #1483, #1527, #1531 (copy)
@@ -824,7 +836,7 @@ changed. Each entry is self-contained; three things are worth knowing before app
 - **Manual / section:** Mac §10.2 Creating a Project (`Docs/macOS-User-Manual.md:599`)
 - **Current:** A project created by an earlier version's onboarding may still carry one: it is shown on Project Home as *From … Through …* and pre-fills the Search date filter, and it cannot be edited.
 - **Proposed:** A project created by an earlier version's onboarding may still carry one: it is shown on Project Home as *From … Through …* and cannot be edited. On the Mac it changes no search; on iPhone and iPad it pre-fills the Search tab's date filter.
-- **Why:** only the iOS Search tab applies a project's date range (`SearchViewModel.applyProjectDefaults`, called from `FRUSExplorer/Search/SearchView.swift:858`); the Mac Search window's model never reads it (no `defaultDateRange` or `applyProjectDefaults` in `FRUSExplorer/App/MacSearchViewModel.swift` or `FRUSExplorer/App/SearchSheet.swift`). Read from the code, not checked in the running Mac app.
+- **Why:** only the iOS Search tab applies a project's date range (`SearchViewModel.applyProjectDefaults`, called from `FRUSExplorer/Search/SearchView.swift:865`); the Mac Search window's model never reads it (no `defaultDateRange` or `applyProjectDefaults` in `FRUSExplorer/App/MacSearchViewModel.swift` or `FRUSExplorer/App/SearchSheet.swift`). Read from the code, not checked in the running Mac app.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §7.11 Search by Meaning (Experimental), after its second paragraph (`Docs/macOS-User-Manual.md:465`)

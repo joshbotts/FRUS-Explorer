@@ -11,7 +11,8 @@ the run is recorded in `Completed/Release-frus1981-88v16.md`): the inventory cou
 version and line references in §3 and §9, the test-target count in §8, and Phase D and Phase F of
 §10, which now cover a **corrected** volume and the build-bump steps the README, the TestFlight
 notes and the encoder's debug symbols add. Where a passage below still says 552, it is describing
-the tree this plan was written against.
+the tree this plan was written against. The line references that refresh rewrote, and step 12's
+#1439 note, were read again at `v2` `1d6fc032` on 2026-10-02, after lanes HYG and READ had merged.
 
 **What this document is for.** When OH publishes a volume, the work is not "add a row to the
 manifest". It is a **release**: 38 bundled data resources, 48.9 MB of them (36 when this was
@@ -467,8 +468,8 @@ one-time rebuild on every device, not just for the new volume:
 
 | Trigger | Effect |
 |---|---|
-| `document-subject-index.json` `generated` or vocabulary digest changes | `applyDocumentSubjectsIfNeeded` wipes and repopulates `document_subjects` + `document_subject_refs` for every indexed volume (`IndexingPipeline.swift:8805`). Measured ~0.8 s for the bucket table alone; no reindex. |
-| `broken-refs-index.json` `generated` changes | `applyBrokenRefsIndexIfNeeded` resets every `is_broken` flag and re-marks in one transaction (`:8953`). |
+| `document-subject-index.json` `generated` or vocabulary digest changes | `applyDocumentSubjectsIfNeeded` wipes and repopulates `document_subjects` + `document_subject_refs` for every indexed volume (`IndexingPipeline.swift:8786`). Measured ~0.8 s for the bucket table alone; no reindex. |
+| `broken-refs-index.json` `generated` changes | `applyBrokenRefsIndexIfNeeded` resets every `is_broken` flag and re-marks in one transaction (`:8934`). |
 | `currentPersonRollupVersion` bumped | Full person-rollup re-consolidation; any surface holding a rollup id must re-resolve (`AppState.swift:1138`). |
 | Semantic provenance digest **unchanged** | Downloaded shards survive. **This is the outcome to protect** — see §4.2. |
 | CloudKit | **Nothing.** No `@Model` and no stored property changes, so the #488 Production-deploy gate is not engaged. Confirm by running `CloudKitSchemaInventoryTests` — it fails the moment the mirrored set changes. |
@@ -508,10 +509,13 @@ Steps marked **[owner]** cannot be done from this repository.
     exact Phase-3 command; diff the manifest; transfer and `shasum -c SHA256SUMS`.
 11. `pool_docs.py` → `build_layout.py` → `DIMS=512 … SemanticVectorsGenerator`.
 12. Verify the provenance digest is unchanged. Review the new cluster labels properly.
-    **Check the language analysis before step 11, not after** (#1439, open): the map pass refuses
-    without a lemmatiser, but it runs after the vector artifacts are written, so a refusal in a run
-    that also changed the digest leaves new `semantic-vectors-*` files beside the old map. If it
-    refuses, re-run in a new process before committing anything.
+    **The language analysis is checked before step 11 writes anything** (#1439, closed by lane
+    HYG, PR #1558, 2026-10-02): the map pass refuses without a lemmatiser, and that refusal, with
+    every other the map pass can make, now comes from `SemanticMapPacker.preflight` before the
+    vector artifacts are written. Until then it came after them, so a refusal in a run that also
+    changed the digest left new `semantic-vectors-*` files beside the old map. If it refuses,
+    re-run in a new process. One case can still refuse after the vectors are written, a store
+    whose heads misstate its documents; `CLAUDE.md`'s `SemanticVectorsGenerator` entry has it.
 13. **[owner]** Push the new `.vec` shard(s) to `joshbotts/frus-semantic-vectors`, `main`,
     `shards/`. **Before** the app build ships.
 
@@ -526,7 +530,7 @@ exists and has no force option, so a correction is invisible to it until its sto
 - **D-c3.** **[owner]** Push the re-packed shard over the old one, before the build ships.
 - **D-c4.** Confirm a device holding the old shard re-fetches it: R-1c's per-shard purge compares
   each on-disk shard with the manifest's SHA-256 at launch
-  (`SemanticShardStore.purgeShardsFailingBundledDigest`, called from `FRUSExplorerApp.swift:1703`).
+  (`SemanticShardStore.purgeShardsFailingBundledDigest`, called from `FRUSExplorerApp.swift:1707`).
   Check it on one device rather than assuming it.
 - **When it is not worth doing:** measure first. vol. XVI's 2026-09-14 correction moved 14 of
   3,145,710 top-10 slots and was waived with those numbers (`Completed/Release-frus1981-88v16.md`,
