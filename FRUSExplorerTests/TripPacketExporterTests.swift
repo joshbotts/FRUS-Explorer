@@ -1385,6 +1385,68 @@ struct TripPacketExporterTests {
         #expect(prefill[0].contains("file POL 17-3 JORDAN,"), "the Subject-Numeric example: \(prefill[0])")
     }
 
+    /// A one-target plan holding a Subject-Numeric block cited through the National Archives —
+    /// the target #1543 keeps on its v2 key, `coll|National Archives|Central Files 1970–73`.
+    private static func blockPlan(designation: String?,
+                                  category: SourceProvenanceCategory = .subjectNumericFile) -> TripPacketModel {
+        TripPacketModel.build(
+            groups: [(key: "coll|National Archives|Central Files 1970–73",
+                      label: "National Archives, Central Files 1970–73", category: category,
+                      repository: "National Archives", lotAsPrinted: nil, resolution: nil,
+                      documents: [.init(volumeId: "frus1969-76ve07", documentId: "d110",
+                                        citation: "FRUS 1969–1976 E–7, Document 110.",
+                                        fileDesignation: designation, documentDay: nil,
+                                        sourceNote: "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret.")])],
+            documentYears: [1971], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+    }
+
+    /// #1543: a Subject-Numeric target is a central-file target whichever key it sits on. NARA
+    /// asks that a central-file citation carry no box number and gives Example 7 for the
+    /// Subject-Numeric File; Example 8 is for records "other than those of the Department of State
+    /// central files". Before #1543 this target was a NARA collection: no no-box line, Example 8.
+    /// `AID (US) INDIA` is an organization-file designation the crib's own form test refuses, so
+    /// the example is reached by the target's category.
+    @Test("A National-Archives-led Subject-Numeric target gets the no-box line and Example 7, not Example 8")
+    func subjectNumericBlockTargetIsACentralFileTarget() throws {
+        let model = Self.blockPlan(designation: "AID (US) INDIA")
+        #expect(model.targets.first?.form == .collection)
+        #expect(!TripPacketExporter.isSubjectNumericDesignation("AID (US) INDIA"))
+        var withCrib = TripPacketExporter(model: model, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        let text = withCrib.export()
+        #expect(text.components(separatedBy: "No box numbers, on purpose").count - 1 == 1)
+        let prefill = Self.cribPrefill(model, heading: "Subject-Numeric File")
+        try #require(prefill.count == 1, "one Subject-Numeric template line, got \(prefill)")
+        #expect(prefill[0].contains("file AID (US) INDIA,"), "the Subject-Numeric example: \(prefill[0])")
+        #expect(text.contains("Example 7, airgram"))
+        #expect(!text.contains("also serves as a model"), "Example 8 is for non-central records")
+        #expect(Self.cribPrefill(model, heading: "Central Decimal File").isEmpty)
+    }
+
+    /// The other side of each conjunct. A Subject-Numeric target whose row gives only its block
+    /// has no designation to put in the template, so the crib prints no Example 7 — and still no
+    /// Example 8, because the target is a central file. The same key under a NARA-collection
+    /// category is not a central-file target: Example 8, no no-box line.
+    @Test("Example 7 needs a designation, and a central-file target never gets Example 8")
+    func subjectNumericExampleNeedsADesignation() {
+        let blockOnly = Self.blockPlan(designation: nil)
+        var withCrib = TripPacketExporter(model: blockOnly, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        let text = withCrib.export()
+        #expect(text.contains("No box numbers, on purpose"))
+        #expect(Self.cribPrefill(blockOnly, heading: "Subject-Numeric File").isEmpty)
+        #expect(!text.contains("also serves as a model"))
+
+        let collection = Self.blockPlan(designation: "AID (US) INDIA", category: .naraCollection)
+        var collectionCrib = TripPacketExporter(model: collection, projectName: "P")
+        collectionCrib.deliverables.includeCitationCrib = true
+        let collectionText = collectionCrib.export()
+        #expect(!collectionText.contains("No box numbers, on purpose"))
+        #expect(collectionText.contains("also serves as a model"))
+        #expect(Self.cribPrefill(collection, heading: "Subject-Numeric File").isEmpty)
+    }
+
     /// With neither shape present the crib prints neither example (one fixture per predicate).
     @Test("A plan holding only titles and record numbers gets neither central example")
     func cribPrintsNoExampleForTitlesAlone() {

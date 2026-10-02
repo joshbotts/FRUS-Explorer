@@ -1640,6 +1640,27 @@ struct SourceExplorerView: View {
         ]
     }()
 
+    /// What Source Explorer shows for a Subject-Numeric citation (#1543): the file designation,
+    /// the block of years it was filed in, and NARA's page and handbooks for the era.
+    struct SubjectNumericCitation: Equatable, Sendable {
+        /// The file designation (`POL 27 VIET S`), or `nil` when the citation gives only its block.
+        let designation: String?
+        /// NARA's block of years: `1963`, `1964–66`, `1967–69` or `1970–73`. `nil` when the note
+        /// prints none of NARA's blocks and the document's date is unknown or outside the file's
+        /// years.
+        let block: String?
+        /// The handbook for the block, or both handbooks when the block is `nil`.
+        let handbooks: [FilingManualLink]
+        /// NARA's finding-aid page for the Subject-Numeric File.
+        let pageURL: URL
+    }
+
+    /// The Subject-Numeric reading of a note, or `nil` when the note does not cite that file.
+    static func subjectNumericCitation(parsed: ParsedSourceNote?, note: String,
+                                       documentDay: DecimalFileSegment.DocumentDay?) -> SubjectNumericCitation? {
+        nil
+    }
+
     // MARK: - Lot File Panel
 
     @ViewBuilder
@@ -2536,7 +2557,7 @@ struct SourceExplorerView: View {
 
         hasAPIKey = await client.hasAPIKey()
         guard hasAPIKey else { return }
-        catalogEvidence = CatalogQueryEvidence.forNote(note)
+        catalogEvidence = CatalogQueryEvidence.forNote(note, rawNote: rawSourceNote)
 
         switch note {
 
@@ -2632,7 +2653,8 @@ struct SourceExplorerView: View {
     /// A short description of *why* the related documents are neighbors, shown atop the
     /// section so the researcher understands the archival relationship.
     private var archivalNeighborBasis: String? {
-        Self.archivalNeighborBasis(for: parsed, documentYear: effectiveYear, documentDay: documentDay)
+        Self.archivalNeighborBasis(for: parsed, note: rawSourceNote, documentYear: effectiveYear,
+                                   documentDay: documentDay)
     }
 
     /// The basis line for a parsed note — the body of ``archivalNeighborBasis``, static so a test
@@ -2645,7 +2667,7 @@ struct SourceExplorerView: View {
     /// misprinted year digit (`740.0011 EW/8–2045` on frus1943/d394, dated 20 August 1943, stays
     /// 1940–1944). Before #1407 an en-dash item carried no year at all, so every one of them was
     /// labelled by its document's year.
-    static func archivalNeighborBasis(for parsed: ParsedSourceNote?, documentYear: Int?,
+    static func archivalNeighborBasis(for parsed: ParsedSourceNote?, note: String, documentYear: Int?,
                                       documentDay: DecimalFileSegment.DocumentDay?) -> String? {
         switch parsed {
         case .lotFile(_, let lot, _):
@@ -2803,7 +2825,7 @@ struct SourceExplorerView: View {
 // MARK: - FilingManualLink
 
 /// A NARA filing manual PDF paired with a display label.
-struct FilingManualLink: Sendable {
+struct FilingManualLink: Sendable, Equatable {
     let url: URL
     let label: String
 }

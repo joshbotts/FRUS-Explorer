@@ -253,6 +253,119 @@ struct TripPacketBuilderTests {
         #expect(formsByKey["r|note"] == .raw)
     }
 
+    // MARK: - Subject-Numeric rows keep their keys (#1543)
+
+    /// #1543, owner decision 8: no stored Archive Visit key moves. A Subject-Numeric citation
+    /// worded through the National Archives was stored `structured` and keyed
+    /// `coll|National Archives|<series>`; it is stored `subject_numeric` now, its key is the same,
+    /// its target is still a collection-form target, and each document on it carries the file
+    /// designation its note gives — which the `.naraCollection` parse never held.
+    @MainActor
+    @Test("A National-Archives-led Subject-Numeric row keeps its key and gains its designation")
+    func nationalArchivesLedSubjectNumericKeepsItsKey() async throws {
+        let stub = Stub(sources: [
+            // frus1969-76ve07/d110, as index v65 stores it.
+            record("v1", "d1", era: "subject_numeric", repository: "National Archives",
+                   series: "Central Files 1970–73",
+                   rawText: "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret. Drafted on January 26 by Quainton."),
+            // A class-keyed note in the same block (constructed from frus1964-68v14/d93's shape).
+            record("v1", "d2", era: "subject_numeric", repository: "National Archives",
+                   series: "Central Files 1970–73",
+                   rawText: "Source: National Archives, RG 59, Central Files 1970–73, POL 27 VIET S. Secret."),
+        ])
+        let model = await TripPacketBuilder.build(
+            documents: [("v1", "d1"), ("v1", "d2")], researchQuestion: nil, dataSource: stub)
+        #expect(model.targets.map(\.key) == ["coll|National Archives|Central Files 1970–73"], """
+            Both notes must stay on the block's key, the one v2 gave them. Re-keying the \
+            class-keyed note to class|POL 27 VIET S would leave a stored tier or note on a \
+            shrunken target. Got \(model.targets.map(\.key)).
+            """)
+        let target = try #require(model.targets.first)
+        #expect(target.form == .collection)
+        #expect(target.category == .subjectNumericFile)
+        #expect(target.drawnFrom.map(\.fileDesignation) == ["AID (US) INDIA", "POL 27 VIET S"])
+        #expect(target.facility == .servedAt(facility: ResearchFacilityResolver.collegePark,
+                                             provenance: "Department of State"))
+    }
+
+    /// The other two origins of a Subject-Numeric row key as v2 keyed them: a Department-led
+    /// note on its class, and a note the parser read as `.cfpfFile` on its class or, without one,
+    /// on its raw text.
+    @MainActor
+    @Test("Department-led and CFPF-origin Subject-Numeric rows key as before")
+    func otherSubjectNumericOriginsKeyAsBefore() async throws {
+        let cfpfRaw = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential."
+        let stub = Stub(sources: [
+            // frus1964-68v01/d5 — Department-led.
+            record("v1", "d1", era: "subject_numeric", repository: "Department of State",
+                   series: "POL 27 VIET S", rg: "RG-59",
+                   rawText: "Source: Department of State, Central Files, POL 27 VIET S. Secret."),
+            // frus1969-76ve11p1/d429 — `.cfpfFile` for its remark, with a class key.
+            record("v1", "d2", era: "subject_numeric", repository: "Department of State", series: "CFPF",
+                   rawText: "Source: National Archives, RG 59, Central Files, 1970–1973, POL 15–1 JAM. Confidential. (Ibid., Central Foreign Policy File, [no film number])"),
+            // frus1969-76ve09p2/d78 — `.cfpfFile`, a designation the class grammar refuses.
+            record("v1", "d3", era: "subject_numeric", repository: "Department of State", series: "CFPF",
+                   rawText: cfpfRaw),
+        ])
+        let model = await TripPacketBuilder.build(
+            documents: [("v1", "d1"), ("v1", "d2"), ("v1", "d3")], researchQuestion: nil, dataSource: stub)
+        let byKey = Dictionary(uniqueKeysWithValues: model.targets.map { ($0.key, $0) })
+        #expect(Set(byKey.keys) == ["class|POL 27 VIET S", "class|POL 15-1 JAM", "r|\(cfpfRaw)"],
+                "got \(byKey.keys.sorted())")
+        #expect(byKey["class|POL 27 VIET S"]?.form == .decimalClass)
+        #expect(byKey["class|POL 27 VIET S"]?.label == "Subject-Numeric File POL 27 VIET S")
+        #expect(byKey["class|POL 15-1 JAM"]?.form == .decimalClass)
+        #expect(byKey["r|\(cfpfRaw)"]?.form == .raw)
+        #expect(model.targets.allSatisfy { $0.category == .subjectNumericFile })
+        // Each row names its file: the stored identifier, the class key, the read designation.
+        #expect(byKey["class|POL 27 VIET S"]?.drawnFrom.first?.fileDesignation == "POL 27 VIET S")
+        #expect(byKey["class|POL 15-1 JAM"]?.drawnFrom.first?.fileDesignation == "POL 15-1 JAM")
+        #expect(byKey["r|\(cfpfRaw)"]?.drawnFrom.first?.fileDesignation == "POL 27–14 Arab-Israeli")
+    }
+
+    /// A decimal number cited through the National Archives is stored `decimal` since #1543. It
+    /// was `structured`, keyed on its series; the key stays, and the row gains the file number.
+    @MainActor
+    @Test("A National-Archives-led decimal row keeps its series key and gains its file number")
+    func nationalArchivesLedDecimalKeepsItsKey() async throws {
+        let stub = Stub(sources: [
+            // frus1961-63v25/d494
+            record("v1", "d1", era: "decimal", repository: "National Archives",
+                   series: "Central Files 1960–63",
+                   rawText: "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."),
+            // The control: the same number worded through the Department keys on its class.
+            record("v1", "d2", era: "decimal", repository: "Department of State", series: "399.731/7–2561",
+                   rg: "RG-59", rawText: "Source: Department of State, Central Files, 399.731/7–2561. Confidential."),
+        ])
+        let model = await TripPacketBuilder.build(
+            documents: [("v1", "d1"), ("v1", "d2")], researchQuestion: nil, dataSource: stub)
+        let byKey = Dictionary(uniqueKeysWithValues: model.targets.map { ($0.key, $0) })
+        #expect(Set(byKey.keys) == ["coll|National Archives|Central Files 1960–63", "class|399.731"],
+                "got \(byKey.keys.sorted())")
+        let block = try #require(byKey["coll|National Archives|Central Files 1960–63"])
+        #expect(block.form == .collection)
+        #expect(block.category == .centralDecimalFile)
+        #expect(block.drawnFrom.first?.fileDesignation == "399.731/7–2561")
+        #expect(byKey["class|399.731"]?.form == .decimalClass)
+    }
+
+    /// A central-file row with neither a class nor a National Archives repository keys on its raw
+    /// text and is a raw-form target, in each of the three central categories — the model's
+    /// third arm (`TripPacketModel.build`).
+    @MainActor
+    @Test("A central-file row with no class and no series is a raw target", arguments: [
+        "decimal", "subject_numeric", "cfpf",
+    ])
+    func classlessCentralRowIsRaw(era: String) async throws {
+        let raw = "Source: Department of State, Central Files. Secret."
+        let stub = Stub(sources: [record("v1", "d1", era: era, repository: "Department of State", rawText: raw)])
+        let model = await TripPacketBuilder.build(
+            documents: [("v1", "d1")], researchQuestion: nil, dataSource: stub)
+        let target = try #require(model.targets.first)
+        #expect(target.key == "r|\(raw)")
+        #expect(target.form == .raw)
+    }
+
     // MARK: - The refs channel
 
     /// The pointed-at channel: class citations are filtered (the anchor #784 defers), lot

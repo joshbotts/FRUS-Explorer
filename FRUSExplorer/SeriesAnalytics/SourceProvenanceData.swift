@@ -34,7 +34,7 @@ struct SourceProvenanceIndex: Codable, Sendable {
     let totalSourceNotes: Int
     /// How many volumes contributed source notes.
     let volumesCovered: Int
-    /// The ordered raw category keys the generator emits (the 10
+    /// The ordered raw category keys the generator emits (the
     /// `SourceProvenanceCategory` raw values, in artifact order).
     let categories: [String]
     /// Per-decade aggregates, ascending by decade.
@@ -128,12 +128,23 @@ struct DecadeProvenance: Codable, Sendable {
 /// is ignored gracefully by `init?(rawValue:)` — decoders that iterate the index's
 /// `categories` array skip unrecognised keys rather than trapping.
 ///
+/// Three of the cases are the State Department's central filing systems, in the order they
+/// replaced one another, and a central-files citation is placed among them by what it gives
+/// (#1543). The declaration order is the display order, and the semantic map's provenance lens
+/// colours by position in `allCases`, so a case is added in place and the lens's palette with it.
+///
 /// Version history:
 ///   1.0 — Analytics SA-3b: initial implementation
+///   1.1 — 2026-10-02 (#1543): `subjectNumericFile`, the eleventh category and the stored form
+///          `subject_numeric`
 enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
-    /// Pre-1960 State Department central filing (the decimal file).
+    /// State Department central filing through January 1963: the decimal file from 1910 and,
+    /// before it, the Numerical File of 1906–1910. Cited by a decimal file number.
     case centralDecimalFile
-    /// Post-1960 State Department central filing (the Central Foreign Policy File).
+    /// The Subject-Numeric File, February 1963–1973. Cited by a file designation
+    /// (`POL 27 VIET S`) or its block of years, through the Department or the National Archives.
+    case subjectNumericFile
+    /// The Central Foreign Policy File, from July 1973. Cited by name or by a film number.
     case centralForeignPolicyFile
     /// Bureau/office "lot" files.
     case lotFile
@@ -157,8 +168,8 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     /// `categories` array order).
     static var ordered: [SourceProvenanceCategory] {
         [
-            .centralDecimalFile, .centralForeignPolicyFile, .lotFile,
-            .presidentialLibrary, .naraCollection, .intelligence,
+            .centralDecimalFile, .subjectNumericFile, .centralForeignPolicyFile,
+            .lotFile, .presidentialLibrary, .naraCollection, .intelligence,
             .namedFileSeries, .foreignArchive, .previouslyPublished,
             .unrecognized,
         ]
@@ -170,6 +181,9 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
         case .centralDecimalFile:
             return String(localized: "series.provenance.cat.centralDecimalFile",
                           defaultValue: "Central Decimal File")
+        case .subjectNumericFile:
+            return String(localized: "series.provenance.cat.subjectNumericFile",
+                          defaultValue: "Subject-Numeric File")
         case .centralForeignPolicyFile:
             return String(localized: "series.provenance.cat.centralForeignPolicyFile",
                           defaultValue: "Central Foreign Policy File")
@@ -203,11 +217,16 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     /// The category a stored `document_sources` row belongs to (#765 rider E).
     ///
     /// The bundled aggregate arrives pre-categorised; the user's own index does not. Its
-    /// `citation_era` column is the citation **form**, and three of these ten categories share
+    /// `citation_era` column is the citation **form**, and three of these categories share
     /// the single form `structured` — a NARA record-group citation, a presidential-library
     /// citation, and a CIA job citation are all written that way. The repository keyword is what
     /// separates them, and it is written in the same statement, so the pair is a faithful
     /// inverse of the writer rather than a guess. See `IndexingPipeline.baseDocumentSourceRow`.
+    ///
+    /// The three central-file forms need no repository (#1543): `decimal`, `subject_numeric` and
+    /// `cfpf` each name their category whoever holds the record, so a Subject-Numeric citation
+    /// worded through the National Archives, and a decimal number worded that way, land with the
+    /// same citations worded through the Department.
     ///
     /// An unknown form yields ``unrecognized`` — never `nil`. Every row in the table is a real
     /// source note the user's index holds, so dropping one would understate a total the Your
@@ -215,6 +234,7 @@ enum SourceProvenanceCategory: String, CaseIterable, Sendable, Hashable {
     static func from(citationEra: String, repository: String?) -> SourceProvenanceCategory {
         switch citationEra {
         case "decimal": return .centralDecimalFile
+        case "subject_numeric": return .subjectNumericFile
         case "cfpf": return .centralForeignPolicyFile
         case "lot_file": return .lotFile
         case "foreign": return .foreignArchive

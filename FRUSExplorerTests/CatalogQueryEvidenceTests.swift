@@ -30,10 +30,10 @@ struct CatalogQueryEvidenceTests {
     @Test("Only a control-number lookup counts as verified")
     func onlyLotLookupIsVerified() {
         let lot = ParsedSourceNote.lotFile(recordGroup: "RG-59", lotNumber: "74 D 476", fileIdentifier: nil)
-        #expect(CatalogQueryEvidence.forNote(lot) == .controlNumberVerified)
-        #expect(CatalogQueryEvidence.forNote(lot)?.isVerified == true)
-        #expect(CatalogQueryEvidence.forNote(lot)?.caveat == nil)
-        #expect(CatalogQueryEvidence.forNote(lot)?.sectionTitle == "NARA Catalog")
+        #expect(CatalogQueryEvidence.forNote(lot, rawNote: "") == .controlNumberVerified)
+        #expect(CatalogQueryEvidence.forNote(lot, rawNote: "")?.isVerified == true)
+        #expect(CatalogQueryEvidence.forNote(lot, rawNote: "")?.caveat == nil)
+        #expect(CatalogQueryEvidence.forNote(lot, rawNote: "")?.sectionTitle == "NARA Catalog")
     }
 
     /// A record-group citation naming a lot is verified **because #704 reroutes it** to the
@@ -44,14 +44,14 @@ struct CatalogQueryEvidenceTests {
         let withLot = ParsedSourceNote.naraCollection(
             recordGroup: "59", series: "Office of the Secretariat Staff",
             lotFile: "81 D 113", box: nil)
-        #expect(CatalogQueryEvidence.forNote(withLot) == .controlNumberVerified)
+        #expect(CatalogQueryEvidence.forNote(withLot, rawNote: "") == .controlNumberVerified)
 
         let withoutLot = ParsedSourceNote.naraCollection(
             recordGroup: "84", series: "Saigon Embassy Files", lotFile: nil, box: nil)
-        #expect(CatalogQueryEvidence.forNote(withoutLot) == .recordGroupOnly(recordGroup: "84"))
-        #expect(CatalogQueryEvidence.forNote(withoutLot)?.isVerified == false)
+        #expect(CatalogQueryEvidence.forNote(withoutLot, rawNote: "") == .recordGroupOnly(recordGroup: "84"))
+        #expect(CatalogQueryEvidence.forNote(withoutLot, rawNote: "")?.isVerified == false)
         // The caveat has to name what *was* constrained, or it reads as "this is worthless".
-        #expect(CatalogQueryEvidence.forNote(withoutLot)?.caveat?.contains("84") == true)
+        #expect(CatalogQueryEvidence.forNote(withoutLot, rawNote: "")?.caveat?.contains("84") == true)
     }
 
     /// The weakest query in the app, and the one 28,456 documents take.
@@ -59,7 +59,7 @@ struct CatalogQueryEvidenceTests {
     func libraryQueryIsNeverVerified() {
         let library = ParsedSourceNote.presidentialLibrary(
             library: "Kennedy Library", collection: "National Security Files", fileIdentifier: nil)
-        let evidence = CatalogQueryEvidence.forNote(library)
+        let evidence = CatalogQueryEvidence.forNote(library, rawNote: "")
         #expect(evidence == .collectionNameOnly)
         #expect(evidence?.isVerified == false)
         #expect(evidence?.sectionTitle == "Candidate NARA Records")
@@ -82,12 +82,33 @@ struct CatalogQueryEvidenceTests {
                 "both unverified branches are headed the same way")
     }
 
+    /// #1543: a Subject-Numeric citation worded through the National Archives parses as a
+    /// record-group collection, and until now ran a keyed search on its block's name ("Central
+    /// Files 1970–73"), which cannot find a central file. Both views skip that search and show
+    /// the Subject-Numeric panel, so the note carries no query evidence. A decimal number worded
+    /// the same way keeps its search, and so does an office file under the same heading.
+    @Test("A Subject-Numeric citation takes no catalogue query")
+    func subjectNumericCitationHasNoEvidence() {
+        let parser = SourceNoteParser()
+        // frus1969-76ve07/d110
+        let subjectNumeric = "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret."
+        #expect(CatalogQueryEvidence.forNote(parser.parse(subjectNumeric), rawNote: subjectNumeric) == nil)
+        // frus1961-63v25/d494 — the decimal number keeps the record-group query.
+        let decimal = "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."
+        #expect(CatalogQueryEvidence.forNote(parser.parse(decimal), rawNote: decimal)
+                == .recordGroupOnly(recordGroup: "59"))
+        // frus1969-76ve08/d15 — an office file under the heading keeps it too.
+        let office = "Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis."
+        #expect(CatalogQueryEvidence.forNote(parser.parse(office), rawNote: office)
+                == .recordGroupOnly(recordGroup: "59"))
+    }
+
     /// A citation that takes no catalogue query classifies as nothing, rather than defaulting
     /// to verified and captioning a section that never renders.
     @Test("A note with no catalogue query has no evidence")
     func noQueryNoEvidence() {
-        #expect(CatalogQueryEvidence.forNote(.unrecognized(rawText: "…")) == nil)
-        #expect(CatalogQueryEvidence.forNote(.previouslyPublished(citation: "FRUS 1958, vol. I")) == nil)
+        #expect(CatalogQueryEvidence.forNote(.unrecognized(rawText: "…"), rawNote: "…") == nil)
+        #expect(CatalogQueryEvidence.forNote(.previouslyPublished(citation: "FRUS 1958, vol. I"), rawNote: "FRUS 1958, vol. I") == nil)
     }
 }
 

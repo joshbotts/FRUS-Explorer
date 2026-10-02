@@ -28,6 +28,8 @@ import Foundation
 ///   1.2 — Session 3 review: the all-zero-decade test asserts explicit zero rows
 ///          (no x-gap) instead of the dropped decade it previously locked in
 ///   1.3 — Regenerated after OH's 2026-09-14 correction to frus1981-88v16: 269,248 → 269,242
+///   1.4 — 2026-10-02 (#1543): eleven categories; the bundled index places the Subject-Numeric
+///          File in the 1960s and 1970s and nowhere else; the Categories menu's count is derived
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -69,16 +71,20 @@ struct SourceProvenanceDataTests {
 
     // MARK: Category enum
 
-    @Test("SourceProvenanceCategory: ten ordered categories with the expected raw values")
+    @Test("SourceProvenanceCategory: eleven ordered categories with the expected raw values")
     func categoryOrder() {
-        #expect(SourceProvenanceCategory.ordered.count == 10)
+        #expect(SourceProvenanceCategory.ordered.count == 11)
         #expect(SourceProvenanceCategory.ordered.map(\.rawValue) == [
-            "centralDecimalFile", "centralForeignPolicyFile", "lotFile",
+            "centralDecimalFile", "subjectNumericFile", "centralForeignPolicyFile", "lotFile",
             "presidentialLibrary", "naraCollection", "intelligence",
             "namedFileSeries", "foreignArchive", "previouslyPublished",
             "unrecognized",
         ])
-        #expect(SourceProvenanceCategory.allCases.count == 10)
+        #expect(SourceProvenanceCategory.allCases.count == 11)
+        // The map's provenance lens colours by position in `allCases`, so the declaration order
+        // is the display order (#1543).
+        #expect(SourceProvenanceCategory.allCases == SourceProvenanceCategory.ordered)
+        #expect(SourceProvenanceCategory.subjectNumericFile.displayName == "Subject-Numeric File")
     }
 
     @Test("SourceProvenanceCategory: an unknown raw value is nil, not a crash")
@@ -165,8 +171,8 @@ struct SourceProvenanceDataTests {
         #expect(count(.presidentialLibrary) == 20 + 30)      // 1950 + 1970
         #expect(count(.centralForeignPolicyFile) == 10)      // 1970
         #expect(count(.naraCollection) == 0)                 // never present
-        // Composition covers all ten categories (stable legend), zeros included.
-        #expect(data.overallComposition.count == 10)
+        // Composition covers all eleven categories (stable legend), zeros included.
+        #expect(data.overallComposition.count == 11)
         // Shares over the shown total (320).
         #expect(data.shownNoteCount == 320)
         let cdfShare = data.overallComposition.first { $0.category == .centralDecimalFile }?.share ?? 0
@@ -244,7 +250,9 @@ struct SourceProvenanceDataTests {
         #expect(index.byVolume?.count == 523,
                 "schema 2 must carry one row per covered volume; got \(index.byVolume?.count ?? -1)")
         #expect(index.byDecade.count == 16, "SA-3a ships 16 coverage decades; got \(index.byDecade.count)")
-        #expect(index.categories.count == 10)
+        #expect(index.categories.count == 11)
+        #expect(index.categories == SourceProvenanceCategory.ordered.map(\.rawValue),
+                "the artifact's category order is the enum's; got \(index.categories)")
 
         // The derivation over the real data floors to >= 1900 and stays sound.
         let derived = SourceProvenanceData(index: index)
@@ -254,6 +262,69 @@ struct SourceProvenanceDataTests {
             let sum = derived.shareByDecade.filter { $0.decade == decade }.reduce(0.0) { $0 + $1.share }
             #expect(abs(sum - 1.0) < 1e-6, "real decade \(decade) shares summed to \(sum)")
         }
+    }
+
+    // MARK: The Subject-Numeric File in the bundled index (#1543)
+
+    /// The bundled index, decoded.
+    private func bundledIndex() throws -> SourceProvenanceIndex {
+        let url = try #require(
+            Bundle.main.url(forResource: "source-provenance-index", withExtension: "json"))
+        return try JSONDecoder().decode(SourceProvenanceIndex.self, from: Data(contentsOf: url))
+    }
+
+    /// The Subject-Numeric File ran February 1963–1973, so its citations fall in the volumes
+    /// covering the 1960s and 1970s and in no other decade. Before #1543 the category did not
+    /// exist and these notes sat in `centralDecimalFile` and `naraCollection`.
+    @Test("The bundled index places the Subject-Numeric File in the 1960s and 1970s only")
+    func subjectNumericFileSitsInItsDecades() throws {
+        let index = try bundledIndex()
+        var entered = 0
+        for decade in index.byDecade {
+            entered += 1
+            let count = decade.count(for: .subjectNumericFile)
+            if decade.decade == 1960 || decade.decade == 1970 {
+                #expect(count > 0, "the \(decade.decade)s carry no Subject-Numeric notes")
+            } else {
+                #expect(count == 0, "the \(decade.decade)s carry \(count) Subject-Numeric notes")
+            }
+        }
+        #expect(entered == 16, "read \(entered) decades")
+    }
+
+    /// The Central Foreign Policy File began in July 1973. No note is placed in it before the
+    /// decade its first volumes cover.
+    @Test("The bundled index places no Central Foreign Policy File note before the 1970s")
+    func foreignPolicyFileStartsInTheSeventies() throws {
+        let index = try bundledIndex()
+        let before = index.byDecade.filter { $0.decade < 1970 }
+        #expect(before.count == 14, "read \(before.count) decades before 1970")
+        for decade in before {
+            #expect(decade.count(for: .centralForeignPolicyFile) == 0,
+                    "the \(decade.decade)s carry Central Foreign Policy File notes")
+        }
+        #expect(index.byDecade.first { $0.decade == 1970 }?.count(for: .centralForeignPolicyFile) ?? 0 > 0)
+        // The category that used to hold the 1960s' National-Archives-led Subject-Numeric
+        // citations now holds fewer notes there than the Subject-Numeric File does.
+        let sixties = try #require(index.byDecade.first { $0.decade == 1960 })
+        #expect(sixties.count(for: .subjectNumericFile) > sixties.count(for: .naraCollection))
+    }
+
+    /// The Categories menu's VoiceOver value read "%lld of 10 shown" from a literal. It is now
+    /// the count of `SourceProvenanceCategory.ordered` (#1543).
+    @Test("The dashboard's category count is derived, not the literal ten")
+    func dashboardCategoryCountIsDerived() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
+            encoding: .utf8)
+        #expect(!source.isEmpty)
+        #expect(!source.contains("of 10 shown"), "the literal count is back")
+        #expect(source.contains("\"%1$lld of %2$lld shown\""), "the two-argument text is missing")
+        #expect(source.contains("series.provenance.filter.a11y.count %lld %lld"))
+        #expect(!source.contains("ten broad categories"), "the archival link still counts ten")
+        #expect(source.components(separatedBy: "eleven broad categories").count - 1 == 2,
+                "both platform arms of the archival link carry the sentence")
     }
 
     // MARK: Category filter (#236)

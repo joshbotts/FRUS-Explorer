@@ -51,6 +51,45 @@ public struct CollectionIdentity: Sendable, Equatable {
     }
 }
 
+// MARK: - CentralFilesForm
+
+/// Which of the Department of State's central filing systems an RG 59 central-files citation
+/// gives a file in: a decimal file number (the Central Decimal File, 1910–January 1963) or a
+/// Subject-Numeric file designation (the Subject-Numeric File, February 1963–1973).
+///
+/// Read from the citation's form by ``CollectionKeying/centralFilesForm(parsed:note:)``, never
+/// from the document's year (#1543).
+public enum CentralFilesForm: String, Sendable, Equatable {
+    /// A decimal file number, `611.61/3-2763`.
+    case decimal
+    /// A Subject-Numeric file designation, `POL 27 VIET S`, or its block of years.
+    case subjectNumeric
+}
+
+/// What decided a central-files citation's form — the three kinds of evidence
+/// ``CollectionKeying/centralFilesReading(parsed:note:)`` reads, in the order it reads them.
+public enum CentralFilesEvidence: String, Sendable, Equatable {
+    /// The class grammar read a class key from the citation sentence.
+    case classKey
+    /// The stored identifier or a segment opens with a Subject-Numeric lead the class grammar
+    /// refuses (`AID (US) S VIET`, `POL Kuwait`, `UN`).
+    case designation
+    /// Only the block of years (`Central Files 1964–66`) names the file.
+    case block
+}
+
+/// One central-files citation as ``CollectionKeying/centralFilesReading(parsed:note:)`` read it.
+public struct CentralFilesReading: Sendable, Equatable {
+    /// The filing system the citation gives a file in.
+    public let form: CentralFilesForm
+    /// What decided the form.
+    public let evidence: CentralFilesEvidence
+    /// The file designation as one string, or `nil` when the citation gives only its block.
+    public let designation: String?
+    /// The Subject-Numeric lead that decided a `.designation` reading, upper-cased; else `nil`.
+    public let lead: String?
+}
+
 // MARK: - CollectionKeying
 
 /// The shared collection-authority keying rules: the normal form, repository
@@ -98,6 +137,12 @@ public struct CollectionIdentity: Sendable, Equatable {
 ///   1.5 — 2026-10-01 (#1514 and its fold-ins): `bridgedRepository(ofHeading:)`, the full-name
 ///          heading both Sources parsers now inherit; a Department of State named series keys no
 ///          authority collection (`identity(of:note:)`)
+///   1.6 — 2026-10-02 (#1543): `centralFilesReading(parsed:note:)` and its three readers
+///          (`centralFilesForm`, `isSubjectNumericCitation`, `centralFileDesignation`), which
+///          place an RG 59 central-files citation by its form — a decimal file number or a
+///          Subject-Numeric file designation — in either wording; `subjectNumericLead(ofCandidate:)`,
+///          `subjectNumericOrganizationLeads` and `printedSubjectNumericBlock(inCitation:)`. No
+///          collection identity changes
 public enum CollectionKeying {
 
     // MARK: - Normal form
@@ -589,6 +634,133 @@ public enum CollectionKeying {
         default:
             return nil
         }
+    }
+
+    // MARK: - Central-files form (#1543)
+
+    /// Leads of a Subject-Numeric designation that are an organization or agency file and no
+    /// handbook category: NARA's hints leaflet gives `UN` as a designator, and the two handbooks
+    /// file an international organization's papers under its own name. These seven are the leads
+    /// `TripPacketExporter.isSubjectNumericDesignation` documents as organization files; the test
+    /// below reads them beside `ParsedSourceNote.subjectNumericCategories`.
+    public static let subjectNumericOrganizationLeads: Set<String> = []   // STUB (#1543, commit one)
+
+    /// The form of an RG 59 central-files citation, with what decided it and the file designation
+    /// it gives, or `nil` when the citation is not one this rule reads or gives no evidence
+    /// (#1543).
+    ///
+    /// NARA names five eras of the Department's central files, and the name does not separate
+    /// them: its catalog lists "Central Foreign Policy File" as another title of the
+    /// Subject-Numeric series and "Central Files" as another title of the decimal series. Only the
+    /// citation's form does, so this reads the form and never the document's year.
+    ///
+    /// ## Gate
+    /// - `.centralFiles` in record group 59. No anchor is needed, and the stored identifier is
+    ///   tested before the segments.
+    /// - `.naraCollection` in record group 59 with no lot, whose citation sentence has an anchor
+    ///   (a segment naming the central files, see `centralFilesAnchor(in:)`) behind a clean lead:
+    ///   every segment before the anchor is a holder or record-group phrase. A library-, lot- or
+    ///   office-led note whose remark names the central files is refused here.
+    /// - `.cfpfFile` with an anchor behind a clean lead, whose citation sentence has neither a lot
+    ///   nor a film form. This case answers `.subjectNumeric` or `nil`, never `.decimal`.
+    ///
+    /// ## Evidence, the first that applies
+    /// 1. `SourceNoteParser.decimalClassLocation(inCitation:)` returns a class key: letter-led is
+    ///    Subject-Numeric, digit-led is decimal.
+    /// 2. The stored identifier, or a candidate after the anchor, opens with a Subject-Numeric
+    ///    lead (`subjectNumericLead(ofCandidate:)`).
+    /// 3. The anchor segment or the one after it prints a block of years inside 1964–1973, and no
+    ///    later segment opens with `Entry`, `Records of` or `Lot`. A single year never decides.
+    ///
+    /// A `.centralFiles` note with no evidence gets `nil`, and its callers keep it where it was.
+    public static func centralFilesReading(parsed: ParsedSourceNote,
+                                           note: String) -> CentralFilesReading? {
+        // STUB (#1543, commit one): the rule lands in the next commit.
+        nil
+    }
+
+    /// The form of an RG 59 central-files citation — a decimal file number or a Subject-Numeric
+    /// file designation — or `nil` (#1543). See `centralFilesReading(parsed:note:)` for the rule.
+    public static func centralFilesForm(parsed: ParsedSourceNote, note: String) -> CentralFilesForm? {
+        centralFilesReading(parsed: parsed, note: note)?.form
+    }
+
+    /// Whether a note cites the Subject-Numeric File of February 1963–1973, in either wording:
+    /// `Department of State, Central Files, POL 27 VIET S` or `National Archives, RG 59, Central
+    /// Files 1964–66, POL 27 VIET S` (#1543).
+    public static func isSubjectNumericCitation(parsed: ParsedSourceNote, note: String) -> Bool {
+        centralFilesForm(parsed: parsed, note: note) == .subjectNumeric
+    }
+
+    /// The file designation a central-files citation gives, as one string: `POL 27 VIET S`,
+    /// `AID (US) INDIA`, or `399.731/7–2561` for a decimal number cited through the National
+    /// Archives (#1543). `nil` for a citation that gives only its block of years, and for one
+    /// `centralFilesReading(parsed:note:)` does not read.
+    ///
+    /// The stored `.centralFiles` identifier wins when the parse kept one; else the class key;
+    /// else the first candidate that opened with a Subject-Numeric lead, taken after a `": "`,
+    /// cut at the first `;`, with a trailing classification marking and trailing stops removed.
+    public static func centralFileDesignation(parsed: ParsedSourceNote, note: String) -> String? {
+        centralFilesReading(parsed: parsed, note: note)?.designation
+    }
+
+    /// The block of years a central-files citation prints, when it is one of NARA's three
+    /// Subject-Numeric blocks — `1964–66`, `1967–69` or `1970–73`, returned in that spelling
+    /// whether the note prints two digits or four for the closing year — or `nil` (#1543).
+    ///
+    /// Read from the anchor segment and the one after it, where rule 3 of
+    /// `centralFilesReading(parsed:note:)` reads its range. Any other printed range is no block:
+    /// the corpus prints `Central Files 1960–63` over 70 Subject-Numeric files of 1963 and
+    /// `Central Files 1964–67` over 4, and NARA has no block of either name. NARA's fourth
+    /// segment, February–December 1963, is one year and is never printed as a range, so a caller
+    /// places a file in it by the document's date.
+    public static func printedSubjectNumericBlock(inCitation note: String) -> String? {
+        // STUB (#1543, commit one).
+        nil
+    }
+
+    /// The Subject-Numeric lead a candidate opens with, upper-cased (`POL`, `AID`, `NATO`), or
+    /// `nil`.
+    ///
+    /// The candidate is read after a `": "` and without its trailing stops. It must open with one
+    /// to six letters followed by the end, whitespace, `(`, `/`, a hyphen or dash, or a digit. The
+    /// letters are all capitals, or three or four letters in title case (`Pol`, `Def`, `Inco`,
+    /// the corpus's 23 title-case designations), and upper-cased they are a handbook category
+    /// (`ParsedSourceNote.subjectNumericCategories`) or an organization lead
+    /// (`subjectNumericOrganizationLeads`). A five-letter title-case word is refused, so
+    /// `Inter-American Affairs` is not read as the category `INTER`.
+    public static func subjectNumericLead(ofCandidate candidate: String) -> String? {
+        // STUB (#1543, commit one).
+        nil
+    }
+
+    /// The first segment of a citation sentence that names the central files, with its text once
+    /// leading `Source:` labels and a leading `RG 59` are dropped, or `nil`.
+    ///
+    /// A segment is the anchor when that text passes `isCentralFilesSegment(_:)`, begins with the
+    /// singular `Central File`, `Central Foreign Policy File` or `Central Decimal File`, begins
+    /// with `Decimal File`, or is exactly `CF`.
+    static func centralFilesAnchor(in segments: [String]) -> (index: Int, text: String)? {
+        // STUB (#1543, commit one).
+        nil
+    }
+
+    /// Whether every segment before `anchorIndex` is a holder or record-group phrase: the
+    /// National Archives, NARA, the Department of State, DOS, the Records or General Records of
+    /// the Department of State, each optionally followed by `RG 59` with no comma, or `RG 59`
+    /// alone. An anchor at index 0 has a clean lead.
+    static func hasCleanLead(_ segments: [String], before anchorIndex: Int) -> Bool {
+        // STUB (#1543, commit one).
+        false
+    }
+
+    /// The segments a designation is looked for in, in order: the anchor's own tail (what follows
+    /// the series words, an optional range of years and any `,` or `:`) when it is not empty, then
+    /// each later segment that is not only a range of years.
+    static func centralFilesCandidates(_ segments: [String],
+                                       anchor: (index: Int, text: String)) -> [String] {
+        // STUB (#1543, commit one).
+        []
     }
 
     /// The record-group pattern both parsers use: `SourceNoteParser.rgRegex` and

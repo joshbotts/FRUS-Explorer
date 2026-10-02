@@ -3022,7 +3022,9 @@ struct VolumeSourceMatcherTests {
                                             repository: "Nixon Presidential Materials", recordGroup: nil))
             #expect(rows["d4"] == SourceRow(era: "lot_file", series: "BAEC —Reference Papers",
                                             repository: "Department of State", recordGroup: "59"))
-            #expect(rows["d5"] == SourceRow(era: "decimal", series: "POL CHICOM -US",
+            // `subject_numeric` since #1543 (index v65): a designator is the Subject-Numeric
+            // File's, and every other column is as v64 stored it.
+            #expect(rows["d5"] == SourceRow(era: "subject_numeric", series: "POL CHICOM -US",
                                             repository: "Department of State", recordGroup: "59"))
             #expect(rows["d7"]?.series == "POL IRAN-U.S.")
             #expect(rows["d8"]?.series == "DEF 12 NATO")
@@ -3033,6 +3035,95 @@ struct VolumeSourceMatcherTests {
                 d5 found \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
                 """)
         }
+    }
+
+    /// #1543 through the pipeline, every note from the corpus: a central-files citation is stored
+    /// by its form, in either wording, and nothing else in the row moves. d1 (frus1964-68v01/d5) is
+    /// Department-led; d2 (frus1964-68v14/d93) and d3 (frus1969-76ve07/d110) are led by the National
+    /// Archives, with and without a class key; d4 (frus1964-68v29p1/d368) gives only its block; d5
+    /// (frus1969-76ve09p2/d78) is cited under the Central Foreign Policy File's name; d6
+    /// (frus1961-63v25/d494) is a decimal number through the National Archives; d7
+    /// (frus1961-63v11/d301) a decimal number through the Department, dated March 1963; d8
+    /// (frus1969-76v22/d17) a film number; d9 (frus1969-76ve08/d15) an office file under the
+    /// "Central Files" heading, which is not the file and stays a NARA collection.
+    @Test("A central-files citation is stored by its form, in either wording (#1543)")
+    func centralFilesAreStoredByTheirForm() async throws {
+        try await withTempDir { dir in
+            _ = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy. Rusk’s initials appear on the source text."),
+                ("d2", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis."),
+                ("d3", "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret. Drafted on January 26 by Quainton."),
+                ("d4", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret. Drafted by Zurhellen and approved in S on July 25."),
+                ("d5", "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential. Repeated to Amman, Beirut, Kuwait City, Tripoli, and Tel Aviv."),
+                ("d6", "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."),
+                ("d7", "Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate. This telegram was inadvertently filed under the discontinued decimal filing system."),
+                ("d8", "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis."),
+                ("d9", "Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis."),
+            ])
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let rows = try Self.sourceRows(dbURL)
+            let classes = try Self.decimalClasses(dbURL)
+            #expect(rows.count == 9, "read \(rows.count) document_sources rows")
+
+            // The Subject-Numeric File, however worded. Repository, record group and series are
+            // what index v64 stored for each wording.
+            #expect(rows["d1"] == SourceRow(era: "subject_numeric", series: "POL 27 VIET S",
+                                            repository: "Department of State", recordGroup: "59"))
+            #expect(rows["d2"] == SourceRow(era: "subject_numeric", series: "Central Files 1964–66",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d3"] == SourceRow(era: "subject_numeric", series: "Central Files 1970–73",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d4"] == SourceRow(era: "subject_numeric", series: "Central Files 1964–66",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d5"] == SourceRow(era: "subject_numeric", series: "CFPF",
+                                            repository: "Department of State", recordGroup: "59"))
+            // A decimal file number, however worded.
+            #expect(rows["d6"] == SourceRow(era: "decimal", series: "Central Files 1960–63",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d7"] == SourceRow(era: "decimal", series: "611.61/3-2763",
+                                            repository: "Department of State", recordGroup: "59"))
+            // What the rule leaves alone.
+            #expect(rows["d8"]?.era == "cfpf")
+            #expect(rows["d8"]?.repository == "Department of State")
+            #expect(rows["d9"]?.era == "structured")
+            #expect(rows["d9"]?.repository == "National Archives")
+
+            // `decimal_class` is filled as before: the class key where the grammar reads one.
+            #expect(classes["d1"] == .some("POL 27 VIET S"))
+            #expect(classes["d2"] == .some("POL 27 VIET S"))
+            #expect(classes["d3"] == .some(nil))
+            #expect(classes["d4"] == .some(nil))
+            #expect(classes["d6"] == .some("399.731"))
+            #expect(classes["d7"] == .some("611.61"))
+        }
+    }
+
+    /// #1543's re-parse: v65. About 9,800 rows change their stored form — the 9,443
+    /// Subject-Numeric citations and the 356 decimal numbers cited through the National Archives.
+    @Test("The index version is at least 65, the central-files form re-parse of #1543")
+    func indexVersionCoversCentralFilesForm() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 65)
+    }
+
+    /// `document_id → decimal_class` for every row.
+    private static func decimalClasses(_ dbURL: URL) throws -> [String: String?] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 1)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT document_id, decimal_class FROM document_sources",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [String: String?] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            rows.updateValue(sqlite3_column_text(stmt, 1).map { String(cString: $0) }, forKey: id)
+        }
+        return rows
     }
 
     /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469,

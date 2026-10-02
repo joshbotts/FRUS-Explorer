@@ -28,11 +28,17 @@ struct StoredProvenanceCategoryTests {
 
     @Test("Every citation form the indexer writes maps back to the category it came from")
     func everyWrittenFormRoundTrips() {
-        // Mirrors `baseDocumentSourceRow`'s ten cases in order. If a case is added there and
-        // not here, the new form falls to `unrecognized` and the composition card quietly
-        // reports it as unclassified.
+        // Mirrors every form `baseDocumentSourceRow` writes. If a form is added there and not
+        // here, it falls to `unrecognized` and the composition card quietly reports it as
+        // unclassified.
         let expected: [(era: String, repository: String?, category: SourceProvenanceCategory)] = [
             ("decimal", "Department of State", .centralDecimalFile),
+            // #1543: a central-files form names its category whoever the row says holds the
+            // record. A Subject-Numeric citation is stored `subject_numeric` in both wordings,
+            // and a decimal number cited through the National Archives is stored `decimal`.
+            ("subject_numeric", "Department of State", .subjectNumericFile),
+            ("subject_numeric", "National Archives", .subjectNumericFile),
+            ("decimal", "National Archives", .centralDecimalFile),
             ("lot_file", "Department of State", .lotFile),
             ("structured", "National Archives", .naraCollection),
             ("structured", "Johnson Library", .presidentialLibrary),
@@ -131,6 +137,47 @@ struct ArchivalLibraryProfileTests {
         #expect(profile.bands[0].documentCount == 120)
         #expect(profile.bands[0].volumeCount == 1)
         #expect(profile.centralFileNoteCount == 100)
+    }
+
+    /// #1543: the collections card says how many notes cite the central files and are therefore
+    /// not listed. That count is the three central filing systems together; before the
+    /// Subject-Numeric File had a category it was two.
+    @Test("The central-file count is the three central filing systems together")
+    func centralFileCountCoversThreeSystems() {
+        let profile = ArchivalLibraryProfile.make(
+            groups: [
+                group("v1", "decimal", "Department of State", 1),
+                group("v2", "subject_numeric", "National Archives", 1),
+                group("v3", "cfpf", "Department of State", 1),
+                // Not a central file: a NARA collection, and a lot.
+                group("v2", "structured", "National Archives", 1),
+                group("v1", "lot_file", "Department of State", 1),
+            ],
+            collectionGroups: [], coverage: coverage([("v1", 1950), ("v2", 1965), ("v3", 1975)]),
+            authority: nil)
+        #expect(profile.noteCount == 5)
+        #expect(profile.centralFileNoteCount == 3, """
+            decimal + Subject-Numeric + Central Foreign Policy File; got \(profile.centralFileNoteCount). \
+            Leaving the Subject-Numeric File out would have the caption say fewer notes cite the \
+            central files than the composition above it shows.
+            """)
+        // One fixture per term: each system alone is counted.
+        for era in ["decimal", "subject_numeric", "cfpf"] {
+            let alone = ArchivalLibraryProfile.make(
+                groups: [group("v1", era, "Department of State", 4)],
+                collectionGroups: [], coverage: [:], authority: nil)
+            #expect(alone.centralFileNoteCount == 4, "\(era) alone counted \(alone.centralFileNoteCount)")
+        }
+        // The Subject-Numeric segment sits between the other two central segments in a band.
+        let band = ArchivalLibraryProfile.make(
+            groups: [
+                group("v1", "cfpf", "Department of State", 1),
+                group("v1", "subject_numeric", "Department of State", 1),
+                group("v1", "decimal", "Department of State", 1),
+            ],
+            collectionGroups: [], coverage: coverage([("v1", 1972)]), authority: nil)
+        #expect(band.bands.first?.categories.map(\.category)
+                == [.centralDecimalFile, .subjectNumericFile, .centralForeignPolicyFile])
     }
 
     @Test("A volume whose coverage is unknown still counts in the totals, just not in a band")

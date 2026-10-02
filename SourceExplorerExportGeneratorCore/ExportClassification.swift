@@ -53,12 +53,21 @@ public enum ExportClassification {
     /// The live NARA Catalog route the app UI offers per strategy — recorded for the audit,
     /// never executed by the export.
     ///
-    /// **Parity:** mirrors the app's live-query switch (`SourceExplorerView.swift:1164-1186`),
-    /// which executes catalog queries for exactly three cases — `.lotFile`
-    /// (`resolveLotFileVariants`), `.naraCollection` (`searchByRecordGroup` + keywords), and
-    /// `.presidentialLibrary` (`searchByPresidentialMaterials`) — and the static-link
-    /// treatments in the view body (`:265-292`) for the rest.
-    public static func liveLookupRoute(for parsed: ParsedSourceNote) -> String {
+    /// **Parity:** mirrors the app's live-query switch (the `switch note` that ends
+    /// `SourceExplorerView.load()`), which executes catalog queries for exactly three cases —
+    /// `.lotFile` (`resolveLotFileVariants`), `.naraCollection` (`searchByRecordGroup` +
+    /// keywords), and `.presidentialLibrary` (`searchByPresidentialMaterials`) — and the
+    /// static-link treatments in `provenanceSection` for the rest.
+    ///
+    /// A Subject-Numeric citation takes the static link in all three of its parse cases (#1543):
+    /// the app shows it the Subject-Numeric panel and runs no keyed search, because the central
+    /// files have no item-level catalog record and a search on "Central Files 1970–73" cannot
+    /// find the file. A decimal number cited through the National Archives keeps the keyed
+    /// search, as the app still gives it the NARA-collection panel.
+    public static func liveLookupRoute(for parsed: ParsedSourceNote, note: String) -> String {
+        if CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) {
+            return "staticSeriesLink"
+        }
         switch parsed {
         case .lotFile:
             return "catalogLotVariantsQuery"

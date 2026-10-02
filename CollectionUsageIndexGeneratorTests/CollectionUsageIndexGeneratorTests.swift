@@ -147,6 +147,45 @@ struct CollectionUsageIndexGeneratorTests {
         #expect(index.coverage.notesWithAClassKey == 1)
     }
 
+    /// #1543, through the real scan at the document grain: both wordings of a Subject-Numeric
+    /// citation land in the new slug's row, the class they share is still one class, and the
+    /// decimal number cited through the National Archives is counted with the decimal file.
+    @Test("A volume's Subject-Numeric notes are counted under subjectNumericFile")
+    func subjectNumericNotesGetTheirOwnRow() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("usage-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let files = [
+            try volume("frus1964-68v14", notes: [
+                "Source: Department of State, Central Files, POL 27 VIET S. Secret.",
+                "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+                "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.",
+                // Keeps the build from refusing a corpus that joins to nothing.
+                "Source: Department of State, Conference Files: Lot 64 D 199, CF 100.",
+            ], in: root),
+        ]
+        let index = try build(files)
+
+        #expect(index.categories.count == 11)
+        #expect(index.categories.firstIndex(of: "subjectNumericFile") == 1)
+        func count(_ slug: String) throws -> Int {
+            let key = try #require(index.categories.firstIndex(of: slug))
+            return index.volumeCategories.first { $0.key == key }.map(total) ?? 0
+        }
+        #expect(try count("subjectNumericFile") == 2, """
+            Before #1543 the Department-led note was centralDecimalFile and the \
+            National-Archives-led one naraCollection.
+            """)
+        #expect(try count("centralDecimalFile") == 1)
+        #expect(try count("naraCollection") == 0)
+        #expect(try count("lotFile") == 1)
+        // The class lens does not move: one Subject-Numeric class carrying both documents, and
+        // the decimal class.
+        #expect(index.classKeys == ["399.731", "POL 27 VIET S"])
+        let subjectNumeric = try #require(row(index.classes, forKey: "POL 27 VIET S", in: index.classKeys))
+        #expect(total(subjectNumeric) == 2)
+    }
+
     @Test("Coverage reports what the scan reached, not what exists")
     func coverageIsHonest() throws {
         let index = try build(try fixtureCorpus())

@@ -311,6 +311,49 @@ struct ExportRecordTests {
         #expect(record.derived.decimalClass == "611.61")
     }
 
+    /// #1543: the app shows a Subject-Numeric citation its own panel and runs no keyed catalog
+    /// search for it, whichever parse case the wording took, so the recorded route is the static
+    /// link. The parse itself is unchanged — `kind` still says how the note was worded.
+    @Test("a National-Archives-led Subject-Numeric citation takes the static series link")
+    func subjectNumericRoute() throws {
+        // frus1964-68v14/d93
+        let record = try makeRecord(
+            note: "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+            year: 1965)
+        #expect(record.strategy == "subjectNumericFile")
+        #expect(record.parsed.kind == "naraCollection")
+        #expect(record.resolution.liveLookupRoute == "staticSeriesLink")
+        #expect(record.derived.decimalClass == "POL 27 VIET S")
+
+        // frus1969-76ve09p2/d78 — the `.cfpfFile` wording takes the same route, not the CFPF guidance.
+        let underCFPFName = try makeRecord(
+            note: "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential.",
+            year: 1973)
+        #expect(underCFPFName.strategy == "subjectNumericFile")
+        #expect(underCFPFName.parsed.kind == "cfpfFile")
+        #expect(underCFPFName.resolution.liveLookupRoute == "staticSeriesLink")
+    }
+
+    /// The other side of the same rule: a decimal number cited through the National Archives is
+    /// counted with the decimal file, and keeps the keyed search the app still runs for it.
+    @Test("a National-Archives-led decimal citation is centralDecimalFile and keeps its keyed route")
+    func nationalArchivesDecimalRoute() throws {
+        // frus1961-63v25/d494
+        let record = try makeRecord(
+            note: "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.",
+            year: 1961)
+        #expect(record.strategy == "centralDecimalFile")
+        #expect(record.parsed.kind == "naraCollection")
+        #expect(record.resolution.liveLookupRoute == "catalogRecordGroupKeywordQuery")
+
+        // frus1969-76v22/d17 — a film number keeps the CFPF guidance.
+        let film = try makeRecord(
+            note: "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis.",
+            year: 1973)
+        #expect(film.strategy == "centralForeignPolicyFile")
+        #expect(film.resolution.liveLookupRoute == "staticCFPFGuidance")
+    }
+
     @Test("PINNED: the synthetic prefixed central-files shape classifies as namedFileSeries")
     func prefixedCentralFilesQuirk() throws {
         // "Department of State, Central Files, 611.61/2–1548." — no "Source:" prefix (so the

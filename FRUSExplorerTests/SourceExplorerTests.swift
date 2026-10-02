@@ -1122,3 +1122,281 @@ struct VolumeSourcesResolutionTests {
         #expect(index.resolution(recordGroup: "59", lotFile: "64 D 199")?.naId == "602231")
     }
 }
+
+// MARK: - SubjectNumericExplorerTests (#1543)
+
+/// Source Explorer's Subject-Numeric panel (#1543): what `SourceExplorerView.subjectNumericCitation`
+/// reads from a note, the filing-period table both twins and the NARA Lookup sheet draw, and a
+/// scan that both hand-written twins call the reader and carry the panel's six strings.
+///
+/// Every note is copied from the corpus with its document id beside it, except where a case says
+/// it is constructed.
+///
+/// Version history:
+///   1.0 — 2026-10-02: #1543
+@Suite("Source Explorer — the Subject-Numeric File (#1543)")
+@MainActor
+struct SubjectNumericExplorerTests {
+
+    private static let page = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1963-1973"
+    private static let handbook1963 = "Classification Handbook 1963 (PDF)"
+    private static let handbook1965 = "Classification Handbook 1965–73 (PDF)"
+
+    private func citation(_ note: String, day: DecimalFileSegment.DocumentDay?) -> SourceExplorerView.SubjectNumericCitation? {
+        SourceExplorerView.subjectNumericCitation(parsed: SourceNoteParser().parse(note), note: note,
+                                                  documentDay: day)
+    }
+
+    private func day(_ year: Int, _ month: Int, _ day: Int) -> DecimalFileSegment.DocumentDay {
+        .init(year: year, month: month, day: day)
+    }
+
+    // MARK: What the panel shows
+
+    /// frus1961-63v15/d177, a telegram of 21 February 1963: no range is printed, so the block is
+    /// the one the document's date falls in, and the handbook is 1963's.
+    @Test("A Department-led note of 1963 shows its designation, the 1963 block and the 1963 handbook")
+    func departmentLed1963() throws {
+        let reading = try #require(citation(
+            "Source: Department of State, Central Files, POL US–USSR. Secret; Priority. Drafted and initialed by Hillenbrand on February 19; cleared by Thompson, Tyler, Guthrie, and Bundy; and approved and initialed by Rusk.",
+            day: day(1963, 2, 21)))
+        #expect(reading.designation == "POL US–USSR")
+        #expect(reading.block == "1963")
+        #expect(reading.handbooks.map(\.label) == [Self.handbook1963])
+        #expect(reading.pageURL.absoluteString == Self.page)
+    }
+
+    /// frus1964-68v14/d93: the note prints NARA's block, and the handbook is the 1965 one, in
+    /// effect from January 1964.
+    @Test("A National-Archives-led note shows the block it prints and the 1965 handbook")
+    func nationalArchivesLed1964() throws {
+        let reading = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+            day: day(1965, 2, 11)))
+        #expect(reading.designation == "POL 27 VIET S")
+        #expect(reading.block == "1964–66")
+        #expect(reading.handbooks.map(\.label) == [Self.handbook1965])
+        #expect(reading.pageURL.absoluteString == Self.page)
+    }
+
+    /// frus1961-63v25/d61, dated 5 February 1963, prints "1960–63" — the decimal file's last
+    /// block, which NARA has no Subject-Numeric block of. The block is the document's.
+    @Test("A printed range that is not one of NARA's blocks gives way to the document's date")
+    func printedRangeThatIsNoBlock() throws {
+        let early = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.",
+            day: day(1963, 2, 5)))
+        #expect(early.designation == "ORG 4–COMM")
+        #expect(early.block == "1963", "not the printed 1960–63")
+        #expect(early.handbooks.map(\.label) == [Self.handbook1963])
+
+        // frus1964-68v05/d4, dated 3 January 1967, prints "1964–67".
+        let straddling = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–67, POL 27–14 VIET/MARIGOLD. Top Secret; Marigold.",
+            day: day(1967, 1, 3)))
+        #expect(straddling.block == "1967–69", "not the printed 1964–67")
+        #expect(straddling.handbooks.map(\.label) == [Self.handbook1965])
+    }
+
+    /// With no day to read and no block printed, the panel names no block and offers both
+    /// handbooks (frus1964-68v01/d5's note, the date withheld).
+    @Test("A note with no date and no printed block shows no block and both handbooks")
+    func noDateNoBlock() throws {
+        let reading = try #require(citation(
+            "Source: Department of State, Central Files, POL 27 VIET S. Secret.", day: nil))
+        #expect(reading.designation == "POL 27 VIET S")
+        #expect(reading.block == nil)
+        #expect(reading.handbooks.map(\.label) == [Self.handbook1963, Self.handbook1965])
+    }
+
+    /// A printed block needs no date, and is kept when the document's date falls outside it —
+    /// the file was cited from that block (frus1969-76ve07/d110's note).
+    @Test("A printed block is used with no date, and over a date outside it")
+    func printedBlockNeedsNoDate() throws {
+        let note = "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret. Drafted on January 26 by Quainton."
+        #expect(try #require(citation(note, day: nil)).block == "1970–73")
+        #expect(try #require(citation(note, day: day(1969, 12, 30))).block == "1970–73")
+        #expect(try #require(citation(note, day: nil)).designation == "AID (US) INDIA")
+        #expect(try #require(citation(note, day: nil)).handbooks.map(\.label) == [Self.handbook1965])
+    }
+
+    /// NARA's four segments by the document's date, each edge once: February–December 1963,
+    /// 1964–66, 1967–69, 1970–73. A date outside February 1963–December 1973 names no block.
+    @Test("The block from the document's date", arguments: [
+        (1963, 1, 31, nil), (1963, 2, 1, "1963"), (1963, 12, 31, "1963"),
+        (1964, 1, 1, "1964–66"), (1966, 12, 31, "1964–66"),
+        (1967, 1, 1, "1967–69"), (1969, 12, 31, "1967–69"),
+        (1970, 1, 1, "1970–73"), (1973, 12, 31, "1970–73"),
+        (1974, 1, 1, nil), (1962, 6, 1, nil),
+    ] as [(Int, Int, Int, String?)])
+    func blockFromTheDate(year: Int, month: Int, dayOfMonth: Int, block: String?) throws {
+        let reading = try #require(citation(
+            "Source: Department of State, Central Files, POL 27 VIET S. Secret.",
+            day: day(year, month, dayOfMonth)))
+        #expect(reading.block == block)
+        // The handbook follows the block: 1963's for 1963, the 1965 one after, both for none.
+        let expected: [String]
+        switch block {
+        case "1963": expected = [Self.handbook1963]
+        case nil: expected = [Self.handbook1963, Self.handbook1965]
+        default: expected = [Self.handbook1965]
+        }
+        #expect(reading.handbooks.map(\.label) == expected)
+    }
+
+    /// A citation that gives only its block has no designation to show (frus1964-68v29p1/d368).
+    @Test("A block-only citation shows its block and no designation")
+    func blockOnly() throws {
+        let reading = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
+            day: day(1966, 7, 5)))
+        #expect(reading.designation == nil)
+        #expect(reading.block == "1964–66")
+    }
+
+    /// The panel is the Subject-Numeric File's alone.
+    @Test("A decimal number, a film number and a lot get no Subject-Numeric panel")
+    func otherCitationsGetNoPanel() {
+        // The control: the reader is answering.
+        #expect(citation("Source: Department of State, Central Files, POL 27 VIET S. Secret.", day: nil) != nil)
+        // frus1961-63v11/d301 — a decimal number dated March 1963.
+        #expect(citation("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.",
+                         day: day(1963, 3, 27)) == nil)
+        // frus1961-63v25/d494 — a decimal number through the National Archives.
+        #expect(citation("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.",
+                         day: day(1961, 7, 25)) == nil)
+        // frus1969-76v22/d17 — a film number.
+        #expect(citation("Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis.",
+                         day: day(1973, 8, 1)) == nil)
+        // frus1969-76ve08/d15 — an office file under the heading.
+        #expect(citation("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis.",
+                         day: day(1974, 11, 1)) == nil)
+        #expect(SourceExplorerView.subjectNumericCitation(parsed: nil, note: "", documentDay: nil) == nil)
+    }
+
+    // MARK: The filing-period table
+
+    /// The no-year table lists NARA's five eras: it ended at 1963–1973 and named that row
+    /// "subject-numeric files". The table has three consumers — both twins' no-year tables and the
+    /// NARA Lookup sheet — and each draws this one list.
+    @Test("The filing-period table ends at the Central Foreign Policy File and names the Subject-Numeric File")
+    func filingPeriodTable() throws {
+        let periods = SourceExplorerView.allFilingPeriods
+        #expect(periods.count == 11)
+        #expect(Set(periods.map(\.id)).count == periods.count, "ids are unique")
+        let last = try #require(periods.last)
+        #expect(last.id == "1973-1979")
+        #expect(last.label == "1973–1979 (Central Foreign Policy File)")
+        #expect(last.url.absoluteString
+                == "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1973-1979")
+        #expect(last.filingManuals.isEmpty)
+
+        let subjectNumeric = try #require(periods.first { $0.id == "1963-1973" })
+        #expect(subjectNumeric.label == "February 1963–1973 (Subject-Numeric File)")
+        #expect(subjectNumeric.url.absoluteString == Self.page)
+        #expect(subjectNumeric.filingManuals.map(\.label) == [Self.handbook1963, Self.handbook1965])
+        #expect(periods.firstIndex { $0.id == "1963-1973" } == periods.count - 2)
+
+        // The decimal rows keep their labels.
+        #expect(periods.filter { $0.label.hasSuffix("(decimal files)") }.count == 7)
+        #expect(periods.first { $0.id == "1960-1963" }?.label == "1960–January 1963 (decimal files)")
+    }
+
+    // MARK: Both twins
+
+    private static let twins = ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
+                                "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"]
+
+    private static let panelKeys = [
+        "source.explorer.subjectNumeric.typeValue", "source.explorer.subjectNumeric.designation",
+        "source.explorer.subjectNumeric.block", "source.explorer.subjectNumeric.period",
+        "source.explorer.subjectNumeric.cite.note", "source.explorer.subjectNumeric.hint",
+    ]
+
+    /// A twin's source without its comment lines.
+    private static func code(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
+    /// The text between the parenthesis that opens at `open` and the one that closes it.
+    private static func arguments(in code: String, openingAt open: String.Index) -> Substring? {
+        var depth = 0
+        var index = open
+        while index < code.endIndex {
+            switch code[index] {
+            case "(": depth += 1
+            case ")":
+                depth -= 1
+                if depth == 0 { return code[code.index(after: open)..<index] }
+            default: break
+            }
+            index = code.index(after: index)
+        }
+        return nil
+    }
+
+    /// Every CALL of `subjectNumericCitation(` in `code` — the declaration excluded — with the
+    /// arguments inside its own parentheses.
+    private static func callSites(in code: String) -> [Substring] {
+        var calls: [Substring] = []
+        var search = code.startIndex
+        while let hit = code.range(of: "subjectNumericCitation(", range: search..<code.endIndex) {
+            search = hit.upperBound
+            let before = code[..<hit.lowerBound]
+            if before.hasSuffix("func ") { continue }
+            let open = code.index(before: hit.upperBound)
+            if let arguments = arguments(in: code, openingAt: open) { calls.append(arguments) }
+        }
+        return calls
+    }
+
+    /// The two Source Explorer views are hand-written per platform, and a change has reached one
+    /// and missed the other before. Each must call the reader with the raw note and the document's
+    /// day — the iOS view once, in `provenanceSection`; the Mac view in both of its boxes — and
+    /// each must carry the panel's six strings.
+    @Test("Both twins call the Subject-Numeric reader and carry the panel's six strings")
+    func bothTwinsDrawThePanel() throws {
+        var read = 0
+        for path in Self.twins {
+            let code = try Self.code(path)
+            read += 1
+            let calls = Self.callSites(in: code)
+            let wanted = path.hasSuffix("MacSourceExplorerView.swift") ? 2 : 1
+            #expect(calls.count >= wanted, "\(path) calls subjectNumericCitation( \(calls.count) time(s), wants \(wanted)")
+            for call in calls {
+                #expect(call.contains("note: rawSourceNote"), "\(path): a call reads another note: \(call)")
+                #expect(call.contains("documentDay: documentDay"), "\(path): a call drops the document's day: \(call)")
+            }
+            for key in Self.panelKeys {
+                #expect(code.contains("\"\(key)\""), "\(path) lacks \(key)")
+            }
+            #expect(code.contains("subjectNumericPanel(") || code.contains("subjectNumericBox("),
+                    "\(path) draws no Subject-Numeric panel")
+            // The keyed catalog search is skipped for these notes, in the view's own `load()`.
+            #expect(code.contains("CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote)"),
+                    "\(path) still runs the keyed search on a Subject-Numeric citation")
+        }
+        #expect(read == 2)
+    }
+
+    /// The scan's own reader: it must count calls, skip the declaration, and read a call's
+    /// arguments to the parenthesis that closes it.
+    @Test("The call scan reads a call's own parentheses")
+    func callScanReadsBalancedParentheses() {
+        let sample = """
+            static func subjectNumericCitation(parsed: ParsedSourceNote?, note: String) -> X? { nil }
+            let a = Self.subjectNumericCitation(parsed: p, note: f(x, (y)), documentDay: d)
+            let b = SourceExplorerView.subjectNumericCitation(
+                parsed: p,
+                note: rawSourceNote, documentDay: documentDay)
+            """
+        let calls = Self.callSites(in: sample)
+        #expect(calls.count == 2, "the declaration is not a call; got \(calls.count)")
+        #expect(calls.first == "parsed: p, note: f(x, (y)), documentDay: d")
+        #expect(calls.last?.contains("note: rawSourceNote, documentDay: documentDay") == true)
+    }
+}

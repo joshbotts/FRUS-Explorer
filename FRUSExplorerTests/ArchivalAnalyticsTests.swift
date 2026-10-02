@@ -753,6 +753,62 @@ struct ArchivalCollectionsDataTests {
         }
     }
 
+    // MARK: - The central files are three filing systems (#1543)
+
+    /// Five Archival Analytics strings called the Department's central files one filing system:
+    /// a class was "a subject heading inside one filing system — 763.72 …, POL 27 VIET S …",
+    /// which names a decimal file number and a Subject-Numeric designation as one system's. Each
+    /// string is read by its own key, from the key to the `")` that closes its call, so a phrase
+    /// in a neighbouring string or a comment cannot satisfy or fail it; `seen` keeps a renamed key
+    /// from passing as a clean scan.
+    @Test("The Archival Analytics copy names three central filing systems, not one")
+    func centralFilesCopyNamesThreeSystems() throws {
+        let sites: [(file: String, key: String, has: [String], lacks: [String])] = [
+            ("Theme/FRUSTheme.swift", "archival.info.units.detail.v2",
+             ["inside one of the State Department’s central filing systems",
+              "763.72 in the decimal file for the European War",
+              "POL 27 VIET S in the Subject-Numeric File for the war in South Vietnam"],
+             ["inside one filing system"]),
+            ("Analytics/ArchivalNetworkView.swift", "archival.network.class.caption.v2",
+             ["a subject heading inside one of the State Department’s central filing systems, not a collection"],
+             ["State Department’s filing system"]),
+            ("Analytics/ArchivalAnalyticsView.swift", "archival.library.collections.caption.v2 %lld %lld",
+             ["notes cite the central files, which are filing systems rather than collections"],
+             ["are a filing system rather than a collection"]),
+            ("Theme/FRUSTheme.swift", "archival.info.library.detail.v2",
+             ["notes citing the central files — the decimal file, the Subject-Numeric File and the Central Foreign Policy File — cite a filing system rather than a collection"],
+             ["notes citing the central files are a filing system"]),
+            ("Theme/FRUSTheme.swift", "archival.info.umbrella.detail.v2",
+             ["The era-specific Central Files records are never hidden.",
+              "Central Files 1964–66, 1967–69 and 1970–73 — are the Subject-Numeric File’s blocks of years",
+              "Your Library counts the same citations under the Subject-Numeric File instead of listing them as collections."],
+             []),
+        ]
+        var seen = 0
+        for site in sites {
+            let source = try Self.source(site.file)
+            guard let keyRange = source.range(of: "\"\(site.key)\"") else {
+                Issue.record("key \(site.key) is not in \(site.file)"); continue
+            }
+            guard let start = source.range(of: "defaultValue:", range: keyRange.upperBound..<source.endIndex),
+                  let end = source.range(of: "\")", range: start.upperBound..<source.endIndex) else {
+                Issue.record("no defaultValue after \(site.key)"); continue
+            }
+            let payload = String(source[start.upperBound..<end.lowerBound])
+            seen += 1
+            for phrase in site.has where !payload.contains(phrase) {
+                Issue.record("\(site.key) lacks “\(phrase)”: \(payload)")
+            }
+            for phrase in site.lacks where payload.contains(phrase) {
+                Issue.record("\(site.key) still says “\(phrase)”")
+            }
+            // The key it replaced is gone, so no call site can still draw the old sentence.
+            let old = site.key.replacingOccurrences(of: ".v2", with: "")
+            #expect(!source.contains("\"\(old)\""), "\(site.file) still declares \(old)")
+        }
+        #expect(seen == sites.count, "only \(seen) of \(sites.count) strings were found")
+    }
+
     // MARK: - One class grain (#826 / R-4)
 
     /// One app source file, for the drift guards that cannot reach the code they protect.

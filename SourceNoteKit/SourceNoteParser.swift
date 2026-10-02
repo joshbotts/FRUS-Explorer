@@ -62,14 +62,24 @@ import Foundation
 ///          sentence so remark sentences can never contribute a class key
 public enum ParsedSourceNote: Sendable, Equatable {
 
-    /// State Department central files identified by a decimal file number
-    /// (e.g. `740.001121/10-1646`) or a bare "File No." number.
-    /// Used in volumes from 1789–early 1963.
+    /// State Department central files cited through the Department: a decimal file number
+    /// (e.g. `740.001121/10-1646`), a bare "File No." number, or a Subject-Numeric file
+    /// designation (`POL 27 VIET S`).
+    ///
+    /// The case does not say which filing era the citation belongs to. It carries the decimal
+    /// file of 1910–January 1963, the Numerical File before it, and the Subject-Numeric File of
+    /// February 1963–1973 as the 1961–1968 volumes cite it. The era is decided by the citation's
+    /// form, which `CollectionKeying.centralFilesForm(parsed:note:)` reads (#1543).
     case centralFiles(recordGroup: String, fileIdentifier: String?)
 
-    /// State Department Central Foreign Policy Files (CFPF), 1973–1979.
-    /// Records are on P-Reels, D-Reels, and N-Reels, and in the AAD
+    /// A note that names the State Department Central Foreign Policy File (CFPF) or one of its
+    /// film numbers — in its citation or, as the parser reads it, anywhere in the note.
+    /// The file's records are on P-Reels, D-Reels, and N-Reels, and in the AAD
     /// Electronic Telegrams database.
+    ///
+    /// A note led by a Subject-Numeric citation whose remark names the CFPF takes this case too
+    /// (`Central Files 1970–73, POL 15–1 JAM. … (Ibid., Central Foreign Policy File, [no film
+    /// number])`); `CollectionKeying.centralFilesForm(parsed:note:)` tells those apart (#1543).
     case cfpfFile(fileIdentifier: String?)
 
     /// State Department lot file. Includes the RG number when it can be extracted.

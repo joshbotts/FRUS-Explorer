@@ -742,6 +742,61 @@ struct SemanticMapSurfaceTests {
         }
     }
 
+    /// #1543: the provenance lens names eleven categories and "too few source notes", each in its
+    /// own colour. The Subject-Numeric File is the second category and takes the third blue,
+    /// between the decimal file's and "Previously Published"; the two central-file colours the
+    /// lens already had do not move, so a reader's memory of them still holds.
+    @Test("The provenance legend has twelve entries, each in its own colour, and keeps the two old blues")
+    @MainActor
+    func provenanceLegendHasTwelveColours() throws {
+        let legend = SemanticMapLens.provenance.legend
+        #expect(legend.count == 12, "got \(legend)")
+        #expect(legend.prefix(4) == ["Too few source notes", "Central Decimal File", "Subject-Numeric File",
+                                      "Central Foreign Policy File"])
+        let palette = SemanticMapColouring.palette(for: .provenance)
+        let named = Array(palette.prefix(legend.count))
+        #expect(named.count == 12)
+        #expect(Set(named.map { "\($0)" }).count == 12, "two legend entries share a colour: \(named)")
+        // The colours v2 gave the two central-file categories it had, at the slots they now sit in.
+        #expect(named[1] == SemanticMapColouring.hsb(hue: 0.58, saturation: 0.70, brightness: 0.95, alpha: 0.75))
+        #expect(named[3] == SemanticMapColouring.hsb(hue: 0.52, saturation: 0.55, brightness: 0.95, alpha: 0.75))
+        // The new one: a third blue, one step from the decimal file's on the other side.
+        #expect(named[2] == SemanticMapColouring.hsb(hue: 0.64, saturation: 0.55, brightness: 0.95, alpha: 0.75))
+        // "Other / Unclassified" stays last and stays the dim one.
+        #expect(named[11] == SemanticMapColouring.hsb(hue: 0.10, saturation: 0.12, brightness: 0.62, alpha: 0.75))
+        // Nothing past the legend is a category colour: the filler is the absence slot's.
+        #expect(palette[12...].allSatisfy { $0 == palette[0] })
+    }
+
+    /// The caption under the provenance lens states two measured figures: how many volumes the
+    /// lens colours, and for how many of them the winning category holds under half the notes.
+    /// They are recomputed here from the bundled index through the lens's own function, so a
+    /// regenerated artifact that moves either one fails the suite. On v2 the caption said 73 of
+    /// 499 and the index gave 75 of 499.
+    @Test("The provenance caption's two figures are the bundled index's")
+    @MainActor
+    func provenanceCaptionFiguresAreMeasured() throws {
+        let byVolume = try #require(SourceProvenanceStore().index?.byVolume)
+        #expect(byVolume.count == 523, "read \(byVolume.count) volumes")
+        let dominant = SemanticMapSpikeView.dominantProvenance(byVolume: byVolume)
+        var pluralityOnly = 0
+        for volume in byVolume {
+            guard let winner = dominant[volume.volumeId] else { continue }
+            if volume.count(for: winner) * 2 < volume.totalNotes { pluralityOnly += 1 }
+        }
+        #expect(dominant.count > 400 && pluralityOnly > 0, "coloured \(dominant.count), plurality-only \(pluralityOnly)")
+
+        let caption = try #require(SemanticMapLens.provenance.caption)
+        let figures = caption.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }
+        #expect(figures == [pluralityOnly, dominant.count], """
+            The caption prints \(figures); the bundled index gives \(pluralityOnly) of \
+            \(dominant.count). Caption: \(caption)
+            """)
+        #expect(caption.contains("for \(pluralityOnly) of the \(dominant.count) volumes it colors"))
+        // The winners: the Subject-Numeric File now wins volumes, which is why the figure moved.
+        #expect(dominant.values.contains(.subjectNumericFile))
+    }
+
     /// The floor exists because one parsed note is not a finding about an archive, and the
     /// measurement behind it is in the code. This pins both ends: a thin volume is left uncoloured,
     /// and a volume at the floor is not.

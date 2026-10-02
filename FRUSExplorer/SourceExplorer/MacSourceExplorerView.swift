@@ -1823,7 +1823,7 @@ struct MacSourceExplorerView: View {
         await loadUnprintedPointers(sourceNote: note)
 
         hasAPIKey = await client.hasAPIKey()
-        catalogEvidence = CatalogQueryEvidence.forNote(note)
+        catalogEvidence = CatalogQueryEvidence.forNote(note, rawNote: rawSourceNote)
 
         // Local related-documents query — runs unconditionally; no API key needed.
         // Must be called before the per-case hasAPIKey guards that return early.

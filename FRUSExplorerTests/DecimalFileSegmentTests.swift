@@ -463,7 +463,7 @@ struct DecimalFileYearNeighbourTests {
 // MARK: - SourceExplorerBasisLineTests (#1407)
 
 /// The Archival Neighbors basis line names the FILE's filing band (#1407), through the static the
-/// section draws (`SourceExplorerView.archivalNeighborBasis(for:documentYear:documentDay:)`) —
+/// section draws (`SourceExplorerView.archivalNeighborBasis(for:note:documentYear:documentDay:)`) —
 /// unless the file's year misprints the document's own day (#1407 review).
 @Suite("Source Explorer basis line (#1407)")
 @MainActor
@@ -476,7 +476,7 @@ struct SourceExplorerBasisLineTests {
     func enDashFileNamesItsBand() {
         let basis = SourceExplorerView.archivalNeighborBasis(
             for: .centralFiles(recordGroup: "RG-59", fileIdentifier: "023.1/9–1454"),
-            documentYear: 1945, documentDay: Self.potsdam)
+            note: "023.1/9–1454", documentYear: 1945, documentDay: Self.potsdam)
         // A later filing: the document is 1945, the filing 1954.
         #expect(basis == "Same decimal file — 023.1, 1950–1954", "got \(basis ?? "nil")")
     }
@@ -485,7 +485,7 @@ struct SourceExplorerBasisLineTests {
     func hyphenGivesTheSameLine() {
         let basis = SourceExplorerView.archivalNeighborBasis(
             for: .centralFiles(recordGroup: "RG-59", fileIdentifier: "023.1/9-1454"),
-            documentYear: 1945, documentDay: Self.potsdam)
+            note: "023.1/9-1454", documentYear: 1945, documentDay: Self.potsdam)
         #expect(basis == "Same decimal file — 023.1, 1950–1954", "got \(basis ?? "nil")")
     }
 
@@ -494,7 +494,7 @@ struct SourceExplorerBasisLineTests {
     func misprintedYearGivesTheDocumentsBand() {
         let basis = SourceExplorerView.archivalNeighborBasis(
             for: .centralFiles(recordGroup: "RG-59", fileIdentifier: "740.0011 EW/8–2045"),
-            documentYear: 1943, documentDay: .init(year: 1943, month: 8, day: 20))
+            note: "740.0011 EW/8–2045", documentYear: 1943, documentDay: .init(year: 1943, month: 8, day: 20))
         #expect(basis == "Same decimal file — 740.0011 EW, 1940–1944", "got \(basis ?? "nil")")
     }
 
@@ -502,8 +502,66 @@ struct SourceExplorerBasisLineTests {
     func sequentialItemTakesTheDocumentYear() {
         let basis = SourceExplorerView.archivalNeighborBasis(
             for: .centralFiles(recordGroup: "RG-59", fileIdentifier: "711.654/123"),
-            documentYear: 1925, documentDay: nil)
+            note: "711.654/123", documentYear: 1925, documentDay: nil)
         #expect(basis == "Same decimal file — 711.654, 1910–1929", "got \(basis ?? "nil")")
+    }
+
+    // MARK: Subject-Numeric files (#1543)
+
+    /// The line a real note gets, through the real parser.
+    private func basis(_ note: String, year: Int? = 1965) -> String? {
+        SourceExplorerView.archivalNeighborBasis(
+            for: SourceNoteParser().parse(note), note: note, documentYear: year, documentDay: nil)
+    }
+
+    /// A Subject-Numeric citation worded through the National Archives finds its neighbours by
+    /// its class key (`relatedByDecimalClass`), which matches both wordings. The line used to read
+    /// "Same collection — RG 59, Central Files 1964–66", naming the block every file of three
+    /// years sits in rather than the file the list is drawn from.
+    @Test("A National-Archives-led Subject-Numeric file names its file, not its block (frus1964-68v14/d93)")
+    func nationalArchivesLedSubjectNumericNamesItsFile() {
+        let line = basis("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.")
+        #expect(line == "Same Subject-Numeric file — POL 27 VIET S", "got \(line ?? "nil")")
+    }
+
+    /// Without a class key that route finds nothing, so there is no list to head
+    /// (frus1969-76ve07/d110).
+    @Test("A National-Archives-led Subject-Numeric file with no class key gets no line")
+    func classlessSubjectNumericGetsNoLine() {
+        let line = basis("Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret.", year: 1971)
+        #expect(line == nil, "got \(line ?? "nil")")
+        // The control: the same wording with a class key gets the line, so the nil is the key's.
+        #expect(basis("Source: National Archives, RG 59, Central Files 1970–73, POL 27 VIET S. Secret.", year: 1971)
+                == "Same Subject-Numeric file — POL 27 VIET S")
+    }
+
+    /// A Department-led designator finds Department-led siblings only (`relatedByDecimal` matches
+    /// the stored file number), so it must not carry the sentence that promises the whole file.
+    /// It keeps v2's behaviour: no line (frus1964-68v01/d5).
+    @Test("A Department-led Subject-Numeric file keeps no basis line")
+    func departmentLedSubjectNumericKeepsNoLine() {
+        let line = basis("Source: Department of State, Central Files, POL 27 VIET S. Secret.", year: 1964)
+        #expect(line == nil, "got \(line ?? "nil")")
+        // The control: the same file worded through the National Archives does get the line, so
+        // the nil above is the wording's and not a rule that names no Subject-Numeric file.
+        #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret.")
+                == "Same Subject-Numeric file — POL 27 VIET S")
+    }
+
+    /// What this lane leaves alone: a decimal number worded through the National Archives, an
+    /// office file under the heading, and a lot keep the lines v2 gave them.
+    @Test("Other record-group citations keep their lines")
+    func otherRecordGroupCitationsKeepTheirLines() {
+        // The control: under the same heading, a Subject-Numeric file is named as one, so the
+        // collection lines below are kept for what is not one.
+        #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4 US. Confidential.", year: 1963)
+                == "Same Subject-Numeric file — ORG 4 US")
+        // frus1961-63v25/d494
+        #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.", year: 1961)
+                == "Same collection — RG 59, Central Files 1960–63")
+        // frus1969-76ve08/d15
+        #expect(basis("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis.", year: 1974)
+                == "Same collection — RG 59, Central Files 1970–73")
     }
 }
 

@@ -126,8 +126,8 @@ public enum CollectionUsageIndexRunner {
 
             for note in notes {
                 let parsed = parser.parse(note.note)
-                byCategory[ProvenanceCategory.from(parsed).rawValue, default: [:]][volumeId,
-                                                                                  default: 0] += 1
+                byCategory[ProvenanceCategory.from(parsed, note: note.note).rawValue,
+                           default: [:]][volumeId, default: 0] += 1
                 if let record = authority.record(forParsed: parsed, note: note.note) {
                     byCollection[record.id, default: [:]][volumeId, default: 0] += 1
                     notesInACollection += 1

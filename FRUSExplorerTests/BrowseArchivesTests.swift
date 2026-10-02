@@ -160,4 +160,31 @@ struct BrowseArchivesTests {
                     "\(door.slug) reaches \(door.volumeCount) volumes against \(usage.coverage.volumesWithNotes) with notes")
         }
     }
+
+    /// #1543: the Subject-Numeric File is a Provenance Types door of its own. The door follows
+    /// the artifact and the enum, so it exists only when the bundled usage index carries the
+    /// slug, and it reads "Subject-Numeric File" only when the enum has the case — a slug with no
+    /// case degrades to the slug itself.
+    @Test func theSubjectNumericFileIsADoor() throws {
+        let usage = try #require(CollectionUsageIndexStore.shared,
+                                 "bundled collection-usage-index.json must decode")
+        let doors = ArchivesAxis.categoryDoors(usage: usage)
+        #expect(doors.count == 11, "eleven doors; got \(doors.map(\.slug))")
+        #expect(doors.map(\.slug).firstIndex(of: "subjectNumericFile") == 1,
+                "second, between the decimal file and the Central Foreign Policy File")
+        let door = try #require(doors.first { $0.slug == "subjectNumericFile" },
+                                "the bundled usage index carries no subjectNumericFile row")
+        #expect(door.name == "Subject-Numeric File")
+        #expect(door.name != door.slug)
+        #expect(door.docCount > 9_000, "the door holds \(door.docCount) documents")
+        #expect(door.volumeCount > 100, "the door reaches \(door.volumeCount) volumes")
+        // The three central doors are in the order the filing systems replaced one another.
+        #expect(doors.prefix(3).map(\.name)
+                == ["Central Decimal File", "Subject-Numeric File", "Central Foreign Policy File"])
+        // What the notes left behind: Other NARA Collections is now smaller than the new door.
+        let nara = try #require(doors.first { $0.slug == "naraCollection" })
+        #expect(nara.docCount < door.docCount,
+                "Other NARA Collections \(nara.docCount) against Subject-Numeric File \(door.docCount)")
+        #expect(doors.reduce(0) { $0 + $1.docCount } == usage.coverage.noteCount)
+    }
 }

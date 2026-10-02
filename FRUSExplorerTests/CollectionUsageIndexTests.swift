@@ -49,7 +49,9 @@ struct CollectionUsageIndexTests {
         #expect(usage.volumes == usage.volumes.sorted(), "volumes must be sorted")
         #expect(usage.collectionIds == usage.collectionIds.sorted())
         #expect(usage.classKeys == usage.classKeys.sorted())
-        #expect(usage.categories.count == 10, "the ten provenance categories")
+        #expect(usage.categories.count == 11, "the eleven provenance categories (#1543)")
+        #expect(usage.categories == SourceProvenanceCategory.ordered.map(\.rawValue),
+                "the artifact's category order is the app's; got \(usage.categories)")
         #expect(usage.volumes.count > 500)
         #expect(usage.collectionIds.count > 1_000)
         #expect(usage.classKeys.count > 5_000)

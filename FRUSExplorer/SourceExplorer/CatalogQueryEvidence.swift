@@ -56,7 +56,7 @@ enum CatalogQueryEvidence: Sendable, Equatable {
     /// Mirrors the dispatch in both views' `loadCatalogResults`. A `.naraCollection` that names
     /// a lot is verified because #704 routes it to the guarded lot path — the classification
     /// has to track that reroute or it would describe a query the app no longer issues.
-    static func forNote(_ note: ParsedSourceNote) -> CatalogQueryEvidence? {
+    static func forNote(_ note: ParsedSourceNote, rawNote: String) -> CatalogQueryEvidence? {
         switch note {
         case .lotFile:
             return .controlNumberVerified
