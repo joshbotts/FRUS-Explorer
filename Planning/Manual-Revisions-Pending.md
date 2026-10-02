@@ -13,11 +13,14 @@ Format, one entry per change:
 <!-- Lanes append below this line, one "## <LANE KEY> — <issues>" heading each. -->
 
 **Index, 2026-10-02** *(added by lane PLAN on 2026-10-01 and brought to the merged file when the
-lane landed; no entry below was edited).* Sixteen sections, in the order the lanes landed:
+lane landed; lane OH's landing added its section to the list; no entry below was edited).*
+Seventeen sections, in the order the lanes landed:
 **WB**, **STOR**, **PAGE**, **SYNC**, **NOTE**, **LANG**, **GRAPH**, **ARCH**, **EXPORT**,
-**MACCOL**, **SEL**, **CITE**, **XREF**, **HYG**, **READ**, and **PLAN** at the end, which
+**MACCOL**, **SEL**, **CITE**, **XREF**, **HYG**, **READ**, **PLAN**, which
 holds manual sentences the 2026-09-27 planning audit found wrong rather than ones a lane's code
-changed. **HYG**'s three entries propose no change; one offers an optional sentence. Each entry
+changed, and **OH** at the end, which proposes no manual change: its report to the Office of the
+Historian changes no app behaviour and no app copy, and its section has no entry to approve.
+**HYG**'s three entries propose no change; one offers an optional sentence. Each entry
 is self-contained; three things are worth knowing before applying them.
 
 - **Five pairs of lanes propose changes to the same sentences.** Lanes GRAPH and ARCH both
@@ -863,3 +866,12 @@ is self-contained; three things are worth knowing before applying them.
 - **Proposed:** Mac: the same sentence with the count the corrected caption gives (75 today). iOS: the Mac's sentence, which also corrects "ten notes or fewer" (the floor is fewer than ten) and drops the two figures the caption does not state.
 - **Why:** the Mac sentence quotes the lens caption, `semanticMap.lens.provenance.caption.v2` (`FRUSExplorer/Semantic/Map/SemanticMapLens.swift:100`), and that caption is itself out of date: recomputed from `source-provenance-index.json` as lane NOTE regenerated it on 2026-10-01, the winner holds under half the notes in **75** of the 499 colored volumes, not 73 (`frus1961-63v03` and `frus1961-63v21` joined). The caption is a code string and was not changed by this lane; it is listed in the plan of record's "Not placed" note. Change the manuals when it is fixed, to whatever it then says.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## OH — #1309 report (P4)
+
+*Lane OH compiled the report to the Office of the Historian (`Planning/OH-Report-2026-10-01.md`). It changes no app behaviour and no app copy, so it makes no manual change necessary. Both manuals were searched for statements the report bears on; the two that touch it stay true as written:*
+
+- *Mac §8.2 and iOS §8.2, cross-references that cannot be followed (`Docs/macOS-User-Manual.md:508`, `Docs/iOS-User-Manual.md:640`): "occasionally … cites a page, document, or volume that does not exist in the digital corpus." The report finds that 352 of the 652 such references point at pages missing from one file, `frus1952-54v09p1`, and 8 at volumes not yet digitized. The sentence covers both.*
+- *Mac §17.5 and iOS §17.6, **Reports → Broken Cross-References** (`Docs/macOS-User-Manual.md:1196`, `Docs/iOS-User-Manual.md:1301`): the export is unchanged. The bundled index was not regenerated (the regenerated CSV is byte-identical to the committed one).*
+
+**No entry for the owner to approve.** If the Office of the Historian restores `frus1952-54v09p1`'s Documents 900–946, the count the app shows falls by 352 at the next corpus refresh; neither manual states a count.

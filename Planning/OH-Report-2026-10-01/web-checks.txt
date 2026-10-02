@@ -1,0 +1,60 @@
+# Public-site checks for Planning/OH-Report-2026-10-01.md, 2026-10-01 (tools/oh-report/check_urls.sh over urls.txt).
+# One line per URL: the HTTP status, the URL, and the run it comes from. Runs 1-3 are whole passes of the
+# script, minutes apart; run 4 is two single requests. history.state.gov throttles: runs 2 and 3 answered 403
+# for pages run 1 had answered 200 or 404, so each line carries the first answer that is not a throttled 403,
+# and names the runs that were. No URL gave two different answers other than that 403.
+# Controls: d99999 (a document that cannot exist) answers 404, as a missing page does;
+# 9999.png (an image that cannot exist) answers 403, as static.history.state.gov does for a missing image.
+200 https://history.state.gov/historicaldocuments/frus1952-54v09p1/d899  # run 1
+404 https://history.state.gov/historicaldocuments/frus1952-54v09p1/d900  # run 1
+404 https://history.state.gov/historicaldocuments/frus1952-54v09p1/d946  # run 1
+200 https://history.state.gov/historicaldocuments/frus1952-54v09p1/pg_1660  # run 1; 403 (throttled) in run 3
+404 https://history.state.gov/historicaldocuments/frus1952-54v09p1/pg_1661  # run 1; 403 (throttled) in run 2
+404 https://history.state.gov/historicaldocuments/frus1952-54v09p1/pg_1741  # run 1; 403 (throttled) in run 2
+200 https://history.state.gov/historicaldocuments/frus1952-54v09p2/d947  # run 1
+404 https://history.state.gov/historicaldocuments/frus1952-54v09p1/d99999  # run 1; 403 (throttled) in run 2
+200 https://history.state.gov/historicaldocuments/frus1977-80v13/pgg_655  # run 1
+404 https://history.state.gov/historicaldocuments/frus1977-80v13/pg_655  # run 1
+200 https://history.state.gov/historicaldocuments/frus1977-80v13/pg_654  # run 1; 403 (throttled) in run 2, 3
+200 https://history.state.gov/historicaldocuments/frus1949v01/pg-814  # run 1; 403 (throttled) in run 2
+404 https://history.state.gov/historicaldocuments/frus1949v01/pg_814  # run 1
+404 https://history.state.gov/historicaldocuments/frus1949v05/pg_990  # run 1; 403 (throttled) in run 2
+404 https://history.state.gov/historicaldocuments/frus1950v01/pg_922  # run 1; 403 (throttled) in run 2, 3
+404 https://history.state.gov/historicaldocuments/frus1977-80v20/pg_1  # run 1; 403 (throttled) in run 2
+200 https://history.state.gov/historicaldocuments/frus1977-80v20/pg_001  # run 1; 403 (throttled) in run 2
+404 https://history.state.gov/historicaldocuments/frus1977-80v12/pg_XIII  # run 1
+200 https://history.state.gov/historicaldocuments/frus1977-80v12/pg_XII  # run 1
+404 https://history.state.gov/historicaldocuments/frus1902app1/pg_327  # run 1
+200 https://history.state.gov/historicaldocuments/frus1902app1/pg_326  # run 1
+404 https://history.state.gov/historicaldocuments/frus1916Supp/pg_191  # run 1
+404 https://history.state.gov/historicaldocuments/frus1916Supp/pg_976  # run 1; 403 (throttled) in run 2
+404 https://history.state.gov/historicaldocuments/frus1952-54v01p2/pg_885  # run 1
+404 https://history.state.gov/historicaldocuments/frus1964-68v16/pg_778  # run 1; 403 (throttled) in run 2
+404 https://history.state.gov/historicaldocuments/frus1870/pg_22  # run 1; 403 (throttled) in run 2
+200 https://static.history.state.gov/frus/frus1916Supp/medium/0476.png  # run 1
+200 https://static.history.state.gov/frus/frus1916Supp/medium/0477.png  # run 1
+200 https://static.history.state.gov/frus/frus1916Supp/medium/1262.png  # run 1
+200 https://static.history.state.gov/frus/frus1952-54v01p2/medium/0095.png  # run 1
+200 https://static.history.state.gov/frus/frus1964-68v16/medium/0816.png  # run 1
+200 https://static.history.state.gov/frus/frus1902app1/medium/0351.png  # run 1
+200 https://static.history.state.gov/frus/frus1902app1/medium/0291.png  # run 1
+200 https://static.history.state.gov/frus/frus1902app1/medium/0292.png  # run 4
+200 https://static.history.state.gov/frus/frus1902app1/medium/0293.png  # run 4
+200 https://static.history.state.gov/frus/frus1902app1/medium/0294.png  # run 1
+200 https://static.history.state.gov/frus/frus1870/medium/0056.png  # run 1
+200 https://static.history.state.gov/frus/frus1870/medium/0057.png  # run 1
+200 https://static.history.state.gov/frus/frus1870/medium/0560.png  # run 1
+200 https://static.history.state.gov/frus/frus1870/medium/0561.png  # run 1
+403 https://static.history.state.gov/frus/frus1916Supp/medium/9999.png  # run 1
+403 https://static.history.state.gov/frus/frus1917/medium/00023.png  # run 1
+200 https://static.history.state.gov/frus/frus1917/medium/0003.png  # run 1
+403 https://static.history.state.gov/frus/frus1964-68v20/medium/574.png  # run 1
+200 https://static.history.state.gov/frus/frus1964-68v20/medium/0574.png  # run 1
+403 https://static.history.state.gov/frus/frus1964-68v22/medium/009.png  # run 1
+200 https://static.history.state.gov/frus/frus1964-68v22/medium/0009.png  # run 1
+403 https://static.history.state.gov/frus/frus1964-68v22/medium/099.png  # run 1
+200 https://static.history.state.gov/frus/frus1964-68v22/medium/0099.png  # run 1
+200 https://static.history.state.gov/frus/frus1866p2/medium/0704.png  # run 1
+200 https://static.history.state.gov/frus/frus1877/medium/0047.png  # run 1
+200 https://static.history.state.gov/frus/frus1951v07p1/medium/0012.png  # run 1
+200 https://static.history.state.gov/frus/frus1952-54v07p2/medium/0010.png  # run 1
