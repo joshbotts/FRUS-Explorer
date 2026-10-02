@@ -4,7 +4,7 @@
 
 **Scope.** 49 issues are open. #234 is deferred indefinitely, and #1309 is used only to hold the report to the Office of the Historian. This plan covers the other **47**.
 
-**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG and READ of Tier 3 on 2026-10-02; §0a says where the wave stands and what remains.**
+**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG, READ and PLAN of Tier 3 on 2026-10-02; OH's report is compiled and lands after them, not yet posted; §0a says where the wave stands and what remains.**
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14. (This is the Visual-Marketing-Plan §7 steps that are done, carried unchanged from the 2026-09-06 plan and checked by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`.)
 
@@ -136,7 +136,7 @@ The release (build 49, one re-index) follows the tiers the owner chooses to land
 
 ## 0a. Where the wave stands — 2026-10-02
 
-Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v2` @ `1d6fc032` when the lane landed on 2026-10-02, after HYG and READ had merged. It changes nothing in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** and the rollup at **v10**.
+Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v2` @ `1d6fc032` when the lane landed on 2026-10-02, after HYG and READ had merged. Lane OH's landing, on `v2` @ `6f6d2430` (PLAN's merge, PR #1560), added the two paragraphs on PLAN and OH below the table and rewrote "What remains" to match. It changes nothing in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** and the rollup at **v10**.
 
 **Landed: WB, all of Tier 1, all of Tier 2, and HYG and READ of Tier 3** (fifteen lanes, in this order: the first thirteen merged on 2026-10-01, HYG and READ on 2026-10-02).
 
@@ -158,15 +158,22 @@ Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v
 | HYG | #1558 | #1412, #1439, #1423, #1450, #1484 | All five ◦ fold-ins. Adds a gate for a view nothing constructs (`UnconstructedViewAuditTests`), and #1412's known-failure exemption is dropped: the unit target runs with none. |
 | READ | #1559 | #1516 | D3 option (f)4, and the ◦ fold-in. The index stays at **v64**: no stored text moved. D3's sub-choices (a)–(d) shipped as §0 recommends and wait on the owner's confirmation (below). |
 
+**PLAN landed too, as PR #1560 on 2026-10-02.** It is the planning housekeeping of P3 (b) and closes no issue, so it has no row in the table. Its session entry in `Planning/DEVELOPMENT-PLAN.md` lists what it archived and corrected.
+
+**OH's report is compiled, and it lands in lane OH's PR, the one that carries this paragraph.** It is `Planning/OH-Report-2026-10-01.md`, with its CSVs in `Planning/OH-Report-2026-10-01/` and the script that re-checks every item in `tools/oh-report/`. It is a **draft for the owner: nothing has been posted, to #1309 or upstream**, and #1309 stays open.
+- **What it holds** (§5 was the plan's list; each item was re-checked at corpus `550a8c5c5`, and several figures moved). `frus1952-54v09p1`'s missing Documents 900–946 lead it: 47 documents, which 352 of the 652 broken references point into. Then six classes: structure (19 edits in 15 volumes, 17 confirmed and 2 questions, and 21 Sources lists as questions), pagination (73 rows in 51 volumes), cross-references (645 defects), dates (205 rows in 89 volumes), transcription (169 rows, and 77 files with glued tags) and headers (13 rows).
+- **What it corrects in the repository's own record.** Of the 2026-09-20 structure sweep's 23 rows, three are withdrawn and one of its five confirmed rows is wrong (`frus1873p1v2`); the report's Part B.2 says not to send that sweep's `REPORT.md`. The generator is not fixed.
+- **The items lanes PAGE and NOTE added for it** are in the report where they are defects: two of PAGE's page ids (`pg-seq-1004` in `frus1949v05`, `pg-seq-938` in `frus1950v01`), NOTE's source-note and dateline patterns, and its nested Sources headings, which a scan of every Sources list took from three volumes to 32 headings in 21 lists. OH's session entry in `Planning/DEVELOPMENT-PLAN.md` says which were left out as ordinary TEI and which are left to the owner.
+- **What follows, in this order (P4):** the owner reviews Part A and spot-checks two or three question rows against the printed volumes; Part A is then posted to #1309 as one comment; and the owner files it upstream on `HistoryAtState/frus`, with the CSVs attached. No printed volume and no page image was read for it.
+
 **Count.** The plan covers 50 issues: the 47 of §1 and #1538, #1539 and #1540. **All 50 are closed**: the 49 in the table and #1430 (D14), each read with `gh issue view` on 2026-10-02. **Six issues are open in the repository**, and none is one of the 50: #234 (deferred), #1309 (it holds the OH report) and the four under "Not placed" below, #1535, #1536, #1543 and #1545.
 
 **What remains, in order.**
-1. **PLAN** — this lane's PR: the planning housekeeping of P3 (b). Its session entry in `Planning/DEVELOPMENT-PLAN.md` lists what it archived and corrected.
-2. **OH** — the #1309 report (§5), one post (P4). The lanes added items for it: PAGE's five page-id defects (its notes are in the session's durable folder) and NOTE's two volumes that nest a library's sources inside another holder's list.
-3. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which holds sixteen sections — one for each of the fifteen landed lanes and one for PLAN — with an index at its head.
-4. **DOCS-2**, after the same hand-back — the iOS manual: the whole re-read, parity with the Mac manual, and the owner's Mac edits.
-5. **Optional tail, LANG-D** — only if LANG's release log shows the lemma verdict still failing on foreground launches (§0, Lane order 5).
-6. **The release steps** — the next paragraph.
+1. **OH's posting.** The report is compiled (above). It is posted to #1309, as one comment (P4), only after the owner's review, and the owner files it upstream. Until then nothing is posted anywhere.
+2. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which holds seventeen sections — one for each of the fifteen lanes in the table, one for PLAN and one for OH — with an index at its head. OH's section proposes no manual change.
+3. **DOCS-2**, after the same hand-back — the iOS manual: the whole re-read, parity with the Mac manual, and the owner's Mac edits.
+4. **Optional tail, LANG-D** — only if LANG's release log shows the lemma verdict still failing on foreground launches (§0, Lane order 5).
+5. **The release steps** — the next paragraph.
 
 **The release (build 49, one re-index, v62 → v64).** §2's list stands. The wave added to it:
 - **The CloudKit schema gate (SYNC).** Every archive now runs a "Check CloudKit schema" phase, and it fails until `Scripts/check_cloudkit_schema.py` has read Production's schema on this Mac. That needs a CloudKit management token (`xcrun cktool save-token --type management`), and none was saved when SYNC landed. Nothing awaits deploy: `identifiersAwaitingDeploy` is empty.
@@ -505,6 +512,8 @@ Lane PLAN moved twelve finished documents and one folder to `Planning/Completed/
 - **Not archived, and why:** the cross-platform review package waits on an owner yes or no to the residue its `STATUS.md` §0 lists. `Vector-Embeddings-Semantic-Design.md` stays at the Planning root because four source files cite it by that path.
 
 ## 5. The #1309 report to the Office of the Historian
+
+*Compiled on 2026-10-01 as `Planning/OH-Report-2026-10-01.md` (§0a). This section is the plan's list as written on 2026-09-28; the report re-checked each item, and several of the figures below moved.*
 
 **Nothing has been filed upstream yet.** #1309 holds the Malta body (now diagnosed as a single displaced `</div>`) and three comments on pagination.
 

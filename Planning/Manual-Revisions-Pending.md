@@ -13,11 +13,14 @@ Format, one entry per change:
 <!-- Lanes append below this line, one "## <LANE KEY> — <issues>" heading each. -->
 
 **Index, 2026-10-02** *(added by lane PLAN on 2026-10-01 and brought to the merged file when the
-lane landed; no entry below was edited).* Sixteen sections, in the order the lanes landed:
+lane landed; lane OH's landing added its section to the list; no entry below was edited).*
+Seventeen sections, in the order the lanes landed:
 **WB**, **STOR**, **PAGE**, **SYNC**, **NOTE**, **LANG**, **GRAPH**, **ARCH**, **EXPORT**,
-**MACCOL**, **SEL**, **CITE**, **XREF**, **HYG**, **READ**, and **PLAN** at the end, which
+**MACCOL**, **SEL**, **CITE**, **XREF**, **HYG**, **READ**, **PLAN**, which
 holds manual sentences the 2026-09-27 planning audit found wrong rather than ones a lane's code
-changed. **HYG**'s three entries propose no change; one offers an optional sentence. Each entry
+changed, and **OH** at the end, which proposes no manual change: its report to the Office of the
+Historian changes no app behaviour and no app copy, and its section has no entry to approve.
+**HYG**'s three entries propose no change; one offers an optional sentence. Each entry
 is self-contained; three things are worth knowing before applying them.
 
 - **Five pairs of lanes propose changes to the same sentences.** Lanes GRAPH and ARCH both

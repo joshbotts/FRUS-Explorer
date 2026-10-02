@@ -24,13 +24,16 @@ What it covers, and what it does not:
   from the round-2 review, and twenty from a sweep of fifty more single-condition mutants in round 2.
   Three of that sweep still pass every check, each a condition that another condition of the same
   rule already implies. That is not a proof that every condition has a control: one nobody has
-  mutated may have none. The session's DEVELOPMENT-PLAN entry lists the mutants that were run.
+  mutated may have none. The session's DEVELOPMENT-PLAN entry itemises the mutants that asked for
+  a control; the sweep's full list of fifty is in a scratch log outside the repository.
 - `--check`: the whole-figure match, Part A alone, the stated count above Part A, and the arguments.
 - main()'s refusals that need no corpus: no CORPUS_COMMIT, no volumes, and a corpus that lacks a
   volume the report names (NAMED), each before anything is scanned or written.
 - NOT covered: the cross-reference scan, the header scan, the missing-documents check and the
   adjudicated structure rows. They read the corpus, or name its files and lines, and are checked
-  only by a run over it.
+  only by a run over it. Nor is figure_sentences(): no self-test calls it (the `--check` tests
+  hand missing_figures() sentences of their own), so the run's sentences are checked only by a
+  run with `--check` on the report.
 
 Prints the number of checks and exits 1 on the first failure.
 """
