@@ -56,3 +56,10 @@ test suite that automates the invariants.
 4. Append a dated verdict section to this file. A finding is a defect the moment a launcher can
    run with nothing surfacing — that is M-1's "worse than a dead button": a buried window that
    silently retargets.
+
+## Re-run 2026-10-02 (build 49, `v2` @ `252298f8` with the build bump): CLEAN
+
+- **Step 1.** `MacWindowFrontingTests` ("macOS window fronting") and `MacWindowRoutingTests` ("macOS window routing") passed inside the full unit target on an iPhone 17 simulator, iOS 27.0.
+- **Step 2.** Re-grepped over `FRUSExplorer/`, comment lines dropped: **79 `fronting(id:)` sites** across 27 files, **2 `fronting(id:value:)` sites** (`about`, `frus.newProject`, as before), **34 `openWindow(value:)` sites** across 20 files, and **zero bare `openWindow(id:)`**. The scene table declares **20 id-based scenes**. Every scene has at least one opener, and every string-literal opener names a declared scene: the set difference is empty both ways.
+- **Step 3.** `openAuxWindow` has 22 call sites. Each passes one of the 13 types with a `WindowGroup(for:)`: `AnalyticsParameters`, `ArchivalNeighborsRequest`, `ArchivalScopeRequest`, `ChronologyParameters`, `CrossReferenceAnalyticsRequest`, `CrossVolumeProvenanceRequest`, `DocumentWindowID`, `GraphWindowRequest`, `PersonAnalyticsRequest`, `RelatedDocumentsRequest`, `SemanticMapRequest`, `SourceExplorerRequest`, `WordCloudScope`. Read from the call sites; a call passing a local variable was traced to its type by reading the function around it.
+- The counts grew since 2026-08-27 (74 → 79 id sites, 27 → 34 value sites) with the wave's new windows and hand-offs; none is unpaired.

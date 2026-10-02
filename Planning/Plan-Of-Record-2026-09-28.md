@@ -273,6 +273,12 @@ Each lane is one PR. Lanes land through the serial merge queue (`.claude/workflo
 - the Gemma policy re-check;
 - TestFlight notes, with fixes on one line.
 
+**Release preparation, 2026-10-02** (build 49 for TestFlight, on the owner's word; the session entry in `Planning/DEVELOPMENT-PLAN.md` has the figures):
+- **Done:** the build is 49; both TestFlight notes are rewritten; the full unit target is green on iOS 27.0 (one test fixed, which Vision on iOS 27.0 misread); `CollectionEditorTitleTests` passes on an iOS 27.0 iPhone and iPad; the re-index census gives 316,768 documents in 553 volumes, equal to the parser replica volume for volume; the window-fronting audit is clean; the link check reports no dead link; the Gemma Terms are unchanged since 2026-04-01.
+- **One suite fails on iOS 27.0, and the cause is older than build 49:** `BrowseWithinScopeTests.testBrowseWithinLandsUnderTheBanner` on an iPhone, twice, because the corpus root rests with My Scopes under the "Local Only" banner. That is the app-wide banner over the last row of every tab's list (`MainTabView.swift:175`–`:215`, unchanged since the `build-48` tag). Not filed.
+- **Found by the census, not filed:** a volume whose indexing is cut off by an unclean shutdown can keep part of its rows with no interrupted mark, and is then treated as indexed.
+- **Owed by the owner before the upload:** a CloudKit management token and `./Scripts/check_cloudkit_schema.py`; `./Scripts/fetch-llama-dsyms.sh`; the archive and upload; `check_repository_links.py --stamp`; the `build-49` tag; and the by-eye checks above.
+
 **Tiers.**
 - **Tier 1 (this week):** STOR, PAGE, NOTE, SYNC.
 - **Tier 2:** EXPORT, MACCOL, GRAPH, ARCH, CITE, XREF, WB.

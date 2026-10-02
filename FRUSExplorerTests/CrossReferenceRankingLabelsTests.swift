@@ -674,6 +674,9 @@ struct HeatMatrixRowAxisTests {
 ///   1.0 — #1473: initial implementation
 ///   1.1 — #1473 review round 1: the UI suite's floor read from its source, and the chart's height,
 ///          drawn and given to its exported figure
+///   1.2 — Build 49 on iOS 27.0: a title's second line must hold a word of three letters or more.
+///          Vision on iOS 27.0 reads the bar count "39", crossed by the dashed gridline, as "m-",
+///          and counting that as a second line failed a chart that draws every title whole.
 @Suite("Ranking chart axis")
 @MainActor
 struct RankingChartAxisTests {
@@ -823,8 +826,13 @@ struct RankingChartAxisTests {
             At 720 pt \(opened.count) of the \(ranking.count) titles are drawn: \(lines)
             """)
         // Two lines each: a title's second line is the other line with words in it. The bars'
-        // counts and the axis's ticks are numbers, so they are not counted.
-        let wrapped = lines.filter { !$0.hasPrefix("Document 1") && $0.rangeOfCharacter(from: .letters) != nil }
+        // counts and the axis's ticks are numbers, so they are not counted. A word means three
+        // letters or more: on iOS 27.0 Vision reads the count "39", crossed by the dashed
+        // gridline, as "m-", and a stray letter like that is not a title.
+        let wrapped = lines.filter { line in
+            !line.hasPrefix("Document 1")
+                && line.split(whereSeparator: { !$0.isLetter }).contains { $0.count >= 3 }
+        }
         #expect(wrapped.count == ranking.count, "\(wrapped.count) titles take a second line, not \(ranking.count): \(lines)")
     }
 }

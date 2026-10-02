@@ -35561,3 +35561,28 @@ Before the push round 2's build was looked at a second time on an iPhone (iPhone
 - **macOS:** `FRUSExplorerMac`, signing off, incremental over the landing's Mac derived data: "** BUILD SUCCEEDED **", with the two known residues only. The four changed app files compiled into the Mac target. The Mac app was built and not run.
 - **After this paragraph was written**, less this bullet and the next, `CodingStandardsAuditTests` and `EditableContentKeyTests` again, on the same build: "✔ Test run with 84 tests in 2 suites passed after 40.205 seconds."
 - **Not run:** iOS 27; any UI suite.
+
+---
+
+## Session 2026-10-02 — Build 49: the build number, the TestFlight notes, and the release checklist run on iOS 27.0
+
+On the owner's word ("bump the build to 49 and then prepare for release", "on TestFlight, not AppStore"). The manuals are deferred.
+
+**Changed**
+- **Build 49.** `CURRENT_PROJECT_VERSION` is 49 in `project.yml` (three targets) and `project.pbxproj` (nine occurrences), edited directly with no `xcodegen` run. The README's "Current build" line and its mirror in `Docs/EditableContent/03-Repository-README.md` say 49.
+- **TestFlight notes,** both rewritten for build 49: figures, the Subject-Numeric File, the iOS edit menu's actions, the one-time re-index and the figure images it then fetches, every fix on one line, and what to test. iOS 3,918 characters, Mac 3,817 (Python `len()`).
+- **One test, for iOS 27.0.** `RankingChartAxisTests`' "At 720 pt every row's title is drawn" failed on every iOS 27.0 run with 16 second lines for 15 titles. The rendered chart draws all fifteen titles whole on two lines; Vision on iOS 27.0 reads the bar count "39", which the dashed gridline crosses, as "m-". A title's second line must now hold a word of three letters or more. Red on the old filter on iOS 27.0, three runs; green on iOS 27.0 and iOS 26.5.
+- **The window-fronting audit's re-run** is appended to `Planning/Cross-Platform-UI-Adversarial-Review/Window-Fronting-Audit-2026-08-27.md`: clean.
+
+**The release checklist** (the plan of record's §2 list)
+- **Full unit target, iOS 27.0** (iPhone 17 `80CF0F18`, `TEST_RUNNER_FRUS_TEI_MIRROR` set): "✔ Test run with 6470 tests in 760 suites passed after 328.354 seconds", "** TEST EXECUTE SUCCEEDED **", after the test change above. The build before it: "** TEST BUILD SUCCEEDED **", with only the two known warning residues.
+- **UI suites measured only on iOS 26 until now**, iOS 27.0 with the timeout flags:
+  - `CollectionEditorTitleTests`: iPhone 17 `80CF0F18`, "Executed 8 tests, with 0 failures"; iPad Pro 13-inch (M5) `9AB3A0C9`, "Executed 8 tests, with 3 tests skipped and 0 failures". The iPhone's 5 tests from #1415 and #1413 had never run on iOS 27.
+  - `BrowseWithinScopeTests`: iPad Pro 11-inch (M5) `27A97343`, "Executed 3 tests, with 0 failures". iPhone 17 `80CF0F18`: two passed and `testBrowseWithinLandsUnderTheBanner` failed, in two runs, at `BrowseWithinScopeTests.swift:177` ("My Scopes shows no row for the seeded scope"). The element tree at the failure is the corpus root with the My Scopes row at y 718–770 under the "Local Only" banner (y 721–874), so the tap reached the banner. That is the banner over the last row of every tab's list, applied as a bottom `safeAreaInset` outside each tab's `NavigationStack` (`MainTabView.swift:175`–`:215`), unchanged since the `build-48` tag; lane CFPF's PR #1562 lists it under "Filed rather than fixed here". Not filed; not a build-49 regression.
+- **Re-index census** on a pinned iPhone 17e `4E79C806`, iOS 27.0: the debug build installed, the 553 manifest volumes cloned into its container, the launch reconcile left to index them. **316,768 documents in 553 volumes** in `document_cache`, equal to `tools/page-citations/replica.py`'s emission at corpus `8e5da08c1` for every volume; `person_rollup` 17,955 rows, as in build 48; `frusExplorer.dateIndexVersion` 65.
+  - **The host restarted mid-run, and that found a defect.** After the restart `frus1937v02` held 550 of its 759 documents: the contiguous tail from document 550, a batch boundary. Its interrupted mark was missing, because the unclean shutdown lost the last UserDefaults writes: the sentinel still named `frus1936v03`, which is complete. So the app took the short volume as indexed, since `isVolumeIndexed` asks only for one row, and the launch reconcile skipped it. On a device this needs a power loss or a reboot during indexing; a crash or a system kill leaves the mark written. `IndexingStateTracker` is unchanged since the `build-48` tag. Deleting the volume's `document_cache` rows made the next launch re-index it to 759, with 759 rows in `frus_documents` and no duplicates. Not filed.
+- **Window-fronting audit:** clean (above).
+- **`check_repository_links.py`, report only:** 20 OK, 3 owner-asserted and 0 dead in the trip packet's table; 3 OK in `PublishedSourceLinkTable`. `--stamp` is the owner's, since it writes the owner's confirmation date.
+- **Gemma policy re-check:** the Terms page reads "Last modified: April 1, 2026", the date recorded in `Planning/semantic-vectors/Gemma-Compliance-Runbook.md`. The Prohibited Use Policy reads "Last modified: February 21, 2024"; no earlier reading of it is recorded in the repository.
+
+**Owed by the owner before the upload:** `xcrun cktool save-token --type management`, then `./Scripts/check_cloudkit_schema.py`; `./Scripts/fetch-llama-dsyms.sh`; the archive and TestFlight upload; `python3 Scripts/check_repository_links.py --stamp`; the `build-49` tag; and the by-eye checks the plan of record's §0a lists.
