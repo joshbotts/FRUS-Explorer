@@ -81,6 +81,11 @@ import Foundation
 ///   2.3 — #1516 (owner decision D3, option (f)4): a volume's figure images are fetched after
 ///          its XML and kept beside it (`FigureImageLibrary`), removed with it, and counted in
 ///          `storageReport`. See "Figure Images" below.
+///   2.4 — #1516 review, round 1: `fetchMissingFigureImages(among:)`, the pass that brings the
+///          volumes already on the device up to their images — at launch and whenever the device
+///          comes back online — and tries again what an earlier run could not fetch; a volume
+///          whose run ended with nothing left to fetch is recorded
+///          (`FigureImageLibrary.completionRecordName`) and not scanned again until its text changes.
 ///
 /// ## Figure Images (#1516)
 /// When a volume's download finishes, `fetchFigureImages(for:)` reads the names its `<figure>`s
@@ -89,14 +94,18 @@ import Foundation
 /// `{Volumes}/{volumeId}.figures/`. Only figure images: never a page's scan — a `<graphic>` too,
 /// but in a `<facsimile>`'s `<surface>`, of which the 553 manifest volumes hold 1,143,043 — and
 /// not a title page's figure, which sits outside every `<div>` — so in no document the app
-/// parses — and which history.state.gov does not serve. A volume downloaded before this existed
-/// gets its images the first time the reader or an export asks for one
+/// parses — and which history.state.gov does not serve.
+///
+/// A volume that was on the device before this existed, and one whose run was cut short or left a
+/// transfer failed, is brought up to its images by `fetchMissingFigureImages(among:)`, which the
+/// app runs at launch and each time the device comes back online. Until that pass reaches a
+/// volume, the reader and the PDF, Word and HTML exports fetch the one image they need
 /// (`fetchFigureImage(volumeId:fileName:)`, through `FigureImageStore`).
 ///
 /// These transfers do not go through `BackgroundDownloadEngine`, for the reasons
 /// `SemanticShardFetcher` gives: the engine hardcodes its destination as `{volumeId}.xml`, keys a
 /// transfer by its volume alone, and exists for one multi-megabyte file — a volume's images are
-/// many small ones (553 corpus-wide, 141.0 MB in all, a median of 337 KB per volume that has any;
+/// many small ones (553 corpus-wide, 141.0 MB in all, a median of 328 KB per volume that has any;
 /// measured 2026-10-01).
 public actor DownloadManager {
 
@@ -192,8 +201,19 @@ public actor DownloadManager {
     /// Image file names history.state.gov refused this session, per volume (#1516): 13 of the
     /// 566 names the corpus's figures give outside title pages are not served (measured
     /// 2026-10-01), and asking again on every page view would not change the answer. Forgotten at
-    /// the next launch, so a name the Office of the Historian starts serving is picked up.
+    /// the next launch, so a name the Office of the Historian starts serving is picked up when
+    /// the reader or an export next asks for it.
     private var figuresRefused: [String: Set<String>] = [:]
+
+    /// The running pass over the volumes on the device (#1516 review, round 1), so the launch's
+    /// pass and a reconnect's cannot both walk the library.
+    private var figureBackfill: Task<[String], Never>?
+
+    /// How many volumes in a row may have every transfer fail before
+    /// ``fetchMissingFigureImages(among:)`` stops: the host is not answering, or the connection
+    /// is one the reader's settings keep image requests off. More than one, so that a single
+    /// volume whose one missing image keeps failing does not end every pass at itself.
+    static let figureBackfillPatience = 3
 
     // MARK: - UserDefaults Key
 
@@ -735,8 +755,10 @@ public actor DownloadManager {
     /// Idempotent and de-duplicated: an image already on disk is not asked for again, and a call
     /// made while one is running over the same text of the volume returns that run's outcome. A
     /// name the server refuses is remembered for the session; a transfer that fails is left to
-    /// the next call. A run stops asking when an update replaces the text it read, and an image
-    /// that lands after its volume was removed is not kept (`fetchFigureImage`).
+    /// the next call, which ``fetchMissingFigureImages(among:)`` makes at the next launch or
+    /// reconnect. A run that ends with nothing failed records the volume complete for its text.
+    /// A run stops asking when an update replaces the text it read, and an image that lands
+    /// after its volume was removed is not kept (`fetchFigureImage`).
     ///
     /// - Parameter volumeId: A volume whose XML is in ``volumesDirectory``.
     /// - Returns: What the run found and did. All zeroes when this manager fetches no images, the
@@ -763,6 +785,9 @@ public actor DownloadManager {
         let volumeId = run.volumeId
         var outcome = FigureFetchOutcome()
         let xmlURL = volumeURL(for: volumeId)
+        // Which file the names are read from, taken before it is read: the record below is of
+        // this text, and a file that changes under the scan no longer matches it.
+        let stamp = FigureImageLibrary.textStamp(ofVolumeAt: xmlURL)
         // Off the actor: a volume is several megabytes of XML.
         let scanned = await Task.detached(priority: .utility) {
             FigureImageLibrary.graphicNames(inVolumeAt: xmlURL)
@@ -786,14 +811,85 @@ public actor DownloadManager {
             case .failed:   outcome.failed += 1
             }
         }
+        // Nothing is left to fetch for this text — every name is on the device or the host has
+        // none — so the pass over the library need not scan it again. A run that left a transfer
+        // failed records nothing, and the next pass tries again.
+        if outcome.failed == 0, let stamp {
+            figureLibrary.recordComplete(volumeId, stamp: stamp)
+        }
         #if DEBUG
         print("[DownloadManager] Figures for \(volumeId): \(outcome)")
         #endif
         return outcome
     }
 
-    /// Fetches one figure image if it is not on the device: the path a volume downloaded before
-    /// #1516 gets its images by, when the reader or an export asks for one.
+    /// Brings the volumes already on the device up to their figure images (#1516 review, round 1).
+    ///
+    /// Owner decision D3 is that a volume's images are downloaded with it and readable offline.
+    /// The download hook does that for a volume downloaded from now on; this pass does it for
+    /// every other: a volume downloaded before figure images existed, one whose run was cut
+    /// short when the app was suspended or quit, and one a transfer failed for. The app calls it
+    /// at launch and each time the device comes back online.
+    ///
+    /// It walks the downloaded volumes among `catalogueVolumeIds` in id order, one at a time,
+    /// skipping every volume recorded complete for the text it holds now
+    /// (`FigureImageLibrary.isRecordedComplete`), and runs ``fetchFigureImages(for:)`` for each
+    /// of the rest. So a library is scanned once, not at every launch: a volume is read again
+    /// only after its text changes or while something of its is still to fetch.
+    ///
+    /// The pass stops when the manager is suspended (the device went offline), and after
+    /// ``figureBackfillPatience`` volumes in a row whose transfers all failed — the host is not
+    /// answering, or the connection is cellular with Allow Cellular Downloads off — so a launch
+    /// that cannot fetch does not read the whole library's XML to find that out.
+    ///
+    /// - Parameter catalogueVolumeIds: The volumes the app has an address for on
+    ///   history.state.gov: the catalogue's ids (`DownloadedVolumesListModel.redownloadableVolumeIds`).
+    ///   A side-loaded volume is not among them (#777).
+    /// - Returns: The volumes a run was made for, in order. A call made while a pass is running
+    ///   returns that pass's.
+    @discardableResult
+    public func fetchMissingFigureImages(among catalogueVolumeIds: Set<String>) async -> [String] {
+        guard figureTransfer != nil, isEnabled else { return [] }
+        if let running = figureBackfill { return await running.value }
+        let task = Task {
+            let visited = await self.performFigureBackfill(among: catalogueVolumeIds)
+            self.figureBackfill = nil
+            return visited
+        }
+        figureBackfill = task
+        return await task.value
+    }
+
+    /// One pass over the library: see ``fetchMissingFigureImages(among:)``.
+    private func performFigureBackfill(among catalogueVolumeIds: Set<String>) async -> [String] {
+        let onDevice = ((try? FileManager.default.contentsOfDirectory(
+            at: volumesDirectory, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? [])
+            .filter { $0.pathExtension == "xml" }
+            .map { $0.deletingPathExtension().lastPathComponent }
+            .filter(catalogueVolumeIds.contains)
+            .sorted()
+        var visited: [String] = []
+        var unanswered = 0
+        for volumeId in onDevice {
+            guard isEnabled else { break }
+            guard !figureLibrary.isRecordedComplete(volumeId, at: volumeURL(for: volumeId)) else { continue }
+            let outcome = await fetchFigureImages(for: volumeId)
+            visited.append(volumeId)
+            if outcome.stored > 0 {
+                unanswered = 0
+            } else if outcome.failed > 0 {
+                unanswered += 1
+                if unanswered >= Self.figureBackfillPatience { break }
+            }
+        }
+        #if DEBUG
+        print("[DownloadManager] Figure pass: \(visited.count) of \(onDevice.count) volumes on the device read.")
+        #endif
+        return visited
+    }
+
+    /// Fetches one figure image if it is not on the device: what the reader or an export asks
+    /// for when it needs an image ``fetchMissingFigureImages(among:)`` has not yet reached.
     ///
     /// - Parameters:
     ///   - volumeId: The volume the image belongs to. Its XML must be on the device.
@@ -809,8 +905,9 @@ public actor DownloadManager {
     /// Fetches one image, de-duplicated by volume and file name.
     ///
     /// - Parameter thenTheRest: After a fetch asked for by the reader or an export, whether to go
-    ///   on to the rest of the volume's images in the background — so a volume downloaded before
-    ///   #1516 is complete, and readable offline, after its first figure is looked at.
+    ///   on to the rest of the volume's images in the background — so a volume the pass over
+    ///   the library has not reached is complete, and readable offline, after its first figure
+    ///   is looked at.
     private func fetchFigureImage(volumeId: String, fileName: String,
                                   thenTheRest: Bool) async -> FigureImageFetch {
         guard let destination = figureLibrary.fileURL(volumeId: volumeId, fileName: fileName),
@@ -861,6 +958,7 @@ public actor DownloadManager {
     /// removed when it lands (`fetchFigureImage`).
     private func discardFigureImages(for volumeId: String) {
         figureLibrary.removeImages(for: volumeId)
+        figureLibrary.recordComplete(volumeId, stamp: nil)
     }
 
     private func downloadDidFail(volumeId: String, error: Error) {
@@ -1031,11 +1129,23 @@ enum FigureImageFetch: Sendable, Equatable {
 /// 553 manifest volumes at corpus `8e5da08c1`: the corpus's `<figure>`s name 968 distinct images;
 /// 402 are on title pages, not one of which is served and none of which the app draws (a title
 /// page is outside every `<div>`); of the other 566, in 99 volumes, **553 are served — 140,994,857 bytes (141.0 MB) in 96 volumes** —
-/// and 13 are refused with HTTP 403. Per volume that has any: a median of 337 KB, the largest
-/// `frus1943CairoTehran` at 25.4 MB; the largest single image is 3.6 MB.
+/// and 13 are refused with HTTP 403. Per volume that has any: a median of 328 KB (328,492.5
+/// bytes, the mean of the 48th and 49th of the 96), the largest `frus1943CairoTehran` at 25.4 MB;
+/// the largest single image is 3.6 MB. Every one of the 553 opens with the PNG signature (their
+/// first 24 bytes read 2026-10-01), `OpenPitMine.jpg.png` among them; the widest is 19,043
+/// pixels (`frus1958-60v03mSupp`'s `eq_03.png`) and the tallest 5,536.
+///
+/// ## Which volumes are complete
+/// `{Volumes}/.figure-images-complete.json` records, per volume, the size and modification date
+/// of the XML whose every named image is on the device or refused by the host
+/// (``recordComplete(_:stamp:)``). `DownloadManager.fetchMissingFigureImages(among:)` skips a
+/// volume whose record matches the file it holds now, so the library's XML is scanned once and
+/// not at every launch. The record is a hidden file — no sweep of the directory sees it — and
+/// is removed with the images by ``removeAllImages()``.
 ///
 /// Version history:
 ///   1.0 — #1516: initial implementation
+///   1.1 — #1516 review, round 1: the completion record
 public struct FigureImageLibrary: Sendable {
 
     /// The app's volumes directory.
@@ -1175,6 +1285,56 @@ public struct FigureImageLibrary: Sendable {
         for url in contents where url.pathExtension == "figures" {
             try? FileManager.default.removeItem(at: url)
         }
+        try? FileManager.default.removeItem(at: completionRecordURL)
+    }
+
+    // MARK: Which volumes are complete
+
+    /// The name of the file, in the volumes directory, that records which volumes need no
+    /// further figure fetch. Hidden, so nothing that lists the directory meets it.
+    static let completionRecordName = ".figure-images-complete.json"
+
+    /// Where the completion record is kept.
+    var completionRecordURL: URL {
+        volumesDirectory.appendingPathComponent(Self.completionRecordName, isDirectory: false)
+    }
+
+    /// What identifies the text of the volume at `url` without reading it: the file's size and
+    /// its modification date. `nil` when the file is not there. Whatever replaces a volume's
+    /// XML — an update, a side-loaded copy under a catalogue id — writes a new file, so the
+    /// stamp changes with the text.
+    static func textStamp(ofVolumeAt url: URL) -> String? {
+        guard let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]),
+              let size = values.fileSize, let modified = values.contentModificationDate else { return nil }
+        return "\(size)-\(modified.timeIntervalSinceReferenceDate)"
+    }
+
+    /// The record: the stamp of each volume's text whose images are complete.
+    private func completionRecord() -> [String: String] {
+        guard let data = try? Data(contentsOf: completionRecordURL),
+              let record = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
+        return record
+    }
+
+    /// Whether `volumeId` is recorded complete for the text now at `url`.
+    func isRecordedComplete(_ volumeId: String, at url: URL) -> Bool {
+        guard let stamp = Self.textStamp(ofVolumeAt: url) else { return false }
+        return completionRecord()[volumeId] == stamp
+    }
+
+    /// Records `volumeId` complete for the text stamped `stamp`, or with `nil` forgets it.
+    /// Called only on `DownloadManager`'s actor, so two writes cannot interleave.
+    func recordComplete(_ volumeId: String, stamp: String?) {
+        var record = completionRecord()
+        guard record[volumeId] != stamp else { return }
+        record[volumeId] = stamp
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        guard let data = try? encoder.encode(record) else { return }
+        try? data.write(to: completionRecordURL, options: .atomic)
+        // Not for a backup: the XML it describes is excluded from one, so restored it would
+        // describe volumes that are not there. (An atomic write replaces the file, so each time.)
+        try? (completionRecordURL as NSURL).setResourceValue(true, forKey: .isExcludedFromBackupKey)
     }
 
     // MARK: Which images a volume names
@@ -1186,9 +1346,12 @@ public struct FigureImageLibrary: Sendable {
     /// measured 2026-10-01 at corpus `8e5da08c1`, 1,143,043 of them in 551 of the 553 manifest
     /// volumes, against 992 `<graphic>`s in figures and none anywhere else — so the rule is "in a
     /// `<figure>`", never "every `<graphic>`", and a scan is never fetched. No figure names two.
-    /// A title page's `<figure>` (402 of the 553 volumes have one) is left out because
-    /// the app draws no title page — all 403 sit outside every `<div>`, so in no document the
-    /// parser returns — and history.state.gov serves none of them.
+    /// A title page's `<figure>` (403 of the 553 volumes have one; 402 name a graphic, and
+    /// `frus1865p4`'s is empty) is left out because the app draws no title page — all 403 sit
+    /// outside every `<div>`, so in no document the parser returns — and history.state.gov
+    /// serves none of them. Two more figures sit outside every `<div>`, directly in `<front>`
+    /// (`frus1931-41v02`'s `figure_0007`, served, 284,620 bytes; `frus1952-54v04`'s
+    /// `figure_0001`, refused): the scan does name those, though no document draws them.
     public static func graphicNames(inVolumeAt url: URL) -> [String]? {
         guard let parser = XMLParser(contentsOf: url) else { return nil }
         let scanner = FigureGraphicScanner()
@@ -1235,8 +1398,11 @@ private final class FigureGraphicScanner: NSObject, XMLParserDelegate {
 /// PDF, Word and HTML exports (#1516).
 ///
 /// One per process, configured at boot with the library and a way to fetch an image that is not
-/// on the device. Until then — and in a unit test, which configures a store of its own — it has
-/// no image and fetches none, so every figure prints its placeholder.
+/// on the device. Until then it has no image and fetches none, so every figure prints its
+/// placeholder — and so it stays in a unit test's host: the tests run inside the app, whose boot
+/// would otherwise point this store at the simulator's own volumes and at the network, so
+/// `FRUSExplorerApp.bootDownloadManager` leaves it unconfigured there (``isUnitTestHost(_:)``).
+/// A test that wants images passes a store of its own.
 ///
 /// ## Why a shared instance
 /// The reader's web view is built by a representable that is handed a render model and nothing
@@ -1248,6 +1414,7 @@ private final class FigureGraphicScanner: NSObject, XMLParserDelegate {
 ///
 /// Version history:
 ///   1.0 — #1516: initial implementation
+///   1.1 — #1516 review, round 1: `isUnitTestHost(_:)`; `fetchAbsent` stops when its task is cancelled
 final class FigureImageStore: @unchecked Sendable {
 
     /// The process-wide store.
@@ -1309,6 +1476,17 @@ final class FigureImageStore: @unchecked Sendable {
         isOnline && catalogueVolumeIds.contains(volumeId)
     }
 
+    /// Whether this process is a unit test's host: the app, launched by XCTest to run the unit
+    /// target inside it. The app's store is left unconfigured there and the pass over the
+    /// library is not started, so no unit test reads the simulator's figures or reaches
+    /// history.state.gov through a default. A UI test's app is not one: XCTest sets this
+    /// variable in the process that runs the tests, which for a UI test is the runner.
+    ///
+    /// - Parameter environment: `ProcessInfo.processInfo.environment`.
+    static func isUnitTestHost(_ environment: [String: String]) -> Bool {
+        environment["XCTestConfigurationFilePath"] != nil
+    }
+
     /// Fetches the image named `fileName` in `volumeId` unless it is on the device.
     ///
     /// - Returns: Whether the image is on the device when the call returns.
@@ -1320,11 +1498,13 @@ final class FigureImageStore: @unchecked Sendable {
         return await fetch(volumeId, fileName)
     }
 
-    /// Fetches each of `images` that is not on the device, one after another: what an export
-    /// does before it prints, so a volume downloaded before #1516 exports with its images.
+    /// Fetches each of `images` that is not on the device, one after another: what a PDF, Word
+    /// or HTML export does before it prints, so a volume whose images are not yet on the device
+    /// exports with them. Stops between images when its task is cancelled.
     func fetchAbsent(_ images: [FigureImageName]) async {
         var asked = Set<FigureImageName>()
         for image in images where asked.insert(image).inserted {
+            if Task.isCancelled { return }
             guard let volumeId = image.volumeId, let fileName = image.fileName else { continue }
             _ = await fetchIfAbsent(volumeId: volumeId, fileName: fileName)
         }

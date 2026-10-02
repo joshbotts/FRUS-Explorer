@@ -533,8 +533,19 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         // whatever happens, so the reveal is never retried.
         //
         // Nothing here needs to wait for layout: the page is a `loadHTMLString` document with no
-        // `@font-face` and no images, and `didFinish` runs after it is parsed and laid out. The
-        // `scroll-margin-block` on `.fn-list-item` absorbs any late reflow.
+        // `@font-face`, and `didFinish` runs after it is parsed and laid out. A figure's image
+        // (#1516) that is on the device is answered by the scheme handler before `didFinish`, so
+        // it is laid out too, and the `scroll-margin-block` on `.fn-list-item` absorbs a small
+        // late reflow.
+        //
+        // An image that is NOT on the device is the exception. The handler fails its request at
+        // once, fetches it, and has the page ask again (`FRUSURLSchemeHandler.figureRetryScript`):
+        // that image is laid out after this scroll, and a map pushes the footnotes down by far
+        // more than the margin. So the entry revealed is remembered in a global the retry script
+        // reads, and the retry brings it back into view once its image has loaded — unless the
+        // reader has since scrolled, tapped or typed, which clears the global, because by then
+        // where they are is their own choice.
+        let revealed = FRUSURLSchemeHandler.revealedFootnoteGlobal
         let script = """
         (() => {
           const li = document.getElementById("fnote-" + \(keyLiteral));
@@ -542,6 +553,14 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
           const instant = document.hidden
             || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
           li.scrollIntoView({ block: "center", behavior: instant ? "auto" : "smooth" });
+          window.\(revealed) = li.id;
+          if (!window.\(revealed)Watched) {
+            window.\(revealed)Watched = true;
+            const forget = () => { window.\(revealed) = null; };
+            for (const type of ["wheel", "touchstart", "mousedown", "keydown"]) {
+              window.addEventListener(type, forget, { capture: true, passive: true });
+            }
+          }
           li.classList.remove("fn-arrived");
           void li.offsetWidth;
           li.classList.add("fn-arrived");

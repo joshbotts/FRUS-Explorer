@@ -448,8 +448,8 @@ public struct FigureBlock: Sendable {
     /// For an embedded video, the document's page on history.state.gov
     /// (`FRUSCanonicalURL`); `nil` for every other figure, and for a video whose volume the
     /// converter was not told. The 20 players all sit in sections (`appendix-1`), and
-    /// history.state.gov resolves a section's id as it does a document's — checked 2026-10-01
-    /// on three of them, with an invented id returning 404.
+    /// history.state.gov resolves a section's id as it does a document's — checked 2026-10-01:
+    /// all eight pages the 20 players link to answered 200, and an invented id 404.
     public let videoURL: URL?
     /// Whether the figure embeds a video player. `true` with a `nil` ``videoURL`` prints the
     /// head alone.

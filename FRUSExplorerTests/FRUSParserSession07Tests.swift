@@ -1912,6 +1912,39 @@ struct FigureCaptionTests {
         #expect(body.contains("W. Averell Harriman"), "body_text: \(body)")
     }
 
+    /// `documentXML` converted with lookups that resolve every person and term it links. Built
+    /// off the main actor, so no main-actor closure crosses into the parse.
+    private static func modelWithLookups(_ documentXML: String) async throws -> FRUSDocumentRenderModel {
+        let converter = ASTToRenderNodeConverter(
+            personLookup: { ref in PersonEntry(ref: ref, name: "Person \(ref)") },
+            glossLookup: { ref in GlossEntry(ref: ref, term: "Term \(ref)", definition: nil) })
+        return try await ListShapeFixtures.renderModel(documentXML, converter: converter)
+    }
+
+    /// The reader draws a caption's name as a link, and a link resolves only if the scheme handler
+    /// saw it when the model was registered: without the handler's `.figureBlock` case the page
+    /// above is unchanged and the tap finds no one.
+    @Test("A person or term linked in a figure's caption or head resolves when tapped")
+    @MainActor
+    func aLinkInACaptionResolvesWhenTapped() async throws {
+        // d289's two photographs, each captioned with a linked name, and a figure whose head
+        // links a term: nothing else in the document names these three.
+        let model = try await Self.modelWithLookups(FigureFixtures.d289.replacing("</div>", with: """
+            <figure><head>Chart of <gloss target="#t_NATO1">NATO</gloss> commands</head><graphic url="chart"/></figure></div>
+            """))
+        let handler = FRUSURLSchemeHandler()
+        handler.register(model: model)
+        var persons: [PersonEntry?] = []
+        var glosses: [GlossEntry?] = []
+        handler.onPersonTap = { persons.append($0) }
+        handler.onGlossTap = { glosses.append($0) }
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://person/p_ADG1")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://person/p_HWA1")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://gloss/t_NATO1")))
+        #expect(persons.map { $0?.ref } == ["p_ADG1", "p_HWA1"], "a caption's person did not resolve: \(persons)")
+        #expect(glosses.map { $0?.ref } == ["t_NATO1"], "a figure head's term did not resolve: \(glosses)")
+    }
+
     @Test("A graphic alone prints the placeholder where the sketch belongs, once, and not its file name")
     func graphicAlonePrintsThePlaceholder() async throws {
         let out = html(try await ListShapeFixtures.renderModel(FigureFixtures.d9))
@@ -2245,6 +2278,23 @@ struct ElementSpaceRuleTests {
         #expect(try await spaces("<p><hi>a</hi> and <hi>b</hi></p>") == 0, "the text between carries its own spaces")
         #expect(try await spaces("<p>\n  <hi>a</hi></p>") == 0, "nothing precedes the run")
         #expect(try await spaces("<p><hi>a</hi>\n</p>") == 0, "nothing follows the run")
+    }
+
+    /// The rule's backward walk: what precedes the run. Every fixture here has an inline element
+    /// on the right, so the `next` guard lets the run through and only the left side can refuse it
+    /// — which the "beside a block" fixtures above, all refused at that guard, never reach.
+    @Test("Not kept after a block, whether the parser knows the block by type or only by name")
+    func notKeptAfterABlock() async throws {
+        // Blocks the parser builds as nodes of their own: a paragraph, a list, a table.
+        #expect(try await spaces("<p>Text<note n=\"1\" xml:id=\"fn1\"><p>One.</p>\n<hi>b</hi></note></p>") == 0, "a paragraph before")
+        #expect(try await spaces("<p><list><item>One</item></list>\n<hi>b</hi></p>") == 0, "a list before")
+        #expect(try await spaces("<p><table><row><cell>a</cell></row></table>\n<hi>b</hi></p>") == 0, "a table before")
+        // Blocks it knows only by name (`.unknown`): a quotation, a signature.
+        #expect(try await spaces("<p><quote>q</quote>\n<hi>b</hi></p>") == 0, "a quote before")
+        #expect(try await spaces("<closer><signed>A</signed>\n<hi>b</hi></closer>") == 0, "a signature before")
+        // And the same right-hand element after an inline one, known by type or only by name, is kept.
+        #expect(try await spaces("<p><persName>A</persName>\n<hi>b</hi></p>") == 1)
+        #expect(try await spaces("<p><placeName>A</placeName>\n<hi>b</hi></p>") == 1, "an inline element known only by name")
     }
 
     @Test("Not kept beside a line break, and kept once across a page break")

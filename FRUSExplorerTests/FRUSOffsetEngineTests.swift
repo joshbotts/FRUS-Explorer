@@ -1883,10 +1883,146 @@ struct FigureReaderTests {
         return try JSONDecoder().decode([DrawnFigure].self, from: Data(raw.utf8))
     }
 
-    /// d587 converted as the reader converts it: in its volume.
+    /// d587 converted in its volume. That the reader's own load converts a document in its
+    /// volume is ``theReadersLoadNamesImagesByItsVolume()``'s to show; this is the fixture.
     private func d587() async throws -> FRUSDocumentRenderModel {
         try await ListShapeFixtures.renderModel(
             FigureFixtures.d587, converter: ASTToRenderNodeConverter(volumeId: "frus1946v01"))
+    }
+
+    /// The reader shows an image only because `DocumentViewModel.load` tells the converter its
+    /// document's volume: without it every figure is named with no volume, the page gets no
+    /// `<img>` for it, and "[Figure]" prints for every image in every document. Driven through
+    /// the real load, since a test that builds its own converter cannot see that line.
+    @Test("The reader's own load names each figure's image by the document's volume, and the page draws it")
+    func theReadersLoadNamesImagesByItsVolume() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            #expect(library.store(try FigureTestImages.png(width: 120, height: 80),
+                                  volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            let viewModel = DocumentViewModel(
+                entry: DocumentBrowserEntry(documentId: "d587", volumeId: "frus1946v01", header: ""),
+                volumeEntry: nil, parser: FRUSDocumentParser())
+            await viewModel.load(volumeURL: library.volumesDirectory.appendingPathComponent("frus1946v01.xml"))
+            let model = try #require(viewModel.renderModel, "d587 did not load: \(String(describing: viewModel.loadError))")
+            #expect(model.figureImages == [
+                FigureImageName(volumeId: "frus1946v01", graphic: "figure_1162"),
+                FigureImageName(volumeId: "frus1946v01", graphic: "figure_1163"),
+                FigureImageName(volumeId: "frus1946v01", graphic: "figure_1166"),
+            ])
+
+            let harness = OffsetEngineTestHarness(figureImages: FigureImageStore(library: library))
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+            let first = try #require(try await figures(harness).first, "the page drew no figure")
+            #expect(first.src == "frusexplorer://figure/frus1946v01/figure_1162.png")
+            #expect(first.naturalWidth == 120 && first.imageShown && !first.placeholderShown, "\(first)")
+        }
+    }
+
+    /// Where the page is scrolled to, and where a footnote's entry sits in the window.
+    private struct FootnotePlace: Decodable {
+        let scrollY: Double
+        let top: Double
+        let bottom: Double
+        let windowHeight: Double
+        /// Whether the whole entry is inside the window.
+        var inView: Bool { top >= 0 && bottom <= windowHeight }
+    }
+
+    private func footnotePlace(_ harness: OffsetEngineTestHarness, id: String) async throws -> FootnotePlace {
+        let raw = try #require(try await harness.evaluateString("""
+            (() => {
+              const r = document.getElementById("\(id)").getBoundingClientRect();
+              return JSON.stringify({ scrollY: window.scrollY, top: r.top, bottom: r.bottom, windowHeight: window.innerHeight });
+            })()
+            """), "the page has no element \(id)")
+        return try JSONDecoder().decode(FootnotePlace.self, from: Data(raw.utf8))
+    }
+
+    /// #988 brings the reader to a footnote when the page has loaded. An image that is not on the
+    /// device is fetched after that and laid out when it lands, which pushes everything under it —
+    /// the footnotes among it — down by its height. The reader must still be at the footnote.
+    @Test("An image fetched after the reader was brought to a footnote leaves that footnote in view")
+    func aLateImageKeepsARevealedFootnoteInView() async throws {
+        try await FigureTestImages.withLibrary { library in
+            // Three windows tall: nothing a scroll margin could absorb.
+            let png = try FigureTestImages.png(width: 400, height: 1_800)
+            let gate = FigureTestImages.Gate()
+            let store = FigureImageStore(library: library) { volumeId, fileName in
+                await gate.wait()
+                return library.store(png, volumeId: volumeId, fileName: fileName)
+            }
+            let paragraphs = (1...60).map { "<p>Paragraph \($0) of a document long enough to scroll.</p>" }.joined()
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>A map:</p><figure><graphic url="map"/></figure>
+                  <p>A sentence with a note.<note n="1" xml:id="d1fn1">The note the reader is brought to.</note></p>
+                  \(paragraphs)
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let harness = OffsetEngineTestHarness(figureImages: store)
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+
+            // The reader arrives at the note while the map is still its placeholder.
+            harness.coordinator.pendingFootnoteAnchor = "d1fn1"
+            #expect(await harness.coordinator.revealFootnote(on: harness.webView), "the note is not on the page")
+            let before = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            #expect(before.inView && before.scrollY > 0, "the reveal did not bring the note into view: \(before)")
+
+            // The map lands, and is drawn.
+            await gate.open()
+            var drawn = try await figures(harness).first
+            for _ in 0..<400 where drawn?.naturalWidth != 400 {
+                try await Task.sleep(for: .milliseconds(50))
+                drawn = try await figures(harness).first
+            }
+            #expect(drawn?.naturalWidth == 400, "the fetched image was never drawn: \(String(describing: drawn))")
+            var after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            for _ in 0..<40 where !after.inView {
+                try await Task.sleep(for: .milliseconds(50))
+                after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            }
+            #expect(after.inView, "the map pushed the note out of view: it is \(after.top) pt down a \(after.windowHeight) pt window")
+            #expect(after.scrollY > before.scrollY + 1_000, "the page did not follow the note down past the map: \(before) then \(after)")
+        }
+    }
+
+    @Test("A late image does not bring the reader back to a footnote they have since scrolled away from")
+    func aLateImageLeavesAReaderWhoMovedOn() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 400, height: 1_800)
+            let gate = FigureTestImages.Gate()
+            let store = FigureImageStore(library: library) { volumeId, fileName in
+                await gate.wait()
+                return library.store(png, volumeId: volumeId, fileName: fileName)
+            }
+            let paragraphs = (1...60).map { "<p>Paragraph \($0) of a document long enough to scroll.</p>" }.joined()
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>A map:</p><figure><graphic url="map"/></figure>
+                  <p>A sentence with a note.<note n="1" xml:id="d1fn1">The note the reader is brought to.</note></p>
+                  \(paragraphs)
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let harness = OffsetEngineTestHarness(figureImages: store)
+            try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+            harness.coordinator.pendingFootnoteAnchor = "d1fn1"
+            #expect(await harness.coordinator.revealFootnote(on: harness.webView))
+            // The reader turns the wheel and goes back to the top of the document.
+            _ = try await harness.evaluateString("""
+                (() => { window.dispatchEvent(new WheelEvent("wheel", { deltaY: -400 })); window.scrollTo(0, 0); return "ok"; })()
+                """)
+            await gate.open()
+            var drawn = try await figures(harness).first
+            for _ in 0..<400 where drawn?.naturalWidth != 400 {
+                try await Task.sleep(for: .milliseconds(50))
+                drawn = try await figures(harness).first
+            }
+            #expect(drawn?.naturalWidth == 400, "the fetched image was never drawn")
+            try await Task.sleep(for: .milliseconds(300))
+            let after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
+            #expect(after.scrollY == 0, "the page was scrolled back to a note the reader had left: \(after)")
+        }
     }
 
     @Test("An image on the device is drawn through the scheme handler; one that is not shows the placeholder in its place")
@@ -1935,8 +2071,10 @@ struct FigureReaderTests {
             let harness = OffsetEngineTestHarness(figureImages: store)
             try await harness.load(HTMLTemplate.build(model: try await d587(), colorScheme: .light))
 
+            // Up to twenty seconds, here and below (#1516 review, round 1): a five-second wait
+            // of this shape timed out once in the first run of a newly built test host.
             var first: DrawnFigure?
-            for _ in 0..<100 {
+            for _ in 0..<400 {
                 first = try await figures(harness).first
                 if first?.naturalWidth == 64 { break }
                 try await Task.sleep(for: .milliseconds(50))
@@ -1946,7 +2084,7 @@ struct FigureReaderTests {
             #expect(drawn.imageShown && !drawn.placeholderShown, "\(drawn)")
             // The second was asked for again by the page, found absent, and is back to its placeholder.
             var all = try await figures(harness)
-            for _ in 0..<100 where !(all[1].src?.hasSuffix("?retry=1") == true && all[1].placeholderShown) {
+            for _ in 0..<400 where !(all[1].src?.hasSuffix("?retry=1") == true && all[1].placeholderShown) {
                 try await Task.sleep(for: .milliseconds(50))
                 all = try await figures(harness)
             }

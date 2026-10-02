@@ -170,6 +170,10 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          and lifts each named heading under it a level (`CollectionOutline.exportLevels`); the preview keeps it,
 ///          and the HTML renderer prints it as "Untitled section". The Section defaults it sets still reach the
 ///          documents beneath it, because the cascades run over the whole outline
+///   1.13 — #1516: each render model names its figures' images by its document's volume, and an export that prints
+///          images — PDF, Word, HTML (`ExportFormat.printsFigureImages`) — fetches the ones not on the device once its
+///          items are resolved, for the documents resolved at full body depth only. BibTeX, RIS and the Zotero send
+///          fetch none; nor does the preview
 @MainActor
 class CollectionContentResolver {
 
@@ -229,6 +233,11 @@ class CollectionContentResolver {
     /// test sets its own.
     var figureImages: FigureImageStore = .shared
 
+    /// Shown while an export fetches the figure images it lacks (`fetchAbsentFigureImages`).
+    static var fetchingFiguresStatus: String {
+        String(localized: "collection.export.status.fetchingFigures", defaultValue: "Fetching figure images…")
+    }
+
     /// Creates a resolver bound to the app's shared services.
     ///
     /// - Parameters:
@@ -270,6 +279,10 @@ class CollectionContentResolver {
     ///   - allNotes: All research notes, for resolving entry note links and (smart path)
     ///     per-document note attachment.
     ///   - purpose: Gates volume preparation and summary generation (see `ResolvePurpose`).
+    ///   - printsFigureImages: Whether what the items are resolved for prints a figure's image
+    ///     (#1516): `ExportFormat.printsFigureImages` — PDF, Word and HTML. Only then, and only
+    ///     for `.export`, are the images that are not on the device fetched first. Default
+    ///     `false`: BibTeX prints citations, and the preview must fetch nothing.
     /// - Returns: Ordered export items ready for any `CollectionExporter`.
     /// - Throws: `CollectionResolveError` for smart-resolution and summary-prompt failures,
     ///   `ExportError.renderingFailed` when on-demand summary generation is impossible,
@@ -278,10 +291,12 @@ class CollectionContentResolver {
         collection: Collection,
         entries: [CollectionEntry],
         allNotes: [ResearchNote],
-        purpose: ResolvePurpose
+        purpose: ResolvePurpose,
+        printsFigureImages: Bool = false
     ) async throws -> [CollectionExportItem] {
         let items = try await resolveWithoutSummaries(
-            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose)
+            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose,
+            fetchesAbsentFigures: purpose == .export && printsFigureImages)
         // A cancelled pass returned partial-safe items — surface the cancellation instead
         // of handing a truncated result to a caller that expected the whole collection.
         try Task.checkCancellation()
@@ -343,7 +358,7 @@ class CollectionContentResolver {
     /// summary phase (e.g. the Zotero RIS/Web-API send paths, which render citations and
     /// notes, never body content). Matches the pre-extraction `resolvedZoteroDocuments()`
     /// behavior: headings and prose are dropped, and `.summaryOnly` depths pass through
-    /// without triggering generation.
+    /// without triggering generation. No figure image is fetched (#1516): a citation prints none.
     ///
     /// - Parameters: See `resolve(collection:entries:allNotes:purpose:)`.
     /// - Returns: The resolved `.document` payloads, in collection order.
@@ -356,7 +371,8 @@ class CollectionContentResolver {
         purpose: ResolvePurpose
     ) async throws -> [CollectionExportDocument] {
         let documents = try await resolveWithoutSummaries(
-            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose)
+            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose,
+            fetchesAbsentFigures: false)
             .documents
         // Same discipline as `resolve`: never hand back a cancellation-truncated list.
         try Task.checkCancellation()
@@ -420,7 +436,49 @@ class CollectionContentResolver {
 
     /// Runs the full resolution *except* the summary phase — the shared body of
     /// `resolve` (which adds summaries) and `resolveDocuments` (which must not).
+    ///
+    /// - Parameter fetchesAbsentFigures: Whether to fetch, once the items are resolved, the
+    ///   figure images they print that are not on the device (#1516). One place for both the
+    ///   smart and the static path, so neither can be wired without the other.
     private func resolveWithoutSummaries(
+        collection: Collection,
+        entries: [CollectionEntry],
+        allNotes: [ResearchNote],
+        purpose: ResolvePurpose,
+        fetchesAbsentFigures: Bool
+    ) async throws -> [CollectionExportItem] {
+        let items = try await resolveItemsWithoutSummaries(
+            collection: collection, entries: entries, allNotes: allNotes, purpose: purpose)
+        if fetchesAbsentFigures { await fetchAbsentFigureImages(printedBy: items) }
+        return items
+    }
+
+    /// Fetches the figure images `items` print that are not on the device (#1516): those of the
+    /// documents resolved at full body depth. A summary-only or index entry prints no body, so
+    /// none of its document's images is asked for. An image that cannot be fetched prints its
+    /// placeholder. Reports `fetchingFiguresStatus` through `onPreparingStatus` while it asks,
+    /// and nothing when every image is on the device; stops when the task is cancelled.
+    private func fetchAbsentFigureImages(printedBy items: [CollectionExportItem]) async {
+        let absent = Self.printedFigureImages(in: items).filter { figureImages.data(for: $0) == nil }
+        guard !absent.isEmpty, !Task.isCancelled else { return }
+        onPreparingStatus?(Self.fetchingFiguresStatus)
+        await figureImages.fetchAbsent(absent)
+        onPreparingStatus?(nil)
+    }
+
+    /// The figure images `items` print, each once, in reading order: those in the render model
+    /// of each document resolved at `.full` body depth (#1516).
+    nonisolated static func printedFigureImages(in items: [CollectionExportItem]) -> [FigureImageName] {
+        var seen = Set<FigureImageName>()
+        return items.documents
+            .filter { $0.bodyDepth == .full }
+            .flatMap { $0.renderModel?.figureImages ?? [] }
+            .filter { seen.insert($0).inserted }
+    }
+
+    /// The items of a collection, smart or static, before the summary phase and before any
+    /// figure image is fetched: see ``resolveWithoutSummaries``.
+    private func resolveItemsWithoutSummaries(
         collection: Collection,
         entries: [CollectionEntry],
         allNotes: [ResearchNote],
@@ -430,8 +488,7 @@ class CollectionContentResolver {
         // them through the unified per-document pipeline.
         if collection.savedSearchId != nil {
             let refs = try await smartRefs(for: collection)
-            return await resolveSmartItems(refs, collection: collection, allNotes: allNotes,
-                                           fetchesAbsentFigures: purpose == .export)
+            return await resolveSmartItems(refs, collection: collection, allNotes: allNotes)
         }
 
         // Static collection path.
@@ -452,8 +509,7 @@ class CollectionContentResolver {
         // the cap that the export (full list) shows. Matches `resolveItem`'s sourcing.
         let batch = await loadBatchContext(
             for: refs, collection: collection, allNotes: allNotes,
-            collectionDocuments: Self.collectionDocumentRefs(of: collection),
-            fetchesAbsentFigures: purpose == .export)
+            collectionDocuments: Self.collectionDocumentRefs(of: collection))
         // #1465: an export leaves out every heading saved with no text; the preview shows it ("Untitled section").
         return await resolveItems(from: refs, batch: batch, dropsUntitledHeadings: purpose == .export)
     }
@@ -512,17 +568,13 @@ class CollectionContentResolver {
     /// Internal (not private) so tests can exercise the unified pipeline without standing
     /// up a live FTS5 search service.
     ///
-    /// - Parameters:
-    ///   - fullRefs: The uncapped result set when `refs` is a capped prefix
-    ///     (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
-    ///   - fetchesAbsentFigures: An export's `true` (#1516, see `loadBatchContext`). Default
-    ///     `false`: the preview never fetches.
+    /// - Parameter fullRefs: The uncapped result set when `refs` is a capped prefix
+    ///   (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
     func resolveSmartItems(
         _ refs: [SmartDocumentRef],
         collection: Collection,
         allNotes: [ResearchNote],
-        fullRefs: [SmartDocumentRef]? = nil,
-        fetchesAbsentFigures: Bool = false
+        fullRefs: [SmartDocumentRef]? = nil
     ) async -> [CollectionExportItem] {
         let entryRefs = refs.map(EntryRef.init)
         // Membership-wide computations (generated blocks, A10 universe) see the FULL
@@ -530,7 +582,7 @@ class CollectionContentResolver {
         let membership = Self.documentRefs(in: (fullRefs ?? refs).map(EntryRef.init))
         let batch = await loadBatchContext(
             for: entryRefs, collection: collection, allNotes: allNotes,
-            collectionDocuments: membership, fetchesAbsentFigures: fetchesAbsentFigures)
+            collectionDocuments: membership)
         // A smart collection's entries are search results, never headings, so there is nothing to drop.
         let items = await resolveItems(from: entryRefs, batch: batch, dropsUntitledHeadings: false)
         let (front, back) = await generatedItems(for: collection, batch: batch)
@@ -857,16 +909,14 @@ class CollectionContentResolver {
     /// throwing entry points surface `CancellationError` before any such result escapes.
     ///
     /// Figure images (#1516): each render model names its figures' images by this document's
-    /// volume, so the exporters find them on the device. With `fetchesAbsentFigures` — an
-    /// export, never the preview, which must fetch nothing — the images that are not on the
-    /// device are fetched first (`figureImages`), so a volume downloaded before figure images
-    /// existed exports with them; one that cannot be fetched prints its placeholder.
+    /// volume, so the exporters find them on the device. Nothing is fetched here; an export that
+    /// prints images fetches the ones it lacks once its items are resolved
+    /// (`fetchAbsentFigureImages(printedBy:)`).
     private func loadBatchContext(
         for refs: [EntryRef],
         collection: Collection,
         allNotes: [ResearchNote],
-        collectionDocuments: [(volumeId: String, documentId: String)],
-        fetchesAbsentFigures: Bool = false
+        collectionDocuments: [(volumeId: String, documentId: String)]
     ) async -> BatchContext {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
@@ -900,9 +950,6 @@ class CollectionContentResolver {
                     bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
                 }
             }
-        }
-        if fetchesAbsentFigures, !Task.isCancelled {
-            await figureImages.fetchAbsent(renderModels.values.flatMap(\.figureImages))
         }
 
         // Editorial-note flags from the index, so collection-level Zotero items

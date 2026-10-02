@@ -857,9 +857,14 @@ enum FigureTestImages {
         }
     }
 
-    /// Polls until `condition` holds, for at most three seconds. Returns whether it came to hold.
+    /// Polls until `condition` holds, for at most twenty seconds. Returns whether it came to hold.
+    ///
+    /// Twenty, not three (#1516 review, round 1): what these polls wait for starts with a scan of
+    /// the volume's XML in a detached utility-priority task, and in the first run of a newly built
+    /// test host, with twelve suites running, a five-second wait of the same shape timed out once
+    /// (`FigureReaderTests`). A wait that holds returns at once, so the budget costs nothing.
     static func eventually(_ condition: () async -> Bool) async -> Bool {
-        for _ in 0..<150 {
+        for _ in 0..<1_000 {
             if await condition() { return true }
             try? await Task.sleep(for: .milliseconds(20))
         }
@@ -1318,6 +1323,216 @@ struct FigureImageDownloadTests {
         #expect(FigureImageLibrary.pngPixelSize(Data("<html>".utf8)) == nil)
         #expect(FigureImageLibrary.pngPixelSize(png.prefix(12)) == nil, "a truncated header has no size")
     }
+
+    // MARK: The pass over the volumes already on the device (#1516 review, round 1)
+
+    /// A one-document volume whose figures name `graphics`.
+    private static func volumeXML(naming graphics: [String]) -> String {
+        let figures = graphics.map { "<p><figure><graphic url=\"\($0)\"/></figure></p>" }.joined()
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+          <div type="document" n="1" xml:id="d1"><p>Text.</p>\(figures)</div>
+        </body></text></TEI>
+        """
+    }
+
+    /// Writes `xml` as `volumeId`'s file in `library`'s directory.
+    private static func seed(_ volumeId: String, _ xml: String, in library: FigureImageLibrary) throws {
+        try xml.write(to: library.volumesDirectory.appendingPathComponent("\(volumeId).xml"),
+                      atomically: true, encoding: .utf8)
+    }
+
+    /// A manager whose every image request is recorded in `asked` as `volume/file` and answered by
+    /// `serves`: `true` a PNG, `false` a transfer that fails as an offline one does.
+    private static func passManager(_ library: FigureImageLibrary, png: Data, asked: FigureTestImages.Counter,
+                                    serves: @escaping @Sendable (_ volumeId: String) -> Bool) -> DownloadManager {
+        DownloadManager(
+            volumesDirectory: library.volumesDirectory,
+            downloadTask: makeMockDownloadTask(),
+            onStateChanged: { _ in },
+            figureTransfer: { request in
+                let url = try #require(request.url)
+                let volumeId = url.deletingLastPathComponent().lastPathComponent
+                await asked.add("\(volumeId)/\(url.lastPathComponent)")
+                guard serves(volumeId) else { throw URLError(.notConnectedToInternet) }
+                return (png, HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!)
+            })
+    }
+
+    /// The completion record on disk: which volumes are recorded as needing no further fetch.
+    private static func recordedComplete(in library: FigureImageLibrary) throws -> [String] {
+        let url = library.volumesDirectory.appendingPathComponent(".figure-images-complete.json")
+        guard FileManager.default.fileExists(atPath: url.path) else { return [] }
+        return try JSONDecoder().decode([String: String].self, from: Data(contentsOf: url)).keys.sorted()
+    }
+
+    @Test("The pass fetches the images of volumes already on the device, catalogue volumes only, and tries again what failed")
+    func thePassBringsVolumesOnTheDeviceUpToTheirImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            let asked = FigureTestImages.Counter()
+            let dm = FigureTestImages.manager(library, png: png, asked: asked)
+            // Three volumes on the device, none of them downloaded by this manager: a catalogue
+            // volume with figures, one with none, and a side-loaded one — on the device, in no
+            // catalogue (#777) — that names a figure.
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            try Self.seed("frus1861", Self.volumeXML(naming: []), in: library)
+            try Self.seed("frus2001v99", Self.volumeXML(naming: ["side_loaded"]), in: library)
+            let catalogue: Set<String> = ["frus1946v01", "frus1861", "frus1900"]
+
+            // A suspended manager — the device is offline — reads nothing and asks for nothing.
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == [])
+            #expect(await asked.values.isEmpty)
+            #expect(!FileManager.default.fileExists(atPath: library.directory(for: "frus1946v01").path))
+
+            await dm.resumeQueuedDownloads()
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == ["frus1861", "frus1946v01"])
+            #expect(library.data(volumeId: "frus1946v01", fileName: "figure_1162.png") == png,
+                    "a volume that was already on the device did not get its figure images")
+            let firstPass = await asked.values
+            #expect(firstPass.allSatisfy { !$0.contains("frus2001v99") },
+                    "a side-loaded volume's image was asked for: \(firstPass)")
+            #expect(!FileManager.default.fileExists(atPath: library.directory(for: "frus2001v99").path))
+            // frus1861 names no image, so nothing is left to fetch for it; frus1946v01's
+            // figure_1166 failed once and its Appendix A.1 was answered with a sign-in page.
+            #expect(try Self.recordedComplete(in: library) == ["frus1861"])
+
+            // The next launch's pass reads only the volume that still lacks something, and
+            // fetches what failed.
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == ["frus1946v01"])
+            #expect(library.data(volumeId: "frus1946v01", fileName: "figure_1166.png") == png,
+                    "a transfer that failed was not tried again by the next pass")
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == ["frus1946v01"],
+                    "a volume with an image still to fetch must be read again")
+            #expect(await asked.count(of: "\(Self.host)/frus1946v01/figure_1162.png") == 1)
+            #expect(await asked.count(of: "\(Self.host)/frus1946v01/figure_1163.png") == 1, "a refused name was asked for again")
+            #expect(try Self.recordedComplete(in: library) == ["frus1861"])
+        }
+    }
+
+    @Test("A volume with nothing left to fetch is not read again until its text changes, and removing it forgets the record")
+    func aCompleteVolumeIsReadAgainOnlyWhenItsTextChanges() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            let asked = FigureTestImages.Counter()
+            let dm = Self.passManager(library, png: png, asked: asked) { _ in true }
+            await dm.resumeQueuedDownloads()
+            try Self.seed("frus1946v01", Self.volumeXML(naming: ["figure_1162", "figure_1163"]), in: library)
+            let catalogue: Set<String> = ["frus1946v01"]
+
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == ["frus1946v01"])
+            #expect(try Self.recordedComplete(in: library) == ["frus1946v01"])
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == [], "a complete volume's XML was read again")
+            #expect(await asked.values == ["frus1946v01/figure_1162.png", "frus1946v01/figure_1163.png"])
+
+            // Its text is replaced by a writer the manager never hears from — a side-loaded copy
+            // under the catalogue's id, say. The file is new, so the record no longer matches it.
+            try Self.seed("frus1946v01", Self.volumeXML(naming: ["figure_1162", "figure_2000", "figure_2001"]), in: library)
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == ["frus1946v01"],
+                    "a volume whose text changed was not read again")
+            let files = try FileManager.default.contentsOfDirectory(
+                atPath: library.directory(for: "frus1946v01").path).sorted()
+            #expect(files == ["figure_1162.png", "figure_2000.png", "figure_2001.png"], "\(files)")
+            #expect(await asked.count(of: "frus1946v01/figure_1162.png") == 1)
+
+            try await dm.deleteVolume(volumeId: "frus1946v01")
+            #expect(try Self.recordedComplete(in: library) == [], "a removed volume is still recorded complete")
+        }
+    }
+
+    @Test("The pass stops after three volumes in a row whose transfers all fail, and one that is served starts the count again")
+    func thePassStopsWhenTheHostDoesNotAnswer() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            let asked = FigureTestImages.Counter()
+            // Only these two volumes' images are served.
+            let dm = Self.passManager(library, png: png, asked: asked) { ["frus1903", "frus1907"].contains($0) }
+            await dm.resumeQueuedDownloads()
+            // frus1901 names no image: it is neither a failure nor an answer.
+            for year in 1900...1907 {
+                try Self.seed("frus\(year)", Self.volumeXML(naming: year == 1901 ? [] : ["figure_1"]), in: library)
+            }
+            let catalogue = Set((1900...1907).map { "frus\($0)" })
+            #expect(DownloadManager.figureBackfillPatience == 3)
+
+            // 1900 and 1902 fail (two in a row, 1901 between them counting for nothing), 1903 is
+            // served and starts the count again, 1904–1906 fail: three in a row, and the pass
+            // stops before 1907, whose image the host would have served.
+            #expect(await dm.fetchMissingFigureImages(among: catalogue)
+                    == ["frus1900", "frus1901", "frus1902", "frus1903", "frus1904", "frus1905", "frus1906"])
+            #expect(await asked.values == [
+                "frus1900/figure_1.png", "frus1902/figure_1.png", "frus1903/figure_1.png",
+                "frus1904/figure_1.png", "frus1905/figure_1.png", "frus1906/figure_1.png",
+            ])
+            #expect(library.data(volumeId: "frus1903", fileName: "figure_1.png") == png)
+            #expect(try Self.recordedComplete(in: library) == ["frus1901", "frus1903"])
+
+            // The next pass skips the two complete volumes and stops at its third failure.
+            #expect(await dm.fetchMissingFigureImages(among: catalogue) == ["frus1900", "frus1902", "frus1904"])
+            #expect(library.data(volumeId: "frus1907", fileName: "figure_1.png") == nil)
+        }
+    }
+
+    @Test("Cancelling a download removes the volume's file and, with it, the images of the copy it was updating")
+    func cancellingADownloadRemovesItsImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            let dm = FigureTestImages.manager(library, png: png, asked: FigureTestImages.Counter())
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            // An update of the volume is queued (the manager is suspended, so it does not start).
+            await dm.enqueueDownload(volumeId: "frus1946v01",
+                                     downloadUrl: "https://example.com/frus1946v01.xml", force: true)
+            #expect(await dm.currentState.pendingVolumeIds == ["frus1946v01"])
+
+            await dm.cancelDownload(volumeId: "frus1946v01")
+            #expect(!dm.isVolumeDownloaded("frus1946v01"), "cancelDownload removes the file at the destination")
+            #expect(!FileManager.default.fileExists(atPath: library.directory(for: "frus1946v01").path),
+                    "the images of a volume whose file a cancel removed were left behind")
+        }
+    }
+
+    @Test("The app starts the pass at launch and on reconnect, once downloads are resumed, and not in a unit test's host")
+    func theAppStartsThePass() throws {
+        #expect(FigureImageStore.isUnitTestHost(["XCTestConfigurationFilePath": "/tmp/x.xctestconfiguration"]))
+        #expect(!FigureImageStore.isUnitTestHost(["HOME": "/var/mobile"]))
+        #expect(!FigureImageStore.isUnitTestHost([:]))
+
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/App/FRUSExplorerApp.swift"), encoding: .utf8)
+        // Twice: in `bootDownloadManager`, and where the device comes back online — each time
+        // straight after the manager is resumed, inside the same online branch.
+        let start = "Self.fetchMissingFigureImages(with: dm, appState: appState)"
+        #expect(source.components(separatedBy: start).count == 3, "the pass must be started at launch and on reconnect")
+        let resumed = "await dm.resumeQueuedDownloads()\n"
+        var cursor = source.startIndex
+        var resumes = 0
+        var followed = 0
+        while let resume = source.range(of: resumed, range: cursor..<source.endIndex) {
+            cursor = resume.upperBound
+            resumes += 1
+            if source[cursor...].drop(while: { $0 == " " }).hasPrefix(start) { followed += 1 }
+        }
+        #expect(resumes == 2 && followed == 2,
+                "each of the \(resumes) resumes of the download queue must be followed by the pass: \(followed) are")
+
+        // What it starts: the manager's pass, over the catalogue's ids, and nothing in a test's host.
+        let declaration = try #require(source.range(of: "static func fetchMissingFigureImages(with dm: DownloadManager, appState: AppState)"))
+        let body = try #require(WindowTargetingTests.balancedBlock(in: source, from: declaration.upperBound))
+        let refusal = try #require(body.range(
+            of: "guard !FigureImageStore.isUnitTestHost(ProcessInfo.processInfo.environment) else { return }"))
+        let pass = try #require(body.range(of: "await dm.fetchMissingFigureImages(among: catalogue)"))
+        #expect(refusal.lowerBound < pass.lowerBound)
+        #expect(body.contains("let catalogue = DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)"))
+
+        // The store the reader and the exports default to is left unconfigured in a test's host.
+        let gate = try #require(source.range(of: "if !FigureImageStore.isUnitTestHost(ProcessInfo.processInfo.environment)"))
+        let gated = try #require(WindowTargetingTests.balancedBlock(in: source, from: gate.upperBound))
+        #expect(gated.contains("FigureImageStore.shared.configure(library: dm.figureLibrary)"),
+                "the app's figure store is configured outside the unit-test gate")
+    }
 }
 
 /// How Volumes & Storage shows a volume's figure images (#1516): in the row's size, and in what
@@ -1364,5 +1579,28 @@ struct FigureStorageDisplayTests {
         let indexed = Int(Double(1_000_000) * StorageReport.indexOverheadFactor)
         #expect(plan.candidates.first?.estimatedBytes == 1_000_000 + indexed + 500_000)
         #expect(plan.estimatedRecovery(for: ["frus1943CairoTehran"]) == 1_000_000 + indexed + 500_000)
+    }
+
+    /// Both hubs are hand-maintained twins, and the model tests above cannot see either: a hub
+    /// that built its bar without the figure bytes would draw no Figures segment under a hero
+    /// total that counts them, and one whose inline rows read the XML alone would show a size the
+    /// full list contradicts.
+    @Test("Each storage hub hands the bar its figure bytes and sizes its inline rows by the whole volume",
+          arguments: ["MacVolumesStorageHub.swift", "VolumesStorageHubView.swift"])
+    func bothHubsCountTheImages(file: String) throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Settings/\(file)"), encoding: .utf8)
+        // The bar: the one call that builds it from a report, with the report's figure bytes.
+        // (The other call draws the empty bar a hub shows before its report is measured.)
+        let fromAReport = "StorageUsageBreakdown.make(volumeBytes: report.totalVolumesBytes"
+        #expect(source.components(separatedBy: fromAReport).count == 2, "\(file) builds its bar from a report once")
+        let make = try #require(source.range(of: fromAReport))
+        let arguments = try #require(WindowTargetingTests.balancedBlock(in: source, from: make.lowerBound, open: "(", close: ")"))
+        #expect(arguments.contains("figureBytes: report.totalFigureBytes"),
+                "\(file) draws its storage bar without the figure images: \(arguments)")
+        // The inline rows: every byte count formatted from a per-volume entry is the whole volume's.
+        let formatted = source.matches(of: /fromByteCount: Int64\(entry\.([A-Za-z]+)\)/).map { String($0.output.1) }
+        #expect(formatted == ["totalBytes"], "\(file) sizes a volume's row by \(formatted)")
     }
 }

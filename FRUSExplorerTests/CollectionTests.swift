@@ -8918,17 +8918,43 @@ struct FigureImageExportTests {
         #expect(d2Text.contains { $0.contains("read by SecState Rusk") }, "\(d2Text)")
     }
 
-    @Test("An export fetches the figure images that are not on the device, and the preview fetches none")
+    /// Makes `resolver` — built by `make` over `library`'s volumes — record each image it is asked
+    /// to fetch in `asked`, fetching none, and collect its progress messages in `status`.
+    private func fetchRecordingResolver(
+        library: FigureImageLibrary, context: ModelContext, asked: FigureTestImages.Counter, status: StatusLog,
+        make: (AppState, ModelContext, @escaping (String?) -> Void) -> CollectionContentResolver = {
+            CollectionContentResolver(appState: $0, modelContext: $1, onPreparingStatus: $2)
+        }
+    ) -> CollectionContentResolver {
+        let appState = AppState()
+        appState.downloadManager = DownloadManager(
+            volumesDirectory: library.volumesDirectory,
+            downloadTask: { _ in throw URLError(.cancelled) },
+            onStateChanged: { _ in })
+        let resolver = make(appState, context) { status.messages.append($0) }
+        resolver.figureImages = FigureImageStore(library: library) { volumeId, fileName in
+            await asked.add("\(volumeId)/\(fileName)")
+            return false
+        }
+        return resolver
+    }
+
+    /// The progress messages a resolve reported, in order; `nil` clears the line.
+    @MainActor
+    private final class StatusLog {
+        var messages: [String?] = []
+    }
+
+    /// The three maps of d587, as an export asks for them.
+    private static let d587Maps = ["frus1946v01/figure_1162.png", "frus1946v01/figure_1163.png",
+                                   "frus1946v01/figure_1166.png"]
+
+    @Test("A PDF, Word or HTML export fetches the figure images that are not on the device; the preview, BibTeX, RIS and the Zotero send fetch none")
     func anExportFetchesAbsentImages() async throws {
         try await FigureTestImages.withLibrary { library in
             try FigureTestImages.seedVolume("frus1946v01", in: library)
             let container = try ModelContainer.makeTestContainer()
             let context = ModelContext(container)
-            let appState = AppState()
-            appState.downloadManager = DownloadManager(
-                volumesDirectory: library.volumesDirectory,
-                downloadTask: { _ in throw URLError(.cancelled) },
-                onStateChanged: { _ in })
             let coll = Collection(name: "Figures")
             context.insert(coll)
             let entry = CollectionEntry(collectionId: coll.id, documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)
@@ -8936,12 +8962,10 @@ struct FigureImageExportTests {
             try context.save()
 
             let asked = FigureTestImages.Counter()
-            let resolver = CollectionContentResolver(appState: appState, modelContext: context)
-            resolver.figureImages = FigureImageStore(library: library) { volumeId, fileName in
-                await asked.add("\(volumeId)/\(fileName)")
-                return false
-            }
-            let preview = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+            let status = StatusLog()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: status)
+            let preview = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview,
+                                                     printsFigureImages: true)
             let askedByThePreview = await asked.values
             #expect(askedByThePreview.isEmpty, "a .preview resolve must fetch nothing: \(askedByThePreview)")
             // The preview's model still names each image by its volume, so one on the device is drawn.
@@ -8951,9 +8975,207 @@ struct FigureImageExportTests {
             }.first, "the preview resolved no document")
             #expect(previewed.renderModel?.figureImages.first == Self.map)
 
+            // BibTeX takes the same resolve as PDF, Word and HTML, and prints citations: it says
+            // it prints no image, and none is fetched. RIS and the Zotero send resolve documents only.
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export,
+                                           printsFigureImages: ExportFormat.bibtex.printsFigureImages)
             _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export)
-            #expect(await asked.values == ["frus1946v01/figure_1162.png", "frus1946v01/figure_1163.png",
-                                           "frus1946v01/figure_1166.png"])
+            _ = try await resolver.resolveDocuments(collection: coll, entries: [entry], allNotes: [], purpose: .export)
+            let askedForCitations = await asked.values
+            #expect(askedForCitations.isEmpty, "a citation export fetched figure images: \(askedForCitations)")
+            #expect(status.messages.isEmpty, "\(status.messages)")
+
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export,
+                                           printsFigureImages: ExportFormat.pdf.printsFigureImages)
+            #expect(await asked.values == Self.d587Maps)
+            // The export sheet's line says what the wait is for, and is cleared afterwards.
+            #expect(status.messages == ["Fetching figure images…", nil], "\(status.messages)")
+        }
+    }
+
+    @Test("Each export format says whether it prints a figure's image, and the export sheet hands the resolver its format's answer")
+    func onlyTheFormatsThatPrintImagesFetchThem() throws {
+        #expect(ExportFormat.allCases.filter(\.printsFigureImages) == [.pdf, .html, .docx])
+        #expect(ExportFormat.allCases.filter { !$0.printsFigureImages } == [.zoteroJSON, .bibtex, .fruscollection])
+
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionExportSheet.swift"), encoding: .utf8)
+        // The one rendered-format resolve, in `runExport`: PDF, HTML, Word and BibTeX all take it.
+        #expect(source.components(separatedBy: "makeResolver().resolve(").count == 2, "the sheet resolves items once")
+        let call = try #require(source.range(of: "makeResolver().resolve"))
+        let arguments = try #require(WindowTargetingTests.balancedBlock(in: source, from: call.upperBound, open: "(", close: ")"))
+        #expect(arguments.contains("purpose: .export"), "\(arguments)")
+        #expect(arguments.contains("printsFigureImages: selectedFormat.printsFigureImages"),
+                "the export sheet does not tell the resolver whether its format prints images: \(arguments)")
+        // RIS and the Zotero send resolve documents only, which fetches none.
+        #expect(source.components(separatedBy: "makeResolver().resolveDocuments(").count == 2)
+    }
+
+    @Test("An export fetches no image of a document it prints without its body")
+    func anIndexEntryFetchesNoImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Figures")
+            context.insert(coll)
+            // d587, with three maps, as an index entry — citation and date, no body — and d588,
+            // which draws the first of them again, in full.
+            let outline = CollectionEntry(collectionId: coll.id, documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)
+            outline.bodyDepthOverride = CollectionBodyDepth.index.rawValue
+            let full = CollectionEntry(collectionId: coll.id, documentId: "d588", volumeId: "frus1946v01", sortOrder: 1)
+            context.insert(outline)
+            context.insert(full)
+            try context.save()
+
+            let asked = FigureTestImages.Counter()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: StatusLog())
+            let items = try await resolver.resolve(collection: coll, entries: [outline, full], allNotes: [],
+                                                   purpose: .export, printsFigureImages: true)
+            #expect(items.documents.map(\.bodyDepth) == [.index, .full])
+            #expect(await asked.values == ["frus1946v01/figure_1162.png"],
+                    "only the document printed in full has its image fetched")
+            #expect(CollectionContentResolver.printedFigureImages(in: items) == [Self.map])
+        }
+    }
+
+    @Test("An image already on the device is not asked for, and an export with nothing to fetch says nothing")
+    func nothingToFetchSaysNothing() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            for name in ["figure_1162.png", "figure_1163.png", "figure_1166.png"] {
+                #expect(library.store(png, volumeId: "frus1946v01", fileName: name))
+            }
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Figures")
+            context.insert(coll)
+            let entry = CollectionEntry(collectionId: coll.id, documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)
+            context.insert(entry)
+            try context.save()
+            let asked = FigureTestImages.Counter()
+            let status = StatusLog()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: status)
+            _ = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .export,
+                                           printsFigureImages: true)
+            #expect(await asked.values.isEmpty)
+            #expect(status.messages.isEmpty, "\(status.messages)")
+        }
+    }
+
+    /// A smart collection's export goes through the saved search, not the entries: a resolver
+    /// whose search returns d587 stands in for one, since no search service runs here.
+    private final class SmartSearchStubResolver: CollectionContentResolver {
+        override func smartRefs(for collection: Collection) async throws -> [SmartDocumentRef] {
+            [SmartDocumentRef(documentId: "d587", volumeId: "frus1946v01", sortOrder: 0)]
+        }
+    }
+
+    @Test("A smart collection's PDF, Word or HTML export fetches its documents' absent images too")
+    func aSmartCollectionsExportFetchesAbsentImages() async throws {
+        try await FigureTestImages.withLibrary { library in
+            try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Smart figures")
+            coll.savedSearchId = UUID()
+            context.insert(coll)
+            try context.save()
+            let asked = FigureTestImages.Counter()
+            let resolver = fetchRecordingResolver(library: library, context: context, asked: asked, status: StatusLog()) {
+                SmartSearchStubResolver(appState: $0, modelContext: $1, onPreparingStatus: $2)
+            }
+            _ = try await resolver.resolve(collection: coll, entries: [], allNotes: [], purpose: .preview,
+                                           printsFigureImages: true)
+            #expect(await asked.values.isEmpty, "a smart collection's preview fetched images")
+            let items = try await resolver.resolve(collection: coll, entries: [], allNotes: [], purpose: .export,
+                                                   printsFigureImages: true)
+            #expect(items.documents.map(\.documentId) == ["d587"], "the smart path resolved \(items.documents.map(\.documentId))")
+            #expect(await asked.values == Self.d587Maps)
+        }
+    }
+
+    /// The header an export prints above a document is read by the resolver's plain-text walk
+    /// (`renderNodePlainText`), not by an exporter's body walk, so a space the parser keeps in a
+    /// dateline has to be printed there too. The header reads a dateline that is the document's
+    /// own child — not one inside an `<opener>`, which prints with the body. Measured 2026-10-01
+    /// over the 553 manifest volumes: of the datelines holding a whitespace-only run between two
+    /// inline elements, 43 are a document's own child (43 documents), 13,692 sit in an opener, 742
+    /// in a closer and 9 in an attachment. `frus1865p4` d493 is one of the 43.
+    @Test("An exported document's dateline keeps the space between two of its inline elements")
+    func theExportedDatelineKeepsItsSpace() async throws {
+        #expect(CollectionContentResolver.renderNodePlainText(
+            [.plainText("Washington,"), .elementSpace, .plainText("February 28, 1861")]) == "Washington, February 28, 1861")
+        try await FigureTestImages.withLibrary { library in
+            // d493's own head and dateline; its text is cut to a line.
+            try """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+                  <div type="document" subtype="historical-document" n="493" xml:id="d493">
+                    <head>Methodist New Connection Conference at Lynden, Canada West</head>
+                    <dateline>
+                        <hi rend="smallcaps">Methodist New Connexion Conference</hi>, <lb/>
+                        <hi rend="italic">Assembled at <placeName>Lynden, C. W.</placeName>,</hi>
+                        <date calendar="gregorian" when="1865-06-13"><hi rend="italic">June</hi>,
+                            13, 1865</date>.</dateline>
+                    <p>Resolution 109.</p>
+                  </div>
+                </body></text></TEI>
+                """.write(to: library.volumesDirectory.appendingPathComponent("frus1865p4.xml"), atomically: true, encoding: .utf8)
+            let container = try ModelContainer.makeTestContainer()
+            let context = ModelContext(container)
+            let coll = Collection(name: "Datelines")
+            context.insert(coll)
+            let entry = CollectionEntry(collectionId: coll.id, documentId: "d493", volumeId: "frus1865p4", sortOrder: 0)
+            context.insert(entry)
+            try context.save()
+            let resolver = fetchRecordingResolver(library: library, context: context,
+                                                  asked: FigureTestImages.Counter(), status: StatusLog())
+            let items = try await resolver.resolve(collection: coll, entries: [entry], allNotes: [], purpose: .preview)
+            let document = try #require(items.documents.first, "d493 did not resolve")
+            let dateline = try #require(document.dateline, "d493 resolved with no dateline")
+            #expect(dateline.hasSuffix("Assembled at Lynden, C. W., June, 13, 1865."), "\(dateline)")
+            #expect(!dateline.contains("C. W.,June"), "the space between the place and the date is not printed: \(dateline)")
+        }
+    }
+
+    @Test("Word draws an image wider than its column or taller than its page scaled to fit, in its shape")
+    func docxFitsALargeImage() async throws {
+        // The widest and the tallest images history.state.gov serves (read 2026-10-01), a map
+        // over both limits, and the largest size that needs no scaling: 936 by 1,152 pixels is
+        // the 6.5-inch column by the 8-inch page at two pixels to the point.
+        let cases: [(width: Int, height: Int, extent: String)] = [
+            (19_043, 800, "cx=\"5943600\" cy=\"249691\""),      // frus1958-60v03mSupp eq_03.png
+            (2_580, 4_321, "cx=\"4367788\" cy=\"7315200\""),    // frus1894app2 figure_1074.png
+            (10_568, 5_536, "cx=\"5943600\" cy=\"3113528\""),   // frus1946v01 figure_1166.png
+            (936, 1_152, "cx=\"5943600\" cy=\"7315200\""),
+            (300, 200, "cx=\"1905000\" cy=\"1270000\""),
+        ]
+        for (width, height, extent) in cases {
+            let run = DocxCollectionExporter.figureDrawingRunXML(index: 0, widthPx: width, heightPx: height, description: "")
+            #expect(run.contains("<wp:extent \(extent)/>"), "\(width) by \(height): \(run.prefix(260))")
+            #expect(run.contains("<a:ext \(extent)/>"), "the picture's own size differs from its place's")
+        }
+
+        // And through the exporter, from the PNGs' own headers: one too wide, one too tall.
+        try await FigureTestImages.withLibrary { library in
+            #expect(library.store(try FigureTestImages.png(width: 1_300, height: 200), volumeId: "v", fileName: "wide.png"))
+            #expect(library.store(try FigureTestImages.png(width: 200, height: 1_300), volumeId: "v", fileName: "tall.png"))
+            let exporter = DocxCollectionExporter()
+            exporter.figureImages = FigureImageStore(library: library)
+            let model = try await ListShapeFixtures.renderModel("""
+                <div type="document" xml:id="d1">
+                  <p>Wide:</p><figure><graphic url="wide"/></figure>
+                  <p>Tall:</p><figure><graphic url="tall"/></figure>
+                </div>
+                """, converter: ASTToRenderNodeConverter(volumeId: "v"))
+            let body = try FigureExportTests.body(of: try await FigureExportTests.docxPackage(model, volumeId: "v", exporter: exporter))
+            let extents = body.matches(of: /<wp:extent cx="(\d+)" cy="(\d+)"\/>/).map { "\($0.output.1) by \($0.output.2)" }
+            // 1,300 px is 650 pt, over the 468 pt column: 468 by 72. 1,300 px tall is over the
+            // 576 pt page: 88.6 by 576.
+            #expect(extents == ["5943600 by 914400", "1125415 by 7315200"], "\(extents)")
         }
     }
 }

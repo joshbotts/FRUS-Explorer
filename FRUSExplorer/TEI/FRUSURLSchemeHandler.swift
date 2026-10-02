@@ -76,6 +76,8 @@ enum CrossRefDestination: Equatable {
 ///          (`PageCitationHint`), read back from the link's query.
 ///   1.3 — #1516: `frusexplorer://figure/…` requests are answered with the figure's image, and
 ///          the links in a figure's head and captions are registered.
+///   1.4 — #1516 review, round 1: an image fetched after the page asked for it brings a revealed
+///          footnote back into view once it has loaded (`figureRetryScript`).
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -302,8 +304,19 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         return (parts[0], parts[1])
     }
 
+    /// The page's global holding the `id` of the footnote entry the reader was last brought to
+    /// (`_FRUSWebViewCoordinator.revealFootnote`), or `null` once the reader has scrolled, tapped
+    /// or typed for themselves. ``figureRetryScript(for:)`` reads it.
+    nonisolated static let revealedFootnoteGlobal = "FRUSRevealedFootnote"
+
     /// The script that makes the page ask again for the image at `url`, once it has been fetched:
     /// every `<img>` naming it drops its figure's `missing` mark and reloads.
+    ///
+    /// An image that arrives this way is laid out after the page was, and pushes everything
+    /// below it down by its height — a map's, where the placeholder was one line. If the reader
+    /// was brought to a footnote (#988) and has not moved since, the footnote is brought back
+    /// into view when the image has loaded: the reveal's own scroll ran before the image had a
+    /// size, and its `scroll-margin-block` is no match for a map.
     nonisolated static func figureRetryScript(for url: URL) -> String {
         var base = URLComponents(url: url, resolvingAgainstBaseURL: false)
         base?.query = nil
@@ -312,6 +325,9 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         return "(function(){var u=\(literal);"
             + "document.querySelectorAll('img.figure-image').forEach(function(i){"
             + "if(i.getAttribute('src').split('?')[0]===u){"
+            + "i.addEventListener('load',function(){"
+            + "var id=window.\(revealedFootnoteGlobal);var li=id&&document.getElementById(id);"
+            + "if(li){li.scrollIntoView({block:'center',behavior:'auto'});}},{once:true});"
             + "i.parentNode.classList.remove('missing');i.src=u+'?retry=1';}});return true;})()"
     }
 
