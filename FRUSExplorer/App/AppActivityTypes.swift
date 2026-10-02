@@ -238,7 +238,9 @@ enum DeepLinkRoute: Equatable, Sendable {
     static let scheme = "frusexplorer"
 
     /// The renderer's own hosts — links that only mean something inside a rendered document.
-    /// Kept in sync with `FRUSURLSchemeHandler`'s switch by a test, not by hope.
+    /// Kept in sync with `FRUSURLSchemeHandler`'s switch by a test, not by hope. The handler's
+    /// `figure` host (#1516) is not one of them: it is the source of an image the reader draws,
+    /// which nothing follows, and no export writes it — so from outside it is an unknown host.
     static let inAppHosts: Set<String> = ["person", "gloss", "doc", "brokenref"]
 
     /// Ids may contain only these. Deliberately excludes `.`, which is what makes `..` unspellable.

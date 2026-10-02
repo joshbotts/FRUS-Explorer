@@ -176,7 +176,25 @@ import Foundation
 ///          superscript label, and its text follows its outer note inside the outer note's entry, so
 ///          `word/footnotes.xml` holds no `<w:footnoteReference>`. #1498: the file name is cut to fit the file system
 ///          (`CollectionExportNaming.fileName`)
+///   1.23 — #1516: a figure prints its image — embedded as `word/media/figureN.png`, from the device's figure store —
+///          with its head in the paragraph above it and its captions in the paragraphs under it, where it printed
+///          `[Figure: figure_1162]`; the placeholder stands in for an image that is not on the device, and an embedded
+///          video prints its head and a hyperlink to its page. A figure that is an image alone prints as a run, so a
+///          mark in a table cell stays in the cell's line. In a footnote an image prints as its placeholder, since
+///          `word/footnotes.xml` has no relationships part to name it by (no image in the corpus sits in a note).
+///          The fold-in: the space between two inline elements prints, outside the highlight tracker.
 final class DocxCollectionExporter: CollectionExporter {
+
+    /// Where figure images come from (#1516). The app's store; a test sets its own.
+    var figureImages: FigureImageStore = .shared
+
+    /// The context of the export being built: where a figure registers its image and a video its link (#1516). Set
+    /// for the length of `buildDocx`, because the body's render walk is not handed the context.
+    private var renderContext: DocxRenderContext?
+
+    /// How many footnote bodies deep the render walk is (#1516): above zero, a figure's image and a video's link
+    /// print as text, since `word/footnotes.xml` carries no relationships.
+    private var footnoteDepth = 0
 
     // MARK: - CollectionExporter
 
@@ -215,6 +233,9 @@ final class DocxCollectionExporter: CollectionExporter {
         cloud: (png: Data, widthPx: Int, heightPx: Int)? = nil
     ) -> Data {
         let ctx = DocxRenderContext()
+        renderContext = ctx
+        footnoteDepth = 0
+        defer { renderContext = nil }
         let decl = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 
         let bodyXML = documentBodyXML(collection: collection, items: items,
@@ -222,21 +243,22 @@ final class DocxCollectionExporter: CollectionExporter {
                                        wordCloudXML: cloud.map { Self.cloudDrawingXML(widthPx: $0.widthPx, heightPx: $0.heightPx) })
         let wNS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         // The relationships namespace is declared ONLY when something references one — a
-        // hyperlink run or the word-cloud image — so a plain export's document.xml bytes are
-        // unchanged from prior builds.
-        let rNSAttr = (ctx.hyperlinkURLs.isEmpty && cloud == nil)
+        // hyperlink run, the word-cloud image or a figure's image (#1516) — so a plain export's
+        // document.xml bytes are unchanged from prior builds.
+        let rNSAttr = (ctx.hyperlinkURLs.isEmpty && cloud == nil && ctx.figureImages.isEmpty)
             ? ""
             : " xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\""
         let docXML = "<w:document xmlns:w=\"\(wNS)\"\(rNSAttr)>\n  <w:body>\n\(bodyXML)  </w:body>\n</w:document>"
 
         var entries: [ZipEntry] = [
             ZipEntry(path: "[Content_Types].xml",
-                     data: Data((decl + contentTypesXML(hasWordCloud: cloud != nil)).utf8)),
+                     data: Data((decl + contentTypesXML(hasWordCloud: cloud != nil || !ctx.figureImages.isEmpty)).utf8)),
             ZipEntry(path: "_rels/.rels",
                      data: Data((decl + rootRelsXML()).utf8)),
             ZipEntry(path: "word/_rels/document.xml.rels",
                      data: Data((decl + documentRelsXML(hyperlinkURLs: ctx.hyperlinkURLs,
-                                                        hasWordCloud: cloud != nil)).utf8)),
+                                                        hasWordCloud: cloud != nil,
+                                                        figureCount: ctx.figureImages.count)).utf8)),
             ZipEntry(path: "word/styles.xml",
                      data: Data((decl + stylesXML()).utf8)),
             ZipEntry(path: "word/document.xml",
@@ -247,11 +269,17 @@ final class DocxCollectionExporter: CollectionExporter {
         if let cloud {
             entries.append(ZipEntry(path: "word/media/wordcloud.png", data: cloud.png))
         }
+        // #1516: each figure image the body printed, once, under the name its relationship targets.
+        for (index, data) in ctx.figureImages.enumerated() {
+            entries.append(ZipEntry(path: "word/\(DocxRenderContext.figureMediaPath(index))", data: data))
+        }
         return buildZip(entries)
     }
 
     // MARK: - Open XML Parts
 
+    /// `[Content_Types].xml`. `hasWordCloud` declares the `png` default, which the word cloud and
+    /// every figure image (#1516) are stored under.
     private func contentTypesXML(hasWordCloud: Bool = false) -> String {
         let pfx = "http://schemas.openxmlformats.org/package/2006"
         let oxml = "application/vnd.openxmlformats-officedocument.wordprocessingml"
@@ -286,8 +314,13 @@ final class DocxCollectionExporter: CollectionExporter {
     /// context (Phase 6 generated-block rows), ids `rId3`+ in first-use order — matching
     /// the ids `DocxRenderContext.hyperlinkRelId(for:)` handed out during body rendering.
     /// With no hyperlinks the output is byte-identical to the pre-Phase-6 part.
+    ///
+    /// `figureCount` (#1516): one image relationship per figure image the body printed,
+    /// `rIdFigure1`… → `media/figure1.png`…, the ids `DocxRenderContext.figureRelId(for:data:)`
+    /// handed out. Non-numeric, for the reason the word cloud's is.
     private func documentRelsXML(hyperlinkURLs: [String] = [],
-                                 hasWordCloud: Bool = false) -> String {
+                                 hasWordCloud: Bool = false,
+                                 figureCount: Int = 0) -> String {
         let pfx  = "http://schemas.openxmlformats.org/package/2006/relationships"
         let oxml = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
         var rels = """
@@ -305,6 +338,10 @@ final class DocxCollectionExporter: CollectionExporter {
             // collide with a collection that has one more link than the id assumed.
             rels += "\n  <Relationship Id=\"rIdCloud\" Type=\"\(oxml)/image\" "
                 + "Target=\"media/wordcloud.png\"/>"
+        }
+        for index in 0..<figureCount {
+            rels += "\n  <Relationship Id=\"\(DocxRenderContext.figureRelId(index))\" Type=\"\(oxml)/image\" "
+                + "Target=\"\(DocxRenderContext.figureMediaPath(index))\"/>"
         }
         rels += "\n</Relationships>"
         return rels
@@ -865,6 +902,26 @@ final class DocxCollectionExporter: CollectionExporter {
             hyperlinkURLs.append(url)
             return "rId\(3 + hyperlinkURLs.count - 1)"
         }
+
+        /// The bytes of each figure image the body printed, in first-use order (#1516): index `i`
+        /// is relationship ``figureRelId(_:)`` and part ``figureMediaPath(_:)``.
+        private(set) var figureImages: [Data] = []
+        /// The index each image was registered at, so a figure printed twice is stored once.
+        private var figureIndexes: [FigureImageName: Int] = [:]
+
+        /// The relationship id of the `index`th figure image.
+        static func figureRelId(_ index: Int) -> String { "rIdFigure\(index + 1)" }
+
+        /// The `index`th figure image's part, relative to `word/`.
+        static func figureMediaPath(_ index: Int) -> String { "media/figure\(index + 1).png" }
+
+        /// Registers `image`'s bytes and returns its index, the same one for a repeated image.
+        func figureIndex(for image: FigureImageName, data: Data) -> Int {
+            if let index = figureIndexes[image] { return index }
+            figureImages.append(data)
+            figureIndexes[image] = figureImages.count - 1
+            return figureImages.count - 1
+        }
     }
 
     // Accumulated run properties passed down during inline rendering
@@ -1050,10 +1107,12 @@ final class DocxCollectionExporter: CollectionExporter {
         case .listBlock(let type, let heading, let items, let trailing):
             return listDocxXML(type: type, heading: heading, items: items, trailing: trailing,
                                indent: Self.listIndent, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker)
-        case .figureBlock(let alt):
-            guard let alt, !alt.isEmpty else { return "" }
-            return wPara(runs: "<w:r><w:t xml:space=\"preserve\">[Figure: \(xmlEscaped(alt))]</w:t></w:r>",
-                         styleId: story.style("Normal"))
+        case .figureBlock(let figure):
+            // #1516: none of a figure is flat text, so none of it is handed the tracker.
+            return figureDocxXML(figure, story: story, footnoteIDMap: footnoteIDMap)
+        case .elementSpace:
+            // `.elementSpace` separates two inline elements; between blocks it separates nothing.
+            return ""
         case .footnoteBody:
             return "" // serialised separately via model.footnotes
         case .pageBreak:
@@ -1070,6 +1129,93 @@ final class DocxCollectionExporter: CollectionExporter {
                 wPara(runs: $0, styleId: story.style("Normal"))
             }
         }
+    }
+
+    // MARK: - Figures (#1516)
+
+    /// A figure as paragraphs of its own: its head in italics, kept with what follows, as a table's caption is; its
+    /// image; each caption; and an embedded video's link. In a footnote each is a `FootnoteText` paragraph.
+    private func figureDocxXML(_ figure: FigureBlock, story: DocxStory, footnoteIDMap: [String: Int]) -> String {
+        var xml = ""
+        if let head = figure.head {
+            let pPr = "<w:pPr><w:pStyle w:val=\"\(story.style("Normal"))\"/><w:keepNext/></w:pPr>"
+            xml += wParaXML(pPr: pPr, runs: inlineRunsXML(head, props: RunProps(italic: true),
+                                                          footnoteIDMap: footnoteIDMap))
+        }
+        if let image = figure.image {
+            xml += wPara(runs: figureImageRunXML(image, figure: figure), styleId: story.style("Normal"))
+        }
+        for caption in figure.captions {
+            xml += wPara(runs: inlineRunsXML(caption, props: RunProps(), footnoteIDMap: footnoteIDMap),
+                         styleId: story.style("Normal"))
+        }
+        if let url = figure.videoURL {
+            xml += wPara(runs: figureVideoRunsXML(url), styleId: story.style("Normal"))
+        }
+        return xml
+    }
+
+    /// A figure's image as one run: an inline drawing of its bytes, registered with the export's context — or the
+    /// placeholder, when the image is not on the device, is no PNG, or the run is inside a footnote, whose part has no
+    /// relationships to name an image by.
+    private func figureImageRunXML(_ image: FigureImageName, figure: FigureBlock) -> String {
+        let placeholder = "<w:r><w:t xml:space=\"preserve\">\(xmlEscaped(FigureBlock.missingImageLabel))</w:t></w:r>"
+        guard footnoteDepth == 0, let ctx = renderContext,
+              let data = figureImages.data(for: image),
+              let pixels = FigureImageLibrary.pngPixelSize(data) else { return placeholder }
+        let index = ctx.figureIndex(for: image, data: data)
+        let headText = figure.head.map { flatText(of: $0) } ?? ""
+        return Self.figureDrawingRunXML(
+            index: index, widthPx: pixels.width, heightPx: pixels.height,
+            description: figure.imageDescription
+                ?? (headText.isEmpty ? FigureBlock.genericImageDescription : headText))
+    }
+
+    /// The runs of an embedded video's link: a hyperlink to its page in the body; in a footnote, its words and the
+    /// page's address as text.
+    private func figureVideoRunsXML(_ url: URL) -> String {
+        let label = xmlEscaped(FigureBlock.videoLinkLabel)
+        guard footnoteDepth == 0, let ctx = renderContext else {
+            return "<w:r><w:t xml:space=\"preserve\">\(label) \(xmlEscaped(url.absoluteString))</w:t></w:r>"
+        }
+        return "<w:hyperlink r:id=\"\(ctx.hyperlinkRelId(for: url.absoluteString))\">"
+            + "<w:r><w:rPr><w:rStyle w:val=\"Hyperlink\"/></w:rPr><w:t xml:space=\"preserve\">\(label)</w:t></w:r>"
+            + "</w:hyperlink>"
+    }
+
+    /// The inline-drawing run of the `index`th figure image. Two pixels to the point, as the PDF export prints one
+    /// (EMUs: 914,400 per inch, so 6,350 per pixel), scaled down to fit a 6.5-inch column and an 8-inch page.
+    static func figureDrawingRunXML(index: Int, widthPx: Int, heightPx: Int, description: String) -> String {
+        var cx = widthPx * 6350
+        var cy = heightPx * 6350
+        let maxCX = 5_943_600, maxCY = 7_315_200
+        if cx > maxCX {
+            cy = cy * maxCX / cx
+            cx = maxCX
+        }
+        if cy > maxCY {
+            cx = cx * maxCY / cy
+            cy = maxCY
+        }
+        let wp = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+        let a = "http://schemas.openxmlformats.org/drawingml/2006/main"
+        let pic = "http://schemas.openxmlformats.org/drawingml/2006/picture"
+        // Unique in the document: the word cloud's drawing is 1001.
+        let id = 2000 + index
+        let descr = description.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+        return "<w:r><w:drawing>"
+            + "<wp:inline xmlns:wp=\"\(wp)\" distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\">"
+            + "<wp:extent cx=\"\(cx)\" cy=\"\(cy)\"/>"
+            + "<wp:docPr id=\"\(id)\" name=\"Figure \(index + 1)\" descr=\"\(descr)\"/>"
+            + "<a:graphic xmlns:a=\"\(a)\"><a:graphicData uri=\"\(pic)\"><pic:pic xmlns:pic=\"\(pic)\">"
+            + "<pic:nvPicPr><pic:cNvPr id=\"\(id)\" name=\"figure\(index + 1).png\"/><pic:cNvPicPr/></pic:nvPicPr>"
+            + "<pic:blipFill><a:blip r:embed=\"\(DocxRenderContext.figureRelId(index))\"/>"
+            + "<a:stretch><a:fillRect/></a:stretch></pic:blipFill>"
+            + "<pic:spPr><a:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"\(cx)\" cy=\"\(cy)\"/></a:xfrm>"
+            + "<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></pic:spPr>"
+            + "</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>"
     }
 
     /// The left indent, in twentieths of a point, of a list at the top of a block, and the step
@@ -1304,7 +1450,11 @@ final class DocxCollectionExporter: CollectionExporter {
                 runs += "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
             case .other(let nodes):
                 for node in nodes {
-                    if Self.printsAsRuns(node) {
+                    // A figure between two items stands between them (#1516): as a run it would
+                    // open the next item's line, ahead of that item's own label.
+                    var isFigure = false
+                    if case .figureBlock = node { isFigure = true }
+                    if Self.printsAsRuns(node), !isFigure {
                         runs += inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap)
                     } else {
                         blocks += blockNodeToDocxXML(node, story: story, footnoteIDMap: footnoteIDMap)
@@ -1322,10 +1472,15 @@ final class DocxCollectionExporter: CollectionExporter {
         switch node {
         case .plainText, .boldText, .italicText, .smallCapsText, .underlineText, .termText,
              .suppliedText, .sicText, .corrText, .formulaText, .lineBreak, .footnoteMarker,
-             .persNameLink, .glossLink, .crossRefLink, .pageBreak, .unknown:
+             .persNameLink, .glossLink, .crossRefLink, .pageBreak, .unknown, .elementSpace:
             return true
+        case .figureBlock(let figure):
+            // #1516: a figure that is an image alone is a run of the line it sits in — a
+            // shipper's mark in a table cell stays in the cell's paragraph. One with a head or
+            // captions prints as paragraphs of its own.
+            return figure.isBare
         case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph,
-             .footnoteBody, .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock,
+             .footnoteBody, .tableBlock, .listBlock, .editorialNoteBlock,
              .titlePageBlock, .attachmentBlock, .attachmentHeading:
             return false
         }
@@ -1388,6 +1543,14 @@ final class DocxCollectionExporter: CollectionExporter {
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .pageBreak:
             return ""
+        case .elementSpace:
+            // #1516 fold-in: the space between two inline elements. Not flat text, so the tracker
+            // is not handed it: `runsXML` would advance the highlight position past it.
+            return "<w:r>\(props.rPrXML())<w:t xml:space=\"preserve\"> </w:t></w:r>"
+        case .figureBlock(let figure) where figure.isBare:
+            // #1516: an image alone, as a run of its line (`printsAsRuns`). Not flat text.
+            guard let image = figure.image else { return "" }
+            return figureImageRunXML(image, figure: figure)
         case .unknown(_, let c):
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         default:
@@ -1519,6 +1682,9 @@ final class DocxCollectionExporter: CollectionExporter {
         let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
         let paragraph = { (runs: String) in "        <w:p>\(DocxStory.footnotePPr)\(runs)</w:p>\n" }
+        // #1516: inside a note, a figure's image and a video's link print as text.
+        footnoteDepth += 1
+        defer { footnoteDepth -= 1 }
         // An empty map: a marker in a note never prints a reference, only its label (#1496).
         var content = paragraphsDocx(children, props: RunProps(), lead: refRun + spacer, story: .footnote,
                                      footnoteIDMap: [:], tracker: nil, paragraph: paragraph)
@@ -1614,7 +1780,12 @@ final class DocxCollectionExporter: CollectionExporter {
                         case .label(let c), .other(let c): walk(c)
                         }
                     }
-                case .footnoteBody, .plainText, .formulaText, .lineBreak, .pageBreak, .figureBlock:
+                case .figureBlock(let figure):
+                    // #1516: a figure's head and captions are converted like any inline content,
+                    // so a note in one would carry its marker (none of the corpus's figures does).
+                    walk(figure.head ?? [])
+                    figure.captions.forEach(walk)
+                case .footnoteBody, .plainText, .formulaText, .lineBreak, .pageBreak, .elementSpace:
                     break
                 }
             }

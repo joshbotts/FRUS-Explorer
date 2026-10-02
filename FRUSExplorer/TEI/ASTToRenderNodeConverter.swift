@@ -105,6 +105,16 @@ import Foundation
 ///          (`.crossRefLink`'s `citing`, `PageCitationHint(noteChildren:)`), built from the same AST
 ///          the indexer builds the reference's edge from. **`kVersion` is not bumped:** the hint is
 ///          no text, and `flatText` reads only `.crossRefLink`'s children.
+///   1.13 — #1516: `.figure` converts everything the figure prints — its `<head>`, its paragraphs
+///          and its `<figDesc>` as captions, the image's name with the volume it is found in, a
+///          video's link — where it kept the graphic's name alone and every renderer printed that
+///          name as the caption (`figure_1162`, on 510 figures in documents); an empty figure
+///          converts to nothing. The fold-in: `.elementSpace`, the space between two inline
+///          elements. **`kVersion` is deliberately NOT bumped:** `flatText` skipped `.figureBlock`
+///          whatever it carried and skips `.elementSpace`, so every document's flat text and
+///          `body_hash` are byte-identical, no stored highlight goes stale and nothing re-indexes
+///          (owner decision D3a: a figure's paragraphs are captions). The index is untouched:
+///          `IndexingPipeline` reads a figure's text from the AST, where it always was.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -208,7 +218,9 @@ public struct ASTToRenderNodeConverter {
     /// Rules:
     /// - `.plainText` / `.formulaText` → contribute their string value.
     /// - `.lineBreak` → contributes `"\n"`.
-    /// - `.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.footnoteBody` → skip (no chars).
+    /// - `.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.footnoteBody`, `.elementSpace` → skip
+    ///   (no chars). A figure's head and captions are skipped with it (#1516): the serializer
+    ///   draws them under `data-skip`.
     /// - `.suppliedText` children → recurse without adding brackets.
     /// - `.tableBlock` → recurse each cell's children in row-major order. Its caption is skipped
     ///   (#1495): the serializer draws it under `data-skip`.
@@ -225,7 +237,7 @@ public struct ASTToRenderNodeConverter {
                 result += s
             case .lineBreak:
                 result += "\n"
-            case .pageBreak, .footnoteMarker, .figureBlock, .footnoteBody:
+            case .pageBreak, .footnoteMarker, .figureBlock, .footnoteBody, .elementSpace:
                 break
             case .tableBlock(_, let rows):
                 for row in rows {
@@ -277,7 +289,14 @@ public struct ASTToRenderNodeConverter {
     /// — so exporters, which inject no lookup, are unaffected.
     public var brokenRefLookup: ((String) -> BrokenRefInfo?)?
 
+    /// The volume the documents being converted come from, or `nil` (#1516): what a figure's
+    /// image and a video's link are found by.
+    public var volumeId: String?
+
     // MARK: State
+
+    /// The id of the document being converted (#1516): a video's link names it.
+    private var documentId = ""
 
     private var footnoteCounter = 0
     private var collectedFootnotes: [FRUSRenderNode] = []
@@ -289,10 +308,17 @@ public struct ASTToRenderNodeConverter {
 
     // MARK: Init
 
-    public init(personLookup: ((String) -> PersonEntry?)? = nil,
+    /// Creates a converter.
+    ///
+    /// - Parameter volumeId: The volume the documents come from. A figure's image is found by
+    ///   volume and name, and a video's link names the volume, so a converter built without one
+    ///   prints the placeholder for every image and no video link (#1516).
+    public init(volumeId: String? = nil,
+                personLookup: ((String) -> PersonEntry?)? = nil,
                 glossLookup: ((String) -> GlossEntry?)? = nil,
                 abbrLookup: ((String) -> GlossEntry?)? = nil,
                 brokenRefLookup: ((String) -> BrokenRefInfo?)? = nil) {
+        self.volumeId = volumeId
         self.personLookup = personLookup
         self.glossLookup = glossLookup
         self.abbrLookup = abbrLookup
@@ -306,6 +332,7 @@ public struct ASTToRenderNodeConverter {
     /// This method is called once per document. The converter instance should not be
     /// reused across multiple documents because the footnote counter is not reset.
     public mutating func convert(_ ast: FRUSDocumentAST) -> FRUSDocumentRenderModel {
+        documentId = ast.documentId
         let bodyNodes = convertNodes(ast.nodes)
         return FRUSDocumentRenderModel(
             documentId: ast.documentId,
@@ -522,8 +549,16 @@ public struct ASTToRenderNodeConverter {
 
         // MARK: Figures and formulas (Session 07)
 
-        case .figure(let graphic, _):
-            return [.figureBlock(altText: graphic)]
+        case .figure(let graphic, let children):
+            // #1516: everything the figure prints, converted where it stands — which is also
+            // footnote order, should a figure ever hold a note (none of the corpus's 1,035 does).
+            // None of it is flat text. An empty figure converts to nothing: history.state.gov
+            // prints nothing for one, and neither does the app (owner decision D3c).
+            return figureBlock(graphic: graphic, children: children).map { [.figureBlock($0)] } ?? []
+
+        case .elementSpace:
+            // #1516 fold-in: drawn as a space by every renderer, counted by no offset walker.
+            return [.elementSpace]
 
         case .formula(let text):
             return [.formulaText(text)]
@@ -585,6 +620,73 @@ public struct ASTToRenderNodeConverter {
         case .unknown(let name, _, let children):
             return [.unknown(name: name, children: convertNodes(children))]
         }
+    }
+
+    // MARK: - Figures (#1516)
+
+    /// The XHTML elements of the video players three public-diplomacy volumes embed in a
+    /// `<figure>`: 12 `<object>` players with their `<script>`s and `<param>`s in
+    /// `frus1917-72PubDip`, and 8 `<iframe>`s in volumes VI and VII. Their wrapping XHTML `<div>`s
+    /// are transparent to the parser, so these reach the figure as its own children. The app
+    /// cannot play them and prints none of their content — a `<script>`'s text least of all.
+    private static let videoPlayerElements: Set<String> = ["iframe", "object", "script", "embed", "param"]
+
+    /// Converts a `<figure>`'s content, or returns `nil` for a figure that prints nothing: one
+    /// with no graphic, no head, no text and no video.
+    ///
+    /// - `<head>` → the figure's head, above the image; a second head joins it on a line of its own.
+    /// - `<p>` → one caption line, its content converted like any inline content.
+    /// - `<figDesc>` → one caption line, and the image's alternative text.
+    /// - a video player's elements, and loose text beside them → no content; the figure links to
+    ///   its page instead.
+    /// - anything else the TEI may put there → a caption line of its own, so nothing is dropped.
+    private mutating func figureBlock(graphic: String?, children: [FRUSASTNode]) -> FigureBlock? {
+        var head: [FRUSRenderNode]?
+        var captions: [[FRUSRenderNode]] = []
+        var description: String?
+        let isVideo = children.contains { child in
+            if case .unknown(let name, _, _) = child { return Self.videoPlayerElements.contains(name) }
+            return false
+        }
+        for child in children {
+            switch child {
+            case .head(let headChildren):
+                let converted = convertNodes(headChildren)
+                head = head.map { $0 + [.lineBreak] + converted } ?? converted
+            case .paragraph(let paragraphChildren):
+                let converted = convertNodes(paragraphChildren)
+                if !converted.isEmpty { captions.append(converted) }
+            case .unknown(let name, _, let descChildren) where name == "figDesc":
+                let converted = convertNodes(descChildren)
+                guard !converted.isEmpty else { continue }
+                captions.append(converted)
+                let text = Self.flatText(converted)
+                    .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+                if !text.isEmpty { description = text }
+            case .unknown(let name, _, _) where Self.videoPlayerElements.contains(name):
+                continue
+            case .text where isVideo:
+                // The player's own hidden text: `frus1917-72PubDip` opens each of its 12 players
+                // with `<div style="display:none"> 298x530 </div>`, and the parser passes an XHTML
+                // `<div>`'s content up to the figure.
+                continue
+            case .text(let string) where string.allSatisfy(\.isWhitespace):
+                continue
+            default:
+                let converted = convertNode(child)
+                if !converted.isEmpty { captions.append(converted) }
+            }
+        }
+        let image = graphic.flatMap { name -> FigureImageName? in
+            name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? nil : FigureImageName(volumeId: volumeId, graphic: name)
+        }
+        guard image != nil || head != nil || !captions.isEmpty || isVideo else { return nil }
+        let videoURL = isVideo
+            ? volumeId.flatMap { FRUSCanonicalURL.url(volumeId: $0, documentId: documentId) }
+            : nil
+        return FigureBlock(image: image, imageDescription: description, head: head,
+                           captions: captions, videoURL: videoURL, isVideo: isVideo)
     }
 
     private func isBlockNode(_ node: FRUSRenderNode) -> Bool {

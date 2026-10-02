@@ -2722,6 +2722,20 @@ struct FRUSExplorerApp: App {
         )
         appState.downloadManager = dm
 
+        // #1516: the reader's scheme handler and the exports draw a figure's image from this store.
+        // A volume downloaded before figure images existed gets them the first time one is asked
+        // for — a catalogue volume only (a side-loaded one has no address on history.state.gov,
+        // #777), and only while online.
+        FigureImageStore.shared.configure(library: dm.figureLibrary) { [appState] volumeId, fileName in
+            let allowed = await MainActor.run {
+                FigureImageStore.mayFetch(
+                    volumeId: volumeId, isOnline: appState.isOnline,
+                    catalogueVolumeIds: DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore))
+            }
+            guard allowed else { return false }
+            return await dm.fetchFigureImage(volumeId: volumeId, fileName: fileName)
+        }
+
         #if DEBUG
         // #1301 round 4: finish the seeded fixture's "download" after a delay, through the manager's
         // own completion router, so a UI test can stand on a compilation while the automatic

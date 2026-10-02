@@ -68,7 +68,10 @@ enum HTMLTemplate {
         // Reading views opt into classification chips on source footnotes
         // (Source Explorer Phase 5); exports construct their own serializer with
         // the default (off) so exported output is unchanged.
-        let fragment = FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true)
+        // #1516: the reader names each figure's image by a `frusexplorer://figure/` URL, which
+        // `FRUSURLSchemeHandler` answers from the device's figure store.
+        let fragment = FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true,
+                                                    figureImages: .reader)
             .serialize(model)
         let cssVars  = FRUSTheme.cssVariables(colorScheme: colorScheme, textSize: textSize)
         return """
@@ -90,6 +93,63 @@ enum HTMLTemplate {
     }
 
     // MARK: - Static CSS
+
+    /// The rules a figure is drawn by (#1516), part of ``documentCSS`` — so the collection HTML
+    /// export and its preview, which embed that stylesheet and draw the same markup, have them too.
+    ///
+    /// A figure between blocks is a centred block; one inside a line (`in-line`) is an
+    /// inline-block, so a shipper's mark sits in its table cell's line and a chart in a sentence
+    /// takes a line of its own only when it is wider than what is left of the line. An image
+    /// never exceeds its column. The head is above the image and the captions under it, each on
+    /// a line of its own, the head in italics as history.state.gov prints one. The placeholder
+    /// is hidden until the figure is marked `missing` — the reader's `<img onerror>` — or has no
+    /// image element at all, which is how every other caller prints it.
+    ///
+    /// All of a figure is data-skip, and deliberately not `user-select: none`, for the reason
+    /// the list parts give above: kSelectionJS moves an endpoint inside one to the first letter
+    /// after it.
+    static let figureCSS = """
+    /* ─── Figures (#1516) ───────────────────────────────────────────────────── */
+        .frus-figure {
+          display: block;
+          margin: 1.25em 0;
+          text-align: center;
+        }
+        .frus-figure.in-line {
+          display: inline-block;
+          margin: 0;
+          max-width: 100%;
+          vertical-align: middle;
+        }
+        /* A figure the TEI puts between two list items stands between them. */
+        .list-aside > .frus-figure.in-line,
+        .list-trailing > .frus-figure.in-line {
+          display: block;
+          margin: 0.5em 0;
+        }
+        /* White behind the image whatever the theme: the corpus's figures are scans and line
+           drawings made for a white page, and one with a transparent ground would lose its black
+           lines on the dark theme's background. */
+        .frus-figure img.figure-image {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          margin: 0 auto;
+          background-color: #fff;
+        }
+        .frus-figure .figure-head,
+        .frus-figure .figure-caption {
+          display: block;
+          font-size: 0.92em;
+        }
+        .frus-figure .figure-head { font-style: italic; margin-bottom: 0.4em; }
+        .frus-figure figcaption,
+        .frus-figure.in-line .figure-caption { margin-top: 0.4em; }
+        .frus-figure .figure-missing { color: var(--color-secondary, #666); }
+        .frus-figure img.figure-image + .figure-missing { display: none; }
+        .frus-figure.missing img.figure-image { display: none; }
+        .frus-figure.missing img.figure-image + .figure-missing { display: inline; }
+    """
 
     /// Layout and typography CSS that references CSS custom properties set by
     /// `FRUSTheme.cssVariables`.  All color and size values use `var(--...)` so
@@ -222,6 +282,8 @@ enum HTMLTemplate {
       font-style: italic;
       padding: 0 0 0.35em;
     }
+
+    \(figureCSS)
 
     /* ─── Lists ─────────────────────────────────────────────────────────────── */
     .frus-list {

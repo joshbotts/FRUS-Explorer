@@ -49,6 +49,11 @@ import Foundation
 ///          a case being added, for the reason 1.5 gives.
 ///   1.7 — #1509: `.crossRefLink` carries `citing`, what a page link's footnote names, defaulted to
 ///          `nil` so a link built without one is unchanged; it is no text, and no walker reads it.
+///   1.8 — #1516: `.figureBlock` carries the whole figure (``FigureBlock``) — its image's name, its
+///          head, its captions and a video's link — where it carried the graphic's name alone; and
+///          `.elementSpace`, the space between two inline elements. Neither is flat text: a figure
+///          was already skipped by every offset walker, and `.elementSpace` falls into the same
+///          arms, so every document's flat text is byte-identical.
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -186,8 +191,14 @@ public indirect enum FRUSRenderNode: Sendable {
     /// An editorial note block, rendered with a visual distinction from body text.
     case editorialNoteBlock([FRUSRenderNode])
 
-    /// A figure placeholder, rendered with an alt-text caption.
-    case figureBlock(altText: String?)
+    /// A rendered `<figure>`: its image, the head the volume printed above it and the captions
+    /// under it, or a link to an embedded video (``FigureBlock``, #1516).
+    ///
+    /// **None of it is flat text.** Every renderer draws it and no offset walker counts it — the
+    /// contract a table's caption and a list's heading have — so restoring a figure's text moved
+    /// no highlight offset and no `renderingVersion`. Until #1516 the payload was the graphic's
+    /// name alone, printed as the caption (`figure_1162`).
+    case figureBlock(FigureBlock)
 
     // MARK: Inline Editorial Marks (Session 07)
 
@@ -205,6 +216,13 @@ public indirect enum FRUSRenderNode: Sendable {
 
     /// Line break within flowing text.
     case lineBreak
+
+    /// The space between two inline elements that the TEI encodes as a whitespace-only run
+    /// (`FRUSASTNode.elementSpace`, #1516 fold-in). Every renderer draws one space for it and no
+    /// offset walker counts it, so the flat text is what it was while the reader dropped the
+    /// space: a highlight's stored passage still reads "Washington,February", as the passages of
+    /// a numbered list omit its numbering (#1371).
+    case elementSpace
 
     // MARK: Title Page (Session 79)
 
@@ -360,6 +378,118 @@ public enum ListLead: Sendable {
     case other([FRUSRenderNode])
 }
 
+// MARK: - Figures (#1516)
+
+/// The image a `<figure>` names: its volume and its `<graphic url>`.
+///
+/// The corpus's graphic urls are bare names — `figure_1162`, `d310p9`, `Document A.1`,
+/// `OpenPitMine.jpg` — and history.state.gov serves each at
+/// `https://static.history.state.gov/frus/<volume>/<url>.png`. The suffix is added to EVERY url:
+/// measured 2026-10-01, `OpenPitMine.jpg` is served as `OpenPitMine.jpg.png` and under no other
+/// name. `FigureImageLibrary` owns where the file is kept on the device.
+///
+/// Version history:
+///   1.0 — #1516: initial implementation
+public struct FigureImageName: Sendable, Hashable {
+    /// The volume the figure is in, or `nil` when the converter was not told (a model built
+    /// outside the reader and the exports), in which case no renderer can find the image.
+    public let volumeId: String?
+    /// The `<graphic url>` value, verbatim.
+    public let graphic: String
+
+    /// Creates an image name.
+    public init(volumeId: String?, graphic: String) {
+        self.volumeId = volumeId
+        self.graphic = graphic
+    }
+
+    /// The image's file name, on history.state.gov and on the device: the url and `.png`. `nil`
+    /// when the url cannot be a file name — empty, a `.`/`..` component, or holding a path
+    /// separator — so a volume's markup can never name a file outside its own figures folder.
+    public var fileName: String? { Self.fileName(forGraphic: graphic) }
+
+    /// ``fileName`` for a bare `<graphic url>` value.
+    public static func fileName(forGraphic graphic: String) -> String? {
+        let name = graphic.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, name != ".", name != "..",
+              !name.contains("/"), !name.contains("\\"), !name.contains("\0") else { return nil }
+        return name + ".png"
+    }
+}
+
+/// Everything a `<figure>` prints (#1516): the payload of ``FRUSRenderNode/figureBlock(_:)``.
+///
+/// Measured at corpus `8e5da08c1` over the 553 manifest volumes, of the 532 figures inside
+/// documents 426 are a graphic alone, 50 a head and a graphic, 32 a graphic and paragraphs, 2 a
+/// graphic and a description, 2 text with no graphic, and 20 are empty — which the converter
+/// drops, since history.state.gov prints nothing for one (owner decision D3c). 20 more, in the
+/// sections of three public-diplomacy volumes, hold an embedded video player.
+///
+/// How it prints (owner decision D3, option (f)4):
+/// - the **head** above the image, as history.state.gov prints it;
+/// - the **image**, when it is on the device; otherwise ``missingImageLabel`` in its place — while
+///   its download has not finished, after a failure, or for a name history.state.gov does not
+///   serve (13 of the 566 names outside title pages, measured 2026-10-01);
+/// - each **caption** under the image: the figure's paragraphs and its description;
+/// - for a video, ``videoLinkLabel`` linking to the document's page on history.state.gov, since
+///   the app cannot play the Brightcove player the TEI embeds.
+///
+/// Version history:
+///   1.0 — #1516: initial implementation
+public struct FigureBlock: Sendable {
+    /// The image the figure names, or `nil` when it has no `<graphic>`.
+    public let image: FigureImageName?
+    /// The figure's `<figDesc>` as plain text — the image's alternative text — or `nil`.
+    public let imageDescription: String?
+    /// The figure's own `<head>`, converted like any inline content, or `nil`.
+    public let head: [FRUSRenderNode]?
+    /// The lines under the image, in document order: each `<p>`'s content and the `<figDesc>`.
+    public let captions: [[FRUSRenderNode]]
+    /// For an embedded video, the document's page on history.state.gov
+    /// (`FRUSCanonicalURL`); `nil` for every other figure, and for a video whose volume the
+    /// converter was not told. The 20 players all sit in sections (`appendix-1`), and
+    /// history.state.gov resolves a section's id as it does a document's — checked 2026-10-01
+    /// on three of them, with an invented id returning 404.
+    public let videoURL: URL?
+    /// Whether the figure embeds a video player. `true` with a `nil` ``videoURL`` prints the
+    /// head alone.
+    public let isVideo: Bool
+
+    /// Creates a figure.
+    public init(image: FigureImageName? = nil, imageDescription: String? = nil,
+                head: [FRUSRenderNode]? = nil, captions: [[FRUSRenderNode]] = [],
+                videoURL: URL? = nil, isVideo: Bool = false) {
+        self.image = image
+        self.imageDescription = imageDescription
+        self.head = head
+        self.captions = captions
+        self.videoURL = videoURL
+        self.isVideo = isVideo
+    }
+
+    /// Whether the figure is an image and nothing else: no head, no caption, no video. Such a
+    /// figure can sit inside a line — a shipper's mark in a table cell (`frus1897` d178) — so the
+    /// PDF and Word exporters print it as a run of its paragraph instead of splitting the line.
+    public var isBare: Bool {
+        head == nil && captions.isEmpty && !isVideo
+    }
+
+    /// What stands in an image's place while it is not on the device.
+    public static var missingImageLabel: String {
+        String(localized: "document.figure.missing", defaultValue: "[Figure]")
+    }
+
+    /// The link an embedded video prints.
+    public static var videoLinkLabel: String {
+        String(localized: "document.figure.video.watch", defaultValue: "Watch on history.state.gov ↗")
+    }
+
+    /// The image's alternative text when the figure has no description of its own.
+    public static var genericImageDescription: String {
+        String(localized: "document.figure.alt", defaultValue: "Figure")
+    }
+}
+
 // MARK: - Document Render Model
 
 /// The fully converted render model for a single FRUS document.
@@ -385,6 +515,61 @@ public struct FRUSDocumentRenderModel: Sendable {
     public let footnotes: [FRUSRenderNode]
 }
 
+// MARK: - Figure images (#1516)
+
+public extension FRUSDocumentRenderModel {
+
+    /// Every image the document's figures name, in reading order — in the body and in its
+    /// footnotes — each once: what an export fetches before it prints, so a volume downloaded
+    /// before figure images existed exports with them.
+    var figureImages: [FigureImageName] {
+        var images: [FigureImageName] = []
+        var seen = Set<FigureImageName>()
+        func walk(_ nodes: [FRUSRenderNode]) {
+            for node in nodes {
+                switch node {
+                case .figureBlock(let figure):
+                    if let image = figure.image, seen.insert(image).inserted { images.append(image) }
+                    walk(figure.head ?? [])
+                    figure.captions.forEach(walk)
+                case .heading(let c), .dateline(let c), .letterOpener(let c), .letterCloser(let c),
+                     .salutation(let c), .paragraph(let c), .boldText(let c), .italicText(let c),
+                     .smallCapsText(let c), .underlineText(let c), .termText(let c),
+                     .editorialNoteBlock(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
+                     .titlePageBlock(let c), .attachmentHeading(let c):
+                    walk(c)
+                case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, _, let c),
+                     .attachmentBlock(_, let c), .unknown(_, let c), .footnoteBody(_, _, _, _, _, let c):
+                    walk(c)
+                case .tableBlock(let caption, let rows):
+                    walk(caption ?? [])
+                    for row in rows { for cell in row { walk(cell.children) } }
+                case .listBlock(_, let heading, let items, let trailing):
+                    walk(heading ?? [])
+                    for item in items {
+                        for lead in item.lead {
+                            switch lead {
+                            case .label(let c), .other(let c): walk(c)
+                            }
+                        }
+                        walk(item.children)
+                    }
+                    for lead in trailing {
+                        switch lead {
+                        case .label(let c), .other(let c): walk(c)
+                        }
+                    }
+                case .plainText, .formulaText, .lineBreak, .elementSpace, .pageBreak, .footnoteMarker:
+                    break
+                }
+            }
+        }
+        walk(bodyNodes)
+        walk(footnotes)
+        return images
+    }
+}
+
 // MARK: - Flat-text extraction
 
 /// Builds the flat-text string from `model.bodyNodes` using the deterministic DFS
@@ -392,7 +577,7 @@ public struct FRUSDocumentRenderModel: Sendable {
 ///
 /// Only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes contribute
 /// characters. All container nodes recurse in array order. `.pageBreak`,
-/// `.footnoteMarker`, and `.figureBlock` are skipped, and so are a `.listBlock`'s heading,
+/// `.footnoteMarker`, `.figureBlock` and `.elementSpace` are skipped, and so are a `.listBlock`'s heading,
 /// labels and other non-item children (#1371) and a `.tableBlock`'s caption (#1495) — a list
 /// contributes its items and a table its cells. This matches the character
 /// positions stored in `DocumentHighlight.startOffset`/`endOffset`, and exactly
@@ -454,7 +639,7 @@ private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout Strin
         case .footnoteBody(_, _, _, _, _, let cs):
             appendFlatText(from: cs, into: &flat)
         default:
-            // .pageBreak, .footnoteMarker, .figureBlock — contribute no characters
+            // .pageBreak, .footnoteMarker, .figureBlock, .elementSpace — contribute no characters
             break
         }
     }
@@ -627,7 +812,7 @@ private func appendFlatTextBlocks(
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
             flushFlatTextBlock(&blocks, &current)
         default:
-            // .pageBreak, .footnoteMarker, .figureBlock — contribute no characters
+            // .pageBreak, .footnoteMarker, .figureBlock, .elementSpace — contribute no characters
             break
         }
     }

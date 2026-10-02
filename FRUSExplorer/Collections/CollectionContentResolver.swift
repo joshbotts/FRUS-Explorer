@@ -225,6 +225,10 @@ class CollectionContentResolver {
     /// `summaryGeneratingMessage` state.
     private let onSummaryStatus: ((String?) -> Void)?
 
+    /// Where an export's absent figure images are fetched through (#1516). The app's store; a
+    /// test sets its own.
+    var figureImages: FigureImageStore = .shared
+
     /// Creates a resolver bound to the app's shared services.
     ///
     /// - Parameters:
@@ -426,7 +430,8 @@ class CollectionContentResolver {
         // them through the unified per-document pipeline.
         if collection.savedSearchId != nil {
             let refs = try await smartRefs(for: collection)
-            return await resolveSmartItems(refs, collection: collection, allNotes: allNotes)
+            return await resolveSmartItems(refs, collection: collection, allNotes: allNotes,
+                                           fetchesAbsentFigures: purpose == .export)
         }
 
         // Static collection path.
@@ -447,7 +452,8 @@ class CollectionContentResolver {
         // the cap that the export (full list) shows. Matches `resolveItem`'s sourcing.
         let batch = await loadBatchContext(
             for: refs, collection: collection, allNotes: allNotes,
-            collectionDocuments: Self.collectionDocumentRefs(of: collection))
+            collectionDocuments: Self.collectionDocumentRefs(of: collection),
+            fetchesAbsentFigures: purpose == .export)
         // #1465: an export leaves out every heading saved with no text; the preview shows it ("Untitled section").
         return await resolveItems(from: refs, batch: batch, dropsUntitledHeadings: purpose == .export)
     }
@@ -506,13 +512,17 @@ class CollectionContentResolver {
     /// Internal (not private) so tests can exercise the unified pipeline without standing
     /// up a live FTS5 search service.
     ///
-    /// - Parameter fullRefs: The uncapped result set when `refs` is a capped prefix
-    ///   (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
+    /// - Parameters:
+    ///   - fullRefs: The uncapped result set when `refs` is a capped prefix
+    ///     (see `resolve(smartRefs:…)`); `nil` means `refs` is the full set.
+    ///   - fetchesAbsentFigures: An export's `true` (#1516, see `loadBatchContext`). Default
+    ///     `false`: the preview never fetches.
     func resolveSmartItems(
         _ refs: [SmartDocumentRef],
         collection: Collection,
         allNotes: [ResearchNote],
-        fullRefs: [SmartDocumentRef]? = nil
+        fullRefs: [SmartDocumentRef]? = nil,
+        fetchesAbsentFigures: Bool = false
     ) async -> [CollectionExportItem] {
         let entryRefs = refs.map(EntryRef.init)
         // Membership-wide computations (generated blocks, A10 universe) see the FULL
@@ -520,7 +530,7 @@ class CollectionContentResolver {
         let membership = Self.documentRefs(in: (fullRefs ?? refs).map(EntryRef.init))
         let batch = await loadBatchContext(
             for: entryRefs, collection: collection, allNotes: allNotes,
-            collectionDocuments: membership)
+            collectionDocuments: membership, fetchesAbsentFigures: fetchesAbsentFigures)
         // A smart collection's entries are search results, never headings, so there is nothing to drop.
         let items = await resolveItems(from: entryRefs, batch: batch, dropsUntitledHeadings: false)
         let (front, back) = await generatedItems(for: collection, batch: batch)
@@ -845,11 +855,18 @@ class CollectionContentResolver {
     /// a SAX parse — stops early when the task is cancelled. The partially loaded context
     /// is safe (unloaded documents would merely resolve with empty bodies), and the
     /// throwing entry points surface `CancellationError` before any such result escapes.
+    ///
+    /// Figure images (#1516): each render model names its figures' images by this document's
+    /// volume, so the exporters find them on the device. With `fetchesAbsentFigures` — an
+    /// export, never the preview, which must fetch nothing — the images that are not on the
+    /// device are fetched first (`figureImages`), so a volume downloaded before figure images
+    /// existed exports with them; one that cannot be fetched prints its placeholder.
     private func loadBatchContext(
         for refs: [EntryRef],
         collection: Collection,
         allNotes: [ResearchNote],
-        collectionDocuments: [(volumeId: String, documentId: String)]
+        collectionDocuments: [(volumeId: String, documentId: String)],
+        fetchesAbsentFigures: Bool = false
     ) async -> BatchContext {
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
@@ -877,12 +894,15 @@ class CollectionContentResolver {
             // structured render model and the XML body-text fallback.
             if renderModels[key] == nil,
                let ast = await cachedAST(volumeId: ref.volumeId, documentId: ref.documentId) {
-                var converter = ASTToRenderNodeConverter()
+                var converter = ASTToRenderNodeConverter(volumeId: ref.volumeId)
                 renderModels[key] = converter.convert(ast)
                 if bodyTexts[key] == nil {
                     bodyTexts[key] = IndexingPipeline.extractBodyText(from: ast.nodes)
                 }
             }
+        }
+        if fetchesAbsentFigures, !Task.isCancelled {
+            await figureImages.fetchAbsent(renderModels.values.flatMap(\.figureImages))
         }
 
         // Editorial-note flags from the index, so collection-level Zotero items
@@ -1687,7 +1707,9 @@ class CollectionContentResolver {
             return renderNodePlainText(c)
         case .formulaText(let s):
             return s
-        case .lineBreak:
+        case .lineBreak, .elementSpace:
+            // `.elementSpace` (#1516 fold-in): the space between two inline elements, so an
+            // exported dateline reads "Washington, February 28, 1861" as the reader draws it.
             return " "
         case .footnoteMarker(_, _, _, let label):
             // #985: an unnumbered note contributes nothing to plain text. This walk reaches

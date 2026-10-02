@@ -664,3 +664,85 @@ Format, one entry per change:
 - **Proposed:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. In the chart a long title takes up to two lines and is cut at its end; the table, and VoiceOver on each bar, give the title whole.
 - **Why:** as for the Mac (#1473; the same `CrossReferenceRankingChart` on every platform, `CrossReferenceAnalyticsView.swift:1525`). On an iPhone the bug was worse than on the Mac: on `v2`, iPhone 17, the plot was squeezed to 1 pt at x 977 of a 402 pt window, and 5 of the 12 rows on screen showed no title at all. Optional, like the Mac sentence.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## READ — #1516
+
+*Lane READ made a document's figures show their images (owner decision D3, option (f)4). These are the manual sentences that makes incomplete or out of step. Each quotes the manual as it stands at `origin/v2` dc17d945. Measured 2026-10-01 by HEAD request at corpus `8e5da08c1`: history.state.gov serves 553 figure images, 140,994,857 bytes (141 MB), for 96 of the 553 catalog volumes; 13 more names it refuses.*
+
+- **Manual / section:** Mac §8.1 Document Structure (`Docs/macOS-User-Manual.md:493`)
+- **Current:** … **body** (paragraphs, numbered footnotes, editorial notes, tables, and lists, faithfully rendered from the TEI source), and — when one exists — a **summary strip** above the body (Section 13).
+- **Proposed:** … **body** (paragraphs, numbered footnotes, editorial notes, tables, lists, and figures, faithfully rendered from the TEI source), and — when one exists — a **summary strip** above the body (Section 13). A **figure** — a map, a chart, a facsimile — is drawn where the volume prints it, with its title above and its caption beneath. **[Figure]** stands in its place only when the image is not on this Mac: the app fetches it then if you are online, and draws it without a reload. Thirteen of the names the series' figures give have no image on history.state.gov, and those figures read **[Figure]** wherever the app shows them. The twenty films in the three *Public Diplomacy* volumes cannot play in the app: each shows its title, where it has one, and a **Watch on history.state.gov ↗** link, which opens the document's page in your browser.
+- **Why:** #1516. A figure used to print only its file's name — "figure_1162" in the reader, "[figure_1162]" in a PDF, "[Figure: figure_1162]" in Word — and neither its head nor its captions. The converter now makes a figure of its head, image and captions (`figureBlock`, `FRUSExplorer/TEI/ASTToRenderNodeConverter.swift:643`); the reader draws the image from the device through `frusexplorer://figure/…` (`respondWithFigure`, `FRUSExplorer/TEI/FRUSURLSchemeHandler.swift:324`), shows `document.figure.missing` ("[Figure]", `FRUSExplorer/TEI/FRUSRenderNode.swift:478`) only while the image is absent, and for a video player prints `document.figure.video.watch` (`FRUSRenderNode.swift:483`). The 13 are the names the host answers with HTTP 403; the 20 films are 12 in `frus1917-72PubDip`, 5 in volume VI and 3 in volume VII, and all eight pages they link to answered 200. Seen on an iPhone 17 (iOS 26.4) with real volumes; the Mac was not run.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §8 Reading Documents, the opening paragraph (`Docs/iOS-User-Manual.md:624`)
+- **Current:** … the original TEI-encoded text rendered as readable prose, with headings, datelines, paragraphs, footnotes, editorial notes, and cross-references as the State Department published them.
+- **Proposed:** … the original TEI-encoded text rendered as readable prose, with headings, datelines, paragraphs, footnotes, editorial notes, figures, and cross-references as the State Department published them. A **figure** — a map, a chart, a facsimile — is drawn where the volume prints it, with its title above and its caption beneath. **[Figure]** stands in its place only when the image is not on your device: the app fetches it then if you are online, and draws it without a reload. Thirteen of the names the series' figures give have no image on history.state.gov, and those figures read **[Figure]** wherever the app shows them. The twenty films in the three *Public Diplomacy* volumes cannot play in the app: each shows its title, where it has one, and a **Watch on history.state.gov ↗** link, which opens the document's page in your browser.
+- **Why:** as for Mac §8.1 (#1516; the reader's page is the same on every platform, `FRUSExplorer/TEI/HTMLTemplate.swift:111`). Seen on an iPhone 17, iOS 26.4: `frus1951v03p1` d249's chart drawn at the column's width inside its editorial note, and `frus1917-72PubDipv06` appendix-1 with "[Figure]", "Reel 1" and the link.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §5.1 Downloading Volumes (`Docs/macOS-User-Manual.md:229`)
+- **Current:** Downloaded volumes index automatically on completion.
+- **Proposed:** Downloaded volumes index automatically on completion, and a volume's figure images — its maps, charts and facsimiles — are fetched with it from history.state.gov and kept beside it. The size a volume's page states is its text alone; the images are 141 MB across the whole series and nothing at all for most volumes. A volume you downloaded before this version fetches each image the first time a document or an export shows it, while you are online.
+- **Why:** #1516. `DownloadManager.figureTextDidChange` starts the fetch when a download finishes (`FRUSExplorer/Downloads/DownloadManager.swift:720`, `fetchFigureImages` at `:745`); a volume already on the device is filled in on demand (`fetchFigureImage`, `:802`, through `FigureImageStore`, configured at `FRUSExplorer/App/FRUSExplorerApp.swift:2729`). The stated size is the manifest's `sizeBytes`, which is the XML. 96 of the 553 catalog volumes have an image the host serves; the median for those is 337 KB and the largest, `frus1943CairoTehran`, 25.4 MB.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §5.1 Downloading Volumes, the last paragraph (`Docs/iOS-User-Manual.md:235`)
+- **Current:** Downloads queue; progress appears in the indexing banner (Section 4.8) and in Settings. **Options** in Volumes & Storage sets concurrent downloads and whether cellular downloads are allowed.
+- **Proposed:** Downloads queue; progress appears in the indexing banner (Section 4.8) and in Settings. **Options** in Volumes & Storage sets concurrent downloads and whether cellular downloads are allowed. A volume's figure images — its maps, charts and facsimiles — are fetched with it from history.state.gov, under the same cellular setting, and kept beside it; they are 141 MB across the whole series and nothing at all for most volumes. A volume you downloaded before this version fetches each image the first time a document or an export shows it, while you are online.
+- **Why:** as for Mac §5.1 (#1516). An image's request carries the Allow Cellular Downloads setting, as the volume's own does (`FRUSExplorer/Downloads/DownloadManager.swift:832`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §5.1a Side-Loaded Volumes, the list of differences (`Docs/macOS-User-Manual.md:239`)
+- **Current:** Four things are deliberately different, and each is the honest consequence of the file not being the catalog's:
+- **Proposed:** Five things are deliberately different, and each is the honest consequence of the file not being the catalog's: — and, as a fifth bullet: "Its figures read **[Figure]**. The app fetches figure images from history.state.gov by a catalog volume's ID, and a file of your own has no such address. (A side-loaded file whose ID *is* a catalog volume's — a corrected copy, say — is the exception: its images are fetched when a document shows them.)"
+- **Why:** #1516. Side-loading starts no figure fetch — only a finished download does — and the on-demand fetch is refused for a volume the catalog does not list (`FigureImageStore.mayFetch`, `FRUSExplorer/Downloads/DownloadManager.swift:1308`), for #777's reason: the app has no address for it. Lane CITE's entry above changes the same lead-in for #1523; the two combine.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §5.1a Side-Loaded Volumes, the list of differences (`Docs/iOS-User-Manual.md:245`)
+- **Current:** Four things are deliberately different, and each is the honest consequence of the file not being the catalog's:
+- **Proposed:** Five things are deliberately different, and each is the honest consequence of the file not being the catalog's: — and the same fifth bullet as the Mac's.
+- **Why:** as for Mac §5.1a (#1516, `DownloadManager.swift:1308`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §5.3 Managing Storage, the storage bar (`Docs/macOS-User-Manual.md:263`)
+- **Current:** The essentials: a **Storage used** bar split into **XML**, **Index**, **Summaries**, and **Vectors** (the semantic-vector files, Section 5.3a);
+- **Proposed:** The essentials: a **Storage used** bar split into **XML**, **Figures** (the volumes' figure images), **Index**, **Summaries**, and **Vectors** (the semantic-vector files, Section 5.3a);
+- **Why:** #1516. The bar draws a **Figures** segment after XML whenever any image is on the device (`settings.storage.segment.figures`, `FRUSExplorer/Settings/SettingsComponents.swift:69`), from `StorageReport.totalFigureBytes` (`FRUSExplorer/Downloads/DownloadModels.swift:113`). A volume's row shows its text and images together (`VolumeStorageEntry.totalBytes`, `DownloadModels.swift:70`), and Free Up Space's estimate counts the images once (`FRUSExplorer/Settings/StorageHubModel.swift:92`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §5.3 Managing Storage, the last sentence (`Docs/macOS-User-Manual.md:263`)
+- **Current:** Your annotations are never touched by any storage or index operation — removing a volume removes the text, not your work.
+- **Proposed:** Your annotations are never touched by any storage or index operation — removing a volume removes the text and its figure images, not your work.
+- **Why:** #1516. `DownloadManager.deleteVolume` removes the volume's images with its XML (`discardFigureImages`, `FRUSExplorer/Downloads/DownloadManager.swift:862`), and Reset Local Data sweeps every volume's (`FRUSExplorer/Settings/ResetService.swift:160`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §17.2 Volumes & Storage, the first sentence (`Docs/macOS-User-Manual.md:1168`)
+- **Current:** It opens with a **Storage used** bar split into **XML**, **Index**, **Summaries**, and **Vectors**, a status line, and the two ways in — **Download from GitHub…** and **Sideload XML File…**.
+- **Proposed:** It opens with a **Storage used** bar split into **XML**, **Figures**, **Index**, **Summaries**, and **Vectors**, a status line, and the two ways in — **Download from GitHub…** and **Sideload XML File…**.
+- **Why:** as for Mac §5.3 (#1516, `SettingsComponents.swift:69`; `FRUSExplorer/Settings/MacVolumesStorageHub.swift:849` passes the figure). Lane STOR's entry above adds to the end of the same sentence; the two combine.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §5.3 Managing Storage, the first bullet (`Docs/iOS-User-Manual.md:265`)
+- **Current:** - A **Storage used** bar splits usage into XML and index, with a line saying how many volumes you hold and whether anything needs attention.
+- **Proposed:** - A **Storage used** bar splits usage into XML, figure images and index, with a line saying how many volumes you hold and whether anything needs attention.
+- **Why:** as for Mac §5.3 (#1516, `SettingsComponents.swift:69`; `FRUSExplorer/Settings/VolumesStorageHubView.swift:892` passes the figure). The bar has drawn Summaries and Vectors segments on iOS since before this lane, which this sentence does not name; that is not this lane's to change.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §17.2 Volumes & Storage, the first sentence (`Docs/iOS-User-Manual.md:1263`)
+- **Current:** Opens with a **Storage used** bar split into XML and index, and a status line.
+- **Proposed:** Opens with a **Storage used** bar split into XML, figure images and index, and a status line.
+- **Why:** as for iOS §5.3 (#1516). Lane STOR's entry above adds to the end of the same sentence; the two combine.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §12.9 Export, the paragraph after the bullets (`Docs/macOS-User-Manual.md:785`)
+- **Current:** Exports always include the collection title and a linked table of contents, and each file is named after the collection.
+- **Proposed:** Exports always include the collection title and a linked table of contents, and each file is named after the collection. A document's figures go with it: the PDF, Word and HTML exports carry each image inside the file, under its title and over its caption, scaled to the page. An export fetches any image that is not on this Mac first, if you are online; one it cannot get prints **[Figure]**. A film prints its title, where it has one, and the address of its page on history.state.gov.
+- **Why:** #1516. An export asks for the absent images before it prints (`figureImages.fetchAbsent`, `FRUSExplorer/Collections/CollectionContentResolver.swift:905`; the live preview does not). PDF sets an image at two pixels to the point, never wider than the text column or taller than 560 pt (`figureDisplaySize`, `FRUSExplorer/Collections/PDFCollectionExporter.swift:1141`, drawn at `:1469`); Word stores it as `word/media/figureN.png` (`FRUSExplorer/Collections/DocxCollectionExporter.swift:1138`, `:1188`), and prints **[Figure]** for an image inside a footnote; HTML embeds it as a `data:` URL (`FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift:326`). In Word and HTML the film's line is a link; in the PDF it is the address in print. Lane EXPORT's entry above rewrites this paragraph's later sentences; this adds one after its first.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.10 Export, the paragraph after the bullets (`Docs/iOS-User-Manual.md:952`)
+- **Current:** After export, the system share sheet appears — save to Files, print, AirDrop, or send anywhere your device supports.
+- **Proposed:** A document's figures go with it: the PDF, Word and HTML exports carry each image inside the file, under its title and over its caption, scaled to the page. An export fetches any image that is not on your device first, if you are online; one it cannot get prints **[Figure]**. A film prints its title, where it has one, and the address of its page on history.state.gov. After export, the system share sheet appears — save to Files, print, AirDrop, or send anywhere your device supports.
+- **Why:** as for Mac §12.9 (#1516; the exporters are shared). Lane EXPORT's entry above changes the same paragraph; the two combine.
+- **Owner:** ☐ approve ☐ edit ☐ reject

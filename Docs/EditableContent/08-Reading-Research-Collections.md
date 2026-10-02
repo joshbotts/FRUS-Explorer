@@ -1700,7 +1700,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3048–3049 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3062–3063 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2458,7 +2458,7 @@ Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") f
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 442–443 | key: collection.headnote.missing | same text also in: FRUSExplorer/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 452–453 | key: collection.headnote.missing | same text also in: FRUSExplorer/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.
