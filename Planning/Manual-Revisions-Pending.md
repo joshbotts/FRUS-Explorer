@@ -13,13 +13,15 @@ Format, one entry per change:
 <!-- Lanes append below this line, one "## <LANE KEY> — <issues>" heading each. -->
 
 **Index, 2026-10-02** *(added by lane PLAN on 2026-10-01 and brought to the merged file when the
-lane landed; lane OH's landing added its section to the list; no entry below was edited).*
-Seventeen sections, in the order the lanes landed:
+lane landed; lane OH's landing added its section to the list, and lane CFPF's added its own; no
+entry below was edited).*
+Eighteen sections, in the order the lanes landed:
 **WB**, **STOR**, **PAGE**, **SYNC**, **NOTE**, **LANG**, **GRAPH**, **ARCH**, **EXPORT**,
 **MACCOL**, **SEL**, **CITE**, **XREF**, **HYG**, **READ**, **PLAN**, which
 holds manual sentences the 2026-09-27 planning audit found wrong rather than ones a lane's code
-changed, and **OH** at the end, which proposes no manual change: its report to the Office of the
-Historian changes no app behaviour and no app copy, and its section has no entry to approve.
+changed, **OH**, which proposes no manual change: its report to the Office of the
+Historian changes no app behaviour and no app copy, and its section has no entry to approve, and
+**CFPF** at the end (#1543, the Subject-Numeric File as its own filing era).
 **HYG**'s three entries propose no change; one offers an optional sentence. Each entry
 is self-contained; three things are worth knowing before applying them.
 
@@ -43,6 +45,11 @@ is self-contained; three things are worth knowing before applying them.
 - **One entry is superseded.** WB's entry for the iOS graph's **Gestures** bullet is marked so in
   place; lane GRAPH's entry for that bullet (iOS §8.6) replaces it, with the item's shipped name,
   *View Document*.
+- **CFPF's entries meet two earlier lanes' on the same text.** Lane NOTE has entries on other
+  rows of Mac §14.1's table and other bullets of iOS §14.2; CFPF's are on the central-files row and
+  bullet NOTE left alone, so they compose. Lane PLAN's entry on Mac §15.6 and iOS §15.6 (the
+  provenance lens's figure) said to wait for the caption fix: CFPF fixed the caption, and its entry
+  for those two sentences gives the figure to use (86 of 499) and replaces PLAN's.
 - **Several sections collect entries from more than one lane, on different sentences**: Mac §17.5
   and iOS §17.6 Data & Recovery (WB, SYNC, LANG, EXPORT), Mac §11.4 and iOS §11.4 Citation Lookup
   (PAGE, CITE), Mac §8.5 (PAGE, GRAPH, ARCH), Mac §12.3 (EXPORT, MACCOL), Mac §14.8 (WB, NOTE,
@@ -875,3 +882,71 @@ is self-contained; three things are worth knowing before applying them.
 - *Mac §17.5 and iOS §17.6, **Reports → Broken Cross-References** (`Docs/macOS-User-Manual.md:1196`, `Docs/iOS-User-Manual.md:1301`): the export is unchanged. The bundled index was not regenerated (the regenerated CSV is byte-identical to the committed one).*
 
 **No entry for the owner to approve.** If the Office of the Historian restores `frus1952-54v09p1`'s Documents 900–946, the count the app shows falls by 352 at the next corpus refresh; neither manual states a count.
+
+## CFPF — #1543
+
+*Lane CFPF made the Subject-Numeric File of February 1963–1973 a filing era of its own: an eleventh provenance category, a stored citation form (`citation_era = 'subject_numeric'`, index v65) and a Source Explorer panel, placed by what the citation gives — a file designation such as `POL 27 VIET S`, or the block of years it sits in — whether the note is worded through the Department or through the National Archives. These are the manual sentences that makes wrong or incomplete. Each quotes the manual as it stands at `origin/v2` 6ab2afc1. Lane NOTE's entries on Mac §14.1 and iOS §14.2 are on other rows and bullets; these compose with them.*
+
+*Two things this lane changes are described in neither manual, so nothing is proposed for them: the Mac's **NARA Search Query** field, which a Subject-Numeric citation no longer offers (`CatalogQueryEvidence.offersManualSearch`, `FRUSExplorer/SourceExplorer/CatalogQueryEvidence.swift:89`), and the list of filing periods Source Explorer and the NARA Lookup sheet show when a document has no year, which now ends "February 1963–1973 (Subject-Numeric File)" and "1973–1979 (Central Foreign Policy File)" (`SourceExplorerView.allFilingPeriods`, `FRUSExplorer/SourceExplorer/SourceExplorerView.swift:1668`). The Mac manual does not count the Provenance Types doors; only the iOS manual does.*
+
+- **Manual / section:** Mac §14.1 What Resolves, and How — the table's **State Dept. central files (post-1963)** row (`Docs/macOS-User-Manual.md:852`)
+- **Current:** | **State Dept. central files (post-1963)** | A NARA Catalog search pre-scoped to the RG-59 parent, with the subject-numeric code (e.g. `POL 27 VIET S`) as the query | No |
+- **Proposed:** | **Subject-Numeric File (February 1963–1973)** — a file designation such as `POL 27 VIET S` or `AID (US) INDIA`, or the block of years it sits in (`Central Files 1964–66`), cited through the Department or through the National Archives | The file designation and its block of years (1963, 1964–66, 1967–69 or 1970–73, from the note where it prints one of them and from the document's date where it does not), NARA's finding-aid page for the file, and the filing handbook for those years — the 1963 handbook for 1963, the 1965 handbook for 1964–1973, both when the years are not known. No catalog search is run, however the note is worded. A note says what to hand an archivist: the file designation and the block of years, not a folder or a box | No |
+- **Why:** #1543. The row's name and its resolution are both out of step. A Subject-Numeric citation now gets one panel in every wording (`SourceExplorerView.subjectNumericCitation`, `FRUSExplorer/SourceExplorer/SourceExplorerView.swift:1706`; the panel at `:1748`; the Mac's rows and box, `FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift:598`, `:645`, `:1067`). Before, a note worded through the Department drew the decimal-file panel ("give them the decimal file number above"), one worded through the National Archives drew the record-group panel and ran a keyed catalog search on "Central Files 1970–73", and one whose remark named the Central Foreign Policy File drew that file's panel. No search is run now (`SourceExplorerView.swift:2723`, `MacSourceExplorerView.swift:1966`, `CatalogQueryEvidence.forNote`, `FRUSExplorer/SourceExplorer/CatalogQueryEvidence.swift:68`). Measured over the 264,552 document source notes: 9,443 documents in 112 volumes cite the file, 5,577 of them through the National Archives.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.1 — the same table, a row for the Central Foreign Policy File (**optional; not a change this lane's code makes**)
+- **Current:** the table has no row for a Central Foreign Policy File citation (a film number such as `P840114–1808`, or the file's name).
+- **Proposed:** | **Central Foreign Policy File (from July 1973)** — a film number such as `P840114–1808`, or the file by name | Links to NARA's research guide for the file and to the Access to Archival Databases electronic telegrams, with a note on what to hand an archivist | No |
+- **Why:** offered because the relabelled row above invites the question of where film-number citations go. The panel is unchanged by #1543 (`cfpfPanel`, `FRUSExplorer/SourceExplorer/SourceExplorerView.swift`; the Mac's `naraBoxByCase`, `FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift:1080`). 4,072 documents are in the category after this lane.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.2 What Resolves, and How — the **Post-1963 central files** bullet (`Docs/iOS-User-Manual.md:1013`)
+- **Current:** "- **Post-1963 central files** (subject-numeric designators like `POL 27 VIET S`) run a NARA Catalog search pre-scoped to the right parent description."
+- **Proposed:** "- **The Subject-Numeric File (February 1963–1973)** — a file designation like `POL 27 VIET S`, or the block of years it sits in (`Central Files 1964–66`), cited through the Department or through the National Archives — shows the designation and its block of years, links to NARA's finding-aid page for the file and to the filing handbook for those years, and says what to hand an archivist. No catalog search is run, however the note is worded. A Central Foreign Policy File film number (`P840114–1808`) has its own panel."
+- **Why:** as for the Mac row above (#1543; `subjectNumericPanel`, `FRUSExplorer/SourceExplorer/SourceExplorerView.swift:1748`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §16.4, the **Archival Sourcing** bullet (`Docs/macOS-User-Manual.md:1132`), and iOS §16.1, the same bullet (`Docs/iOS-User-Manual.md:1231`)
+- **Current (both):** "- **Archival Sourcing** — the provenance mix over coverage decades: the central decimal file giving way to lot files, presidential libraries, and the Central Foreign Policy File; …" and, on the Mac only, at the bullet's end: "… which names the individual collections these ten categories group together."
+- **Proposed (both):** "- **Archival Sourcing** — the provenance mix over coverage decades: the central decimal file giving way to the Subject-Numeric File, lot files, presidential libraries, and the Central Foreign Policy File; …" and, on the Mac, "… which names the individual collections these eleven categories group together."
+- **Why:** #1543: `SourceProvenanceCategory.subjectNumericFile` (`FRUSExplorer/SeriesAnalytics/SourceProvenanceData.swift:146`) is the eleventh category, second in order. In the bundled index it holds 6,842 source notes in the 1960s and 2,455 in the 1970s; before, the 1960s showed Central Decimal File 7,270 and Other NARA Collections 4,573 for the same notes. The dashboard's own sentence now says "eleven broad categories" (`series.provenance.archivalLink.detail.v2`, `FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift:583`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §6.1g Archives, the **Provenance Types** bullet (`Docs/iOS-User-Manual.md:361`) and the screenshot caption under it (`:369`)
+- **Current:** "- **Provenance Types** — ten doors for the *kinds* of files FRUS drew on: the Central Decimal File, presidential libraries, lot files, intelligence records, and so on. …" and the caption "Archives, Provenance Types lens — the ten kinds of file FRUS drew on, each with its counts."
+- **Proposed:** "- **Provenance Types** — eleven doors for the *kinds* of files FRUS drew on: the Central Decimal File, the Subject-Numeric File, presidential libraries, lot files, intelligence records, and so on. …" and the caption "Archives, Provenance Types lens — the eleven kinds of file FRUS drew on, each with its counts."
+- **Why:** #1543: the doors follow the bundled `collection-usage-index.json` (`ArchivesAxis.categoryDoors`, `FRUSExplorer/Browser/ArchivesBrowseView.swift:65`), which now carries eleven categories. Measured on the regenerated artifact: Subject-Numeric File 9,443 documents in 112 volumes, Central Decimal File 194,206 → 190,718, Other NARA Collections 10,551 → 4,618, Central Foreign Policy File 4,094 → 4,072.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.6 Semantic Analytics, the **Color by** bullet (`Docs/macOS-User-Manual.md:1065`), and iOS §15.6, the same bullet (`Docs/iOS-User-Manual.md:1184`) — **replaces lane PLAN's entry for these two sentences**
+- **Current (Mac):** "… with its caveat stated under the lens: a plurality, not a majority, for 73 of the 499 volumes it colors; volumes with fewer than ten notes, and the 30 the aggregate does not cover, take the gray **Too few source notes** color rather than a guess."
+- **Current (iOS):** "… with carefully stated caveats: it is a volume-level plurality (for 73 of 522 covered volumes the winner holds under half the notes), 55 volumes are "won" by *Other/Unclassified* (meaning the parser could not classify their notes), and volumes resting on ten notes or fewer take their own gray *Too few source notes* color rather than being folded in."
+- **Proposed:** Mac: the same sentence with "86 of the 499 volumes it colors". iOS: the Mac's sentence, which also corrects "ten notes or fewer" (the floor is fewer than ten) and drops the two figures the caption does not state.
+- **Why:** #1543: the caption is `semanticMap.lens.provenance.caption.v3` (`FRUSExplorer/Semantic/Map/SemanticMapLens.swift:106`), and its two figures are measured from the regenerated `source-provenance-index.json` and recomputed by `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured`. The Subject-Numeric File wins 30 volumes (14 that were Central Decimal File and 16 that were Other NARA Collections), 7 more move to Presidential Libraries, and the count of volumes whose winner holds under half the notes goes from 75 to 86. The legend gains the category, in a third blue between the decimal file's and Previously Published's (`SemanticMapLens.swift:356`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §8.4 Related Documents — the table's **Archival provenance** row (`Docs/macOS-User-Manual.md:520`)
+- **Current:** "| **Archival provenance** | Drawn from the same lot file, central file — the dotted decimal form, the pre-1910 Numerical File case, or a CFPF film segment — or archival collection (the same keys Archival Neighbors uses) |"
+- **Proposed:** "| **Archival provenance** | Drawn from the same lot file, central file — the dotted decimal form, the pre-1910 Numerical File case, a Subject-Numeric file designation, or a CFPF film segment — or archival collection (the same keys Archival Neighbors uses) |"
+- **Why:** the list omitted a form the app has matched on since #1460 (`IndexingPipeline.relatedByDecimal`, whose filter reads both stored forms since #1543: `FRUSExplorer/Search/IndexingPipeline.swift:10503`). One limit stays, and the manual may want to say so: a designation worded through the Department lists Department-worded siblings only; the same file worded through the National Archives is found by its class key and lists both wordings.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.5 Archival Analytics, the **Central Files umbrella** chip bullet (`Docs/macOS-User-Manual.md:1047`), and iOS §15.5, the same bullet (`Docs/iOS-User-Manual.md:1166`)
+- **Current:** "- The **Central Files umbrella** chip: the State Department's central files are cited by 157 volumes and supply over seventeen thousand documents — more than twice the next-largest collection — so its bar would flatten every other one. It is hidden by default, the chart states how many it withheld in the era you're viewing, and one click shows it."
+- **Proposed:** add after it: "The records named for their years — *Central Files 1964–66*, *1967–69* and *1970–73* — are never hidden: they are the Subject-Numeric File's blocks of years, as the later volumes cite them through the National Archives. **Your Library** counts those citations under the Subject-Numeric File rather than listing them as collections, so the two views differ there."
+- **Why:** #1543, owner decision 9 (leave the collection records and explain them in help): the help text says so (`archival.info.umbrella.detail.v2`, `FRUSExplorer/Theme/FRUSTheme.swift:349`), and Your Library's collections query no longer returns those rows (`IndexingPipeline.archivalLibraryCollectionGroups`; they are stored `subject_numeric`, not `structured`). In the bundled usage index the three block records hold 2,101, 1,842 and 1,440 documents.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.8 and iOS §14.8 The Archives Visit Packet — the **research targets** paragraph (`Docs/macOS-User-Manual.md:935`, `Docs/iOS-User-Manual.md:1062`); **composes with lane NOTE's entry on the same sentence**
+- **Current (both manuals):** "… (with the file or folder designation their source note cites — none when the note names only the series or says only how many pages are withheld, and none for some notes that do name a file, such as one without a number (`POL ARAB–ISR`) or one given only as a volume number or a web address), …"
+- **Proposed:** "… (with the file or folder designation their source note cites — none when the note names only the series, gives only the block of years its file sits in (`RG 59, Central Files 1964–66, JAPAN–KOR S`), or says only how many pages are withheld), …"
+- **With lane NOTE's entry:** NOTE replaces the sentence's three examples with two that were true after #1514: a note cited under the National Archives' own name and record group (`RG 59, Central Files 1967–69, POL 27–14 VIET`), and a Subject-Numeric file without a number whose country is not in capitals (`POL Laos`). Both carry their designation since #1543, so apply this entry's text in place of NOTE's for this clause.
+- **Why:** #1543: a roster row with no parsed designation takes the one the central-files rule reads (`CollectionKeying.centralFileDesignation`, `FRUSExplorer/TripPacket/TripPacketBuilder.swift:191`), so a citation worded through the National Archives carries `POL 27–14 VIET`, and `POL Laos` and `AID (US) S VIET` are read by their lead. Seven documents give only a block. Their target also gains the no-box line and NARA's Example 7 in the citation appendix, where it had Example 8 (`TripPacketExporter.isCentralFileTarget`, `FRUSExplorer/TripPacket/TripPacketExporter.swift:1125`); the packet's keys are unchanged, so a stored plan's rows stay on their targets.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** screenshots — iOS §6 Browse, Archives (`screenshots/ipad/browse-archives-provenance.png`, `Docs/iOS-User-Manual.md:369`), and the Archival Sourcing charts in both manuals (Mac §16.4, iOS §16.1)
+- **Current:** the Provenance Types lens with ten doors; the Archival Sourcing charts with ten categories.
+- **Proposed:** recapture once build 49 ships (owner step). Lane NOTE's entry already asks for the first; this lane adds an eleventh door and moves three counts again.
+- **Why:** #1543. The eleventh category is second in order, so in the Archival Sourcing charts and Your Library's composition every category after the first takes the next colour of the chart's palette: the screenshots show the old colours.
+- **Owner:** ☐ approve ☐ edit ☐ reject

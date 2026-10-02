@@ -893,14 +893,14 @@ Open Document
 <!-- END SOURCE: research.action.openDocument.v2 -->
 
 #### Colors group collections by who holds the records — four…
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 307–308 | key: series.provenance.topCollections.method.v3 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 307–308 | key: series.provenance.topCollections.method.v4 %lld %lld -->
 
-Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking.
+Colors group collections by who holds the records — four custodians, not the eleven categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking.
 
-<!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
+<!-- END SOURCE: series.provenance.topCollections.method.v4 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2196–2197 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2320–2321 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 

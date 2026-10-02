@@ -4,7 +4,7 @@
 
 **Scope.** 49 issues are open. #234 is deferred indefinitely, and #1309 is used only to hold the report to the Office of the Historian. This plan covers the other **47**.
 
-**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG, READ and PLAN of Tier 3 on 2026-10-02; OH's report is compiled and lands after them, not yet posted; §0a says where the wave stands and what remains.**
+**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG, READ and PLAN of Tier 3 on 2026-10-02; OH's report landed after them and was filed with the Office of the Historian on 2026-10-02; lane CFPF (#1543) was added after Tier 3 on the owner's word; §0a says where the wave stands and what remains.**
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14. (This is the Visual-Marketing-Plan §7 steps that are done, carried unchanged from the 2026-09-06 plan and checked by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`.)
 
@@ -136,7 +136,7 @@ The release (build 49, one re-index) follows the tiers the owner chooses to land
 
 ## 0a. Where the wave stands — 2026-10-02
 
-Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v2` @ `1d6fc032` when the lane landed on 2026-10-02, after HYG and READ had merged. Lane OH's landing, on `v2` @ `6f6d2430` (PLAN's merge, PR #1560), added the two paragraphs on PLAN and OH below the table and rewrote "What remains" to match. It changes nothing in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** and the rollup at **v10**.
+Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v2` @ `1d6fc032` when the lane landed on 2026-10-02, after HYG and READ had merged. Lane OH's landing, on `v2` @ `6f6d2430` (PLAN's merge, PR #1560), added the two paragraphs on PLAN and OH below the table and rewrote "What remains" to match. Lane CFPF (2026-10-02, #1543) added the paragraph on itself below, recorded OH's filing, and changed the release's re-index to v62 → v65. None of this changes anything in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** on `v2` and goes to **v65** when lane CFPF lands; the rollup is at **v10**.
 
 **Landed: WB, all of Tier 1, all of Tier 2, and HYG and READ of Tier 3** (fifteen lanes, in this order: the first thirteen merged on 2026-10-01, HYG and READ on 2026-10-02).
 
@@ -160,22 +160,24 @@ Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v
 
 **PLAN landed too, as PR #1560 on 2026-10-02.** It is the planning housekeeping of P3 (b) and closes no issue, so it has no row in the table. Its session entry in `Planning/DEVELOPMENT-PLAN.md` lists what it archived and corrected.
 
-**OH's report is compiled, and it lands in lane OH's PR, the one that carries this paragraph.** It is `Planning/OH-Report-2026-10-01.md`, with its CSVs in `Planning/OH-Report-2026-10-01/` and the script that re-checks every item in `tools/oh-report/`. It is a **draft for the owner: nothing has been posted, to #1309 or upstream**, and #1309 stays open.
+**OH's report is compiled, and it lands in lane OH's PR, the one that carries this paragraph.** It is `Planning/OH-Report-2026-10-01.md`, with its CSVs in `Planning/OH-Report-2026-10-01/` and the script that re-checks every item in `tools/oh-report/`. **It was filed on 2026-10-02**: upstream as [HistoryAtState/frus#469](https://github.com/HistoryAtState/frus/issues/469), and on #1309 as [one comment](https://github.com/joshbotts/FRUS-Explorer/issues/1309#issuecomment-5953382879). #1309 stays open.
 - **What it holds** (§5 was the plan's list; each item was re-checked at corpus `550a8c5c5`, and several figures moved). `frus1952-54v09p1`'s missing Documents 900–946 lead it: 47 documents, which 352 of the 652 broken references point into. Then six classes: structure (19 edits in 15 volumes, 17 confirmed and 2 questions, and 21 Sources lists as questions), pagination (73 rows in 51 volumes), cross-references (645 defects), dates (205 rows in 89 volumes), transcription (169 rows, and 77 files with glued tags) and headers (13 rows).
 - **What it corrects in the repository's own record.** Of the 2026-09-20 structure sweep's 23 rows, three are withdrawn and one of its five confirmed rows is wrong (`frus1873p1v2`); the report's Part B.2 says not to send that sweep's `REPORT.md`. The generator is not fixed.
 - **The items lanes PAGE and NOTE added for it** are in the report where they are defects: two of PAGE's page ids (`pg-seq-1004` in `frus1949v05`, `pg-seq-938` in `frus1950v01`), NOTE's source-note and dateline patterns, and its nested Sources headings, which a scan of every Sources list took from three volumes to 32 headings in 21 lists. OH's session entry in `Planning/DEVELOPMENT-PLAN.md` says which were left out as ordinary TEI and which are left to the owner.
-- **What follows, in this order (P4):** the owner reviews Part A and spot-checks two or three question rows against the printed volumes; Part A is then posted to #1309 as one comment; and the owner files it upstream on `HistoryAtState/frus`, with the CSVs attached. No printed volume and no page image was read for it.
+- **What followed (P4), done on 2026-10-02:** Part A was posted to #1309 as one comment and filed upstream on `HistoryAtState/frus` as issue #469 (the two links above). No printed volume and no page image was read for it.
 
-**Count.** The plan covers 50 issues: the 47 of §1 and #1538, #1539 and #1540. **All 50 are closed**: the 49 in the table and #1430 (D14), each read with `gh issue view` on 2026-10-02. **Six issues are open in the repository**, and none is one of the 50: #234 (deferred), #1309 (it holds the OH report) and the four under "Not placed" below, #1535, #1536, #1543 and #1545.
+**Count.** The plan covers 50 issues: the 47 of §1 and #1538, #1539 and #1540. **All 50 are closed**: the 49 in the table and #1430 (D14), each read with `gh issue view` on 2026-10-02. **Six issues are open in the repository**, and none is one of the 50: #234 (deferred), #1309 (it holds the OH report) and the four under "Not placed" below, #1535, #1536, #1543 and #1545. Lane CFPF takes #1543, which closes when its PR merges.
+
+**Lane CFPF (#1543), added after Tier 3 on the owner's word (2026-10-02).** The Subject-Numeric File of February 1963–1973 becomes an eleventh provenance category, a stored citation form (`citation_era = 'subject_numeric'`, index **v65**) and a Source Explorer panel, placed by what the citation gives. The owner answered four questions for it — the full split; build 49; the 356 decimal numbers cited through the National Archives move to Central Decimal File; the collection records stay and the help text explains them — and its other decisions are listed for review in its PR. Its session entry in `Planning/DEVELOPMENT-PLAN.md` has the measurements.
 
 **What remains, in order.**
-1. **OH's posting.** The report is compiled (above). It is posted to #1309, as one comment (P4), only after the owner's review, and the owner files it upstream. Until then nothing is posted anywhere.
-2. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which holds seventeen sections — one for each of the fifteen lanes in the table, one for PLAN and one for OH — with an index at its head. OH's section proposes no manual change.
+1. ~~**OH's posting.**~~ **Done on 2026-10-02**: filed upstream as [HistoryAtState/frus#469](https://github.com/HistoryAtState/frus/issues/469) and posted on #1309 as [one comment](https://github.com/joshbotts/FRUS-Explorer/issues/1309#issuecomment-5953382879). #1309 stays open.
+2. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which holds eighteen sections — one for each of the fifteen lanes in the table, one for PLAN, one for OH and one for CFPF — with an index at its head. OH's section proposes no manual change.
 3. **DOCS-2**, after the same hand-back — the iOS manual: the whole re-read, parity with the Mac manual, and the owner's Mac edits.
 4. **Optional tail, LANG-D** — only if LANG's release log shows the lemma verdict still failing on foreground launches (§0, Lane order 5).
 5. **The release steps** — the next paragraph.
 
-**The release (build 49, one re-index, v62 → v64).** §2's list stands. The wave added to it:
+**The release (build 49, one re-index, v62 → v65).** §2's list stands. The wave added to it (v65 is lane CFPF's, owner decision of 2026-10-02 that #1543 ships in build 49, so the build still carries one re-index):
 - **The CloudKit schema gate (SYNC).** Every archive now runs a "Check CloudKit schema" phase, and it fails until `Scripts/check_cloudkit_schema.py` has read Production's schema on this Mac. That needs a CloudKit management token (`xcrun cktool save-token --type management`), and none was saved when SYNC landed. Nothing awaits deploy: `identifiersAwaitingDeploy` is empty.
 - **SYNC's device check.** The Development-device A/B with an unpublished field, and the Mac and iPhone system logs, were not run.
 - **LANG's release log**, on the owner's devices. It decides whether LANG-D is needed.
@@ -185,7 +187,7 @@ Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v
 
 **Not placed.** Open issues and defects that no lane holds. None is designed here.
 - **#1535** — Browse cannot open a prose-only chapter, subchapter or compilation. **#1536** — text printed at a container's own level is discarded. Both are D1's side gaps. §0 puts them in scope "only if P1 allows", and the owner has not added them.
-- **#1543** — treat the Subject-Numeric file as its own filing era, apart from the Central Foreign Policy File, in archival analytics and Source Explorer. Filed by the owner during the wave (2026-09-30).
+- **#1543** — taken by lane CFPF (its PR is opened when the lane lands): the Subject-Numeric File is an eleventh provenance category and a stored citation form; index v65.
 - **#1545** — Semantic Match Feedback has a way to share its file and no destination. An owner decision; filed from WB's close-out.
 - **Found by the Tier 3 lanes and not filed.** Each is described under "Filed rather than fixed here" in the PR named:
   - **PR #1558 (HYG):** `RichTextRestingCapTests` crashes the test host on an iPad Pro 13-inch (M5) on iOS 27.0, so an iPad host there cannot finish the unit target.
@@ -206,7 +208,7 @@ Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v
   - **PR #1559:** the figure fetch's run-level de-duplication has no test.
 - **Left for HYG by lane PLAN, and not taken** (the two lanes were developed on the same base, so HYG never saw the note): the comment-only fixes in four Swift files (`Project.swift`, `SimilarityModel.swift`, `ProvenanceSource.swift`'s `curatedDisclosure`, `TripPacketSheet.swift`), and the citations of #1210, #1211 and #1257 in `CLAUDE.md` and in 22 Swift files' doc comments, where the work merged as PRs #1250, #1251 and #1256. PLAN's session entry has both.
 - **Found by lane PLAN while re-measuring, not filed:**
-  - **The provenance lens's caption is two volumes out.** `semanticMap.lens.provenance.caption.v2` says the winning category is a plurality "for 73 of the 499 volumes it colors". Recomputed from `source-provenance-index.json` as NOTE regenerated it, it is **75 of 499**: `frus1961-63v03` and `frus1961-63v21` joined. The string, its EditableContent block, three doc comments and both manuals' §15.6 state 73, and no test compares the caption with the artifact.
+  - **The provenance lens's caption is two volumes out.** *Fixed by lane CFPF (#1543): the caption is `.v3`, its two figures are measured from the regenerated index (86 of 499), and `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured` recomputes them. The manuals' §15.6 sentences are proposed in `Planning/Manual-Revisions-Pending.md`.* As found: `semanticMap.lens.provenance.caption.v2` says the winning category is a plurality "for 73 of the 499 volumes it colors". Recomputed from `source-provenance-index.json` as NOTE regenerated it, it is **75 of 499**: `frus1961-63v03` and `frus1961-63v21` joined. The string, its EditableContent block, three doc comments and both manuals' §15.6 state 73, and no test compares the caption with the artifact.
   - **`subject-numeric-labels.json` describes itself out of date.** Its `coverage.measured` block counts 1,362 subject-numeric keys; `collection-usage-index.json` has held 1,370 since its 2026-09-25 regeneration. Its `coverage.note` says the country element is not read, though the file has carried `areas` since #1254. Regenerating it needs the owner's local handbooks.
 - **Left open by the lanes themselves**, each with its fix described in the lane's entry: the Spotlight item of a left-out container, the persons list's "until January, 1953", and the export check's wording for a left-out container (PAGE); the Subject-Numeric files still stored without a designation — 126 central-file notes, 55 `AID` notes and about 778 NARA-led notes (NOTE); the bracketed `@n` on six more labels (MACCOL, CITE); and Person Analytics' ranking chart, which sets the labels XREF fixed elsewhere.
 
@@ -263,7 +265,7 @@ Each lane is one PR. Lanes land through the serial merge queue (`.claude/workflo
 
 **Landing order** follows readiness, with wrong-data lanes first: STOR, PAGE, NOTE, SYNC, then the rest. Each index lane takes the next version at its landing.
 
-**Release.** Build 49 ships once Tier 1 and Tier 2 have merged, with **one re-index** (v62 → v64). Before it:
+**Release.** Build 49 ships once Tier 1 and Tier 2 have merged, with **one re-index** (v62 → v65; v64 until lane CFPF, #1543, was added on 2026-10-02 — §0a). Before it:
 - the full unit target on iOS 27;
 - the build-48 UI suites that were measured only on iOS 26 (`CollectionEditorTitleTests`, `BrowseWithinScopeTests`);
 - one full re-index census on a pinned device;

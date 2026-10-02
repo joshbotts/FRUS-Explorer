@@ -1388,7 +1388,7 @@ Layout preserves local similarity; distances between far regions are not meaning
 #### What a region is
 <!-- New in build 42. The second sentence is load-bearing: the names are the most distinctive words in a SAMPLE (c-TF-IDF over up to 300 documents), not subject headings, and a reader who takes them for topic labels over-reads every region. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2273–2274 | key: semanticMap.region.whatItIs | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2274–2275 | key: semanticMap.region.whatItIs | shared: iOS+macOS (single edit point) -->
 
 A region is a group the corpus fell into on its own — documents whose meaning an AI model detected to be alike, found by mathematical clustering rather than chosen by a human editor. Its name reflects the most distinctive words in a sample of those documents. It is NOT a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it.
 
@@ -1397,14 +1397,14 @@ A region is a group the corpus fell into on its own — documents whose meaning 
 #### Save the region as a working corpus
 <!-- New in build 42. The lasso could carry a set off the map and a region could not. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2304–2305 | key: semanticMap.region.save | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2305–2306 | key: semanticMap.region.save | shared: iOS+macOS (single edit point) -->
 
 Save as Working Corpus
 
 <!-- END SOURCE: semanticMap.region.save -->
 
 #### Confirmation after saving
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2297–2298 | key: semanticMap.region.saved %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2298–2299 | key: semanticMap.region.saved %@ | shared: iOS+macOS (single edit point) -->
 
 Saved as “%@”. Find it under Working Corpora, where it can scope a search.
 
@@ -1417,14 +1417,14 @@ Saved as “%@”. Find it under Working Corpora, where it can scope a search.
 #### What a slice adds, on the selection card
 <!-- New in build 42, and the complement of §13.2. The last sentence is the one that keeps it honest: ANY two differing volumes produce a spread, so a tidy picture is not evidence. Removing it would leave the text selling the feature. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2514–2515 | key: semanticMap.axis.whatItAdds | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2515–2516 | key: semanticMap.axis.whatItAdds | shared: iOS+macOS (single edit point) -->
 
 On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document “leans” between two volumes you pick, with time running up the side. Any two volumes should produce a spread, so read it as a contrast you are interested in investigating — not one the corpus found.
 
 <!-- END SOURCE: semanticMap.axis.whatItAdds -->
 
 #### After one pole is set
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2187–2188 | key: semanticMap.axis.needsSecondPole.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2188–2189 | key: semanticMap.axis.needsSecondPole.v2 | shared: iOS+macOS (single edit point) -->
 
 Select a document in a different volume and choose “…to here”. The map will then display every document in the series by where it falls between your chosen documents’ enclosing volumes.
 
@@ -1490,7 +1490,7 @@ Show where this document sits on the semantic map, among the documents whose lan
 <!-- END SOURCE: researchRail.tile.semanticMap.help -->
 
 #### Nearest-documents heading
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2390–2391 | key: semanticMap.nearest.header | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2391–2392 | key: semanticMap.nearest.header | shared: iOS+macOS (single edit point) -->
 
 Nearest in language
 
@@ -1499,7 +1499,7 @@ Nearest in language
 #### What the nearest list is drawn from
 <!-- The map draws all 553 volumes; this list can only score documents whose vectors are on the device. Saying so is not optional — without it the ten rows read as the ten nearest in the corpus. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2414–2415 | key: semanticMap.nearest.fence | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2415–2416 | key: semanticMap.nearest.fence | shared: iOS+macOS (single edit point) -->
 
 Drawn only from volumes downloaded on this device — the map shows the whole series, so there may be nearer documents it cannot score yet.
 
@@ -1508,14 +1508,14 @@ Drawn only from volumes downloaded on this device — the map shows the whole se
 #### When the anchor's own volume is absent
 <!-- The anchor's own vectors ARE the query, so this is a harder limit than the one above: no vectors for this volume means no comparison at all. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2425–2426 | key: semanticMap.nearest.needsVolume | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2426–2427 | key: semanticMap.nearest.needsVolume | shared: iOS+macOS (single edit point) -->
 
 Finding nearest documents needs this volume on the device. Download it to compare this document with others.
 
 <!-- END SOURCE: semanticMap.nearest.needsVolume -->
 
 #### A document with no place on the map
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2038–2039 | key: semanticMap.reveal.notOnMap | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2039–2040 | key: semanticMap.reveal.notOnMap | shared: iOS+macOS (single edit point) -->
 
 This document has no place on the map
 
@@ -1524,7 +1524,7 @@ This document has no place on the map
 #### …and why
 <!-- About 2,356 display rows — chapter openers, front matter, appendix structure — were never embedded. Ordinary, not a fault, and the wording carries that. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2042–2043 | key: semanticMap.reveal.notOnMap.detail %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2043–2044 | key: semanticMap.reveal.notOnMap.detail %@ | shared: iOS+macOS (single edit point) -->
 
 Chapter openers, front matter and appendix material were not included when the map was built, so %@ has no point to show. The rest of the series is here.
 
@@ -1686,7 +1686,7 @@ Each frame lights every mapped document in the volumes published so far — whol
 #### The slice figure's caveat
 <!-- Placeholder note: `%1$@` and `%2$@` are the slice's two pole labels. Keep them, positional
      numbers included. The capitalized SLICE is deliberate emphasis in a plain-text stamp. -->
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2998–2999 | key: semanticMap.export.caveat.slice %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2999–3000 | key: semanticMap.export.caveat.slice %@ %@ -->
 
 This figure shows a SLICE (%1$@ → %2$@), not a map: the horizontal axis is the slice projection and the vertical axis is time. The map’s region labels are omitted because a slice offers a totally different illustration of the series’s semantic space.
 
@@ -1765,18 +1765,18 @@ Reading every indexed document. On a full library this takes several minutes —
 ### Semantic map lenses
 
 #### Too few source notes
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 139–140 | key: semanticMap.legend.noProvenance.v2 -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 146–147 | key: semanticMap.legend.noProvenance.v2 -->
 
 Too few source notes
 
 <!-- END SOURCE: semanticMap.legend.noProvenance.v2 -->
 
 #### Each volume takes the category its source notes name most…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 99–100 | key: semanticMap.lens.provenance.caption.v2 -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 106–107 | key: semanticMap.lens.provenance.caption.v3 -->
 
-Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of the 499 volumes it colors. Volumes with fewer than ten notes are left uncolored.
+Each volume takes the category its source notes name most often — a plurality, not a majority, for 86 of the 499 volumes it colors. Volumes with fewer than ten notes are left uncolored.
 
-<!-- END SOURCE: semanticMap.lens.provenance.caption.v2 -->
+<!-- END SOURCE: semanticMap.lens.provenance.caption.v3 -->
 
 ### Chronology summary line
 
@@ -2011,21 +2011,21 @@ Left to right is how far each document leans from %1$@ toward %2$@. The reading 
 <!-- END SOURCE: semanticMap.caveat.slice.position.nobits.v2 %@ %@ -->
 
 #### No nearest documents yet. The vectors for this volume may…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.nearestSection | lines: 2423–2424 | key: semanticMap.nearest.none -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.nearestSection | lines: 2424–2425 | key: semanticMap.nearest.none -->
 
 No nearest documents yet. The vectors for this volume may still be downloading — try again in a moment.
 
 <!-- END SOURCE: semanticMap.nearest.none -->
 
 #### Everything you enclosed is outside the current scope. Widen…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.lassoCard | lines: 2701–2705 | key: semanticMap.lasso.emptyInScope.detail -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.lassoCard | lines: 2702–2706 | key: semanticMap.lasso.emptyInScope.detail -->
 
 Everything you enclosed is outside the current scope. Widen the scope, or draw around the coloured documents.
 
 <!-- END SOURCE: semanticMap.lasso.emptyInScope.detail -->
 
 #### Semantic map: %1$lld regions covering %2$lld documents.…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.accessibilitySummary | lines: 3076–3077 | key: semanticMap.a11y.summary %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.accessibilitySummary | lines: 3077–3078 | key: semanticMap.a11y.summary %lld %lld %lld -->
 
 Semantic map: %1$lld regions covering %2$lld documents. %3$lld more sit between regions and are not listed. Position shows similarity, not time — distances between far-apart regions are not meaningful.
 
