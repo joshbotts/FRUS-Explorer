@@ -50,6 +50,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — CW-10 (UI review M-8)
+///   1.1 — #1491 review round 1: a document the volume prints without a number reads "… ·
+///          Unnumbered (d710a-1)", where it read "… · Doc [Unnumbered document following …]"
 enum MacDocumentTitle {
 
     /// The toolbar centre's text.
@@ -62,14 +64,21 @@ enum MacDocumentTitle {
     /// - Parameters:
     ///   - volumeLabel: The short volume form, or `nil` when the manifest has no entry.
     ///   - documentNumber: The document's number within its volume, if it has one. Editorial
-    ///     notes and front-matter sections do not.
-    ///   - documentId: The raw id, used only as the fallback.
+    ///     notes and front-matter sections do not. A stored number that is the editors' bracketed
+    ///     description of an unnumbered document (`frus1945Berlinv02`'s 217) names it "Unnumbered
+    ///     (d710a-1)" instead (`CitableDocumentNumber.unnumberedLabel`, #1491).
+    ///   - documentId: The raw id, used as the fallback and to name an unnumbered document.
     /// - Returns: The label to render.
     static func principalLabel(volumeLabel: String?,
                                documentNumber: String?,
                                documentId: String) -> String {
         guard let volumeLabel, !volumeLabel.isEmpty else { return documentId }
         guard let documentNumber, !documentNumber.isEmpty else { return volumeLabel }
+        if CitableDocumentNumber.isUnnumbered(printed: documentNumber) {
+            return String(format: String(localized: "macDocument.principal.unnumbered %@ %@",
+                                         defaultValue: "%1$@ · %2$@"),
+                          volumeLabel, CitableDocumentNumber.unnumberedLabel(documentId: documentId))
+        }
         return String(format: String(localized: "macDocument.principal %@ %@",
                                      defaultValue: "%1$@ · Doc %2$@"),
                       volumeLabel, documentNumber)

@@ -123,7 +123,7 @@ struct ScopeFacetsTests {
             volumeId: id, filename: "\(id).xml", subseries: subseries, title: "T\(id)",
             dateRange: DateRange(earliest: earliest, latest: latest),
             publicationDate: nil, status: .published, editors: editors, generalEditor: nil,
-            documentCount: 0, sizeBytes: 0, tags: tags
+            sizeBytes: 0, tags: tags
         )
     }
 

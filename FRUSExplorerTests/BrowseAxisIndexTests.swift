@@ -157,7 +157,7 @@ struct EditorIndexGroupingTests {
             dateRange: DateRange(earliest: nil, latest: nil),
             publicationDate: publicationDate, status: .published,
             editors: editors, generalEditor: "General Editor Excluded",
-            documentCount: 0, sizeBytes: 0, tags: []
+            sizeBytes: 0, tags: []
         )
     }
 

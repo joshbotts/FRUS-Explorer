@@ -79,7 +79,6 @@ struct VolumePickerTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 100,
             sizeBytes: sizeBytes,
             tags: tags
         )

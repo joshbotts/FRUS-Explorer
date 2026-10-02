@@ -143,6 +143,18 @@ public final class ManifestStore {
         return catalogue + localEntries.filter { !known.contains($0.volumeId) }
     }
 
+    /// The volumes citation resolution answers for: the bundled catalogue, and never a volume
+    /// side-loaded from the reader's own file (#1523, owner decision D7).
+    ///
+    /// Citation Lookup and Add Documents' citations and links read this, through
+    /// `CitationMatchingEngine`, because a citation is resolved by what the catalogue knows of a
+    /// published volume — its subseries, its numbering, its title — and a side-loaded file's own
+    /// header is not that record. Unlike ``browsableEntries`` it is not filtered by the live
+    /// listing, so a volume no longer published is still found for a citation of it. The import
+    /// tells the reader a side-loaded volume is left out (`SideloadCatalogueNotice`), deciding
+    /// which volumes are by this same list.
+    public var citableEntries: [VolumeManifestEntry] { bundledEntries }
+
     /// Re-reads the side-loaded volumes' sidecars, parsing headers for any that have none.
     ///
     /// Called through `AppState.reconcileSideloadedVolumes()`, from the corpus-change refresh that

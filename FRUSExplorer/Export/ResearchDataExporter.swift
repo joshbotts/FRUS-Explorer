@@ -501,6 +501,7 @@ struct ResearchNoteMarkdownExport: Identifiable, Sendable {
 ///   1.0 — Session 154: initial implementation
 ///   1.1 — Wave R-5: the envelope carries the research trail, and the stale `SettingsDataPane`
 ///          entry point above was corrected
+///   1.2 — #1491: a note's Markdown citation cites the number through `CitableDocumentNumber`
 @MainActor
 enum ResearchDataExporter {
 
@@ -933,8 +934,11 @@ enum ResearchDataExporter {
               let documentEntry = documents.first(where: { $0.documentId == documentId })
         else { return nil }
 
+        // The number through `CitableDocumentNumber.resolve` (#1491), as every export cites it: a
+        // document printed without a number is cited with none, not with the editors' bracketed
+        // description as its number.
         return HistoryAtStateCitationFormatter().format(
-            document: FRUSDocumentMetadata(documentEntry),
+            document: FRUSDocumentMetadata(citing: documentEntry, printedNumber: documentEntry.documentNumber),
             volume: FRUSVolumeMetadata(volumeEntry)
         )
     }

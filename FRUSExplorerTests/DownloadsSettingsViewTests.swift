@@ -40,7 +40,6 @@ struct DownloadsSettingsViewTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 500_000,
             tags: []
         )

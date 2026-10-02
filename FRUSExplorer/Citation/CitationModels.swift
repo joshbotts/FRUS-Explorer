@@ -339,6 +339,7 @@ public enum ParserConfidence: Sendable, Equatable {
 ///   1.0 — Session 30: initial implementation
 ///   1.1 — #1503 review round 1: `sharedPageTotal`
 ///   1.2 — #1522: `awaitingIndex`
+///   1.3 — #1506 review round 1: `volumeIsBestGuess` and `isBestGuess`
 public struct CitationMatch: Sendable, Identifiable {
 
     public let documentId: String
@@ -372,8 +373,26 @@ public struct CitationMatch: Sendable, Identifiable {
     /// longer says — so Batch counts every document on the page, and Add Documents gives one
     /// count. `nil` for every other match.
     public let sharedPageTotal: Int?
+    /// `true` on a volume row — a volume offered for download, or one not yet indexed — whose
+    /// volume does not carry a field the citation names, which the engine labels a best guess
+    /// (`ConfidenceLabels.bestGuess`) while it keeps the row's `.manifestOnly` strategy, since the
+    /// row names no document to guess at (#1506 review round 1). The strategy alone could not say
+    /// so, and Batch counted such a row as ambiguous beside its own "Best guess — …" label.
+    /// `false` for every other match; read it through `isBestGuess`.
+    public let volumeIsBestGuess: Bool
 
     public var id: String { "\(volumeId)/\(documentId)/\(rank)" }
+
+    /// Whether the engine labels this match a best guess: a document under `MatchStrategy.bestGuess`
+    /// — from a volume that does not carry a cited field, or not on the cited page — the
+    /// `.bestGuess` row a citation whose subseries no volume has gets, and a volume row whose
+    /// volume does not carry a cited field (`volumeIsBestGuess`). Batch counts a lone one in its
+    /// own bucket (`BatchCitationOutcome.bestGuess`, owner decision D17), so its summary and the
+    /// row's "Best guess — …" label agree.
+    public var isBestGuess: Bool {
+        if case .bestGuess = matchStrategy { return true }
+        return volumeIsBestGuess
+    }
 
     public init(
         documentId: String,
@@ -385,7 +404,8 @@ public struct CitationMatch: Sendable, Identifiable {
         requiresDownload: Bool = false,
         awaitingIndex: Bool = false,
         volumeManifestEntry: VolumeManifestEntry? = nil,
-        sharedPageTotal: Int? = nil
+        sharedPageTotal: Int? = nil,
+        volumeIsBestGuess: Bool = false
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -397,6 +417,7 @@ public struct CitationMatch: Sendable, Identifiable {
         self.awaitingIndex = awaitingIndex
         self.volumeManifestEntry = volumeManifestEntry
         self.sharedPageTotal = sharedPageTotal
+        self.volumeIsBestGuess = volumeIsBestGuess
     }
 }
 
@@ -409,6 +430,10 @@ public struct CitationMatch: Sendable, Identifiable {
 /// number, even one (review round 1); every surface that decides whether a result is confident —
 /// Batch's triage (`BatchCitationOutcome`), Add Documents (`CollectionCitationLineResolver`) —
 /// treats it as not.
+///
+/// A nearest-document case (`fuzzyDocumentNumber(nearest:)`) was deleted with the strategy that
+/// made it (#1504): it read the manifest's `documentCount`, 0 in every row, so no lookup ever
+/// returned one.
 public enum MatchStrategy: Sendable, Equatable {
     /// Subseries + volume + doc number → direct hit (post-1955–57), in a volume that meets every
     /// cited field; or a history.state.gov link naming the document, in any era (#1474).
@@ -425,8 +450,6 @@ public enum MatchStrategy: Sendable, Equatable {
     case sharedPage(documents: Int)
     /// Pre-1955–57 volume; doc number editorially assigned during digitization.
     case superimposedDocumentNumber
-    /// Doc number not found; nearest existing document surfaced.
-    case fuzzyDocumentNumber(nearest: Int)
     /// Volume resolved via title fragment; doc/page then matched.
     case titleFragmentMatch
     /// Volume metadata only: the volume is not downloaded, or (#1474) a history.state.gov link
@@ -449,6 +472,12 @@ public enum CitationLookupMode: Sendable, CaseIterable, Equatable {
     case structured
     /// A pasted block of footnotes, triaged as a table (#263).
     case batch
+
+    /// Whether the mode reads the Parsed Fields, and so shows them (#1506): Paste fills them from
+    /// the pasted citation and Structured Entry is them, while Batch parses each pasted note on
+    /// its own and never reads them. Until #1506 Batch showed them anyway, holding the last paste's
+    /// values, and a reader who edited one saw no effect on the batch.
+    public var showsParsedFields: Bool { self != .batch }
 
     public var label: String {
         switch self {

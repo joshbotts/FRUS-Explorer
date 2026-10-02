@@ -475,6 +475,58 @@ struct SideloadValidator {
     }
 }
 
+// MARK: - SideloadCatalogueNotice
+
+/// What the reader is told after side-loading a volume the bundled catalogue does not list
+/// (#1523, owner decision D7).
+///
+/// Such a volume is on disk, indexed and browsable, and still left out of the features that rely
+/// on the app's bundled publication data: Citation Lookup and Add Documents do not resolve a
+/// citation or history.state.gov link to it (`ManifestStore.citableEntries`). Before #1523 nothing
+/// said so, and a reader who looked one up read "No Matches Found … Check the subseries and
+/// volume" about a volume they had just added. A file named after a catalogue volume is that
+/// volume, which those features do answer for, so it draws no notice.
+///
+/// Both storage hubs show it, beneath the import's outcome, through `SideloadCatalogueNoticeRow`.
+///
+/// Version history:
+///   1.0 — #1523: initial implementation
+enum SideloadCatalogueNotice {
+
+    /// The notice's title.
+    static let label = String(localized: "settings.hub.sideload.notCatalogued",
+                              defaultValue: "Not in the bundled catalogue")
+
+    /// The notice: what leaves the volume out, and where it can be reached instead.
+    static let detail = String(
+        localized: "settings.hub.sideload.notCatalogued.detail",
+        defaultValue: "Volumes added from your own files are not included in features that rely on the app’s bundled publication data. Citation Lookup and Add Documents do not resolve a citation or history.state.gov link to them; open them from Browse or find them with Search.")
+
+    /// Whether an import of `importedVolumeIds` draws the notice: at least one of them is a volume
+    /// citation resolution does not answer for, one `citableVolumeIds` does not hold.
+    ///
+    /// - Parameters:
+    ///   - importedVolumeIds: The volumes the import added.
+    ///   - citableVolumeIds: The ids of `ManifestStore.citableEntries`.
+    /// - Returns: `true` when the reader should be told.
+    static func applies(importedVolumeIds: [String], citableVolumeIds: Set<String>) -> Bool {
+        importedVolumeIds.contains { !citableVolumeIds.contains($0) }
+    }
+}
+
+/// The side-load notice as a status row, shared by both storage hubs so the twins cannot drift
+/// (`SideloadCatalogueNotice`, #1523).
+///
+/// Version history:
+///   1.0 — #1523: initial implementation
+struct SideloadCatalogueNoticeRow: View {
+    var body: some View {
+        SettingsStatusRow(label: SideloadCatalogueNotice.label,
+                          detail: SideloadCatalogueNotice.detail,
+                          state: .warning)
+    }
+}
+
 // MARK: - RootElementSnifferDelegate (internal for testing)
 
 final class RootElementSnifferDelegate: NSObject, XMLParserDelegate {

@@ -25,8 +25,8 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 119 KB | 221 | 0 | — |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 126 KB | 265 | 0 | — |
 | [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 103 KB | 216 | 0 | — |
-| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 145 KB | 287 | 0 | — |
-| [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 94 KB | 206 | 0 | — |
+| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 145 KB | 286 | 0 | — |
+| [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 95 KB | 207 | 0 | — |
 
 ## How to read this file
 

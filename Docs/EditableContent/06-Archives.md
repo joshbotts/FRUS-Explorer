@@ -1173,7 +1173,7 @@ The source note format was not recognized. Its raw text is shown under Source No
 
 #### The macOS window with no document selected
 
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 2154–2155 | key: source.explorer.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 2158–2159 | key: source.explorer.window.empty.detail -->
 
 *#1380: it said “tap Sources in the toolbar”. On the Mac the reader clicks, and Sources is a tile in the document’s Research rail, not a toolbar item.*
 

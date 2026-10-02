@@ -23,7 +23,6 @@ struct CitationMatchingEngineTests {
         volumeId: String,
         subseries: String,
         title: String,
-        documentCount: Int = 50,
         publicationDate: String = "1969"
     ) -> VolumeManifestEntry {
         VolumeManifestEntry(
@@ -36,7 +35,6 @@ struct CitationMatchingEngineTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: documentCount,
             sizeBytes: 0,
             tags: []
         )
@@ -159,7 +157,7 @@ struct CitationMatchingEngineTests {
     @Test("CitationMatchingEngineTest: undownloaded volume returns requiresDownload = true")
     func undownloadedVolumeTest() async throws {
         let v1 = makeVolume(volumeId: "frus1969-76v01", subseries: "1969-76",
-                            title: "FRUS 1969-76 Vol I", documentCount: 50)
+                            title: "FRUS 1969-76 Vol I")
         let engine = CitationMatchingEngine(
             manifestStore: makeManifestStore(volumes: [v1]),
             searchService: nil,
@@ -190,12 +188,12 @@ struct CitationMatchingEngineTests {
             + "                    \(part)"
         }
         return [
-            makeVolume(volumeId: "frus1863p1", subseries: "1863", title: title(session: "First",  part: "I"),   documentCount: 0, publicationDate: "1864"),
-            makeVolume(volumeId: "frus1863p2", subseries: "1863", title: title(session: "First",  part: "II"),  documentCount: 0, publicationDate: "1864"),
-            makeVolume(volumeId: "frus1864p1", subseries: "1864", title: title(session: "Second", part: "I"),   documentCount: 0, publicationDate: "1864"),
-            makeVolume(volumeId: "frus1864p2", subseries: "1864", title: title(session: "Second", part: "II"),  documentCount: 0, publicationDate: "1865"),
-            makeVolume(volumeId: "frus1864p3", subseries: "1864", title: title(session: "Second", part: "III"), documentCount: 0, publicationDate: "1865"),
-            makeVolume(volumeId: "frus1864p4", subseries: "1864", title: title(session: "Second", part: "IV"),  documentCount: 0, publicationDate: "1866"),
+            makeVolume(volumeId: "frus1863p1", subseries: "1863", title: title(session: "First",  part: "I"), publicationDate: "1864"),
+            makeVolume(volumeId: "frus1863p2", subseries: "1863", title: title(session: "First",  part: "II"), publicationDate: "1864"),
+            makeVolume(volumeId: "frus1864p1", subseries: "1864", title: title(session: "Second", part: "I"), publicationDate: "1864"),
+            makeVolume(volumeId: "frus1864p2", subseries: "1864", title: title(session: "Second", part: "II"), publicationDate: "1865"),
+            makeVolume(volumeId: "frus1864p3", subseries: "1864", title: title(session: "Second", part: "III"), publicationDate: "1865"),
+            makeVolume(volumeId: "frus1864p4", subseries: "1864", title: title(session: "Second", part: "IV"), publicationDate: "1866"),
         ]
     }
 
@@ -869,13 +867,12 @@ struct CitationLookupIndexedTests {
     }
 
     /// A manifest row for a fixture volume.
-    private func entry(_ volumeId: String, _ subseries: String, _ title: String,
-                       documentCount: Int = 0) -> VolumeManifestEntry {
+    private func entry(_ volumeId: String, _ subseries: String, _ title: String) -> VolumeManifestEntry {
         VolumeManifestEntry(
             volumeId: volumeId, filename: "\(volumeId).xml", subseries: subseries, title: title,
             dateRange: DateRange(earliest: "1961-01-01", latest: "1963-12-31"),
             publicationDate: "1990", status: .published, editors: [], generalEditor: nil,
-            documentCount: documentCount, sizeBytes: 0, tags: [])
+            sizeBytes: 0, tags: [])
     }
 
     /// Indexes `volumes` with the real pipeline, every one downloaded, and hands `body` an engine
@@ -929,13 +926,11 @@ struct CitationLookupIndexedTests {
     private var sixtyOneVolumes: [(entry: VolumeManifestEntry, docs: [Doc])] {
         [
             (entry("frus1961-63v05", "1961-63",
-                   "Foreign Relations of the United States, 1961–1963, Volume V,\n                    Soviet Union",
-                   documentCount: 85),
+                   "Foreign Relations of the United States, 1961–1963, Volume V,\n                    Soviet Union"),
              [Doc(id: "d83", number: "83", pages: [180]), Doc(id: "d84", number: "84", pages: [181]),
               Doc(id: "d85", number: "85", pages: [182])]),
             (entry("frus1961-63v14", "1961-63",
-                   "Foreign Relations of the United States, 1961–1963, Volume\n                    XIV, Berlin Crisis, 1961–1962",
-                   documentCount: 84),
+                   "Foreign Relations of the United States, 1961–1963, Volume\n                    XIV, Berlin Crisis, 1961–1962"),
              [Doc(id: "d7", number: "7", pages: [49, 50]), Doc(id: "d8", number: "8", pages: [51]),
               Doc(id: "d84", number: "84", pages: [200], pagesBefore: [199])]),
         ]
@@ -1015,8 +1010,8 @@ struct CitationLookupIndexedTests {
         }
     }
 
-    @Test("A page match, and a nearest-document match, in a volume the citation does not name are best guesses too (#1474)")
-    func unmetPageAndFuzzyAreBestGuesses() async throws {
+    @Test("A page match in a volume the citation does not name is a best guess too, and a document number past the volume's last finds nothing (#1474, #1504)")
+    func unmetPageIsABestGuessAndAPastNumberFindsNothing() async throws {
         try await withEngine(sixtyOneVolumes) { engine in
             let byPage = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XX",
                                                                      pageNumber: 50))
@@ -1027,24 +1022,17 @@ struct CitationLookupIndexedTests {
             #expect(pageHit.correctionNote?.contains("pages 50–51") == true, "\(pageHit.correctionNote ?? "nil")")
             #expect(pageHit.correctionNote?.contains(ConfidenceLabels.unmetFieldsNote) == true)
 
-            // Document 500 is past the end of both volumes: the nearest-document fallback runs on
-            // the first candidate, which is not the cited Volume XX either. NOTE this half protects
-            // a path the app cannot reach today: the fallback needs a manifest `documentCount`, the
-            // fixture gives 85, and every one of the 553 bundled rows carries 0. It is kept because
-            // the relabel is the same code as the page half's, and a manifest that gains counts
-            // would reach it.
-            let fuzzy = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XX",
-                                                                    documentNumber: 500))
-            let nearest = try #require(fuzzy.first { $0.documentId == "d85" })
-            #expect(isBestGuess(nearest.matchStrategy), "\(nearest.matchStrategy)")
-            // …and keeps its own note, which is the only place the substituted number is named.
-            #expect(nearest.correctionNote?.contains("nearest available document is 85") == true,
-                    "\(nearest.correctionNote ?? "nil")")
-
-            // The control: the same fallback in the cited volume keeps its own label.
+            // Document 500 is past the end of both volumes, which are indexed. Until #1504 a
+            // nearest-document fallback stood in for it ("nearest is document 85") — on a fixture
+            // that set the manifest's document count, which every bundled row left at 0, so the
+            // app never reached it. With the fallback and the count gone, nothing answers: the
+            // volumes are indexed and hold no such document, in the cited volume or out of it.
+            let uncited = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XX",
+                                                                      documentNumber: 500))
+            #expect(uncited.isEmpty, "\(uncited.map { "\($0.volumeId)/\($0.documentId) \($0.confidenceLabel)" })")
             let cited = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "V",
                                                                     documentNumber: 500))
-            #expect(cited.first?.matchStrategy == .fuzzyDocumentNumber(nearest: 85))
+            #expect(cited.isEmpty, "\(cited.map { "\($0.volumeId)/\($0.documentId) \($0.confidenceLabel)" })")
         }
     }
 
@@ -1412,25 +1400,34 @@ struct CitationLookupIndexedTests {
             #expect(guess.first?.correctionNote?.components(separatedBy: "\n")
                         .contains(ConfidenceLabels.notYetIndexed) == true,
                     "\(guess.first?.correctionNote ?? "nil")")
+            // Batch counts it as the best guess its label says it is (#1506 review round 1), where
+            // the not-yet-indexed note above stays ambiguous.
+            #expect(guess.first?.volumeIsBestGuess == true)
+            let guessRows = BatchRowCollector()
+            await BatchCitationRunner.run(entries: CitationBlockSplitter.split("1. FRUS, 1961–1963, vol. V, pt. 2, doc. 84."),
+                                          engine: downloads.engine, parser: parser) { row in
+                guessRows.rows.append(row)
+            }
+            #expect(await guessRows.rows.map(\.outcome) == [.bestGuess])
 
-            // A document numbered past the volume's count: the nearest document would stand in for
-            // it (Strategy 4), but the index holds none of the volume yet, so the volume's row stays
-            // (#1522 review round 1).
-            let pastTheCount = "FRUS, 1961–1963, vol. V, doc. 999"
-            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(pastTheCount)),
-                                "frus1961-63v05", pastTheCount)
+            // A document numbered past the volume's last: the index holds none of the volume yet,
+            // so the volume's row stays (#1522 review round 1).
+            let pastTheLast = "FRUS, 1961–1963, vol. V, doc. 999"
+            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(pastTheLast)),
+                                "frus1961-63v05", pastTheLast)
 
             // Volume V's pass finishes: the same lookup finds the document, exactly, and the one past
-            // the count gets its nearest document — "look it up again once it is" was a promise kept.
+            // the last finds nothing, which the index can now say. (Until #1504 a nearest-document
+            // row stood in for it on this fixture, which set the manifest's document count every
+            // bundled row left at 0; the fallback and the count are gone.)
             try await downloads.pipeline.indexVolume("frus1961-63v05")
             let found = try await downloads.engine.match(
                 input: fields.input(mode: .paste, pasteText: pasted, parser: parser))
             #expect(found.map(\.documentId) == ["d84"])
             #expect(found.first?.matchStrategy == .exactDocumentNumber)
             #expect(found.first?.awaitingIndex == false)
-            let nearest = try await downloads.engine.match(input: parser.parse(pastTheCount))
-            #expect(nearest.map(\.documentId) == ["d85"], "\(nearest.map(\.confidenceLabel))")
-            #expect(nearest.first?.matchStrategy == .fuzzyDocumentNumber(nearest: 85))
+            let past = try await downloads.engine.match(input: parser.parse(pastTheLast))
+            #expect(past.isEmpty, "\(past.map(\.confidenceLabel))")
         }
     }
 
@@ -1541,21 +1538,21 @@ struct CitationLookupIndexedTests {
                 "frus1961-63v05": ("https://history.state.gov/historicaldocuments/frus1961-63v05/d84",
                                    "https://history.state.gov/historicaldocuments/frus1961-63v05/d999"),
             ]
-            // A document numbered past Volume V's count of 85: the nearest document stands in for it,
-            // in a finished volume and — review round 1 — in one mid-pass too, where the not-yet-
-            // indexed row had withheld it. No pass adds a document 999 to an 85-document volume.
-            let pastTheCount = "FRUS, 1961–1963, vol. V, doc. 999"
+            // A document numbered past Volume V's last (85): a finished volume finds nothing for it,
+            // and one mid-pass gives the not-yet-indexed row, as for any document it does not yet
+            // hold. (Until #1504 a nearest-document row stood in for it on this fixture, in both.)
+            let pastTheLast = "FRUS, 1961–1963, vol. V, doc. 999"
             // The control: both volumes finished, each reports what it lacks.
             for (volumeId, line) in lines {
                 #expect(try await downloads.engine.match(input: parser.parse(line.absent)).map(\.confidenceLabel)
                         == [ConfidenceLabels.linkVolumeOnly], "\(volumeId)")
             }
-            #expect(try await downloads.engine.match(input: parser.parse(pastTheCount)).map(\.documentId) == ["d85"])
+            #expect(try await downloads.engine.match(input: parser.parse(pastTheLast)).isEmpty)
 
             let lookups = MidPassLookups()
             let asked = lines.mapValues { [$0.held, $0.absent] }
             await downloads.pipeline.setVolumeStoredTestHook { [engine = downloads.engine, search = downloads.search] volumeId in
-                let extra = volumeId == "frus1961-63v05" ? [pastTheCount] : []
+                let extra = volumeId == "frus1961-63v05" ? [pastTheLast] : []
                 await lookups.lookUp((asked[volumeId] ?? []) + extra, storing: volumeId, engine: engine, search: search)
             }
             try await downloads.pipeline.indexAllVolumes()
@@ -1572,10 +1569,8 @@ struct CitationLookupIndexedTests {
                 #expect(midPass[line.held]?.first?.matchStrategy == .exactDocumentNumber, "\(volumeId)")
                 expectNotYetIndexed(midPass[line.absent] ?? [], volumeId, "mid-pass \(line.absent)")
             }
-            let nearest = await lookups.matches["frus1961-63v05"]?[pastTheCount] ?? []
-            #expect(nearest.map(\.documentId) == ["d85"], "\(nearest.map(\.confidenceLabel))")
-            #expect(nearest.first?.matchStrategy == .fuzzyDocumentNumber(nearest: 85))
-            #expect(nearest.first?.rank == 1)
+            expectNotYetIndexed(await lookups.matches["frus1961-63v05"]?[pastTheLast] ?? [],
+                                "frus1961-63v05", "mid-pass \(pastTheLast)")
 
             // The pass has completed: no volume is left marked, and each reports what it lacks.
             let leftMarked = await downloads.tracker.interruptedVolumeIds()
@@ -2722,8 +2717,7 @@ struct CitationLookupIndexedTests {
     private var linkedVolumes: [(entry: VolumeManifestEntry, docs: [Doc])] {
         [
             (entry("frus1961-63v05", "1961-63",
-                   "Foreign Relations of the United States, 1961–1963, Volume V,\n                    Soviet Union",
-                   documentCount: 85),
+                   "Foreign Relations of the United States, 1961–1963, Volume V,\n                    Soviet Union"),
              [Doc(id: "d1", number: "1", pages: [1]), Doc(id: "d84", number: "84", pages: [181])]),
             sixtyOneVolumes[1],
             (entry("frus1964-68v23", "1964-68",
@@ -2824,7 +2818,8 @@ struct CitationLookupIndexedTests {
             let rows = await collector.rows
             #expect(rows.count == 2)
             #expect(rows.first?.outcome == .resolved, "\(rows.first?.outcome as Any)")
-            #expect(rows.last?.outcome == .ambiguous(count: 1), "\(rows.last?.outcome as Any)")
+            // A best guess at a document is counted on its own since #1506 (owner decision D17).
+            #expect(rows.last?.outcome == .bestGuess, "\(rows.last?.outcome as Any)")
         }
     }
 
@@ -2980,14 +2975,56 @@ struct CitationLookupIndexedTests {
             let rows = await collector.rows
             #expect(rows.count == 2)
             // Volume V has no part 2, so its document 84 is the one candidate and a best guess —
-            // which Paste mode calls it, and which this row drew as a green "Resolved".
-            #expect(rows.first?.outcome == .ambiguous(count: 1))
+            // which Paste mode calls it, and which this row drew as a green "Resolved" — counted in
+            // a bucket of its own since #1506 (owner decision D17), where it was counted ambiguous.
+            #expect(rows.first?.outcome == .bestGuess)
             #expect(rows.first?.loneCandidateLabel?.contains("part 2") == true,
                     "\(rows.first?.loneCandidateLabel ?? "nil")")
             // The control: the cited volume's own document 84.
             #expect(rows.last?.outcome == .resolved)
             #expect(rows.last?.loneCandidateLabel == nil)
         }
+    }
+
+    /// #1474's own example with Volume V not downloaded — what most readers, who hold only some of
+    /// the 553 volumes, get: the one row is the volume, offered for download, and the engine labels
+    /// it a best guess because Volume V has no part 2. Until #1506 review round 1 Batch counted it
+    /// as ambiguous, so the table drew "Best guess — this volume does not match the cited part 2"
+    /// above a summary reading "1 ambiguous · 0 best guesses". The control is the same volume cited
+    /// without the part: a plain download row, which stays ambiguous.
+    @Test("Batch counts a lone volume row the engine labels a best guess as a best guess, and a plain download row as ambiguous (#1506 review round 1)")
+    func batchCountsAVolumeBestGuessAsOne() async throws {
+        let volumes = sixtyOneVolumes.map(\.entry)
+        let manifest = await MainActor.run { ManifestStore(bundledEntries: volumes) }
+        let engine = CitationMatchingEngine(manifestStore: manifest, searchService: nil, pageRangeStore: nil,
+                                            downloadedVolumeIds: [])
+        let entries = CitationBlockSplitter.split(
+            "1. FRUS, 1961–1963, vol. V, pt. 2, doc. 84.\n2. FRUS, 1961–1963, vol. V, doc. 84.")
+        #expect(entries.count == 2)
+        let collector = BatchRowCollector()
+        await BatchCitationRunner.run(entries: entries, engine: engine, parser: CitationParser()) { row in
+            collector.rows.append(row)
+        }
+        let rows = await collector.rows
+        #expect(rows.count == 2)
+        let guess = try #require(rows.first?.primaryMatch)
+        // The row the engine gives: the volume to download, under its best-guess label, keeping
+        // `.manifestOnly` — it names no document to guess at.
+        #expect(guess.volumeId == "frus1961-63v05" && guess.documentId.isEmpty && guess.requiresDownload)
+        #expect(guess.matchStrategy == .manifestOnly, "\(guess.matchStrategy)")
+        #expect(guess.volumeIsBestGuess && guess.isBestGuess)
+        #expect(rows.first?.outcome == .bestGuess, "\(String(describing: rows.first?.outcome))")
+        #expect(rows.first?.loneCandidateLabel?.hasPrefix("Best guess") == true,
+                "\(rows.first?.loneCandidateLabel ?? "nil")")
+        #expect(rows.first?.loneCandidateLabel?.contains("part 2") == true,
+                "\(rows.first?.loneCandidateLabel ?? "nil")")
+        // The control: Volume V carries every field this citation names.
+        #expect(rows.last?.outcome == .ambiguous(count: 1), "\(String(describing: rows.last?.outcome))")
+        #expect(rows.last?.primaryMatch?.isBestGuess == false)
+        #expect(rows.last?.loneCandidateLabel == ConfidenceLabels.manifestOnly,
+                "\(rows.last?.loneCandidateLabel ?? "nil")")
+        #expect(BatchCitationOutcome.summary(of: rows.map(\.outcome), locale: Locale(identifier: "en_US"))
+                == "2 citations · 0 resolved · 1 ambiguous · 1 best guess · 0 unresolved")
     }
 
     @Test("Batch triage forwards a pasted link, so its row resolves to the linked document (#1474)")

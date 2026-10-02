@@ -120,7 +120,7 @@ Read the results you have as a timeline, as your search term in context, or as t
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1132–1133 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1134–1135 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1759–1761 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1761–1763 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1764–1766 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1766–1768 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -669,19 +669,19 @@ rather than hidden: this is the case where the number explains the most.*
 
 <!-- END SOURCE: settings.storage.compact.blocked %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 901–902 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 907–908 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
 
 Compact Database
 
 <!-- END SOURCE: settings.storage.compact.action -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 911–912 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 917–918 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
 
 Rewrites the index to give the free space back. Searching is unavailable while it runs — usually a few seconds, longer on a large library. Nothing you have written is affected.
 
 <!-- END SOURCE: settings.storage.compact.caveat -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 920–921 | key: settings.storage.compact.done %@ -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 926–927 | key: settings.storage.compact.done %@ -->
 
 *Interpolated with the reclaimed size.*
 
@@ -1144,14 +1144,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 726–726 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 728–728 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 733–734 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 735–736 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1160,7 +1160,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2199–2199 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2201–2201 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1357,14 +1357,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1077–1078 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1079–1080 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1508–1509 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1510–1511 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 

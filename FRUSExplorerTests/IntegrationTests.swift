@@ -299,7 +299,6 @@ struct CrossSessionDependencyTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 50,
             sizeBytes: 1024,
             tags: []
         )
@@ -382,7 +381,6 @@ struct CrossSessionDependencyTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 10,
             sizeBytes: 512,
             tags: []
         )

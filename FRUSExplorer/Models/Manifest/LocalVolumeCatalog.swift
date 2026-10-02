@@ -97,7 +97,6 @@ public struct LocalVolumeCatalog: Sendable {
             status: header.isPartiallyPublished ? .partiallyPublished : .published,
             editors: header.editors,
             generalEditor: header.generalEditor,
-            documentCount: header.documentCount,
             sizeBytes: sizeBytes,
             tags: header.tags,
             provenance: .sideloaded

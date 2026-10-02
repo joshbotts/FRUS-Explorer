@@ -138,6 +138,53 @@ struct ManifestStoreTests {
         #expect(nav.id == "frus2024-25v01.xml")
     }
 
+    // MARK: - No document count (#1504)
+
+    /// The repository root, from this file's own path.
+    private static var repoRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests
+            .deletingLastPathComponent()   // repo root
+    }
+
+    /// The manifest carried a per-volume `documentCount` that no generator ever filled: it read 0
+    /// in all 553 rows, and its only reader was Citation Lookup's nearest-document strategy, which
+    /// therefore never answered. Both are deleted (#1504, owner decision D6). This reads the
+    /// bundled file's raw rows — a decoder ignores a key it does not know, so decoding would pass
+    /// with the key still there.
+    @Test("No row of the bundled manifest carries a documentCount (#1504)")
+    func bundledManifestCarriesNoDocumentCount() throws {
+        let url = Self.repoRoot.appendingPathComponent("FRUSExplorer/Resources/manifest.json")
+        let rows = try #require(
+            try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [[String: Any]])
+        #expect(rows.count >= 553, "Read \(rows.count) manifest rows: the scan is broken, not the file clean.")
+        let carrying = rows.filter { $0["documentCount"] != nil }.compactMap { $0["volumeId"] as? String }
+        #expect(carrying.isEmpty, "\(carrying.count) rows still carry documentCount, e.g. \(carrying.prefix(3))")
+    }
+
+    /// Neither declaration of `VolumeManifestEntry` — the app's, and the generator's, which writes the
+    /// file — declares the field, so a regenerated manifest cannot bring it back (#1504).
+    @Test("Neither VolumeManifestEntry declares a documentCount (#1504)",
+          arguments: ["FRUSExplorer/Models/Manifest/ManifestModels.swift",
+                      "ManifestGeneratorCore/ManifestModels.swift"])
+    func manifestModelsDeclareNoDocumentCount(_ path: String) throws {
+        let source = try String(contentsOf: Self.repoRoot.appendingPathComponent(path), encoding: .utf8)
+        let start = try #require(source.range(of: "struct VolumeManifestEntry"), "\(path) declares no VolumeManifestEntry")
+        // The struct's own body: from its opening brace to the brace that closes it.
+        var depth = 0
+        var body = ""
+        for character in source[start.upperBound...] {
+            if character == "{" { depth += 1 }
+            if depth > 0 { body.append(character) }
+            if character == "}" {
+                depth -= 1
+                if depth == 0 { break }
+            }
+        }
+        #expect(body.count > 200, "\(path): read \(body.count) characters of the struct — the scan is broken")
+        #expect(!body.contains("documentCount"), "\(path) still declares documentCount")
+    }
+
     // MARK: - Helpers
 
     private func makeSampleEntry() -> VolumeManifestEntry {
@@ -151,7 +198,6 @@ struct ManifestStoreTests {
             status: .published,
             editors: ["David C. Humphrey"],
             generalEditor: "Edward C. Keefer",
-            documentCount: 0,
             sizeBytes: 4_521_000,
             tags: ["kissinger-henry-a"]
         )

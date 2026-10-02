@@ -829,7 +829,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 294
+    static let countCopyBaselineCeiling = 293
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -863,7 +863,9 @@ extension CodingStandardsAuditTests {
     /// wording, because "1 possible matches in 1 volumes" was their most common case. The owner's
     /// close-out pass took it to 294 (#1478): the Word Cloud export's stop-lists sentence and the
     /// Archival ranking export's Scope sentence go through `CountCopy` in the owner's wording, and
-    /// the Cited Over Time export's timeline sentence states no era count.
+    /// the Cited Over Time export's timeline sentence states no era count. #1506 took it to 293: the
+    /// Citation Lookup Batch summary was rebuilt with a best-guess bucket (`BatchCitationOutcome.summary`),
+    /// its citation and best-guess counts through `CountCopy`.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -994,7 +996,6 @@ extension CodingStandardsAuditTests {
         #"Chronology/ChronologyViewModel.swift | chronology.spanning.chip.a11y.many"#,
         #"Chronology/ChronologyViewModel.swift | chronology.spanning.chip.many"#,
         #"Citation/CitationLookupView.swift | citation.batch.ambiguous %lld"#,
-        #"Citation/CitationLookupView.swift | citation.batch.summary %lld %lld %lld %lld"#,
         #"Citation/CitationLookupView.swift | citation.results.count.a11y"#,
         #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.addedToast %lld"#,
         #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.citations.topOf"#,

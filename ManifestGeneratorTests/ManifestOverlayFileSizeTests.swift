@@ -104,7 +104,7 @@ struct ManifestOverlayFileSizeTests {
         try ManifestWriter.write(entries: [VolumeManifestEntry(
             volumeId: "frus-test", filename: "frus-test.xml", subseries: "test", title: "Test",
             dateRange: DateRange(earliest: nil, latest: nil), publicationDate: nil,
-            status: .published, editors: [], generalEditor: nil, documentCount: 0,
+            status: .published, editors: [], generalEditor: nil,
             sizeBytes: 0, tags: [])], to: manifest.path)
 
         ManifestGeneratorRunner.runLocalOverlay(

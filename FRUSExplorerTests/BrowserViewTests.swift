@@ -29,7 +29,6 @@ struct BrowserViewTests {
         subseries: String,
         title: String = "Test Volume",
         tags: [String] = [],
-        documentCount: Int = 0,
         status: VolumeStatus = .published
     ) -> VolumeManifestEntry {
         VolumeManifestEntry(
@@ -42,7 +41,6 @@ struct BrowserViewTests {
             status: status,
             editors: [],
             generalEditor: nil,
-            documentCount: documentCount,
             sizeBytes: 1_000_000,
             tags: tags
         )
@@ -451,7 +449,7 @@ struct BrowseLevelMemoryTests {
         title: "Organization and Management of Foreign Policy; United Nations",
         dateRange: DateRange(earliest: "1964-01-01", latest: "1968-12-31"),
         publicationDate: "2004", status: .published, editors: [], generalEditor: nil,
-        documentCount: 0, sizeBytes: 1_000_000, tags: []))
+        sizeBytes: 1_000_000, tags: []))
 
     private func makeViewModel() -> BrowserViewModel {
         BrowserViewModel(manifestStore: ManifestStore(bundledEntries: []),

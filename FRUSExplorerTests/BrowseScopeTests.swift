@@ -42,7 +42,7 @@ struct BrowseScopeTests {
             dateRange: DateRange(earliest: nil, latest: nil),
             publicationDate: "2000", status: .published,
             editors: [], generalEditor: nil,
-            documentCount: 0, sizeBytes: 0, tags: []
+            sizeBytes: 0, tags: []
         )
     }
 
