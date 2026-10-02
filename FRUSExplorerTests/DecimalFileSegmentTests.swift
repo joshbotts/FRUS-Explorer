@@ -535,6 +535,21 @@ struct SourceExplorerBasisLineTests {
                 == "Same Subject-Numeric file — POL 27 VIET S")
     }
 
+    /// The line follows the ROUTE, and the route is the class route only when the stored series
+    /// names the central files. frus1964-68v34 prints "RG 59, Records of the Department of State,
+    /// Central Files, 1964–66, AV 12–7 US", and the parser stores "Records of the Department of
+    /// State" as its series (179 of the volume's notes; 192 corpus-wide). Its neighbours come from
+    /// the collection route on that series, so it keeps the collection line, though it is a
+    /// Subject-Numeric citation with a class key.
+    @Test("A Subject-Numeric file whose stored series is not the central files keeps the collection line (frus1964-68v34/d121)")
+    func subjectNumericUnderAnotherSeriesKeepsTheCollectionLine() {
+        let note = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, AV 12–7 US. Confidential. Repeated to Paris for USRO."
+        // The premises: a Subject-Numeric citation, with a class key.
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: SourceNoteParser().parse(note), note: note))
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == "AV 12-7 US")
+        #expect(basis(note) == "Same collection — RG 59, Records of the Department of State")
+    }
+
     /// A Department-led designator finds Department-led siblings only (`relatedByDecimal` matches
     /// the stored file number), so it must not carry the sentence that promises the whole file.
     /// It keeps v2's behaviour: no line (frus1964-68v01/d5).

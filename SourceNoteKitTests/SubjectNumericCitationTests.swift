@@ -155,6 +155,33 @@ struct SubjectNumericCitationTests {
         #expect(reading("Source: National Archives and Records Administration, RG 59, Central Files 1972–77, JAPAN–KOR S. Secret.") == nil)
         // Constructed: a single year never decides.
         #expect(reading("Source: National Archives and Records Administration, RG 59, Central Files 1966, JAPAN–KOR S. Secret.") == nil)
+        // Constructed: under a block, a folder title is in the file whatever its first word is —
+        // the lead test refuses `Inter-American Affairs` (see `leadIsRefused`), and the block
+        // still decides. Without the block the same note gives no form (`noEvidenceIsNil`).
+        #expect(reading("Source: National Archives, RG 59, Central Files 1970–73, Inter-American Affairs. Confidential.")
+                == CentralFilesReading(form: .subjectNumeric, evidence: .block, designation: nil, lead: nil))
+        // Constructed: a range two segments past the anchor is a folder's dates, not the block.
+        #expect(reading("Source: National Archives and Records Administration, RG 59, Central Files, JAPAN–KOR S, Box 5, 1964–66. Secret.") == nil)
+    }
+
+    @Test("A stored identifier is read where the citation has no anchor to read segments after")
+    func identifierIsReadWithoutAnAnchor() {
+        // Constructed: the parse carries a designation the class grammar refuses, and the note
+        // names no central files, so there is no segment after an anchor to find it in. The
+        // identifier is tested first, and for a Department-led parse no anchor is asked for.
+        let parsed = ParsedSourceNote.centralFiles(recordGroup: "RG-59", fileIdentifier: "POL US–USSR")
+        #expect(CollectionKeying.centralFilesAnchor(in: CollectionKeying.segments(ofCitation: "POL US–USSR.")) == nil)
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: "POL US–USSR.") == nil)
+        #expect(CollectionKeying.centralFilesReading(parsed: parsed, note: "POL US–USSR.")
+                == CentralFilesReading(form: .subjectNumeric, evidence: .designation,
+                                       designation: "POL US–USSR", lead: "POL"))
+        // The same identifier under another record group is refused (the Paris Peace Conference's
+        // file is RG 256): the gate is the record group's, and nothing else differs.
+        #expect(CollectionKeying.centralFilesReading(
+            parsed: .centralFiles(recordGroup: "RG-256", fileIdentifier: "POL US–USSR"), note: "POL US–USSR.") == nil)
+        #expect(CollectionKeying.centralFilesReading(
+            parsed: .centralFiles(recordGroup: "59", fileIdentifier: "POL US–USSR"), note: "POL US–USSR.")?
+            .form == .subjectNumeric)
     }
 
     @Test("An office's or a lot's records under the Central Files heading are not the file")
@@ -304,6 +331,20 @@ struct SubjectNumericCitationTests {
         let council = "Source: National Archives, RG 429, Records of the Council on International Economic Policy, 1971–77, Central File 1972–77, Box 54, File 53508, Memcon major oil firms. No classification marking."
         #expect(parseCase(council) == "naraCollection")
         #expect(reading(council) == nil)
+
+        // frus1964-68v28/d366 — the parser takes RG 330 from the remark, so the row it stores is an
+        // RG 330 collection ("OSD /Admin Files: FRC 73A 1304"). The citation sentence has a clean
+        // lead, an anchor and a designation; only the record group refuses it. (25 notes are read
+        // this way, a parser defect the lane leaves alone: relabelling the form would leave a row
+        // that contradicts its own record group and series.)
+        let remarkGroup = "Source: Department of State, Central Files, POL 27 LAOS. Top Secret. Bundy sent a draft of this letter to Katzenbach under cover of a memorandum of May 3. A note on another copy indicates that Nitze saw it. (Washington National Records Center, RG 330, OSD /Admin Files: FRC 73A 1304, Laos 381, 1968)"
+        guard case .naraCollection(let group, _, let lot, _) = parser.parse(remarkGroup) else {
+            Issue.record("expected .naraCollection, got \(parser.parse(remarkGroup))")
+            return
+        }
+        #expect(group == "330")
+        #expect(lot == nil)
+        #expect(reading(remarkGroup) == nil)
 
         // The controls: a bare RG 59 decimal number is read, and so is a Subject-Numeric file
         // behind RG 59 (frus1964-68v14/d93) — the refusals above are the record group's.

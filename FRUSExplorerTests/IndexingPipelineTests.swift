@@ -6863,9 +6863,15 @@ struct HeadNestedSourceNoteTests {
         }
     }
 
-    /// NARA narratives from the head-nested era produce `citation_era='structured'`
+    /// NARA narratives from the head-nested era reach the structured parser and produce
     /// `.naraCollection` rows — the audit found zero such rows existed before this fix.
-    @Test("structured rows: head-nested NARA narrative yields citation_era='structured'")
+    ///
+    /// The row's form is the citation's (#1543, index v65). d1 is a Subject-Numeric file cited
+    /// through the National Archives: it was this test's `structured` row until the form rule,
+    /// and is `subject_numeric` now, with the record group and repository its wording gave it.
+    /// d2 (frus1969-76ve08/d15's note) is an office's records under the same "Central Files"
+    /// heading, which is not the file and stays `structured` — the row this test was written for.
+    @Test("structured rows: a head-nested NARA narrative is stored as a record-group row, in the form its citation gives")
     func structuredNARARow() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
@@ -6878,21 +6884,38 @@ struct HeadNestedSourceNoteTests {
                 POL 27 ARAB&#8211;ISR. Secret; Nodis.</note></head>
                 <p>Body.</p>
                 """),
+                ("d2", """
+                <head>2. Memorandum of Conversation<note n=" 1" type="source" \
+                xml:id="d2fn1">Source: National Archives, RG 59, Central Files 1970&#8211;73, \
+                Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, \
+                November 1974 (2). Secret; Nodis.</note></head>
+                <p>Body.</p>
+                """),
             ])
             try await pipeline.indexVolume("frus1969-76v25")
 
             let sources = try await pipeline.documentSourcesByKey([
-                (volumeId: "frus1969-76v25", documentId: "d1")
+                (volumeId: "frus1969-76v25", documentId: "d1"),
+                (volumeId: "frus1969-76v25", documentId: "d2"),
             ])
-            let source = try #require(sources["frus1969-76v25/d1"])
-            #expect(source.recordGroup == "59")
-            #expect(source.rawText.hasPrefix("Source: National Archives"))
+            for key in ["frus1969-76v25/d1", "frus1969-76v25/d2"] {
+                let source = try #require(sources[key])
+                #expect(source.recordGroup == "59")
+                #expect(source.repository == "National Archives")
+                #expect(source.rawText.hasPrefix("Source: National Archives"))
+            }
 
-            let row = try #require(try documentSourceRow(
+            let subjectNumeric = try #require(try documentSourceRow(
                 dbURL: dir.appendingPathComponent("test.sqlite"),
                 volumeId: "frus1969-76v25", documentId: "d1"))
-            #expect(row.era == "structured")
-            #expect(row.classification == "Secret; Nodis")
+            #expect(subjectNumeric.era == "subject_numeric")
+            #expect(subjectNumeric.classification == "Secret; Nodis")
+
+            let office = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1969-76v25", documentId: "d2"))
+            #expect(office.era == "structured")
+            #expect(office.classification == "Secret; Nodis")
         }
     }
 }
