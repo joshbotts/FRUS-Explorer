@@ -9,6 +9,7 @@
 import Foundation
 import CoreGraphics
 import CoreText
+import ImageIO
 
 // MARK: - PDFCollectionExporter
 
@@ -132,6 +133,13 @@ import CoreText
 ///   1.23 — #1495: a table prints its caption on a line above its rows, in italics, with the
 ///          highlight tracker parked; a footnote in the caption prints its marker, and its body
 ///          among the footnotes
+///   1.24 — #1516: a figure prints its image — embedded, from the device's figure store — with
+///          its head on a line above it and its captions under it, where it printed the image's
+///          file name in brackets; the placeholder stands in for an image that is not on the
+///          device, and an embedded video prints its head and its page's address. The image is a
+///          one-character run whose delegate reserves its size (`figureImageAttrKey`), drawn by
+///          `drawFrameWithHighlights` once the text is. The fold-in: the space between two inline
+///          elements prints. All with the highlight tracker parked, since none of it is flat text.
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -140,6 +148,23 @@ final class PDFCollectionExporter: CollectionExporter {
     /// highlight shading is painted manually — see `drawFrameWithHighlights`. Internal (#1371)
     /// so a test can read which characters `bodyAttributedString` shades.
     static let highlightAttrKey = NSAttributedString.Key("FRUSHighlightBackgroundColor")
+
+    /// Custom attribute key carrying a figure's image (``FigureImageBox``) on the one character
+    /// that reserves its place in the line (#1516). Internal so a test can read the image and the
+    /// size `bodyAttributedString` sets it at.
+    static let figureImageAttrKey = NSAttributedString.Key("FRUSFigureImage")
+
+    /// A figure's decoded image and the size it prints at, in points: the value of
+    /// ``figureImageAttrKey``.
+    struct FigureImageBox {
+        /// The decoded image.
+        let image: CGImage
+        /// The size it prints at.
+        let size: CGSize
+    }
+
+    /// Where figure images come from (#1516). The app's store; a test sets its own.
+    var figureImages: FigureImageStore = .shared
 
     // MARK: - Page geometry
 
@@ -1082,12 +1107,12 @@ final class PDFCollectionExporter: CollectionExporter {
                 result.append(NSAttributedString(string: "\n",
                                                  attributes: makeAttrs(fontSize: fontSize - 1, bold: false)))
             }
-        case .figureBlock(let alt):
-            if let alt, !alt.isEmpty {
-                result.append(NSAttributedString(string: "[\(alt)]\n",
-                                                 attributes: makeAttrs(fontSize: fontSize - 1, bold: false, gray: 0.4)))
-            }
-        case .footnoteBody, .pageBreak:
+        case .figureBlock(let figure):
+            // #1516: the figure's head, image and captions, each on a line of its own. None of it
+            // is flat text, so it is drawn with the highlight tracker parked.
+            result.append(unpainted { figureAttributedString(figure, fontSize: fontSize) })
+        case .footnoteBody, .pageBreak, .elementSpace:
+            // `.elementSpace` separates two inline elements; between blocks it separates nothing.
             break // handled separately
         case .unknown(_, let c):
             for child in c { result.append(blockNodeToAttributedString(child, fontSize: fontSize)) }
@@ -1098,6 +1123,99 @@ final class PDFCollectionExporter: CollectionExporter {
                                              attributes: makeAttrs(fontSize: fontSize, bold: false)))
         }
         return result
+    }
+
+    // MARK: - Figures (#1516)
+
+    /// The widest a figure's image prints: the page's text column.
+    private static var figureMaxWidth: CGFloat { contentWidth }
+
+    /// The tallest a figure's image prints. A line taller than the text frame of an empty page
+    /// (`pageHeight` less both margins and the folio's 20 points: 628) can be laid out on no page,
+    /// and the body's page loop stops at a line it cannot place — losing everything after it.
+    private static let figureMaxHeight: CGFloat = 560
+
+    /// The size an image of `pixelWidth` by `pixelHeight` prints at: two pixels to the point —
+    /// the corpus's figures are scans, and at one pixel to the point a shipper's mark would fill
+    /// its table cell's line — scaled down, keeping its shape, to fit the column and the page.
+    static func figureDisplaySize(pixelWidth: Int, pixelHeight: Int) -> CGSize {
+        var size = CGSize(width: CGFloat(pixelWidth) / 2, height: CGFloat(pixelHeight) / 2)
+        let scale = min(1, figureMaxWidth / max(size.width, 1), figureMaxHeight / max(size.height, 1))
+        size.width *= scale
+        size.height *= scale
+        return size
+    }
+
+    /// A figure as lines of its own: its head in italics, as history.state.gov prints one; its
+    /// image, or the placeholder when the image is not on the device; each caption; and for an
+    /// embedded video its link's words and its page's address (a PDF frame carries no link, so the
+    /// address prints, as a generated block's does). The caller parks the highlight tracker.
+    private func figureAttributedString(_ figure: FigureBlock, fontSize: CGFloat) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        let newline = NSAttributedString(string: "\n", attributes: makeAttrs(fontSize: fontSize - 1, bold: false))
+        if let head = figure.head {
+            result.append(inlineAttributedString(head, fontSize: fontSize - 1, bold: false, italic: true))
+            result.append(newline)
+        }
+        if let image = figure.image {
+            result.append(figureImageAttributedString(image, fontSize: fontSize))
+            result.append(newline)
+        }
+        for caption in figure.captions {
+            result.append(inlineAttributedString(caption, fontSize: fontSize - 1))
+            result.append(newline)
+        }
+        if let url = figure.videoURL {
+            result.append(NSAttributedString(
+                string: "\(FigureBlock.videoLinkLabel) \(url.absoluteString)",
+                attributes: makeAttrs(fontSize: fontSize - 1, bold: false, gray: 0.4)))
+            result.append(newline)
+        }
+        return result
+    }
+
+    /// A figure's image as one character whose run delegate reserves the image's size in its
+    /// line — `drawFrameWithHighlights` draws the image there — or the placeholder, in gray, when
+    /// the image is not on the device or cannot be decoded.
+    private func figureImageAttributedString(_ image: FigureImageName, fontSize: CGFloat) -> NSAttributedString {
+        guard let data = figureImages.data(for: image),
+              let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let decoded = CGImageSourceCreateImageAtIndex(source, 0, nil),
+              let delegate = Self.figureRunDelegate(
+                size: Self.figureDisplaySize(pixelWidth: decoded.width, pixelHeight: decoded.height)) else {
+            return NSAttributedString(string: FigureBlock.missingImageLabel,
+                                      attributes: makeAttrs(fontSize: fontSize - 1, bold: false, gray: 0.4))
+        }
+        var attrs = makeAttrs(fontSize: fontSize, bold: false)
+        attrs[NSAttributedString.Key(kCTRunDelegateAttributeName as String)] = delegate
+        attrs[Self.figureImageAttrKey] = FigureImageBox(
+            image: decoded,
+            size: Self.figureDisplaySize(pixelWidth: decoded.width, pixelHeight: decoded.height))
+        // U+FFFC, the object replacement character: one glyph for the delegate to size.
+        return NSAttributedString(string: "\u{FFFC}", attributes: attrs)
+    }
+
+    /// A run delegate that gives its run `size`'s width, its height as ascent and no descent, so
+    /// the image stands on the baseline of its line.
+    private static func figureRunDelegate(size: CGSize) -> CTRunDelegate? {
+        let extent = UnsafeMutablePointer<CGSize>.allocate(capacity: 1)
+        extent.initialize(to: size)
+        var callbacks = CTRunDelegateCallbacks(
+            version: kCTRunDelegateVersion1,
+            dealloc: { pointer in
+                let extent = pointer.assumingMemoryBound(to: CGSize.self)
+                extent.deinitialize(count: 1)
+                extent.deallocate()
+            },
+            getAscent: { pointer in pointer.assumingMemoryBound(to: CGSize.self).pointee.height },
+            getDescent: { _ in 0 },
+            getWidth: { pointer in pointer.assumingMemoryBound(to: CGSize.self).pointee.width })
+        guard let delegate = CTRunDelegateCreate(&callbacks, extent) else {
+            extent.deinitialize(count: 1)
+            extent.deallocate()
+            return nil
+        }
+        return delegate
     }
 
     /// A list's labels and other non-item children, in order (#1371): a label and a space where
@@ -1113,7 +1231,15 @@ final class PDFCollectionExporter: CollectionExporter {
                 result.append(NSAttributedString(string: " ",
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
             case .other(let children):
-                result.append(inlineAttributedString(children, fontSize: fontSize))
+                for child in children {
+                    // A figure between two items stands on lines of its own (#1516): as a run it
+                    // would open the next item's line, ahead of that item's own label.
+                    if case .figureBlock(let figure) = child {
+                        result.append(figureAttributedString(figure, fontSize: fontSize))
+                    } else {
+                        result.append(inlineAttributedString([child], fontSize: fontSize))
+                    }
+                }
             }
         }
         return result
@@ -1216,6 +1342,22 @@ final class PDFCollectionExporter: CollectionExporter {
             return inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: italic)
         case .pageBreak:
             return NSAttributedString()
+        case .elementSpace:
+            // #1516 fold-in: the space between two inline elements. Not flat text, so it is not
+            // handed to `paintedString`, which would advance the highlight tracker past it.
+            return NSAttributedString(string: " ", attributes: makeStyledAttrs(fontSize: fontSize,
+                                                                              bold: bold, italic: italic))
+        case .figureBlock(let figure):
+            // #1516: inside a line. A figure that is an image alone — a shipper's mark in a table
+            // cell — is a run of that line; one with a head or captions (a chart inside a
+            // sentence, `frus1969-76ve16` d77) takes lines of its own, opening on a new one.
+            if figure.isBare, let image = figure.image {
+                return unpainted { figureImageAttributedString(image, fontSize: fontSize) }
+            }
+            let lines = NSMutableAttributedString(string: "\n",
+                                                  attributes: makeAttrs(fontSize: fontSize, bold: false))
+            lines.append(unpainted { figureAttributedString(figure, fontSize: fontSize) })
+            return lines
         case .unknown(_, let c):
             return inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: italic)
         default:
@@ -1315,6 +1457,30 @@ final class PDFCollectionExporter: CollectionExporter {
         ctx.restoreGState()
 
         CTFrameDraw(frame, ctx)
+        drawFigureImages(in: frame, lines: lines, origins: origins, attrStr: attrStr, ctx: ctx)
+    }
+
+    /// Draws each figure image whose place `frame` reserves (#1516): a run carrying
+    /// ``figureImageAttrKey`` is one object-replacement character sized by its run delegate, and
+    /// the image is drawn standing on that run's baseline, at the run's offset in its line.
+    ///
+    /// A line's origin is relative to the origin of the frame path's bounding box, which is added
+    /// here; a PDF context's origin is bottom-left and draws an image upright, so no flip.
+    private func drawFigureImages(in frame: CTFrame, lines: [CTLine], origins: [CGPoint],
+                                  attrStr: NSAttributedString, ctx: CGContext) {
+        let frameOrigin = CTFrameGetPath(frame).boundingBoxOfPath.origin
+        for (i, line) in lines.enumerated() {
+            let lineRange = CTLineGetStringRange(line)
+            let nsLineRange = NSRange(location: lineRange.location, length: lineRange.length)
+            guard lineRange.length > 0, NSMaxRange(nsLineRange) <= attrStr.length else { continue }
+            attrStr.enumerateAttribute(Self.figureImageAttrKey, in: nsLineRange, options: []) { value, subRange, _ in
+                guard let box = value as? FigureImageBox else { return }
+                let x = CTLineGetOffsetForStringIndex(line, subRange.location, nil)
+                ctx.draw(box.image, in: CGRect(x: frameOrigin.x + origins[i].x + x,
+                                               y: frameOrigin.y + origins[i].y,
+                                               width: box.size.width, height: box.size.height))
+            }
+        }
     }
 
     // MARK: - Text Drawing

@@ -465,8 +465,11 @@ struct ExportSheetView: View {
             summaryGeneratingMessage = nil
         }
         do {
+            // #1516: PDF, Word and HTML print a figure's image, so only those fetch the ones
+            // that are not on the device; BibTeX, on this same path, prints citations.
             let items = try await makeResolver().resolve(
-                collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
+                collection: collection, entries: entries, allNotes: allNotes, purpose: .export,
+                printsFigureImages: selectedFormat.printsFigureImages)
             let metadata = CollectionExportMetadata.forExport(
                 of: collection, activeProject: activeProject, modelContext: modelContext)
             guard let exporter = selectedFormat.makeExporter() else { return }

@@ -3,10 +3,16 @@
 <plist version="1.0">
 <dict>
     <!-- The app does not track, and collects nothing. Every network destination is either a
-         public read (the FRUS repository on GitHub, the NARA catalog, the model host) or the
-         user's own account under the user's own credentials (Zotero). CloudKit sync goes to the
-         user's private database, which is not collection by Apple's definition. There is no
-         analytics SDK and no third-party SPM dependency in either app target.
+         public read (the FRUS repository on GitHub, the figure images of downloaded volumes on
+         static.history.state.gov, the NARA catalog, the model host) or the user's own account
+         under the user's own credentials (Zotero). CloudKit sync goes to the user's private
+         database, which is not collection by Apple's definition. There is no analytics SDK and
+         no third-party SPM dependency in either app target.
+         The figure images (#1516) are requested without being asked for: after a volume
+         downloads, at launch and on reconnect for the volumes already on the device, and for
+         one image when a document or a PDF, Word or HTML export needs it before then. Each
+         request names a volume and an image file and carries no identifier of the user or the
+         device; the session is ephemeral, so no cookie or cache outlives the process.
          The App Store Connect nutrition label must say the same thing this file says. -->
     <key>NSPrivacyTracking</key>
     <false/>
@@ -28,8 +34,10 @@
             </array>
         </dict>
         <!-- WordCloudDiskCache reads .contentModificationDateKey to pick the newest cached
-             cloud from the app's own Library/Caches directory. C617.1 — inside the app's own
-             container. The seven attributesOfItem sites read [.size] only. -->
+             cloud from the app's own Library/Caches directory, and FigureImageLibrary.textStamp
+             (#1516) reads it for a downloaded volume's XML, to tell whether the volume's text
+             has changed since its figure images were fetched. C617.1 — both inside the app's
+             own container. The seven attributesOfItem sites read [.size] only. -->
         <dict>
             <key>NSPrivacyAccessedAPIType</key>
             <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>

@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §9, §11, §15, §18.3, §18.9, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 265 blocks · no ⚑ wording issues
+**In this file:** 263 blocks · no ⚑ wording issues
 
 ---
 
@@ -2079,42 +2079,31 @@ Each document contributes through two switches: its own source note (drawn from)
 ### 15.6 The trip-packet sheet
 
 *Phase 0 (#1088) rescoped the packet to the documents the reader has actually engaged with, and
-rewrote its empty states so each names its real cause. The three causes are distinct diagnoses —
-no engaged documents, no search index yet, a smart collection whose saved search cannot run yet —
-and an edit must not collapse them into one generic message.*
+rewrote its empty states so each names its real cause. The two causes are distinct diagnoses —
+no documents in the plan, no search index yet — and an edit must not collapse them into one
+generic message. There was a third, "This collection’s search can’t run yet", for a packet built
+straight from a smart collection; no screen could open one, so lane HYG (2026-10-01, #1423) deleted
+that path and its two strings.*
 
 #### Empty — no documents to plan over
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 296–297 | key: packet.empty.noDocuments.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 295–296 | key: packet.empty.noDocuments.message -->
 
 There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.
 
 <!-- END SOURCE: packet.empty.noDocuments.message -->
 
 #### Empty — the index is not ready
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 277–278 | key: packet.empty.noIndex.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 284–285 | key: packet.empty.noIndex.title -->
 
 The search index isn’t ready
 
 <!-- END SOURCE: packet.empty.noIndex.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 281–282 | key: packet.empty.noIndex.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 288–289 | key: packet.empty.noIndex.message -->
 
 The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.
 
 <!-- END SOURCE: packet.empty.noIndex.message -->
-
-#### Empty — a smart collection's search cannot run
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 285–286 | key: packet.empty.smart.title -->
-
-This collection’s search can’t run yet
-
-<!-- END SOURCE: packet.empty.smart.title -->
-
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 289–290 | key: packet.empty.smart.message -->
-
-This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.
-
-<!-- END SOURCE: packet.empty.smart.message -->
 
 #### The research-topic field captions
 <!-- Two states of one caption. The seeded form's second sentence is a privacy boundary — the
@@ -2122,13 +2111,13 @@ This collection’s documents come from its saved search, and search isn’t ava
      Since #1366 the seeded form shows only while the field still reads the plan's project's
      research question (a plan copies it when it is created); before, the sheet was never told
      the question and this form could not appear. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 440–441 | key: packet.topic.caption.seeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 433–434 | key: packet.topic.caption.seeded -->
 
 Seeded from your project’s research question — edit freely. The drafts include what you write here, never the stored note.
 
 <!-- END SOURCE: packet.topic.caption.seeded -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 442–443 | key: packet.topic.caption.unseeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 435–436 | key: packet.topic.caption.unseeded -->
 
 The inquiry drafts include what you write here.
 

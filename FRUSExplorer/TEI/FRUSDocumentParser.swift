@@ -124,6 +124,10 @@ import Foundation
 ///          heading that names it in full and carries no keyword (`Princeton University Library`
 ///          → `Princeton University`, `CollectionKeying.bridgedRepository(ofHeading:)`), the
 ///          name the authority keys the rows under. Index v64. (Numbered after lane PAGE's 2.9.)
+///   2.11 — 2026-10-01 (#1516's fold-in): a whitespace-only run between two inline elements is
+///          kept as `.elementSpace` (`TEIParserDelegate.keepsElementSpace`), so the reader draws
+///          the space between `<placeName>Washington,</placeName>` and `<date>February 28,
+///          1861</date>`. The node is no text: nothing the index stores moves, so no index bump.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -916,7 +920,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 qualifiedName qName: String?,
                 attributes attributeDict: [String: String] = [:]) {
         // Flush any text that accumulated in the current top frame before pushing the new element.
-        flushText()
+        flushText(before: elementName)
         // #1503: the page each div begins on is the last break before its first printed text. A
         // div opens on the page in effect, and a break met before any text reaches it moves it on.
         if elementName == "pb" {
@@ -1209,13 +1213,84 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
     /// Flush the current top frame's text buffer by producing a normalized text node
     /// and appending it to the frame's children, then clearing the buffer.
-    private func flushText() {
+    ///
+    /// A buffer holding only whitespace yields no text node. Between two inline elements it
+    /// yields `.elementSpace` instead (#1516 fold-in, ``keepsElementSpace(in:before:)``).
+    ///
+    /// - Parameter next: The name of the element about to open.
+    private func flushText(before next: String) {
         guard !stack.isEmpty else { return }
-        let text = normalizedText(stack[stack.count - 1].textBuffer)
+        let raw = stack[stack.count - 1].textBuffer
+        let text = normalizedText(raw)
         if !text.isEmpty {
             stack[stack.count - 1].children.append(.text(text))
+        } else if !raw.isEmpty, Self.keepsElementSpace(in: stack[stack.count - 1], before: next) {
+            stack[stack.count - 1].children.append(.elementSpace)
         }
         stack[stack.count - 1].textBuffer = ""
+    }
+
+    // MARK: - Spaces between inline elements (#1516 fold-in)
+
+    /// Elements whose frame holds blocks, or whose children the parser picks among by position,
+    /// so a space marker among them has nothing to separate: the structural wrappers, a list, a
+    /// table and its rows, a `<choice>` (`buildNode` takes its first child that is not a `<sic>`,
+    /// which a marker would become), a `<figure>` and a title page.
+    private static let elementSpaceFreeContainers: Set<String> = [
+        "TEI", "text", "body", "front", "back", "group", "div", "frus:attachment",
+        "list", "table", "row", "choice", "figure", "titlePage",
+    ]
+
+    /// Elements the page sets on lines of their own, or that draw nothing beside which a space
+    /// could show: no space is kept before or after one. Every other element — `hi`, `persName`,
+    /// `placeName`, `gloss`, `date`, `ref`, `del`, `seg`, `note` and whatever the corpus adds —
+    /// is drawn inside a line.
+    private static let elementSpaceBlockNames: Set<String> = [
+        "p", "ab", "div", "head", "opener", "closer", "dateline", "salute", "signed", "postscript",
+        "quote", "list", "item", "label", "table", "row", "cell", "frus:attachment", "figure",
+        "graphic", "figDesc", "titlePage", "lg", "l", "lb",
+    ]
+
+    /// Whether a whitespace-only run in `frame`, met just before an element named `next` opens,
+    /// is a space the page prints (#1516 fold-in).
+    ///
+    /// The parser discards whitespace-only character data, which suppresses the indentation
+    /// between blocks. Between two inline elements the run is the space between two words:
+    /// `<placeName>Washington,</placeName>`, a line break, `<date>February 28, 1861</date>` read
+    /// "Washington,February 28, 1861" in the reader (`frus1861` d2). Measured at corpus `8e5da08c1`
+    /// over the 553 manifest volumes: 54,025 such runs between two inline elements inside
+    /// documents, 14,193 of them a `<placeName>` then a `<date>` in a dateline (9,884 documents).
+    ///
+    /// The run is kept when what precedes it in `frame` is drawn inside a line — an inline
+    /// element, or a footnote, whose marker is — and so is `next`. A page break draws nothing, so
+    /// it is looked past on the left and counts as inline on the right: of
+    /// `</persName> <pb/> <gloss>` the first run is kept and the second is not, since the space is
+    /// already there. Text beside an element keeps its own boundary space (`normalizedText`), so
+    /// a text node precedes a whitespace-only run only across a page break.
+    private static func keepsElementSpace(in frame: ParseFrame, before next: String) -> Bool {
+        guard !elementSpaceFreeContainers.contains(frame.elementName),
+              !elementSpaceBlockNames.contains(next) else { return false }
+        var crossedPageBreak = false
+        for child in frame.children.reversed() {
+            switch child {
+            case .pageBreak:
+                crossedPageBreak = true
+                continue
+            case .persName, .gloss, .crossReference, .emphasis, .term, .date, .supplied, .sic, .corr,
+                 .formula, .footnote:
+                return true
+            case .unknown(let name, _, _):
+                return !elementSpaceBlockNames.contains(name)
+            case .text(let string):
+                // Only across a page break: `word<pb/> <hi>` lost the space after the break.
+                return crossedPageBreak && string.last?.isWhitespace == false
+            case .elementSpace, .lineBreak, .document, .head, .dateline, .opener, .closer, .salute,
+                 .paragraph, .table, .tableRow, .tableCell, .list, .listItem, .editorialNote,
+                 .titlePage, .figure, .attachment:
+                return false
+            }
+        }
+        return false
     }
 
     /// Normalizes whitespace in character data:

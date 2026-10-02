@@ -229,9 +229,9 @@ public final class BrowserViewModel {
     /// on top of whatever document is open in the detail, so Back would walk through an unrelated
     /// reading history. Replacing is what makes a list pane a list pane.
     ///
-    /// The dead `SubseriesListView` — written for the split layout #238 reverted — already used
-    /// the assignment form. It was right about this and is the reason the semantics were not
-    /// guessed at.
+    /// `SubseriesListView` — written for the split layout #238 reverted, dead from then until lane
+    /// HYG deleted it — already used the assignment form. It was right about this and is the
+    /// reason the semantics were not guessed at.
     ///
     /// ## It forgets every level's memory (#1363)
     /// A choice from the root opens its level afresh, as the phone's stack opens it: there the path

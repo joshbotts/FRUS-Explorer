@@ -208,12 +208,16 @@ structurally impossible before, since a head carried only `model` and `dim`. The
 manifest diff above stays as belt to the braces. Eleven mutations killed; the packer test drives
 the real `run()` against a 2 KB store.
 
-### 4.3 `DIMS=512` is not the default
+### 4.3 `DIMS=512` is the default now (it was not until 2026-10-01)
 
-The generator's own `DIMS` default is still **256**; the shipped artifacts are packed at **512**
-since #933 / build 42. Pass `DIMS=512` or the bundle silently repacks at half its shipping width
-and takes every consumer to `.provenanceMismatch`. (This is stated in `CLAUDE.md`; it is repeated
-here because it is the same failure class as §4.2 and will be reached in the same sitting.)
+The shipped artifacts are packed at **512** since #933 / build 42, and since 2026-10-01 the
+generator's own `DIMS` default is 512 too (`SemanticVectorsRunner.defaultShippingDims`, which
+`SemanticVectorsArtifactTests.defaultWidthIsTheShippedWidth` holds to the committed index's width).
+Until then the default was still **256**, and a regeneration that forgot `DIMS=512` silently
+repacked the bundle at half its shipping width and took every consumer to `.provenanceMismatch`.
+The commands in this plan still pass `DIMS=512`; it is harmless, and it says which width is meant.
+`EXPECT_DIGEST` (§4.2) is still the guard that matters: the width is in the digest, so a pack at
+any other width is refused when it is set.
 
 ### 4.4 The shards live in another repository
 

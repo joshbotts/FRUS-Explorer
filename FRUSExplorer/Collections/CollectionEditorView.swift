@@ -323,8 +323,8 @@ struct CollectionEditorView: View {
         // #830 / Phase 3: attached to the SHARED body, not to a per-platform one — the
         // Phase 0 lesson (the ephemeral packet's presenter shipped inside `macBody` while its
         // control lived in `iPhoneAddMenu`, dead on every platform) holds for its successor.
-        // Membership is resolved through the SAME `TripPacketSeed.resolve` rule the packet
-        // uses (smart → `smartRefs`; static → documents + excerpts, de-duplicated), so this
+        // Membership is resolved through the ONE `TripPacketSeed.resolve` rule the Mac window
+        // uses too (smart → `smartRefs`; static → documents + excerpts, de-duplicated), so this
         // surface and the export cannot describe different membership.
         .sheet(item: $planPickerRequest) { request in
             PlanPickerSheet(request: request)

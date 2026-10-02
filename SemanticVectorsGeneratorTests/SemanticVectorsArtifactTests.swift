@@ -39,12 +39,16 @@ import SemanticVectorsKit
 /// say so: prefer a relation between two artifacts over a number typed into a test.
 ///
 /// The literal is kept rather than replaced by a relation, for one reason: it is the only thing
-/// that fails if a bare `swift run SemanticVectorsGenerator` re-packs at the resolver's 256
-/// default. Every relational check would pass on a wholly-256 artifact.
+/// that fails on a pack at another width. Every relational check would pass on a wholly-256
+/// artifact. Until lane HYG (2026-10-01) the commonest way to get one was a bare
+/// `swift run SemanticVectorsGenerator`, because the resolver defaulted to 256; it now defaults
+/// to the shipped width, and ``defaultWidthIsTheShippedWidth()`` holds the default to this
+/// artifact, so the two cannot part again without a red test.
 ///
 /// Version history:
 ///   1.0 — V-1: initial implementation
 ///   1.1 — Session 2026-08-19: shippingDims re-pinned to the shipped 512
+///   1.2 — lane HYG (2026-10-01): the generator's `DIMS` default is held to the committed width
 @Suite("SemanticVectors — committed artifacts")
 struct SemanticVectorsArtifactTests {
 
@@ -141,11 +145,9 @@ struct SemanticVectorsArtifactTests {
         #expect(provenance.modelFileSHA256.count == 64)
         #expect(provenance.modelFileSHA256.allSatisfy { $0.isHexDigit })
         #expect(provenance.nativeDims == 768)
-        // 512, NOT the 256 `resolveShippingDims` returns for an unset `DIMS`. The program shipped
-        // the priced lever (recall 0.851 against 0.745), so the shipped artifact and the
-        // generator's default disagree BY DESIGN — and this literal is the only thing standing
-        // between that and a bare re-run silently halving the width. Do not "correct" it back to
-        // 256 to match the default; regenerate with `DIMS=512`, which is what produced these bytes.
+        // 512: the program shipped the priced lever (recall 0.851 against 0.745). A literal, so a
+        // pack at any other width fails here; `defaultWidthIsTheShippedWidth` is the relation that
+        // keeps the generator's default on the same number.
         #expect(provenance.shippingDims == 512)
         #expect(provenance.chunkChars == 3200)
         #expect(provenance.overlapChars == 480)
@@ -155,6 +157,26 @@ struct SemanticVectorsArtifactTests {
         #expect(provenance.quantization.contains("127"))
         #expect(!Self.index.harvestScriptSHA256.isEmpty)
         #expect(!Self.index.harvestGenerated.isEmpty)
+    }
+
+    /// **A run that sets no `DIMS` packs at the width the bundle ships.**
+    ///
+    /// The default was 256 from V-1 and stayed 256 when #933 took the bundle to 512, so the
+    /// committed artifact and the generator's default disagreed, and CLAUDE.md, the release plan
+    /// and this suite each carried a warning to pass `DIMS=512`. A warning is what a regeneration
+    /// forgets. The width is read from the committed index rather than typed here, so the next
+    /// change of width moves the default with the artifact or fails.
+    @Test("An unset DIMS packs at the committed artifact's width")
+    func defaultWidthIsTheShippedWidth() throws {
+        let shipped = Self.index.provenance.shippingDims
+        #expect(SemanticVectorsRunner.defaultShippingDims == shipped)
+        #expect(try SemanticVectorsRunner.resolveShippingDims(
+            nil, native: Self.index.provenance.nativeDims) == shipped)
+        // And the bundled shard manifest, the third place the width is written, says the same.
+        let url = Self.resources.appendingPathComponent("semantic-shards-manifest.json")
+        let manifest = try JSONDecoder().decode(
+            SemanticVectorsRunner.ShardManifest.self, from: try Data(contentsOf: url))
+        #expect(manifest.shippingDims == shipped)
     }
 
     /// The measured retrieval defaults travel with the artifact so a device does not have to read a

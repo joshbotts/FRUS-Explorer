@@ -408,7 +408,7 @@ struct VolumesStorageHubView: View {
                                 ?? entry.volumeId,
                             detail: entry.volumeId,
                             value: ByteCountFormatter.string(
-                                fromByteCount: Int64(entry.volumeFileBytes), countStyle: .file)
+                                fromByteCount: Int64(entry.totalBytes), countStyle: .file)
                         )
                     }
                     if report.perVolume.count > Self.inlineVolumeLimit {
@@ -889,7 +889,7 @@ struct VolumesStorageHubView: View {
         return StorageUsageBreakdown.make(volumeBytes: report.totalVolumesBytes,
                                           indexBytes: report.totalIndexBytes,
                                           summaryBytes: report.totalSummariesBytes,
-                                          vectorBytes: report.totalVectorBytes)
+                                          vectorBytes: report.totalVectorBytes, figureBytes: report.totalFigureBytes)
     }
 
     /// How many volumes the manifest knows about.

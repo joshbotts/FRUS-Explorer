@@ -206,46 +206,238 @@ struct CodingStandardsAuditTests {
 
     // MARK: - License Header Compliance
 
-    @Test("CodingStandardsAudit: all session source files carry Apache 2.0 license header")
-    func allSourceFilesHaveLicenseHeader() throws {
-        let licenseMarker = "Licensed under the Apache License, Version 2.0"
-        var violations: [String] = []
-
-        let fm = FileManager.default
-        let sourceURLs = try fm.subpathsOfDirectory(atPath: Self.sourceRoot.path)
-            .filter { $0.hasSuffix(".swift") }
-            .map { Self.sourceRoot.appendingPathComponent($0) }
-
-        for url in sourceURLs {
-            let content = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-            if !content.contains(licenseMarker) {
-                violations.append(url.lastPathComponent)
-            }
-        }
-
-        #expect(violations.isEmpty,
-                "Missing Apache 2.0 header in: \(violations.sorted().joined(separator: ", "))")
+    /// What a license-header scan of one directory read and found.
+    struct LicenseHeaderScan: Equatable {
+        /// How many `.swift` files the scan read.
+        var read = 0
+        /// The files without the header, by path relative to the scanned directory, sorted.
+        var missing: [String] = []
     }
 
-    @Test("CodingStandardsAudit: all test files carry Apache 2.0 license header")
-    func allTestFilesHaveLicenseHeader() throws {
-        let licenseMarker = "Licensed under the Apache License, Version 2.0"
-        var violations: [String] = []
+    /// How many lines, from the top of a file, the header must sit within.
+    static let licenseHeaderLines = 20
 
-        let fm = FileManager.default
-        let testURLs = try fm.subpathsOfDirectory(atPath: Self.testsRoot.path)
-            .filter { $0.hasSuffix(".swift") }
-            .map { Self.testsRoot.appendingPathComponent($0) }
+    /// Whether `source` opens with the Apache 2.0 header: the "Licensed under" line AND the
+    /// license's URL, both within the first ``licenseHeaderLines`` lines.
+    ///
+    /// Both, and at the top: a header cut short keeps its first line and loses what follows (#1279
+    /// recorded three UI-test files with "a truncated header", since repaired), and notice text
+    /// quoted further down a file is not a header. Until lane HYG the check was `contains` on the
+    /// "Licensed under" line alone, anywhere in the file, which a header missing its URL passes.
+    static func carriesLicenseHeader(_ source: String) -> Bool {
+        let head = source.split(separator: "\n", maxSplits: licenseHeaderLines,
+                                omittingEmptySubsequences: false)
+            .prefix(licenseHeaderLines).joined(separator: "\n")
+        return head.contains("Licensed under the Apache License, Version 2.0")
+            && head.contains("http://www.apache.org/licenses/LICENSE-2.0")
+    }
 
-        for url in testURLs {
-            let content = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-            if !content.contains(licenseMarker) {
-                violations.append(url.lastPathComponent)
-            }
+    /// Reads every `.swift` file under `root`, at any depth.
+    static func licenseHeaderScan(under root: URL) throws -> LicenseHeaderScan {
+        var scan = LicenseHeaderScan()
+        for path in try FileManager.default.subpathsOfDirectory(atPath: root.path).sorted()
+        where path.hasSuffix(".swift") {
+            scan.read += 1
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            if !carriesLicenseHeader(source) { scan.missing.append(path) }
         }
+        return scan
+    }
 
-        #expect(violations.isEmpty,
-                "Missing Apache 2.0 header in tests: \(violations.sorted().joined(separator: ", "))")
+    /// Every directory of Swift the repository builds, with the fewest files a working scan of it
+    /// reads. Measured 2026-10-01: the app 480, the unit tests 339, the UI tests 21, the widgets 2.
+    ///
+    /// The UI tests and the widgets joined this list with lane HYG. Until then `uiTestsRoot` was
+    /// read by the CloudKit scan below and by no license scan, so the three truncated headers
+    /// #1279 recorded in `FRUSExplorerUITests` were found by reading, and nothing would have
+    /// caught a fourth.
+    static let licensedXcodeRoots: [(directory: String, atLeast: Int)] = [
+        ("FRUSExplorer", 400),
+        ("FRUSExplorerTests", 300),
+        ("FRUSExplorerUITests", 15),
+        ("FRUSExplorerWidgets", 1),
+    ]
+
+    @Test("CodingStandardsAudit: every Swift file of the app, its two test targets and its widgets carries the Apache 2.0 header",
+          arguments: licensedXcodeRoots.map(\.directory))
+    func xcodeTargetFilesHaveLicenseHeader(_ directory: String) throws {
+        let floor = try #require(Self.licensedXcodeRoots.first { $0.directory == directory }?.atLeast)
+        let scan = try Self.licenseHeaderScan(under: Self.projectRoot.appendingPathComponent(directory))
+        // A moved or emptied directory reads no files and finds none missing.
+        #expect(scan.read >= floor, "Read only \(scan.read) Swift file(s) under \(directory)/, expected ≥ \(floor)")
+        #expect(scan.missing.isEmpty,
+                "Missing or truncated Apache 2.0 header in \(directory)/: \(scan.missing.joined(separator: ", "))")
+    }
+
+    /// The package's own sources: `Package.swift`, and every directory a target names as its
+    /// `path:`. Read from the manifest rather than listed here, so a new generator is covered the
+    /// day it is added.
+    ///
+    /// Measured 2026-10-01: 106 target directories and 332 Swift files, all with the header. The
+    /// app, its tests and its widgets are not in `Package.swift` and have the test above.
+    @Test("CodingStandardsAudit: Package.swift and every package target's sources carry the Apache 2.0 header")
+    func packageTargetFilesHaveLicenseHeader() throws {
+        let manifestURL = Self.projectRoot.appendingPathComponent("Package.swift")
+        let manifest = try String(contentsOf: manifestURL, encoding: .utf8)
+        #expect(Self.carriesLicenseHeader(manifest), "Package.swift has no Apache 2.0 header")
+
+        let directories = Self.packageTargetPaths(in: manifest)
+        #expect(directories.count >= 90, """
+            Read only \(directories.count) `path:` entries from Package.swift: the manifest's shape \
+            changed and this scan is reading fewer targets than the package builds.
+            """)
+        var read = 0
+        var missing: [String] = []
+        for directory in directories {
+            let scan = try Self.licenseHeaderScan(under: Self.projectRoot.appendingPathComponent(directory))
+            #expect(scan.read > 0, "Package target directory \(directory)/ holds no Swift file")
+            read += scan.read
+            missing += scan.missing.map { "\(directory)/\($0)" }
+        }
+        #expect(read >= 300, "Read only \(read) Swift file(s) across \(directories.count) package targets")
+        #expect(missing.isEmpty, "Missing or truncated Apache 2.0 header in: \(missing.joined(separator: ", "))")
+    }
+
+    /// The distinct `path: "…"` values in a package manifest, sorted. A commented-out line is
+    /// skipped, so a target that is not built is not required to exist.
+    static func packageTargetPaths(in manifest: String) -> [String] {
+        var paths = Set<String>()
+        for line in manifest.split(separator: "\n") {
+            let code = line.trimmingCharacters(in: .whitespaces)
+            guard !code.hasPrefix("//"), let label = code.range(of: "path: \"") else { continue }
+            let rest = code[label.upperBound...]
+            guard let close = rest.firstIndex(of: "\"") else { continue }
+            paths.insert(String(rest[..<close]))
+        }
+        return paths.sorted()
+    }
+
+    /// The header rule, one fixture per way a file can fail it and the two ways it can pass.
+    @Test("CodingStandardsAudit: the license check wants the whole header, at the top")
+    func licenseHeaderRule() {
+        let header = """
+            // Copyright 2026 The FRUS Explorer Contributors
+            //
+            // Licensed under the Apache License, Version 2.0 (the "License");
+            // you may not use this file except in compliance with the License.
+            // You may obtain a copy of the License at
+            //
+            //     http://www.apache.org/licenses/LICENSE-2.0
+            """
+        #expect(Self.carriesLicenseHeader(header + "\n\nimport XCTest\n"))
+        // The long form, with the warranty paragraph, as the package sources carry it.
+        #expect(Self.carriesLicenseHeader(header + "\n//\n// Unless required by applicable law…\n\nimport Foundation\n"))
+        // No header at all.
+        #expect(!Self.carriesLicenseHeader("import XCTest\n\nfinal class T: XCTestCase {}\n"))
+        // Cut short before the URL: the first line is there and the license's address is not.
+        let truncated = header.split(separator: "\n").prefix(4).joined(separator: "\n")
+        #expect(!Self.carriesLicenseHeader(truncated + "\n\nimport XCTest\n"))
+        // The URL without the "Licensed under" line.
+        #expect(!Self.carriesLicenseHeader("// See http://www.apache.org/licenses/LICENSE-2.0\nimport XCTest\n"))
+        // The whole notice quoted far below the top is not a header.
+        let padding = String(repeating: "let x = 1\n", count: Self.licenseHeaderLines)
+        #expect(!Self.carriesLicenseHeader("import XCTest\n" + padding + header + "\n"))
+    }
+
+    /// The directory scan, driven over a directory of its own: it reads `.swift` files at any
+    /// depth, counts them, names the ones without the header by relative path, and reads nothing
+    /// else. This is what stands in for deleting a real file's header to see the tree test fail.
+    @Test("CodingStandardsAudit: the license scan reads every Swift file under a directory and names the bare ones")
+    func licenseHeaderScanReadsADirectory() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-license-scan-\(UUID().uuidString)")
+        let nested = root.appendingPathComponent("Nested")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let header = """
+            // Licensed under the Apache License, Version 2.0 (the "License");
+            //     http://www.apache.org/licenses/LICENSE-2.0
+
+            """
+        try (header + "import XCTest\n").write(to: root.appendingPathComponent("Good.swift"),
+                                                atomically: true, encoding: .utf8)
+        try "import XCTest\n".write(to: root.appendingPathComponent("Bare.swift"), atomically: true, encoding: .utf8)
+        try "import XCTest\n".write(to: nested.appendingPathComponent("AlsoBare.swift"),
+                                    atomically: true, encoding: .utf8)
+        try "no header, and not Swift".write(to: root.appendingPathComponent("notes.md"),
+                                             atomically: true, encoding: .utf8)
+
+        #expect(try Self.licenseHeaderScan(under: root)
+                == LicenseHeaderScan(read: 3, missing: ["Bare.swift", "Nested/AlsoBare.swift"]))
+        #expect(Self.packageTargetPaths(in: """
+                .target(name: "A", path: "A"),
+                // .target(name: "Gone", path: "Gone"),
+                .testTarget(name: "ATests", dependencies: ["A"], path: "ATests"),
+                .executableTarget(name: "A", path: "A"),
+            """) == ["A", "ATests"])
+    }
+
+    // MARK: - Harness templates
+
+    /// A workflow script under `Planning/` whose prompts tell an agent to run `sqlite3 … -uri`
+    /// says, at its head, that the command does not work.
+    ///
+    /// sqlite3 has no `-uri` option. The C-0 falsifier's runner prompts printed it
+    /// (`sqlite3 "file:…?mode=ro" -uri`), every C-0 and C-2 run spent its first query on it, and
+    /// it was copied from there into a later run's prompts before anyone ran it
+    /// (`Planning/Agentic-Harness-Runbook.md` §5). The two scripts are experiment records, so
+    /// their prompts are not rewritten; lane HYG (2026-10-01) put a `BROKEN INVOCATION` banner
+    /// before each one's prompts instead. This holds the banner there, and asks it of any script
+    /// that prints the command again — a copy of either file is the likeliest way that happens.
+    ///
+    /// The command is recognised by its escaped form, `mode=ro\" -uri`, as a prompt inside a
+    /// JavaScript string writes it; a sentence warning against the flag does not match, which is
+    /// why `c0b-falsifier/workflow.mjs`, whose prompts say "Do NOT pass `-uri`", needs no banner.
+    @Test("CodingStandardsAudit: a Planning workflow that prints `sqlite3 … -uri` is marked broken at its head")
+    func brokenSqliteInvocationsAreMarked() throws {
+        let planning = Self.projectRoot.appendingPathComponent("Planning")
+        let scripts = try FileManager.default.subpathsOfDirectory(atPath: planning.path)
+            .filter { $0.hasSuffix(".mjs") || $0.hasSuffix(".js") }
+            .sorted()
+        var printing: [String] = []
+        for path in scripts {
+            let text = try String(contentsOf: planning.appendingPathComponent(path), encoding: .utf8)
+            guard Self.printsTheBrokenSqliteCommand(text) else { continue }
+            printing.append(path)
+            #expect(Self.marksTheBrokenSqliteCommand(text), """
+                Planning/\(path) tells an agent to run `sqlite3 "file:…?mode=ro" -uri`, and sqlite3 \
+                has no -uri option. If it is a record of a run, say so in a comment before its \
+                prompts that contains "BROKEN INVOCATION" and names the working forms; if it is a \
+                new harness, fix the prompt (Planning/c0b-falsifier/workflow.mjs has the form).
+                """)
+        }
+        // The two records. If either stops printing the command its prompts were rewritten,
+        // which changes what C-0 or C-2 measured; and a third is a copy that needs its own answer.
+        #expect(scripts.count >= 3, "Read only \(scripts.count) workflow script(s) under Planning/")
+        #expect(printing == ["c0-falsifier/workflow.mjs", "c2-long-session/workflow.mjs"])
+    }
+
+    /// Whether a script's text holds the command as a prompt writes it: escaped inside a string.
+    static func printsTheBrokenSqliteCommand(_ script: String) -> Bool {
+        script.contains(#"mode=ro\" -uri"#)
+    }
+
+    /// Whether a script says the command is broken before its first prompt: a `BROKEN INVOCATION`
+    /// comment ahead of the first occurrence of the command.
+    static func marksTheBrokenSqliteCommand(_ script: String) -> Bool {
+        guard let command = script.range(of: #"mode=ro\" -uri"#),
+              let banner = script.range(of: "BROKEN INVOCATION") else { return false }
+        return banner.upperBound <= command.lowerBound
+    }
+
+    /// The two readers above, one fixture per answer.
+    @Test("CodingStandardsAudit: the broken-sqlite readers tell a printed command from a warning, and a banner from its absence")
+    func brokenSqliteReaders() {
+        let prompt = #"const RUNNERS = { "a1": "Open it READ-ONLY (`sqlite3 \"file:/x.db?mode=ro\" -uri`)." }"#
+        let warning = #"const RUNNERS = { "b1": "Do NOT pass `-uri`: use `sqlite3 \"file:/x.db?mode=ro\"`." }"#
+        #expect(Self.printsTheBrokenSqliteCommand(prompt))
+        #expect(!Self.printsTheBrokenSqliteCommand(warning))
+        // An unescaped mention in a comment is prose about the command, not a prompt printing it.
+        #expect(!Self.printsTheBrokenSqliteCommand(#"// sqlite3 "file:/x.db?mode=ro" -uri is rejected"#))
+        #expect(!Self.marksTheBrokenSqliteCommand(prompt))
+        #expect(Self.marksTheBrokenSqliteCommand("// ⚠ BROKEN INVOCATION — a record\n" + prompt))
+        // A banner after the prompts is one a reader copying the prompts never reaches.
+        #expect(!Self.marksTheBrokenSqliteCommand(prompt + "\n// BROKEN INVOCATION"))
     }
 
     // MARK: - Version History Comments

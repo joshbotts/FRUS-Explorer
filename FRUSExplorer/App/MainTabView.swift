@@ -65,7 +65,7 @@ import SwiftData
 ///          checked against the file. Verify before re-adding an entry here: the only
 ///          `NavigationSplitView`s left in the module are `#if os(macOS)`-guarded
 ///          (`FRUSSettingsView`, `ResearchView`, `MacCorpusBrowserWindow`) or unreferenced
-///          (`BrowserView.splitLayout`), and none can render under `.sidebarAdaptable`.
+///          (`BrowserView.splitLayout`, deleted since), and none can render under `.sidebarAdaptable`.
 ///   1.12 — #316: the tab selection is now per-window `@SceneStorage`, not a shared `appState`
 ///          property, so multiple iPad main windows (Stage Manager) no longer mirror each
 ///          other's tab — a user tap changes only the per-scene value, which nothing else

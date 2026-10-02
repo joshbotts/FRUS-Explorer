@@ -12,7 +12,11 @@ Environment:
   POOL_DIR    directory holding doc_f32_768.npy + doc_keys.jsonl, as written by
               tools/semantic-harvest/corpus-gates/pool_docs.py   (default ~/frus-semantic-gates/pool)
   OUT_DIR     where to write layout.bin + layout-meta.json       (default Planning/semantic-map)
-  DIMS        width of the vectors to project                    (default 256, the shipping width)
+  DIMS        width of the vectors to project                    (default 256: the width the shipped
+              map was projected from, recorded as projectedFromDims. NOT the vectors' shipping width,
+              which is 512 and is SemanticVectorsGenerator's own DIMS default since 2026-10-01 — the
+              two tools read one variable name and mean different things, so do not export DIMS=512
+              across both; a layout at another width is a different map)
   NEIGHBORS   UMAP n_neighbors                                   (default 15)
   MIN_DIST    UMAP min_dist                                      (default 0.1)
   MIN_CLUSTER HDBSCAN min_cluster_size                           (default 250)

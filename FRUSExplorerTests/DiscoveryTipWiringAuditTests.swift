@@ -275,20 +275,40 @@ struct DiscoveryTipWiringAuditTests {
 
     // MARK: - F · the denylist
 
-    /// The live traps, refused by name. Both files render in no shipping build, so a `.popoverTip`
-    /// placed in either would pass every assertion above while displaying to nobody.
+    /// The traps, refused by name: a file on the denylist renders in no shipping build, so a
+    /// `.popoverTip` placed in it would pass every assertion above while displaying to nobody.
+    ///
+    /// The app's denylist has been empty since lane HYG deleted the two views it named, so over
+    /// the app's own data this loop refuses nothing; ``refusal(of:denylist:)``'s fixture test is
+    /// what shows the rule still bites.
     @Test("No tip is anchored in a known-dead view")
     func forbiddenAnchorsAreRefused() {
+        var anchors = 0
         for entry in DiscoveryTipRegistry.entries {
             for anchor in entry.anchors {
-                if let reason = DiscoveryTipRegistry.forbiddenAnchors[anchor.file] {
-                    Issue.record("""
-                        \(entry.typeName) is anchored in \(anchor.file), which is on the denylist: \
-                        \(reason)
-                        """)
+                anchors += 1
+                if let reason = Self.refusal(of: anchor.file,
+                                             denylist: DiscoveryTipRegistry.forbiddenAnchors) {
+                    Issue.record("\(entry.typeName) is anchored in \(reason)")
                 }
             }
         }
+        #expect(anchors > 0, "the registry lists no anchors, so nothing was checked")
+    }
+
+    /// Why a tip may not be anchored in `file`, or `nil` when it may.
+    static func refusal(of file: String, denylist: [String: String]) -> String? {
+        denylist[file].map { "\(file), which is on the denylist: \($0)" }
+    }
+
+    /// The rule, driven: a listed file is refused with its reason, and an unlisted one is not.
+    @Test("A denylisted anchor is refused with its reason; any other file is allowed")
+    func denylistRuleRefusesAListedFile() {
+        let denylist = ["FRUSExplorer/Dead/DeadView.swift": "nothing presents it"]
+        #expect(Self.refusal(of: "FRUSExplorer/Dead/DeadView.swift", denylist: denylist)
+                == "FRUSExplorer/Dead/DeadView.swift, which is on the denylist: nothing presents it")
+        #expect(Self.refusal(of: "FRUSExplorer/Browser/BrowserView.swift", denylist: denylist) == nil)
+        #expect(Self.refusal(of: "FRUSExplorer/Dead/DeadView.swift", denylist: [:]) == nil)
     }
 
     /// And the denylist itself must stay honest: an entry naming a file that no longer exists is a
@@ -299,6 +319,20 @@ struct DiscoveryTipWiringAuditTests {
             let url = Self.root.appending(path: path)
             #expect(FileManager.default.fileExists(atPath: url.path),
                     "denylisted \(path) no longer exists — drop the entry (reason was: \(reason))")
+        }
+    }
+
+    /// The two views the denylist named until lane HYG deleted them stay deleted, so the empty
+    /// list is the truth rather than an oversight: neither `GlobalContextView` nor `BrowserView`'s
+    /// `splitLayout` (with the `SubseriesListView` it drew) is declared anywhere in the app.
+    @Test("The views the denylist used to name are gone, not merely unlisted")
+    func formerDenylistEntriesAreDeleted() throws {
+        #expect(!FileManager.default.fileExists(
+            atPath: Self.root.appending(path: "FRUSExplorer/ProjectContext/GlobalContextView.swift").path))
+        let browser = try Self.source("FRUSExplorer/Browser/BrowserView.swift")
+        for declaration in ["func splitLayout(", "struct SubseriesListView", "struct SubseriesRowView",
+                            "NavigationSplitView {"] {
+            #expect(!browser.contains(declaration), "BrowserView.swift declares \(declaration) again")
         }
     }
 

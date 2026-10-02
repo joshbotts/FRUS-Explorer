@@ -51,12 +51,30 @@ public struct DownloadManagerState: Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 05: initial implementation
+///   1.1 — #1516: `figureBytes`, the volume's figure images, and `totalBytes`, what the volume
+///          takes on the device and what Volumes & Storage shows for it.
 public struct VolumeStorageEntry: Sendable {
     /// The volume identifier, e.g. `"frus1969-76v01"`.
     public let volumeId: String
 
-    /// Size in bytes of the downloaded XML file on disk.
+    /// Size in bytes of the downloaded XML file on disk. The search index's size is estimated
+    /// from this figure alone (`StorageReport.indexOverheadFactor`): images are not indexed.
     public let volumeFileBytes: Int
+
+    /// Size in bytes of the volume's figure images on disk (#1516): zero for the 454 volumes of
+    /// the 553 whose text names no image outside its title page, and for a volume whose images
+    /// have not been fetched.
+    public let figureBytes: Int
+
+    /// The XML and the figure images together: what removing the volume's files frees.
+    public var totalBytes: Int { volumeFileBytes + figureBytes }
+
+    /// Creates an entry. `figureBytes` defaults to none.
+    public init(volumeId: String, volumeFileBytes: Int, figureBytes: Int = 0) {
+        self.volumeId = volumeId
+        self.volumeFileBytes = volumeFileBytes
+        self.figureBytes = figureBytes
+    }
 }
 
 /// Aggregate storage usage across all downloaded volumes, the search index, and
@@ -70,6 +88,8 @@ public struct VolumeStorageEntry: Sendable {
 ///   1.0 — Session 05: initial implementation
 ///   1.1 — Session 130: `indexOverheadFactor` constant added; calibrated with full-corpus
 ///          measurements (552 volumes: macOS 10.09 GB index, iOS 8.77 GB index, ~3.4 GB XML)
+///   1.2 — #1516: `totalFigureBytes`, the volumes' figure images — a figure of its own, drawn as
+///          its own segment of the Volumes & Storage bar, and part of `grandTotalBytes`.
 public struct StorageReport: Sendable {
     /// Sum of all downloaded volume XML file sizes.
     public let totalVolumesBytes: Int
@@ -87,12 +107,28 @@ public struct StorageReport: Sendable {
     /// the hero figure double-counted.
     public let totalVectorBytes: Int
 
-    /// Per-volume breakdown of XML file sizes.
+    /// Size of the downloaded volumes' figure images (#1516): the sum of each `perVolume`
+    /// entry's `figureBytes`. They sit in folders inside the volumes directory, which the index
+    /// walk excludes whole, so they are counted here and nowhere else.
+    public let totalFigureBytes: Int
+
+    /// Per-volume breakdown of XML file and figure-image sizes.
     public let perVolume: [VolumeStorageEntry]
+
+    /// Creates a report. `totalFigureBytes` defaults to none.
+    public init(totalVolumesBytes: Int, totalIndexBytes: Int, totalSummariesBytes: Int,
+                totalVectorBytes: Int, totalFigureBytes: Int = 0, perVolume: [VolumeStorageEntry]) {
+        self.totalVolumesBytes = totalVolumesBytes
+        self.totalIndexBytes = totalIndexBytes
+        self.totalSummariesBytes = totalSummariesBytes
+        self.totalVectorBytes = totalVectorBytes
+        self.totalFigureBytes = totalFigureBytes
+        self.perVolume = perVolume
+    }
 
     /// Combined total of all managed storage.
     public var grandTotalBytes: Int {
-        totalVolumesBytes + totalIndexBytes + totalSummariesBytes + totalVectorBytes
+        totalVolumesBytes + totalIndexBytes + totalSummariesBytes + totalVectorBytes + totalFigureBytes
     }
 
     // MARK: - Index size estimation
