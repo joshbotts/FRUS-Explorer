@@ -1518,8 +1518,8 @@ struct ArchivalAnalyticsView: View {
             title: String(localized: "archival.library.collections.title",
                           defaultValue: "Your most-cited collections"),
             caption: String(format: String(
-                localized: "archival.library.collections.caption %lld %lld",
-                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognize. Neither group is listed here."),
+                localized: "archival.library.collections.caption.v2 %lld %lld",
+                defaultValue: "Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are filing systems rather than collections. Another %2$lld name something the list does not recognize. Neither group is listed here."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)),
             inspector: libraryCollectionsTable(profile),

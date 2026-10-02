@@ -80,10 +80,17 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// `provenance` is the one that needs it, and the first draft of this caption was itself wrong.
     /// It is a **per-volume** reading — the category a volume's source notes name most often — on a
     /// map whose points are documents, so every point in a volume takes one colour. The draft called
-    /// that colour the volume's "larger half", which is false for **73 of the 523** covered volumes,
-    /// where the winner holds under half the notes; it is a plurality. The caption now says so, and
-    /// names the evidence floor, because a solid block of colour otherwise reads as a stronger claim
-    /// than the data makes.
+    /// that colour the volume's "larger half", which is false for **86 of the 499** volumes the lens
+    /// colours, where the winner holds under half the notes; it is a plurality. The caption now
+    /// says so, and names the evidence floor, because a solid block of colour otherwise reads as a
+    /// stronger claim than the data makes.
+    ///
+    /// Both figures are measured from the bundled `source-provenance-index.json`, and
+    /// `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured` recomputes them through
+    /// `SemanticMapSpikeView.dominantProvenance`, so a regenerated index that moves either fails
+    /// the suite. They moved at #1543: the Subject-Numeric File became a category, 37 volumes
+    /// changed winner (30 to it), and the plurality-only count went from 75 to 86. The caption had
+    /// said 73, a figure two regenerations old.
     ///
     /// `cluster` gets one too, for a different reason: its key can name only one of the sixteen
     /// colours it uses (`namesEveryColour`), so the caption is what stops the other fifteen from
@@ -96,8 +103,8 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
         case .era, .availability:
             return nil
         case .provenance:
-            return String(localized: "semanticMap.lens.provenance.caption.v2",
-                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of the 499 volumes it colors. Volumes with fewer than ten notes are left uncolored.")
+            return String(localized: "semanticMap.lens.provenance.caption.v3",
+                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 86 of the 499 volumes it colors. Volumes with fewer than ten notes are left uncolored.")
         }
     }
 
@@ -334,19 +341,26 @@ enum SemanticMapColouring {
             return [SIMD4(0.34, 0.36, 0.40, 0.28), SIMD4(0.35, 0.78, 0.52, 0.80)]
                 + Array(repeating: SIMD4(0.35, 0.78, 0.52, 0.80), count: paletteSize - 2)
         case .provenance:
-            // Categorical, and deliberately NOT the cluster lens's even hue sweep: these ten are a
-            // named vocabulary a reader will look up in the legend, so the two central-file
-            // categories are neighbouring blues (they are one filing system, renumbered in 1960),
-            // presidential libraries and lot files take warm hues, and "no source notes" keeps the
-            // dim achromatic slot every lens reserves for absence.
-            let hues: [Float] = [0.58, 0.52, 0.08, 0.12, 0.95, 0.75, 0.32, 0.44, 0.68, 0.10]
-            let saturations: [Float] = [0.70, 0.55, 0.75, 0.85, 0.60, 0.65, 0.60, 0.55, 0.45, 0.12]
-            // `unrecognized` is last, and it is deliberately the DIMMEST of the ten rather than a
+            // Categorical, and deliberately NOT the cluster lens's even hue sweep: these eleven are
+            // a named vocabulary a reader will look up in the legend, so the three central-file
+            // categories are neighbouring blues — three filing systems that replaced one another,
+            // the decimal file, the Subject-Numeric File of February 1963 and the Central Foreign
+            // Policy File of July 1973 — presidential libraries and lot files take warm hues, and
+            // "no source notes" keeps the dim achromatic slot every lens reserves for absence.
+            //
+            // One entry per `SourceProvenanceCategory.allCases` case, in that order, because the
+            // colouring hands out slot 1 + a category's position there. The Subject-Numeric File's
+            // blue (#1543) is inserted at index 1 and the two blues beside it are the ones the
+            // lens already had, so a reader's memory of them holds; it sits one 0.06 step past the
+            // decimal file's, as the Central Foreign Policy File's does on the other side.
+            let hues: [Float] = [0.58, 0.64, 0.52, 0.08, 0.12, 0.95, 0.75, 0.32, 0.44, 0.68, 0.10]
+            let saturations: [Float] = [0.70, 0.55, 0.55, 0.75, 0.85, 0.60, 0.65, 0.60, 0.55, 0.45, 0.12]
+            // `unrecognized` is last, and it is deliberately the DIMMEST of the eleven rather than a
             // full-brightness hue. It wins 32 volumes — 4.5% of the plane — and it means *the parser
             // could not classify these notes*, so drawing it as confidently as "Presidential
             // Libraries" would put the map's loudest claim on its weakest evidence. The first draft
             // gave it saturation 0 at brightness 0.95, i.e. white: the brightest thing on screen.
-            let brightnesses: [Float] = [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.62]
+            let brightnesses: [Float] = [0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.95, 0.62]
             let categorical = zip(zip(hues, saturations), brightnesses).map { pair, brightness in
                 hsb(hue: pair.0, saturation: pair.1, brightness: brightness, alpha: 0.75)
             }

@@ -101,8 +101,8 @@ enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
 
     /// The orderings worth offering for `section`, or empty when the choice is meaningless.
     ///
-    /// Document type has two rows and provenance nine eras whose keys carry a chronological
-    /// sense that alphabetising would scramble; neither gets a picker. Subjects does get one:
+    /// Document type has two rows and provenance a handful of citation forms whose keys carry a
+    /// chronological sense that alphabetising would scramble; neither gets a picker. Subjects does get one:
     /// 106 rows is more than a reader scans by eye, and unlike provenance its labels are names
     /// with no inherent order, so A–Z is a real way to find one.
     static func choices(for section: FacetSection) -> [FacetSort] {

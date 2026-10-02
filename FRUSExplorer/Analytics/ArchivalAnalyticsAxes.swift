@@ -141,7 +141,7 @@ enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
 /// legible.
 ///
 /// Classes are drawn as rounded squares inside a dashed hull, never as circles: a class is a
-/// subject heading inside one filing system, not a body of records with a custodian, and the two
+/// subject heading inside one of the central filing systems, not a body of records with a custodian, and the two
 /// must not be able to be mistaken for each other (feasibility §4-I rider b).
 ///
 /// Version history:
@@ -184,8 +184,9 @@ enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
 /// records an authority collection names.
 ///
 /// ## Why this is not ``SourceProvenanceCategory``
-/// SA-3's ten-way category classifies a **parsed source note**: it can tell a pre-1963 decimal
-/// citation from its post-1963 successor because it read the citation. This classifies an
+/// SA-3's eleven-way category classifies a **parsed source note**: it can tell a decimal
+/// citation from a Subject-Numeric one, and both from a Central Foreign Policy File film number,
+/// because it read the citation. This classifies an
 /// **authority record**, which has only a repository keyword, a lot key, and a name. The two
 /// answer different questions from different inputs, and folding them into one enum would mean
 /// one of the two surfaces silently reporting a class it cannot actually distinguish.
@@ -410,7 +411,8 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 ///
 /// The two are different kinds of thing and are never mixed in one ranking (feasibility §4-I
 /// rider b): a named collection is a body of records with a custodian, a central-file class is
-/// a subject heading inside one filing system. Switching the lens replaces the chart.
+/// a subject heading inside one of the central filing systems (the decimal file or the
+/// Subject-Numeric File). Switching the lens replaces the chart.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1

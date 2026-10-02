@@ -831,8 +831,8 @@ struct ArchivalNetworkView: View {
             name: node.label,
             caption: node.kind == .collection
                 ? node.category.displayName
-                : String(localized: "archival.network.class.caption",
-                         defaultValue: "Central-file class — a subject heading inside the State Department’s filing system, not a collection"),
+                : String(localized: "archival.network.class.caption.v2",
+                         defaultValue: "Central-file class — a subject heading inside one of the State Department’s central filing systems, not a collection"),
             detail: ArchivalNetworkBuilder.cardDetail(for: node, in: graph, usage: usage),
             isCompact: isShortScreen) {
                 nodeActions(node)

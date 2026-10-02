@@ -911,7 +911,15 @@ struct TripPacketExporter {
                 ]))
         }
 
-        if let subjectNumeric = designations.first(where: Self.isSubjectNumericDesignation) {
+        // By the target's category or by the designation's form (#1543). The category reaches
+        // what the form test refuses: an organization or agency file with no number
+        // (`AID (US) INDIA`), a country not in capitals (`POL Kuwait`). The form reaches a
+        // designator filed under a decimal-category target.
+        let subjectNumericByCategory = centralTargets
+            .filter { $0.category == .subjectNumericFile }
+            .flatMap(\.drawnFrom).compactMap(\.fileDesignation).first
+        if let subjectNumeric = subjectNumericByCategory
+            ?? designations.first(where: Self.isSubjectNumericDesignation) {
             out.append(CribExample(
                 heading: "Subject-Numeric File",
                 naraContext: "Example 7, airgram",
@@ -1111,9 +1119,12 @@ struct TripPacketExporter {
             && designation.range(of: #"^\D*\d{4,}"#, options: .regularExpression) == nil
     }
 
-    /// Whether a target is a central-file target — the no-box rule's gate, and the crib's.
+    /// Whether a target is a central-file target — the no-box rule's gate, and the crib's. The
+    /// three central filing systems, by the target's category and not its key: a Subject-Numeric
+    /// block cited through the National Archives sits on a `coll|` key and is one (#1543).
     static func isCentralFileTarget(_ target: TripPacketModel.Target) -> Bool {
-        target.category == .centralDecimalFile || target.category == .centralForeignPolicyFile
+        target.category == .centralDecimalFile || target.category == .subjectNumericFile
+            || target.category == .centralForeignPolicyFile
     }
 
     /// Substitute-unit titles by NAID, for the per-seeding markers.

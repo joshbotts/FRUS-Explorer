@@ -377,6 +377,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         no run-on classification, and the stop of `U.S.` (see the v64 note); a Sources row under a
 ///         full-name library heading takes that library. Numbered after lane PAGE's 4.25 and v63,
 ///         which land first.
+///  4.27 — 2026-10-02 (#1543): `currentDateIndexVersion` → 65 — a central-files citation is stored
+///         by its form. `citation_era` gains `subject_numeric`, written for a Subject-Numeric file
+///         designation or its block of years in either wording, and a decimal number cited through
+///         the National Archives is stored `decimal` (see the v65 note). `relatedByDecimal` reads
+///         both forms.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1251,7 +1256,28 @@ public actor IndexingPipeline {
     ///   Department's — take that library, not the outer holder. The generator's port, which keys
     ///   `collection-authority.json`, moves rows in 12 volumes.
     ///   A device still on v62 re-indexes once, for v63's changes and these together.
-    public static let currentDateIndexVersion: Int = 64
+    /// - v64→65 — #1543: a central-files citation is stored by its FORM. NARA names five eras of
+    ///   the Department's central files, and the name does not separate them (its catalog lists
+    ///   "Central Foreign Policy File" as another title of the Subject-Numeric series), so
+    ///   `baseDocumentSourceRow` asks `CollectionKeying.centralFilesForm(parsed:note:)` what the
+    ///   citation gives. `citation_era` gains the value `subject_numeric`: a Subject-Numeric file
+    ///   designation (`POL 27 VIET S`) or its block of years (`Central Files 1964–66`), whether
+    ///   the note is worded through the Department (stored `decimal` until now), through the
+    ///   National Archives (`structured`, repository `National Archives`) or under the Central
+    ///   Foreign Policy File's name (`cfpf`). A decimal file number worded through the National
+    ///   Archives (`RG 59, Central Files 1960–63, 399.731/7–2561`) is stored `decimal`, where it
+    ///   was `structured`. Only `citation_era` moves: repository, record group, `series_name` and
+    ///   `decimal_class` are written as before, so a `subject_numeric` or `decimal` row may carry
+    ///   the repository `National Archives` and a series name where a file number would be.
+    ///   Measured over the 553 manifest volumes' 264,552 document source notes (corpus
+    ///   `8e5da08c1`), 9,799 rows change form: 9,443 become `subject_numeric` (3,844 from
+    ///   `decimal`, 5,577 from `structured`, 22 from `cfpf`) and 356 go from `structured` to
+    ///   `decimal`. Without the bump an installed index keeps the old forms, and Your Library, the
+    ///   Archival provenance facet and the Archives Visit packet would disagree with the bundled
+    ///   `source-provenance-index.json` and `collection-usage-index.json`, which were regenerated
+    ///   by the same rule. No collection identity moves, so no other artifact does.
+    ///   A device still on v62 re-indexes once, for v63's and v64's changes and these together.
+    public static let currentDateIndexVersion: Int = 65
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -8317,15 +8343,24 @@ public actor IndexingPipeline {
 
     /// The era/columns mapping for each `ParsedSourceNote` case (everything except the
     /// cross-case `decimal_class` column, which `documentSourceRow` fills).
+    ///
+    /// The three central-file arms store the citation's FORM, which
+    /// `CollectionKeying.centralFilesForm(parsed:note:)` reads from the parse and the note text
+    /// (#1543, index v65): `subject_numeric` for a Subject-Numeric file designation or its block of
+    /// years in any of the three parse cases, and `decimal` for a decimal number the note words
+    /// through the National Archives. A note that gives no readable form keeps the form its parse
+    /// case always had. Nothing but `citation_era` depends on the form.
     nonisolated private static func baseDocumentSourceRow(
         volumeId: String, documentId: String,
         parsed: ParsedSourceNote, rawText: String
     ) -> DocumentSourceRow {
+        let form = CollectionKeying.centralFilesForm(parsed: parsed, note: rawText)
         switch parsed {
         case .centralFiles(let rg, let fid):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "Department of State", recordGroup: rg,
-                lotFile: nil, seriesName: fid, citationEra: "decimal", rawText: rawText)
+                lotFile: nil, seriesName: fid,
+                citationEra: form == .subjectNumeric ? "subject_numeric" : "decimal", rawText: rawText)
         case .lotFile(let rg, let lot, let fid):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "Department of State", recordGroup: rg,
@@ -8333,9 +8368,15 @@ public actor IndexingPipeline {
                 lotFileNorm: SourceNoteParser.lotFileNorm(lot))
         case .naraCollection(let rg, let series, let lot, let box):
             let sid = [series, box.map { "Box \($0)" }].compactMap { $0 }.joined(separator: ", ")
+            let era: String
+            switch form {
+            case .subjectNumeric: era = "subject_numeric"
+            case .decimal: era = "decimal"
+            case nil: era = "structured"
+            }
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "National Archives", recordGroup: rg,
-                lotFile: lot, seriesName: sid.isEmpty ? nil : sid, citationEra: "structured", rawText: rawText,
+                lotFile: lot, seriesName: sid.isEmpty ? nil : sid, citationEra: era, rawText: rawText,
                 lotFileNorm: lot.map { SourceNoteParser.lotFileNorm($0) })
         case .presidentialLibrary(let lib, let coll, _):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
@@ -8358,7 +8399,8 @@ public actor IndexingPipeline {
         case .cfpfFile(let fid):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: "Department of State", recordGroup: "59",
-                lotFile: nil, seriesName: fid.map { "CFPF \($0)" } ?? "CFPF", citationEra: "cfpf", rawText: rawText)
+                lotFile: nil, seriesName: fid.map { "CFPF \($0)" } ?? "CFPF",
+                citationEra: form == .subjectNumeric ? "subject_numeric" : "cfpf", rawText: rawText)
         case .namedFileSeries(let series, _):
             // No repository asserted at parse time: the series name is the match key
             // the Phase 3/4 collection-authority work resolves.
@@ -10390,6 +10432,12 @@ public actor IndexingPipeline {
 
     /// Returns documents from the same decimal-file **location and chronological segment**.
     ///
+    /// Reads the two forms whose `series_name` is a file number as the note prints it: `decimal`
+    /// and, since #1543 (v65), `subject_numeric` — a Department-led Subject-Numeric designator
+    /// (`POL 15 HOND`) routes here and was stored `decimal` until then. A central-file row worded
+    /// through the National Archives stores its block's name in `series_name`, so it never matches
+    /// a location; its route is `relatedByDecimalClass`.
+    ///
     /// Same location = the decimal classification before `/`. Same segment = the same
     /// filing period, derived from each candidate's suffix year (1940+ date form) or, for
     /// pre-1940 sequential refs, its own indexed document year. When the viewed document's
@@ -10452,7 +10500,7 @@ public actor IndexingPipeline {
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             LEFT JOIN document_dates dd
                 ON dd.volume_id = ds.volume_id AND dd.document_id = ds.document_id
-            WHERE ds.citation_era = 'decimal'
+            WHERE ds.citation_era IN ('decimal', 'subject_numeric')
                 AND (ds.series_name = ? OR ds.series_name LIKE ? OR ds.series_name LIKE ?)\(ex.clause)
             ORDER BY ds.volume_id, ds.document_id
             LIMIT ?
@@ -10984,8 +11032,8 @@ public actor IndexingPipeline {
     /// citation forms × repositories — while the underlying table runs to a quarter of a million
     /// rows on a full index.
     ///
-    /// `citation_era` is a **citation form**, not a date, and it is not the ten-way provenance
-    /// category either: `structured` covers NARA collections, presidential libraries, and CIA
+    /// `citation_era` is a **citation form**, not a date, and it is not the provenance category
+    /// either: `structured` covers NARA collections, presidential libraries, and CIA
     /// records alike, which is why `repository` comes back beside it.
     ///
     /// - Returns: Groups in no guaranteed order; callers fold them.
@@ -11015,11 +11063,16 @@ public actor IndexingPipeline {
     /// bundled authority resolves on.
     ///
     /// Restricted to the three citation forms whose `series_name` is a collection name —
-    /// `lot_file`, `structured`, `named_series`. The two central-file forms (`decimal`, `cfpf`)
-    /// are deliberately excluded: their `series_name` holds a file identifier such as
-    /// `763.72/1-2354`, so grouping on it would produce thousands of one-document groups that
-    /// resolve to nothing, and the count they belong to is the central-file total the
-    /// composition card already reports.
+    /// `lot_file`, `structured`, `named_series`. The three central-file forms (`decimal`,
+    /// `subject_numeric`, `cfpf`) are deliberately excluded: a Department-led row's `series_name`
+    /// holds a file identifier such as `763.72/1-2354` or `POL 27 VIET S`, so grouping on it
+    /// would produce thousands of one-document groups that resolve to nothing, and the count they
+    /// belong to is the central-file total the composition card already reports.
+    ///
+    /// A central-file row worded through the National Archives falls outside it too (#1543). Its
+    /// `series_name` is the block the note prints — `Central Files 1970–73` — which was listed
+    /// here as a collection while those rows were stored `structured`; the block is a segment of
+    /// the Subject-Numeric File, not a collection, and its notes are counted with that file.
     ///
     /// - Returns: Groups in no guaranteed order; the caller resolves each against
     ///   `CollectionAuthorityIndex` and sums by record.

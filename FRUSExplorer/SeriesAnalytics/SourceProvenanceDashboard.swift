@@ -21,8 +21,9 @@ import Charts
 /// renders three Swift Charts telling the sourcing story of the FRUS series: how
 /// the archival base shifted from the near-total dominance of the State
 /// Department's Central Decimal File in the 1900s–1930s, through the 1950s
-/// appearance of bureau lot files and presidential libraries, to the 1970s
-/// preponderance of presidential-library and Central Foreign Policy File material.
+/// appearance of bureau lot files and presidential libraries and the 1960s'
+/// Subject-Numeric File, to the 1970s preponderance of presidential-library
+/// material beside the Central Foreign Policy File.
 /// Everything is derived from the bundled aggregate, so it renders offline, with
 /// zero index, mid-onboarding.
 ///
@@ -327,9 +328,12 @@ struct SourceProvenanceDashboard: View {
                                        defaultValue: "Provenance categories shown"))
             .accessibilityValue(hiddenCategories.isEmpty
                                 ? String(localized: "series.provenance.filter.a11y.all", defaultValue: "All shown")
-                                : String(format: String(localized: "series.provenance.filter.a11y.count %lld",
-                                                        defaultValue: "%lld of 10 shown"),
-                                         Int64(SourceProvenanceCategory.ordered.count - hiddenCategories.count)))
+                                // The total is the enum's count, not a literal (#1543: the text
+                                // carried the number ten itself while there were ten categories).
+                                : String(format: String(localized: "series.provenance.filter.a11y.count %lld %lld",
+                                                        defaultValue: "%1$lld of %2$lld shown"),
+                                         Int64(SourceProvenanceCategory.ordered.count - hiddenCategories.count),
+                                         Int64(SourceProvenanceCategory.ordered.count)))
             Spacer()
         }
         .padding(.horizontal)
@@ -576,8 +580,8 @@ struct SourceProvenanceDashboard: View {
                                  defaultValue: "Open Archival Analytics"),
                           systemImage: "archivebox")
                 }
-                Text(String(localized: "series.provenance.archivalLink.detail",
-                            defaultValue: "This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
+                Text(String(localized: "series.provenance.archivalLink.detail.v2",
+                            defaultValue: "This dashboard groups source notes into eleven broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -597,8 +601,8 @@ struct SourceProvenanceDashboard: View {
                              defaultValue: "Open Archival Analytics"),
                       systemImage: "archivebox")
             }
-            Text(String(localized: "series.provenance.archivalLink.detail",
-                        defaultValue: "This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
+            Text(String(localized: "series.provenance.archivalLink.detail.v2",
+                        defaultValue: "This dashboard groups source notes into eleven broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -626,8 +630,10 @@ struct SourceProvenanceDashboard: View {
             }
             // R-3: "covered of cataloged" is `data.volumesCovered` over the bundled manifest's
             // count — a ratio that must be RE-MEASURED at each release, which a literal cannot be.
-            Text(String(format: String(localized: "series.provenance.caveats.body.v2 %lld %lld",
-                        defaultValue: "These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system. For now, the Central Foreign Policy File category covers both its 1963–1973 Subject-Numeric successor and the post-1973 file. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives."),
+            // New key (.v3, #1543): the central-files sentences changed meaning. The category
+            // the old text said covered the 1963–1973 file never held it.
+            Text(String(format: String(localized: "series.provenance.caveats.body.v3 %lld %lld",
+                        defaultValue: "These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File category is the central filing system through January 1963: the decimal file from 1910 and, before it, the Numerical File of 1906–1910. The Subject-Numeric File replaced the decimal file in February 1963 and ran through 1973, and the Central Foreign Policy File followed from July 1973. A citation to the central files is placed by what it gives: a decimal file number, a Subject-Numeric file designation or its block of years, or the Central Foreign Policy File’s name or a film number. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives."),
                         Int64(data.volumesCovered), Int64(entries.count)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)

@@ -103,6 +103,30 @@ struct CatalogQueryEvidenceTests {
                 == .recordGroupOnly(recordGroup: "59"))
     }
 
+    /// The Mac window's free-text search field (#1543): offered for the three cases whose results
+    /// its NARA box draws, and not for a Subject-Numeric citation, whose box draws the era's
+    /// finding aids instead — a field there would run a search whose results nothing shows. The
+    /// rule lives in the shared type because the Mac view is not compiled into this target's host.
+    @Test("The Mac's manual search is offered where a catalogue query runs, and not for a Subject-Numeric citation")
+    func manualSearchIsNotOfferedForSubjectNumeric() {
+        let parser = SourceNoteParser()
+        func offered(_ note: String) -> Bool {
+            CatalogQueryEvidence.offersManualSearch(for: parser.parse(note), rawNote: note)
+        }
+        // frus1969-76ve07/d110 — parses as `.naraCollection`, which is otherwise offered the field.
+        #expect(!offered("Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret."))
+        // The three offered cases: a record-group collection, a lot, a presidential library.
+        #expect(offered("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis."))
+        #expect(offered("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."))
+        #expect(offered("Source: Department of State, Conference Files: Lot 64 D 199, CF 100."))
+        #expect(offered("Source: Johnson Library, National Security File, Country File, Vietnam. Secret."))
+        // Every other case, as before: a Department-led central file, a film number, no parse yet.
+        #expect(!offered("Source: Department of State, Central Files, 611.61/3-2763. Secret."))
+        #expect(!offered("Source: Department of State, Central Files, POL 27 VIET S. Secret."))
+        #expect(!offered("Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential."))
+        #expect(!CatalogQueryEvidence.offersManualSearch(for: nil, rawNote: ""))
+    }
+
     /// A citation that takes no catalogue query classifies as nothing, rather than defaulting
     /// to verified and captioning a section that never renders.
     @Test("A note with no catalogue query has no evidence")
@@ -143,6 +167,17 @@ struct CatalogQueryEvidenceWiringTests {
             #expect(code.contains("catalogEvidence?.caveat") || code.contains("catalogEvidence?.sectionTitle"),
                     Comment(rawValue: "\(path) classifies the query and then ignores the answer"))
         }
+    }
+
+    /// The Mac view asks the shared rule whether to offer its manual search field (#1543), rather
+    /// than switching on the parse case itself, which is what offered the field to a
+    /// Subject-Numeric citation worded through the National Archives.
+    @Test("The Mac view takes its manual-search rule from the shared type")
+    func macViewAsksTheSharedManualSearchRule() throws {
+        let code = try source("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift")
+        #expect(code.contains("CatalogQueryEvidence.offersManualSearch(for: parsed, rawNote: rawSourceNote)"))
+        #expect(!code.contains("case .lotFile, .presidentialLibrary, .naraCollection: return true"),
+                "the Mac view decides the field by parse case again")
     }
 
     /// The chip is the visible half. Without it a reader scanning rows sees no difference

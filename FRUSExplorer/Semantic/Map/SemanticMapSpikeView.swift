@@ -1734,8 +1734,9 @@ struct SemanticMapSpikeView: View {
 
     /// The category a volume's source notes name most often, when there are enough of them.
     ///
-    /// **A plurality, not a majority** — it holds under half the notes for 73 of the 523 covered
-    /// volumes — and the caption under the map says so. Ties break on the category order in
+    /// **A plurality, not a majority** — it holds under half the notes for 86 of the 499 volumes
+    /// this returns (523 are covered; 24 fall under the floor) — and the caption under the map
+    /// says so. Ties break on the category order in
     /// `SourceProvenanceCategory.allCases` rather than arbitrarily, because a Swift dictionary has no
     /// stable iteration order and a tie broken by iteration would recolour the map between launches.
     ///

@@ -1524,7 +1524,8 @@ struct SemanticMapExportTests {
     ///
     /// A lens carries a `caption` exactly when its colouring would otherwise overstate the
     /// evidence: the provenance lens assigns each volume the category its source notes name most
-    /// often, which is a plurality and not a majority for 73 of 522 volumes. `provenance` used to
+    /// often, which is a plurality and not a majority for 86 of the 499 volumes it colours.
+    /// `provenance` used to
     /// take a lens LABEL, so the caption was structurally unreachable — a figure or CSV taken on
     /// that lens made a stronger claim than the data supports and said nothing about it.
     @Test("A lens with a caveat carries it into the export; one without adds nothing")

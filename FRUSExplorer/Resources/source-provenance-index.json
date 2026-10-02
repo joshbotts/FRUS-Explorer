@@ -69,9 +69,9 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 30960,
+        "centralDecimalFile" : 30970,
         "namedFileSeries" : 636,
-        "naraCollection" : 34,
+        "naraCollection" : 24,
         "presidentialLibrary" : 4,
         "previouslyPublished" : 160,
         "unrecognized" : 249
@@ -104,11 +104,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 63925,
+        "centralDecimalFile" : 63961,
         "intelligence" : 198,
         "lotFile" : 2678,
         "namedFileSeries" : 3662,
-        "naraCollection" : 161,
+        "naraCollection" : 125,
         "presidentialLibrary" : 444,
         "previouslyPublished" : 80,
         "unrecognized" : 631
@@ -119,12 +119,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 32207,
+        "centralDecimalFile" : 32405,
         "foreignArchive" : 21,
         "intelligence" : 576,
         "lotFile" : 7061,
         "namedFileSeries" : 1290,
-        "naraCollection" : 468,
+        "naraCollection" : 270,
         "presidentialLibrary" : 3387,
         "previouslyPublished" : 54,
         "unrecognized" : 1908
@@ -135,14 +135,15 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 7270,
+        "centralDecimalFile" : 3554,
         "foreignArchive" : 12,
         "intelligence" : 1241,
         "lotFile" : 2243,
         "namedFileSeries" : 347,
-        "naraCollection" : 4573,
+        "naraCollection" : 1447,
         "presidentialLibrary" : 8256,
         "previouslyPublished" : 35,
+        "subjectNumericFile" : 6842,
         "unrecognized" : 479
       },
       "decade" : 1960,
@@ -151,15 +152,16 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 9,
-        "centralForeignPolicyFile" : 2466,
+        "centralDecimalFile" : 5,
+        "centralForeignPolicyFile" : 2461,
         "foreignArchive" : 20,
         "intelligence" : 685,
         "lotFile" : 1023,
         "namedFileSeries" : 438,
-        "naraCollection" : 4808,
+        "naraCollection" : 2362,
         "presidentialLibrary" : 14228,
         "previouslyPublished" : 147,
+        "subjectNumericFile" : 2455,
         "unrecognized" : 2845
       },
       "decade" : 1970,
@@ -703,7 +705,8 @@
     },
     {
       "counts" : {
-        "naraCollection" : 34,
+        "centralDecimalFile" : 10,
+        "naraCollection" : 24,
         "presidentialLibrary" : 4,
         "unrecognized" : 9
       },
@@ -713,7 +716,8 @@
     },
     {
       "counts" : {
-        "naraCollection" : 101,
+        "centralDecimalFile" : 4,
+        "naraCollection" : 97,
         "presidentialLibrary" : 52,
         "previouslyPublished" : 1
       },
@@ -724,9 +728,10 @@
     {
       "counts" : {
         "intelligence" : 1,
-        "naraCollection" : 119,
+        "naraCollection" : 118,
         "presidentialLibrary" : 58,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 1,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -735,9 +740,10 @@
     },
     {
       "counts" : {
-        "naraCollection" : 121,
+        "naraCollection" : 107,
         "presidentialLibrary" : 56,
-        "previouslyPublished" : 2
+        "previouslyPublished" : 2,
+        "subjectNumericFile" : 14
       },
       "decade" : 1970,
       "totalNotes" : 179,
@@ -2030,9 +2036,10 @@
     },
     {
       "counts" : {
+        "centralDecimalFile" : 36,
         "intelligence" : 198,
         "lotFile" : 29,
-        "naraCollection" : 161,
+        "naraCollection" : 125,
         "presidentialLibrary" : 41,
         "previouslyPublished" : 3,
         "unrecognized" : 3
@@ -2611,10 +2618,11 @@
     },
     {
       "counts" : {
+        "centralDecimalFile" : 12,
         "intelligence" : 73,
         "lotFile" : 78,
         "namedFileSeries" : 14,
-        "naraCollection" : 28,
+        "naraCollection" : 16,
         "presidentialLibrary" : 31,
         "unrecognized" : 12
       },
@@ -2706,9 +2714,10 @@
     },
     {
       "counts" : {
+        "centralDecimalFile" : 91,
         "foreignArchive" : 3,
         "intelligence" : 192,
-        "naraCollection" : 142,
+        "naraCollection" : 51,
         "presidentialLibrary" : 12,
         "unrecognized" : 9
       },
@@ -2718,9 +2727,10 @@
     },
     {
       "counts" : {
+        "centralDecimalFile" : 93,
         "foreignArchive" : 3,
         "intelligence" : 192,
-        "naraCollection" : 144,
+        "naraCollection" : 51,
         "presidentialLibrary" : 12,
         "unrecognized" : 8
       },
@@ -3577,9 +3587,9 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 354,
+        "centralDecimalFile" : 356,
         "lotFile" : 39,
-        "naraCollection" : 17,
+        "naraCollection" : 15,
         "presidentialLibrary" : 18
       },
       "decade" : 1950,
@@ -3892,12 +3902,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 150,
+        "centralDecimalFile" : 11,
         "intelligence" : 3,
         "lotFile" : 41,
         "namedFileSeries" : 1,
         "naraCollection" : 29,
         "presidentialLibrary" : 70,
+        "subjectNumericFile" : 139,
         "unrecognized" : 7
       },
       "decade" : 1960,
@@ -3906,12 +3917,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 169,
         "lotFile" : 32,
         "namedFileSeries" : 12,
         "naraCollection" : 20,
         "presidentialLibrary" : 130,
         "previouslyPublished" : 3,
+        "subjectNumericFile" : 169,
         "unrecognized" : 15
       },
       "decade" : 1960,
@@ -3920,11 +3931,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 145,
+        "centralDecimalFile" : 106,
         "intelligence" : 33,
         "lotFile" : 32,
         "presidentialLibrary" : 48,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 39,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -3945,11 +3957,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 109,
+        "centralDecimalFile" : 64,
         "intelligence" : 22,
         "lotFile" : 48,
         "naraCollection" : 23,
         "presidentialLibrary" : 113,
+        "subjectNumericFile" : 45,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -3958,13 +3971,14 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 159,
+        "centralDecimalFile" : 110,
         "foreignArchive" : 1,
         "intelligence" : 30,
         "lotFile" : 71,
         "namedFileSeries" : 3,
         "naraCollection" : 34,
         "presidentialLibrary" : 181,
+        "subjectNumericFile" : 49,
         "unrecognized" : 16
       },
       "decade" : 1960,
@@ -3985,12 +3999,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 119,
+        "centralDecimalFile" : 88,
         "intelligence" : 1,
         "lotFile" : 49,
         "namedFileSeries" : 7,
         "naraCollection" : 29,
-        "presidentialLibrary" : 110
+        "presidentialLibrary" : 110,
+        "subjectNumericFile" : 31
       },
       "decade" : 1960,
       "totalNotes" : 315,
@@ -4012,12 +4027,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 171,
+        "centralDecimalFile" : 130,
         "intelligence" : 135,
         "lotFile" : 90,
         "namedFileSeries" : 27,
         "naraCollection" : 48,
         "presidentialLibrary" : 226,
+        "subjectNumericFile" : 41,
         "unrecognized" : 160
       },
       "decade" : 1960,
@@ -4026,12 +4042,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 61,
+        "centralDecimalFile" : 55,
         "intelligence" : 46,
         "lotFile" : 68,
         "namedFileSeries" : 12,
         "naraCollection" : 10,
         "presidentialLibrary" : 166,
+        "subjectNumericFile" : 6,
         "unrecognized" : 22
       },
       "decade" : 1960,
@@ -4040,11 +4057,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 196,
+        "centralDecimalFile" : 149,
         "intelligence" : 14,
         "lotFile" : 53,
         "naraCollection" : 5,
         "presidentialLibrary" : 130,
+        "subjectNumericFile" : 47,
         "unrecognized" : 4
       },
       "decade" : 1960,
@@ -4053,10 +4071,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 272,
+        "centralDecimalFile" : 199,
         "lotFile" : 95,
         "naraCollection" : 1,
         "presidentialLibrary" : 67,
+        "subjectNumericFile" : 73,
         "unrecognized" : 5
       },
       "decade" : 1960,
@@ -4076,11 +4095,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 149,
+        "centralDecimalFile" : 97,
         "lotFile" : 40,
         "namedFileSeries" : 1,
         "naraCollection" : 2,
-        "presidentialLibrary" : 50
+        "presidentialLibrary" : 50,
+        "subjectNumericFile" : 52
       },
       "decade" : 1960,
       "totalNotes" : 242,
@@ -4088,9 +4108,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 294,
+        "centralDecimalFile" : 211,
         "lotFile" : 73,
         "presidentialLibrary" : 16,
+        "subjectNumericFile" : 83,
         "unrecognized" : 2
       },
       "decade" : 1960,
@@ -4112,11 +4133,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 216,
+        "centralDecimalFile" : 96,
         "intelligence" : 7,
         "lotFile" : 40,
         "naraCollection" : 21,
-        "presidentialLibrary" : 100
+        "presidentialLibrary" : 100,
+        "subjectNumericFile" : 120
       },
       "decade" : 1960,
       "totalNotes" : 384,
@@ -4124,11 +4146,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 217,
+        "centralDecimalFile" : 165,
         "intelligence" : 8,
         "lotFile" : 12,
         "naraCollection" : 5,
         "presidentialLibrary" : 98,
+        "subjectNumericFile" : 52,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4137,12 +4160,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 333,
+        "centralDecimalFile" : 322,
         "intelligence" : 4,
         "lotFile" : 13,
         "namedFileSeries" : 2,
         "naraCollection" : 2,
         "presidentialLibrary" : 50,
+        "subjectNumericFile" : 11,
         "unrecognized" : 5
       },
       "decade" : 1960,
@@ -4151,12 +4175,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 204,
+        "centralDecimalFile" : 135,
         "intelligence" : 8,
         "lotFile" : 33,
         "namedFileSeries" : 2,
         "naraCollection" : 33,
         "presidentialLibrary" : 125,
+        "subjectNumericFile" : 69,
         "unrecognized" : 4
       },
       "decade" : 1960,
@@ -4165,11 +4190,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 167,
+        "centralDecimalFile" : 141,
         "intelligence" : 15,
         "lotFile" : 46,
-        "naraCollection" : 9,
+        "naraCollection" : 8,
         "presidentialLibrary" : 100,
+        "subjectNumericFile" : 27,
         "unrecognized" : 10
       },
       "decade" : 1960,
@@ -4178,11 +4204,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 247,
+        "centralDecimalFile" : 174,
         "intelligence" : 5,
         "lotFile" : 24,
         "naraCollection" : 17,
         "presidentialLibrary" : 160,
+        "subjectNumericFile" : 73,
         "unrecognized" : 4
       },
       "decade" : 1960,
@@ -4191,12 +4218,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 218,
+        "centralDecimalFile" : 202,
         "intelligence" : 6,
         "lotFile" : 14,
         "namedFileSeries" : 4,
         "naraCollection" : 12,
         "presidentialLibrary" : 210,
+        "subjectNumericFile" : 16,
         "unrecognized" : 29
       },
       "decade" : 1960,
@@ -4205,11 +4233,13 @@
     },
     {
       "counts" : {
+        "centralDecimalFile" : 99,
         "intelligence" : 17,
         "lotFile" : 75,
         "namedFileSeries" : 4,
-        "naraCollection" : 202,
+        "naraCollection" : 33,
         "presidentialLibrary" : 152,
+        "subjectNumericFile" : 70,
         "unrecognized" : 3
       },
       "decade" : 1960,
@@ -4218,11 +4248,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 200,
         "lotFile" : 55,
         "namedFileSeries" : 17,
         "naraCollection" : 37,
-        "presidentialLibrary" : 142
+        "presidentialLibrary" : 142,
+        "subjectNumericFile" : 200
       },
       "decade" : 1960,
       "totalNotes" : 451,
@@ -4230,11 +4260,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 129,
         "intelligence" : 13,
         "lotFile" : 33,
         "naraCollection" : 10,
-        "presidentialLibrary" : 135
+        "presidentialLibrary" : 135,
+        "subjectNumericFile" : 129
       },
       "decade" : 1960,
       "totalNotes" : 320,
@@ -4242,11 +4272,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 85,
         "intelligence" : 3,
         "lotFile" : 18,
         "naraCollection" : 11,
-        "presidentialLibrary" : 147
+        "presidentialLibrary" : 147,
+        "subjectNumericFile" : 85
       },
       "decade" : 1960,
       "totalNotes" : 264,
@@ -4254,12 +4284,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 110,
         "intelligence" : 18,
         "lotFile" : 25,
         "namedFileSeries" : 2,
         "naraCollection" : 13,
-        "presidentialLibrary" : 159
+        "presidentialLibrary" : 159,
+        "subjectNumericFile" : 110
       },
       "decade" : 1960,
       "totalNotes" : 327,
@@ -4267,12 +4297,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 1,
         "intelligence" : 10,
         "lotFile" : 15,
         "namedFileSeries" : 7,
-        "naraCollection" : 182,
+        "naraCollection" : 18,
         "presidentialLibrary" : 190,
+        "subjectNumericFile" : 165,
         "unrecognized" : 7
       },
       "decade" : 1960,
@@ -4281,12 +4311,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 1,
         "intelligence" : 13,
         "lotFile" : 19,
         "namedFileSeries" : 9,
-        "naraCollection" : 74,
+        "naraCollection" : 15,
         "presidentialLibrary" : 189,
+        "subjectNumericFile" : 60,
         "unrecognized" : 15
       },
       "decade" : 1960,
@@ -4298,8 +4328,9 @@
         "intelligence" : 5,
         "lotFile" : 65,
         "namedFileSeries" : 1,
-        "naraCollection" : 25,
+        "naraCollection" : 13,
         "presidentialLibrary" : 169,
+        "subjectNumericFile" : 12,
         "unrecognized" : 2
       },
       "decade" : 1960,
@@ -4308,11 +4339,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 72,
         "lotFile" : 6,
         "namedFileSeries" : 3,
         "naraCollection" : 36,
         "presidentialLibrary" : 233,
+        "subjectNumericFile" : 72,
         "unrecognized" : 2
       },
       "decade" : 1960,
@@ -4321,11 +4352,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 138,
         "lotFile" : 26,
         "namedFileSeries" : 1,
-        "naraCollection" : 68,
+        "naraCollection" : 67,
         "presidentialLibrary" : 112,
+        "subjectNumericFile" : 139,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4338,8 +4369,9 @@
         "intelligence" : 10,
         "lotFile" : 8,
         "namedFileSeries" : 6,
-        "naraCollection" : 100,
+        "naraCollection" : 86,
         "presidentialLibrary" : 88,
+        "subjectNumericFile" : 14,
         "unrecognized" : 2
       },
       "decade" : 1960,
@@ -4348,13 +4380,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 59,
         "foreignArchive" : 1,
         "intelligence" : 2,
         "lotFile" : 32,
         "namedFileSeries" : 3,
         "naraCollection" : 45,
         "presidentialLibrary" : 117,
+        "subjectNumericFile" : 59,
         "unrecognized" : 10
       },
       "decade" : 1960,
@@ -4365,8 +4397,9 @@
       "counts" : {
         "lotFile" : 41,
         "namedFileSeries" : 4,
-        "naraCollection" : 183,
+        "naraCollection" : 10,
         "presidentialLibrary" : 106,
+        "subjectNumericFile" : 173,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4375,10 +4408,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 246,
         "intelligence" : 1,
         "lotFile" : 52,
-        "presidentialLibrary" : 33
+        "presidentialLibrary" : 33,
+        "subjectNumericFile" : 246
       },
       "decade" : 1960,
       "totalNotes" : 332,
@@ -4389,8 +4422,9 @@
         "intelligence" : 12,
         "lotFile" : 18,
         "namedFileSeries" : 1,
-        "naraCollection" : 165,
-        "presidentialLibrary" : 115
+        "naraCollection" : 26,
+        "presidentialLibrary" : 115,
+        "subjectNumericFile" : 139
       },
       "decade" : 1960,
       "totalNotes" : 311,
@@ -4398,11 +4432,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 154,
         "intelligence" : 2,
         "lotFile" : 37,
         "naraCollection" : 1,
-        "presidentialLibrary" : 105
+        "presidentialLibrary" : 105,
+        "subjectNumericFile" : 154
       },
       "decade" : 1960,
       "totalNotes" : 299,
@@ -4410,11 +4444,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 314,
         "intelligence" : 3,
         "lotFile" : 24,
         "naraCollection" : 1,
         "presidentialLibrary" : 27,
+        "subjectNumericFile" : 314,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4423,10 +4457,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 136,
         "intelligence" : 4,
         "lotFile" : 25,
-        "presidentialLibrary" : 43
+        "presidentialLibrary" : 43,
+        "subjectNumericFile" : 136
       },
       "decade" : 1960,
       "totalNotes" : 208,
@@ -4434,11 +4468,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 2,
         "intelligence" : 10,
         "lotFile" : 7,
-        "naraCollection" : 274,
+        "naraCollection" : 35,
         "presidentialLibrary" : 114,
+        "subjectNumericFile" : 241,
         "unrecognized" : 2
       },
       "decade" : 1960,
@@ -4447,14 +4481,14 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 5,
         "foreignArchive" : 4,
         "intelligence" : 11,
         "lotFile" : 7,
         "namedFileSeries" : 10,
-        "naraCollection" : 271,
+        "naraCollection" : 25,
         "presidentialLibrary" : 215,
-        "previouslyPublished" : 1
+        "previouslyPublished" : 1,
+        "subjectNumericFile" : 251
       },
       "decade" : 1960,
       "totalNotes" : 524,
@@ -4462,11 +4496,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 1,
         "intelligence" : 4,
         "lotFile" : 9,
-        "naraCollection" : 206,
+        "naraCollection" : 12,
         "presidentialLibrary" : 151,
+        "subjectNumericFile" : 195,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4478,8 +4512,9 @@
         "intelligence" : 18,
         "lotFile" : 27,
         "namedFileSeries" : 2,
-        "naraCollection" : 335,
-        "presidentialLibrary" : 91
+        "naraCollection" : 25,
+        "presidentialLibrary" : 91,
+        "subjectNumericFile" : 310
       },
       "decade" : 1960,
       "totalNotes" : 473,
@@ -4487,11 +4522,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 179,
         "intelligence" : 13,
         "lotFile" : 22,
         "naraCollection" : 16,
-        "presidentialLibrary" : 93
+        "presidentialLibrary" : 93,
+        "subjectNumericFile" : 179
       },
       "decade" : 1960,
       "totalNotes" : 323,
@@ -4499,12 +4534,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 1,
         "intelligence" : 168,
         "lotFile" : 7,
         "namedFileSeries" : 29,
-        "naraCollection" : 222,
+        "naraCollection" : 18,
         "presidentialLibrary" : 100,
+        "subjectNumericFile" : 205,
         "unrecognized" : 4
       },
       "decade" : 1960,
@@ -4513,12 +4548,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 291,
         "intelligence" : 24,
         "lotFile" : 24,
         "namedFileSeries" : 12,
         "naraCollection" : 29,
         "presidentialLibrary" : 254,
+        "subjectNumericFile" : 291,
         "unrecognized" : 17
       },
       "decade" : 1960,
@@ -4530,8 +4565,9 @@
         "intelligence" : 9,
         "lotFile" : 6,
         "namedFileSeries" : 1,
-        "naraCollection" : 259,
+        "naraCollection" : 20,
         "presidentialLibrary" : 255,
+        "subjectNumericFile" : 239,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4543,8 +4579,9 @@
         "intelligence" : 7,
         "lotFile" : 15,
         "namedFileSeries" : 11,
-        "naraCollection" : 186,
+        "naraCollection" : 21,
         "presidentialLibrary" : 135,
+        "subjectNumericFile" : 165,
         "unrecognized" : 6
       },
       "decade" : 1960,
@@ -4553,12 +4590,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 186,
         "intelligence" : 3,
         "lotFile" : 30,
         "namedFileSeries" : 17,
         "naraCollection" : 26,
         "presidentialLibrary" : 129,
+        "subjectNumericFile" : 186,
         "unrecognized" : 7
       },
       "decade" : 1960,
@@ -4567,12 +4604,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 184,
         "intelligence" : 20,
         "lotFile" : 30,
         "namedFileSeries" : 2,
         "naraCollection" : 34,
         "presidentialLibrary" : 117,
+        "subjectNumericFile" : 184,
         "unrecognized" : 2
       },
       "decade" : 1960,
@@ -4584,8 +4621,9 @@
         "intelligence" : 4,
         "lotFile" : 7,
         "namedFileSeries" : 5,
-        "naraCollection" : 210,
+        "naraCollection" : 16,
         "presidentialLibrary" : 103,
+        "subjectNumericFile" : 194,
         "unrecognized" : 9
       },
       "decade" : 1960,
@@ -4594,10 +4632,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 3,
         "lotFile" : 4,
-        "naraCollection" : 72,
+        "naraCollection" : 11,
         "presidentialLibrary" : 27,
+        "subjectNumericFile" : 64,
         "unrecognized" : 16
       },
       "decade" : 1960,
@@ -4606,12 +4644,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 180,
         "intelligence" : 11,
         "lotFile" : 31,
         "namedFileSeries" : 7,
         "naraCollection" : 5,
         "presidentialLibrary" : 101,
+        "subjectNumericFile" : 180,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4623,8 +4661,9 @@
         "intelligence" : 33,
         "lotFile" : 26,
         "namedFileSeries" : 14,
-        "naraCollection" : 193,
+        "naraCollection" : 26,
         "presidentialLibrary" : 232,
+        "subjectNumericFile" : 167,
         "unrecognized" : 7
       },
       "decade" : 1960,
@@ -4636,8 +4675,9 @@
         "intelligence" : 43,
         "lotFile" : 18,
         "namedFileSeries" : 54,
-        "naraCollection" : 124,
+        "naraCollection" : 8,
         "presidentialLibrary" : 170,
+        "subjectNumericFile" : 116,
         "unrecognized" : 6
       },
       "decade" : 1960,
@@ -4646,12 +4686,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 1,
         "intelligence" : 51,
         "lotFile" : 26,
         "namedFileSeries" : 13,
-        "naraCollection" : 61,
+        "naraCollection" : 13,
         "presidentialLibrary" : 257,
+        "subjectNumericFile" : 49,
         "unrecognized" : 9
       },
       "decade" : 1960,
@@ -4661,8 +4701,9 @@
     {
       "counts" : {
         "lotFile" : 28,
-        "naraCollection" : 181,
-        "presidentialLibrary" : 80
+        "naraCollection" : 2,
+        "presidentialLibrary" : 80,
+        "subjectNumericFile" : 179
       },
       "decade" : 1960,
       "totalNotes" : 289,
@@ -4687,9 +4728,10 @@
         "intelligence" : 24,
         "lotFile" : 16,
         "namedFileSeries" : 18,
-        "naraCollection" : 82,
+        "naraCollection" : 58,
         "presidentialLibrary" : 196,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 24,
         "unrecognized" : 4
       },
       "decade" : 1970,
@@ -4699,8 +4741,9 @@
     {
       "counts" : {
         "lotFile" : 16,
-        "naraCollection" : 91,
-        "presidentialLibrary" : 85
+        "naraCollection" : 58,
+        "presidentialLibrary" : 85,
+        "subjectNumericFile" : 33
       },
       "decade" : 1970,
       "totalNotes" : 192,
@@ -4711,8 +4754,9 @@
         "centralDecimalFile" : 1,
         "lotFile" : 91,
         "namedFileSeries" : 5,
-        "naraCollection" : 58,
+        "naraCollection" : 39,
         "presidentialLibrary" : 223,
+        "subjectNumericFile" : 19,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4722,8 +4766,9 @@
     {
       "counts" : {
         "lotFile" : 4,
-        "naraCollection" : 290,
-        "presidentialLibrary" : 150
+        "naraCollection" : 4,
+        "presidentialLibrary" : 150,
+        "subjectNumericFile" : 286
       },
       "decade" : 1970,
       "totalNotes" : 444,
@@ -4735,8 +4780,9 @@
         "intelligence" : 4,
         "lotFile" : 2,
         "namedFileSeries" : 6,
-        "naraCollection" : 21,
+        "naraCollection" : 7,
         "presidentialLibrary" : 278,
+        "subjectNumericFile" : 14,
         "unrecognized" : 1
       },
       "decade" : 1960,
@@ -4748,8 +4794,9 @@
         "foreignArchive" : 1,
         "intelligence" : 3,
         "namedFileSeries" : 8,
-        "naraCollection" : 16,
+        "naraCollection" : 13,
         "presidentialLibrary" : 251,
+        "subjectNumericFile" : 3,
         "unrecognized" : 3
       },
       "decade" : 1970,
@@ -4760,8 +4807,9 @@
       "counts" : {
         "intelligence" : 7,
         "namedFileSeries" : 4,
-        "naraCollection" : 40,
+        "naraCollection" : 39,
         "presidentialLibrary" : 208,
+        "subjectNumericFile" : 1,
         "unrecognized" : 2
       },
       "decade" : 1970,
@@ -4771,8 +4819,9 @@
     {
       "counts" : {
         "intelligence" : 1,
-        "naraCollection" : 31,
+        "naraCollection" : 30,
         "presidentialLibrary" : 296,
+        "subjectNumericFile" : 1,
         "unrecognized" : 3
       },
       "decade" : 1970,
@@ -4785,8 +4834,9 @@
         "foreignArchive" : 2,
         "intelligence" : 10,
         "namedFileSeries" : 5,
-        "naraCollection" : 25,
+        "naraCollection" : 22,
         "presidentialLibrary" : 245,
+        "subjectNumericFile" : 3,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4798,8 +4848,9 @@
         "intelligence" : 2,
         "lotFile" : 3,
         "namedFileSeries" : 1,
-        "naraCollection" : 95,
+        "naraCollection" : 8,
         "presidentialLibrary" : 203,
+        "subjectNumericFile" : 87,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4810,8 +4861,9 @@
       "counts" : {
         "intelligence" : 8,
         "namedFileSeries" : 3,
-        "naraCollection" : 17,
-        "presidentialLibrary" : 185
+        "naraCollection" : 4,
+        "presidentialLibrary" : 185,
+        "subjectNumericFile" : 13
       },
       "decade" : 1960,
       "totalNotes" : 213,
@@ -4822,8 +4874,9 @@
         "intelligence" : 1,
         "lotFile" : 4,
         "namedFileSeries" : 1,
-        "naraCollection" : 24,
+        "naraCollection" : 3,
         "presidentialLibrary" : 285,
+        "subjectNumericFile" : 21,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4835,8 +4888,9 @@
         "centralDecimalFile" : 1,
         "intelligence" : 2,
         "namedFileSeries" : 2,
-        "naraCollection" : 22,
-        "presidentialLibrary" : 215
+        "naraCollection" : 10,
+        "presidentialLibrary" : 215,
+        "subjectNumericFile" : 12
       },
       "decade" : 1970,
       "totalNotes" : 242,
@@ -4873,9 +4927,10 @@
         "intelligence" : 8,
         "lotFile" : 12,
         "namedFileSeries" : 5,
-        "naraCollection" : 51,
+        "naraCollection" : 25,
         "presidentialLibrary" : 185,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 26,
         "unrecognized" : 5
       },
       "decade" : 1970,
@@ -4900,8 +4955,9 @@
         "intelligence" : 5,
         "lotFile" : 1,
         "namedFileSeries" : 1,
-        "naraCollection" : 31,
+        "naraCollection" : 4,
         "presidentialLibrary" : 131,
+        "subjectNumericFile" : 27,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4911,8 +4967,9 @@
     {
       "counts" : {
         "intelligence" : 2,
-        "naraCollection" : 28,
+        "naraCollection" : 15,
         "presidentialLibrary" : 100,
+        "subjectNumericFile" : 13,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4925,8 +4982,9 @@
         "intelligence" : 1,
         "lotFile" : 12,
         "namedFileSeries" : 14,
-        "naraCollection" : 114,
+        "naraCollection" : 12,
         "presidentialLibrary" : 162,
+        "subjectNumericFile" : 102,
         "unrecognized" : 16
       },
       "decade" : 1970,
@@ -4940,9 +4998,10 @@
         "intelligence" : 21,
         "lotFile" : 3,
         "namedFileSeries" : 79,
-        "naraCollection" : 96,
+        "naraCollection" : 38,
         "presidentialLibrary" : 150,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 58,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4951,11 +5010,12 @@
     },
     {
       "counts" : {
-        "centralForeignPolicyFile" : 15,
+        "centralForeignPolicyFile" : 14,
         "intelligence" : 3,
         "lotFile" : 1,
-        "naraCollection" : 94,
+        "naraCollection" : 89,
         "presidentialLibrary" : 33,
+        "subjectNumericFile" : 6,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -4964,8 +5024,9 @@
     },
     {
       "counts" : {
-        "naraCollection" : 19,
-        "presidentialLibrary" : 273
+        "naraCollection" : 14,
+        "presidentialLibrary" : 273,
+        "subjectNumericFile" : 5
       },
       "decade" : 1970,
       "totalNotes" : 292,
@@ -4976,8 +5037,9 @@
         "foreignArchive" : 1,
         "intelligence" : 8,
         "namedFileSeries" : 1,
-        "naraCollection" : 137,
-        "presidentialLibrary" : 179
+        "naraCollection" : 11,
+        "presidentialLibrary" : 179,
+        "subjectNumericFile" : 126
       },
       "decade" : 1970,
       "totalNotes" : 326,
@@ -4987,8 +5049,9 @@
       "counts" : {
         "centralForeignPolicyFile" : 4,
         "intelligence" : 5,
-        "naraCollection" : 36,
+        "naraCollection" : 16,
         "presidentialLibrary" : 366,
+        "subjectNumericFile" : 20,
         "unrecognized" : 3
       },
       "decade" : 1970,
@@ -5015,8 +5078,9 @@
         "intelligence" : 12,
         "lotFile" : 4,
         "namedFileSeries" : 11,
-        "naraCollection" : 31,
+        "naraCollection" : 12,
         "presidentialLibrary" : 149,
+        "subjectNumericFile" : 19,
         "unrecognized" : 2
       },
       "decade" : 1970,
@@ -5028,8 +5092,9 @@
         "centralForeignPolicyFile" : 26,
         "intelligence" : 2,
         "namedFileSeries" : 18,
-        "naraCollection" : 57,
+        "naraCollection" : 3,
         "presidentialLibrary" : 133,
+        "subjectNumericFile" : 54,
         "unrecognized" : 2
       },
       "decade" : 1970,
@@ -5041,8 +5106,9 @@
         "intelligence" : 7,
         "lotFile" : 20,
         "namedFileSeries" : 11,
-        "naraCollection" : 119,
+        "naraCollection" : 24,
         "presidentialLibrary" : 267,
+        "subjectNumericFile" : 95,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -5055,8 +5121,9 @@
         "intelligence" : 11,
         "lotFile" : 13,
         "namedFileSeries" : 1,
-        "naraCollection" : 29,
+        "naraCollection" : 23,
         "presidentialLibrary" : 179,
+        "subjectNumericFile" : 6,
         "unrecognized" : 2
       },
       "decade" : 1970,
@@ -5102,8 +5169,9 @@
         "intelligence" : 16,
         "lotFile" : 1,
         "namedFileSeries" : 1,
-        "naraCollection" : 21,
+        "naraCollection" : 18,
         "presidentialLibrary" : 161,
+        "subjectNumericFile" : 3,
         "unrecognized" : 2
       },
       "decade" : 1970,
@@ -5129,8 +5197,9 @@
         "centralForeignPolicyFile" : 2,
         "intelligence" : 17,
         "lotFile" : 2,
-        "naraCollection" : 101,
+        "naraCollection" : 41,
         "presidentialLibrary" : 212,
+        "subjectNumericFile" : 60,
         "unrecognized" : 2
       },
       "decade" : 1970,
@@ -5168,9 +5237,10 @@
         "intelligence" : 12,
         "lotFile" : 22,
         "namedFileSeries" : 8,
-        "naraCollection" : 47,
+        "naraCollection" : 45,
         "presidentialLibrary" : 109,
         "previouslyPublished" : 2,
+        "subjectNumericFile" : 2,
         "unrecognized" : 5
       },
       "decade" : 1970,
@@ -5182,9 +5252,10 @@
         "centralForeignPolicyFile" : 15,
         "intelligence" : 1,
         "lotFile" : 2,
-        "naraCollection" : 59,
+        "naraCollection" : 54,
         "presidentialLibrary" : 217,
-        "previouslyPublished" : 2
+        "previouslyPublished" : 2,
+        "subjectNumericFile" : 5
       },
       "decade" : 1970,
       "totalNotes" : 296,
@@ -5196,8 +5267,9 @@
         "intelligence" : 1,
         "lotFile" : 22,
         "namedFileSeries" : 10,
-        "naraCollection" : 78,
-        "presidentialLibrary" : 211
+        "naraCollection" : 11,
+        "presidentialLibrary" : 211,
+        "subjectNumericFile" : 67
       },
       "decade" : 1970,
       "totalNotes" : 323,
@@ -5207,8 +5279,9 @@
       "counts" : {
         "intelligence" : 8,
         "namedFileSeries" : 4,
-        "naraCollection" : 58,
+        "naraCollection" : 24,
         "presidentialLibrary" : 261,
+        "subjectNumericFile" : 34,
         "unrecognized" : 7
       },
       "decade" : 1970,
@@ -5217,8 +5290,8 @@
     },
     {
       "counts" : {
-        "naraCollection" : 1,
         "presidentialLibrary" : 68,
+        "subjectNumericFile" : 1,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -5227,12 +5300,12 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 3,
         "foreignArchive" : 1,
         "lotFile" : 16,
-        "naraCollection" : 245,
+        "naraCollection" : 15,
         "presidentialLibrary" : 178,
-        "previouslyPublished" : 1
+        "previouslyPublished" : 1,
+        "subjectNumericFile" : 233
       },
       "decade" : 1970,
       "totalNotes" : 444,
@@ -5243,9 +5316,10 @@
         "foreignArchive" : 1,
         "intelligence" : 1,
         "namedFileSeries" : 2,
-        "naraCollection" : 127,
+        "naraCollection" : 46,
         "presidentialLibrary" : 201,
         "previouslyPublished" : 16,
+        "subjectNumericFile" : 81,
         "unrecognized" : 5
       },
       "decade" : 1970,
@@ -5257,8 +5331,9 @@
         "centralForeignPolicyFile" : 82,
         "intelligence" : 8,
         "lotFile" : 28,
-        "naraCollection" : 45,
-        "presidentialLibrary" : 101
+        "naraCollection" : 27,
+        "presidentialLibrary" : 101,
+        "subjectNumericFile" : 18
       },
       "decade" : 1970,
       "totalNotes" : 264,
@@ -5268,8 +5343,9 @@
       "counts" : {
         "intelligence" : 17,
         "namedFileSeries" : 3,
-        "naraCollection" : 225,
+        "naraCollection" : 31,
         "presidentialLibrary" : 84,
+        "subjectNumericFile" : 194,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -5281,8 +5357,9 @@
         "foreignArchive" : 2,
         "intelligence" : 13,
         "namedFileSeries" : 4,
-        "naraCollection" : 144,
+        "naraCollection" : 31,
         "presidentialLibrary" : 163,
+        "subjectNumericFile" : 113,
         "unrecognized" : 58
       },
       "decade" : 1970,
@@ -5293,8 +5370,9 @@
       "counts" : {
         "intelligence" : 13,
         "namedFileSeries" : 8,
-        "naraCollection" : 101,
+        "naraCollection" : 12,
         "presidentialLibrary" : 41,
+        "subjectNumericFile" : 89,
         "unrecognized" : 22
       },
       "decade" : 1970,
@@ -5307,8 +5385,9 @@
         "intelligence" : 5,
         "lotFile" : 45,
         "namedFileSeries" : 5,
-        "naraCollection" : 114,
+        "naraCollection" : 88,
         "presidentialLibrary" : 107,
+        "subjectNumericFile" : 26,
         "unrecognized" : 22
       },
       "decade" : 1970,
@@ -5320,8 +5399,9 @@
         "intelligence" : 7,
         "lotFile" : 16,
         "namedFileSeries" : 8,
-        "naraCollection" : 237,
+        "naraCollection" : 24,
         "presidentialLibrary" : 165,
+        "subjectNumericFile" : 213,
         "unrecognized" : 22
       },
       "decade" : 1970,
@@ -5330,12 +5410,13 @@
     },
     {
       "counts" : {
-        "centralForeignPolicyFile" : 82,
+        "centralForeignPolicyFile" : 80,
         "intelligence" : 11,
         "lotFile" : 48,
-        "naraCollection" : 44,
+        "naraCollection" : 16,
         "presidentialLibrary" : 78,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 30,
         "unrecognized" : 52
       },
       "decade" : 1970,
@@ -5362,13 +5443,13 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 1,
         "foreignArchive" : 2,
         "intelligence" : 35,
         "lotFile" : 13,
         "namedFileSeries" : 25,
-        "naraCollection" : 222,
+        "naraCollection" : 34,
         "presidentialLibrary" : 376,
+        "subjectNumericFile" : 189,
         "unrecognized" : 16
       },
       "decade" : 1970,
@@ -5397,11 +5478,12 @@
     },
     {
       "counts" : {
-        "centralForeignPolicyFile" : 69,
+        "centralForeignPolicyFile" : 68,
         "intelligence" : 17,
-        "naraCollection" : 62,
+        "naraCollection" : 56,
         "presidentialLibrary" : 266,
         "previouslyPublished" : 1,
+        "subjectNumericFile" : 7,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -5410,8 +5492,8 @@
     },
     {
       "counts" : {
-        "naraCollection" : 10,
-        "presidentialLibrary" : 165
+        "presidentialLibrary" : 165,
+        "subjectNumericFile" : 10
       },
       "decade" : 1970,
       "totalNotes" : 175,
@@ -5422,8 +5504,9 @@
         "centralForeignPolicyFile" : 107,
         "intelligence" : 3,
         "lotFile" : 25,
-        "naraCollection" : 14,
-        "presidentialLibrary" : 41
+        "naraCollection" : 4,
+        "presidentialLibrary" : 41,
+        "subjectNumericFile" : 10
       },
       "decade" : 1970,
       "totalNotes" : 190,
@@ -5441,11 +5524,12 @@
     },
     {
       "counts" : {
-        "centralForeignPolicyFile" : 10,
+        "centralForeignPolicyFile" : 9,
         "intelligence" : 5,
         "namedFileSeries" : 1,
-        "naraCollection" : 22,
+        "naraCollection" : 14,
         "presidentialLibrary" : 66,
+        "subjectNumericFile" : 9,
         "unrecognized" : 1
       },
       "decade" : 1970,
@@ -6020,6 +6104,7 @@
   ],
   "categories" : [
     "centralDecimalFile",
+    "subjectNumericFile",
     "centralForeignPolicyFile",
     "lotFile",
     "presidentialLibrary",
@@ -6030,7 +6115,7 @@
     "previouslyPublished",
     "unrecognized"
   ],
-  "generated" : "2026-10-01",
+  "generated" : "2026-10-02",
   "schemaVersion" : 2,
   "totalSourceNotes" : 269242,
   "volumesCovered" : 523
