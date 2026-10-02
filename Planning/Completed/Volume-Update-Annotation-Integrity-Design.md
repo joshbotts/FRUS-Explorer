@@ -1,7 +1,7 @@
 # Volume updates and annotation integrity — a design
 
 **Status: SHIPPED, and archived here on 2026-10-01.** Every phase is in the app: P1 (#1179), P2
-(#1180), P3a (#1181) and the whole P3b sequence (#1182–#1187), as §8.2 records. Three things in
+(#1180), P3a (#1181) and the whole P3b sequence (#1182–#1189), as §8.2 records. Three things in
 the text below were stale when it was archived and are corrected in place: this line (it read
 "design"), §5.2's banner ("PR pending" — #1183 merged), and §8.2's Q-9 row (the `index_version`
 column it deferred shipped in #1233). What it left open is carried by the live plan of record: Q-2
@@ -516,5 +516,5 @@ it is corrected here.
 
 *Document history*
 *1.0 — 2026-09-02: written against `b142381`, answering `New-Volume-Release-Plan.md` §13.*
-*1.2 — 2026-10-01: archived as shipped; the status line, §5.2's banner and the Q-9 row corrected.*
 *1.1 — 2026-09-03: P1 shipped (#1179); Q-1 measured and answered. One design premise corrected in the shipping: the vanished stamp does not need to run *before* the cache delete, because the revision row lives in its own table and survives it — the ordering is kept for legibility, not correctness.*
+*1.2 — 2026-10-01: archived as shipped; the status line, §5.2's banner and the Q-9 row corrected.*

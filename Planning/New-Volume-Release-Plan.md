@@ -96,7 +96,7 @@ not a discovery. See D-4.
 | `manifest.json` | `ManifestGenerator` (needs `GITHUB_TOKEN`) | The gate. Defines the shippable set for every generator below. Sorted by `volumeId` — see §5. |
 | `volume-sources-index.json` | `VolumeSourcesIndexGenerator` | Corpus front-matter Sources + offline lot resolution against `central-files-index.json`. Needs `CATALOG_API_KEY` only if the new volume names lots the bundle cannot answer. |
 | `collection-authority.json` (+ report) | `CollectionAuthorityGenerator -c release` | Re-clusters the whole cross-volume authority. **Ids can move** — #696's `president's `→`presidential ` fold once killed 28 collection ids covering 2,040 documents. Everything downstream must be rebuilt from the *new* authority, never from a stale export. |
-| `collection-usage-index.json` | `CollectionUsageIndexGenerator -c release` | Reads the authority. 645 KB today. |
+| `collection-usage-index.json` | `CollectionUsageIndexGenerator -c release` | Reads the authority. 645,052 bytes today (630 KiB, the figure `CLAUDE.md` gives as "630KB"). |
 | `external-citation-index.json` | `ExternalCitationIndexGenerator -c release` | Reads the authority **and** `decimal-class-labels.json`. |
 | `provenance-flow-index.json` | `ProvenanceFlowIndexGenerator -c release` | Reads the authority. |
 | `resolved-edge-index.json` | `ResolvedEdgeIndexGenerator -c release` | **Changes for existing volumes too**: cross-volume citations *into* the new volume become resolvable, and the new volume's own outbound citations add inbound edges to documents in volumes already shipped. |
@@ -128,7 +128,7 @@ bumped in the same commit. That forces a one-time re-consolidation on every devi
 `curated-lot-resolutions.json`, `curated-library-resolutions.json`, `decimal-class-labels.json`,
 and the two this list did not carry until 2026-10-01: `accession-series-index.json` (#1203; read
 from the record-group harvest, and nothing in the app reads it) and `subject-numeric-labels.json`
-(#1211; parsed from the Department's 1963 and 1965 handbooks, with its reach floors measured
+(#1251; parsed from the Department's 1963 and 1965 handbooks, with its reach floors measured
 against `collection-usage-index.json`). See §6.
 
 **Two cross-tier dependencies a regeneration must respect.** `external-citation-index.json`

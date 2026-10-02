@@ -63,10 +63,13 @@ Read-mode chevrons at rest and *Include front matter* changing a result set (#91
 departures from the M-4 design that the brief left reversible — a fixed token order, and a Type
 token on a fresh window when the Settings default is narrower than All.
 
-**The screenshot ledger (§1a) is behind the app.** #1081's sweep filled both manuals' slots (PR
-#1355, 2026-09-23), but the build-48 fixes and the build-49 wave have reshaped chrome since
-without adding a row to `Docs/screenshots/README.md`, and that file's own notes still say build 48
-does not draw two things it does (#1377's Mac packet buttons, #1372's ranking labels). Three
+**The captures (§1a) are behind the app.** #1081's sweep filled both manuals' slots (PR #1355,
+2026-09-23), and the build-48 fixes and the build-49 wave have reshaped chrome since. No capture
+has been retaken. `Docs/screenshots/README.md` lists what that left: its "Stale after build 48
+(Mac)" section, and, since 2026-10-01, a "Not re-checked after the build-49 wave" section, which
+is a list of candidates drawn from what each lane changed, with one capture measured. One of its
+capture notes still explains a choice by a defect build 48 fixed: `crossref-analytics` shows only
+the heat matrix "because both rankings carried fallback labels" (#1372, fixed in PR #1396). Three
 `[SCREENSHOT` placeholders also remain in the manuals. All of it is the owner's capture lane and is
 listed in the plan of record's §4.
 

@@ -448,7 +448,7 @@ The audit found **714 items**. After the skeptics' corrections: 157 done, **362 
   - by-eye checks listed in the build-48 PRs (#1486, #1490, #1501, #1519; Mac hover; iPad Stage Manager);
   - the Topics lens on a physical iOS 27 device;
   - confirming the dSYM warning is gone;
-  - App Store Connect: the EULA, the privacy label, the listing (its figures predate vol. XVI);
+  - App Store Connect: the EULA, the privacy label, the listing (~~its figures predate vol. XVI~~ `Store-Listing-Draft.md` was re-measured at 553 volumes by lane PLAN on 2026-10-01; three sentences of its description still wait on your wording, under its "Open before paste");
   - filming and marketing plates (Visual-Marketing-Plan steps 5, 10, 12, 13, 15 and 16).
 - **Designed but unbuilt (recommend parking):**
   - the OS-27 App Intents / IndexedEntity assessment (now unblocked by Xcode 27);

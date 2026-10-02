@@ -239,7 +239,7 @@ of UUIDs, be handed a verified and consentfully-stripped database in one action,
 weights the app validated under the prompt the artifact publishes, rerank the whole series, cite a
 run reproducibly, and emit a link that opens the rendered document.
 
-**L-8 was assessed and refused.** `MCP-Server-Assessment-2026-08-31.md` carries the reasoning; the
+**L-8 was assessed and refused.** `Completed/MCP-Server-Assessment-2026-08-31.md` carries the reasoning; the
 short form is that the gate did its job. Measured against the baseline the other seven rows built —
 rather than against the folklore L-8 was scoped in — an MCP server would have been **the first
 artifact in this wave that works only for users of MCP-capable clients**, narrowing the audience

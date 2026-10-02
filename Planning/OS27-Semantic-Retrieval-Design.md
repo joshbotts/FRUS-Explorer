@@ -182,7 +182,7 @@ Embedding 250k+ documents on-device is the largest unknown here and the most lik
 > rescaling of the per-seed cosine sum `ProjectLeadsAggregator` already forms — the full
 > 314,483-row ordering is identical at k=3 and k=40 (max residual 2.1e-14). "Near the project's
 > thematic centre rather than near any single seed" describes summing per-seed similarity, which
-> is what ships. See `Plan-Of-Record-2026-09-06.md` (S-2) for the re-scoped row.
+> is what ships. See `Completed/Plan-Of-Record-2026-09-06.md` (S-2) for the re-scoped row.
 
 **The catch:** a centroid query destroys per-seed attribution, and `contributingSeedKeys` exists precisely to power the "related to N of your documents" affordance. So the shape is **centroid for generation, per-seed cosine for attribution** — retrieve against the centroid, then batch-score the bounded result set per seed to repopulate `contributingSeedKeys`. Which is exactly the #308 §6.2 generator/scorer split, reused.
 

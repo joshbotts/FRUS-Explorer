@@ -111,7 +111,7 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
   - **The vol. XVI ingest**: `Release-frus1981-88v16.md` (the run record; shipped in build 47,
     corrections absorbed 2026-09-19) and `Phase-D-on-the-Air.md` (the executed semantic runbook).
     The runbook they executed, `../New-Volume-Release-Plan.md`, stays live.
-  - **Shipped designs**: `Volume-Update-Annotation-Integrity-Design.md` (R-5, P1–P3b, #1179–#1187;
+  - **Shipped designs**: `Volume-Update-Annotation-Integrity-Design.md` (R-5, P1–P3b, #1179–#1189;
     source and tests cite it by title), `Archive-Visit-Plan-Design.md` and its
     `Archive-Visit-Design-Handoff/` (Phases 0–4; cited by title from `TripPacket/` and
     `Models/`), and `Provenance-Tiers-Development-Plan.md` (wave PV, #1210–#1219;
@@ -124,9 +124,17 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
   - **A record written directly here**: `Mac-Check-2026-09-25.md` — the by-eye results for twelve
     build-48 PRs, which had lived only in a session folder. Its header lists the five checks that
     are still the owner's to make by hand.
-  - Some dated records still cite the old paths of these files (the #234 feasibility assessment
-    and its generator script name `Planning/Plan-Of-Record-2026-09-06.md`; `DEVELOPMENT-PLAN.md`
-    names several). They were left as written.
+  - **Pointers to these files.** Every live document at the `Planning/` root that named one as a
+    sibling now names it under `Completed/` (the marketing plan, the agentic-loop plan, the
+    guide-revisions record, the vector design, the OS-27 sketch and the W-15 assessment), and so
+    does `Plan-Of-Record-2026-08-23.md`'s status line here. The live plan of record names them
+    bare in its P5 decision and its §4a, both of which say they are archived. Dated records were
+    left as written, with the path they had on their day: the #234 feasibility assessment (two
+    sites) and its generator script, which name `Planning/Plan-Of-Record-2026-09-06.md` and
+    `-08-28.md`; `DEVELOPMENT-PLAN.md`'s earlier entries; and five sites inside four archived
+    documents that give a `Planning/` root path (`Plan-Of-Record-2026-08-23.md` twice,
+    `Plan-Of-Record-2026-09-06.md`, and the Archive Visit hand-off's `README.md` and
+    `PROVENANCE.md`).
 
 **Deliberately NOT here** (live at `Planning/` root — verified 2026-10-01, by listing the
 directory):

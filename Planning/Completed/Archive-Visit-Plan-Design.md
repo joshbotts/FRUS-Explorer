@@ -1,10 +1,11 @@
 # Archive Visits — the archival research plan (design v3, 2026-08-26)
 
 **Archived here on 2026-10-01: built.** Phases 0–4 are struck as shipped in §6, and the three
-record types reached Production with the tenth CloudKit promotion (build 47). Two things remain
-and are carried by the live plan of record: the "Seeded from …" caption on the plan list, which
-needs a stored field the plan has not got, and the per-release repository link check
-(`Scripts/check_repository_links.py --stamp`), which is on the release list.
+record types reached Production with the eighth CloudKit promotion (2026-08-26, build 43), the
+reserved W-4+W-5 block. Two things remain and are carried by the live plan of record: the
+"Seeded from …" caption on the plan list, which needs a stored field the plan has not got, and
+the per-release repository link check (`Scripts/check_repository_links.py --stamp`), which is on
+the release list.
 
 **Status when written: DECIDED — every §7 decision is answered; ready to execute at Phase 0.** v1 answered the owner's first direction
 (seeding surfaces, per-document source/references choice, persistence). **v2 revises it against

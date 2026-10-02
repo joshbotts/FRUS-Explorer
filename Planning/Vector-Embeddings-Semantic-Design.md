@@ -367,7 +367,7 @@ sharpenings from the lexical assessment's scar tissue:
    > semantic member. Building the scoring pass is inert at the shipped weight of 0 — the ranker
    > checks the weight *before* the score — and it cannot reach the 45,030 empty-list documents
    > that justify the axis, since those have no other-generator candidates to re-score. Recorded
-   > as S-1 in `Plan-Of-Record-2026-09-06.md`, with the three implementation constraints that
+   > as S-1 in `Completed/Plan-Of-Record-2026-09-06.md`, with the three implementation constraints that
    > should ride with it whenever it is taken.
 3. **The "why related" chip.** Cosine explains nothing, and an unexplained row reads as noise
    (OS-27 §5.2's open question). Recommended answer: compute shared-distinctive-terms **at render
@@ -397,7 +397,7 @@ V-0 pre-1900 gate, not on Cold War telegrams, which everything retrieves well.
 > The real difference is only that `perSeedRelatedLimit` truncates today, and removing that
 > truncation is measurably worse on a heterogeneous project. Funnel recall also degrades with seed
 > count: 10.00/10 at k=1 against 6.33/10 at k=40. Full evidence and the re-scoped row in
-> `Plan-Of-Record-2026-09-06.md` (S-2). The off-index tier below, (a), **shipped** at PR #1235.
+> `Completed/Plan-Of-Record-2026-09-06.md` (S-2). The off-index tier below, (a), **shipped** at PR #1235.
 
 Centroid of seed vectors (seedCap 40) → Tier 1/2 top-N → per-seed cosine on the bounded result to
 repopulate `contributingSeedKeys` — generation by centroid, attribution per seed, the §6.2

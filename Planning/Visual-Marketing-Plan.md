@@ -1011,7 +1011,7 @@ item: M-1's interpolator is mandated as "a named type with its own test" — two
 
 ### The M-number collision — for anyone editing either document
 
-**`Plan-Of-Record-2026-08-28.md` §2a and this document's §3.2 both use M-numbers, for different
+**`Completed/Plan-Of-Record-2026-08-28.md` §2a and this document's §3.2 both use M-numbers, for different
 rows.** §2a's M-1/M-2/M-3 are *the store listing / the five export gaps / in-app motion*; §3.2's
 M-1..M-6 are *camera transit / reduce-motion contract / lens dip / splash drift / seeded lens /
 decade accumulation*. Always write "plan §3.2's M-1" when crossing between them. The handoff did not
