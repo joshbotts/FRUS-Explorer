@@ -152,9 +152,9 @@ public enum SemanticVectorsRunner {
     /// ## Nothing is written until every refusal that can be made first has been made
     /// In order: the shipping width, the model pin, `EXPECT_DIGEST`, the manifest, and — when
     /// `LAYOUT_DIR/layout.bin` exists, so a map pass will follow — everything that pass can refuse
-    /// on: the store's volume heads, `SemanticMapPacker.preflight` (#1439), and the manifest's
-    /// coverage dates (`loadVolumeEras`), which the map's era histograms read and which decode a
-    /// stricter shape than the volume list does. Only then are the output directories created.
+    /// on: the manifest's coverage dates (`loadVolumeEras`), which the map's era histograms read
+    /// and which decode a stricter shape than the volume list does; then the store's volume heads;
+    /// then `SemanticMapPacker.preflight` (#1439). Only then are the output directories created.
     /// Before #1439 the map pass made its refusals after the vector artifacts were on disk, which
     /// left new vectors beside the previous map. `RunWriteOrderTests` pins the order in this body:
     /// both calls come before every write, and after the first write the map block makes no call

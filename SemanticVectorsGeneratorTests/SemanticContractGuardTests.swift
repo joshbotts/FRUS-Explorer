@@ -152,10 +152,10 @@ struct SemanticContractGuardTests {
 /// previous `semantic-map*` ones. `run` now makes every one of those refusals first, through
 /// `SemanticMapPacker.preflight`, when `LAYOUT_DIR/layout.bin` exists.
 ///
-/// Each test drives the real `run(environment:languageAnalysis:)` over the two-kilobyte store and
-/// a six-byte layout, and requires the refusal AND an output directory that was never created. One
-/// fixture per refusal: with the `preflight` call removed, every one of them fails, because the
-/// run writes the vectors before the map pass stops it (measured 2026-10-01, macOS host).
+/// Each test drives the real `run(environment:languageAnalysis:)` over the two-kilobyte store and a
+/// six-byte layout, and requires the refusal AND an output directory never created. One fixture per
+/// refusal, failing when its own check leaves the pre-write block (measured 2026-10-01, macOS host):
+/// `preflight` for six, the heads loop for the missing volume, `loadVolumeEras` for the `dateRange`.
 ///
 /// Not serialized, and it needs no `setenv`: the environment is passed in.
 ///
