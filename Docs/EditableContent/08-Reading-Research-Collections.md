@@ -1675,14 +1675,14 @@ The map artifact stores positions and region membership only — no document tit
 <!-- END SOURCE: semanticMap.export.caveat.identity -->
 
 #### Frame: rendered at %1$lld × %2$lld points, centered on grid…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 236–237 | key: semanticMap.export.caveat.frame %lld %lld %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 237–238 | key: semanticMap.export.caveat.frame %lld %lld %lld %lld %@ -->
 
 Frame: rendered at %1$lld × %2$lld points, centered on grid (%3$lld, %4$lld) — %5$@. Those coordinates are the artifact’s own grid, recorded so this exact view can be restored; they are not a measurement, and the projection has no axis, no scale and no origin.
 
 <!-- END SOURCE: semanticMap.export.caveat.frame %lld %lld %lld %lld %@ -->
 
 #### Region names shown: %1$lld of %2$lld, chosen to fit this…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 244–245 | key: semanticMap.export.caveat.frame.labels %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.frameCaveats | lines: 245–246 | key: semanticMap.export.caveat.frame.labels %lld %lld -->
 
 Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app’s window is a different shape and re-runs the same rule against it, so a reader at the screen sees a different set of names — a region named here can be unnamed there, and the reverse.
 
@@ -2510,7 +2510,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: collection.import.error.version -->
 
 #### %@, footnote (no printed number recorded).
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1013–1014 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1021–1022 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 %@, footnote (no printed number recorded).
 
@@ -2519,7 +2519,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 #### %@, footnote %@.
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1017–1018 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1025–1026 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 %@, footnote %@.
 

@@ -16,7 +16,7 @@ import SwiftUI
 /// coverage block, never copied from doc comments (several in-code figures are stale).
 ///
 /// ## The settled shape (owner decision, 2026-08-22): SIBLING LENSES, never nested
-/// The axis offers two ways in side by side — ten provenance-type doors drilling straight
+/// The axis offers two ways in side by side — eleven provenance-type doors drilling straight
 /// to volume lists, and the collection index (grouped by repository, record group, or not at all) — because **no shipped
 /// data maps a collection to a provenance category**. The join was measured many-to-many
 /// against the export sample (decimal-file parses land on `txt:` records 76×), the
@@ -57,7 +57,8 @@ enum ArchivesAxis {
         SourceProvenanceCategory(rawValue: slug)?.displayName ?? slug
     }
 
-    /// The ten doors, in the artifact's own display order, with live counts.
+    /// The doors, one per provenance category the artifact carries (eleven since #1543), in the
+    /// artifact's own display order, with live counts.
     ///
     /// - Parameter usage: The bundled usage index.
     /// - Returns: One door per category the artifact carries.
@@ -139,7 +140,7 @@ enum ArchivesAxis {
 
 // MARK: - ArchivesIndexView
 
-/// The Archives axis (#1051 B-5, A-9): two SIBLING lenses — the ten provenance-type
+/// The Archives axis (#1051 B-5, A-9): two SIBLING lenses — the eleven provenance-type
 /// doors, and the collection index (the shipped
 /// `CollectionBrowserView`, mounted through its B-5 `onSelect` seam so one list serves
 /// Source Explorer and Browse without a third being born).
@@ -337,8 +338,8 @@ struct ArchivesIndexView: View {
 
     // MARK: Arrangement
 
-    /// The controls for the lens on screen. Provenance Types has none: its ten doors are the
-    /// artifact's own display order, and there are only ten. Collections draws its controls INSIDE
+    /// The controls for the lens on screen. Provenance Types has none: its eleven doors are the
+    /// artifact's own display order, and there are only eleven. Collections draws its controls INSIDE
     /// `CollectionBrowserView`, which renders the same row in Source Explorer — one implementation for
     /// three hosts rather than three to drift apart.
     @ViewBuilder

@@ -126,8 +126,8 @@ public enum CollectionUsageIndexRunner {
 
             for note in notes {
                 let parsed = parser.parse(note.note)
-                byCategory[ProvenanceCategory.from(parsed).rawValue, default: [:]][volumeId,
-                                                                                  default: 0] += 1
+                byCategory[ProvenanceCategory.from(parsed, note: note.note).rawValue,
+                           default: [:]][volumeId, default: 0] += 1
                 if let record = authority.record(forParsed: parsed, note: note.note) {
                     byCollection[record.id, default: [:]][volumeId, default: 0] += 1
                     notesInACollection += 1
@@ -179,7 +179,7 @@ public enum CollectionUsageIndexRunner {
     /// Interns one accumulator into sorted ``CollectionUsageIndex/UsageRow`` values.
     ///
     /// Keys with no documents are dropped rather than stored empty — the category vocabulary is
-    /// fixed at ten, and a category the corpus never uses should not occupy a row.
+    /// fixed at eleven, and a category the corpus never uses should not occupy a row.
     private static func rows(_ accumulator: [String: [String: Int]], keys: [String],
                              volumeIndex: [String: Int]) -> [CollectionUsageIndex.UsageRow] {
         keys.enumerated().compactMap { keyIndex, key in

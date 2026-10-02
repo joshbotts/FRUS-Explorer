@@ -52,9 +52,13 @@ enum ArchivesClassAxis {
         /// First and last year the schedule governs.
         let span: ClosedRange<Int>
 
-        /// Section heading — `Decimal file · 1910–1949`.
+        /// Section heading — `Decimal file · 1910–1949`. A schedule that governs one year prints
+        /// it once: the 1963 handbook's is `Subject-numeric file · 1963`, which read
+        /// `1963–1963` until #1543.
         var title: String {
-            let years = "\(span.lowerBound)–\(span.upperBound)"
+            let years = span.lowerBound == span.upperBound
+                ? "\(span.lowerBound)"
+                : "\(span.lowerBound)–\(span.upperBound)"
             switch system {
             case .decimal:
                 return String(format: String(localized: "browser.archives.era.decimal %@",

@@ -159,6 +159,51 @@ struct ArchivalLibraryQueryTests {
         }
     }
 
+    /// #1543: a Subject-Numeric citation worded through the National Archives used to be stored
+    /// `structured`, so Your Library listed its block of years as a collection ("Central Files
+    /// 1970–73"). It is a central-file form now, and the collections query takes only
+    /// `structured`, `lot_file` and `named_series` rows. The office file printed under the same
+    /// heading is not the file, stays `structured`, and is still listed.
+    @Test("A National-Archives-led Subject-Numeric citation is not a collection group (#1543)")
+    func subjectNumericBlocksAreNotCollections() async throws {
+        try await withIndex([
+            (id: "frus1969-76v01", notes: [
+                // frus1969-76ve07/d110
+                (id: "d1", note: "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret. Drafted on January 26 by Quainton."),
+                // frus1964-68v14/d93
+                (id: "d2", note: "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis."),
+                // frus1961-63v25/d494 — a decimal number worded the same way.
+                (id: "d3", note: "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."),
+                // frus1969-76ve08/d15 — Kissinger's office records under the heading.
+                (id: "d4", note: "Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis."),
+            ]),
+        ]) { pipeline in
+            let groups = try await pipeline.archivalLibraryGroups()
+            let byForm = Dictionary(grouping: groups, by: \.citationEra)
+                .mapValues { $0.reduce(0) { $0 + $1.documentCount } }
+            #expect(byForm == ["subject_numeric": 2, "decimal": 1, "structured": 1],
+                    "the four notes were stored as \(byForm)")
+            #expect(groups.filter { $0.citationEra != "structured" }
+                .allSatisfy { $0.repository == "National Archives" },
+                    "a central-file row keeps the repository its wording gave it")
+
+            let collections = try await pipeline.archivalLibraryCollectionGroups()
+            #expect(collections.reduce(0) { $0 + $1.documentCount } == 1, """
+                The collection query returned \(collections.map { $0.seriesName ?? "nil" }). Only \
+                the office file is a collection; the two Subject-Numeric notes and the decimal \
+                number are central files.
+                """)
+            #expect(collections.first?.seriesName?.hasPrefix("Central Files 1970–73") == true)
+
+            let profile = ArchivalLibraryProfile.make(
+                groups: groups, collectionGroups: collections,
+                coverage: ["frus1969-76v01": ArchivalVolumeCoverage(firstYear: 1969, lastYear: 1972)],
+                authority: nil)
+            #expect(profile.centralFileNoteCount == 3)
+            #expect(profile.composition.first?.category == .subjectNumericFile)
+        }
+    }
+
     @Test("The library total is source notes, never documents")
     func documentsWithoutNotesAreNotCounted() async throws {
         // The distinction the intro line and the footer both rest on: an indexed document with
@@ -262,7 +307,7 @@ struct ArchivalAnalyticsEntryPointTests {
 
     @Test("The SA-3 dashboard points at it, on both platforms, and not mid-onboarding")
     func seriesDashboardCrossLink() throws {
-        // The #765 D-1 rider: the provenance dashboard's ten categories are the coarse view of
+        // The #765 D-1 rider: the provenance dashboard's eleven categories are the coarse view of
         // what Archival Analytics names collection by collection.
         let source = try Self.source("SeriesAnalytics/SourceProvenanceDashboard.swift")
         #expect(source.contains("openWindow.fronting(id: \"frus.archivalAnalytics\")"),
@@ -368,7 +413,8 @@ struct ArchivalAnalyticsEntryPointTests {
             """)
 
         // The three sentences the card owes its reader.
-        #expect(card.contains("four custodians, not the ten categories above"))
+        #expect(card.contains("four custodians, not the eleven categories above"))
+        #expect(card.contains("series.provenance.topCollections.method.v4 %lld %lld"))
         // R-3: both numbers are DERIVED now, never literals. This pin used to assert
         // "reaches 356 of them" as the measured value — and the shipped authority had named
         // 365 since its 2026-08-19 re-clustering. A literal pinned by a source scan is a number

@@ -18,58 +18,71 @@ struct ProvenanceCategoryMappingTests {
 
     @Test("centralFiles → centralDecimalFile")
     func centralFiles() {
-        #expect(ProvenanceCategory.from(.centralFiles(recordGroup: "RG-59", fileIdentifier: "1")) == .centralDecimalFile)
+        #expect(ProvenanceCategory.from(.centralFiles(recordGroup: "RG-59", fileIdentifier: "1"), note: "") == .centralDecimalFile)
     }
 
     @Test("cfpfFile → centralForeignPolicyFile")
     func cfpf() {
-        #expect(ProvenanceCategory.from(.cfpfFile(fileIdentifier: "P840114–1808")) == .centralForeignPolicyFile)
+        #expect(ProvenanceCategory.from(.cfpfFile(fileIdentifier: "P840114–1808"), note: "") == .centralForeignPolicyFile)
     }
 
     @Test("lotFile → lotFile")
     func lot() {
-        #expect(ProvenanceCategory.from(.lotFile(recordGroup: "59", lotNumber: "60 D 627", fileIdentifier: nil)) == .lotFile)
+        #expect(ProvenanceCategory.from(.lotFile(recordGroup: "59", lotNumber: "60 D 627", fileIdentifier: nil), note: "") == .lotFile)
     }
 
     @Test("presidentialLibrary → presidentialLibrary")
     func presidential() {
-        #expect(ProvenanceCategory.from(.presidentialLibrary(library: "Eisenhower Library", collection: "Dulles Papers", fileIdentifier: nil)) == .presidentialLibrary)
+        #expect(ProvenanceCategory.from(.presidentialLibrary(library: "Eisenhower Library", collection: "Dulles Papers", fileIdentifier: nil), note: "") == .presidentialLibrary)
     }
 
     @Test("naraCollection → naraCollection")
     func nara() {
-        #expect(ProvenanceCategory.from(.naraCollection(recordGroup: "59", series: nil, lotFile: nil, box: nil)) == .naraCollection)
+        #expect(ProvenanceCategory.from(.naraCollection(recordGroup: "59", series: nil, lotFile: nil, box: nil), note: "") == .naraCollection)
     }
 
     @Test("ciaCollection → intelligence")
     func cia() {
-        #expect(ProvenanceCategory.from(.ciaCollection(jobNumber: "80-01795R", box: nil, description: "CIA")) == .intelligence)
+        #expect(ProvenanceCategory.from(.ciaCollection(jobNumber: "80-01795R", box: nil, description: "CIA"), note: "") == .intelligence)
     }
 
     @Test("namedFileSeries → namedFileSeries")
     func named() {
-        #expect(ProvenanceCategory.from(.namedFileSeries(seriesName: "IO Files", fileIdentifier: nil)) == .namedFileSeries)
+        #expect(ProvenanceCategory.from(.namedFileSeries(seriesName: "IO Files", fileIdentifier: nil), note: "") == .namedFileSeries)
     }
 
     @Test("foreignGovernmentArchive → foreignArchive")
     func foreign() {
-        #expect(ProvenanceCategory.from(.foreignGovernmentArchive(description: "PRO")) == .foreignArchive)
+        #expect(ProvenanceCategory.from(.foreignGovernmentArchive(description: "PRO"), note: "") == .foreignArchive)
     }
 
     @Test("previouslyPublished → previouslyPublished")
     func published() {
-        #expect(ProvenanceCategory.from(.previouslyPublished(citation: "Treaty Series No. 762")) == .previouslyPublished)
+        #expect(ProvenanceCategory.from(.previouslyPublished(citation: "Treaty Series No. 762"), note: "") == .previouslyPublished)
     }
 
     @Test("unrecognized → unrecognized")
     func unrecognized() {
-        #expect(ProvenanceCategory.from(.unrecognized(rawText: "???")) == .unrecognized)
+        #expect(ProvenanceCategory.from(.unrecognized(rawText: "???"), note: "") == .unrecognized)
     }
 
     @Test("orderedCases covers every case exactly once")
     func orderedCasesComplete() {
         #expect(Set(ProvenanceCategory.orderedCases) == Set(ProvenanceCategory.allCases))
         #expect(ProvenanceCategory.orderedCases.count == ProvenanceCategory.allCases.count)
+    }
+
+    /// #1543: eleven categories, the Subject-Numeric File second. The declaration order is pinned
+    /// with the artifact order because the app's map lens colours by position in `allCases`.
+    @Test("There are eleven categories, in one order, with the Subject-Numeric File second")
+    func elevenCategoriesInOrder() {
+        #expect(ProvenanceCategory.orderedCases.count == 11)
+        #expect(ProvenanceCategory.orderedCases == ProvenanceCategory.allCases)
+        #expect(ProvenanceCategory.orderedCases.map(\.rawValue) == [
+            "centralDecimalFile", "subjectNumericFile", "centralForeignPolicyFile", "lotFile",
+            "presidentialLibrary", "naraCollection", "intelligence", "namedFileSeries",
+            "foreignArchive", "previouslyPublished", "unrecognized",
+        ])
     }
 }
 
@@ -79,7 +92,54 @@ struct ProvenanceCategoryMappingTests {
 struct PipelineTests {
 
     private func category(_ note: String) -> ProvenanceCategory {
-        ProvenanceCategory.from(SourceNoteParser().parse(note))
+        ProvenanceCategory.from(SourceNoteParser().parse(note), note: note)
+    }
+
+    // MARK: #1543 — a central-files citation is placed by its form
+
+    @Test("A Subject-Numeric citation is subjectNumericFile in either wording")
+    func subjectNumericBothWordings() {
+        // frus1964-68v01/d5 — Department-led; `.centralFiles` before #1543 made it centralDecimalFile.
+        #expect(category("Source: Department of State, Central Files, POL 27 VIET S. Secret.") == .subjectNumericFile)
+        // frus1964-68v14/d93 — National-Archives-led; `.naraCollection` made it naraCollection.
+        #expect(category("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.")
+                == .subjectNumericFile)
+        // frus1969-76ve09p2/d78 — cited under the Central Foreign Policy File's name.
+        #expect(category("Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential.")
+                == .subjectNumericFile)
+    }
+
+    @Test("A decimal number cited through the National Archives is centralDecimalFile")
+    func decimalThroughTheNationalArchives() {
+        // frus1961-63v25/d494
+        #expect(category("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.")
+                == .centralDecimalFile)
+        // frus1951-54Iran/d86 — a number the class grammar cannot read stays where it was.
+        #expect(category("Source: National Archives, RG 59, Central Files 1950–1954, 888. 10/7–1852. Top Secret; Priority; NIACT.")
+                == .naraCollection)
+    }
+
+    @Test("A film number and a Department-led decimal number keep their categories")
+    func unchangedCentralCategories() {
+        // The control: the form rule is running — the same heading over a Subject-Numeric file
+        // (frus1969-76ve07/d110) is placed by it — so what follows is kept by the rule, not by
+        // its absence.
+        #expect(category("Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret.")
+                == .subjectNumericFile)
+        // frus1969-76v22/d17
+        #expect(category("Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis.")
+                == .centralForeignPolicyFile)
+        // frus1969-76v31/d37 — by name alone.
+        #expect(category("Source: National Archives, RG 59, Central Foreign Policy Files. Secret; Limdis.")
+                == .centralForeignPolicyFile)
+        // frus1961-63v11/d301 — a decimal number dated March 1963.
+        #expect(category("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.")
+                == .centralDecimalFile)
+        // frus1958-60v05mSupp/co_d36 — no form at all: the v2 category.
+        #expect(category("Source: Department of State, Central Files. Secret; Official-Informal.") == .centralDecimalFile)
+        // frus1969-76ve08/d15 — an office file under the heading stays a NARA collection.
+        #expect(category("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis.")
+                == .naraCollection)
     }
 
     @Test("Decimal central-file note → centralDecimalFile")
@@ -294,6 +354,34 @@ struct VolumeBucketTests {
             Reversing the scan order changed the output order, so the artifact's determinism \
             depends on the directory listing rather than on the writer.
             """)
+    }
+
+    /// #1543, through the real scan: a volume's two Subject-Numeric notes — one worded through the
+    /// Department, one through the National Archives — land in the new slug's row, and the
+    /// decimal number cited through the National Archives lands with the decimal file.
+    @Test("A volume's Subject-Numeric notes are counted under subjectNumericFile")
+    func subjectNumericNotesGetTheirOwnRow() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("prov-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let file = try volume("frus1964-68v14", notes: [
+            "Source: Department of State, Central Files, POL 27 VIET S. Secret.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.",
+            "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential.",
+        ], in: root)
+        let index = SourceProvenanceIndexRunner
+            .build(xmls: [file], decadeByVolume: ["frus1964-68v14": 1960], generated: "2026-10-02").index
+        let bucket = try #require(index.byVolume?.first)
+        #expect(bucket.totalNotes == 4)
+        #expect(bucket.counts == ["subjectNumericFile": 2, "centralDecimalFile": 1,
+                                  "centralForeignPolicyFile": 1], """
+            Before #1543 these four notes were 1 centralDecimalFile, 2 naraCollection and 1 \
+            centralForeignPolicyFile. Got \(bucket.counts).
+            """)
+        #expect(index.categories.count == 11)
+        #expect(index.categories.firstIndex(of: "subjectNumericFile") == 1)
+        #expect(index.byDecade.first?.counts["subjectNumericFile"] == 2)
     }
 
     @Test("The artifact declares schema 2")

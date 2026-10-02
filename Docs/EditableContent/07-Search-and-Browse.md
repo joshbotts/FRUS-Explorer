@@ -1224,7 +1224,7 @@ A cluster is a grouping detected by an AI model that the corpus fell into on its
 <!-- Placeholder note: keep `\(coverage.noteCount)`, `\(coverage.volumesWithNotes)`,
      `\(coverage.volumesScanned)`, `\(percent)` and `\(noteless)` intact. The last sentence is the
      refusal — the noteless volumes, mostly the pre-1906 annuals, cannot appear on this axis. -->
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | lines: 85–86 | key: browser.archives.coverage -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | lines: 86–87 | key: browser.archives.coverage -->
 
 FRUS’s editors printed a source note under \(coverage.noteCount) documents across \(coverage.volumesWithNotes) of \(coverage.volumesScanned) volumes — the archival record this axis browses. About \(percent)% of those notes name an archival collection; most of the rest cite a State Department central-file number. \(noteless) volumes, mostly the pre-1906 annuals, print no notes and cannot appear here.
 
@@ -1537,28 +1537,28 @@ Record groups are the National Archives’ own divisions. Collections whose cita
 <!-- END SOURCE: browser.archives.collections.noRecordGroup -->
 
 #### \(…) volumes with documents drawn from \(…), largest count…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesAxis.spec | lines: 133–134 | key: browser.archives.drill.caption -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesAxis.spec | lines: 134–135 | key: browser.archives.drill.caption -->
 
 \(byVolume.count) volumes with documents drawn from \(name), largest count first. Percentages are each volume’s share of its own sourced documents — the notes printed under documents, not every document in the volume.
 
 <!-- END SOURCE: browser.archives.drill.caption -->
 
 #### Central-file classes, grouped by the filing schedule in…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.classesLens | lines: 386–396 | key: browser.archives.classes.caption -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.classesLens | lines: 387–397 | key: browser.archives.classes.caption -->
 
 Central-file classes, grouped by the filing schedule in force. A volume is counted in the era its coverage falls inside; one spanning two schedules is counted in neither, because the same number means different things on either side. Readings come from the Department’s own filing manuals. Each era lists every class its volumes’ source notes cite; by class number, it follows its own file — decimal numbers digit by digit, so 711.11 comes before 711.2, and subject-numeric designators by their numbers.
 
 <!-- END SOURCE: browser.archives.classes.caption -->
 
 #### About \(…)% of sourced documents name an archival…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.collectionsLens | lines: 538–539 | key: browser.archives.collections.ceiling -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.collectionsLens | lines: 539–540 | key: browser.archives.collections.ceiling -->
 
 About \(ArchivesAxis.collectionSharePercent(coverage: usage.coverage))% of sourced documents name an archival collection; the rest — mostly central-file citations — are under Provenance Types.
 
 <!-- END SOURCE: browser.archives.collections.ceiling -->
 
 #### Volumes citing %1$@ whose coverage falls inside %2$@.…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesClassAxis.swift | ArchivesClassAxis.spec | lines: 272–276 | key: browser.archives.class.caption %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesClassAxis.swift | ArchivesClassAxis.spec | lines: 276–280 | key: browser.archives.class.caption %@ %@ -->
 
 Volumes citing %1$@ whose coverage falls inside %2$@. Counted from document source notes.
 

@@ -168,7 +168,10 @@ struct ArchivalLibraryProfile: Sendable, Equatable {
             composition: composition,
             bands: bands,
             collections: ranked.collections,
+            // The three central filing systems together (#1543 added the Subject-Numeric File,
+            // whose notes were inside the other two categories' counts or listed as collections).
             centralFileNoteCount: (totals[.centralDecimalFile] ?? 0)
+                + (totals[.subjectNumericFile] ?? 0)
                 + (totals[.centralForeignPolicyFile] ?? 0),
             unresolvedCollectionNoteCount: ranked.unresolved)
     }

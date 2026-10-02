@@ -494,8 +494,17 @@ struct TripPacketModel: Equatable, Sendable {
         for group in built {
             let form: Target.Form
             switch group.category {
-            case .centralDecimalFile, .centralForeignPolicyFile:
-                form = group.id.hasPrefix("class|") ? .decimalClass : .raw
+            // The three central categories key three ways (`TripPacketBuilder.targetKey`): on the
+            // class, on the series for a row worded through the National Archives (#1543), and on
+            // the raw note when there is neither.
+            case .centralDecimalFile, .subjectNumericFile, .centralForeignPolicyFile:
+                if group.id.hasPrefix("class|") {
+                    form = .decimalClass
+                } else if group.id.hasPrefix("coll|") {
+                    form = .collection
+                } else {
+                    form = .raw
+                }
             case .lotFile: form = .lotFile
             case .unrecognized, nil: form = group.id.hasPrefix("r|") ? .raw : .collection
             default: form = .collection

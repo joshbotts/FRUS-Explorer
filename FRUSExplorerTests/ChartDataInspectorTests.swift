@@ -22,6 +22,8 @@ import Foundation
 ///   1.0 — Analytics SA (chart table inspector): initial implementation
 ///   1.1 — 2026-09-30: #1483 — the region tables' title and share column, and both provenance
 ///         tables' "Share of source notes"
+///   1.2 — 2026-10-02 (#1543, landing round 3): the provenance-mix table lists the categories
+///         with notes, from chart rows that now hold a zero row for every other category
 struct ChartDataInspectorTests {
 
     // MARK: - Fixtures
@@ -159,15 +161,18 @@ struct ChartDataInspectorTests {
             ]
         )
         let data = SourceProvenanceData(index: index)
+        // The chart's rows: every category, zero where it has no notes (#1543, landing round 3).
+        // The table lists the two with notes, as it did when the chart's rows were only those.
         let filtered = data.shareByDecade(in: 1900...1993)
-        #expect(filtered.count == 2)
+        #expect(filtered.count == SourceProvenanceCategory.ordered.count)
 
         let table = ChartInspectorAdapters.provenanceMixTable(filtered)
         // #1483: "Share of source notes", the chart's axis text under the same key.
         #expect(table.columns == ["Coverage decade", "Provenance", "Share of source notes"])
         #expect(ChartInspectorAdapters.compositionTable(data.overallComposition).columns
                 == ["Provenance", "Source notes", "Share of source notes"])
-        #expect(table.rows.count == filtered.count)
+        #expect(table.rows.count == 2)
+        #expect(table.rows.map { $0.cells[1] } == ["Central Decimal File", "Lot Files"])
         // Decade cell has no comma.
         #expect(table.rows.first?.cells.first == "1940")
         // Share cells are percents ending in "%".
@@ -175,6 +180,45 @@ struct ChartDataInspectorTests {
         #expect(shareCells.allSatisfy { $0.contains("%") })
         #expect(shareCells.contains("75.0%"))
         #expect(shareCells.contains("25.0%"))
+    }
+
+    /// The trend chart's rows give every category a point in every decade, zero where it has no
+    /// notes (#1543, landing round 3). The table and its CSV are built from the same rows and
+    /// must go on listing only the categories with notes: over the bundled index, the 65 lines
+    /// they had, and no "Subject-Numeric File, 1950, 0.0%".
+    @Test("Provenance mix table: a category with no notes in a decade has no line")
+    func provenanceMixListsOnlyCategoriesWithNotes() throws {
+        let url = try #require(Bundle.main.url(forResource: "source-provenance-index", withExtension: "json"))
+        let index = try JSONDecoder().decode(SourceProvenanceIndex.self, from: Data(contentsOf: url))
+        let data = SourceProvenanceData(index: index)
+        let rows = data.shareByDecade(in: 1861...1993, excluding: [])
+        #expect(rows.count == 99, "the chart's rows: 9 decades of 11 categories")
+
+        let table = ChartInspectorAdapters.provenanceMixTable(rows)
+        #expect(table.rows.count == 65)
+        var read = 0
+        for row in table.rows {
+            read += 1
+            let decade = try #require(index.byDecade.first { String($0.decade) == row.cells[0] })
+            let category = try #require(SourceProvenanceCategory.ordered.first { $0.displayName == row.cells[1] })
+            #expect(decade.count(for: category) > 0, "\(row.cells) is a line for a category with no notes")
+        }
+        #expect(read == 65)
+        #expect(table.rows.filter { $0.cells[1] == "Subject-Numeric File" }.map { $0.cells[0] } == ["1960", "1970"])
+        #expect(table.rows.filter { $0.cells[1] == "Central Foreign Policy File" }.map { $0.cells[0] } == ["1970", "1980"])
+
+        // Under the category filter, a decade left with no shown notes keeps its 0.0% lines, as it
+        // has since the filter shipped: hiding the decimal file empties no real decade, so the
+        // fixture is one decade of the decimal file alone.
+        let lone = SourceProvenanceData(index: SourceProvenanceIndex(
+            schemaVersion: 1, generated: "2026-07-04", totalSourceNotes: 4, volumesCovered: 1,
+            categories: SourceProvenanceCategory.allCases.map(\.rawValue),
+            byDecade: [DecadeProvenance(decade: 1940, totalNotes: 4, volumeCount: 1,
+                                        counts: [SourceProvenanceCategory.centralDecimalFile.rawValue: 4])]))
+        let emptied = ChartInspectorAdapters.provenanceMixTable(
+            lone.shareByDecade(in: 1900...1993, excluding: [.centralDecimalFile]))
+        #expect(emptied.rows.count == 10)
+        #expect(emptied.rows.allSatisfy { $0.cells[2] == "0.0%" })
     }
 
     // MARK: - Formatting helpers

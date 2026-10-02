@@ -69,9 +69,9 @@ struct CorpusScaleLiteralsTests {
             ("SeriesAnalytics/AdministrationProfilesDashboard.swift", "series.admin.caveats.body.v2 %lld"),
             ("SeriesAnalytics/SeriesProductionDashboard.swift", "series.chart.cumulative.caption.v2 %lld"),
             ("SeriesAnalytics/SeriesProductionDashboard.swift", "series.caveats.body.v2 %lld"),
-            ("SeriesAnalytics/SourceProvenanceDashboard.swift", "series.provenance.caveats.body.v2 %lld %lld"),
+            ("SeriesAnalytics/SourceProvenanceDashboard.swift", "series.provenance.caveats.body.v3 %lld %lld"),
             ("SeriesAnalytics/SeriesGeographyDashboard.swift", "series.geography.caveats.body.v2 %lld %lld"),
-            ("SeriesAnalytics/TopCollectionsCard.swift", "series.provenance.topCollections.method.v3 %lld %lld"),
+            ("SeriesAnalytics/TopCollectionsCard.swift", "series.provenance.topCollections.method.v4 %lld %lld"),
         ]
         // The literals that shipped: the catalog count and the four ratios measured against it.
         let literals = ["552", "522", "551", "254", "356"]

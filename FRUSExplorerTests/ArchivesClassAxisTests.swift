@@ -35,6 +35,29 @@ struct ArchivesClassAxisTests {
         #expect(eras.contains { $0.system == .subjectNumeric && $0.span.contains(1970) })
     }
 
+    /// #1543: the 1963 handbook's schedule spans one year, and its heading printed that year as a
+    /// range, "Subject-numeric file · 1963–1963". A one-year span prints the year once; every
+    /// longer span still prints both ends.
+    @Test("A one-year era prints its year once")
+    func oneYearEraPrintsOneYear() throws {
+        let eras = ArchivesClassAxis.eras()
+        let single = eras.filter { $0.span.lowerBound == $0.span.upperBound }
+        #expect(single.count == 1, "the 1963 Subject-Numeric schedule is the one-year era; got \(single.map(\.title))")
+        #expect(single.first?.title == "Subject-numeric file · 1963")
+        var ranged = 0
+        for era in eras where era.span.lowerBound != era.span.upperBound {
+            ranged += 1
+            #expect(era.title.hasSuffix("\(era.span.lowerBound)–\(era.span.upperBound)"), "\(era.title)")
+        }
+        #expect(ranged == 4, "four eras span more than a year; read \(ranged)")
+        #expect(!eras.contains { $0.title.contains("1963–1963") })
+        // Through the type itself, for each system.
+        let decimal = ArchivesClassAxis.FilingEra(id: "d", scheduleId: "s", system: .decimal, span: 1955...1955)
+        #expect(decimal.title == "Decimal file · 1955")
+        let subject = ArchivesClassAxis.FilingEra(id: "s", scheduleId: "s", system: .subjectNumeric, span: 1964...1973)
+        #expect(subject.title == "Subject-numeric file · 1964–1973")
+    }
+
     @Test("A volume straddling two schedules is counted in neither")
     func straddlingVolumesAreUnplaced() throws {
         let eras = ArchivesClassAxis.eras()

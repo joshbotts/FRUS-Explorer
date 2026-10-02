@@ -21,8 +21,9 @@ import Charts
 /// renders three Swift Charts telling the sourcing story of the FRUS series: how
 /// the archival base shifted from the near-total dominance of the State
 /// Department's Central Decimal File in the 1900s–1930s, through the 1950s
-/// appearance of bureau lot files and presidential libraries, to the 1970s
-/// preponderance of presidential-library and Central Foreign Policy File material.
+/// appearance of bureau lot files and presidential libraries and the 1960s'
+/// Subject-Numeric File, to the 1970s preponderance of presidential-library
+/// material beside the Central Foreign Policy File.
 /// Everything is derived from the bundled aggregate, so it renders offline, with
 /// zero index, mid-onboarding.
 ///
@@ -64,6 +65,12 @@ import Charts
 ///         `presentationContext` and presented locally rather than through the tab shell
 ///   1.9 — 2026-09-30: #1483 — the trend's AreaMark names its value "Share of source notes",
 ///         the axis's text under the same key
+///   1.10 — 2026-10-02 (#1543, landing round 2): the two charts take their colours from
+///         `provenanceCategoryColorScale()`, declared at the foot of this file, instead of Swift
+///         Charts' seven-colour cycle by position
+///   1.11 — 2026-10-02 (#1543, landing round 3): the trend chart is `provenanceMixChart(_:domain:)`,
+///         static so a test draws it, over rows that give every category a point in every decade;
+///         the rows added for that are hidden from VoiceOver
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -327,9 +334,12 @@ struct SourceProvenanceDashboard: View {
                                        defaultValue: "Provenance categories shown"))
             .accessibilityValue(hiddenCategories.isEmpty
                                 ? String(localized: "series.provenance.filter.a11y.all", defaultValue: "All shown")
-                                : String(format: String(localized: "series.provenance.filter.a11y.count %lld",
-                                                        defaultValue: "%lld of 10 shown"),
-                                         Int64(SourceProvenanceCategory.ordered.count - hiddenCategories.count)))
+                                // The total is the enum's count, not a literal (#1543: the text
+                                // carried the number ten itself while there were ten categories).
+                                : String(format: String(localized: "series.provenance.filter.a11y.count %lld %lld",
+                                                        defaultValue: "%1$lld of %2$lld shown"),
+                                         Int64(SourceProvenanceCategory.ordered.count - hiddenCategories.count),
+                                         Int64(SourceProvenanceCategory.ordered.count)))
             Spacer()
         }
         .padding(.horizontal)
@@ -397,46 +407,66 @@ struct SourceProvenanceDashboard: View {
                 yearRange: domain.lowerBound...domain.upperBound),
             figureHeight: 300
         ) {
-            Chart {
-                ForEach(shares) { point in
-                    AreaMark(
-                        x: .value(
-                            String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
-                            point.decade
-                        ),
-                        y: .value(
-                            String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
-                            point.share
-                        )
-                    )
-                    .foregroundStyle(by: .value(
-                        String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
-                        point.category.displayName
-                    ))
-                    .accessibilityLabel(Text(String(
-                        localized: "series.provenance.trend.a11y.label",
-                        defaultValue: "\(point.category.displayName), \(String(point.decade))s"
-                    )))
-                    .accessibilityValue(Text(point.share, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))))
-                }
-            }
-            .chartForegroundStyleScale(domain: SourceProvenanceCategory.ordered.map(\.displayName))
-            .chartXScale(domain: domain.lowerBound...domain.upperBound)
-            .chartYScale(domain: 0...1)
-            .chartXAxis {
-                AxisMarks { value in
-                    AxisGridLine()
-                    AxisTick()
-                    AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
-                }
-            }
-            .chartYAxis {
-                AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
-            }
-            .chartXAxisLabel(String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"))
-            .chartYAxisLabel(String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"))
-            .frame(height: 300)
+            Self.provenanceMixChart(shares, domain: domain)
         }
+    }
+
+    /// The trend chart itself: one stacked band per category over the coverage decades. Static and
+    /// internal so a test draws the chart the card shows.
+    ///
+    /// `shares` holds a row for every shown category in every decade, zero where the category has
+    /// no notes, which is what closes the stack: a band with no point in the decade before its
+    /// first notes began as a vertical edge and left a white wedge under the bands above it
+    /// (`SourceProvenanceData.shareByDecade`). The zero rows are drawn and not read out. VoiceOver
+    /// is given the rows the table lists (`SourceProvenanceData.listed(_:)`), so it has no
+    /// "Subject-Numeric File, 1950s, 0%" that it did not have before the rows were added.
+    ///
+    /// - Parameters:
+    ///   - shares: `SourceProvenanceData.shareByDecade(in:excluding:)`'s rows.
+    ///   - domain: The coverage years the x axis spans.
+    static func provenanceMixChart(_ shares: [SourceProvenanceData.CategoryDecadeShare],
+                                   domain: ClosedRange<Int>) -> some View {
+        let listed = Set(SourceProvenanceData.listed(shares).map(\.id))
+        return Chart {
+            ForEach(shares) { point in
+                AreaMark(
+                    x: .value(
+                        String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
+                        point.decade
+                    ),
+                    y: .value(
+                        String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
+                        point.share
+                    )
+                )
+                .foregroundStyle(by: .value(
+                    String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
+                    point.category.displayName
+                ))
+                .accessibilityLabel(Text(String(
+                    localized: "series.provenance.trend.a11y.label",
+                    defaultValue: "\(point.category.displayName), \(String(point.decade))s"
+                )))
+                .accessibilityValue(Text(point.share, format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))))
+                .accessibilityHidden(!listed.contains(point.id))
+            }
+        }
+        .provenanceCategoryColorScale()
+        .chartXScale(domain: domain.lowerBound...domain.upperBound)
+        .chartYScale(domain: 0...1)
+        .chartXAxis {
+            AxisMarks { value in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel(format: SeriesChartKind.yearAxisFormat)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(format: FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0)))
+        }
+        .chartXAxisLabel(String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"))
+        .chartYAxisLabel(String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"))
+        .frame(height: 300)
     }
 
     // MARK: - Chart 2: Overall provenance composition
@@ -479,7 +509,7 @@ struct SourceProvenanceDashboard: View {
                     .accessibilityValue(Text(item.noteCount, format: .number))
                 }
             }
-            .chartForegroundStyleScale(domain: SourceProvenanceCategory.ordered.map(\.displayName))
+            .provenanceCategoryColorScale()
             .chartLegend(.hidden)
             .chartXAxis {
                 AxisMarks { value in
@@ -550,7 +580,7 @@ struct SourceProvenanceDashboard: View {
 
     // MARK: - Cross-link
 
-    /// The #795 rider: a pointer from this dashboard's ten provenance *categories* to the named
+    /// The #795 rider: a pointer from this dashboard's eleven provenance *categories* to the named
     /// collections behind them.
     ///
     /// **On iOS it is withheld mid-onboarding** (#798, owner decision (a)). The Mac has no
@@ -576,8 +606,8 @@ struct SourceProvenanceDashboard: View {
                                  defaultValue: "Open Archival Analytics"),
                           systemImage: "archivebox")
                 }
-                Text(String(localized: "series.provenance.archivalLink.detail",
-                            defaultValue: "This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
+                Text(String(localized: "series.provenance.archivalLink.detail.v2",
+                            defaultValue: "This dashboard groups source notes into eleven broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -597,8 +627,8 @@ struct SourceProvenanceDashboard: View {
                              defaultValue: "Open Archival Analytics"),
                       systemImage: "archivebox")
             }
-            Text(String(localized: "series.provenance.archivalLink.detail",
-                        defaultValue: "This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
+            Text(String(localized: "series.provenance.archivalLink.detail.v2",
+                        defaultValue: "This dashboard groups source notes into eleven broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together."))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -626,8 +656,10 @@ struct SourceProvenanceDashboard: View {
             }
             // R-3: "covered of cataloged" is `data.volumesCovered` over the bundled manifest's
             // count — a ratio that must be RE-MEASURED at each release, which a literal cannot be.
-            Text(String(format: String(localized: "series.provenance.caveats.body.v2 %lld %lld",
-                        defaultValue: "These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system. For now, the Central Foreign Policy File category covers both its 1963–1973 Subject-Numeric successor and the post-1973 file. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives."),
+            // New key (.v3, #1543): the central-files sentences changed meaning. The category
+            // the old text said covered the 1963–1973 file never held it.
+            Text(String(format: String(localized: "series.provenance.caveats.body.v3 %lld %lld",
+                        defaultValue: "These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File category is the central filing system through January 1963: the decimal file from 1910 and, before it, the Numerical File of 1906–1910. The Subject-Numeric File replaced the decimal file in February 1963 and ran through 1973, and the Central Foreign Policy File followed from July 1973. A citation to the central files is placed by what it gives: a decimal file number, a Subject-Numeric file designation or its block of years, or the Central Foreign Policy File’s name or a film number. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives."),
                         Int64(data.volumesCovered), Int64(entries.count)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -690,5 +722,68 @@ struct SourceProvenanceDashboard: View {
             },
             content: content
         )
+    }
+}
+
+// MARK: - The provenance colour scale (#1543)
+
+extension SourceProvenanceCategory {
+
+    /// The colour every provenance chart draws this category in.
+    ///
+    /// Until #1543 the charts gave Swift Charts a domain and no range, so each category took the
+    /// default cycle's colour for its POSITION: blue, green, orange, purple, red, teal, yellow,
+    /// then blue again. (Measured on macOS 27.0 and an iOS 26.4 simulator, in light and dark: the
+    /// sixth is `Color.teal`, not `.cyan`.) Seven colours for ten categories already drew three
+    /// pairs alike, and an eleventh category in second place moved every later one a slot: the
+    /// Central Decimal File's twin became Named File Series, a visible band of the same blue.
+    ///
+    /// So the colours are stated. The ten categories the charts had before the Subject-Numeric
+    /// File keep exactly the colour the cycle gave them then, by their position among those ten,
+    /// and the Subject-Numeric File takes brown, which the cycle never uses. Brown rather than
+    /// indigo, pink or mint because those three sit beside the cycle's blue and purple, red, and
+    /// teal. The three older pairs are still drawn alike (the decimal file and Foreign Archives,
+    /// the Central Foreign Policy File and Previously Published, Lot Files and Other /
+    /// Unclassified); giving them colours of their own is a change to every one of these charts
+    /// and is not made here.
+    ///
+    /// The semantic map's provenance lens has its own palette (`SemanticMapLens`), read by
+    /// position in `allCases`. This is the charts' alone.
+    var chartColor: Color {
+        switch self {
+        case .centralDecimalFile: return .blue
+        case .subjectNumericFile: return .brown
+        case .centralForeignPolicyFile: return .green
+        case .lotFile: return .orange
+        case .presidentialLibrary: return .purple
+        case .naraCollection: return .red
+        case .intelligence: return .teal
+        case .namedFileSeries: return .yellow
+        case .foreignArchive: return .blue
+        case .previouslyPublished: return .green
+        case .unrecognized: return .orange
+        }
+    }
+
+    /// The charts' colour scale: every category's display name, in `ordered`'s order, and its
+    /// colour. The one source `provenanceCategoryColorScale()` reads, so the legend's order is the
+    /// enum's and a category has one colour on every chart.
+    static var chartColorScale: (domain: [String], range: [Color]) {
+        (ordered.map(\.displayName), ordered.map(\.chartColor))
+    }
+}
+
+extension View {
+
+    /// Colours a chart whose marks are styled by a provenance category's display name
+    /// (`.foregroundStyle(by: .value(…, category.displayName))`) from
+    /// `SourceProvenanceCategory.chartColorScale`.
+    ///
+    /// Every chart that colours by provenance category calls this and passes no scale of its own:
+    /// the two on the Archival Sourcing dashboard and the two on Archival Analytics ▸ Your
+    /// Library. `SourceProvenanceDataTests` scans for a chart that states its own.
+    func provenanceCategoryColorScale() -> some View {
+        let scale = SourceProvenanceCategory.chartColorScale
+        return chartForegroundStyleScale(domain: scale.domain, range: scale.range)
     }
 }

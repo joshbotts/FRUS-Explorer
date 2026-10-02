@@ -173,9 +173,9 @@ public enum SourceExplorerExportRunner {
                              volumeSources: VolumeSourcesIndex,
                              authority: AuthorityLookup) -> SourceExplorerExportRecord {
         let parsed = parser.parse(rawNote)
-        let strategy = ProvenanceCategory.from(parsed).rawValue
+        let strategy = ProvenanceCategory.from(parsed, note: rawNote).rawValue
         let derived = ExportClassification.derivedKeys(for: parsed, note: rawNote)
-        let route = ExportClassification.liveLookupRoute(for: parsed)
+        let route = ExportClassification.liveLookupRoute(for: parsed, note: rawNote)
 
         // Bundled lot resolution (#321 guard inside BundledLotResolver); on a miss,
         // distinguish "flagged" from "not in bundle" via the unguarded mirror accessor.

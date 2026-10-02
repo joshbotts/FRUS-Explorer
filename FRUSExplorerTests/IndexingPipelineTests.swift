@@ -2478,6 +2478,311 @@ struct W17RouteArmsTests {
     }
 }
 
+// MARK: - AliasFallbackCentralFilesTests (#1543, landing round 2)
+
+/// The collection authority's alias fallback and a document that cites the central files.
+///
+/// A Department-led central-files citation resolves to the authority's "Central Files" record,
+/// which is the filing system and not a collection, and the fallback matched that record's name
+/// against `series_name` with no test of the file. A document alone in its file therefore listed
+/// every indexed document whose note words the central files with a comma after the name: on a
+/// five-volume index `frus1964-68v01/d359`, the only document in `POL 13 VIET S`, showed two
+/// decimal documents of 1961–62 and four Subject-Numeric documents of 1973.
+///
+/// The first two tests index that shape through the real writer and ask the real query. Each
+/// first shows the fallback had something to serve — the anchor resolves to the "Central Files"
+/// record in the BUNDLED authority, and that record's names match the comma-worded documents —
+/// so an empty answer is the rule's doing, not a fixture the fallback could never have reached.
+/// The controls are a library collection, a named series and a lot file, which get their alias
+/// neighbours as before. The last test asks `aliasFallbackServes` itself, one note per arm.
+///
+/// Version history:
+///   1.0 — 2026-10-02 (#1543, landing round 2): initial implementation
+///   1.1 — 2026-10-02 (#1543, landing round 3): the lot-file control, end to end; until it the
+///          lot file had only its two fixtures in the rule by arm
+@Suite("IndexingPipeline — the alias fallback and the central files (#1543)")
+struct AliasFallbackCentralFilesTests {
+
+    /// The five source notes the by-eye pass found under `frus1964-68v01/d359`: worded through the
+    /// National Archives with a comma after "Central Files", so the stored series is the bare name
+    /// (`Central Files`, or `Central Files, Box 2432`) that the umbrella record's name matches.
+    private static let commaWordedSeventies: [(id: String, note: String)] = [
+        ("d33", "Source: National Archives, RG 59, Central Files, 1970–73, POL 23 Oman. Confidential."),
+        ("d39", "Source: National Archives, RG 59, Central Files, 1970–73, POL 30, South Yemen. Confidential."),
+        ("d194", "Source: National Archives, RG 59, Central Files, 1970–73, Box 2432, POL Kuwait. Secret."),
+    ]
+    private static let commaWordedSixties: [(id: String, note: String)] = [
+        ("d181", "Source: National Archives, RG 59, Central Files, 1960–63, 303/8–3161. Secret."),
+        ("d348", "Source: National Archives, RG 59, Central Files, 1960–63, 110.10/3–1662. Confidential."),
+    ]
+
+    /// Indexes the two volumes of comma-worded notes beside one anchor volume.
+    private func indexFixture(
+        dir: URL, anchorVolume: String, anchor: (id: String, note: String)
+    ) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        let volumes: [(String, [(id: String, note: String)])] = [
+            (anchorVolume, [anchor]),
+            ("frus1969-76ve09p2", Self.commaWordedSeventies),
+            ("frus1961-63v25", Self.commaWordedSixties),
+        ]
+        for (volumeId, notes) in volumes {
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("\(volumeId).xml"),
+                volumeId: volumeId,
+                documents: notes.enumerated().map { i, doc in
+                    (doc.id, "<head>\(i + 1). Telegram</head><note type=\"source\">\(doc.note)</note><p>Text.</p>")
+                })
+            try await pipeline.indexVolume(volumeId)
+        }
+        return pipeline
+    }
+
+    /// What the alias fallback had to serve for `anchorNote`: the bundled authority's record for
+    /// it must be the "Central Files" umbrella, and that record's names, asked of the index the
+    /// way the fallback asks, must match the five comma-worded documents.
+    private func requireTheFallbackHadAPool(
+        _ pipeline: IndexingPipeline, anchorNote: String
+    ) async throws {
+        let authority = try #require(CollectionAuthorityStore.shared,
+                                     "collection-authority.json must be bundled")
+        let record = try #require(
+            authority.record(forParsed: SourceNoteParser().parse(anchorNote), note: anchorNote),
+            "the anchor resolves to no authority record, so no fallback could run")
+        #expect(record.id == ArchivalCollectionsData.umbrellaCollectionId)
+        // An entry with no key of its own, so only the fallback answers: the same
+        // `aliasNeighbors` pass the anchored path ran, over the same record.
+        let pool = try await pipeline.archivalNeighbors(
+            forLotFile: nil, recordGroup: nil, series: nil,
+            aliasFallback: IndexingPipeline.CollectionAliasFallback(record: record))
+        #expect(Set(pool.documents.map(\.compositeKey)) == [
+            "frus1969-76ve09p2/d33", "frus1969-76ve09p2/d39", "frus1969-76ve09p2/d194",
+            "frus1961-63v25/d181", "frus1961-63v25/d348",
+        ], "the umbrella record's name must match the five comma-worded documents")
+        #expect(pool.basis == "Central Files (collection authority)")
+    }
+
+    @Test("A Subject-Numeric document alone in its file has no neighbours")
+    func subjectNumericAnchorAloneInItsFile() async throws {
+        try await withTempDir { dir in
+            let note = "Source: Department of State, Central Files, POL 13 VIET S. Secret; Priority; Limdis. Repeated to CINCPAC."
+            let pipeline = try await indexFixture(
+                dir: dir, anchorVolume: "frus1964-68v01", anchor: ("d359", note))
+            try await requireTheFallbackHadAPool(pipeline, anchorNote: note)
+
+            let result = try await pipeline.archivalNeighborsWithCohort(
+                forVolumeId: "frus1964-68v01", documentId: "d359")
+            #expect(result.documents.map(\.compositeKey) == [],
+                    "no indexed document is in POL 13 VIET S; the comma-worded ones are in other files")
+            #expect(result.totalCount == 0)
+            #expect(result.cohortCount == 0)
+            #expect(result.basis == "POL 13 VIET S", "the basis stays the file the note cites")
+        }
+    }
+
+    @Test("A decimal document alone in its file has no neighbours")
+    func decimalAnchorAloneInItsFile() async throws {
+        try await withTempDir { dir in
+            let note = "Source: Department of State, Central Files, 751K.5/1-1163. Secret."
+            let pipeline = try await indexFixture(
+                dir: dir, anchorVolume: "frus1961-63v03", anchor: ("d10", note))
+            try await requireTheFallbackHadAPool(pipeline, anchorNote: note)
+
+            let result = try await pipeline.archivalNeighborsWithCohort(
+                forVolumeId: "frus1961-63v03", documentId: "d10", documentYear: 1963)
+            #expect(result.documents.map(\.compositeKey) == [])
+            #expect(result.totalCount == 0)
+            #expect(result.cohortCount == 0)
+            #expect(result.basis == "751K.5")
+        }
+    }
+
+    @Test("A central-files document still finds the documents in its own file")
+    func theDirectRouteIsUnmoved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1964-68v01.xml"),
+                volumeId: "frus1964-68v01",
+                documents: [
+                    ("d5", "<head>1. Telegram</head><note type=\"source\">Source: Department of State, Central Files, POL 27 VIET S. Secret.</note><p>A.</p>"),
+                    ("d6", "<head>2. Telegram</head><note type=\"source\">Source: Department of State, Central Files, POL 27 VIET S. Top Secret.</note><p>B.</p>"),
+                    ("d7", "<head>3. Telegram</head><note type=\"source\">Source: National Archives, RG 59, Central Files, 1970–73, POL 23 Oman. Confidential.</note><p>C.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1964-68v01")
+            let result = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1964-68v01", documentId: "d5")
+            #expect(result.documents.map(\.documentId) == ["d6"])
+            #expect(result.basis == "POL 27 VIET S")
+        }
+    }
+
+    @Test("A library collection still reaches its neighbours through an authority alias")
+    func libraryAliasFallbackIsUnmoved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // The anchor says "Files" and its sibling "File". The direct route is a prefix match on
+            // the anchor's own spelling and misses; the Kennedy Library record carries both.
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1961-63v24.xml"),
+                volumeId: "frus1961-63v24",
+                documents: [
+                    ("d1", "<head>1. Memo</head><note type=\"source\">Source: Kennedy Library, National Security Files, Countries Series, Laos. Top Secret.</note><p>A.</p>"),
+                    ("d2", "<head>2. Memo</head><note type=\"source\">Source: Kennedy Library, National Security File, Countries Series, Cuba. Secret.</note><p>B.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">Source: Kennedy Library, President’s Office Files, Countries, Laos. Secret.</note><p>C.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1961-63v24")
+            let result = try await pipeline.archivalNeighborsWithCohort(
+                forVolumeId: "frus1961-63v24", documentId: "d1")
+            #expect(result.documents.map(\.documentId) == ["d2"])
+            #expect(result.basis == "National Security File (collection authority)",
+                    "the alias form that matched names the basis")
+            #expect(result.cohortCount == 2)
+        }
+    }
+
+    @Test("A named series still reaches its neighbours through the authority")
+    func namedSeriesAliasFallbackIsUnmoved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // A named series has no direct route at all, so the fallback is its only one.
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1946v01.xml"),
+                volumeId: "frus1946v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><note type=\"source\">Source: SWNCC Files, Series 360. Top Secret.</note><p>A.</p>"),
+                    ("d2", "<head>2. Memo</head><note type=\"source\">Source: SWNCC Files, Series 371. Secret.</note><p>B.</p>"),
+                    ("d3", "<head>3. Memo</head><note type=\"source\">Source: Pauley Files, Reparations. Secret.</note><p>C.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1946v01")
+            let result = try await pipeline.archivalNeighborsWithCohort(
+                forVolumeId: "frus1946v01", documentId: "d1")
+            #expect(result.documents.map(\.documentId) == ["d2"])
+            #expect(result.basis == "SWNCC Files (collection authority)")
+        }
+    }
+
+    /// The third control: a lot file. A control, so it passes with the gate and without it; it
+    /// fails when the gate refuses a lot file, which is the mistake it is here to catch.
+    ///
+    /// The anchor is `frus1947v07`'s wording of the State-War-Navy Coordinating Committee's lot,
+    /// alone in its lot on this index, so the direct route (`relatedByLotFile`) finds nothing. The
+    /// bundled authority's record for the lot carries the name the committee's files are cited by
+    /// where no lot is printed (`SWNCC Files`, the whole of 22 source notes in five volumes, six
+    /// of them in `frus1945Berlinv02`), and the fallback reaches that document by it. The third
+    /// document cites another lot and is not reached.
+    @Test("A lot file alone in its lot still reaches its neighbours through an authority alias")
+    func lotFileAliasFallbackIsUnmoved() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let anchor = "SWNCC Files, Lot 52M45"
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1947v07.xml"),
+                volumeId: "frus1947v07",
+                documents: [
+                    ("d1", "<head>1. Telegram</head><note type=\"source\">\(anchor)</note><p>A.</p>"),
+                ])
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1945Berlinv02.xml"),
+                volumeId: "frus1945Berlinv02",
+                documents: [
+                    ("d2", "<head>1. Memorandum</head><note type=\"source\">SWNCC Files</note><p>B.</p>"),
+                    ("d3", "<head>2. Telegram</head><note type=\"source\">Marshall Mission Files, Lot 54–D270: Telegram</note><p>C.</p>"),
+                ])
+            try await pipeline.indexVolume("frus1947v07")
+            try await pipeline.indexVolume("frus1945Berlinv02")
+
+            // The anchor is a lot file, its lot has a record in the bundled authority that
+            // carries the alias, the gate serves it, and its direct route finds nothing.
+            let parsed = SourceNoteParser().parse(anchor)
+            guard case .lotFile(_, let lot, _) = parsed else {
+                Issue.record("the anchor parsed as \(parsed), not a lot file")
+                return
+            }
+            #expect(SourceNoteParser.lotFileNorm(lot) == "52M45")
+            let record = try #require(
+                CollectionAuthorityStore.shared?.record(forParsed: parsed, note: anchor),
+                "the anchor resolves to no authority record, so no fallback could run")
+            #expect(record.id == "lot:52M45")
+            #expect(IndexingPipeline.CollectionAliasFallback(record: record).names.contains("SWNCC Files"))
+            #expect(IndexingPipeline.aliasFallbackServes(parsed, note: anchor))
+            let direct = try await pipeline.relatedDocuments(
+                for: parsed, excludingVolumeId: "frus1947v07", excludingDocumentId: "d1", rawCitation: anchor)
+            #expect(direct.totalCount == 0, "no other indexed document is in the lot")
+
+            let result = try await pipeline.archivalNeighborsWithCohort(
+                forVolumeId: "frus1947v07", documentId: "d1")
+            #expect(result.documents.map(\.compositeKey) == ["frus1945Berlinv02/d2"])
+            #expect(result.basis == "SWNCC Files (collection authority)",
+                    "the alias form that matched names the basis")
+            #expect(result.cohortCount == 2)
+        }
+    }
+
+    /// One note per arm of `aliasFallbackServes`, with the parse case each must have: a fixture
+    /// the parser read another way would pass through a different arm and test nothing.
+    @Test("The alias fallback serves every citation but one to the central files")
+    func theRuleByArm() {
+        enum Case { case centralFiles, naraCollection, cfpfFile, lotFile, presidentialLibrary, namedFileSeries }
+        func parseCase(_ parsed: ParsedSourceNote) -> Case? {
+            switch parsed {
+            case .centralFiles: return .centralFiles
+            case .naraCollection: return .naraCollection
+            case .cfpfFile: return .cfpfFile
+            case .lotFile: return .lotFile
+            case .presidentialLibrary: return .presidentialLibrary
+            case .namedFileSeries: return .namedFileSeries
+            default: return nil
+            }
+        }
+        let fixtures: [(note: String, parse: Case, serves: Bool, why: String)] = [
+            // Refused: the parse case.
+            ("Source: Department of State, Central Files, POL 13 VIET S. Secret.",
+             .centralFiles, false, "a Department-led Subject-Numeric designation"),
+            ("Source: Department of State, Central Files, 751K.5/1-1163. Secret.",
+             .centralFiles, false, "a Department-led decimal number"),
+            ("Source: Department of State, Central Files. Secret.",
+             .centralFiles, false, "a central-files citation the reading gives no form"),
+            // Refused: the reading.
+            ("Source: National Archives, RG 59, Central Files 1970–73, POL 23 OMAN. Confidential.",
+             .naraCollection, false, "a National-Archives-led designation under its block"),
+            ("Source: National Archives, RG 59, Central Files, 1970–73, Box 2432, POL Kuwait. Secret.",
+             .naraCollection, false, "the comma wording, whose series is the bare name"),
+            ("Source: National Archives, RG 59, Central Files 1960–63, 399.731/7–2561. Secret.",
+             .naraCollection, false, "a decimal number cited through the National Archives"),
+            ("Source: National Archives, RG 59, Central Files, 1970–1973, POL 15–1 JAM. Confidential. Repeated to Bridgetown. (Ibid., Central Foreign Policy File, [no film number])",
+             .cfpfFile, false, "a designation in a note the parser read as the Central Foreign Policy File"),
+            // Served, as before.
+            ("SPA Files: Lot 61-D 146, Box 4581", .lotFile, true, "a lot file"),
+            ("Source: National Archives, RG 59, Central Files, 1970–1973, ARA/CAR, Lot 75D393, POL 7 Visits and Meetings. Confidential.",
+             .naraCollection, true, "a lot printed under a Central Files heading"),
+            ("Source: National Archives, RG 84, Moscow Embassy Files, Box 12. Secret.",
+             .naraCollection, true, "another record group's series"),
+            ("Source: National Archives and Records Administration, RG 59, Conference Files, CF 2449. Confidential.",
+             .naraCollection, true, "an RG 59 series that is not the central files"),
+            ("Source: Kennedy Library, National Security Files, Countries Series, Laos. Top Secret.",
+             .presidentialLibrary, true, "a library collection"),
+            ("Source: SWNCC Files, Series 360. Top Secret.", .namedFileSeries, true, "a named series"),
+            ("Source: Carter Library, White House Central Files, Subject File, Federal Government, International Communication Agency, Executive, Box FG–217, FG 298 1/20/77–12/31/78. No classification marking. (National Archives, RG 59, Central Foreign Policy File, P840176–1246)",
+             .cfpfFile, true, "a library-led note read as the Central Foreign Policy File from its remark"),
+        ]
+        var refused = 0, served = 0
+        for fixture in fixtures {
+            let parsed = SourceNoteParser().parse(fixture.note)
+            #expect(parseCase(parsed) == fixture.parse, "\(fixture.why): parsed as \(parsed)")
+            let serves = IndexingPipeline.aliasFallbackServes(parsed, note: fixture.note)
+            #expect(serves == fixture.serves, "\(fixture.why)")
+            if fixture.serves { served += 1 } else { refused += 1 }
+        }
+        #expect(refused == 7 && served == 7, "read \(refused) refused and \(served) served fixtures")
+    }
+}
+
 // MARK: - ArchivalPoolStratificationEndToEndTests (#645)
 
 /// The stratified candidate pool, driven through a real index rather than asserted about.
@@ -3022,7 +3327,9 @@ struct VolumeSourceMatcherTests {
                                             repository: "Nixon Presidential Materials", recordGroup: nil))
             #expect(rows["d4"] == SourceRow(era: "lot_file", series: "BAEC —Reference Papers",
                                             repository: "Department of State", recordGroup: "59"))
-            #expect(rows["d5"] == SourceRow(era: "decimal", series: "POL CHICOM -US",
+            // `subject_numeric` since #1543 (index v65): a designator is the Subject-Numeric
+            // File's, and every other column is as v64 stored it.
+            #expect(rows["d5"] == SourceRow(era: "subject_numeric", series: "POL CHICOM -US",
                                             repository: "Department of State", recordGroup: "59"))
             #expect(rows["d7"]?.series == "POL IRAN-U.S.")
             #expect(rows["d8"]?.series == "DEF 12 NATO")
@@ -3033,6 +3340,95 @@ struct VolumeSourceMatcherTests {
                 d5 found \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
                 """)
         }
+    }
+
+    /// #1543 through the pipeline, every note from the corpus: a central-files citation is stored
+    /// by its form, in either wording, and nothing else in the row moves. d1 (frus1964-68v01/d5) is
+    /// Department-led; d2 (frus1964-68v14/d93) and d3 (frus1969-76ve07/d110) are led by the National
+    /// Archives, with and without a class key; d4 (frus1964-68v29p1/d368) gives only its block; d5
+    /// (frus1969-76ve09p2/d78) is cited under the Central Foreign Policy File's name; d6
+    /// (frus1961-63v25/d494) is a decimal number through the National Archives; d7
+    /// (frus1961-63v11/d301) a decimal number through the Department, dated March 1963; d8
+    /// (frus1969-76v22/d17) a film number; d9 (frus1969-76ve08/d15) an office file under the
+    /// "Central Files" heading, which is not the file and stays a NARA collection.
+    @Test("A central-files citation is stored by its form, in either wording (#1543)")
+    func centralFilesAreStoredByTheirForm() async throws {
+        try await withTempDir { dir in
+            _ = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy. Rusk’s initials appear on the source text."),
+                ("d2", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis."),
+                ("d3", "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret. Drafted on January 26 by Quainton."),
+                ("d4", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret. Drafted by Zurhellen and approved in S on July 25."),
+                ("d5", "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential. Repeated to Amman, Beirut, Kuwait City, Tripoli, and Tel Aviv."),
+                ("d6", "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."),
+                ("d7", "Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate. This telegram was inadvertently filed under the discontinued decimal filing system."),
+                ("d8", "Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis."),
+                ("d9", "Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis."),
+            ])
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let rows = try Self.sourceRows(dbURL)
+            let classes = try Self.decimalClasses(dbURL)
+            #expect(rows.count == 9, "read \(rows.count) document_sources rows")
+
+            // The Subject-Numeric File, however worded. Repository, record group and series are
+            // what index v64 stored for each wording.
+            #expect(rows["d1"] == SourceRow(era: "subject_numeric", series: "POL 27 VIET S",
+                                            repository: "Department of State", recordGroup: "59"))
+            #expect(rows["d2"] == SourceRow(era: "subject_numeric", series: "Central Files 1964–66",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d3"] == SourceRow(era: "subject_numeric", series: "Central Files 1970–73",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d4"] == SourceRow(era: "subject_numeric", series: "Central Files 1964–66",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d5"] == SourceRow(era: "subject_numeric", series: "CFPF",
+                                            repository: "Department of State", recordGroup: "59"))
+            // A decimal file number, however worded.
+            #expect(rows["d6"] == SourceRow(era: "decimal", series: "Central Files 1960–63",
+                                            repository: "National Archives", recordGroup: "59"))
+            #expect(rows["d7"] == SourceRow(era: "decimal", series: "611.61/3-2763",
+                                            repository: "Department of State", recordGroup: "59"))
+            // What the rule leaves alone.
+            #expect(rows["d8"]?.era == "cfpf")
+            #expect(rows["d8"]?.repository == "Department of State")
+            #expect(rows["d9"]?.era == "structured")
+            #expect(rows["d9"]?.repository == "National Archives")
+
+            // `decimal_class` is filled as before: the class key where the grammar reads one.
+            #expect(classes["d1"] == .some("POL 27 VIET S"))
+            #expect(classes["d2"] == .some("POL 27 VIET S"))
+            #expect(classes["d3"] == .some(nil))
+            #expect(classes["d4"] == .some(nil))
+            #expect(classes["d6"] == .some("399.731"))
+            #expect(classes["d7"] == .some("611.61"))
+        }
+    }
+
+    /// #1543's re-parse: v65. About 9,800 rows change their stored form — the 9,443
+    /// Subject-Numeric citations and the 356 decimal numbers cited through the National Archives.
+    @Test("The index version is at least 65, the central-files form re-parse of #1543")
+    func indexVersionCoversCentralFilesForm() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 65)
+    }
+
+    /// `document_id → decimal_class` for every row.
+    private static func decimalClasses(_ dbURL: URL) throws -> [String: String?] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 1)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT document_id, decimal_class FROM document_sources",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [String: String?] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            rows.updateValue(sqlite3_column_text(stmt, 1).map { String(cString: $0) }, forKey: id)
+        }
+        return rows
     }
 
     /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469,
@@ -6772,9 +7168,15 @@ struct HeadNestedSourceNoteTests {
         }
     }
 
-    /// NARA narratives from the head-nested era produce `citation_era='structured'`
+    /// NARA narratives from the head-nested era reach the structured parser and produce
     /// `.naraCollection` rows — the audit found zero such rows existed before this fix.
-    @Test("structured rows: head-nested NARA narrative yields citation_era='structured'")
+    ///
+    /// The row's form is the citation's (#1543, index v65). d1 is a Subject-Numeric file cited
+    /// through the National Archives: it was this test's `structured` row until the form rule,
+    /// and is `subject_numeric` now, with the record group and repository its wording gave it.
+    /// d2 (frus1969-76ve08/d15's note) is an office's records under the same "Central Files"
+    /// heading, which is not the file and stays `structured` — the row this test was written for.
+    @Test("structured rows: a head-nested NARA narrative is stored as a record-group row, in the form its citation gives")
     func structuredNARARow() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
@@ -6787,21 +7189,38 @@ struct HeadNestedSourceNoteTests {
                 POL 27 ARAB&#8211;ISR. Secret; Nodis.</note></head>
                 <p>Body.</p>
                 """),
+                ("d2", """
+                <head>2. Memorandum of Conversation<note n=" 1" type="source" \
+                xml:id="d2fn1">Source: National Archives, RG 59, Central Files 1970&#8211;73, \
+                Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, \
+                November 1974 (2). Secret; Nodis.</note></head>
+                <p>Body.</p>
+                """),
             ])
             try await pipeline.indexVolume("frus1969-76v25")
 
             let sources = try await pipeline.documentSourcesByKey([
-                (volumeId: "frus1969-76v25", documentId: "d1")
+                (volumeId: "frus1969-76v25", documentId: "d1"),
+                (volumeId: "frus1969-76v25", documentId: "d2"),
             ])
-            let source = try #require(sources["frus1969-76v25/d1"])
-            #expect(source.recordGroup == "59")
-            #expect(source.rawText.hasPrefix("Source: National Archives"))
+            for key in ["frus1969-76v25/d1", "frus1969-76v25/d2"] {
+                let source = try #require(sources[key])
+                #expect(source.recordGroup == "59")
+                #expect(source.repository == "National Archives")
+                #expect(source.rawText.hasPrefix("Source: National Archives"))
+            }
 
-            let row = try #require(try documentSourceRow(
+            let subjectNumeric = try #require(try documentSourceRow(
                 dbURL: dir.appendingPathComponent("test.sqlite"),
                 volumeId: "frus1969-76v25", documentId: "d1"))
-            #expect(row.era == "structured")
-            #expect(row.classification == "Secret; Nodis")
+            #expect(subjectNumeric.era == "subject_numeric")
+            #expect(subjectNumeric.classification == "Secret; Nodis")
+
+            let office = try #require(try documentSourceRow(
+                dbURL: dir.appendingPathComponent("test.sqlite"),
+                volumeId: "frus1969-76v25", documentId: "d2"))
+            #expect(office.era == "structured")
+            #expect(office.classification == "Secret; Nodis")
         }
     }
 }

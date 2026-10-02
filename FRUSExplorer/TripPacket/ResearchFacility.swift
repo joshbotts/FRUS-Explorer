@@ -114,6 +114,8 @@ enum ResearchFacility: Equatable, Sendable {
 ///          holding it — the Department of State's own series, newly routed out of the central
 ///          files, and the other agencies' since #353 — resolves to `unknown`, not College Park
 ///          (`seriesName`)
+///   1.3 — 2026-10-02 (#1543): the Subject-Numeric File is College Park material by its category,
+///          like the other two central filing systems
 enum ResearchFacilityResolver {
 
     /// The one place a researcher is served for records whose citation names an agency rather than
@@ -226,7 +228,8 @@ enum ResearchFacilityResolver {
         //
         //    Central files are the 72.9% case and reach here without a repository string at all,
         //    which is why this keys on the category rather than on parsed text.
-        if category == .centralDecimalFile || category == .centralForeignPolicyFile
+        if category == .centralDecimalFile || category == .subjectNumericFile
+            || category == .centralForeignPolicyFile
             || category == .lotFile || category == .naraCollection
             || category == .namedFileSeries {
             return .servedAt(facility: collegePark, provenance: "Department of State")

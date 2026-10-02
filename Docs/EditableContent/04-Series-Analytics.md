@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §4, §18.4. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 33 blocks · no ⚑ wording issues
+**In this file:** 33 blocks · 1 ✎ note (your central-files sentences in the “About these figures” footnote, replaced by #1543) · no ⚑ wording issues
 
 ---
 
@@ -16,7 +16,7 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 
 #### Page intro
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 241–242 | key: series.provenance.intro -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 248–249 | key: series.provenance.intro -->
 
 Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival provenance changed. The State Department’s central files predominated until bureau lot files and presidential libraries appeared after World War II. Modern volumes draw on a much wider range of sources.
 
@@ -24,7 +24,7 @@ Where did the editors of Foreign Relations of the United States find the documen
 
 #### Chart 1 subtitle — Archival provenance over time
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | mixOverTimeChart caption | lines: 389–390 | key: series.provenance.trend.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | mixOverTimeChart caption | lines: 399–400 | key: series.provenance.trend.caption -->
 
 Each decade’s source notes divided among the archival collections they cite, so every decade totals 100%. A volume’s decade is set by the midpoint of its coverage. The trend begins in 1900 because earlier volumes carry no archival source notes.
 
@@ -32,7 +32,7 @@ Each decade’s source notes divided among the archival collections they cite, s
 
 #### Chart 2 subtitle — Overall provenance composition
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | compositionChart caption | lines: 451–452 | key: series.provenance.composition.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | compositionChart caption | lines: 481–482 | key: series.provenance.composition.caption -->
 
 How many source notes across the whole series, from 1900 on, cite each kind of archival collection. The Central Decimal File dwarfs the rest. Most published FRUS documents came from the State Department’s various central filing systems, but recent volumes draw from presidential records and other kinds of federal record collections.
 
@@ -40,7 +40,7 @@ How many source notes across the whole series, from 1900 on, cite each kind of a
 
 #### Chart 3 subtitle — The documentary base by decade
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 506–507 | key: series.provenance.density.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 536–537 | key: series.provenance.density.caption -->
 
 How many source notes each decade contributes. These are the counts behind the shares above. The 1940s carry the deepest base. Volumes covering the 1970s, 1980s, and 1990s are still in production, so those decades will grow as new volumes are released.
 
@@ -48,7 +48,7 @@ How many source notes each decade contributes. These are the counts behind the s
 
 #### Category-filter caveat — shown while categories are hidden
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats filtered line | lines: 621–622 | key: series.provenance.caveats.filtered.v2 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats filtered line | lines: 651–652 | key: series.provenance.caveats.filtered.v2 -->
 
 Some categories are hidden. Each share below is a share of the categories still shown, not of all source notes. A decade with no notes in any shown category reads as zero rather than being skipped. Use the Categories menu above to show them all.
 
@@ -56,11 +56,13 @@ Some categories are hidden. Each share below is a share of the categories still 
 
 #### "About these figures" methodology footnote
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 629–630 | key: series.provenance.caveats.body.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 661–662 | key: series.provenance.caveats.body.v3 %lld %lld -->
 
-These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system. For now, the Central Foreign Policy File category covers both its 1963–1973 Subject-Numeric successor and the post-1973 file. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives.
+These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File category is the central filing system through January 1963: the decimal file from 1910 and, before it, the Numerical File of 1906–1910. The Subject-Numeric File replaced the decimal file in February 1963 and ran through 1973, and the Central Foreign Policy File followed from July 1973. A citation to the central files is placed by what it gives: a decimal file number, a Subject-Numeric file designation or its block of years, or the Central Foreign Policy File’s name or a film number. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives.
 
-<!-- END SOURCE: series.provenance.caveats.body.v2 %lld %lld -->
+<!-- END SOURCE: series.provenance.caveats.body.v3 %lld %lld -->
+
+> **✎ Your sentences of 2026-09-30, replaced by lane CFPF (#1543, 2026-10-02).** You wrote: “The Central Decimal File is the pre-1963 central filing system. For now, the Central Foreign Policy File category covers both its 1963–1973 Subject-Numeric successor and the post-1973 file.” The app now ships the three sentences above in their place, under a new key (`.v3`). Why: the category never held the 1963–1973 file. Measured over the 264,552 document source notes, 22 of the 9,443 Subject-Numeric citations sat in the Central Foreign Policy File category; 3,844 were counted under the Central Decimal File and 5,577 under Other NARA Collections, by how each note was worded. #1543 gives the Subject-Numeric File a category of its own, which is what your “For now” was waiting on, so the footnote says what the three central categories are and how a citation is placed among them. It also names the Numerical File of 1906–1910, whose 2,447 citations the Central Decimal File category has always held. Edit the block above to reword it; this box is never written back.
 
 ---
 
@@ -235,12 +237,12 @@ These figures cover only published, digitized volumes. A volume’s publication 
 
 *The Top Collections card and the other dashboard sentences §4 does not carry.*
 
-#### This dashboard groups source notes into ten broad…
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | SourceProvenanceDashboard.archivalAnalyticsLink | lines: 579–580 | key: series.provenance.archivalLink.detail -->
+#### This dashboard groups source notes into eleven broad…
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | SourceProvenanceDashboard.archivalAnalyticsLink | lines: 609–610 | key: series.provenance.archivalLink.detail.v2 -->
 
-This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together.
+This dashboard groups source notes into eleven broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together.
 
-<!-- END SOURCE: series.provenance.archivalLink.detail -->
+<!-- END SOURCE: series.provenance.archivalLink.detail.v2 -->
 
 #### The years selected above fall outside the eras this ranking…
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | TopCollectionsCard.body | lines: 83–84 | key: series.provenance.topCollections.noBands -->

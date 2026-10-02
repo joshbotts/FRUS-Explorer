@@ -378,10 +378,19 @@ of the editors' source note. This answers *where the printed document came from*
 | `citation_era` | **The citation *form*, not a date.** See below. |
 | `raw_text` | The source note as printed — your fallback when the parse is thin. It is also where the printed source note's misprints live: a singleton class key beside a large neighbour (`611.8331/139` beside `611.3331`, `611.2031`/`611.2631` beside `611.2531`) is a suspect, and the document header decides. |
 
-`citation_era` takes one of: `decimal`, `cfpf`, `lot_file`, `structured`, `foreign`, `published`,
-`named_series`, `unrecognized`. These describe *how the citation is shaped*, which correlates with
-period but does not encode it. `structured` in particular covers NARA collections, presidential
-libraries, and CIA Job citations alike. Never group by it and label the axis "era."
+`citation_era` takes one of: `decimal`, `subject_numeric`, `cfpf`, `lot_file`, `structured`,
+`foreign`, `published`, `named_series`, `unrecognized`. These describe *how the citation is shaped*,
+which correlates with period but does not encode it. `structured` in particular covers NARA
+collections, presidential libraries, and CIA Job citations alike. Never group by it and label the
+axis "era."
+
+`subject_numeric` (index v65, #1543) is a Subject-Numeric File citation (February 1963–1973) in
+either wording, Department-led or National-Archives-led; its `repository` and `series_name` are
+stored as before. `decimal` likewise covers a decimal file number cited through the National
+Archives. So a `subject_numeric` or `decimal` row may carry `repository = 'National Archives'` and a
+block's name (`Central Files 1970–73`) in `series_name` where a Department-led row carries the file
+number: read the designation from `decimal_class`, or from `raw_text` when the class grammar
+refuses it (`AID (US) INDIA`). The form is read from the citation, never from the document's date.
 
 **`external_citations`** — **many rows per document**, keyed
 `(volume_id, document_id, note_ordinal, citation_index)`: archival material the editors *cited in a
@@ -1307,8 +1316,11 @@ KNOWN TRAPS — do not fall into these:
   (b) PUBLISH NO SHARE WITHOUT ITS DENOMINATOR, as "N of M", at the point of use. A share is a
       number a reader must be able to re-derive from what you printed; it is not a claim.
 - body_text INCLUDES editorial footnotes. Term frequencies blend document and editor language.
-- citation_era is a citation FORM (decimal, lot_file, structured, cfpf, foreign, published,
-  named_series, unrecognized), NOT a date. Never plot it as a timeline.
+- citation_era is a citation FORM (decimal, subject_numeric, lot_file, structured, cfpf, foreign,
+  published, named_series, unrecognized), NOT a date. Never plot it as a timeline. subject_numeric
+  is a Subject-Numeric File citation (February 1963–1973) in either wording, Department-led or
+  National-Archives-led; its repository and series_name are stored as before. decimal likewise
+  covers a decimal file number cited through the National Archives.
 - cross_references.reference_type defaults body references to 'footnote'. It cannot support a
   body-vs-footnote split.
 - document_sources (where a document CAME FROM, one row per document) and external_citations
@@ -1972,7 +1984,7 @@ The stack, and the question each artifact answers:
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,850 edges, 4,885 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 8,637 cross-volume edges into 5,747 documents from 185 volumes — its `volumes` array (237) is a shared vocabulary of target *and* citing volumes, not a target list (distinct targets: 208), and its own footnote share is 7,631 of 8,637 = 88.4%, not the corpus-wide 95.3% |
-| `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, a lot file, a library — per decade and per volume | 269,242 notes, 523 volumes, 16 decades |
+| `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,242 notes, 523 volumes, 16 decades |
 
 Three rules govern using them, and the second is easy to get backwards.
 

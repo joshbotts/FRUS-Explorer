@@ -128,7 +128,7 @@ public enum SourceProvenanceIndexRunner {
             var acc = accumulators[decade] ?? DecadeAccumulator()
             var volumeCounts: [ProvenanceCategory: Int] = [:]
             for text in noteTexts {
-                let category = ProvenanceCategory.from(parser.parse(text))
+                let category = ProvenanceCategory.from(parser.parse(text), note: text)
                 acc.counts[category, default: 0] += 1
                 volumeCounts[category, default: 0] += 1
                 acc.totalNotes += 1

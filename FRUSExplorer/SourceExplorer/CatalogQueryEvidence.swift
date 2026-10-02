@@ -39,6 +39,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-06: #681, live results adopt #669's candidate grammar
+///   1.1 — 2026-10-02: #1543 — `forNote(_:rawNote:)` reads the note text, and a Subject-Numeric
+///          citation takes no catalogue query in any wording; `offersManualSearch(for:rawNote:)`,
+///          the Mac window's rule for its free-text field
 enum CatalogQueryEvidence: Sendable, Equatable {
 
     /// Every result carries the control number that was asked for, checked by
@@ -53,10 +56,17 @@ enum CatalogQueryEvidence: Sendable, Equatable {
 
     /// How the citation `note` will be looked up, or `nil` when it takes no catalogue query.
     ///
-    /// Mirrors the dispatch in both views' `loadCatalogResults`. A `.naraCollection` that names
+    /// Mirrors the dispatch in both views' `load()`. A `.naraCollection` that names
     /// a lot is verified because #704 routes it to the guarded lot path — the classification
     /// has to track that reroute or it would describe a query the app no longer issues.
-    static func forNote(_ note: ParsedSourceNote) -> CatalogQueryEvidence? {
+    ///
+    /// A Subject-Numeric citation takes no query, however it is worded (#1543). Worded through
+    /// the National Archives it parses as a record-group collection, and it used to run a keyed
+    /// search on its block's name — "Central Files 1970–73" — which cannot find a central file:
+    /// the central files have no item-level catalogue record. Both views show it the
+    /// Subject-Numeric panel instead.
+    static func forNote(_ note: ParsedSourceNote, rawNote: String) -> CatalogQueryEvidence? {
+        if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawNote) { return nil }
         switch note {
         case .lotFile:
             return .controlNumberVerified
@@ -66,6 +76,22 @@ enum CatalogQueryEvidence: Sendable, Equatable {
             return .collectionNameOnly
         default:
             return nil
+        }
+    }
+
+    /// Whether the Mac window offers its free-text catalogue search for a note: the three cases
+    /// whose results the NARA box draws, less a Subject-Numeric citation (#1543), which has no
+    /// query to refine and whose box draws the Subject-Numeric finding aids instead — a field
+    /// there would run a search whose results nothing shows.
+    ///
+    /// Here rather than in `MacSourceExplorerView` so the rule is tested: the Mac view is not
+    /// compiled into the test target's host.
+    static func offersManualSearch(for note: ParsedSourceNote?, rawNote: String) -> Bool {
+        guard let note else { return false }
+        if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawNote) { return false }
+        switch note {
+        case .lotFile, .presidentialLibrary, .naraCollection: return true
+        default: return false
         }
     }
 

@@ -858,3 +858,111 @@ struct RealTEIPageCitationsV63Tests {
         }
     }
 }
+
+// MARK: - Subject-Numeric rows against the bundled usage index (#1543)
+
+/// The live index and the bundled artifacts place a central-files citation by the same rule
+/// (#1543): `IndexingPipeline.baseDocumentSourceRow` and `ProvenanceCategory.from(_:note:)` both
+/// read `CollectionKeying.centralFilesForm`. This indexes three real volumes and requires each
+/// one's stored rows, mapped back through `SourceProvenanceCategory.from(citationEra:repository:)`,
+/// to equal that volume's counts in the bundled `collection-usage-index.json` for the four
+/// categories the rule moves notes between.
+///
+/// - `frus1964-68v01` cites the file through the Department (`Central Files, POL 27 VIET S`).
+/// - `frus1961-63v25` cites it through the National Archives under a printed "1960–63", beside
+///   decimal numbers worded the same way, which are stored `decimal` with the repository
+///   `National Archives`.
+/// - `frus1969-76ve09p2` cites it under the Central Foreign Policy File's name
+///   (`Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli`).
+///
+/// Skipped without `FRUS_TEI_MIRROR` (see `RealTEICorpus`), so a run must report this suite's
+/// test as run, not skipped, to count. Before index v65 no row was stored `subject_numeric`.
+///
+/// Version history:
+///   1.0 — 2026-10-02: #1543
+@Suite("IndexingPipeline — real-TEI Subject-Numeric rows (index v65, #1543)",
+       .enabled(if: RealTEICorpus.hasVolumes(["frus1964-68v01", "frus1961-63v25", "frus1969-76ve09p2"]),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEISubjectNumericTests {
+
+    /// One stored row's form and repository.
+    private struct StoredForm {
+        let documentId: String
+        let era: String
+        let repository: String?
+    }
+
+    private func storedForms(dbURL: URL, volumeId: String) throws -> [StoredForm] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "RealTEISubjectNumericTests", code: 1)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        let sql = "SELECT document_id, citation_era, repository FROM document_sources WHERE volume_id = ? ORDER BY document_id"
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "RealTEISubjectNumericTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var rows: [StoredForm] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            func col(_ i: Int32) -> String? { sqlite3_column_text(stmt, i).map { String(cString: $0) } }
+            rows.append(StoredForm(documentId: col(0) ?? "", era: col(1) ?? "", repository: col(2)))
+        }
+        return rows
+    }
+
+    @Test("Three volumes' stored central-file forms equal their bundled usage-index counts")
+    func storedFormsMatchTheBundledUsageIndex() async throws {
+        let usage = try #require(CollectionUsageIndexStore.shared, "bundled collection-usage-index.json must decode")
+        let moved: [SourceProvenanceCategory] = [.centralDecimalFile, .subjectNumericFile,
+                                                 .centralForeignPolicyFile, .naraCollection]
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            var entered = 0
+            for volumeId in ["frus1964-68v01", "frus1961-63v25", "frus1969-76ve09p2"] {
+                try await pipeline.indexVolume(volumeId)
+                let rows = try storedForms(dbURL: dbURL, volumeId: volumeId)
+                #expect(rows.count > 50, "\(volumeId) stored \(rows.count) source rows")
+                var stored: [SourceProvenanceCategory: Int] = [:]
+                for row in rows {
+                    stored[SourceProvenanceCategory.from(citationEra: row.era, repository: row.repository),
+                           default: 0] += 1
+                }
+                let bundled = usage.categoryCounts(forVolumeId: volumeId)
+                #expect((bundled["subjectNumericFile"] ?? 0) > 0,
+                        "the bundled usage index gives \(volumeId) no Subject-Numeric notes")
+                for category in moved {
+                    #expect((stored[category] ?? 0) == (bundled[category.rawValue] ?? 0), """
+                        \(volumeId), \(category.rawValue): the index stored \(stored[category] ?? 0), the \
+                        bundled usage index counts \(bundled[category.rawValue] ?? 0). Stored \
+                        subject_numeric documents: \
+                        \(rows.filter { $0.era == "subject_numeric" }.map(\.documentId).joined(separator: " "))
+                        """)
+                }
+                #expect(rows.filter { $0.era == "subject_numeric" }.count
+                        == (bundled["subjectNumericFile"] ?? 0))
+                entered += 1
+            }
+            #expect(entered == 3)
+
+            // The three volumes' Subject-Numeric counts, as measured at corpus 8e5da08c1.
+            #expect(usage.categoryCounts(forVolumeId: "frus1964-68v01")["subjectNumericFile"] == 201)
+            #expect(usage.categoryCounts(forVolumeId: "frus1961-63v25")["subjectNumericFile"] == 70)
+            #expect(usage.categoryCounts(forVolumeId: "frus1969-76ve09p2")["subjectNumericFile"] == 10)
+
+            // frus1961-63v25's decimal numbers cited through the National Archives: stored
+            // `decimal`, with the repository their wording gave them.
+            let v25 = try storedForms(dbURL: dbURL, volumeId: "frus1961-63v25")
+            let nationalArchivesDecimal = v25.filter { $0.era == "decimal" && $0.repository == "National Archives" }
+            #expect(nationalArchivesDecimal.count == 99, "stored \(nationalArchivesDecimal.count)")
+            // And its Subject-Numeric rows keep the same repository.
+            #expect(v25.filter { $0.era == "subject_numeric" }.allSatisfy { $0.repository == "National Archives" })
+            // frus1964-68v01's are worded through the Department.
+            let v01 = try storedForms(dbURL: dbURL, volumeId: "frus1964-68v01")
+            #expect(v01.filter { $0.era == "subject_numeric" }.allSatisfy { $0.repository == "Department of State" })
+        }
+    }
+}

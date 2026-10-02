@@ -407,7 +407,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/So
 
 - Intro: `series.provenance.intro`
 - Chart titles/captions: `series.provenance.composition.title` / `.caption`, `series.provenance.trend.title` / `.caption`, `series.provenance.density.title` / `.caption`; axis labels `series.provenance.*.x` / `.y`; category legend `series.provenance.category.legend`
-- Caveats block: `series.provenance.caveats.title` / `series.provenance.caveats.body.v2 %lld %lld`
+- Caveats block: `series.provenance.caveats.title` / `series.provenance.caveats.body.v3 %lld %lld`
 - Shared “View as table” control: `series.inspector.viewTable`
 - Empty state: `series.provenance.empty.title` / `series.provenance.empty.message`
 

@@ -70,6 +70,10 @@ import Foundation
 ///          the cut against today's parser
 ///   1.8 — #1515: `centralFileDesignation(_:)` keeps the stop of an abbreviation of initials
 ///          (`DEF 15–3 IRAN-U.S.`), which the crib printed as `IRAN-U.S`
+///   1.9 — #1543: `.subjectNumericFile` is a central category. A central-file row worded through
+///          the National Archives keeps the key index v64 gave it (`coll|National
+///          Archives|<series>`), so no stored Archive Visit key moves, and a roster row with no
+///          parsed designation takes `CollectionKeying.centralFileDesignation(parsed:note:)`
 @MainActor
 enum TripPacketBuilder {
 
@@ -179,7 +183,12 @@ enum TripPacketBuilder {
                 citation: dataSource.citation(volumeId: document.volumeId,
                                               documentId: document.documentId,
                                               printedNumber: printedNumbers[documentKey]),
-                fileDesignation: Self.fileDesignation(from: parsed),
+                // The parse's own designation, else the one the central-files rule reads from the
+                // note (#1543): a citation worded through the National Archives parses as a
+                // record-group collection, which carries no designation, and one the class grammar
+                // refuses (`AID (US) S VIET`) stores none.
+                fileDesignation: Self.fileDesignation(from: parsed)
+                    ?? CollectionKeying.centralFileDesignation(parsed: parsed, note: record.rawText),
                 documentDay: dates[documentKey].flatMap {
                     DecimalFileSegment.DocumentDay(iso: $0.dateISO, precision: $0.precision)
                 },
@@ -293,6 +302,7 @@ enum TripPacketBuilder {
     /// | form | key | why this grain |
     /// |---|---|---|
     /// | central file | `class\|611.51` | the class is what a researcher consults; the file number is the seeding's detail |
+    /// | central file through the National Archives | `coll\|National Archives\|Central Files 1970–73` | the key index v64 gave the row, kept so a stored plan row stays on its target (#1543) |
     /// | lot file | `lot\|60D627` | `lotFileNorm`, the normalizer `external_citations` stores — merge parity by construction |
     /// | library / collection | `coll\|repo\|series` | the box/folder is the seeding's detail |
     /// | unparsed | `r\|<raw>` | distinct notes must never merge on a guess |
@@ -303,8 +313,20 @@ enum TripPacketBuilder {
         for record: CollectionGeneratedBlocks.SourceRecord,
         category: SourceProvenanceCategory?
     ) -> (key: String, label: String, lotAsPrinted: String?) {
+        // `where` on each pattern: in a multi-pattern case it binds only the pattern it follows.
+        let keysAsCentralFile = record.repository != "National Archives"
         switch category {
-        case .centralDecimalFile, .centralForeignPolicyFile:
+        // #1543, owner decision 8: no stored key moves. A central-file row whose stored repository
+        // is the National Archives was a `structured` row until index v65 and keyed on its series,
+        // the block its note prints. It keeps that key in whichever central category it now sits
+        // (a Subject-Numeric file, or a decimal number worded the same way), by falling to the
+        // default arm. Re-keying the class-keyed half of a block to `class|…` would leave a stored
+        // tier, exclusion or note on a shrunken target while most of its documents reappeared as
+        // new ones: measured, 100 of 168 (volume, series) buckets mix class-keyed and class-less
+        // notes.
+        case .centralDecimalFile where keysAsCentralFile,
+             .subjectNumericFile where keysAsCentralFile,
+             .centralForeignPolicyFile where keysAsCentralFile:
             // The canonical class function — the same grammar `document_sources.decimal_class`
             // stores, so this grain matches the archival-analytics vocabulary.
             if let cls = SourceNoteParser.decimalClassLocation(inCitation: record.rawText) {

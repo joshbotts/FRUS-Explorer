@@ -202,7 +202,8 @@ enum SemanticMapExport {
         ]
         // The lens's OWN caveat, which until now reached only the on-screen legend. A lens carries
         // a caption exactly when its colouring would otherwise overstate the evidence — the
-        // provenance lens's categories are a plurality, not a majority, for 73 of 523 volumes — so
+        // provenance lens's categories are a plurality, not a majority, for 86 of the 499 volumes it
+        // colours (the caption carries the measured figures) — so
         // an export without it is an export that overstates. Appended last, beside the lens line
         // it qualifies.
         if let caption = lens.caption { lines.append(caption) }

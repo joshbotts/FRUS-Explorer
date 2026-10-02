@@ -51,6 +51,45 @@ public struct CollectionIdentity: Sendable, Equatable {
     }
 }
 
+// MARK: - CentralFilesForm
+
+/// Which of the Department of State's central filing systems an RG 59 central-files citation
+/// gives a file in: a decimal file number (the Central Decimal File, 1910–January 1963) or a
+/// Subject-Numeric file designation (the Subject-Numeric File, February 1963–1973).
+///
+/// Read from the citation's form by ``CollectionKeying/centralFilesForm(parsed:note:)``, never
+/// from the document's year (#1543).
+public enum CentralFilesForm: String, Sendable, Equatable {
+    /// A decimal file number, `611.61/3-2763`.
+    case decimal
+    /// A Subject-Numeric file designation, `POL 27 VIET S`, or its block of years.
+    case subjectNumeric
+}
+
+/// What decided a central-files citation's form — the three kinds of evidence
+/// ``CollectionKeying/centralFilesReading(parsed:note:)`` reads, in the order it reads them.
+public enum CentralFilesEvidence: String, Sendable, Equatable {
+    /// The class grammar read a class key from the citation sentence.
+    case classKey
+    /// The stored identifier or a segment opens with a Subject-Numeric lead the class grammar
+    /// refuses (`AID (US) S VIET`, `POL Kuwait`, `UN`).
+    case designation
+    /// Only the block of years (`Central Files 1964–66`) names the file.
+    case block
+}
+
+/// One central-files citation as ``CollectionKeying/centralFilesReading(parsed:note:)`` read it.
+public struct CentralFilesReading: Sendable, Equatable {
+    /// The filing system the citation gives a file in.
+    public let form: CentralFilesForm
+    /// What decided the form.
+    public let evidence: CentralFilesEvidence
+    /// The file designation as one string, or `nil` when the citation gives only its block.
+    public let designation: String?
+    /// The Subject-Numeric lead that decided a `.designation` reading, upper-cased; else `nil`.
+    public let lead: String?
+}
+
 // MARK: - CollectionKeying
 
 /// The shared collection-authority keying rules: the normal form, repository
@@ -98,6 +137,12 @@ public struct CollectionIdentity: Sendable, Equatable {
 ///   1.5 — 2026-10-01 (#1514 and its fold-ins): `bridgedRepository(ofHeading:)`, the full-name
 ///          heading both Sources parsers now inherit; a Department of State named series keys no
 ///          authority collection (`identity(of:note:)`)
+///   1.6 — 2026-10-02 (#1543): `centralFilesReading(parsed:note:)` and its three readers
+///          (`centralFilesForm`, `isSubjectNumericCitation`, `centralFileDesignation`), which
+///          place an RG 59 central-files citation by its form — a decimal file number or a
+///          Subject-Numeric file designation — in either wording; `subjectNumericLead(ofCandidate:)`,
+///          `subjectNumericOrganizationLeads` and `printedSubjectNumericBlock(inCitation:)`. No
+///          collection identity changes
 public enum CollectionKeying {
 
     // MARK: - Normal form
@@ -590,6 +635,337 @@ public enum CollectionKeying {
             return nil
         }
     }
+
+    // MARK: - Central-files form (#1543)
+
+    /// Leads of a Subject-Numeric designation that are an organization or agency file and no
+    /// handbook category: NARA's hints leaflet gives `UN` as a designator, and the two handbooks
+    /// file an international organization's papers under its own name. These seven are the leads
+    /// `TripPacketExporter.isSubjectNumericDesignation` documents as organization files; the test
+    /// below reads them beside `ParsedSourceNote.subjectNumericCategories`.
+    public static let subjectNumericOrganizationLeads: Set<String> = [
+        "AID", "UN", "NATO", "SEATO", "CENTO", "EEC", "OECD",
+    ]
+
+    /// The form of an RG 59 central-files citation, with what decided it and the file designation
+    /// it gives, or `nil` when the citation is not one this rule reads or gives no evidence
+    /// (#1543).
+    ///
+    /// NARA names five eras of the Department's central files, and the name does not separate
+    /// them: its catalog lists "Central Foreign Policy File" as another title of the
+    /// Subject-Numeric series and "Central Files" as another title of the decimal series. Only the
+    /// citation's form does, so this reads the form and never the document's year.
+    ///
+    /// ## Gate
+    /// - `.centralFiles` in record group 59. No anchor is needed, and the stored identifier is
+    ///   tested before the segments.
+    /// - `.naraCollection` in record group 59 with no lot, whose citation sentence has an anchor
+    ///   (a segment naming the central files, see `centralFilesAnchor(in:)`) behind a clean lead:
+    ///   every segment before the anchor is a holder or record-group phrase. A library-, lot- or
+    ///   office-led note whose remark names the central files is refused here.
+    /// - `.cfpfFile` with an anchor behind a clean lead, whose citation sentence has neither a lot
+    ///   nor a film form. This case answers `.subjectNumeric` or `nil`, never `.decimal`.
+    ///
+    /// ## Evidence, the first that applies
+    /// 1. `SourceNoteParser.decimalClassLocation(inCitation:)` returns a class key: letter-led is
+    ///    Subject-Numeric, digit-led is decimal.
+    /// 2. The stored identifier, or a candidate after the anchor, opens with a Subject-Numeric
+    ///    lead (`subjectNumericLead(ofCandidate:)`).
+    /// 3. The anchor segment or the one after it prints a block of years inside 1964–1973, and no
+    ///    later segment opens with `Entry`, `Records of` or `Lot`. A single year never decides.
+    ///
+    /// A `.centralFiles` note with no evidence gets `nil`, and its callers keep it where it was.
+    public static func centralFilesReading(parsed: ParsedSourceNote,
+                                           note: String) -> CentralFilesReading? {
+        // The parse's own gates first, so a lot, a library or an unparsed note — most of the
+        // corpus after 1955 — leaves before its citation sentence is tokenized.
+        var identifier: String?
+        var isForeignPolicyFile = false
+        let needsAnchor: Bool
+        switch parsed {
+        case .centralFiles(let recordGroup, let fileIdentifier):
+            guard recordGroup == "RG-59" || recordGroup == "59" else { return nil }
+            identifier = fileIdentifier
+            needsAnchor = false
+        case .naraCollection(let recordGroup, _, let lotFile, _):
+            guard recordGroup == "59", lotFile == nil else { return nil }
+            needsAnchor = true
+        case .cfpfFile:
+            isForeignPolicyFile = true
+            needsAnchor = true
+        default:
+            return nil
+        }
+        let segs = segments(ofCitation: note)
+        let anchor = centralFilesAnchor(in: segs)
+        if needsAnchor {
+            guard let anchor, hasCleanLead(segs, before: anchor.index) else { return nil }
+        }
+        if isForeignPolicyFile {
+            let scope = SourceNoteParser.citationSentence(of: note)
+            guard !matches(filmFormRegex, scope),
+                  SourceNoteParser.firstLotReference(in: scope) == nil else { return nil }
+        }
+
+        let candidates = anchor.map { centralFilesCandidates(segs, anchor: $0) } ?? []
+
+        // 1. The class key.
+        if let classKey = SourceNoteParser.decimalClassLocation(inCitation: note) {
+            if isSubjectNumericClass(classKey) {
+                return CentralFilesReading(form: .subjectNumeric, evidence: .classKey,
+                                           designation: identifier ?? classKey, lead: nil)
+            }
+            guard !isForeignPolicyFile else { return nil }
+            return CentralFilesReading(
+                form: .decimal, evidence: .classKey,
+                designation: identifier ?? candidates.lazy
+                    .map(droppingTrailingStops)
+                    .first { $0.first?.isNumber == true },
+                lead: nil)
+        }
+
+        // 2. A Subject-Numeric lead.
+        if let identifier, let lead = subjectNumericLead(ofCandidate: identifier) {
+            return CentralFilesReading(form: .subjectNumeric, evidence: .designation,
+                                       designation: identifier, lead: lead)
+        }
+        for candidate in candidates {
+            if let lead = subjectNumericLead(ofCandidate: candidate) {
+                return CentralFilesReading(
+                    form: .subjectNumeric, evidence: .designation,
+                    designation: identifier ?? designation(fromCandidate: candidate), lead: lead)
+            }
+        }
+
+        // 3. A block of years.
+        if let anchor {
+            let near = segs[anchor.index...].prefix(2).joined(separator: ", ")
+            if matches(subjectNumericBlockRegex, near),
+               !segs[(anchor.index + 1)...].contains(where: { matches(officeFileLeadRegex, $0) }) {
+                return CentralFilesReading(form: .subjectNumeric, evidence: .block,
+                                           designation: identifier, lead: nil)
+            }
+        }
+        return nil
+    }
+
+    /// The form of an RG 59 central-files citation — a decimal file number or a Subject-Numeric
+    /// file designation — or `nil` (#1543). See `centralFilesReading(parsed:note:)` for the rule.
+    public static func centralFilesForm(parsed: ParsedSourceNote, note: String) -> CentralFilesForm? {
+        centralFilesReading(parsed: parsed, note: note)?.form
+    }
+
+    /// Whether a note cites the Subject-Numeric File of February 1963–1973, in either wording:
+    /// `Department of State, Central Files, POL 27 VIET S` or `National Archives, RG 59, Central
+    /// Files 1964–66, POL 27 VIET S` (#1543).
+    public static func isSubjectNumericCitation(parsed: ParsedSourceNote, note: String) -> Bool {
+        centralFilesForm(parsed: parsed, note: note) == .subjectNumeric
+    }
+
+    /// The file designation a central-files citation gives, as one string: `POL 27 VIET S`,
+    /// `AID (US) INDIA`, or `399.731/7–2561` for a decimal number cited through the National
+    /// Archives (#1543). `nil` for a citation that gives only its block of years, and for one
+    /// `centralFilesReading(parsed:note:)` does not read.
+    ///
+    /// The stored `.centralFiles` identifier wins when the parse kept one; else the class key;
+    /// else the first candidate that opened with a Subject-Numeric lead, taken after a `": "`,
+    /// cut at the first `;`, with a trailing classification marking and trailing stops removed.
+    public static func centralFileDesignation(parsed: ParsedSourceNote, note: String) -> String? {
+        centralFilesReading(parsed: parsed, note: note)?.designation
+    }
+
+    /// The block of years a central-files citation prints, when it is one of NARA's three
+    /// Subject-Numeric blocks — `1964–66`, `1967–69` or `1970–73`, returned in that spelling
+    /// whether the note prints two digits or four for the closing year — or `nil` (#1543).
+    ///
+    /// Read from the anchor segment and the one after it, where rule 3 of
+    /// `centralFilesReading(parsed:note:)` reads its range. Any other printed range is no block:
+    /// the corpus prints `Central Files 1960–63` over 70 Subject-Numeric files of 1963 and
+    /// `Central Files 1964–67` over 4, and NARA has no block of either name. NARA's fourth
+    /// segment, February–December 1963, is one year and is never printed as a range, so a caller
+    /// places a file in it by the document's date.
+    public static func printedSubjectNumericBlock(inCitation note: String) -> String? {
+        let segs = segments(ofCitation: note)
+        guard let anchor = centralFilesAnchor(in: segs), let regex = naraBlockRegex else { return nil }
+        let near = segs[anchor.index...].prefix(2).joined(separator: ", ")
+        guard let match = regex.firstMatch(in: near, range: NSRange(near.startIndex..., in: near)),
+              let first = Range(match.range(at: 1), in: near),
+              let last = Range(match.range(at: 2), in: near) else { return nil }
+        switch (String(near[first]), String(near[last])) {
+        case ("64", "66"): return "1964–66"
+        case ("67", "69"): return "1967–69"
+        case ("70", "73"): return "1970–73"
+        default: return nil
+        }
+    }
+
+    /// The Subject-Numeric lead a candidate opens with, upper-cased (`POL`, `AID`, `NATO`), or
+    /// `nil`.
+    ///
+    /// The candidate is read after a `": "` and without its trailing stops. It must open with one
+    /// to six letters followed by the end, whitespace, `(`, `/`, a hyphen or dash, or a digit. The
+    /// letters are all capitals, or three or four letters in title case (`Pol`, `Def`, `Inco`,
+    /// the corpus's 23 title-case designations), and upper-cased they are a handbook category
+    /// (`ParsedSourceNote.subjectNumericCategories`) or an organization lead
+    /// (`subjectNumericOrganizationLeads`). A five-letter title-case word is refused, so
+    /// `Inter-American Affairs` is not read as the category `INTER`.
+    public static func subjectNumericLead(ofCandidate candidate: String) -> String? {
+        let text = droppingTrailingStops(afterColon(candidate))
+        guard let regex = leadTokenRegex,
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let range = Range(match.range(at: 1), in: text) else { return nil }
+        let token = String(text[range])
+        let upper = token.uppercased()
+        let isCapitals = token == upper
+        let isTitleCase = (3...4).contains(token.count) && token.first?.isUppercase == true
+            && token.dropFirst().allSatisfy(\.isLowercase)
+        guard isCapitals || isTitleCase else { return nil }
+        guard ParsedSourceNote.subjectNumericCategories.contains(upper)
+                || subjectNumericOrganizationLeads.contains(upper) else { return nil }
+        return upper
+    }
+
+    /// The first segment of a citation sentence that names the central files, with its text once
+    /// leading `Source:` labels and a leading `RG 59` are dropped, or `nil`.
+    ///
+    /// A segment is the anchor when that text passes `isCentralFilesSegment(_:)`, begins with the
+    /// singular `Central File`, `Central Foreign Policy File` or `Central Decimal File`, begins
+    /// with `Decimal File`, or is exactly `CF`.
+    static func centralFilesAnchor(in segments: [String]) -> (index: Int, text: String)? {
+        for (index, segment) in segments.enumerated() {
+            let text = removingPrefix(rg59PrefixRegex, from: bare(segment))
+            if isCentralFilesSegment(text) || matches(singularAnchorRegex, text)
+                || matches(decimalFileAnchorRegex, text) || text == "CF" {
+                return (index, text)
+            }
+        }
+        return nil
+    }
+
+    /// Whether every segment before `anchorIndex` is a holder or record-group phrase: the
+    /// National Archives, NARA, the Department of State, DOS, the Records or General Records of
+    /// the Department of State, each optionally followed by `RG 59` with no comma, or `RG 59`
+    /// alone. An anchor at index 0 has a clean lead.
+    static func hasCleanLead(_ segments: [String], before anchorIndex: Int) -> Bool {
+        segments[..<anchorIndex].allSatisfy { matches(holderLeadRegex, bare($0)) }
+    }
+
+    /// The segments a designation is looked for in, in order: the anchor's own tail (what follows
+    /// the series words, an optional range of years and any `,` or `:`) when it is not empty, then
+    /// each later segment that is not only a range of years.
+    static func centralFilesCandidates(_ segments: [String],
+                                       anchor: (index: Int, text: String)) -> [String] {
+        var candidates: [String] = []
+        if anchor.text != "CF", let regex = anchorHeadRegex,
+           let match = regex.firstMatch(in: anchor.text,
+                                        range: NSRange(anchor.text.startIndex..., in: anchor.text)),
+           let range = Range(match.range, in: anchor.text) {
+            let tail = anchor.text[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            if !tail.isEmpty { candidates.append(tail) }
+        }
+        for segment in segments[(anchor.index + 1)...] {
+            let trimmed = segment.trimmingCharacters(in: CharacterSet(charactersIn: " ."))
+            if !matches(yearRangeOnlyRegex, trimmed) { candidates.append(segment) }
+        }
+        return candidates
+    }
+
+    /// A segment without its leading `Source:` labels (the corpus doubles the label in places).
+    private static func bare(_ segment: String) -> String {
+        removingPrefix(sourceLabelRegex, from: segment.trimmingCharacters(in: .whitespaces))
+    }
+
+    /// `text` after its first `": "`, or `text` itself when it has none.
+    private static func afterColon(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespaces)
+        guard let colon = trimmed.range(of: ": ") else { return trimmed }
+        return String(trimmed[colon.upperBound...])
+    }
+
+    /// `text` without trailing full stops and spaces.
+    private static func droppingTrailingStops(_ text: String) -> String {
+        var result = text.trimmingCharacters(in: .whitespaces)
+        while result.hasSuffix(".") || result.hasSuffix(" ") { result.removeLast() }
+        return result
+    }
+
+    /// The designation a candidate carries: read after a `": "`, cut at the first `;`, without a
+    /// trailing classification marking and without trailing stops.
+    private static func designation(fromCandidate candidate: String) -> String? {
+        var text = afterColon(candidate)
+        if let semicolon = text.firstIndex(of: ";") { text = String(text[..<semicolon]) }
+        text = droppingTrailingStops(text)
+        if let regex = trailingClassificationRegex,
+           let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+           let range = Range(match.range, in: text) {
+            text = droppingTrailingStops(String(text[..<range.lowerBound]))
+        }
+        return text.isEmpty ? nil : text
+    }
+
+    private static func matches(_ regex: NSRegularExpression?, _ text: String) -> Bool {
+        guard let regex else { return false }
+        return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+    }
+
+    private static func removingPrefix(_ regex: NSRegularExpression?, from text: String) -> String {
+        guard let regex,
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let range = Range(match.range, in: text) else { return text }
+        return String(text[range.upperBound...])
+    }
+
+    private static let sourceLabelRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Source:\s*)+"#)
+
+    private static let rg59PrefixRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:RG[\s-]?59|Record Group 59)\s+"#, options: .caseInsensitive)
+
+    private static let holderLeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:(?:National Archives(?: and Records Administration)?|NARA|Department of State|DOS|(?:General )?Records of the Department of State)(?:\s+(?:RG[\s-]?59|Record Group 59))?|RG[\s-]?59|Record Group 59)$"#,
+        options: .caseInsensitive)
+
+    private static let singularAnchorRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^Central\s+(?:Foreign\s+Policy\s+|Decimal\s+)?File\b"#, options: .caseInsensitive)
+
+    private static let decimalFileAnchorRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^Decimal\s+Files?\b"#, options: .caseInsensitive)
+
+    /// The anchor's series words, an optional range of years, and the punctuation after them.
+    private static let anchorHeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:(?:(?:Decimal\s+and\s+)?Subject-Numeric\s+(?:Indexed\s+)?)?Central\s+(?:Foreign\s+Policy\s+|Decimal\s+)?|Decimal\s+)Files?\s*[,:]?\s*(?:(?:19)?\d{2,4}\s?[–—-]\s?(?:19)?\d{2,4})?[\s:,]*"#,
+        options: .caseInsensitive)
+
+    private static let yearRangeOnlyRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:19)?\d{2,4}\s?[–—-]\s?(?:19)?\d{2,4}$"#)
+
+    private static let leadTokenRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^([A-Za-z]{1,6})(?=$|[\s(/\-–—]|\d)"#)
+
+    /// The Central Foreign Policy File's own forms: a film number (`P840114–1808`,
+    /// `P–860122–0281`, `D 750010–1075`), a stated absence of one, the electronic telegrams, a
+    /// reel, or the Department's STARS record numbers.
+    private static let filmFormRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\b[PDN]\s?[–\-]?\s?\d{6}\s?[–—\-]\s?\d{4}\b|\[?no (?:film|N|reel) number|Electronic Telegrams|\b[PDN]-?Reel|\breel #|STARS"#,
+        options: .caseInsensitive)
+
+    /// A range of years with both ends in 1964…1973 — NARA's blocks are 1964–66, 1967–69 and
+    /// 1970–73, and the corpus prints a few others (`1964–67`).
+    private static let subjectNumericBlockRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?<!\d)19(?:6[4-9]|7[0-3])\s?[–—-]\s?(?:19)?(?:6[4-9]|7[0-3])(?!\d)"#)
+
+    /// A range of years opening in 1964, 1967 or 1970 and closing in 1966, 1969 or 1973, in two
+    /// digits or four; the caller checks the two ends are one block's.
+    private static let naraBlockRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?<!\d)19(64|67|70)\s?[–—-]\s?(?:19)?(66|69|73)(?!\d)"#)
+
+    /// A segment that names an office's or a lot's records under the "Central Files" heading.
+    private static let officeFileLeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Entry\b|Records of\b|Lot\b)"#)
+
+    private static let trailingClassificationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\s+(?:Top Secret|Secret|Confidential|Unclassified|Limited Official Use|Official Use Only|No classification marking)$"#,
+        options: .caseInsensitive)
 
     /// The record-group pattern both parsers use: `SourceNoteParser.rgRegex` and
     /// `FRUSDocumentParser.rgPat` are this literal string. Pinned by

@@ -893,14 +893,14 @@ Open Document
 <!-- END SOURCE: research.action.openDocument.v2 -->
 
 #### Colors group collections by who holds the records — four…
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 307–308 | key: series.provenance.topCollections.method.v3 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 307–308 | key: series.provenance.topCollections.method.v4 %lld %lld -->
 
-Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking.
+Colors group collections by who holds the records — four custodians, not the eleven categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking.
 
-<!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
+<!-- END SOURCE: series.provenance.topCollections.method.v4 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2196–2197 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2322–2323 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 
@@ -1570,7 +1570,7 @@ Close details
 
 #### `series.geography.totals.title`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:156, SeriesGeographyDashboard.swift:258, SeriesGeographyDashboard.swift:264 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:160, SeriesGeographyDashboard.swift:258, SeriesGeographyDashboard.swift:264 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Overall regional emphasis
 
@@ -1580,7 +1580,7 @@ Overall regional emphasis
 
 #### `series.geography.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:140, SeriesGeographyDashboard.swift:218, SeriesGeographyDashboard.swift:247 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:144, SeriesGeographyDashboard.swift:218, SeriesGeographyDashboard.swift:247 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Share of volumes
 
@@ -1590,7 +1590,7 @@ Share of volumes
 
 #### `series.provenance.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:267, ChartInspectorAdapters.swift:287, SourceProvenanceDashboard.swift:408, SourceProvenanceDashboard.swift:437 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:276, ChartInspectorAdapters.swift:296, SourceProvenanceDashboard.swift:438, SourceProvenanceDashboard.swift:468 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
 
 Share of source notes
 

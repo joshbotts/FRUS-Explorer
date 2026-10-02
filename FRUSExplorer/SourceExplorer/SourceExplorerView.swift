@@ -97,6 +97,19 @@ import SwiftUI
 ///           opens with (`NamedFileSeriesRouting.explainer`); review round 1: it offers NARA's
 ///           Department of State records page only when the name states no holder
 ///           (`NamedFileSeriesRouting.offersStateRecordsLink`). Mirrored by MacSourceExplorerView 1.13.
+///   1.15 — 2026-10-02: #1543 — a Subject-Numeric citation gets its own panel in every wording
+///           (`subjectNumericCitation(parsed:note:documentDay:)`, `subjectNumericPanel`): the file
+///           designation, NARA's block of years, the era's page and handbook, and what to hand an
+///           archivist. No keyed catalog search runs for it. The basis line names the file for a
+///           citation worded through the National Archives. The filing-period table gains the
+///           1973–1979 row and names the Subject-Numeric File. Mirrored by MacSourceExplorerView 1.14.
+///           Review round 1: a Department-led designation with a stop in it (`DEF 19–8 U.S.-IRAN`)
+///           gets no basis line, where the decimal arm had captioned it "Same decimal file".
+///           Landing: an empty Archival Neighbors list under the panel says the note cites the
+///           Subject-Numeric File (`relatedEmptyState(for:note:)`, two new sentences), where it
+///           said the note cites no recognized central file.
+///           Landing round 3: a Department-led designation alone in its file has that sentence
+///           too, where it had the one every keyed note has; one situation, one sentence.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -783,8 +796,26 @@ struct SourceExplorerView: View {
 
     // MARK: - Provenance Section
 
+    /// The provenance panel for a parsed note.
+    ///
+    /// A Subject-Numeric citation is read first (#1543), because its parse case says how the note
+    /// was worded and not what it cites: the same file is `.centralFiles` through the Department,
+    /// `.naraCollection` through the National Archives and `.cfpfFile` when a remark names the
+    /// Central Foreign Policy File, and the three panels those cases draw told three stories about
+    /// one file. Every other note takes the panel its case names.
     @ViewBuilder
     private func provenanceSection(parsed: ParsedSourceNote) -> some View {
+        if let subjectNumeric = Self.subjectNumericCitation(parsed: parsed, note: rawSourceNote,
+                                                           documentDay: documentDay) {
+            subjectNumericPanel(subjectNumeric)
+        } else {
+            provenancePanel(for: parsed)
+        }
+    }
+
+    /// The panel a note's parse case names — `provenanceSection(parsed:)`'s second arm.
+    @ViewBuilder
+    private func provenancePanel(for parsed: ParsedSourceNote) -> some View {
         switch parsed {
 
         case .centralFiles(let rg, let fileId):
@@ -1572,11 +1603,16 @@ struct SourceExplorerView: View {
     /// All State Dept. central-file filing periods, shown when document year is unknown.
     /// Internal (not private) so `MacSourceExplorerView` and `NARACatalogLookupView` can reference the same list.
     ///
+    /// NARA's five eras (#1543): 1789–1906, 1906–1910, the decimal file's seven blocks, the
+    /// Subject-Numeric File of February 1963–1973, and the Central Foreign Policy File of
+    /// 1973–1979. The table ended at the fourth, and called it "subject-numeric files".
+    ///
     /// ## URL notes (verified 2026-06-04)
     /// - The seven 1910-1963 sub-period pages (`/1910-1963/1910-1929` etc.) all return 404.
     ///   NARA consolidated them onto one parent page; all seven now link to `/1910-1963`.
     /// - The 1789-1906 and 1906-1910 pages load correctly.
     /// - The 1963-1973 page loads correctly.
+    /// - The 1973-1979 page is the one NARA's index of the five eras links (read 2026-10-02).
     /// - All filing manual PDFs are verified present.
     static let allFilingPeriods: [FilingPeriod] = {
         let base     = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files"
@@ -1633,12 +1669,161 @@ struct SourceExplorerView: View {
                          url: URL(string: parent)!,
                          filingManuals: [m1960]),
 
-            // 1963-1973: two filing manuals because the period spans two classification systems.
-            FilingPeriod(id: "1963-1973", label: "1963–1973 (subject-numeric files)",
+            // 1963-1973: two handbooks, in this order — the 1963 one for February–December 1963
+            // and the 1965 one, in effect from January 1964, for 1964–1973.
+            // `subjectNumericCitation` takes the first for the 1963 block and the second after.
+            FilingPeriod(id: "1963-1973", label: "February 1963–1973 (Subject-Numeric File)",
                          url: URL(string: "\(base)/1963-1973")!,
                          filingManuals: [m1963, m1965]),
+
+            // 1973-1979: phased in from July 1973. NARA publishes no filing manual for it.
+            FilingPeriod(id: "1973-1979", label: "1973–1979 (Central Foreign Policy File)",
+                         url: URL(string: "\(base)/1973-1979")!),
         ]
     }()
+
+    /// What Source Explorer shows for a Subject-Numeric citation (#1543): the file designation,
+    /// the block of years it was filed in, and NARA's page and handbooks for the era.
+    struct SubjectNumericCitation: Equatable, Sendable {
+        /// The file designation (`POL 27 VIET S`), or `nil` when the citation gives only its block.
+        let designation: String?
+        /// NARA's block of years: `1963`, `1964–66`, `1967–69` or `1970–73`. `nil` when the note
+        /// prints none of NARA's blocks and the document's date is unknown or outside the file's
+        /// years.
+        let block: String?
+        /// The handbook for the block, or both handbooks when the block is `nil`.
+        let handbooks: [FilingManualLink]
+        /// NARA's finding-aid page for the Subject-Numeric File.
+        let pageURL: URL
+    }
+
+    /// The Subject-Numeric reading of a note, or `nil` when the note does not cite that file
+    /// (`CollectionKeying.centralFilesReading(parsed:note:)` decides, from the citation's form).
+    ///
+    /// - **The designation** is the one the rule read: the stored identifier, the class key, or
+    ///   the segment that opened with a Subject-Numeric lead.
+    /// - **The block** is the one the note prints when that is one of NARA's three (`1964–66`,
+    ///   `1967–69`, `1970–73`). The corpus also prints `1960–63` over 70 Subject-Numeric files of
+    ///   1963 and `1964–67` over 4, and NARA has no block of either name, so for those — and for
+    ///   a note that prints no range — the block is the one the document's own day falls in
+    ///   (`subjectNumericBlock(for:)`).
+    /// - **The handbook** follows the block: the 1963 handbook for 1963, the 1965 one for the
+    ///   later blocks, and both when no block is known. They and the page are the `1963-1973`
+    ///   row's in `allFilingPeriods`, so the panel and the no-year table offer the same links.
+    static func subjectNumericCitation(parsed: ParsedSourceNote?, note: String,
+                                       documentDay: DecimalFileSegment.DocumentDay?) -> SubjectNumericCitation? {
+        guard let parsed,
+              let reading = CollectionKeying.centralFilesReading(parsed: parsed, note: note),
+              reading.form == .subjectNumeric,
+              let period = allFilingPeriods.first(where: { $0.id == "1963-1973" }) else { return nil }
+        let block = CollectionKeying.printedSubjectNumericBlock(inCitation: note)
+            ?? subjectNumericBlock(for: documentDay)
+        let handbooks: [FilingManualLink]
+        switch block {
+        case "1963"?: handbooks = Array(period.filingManuals.prefix(1))
+        case nil: handbooks = period.filingManuals
+        default: handbooks = Array(period.filingManuals.suffix(1))
+        }
+        return SubjectNumericCitation(designation: reading.designation, block: block,
+                                      handbooks: handbooks, pageURL: period.url)
+    }
+
+    /// The segment of the Subject-Numeric File a day falls in, as NARA divides it: February–December
+    /// 1963, 1964–66, 1967–69, 1970–73. `nil` for no day and for a day outside February
+    /// 1963–December 1973 — two corpus notes give a designation on a document dated before the
+    /// file opened, and the panel names no block for them rather than a wrong one.
+    static func subjectNumericBlock(for day: DecimalFileSegment.DocumentDay?) -> String? {
+        guard let day else { return nil }
+        switch (day.year, day.month) {
+        case (1963, 2...12): return "1963"
+        case (1964...1966, _): return "1964–66"
+        case (1967...1969, _): return "1967–69"
+        case (1970...1973, _): return "1970–73"
+        default: return nil
+        }
+    }
+
+    /// The provenance panel for a Subject-Numeric citation (#1543), in every wording: what the
+    /// citation gives, what to hand a NARA archivist, and the era's finding aids.
+    ///
+    /// The request note follows NARA's citing leaflet, deposited at
+    /// `Planning/reference/nara-citing-foreign-affairs-records-2023-09.md`: give the file
+    /// designation each document carries, not the folder designation, and no box number
+    /// (`:83-90`); Example 7 names the block of years with the file (`:261-267`). NARA's page for
+    /// the era asks for the document's date and its telegram or airgram number.
+    @ViewBuilder
+    private func subjectNumericPanel(_ citation: SubjectNumericCitation) -> some View {
+        Section(String(localized: "source.explorer.provenance.header", defaultValue: "Provenance")) {
+            LabeledContent(
+                String(localized: "source.explorer.centralFiles.type", defaultValue: "Type"),
+                value: String(localized: "source.explorer.subjectNumeric.typeValue",
+                              defaultValue: "State Dept. Subject-Numeric File (February 1963–1973)")
+            )
+            LabeledContent(
+                String(localized: "source.explorer.nara.rg", defaultValue: "Record Group"),
+                value: "RG 59"
+            )
+            if let designation = citation.designation {
+                LabeledContent(
+                    String(localized: "source.explorer.subjectNumeric.designation",
+                           defaultValue: "File Designation"),
+                    value: designation
+                )
+            }
+            if let block = citation.block {
+                LabeledContent(
+                    String(localized: "source.explorer.subjectNumeric.block", defaultValue: "File Years"),
+                    value: block
+                )
+            }
+            Text(String(localized: "source.explorer.subjectNumeric.cite.note",
+                        defaultValue: "To request the original record from NARA, give them the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        Section(String(localized: "source.explorer.decimalPeriod.header",
+                       defaultValue: "NARA Finding Aids by Period")) {
+            LabeledContent(
+                String(localized: "source.explorer.decimalPeriod.matched", defaultValue: "Filing Period"),
+                value: String(localized: "source.explorer.subjectNumeric.period",
+                              defaultValue: "February 1963–1973 (Subject-Numeric File)")
+            )
+            Button {
+                openURL(citation.pageURL)
+            } label: {
+                Label(
+                    String(localized: "source.explorer.decimalPeriod.link",
+                           defaultValue: "Open NARA Finding Aids for This Period"),
+                    systemImage: "arrow.up.right.square"
+                )
+            }
+            if citation.handbooks.count == 1, let handbook = citation.handbooks.first {
+                Button {
+                    openURL(handbook.url)
+                } label: {
+                    Label(
+                        String(localized: "source.explorer.decimalPeriod.manualLink",
+                               defaultValue: "Filing Manual for This Period (PDF)"),
+                        systemImage: "doc.fill"
+                    )
+                }
+            } else {
+                // No block is known, so neither handbook is "this period's": both, by name.
+                ForEach(citation.handbooks, id: \.url) { handbook in
+                    Button {
+                        openURL(handbook.url)
+                    } label: {
+                        Label(handbook.label, systemImage: "doc.fill")
+                    }
+                }
+            }
+            Text(String(localized: "source.explorer.subjectNumeric.hint",
+                        defaultValue: "The filing handbooks are on the linked NARA page: the 1963 handbook for 1963 and the 1965 handbook for 1964–1973. Box lists are available on-site at the National Archives at College Park."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
 
     // MARK: - Lot File Panel
 
@@ -2536,7 +2721,13 @@ struct SourceExplorerView: View {
 
         hasAPIKey = await client.hasAPIKey()
         guard hasAPIKey else { return }
-        catalogEvidence = CatalogQueryEvidence.forNote(note)
+        catalogEvidence = CatalogQueryEvidence.forNote(note, rawNote: rawSourceNote)
+
+        // #1543: a Subject-Numeric citation runs no keyed search, however it is worded. Worded
+        // through the National Archives it is a `.naraCollection`, and the arm below would search
+        // RG 59 for "Central Files 1970–73" — a query that needs a key and cannot find a central
+        // file. The Subject-Numeric panel carries the era's finding aids instead.
+        if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote) { return }
 
         switch note {
 
@@ -2632,7 +2823,8 @@ struct SourceExplorerView: View {
     /// A short description of *why* the related documents are neighbors, shown atop the
     /// section so the researcher understands the archival relationship.
     private var archivalNeighborBasis: String? {
-        Self.archivalNeighborBasis(for: parsed, documentYear: effectiveYear, documentDay: documentDay)
+        Self.archivalNeighborBasis(for: parsed, note: rawSourceNote, documentYear: effectiveYear,
+                                   documentDay: documentDay)
     }
 
     /// The basis line for a parsed note — the body of ``archivalNeighborBasis``, static so a test
@@ -2645,8 +2837,34 @@ struct SourceExplorerView: View {
     /// misprinted year digit (`740.0011 EW/8–2045` on frus1943/d394, dated 20 August 1943, stays
     /// 1940–1944). Before #1407 an en-dash item carried no year at all, so every one of them was
     /// labelled by its document's year.
-    static func archivalNeighborBasis(for parsed: ParsedSourceNote?, documentYear: Int?,
+    ///
+    /// A Subject-Numeric citation worded through the National Archives names its FILE (#1543). Its
+    /// neighbours come from `relatedByDecimalClass`, which matches the stored class key and finds
+    /// both wordings, so "Same Subject-Numeric file — POL 27 VIET S" is what the list is; the line
+    /// used to name the block every file of three years sits in ("Same collection — RG 59, Central
+    /// Files 1964–66"). The arm is the route's own: the stored series names the central files
+    /// (`ParsedSourceNote.seriesNamesCentralFiles`), and with no class key that route finds
+    /// nothing, so there is no line. A Department-led designator has no line: its route,
+    /// `relatedByDecimal`, matches the stored file number and finds Department-led siblings only,
+    /// so it must not carry a sentence that promises the whole file. That holds for a designation
+    /// with a stop in it too (`DEF 19–8 U.S.-IRAN`, frus1964-68v22/d111): the decimal arm below
+    /// tests for a `.`, and until review round 1 of #1543 it captioned 34 such documents "Same
+    /// decimal file — DEF 19–8 U.S.-IRAN" under the Subject-Numeric panel.
+    ///
+    /// This is the iOS view's line. `MacSourceExplorerView` draws no basis line.
+    static func archivalNeighborBasis(for parsed: ParsedSourceNote?, note: String, documentYear: Int?,
                                       documentDay: DecimalFileSegment.DocumentDay?) -> String? {
+        if let parsed, case .naraCollection(_, let series?, nil, _) = parsed,
+           ParsedSourceNote.seriesNamesCentralFiles(series),
+           CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) {
+            guard let classKey = SourceNoteParser.decimalClassLocation(inCitation: note) else { return nil }
+            return String(localized: "source.explorer.related.basis.subjectNumeric",
+                          defaultValue: "Same Subject-Numeric file — \(classKey)")
+        }
+        if let parsed, case .centralFiles = parsed,
+           CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) {
+            return nil
+        }
         switch parsed {
         case .lotFile(_, let lot, _):
             return String(localized: "source.explorer.related.basis.lot",
@@ -2681,8 +2899,10 @@ struct SourceExplorerView: View {
     ///
     /// Shown once the source note has been parsed (so the header is always visible while the
     /// Source Explorer is open) with three states: a loading spinner, the list of matches, or
-    /// an explicit empty-state that explains *why* there are none — either the note isn't a
-    /// recognized archival citation, or no other indexed document shares its collection.
+    /// an empty state that says why there are none, in one of four sentences
+    /// (`relatedEmptyState(for:note:)`): no other indexed document shares the note's key; the
+    /// note cites the Subject-Numeric File and nothing else was matched to its file; it cites
+    /// that file in a form the app cannot match on; or it is not a recognized archival citation.
     @ViewBuilder
     private var relatedDocumentsSection: some View {
         if relatedLoading || parsed != nil {
@@ -2748,13 +2968,99 @@ struct SourceExplorerView: View {
         }
     }
 
-    /// Explains an empty related-documents result: an unmatched note type vs. a matched key
-    /// with no neighbors in the indexed volumes.
+    /// Why an Archival Neighbors list is empty — which of its sentences both Source Explorer views
+    /// print under the heading (`relatedEmptyState(for:note:)`).
+    enum RelatedEmptyState: Equatable, Sendable {
+        /// The note has a key the neighbour query matches on, and no other indexed document has it.
+        case noNeighbors
+        /// A Subject-Numeric citation whose neighbours are matched on its file — the stored
+        /// designation or the class key — with none found.
+        case subjectNumericNoNeighbors
+        /// A Subject-Numeric citation the neighbour query has no key for.
+        case subjectNumericUnkeyed
+        /// Any other note the neighbour query has no key for.
+        case unmatched
+    }
+
+    /// Which empty state a note's Archival Neighbors list is in, static so a test drives the rule
+    /// both views ask rather than a copy of it. `MacSourceExplorerView` calls it too.
+    ///
+    /// A Subject-Numeric citation used to fall to `.unmatched` whenever its parse has no neighbour
+    /// key, and so read "This source note doesn’t cite a recognized lot file, central file, or
+    /// presidential library" under the panel that names its central file (#1543). It has two states
+    /// of its own, because the list is empty for two reasons (documents, of the 9,443 that cite the
+    /// file, counted by this rule over the corpus's 264,552 document notes):
+    ///
+    /// - **Matched on its file, and nothing found** (`.subjectNumericNoNeighbors`), in both
+    ///   wordings, 7,740 documents:
+    ///   - worded through the Department, with a designation the parse stored (3,657):
+    ///     `relatedByDecimal` matches the stored file number. A designation with no subject number
+    ///     is among them when the parse stored it (`POL US–USSR`), since that route matches the
+    ///     stored file number whole. Until the landing's third round these read `.noNeighbors`,
+    ///     the sentence of every keyed note, so `frus1964-68v01/d359` and `frus1969-76v30/d6`,
+    ///     each alone in its file, had two different sentences. The sentence says "was matched",
+    ///     which holds here too: this route finds the Department-led documents of the file and
+    ///     not the ones worded through the National Archives (237 designations are cited both
+    ///     ways; one neighbour set per file is in the lane's out-of-scope list).
+    ///   - worded through the National Archives, with a stored series that names the central files
+    ///     and a class key `SourceNoteParser.decimalClassLocation(inCitation:)` reads (4,083).
+    ///     That is the one arm of `IndexingPipeline.relatedDocuments` that matches with no
+    ///     parse-level key (`relatedByDecimalClass`, on the stored `decimal_class`), so
+    ///     `supportsArchivalNeighbors` is false although a query ran. 399 of these cite a class no
+    ///     other document in the corpus stores, and the rest reach the state only while the
+    ///     volumes that share the class are not indexed.
+    /// - **Nothing to match on** (`.subjectNumericUnkeyed`): 1,518 documents. The second wording
+    ///   with no class key (1,302: a designation the class grammar refuses, with no subject number
+    ///   — `POL FR-US`, 902 — or with one — `ORG 4–COMM`, 393 — and 7 that give only their block of
+    ///   years), a Department-led note with no stored identifier (`AID (US) S VIET`, 184) or one the
+    ///   file-number route cannot read (3), a note parsed as the Central Foreign Policy File (19),
+    ///   and a National-Archives-led note whose parse kept no series (10). `relatedDocuments` has
+    ///   no arm for any of them.
+    ///
+    /// The other 185 have a key that is **not their file**, and are `.noNeighbors`, the sentence
+    /// every keyed note has: a National-Archives-led note whose series does not name the central
+    /// files (182; `RG 59, Records of the Department of State, Central Files, 1964–66, …`, matched
+    /// by `relatedByCollection` on that series), and 3 parsed as the Central Foreign Policy File
+    /// whose remark carries a film number (`relatedByCFPFFilm`). "No other indexed document was
+    /// matched to the same file" would be untrue of them: the query did not ask about the file.
+    ///
+    /// A central-files citation's list is empty exactly when its direct route finds nothing: the
+    /// collection authority's alias fallback does not serve one
+    /// (`IndexingPipeline.aliasFallbackServes`, landing round 2), so no list here is filled with
+    /// documents matched by the central files' name.
+    static func relatedEmptyState(for parsed: ParsedSourceNote?, note: String) -> RelatedEmptyState {
+        guard let parsed else { return .unmatched }
+        let citesTheFile = CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note)
+        if parsed.supportsArchivalNeighbors {
+            // A Department-led designation: its key is the stored file number, which is the file.
+            // The other two keyed shapes are keyed by a series and by a film number.
+            if citesTheFile, case .centralFiles = parsed { return .subjectNumericNoNeighbors }
+            return .noNeighbors
+        }
+        guard citesTheFile else { return .unmatched }
+        // `relatedDocuments`' arm for a series that names the central files. The series is not
+        // tested again: a parse with any other series has a key of its own, and left above.
+        if case .naraCollection(_, _?, nil, _) = parsed,
+           SourceNoteParser.decimalClassLocation(inCitation: note) != nil {
+            return .subjectNumericNoNeighbors
+        }
+        return .subjectNumericUnkeyed
+    }
+
+    /// Explains an empty related-documents result: a matched key with no neighbors in the indexed
+    /// volumes, a Subject-Numeric citation in either of its two states, or an unmatched note type.
     private var relatedEmptyMessage: String {
-        if parsed?.supportsArchivalNeighbors == true {
+        switch SourceExplorerView.relatedEmptyState(for: parsed, note: rawSourceNote) {
+        case .noNeighbors:
             return String(localized: "source.explorer.related.empty.noNeighbors",
                           defaultValue: "No other indexed documents cite this archival source. Index more volumes to surface related documents.")
-        } else {
+        case .subjectNumericNoNeighbors:
+            return String(localized: "source.explorer.related.empty.subjectNumeric",
+                          defaultValue: "This source note cites the Subject-Numeric File. No other indexed document was matched to the same file. Index more volumes to surface related documents.")
+        case .subjectNumericUnkeyed:
+            return String(localized: "source.explorer.related.empty.subjectNumeric.unkeyed",
+                          defaultValue: "This source note cites the Subject-Numeric File, but not in a form the app can match on, so documents from the same file can’t be matched.")
+        case .unmatched:
             return String(localized: "source.explorer.related.empty.unmatched",
                           defaultValue: "This source note doesn’t cite a recognized lot file, central file, or presidential library, so related documents can’t be matched.")
         }
@@ -2803,7 +3109,7 @@ struct SourceExplorerView: View {
 // MARK: - FilingManualLink
 
 /// A NARA filing manual PDF paired with a display label.
-struct FilingManualLink: Sendable {
+struct FilingManualLink: Sendable, Equatable {
     let url: URL
     let label: String
 }

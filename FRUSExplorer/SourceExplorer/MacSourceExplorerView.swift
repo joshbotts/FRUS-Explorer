@@ -80,6 +80,13 @@ import AppKit
 ///           with (`NamedFileSeriesRouting.macNote`); review round 1: the provenance column offers
 ///           NARA's Department of State records page only when the name states no holder
 ///           (`NamedFileSeriesRouting.offersStateRecordsLink`). Mirrors SourceExplorerView 1.14.
+///   1.14 — 2026-10-02: #1543 — a Subject-Numeric citation gets its own rows in the Provenance
+///           box and its own finding aids in the NARA box, in every wording, read through the iOS
+///           twin's `SourceExplorerView.subjectNumericCitation(parsed:note:documentDay:)`. No keyed
+///           catalog search runs for it and no manual search field is offered
+///           (`CatalogQueryEvidence.offersManualSearch`). Mirrors SourceExplorerView 1.15.
+///           Landing: an empty Archival Neighbors list under those rows says the note cites the
+///           Subject-Numeric File, by the iOS twin's `SourceExplorerView.relatedEmptyState(for:note:)`.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -559,10 +566,7 @@ struct MacSourceExplorerView: View {
     }
 
     private var showsManualSearch: Bool {
-        switch parsed {
-        case .lotFile, .presidentialLibrary, .naraCollection: return true
-        default: return false
-        }
+        CatalogQueryEvidence.offersManualSearch(for: parsed, rawNote: rawSourceNote)
     }
 
     private var manualSearchField: some View {
@@ -589,8 +593,110 @@ struct MacSourceExplorerView: View {
 
     // MARK: - Provenance Box
 
+    /// The Provenance box for a parsed note. A Subject-Numeric citation is read first (#1543), in
+    /// every wording, exactly as the iOS twin's `provenanceSection(parsed:)` reads it — through the
+    /// same static — and gets its own rows; every other note takes the rows its parse case names.
     @ViewBuilder
     private func provenanceBox(for parsed: ParsedSourceNote) -> some View {
+        if let subjectNumeric = SourceExplorerView.subjectNumericCitation(
+            parsed: parsed, note: rawSourceNote, documentDay: documentDay) {
+            GroupBox(String(localized: "source.explorer.provenance.header",
+                            defaultValue: "Provenance")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    subjectNumericProvenanceRows(subjectNumeric)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            provenanceBoxByCase(for: parsed)
+        }
+    }
+
+    /// The Subject-Numeric rows of the Provenance box — the iOS `subjectNumericPanel`'s first
+    /// section, under the same keys and texts.
+    @ViewBuilder
+    private func subjectNumericProvenanceRows(
+        _ citation: SourceExplorerView.SubjectNumericCitation
+    ) -> some View {
+        provenanceRow(label: String(localized: "source.explorer.centralFiles.type",
+                                    defaultValue: "Type"),
+                      value: String(localized: "source.explorer.subjectNumeric.typeValue",
+                                    defaultValue: "State Dept. Subject-Numeric File (February 1963–1973)"))
+        provenanceRow(label: String(localized: "source.explorer.nara.rg", defaultValue: "Record Group"),
+                      value: "RG 59")
+        if let designation = citation.designation {
+            provenanceRow(label: String(localized: "source.explorer.subjectNumeric.designation",
+                                        defaultValue: "File Designation"),
+                          value: designation)
+        }
+        if let block = citation.block {
+            provenanceRow(label: String(localized: "source.explorer.subjectNumeric.block",
+                                        defaultValue: "File Years"),
+                          value: block)
+        }
+        Text(String(localized: "source.explorer.subjectNumeric.cite.note",
+                    defaultValue: "To request the original record from NARA, give them the file designation above and the block of years it was filed in (1963, 1964–66, 1967–69 or 1970–73). Add any telegram or airgram number, the from/to information, and the document’s date from the source note. NARA asks that a central-file citation name the file designation, not a folder or a box."))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// The finding aids for a Subject-Numeric citation — the iOS `subjectNumericPanel`'s second
+    /// section, laid out as `centralFilesPeriodBox` lays out a decimal file's.
+    @ViewBuilder
+    private func subjectNumericBox(_ citation: SourceExplorerView.SubjectNumericCitation) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(String(localized: "source.explorer.decimalPeriod.matched",
+                            defaultValue: "Filing Period"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 100, alignment: .trailing)
+                Text(String(localized: "source.explorer.subjectNumeric.period",
+                            defaultValue: "February 1963–1973 (Subject-Numeric File)"))
+                    .font(.callout)
+                    .textSelection(.enabled)
+            }
+            Button {
+                openURL(citation.pageURL)
+            } label: {
+                Label(String(localized: "source.explorer.decimalPeriod.link",
+                             defaultValue: "Open NARA Finding Aids for This Period"),
+                      systemImage: "arrow.up.right.square")
+            }
+            .buttonStyle(.link)
+            if citation.handbooks.count == 1, let handbook = citation.handbooks.first {
+                Button {
+                    openURL(handbook.url)
+                } label: {
+                    Label(String(localized: "source.explorer.decimalPeriod.manualLink",
+                                 defaultValue: "Filing Manual for This Period (PDF)"),
+                          systemImage: "doc.fill")
+                }
+                .buttonStyle(.link)
+            } else {
+                // No block is known, so neither handbook is "this period's": both, by name.
+                ForEach(citation.handbooks, id: \.url) { handbook in
+                    Button {
+                        openURL(handbook.url)
+                    } label: {
+                        Label(handbook.label, systemImage: "doc.fill")
+                    }
+                    .buttonStyle(.link)
+                }
+            }
+            Text(String(localized: "source.explorer.subjectNumeric.hint",
+                        defaultValue: "The filing handbooks are on the linked NARA page: the 1963 handbook for 1963 and the 1965 handbook for 1964–1973. Box lists are available on-site at the National Archives at College Park."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The Provenance box a note's parse case names — `provenanceBox(for:)`'s second arm.
+    @ViewBuilder
+    private func provenanceBoxByCase(for parsed: ParsedSourceNote) -> some View {
         GroupBox(String(localized: "source.explorer.provenance.header",
                         defaultValue: "Provenance")) {
             VStack(alignment: .leading, spacing: 10) {
@@ -956,8 +1062,24 @@ struct MacSourceExplorerView: View {
 
     // MARK: - NARA Box
 
+    /// The NARA box for a parsed note. A Subject-Numeric citation is read first (#1543), as in
+    /// `provenanceBox(for:)`: worded through the National Archives it is a `.naraCollection`, and
+    /// the default arm below would draw the catalogue-search states for a query that is not run.
     @ViewBuilder
     private func naraBox(for parsed: ParsedSourceNote) -> some View {
+        if let subjectNumeric = SourceExplorerView.subjectNumericCitation(
+            parsed: parsed, note: rawSourceNote, documentDay: documentDay) {
+            GroupBox(String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")) {
+                subjectNumericBox(subjectNumeric)
+            }
+        } else {
+            naraBoxByCase(for: parsed)
+        }
+    }
+
+    /// The NARA box a note's parse case names — `naraBox(for:)`'s second arm.
+    @ViewBuilder
+    private func naraBoxByCase(for parsed: ParsedSourceNote) -> some View {
         let header = String(localized: "source.explorer.nara.header", defaultValue: "NARA Catalog")
 
         switch parsed {
@@ -1823,7 +1945,7 @@ struct MacSourceExplorerView: View {
         await loadUnprintedPointers(sourceNote: note)
 
         hasAPIKey = await client.hasAPIKey()
-        catalogEvidence = CatalogQueryEvidence.forNote(note)
+        catalogEvidence = CatalogQueryEvidence.forNote(note, rawNote: rawSourceNote)
 
         // Local related-documents query — runs unconditionally; no API key needed.
         // Must be called before the per-case hasAPIKey guards that return early.
@@ -1840,6 +1962,10 @@ struct MacSourceExplorerView: View {
                     repository: library, collection: collection, note: raw)
             }.value
         }
+
+        // #1543: a Subject-Numeric citation runs no keyed search and pre-fills no manual query,
+        // however it is worded. Mirrors iOS.
+        if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote) { return }
 
         switch note {
         case .lotFile(let rg, let lotNumber, _):
@@ -2380,9 +2506,11 @@ struct MacSourceExplorerView: View {
     /// GroupBox listing documents from the same archival collection.
     ///
     /// Shown once the source note has been parsed, with three states: a loading spinner, the
-    /// list of matches, or an explicit empty-state explaining why there are none (the note
-    /// isn't a recognized archival citation, or no other indexed document shares its
-    /// collection) — rather than silently hiding the box.
+    /// list of matches, or an empty state that says why there are none, in one of the four
+    /// sentences of `SourceExplorerView.relatedEmptyState(for:note:)` (no other indexed document
+    /// shares the note's key; a Subject-Numeric citation whose file matched nothing; one in a
+    /// form the app cannot match on; a note that is not a recognized archival citation) — rather
+    /// than silently hiding the box.
     @ViewBuilder
     private var relatedDocumentsBox: some View {
         if relatedLoading || parsed != nil {
@@ -2451,13 +2579,21 @@ struct MacSourceExplorerView: View {
         }
     }
 
-    /// Explains an empty related-documents result: an unmatched note type vs. a matched key
-    /// with no neighbors in the indexed volumes.
+    /// Explains an empty related-documents result: a matched key with no neighbors in the indexed
+    /// volumes, a Subject-Numeric citation in either of its two states, or an unmatched note type.
+    /// The state is the iOS twin's rule, `SourceExplorerView.relatedEmptyState(for:note:)`.
     private var relatedEmptyMessage: String {
-        if parsed?.supportsArchivalNeighbors == true {
+        switch SourceExplorerView.relatedEmptyState(for: parsed, note: rawSourceNote) {
+        case .noNeighbors:
             return String(localized: "source.explorer.related.empty.noNeighbors",
                           defaultValue: "No other indexed documents cite this archival source. Index more volumes to surface related documents.")
-        } else {
+        case .subjectNumericNoNeighbors:
+            return String(localized: "source.explorer.related.empty.subjectNumeric",
+                          defaultValue: "This source note cites the Subject-Numeric File. No other indexed document was matched to the same file. Index more volumes to surface related documents.")
+        case .subjectNumericUnkeyed:
+            return String(localized: "source.explorer.related.empty.subjectNumeric.unkeyed",
+                          defaultValue: "This source note cites the Subject-Numeric File, but not in a form the app can match on, so documents from the same file can’t be matched.")
+        case .unmatched:
             return String(localized: "source.explorer.related.empty.unmatched",
                           defaultValue: "This source note doesn’t cite a recognized lot file, central file, or presidential library, so related documents can’t be matched.")
         }

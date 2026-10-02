@@ -14,7 +14,7 @@ import SwiftUI
 /// Sourcing page (#835).
 ///
 /// ## Why the narrative lives here and the instrument does not
-/// The page above this card answers *what kind* of record FRUS drew on, in ten broad provenance
+/// The page above this card answers *what kind* of record FRUS drew on, in eleven broad provenance
 /// categories. It has never been able to name one. This card names them — and stops there. The
 /// query-driven instrument (era switching, unit lens, weights, co-citation, flows) stays in
 /// Archival Analytics: §8's assessment of the owner's relocation question was **relocate no,
@@ -34,7 +34,7 @@ import SwiftUI
 ///    1900 and its artifact covers 523 volumes; the archival authority covers 553 and has no
 ///    floor. Sixty-eight volumes sit in coverage decades before 1900. Rows here can therefore rest
 ///    on volumes no chart above draws.
-/// 2. **Its colours are not the charts' colours.** Above, ten `SourceProvenanceCategory` cases
+/// 2. **Its colours are not the charts' colours.** Above, eleven `SourceProvenanceCategory` cases
 ///    classify the *parsed source note*; here, four `ArchivalRepositoryCategory` cases classify
 ///    the *collection's holder*. `ArchivalAnalyticsAxes` argues at length why the two must not be
 ///    folded, so the card carries its own legend and says what it is colouring.
@@ -256,7 +256,7 @@ struct TopCollectionsCard: View {
         min(1, max(0, Double(row.value) / Double(maximum)))
     }
 
-    /// The custodian legend — its own, because these four buckets are not the ten above.
+    /// The custodian legend — its own, because these four buckets are not the eleven above.
     private var legend: some View {
         HStack(spacing: 10) {
             ForEach(ArchivalRepositoryCategory.ordered, id: \.self) { category in
@@ -304,8 +304,8 @@ struct TopCollectionsCard: View {
             // R-3: both numbers are derived — the index's `volumesScanned` (or the catalog count
             // when the index is absent) and the authority's distinct-volume reach. The reach was
             // hardcoded as 356 and had been 365 since the 2026-08-19 re-clustering.
-            Text(String(format: String(localized: "series.provenance.topCollections.method.v3 %lld %lld",
-                        defaultValue: "Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking."),
+            Text(String(format: String(localized: "series.provenance.topCollections.method.v4 %lld %lld",
+                        defaultValue: "Colors group collections by who holds the records — four custodians, not the eleven categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking."),
                         Int64(data.volumesScanned ?? entries.count),
                         Int64(data.authorityVolumeReach)))
                 .font(.caption2)

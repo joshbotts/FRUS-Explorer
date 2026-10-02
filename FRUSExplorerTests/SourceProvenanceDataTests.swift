@@ -8,6 +8,8 @@
 
 import Testing
 import Foundation
+import SwiftUI
+import Charts
 @testable import FRUSExplorer
 
 // MARK: - SourceProvenanceDataTests
@@ -28,6 +30,16 @@ import Foundation
 ///   1.2 — Session 3 review: the all-zero-decade test asserts explicit zero rows
 ///          (no x-gap) instead of the dropped decade it previously locked in
 ///   1.3 — Regenerated after OH's 2026-09-14 correction to frus1981-88v16: 269,248 → 269,242
+///   1.4 — 2026-10-02 (#1543): eleven categories; the bundled index places the Subject-Numeric
+///          File in the 1960s and 1970s and nowhere else; the Categories menu's count is derived
+///   1.5 — 2026-10-02 (#1543, review round 1): the count test reads the call's two arguments,
+///          so a literal total fails it
+///   1.6 — 2026-10-02 (#1543, landing round 2): the charts' colour scale — each older category
+///          keeps the colour the default cycle drew it in, read from the scale and from drawn
+///          charts, and every chart that colours by category takes the one scale
+///   1.7 — 2026-10-02 (#1543, landing round 3): the share rows are dense — every category in
+///          every decade, zero where it has no notes — the listed rows are the rows as they
+///          were, and the trend chart, drawn, has no hole in its stack
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -69,16 +81,20 @@ struct SourceProvenanceDataTests {
 
     // MARK: Category enum
 
-    @Test("SourceProvenanceCategory: ten ordered categories with the expected raw values")
+    @Test("SourceProvenanceCategory: eleven ordered categories with the expected raw values")
     func categoryOrder() {
-        #expect(SourceProvenanceCategory.ordered.count == 10)
+        #expect(SourceProvenanceCategory.ordered.count == 11)
         #expect(SourceProvenanceCategory.ordered.map(\.rawValue) == [
-            "centralDecimalFile", "centralForeignPolicyFile", "lotFile",
+            "centralDecimalFile", "subjectNumericFile", "centralForeignPolicyFile", "lotFile",
             "presidentialLibrary", "naraCollection", "intelligence",
             "namedFileSeries", "foreignArchive", "previouslyPublished",
             "unrecognized",
         ])
-        #expect(SourceProvenanceCategory.allCases.count == 10)
+        #expect(SourceProvenanceCategory.allCases.count == 11)
+        // The map's provenance lens colours by position in `allCases`, so the declaration order
+        // is the display order (#1543).
+        #expect(SourceProvenanceCategory.allCases == SourceProvenanceCategory.ordered)
+        #expect(SourceProvenanceCategory.subjectNumericFile.displayName == "Subject-Numeric File")
     }
 
     @Test("SourceProvenanceCategory: an unknown raw value is nil, not a crash")
@@ -129,9 +145,12 @@ struct SourceProvenanceDataTests {
         let cdf = data.shareByDecade.first { $0.decade == 1950 && $0.category == .centralDecimalFile }
         #expect(cdf != nil)
         #expect(abs((cdf?.share ?? 0) - 0.5) < 1e-9)
-        // naraCollection has no row in 1950 (share would be 0).
+        // naraCollection has no notes in 1950: its row is there, with a share of 0 (#1543, so
+        // that the category's band has a point in the decade), and a table does not list it.
         let nara = data.shareByDecade.first { $0.decade == 1950 && $0.category == .naraCollection }
-        #expect(nara == nil)
+        #expect(nara?.share == 0)
+        #expect(!SourceProvenanceData.listed(data.shareByDecade)
+            .contains { $0.decade == 1950 && $0.category == .naraCollection })
     }
 
     @Test("SourceProvenanceData: an unknown category key is ignored, not counted")
@@ -165,8 +184,8 @@ struct SourceProvenanceDataTests {
         #expect(count(.presidentialLibrary) == 20 + 30)      // 1950 + 1970
         #expect(count(.centralForeignPolicyFile) == 10)      // 1970
         #expect(count(.naraCollection) == 0)                 // never present
-        // Composition covers all ten categories (stable legend), zeros included.
-        #expect(data.overallComposition.count == 10)
+        // Composition covers all eleven categories (stable legend), zeros included.
+        #expect(data.overallComposition.count == 11)
         // Shares over the shown total (320).
         #expect(data.shownNoteCount == 320)
         let cdfShare = data.overallComposition.first { $0.category == .centralDecimalFile }?.share ?? 0
@@ -244,7 +263,9 @@ struct SourceProvenanceDataTests {
         #expect(index.byVolume?.count == 523,
                 "schema 2 must carry one row per covered volume; got \(index.byVolume?.count ?? -1)")
         #expect(index.byDecade.count == 16, "SA-3a ships 16 coverage decades; got \(index.byDecade.count)")
-        #expect(index.categories.count == 10)
+        #expect(index.categories.count == 11)
+        #expect(index.categories == SourceProvenanceCategory.ordered.map(\.rawValue),
+                "the artifact's category order is the enum's; got \(index.categories)")
 
         // The derivation over the real data floors to >= 1900 and stays sound.
         let derived = SourceProvenanceData(index: index)
@@ -254,6 +275,551 @@ struct SourceProvenanceDataTests {
             let sum = derived.shareByDecade.filter { $0.decade == decade }.reduce(0.0) { $0 + $1.share }
             #expect(abs(sum - 1.0) < 1e-6, "real decade \(decade) shares summed to \(sum)")
         }
+    }
+
+    // MARK: The Subject-Numeric File in the bundled index (#1543)
+
+    /// The bundled index, decoded.
+    private func bundledIndex() throws -> SourceProvenanceIndex {
+        let url = try #require(
+            Bundle.main.url(forResource: "source-provenance-index", withExtension: "json"))
+        return try JSONDecoder().decode(SourceProvenanceIndex.self, from: Data(contentsOf: url))
+    }
+
+    /// The Subject-Numeric File ran February 1963–1973, so its citations fall in the volumes
+    /// covering the 1960s and 1970s and in no other decade. Before #1543 the category did not
+    /// exist and these notes sat in `centralDecimalFile` and `naraCollection`.
+    @Test("The bundled index places the Subject-Numeric File in the 1960s and 1970s only")
+    func subjectNumericFileSitsInItsDecades() throws {
+        let index = try bundledIndex()
+        var entered = 0
+        for decade in index.byDecade {
+            entered += 1
+            let count = decade.count(for: .subjectNumericFile)
+            if decade.decade == 1960 || decade.decade == 1970 {
+                #expect(count > 0, "the \(decade.decade)s carry no Subject-Numeric notes")
+            } else {
+                #expect(count == 0, "the \(decade.decade)s carry \(count) Subject-Numeric notes")
+            }
+        }
+        #expect(entered == 16, "read \(entered) decades")
+    }
+
+    /// The Central Foreign Policy File began in July 1973. No note is placed in it before the
+    /// decade its first volumes cover.
+    ///
+    /// The first two assertions are a PIN, not a guard for #1543: they held on the artifact
+    /// before the change too (it had 2,466 such notes in the 1970s, 712 in the 1980s and none
+    /// earlier). Only the last one depends on #1543 — in the 1960s the Subject-Numeric File
+    /// holds more notes than Other NARA Collections, which held those citations before.
+    @Test("The bundled index places no Central Foreign Policy File note before the 1970s")
+    func foreignPolicyFileStartsInTheSeventies() throws {
+        let index = try bundledIndex()
+        let before = index.byDecade.filter { $0.decade < 1970 }
+        #expect(before.count == 14, "read \(before.count) decades before 1970")
+        for decade in before {
+            #expect(decade.count(for: .centralForeignPolicyFile) == 0,
+                    "the \(decade.decade)s carry Central Foreign Policy File notes")
+        }
+        #expect(index.byDecade.first { $0.decade == 1970 }?.count(for: .centralForeignPolicyFile) ?? 0 > 0)
+        // The category that used to hold the 1960s' National-Archives-led Subject-Numeric
+        // citations now holds fewer notes there than the Subject-Numeric File does.
+        let sixties = try #require(index.byDecade.first { $0.decade == 1960 })
+        #expect(sixties.count(for: .subjectNumericFile) > sixties.count(for: .naraCollection))
+    }
+
+    /// The Categories menu's VoiceOver value read "%lld of 10 shown" from a literal. It is now
+    /// the count of `SourceProvenanceCategory.ordered` (#1543).
+    ///
+    /// The value is built inside a view body, so this reads the CALL that builds it: the text
+    /// between the parentheses of the `String(format:` that carries the key, with its whitespace
+    /// removed. Both arguments must be the enum's count — a literal `11` there reads the same on
+    /// screen today and is the defect again at the twelfth category, and no runtime check can
+    /// tell the two apart.
+    @Test("The dashboard's category count is derived, not the literal ten")
+    func dashboardCategoryCountIsDerived() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
+            encoding: .utf8)
+        #expect(!source.isEmpty)
+        #expect(!source.contains("of 10 shown"), "the literal count is back")
+        #expect(!source.contains("ten broad categories"), "the archival link still counts ten")
+        #expect(!source.contains("ten provenance"), "a comment still counts ten categories")
+        #expect(source.components(separatedBy: "eleven broad categories").count - 1 == 2,
+                "both platform arms of the archival link carry the sentence")
+
+        let opening = "String(format: String(localized: \"series.provenance.filter.a11y.count %lld %lld\""
+        #expect(source.components(separatedBy: opening).count - 1 == 1, "the count text is built once")
+        let call = try #require(Self.call(in: source, opening: opening))
+        let wanted = "format:String(localized:\"series.provenance.filter.a11y.count%lld%lld\","
+            + "defaultValue:\"%1$lldof%2$lldshown\"),"
+            + "Int64(SourceProvenanceCategory.ordered.count-hiddenCategories.count),"
+            + "Int64(SourceProvenanceCategory.ordered.count)"
+        #expect(call == wanted, "the count text's arguments are \(call)")
+    }
+
+    // MARK: The charts' colour scale (#1543, landing round 2)
+
+    /// The ten categories the charts had before the Subject-Numeric File, in the order they had:
+    /// `SourceProvenanceCategory.ordered` on the base this lane was cut from.
+    private static let categoriesBeforeSubjectNumeric: [SourceProvenanceCategory] = [
+        .centralDecimalFile, .centralForeignPolicyFile, .lotFile, .presidentialLibrary,
+        .naraCollection, .intelligence, .namedFileSeries, .foreignArchive, .previouslyPublished,
+        .unrecognized,
+    ]
+
+    /// Swift Charts' default cycle, which a chart with a domain and no range takes by position.
+    /// Measured by drawing one: on macOS 27.0 and the iOS 26.4 and 26.5 simulators the sixth
+    /// colour is `Color.teal` (0, 195, 208 in light mode), not `.cyan` (0, 192, 232).
+    private static let defaultCycle: [Color] = [.blue, .green, .orange, .purple, .red, .teal, .yellow]
+
+    /// Until this scale the charts passed a domain and no range, so an eleventh category in second
+    /// place moved every later category one colour along the cycle, and Named File Series took
+    /// the Central Decimal File's blue.
+    @Test("Each older category keeps the colour its position gave it, and the new one has its own")
+    func olderCategoriesKeepTheirColours() {
+        let older = Self.categoriesBeforeSubjectNumeric
+        #expect(older.count == 10)
+        #expect(Set(older).union([.subjectNumericFile]) == Set(SourceProvenanceCategory.allCases),
+                "the ten older categories and the Subject-Numeric File are every category")
+        for (position, category) in older.enumerated() {
+            #expect(category.chartColor == Self.defaultCycle[position % Self.defaultCycle.count],
+                    "\(category.rawValue) is no longer the colour of position \(position + 1) of ten")
+        }
+
+        let new = SourceProvenanceCategory.subjectNumericFile.chartColor
+        #expect(new == .brown)
+        for category in older {
+            #expect(category.chartColor != new, "\(category.rawValue) shares the new category's colour")
+        }
+        #expect(!Self.defaultCycle.contains(new), "the new category's colour is one the cycle uses")
+
+        // The scale the charts read: eleven entries, the enum's order, each category's colour.
+        let scale = SourceProvenanceCategory.chartColorScale
+        #expect(scale.domain.count == 11 && scale.range.count == 11)
+        #expect(scale.domain == SourceProvenanceCategory.ordered.map(\.displayName))
+        #expect(scale.range == SourceProvenanceCategory.ordered.map(\.chartColor))
+        #expect(scale.domain[1] == "Subject-Numeric File", "the legend's second entry")
+        #expect(scale.range[1] == .brown)
+    }
+
+    /// One bar of `category`, coloured by its display name the way the provenance charts colour
+    /// theirs: through the scale they call, or through the ten-name domain with no range that
+    /// they passed before the Subject-Numeric File.
+    @MainActor @ViewBuilder
+    private static func bar(of category: SourceProvenanceCategory, statedScale: Bool) -> some View {
+        let chart = Chart {
+            BarMark(x: .value("Provenance", category.displayName), y: .value("Source notes", 1))
+                .foregroundStyle(by: .value("Provenance", category.displayName))
+        }
+        .chartLegend(.hidden)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        if statedScale {
+            chart.provenanceCategoryColorScale()
+        } else {
+            chart.chartForegroundStyleScale(domain: categoriesBeforeSubjectNumeric.map(\.displayName))
+        }
+    }
+
+    /// The colour at the middle of that bar, drawn 60 points square.
+    @MainActor
+    private static func drawnColour(of category: SourceProvenanceCategory, statedScale: Bool,
+                                    scheme: ColorScheme) throws -> [UInt8] {
+        let view = bar(of: category, statedScale: statedScale)
+            .frame(width: 60, height: 60)
+            .environment(\.colorScheme, scheme)
+        let image = try RenderedText.image(of: view, width: 60, scale: 1)
+        let pixels = try RenderedText.pixels(of: image)
+        let middle = ((image.height / 2) * image.width + image.width / 2) * 4
+        return Array(pixels[middle..<middle + 3])
+    }
+
+    /// The same claim read off drawn charts, so it does not rest on the cycle this file states:
+    /// each older category, drawn through the scale, is the colour a ten-category chart with no
+    /// range draws it in. That reference chart is what the app shipped.
+    @MainActor
+    @Test("Drawn, each older category is the colour a ten-category chart with no range gave it",
+          arguments: [ColorScheme.light, ColorScheme.dark])
+    func drawnColoursAreTheDefaultCycle(scheme: ColorScheme) throws {
+        var drawn: [SourceProvenanceCategory: [UInt8]] = [:]
+        for category in Self.categoriesBeforeSubjectNumeric {
+            let before = try Self.drawnColour(of: category, statedScale: false, scheme: scheme)
+            let now = try Self.drawnColour(of: category, statedScale: true, scheme: scheme)
+            #expect(now == before, "\(category.rawValue) was \(before) and is \(now)")
+            drawn[category] = now
+        }
+        // The drawing drew: ten bars in the cycle's seven colours, none of them the white the
+        // image is laid on.
+        #expect(drawn.count == 10)
+        #expect(Set(drawn.values).count == 7, "the ten bars are in \(Set(drawn.values).count) colours")
+        #expect(!drawn.values.contains([255, 255, 255]))
+
+        let new = try Self.drawnColour(of: .subjectNumericFile, statedScale: true, scheme: scheme)
+        #expect(new != [255, 255, 255])
+        for (category, colour) in drawn {
+            #expect(colour != new, "\(category.rawValue) is drawn in the Subject-Numeric File's colour")
+        }
+    }
+
+    /// Every chart that colours its marks by provenance category calls the one scale, and none
+    /// states a scale of its own.
+    ///
+    /// The marks are found by the legend key their `.foregroundStyle(by:)` call carries — the
+    /// dashboard's and Your Library's — and counted against the calls of
+    /// `.provenanceCategoryColorScale()` in the same file. Nothing ties one mark to one call but
+    /// the count, so a chart added without the scale, or a scale left on a chart that lost its
+    /// marks, moves one count and not the other.
+    @Test("Every chart coloured by provenance category takes the one scale")
+    func everyProvenanceChartTakesTheScale() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let legendKeys = ["\"series.provenance.category.legend\"", "\"archival.table.provenance\""]
+        let expected = [
+            "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift": 2,
+            "FRUSExplorer/Analytics/ArchivalAnalyticsView.swift": 2,
+        ]
+
+        var marksByFile: [String: Int] = [:]
+        var ownScales: [String] = []
+        var filesRead = 0
+        let appRoot = root.appending(path: "FRUSExplorer")
+        let walker = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            filesRead += 1
+            let source = try String(contentsOf: url, encoding: .utf8)
+            let path = "FRUSExplorer/" + url.path.dropFirst(appRoot.path.count + 1)
+            let marks = Self.calls(in: source, opening: ".foregroundStyle(by:")
+                .filter { call in legendKeys.contains { call.contains($0) } }
+            if !marks.isEmpty { marksByFile[path] = marks.count }
+            for call in Self.calls(in: source, opening: ".chartForegroundStyleScale(")
+            where call.contains("SourceProvenanceCategory") {
+                ownScales.append("\(path): \(call)")
+            }
+        }
+        #expect(filesRead > 300, "read \(filesRead) Swift files under FRUSExplorer/")
+        #expect(marksByFile == expected, "marks coloured by provenance category are in \(marksByFile)")
+        #expect(ownScales.isEmpty, "a chart states its own scale over the categories: \(ownScales)")
+
+        for (path, charts) in expected {
+            let source = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            let calls = source.components(separatedBy: ".provenanceCategoryColorScale()").count - 1
+            #expect(calls == charts, "\(path) applies the scale \(calls) times to \(charts) charts")
+        }
+    }
+
+    /// The scan's reader against a mark, a scale of its own, and an unclosed call.
+    @Test("The chart scan reads each call's arguments")
+    func chartScanReadsEachCall() {
+        let source = """
+            Chart {
+                BarMark(x: .value("x", item.name))
+                    .foregroundStyle(by: .value(
+                        String(localized: "archival.table.provenance", defaultValue: "Provenance"),
+                        item.category.displayName))
+            }
+            .chartForegroundStyleScale(
+                domain: SourceProvenanceCategory.ordered.map(\\.displayName))
+            .foregroundStyle(by: .value("Custodian", row.category.displayName))
+            """
+        let marks = Self.calls(in: source, opening: ".foregroundStyle(by:")
+        #expect(marks.count == 2)
+        #expect(marks.filter { $0.contains("\"archival.table.provenance\"") }.count == 1)
+        let scales = Self.calls(in: source, opening: ".chartForegroundStyleScale(")
+        #expect(scales == ["domain:SourceProvenanceCategory.ordered.map(\\.displayName)"])
+        #expect(Self.calls(in: ".foregroundStyle(by: .value(\"k\", x)", opening: ".foregroundStyle(by:").isEmpty,
+                "an unclosed call is not a call")
+    }
+
+    /// The arguments of every call in `source` that begins with `opening`, whitespace removed.
+    /// `opening` ends at or after the call's opening parenthesis; an unclosed call is left out.
+    private static func calls(in source: String, opening: String) -> [String] {
+        var found: [String] = []
+        var from = source.startIndex
+        while let hit = source.range(of: opening, range: from..<source.endIndex) {
+            from = hit.upperBound
+            guard let open = source[hit].lastIndex(of: "(") else { continue }
+            var depth = 0
+            var index = open
+            var close: String.Index?
+            while index < source.endIndex {
+                if source[index] == "(" { depth += 1 }
+                if source[index] == ")" {
+                    depth -= 1
+                    if depth == 0 { close = index; break }
+                }
+                index = source.index(after: index)
+            }
+            guard let close else { continue }
+            found.append(String(source[source.index(after: open)..<close].filter { !$0.isWhitespace }))
+        }
+        return found
+    }
+
+    /// The scan's own reader, against the two mutants it exists for and a call split another way.
+    @Test("The call scan reads the whole call and tells a literal total from the derived one")
+    func callScanReadsTheArguments() throws {
+        let opening = "String(format: String(localized: \"k %lld %lld\""
+        let derived = """
+            .accessibilityValue(String(format: String(localized: "k %lld %lld",
+                                                      defaultValue: "%1$lld of %2$lld shown"),
+                                       Int64(Category.ordered.count - hidden.count),
+                                       Int64(Category.ordered.count)))
+            """
+        #expect(try #require(Self.call(in: derived, opening: opening))
+                == "format:String(localized:\"k%lld%lld\",defaultValue:\"%1$lldof%2$lldshown\"),"
+                + "Int64(Category.ordered.count-hidden.count),Int64(Category.ordered.count)")
+        let literal = derived.replacingOccurrences(of: "Int64(Category.ordered.count)))", with: "Int64(11)))")
+        #expect(try #require(Self.call(in: literal, opening: opening)).hasSuffix(",Int64(11)"))
+        #expect(Self.call(in: "no such call", opening: opening) == nil)
+        #expect(Self.call(in: opening + ", unclosed", opening: opening) == nil)
+    }
+
+    /// The arguments of the call that begins with `opening` — everything between the parenthesis
+    /// `opening` first opens and the one that closes it — with all whitespace removed, or `nil`
+    /// when `source` has no such call or never closes it. Parentheses inside string literals are
+    /// not skipped: the texts this reads carry none.
+    private static func call(in source: String, opening: String) -> String? {
+        guard let hit = source.range(of: opening),
+              let open = source[hit].firstIndex(of: "(") else { return nil }
+        var depth = 0
+        var index = open
+        while index < source.endIndex {
+            switch source[index] {
+            case "(": depth += 1
+            case ")":
+                depth -= 1
+                if depth == 0 {
+                    return String(source[source.index(after: open)..<index].filter { !$0.isWhitespace })
+                }
+            default: break
+            }
+            index = source.index(after: index)
+        }
+        return nil
+    }
+
+    // MARK: Dense share rows, and the stack with no hole (#1543, landing round 3)
+
+    /// The rows the trend chart and its table had before the share rows were dense, computed here
+    /// from the index's own counts: one row for each category with notes in a decade from 1900 on.
+    private func rowsWithNotes(in index: SourceProvenanceIndex) -> [(id: String, share: Double)] {
+        index.byDecade
+            .filter { $0.decade >= SourceProvenanceData.trendStartDecade && $0.totalNotes > 0 }
+            .sorted { $0.decade < $1.decade }
+            .flatMap { decade in
+                SourceProvenanceCategory.ordered.compactMap { category -> (id: String, share: Double)? in
+                    let count = decade.count(for: category)
+                    guard count > 0 else { return nil }
+                    return ("\(decade.decade)-\(category.rawValue)", Double(count) / Double(decade.totalNotes))
+                }
+            }
+    }
+
+    /// A category with no notes in a decade had no row there, so its band in the stacked chart had
+    /// no point in the decade before it began or after it ended: the Subject-Numeric File's band
+    /// began as a vertical edge at 1960 and left a white wedge under Lot Files back to 1950. Each
+    /// category now has a row in every decade, zero where it has no notes.
+    ///
+    /// The second half is that nothing else moved. The rows with notes are the rows as they were
+    /// (65 of them, 267,209 notes), each with the share its count gives, and `listed(_:)` returns
+    /// exactly those.
+    @Test("Over the bundled index every category has a share row in every decade, zero where it has no notes")
+    func bundledSharesAreDense() throws {
+        let index = try bundledIndex()
+        let data = SourceProvenanceData(index: index)
+        let rows = data.shareByDecade
+        let decades = [1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980]
+
+        // Categories × decades, each pair once, by decade and then in display order.
+        #expect(rows.count == 99, "\(rows.count) rows for 9 decades of 11 categories")
+        let wanted = decades.flatMap { decade in
+            SourceProvenanceCategory.ordered.map { "\(decade)-\($0.rawValue)" }
+        }
+        #expect(rows.map(\.id) == wanted)
+
+        // Each decade still sums to 1.
+        for decade in decades {
+            let sum = rows.filter { $0.decade == decade }.reduce(0.0) { $0 + $1.share }
+            #expect(abs(sum - 1.0) < 1e-9, "the \(decade)s sum to \(sum)")
+        }
+
+        // The zeros that close the three holes: the Subject-Numeric File before and after its two
+        // decades, the Central Foreign Policy File before its first.
+        func share(_ decade: Int, _ category: SourceProvenanceCategory) -> Double? {
+            rows.first { $0.decade == decade && $0.category == category }?.share
+        }
+        #expect(share(1950, .subjectNumericFile) == 0)
+        #expect(share(1980, .subjectNumericFile) == 0)
+        #expect(share(1960, .centralForeignPolicyFile) == 0)
+        #expect((share(1960, .subjectNumericFile) ?? 0) > 0.27)
+        #expect(rows.filter { $0.share == 0 }.count == 34)
+
+        // The rows with notes are the rows as they were, share for share.
+        let before = rowsWithNotes(in: index)
+        #expect(before.count == 65)
+        let withNotes = rows.filter { $0.share > 0 }
+        #expect(withNotes.map(\.id) == before.map(\.id))
+        #expect(withNotes.map(\.share) == before.map(\.share))
+        #expect(data.shownNoteCount == 267_209)
+        // And they are what a table lists.
+        #expect(SourceProvenanceData.listed(rows) == withNotes)
+        #expect(SourceProvenanceData.listed(data.shareByDecade(in: 1861...1993, excluding: [])) == withNotes)
+    }
+
+    /// The same under the category filter, where the rows are re-based over what is shown: every
+    /// shown category has a row in every decade, and `listed(_:)` gives what the filter returned
+    /// before — the categories with notes, and for a decade the filter leaves with none, its zero
+    /// rows (Session 3's review: they are what says the decade is empty).
+    @Test("category filter: every shown category has a row in every decade, and the listed rows are the rows as they were")
+    func categoryFilterRowsAreDense() {
+        let data = SourceProvenanceData(index: fixture())
+        let shown = SourceProvenanceCategory.ordered.filter { $0 != .presidentialLibrary }
+
+        let filtered = data.shareByDecade(in: allDecades, excluding: [.presidentialLibrary])
+        #expect(filtered.count == 30, "\(filtered.count) rows for 3 decades of 10 shown categories")
+        #expect(filtered.map(\.id) == [1910, 1950, 1970].flatMap { decade in
+            shown.map { "\(decade)-\($0.rawValue)" }
+        })
+        // 1910: the decimal file alone. 1950: 40 and 20 of the 60 shown. 1970: the 10 that are
+        // not presidential-library notes.
+        let listed = SourceProvenanceData.listed(filtered)
+        #expect(listed.map(\.id) == [
+            "1910-centralDecimalFile", "1950-centralDecimalFile", "1950-lotFile",
+            "1970-centralForeignPolicyFile",
+        ])
+        #expect(listed.map(\.share) == [1.0, 40.0 / 60.0, 20.0 / 60.0, 1.0])
+
+        // Hiding the decimal file leaves 1910 with no shown notes. Its ten zero rows are listed;
+        // the zero rows of 1950 and 1970, which have notes, are not.
+        let emptied = data.shareByDecade(in: allDecades, excluding: [.centralDecimalFile])
+        #expect(emptied.count == 30)
+        let listedEmptied = SourceProvenanceData.listed(emptied)
+        #expect(listedEmptied.filter { $0.decade == 1910 }.count == 10)
+        #expect(listedEmptied.filter { $0.decade == 1910 }.allSatisfy { $0.share == 0 })
+        #expect(listedEmptied.filter { $0.decade != 1910 }.map(\.id) == [
+            "1950-lotFile", "1950-presidentialLibrary",
+            "1970-centralForeignPolicyFile", "1970-presidentialLibrary",
+        ])
+        #expect(SourceProvenanceData.listed([]).isEmpty)
+    }
+
+    /// What a column scan of the drawn trend chart found.
+    private struct StackScan {
+        /// The plot's height in pixels: the longest unbroken run of chart colour in any column.
+        var plotHeight = 0
+        /// How many pixel columns the stack covers.
+        var columns = 0
+        /// The most background pixels inside the stack in any one column, and that column.
+        var worstHole = 0
+        var worstColumn = 0
+        /// How many columns have any background pixel inside the stack.
+        var columnsWithAHole = 0
+    }
+
+    /// Draws the dashboard's own trend chart over the bundled index, 700 points wide at 2×, and
+    /// scans every pixel column of the stack for the colour the chart is laid on.
+    ///
+    /// The plot's top and bottom rows are those of the longest unbroken run of chart colour in
+    /// any column: at a decade's own x the bands sum to 100% with the rows dense or not, so that
+    /// run is the plot's full height. A column belongs to the stack when at least half of it
+    /// between those rows is chart colour. Background is white, or the pale grey of a grid line:
+    /// no channel under 200 and the three within 12 of each other. No blend of two of the
+    /// chart's colours at a band's edge is that pale.
+    @MainActor
+    private func scanOfTheDrawnStack(hiding hidden: Set<SourceProvenanceCategory>) throws -> StackScan {
+        let data = SourceProvenanceData(index: try bundledIndex())
+        let domain = effectiveDomain(userStart: SeriesChartKind.floorYear,
+                                     userEnd: SeriesChartKind.coverageCeilingYear, kind: .coverage)
+        let chart = SourceProvenanceDashboard.provenanceMixChart(
+            data.shareByDecade(in: domain, excluding: hidden), domain: domain)
+        let image = try RenderedText.image(of: chart, width: 700, scale: 2)
+        let pixels = try RenderedText.pixels(of: image)
+        let width = image.width, height = image.height
+
+        func isBackground(_ x: Int, _ y: Int) -> Bool {
+            let i = (y * width + x) * 4
+            let r = Int(pixels[i]), g = Int(pixels[i + 1]), b = Int(pixels[i + 2])
+            return min(r, g, b) >= 200 && max(r, g, b) - min(r, g, b) <= 12
+        }
+        /// A chart colour: far from grey, which leaves out the axis text and the grid.
+        func isChartColour(_ x: Int, _ y: Int) -> Bool {
+            let i = (y * width + x) * 4
+            let r = Int(pixels[i]), g = Int(pixels[i + 1]), b = Int(pixels[i + 2])
+            return max(r, g, b) - min(r, g, b) >= 40
+        }
+
+        // The plot's rows.
+        var top = 0, bottom = -1
+        for x in 0..<width {
+            var start: Int?
+            for y in 0...height {
+                if y < height, isChartColour(x, y) {
+                    if start == nil { start = y }
+                } else if let from = start {
+                    if y - from > bottom - top + 1 { top = from; bottom = y - 1 }
+                    start = nil
+                }
+            }
+        }
+        var scan = StackScan()
+        scan.plotHeight = bottom - top + 1
+        try #require(scan.plotHeight > 200, "the plot was read as \(scan.plotHeight) pixels high")
+
+        for x in 0..<width {
+            let coloured = (top...bottom).filter { isChartColour(x, $0) }
+            guard coloured.count * 2 >= scan.plotHeight,
+                  let first = coloured.first, let last = coloured.last else { continue }
+            scan.columns += 1
+            let hole = (first...last).filter { isBackground(x, $0) }.count
+            if hole > 0 { scan.columnsWithAHole += 1 }
+            if hole > scan.worstHole { scan.worstHole = hole; scan.worstColumn = x }
+        }
+        return scan
+    }
+
+    /// The defect as it was seen: white holes in "Archival provenance over time" where a band
+    /// begins or ends — under the Lot Files from 1950 to 1960 where the Subject-Numeric File
+    /// begins (27% of the plot's height just before 1960), from 1960 to 1970 where the Central
+    /// Foreign Policy File begins, and after 1970 where the Subject-Numeric File ends. The chart
+    /// is the dashboard's own, drawn over the bundled index with no category hidden and with one
+    /// hidden, since the filter builds its rows on another path.
+    @MainActor
+    @Test("Drawn, the trend chart's stack has no hole where a band begins or ends",
+          arguments: [[], [SourceProvenanceCategory.unrecognized]])
+    func drawnStackHasNoHole(hidden: [SourceProvenanceCategory]) throws {
+        let scan = try scanOfTheDrawnStack(hiding: Set(hidden))
+        // The scan read a chart: the stack runs from the 1900s to the 1980s, 80 of the axis's
+        // 132 years, on a plot some 600 points wide at 2×.
+        #expect(scan.columns > 400, "the stack was read as \(scan.columns) columns wide")
+        #expect(scan.worstHole == 0, """
+            the stack has a hole \(scan.worstHole) pixels high at column \(scan.worstColumn), \
+            \(scan.worstHole * 100 / max(scan.plotHeight, 1))% of the plot's \(scan.plotHeight); \
+            \(scan.columnsWithAHole) of \(scan.columns) columns have one
+            """)
+    }
+
+    /// What the tests above cannot reach, read from the dashboard's source: the card draws the
+    /// chart they draw, over the rows it hands the table, and the zero rows are hidden from
+    /// VoiceOver, which would otherwise gain a "Subject-Numeric File, 1950s, 0%" for each. A
+    /// source scan, since the card's body cannot be run here; whether VoiceOver reads the chart
+    /// as it did is a check by ear.
+    @Test("The dashboard's card draws the tested chart over the table's rows and hides the zero rows from VoiceOver")
+    func dashboardDrawsTheTestedChart() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift"),
+            encoding: .utf8)
+        // One set of rows, read once; the card's chart and its table are both built from it.
+        #expect(Self.calls(in: source, opening: "data.shareByDecade(") == ["in:domain,excluding:hiddenCategories"])
+        #expect(Self.calls(in: source, opening: "Self.provenanceMixChart(") == ["shares,domain:domain"])
+        #expect(Self.calls(in: source, opening: "ChartInspectorAdapters.provenanceMixTable(") == ["shares"])
+        // The file's one area chart is the static one.
+        #expect(source.components(separatedBy: "AreaMark(").count - 1 == 1)
+        #expect(source.components(separatedBy: "static func provenanceMixChart(").count - 1 == 1)
+        // The rows a table lists are the rows VoiceOver is given.
+        #expect(Self.calls(in: source, opening: "let listed = Set(") == ["SourceProvenanceData.listed(shares).map(\\.id)"])
+        #expect(Self.calls(in: source, opening: ".accessibilityHidden(") == ["!listed.contains(point.id)"])
     }
 
     // MARK: Category filter (#236)

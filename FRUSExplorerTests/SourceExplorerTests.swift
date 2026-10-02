@@ -1122,3 +1122,621 @@ struct VolumeSourcesResolutionTests {
         #expect(index.resolution(recordGroup: "59", lotFile: "64 D 199")?.naId == "602231")
     }
 }
+
+// MARK: - SubjectNumericExplorerTests (#1543)
+
+/// Source Explorer's Subject-Numeric panel (#1543): what `SourceExplorerView.subjectNumericCitation`
+/// reads from a note, the filing-period table both twins and the NARA Lookup sheet draw, and a
+/// scan that both hand-written twins call the reader, draw the panel from it, carry the panel's
+/// six strings and return from `load()` before the query switch.
+///
+/// Every note is copied from the corpus with its document id beside it, except where a case says
+/// it is constructed.
+///
+/// Version history:
+///   1.0 — 2026-10-02: #1543
+///   1.1 — 2026-10-02 (#1543, review round 1): the twin scan reads each view's `load()` for the
+///          skip and its place, and wants a call of the panel; a lot fixture
+///   1.2 — 2026-10-02 (#1543, landing): the empty Archival Neighbors list — the state both views
+///          ask for, driven, and each view's sentence for each state, scanned
+///   1.3 — 2026-10-02 (#1543, landing round 3): a Department-led designation alone in its file has
+///          the Subject-Numeric sentence, as the same file cited through the National Archives
+///          has; the two keyed shapes whose key is not the file keep the generic one, a fixture each
+@Suite("Source Explorer — the Subject-Numeric File (#1543)")
+@MainActor
+struct SubjectNumericExplorerTests {
+
+    private static let page = "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1963-1973"
+    private static let handbook1963 = "Classification Handbook 1963 (PDF)"
+    private static let handbook1965 = "Classification Handbook 1965–73 (PDF)"
+
+    private func citation(_ note: String, day: DecimalFileSegment.DocumentDay?) -> SourceExplorerView.SubjectNumericCitation? {
+        SourceExplorerView.subjectNumericCitation(parsed: SourceNoteParser().parse(note), note: note,
+                                                  documentDay: day)
+    }
+
+    private func day(_ year: Int, _ month: Int, _ day: Int) -> DecimalFileSegment.DocumentDay {
+        .init(year: year, month: month, day: day)
+    }
+
+    // MARK: What the panel shows
+
+    /// frus1961-63v15/d177, a telegram of 21 February 1963: no range is printed, so the block is
+    /// the one the document's date falls in, and the handbook is 1963's.
+    @Test("A Department-led note of 1963 shows its designation, the 1963 block and the 1963 handbook")
+    func departmentLed1963() throws {
+        let reading = try #require(citation(
+            "Source: Department of State, Central Files, POL US–USSR. Secret; Priority. Drafted and initialed by Hillenbrand on February 19; cleared by Thompson, Tyler, Guthrie, and Bundy; and approved and initialed by Rusk.",
+            day: day(1963, 2, 21)))
+        #expect(reading.designation == "POL US–USSR")
+        #expect(reading.block == "1963")
+        #expect(reading.handbooks.map(\.label) == [Self.handbook1963])
+        #expect(reading.pageURL.absoluteString == Self.page)
+    }
+
+    /// frus1964-68v14/d93: the note prints NARA's block, and the handbook is the 1965 one, in
+    /// effect from January 1964.
+    @Test("A National-Archives-led note shows the block it prints and the 1965 handbook")
+    func nationalArchivesLed1964() throws {
+        let reading = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+            day: day(1965, 2, 11)))
+        #expect(reading.designation == "POL 27 VIET S")
+        #expect(reading.block == "1964–66")
+        #expect(reading.handbooks.map(\.label) == [Self.handbook1965])
+        #expect(reading.pageURL.absoluteString == Self.page)
+    }
+
+    /// frus1961-63v25/d61, dated 5 February 1963, prints "1960–63" — the decimal file's last
+    /// block, which NARA has no Subject-Numeric block of. The block is the document's.
+    @Test("A printed range that is not one of NARA's blocks gives way to the document's date")
+    func printedRangeThatIsNoBlock() throws {
+        let early = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.",
+            day: day(1963, 2, 5)))
+        #expect(early.designation == "ORG 4–COMM")
+        #expect(early.block == "1963", "not the printed 1960–63")
+        #expect(early.handbooks.map(\.label) == [Self.handbook1963])
+
+        // frus1964-68v05/d4, dated 3 January 1967, prints "1964–67".
+        let straddling = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–67, POL 27–14 VIET/MARIGOLD. Top Secret; Marigold.",
+            day: day(1967, 1, 3)))
+        #expect(straddling.block == "1967–69", "not the printed 1964–67")
+        #expect(straddling.handbooks.map(\.label) == [Self.handbook1965])
+    }
+
+    /// With no day to read and no block printed, the panel names no block and offers both
+    /// handbooks (frus1964-68v01/d5's note, the date withheld).
+    @Test("A note with no date and no printed block shows no block and both handbooks")
+    func noDateNoBlock() throws {
+        let reading = try #require(citation(
+            "Source: Department of State, Central Files, POL 27 VIET S. Secret.", day: nil))
+        #expect(reading.designation == "POL 27 VIET S")
+        #expect(reading.block == nil)
+        #expect(reading.handbooks.map(\.label) == [Self.handbook1963, Self.handbook1965])
+    }
+
+    /// A printed block needs no date, and is kept when the document's date falls outside it —
+    /// the file was cited from that block (frus1969-76ve07/d110's note).
+    @Test("A printed block is used with no date, and over a date outside it")
+    func printedBlockNeedsNoDate() throws {
+        let note = "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret. Drafted on January 26 by Quainton."
+        #expect(try #require(citation(note, day: nil)).block == "1970–73")
+        #expect(try #require(citation(note, day: day(1969, 12, 30))).block == "1970–73")
+        #expect(try #require(citation(note, day: nil)).designation == "AID (US) INDIA")
+        #expect(try #require(citation(note, day: nil)).handbooks.map(\.label) == [Self.handbook1965])
+    }
+
+    /// NARA's four segments by the document's date, each edge once: February–December 1963,
+    /// 1964–66, 1967–69, 1970–73. A date outside February 1963–December 1973 names no block.
+    @Test("The block from the document's date", arguments: [
+        (1963, 1, 31, nil), (1963, 2, 1, "1963"), (1963, 12, 31, "1963"),
+        (1964, 1, 1, "1964–66"), (1966, 12, 31, "1964–66"),
+        (1967, 1, 1, "1967–69"), (1969, 12, 31, "1967–69"),
+        (1970, 1, 1, "1970–73"), (1973, 12, 31, "1970–73"),
+        (1974, 1, 1, nil), (1962, 6, 1, nil),
+    ] as [(Int, Int, Int, String?)])
+    func blockFromTheDate(year: Int, month: Int, dayOfMonth: Int, block: String?) throws {
+        let reading = try #require(citation(
+            "Source: Department of State, Central Files, POL 27 VIET S. Secret.",
+            day: day(year, month, dayOfMonth)))
+        #expect(reading.block == block)
+        // The handbook follows the block: 1963's for 1963, the 1965 one after, both for none.
+        let expected: [String]
+        switch block {
+        case "1963": expected = [Self.handbook1963]
+        case nil: expected = [Self.handbook1963, Self.handbook1965]
+        default: expected = [Self.handbook1965]
+        }
+        #expect(reading.handbooks.map(\.label) == expected)
+    }
+
+    /// A citation that gives only its block has no designation to show (frus1964-68v29p1/d368).
+    @Test("A block-only citation shows its block and no designation")
+    func blockOnly() throws {
+        let reading = try #require(citation(
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
+            day: day(1966, 7, 5)))
+        #expect(reading.designation == nil)
+        #expect(reading.block == "1964–66")
+    }
+
+    /// The panel is the Subject-Numeric File's alone.
+    @Test("A decimal number, a film number, an office file and a lot get no Subject-Numeric panel")
+    func otherCitationsGetNoPanel() {
+        // The control: the reader is answering.
+        #expect(citation("Source: Department of State, Central Files, POL 27 VIET S. Secret.", day: nil) != nil)
+        // frus1961-63v11/d301 — a decimal number dated March 1963.
+        #expect(citation("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.",
+                         day: day(1963, 3, 27)) == nil)
+        // frus1961-63v25/d494 — a decimal number through the National Archives.
+        #expect(citation("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.",
+                         day: day(1961, 7, 25)) == nil)
+        // frus1969-76v22/d17 — a film number.
+        #expect(citation("Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Confidential; Priority; Nodis; Stadis.",
+                         day: day(1973, 8, 1)) == nil)
+        // frus1969-76ve08/d15 — an office file under the heading.
+        #expect(citation("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis.",
+                         day: day(1974, 11, 1)) == nil)
+        // frus1969-76ve11p1/d393, cut after its classification — a lot under the heading, with a
+        // designation after it and a block before it.
+        let lot = "Source: National Archives, RG 59, Central Files, 1970–1973, ARA/CAR, Lot 75D393, POL 7 Visits and Meetings. Confidential."
+        #expect(citation(lot, day: day(1973, 4, 10)) == nil)
+        // The same sentence without the lot is the file's, so the nil above is the lot's.
+        let withoutLot = "Source: National Archives, RG 59, Central Files, 1970–1973, POL 7 Visits and Meetings. Confidential."
+        #expect(citation(withoutLot, day: day(1973, 4, 10))?.block == "1970–73")
+        #expect(SourceExplorerView.subjectNumericCitation(parsed: nil, note: "", documentDay: nil) == nil)
+    }
+
+    // MARK: The filing-period table
+
+    /// The no-year table lists NARA's five eras: it ended at 1963–1973 and named that row
+    /// "subject-numeric files". The table has three consumers — both twins' no-year tables and the
+    /// NARA Lookup sheet — and each draws this one list.
+    @Test("The filing-period table ends at the Central Foreign Policy File and names the Subject-Numeric File")
+    func filingPeriodTable() throws {
+        let periods = SourceExplorerView.allFilingPeriods
+        #expect(periods.count == 11)
+        #expect(Set(periods.map(\.id)).count == periods.count, "ids are unique")
+        let last = try #require(periods.last)
+        #expect(last.id == "1973-1979")
+        #expect(last.label == "1973–1979 (Central Foreign Policy File)")
+        #expect(last.url.absoluteString
+                == "https://www.archives.gov/research/foreign-policy/state-dept/rg-59-central-files/1973-1979")
+        #expect(last.filingManuals.isEmpty)
+
+        let subjectNumeric = try #require(periods.first { $0.id == "1963-1973" })
+        #expect(subjectNumeric.label == "February 1963–1973 (Subject-Numeric File)")
+        #expect(subjectNumeric.url.absoluteString == Self.page)
+        #expect(subjectNumeric.filingManuals.map(\.label) == [Self.handbook1963, Self.handbook1965])
+        #expect(periods.firstIndex { $0.id == "1963-1973" } == periods.count - 2)
+
+        // The decimal rows keep their labels.
+        #expect(periods.filter { $0.label.hasSuffix("(decimal files)") }.count == 7)
+        #expect(periods.first { $0.id == "1960-1963" }?.label == "1960–January 1963 (decimal files)")
+    }
+
+    // MARK: Both twins
+
+    private static let twins = ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
+                                "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"]
+
+    private static let panelKeys = [
+        "source.explorer.subjectNumeric.typeValue", "source.explorer.subjectNumeric.designation",
+        "source.explorer.subjectNumeric.block", "source.explorer.subjectNumeric.period",
+        "source.explorer.subjectNumeric.cite.note", "source.explorer.subjectNumeric.hint",
+    ]
+
+    /// A twin's source without its comment lines.
+    private static func code(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
+    /// The text between the parenthesis that opens at `open` and the one that closes it.
+    private static func arguments(in code: String, openingAt open: String.Index) -> Substring? {
+        var depth = 0
+        var index = open
+        while index < code.endIndex {
+            switch code[index] {
+            case "(": depth += 1
+            case ")":
+                depth -= 1
+                if depth == 0 { return code[code.index(after: open)..<index] }
+            default: break
+            }
+            index = code.index(after: index)
+        }
+        return nil
+    }
+
+    /// Every CALL of `name(` in `code` — the declaration excluded — with the arguments inside its
+    /// own parentheses.
+    private static func callSites(of name: String = "subjectNumericCitation", in code: String) -> [Substring] {
+        var calls: [Substring] = []
+        var search = code.startIndex
+        while let hit = code.range(of: name + "(", range: search..<code.endIndex) {
+            search = hit.upperBound
+            let before = code[..<hit.lowerBound]
+            if before.hasSuffix("func ") { continue }
+            let open = code.index(before: hit.upperBound)
+            if let arguments = arguments(in: code, openingAt: open) { calls.append(arguments) }
+        }
+        return calls
+    }
+
+    /// The body of the function declared `signature` in `code`: the text between the brace that
+    /// opens it and the one that closes it, or `nil`. Braces inside string literals are not
+    /// skipped; neither view's `load()` has one.
+    private static func body(of signature: String, in code: String) -> Substring? {
+        guard let hit = code.range(of: signature),
+              let open = code[hit.upperBound...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var index = open
+        while index < code.endIndex {
+            switch code[index] {
+            case "{": depth += 1
+            case "}":
+                depth -= 1
+                if depth == 0 { return code[code.index(after: open)..<index] }
+            default: break
+            }
+            index = code.index(after: index)
+        }
+        return nil
+    }
+
+    /// The statement that skips the keyed catalog search for a Subject-Numeric citation.
+    private static let searchSkip =
+        "if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote) { return }"
+
+    /// Whether `code`'s `load()` returns for a Subject-Numeric citation BEFORE its query switch:
+    /// the body holds `searchSkip` once, whole, and nothing but whitespace stands between it and
+    /// the first `switch note {` — the switch whose arms run the keyed searches. `code` is a
+    /// twin's source without its comment lines.
+    private static func loadSkipsTheKeyedSearch(_ code: String) -> Bool {
+        guard let load = body(of: "private func load() async", in: code),
+              load.components(separatedBy: searchSkip).count - 1 == 1,
+              let skip = load.range(of: searchSkip),
+              let query = load.range(of: "switch note {"),
+              skip.upperBound <= query.lowerBound else { return false }
+        return load[skip.upperBound..<query.lowerBound].allSatisfy(\.isWhitespace)
+    }
+
+    /// The two Source Explorer views are hand-written per platform, and a change has reached one
+    /// and missed the other before. Each must call the reader with the raw note and the document's
+    /// day — the iOS view once, in `provenanceSection`; the Mac view in both of its boxes — draw
+    /// the panel from it, carry the panel's six strings, and return from its own `load()` before
+    /// the query switch.
+    ///
+    /// This is a source scan: it shows each view is WRITTEN to skip the search, at the statement
+    /// and in the place that does it. No test runs a view's `load()`; the rule both views ask,
+    /// `CatalogQueryEvidence.forNote`, has its runtime test in `CatalogQueryEvidenceTests`.
+    @Test("Both twins call the Subject-Numeric reader, draw its panel and skip the keyed search")
+    func bothTwinsDrawThePanel() throws {
+        var read = 0
+        for path in Self.twins {
+            let code = try Self.code(path)
+            read += 1
+            let calls = Self.callSites(in: code)
+            let wanted = path.hasSuffix("MacSourceExplorerView.swift") ? 2 : 1
+            #expect(calls.count >= wanted, "\(path) calls subjectNumericCitation( \(calls.count) time(s), wants \(wanted)")
+            for call in calls {
+                #expect(call.contains("note: rawSourceNote"), "\(path): a call reads another note: \(call)")
+                #expect(call.contains("documentDay: documentDay"), "\(path): a call drops the document's day: \(call)")
+            }
+            for key in Self.panelKeys {
+                #expect(code.contains("\"\(key)\""), "\(path) lacks \(key)")
+            }
+            // A CALL of the panel, not its declaration alone, and handed the citation just read.
+            let panel = path.hasSuffix("MacSourceExplorerView.swift") ? "subjectNumericBox" : "subjectNumericPanel"
+            let draws = Self.callSites(of: panel, in: code)
+            #expect(!draws.isEmpty, "\(path) declares \(panel)( and never calls it")
+            #expect(draws.allSatisfy { $0 == "subjectNumeric" }, "\(path) draws the panel from \(draws)")
+            // The keyed catalog search is skipped for these notes, in the view's own `load()`.
+            #expect(Self.loadSkipsTheKeyedSearch(code),
+                    "\(path): load() does not return before its query switch for a Subject-Numeric citation")
+        }
+        #expect(read == 2)
+    }
+
+    /// The scan's own reader: it must count calls, skip the declaration, and read a call's
+    /// arguments to the parenthesis that closes it.
+    @Test("The call scan reads a call's own parentheses")
+    func callScanReadsBalancedParentheses() {
+        let sample = """
+            static func subjectNumericCitation(parsed: ParsedSourceNote?, note: String) -> X? { nil }
+            let a = Self.subjectNumericCitation(parsed: p, note: f(x, (y)), documentDay: d)
+            let b = SourceExplorerView.subjectNumericCitation(
+                parsed: p,
+                note: rawSourceNote, documentDay: documentDay)
+            private func subjectNumericPanel(_ citation: SubjectNumericCitation) -> some View { EmptyView() }
+            """
+        let calls = Self.callSites(in: sample)
+        #expect(calls.count == 2, "the declaration is not a call; got \(calls.count)")
+        #expect(calls.first == "parsed: p, note: f(x, (y)), documentDay: d")
+        #expect(calls.last?.contains("note: rawSourceNote, documentDay: documentDay") == true)
+        // A panel that is declared and never called is no call.
+        #expect(Self.callSites(of: "subjectNumericPanel", in: sample).isEmpty)
+        #expect(Self.callSites(of: "subjectNumericPanel", in: sample + "\nsubjectNumericPanel(subjectNumeric)")
+                == ["subjectNumeric"])
+    }
+
+    /// The `load()` scan against the shapes it must refuse: the predicate without its `return`,
+    /// the skip below the query switch, the skip in another function, and a statement between the
+    /// skip and the switch.
+    @Test("The load scan wants the return, before the query switch, in load() itself")
+    func loadScanReadsTheSkipInPlace() {
+        func view(load: String, other: String = "") -> String {
+            """
+            struct V {
+                private func load() async {
+                    catalogEvidence = nil
+            \(load)
+                }
+                private func loadRelatedDocuments(for note: ParsedSourceNote) async {
+            \(other)
+                }
+            }
+            """
+        }
+        let skip = Self.searchSkip
+        #expect(Self.loadSkipsTheKeyedSearch(view(load: "\(skip)\n\n        switch note { case .lotFile: break }")))
+        // The predicate with no return: the search runs.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(
+            load: "if CollectionKeying.isSubjectNumericCitation(parsed: note, note: rawSourceNote) { }\nswitch note { }")))
+        // The skip after the switch that runs the searches.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(load: "switch note { case .lotFile: break }\n\(skip)")))
+        // The skip in another function.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(load: "switch note { }", other: skip)))
+        // A statement between the skip and the switch.
+        #expect(!Self.loadSkipsTheKeyedSearch(view(load: "\(skip)\nawait fetchResults { [] }\nswitch note { }")))
+        // No `load()` at all.
+        #expect(!Self.loadSkipsTheKeyedSearch("struct V { }"))
+        #expect(Self.body(of: "private func load() async", in: view(load: "let a = { 1 }"))?
+            .contains("let a = { 1 }") == true)
+    }
+
+    // MARK: The empty Archival Neighbors list
+
+    private func emptyState(_ note: String) -> SourceExplorerView.RelatedEmptyState {
+        SourceExplorerView.relatedEmptyState(for: SourceNoteParser().parse(note), note: note)
+    }
+
+    /// Under the Subject-Numeric panel an empty list read "This source note doesn’t cite a
+    /// recognized lot file, central file, or presidential library", for every citation whose parse
+    /// has no neighbour key. It has two states of its own now, and which one follows the route
+    /// `IndexingPipeline.relatedDocuments` takes: matched on the file with nothing found, or
+    /// nothing to match on. One fixture for each way into each state, every note the corpus's own
+    /// (cut after its classification where it runs on).
+    ///
+    /// The file is matched in both wordings, and both have the one sentence (landing round 3).
+    /// Until then a Department-led designation had the sentence of every keyed note, so
+    /// `frus1964-68v01/d359` and `frus1969-76v30/d6`, each alone in its file, read differently.
+    @Test("An empty neighbour list under the Subject-Numeric panel is one of the file's two states")
+    func emptyNeighbourStates() {
+        // Matched on its class key: the one route with no parse-level key (frus1964-68v14/d93,
+        // and frus1969-76v30/d6, which the second by-eye pass looked at).
+        for keyed in [
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis.",
+            "Source: National Archives, RG 59, Central Files 1970–73, POL 14 GREECE. Confidential; No Foreign Dissem.",
+        ] {
+            #expect(!SourceNoteParser().parse(keyed).supportsArchivalNeighbors, "the parse has no key; the route reads the class")
+            #expect(emptyState(keyed) == .subjectNumericNoNeighbors, "\(keyed)")
+        }
+
+        // Matched on the designation the parse stored, which `relatedByDecimal` matches whole: with
+        // a subject number (frus1964-68v01/d359, the document the pass looked at, and d5), without
+        // one (frus1961-63v15/d177), and with a stop in it, which the dotted arm takes
+        // (frus1964-68v22/d111). Each has a key, and the key is the file.
+        let stored: [(note: String, key: String)] = [
+            ("Source: Department of State, Central Files, POL 13 VIET S. Secret; Priority; Limdis. Repeated to CINCPAC.", "POL 13 VIET S"),
+            ("Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy.", "POL 27 VIET S"),
+            ("Source: Department of State, Central Files, POL US–USSR. Secret; Priority.", "POL US–USSR"),
+            ("Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN. Confidential. Repeated to Karachi.", "DEF 19–8 U.S.-IRAN"),
+        ]
+        for (note, key) in stored {
+            let parsed = SourceNoteParser().parse(note)
+            if case .centralFiles = parsed {} else { Issue.record("\(note) is no longer a central-files parse") }
+            #expect(parsed.archivalNeighborKey == key, "\(note)")
+            #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note), "\(note)")
+            #expect(emptyState(note) == .subjectNumericNoNeighbors, "\(note)")
+        }
+
+        // Nothing to match on. The same wording with a designation the class grammar refuses:
+        // no subject number (frus1964-68v12/d34), a number and a commodity (frus1961-63v25/d59),
+        // and the block alone (frus1964-68v29p1/d368).
+        for note in [
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964-66, POL FR-US. Confidential. Drafted by Schaetzel.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
+        ] {
+            #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == nil, "\(note) has a class key")
+            #expect(emptyState(note) == .subjectNumericUnkeyed, "\(note)")
+        }
+        // A parse that kept no series, though the note has a class key (frus1964-68v19/d505, which
+        // prints no comma after the record group): the class route is the series arm's.
+        let noSeries = "Source: National Archives and Records Administration, RG 59 Central Files 1967–69, POL 27–14 ARAB–ISR. Secret; Priority; Nodis."
+        if case .naraCollection(_, let series, _, _) = SourceNoteParser().parse(noSeries) {
+            #expect(series == nil)
+        } else {
+            Issue.record("frus1964-68v19/d505 no longer parses as a collection")
+        }
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: noSeries) == "POL 27-14 ARAB-ISR")
+        #expect(emptyState(noSeries) == .subjectNumericUnkeyed)
+        // A note parsed as the Central Foreign Policy File, though it has a class key
+        // (frus1969-76ve08/d126, whose remark names the "Central Foreign Policy Files").
+        let foreignPolicy = "Source: National Archives, RG 59, Central Files 1970–73, POL 15–1 PAK. Confidential. It was repeated to Kabul, Karachi, Lahore, New Delhi, and Tehran. The Embassy had reported on the ratification process in telegrams 2903, April 10 (Ibid.), 2993, April 12, (Ibid., Central Foreign Policy Files), and 3017, April 13, (Ibid., Central Files 1970–73, POL 15–5 PAK) all from Islamabad."
+        if case .cfpfFile = SourceNoteParser().parse(foreignPolicy) {} else {
+            Issue.record("frus1969-76ve08/d126 no longer parses as the Central Foreign Policy File")
+        }
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: foreignPolicy) == "POL 15-1 PAK")
+        #expect(emptyState(foreignPolicy) == .subjectNumericUnkeyed)
+        // A Department-led note whose designation the parse did not store (frus1961-63v03/d53).
+        let unstored = "Source: Department of State, Central Files, AID (US) S VIET. Confidential. Repeated to CINCPAC."
+        if case .centralFiles(_, let identifier) = SourceNoteParser().parse(unstored) {
+            #expect(identifier == nil)
+        } else {
+            Issue.record("frus1961-63v03/d53 no longer parses as a central-files note")
+        }
+        #expect(emptyState(unstored) == .subjectNumericUnkeyed)
+    }
+
+    /// The states that are not the file's. A Subject-Numeric citation whose key is NOT its file
+    /// keeps the sentence every keyed note has, because the query asked about something else and
+    /// "no other indexed document was matched to the same file" would be untrue of it. There are
+    /// two such shapes, a fixture each: a National-Archives-led note whose series does not name
+    /// the central files, matched by collection on that series (frus1964-68v34/d1), and a note
+    /// parsed as the Central Foreign Policy File whose remark carries a film number, matched on
+    /// the film (frus1969-76ve09p2/d84, without the `Summary:` sentence the volume prints first).
+    /// A note that is no Subject-Numeric citation keeps its own two.
+    @Test("A Subject-Numeric citation keyed by something other than its file, and every other note, keep the generic sentence")
+    func otherEmptyStatesAreUnmoved() {
+        let bySeries = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, SCI 3 OECD. Limited Official Use; Priority. Passed to the White House."
+        let seriesParse = SourceNoteParser().parse(bySeries)
+        if case .naraCollection(_, let series?, nil, _) = seriesParse {
+            #expect(!ParsedSourceNote.seriesNamesCentralFiles(series), "\(series) names the central files")
+        } else {
+            Issue.record("frus1964-68v34/d1 no longer parses as a collection with a series")
+        }
+        #expect(seriesParse.archivalNeighborKey == "RG 59: Records of the Department of State")
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: seriesParse, note: bySeries))
+        #expect(emptyState(bySeries) == .noNeighbors)
+
+        let byFilm = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL Iran-Saudi Arabia. Secret. Drafted by Brooks Wrampelmeier (NEA/ARP); cleared in NEA/IRN, NEA/ARP, and NEA; approved by Atherton. Repeated to Tehran, Kuwait City, London, and Sana’a. Brackets are in the original. Telegrams 1450 from Jidda, April 9, and 2372 from Tehran, April 12, are in the National Archives, RG 59, Central Foreign Policy File, [no film number]. The difficulties of Iranian-Saudi cooperation were discussed in INR study RNAS–6, April 12, “Iran and Saudi Arabia—The Odd Couple.” (Ibid.) Both Ambassadors attempted to facilitate discussions during the spring of 1973 while emphasizing the difficulty of encouraging trust between King Faisal and the Shah, reported in telegram 2450 from Tehran, April 16, and telegram 1618 from Jidda, April 20. (Ibid., [no film number] and D760430–0677)"
+        let filmParse = SourceNoteParser().parse(byFilm)
+        if case .cfpfFile = filmParse {} else {
+            Issue.record("frus1969-76ve09p2/d84 no longer parses as the Central Foreign Policy File")
+        }
+        #expect(filmParse.archivalNeighborKey == "CFPF film D760430")
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: filmParse, note: byFilm))
+        #expect(emptyState(byFilm) == .noNeighbors)
+
+        // A decimal number and a lot have a key (frus1961-63v11/d301; a lot of the Conference Files).
+        #expect(emptyState("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.") == .noNeighbors)
+        #expect(SourceExplorerView.relatedEmptyState(
+            for: .lotFile(recordGroup: "RG-59", lotNumber: "63 D 123", fileIdentifier: nil), note: "") == .noNeighbors)
+        // A note with no archival key, and no note at all, are unmatched and not the file's.
+        #expect(emptyState("Source: see footnote 3") == .unmatched)
+        #expect(SourceExplorerView.relatedEmptyState(
+            for: .previouslyPublished(citation: "FRUS 1958-60, vol. X"), note: "") == .unmatched)
+        #expect(SourceExplorerView.relatedEmptyState(for: nil, note: "") == .unmatched)
+    }
+
+    /// Each state with the key of the sentence a view prints for it.
+    private static let emptySentences: [(state: String, key: String)] = [
+        ("noNeighbors", "source.explorer.related.empty.noNeighbors"),
+        ("subjectNumericNoNeighbors", "source.explorer.related.empty.subjectNumeric"),
+        ("subjectNumericUnkeyed", "source.explorer.related.empty.subjectNumeric.unkeyed"),
+        ("unmatched", "source.explorer.related.empty.unmatched"),
+    ]
+
+    /// What is wrong with `code`'s empty-list sentence, or an empty list when nothing is. `code` is
+    /// a view's source without its comment lines. The view must draw `relatedEmptyMessage`; that
+    /// property must switch over ONE call of `SourceExplorerView.relatedEmptyState(`, handed the
+    /// parse and the raw note; and each state's arm — the text from its `case .state:` to the next
+    /// `case .` — must hold that state's key, quoted, and none of the other three.
+    private static func emptySentenceFaults(in code: String) -> [String] {
+        var faults: [String] = []
+        if code.components(separatedBy: "Text(relatedEmptyMessage)").count - 1 != 1 {
+            faults.append("relatedEmptyMessage is not drawn exactly once")
+        }
+        guard let message = body(of: "private var relatedEmptyMessage: String", in: code).map(String.init) else {
+            return faults + ["no relatedEmptyMessage"]
+        }
+        let calls = callSites(of: "SourceExplorerView.relatedEmptyState", in: message)
+        if calls.map(String.init) != ["for: parsed, note: rawSourceNote"] {
+            faults.append("relatedEmptyState( is called with \(calls)")
+        }
+        let arms = message.components(separatedBy: "case .").dropFirst()
+        if arms.count != emptySentences.count { faults.append("\(arms.count) arms") }
+        for (state, key) in emptySentences {
+            guard let arm = arms.first(where: { $0.hasPrefix(state + ":") }) else {
+                faults.append("no arm for .\(state)")
+                continue
+            }
+            if !arm.contains("String(localized: \"\(key)\"") { faults.append(".\(state) does not print \(key)") }
+            for (_, other) in emptySentences where other != key && arm.contains("\"\(other)\"") {
+                faults.append(".\(state) prints \(other)")
+            }
+        }
+        return faults
+    }
+
+    /// Both views print the sentence for the state the shared rule gives, and the two sentences
+    /// for the Subject-Numeric File name it. The rule has its runtime test above; this is a source
+    /// scan of the property each view draws, since neither view's body can be run here. That a
+    /// key's text is the same in both views is `CodingStandardsAuditTests.everyKeyCarriesOneText`.
+    @Test("Both twins print each empty state's own sentence, chosen by the shared rule")
+    func bothTwinsSayWhyTheListIsEmpty() throws {
+        var read = 0
+        for path in Self.twins {
+            let code = try Self.code(path)
+            read += 1
+            #expect(Self.emptySentenceFaults(in: code).isEmpty, "\(path): \(Self.emptySentenceFaults(in: code))")
+            let message = try #require(Self.body(of: "private var relatedEmptyMessage: String", in: code))
+            for arm in message.components(separatedBy: "case .").dropFirst() where arm.hasPrefix("subjectNumeric") {
+                #expect(arm.contains("Subject-Numeric File"), "\(path): \(arm.prefix(40)) does not name the file")
+                #expect(!arm.contains("doesn’t cite a recognized"), "\(path): \(arm.prefix(40)) denies the central file")
+            }
+        }
+        #expect(read == 2)
+    }
+
+    /// The scan against the shapes it must refuse: the sentence chosen by the old test of the
+    /// parse, two states' keys traded, an arm missing, a second note handed to the rule, and a
+    /// property nothing draws.
+    @Test("The empty-sentence scan wants the shared rule's call and each state's own key")
+    func emptySentenceScanReadsEachArm() {
+        func view(message: String, draws: String = "Text(relatedEmptyMessage)") -> String {
+            """
+            struct V {
+                var body: some View { \(draws) }
+                private var relatedEmptyMessage: String {
+            \(message)
+                }
+            }
+            """
+        }
+        func arms(_ pairs: [(String, String)], call: String = "SourceExplorerView.relatedEmptyState(for: parsed, note: rawSourceNote)") -> String {
+            "switch \(call) {\n" + pairs.map { "case .\($0.0):\n    return String(localized: \"\($0.1)\", defaultValue: \"x\")" }
+                .joined(separator: "\n") + "\n}"
+        }
+        let right = Self.emptySentences.map { ($0.state, $0.key) }
+        #expect(Self.emptySentenceFaults(in: view(message: arms(right))).isEmpty)
+        // The property as it was: the parse's own test, and two sentences.
+        let old = """
+            if parsed?.supportsArchivalNeighbors == true {
+                return String(localized: "source.explorer.related.empty.noNeighbors", defaultValue: "x")
+            } else {
+                return String(localized: "source.explorer.related.empty.unmatched", defaultValue: "x")
+            }
+            """
+        #expect(!Self.emptySentenceFaults(in: view(message: old)).isEmpty)
+        // Two states' keys traded: the short key is a prefix of the long one, so the quote counts.
+        var traded = right
+        traded[1].1 = right[2].1
+        traded[2].1 = right[1].1
+        #expect(Self.emptySentenceFaults(in: view(message: arms(traded))) == [
+            ".subjectNumericNoNeighbors does not print source.explorer.related.empty.subjectNumeric",
+            ".subjectNumericNoNeighbors prints source.explorer.related.empty.subjectNumeric.unkeyed",
+            ".subjectNumericUnkeyed does not print source.explorer.related.empty.subjectNumeric.unkeyed",
+            ".subjectNumericUnkeyed prints source.explorer.related.empty.subjectNumeric",
+        ])
+        // An arm missing.
+        #expect(Self.emptySentenceFaults(in: view(message: arms(Array(right.dropLast()))))
+                == ["3 arms", "no arm for .unmatched"])
+        // The rule handed another note.
+        let otherNote = Self.emptySentenceFaults(in: view(message: arms(
+            right, call: "SourceExplorerView.relatedEmptyState(for: parsed, note: documentHeader)")))
+        #expect(otherNote.count == 1)
+        #expect(otherNote.first?.hasPrefix("relatedEmptyState( is called with") == true)
+        // A property nothing draws.
+        #expect(Self.emptySentenceFaults(in: view(message: arms(right), draws: "EmptyView()"))
+                == ["relatedEmptyMessage is not drawn exactly once"])
+    }
+}

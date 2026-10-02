@@ -135,8 +135,11 @@ struct ResearchFacilityTests {
     /// The 72.9% case, and it has no repository string to key on.
     @Test("Record-group material derives its facility from the category alone")
     func centralFilesResolveWithoutARepositoryString() {
-        for category in [SourceProvenanceCategory.centralDecimalFile, .centralForeignPolicyFile,
-                         .lotFile, .naraCollection, .namedFileSeries] {
+        // `.subjectNumericFile` since #1543: the third central filing system is College Park
+        // material like the other two, and it reaches here with the repository its wording gave
+        // it or with none.
+        for category in [SourceProvenanceCategory.centralDecimalFile, .subjectNumericFile,
+                         .centralForeignPolicyFile, .lotFile, .naraCollection, .namedFileSeries] {
             let facility = ResearchFacilityResolver.facility(
                 naId: nil, category: category, repository: nil, facts: { _ in nil })
             #expect(facility == .servedAt(facility: ResearchFacilityResolver.collegePark,
