@@ -1,7 +1,12 @@
 # OS 27 — Semantic Retrieval: Siri Distribution, Natural-Language Search, Similarity Axis
 
 **Status:** design sketch, unreviewed. Written against **beta** documentation and third-party WWDC26 write-ups — every OS-27 API claim below is marked **[V]** verified against Apple's own material or **[U]** unverified/second-hand. No claim here has been exercised against the Xcode 27 beta SDK. Read §8 before scheduling.
-**Issue:** none yet — no open issue covers App Intents, Spotlight semantics, or embeddings (searched 2026-08-01).
+**Where the three workstreams stand, 2026-10-01** (the sketch below is unchanged):
+- **B0 shipped** — a bounded `textContent` is donated to Spotlight (`IndexingPipeline.swift:2661`, the first 3,200 characters; build 44).
+- **B1 was measured and not built** — `CSUserQuery` did not clear the bar on any register (`semantic-vectors/eval-2026-08-27/VERDICT.md`, addendum of 2026-08-28), and the app has no such surface.
+- **C is superseded** by the precomputed vectors of `Vector-Embeddings-Semantic-Design.md`; the axis shipped as V-3.
+- **A is open, and no longer blocked.** The reason it was held — no Xcode 27 SDK on this machine — is gone (Xcode 27.0, 27A266a). The SDK also settles part of A0 at the declaration level: `IndexedEntity` is `@available(macOS 15.0, iOS 18.0, visionOS 2.0, *)` in `AppIntents.swiftinterface`, under this app's 26.0 deployment target, so the §1 table's "iOS 27" floor for A holds only for `IndexedEntityQuery`, which is 27.0. Whether Siri surfaces an associated item is behaviour and is still unverified. The tree has no App Intents code; the plan of record parks the assessment (§4, "Designed but unbuilt").
+**Issue:** none yet — no open issue covers App Intents, Spotlight semantics, or embeddings (searched 2026-08-01; still none among the 12 open on 2026-10-01).
 **Related:** #308 (multi-axis related-documents model — the axis in §5 extends it), #377 Phase 3 (Project Leads), #488 (the CloudKit schema-deploy tax that §5.3 is designed to avoid), Session 154 (`rebuildSpotlightIndex()`)
 **Date:** 2026-08-01
 

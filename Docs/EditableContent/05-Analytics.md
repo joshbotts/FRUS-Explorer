@@ -1339,8 +1339,8 @@ produced on its own, a **slice** is a contrast the reader proposed, and the diff
 two sentences is the feature. Nearly all of it is new in build 42.*
 
 **The standing rule for this section: plainer must not become more confident.** The semantic axis
-ships at weight 0, its quality before 1900 is a declared unknown rather than a measured pass, and
-the neighbor list is drawn only from volumes on the device even though the map draws all 552. Every
+is on at half weight since 2026-09-10, its quality before 1900 is still a declared unknown, and
+the neighbor list is drawn only from volumes on the device even though the map draws all 553. Every
 one of those limits is stated somewhere below. If an edit reads as having removed one rather than
 unpacked it, that is a defect — say so and it goes back.
 
@@ -1497,7 +1497,7 @@ Nearest in language
 <!-- END SOURCE: semanticMap.nearest.header -->
 
 #### What the nearest list is drawn from
-<!-- The map draws all 552 volumes; this list can only score documents whose vectors are on the device. Saying so is not optional — without it the ten rows read as the ten nearest in the corpus. -->
+<!-- The map draws all 553 volumes; this list can only score documents whose vectors are on the device. Saying so is not optional — without it the ten rows read as the ten nearest in the corpus. -->
 
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2414–2415 | key: semanticMap.nearest.fence | shared: iOS+macOS (single edit point) -->
 
@@ -1535,7 +1535,7 @@ Chapter openers, front matter and appendix material were not included when the m
 
 
 #### Axis caption when the weight is 0
-<!-- The axis ships OFF. Until build 42 the only prose describing it lived in a feedback screen in Settings ▸ Data & Recovery, so the app's most usable semantic feature was its least discoverable. -->
+<!-- The axis shipped OFF until 2026-09-10 and is on at half weight since, so a reader sees this caption only after turning it down to 0. Until build 42 the only prose describing it lived in a feedback screen in Settings ▸ Data & Recovery, so the app's most usable semantic feature was its least discoverable. -->
 
 <!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 554–555 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
 

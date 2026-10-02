@@ -255,6 +255,12 @@ Everything Claude-side that Phase 5 hands over is now done except the packer. In
    shifts every document behind it. Identity is now stored, not derived (1,605 run
    segments, ~14 KB). The `(volume_id, d)` join and the 2,356 typed-unavailable
    structural rows stand as measured.
+*(Items 2–4 below are the 2026-08-12 state. Since then: the map stage ran and Tier 0 is
+bundled — `semantic-map.bin` and `semantic-map-index.json`, 171 clusters over 314,571 documents;
+the licence gate was resolved on 2026-08-28; and item 4's decisions were taken — 512 dimensions,
+Tier 1 bundled, the app-owned `joshbotts/frus-semantic-vectors` repository as host, and the
+edition-twin rule in `SemanticVectorsKit/SemanticEditionTwins.swift`. Recorded 2026-10-01.)*
+
 2. **Tier 0's map stage is not yet run**: PCA→UMAP→HDBSCAN + c-TF-IDF labels (design
    §3.1) needs a pinned non-stdlib Python environment (`uv`-managed, per the design) —
    the one remaining Python-side build. It gates V-4 only; V-3 needs Tiers 1/2.

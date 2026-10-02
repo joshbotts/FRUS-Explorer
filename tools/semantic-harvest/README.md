@@ -202,7 +202,9 @@ downloadable `.vec` shards, deterministically and with the harvest's provenance 
 Two things it needs from a future harvest, both learned here: set `MODEL_FILE` (the packer refuses
 a store whose `model_file_sha256` is not 64 hex — a shipped artifact must name its weights), and
 keep the run in ONE invocation where practical, since `totals_this_run` describes the invocation
-rather than the store. What remains owner-side is unchanged: the licence read before V-5. The blind
+rather than the store. ~~What remains owner-side is unchanged: the licence read before V-5.~~ The
+licence gate was resolved on 2026-08-28 and V-5 shipped in build 44, so nothing owner-side remains
+here. The blind
 panel is no longer a gate (owner decision 2026-08-12) and stays staged un-keyed as the fallback.
 
 ## What this store contains (the contract)

@@ -103,10 +103,15 @@ LOD's job for a fraction of LOD's complexity.
    in the app.
 2. ~~**Re-measure this spike against the UMAP layout**~~ — **done**, §3a. A density layer is not
    needed for performance; scale point size with zoom instead.
-3. **Pack Tier-0 into the bundled artifact**: extend `SemanticVectorsGenerator` to read `layout.bin`,
+3. ~~**Pack Tier-0 into the bundled artifact**: extend `SemanticVectorsGenerator` to read `layout.bin`,
    emit coordinates + cluster ids, and generate c-TF-IDF cluster labels through `WordCloudKit`. This
-   is the next step and the last one before the surface itself.
-4. Only then the interaction design: lenses, slices, lasso, selection → `WorkingCorpus`.
+   is the next step and the last one before the surface itself.~~ **Done** — `semantic-map.bin` and
+   `semantic-map-index.json` are bundled (171 clusters over 314,571 documents today).
+4. ~~Only then the interaction design: lenses, slices, lasso, selection → `WorkingCorpus`.~~ **Done**
+   — the map shipped as V-4 (#870–#883; `FRUSExplorer/Semantic/Map/`).
+
+*(Struck 2026-10-01. One measurement this spike named is still owed: the map's frame time on a
+device weaker than the M1 Max it was measured on, §2.)*
 
 ## 5. Notes for whoever picks this up
 

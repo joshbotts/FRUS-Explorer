@@ -1255,7 +1255,7 @@ Volumes filed by the administration their documents cover — dated to each term
 ### 16.4 Subjects
 
 #### The coverage statement
-<!-- The two disclosures are the caption: counts describe all 552 volumes while search reaches
+<!-- The two disclosures are the caption: counts describe all 553 volumes while search reaches
      only this device's index, and topics are DETECTED, not editorial — "so some are wrong" is a
      sentence the feature owes the reader and must survive editing. -->
 <!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 485–486 | key: subjects.index.coverage.v2 %lld %lld -->

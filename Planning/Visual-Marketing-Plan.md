@@ -2,7 +2,13 @@
 
 **Status:** proposed, 2026-08-30. Written against the tree at `30b105e` (build 44 on TestFlight).
 Reconciles against `Planning/Map-Figure-Export-And-Visual-Outputs.md` §7–§9 and
-`Planning/Plan-Of-Record-2026-08-28.md` rather than being invented beside them.
+`Planning/Completed/Plan-Of-Record-2026-08-28.md` rather than being invented beside them.
+
+**Status at 2026-10-01: live.** §7's steps 0–4, 6–9, 11 and 14 are done (struck there); steps 5,
+10, 12, 13, 15 and 16 and GATE A's owner half are open. **§4.3, §5 and §7's figures were
+re-measured on 2026-10-01** against the bundle at `v2` `dc17d945`: the manifest holds 553 volumes
+and the map 314,571 documents in 171 regions, where this plan was written at 552, 314,483 and 179.
+Figures in §1–§3 and §8–§10 are left as measured on the dates those sections carry.
 
 **Method.** Eight verified probes over the shipped code, three independent plan drafts scored by
 adversarial judges, and a completeness critic. **The critic overturned the winning draft's flagship
@@ -119,6 +125,8 @@ pooled the field into 83% of the width by **23% of the height**; the drift path 
 **The Renderer column is load-bearing** *(added 2026-08-31, §10)*. `WordCloudBackdropView.drift`
 defaults to `false` (`WordCloudBackdropView.swift:71`) and is opt-in per surface; only the two sites
 two rows below pass it. **The splash and the onboarding cloud have never run the particle canvas.**
+*(True when written. Both pass `drift: true` now — `LaunchSplashView.swift:86` since M-4,
+`OnboardingView.swift:168` since 2026-09-20 — as the table above records.)*
 A row that proposes changing "the splash's drift" is proposing to *enable a renderer*, not to tune a
 constant — see M-4. Note also that the splash's `continuous` Motion cell describes its shimmer
 (`LaunchSplashView.swift:98`), not its words: the static resolver never touches `fillFactor` or
@@ -405,10 +413,11 @@ conditions before it ships:
 
 **PLATE B — the map under the Provenance lens.** The same finding rendered spatially rather than
 quantitatively, which is what gets two figures into one paper instead of one figure and a decoration.
-Blocked on Gap 3.
+~~Blocked on Gap 3.~~ Gap 3 was fixed on 2026-08-31 (§1); the plate itself is §7 step 13, still
+open.
 
-**FILM — "The record assembles itself."** 553 chronological frames, no new app code. Five defects
-must be fixed first; see §6 and §7.
+**FILM — "The record assembles itself."** 553 chronological frames, no new app code. ~~Five defects
+must be fixed first; see §6 and §7.~~ **Shipped 2026-09-06** (§7 step 11).
 
 ### 4.3 What "ships today" actually means
 
@@ -419,6 +428,11 @@ must be fixed first; see §6 and §7.
 | Corpus term-frequency plate | yes | **all 552 volumes indexed** | no |
 | Word-cloud / keyness plate | yes | **all 552 volumes indexed** | no |
 | Frame sequence | yes | Metal + simulator + env var | **no** — sidecar defect, frame holes |
+
+**This table is the 2026-08-30 state.** Gaps 1–3 were fixed on 2026-08-31 (§1's struck rows; GATE C,
+§7 steps 1 and 2), and the frame sequence's two defects at §7 step 4 (the sidecar in PR #1166; a
+failed frame now throws instead of leaving a hole), so nothing in the *Citable today* column is
+blocked by a gap any longer. The two index-dependent plates need all **553** volumes indexed today.
 
 **There are twelve `AnalyticsFigureCanvas` plates, not eleven.** Corpus Analytics term frequency
 (`AnalyticsView.swift:904`, `:907`) is wired to a hand-built PNG/PDF menu rather than through
@@ -449,13 +463,18 @@ sidecar** — a sidecar is the first thing lost when a clip is reposted.
 |---|---|---|
 | Any exported figure | OH/State attribution + public-domain line; and the "accompanies this figure in its CSV export" line reworded | `AnalyticsProvenance.swift:109-112`; `AnalyticsFigureExport.swift:79-80` |
 | Anything showing the map | *"Layout preserves local similarity; distances between far regions are not meaningful."* | `SemanticMapSpikeView.swift:1444-1450` |
-| Anything naming a region | ***"This surface is experimental."*** + the clustering sentence + coverage (179 regions, 226,276 documents; **88,207 sit between regions**) | `SemanticMapExport.swift:128-135` |
-| Provenance lens | plurality-not-majority, 73 of 522 | `SemanticMapLens.swift:100` |
+| Anything naming a region | ***"This surface is experimental."*** + the clustering sentence + coverage (171 regions, 225,122 documents; **89,449 sit between regions** — `semantic-map-index.json`, generated 2026-09-09) | `SemanticMapExport.swift:128-135` |
+| Provenance lens | plurality-not-majority. The shipped caption says **73 of the 499 volumes it colors**; recomputed from `source-provenance-index.json` as regenerated on 2026-10-01 (#1514) the count is **75 of 499** — `frus1961-63v03` and `frus1961-63v21` joined — so the caption is owed a correction before any asset quotes it (plan of record, "Not placed") | `SemanticMapLens.swift:100` |
 | Any scoped-map animation | the scope-is-a-set-of-volumes grain sentence | `SemanticMapFrameSequence.swift:84-85` |
 | Anything on `provenance-flow-index.json` | 95.3% of edges are footnotes — annotation practice, not a relation between archives | design §8 |
 | Anything showing NARA data | *"not affiliated with, endorsed by, or sponsored by the National Archives…"* | `AboutView.swift:710-719` |
 | Store copy / launch post mentioning meaning search | **Gemma: "describe, never brand"** — no rights to Google marks or to suggest endorsement | `gemma-terms-of-use.txt:132-137`; `Gemma-Compliance-Runbook.md:163-164` |
 | Everything | *not an official product of the Office of the Historian or the U.S. Department of State* — and note it continues *"Any commentary… reflects personal views,"* which is the **operative framing** for Plate A's claim, not boilerplate | `AboutView.swift:750-756` |
+
+**One departure from this table, by owner decision (2026-09-20).** The film carries the owner's
+title — *Visualizing FRUS: Documents are placed on the semantic map in volume publication order.* —
+in place of the scoped-map grain sentence, which stays line 1 of the harness's `provenance.txt`;
+`tools/map-film/README.md` ("The title") gives the one flag that puts the sentence back.
 
 **Four amendments to the caveat text itself:**
 1. **Do not elide "This surface is experimental."** Every other semantic surface carries that word on
@@ -469,12 +488,16 @@ sidecar** — a sidecar is the first thing lost when a clip is reposted.
    at exactly ten**.
 4. ~~"73 of 522" is measured over the **498 coloured** volumes. Literally true, imprecise.~~
    **FIXED 2026-08-31**, PR #1160 — the caption now gives 73 against the 498 volumes the lens
-   colours. Both denominators verified from `source-provenance-index.json`.
+   colours. Both denominators verified from `source-provenance-index.json`. *(The artifact has
+   moved twice since: 499 coloured of 523 covered, and see the Provenance-lens row above for the
+   2026-10-01 count.)*
 
-**Two copy rules.** The map draws **314,483** documents; the app indexes **316,839** — a title card
-reading "every document" would be wrong. And **no marketing number may come from `CLAUDE.md` or a
-generator doc comment**: several are measurably stale against the shipped artifacts (external-citation
-volume counts 284 vs 440 on disk). The app is safe because it recomputes at render time; **a store
+**Two copy rules.** The map draws **314,571** documents; the app indexes **316,768** (the index
+v63 parser's emission over the 553 volumes, `tools/page-citations/replica.py`; a device count is
+owed to the release's re-index census) — a title card reading "every document" would be wrong. And
+**no marketing number may come from `CLAUDE.md` or a generator doc comment**: when this was written
+several were measurably stale against the shipped artifacts (external-citation volume counts 284 vs
+440 on disk; both read 441 today). The app is safe because it recomputes at render time; **a store
 description has no recompute step.**
 
 **Everything here is English-only and nothing says so.** No `.xcstrings` ships; every
@@ -523,11 +546,13 @@ first sitting:
 
 - **GATE A — owner-only, start now.** Fill the four EULA placeholders (gates App Store submission of
   any encoder-carrying build; **TestFlight is explicitly not gated**). Decide the privacy nutrition
-  label — **no `PrivacyInfo.xcprivacy` exists anywhere in the repo**. Neither is visual; both are
+  label — ~~**no `PrivacyInfo.xcprivacy` exists anywhere in the repo**~~ the manifest exists since
+  PR #1191 (`FRUSExplorer/Resources/PrivacyInfo.xcprivacy`, declaring no collected data types), so
+  what remains is the App Store Connect label itself. Neither is visual; both are
   hard blockers that surface the week you planned to submit.
 - ~~**GATE B — start the full 552-volume download and index now.**~~ **ALREADY SATISFIED, verified
   2026-08-31.** The author's own Mac carries **552 volumes / 316,839 documents** — the whole manifest,
-  every volume. The longest pole in the plan was already finished when the plan was written; nobody
+  every volume *(as of that date; the manifest has held 553 volumes since build 47)*. The longest pole in the plan was already finished when the plan was written; nobody
   had looked. Steps 5 and 10 and every corpus-bearing store screenshot are unblocked **now**.
 - ~~**GATE C — fix the caption band.**~~ **SHIPPED 2026-08-31**, PR #1154. See the note below for
   what the sizing argument got wrong. Original text: **Size L, not M.** It is the funnel for **twelve** plates; it needs
@@ -721,6 +746,10 @@ ahead of the capture sessions. Old numbers in brackets.)*
 11. ~~*(was 8)* **Finish the film (M, mostly assembly).**~~ **SHIPPED 2026-09-06** —
     `tools/map-film/` (`build_film.sh`, `make_subtitles.py`, `render_caption.swift`, README).
     Output `map-film.mp4`: **1440×1080, 46.08 s, 1.94 MB**, two soft subtitle tracks. No re-render.
+    *(That is the 2026-09-06 build, and `ffprobe` on 2026-10-01 still reads it so on the machine
+    this plan is kept on. `tools/map-film/README.md` records the owner's 2026-09-20 rebuild — the
+    owner's title in place of the grain sentence, no subtitle track, and one more frame for vol.
+    XVI — which was not re-measured here.)*
 
     **"~44% dead width" was exactly right, and is now measured rather than estimated**: the drawn
     content occupies x 418..1501 (1084 px) of 1920, so **836 px = 43.5%** is empty ground. The crop
@@ -773,7 +802,7 @@ neither this document nor the Plan of Record licenses, since neither bounds Gate
 moved work's. Index-independence is true, checkable, and sufficient.)*
 
 **One tension recorded rather than resolved.** §7.4 (word-cloud animation) is last on engineering
-risk, but it is the **only** item producing posts indefinitely — 552 volumes × 4 lenses of bundled,
+risk, but it is the **only** item producing posts indefinitely — 553 volumes × 4 lenses of bundled,
 zero-download content. The hero clip is one post; this is hundreds. If marketing cadence outranks
 engineering risk this cycle, promote it. That is an owner call.
 
@@ -991,7 +1020,7 @@ notice, and wrote §3.2's vocabulary into a §2a cell.
 ### Whether to commit the review document
 
 The precedent is real — `Planning/Cross-Platform-UI-Adversarial-Review/` and
-`Planning/Archive-Visit-Design-Handoff/` both track their `.dc.html` with a byte-identical
+`Planning/Completed/Archive-Visit-Design-Handoff/` both track their `.dc.html` with a byte-identical
 `support.js`. **Recommendation: do not commit this one.** Its citation-grade claim does not survive
 verification (a refuted headline, a wrong line cite, an elided quotation), and its one piece of
 content that reaches neither plan — A-8's rig pointer — was wrong and has been replaced above with

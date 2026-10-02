@@ -12,6 +12,30 @@ Format, one entry per change:
 
 <!-- Lanes append below this line, one "## <LANE KEY> — <issues>" heading each. -->
 
+**Index, 2026-10-01** *(added by lane PLAN; no entry below was edited).* Fourteen sections, in the
+order the lanes landed: **WB**, **STOR**, **PAGE**, **SYNC**, **NOTE**, **LANG**, **GRAPH**,
+**ARCH**, **EXPORT**, **MACCOL**, **SEL**, **CITE**, **XREF**, and **PLAN** at the end, which
+holds manual sentences the 2026-09-27 planning audit found wrong rather than ones a lane's code
+changed. Each entry is self-contained; three things are worth knowing before applying them.
+
+- **Two pairs of lanes propose changes to the same sentences.** Lanes GRAPH and ARCH both
+  rewrite Mac §8.5's **Volume Connections** bullet and the **Network** paragraph of Mac §15.3
+  Person Analytics (GRAPH's entry covers iOS §15.3 too, and ARCH has an iOS §15.3 entry of its
+  own). They do not conflict: GRAPH appends sentences (only the centre is named while the graph
+  settles; drag and double-click on empty canvas), and ARCH changes the clause about where a label
+  goes (under its node, or above it). Apply both to the same text. Lanes NOTE and EXPORT likewise
+  both extend the last clause of the **coverage report** paragraph in Mac §14.8 and iOS §14.8
+  (NOTE: divided lots; EXPORT: where the packet came from); they compose the same way.
+- **One entry is superseded.** WB's entry for the iOS graph's **Gestures** bullet is marked so in
+  place; lane GRAPH's entry for that bullet (iOS §8.6) replaces it, with the item's shipped name,
+  *View Document*.
+- **Several sections collect entries from more than one lane, on different sentences**: Mac §17.5
+  and iOS §17.6 Data & Recovery (WB, SYNC, LANG, EXPORT), Mac §11.4 and iOS §11.4 Citation Lookup
+  (PAGE, CITE), Mac §8.5 (PAGE, GRAPH, ARCH), Mac §12.3 (EXPORT, MACCOL), Mac §14.8 (WB, NOTE,
+  EXPORT), iOS §14.2 (NOTE, SEL), iOS §15.4 (PAGE, XREF), and Mac §15.6 and iOS §15.6 (PLAN only,
+  but waiting on a code fix — see its entry). Reading a section's entries together is quicker
+  than taking the lanes in order.
+
 ## WB — #1422, #1464, #1476, #1478, #1481, #1483, #1527, #1531 (copy)
 
 *Lane WB wrote the owner's 2026-09-30 EditableContent review into the app. These are the manual sentences that review, or the code it needed, makes wrong or out of step. Each quotes the manual as it stands at `origin/v2` b340c61b.*
@@ -663,4 +687,63 @@ Format, one entry per change:
 - **Current:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to.
 - **Proposed:** - **Most-Referenced Documents** — ranked by inbound citations (in-degree); chart or table. A fast way to surface the memos and decisions a whole era kept coming back to. In the chart a long title takes up to two lines and is cut at its end; the table, and VoiceOver on each bar, give the title whole.
 - **Why:** as for the Mac (#1473; the same `CrossReferenceRankingChart` on every platform, `CrossReferenceAnalyticsView.swift:1525`). On an iPhone the bug was worse than on the Mac: on `v2`, iPhone 17, the plot was squeezed to 1 pt at x 977 of a 402 pt window, and 5 of the 12 rows on screen showed no title at all. Optional, like the Mac sentence.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## PLAN — planning housekeeping (P3)
+
+*Lane PLAN changed no code. These are manual sentences the 2026-09-27 planning audit found wrong or missing and that no lane's code change covers; each was re-read against the manuals and the tree at `origin/v2` dc17d945. The iOS ones overlap DOCS-2's whole re-read and are listed so that nothing depends on that lane rediscovering them.*
+
+- **Manual / section:** iOS §6.1h Clusters, last paragraph (`Docs/iOS-User-Manual.md:387`)
+- **Current:** Clusters are an **experimental, computed** view — the same "leads or noise?" question the semantic map asks. If a cluster's members read like a genuine research lead, that is worth knowing; if they read like an arbitrary pile, that is worth knowing too.
+- **Proposed:** Clusters are an **experimental, computed** view: the groups come from how documents read, not from an editor's heading, and a cluster's label is a sample of its distinctive terms. Treat a cluster as a lead to check against its documents. About 28% of the corpus (89,449 documents) belongs to no cluster and cannot be reached here.
+- **Why:** owner decision D-A (2026-09-10, `Planning/Completed/Plan-Of-Record-2026-09-06.md` §0): "No surface should any longer invite its own removal. The leads-or-noise framing is retired." This paragraph is the one place it survives; no app string carries it. The proposed limits are the ones Mac §6.1 already states, and 89,449 is `semantic-map-index.json`'s `layout.unclusteredCount` of 314,571 (28.4%).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §8.5 Related Documents, the signal table's **Semantic similarity** row and the sentence under **Adjust weights** (`Docs/iOS-User-Manual.md:668`, `:676`)
+- **Current:** | **Semantic similarity** | *Experimental, and off until you move its slider.* Documents whose language reads alike, whether or not they share words | … **Semantic similarity** is experimental and starts at zero; drag it above zero to include it.
+- **Proposed:** | **Semantically similar (experimental)** | Language that reads alike, whether or not the words match. On by default at half weight — below the archival and citation signals, so it shapes the list without dominating it — and its slider moves it either way | … **Semantically similar** is experimental and on at half weight; its slider moves it either way.
+- **Why:** owner decision D-D (2026-09-10) raised the default from 0 to 0.5: `SimilarityAxis.defaultWeight` returns `0.5` for `.semanticSimilarity` (`FRUSExplorer/RelatedDocuments/SimilarityModel.swift:218`), and the axis's label is "Semantically similar (experimental)" (`:121`). The proposed row is Mac §8.4's, word for word. *Similar wording* does start at zero (`.lexicalSimilarity`, `:219`), so its row is right as it stands.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §15.8 Exporting a Chart for Publication, the **Before you publish a figure alone** bullet (`Docs/iOS-User-Manual.md:1210`)
+- **Current:** **Before you publish a figure alone**: the figure's caption strip is deliberately short, and the caveats that qualify the numbers — the dating rule, the fact that counts cover only the volumes indexed on *your* device, what a percentage is a percentage *of* — live in the CSV. The figure says so in small type at its foot. Submit the pair together; the CSV is where a referee finds your method.
+- **Proposed:** **Before you publish a figure alone**: beneath the chart the figure prints its title, a line naming the scope, the year range and value mode where they apply, the app, and the date, and then, in small type, the same caveats the CSV's method block states — the dating rule, the fact that counts cover only the volumes indexed on *your* device, what a percentage is a percentage *of*, and the sources the numbers were drawn from — followed by the corpus credit and a line saying the underlying numbers are available as a CSV export with the full method statement. The numbers themselves are only in the CSV. Submit the pair together; the CSV is where a referee checks your figures.
+- **Why:** false since GATE C (PR #1154, 2026-08-31): a plate prints every caveat the CSV prints, the Office of the Historian credit and a data pointer (`AnalyticsProvenance.plateLines`, `FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift:301`), the sources statement among them. The proposed text is Mac §15.8's bullet with "this Mac" changed to "your device". Lane EXPORT's entries for §15.8 are on the **What.** bullet and the last bullet, not this one.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.1 Corpus Analytics, the **Documents or Occurrences** bullet (`Docs/macOS-User-Manual.md:982`), and iOS §15.1, the same bullet (`Docs/iOS-User-Manual.md:1109`); and the pointer to it in §18.2 of each (`:1227`, `:1332`)
+- **Current:** … The two can move in opposite directions, and the difference is a finding: searching `"Article 43"`, documents fall from 34 in 1948 to 11 in 1949 while occurrences *rise* from 77 to 92 — a single 1949 document discusses it 54 times. … The picker is disabled **with a stated reason** wherever no honest count exists — exact-word (`=`) searches, phrases, wildcards, proximity queries, multi-term comparisons …
+- **Proposed:** *(no figures offered)* … The two can move in opposite directions, and the difference is a finding: a term can appear in fewer documents in one year than the last while its occurrences rise, because one long document discusses it many times. … — and in §18.2, "(15.1 explains the difference)" in place of "(the `"Article 43"` example in 15.1 is the cautionary tale)".
+- **Why:** the example contradicts its own paragraph: `"Article 43"` is a phrase search, and the next sentence says the Measure picker is disabled for phrases. The figures also predate #1340, which changed what the bars count under Occurrences. **A measured one-word example would be better than none, and this lane could not measure one**: it needs a full index. PR #1340 listed it as an owner step.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §10.2 Creating a Project (`Docs/macOS-User-Manual.md:599`)
+- **Current:** A project created by an earlier version's onboarding may still carry one: it is shown on Project Home as *From … Through …* and pre-fills the Search date filter, and it cannot be edited.
+- **Proposed:** A project created by an earlier version's onboarding may still carry one: it is shown on Project Home as *From … Through …* and cannot be edited. On the Mac it changes no search; on iPhone and iPad it pre-fills the Search tab's date filter.
+- **Why:** only the iOS Search tab applies a project's date range (`SearchViewModel.applyProjectDefaults`, called from `FRUSExplorer/Search/SearchView.swift:858`); the Mac Search window's model never reads it (no `defaultDateRange` or `applyProjectDefaults` in `FRUSExplorer/App/MacSearchViewModel.swift` or `FRUSExplorer/App/SearchSheet.swift`). Read from the code, not checked in the running Mac app.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §7.11 Search by Meaning (Experimental), after its second paragraph (`Docs/macOS-User-Manual.md:465`)
+- **Current:** *(no such sentence)*
+- **Proposed:** *(add)* Like every semantic surface it is **experimental**: its quality on nineteenth-century material is not yet established, and a phrase whose exact wording is the point ("persona non grata") is better served by a keyword search.
+- **Why:** parity. iOS §7.12 carries this caveat (`Docs/iOS-User-Manual.md:584`) and the Mac section does not; the evaluation behind it is `Planning/semantic-vectors/eval-2026-08-27/VERDICT.md`, and the early-era question is still open (no pre-1900 quality measurement exists). The in-app strip (`search.meaning.strip.base`) says neither thing; that is copy for the owner's EditableContent pass, not a manual change.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §5.3a Semantic Vectors and the Search Model (`Docs/macOS-User-Manual.md:265`), and iOS §5.3 Managing Storage, where the iOS manual has no vectors section yet (`Docs/iOS-User-Manual.md:261`)
+- **Current:** *(no such sentence)*
+- **Proposed:** *(add)* The vectors, the semantic map and its regions are made when the app is built. If the Office of the Historian corrects a volume and you update your copy, your text is the corrected one at once, but Related Documents' semantic matches, search by meaning and the map go on describing the earlier text of that volume until the next app update.
+- **Why:** `Planning/New-Volume-Release-Plan.md` §13 names this window and says it "cannot be fixed, only disclosed"; nothing discloses it. The bundled index, binary and map are app resources, while a volume's text is downloaded live (`VolumeUpdateChecker`). A shard whose document count changed is refused and re-fetched (`settings.vectors.error.rejected.v2`), but a correction that keeps the count is scored from the old vectors until a release re-publishes the shard. The wording is new and is the owner's to set.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §5.3 Managing Storage, the **Free Up Space…** bullet (`Docs/iOS-User-Manual.md:264`)
+- **Current:** **Free Up Space…** lists only volumes with nothing of yours attached — no notes, highlights, or tags — ordered by what you would recover, and asks before removing anything.
+- **Proposed:** **Free Up Space…** lists only volumes with no research notes, collection entries, or summaries attached and that the app can download again (a side-loaded volume is never offered; highlights and tags do not keep a volume off the list, and they survive its removal like the rest of your work), ordered by what you would recover, and asks before removing anything.
+- **Why:** the list is wrong: the sheet's own empty state says "Every volume has notes, collections, or summaries attached." (`FRUSExplorer/Settings/VolumesStorageHubView.swift:665`), and Mac §5.3 already states the rule this way. The ordering clause is left as iOS has it; lane STOR's entry on the same item (iOS §17.2) adds that the rows are dimmed while it removes.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.6 Semantic Analytics, the **Color by** bullet (`Docs/macOS-User-Manual.md:1065`), and iOS §15.6, the same bullet (`Docs/iOS-User-Manual.md:1184`) — **wait for the caption fix**
+- **Current (Mac):** … with its caveat stated under the lens: a plurality, not a majority, for 73 of the 499 volumes it colors; volumes with fewer than ten notes, and the 30 the aggregate does not cover, take the gray **Too few source notes** color rather than a guess.
+- **Current (iOS):** … with carefully stated caveats: it is a volume-level plurality (for 73 of 522 covered volumes the winner holds under half the notes), 55 volumes are "won" by *Other/Unclassified* (meaning the parser could not classify their notes), and volumes resting on ten notes or fewer take their own gray *Too few source notes* color rather than being folded in.
+- **Proposed:** Mac: the same sentence with the count the corrected caption gives (75 today). iOS: the Mac's sentence, which also corrects "ten notes or fewer" (the floor is fewer than ten) and drops the two figures the caption does not state.
+- **Why:** the Mac sentence quotes the lens caption, `semanticMap.lens.provenance.caption.v2` (`FRUSExplorer/Semantic/Map/SemanticMapLens.swift:100`), and that caption is itself out of date: recomputed from `source-provenance-index.json` as lane NOTE regenerated it on 2026-10-01, the winner holds under half the notes in **75** of the 499 colored volumes, not 73 (`frus1961-63v03` and `frus1961-63v21` joined). The caption is a code string and was not changed by this lane; it is listed in the plan of record's "Not placed" note. Change the manuals when it is fixed, to whatever it then says.
 - **Owner:** ☐ approve ☐ edit ☐ reject

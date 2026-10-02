@@ -4,7 +4,7 @@
 
 **Scope.** 49 issues are open. #234 is deferred indefinitely, and #1309 is used only to hold the report to the Office of the Historian. This plan covers the other **47**.
 
-**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md`. The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. No lane has started: the plan starts once the owner hands back the revised `Docs/EditableContent/` and has usage for it (P1, P2).
+**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01; §0a says where the wave stands and what remains.**
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14. (This is the Visual-Marketing-Plan §7 steps that are done, carried unchanged from the 2026-09-06 plan and checked by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`.)
 
@@ -134,9 +134,60 @@ The owner's answers, as they bind the lanes. §3 and §3a keep the original opti
 
 The release (build 49, one re-index) follows the tiers the owner chooses to land. The staged launch files are listed in the plan's session entry in `Planning/DEVELOPMENT-PLAN.md`.
 
+## 0a. Where the wave stands — 2026-10-01
+
+Recorded by lane PLAN against `v2` @ `dc17d945`. It changes nothing in §0. The build number is still 48: build 49 has not been cut. The index is at **v64** and the rollup at **v10**.
+
+**Landed: WB, all of Tier 1 and all of Tier 2** (thirteen lanes, merged 2026-10-01 in this order).
+
+| Lane | PR | Issues closed | Notes |
+|---|---|---|---|
+| WB | #1544 | #1422, #1478, #1483, #1527 | The owner's 2026-09-30 EditableContent review, written into the app. It also carried the copy for #1464, #1476, #1481 and #1531. |
+| STOR | #1546 | #1526, #1432, #1476, #1538 | Both ◦ fold-ins. |
+| PAGE | #1547 | #1509, #1510, #1511 | Index **v63**. The persons-list ◦ fold-in. |
+| SYNC | #1548 | #1531 | All seven items of §2, and the ◦ fold-in. Adds the archive gate (below). |
+| NOTE | #1549 | #1514, #1515, #1404 | Index **v64**, D2 "wide". All five ◦ fold-ins, and one fix taken from §4: the live NARA decoder's series dates. Five artifacts regenerated. |
+| LANG | #1550 | #1539 | Steps A–C. Step D stays the optional tail. |
+| GRAPH | #1551 | #1434, #1517, #1518, #1481 | |
+| ARCH | #1552 | #1437, #1438, #1468, #1470 | `collection-authority.json` and its successors regenerated (D11). |
+| EXPORT | #1553 | #1465, #1496, #1497, #1498, #1464 | The three ◦ fold-ins, and two fixes taken from the audit beyond §2: PV-1's sources statement (§4), in the analytics exports, the visit packet and the method appendix; and the word-cloud plate, which now pins the light appearance and draws its credit in a fixed colour. |
+| MACCOL | #1554 | #1446, #1448, #1449, #1477, #1493, #1475 | Both ◦ fold-ins. |
+| SEL | #1555 | #1540 | Option (a). |
+| CITE | #1556 | #1504, #1506, #1523, #1524, #1491 | |
+| XREF | #1557 | #1472, #1473 | The ◦ fold-in. |
+
+**Count.** The plan covers 50 issues: the 47 of §1 and #1538, #1539 and #1540. **44 are closed**: the 43 in the table and #1430 (D14). **Six are open**, all Tier 3: #1516 (READ) and #1412, #1423, #1439, #1450 and #1484 (HYG).
+
+**What remains, in order.**
+1. **READ** — #1516, as D3 settles it (figure images downloaded with their volume), with its ◦ fold-in.
+2. **HYG** — the five issues above and its ◦ fold-ins.
+3. **PLAN** — this lane: the planning housekeeping of P3 (b). Its session entry in `Planning/DEVELOPMENT-PLAN.md` lists what it archived and corrected.
+4. **OH** — the #1309 report (§5), one post (P4). The lanes added items for it: PAGE's five page-id defects (its notes are in the session's durable folder) and NOTE's two volumes that nest a library's sources inside another holder's list.
+5. **MANUALS**, after the owner hands back the Mac manual: apply the approved entries of `Planning/Manual-Revisions-Pending.md`, which now holds a section for each landed lane and one for PLAN, with an index at its head.
+6. **DOCS-2** — the iOS manual: the whole re-read, parity with the Mac manual, and the owner's Mac edits.
+7. **Optional tail, LANG-D** — only if LANG's release log shows the lemma verdict still failing on foreground launches (§0, Lane order 5).
+
+**The release (build 49, one re-index, v62 → v64).** §2's list stands. The wave added to it:
+- **The CloudKit schema gate (SYNC).** Every archive now runs a "Check CloudKit schema" phase, and it fails until `Scripts/check_cloudkit_schema.py` has read Production's schema on this Mac. That needs a CloudKit management token (`xcrun cktool save-token --type management`), and none was saved when SYNC landed. Nothing awaits deploy: `identifiersAwaitingDeploy` is empty.
+- **SYNC's device check.** The Development-device A/B with an unpublished field, and the Mac and iPhone system logs, were not run.
+- **LANG's release log**, on the owner's devices. It decides whether LANG-D is needed.
+- **The owner's by-eye checks**, listed under "Still open" in each lane's entry in `Planning/DEVELOPMENT-PLAN.md`: the Mac's research-database export from a sandboxed build (STOR); the Archival network on the Mac and an iPhone (ARCH); Cross-Reference Analytics at 720 and 820 pt on the Mac (XREF); Batch and the side-load notice (CITE); one Word export holding `frus1951v01` d2 (EXPORT); the Mac Collections window's list in MACCOL's entry ("Owner's Mac checks"); VoiceOver on the iOS edit menu (SEL); and the Settings row for language analysis (LANG). No entry records the Mac app being run by eye: GRAPH's Mac half rests on an in-process replay and MACCOL's on a harness.
+- **The earlier Mac check's five steps**, still owed since 2026-09-25 (`Planning/Completed/Mac-Check-2026-09-25.md`): hover, a trackpad swipe, dark appearance, and one judgement.
+
+**Not placed.** Open issues and defects that no lane holds. None is designed here.
+- **#1535** — Browse cannot open a prose-only chapter, subchapter or compilation. **#1536** — text printed at a container's own level is discarded. Both are D1's side gaps. §0 puts them in scope "only if P1 allows", and the owner has not added them.
+- **#1543** — treat the Subject-Numeric file as its own filing era, apart from the Central Foreign Policy File, in archival analytics and Source Explorer. Filed by the owner during the wave (2026-09-30).
+- **#1545** — Semantic Match Feedback has a way to share its file and no destination. An owner decision; filed from WB's close-out.
+- **Found by lane PLAN while re-measuring, not filed:**
+  - **The provenance lens's caption is two volumes out.** `semanticMap.lens.provenance.caption.v2` says the winning category is a plurality "for 73 of the 499 volumes it colors". Recomputed from `source-provenance-index.json` as NOTE regenerated it, it is **75 of 499**: `frus1961-63v03` and `frus1961-63v21` joined. The string, its EditableContent block, three doc comments and both manuals' §15.6 state 73, and no test compares the caption with the artifact.
+  - **`subject-numeric-labels.json` describes itself out of date.** Its `coverage.measured` block counts 1,362 subject-numeric keys; `collection-usage-index.json` has held 1,370 since its 2026-09-25 regeneration. Its `coverage.note` says the country element is not read, though the file has carried `areas` since #1254. Regenerating it needs the owner's local handbooks.
+- **Left open by the lanes themselves**, each with its fix described in the lane's entry: the Spotlight item of a left-out container, the persons list's "until January, 1953", and the export check's wording for a left-out container (PAGE); the Subject-Numeric files still stored without a designation — 126 central-file notes, 55 `AID` notes and about 778 NARA-led notes (NOTE); the bracketed `@n` on six more labels (MACCOL, CITE); and Person Analytics' ranking chart, which sets the labels XREF fixed elsewhere.
+
 ---
 
 ## 1. Where the 47 issues stand
+
+*(As of 2026-09-28. §0a has the count at 2026-10-01.)*
 
 - **Four show users wrong data.**
   - #1509: a "p. N" reference goes to the first of several documents beginning on that page. At least 1,825 of these are wrong.
@@ -389,9 +440,9 @@ The audit found **714 items**. After the skeptics' corrections: 157 done, **362 
 - **Also unfiled:**
   - on iOS, Facets is disabled in Meaning mode (the Mac offers it);
   - the S-2 project reach scan and S-3's off-index leads count Ed2 reprints of documents the reader already holds;
-  - the live NARA catalog decoder misreads series dates;
+  - ~~the live NARA catalog decoder misreads series dates;~~ fixed in lane NOTE (#1549), from fixtures: no API key was available to check a live response;
   - Archives Visit derivations go stale when an indexed volume is updated, and an older derivation can finish last;
-  - PV-1's sources statement is missing from analytics exports, the trip packet and the method appendix.
+  - ~~PV-1's sources statement is missing from analytics exports, the trip packet and the method appendix.~~ fixed in lane EXPORT (#1553).
 - **Owner-only, outstanding:**
   - three screenshot placeholders, and the Mac and iPad captures build 48 made stale;
   - by-eye checks listed in the build-48 PRs (#1486, #1490, #1501, #1519; Mac hover; iPad Stage Manager);
@@ -415,6 +466,23 @@ The audit found **714 items**. After the skeptics' corrections: 157 done, **362 
   - Differentiate Without Color on the map;
   - about 37 fixed-size text sites.
 - **Deferred or declined; no action:** #234 and its programs, W12 parallel editions, W14, the MCP server (no-build), CSUserQuery.
+
+## 4a. Residue carried from the documents archived on 2026-10-01
+
+Lane PLAN moved twelve finished documents and one folder to `Planning/Completed/` (its README lists them). Each had a little left. This is where that goes; nothing here is scheduled.
+
+- **`Release-frus1981-88v16.md`** (the vol. XVI ingest, build 47):
+  - Phase E, deferred by the owner: subject tags and the person crosswalk for the volume, when the upstream drops include it.
+  - Lot `95D407` is unresolved. NARA's catalogue does not answer it; retry at the next keyed run.
+  - Re-harvest the volume's semantic shard at its next document-count change, deleting its store entry first. `New-Volume-Release-Plan.md` §10 now has the steps.
+  - The doubled `)` in d395 goes in the OH report (§5).
+- **`Volume-Update-Annotation-Integrity-Design.md`** (R-5, shipped): Q-2 is among §3's older decisions. Unbuilt and undecided: its §9 cases (a side-loaded volume later published, cross-document annotations, exports made before a correction). `CD_AnnotationReview.CD_annotationId` still has no writer.
+- **`Archive-Visit-Plan-Design.md`** (built): the "Seeded from …" caption on the plan list waits on a stored field, which is a CloudKit change. The repository link check is on the release list.
+- **`Provenance-Tiers-Development-Plan.md`** (wave PV, complete): the archival exports and the provenance dashboard rest on the source-note parse and do not print its residual. `ProvenanceSource.curatedDisclosure`'s doc comment states a premise its own Q-3 refuted.
+- **`Open-Issues-Resolution-Plan-2026-09-19.md`** and **`-2026-09-23.md`** (discharged): what they left is this plan.
+- **`Plan-Of-Record-2026-08-28.md`** and **`-2026-09-06.md`** (superseded): §4 above summarises what the audit found open in them.
+- **`Tier-E-Assessment-2026-08-27.md`**, **`MCP-Server-Assessment-2026-08-31.md`**, **`W12-Parallel-Series-Concordance-Assessment-2026-09-07.md`**, **`Phase-D-on-the-Air.md`**: nothing.
+- **Not archived, and why:** the cross-platform review package waits on an owner yes or no to the residue its `STATUS.md` §0 lists. `Vector-Embeddings-Semantic-Design.md` stays at the Planning root because four source files cite it by that path.
 
 ## 5. The #1309 report to the Office of the Historian
 
@@ -448,6 +516,8 @@ The audit found **714 items**. After the skeptics' corrections: 157 done, **362 
 **Work.** Claude's part is S: regenerate the broken-ref report at `550a8c5c5` into scratch, then write one comment plus CSVs. Your part: pick the channel (P4), spot-check 2–3 of the question rows against the printed volumes, and post.
 
 ## Appendix — every open issue
+
+*(The 50 issues as planned on 2026-09-28 and 2026-09-29. Forty-four have closed since; §0a lists them by lane.)*
 
 **WB** = the owner's EditableContent wording, applied by the write-back lane.
 

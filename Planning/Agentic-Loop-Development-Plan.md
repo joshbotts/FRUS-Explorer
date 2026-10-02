@@ -2,12 +2,17 @@
 
 **Status:** proposed, 2026-08-30. Written against the tree at `9760d2b` (build 44 on TestFlight,
 index format version 47). This is **wave W-19**; its Plan-of-Record placement is **Tier A §2b of
-`Plan-Of-Record-2026-08-28.md`** — *promoted 2026-08-31 from Tier D, which that document then
+`Completed/Plan-Of-Record-2026-08-28.md`** — *promoted 2026-08-31 from Tier D, which that document then
 vacated, when #234's scoring lane was deferred.* Every code claim below was verified against the
 tree at the stated anchors, not taken from a doc comment.
 
+**Brought current 2026-10-01**: the C-table and the block-size table below gain C-0c and C-0d,
+which were run on 2026-09-06 after this plan's last edit and were recorded only in the guide and
+their own files, and the "sharpest number" paragraph carries C-0c's qualification. The guide is
+at **v1.23** today.
+
 **One row has moved since writing.** L-0 called `Docs/Agentic-Analysis-Guide.md` v1.1; the guide
-is now at **v1.19** (2026-09-06). v1.2 (PR #1137, 2026-08-31) added §14 — the scoping method
+was at **v1.19** (2026-09-06) when this paragraph was written. v1.2 (PR #1137, 2026-08-31) added §14 — the scoping method
 drawn from three measured runs — and §14.11, the archival half, after an audit found all three runs
 had resolved zero record groups and zero NAIDs. **A.7's staleness is no longer owed**: L-0 shipped
 it on 2026-08-31 (see the row below, which corrected two sites rather than the one this paragraph
@@ -256,6 +261,8 @@ exactly the authority of §12's prose. Only implementations bind.
 | ~~C-2~~ | ~~**The long-session re-run**~~ — **RUN AND JUDGED 2026-08-31**, PR #1153. **The block does not decay.** Record: `Planning/C2-Long-Session-2026-08-31.md` | S | — |
 | ~~C-1~~ | ~~The read-only CLI~~ — **CLOSED, NOT NEEDED**, on C-2's pre-registered reading | M | — |
 | ~~C-0b~~ | ~~**Re-run the falsifier on the revised block**~~ — **RUN AND JUDGED 2026-09-06**, PR #1231 (#1208). **BLOCK 116/116 = 100%, CONTROL 90/116 = 77.6%** on the block at its current **143 lines**, two fresh questions. Archival discriminator reproduced: BLOCK 4/4 runs and 21 distinct NAIDs, CONTROL 0/4. Record: `Planning/C0b-Falsifier-2026-09-06.md`, evidence at `Planning/c0b-falsifier/` | S | — |
+| ~~C-0c~~ | ~~**Re-run it on the v1.20 block**~~ — **RUN AND JUDGED 2026-09-06**, PR #1238. **BLOCK 120/126 = 95.2%, CONTROL 98/126 = 77.8%** on the block at **181 lines**, two fresh questions. The rewritten log rule scored 0 of 4 in both arms. Archival discriminator: BLOCK 4/4 runs, **CONTROL 2 of 4**. Record: `Planning/C0c-Falsifier-2026-09-06.md`, evidence at `Planning/c0c-falsifier/` | S | — |
+| ~~C-0d~~ | ~~**Does the revised log rule get obeyed?**~~ — **RUN AND JUDGED 2026-09-06**, PR #1240. **Single arm, no control: BLOCK 124/125 = 99.2%** on the block at **184 lines** (guide v1.21); the log rule went 0 of 4 to 4 of 4. A before/after against C-0c's block arm, not a controlled comparison. Record: `Planning/C0d-Falsifier-2026-09-06.md`, evidence at `Planning/c0d-falsifier/` | S | — |
 
 **C-0 ran with a control arm the row did not ask for, and that arm is why the result means
 anything.** Eight scoping passes — two fresh questions × (§12 block pasted | no rules) × 2 — blind-
@@ -300,6 +307,8 @@ table that did not say so would read as three measurements of one instrument:
 | **short session** (C-0) | 99% | 84% | 110 lines (guide v1.10) |
 | **long session** (C-2) | **99%** | 75% | 110 lines (guide v1.10) |
 | **short session** (C-0b) | **100%** | 77.6% | **143 lines** (guide v1.17) |
+| **short session** (C-0c) | 95.2% | 77.8% | **181 lines** (guide v1.20) |
+| **short session** (C-0d) | **99.2%** | not run | **184 lines** (guide v1.21) |
 
 **C-0b's own stated limit, carried here rather than re-decided:** it measured 143 lines at C-0
 length only. C-2's survival-across-a-doubled-session test was run on the 110-line block and has not
@@ -313,7 +322,11 @@ it.
 
 **And the sharpest number in the program.** Distinct catalogue identifiers resolved, all sixteen runs
 across both experiments: **BLOCK 8 of 8 runs, CONTROL 0 of 8** — at either session length. That is
-pre-registered item A6, the strict form C-0 had to recover post-hoc.
+pre-registered item A6, the strict form C-0 had to recover post-hoc. *(Qualified by C-0c,
+2026-09-06: on its two questions the block arm was again 4 of 4, but **two of the four control
+runs resolved identifiers unprompted** — 21 and 19 NAIDs — so its record calls the gap "a
+difference of reliability, not of possibility" and says the clean split "should not be quoted as
+a general property of the block". The 8-of-8 against 0-of-8 above is C-0 and C-2 only.)*
 
 **The recorded limit: no session compacted, zero of eight.** So the *forgotten* half of the mechanism
 is refuted and the *truncated* half is untested. It does not reopen C-1 — the pre-registration said

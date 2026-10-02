@@ -1,5 +1,9 @@
 # Open-issues resolution plan — 2026-09-19
 
+**Discharged, and archived here on 2026-10-01.** Ten of its twelve issues are closed. The two
+that are open are #1309, the Office of the Historian report, which the live plan of record
+carries (§5), and #234, deferred.
+
 Base: `v2` @ `9078fe61` · index v51 (`IndexingPipeline.swift:824`) · rollup v9 · build 47 · **no open PRs**.
 Corpus pinned at `/Users/jbotts/Development/frus` `550a8c5c5`.
 

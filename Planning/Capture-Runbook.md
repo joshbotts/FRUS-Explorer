@@ -5,6 +5,14 @@ afternoon, zero code"*. The frame sequence half is **run and measured** below. T
 afternoon at a device, and it is the owner's: §2(b) establishes that the splash and onboarding
 frames are manual on an erased device, in a window that occurs once per install.
 
+**Brought current 2026-10-01.** The runs measured below are the 2026-08-31 and 2026-09-01 ones and
+keep their figures; what changed since is marked where it sits. In short: the manifest holds 553
+volumes, so the harness now writes **554** frames (one per covered volume plus the closing frame —
+`records.count == ordered.count + 1`, and `semantic-vectors-index.json` covers all 553); the splash
+and the onboarding cloud both run the particle canvas; a download queued before the first batch
+now draws a banner; and the film was rebuilt on 2026-09-20 with the owner's title. The sections
+are back in numeric order; their numbers are unchanged, since other documents cite them.
+
 ---
 
 ## 0. How the blocks in this document work
@@ -26,6 +34,8 @@ running tests is `name=iPhone 17`: right there, because any iPhone 17 will do. A
 different — several iOS runtimes are installed, `name=` silently picks one, and *"which device did I
 shoot on"* has to be answerable afterwards.
 
+---
+
 ## 1. The frame sequence — RUN 2026-08-31, and it holds
 
 ```bash
@@ -42,7 +52,8 @@ TEST_RUNNER_RENDER_MAP_FRAMES_DIR=/tmp/map-frames xcodebuild test \
   -only-testing FRUSExplorerTests/SemanticMapFrameSequenceTests
 ```
 
-Verified by running that block verbatim in a shell with no prior state: 553 frames.
+Verified by running that block verbatim in a shell with no prior state: 553 frames (at 552
+volumes; expect 554 at today's 553 — not re-rendered for this note).
 
 Two things about that command are load-bearing and both are in the harness's own doc comment: the
 env var **must** wear xcodebuild's `TEST_RUNNER_` prefix (a trailing `KEY=VALUE` is a build setting
@@ -63,7 +74,8 @@ mean barely moves — the shape of a warm-up outlier, not a slower device. The o
 either way: the sequence is deterministic in the artifact, not in the host.
 
 Files `frame-0000.png` … `frame-0552.png`, **no gaps**, plus `frames.csv` (554 lines: header + 553)
-and `provenance.txt`. **The film assembles, verified 2026-09-01**: 553 frames at 12 fps → `map.mp4`, 1920×1080,
+and `provenance.txt` — one more of each at 553 volumes, as `tools/map-film/README.md` records
+(`frame-0553.png`). **The film assembles, verified 2026-09-01**: 553 frames at 12 fps → `map.mp4`, 1920×1080,
 **46.1 s, 1.19 MB**. Assemble with:
 
 ```bash
@@ -111,7 +123,9 @@ step 11's own text did the same. Corrected 2026-09-06.)*
 
 **The film is finished**, 2026-09-06 — `tools/map-film/build_film.sh` crops the measured 43.5% dead
 width to 1440×1080, burns the grain sentence into the reclaimed band and muxes two subtitle tracks
-cut from `frames.csv`. It consumes these frames; it does not re-render them. See
+cut from `frames.csv`. *(Rebuilt 2026-09-20: the frame is sized to its parts, the title band
+carries the owner's title instead of the grain sentence, and the film carries no subtitle track —
+`tools/map-film/README.md` has the current output and why.)* It consumes these frames; it does not re-render them. See
 `tools/map-film/README.md`, and note two things this runbook's `ffmpeg` line does not: `cropdetect`
 reports no crop on the encoded mp4 (h264 ringing in the flat ground), and this ffmpeg build has no
 text filter at all.
@@ -124,9 +138,11 @@ See §4.
 
 ## 2. What to film, and what each shot is for
 
-`§3.1` is the inventory. **The Renderer column decides what you are looking at**: the splash and
+`§3.1` is the inventory. **The Renderer column decides what you are looking at.** ~~The splash and
 the onboarding cloud have never run the particle canvas, so their words are static and only the
-splash's shimmer moves.
+splash's shimmer moves.~~ Both drift now: the splash since M-4 (PR #1174, 2026-09-01;
+`LaunchSplashView.swift:86`) and the onboarding cloud since 2026-09-20 (`OnboardingView.swift:168`),
+each passing `drift: true`.
 
 | Shot | Device state | Notes |
 |---|---|---|
@@ -181,24 +197,21 @@ would have been. Film both takes back to back.
 
 ---
 
-## 8. Which device class to shoot on
+## 6. What this settles
 
-§6 flags this and could not settle it: *"Device classes are asserted, not verified. The documented
-capture program is iPhone 17 + iPad Pro 11″; store requirements (6.9″, 13″) are external facts."*
-Still true — App Store Connect is the authority and it is outside this repo. But the two required
-classes map onto simulators already installed here, and they are **not** the two the capture
-program names:
+Step 4 exists to answer *does the material justify engineering before a line is written*. Read
+against what has since shipped:
 
-| Purpose | Class | Simulator |
-|---|---|---|
-| Store screenshots — iPhone | 6.9″ | **iPhone 17 Pro Max** |
-| Store screenshots — iPad | 13″ | **iPad Pro 13-inch (M5)** |
-| Figures, film, frame sequence | any | iPhone 17 — what this runbook's commands name |
-
-So do not shoot store assets on the device you render figures on without checking: `iPhone 17` is
-the 6.3″ class, and the plan's `iPad Pro 11″` is not the 13″ one. **Confirm against App Store
-Connect before a submission pass** — that instruction stands unchanged. What is new is that the
-substitute devices are named and present.
+- **The frame sequence is publishable today** — 553 frames, deterministic, with its grain sentence
+  in `provenance.txt` — subject to §1's captioning obligation. ~~and step 11's two literals~~ (both
+  fixed in PR #1166, §1).
+- **The lens dip and the camera transit are worth filming** and were worth building; both are
+  visible in a way a still cannot show, which is the argument §3.2 made and could not demonstrate.
+- **The splash is the weakest of the four.** ~~Its words are static, its only motion is a 140×3 pt
+  shimmer~~, and it lives 1.6 s. ~~M-4 would change that by enabling a renderer on a first-run
+  composition — priced `S in code, M in risk` — and nothing here argues for pulling it forward.~~
+  M-4 shipped the day after this was written (PR #1174), so its words drift; it still lives 1.6 s
+  (`ContentView.swift:188`).
 
 ---
 
@@ -207,7 +220,7 @@ substitute devices are named and present.
 | State | What it is | How to reach it |
 |---|---|---|
 | **A** | Corpus-empty, fresh install | Erase the simulator. The splash is reachable **only** here. |
-| **B** | Corpus-full | Already satisfied — 552 volumes, 316,839 documents on the author's Mac. |
+| **B** | Corpus-full | Satisfied when this was written (552 volumes, 316,839 documents on the author's Mac, 2026-08-31). The manifest holds 553 volumes since build 47; confirm the count in Volumes & Storage before shooting. |
 | **C** | A library that has been *worked in* | State B **plus** `FRUS_CAPTURE_SEED=1` on one launch. |
 
 **Why C exists.** §6 records that A and B are incomplete: a project header, a collection with
@@ -311,26 +324,38 @@ Step 6 says to confirm this before shooting, and it cannot be automated: the UI-
 `.none` unconditionally, so the XCUITest harness can never see the splash (§2(b)).
 
 What **is** checkable, and is pinned by `CloudSurfaceArbiterTests`, is the arbiter's verdict for
-State A's inputs. What is not checkable is that the verdict reaches the screen — and there is a
+State A's inputs. What is not checkable is that the verdict reaches the screen — ~~and there is a
 known window where it does not: with a download **queued but no batch started**, `resolve` returns
 `.indexingBackdrop`, `ContentView` withholds the splash, and `MainTabView` never mounts the strip,
-so nothing renders. So the confirmation is: **erase, launch with no download queued, watch for the
-splash.** If it is missing, check whether anything is queued before assuming a regression.
+so nothing renders.~~ That window closed with B-6 (PR #1191, 2026-09-04): a queue with no batch
+started now draws `DownloadQueueBannerView` (`IndexingInsetState`, `IndexingBannerView.swift`). And
+the splash itself **had never rendered** before #1346 (2026-09-20), so any State A take from before
+that date shows no splash for that reason, not this one. So the confirmation is: **erase, launch
+with no download queued, watch for the splash.** If it is missing, check whether anything is queued
+before assuming a regression.
 
 ---
 
-## 6. What this settles
+## 8. Which device class to shoot on
 
-Step 4 exists to answer *does the material justify engineering before a line is written*. Read
-against what has since shipped:
+§6 flags this and could not settle it: *"Device classes are asserted, not verified. The documented
+capture program is iPhone 17 + iPad Pro 11″; store requirements (6.9″, 13″) are external facts."*
+Still true — App Store Connect is the authority and it is outside this repo. But the two required
+classes map onto simulators already installed here, and they are **not** the two the capture
+program names:
 
-- **The frame sequence is publishable today** — 553 frames, deterministic, with its grain sentence
-  in `provenance.txt` — subject to §1's captioning obligation and step 11's two literals.
-- **The lens dip and the camera transit are worth filming** and were worth building; both are
-  visible in a way a still cannot show, which is the argument §3.2 made and could not demonstrate.
-- **The splash is the weakest of the four.** Its words are static, its only motion is a 140×3 pt
-  shimmer, and it lives 1.6 s. M-4 would change that by enabling a renderer on a first-run
-  composition — priced `S in code, M in risk` — and nothing here argues for pulling it forward.
+| Purpose | Class | Simulator |
+|---|---|---|
+| Store screenshots — iPhone | 6.9″ | **iPhone 17 Pro Max** |
+| Store screenshots — iPad | 13″ | **iPad Pro 13-inch (M5)** |
+| Figures, film, frame sequence | any | iPhone 17 — what this runbook's commands name |
+
+So do not shoot store assets on the device you render figures on without checking: `iPhone 17` is
+the 6.3″ class, and the plan's `iPad Pro 11″` is not the 13″ one. **Confirm against App Store
+Connect before a submission pass** — that instruction stands unchanged. What is new is that the
+substitute devices are named and present.
+
+---
 
 ## 9. Mac shots and by-eye checks: the isolated copy
 

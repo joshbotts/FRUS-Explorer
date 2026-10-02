@@ -5,6 +5,16 @@ frame-sequence harness — see the status block at the end of Phase 3, which car
 per-frame cost the phase demanded). §7's adjacent ideas remain open, priced, and sequenced below.
 Written 2026-08-20 against the tree at `claude/visual-elements-marketing-xt23dc`.
 
+**Status at 2026-10-01.** §1–§6 are done. §7 is no longer "open" as a whole:
+`Visual-Marketing-Plan.md` reconciled against it on 2026-08-30 and is where its residue is
+sequenced. §7.1 (a randomised splash lens) is superseded — the lens is seeded, never randomised
+(that plan's refusal 12, and its step 9, shipped); §7.2's title-only plates are declined (refusal
+3); §7.6's figure plates for the graph surfaces are declined (refusal 7); §7.3, §7.4 and §7.5 are
+that plan's step 16, still open. The figures below are the 2026-08-20 measurements and are left as
+written; the bundle today holds 553 volumes × 4 lenses in `cloud-vectors-volumes.json` and 171
+regions over 314,571 documents in `semantic-map-index.json`, and §8's provenance-lens line is
+corrected in place.
+
 **Why this document exists.** `SemanticMapExport.swift` ships a deliberate refusal: the map gets the
 data half of Manual §13.9's "every analytics chart a figure *or* its data" and not the figure half.
 Its doc comment names the cause (a Metal point-sprite pass inside an `MTKView`, which the app's
@@ -385,7 +395,9 @@ caveat is the one way this program does damage:
 
 - **95.3%** of `provenance-flow-index.json`'s edges are footnotes: a cell describes the editors'
   annotation practice, not a relation between archives.
-- The map's per-volume provenance colour is a **plurality, not a majority**, for **73 of 522** volumes.
+- The map's per-volume provenance colour is a **plurality, not a majority**, for ~~**73 of 522** volumes~~
+  **75 of the 499 volumes the lens colours** (recomputed 2026-10-01 from `source-provenance-index.json`;
+  the shipped caption still says 73 and is owed a correction — plan of record, "Not placed").
 - A map scope lights **every document in** the scoped volumes, not the documents *about* the subject
   (§6, Phase 3).
 

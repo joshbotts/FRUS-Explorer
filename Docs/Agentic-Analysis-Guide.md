@@ -320,10 +320,18 @@ more per document with `is_start = 1`: the page it begins on, which is the last 
 its first printed text. That break often sits between two documents, where it is no document's own.
 Only a document or an editorial note has a start row; a prose section the index also holds as a
 document — a chapter that is only a cross-reference, a list of errata — has its own breaks and no
-start. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable`; `page_number_int`
-is populated only for the first two, and a page printed as `[31]` is `arabic` 31 when its break's
+start. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable` and, from index
+version 63, `other-pagination`; `page_number_int` is populated for `arabic`, `roman` and
+`other-pagination`, and a page printed as `[31]` is `arabic` 31 when its break's
 id is `pg_31` or `pg_031` (one of a separately paginated section, `pg-seq-3`, stays
-`unparseable`).
+`unparseable`). **`other-pagination` is a page of a second numbering the volume prints beside its
+own** — a digit break whose id is a `pg-seq` id, as in `frus1871`'s second sequence and the
+President's messages of `frus1862` and `frus1865p1` — and it is not that page of the volume: before
+version 63 those rows were `arabic` and made the message an answer for a page another document is
+printed on. Keep the `page_number_type = 'arabic'` predicate on anything that reads the volume's
+own pages. Version 63 also stopped indexing a compilation, chapter or subchapter that holds only a
+heading and the sections under it (162 across 75 volumes), so those ids have no row here or in
+`document_cache` on a current index.
 `section_id` is the document's own id on every row, so it groups nothing. `MIN`/`MAX` over `arabic`
 gives the pages a document is printed on, from the page it begins on; add `is_start = 0` for its
 own breaks alone. Where page numbers restart — the E-volumes that number pages per document,
@@ -418,9 +426,11 @@ they consulted — not a per-document assertion. Volume-grain, never document-gr
 editors' own gloss table for filing keys — 4,242 of 33,764 rows carry a `decimal_class`; 804
 distinct class glosses in 50 volumes (`411.: U.S. trade`, `411.4141: U.S. trade relations with the
 United Kingdom`,
-`frus1958-60v04`) — and for 1950–63 keys it is the **only** gloss in the stack. Do not confuse it
-with the bundled `volume-sources-index.json` (§14.11), which holds the *resolved collections* (3,412
-rows, 251 volumes) and none of these glosses; an agent given only the JSON will report the glosses
+`frus1958-60v04`) — and for 1950–63 keys it is the only gloss of a key's **subject**: since #1210
+`decimal-class-labels.json` names the class and the country of a 1950–63 key, but ships no subject
+suffixes for those years (§14.11). Do not confuse it
+with the bundled `volume-sources-index.json` (§14.11), which holds the *resolved collections* (2,470
+rows, 252 volumes) and none of these glosses; an agent given only the JSON will report the glosses
 absent.
 
 ### 4.5 Subjects
@@ -1928,36 +1938,39 @@ your index, for §5's versioning reason.
 Every artifact in this table is a projection of NARA's catalogue, and a negative in the bundle is a
 negative in the projection. In one run a record group returned 0 hits in eight bundled artifacts
 and resolved to 232 series, all Unrestricted, from the record-group harvest the artifacts are built
-from — and two fields the projection drops, `recordsCenterTransferNumbers` (the FRC accession a
-series was retired under; 240,929 occurrences in the RG 59 shard) and NARA's wider
-`coverageStartDate/EndDate` (`series-facts-index.json` carries only the inclusive pair as `y0`/`y1`),
-decided four of that run's five archival corrections. When a record group is in the harvest's
+from — and two fields the projection dropped at the time, `recordsCenterTransferNumbers` (the FRC
+accession a series was retired under; 240,929 occurrences in the RG 59 shard) and NARA's wider
+`coverageStartDate/EndDate`, decided four of that run's five archival corrections. Both are in the
+bundle now: `accession-series-index.json` projects the transfer numbers (#1203), and
+`series-facts-index.json` carries the coverage pair as `cy0`/`cy1` beside the inclusive `y0`/`y1`
+(#1202). When a record group is in the harvest's
 coverage list and the bundle has nothing, that is a projection gap, not a structural limit: say
 which, check NARA's catalogue for the field, and read a series' own entry number rather than
 assuming a record group sits under one finding aid (197 of those 232 carried PI-100; 35 carried
 another). The harvest is an owner-local store described in
 `Planning/nara-record-group-catalog-runbook.md`; its depth is uneven (RG 256 has a 178 MB shard, RG 429
 none; RG 182 has no file units described); counts from it are labelled [HARVEST], carry the snapshot
-date (2026-04-09 against bundle stamps 2026-08-09 to 2026-08-28), and are never summed with bundled
-counts.
+date (2026-04-09 against the stamps of the artifacts in the table below, 2026-08-04 to 2026-10-01),
+and are never summed with bundled counts.
 
 The stack, and the question each artifact answers:
 
 | Artifact | Answers | Scale |
 |---|---|---|
-| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,464 notes; 1,839 collections reached; 10,446 class keys |
-| `external-citation-index.json` | what the editors cited and did **not** print | 19,800 lot/library refs + 29,890 class refs, 440 volumes |
-| `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,065 lot files, all carrying a NAID |
-| `collection-authority.json` | which collection is this note naming, under every spelling | 4,429 collections, 1,018 with a NAID |
-| `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 173 of 695 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 695 series, 397 creator headings, 173 with a coverage pair |
+| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,552 notes; 1,834 collections reached; 10,454 class keys |
+| `external-citation-index.json` | what the editors cited and did **not** print | 19,614 lot/library refs + 30,524 class refs, 441 volumes |
+| `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,070 lot files, all carrying a NAID |
+| `collection-authority.json` | which collection is this note naming, under every spelling | 4,051 collections, 1,014 with a NAID |
+| `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 174 of 698 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 698 series, 398 creator headings, 174 with a coverage pair |
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
 | `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
-| `volume-sources-index.json` | what the editors say they consulted, per volume | 3,412 rows, 251 volumes |
-| `decimal-class-labels.json` | what `812.6363` means, compositionally. **ONE schedule, 1910–49**, and since #1204 the file states that as data: read `coverage.glossableYears` and gloss only when the DOCUMENT's date falls inside a listed span — `coverage.keyOutsideGlossableYears` is `no-gloss`, and `coverage.notShipped` names 1950–1959 and 1960–1963 with the counts that refused them (4 and 8 class headings against a floor of 10; their country and subject tables cleared theirs). Run a post-1950 key through the shipped schedule anyway and you get a plausible WRONG gloss, not a miss: `411.48` composes as *Claims — United States and British Africa* where the editors gloss it as U.S. trade with **Poland**, and `48` is live in two vocabularies at once (country *British Africa*, class-8 subject *Calamities. Disasters*). Gloss 1950–63 keys from `volume_sources` (§4.4). Note the gate is on GLOSSING only — whether a key is well-formed is a separate, deliberately era-blind test, so a post-1950 key composing here is expected. Its 1910–49 country table **was** wrong or empty on several codes FRUS files commerce under; the build of 2026-09-05 fixed most of them (#1201). `60f` now glosses *Czechoslovakia* (was *Ruthenia*; 82 documents on `611.60F31`), `47h` *New Zealand* (was *Cook Islands*), and `43` Newfoundland, `54` Switzerland and `11b` Philippines are present where they were absent — 198 → **217** codes, with 19 others recovered and none lost. **`42` Canada and `74` Bulgaria are still absent, deliberately**: their pages in NARA's scan emit names and codes as separate blocks, so the document settles no pairing, and the table stays silent rather than guessing. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 1910–49 schedule; 9 classes, 217 countries, 693 suffixes |
+| `volume-sources-index.json` | what the editors say they consulted, per volume | 2,470 rows, 252 volumes |
+| `decimal-class-labels.json` | what `812.6363` means, compositionally. **THREE schedules since #1210 — 1910–1949, 1950–1959 and 1960–1963 — and the file says which one governs, as data**: find the span of `coverage.glossableYears` that holds the DOCUMENT's date and gloss from the schedule its `scheduleId` names. `coverage.keyOutsideGlossableYears` is `no-gloss`, and `coverage.notShipped` is now empty. **It is a lookup by date, not a filter on it**: a consumer that checks the year and then reads the first schedule answers a 1958 key out of the pre-1950 table and gets a plausible WRONG gloss, not a miss, because the classification was renumbered in 1950 — `411.48` composes under 1910–49 as *Claims — United States and British Africa* where the editors gloss it as U.S. trade with **Poland**, and country `48` is *British Africa* in the first schedule and *Poland* in the other two (in the first it is also a class-8 subject, *Calamities. Disasters*). **Only the 1910–49 schedule carries subject suffixes** (693); the two later ones ship classes and countries and no subject layer, by refusal rather than omission (the later handbooks' subject index parses backwards), so a 1950–63 key glosses to its class and country here and its subject comes from `volume_sources` (§4.4). Note the gate is on GLOSSING only — whether a key is well-formed is a separate, deliberately era-blind test, so a key composing under a schedule that does not govern it is expected. **One number is often several places**: the Department filed a territory under the number of the power holding it, so each schedule also carries `countryAlternates` (#1257), the other names a code answers to — 101, 96 and 89 codes in the three schedules (`11g` is *Virgin Islands (U.S.)*, with St. Croix, St. John and St. Thomas as its alternates). The country tables were re-read from the source's own column geometry in #1256, which is why `42` Canada and `74` Bulgaria, absent from earlier builds, are present (`74` in 1910–49 only), and why `60f` reads *Czechoslovakia* and `47h` *New Zealand* in 1910–49. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent or shared where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 3 schedules: 9 / 10 / 10 classes, 287 / 252 / 263 countries, 693 / 0 / 0 subject suffixes |
+| `subject-numeric-labels.json` | what `POL 27 VIET S` means — the filing scheme that replaced the decimal file in 1963 (#1211). **TWO schedules, 1963 and 1964–1973, and they are not interchangeable**: `POL 24` is *SUBVERSION. ESPIONAGE. SABOTAGE.* in the first and *SANCTIONS* in the second, which moved subversion to `POL 23-7`. Choose the schedule by the document's date through `coverage.glossableYears[].scheduleId`, as for the decimal table, and gloss nothing for a date outside both spans or a volume span that straddles them (`keyOutsideGlossableYears` is `no-gloss`). A designator is `subjects[<category>][<number>]` (`POL` → `27` → *MILITARY OPERATIONS*). An organization's file (`UN`, `NATO`) is not a primary subject: read it from `organizationSubjects`, and only when `abbreviations` names the prefix — and try `subjects` first, because the two lists reuse numbers for different things. The country element is in `areas`, keyed as the corpus writes it (`VIET S` → *Vietnam, South*, `ARAB-ISR` → *Arab–Israeli*); **the file's own `coverage.note` predates that table and still says the country element is not read — trust the table**. `coverage.unnamedCategories` lists the 19 prefixes neither handbook answers, three of which (`NSSD`, `FG`, `PSL`) are not central-file classes at all. Labels keep the handbooks' capitalisation and the scans' damage (`REAl PROPERTY ACCOUNTING`): quote them as this file's reading, and check a heading you intend to print. `document_sources.decimal_class` holds both filing systems in one column; a key with a letter prefix is this one. | 2 schedules: 57 / 39 categories, 1,897 / 1,648 designators, 303 / 268 area names. The corpus cites 1,370 subject-numeric keys (6,905 documents) in `collection-usage-index.json`; the file's own `coverage.measured` block was written on 2026-09-08 against the 1,362 keys of that day and reports 1,202 / 989 of them named, so read it as dated |
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
-| `accession-series-index.json` | which NARA series a Federal Records Center accession became — the join a lot number cannot make, for front matter that says "now part of … Accession No. 71 A 6682". **Keys are `<record group>/<accession>` and the group is load-bearing**: an accession number is unique only within its group (`68A5612` = 1 series in RG 59, 18 in RG 84), so matching bare raises apparent coverage from 7% to 15% by answering State citations with Foreign Service Post records. **Know the ceiling before you lean on it**: counted anchor-first (the accession must directly follow *FRC* / *Federal Records Center* / *WNRC* / *Accession* — a proximity window sweeps in the lot numbers printed beside it and inflated this count from 995 mentions to 2,371), the corpus cites 116 accessions over 995 mentions, and **22 resolve — 150 mentions, 15%**; the most-cited of all, `53A278` at 115 mentions, is absent from the harvest entirely. Every claimant is stored, never chosen, because a key reaches **59**: state the division. One-letter row keys, `legend` in the file. NOTHING IN THE APP READS THIS — it is data for you, not a feature. | 4,750 keys, 7,349 claimants, max 59 |
+| `accession-series-index.json` | which NARA series a Federal Records Center accession became — the join a lot number cannot make, for front matter that says "now part of … Accession No. 71 A 6682". **Keys are `<record group>/<accession>` and the group is load-bearing**: an accession number is unique only within its group (`68A5612` = 1 series in RG 59, 18 in RG 84), so matching bare raises apparent coverage from 7% to 15% by answering State citations with Foreign Service Post records. **Know the ceiling before you lean on it**: counted anchor-first (the accession must directly follow *FRC* / *Federal Records Center* / *WNRC* / *Accession* — a proximity window sweeps in the lot numbers printed beside it and inflated this count from 995 mentions to 2,371), the corpus cites 116 accessions over 995 mentions, and **22 resolve — 150 mentions, 15%**; the most-cited of all, `53A278` at 115 mentions, is absent from the harvest entirely. Every claimant is stored, never chosen, because a key reaches **59**: state the division. One-letter row keys, `legend` in the file. NOTHING IN THE APP READS THIS — it is data for you, not a feature. | 4,750 keys, 7,346 stored claimants (7,349 occurrences before the dedupe by NAID), max 59 |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
-| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,850 edges, 4,864 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
+| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,850 edges, 4,885 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 8,637 cross-volume edges into 5,747 documents from 185 volumes — its `volumes` array (237) is a shared vocabulary of target *and* citing volumes, not a target list (distinct targets: 208), and its own footnote share is 7,631 of 8,637 = 88.4%, not the corpus-wide 95.3% |
 | `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, a lot file, a library — per decade and per volume | 269,242 notes, 523 volumes, 16 decades |
 
@@ -2048,7 +2061,7 @@ Two cautions, both measured. NARA's creator attribution is itself a decoy surfac
 [§14.5](#145-the-false-friend-test-compare-a-terms-concentration-to-the-corpus-baseline) — it ran at
 56% precision on one route here, and the adversarial pass that caught this whole omission
 nevertheless mis-filed NAID 27022913 (Bureau of International Organization Affairs) as a Foreign
-Service management series. And the offline stack has a hard reach: 11 of 695 bundled series begin
+Service management series. And the offline stack has a hard reach: 11 of 698 bundled series begin
 before 1940, so a pre-war archival roadmap is largely unavailable regardless of how well the corpus
 covers the period.
 
@@ -2715,6 +2728,42 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.23 — 2026-10-01: **§14.11's artifact table re-measured against the bundle, and the history
+  repaired.** Every Scale cell was re-read from the shipped file, and nine had moved since they
+  were written: `collection-usage` (264,552 notes, 1,834 collections reached, 10,454 class keys),
+  `external-citation` (19,614 + 30,524 references, 441 volumes), `central-files` (1,070 lot
+  files), `collection-authority` (4,051 collections, 1,014 with a NAID), `series-facts` (698
+  series, 398 headings, 174 with a coverage pair), `volume-sources` (2,470 rows, 252 volumes),
+  `accession-series` (7,346 stored claimants; 7,349 was the count before the dedupe),
+  `provenance-flow` (4,885 collection pairs) and the decimal table. **The `decimal-class-labels.json`
+  row described the file as it was before 2026-09-07**: it said ONE schedule, 217 countries, 1950–63 not
+  shipped and `42`/`74` absent, where the file has carried three schedules (287 / 252 / 263
+  countries) since #1210 and #1256 and `countryAlternates` since #1257. The row now says to choose
+  the schedule by the document's date and what the two later schedules do not carry. **A row is
+  added for `subject-numeric-labels.json`** (#1211), which the guide had never named. The prose
+  those changes made false is corrected with the table: §4.4's "the only gloss in the stack" for
+  1950–63 keys (true now of a key's subject only), §14.11's sentence that the projection drops the
+  coverage dates and the records-center transfer numbers (both ship, #1202 and #1203), the range
+  of the bundle's stamps, and "11 of 695 bundled series" (698). **§12's block is deliberately untouched**: it is the measured instrument (C-0d), and
+  what it says about these files is incomplete or a count behind rather than wrong in kind — it
+  does not say to choose the decimal schedule by `scheduleId`, it calls the `series-facts` span
+  "inclusive", its `notShipped` sentence describes a list that is now empty, and its "11 of 695
+  bundled series" is 11 of 698 today. Editing it means re-measuring it, which is the owner's call.
+
+  **Two repairs to this history.** The entry for #1280 was numbered 1.21, the number the
+  2026-09-06 log-rule entry already carried, and sat below 1.20; it is 1.21a now and in date order.
+  And **one change was never entered**: #1503 (2026-09-26, index v61) rewrote §4.3's `page_ranges`
+  paragraph and added §6.8's query for the documents that begin on a page. That paragraph is
+  brought to index v63 here: `page_number_type` gains `other-pagination` (#1511), and heading-only
+  containers are no longer indexed (#1510).
+
+  **Not re-measured here, and worth knowing.** The counts in §4 and §6 that come from a live index
+  rather than a bundled file (§4.4's repository vocabulary, `volume_sources`' gloss counts, the
+  `external_citations` figures) were measured on index versions 46 to 62. Version 63 took 162
+  heading-only containers out of `document_cache`, and version 64 re-filed 601 source notes that
+  had been stored as RG 59 central files and changed the stored file of 564 more; neither was run
+  against a full index for this entry.
+
 - 1.22 — 2026-09-24: **#1421 joins `body_text` as the page prints it**, so two lines that described
   the old text are corrected. §8's quotation check no longer blames "the space the flattened TEI
   puts before punctuation": since index format version 59 `body_text` sets no space after an
@@ -2724,6 +2773,16 @@ SEMANTIC VECTORS
   gains its one caveat — a captured length belongs to one index build, because version 59
   shortened 313,949 bodies. The rule itself is unchanged: it compares a capture with
   `length(body_text)` from the same copy, which moves with it.
+
+- 1.21a — 2026-09-12: **#1280 closed, so §4.2's column table and §7.6 now state the grain of
+  `note_text`.** It is one row per DOCUMENT holding EVERY note on it, oldest first, joined by a
+  blank line — not one row per note, which is what the guide's silence invited a reader to assume.
+  Two consequences an agent counting anything needs: `COUNT(note_text)` counts annotated documents
+  and never notes, and an FTS5 phrase query can match across the boundary between two of them. The
+  contrast with `summary_text` beside it is now explicit as well: that column is the newest
+  non-draft summary with the rest superseded, where a note is the researcher's own kept writing and
+  none is superseded by another. (Before #1280 the column really did hold one note — whichever the
+  unsorted boot replay wrote last — so this entry documents a behaviour change, not only a gap.)
 
 - 1.21 — 2026-09-06: **the log rule, rewritten a second time and measured working.** C-0c had scored
   v1.20's version at **0 of 4 under the block**, and §14.15a diagnosed why: it still asked for a
@@ -2813,16 +2872,6 @@ SEMANTIC VECTORS
   work. Deliberately in §14 and **not** in §12's block: these are obligations on a round's synthesis,
   which a thread-level agent cannot discharge, and the block is already carrying a length caveat.
 
-
-- 1.21 — 2026-09-12: **#1280 closed, so §4.2's column table and §7.6 now state the grain of
-  `note_text`.** It is one row per DOCUMENT holding EVERY note on it, oldest first, joined by a
-  blank line — not one row per note, which is what the guide's silence invited a reader to assume.
-  Two consequences an agent counting anything needs: `COUNT(note_text)` counts annotated documents
-  and never notes, and an FTS5 phrase query can match across the boundary between two of them. The
-  contrast with `summary_text` beside it is now explicit as well: that column is the newest
-  non-draft summary with the rest superseded, where a note is the researcher's own kept writing and
-  none is superseded by another. (Before #1280 the column really did hold one note — whichever the
-  unsorted boot replay wrote last — so this entry documents a behaviour change, not only a gap.)
 
 - 1.19 — 2026-09-06: **#1207 closed.** §14.12 item 7 now points at
   `Planning/Agentic-Harness-Runbook.md`, which carries the operational facts the guide

@@ -1,6 +1,17 @@
 # Provenance tiers — telling the reader what they may claim
 
-**Status:** proposed, 2026-09-04. Written against the tree at `0d88e7e5` (**build 45**, index format
+**Status: COMPLETE, and archived here on 2026-10-01.** Wave PV shipped whole (PV-0…PV-5, PRs
+#1210–#1219; §9, v1.5), with P-1's per-row chips after it (#1243). Read two things below as
+history: the header's "proposed", and §4's "`currentDateIndexVersion` stays at 47" (it is 64
+today, for unrelated reasons). **One part of PV-1 did not reach everything the plan named until
+the build-49 wave**: lane EXPORT (#1553, 2026-10-01) gave the analytics exports that read more than
+the volumes their own sources, and carried the sources block into the Archives Visit packet and
+into the method appendix's Markdown and embedded forms. What is left is small, and the live plan
+of record's list of archived residue carries it: the archival exports and the provenance
+dashboard rest on the source-note parse without printing its measured residual, and
+`ProvenanceSource.curatedDisclosure`'s doc comment still states the premise §8's Q-3 refuted.
+
+**Written as:** proposed, 2026-09-04, against the tree at `0d88e7e5` (**build 45**, index format
 version 47). This is **wave PV**; its Plan-of-Record placement is a new row in
 `Plan-Of-Record-2026-08-28.md`. **It ships in the release AFTER build 45** — build 45 is at the
 store gate and nothing here may delay it. Every code claim below was verified against the tree at

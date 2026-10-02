@@ -5,7 +5,70 @@ Several of its findings have not survived contact with the current build, and th
 that is written down — otherwise the next session re-scopes from the review text and redoes work
 that was already done, or "fixes" something that was never broken.
 
-Last updated after PR #924. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), and Wave 3 so far (CW-11a, CW-10a/b, M-2 graph #920, F-2 document #921, M-4 3a #922, M-4 1b #923, plus #901's by-catch).
+Last updated 2026-10-01 (the build-49 wave's planning lane); before that, after PR #924, with the
+W-2 notes of 2026-08-27 added in place. Shipped: Wave 1 (CW-1…CW-5), Wave 2 (CW-6…CW-8a), Wave 3
+(CW-9 through #917, CW-10, CW-11's prep and the #1081 capture sweep, CW-12's three programs), plus
+#901's by-catch.
+
+---
+
+## 0. State at 2026-10-01 — the program is done, and this is what it left
+
+**Nothing in the review is scheduled any longer.** Every item §3 called "next" has shipped or was
+closed by a recorded decision, and the passages of §3 that still said otherwise are struck in
+place below. What follows is the residue: findings that were deferred, never built, and are on no
+issue. It is listed here so that it has one home, and so that the package can be archived to
+`Planning/Completed/` once the owner has said yes or no to each. Every line was re-checked against
+the tree at `v2` `dc17d945`.
+
+**Already carried by the plan of record** (`Planning/Plan-Of-Record-2026-09-28.md` §4, "Designed
+but unbuilt (recommend parking)"), so nothing more is owed here:
+- **F-22** — a reader that follows the system text size (`HTMLTemplate.swift:110` still pins
+  `-webkit-text-size-adjust: none`).
+- **P-6** — an iPhone rail peek strip. **P-10** — an immersive Read mode.
+- **O-1, O-2** — links between the map and Search and Related. **O-3** — a region-share chart.
+  **O-6** — a subseries pole picker.
+- **M-4's two follow-ons** — a Search command menu with shortcuts, and standalone token editors.
+- **crossref-integration §3a** — a heat-matrix cell drill-down.
+- **CW-12's recorded debt** — the fixed-size text sites (§3, first program).
+
+**On no list at all — each needs an owner yes or no** (file an issue, or decline it here):
+- **F-4** — Corpus Analytics' charts sit in fixed 280 and 220 pt bands (`AnalyticsView.swift`,
+  eight `.frame(height:)` sites) instead of growing with their window.
+- **F-8** — drag and drop. The app has no `.draggable`, `.dropDestination`, `.onDrop`, `.onDrag`
+  or `Transferable` site; the pass was deferred at CW-6 and not picked up again.
+- **F-16** — the reader shows a document's title twice, in the navigation bar and as the
+  `h2.doc-heading` at the top of the text (`FRUSRenderNodeHTMLSerializer.swift:622`). It conflicts
+  with #888's deliberate wrapped title, so it is a decision before it is a fix.
+- **PR-6** — the phone-identity work: "works best on iPad or Mac" copy on the surfaces that do not
+  fit a phone, and Handoff from the analytics and graph surfaces (`.userActivity` exists only on
+  the two document views and the map).
+- **M-13** — the Research sidebar truncates long tag and collection names into identical strings
+  (`ResearchView.swift` sets no truncation mode and no `.help`).
+- **M-15** — a second menu door for the Mac Research Guide, beside Help.
+- **M-20** — a CSV for a map lasso or slice. The figure half shipped (#1100).
+- **M-22** — whether the Mac semantic map stays a singleton window
+  (`Window("Semantic Analytics", id: "frus.semanticAnalytics")`) or becomes value-based like the
+  iPad's. One line of decision.
+- **R-15's rider** — a zoom control on the iPad and iPhone map other than pinch. The Zoom In, Zoom
+  Out and Fit buttons are macOS-only.
+- **O-5** — the Metal point renderer as a shared substrate for other large figures. Research, not
+  a fix.
+- **crossref-integration §3b** — links between Cross-Reference Analytics and the Cross-Reference
+  Graph, and §4's sentence that the two read different corpora, owed only if §3a or §3b is built.
+
+**Owner checks the program asked for and nothing records** (§6): the menu bar and ⌘ shortcuts on
+an iPad with a hardware keyboard, including whether ⌘F is offered twice (#892); on the Mac, the
+Read-mode chevrons at rest and *Include front matter* changing a result set (#916); and the two
+departures from the M-4 design that the brief left reversible — a fixed token order, and a Type
+token on a fresh window when the Settings default is narrower than All.
+
+**The screenshot ledger (§1a) is behind the app.** #1081's sweep filled both manuals' slots (PR
+#1355, 2026-09-23), but the build-48 fixes and the build-49 wave have reshaped chrome since
+without adding a row to `Docs/screenshots/README.md`, and that file's own notes still say build 48
+does not draw two things it does (#1377's Mac packet buttons, #1372's ranking labels). Three
+`[SCREENSHOT` placeholders also remain in the manuals. All of it is the owner's capture lane and is
+listed in the plan of record's §4.
 
 ---
 
@@ -116,7 +179,8 @@ Wave 2 is complete. What remains, in the review's own order:
 "analytics `WindowGroup`s on iPad, Semantic first" half of the item and proves the pattern on the
 sharpest surface. What remains:
 
-- **F-11 is four surfaces of six done.** The map (#904), Corpus Analytics and Chronology (#905),
+- ~~**F-11 is four surfaces of six done.**~~ **F-11 is complete, six of six** (§2: Person Analytics
+  in #907, Cross-Reference Analytics in #917). The map (#904), Corpus Analytics and Chronology (#905),
   and Archival Analytics (#906) all had request types already, so each window cost a synthesised
   `Codable & Hashable` and a gate. **Person Analytics and Cross-Reference Analytics are what
   remain, and they are a decision rather than a port**: measured, they are the only two analytics
@@ -134,8 +198,10 @@ sharpest surface. What remains:
   `PersonAnalyticsRequest` carries the mode, so Trends and Network open as two windows, and the
   Browse menu becomes a submenu of the two halves where windows are available (without it the
   mode-carrying request would be theoretical: the menu could only ever have opened Trends).
-  **Cross-Reference Analytics was not covered by that decision and remains a sheet** — it has no
-  mode enum of its own, so option 2 has nothing to key on there and only option 1 applies.
+  ~~**Cross-Reference Analytics was not covered by that decision and remains a sheet**~~ — it has no
+  mode enum of its own, so option 2 has nothing to key on there and only option 1 applies. **Option 1
+  shipped in #917 (CW-9e)**: `CrossReferenceAnalyticsRequest` is the empty marker, and the surface
+  is a window on iPad (`FRUSExplorerApp.swift:1633`).
 - ~~**M-2, rescoped by measurement.**~~ COMPLETE (graph #920, Source Explorer W-2b). The word
   cloud stayed out (app-level, not per-document). W-2b's conversion follows the graph's shape —
   `WindowGroup(id:for:)`, nil request = the #363 tri-mode cold default, the rail opens by value —
@@ -145,7 +211,8 @@ sharpest surface. What remains:
   document request. **W-2b also paid #920's unhonoured promise**: "the explicit command below"
   never existed, so the graph's cold Window-menu door was silently gone — both conversions now
   share a `CommandGroup(before: .windowArrangement)` cold-door pair, pinned by `coldDoorsExist`.
-- **M-3 needs an owner decision before code**: what keys a Search window that opens empty and is
+- ~~**M-3 needs an owner decision before code**~~ **Decided 2026-08-15 and recorded in #916: the
+  Mac Search window stays a singleton.** The question was: what keys a Search window that opens empty and is
   typed into? Value-based windows reuse by request equality, and an empty request is the same
   empty request.
 - **A consequence of #904, now measured twice.** The map window is a real scene, so iPadOS restores
@@ -159,7 +226,8 @@ sharpest surface. What remains:
 **CW-10 — chrome and width.** Verified in full (§1); **F-5 and F-17 shipped in #902**. What remains,
 with the constraint that makes each one bigger than it looks:
 
-- **F-2 (the width cap) needs an owner decision, not an implementation.** The finding is true — no
+- ~~**F-2 (the width cap) needs an owner decision, not an implementation.**~~ **Decided and shipped —
+  two-pane at regular width (§3a; #914, #915, #921).** The finding is true — no
   root is capped and no helper exists — but the obvious fix is measurably wrong: framing a
   NavigationStack-root `List` turns `.insetGrouped` into a floating card and costs `.plain` its
   edge-to-edge separators and swipe-action extents, and no `List` in this app is capped that way
@@ -167,13 +235,15 @@ with the constraint that makes each one bigger than it looks:
   two-pane shape at regular width per `CollectionEditorView.iPadCollectionLayout`, or (c) decide
   full-width lists are correct on iPad, as Apple's own Settings and Mail are. That is a design
   call.
-- **F-3 (`TabSection`s) needs a tab-identity model first.** `TabSection` sits in a
+- ~~**F-3 (`TabSection`s) needs a tab-identity model first.**~~ **Shipped in #909 as a sidebar
+  footer instead (§3a).** `TabSection` sits in a
   `@TabContentBuilder`, so the extraction must conform to **`TabContent`**, and no such type
   exists in the repo — this is new ground rather than an adoption.
-- **Mac W-8/W-9.** M-10 and M-8 shipped in #903 (§5). **M-4** (the Search window's ten
+- **Mac W-8/W-9.** M-10 and M-8 shipped in #903 (§5). ~~**M-4** (the Search window's ten
   hover-explained icon toggles and its five-buttons-that-want-to-be-a-picker) and **M-9**
   (Read-mode paging is hover-only edge chevrons) are what remain, and both genuinely want a Mac in
-  front of someone.
+  front of someone.~~ **Both shipped**: M-9 in #916, M-4 in #922 (the token row) and #923 (the
+  titlebar toolbar). The owner's by-eye check of each is in §0.
 
 **CW-12, first program: macOS text scaling (Mac W-11 / M-5) — CONVERTED at W-2c, and the
 premise re-baselined.** M-5's "262 deferred sites" was exact when written and stale when
@@ -211,8 +281,9 @@ LEAVE-FIXED per the worklist's canvas rule, the rest are ordinary chrome debt.
   project was created in; the modifier presents only when addressed (macOS's single Settings
   instance passes through), so a Stage-Manager setup shows the alert once. Dismissal still
   clears the shared slot — the nudge stays one-shot.
-- **#657 stays owner-lane**: the device backtrace (plan item B-1) cannot be captured from these
-  sessions; the badge mitigation remains "a suspect removed, not a proven fix".
+- ~~**#657 stays owner-lane**: the device backtrace (plan item B-1) cannot be captured from these
+  sessions; the badge mitigation remains "a suspect removed, not a proven fix".~~ **#657 closed on
+  2026-08-18**, confirmed fixed on build 43.
 
 **CW-11 — the rest of the documentation sweep.** The ledger rule is written (§1a), the guide
 doors shipped, and **the W-2 prep is done (W-2e)**: `Docs/screenshots/SHOT-LIST-2026-08.md` stages
@@ -220,9 +291,10 @@ doors shipped, and **the W-2 prep is done (W-2e)**: `Docs/screenshots/SHOT-LIST-
 README heroes) with per-shot routes and content contracts — and `Docs/screenshots/README.md` was
 REPAIRED first: six of the owner's editorial directives had been committed as body text instead of
 applied (one had eaten the macOS "Captured" sentence's opening line, another spliced a bullet
-mid-sentence), recovered from the pre-#1085 git history and applied as edits. What remains is the
+mid-sentence), recovered from the pre-#1085 git history and applied as edits. ~~What remains is the
 **captures themselves** — the owner's by standing convention — plus the caption corrections that
-depend on them.
+depend on them.~~ **The captures were made and #1081 closed on 2026-09-23** (PR #1355). What has
+gone stale since is in §0.
 
 **CW-12, second program: the window-fronting audit (Mac W-12 / M-1) — RE-RUN 2026-08-27 (W-2e),
 verdict CLEAN.** 74 fronting sites + 27 value sites paired both ways against the scene table with

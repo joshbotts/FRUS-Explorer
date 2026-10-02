@@ -1,6 +1,15 @@
 # Volume updates and annotation integrity — a design
 
-**Status:** design, written 2026-09-02 against the tree at `b142381`. Answers the question left
+**Status: SHIPPED, and archived here on 2026-10-01.** Every phase is in the app: P1 (#1179), P2
+(#1180), P3a (#1181) and the whole P3b sequence (#1182–#1187), as §8.2 records. Three things in
+the text below were stale when it was archived and are corrected in place: this line (it read
+"design"), §5.2's banner ("PR pending" — #1183 merged), and §8.2's Q-9 row (the `index_version`
+column it deferred shipped in #1233). What it left open is carried by the live plan of record: Q-2
+(whether to keep a changed document's superseded text) is one of its older owner decisions, and
+§9's three uncovered cases and the unwritten `CD_AnnotationReview.CD_annotationId` are in its
+list of archived residue.
+
+**Written as:** a design, 2026-09-02, against the tree at `b142381`. Answers the question left
 open at `New-Volume-Release-Plan.md` §13: when the Office of the Historian corrects a published
 volume, can the app tell the reader *which of their annotations* are in doubt?
 
@@ -154,7 +163,7 @@ The store pass reads the prior row, compares, writes the new hashes, and stamps 
 
 ### 5.2 Device-local, not CloudKit — and why that is the right answer anyway
 
-> **SUPERSEDED IN PART, 2026-09-03 (R-5 P3b-2, PR pending).** The owner answered Q-3: review state
+> **SUPERSEDED IN PART, 2026-09-03 (R-5 P3b-2, PR #1183, merged the same day).** The owner answered Q-3: review state
 > syncs. This section's reasoning about the *table* still stands — `document_revisions` remains
 > device-local derived data in `frus.db`, because "this device re-downloaded and re-indexed this
 > volume" is a device-local fact. What changed is the *disposition*: a reader's review now also
@@ -312,7 +321,7 @@ that came before it.
 | **Q-6** | **G** — one new mirrored `@Model` ledger (`AnnotationReview`: annotation type, annotation id, volume, document, content hash, reviewed at), rather than a field on four to seven annotation types. Tags key on **tag id**, since the picker re-mints assignment rows. | One CloudKit record type in the ninth Production promotion (#488 gate: `identifiersAwaitingDeploy`, owner exercises on a Development build, Dashboard deploy, baseline restated). |
 | **Q-7** | **(b) with (f)**: excerpt entries join the review filter; the sheet runs `ExcerptVerifier` per quotation and reads `excerptRenderingVersion` as a highlight's version is read. Plus the export sheet stops reporting a vanished document as "volume not downloaded". The three engagement consumers keep the `.document` rule. | **SHIPPED P3b-4**, no deploy — the rows are reads, and a ledger row for a collection entry would have cost a tenth promotion. The iOS manual gained the whole review paragraph it lacked, and both manuals' excerpt sections were corrected: the frozen text stays as the source *printed* it, not as it *prints* it. |
 | **Q-8** | Drafts excluded from the counts; **(e) SHIPPED P3b-6** — six defects and SEVEN literals, not the four this row recorded, and the oldest-prompt fetch had no `isStandard` filter at all, so it could make a reader's own prompt the silent default. iOS's control went in the summary STRIP rather than the rail branch, because the strip is also the pinned iPhone and Read-mode surface. **(b) → P3b-7**: every summary in existence carries a nil `sourceContentHash`, so its comparison cannot fire; **(g)** search hygiene (newest non-draft summary wins the FTS column); **(b)** regenerate-and-keep from the sheet as a later step; **(d-cloud)** `GeneratedSummary.sourceContentHash` **rides Q-6's deploy** — the stored value is the revision row's `content_hash` at generation, never a hash of the summariser's input; existing summaries stay null and keep the date rule. (c) refused; (f) only if a correction batch is large. | One more identifier in the same promotion. |
-| **Q-9** | **(c)** un-indexed volumes excluded from the unreviewed read at VOLUME grain (rows return intact on re-download); **(d)** rider: the table is cleared at the Erase-Everything site only — never in `resetLocalData`, which "Reset This Device" also calls while promising annotations return. | No deploy. Known residue: a removed volume misses the rebaseline; an additive `index_version` column fixes that later. |
+| **Q-9** | **(c)** un-indexed volumes excluded from the unreviewed read at VOLUME grain (rows return intact on re-download); **(d)** rider: the table is cleared at the Erase-Everything site only — never in `resetLocalData`, which "Reset This Device" also calls while promising annotations return. | No deploy. Known residue: a removed volume misses the rebaseline; an additive `index_version` column fixes that later. *(It did: `document_revisions.index_version`, #1233, 2026-09-06.)* |
 | **Q-10** | **(b)** the exact, unique, seam-aware search in the shared sheet with Move after an explicit tap and the found words plus context shown; **(e)**'s three sentences ship inside it; **(f)** a Find-passage complement through the twins' existing find machinery — **subsequently REFUSED in P3b-4** on a six-axis measurement of what the find bar searches against what the sheet searches; see the P3b-4 paragraph below. UTF-16 pinned by fixture (the corpus holds no non-BMP or combining character). (c) only if matching ever becomes normalised. | No deploy. |
 | **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | **(b) and (i) SHIPPED P3b-5**, no deploy. (i) turned out to be THREE sites — the sentence and both Undo paths — plus a fresh override minting a corrupt snapshot after a stale restore. (b) reaches notes, tags and archive-visit plans; macOS routes a note to its composer WINDOW, whose request type is pure identity, rather than nesting a sheet. |
 
@@ -507,4 +516,5 @@ it is corrected here.
 
 *Document history*
 *1.0 — 2026-09-02: written against `b142381`, answering `New-Volume-Release-Plan.md` §13.*
+*1.2 — 2026-10-01: archived as shipped; the status line, §5.2's banner and the Q-9 row corrected.*
 *1.1 — 2026-09-03: P1 shipped (#1179); Q-1 measured and answered. One design premise corrected in the shipping: the vanished stamp does not need to run *before* the cache delete, because the revision row lives in its own table and survives it — the ordering is kept for legibility, not correctness.*

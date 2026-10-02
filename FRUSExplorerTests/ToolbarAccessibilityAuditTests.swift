@@ -2260,7 +2260,7 @@ struct MacSheetToolbarPlacementAuditTests {
 /// alike, and none of them can see a Mac toolbar overflow (neither test target runs on macOS). They
 /// fail when the source loses the fix. Whether the toolbar fits at the window's default size is
 /// checked by eye on a Mac, at the width recorded in ``measuredToolbarFitWidth``
-/// (`Planning/Open-Issues-Resolution-Plan-2026-09-23.md`, §4 item 14).
+/// (`Planning/Completed/Open-Issues-Resolution-Plan-2026-09-23.md`, §4 item 14).
 ///
 /// Version history:
 ///   1.0 — #1378: initial implementation
