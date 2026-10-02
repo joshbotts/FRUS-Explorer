@@ -61,6 +61,9 @@ import Foundation
 ///          an empty fresh read, and a superseded read writes nothing (``planVisitKeepsTheGatesPromise()``)
 ///   2.7 — The merge of #1456 with #1458: what the editor and the list row re-derive on their plan's
 ///          inputs is what `ArchiveVisitCounts` counts (``reDerivedModelIsWhatTheCountsRead()``)
+///   2.8 — #1423 review, round 1: the app constructs the packet sheet in exactly one place, the
+///          Archives Visit editor (``onlyTheEditorPresentsThePacketSheet()``); the sheet's header
+///          cited this suite for that, and it had read only two files
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -609,6 +612,56 @@ struct TripPacketEntryPointParityTests {
                 found: \(caption)
                 """)
         }
+    }
+
+    /// **Nothing but the Archives Visit editor presents the packet sheet** (#1423 review, round 1).
+    /// `TripPacketSheet`'s header says so and cites this suite, which pinned two narrower facts:
+    /// the editor constructs the sheet once (``packetSheetCaptionIsWired()``) and Project Home does
+    /// not (``projectHomeIsCreateOrOpen()``). No test read the rest of the app, so a collection
+    /// screen presenting `TripPacketSheet(plan:title:researchQuestion:)` with some other question
+    /// passed every test, and #1366's rule — the caption compares the field with the plan's own
+    /// project's question — went unpinned for the new presenter.
+    ///
+    /// It walks every Swift file under `FRUSExplorer/`, comments removed, as
+    /// ``everyPlanIsCreatedThroughTheFactory()`` does, and requires exactly one `TripPacketSheet(`
+    /// or `TripPacketSheet.init(`, in `ArchiveVisitEditorView.swift`. A construction spelled any
+    /// other way — through a typealias, say — is out of its reach; none exists.
+    @Test("Nothing but the Archives Visit editor constructs the packet sheet (#1423)")
+    func onlyTheEditorPresentsThePacketSheet() throws {
+        let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        #expect(paths.count > 100,
+                "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
+
+        let construction = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])TripPacketSheet(\.init)?\("#)
+        var sites: [String] = []
+        var unterminated: [String] = []
+        for path in paths {
+            let relative = "FRUSExplorer/\(path)"
+            let stripped = Self.stripComments(try Self.source(relative))
+            if stripped.endsInBlockComment { unterminated.append(relative) }
+            let code = stripped.code
+            for match in construction.matches(in: code, range: NSRange(code.startIndex..., in: code)) {
+                guard let range = Range(match.range, in: code) else {
+                    Issue.record("\(relative): a match did not map back to the source")
+                    continue
+                }
+                sites.append("\(relative):\(code[..<range.lowerBound].components(separatedBy: "\n").count)")
+            }
+        }
+        let editor = "FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift:"
+        let onlyTheEditor = sites.count == 1 && sites.allSatisfy { $0.hasPrefix(editor) }
+        #expect(onlyTheEditor, """
+            The app constructs TripPacketSheet at \(sites.count) place(s): \(sites). The one \
+            presenter is the Archives Visit editor's Export packet, which passes the plan's own \
+            project's question (#1366); a second presenter is a second place for the packet's rules \
+            to be applied differently (#1423). Zero means the scan stopped reading the editor.
+            """)
+        #expect(unterminated.isEmpty,
+                "the comment stripper ended \(unterminated) inside a block comment, hiding the rest from this scan")
     }
 
     /// **The packet sheet opens a plan's topic from the plan alone** (#1366 review, round 2). The

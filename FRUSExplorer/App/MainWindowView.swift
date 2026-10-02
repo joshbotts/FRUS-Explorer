@@ -290,7 +290,7 @@ struct MainWindowView: View {
 
             Divider().frame(height: 20)
 
-            // Browse (was "Corpus") — shortcut owned by the "frus.corpusBrowser" scene (⌘⇧B)
+            // Browse (was "Corpus") — its shortcut, ⇧⌘B, is owned by the Find menu (`FindMenuContent`), not here.
             Button {
                 appState.bindTool(.corpusBrowser, to: hostID)
                 openWindow.fronting(id: "frus.corpusBrowser")

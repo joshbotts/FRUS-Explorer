@@ -904,7 +904,7 @@ struct FRUSExplorerApp: App {
                 .task { await bootSearchInfrastructureOnce() }
         }
         .defaultSize(width: 520, height: 700)
-        // ⌘⇧B lives on the Research-menu item, NOT here (#749 / audit L-37). A shortcut declared on
+        // ⌘⇧B lives on the Find menu's item, NOT here (#749 / audit L-37). A shortcut declared on
         // a Window scene runs no app code — AppState.bindTool relies on exactly that — so it cannot
         // call `bringMacWindowToFront`, leaving the only keyboard route to Browse unable to raise an
         // open-but-buried browser. It also put the shortcut on no visible menu item, so nothing
@@ -1991,15 +1991,15 @@ struct FRUSExplorerApp: App {
             // `.modelContainer` feeds the embedded History submenu's @Query; appState/
             // openWindow are explicit init params (mirroring the surrounding CommandGroup
             // blocks) rather than relying on @Environment propagation into .commands.
-            // Corpus Browser lives in the WINDOW menu, not Research. It opens a window and does
-            // nothing else — the Research menu's other items each act on research state (bind a
-            // project, open a collection), and grouping "show me this window" with them made the
-            // menu a list of two unlike things.
+            // Corpus Browser is not in this menu. It opens a window and does nothing else — the
+            // Research menu's other items each act on research state (bind a project, open a
+            // collection), and grouping "show me this window" with them made the menu a list of
+            // two unlike things. Its item is in the Find menu (`FindMenuContent`), which says why
+            // it is not in the Window menu either (#822).
             //
-            // ⌘⇧B stays on this Button rather than moving back to the `Window` scene: a
-            // scene-level shortcut runs no app code, so it cannot front a buried browser, and it
-            // appears on no menu at all (#749 / audit L-37). That is the defect this item exists
-            // to have fixed, and it is independent of which menu the item sits in.
+            // ⌘⇧B is on that item's Button, not on the `Window` scene: a scene-level shortcut runs
+            // no app code, so it cannot front a buried browser, and it appears on no menu at all
+            // (#749 / audit L-37). That is independent of which menu the item sits in.
             CommandMenu(String(localized: "menu.research", defaultValue: "Research")) {
                 ResearchMenuContent(appState: appState, openWindow: openWindow, openSettings: openSettings)
                     .modelContainer(modelContainer)

@@ -44,6 +44,9 @@ import WordCloudKit
 ///         (``defaultShippingDims``, 512), where it defaulted to 256 and a regeneration that forgot
 ///         the variable repacked the bundle at half width; and #1439 — every refusal the map pass
 ///         can make is made before the first write (``run(environment:languageAnalysis:)``)
+///   1.2 — #1439 review, round 1: the manifest's coverage dates are decoded before the first
+///         write too. `loadVolumeEras` ran after the vectors and shards were on disk and reads a
+///         stricter shape than the volume list, so a one-sided `dateRange` refused there
 public enum SemanticVectorsRunner {
 
     /// Artifact schema version for `semantic-vectors-index.json`.
@@ -149,9 +152,13 @@ public enum SemanticVectorsRunner {
     /// ## Nothing is written until every refusal that can be made first has been made
     /// In order: the shipping width, the model pin, `EXPECT_DIGEST`, the manifest, and — when
     /// `LAYOUT_DIR/layout.bin` exists, so a map pass will follow — everything that pass can refuse
-    /// on (`SemanticMapPacker.preflight`, #1439). Only then are the output directories created.
+    /// on: the store's volume heads, `SemanticMapPacker.preflight` (#1439), and the manifest's
+    /// coverage dates (`loadVolumeEras`), which the map's era histograms read and which decode a
+    /// stricter shape than the volume list does. Only then are the output directories created.
     /// Before #1439 the map pass made its refusals after the vector artifacts were on disk, which
-    /// left new vectors beside the previous map. `RunWriteOrderTests` pins the order in this body.
+    /// left new vectors beside the previous map. `RunWriteOrderTests` pins the order in this body:
+    /// both calls come before every write, and after the first write the map block makes no call
+    /// that can throw other than `SemanticMapPacker.pack` and its own two writes.
     ///
     /// - Parameters:
     ///   - env: The environment overrides (`STORE`, `MANIFEST`, `OUTPUT_DIR`, `SHARDS_DIR`, `DIMS`,
@@ -214,13 +221,17 @@ public enum SemanticVectorsRunner {
         // map pass will run, after the vectors are written — so everything it can refuse on is
         // checked here, while a refusal still leaves the previous artifacts exactly as they were
         // (#1439). The document count it checks is the sum of the store's volume heads, which is
-        // what the vector pass is about to pool.
+        // what the vector pass is about to pool. The manifest's coverage dates are read here too:
+        // `loadVolumeEras` decodes `dateRange`, which `loadManifestVolumes` above never touches, so
+        // read after the vectors a one-sided `dateRange` refused there (review of #1439).
         let layoutDir = URL(fileURLWithPath: env["LAYOUT_DIR"] ?? "Planning/semantic-map")
         let lexiconsPath = env["LEXICONS"] ?? "FRUSExplorer/Resources/word-cloud-lexicons.json"
         let stopwordsPath = env["STOPWORDS"] ?? "FRUSExplorer/Resources/word-cloud-stopwords.json"
         let packsMap = FileManager.default.fileExists(
             atPath: layoutDir.appendingPathComponent("layout.bin").path)
+        var eras: [String: String] = [:]
         if packsMap {
+            eras = try loadVolumeEras(manifestPath)
             var documentsInStore = 0
             for volume in volumes {
                 guard let head = SemanticRawStore.head(for: volume.id, at: storeURL) else {
@@ -369,9 +380,8 @@ public enum SemanticVectorsRunner {
         if pruned > 0 { generatorLog("pruned \(pruned) shard(s) not published by this run") }
 
         // Tier 0, the map. Whether it runs was decided before the first write, where its refusals
-        // were made (`packsMap`, above).
+        // were made and its eras read (`packsMap`, above).
         if packsMap {
-            let eras = try loadVolumeEras(manifestPath)
             let packed = try SemanticMapPacker.pack(
                 layoutDir: layoutDir,
                 index: SemanticVectorIndex(file: index),
@@ -509,8 +519,14 @@ public enum SemanticVectorsRunner {
     /// The raw value of the app's `CoverageEra`, not a scheme invented here, so a cluster's era
     /// histogram is comparable with every other era-split surface.
     ///
+    /// Read before the run's first write (review of #1439): it decodes `dateRange` as two strings,
+    /// which ``loadManifestVolumes(_:)`` never reads, so an entry with a one-sided or non-string
+    /// `dateRange` passes the volume list and throws here.
+    ///
     /// - Parameter path: Path to `manifest.json`.
     /// - Returns: Volume id to era raw value.
+    /// - Throws: `GeneratorError.missingFile`, or the decoder's error for a `dateRange` that is
+    ///   present and is not `{earliest: String, latest: String}`.
     private static func loadVolumeEras(_ path: String) throws -> [String: String] {
         guard let data = FileManager.default.contents(atPath: path) else {
             throw GeneratorError.missingFile(path)

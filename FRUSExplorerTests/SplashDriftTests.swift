@@ -36,6 +36,9 @@ import SwiftUI
 /// Version history:
 ///   1.0 — visual-marketing plan §3.2 M-4: initial implementation
 ///   1.1 — #1412 (lane HYG): no fixture reads the test host's idiom; the zone tests run per idiom
+///   1.2 — #1412 review, round 1: ``geometryFixturesNameTheirIdiom()`` reads every Swift file in
+///         the unit-test target, where it read a list of three; the iPad fixture is the 1,210 pt
+///         canvas of the iPad Pro 11-inch (M5), as `LaunchArtworkTests`' is
 @Suite("Launch splash — drift and exclusion")
 struct SplashDriftTests {
 
@@ -56,9 +59,11 @@ struct SplashDriftTests {
         /// An iPhone at the width the composition review is asked for.
         static let phone = Idiom(name: "iPhone, 393 × 852",
                                  canvas: CGSize(width: 393, height: 852), metrics: .phone)
-        /// An iPad Pro 11-inch in portrait.
-        static let pad = Idiom(name: "iPad, 834 × 1194",
-                               canvas: CGSize(width: 834, height: 1_194), metrics: .pad)
+        /// An iPad Pro 11-inch (M5) in portrait, the canvas `LaunchArtworkTests` gives that iPad.
+        /// It read 834 × 1194, the height of the 11-inch models before 2024; no assertion here
+        /// turns on the 16 pt, since every zone is placed relative to its canvas.
+        static let pad = Idiom(name: "iPad, 834 × 1210",
+                               canvas: CGSize(width: 834, height: 1_210), metrics: .pad)
         /// The Mac's splash window (`LaunchIdentityMetrics.mac`'s doc gives its size).
         static let mac = Idiom(name: "Mac, 560 × 540",
                                canvas: CGSize(width: 560, height: 540), metrics: .mac)
@@ -499,19 +504,31 @@ struct SplashDriftTests {
     /// that leaves the default in measures an iPad's block on an iPad host and a phone's on an
     /// iPhone host, against whatever canvas the fixture hard-codes. That is how three tests came
     /// to fail on every iPad host and pass on every iPhone (#1412) — and since the wave's unit
-    /// runs are on an iPhone, a new one would not be seen. So this reads the three files that
-    /// build identity zones and refuses a call without `metrics:` and any read of the host's
-    /// metrics. Same result on every destination; the failure it prevents shows on an iPad host.
+    /// runs are on an iPhone, a new one would not be seen. So this reads every Swift file in the
+    /// unit-test target and refuses a call without `metrics:` and any read of the host's metrics.
+    /// Same result on every destination; the failure it prevents shows on an iPad host.
+    ///
+    /// **Every file, not a list of them** (review of #1412). It first opened the three files that
+    /// built identity zones on 2026-10-01 — this one, `OnboardingDockMetricsTests.swift` and
+    /// `LaunchArtworkTests.swift` — so a host-reading call in a fourth file was never read, and a
+    /// new test file is exactly where a new fixture goes. The three are still the only callers
+    /// (``geometryFixtureFiles``), which the scan now reports rather than assumes.
     @Test("No splash or onboarding geometry fixture reads the test host's idiom (#1412)")
     func geometryFixturesNameTheirIdiom() throws {
         let directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        let names = try FileManager.default.subpathsOfDirectory(atPath: directory.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        // Measured 2026-10-01: 339 Swift files in the unit-test target. A wrong path reads none.
+        try #require(names.count > 200, "only \(names.count) Swift files under \(directory.path)")
         // Spelled in two pieces so this file does not hold the text it refuses.
         let view = "LaunchSplash" + "View."
         let hostReads = ["tileSize", "wordmarkSize", "captionSize", "blockSpacing", "identityBlockMinimumHeight"]
             .map { view + $0 } + ["LaunchIdentity" + "Metrics.current", "metrics: " + ".current"]
         var calls = 0
+        var callers: Set<String> = []
         var failures: [String] = []
-        for name in ["SplashDriftTests.swift", "OnboardingDockMetricsTests.swift", "LaunchArtworkTests.swift"] {
+        for name in names {
             // Comment lines blanked, line count kept: the doc comments here name what they refuse.
             let source = try String(contentsOf: directory.appendingPathComponent(name), encoding: .utf8)
                 .components(separatedBy: "\n")
@@ -534,6 +551,7 @@ struct SplashDriftTests {
                     }
                     try #require(close > open, "\(name): an \(function) call never closes")
                     calls += 1
+                    callers.insert(name)
                     let arguments = source[open...close]
                     if !arguments.contains("metrics:") {
                         let line = source[..<call.lowerBound].components(separatedBy: "\n").count
@@ -543,14 +561,25 @@ struct SplashDriftTests {
                 }
             }
         }
-        // Measured 2026-10-01: 12 calls across the three files. A scan that finds none passes.
-        #expect(calls >= 10, "found only \(calls) identity-zone call(s) in the three files")
+        // Measured 2026-10-01: 12 calls, in these three files. A scan that finds none passes, and
+        // one that stopped reading a known caller has stopped reading something.
+        #expect(calls >= 10, "found only \(calls) identity-zone call(s) in \(names.count) files")
+        #expect(callers.isSuperset(of: Self.geometryFixtureFiles), """
+            The scan found identity-zone calls in \(callers.sorted()) and not in every file known to \
+            make them (\(Self.geometryFixtureFiles.sorted())) — it is no longer reading the target.
+            """)
         #expect(failures.isEmpty, """
             A fixture takes the identity block's sizes from the simulator hosting the tests, so it \
             passes or fails by host (#1412). Pass `metrics:` for the idiom the canvas belongs to:
             \(failures.joined(separator: "\n"))
             """)
     }
+
+    /// The unit-test files that build identity zones, measured 2026-10-01. A floor for
+    /// ``geometryFixturesNameTheirIdiom()``'s reach, not its scope: it reads every file.
+    private static let geometryFixtureFiles: Set<String> = [
+        "SplashDriftTests.swift", "OnboardingDockMetricsTests.swift", "LaunchArtworkTests.swift",
+    ]
 
     // MARK: - Wiring
 

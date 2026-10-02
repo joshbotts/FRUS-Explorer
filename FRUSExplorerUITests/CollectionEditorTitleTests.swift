@@ -28,6 +28,12 @@ import XCTest
 /// Collection settings straight for the list SKIP on the sheet route: only the pushed screen covers the editor, and
 /// that is the state they need. Expect 8 tests with 0 skipped on an iPhone, and 8 with 3 skipped on an iPad.
 ///
+/// **A narrow iPad is a third layout, and only it reaches the Add menu's overflow (#1450).** On iPad Air 11-inch in
+/// portrait the regular-width toolbar folds ＋ Add into its ⋯ overflow, while ⚙ Collection stays in the bar and
+/// Collection settings is still the sheet. Measured there (M4, iOS 26.5, 2026-10-01): 8 tests, 3 skipped, none failed,
+/// the four heading tests each printing `[CollectionEditorAddMenu] opened from the toolbar's overflow menu`. With the
+/// bar-only lookup put back, those four failed in `addSectionHeading()` ("The editor has no Add menu").
+///
 /// **Only the iPhone run guards the push-over and the Collections-tab exit.** On an iPad
 /// `testContentAloneDoesNotNameANewCollection` runs rather than skipping, but by reading it cannot fail there on the
 /// old rule: the settings SHEET covers nothing, and presenting a sheet fires no `onDisappear`, so nothing is mistaken
@@ -82,6 +88,8 @@ import XCTest
 ///         subtitle and toggle survive the editor and show in it
 ///   1.4 — #1450: `addSectionHeading()` opens the Add menu through `CollectionEditorAddMenu`, which also looks in
 ///         the toolbar's ⋯ overflow, where a narrow iPad puts it
+///   1.5 — #1450 review, round 1: run on iPad Air 11-inch (M4) in portrait, iOS 26.5, the device #1450 names — the
+///         four heading tests open the menu from the overflow and pass, and fail with the bar-only lookup put back
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 
@@ -349,9 +357,10 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// Adds a section heading, so the collection has content and is kept when its editor goes.
     ///
     /// The Add menu is opened wherever the layout put it (`CollectionEditorAddMenu.open`). Until #1450 this looked for
-    /// it in the bar alone, so on an iPad narrow enough to fold ＋ Add into the toolbar's ⋯ overflow — measured by lane
-    /// K3 on iPad Air 11-inch (M4) in portrait, iOS 26.5 — it failed here with "The editor has no Add menu" before the
-    /// test had tested anything. The two devices this suite documents never fold it, which is why it had never failed.
+    /// it in the bar alone, so on an iPad narrow enough to fold ＋ Add into the toolbar's ⋯ overflow — iPad Air 11-inch
+    /// (M4) in portrait, iOS 26.5 — it failed here with "The editor has no Add menu" before the test had tested
+    /// anything: measured by lane K3 on the one test that then added a heading, and on all four that do now when that
+    /// lookup was put back on 2026-10-01. iPhone 17 and iPad Pro 13-inch never fold it, which is why it had never failed.
     private func addSectionHeading() {
         CollectionEditorAddMenu.open(in: app)
         let heading = app.buttons["Add Section Heading"].firstMatch
@@ -577,19 +586,25 @@ final class CollectionEditorTitleTests: XCTestCase {
 /// text size, iOS 26.5 — and not at AX3 on the same device, nor on iPad Pro 13-inch.
 ///
 /// `CollectionProseRowRestTests` had the three-way lookup from the start. `CollectionEditorTitleTests` looked in the
-/// bar alone, so the four of its tests that add a section heading failed on that iPad before reaching what they test
-/// (#1450). One function now serves both, so the next place the layout puts the menu is learned once.
+/// bar alone, so a test of its that adds a section heading failed on that iPad before reaching what it tests (#1450).
+/// What was measured, and when: lane K3 saw the one such test the suite then had fail
+/// (`testContentAloneDoesNotNameANewCollection`); #1413 added three more; and on 2026-10-01, with the bar-only lookup
+/// put back, all four failed there with "The editor has no Add menu" (8 tests: 4 failed, 3 skipped, 1 passed). One
+/// function now serves both suites, so the next place the layout puts the menu is learned once.
 ///
-/// **Which devices can show the third place.** Neither device `CollectionEditorTitleTests` documents (iPhone 17, iPad
-/// Pro 13-inch) folds the menu, so on those two a run takes the first or second branch and says nothing about the
-/// third. Each call prints the branch it took, `[CollectionEditorAddMenu] opened from …`, so a log shows which.
-/// Lane HYG had those two devices only and tried to narrow the iPad's editor by showing the tab sidebar: on iPad Pro
-/// 13-inch (M5), iOS 27.0, in portrait, the sidebar is an overlay there (content area 752 pt while it shows), and the
-/// first tap on the Collections list dismissed it, so the editor opened at full width with ＋ Add in the toolbar. So
-/// #1450's own failure, and the overflow branch in THIS suite, still want a run on iPad Air 11-inch in portrait.
+/// **Which devices can show the third place.** iPhone 17 and iPad Pro 13-inch never fold the menu, so on those two a
+/// run takes the first or second branch and says nothing about the third. Each call prints the branch it took,
+/// `[CollectionEditorAddMenu] opened from …`, so a log shows which. Showing the tab sidebar does not narrow the
+/// editor enough to reach it: on iPad Pro 13-inch (M5), iOS 27.0, in portrait, the sidebar is an overlay (content
+/// area 752 pt while it shows), and the first tap on the Collections list dismissed it, so the editor opened at full
+/// width with ＋ Add in the toolbar. The third place wants iPad Air 11-inch in portrait: there, on iOS 26.5,
+/// `CollectionEditorTitleTests` opened all four of its Add menus "from the toolbar's overflow menu" and passed
+/// (2026-10-01). A change to this function is untested on the overflow until it has run on that device.
 ///
 /// Version history:
 ///   1.0 — #1450 (lane HYG): lifted from `CollectionProseRowRestTests.openAddMenu()`, unchanged in what it does
+///   1.1 — #1450 review, round 1: the overflow branch measured from `CollectionEditorTitleTests` on iPad Air 11-inch
+///         (M4), iOS 26.5; the doc says what was measured failing, and when
 @MainActor
 enum CollectionEditorAddMenu {
 

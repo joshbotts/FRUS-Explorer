@@ -161,6 +161,8 @@ struct SemanticContractGuardTests {
 ///
 /// Version history:
 ///   1.0 — #1439 (lane HYG): initial implementation
+///   1.1 — #1439 review, round 1: a manifest `dateRange` that does not decode refuses before any
+///         write, with a no-layout control; the no-lemmatiser refusal's message is pinned
 @Suite("SemanticVectors — the map pass refuses before the vectors are written (#1439)")
 struct MapPassRefusesBeforeTheVectorsTests {
 
@@ -205,6 +207,13 @@ struct MapPassRefusesBeforeTheVectorsTests {
             return
         }
         Self.expectNothingWritten(sandbox, "no lemmatiser")
+        // What the operator reads. Until the review of #1439 it said "refusing to write the map.
+        // The vector artifacts do not read the tagger", as though the vectors had been packed.
+        let message = String(describing: thrown)
+        #expect(message.contains("Nothing was written"),
+                "the refusal does not say the run wrote nothing: \(message)")
+        #expect(message.contains("LAYOUT_DIR"),
+                "the refusal does not say how to pack the vectors alone: \(message)")
     }
 
     /// The layout's metadata is unreadable.
@@ -305,6 +314,43 @@ struct MapPassRefusesBeforeTheVectorsTests {
         Self.expectNothingWritten(sandbox, "missing volume")
     }
 
+    /// **A manifest whose coverage dates do not decode** (review of #1439). The map's era
+    /// histograms read `dateRange` as two strings; the volume list the vector pass reads does not
+    /// read it at all. So an entry with only `earliest` passed the first read and threw at the
+    /// second, which ran after every vector artifact and shard was on disk — #1439's own symptom,
+    /// by a throw `SemanticMapPacker.preflight` does not make. The eras are now read before the
+    /// first write.
+    ///
+    /// The second half is the control: the same manifest with no layout packs the vectors, because
+    /// a run with no map never reads the dates. Without it the refusal could be the volume list's.
+    @Test("A manifest dateRange that does not decode refuses before any write when a layout is present")
+    func undecodableDateRangeRefusesBeforeAnyWrite() throws {
+        let oneSided = #"[{"volumeId":"frus1861","subseries":"1861","dateRange":{"earliest":"1861-01-01"}}]"#
+
+        let sandbox = try Fixture.makeSandbox()
+        defer { sandbox.remove() }
+        try sandbox.writeLayout()
+        try oneSided.write(to: sandbox.store.url.appendingPathComponent("manifest.json"),
+                           atomically: true, encoding: .utf8)
+        let thrown = Self.run(sandbox)
+        #expect(thrown is DecodingError,
+                "expected the manifest's dateRange to fail to decode, got \(String(describing: thrown))")
+        Self.expectNothingWritten(sandbox, "one-sided dateRange")
+
+        let noLayout = try Fixture.makeSandbox()
+        defer { noLayout.remove() }
+        try oneSided.write(to: noLayout.store.url.appendingPathComponent("manifest.json"),
+                           atomically: true, encoding: .utf8)
+        let packed = Self.run(noLayout)
+        #expect(packed == nil, """
+            with no layout the same manifest must pack the vectors, which never read the dates: \
+            \(String(describing: packed))
+            """)
+        #expect(FileManager.default.fileExists(
+            atPath: noLayout.output.appendingPathComponent("semantic-vectors-index.json").path),
+                "the no-layout control wrote no vector index, so the refusal above proves nothing")
+    }
+
     /// **The control, without which every refusal above could be a run that cannot pack at all.**
     /// The same store and the same layout, a working verdict: the vectors and the map are written.
     /// `pack` re-checks this process's own tagger, which lemmatises on the macOS host these
@@ -359,6 +405,8 @@ struct MapPassRefusesBeforeTheVectorsTests {
 ///
 /// Version history:
 ///   1.0 — #1439 (lane HYG): initial implementation
+///   1.1 — #1439 review, round 1: after the vectors are written the map block may throw only from
+///         the pack and its two writes, and the manifest's coverage dates are read before any write
 @Suite("SemanticVectors — run order (#1439)")
 struct RunWriteOrderTests {
 
@@ -418,6 +466,41 @@ struct RunWriteOrderTests {
             }
             #expect(sites == count, "the run has \(sites) \(call) call(s), and this test knows \(count)")
         }
+    }
+
+    /// **Nothing in the map block can throw after the vectors are written but the pack and its
+    /// two writes** (review of #1439). ``preflightPrecedesEveryWrite()`` proves the writes follow
+    /// the preflight; it said nothing about a `try` that follows the writes, and there was one:
+    /// `try loadVolumeEras(manifestPath)` opened the block, decoding the manifest's `dateRange`,
+    /// which the pre-write read of the volume list never touches. So this requires that the eras
+    /// are read once, before the first write, and that the block which runs after the vectors —
+    /// the last `if packsMap {` in the run — holds exactly three `try`s, the ones named here.
+    /// `MapPassRefusesBeforeTheVectorsTests.undecodableDateRangeRefusesBeforeAnyWrite` drives it.
+    @Test("After the vectors are written the map block throws only from pack and its two writes")
+    func mapBlockThrowsOnlyFromThePackAndItsWrites() throws {
+        let body = try Self.body(of: "static func run(\n        environment env:", in: Self.runnerSource())
+        let eras = try #require(body.range(of: "try loadVolumeEras("),
+                                "the run no longer reads the manifest's coverage dates")
+        let firstWrite = try #require(body.range(of: "createDirectory("))
+        #expect(eras.upperBound <= firstWrite.lowerBound,
+                "the run decodes the manifest's dateRange after it has started writing")
+        #expect(body.components(separatedBy: "loadVolumeEras(").count - 1 == 1,
+                "the run reads the manifest's coverage dates more than once")
+
+        let gate = try #require(body.range(of: "if packsMap {", options: .backwards))
+        #expect(firstWrite.upperBound <= gate.lowerBound,
+                "the last `if packsMap {` is not the block that follows the writes — re-derive this test")
+        // `body(of:in:)` opens at the first brace AFTER what it is given, so it is given no brace.
+        let block = try Self.body(of: "if packsMap", in: String(body[gate.lowerBound...]))
+        let attempt = try NSRegularExpression(pattern: #"(?<![A-Za-z0-9_])try[?!]?\s+([A-Za-z0-9_.]+)"#)
+        let text = String(block)
+        let attempts = attempt.matches(in: text, range: NSRange(text.startIndex..., in: text))
+            .compactMap { Range($0.range(at: 1), in: text).map { String(text[$0]) } }
+        #expect(attempts == ["SemanticMapPacker.pack", "packed.binary.write", "encoder.encode"], """
+            After the vectors are written the map block makes these throwing calls: \(attempts). \
+            Each one beyond the pack and its two writes is a refusal that leaves new vectors beside \
+            the previous map (#1439): make it before the first write, beside the preflight.
+            """)
     }
 }
 

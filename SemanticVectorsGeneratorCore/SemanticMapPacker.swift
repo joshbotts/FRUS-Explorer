@@ -31,6 +31,8 @@ import WordCloudKit
 ///          tagger has no lemmatiser (`ClusterLabeller.requireLanguageAnalysis`)
 ///   1.2 — #1439: `preflight`, every refusal a map pass can make that needs no vector artifact, so
 ///          the runner can make them before it writes a byte; `readLayoutMeta` is shared with `pack`
+///   1.3 — #1439 review, round 1: `preflight`'s doc names the runner's other pre-write read, the
+///          manifest's coverage dates, which this function does not make
 public enum SemanticMapPacker {
 
     /// Artifact schema version for `semantic-map-index.json`.
@@ -159,6 +161,13 @@ public enum SemanticMapPacker {
     /// volume heads. The two agreed on all 553 volumes of the shipped store (measured 2026-10-01:
     /// 314,571 by either count), so a store whose heads misstate its documents is the one case
     /// that can still refuse after the vectors are written.
+    ///
+    /// **`pack`'s throws are not the runner's whole map block.** The runner also decodes the
+    /// manifest's coverage dates for the era histograms (`SemanticVectorsRunner.loadVolumeEras`),
+    /// a stricter read than its volume list, and until the review of #1439 it did so after the
+    /// vectors were written. It now reads them beside this call, before its first write, and
+    /// `RunWriteOrderTests` requires that the block after the vectors makes no throwing call but
+    /// `pack` and its two writes.
     ///
     /// - Parameters:
     ///   - layoutDir: Directory holding `layout.bin` and `layout-meta.json`.
