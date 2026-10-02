@@ -2506,9 +2506,11 @@ struct MacSourceExplorerView: View {
     /// GroupBox listing documents from the same archival collection.
     ///
     /// Shown once the source note has been parsed, with three states: a loading spinner, the
-    /// list of matches, or an explicit empty-state explaining why there are none (the note
-    /// isn't a recognized archival citation, or no other indexed document shares its
-    /// collection) — rather than silently hiding the box.
+    /// list of matches, or an empty state that says why there are none, in one of the four
+    /// sentences of `SourceExplorerView.relatedEmptyState(for:note:)` (no other indexed document
+    /// shares the note's key; a Subject-Numeric citation whose file matched nothing; one in a
+    /// form the app cannot match on; a note that is not a recognized archival citation) — rather
+    /// than silently hiding the box.
     @ViewBuilder
     private var relatedDocumentsBox: some View {
         if relatedLoading || parsed != nil {

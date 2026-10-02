@@ -2897,8 +2897,10 @@ struct SourceExplorerView: View {
     ///
     /// Shown once the source note has been parsed (so the header is always visible while the
     /// Source Explorer is open) with three states: a loading spinner, the list of matches, or
-    /// an explicit empty-state that explains *why* there are none — either the note isn't a
-    /// recognized archival citation, or no other indexed document shares its collection.
+    /// an empty state that says why there are none, in one of four sentences
+    /// (`relatedEmptyState(for:note:)`): no other indexed document shares the note's key; the
+    /// note cites the Subject-Numeric File and nothing else was matched to its file; it cites
+    /// that file in a form the app cannot match on; or it is not a recognized archival citation.
     @ViewBuilder
     private var relatedDocumentsSection: some View {
         if relatedLoading || parsed != nil {
@@ -3007,6 +3009,11 @@ struct SourceExplorerView: View {
     /// central files (182), and 3 whose remark carries a film number. A designation with no subject
     /// number is among the first when the Department-led parse stored it (`POL US–USSR`):
     /// `relatedByDecimal` matches the stored file number whole.
+    ///
+    /// A central-files citation's list is empty exactly when its direct route finds nothing: the
+    /// collection authority's alias fallback does not serve one
+    /// (`IndexingPipeline.aliasFallbackServes`, landing round 2), so no list here is filled with
+    /// documents matched by the central files' name.
     static func relatedEmptyState(for parsed: ParsedSourceNote?, note: String) -> RelatedEmptyState {
         guard let parsed else { return .unmatched }
         if parsed.supportsArchivalNeighbors { return .noNeighbors }
