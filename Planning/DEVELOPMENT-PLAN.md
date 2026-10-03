@@ -35586,3 +35586,18 @@ On the owner's word ("bump the build to 49 and then prepare for release", "on Te
 - **Gemma policy re-check:** the Terms page reads "Last modified: April 1, 2026", the date recorded in `Planning/semantic-vectors/Gemma-Compliance-Runbook.md`. The Prohibited Use Policy reads "Last modified: February 21, 2024"; no earlier reading of it is recorded in the repository.
 
 **Owed by the owner before the upload:** `xcrun cktool save-token --type management`, then `./Scripts/check_cloudkit_schema.py`; `./Scripts/fetch-llama-dsyms.sh`; the archive and TestFlight upload; `python3 Scripts/check_repository_links.py --stamp`; the `build-49` tag; and the by-eye checks the plan of record's §0a lists.
+
+---
+
+## Session 2026-10-02 — The CloudKit schema gate's first read: fifteen fields Production never held, deployed in the twelfth promotion
+
+The owner saved a CloudKit management token and ran `./Scripts/check_cloudkit_schema.py` for build 49. It failed.
+- **The finding.** Fifteen identifiers the inventory attested as deployed were absent from Production: `CD_ArchiveVisitDocument.CD_stateData`, `CD_ArchiveVisitPlan.CD_deliverableTogglesData` and `.CD_inquiryText`, `CD_ArchiveVisitTarget.CD_stateData` and `.CD_userNote`, `CD_Collection.CD_introductionRichText`, `.CD_introductionText` and `.CD_subtitle`, `CD_CollectionEntry.CD_includeFootnotesOverride`, `.CD_includeRelatedDocuments`, `.CD_includeSourceNoteOverride` and `.CD_summaryPromptIdOverride`, `CD_DocumentHighlight.CD_noteId`, and `CD_SavedSearch.CD_dateRangeEnd` and `.CD_dateRangeStart`.
+  - The first ten were in the inventory since it began (2026-07-26), the five Archive Visit fields since the eighth promotion (2026-08-26).
+  - The raw `cktool export-schema` files for Production and Development were byte-identical (27,003 bytes) and held none of them. That is what a Development environment reset to Production looks like, so no deploy could have carried them.
+  - A record saved with one of them set on a TestFlight build since then would have failed to upload (#1531's shape). Not measured on any device.
+- **The fix.** The Development export plus the fifteen fields, each typed as the mirror types its analogues (`String`/`UUID` STRING QUERYABLE SEARCHABLE SORTABLE, `Data` BYTES QUERYABLE SORTABLE, `Bool` INT64 QUERYABLE SORTABLE, `Date` TIMESTAMP QUERYABLE SORTABLE; all fifteen are optional with no external storage).
+  - `cktool validate-schema` passed, and the owner ran `cktool import-schema` into Development.
+  - The gate read against Development then passed. The owner deployed to Production, and the gate's read against Production passed: 268 required identifiers held, 310 in all. It wrote the stamp the archive phase reads in the main checkout.
+- **The record.** `CloudKitSchemaInventory` 2.0 records the twelfth promotion; `deployedThroughBuild` 48 → 49 and `deployedOn` → 2026-10-02. The baseline count and digest do not move.
+- **Not done:** no device check that the records which failed before now upload.

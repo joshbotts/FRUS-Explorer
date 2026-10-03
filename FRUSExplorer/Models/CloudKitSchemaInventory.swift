@@ -115,6 +115,22 @@ import SwiftData
 ///          it with this inventory, and every archive — from Xcode as well as notarize.sh — fails
 ///          at its "Check CloudKit schema" phase until a read has passed.
 ///          ``identifiersNotStoredAsFields`` is new for that script.
+///   2.0 — **The gate's first read found fifteen more, and the TWELFTH promotion (2026-10-02,
+///          build 49) deployed them.** The first `Scripts/check_cloudkit_schema.py` run against
+///          Production, after the owner saved a management token on 2026-10-02, failed: fifteen
+///          identifiers this inventory attested as deployed were in neither Production nor
+///          Development — the ten `CD_Collection`, `CD_CollectionEntry`, `CD_DocumentHighlight`
+///          and `CD_SavedSearch` fields here since the inventory began (2026-07-26) and five
+///          Archive Visit fields here since the eighth promotion (2026-08-26). The two exports
+///          were byte-identical, which is what a Development environment reset to Production
+///          looks like, so no deploy could have carried them. The fifteen were imported into
+///          Development with `cktool import-schema` (each typed as the mirror types its analogues:
+///          `String`/`UUID` STRING, `Data` BYTES, `Bool` INT64, `Date` TIMESTAMP; `cktool
+///          validate-schema` passed first), the owner deployed them to Production, and the gate's
+///          next read passed: Production holds all 268 identifiers this build can write (310 in
+///          all). The baseline count and digest do not move — they were right about the code and
+///          wrong only about Production — and for the first time the attestation is checked:
+///          `deployedThroughBuild` 48 → 49, `deployedOn` → 2026-10-02.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -427,12 +443,15 @@ enum CloudKitSchemaInventory {
     /// reader's synced tag and project order. The eleventh (2026-09-28, build 48 current)
     /// deployed `CD_GeneratedSummary.CD_sourceContentHash`, the identifier the ninth had missed,
     /// and ended the #1531 outage; what else it carried was not read. It changed nothing in the
-    /// inventory, so the baseline below did not move.
-    static let deployedThroughBuild = "48"
+    /// inventory, so the baseline below did not move. The twelfth (2026-10-02, build 49) deployed
+    /// fifteen fields the inventory had attested since 2026-07-26 and 2026-08-26 and Production
+    /// had never held, found by the first read of `Scripts/check_cloudkit_schema.py`; that read
+    /// has passed since, so from build 49 this marker is checked rather than only attested.
+    static let deployedThroughBuild = "49"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-09-28"
+    static let deployedOn = "2026-10-02"
 
     /// How many identifiers **this build mirrors that are attested deployed**. Pinned by the
     /// test against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the
