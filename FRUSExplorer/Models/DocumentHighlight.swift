@@ -136,13 +136,9 @@ import SwiftUI
 
 extension DocumentHighlight {
 
-    /// The four supported highlight colors.
-    enum Color: String, CaseIterable, Sendable {
-        case yellow
-        case green
-        case blue
-        case pink
-    }
+    /// The four supported highlight colors: FRUSCoreKit's `HighlightColor`, whose render pipeline
+    /// paints them, under the name the app calls them by.
+    typealias Color = HighlightColor
 
     /// Convenience accessor for the typed color.
     var color: Color { Color(rawValue: colorTag) ?? .yellow }

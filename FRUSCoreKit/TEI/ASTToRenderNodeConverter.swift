@@ -443,7 +443,7 @@ public struct ASTToRenderNodeConverter {
             // document the footnote means among several the page names.
             var citing: PageCitationHint?
             if let note = citingNotes.last ?? nil,
-               case .page = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId) {
+               case .page = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: volumeId) {
                 citing = PageCitationHint(noteChildren: note)
             }
             return [.crossRefLink(target: target, volumeId: volumeId, broken: broken,

@@ -306,20 +306,6 @@ enum CollectionFootnoteStyle: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-// MARK: - ExportHighlight
-
-/// A snapshot of one `DocumentHighlight` used by exporters to annotate the
-/// document body. Carries flat-text character offsets (same coordinate space as
-/// `DocumentHighlight.startOffset`/`endOffset`) and the highlight colour.
-///
-/// Version history:
-///   1.0 — Session 153: initial implementation
-struct ExportHighlight: Sendable {
-    let startOffset: Int
-    let endOffset:   Int
-    let color:       DocumentHighlight.Color
-}
-
 // MARK: - HighlightPaintTracker
 
 /// Walks exported text in flat-text traversal order, partitioning each chunk into

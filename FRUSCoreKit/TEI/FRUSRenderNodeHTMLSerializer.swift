@@ -388,7 +388,7 @@ public struct FRUSRenderNodeHTMLSerializer {
         var openCSS  = ""          // CSS class of the logically-open highlight
         var markOpen = false       // whether a physical <mark> is currently unclosed
 
-        func cssClass(_ color: DocumentHighlight.Color) -> String {
+        func cssClass(_ color: HighlightColor) -> String {
             "hl-\(color.rawValue)"
         }
 
@@ -888,17 +888,16 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// no confident classification-markings sentence.
     ///
     /// The note text is recovered with the shared flat-text DFS, its `[Source: …]`
-    /// wrapper collapsed exactly as indexing does (`normalizeSourceNoteWrapper`),
+    /// wrapper collapsed exactly as indexing does (`StoredSourceNote.normalizeWrapper`),
     /// and the marking extracted by the same S1 derivation stored in
     /// `document_sources.classification` — so the chip in the reading view always
     /// matches the Source Explorer's.
     private func classificationChipHTML(type: FootnoteType, children: [FRUSRenderNode]) -> String {
         guard annotateSourceClassification, type == .source else { return "" }
-        // Collapse whitespace the same way indexing's `normalizedWhitespace` does
-        // (that helper is file-private to IndexingPipeline.swift).
+        // Collapse whitespace the same way indexing's `normalizedWhitespace` does.
         let collapsed = flatText(of: children)
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        let note = IndexingPipeline.normalizeSourceNoteWrapper(collapsed)
+        let note = StoredSourceNote.normalizeWrapper(collapsed)
         guard let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) else {
             return ""
         }
@@ -986,7 +985,7 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .placeholder:
             return missing
         case .reader:
-            guard let url = FRUSURLSchemeHandler.figureURL(for: image) else { return missing }
+            guard let url = FRUSURLScheme.figureURL(for: image) else { return missing }
             // The handler answers with the image when it is on the device and with a failure
             // when it is not; `onerror` then shows the placeholder in the image's place.
             return "<img class=\"figure-image\" src=\"\(escaped(url.absoluteString))\" alt=\"\(alt)\" "

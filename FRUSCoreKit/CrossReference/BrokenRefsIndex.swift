@@ -163,35 +163,5 @@ public struct BrokenRefsIndex: Sendable, Decodable {
     public var degradableCount: Int { degradableByKey.count }
 }
 
-// MARK: - BrokenRefsIndexStore
-
-/// Lazily loads the bundled `broken-refs-index.json` once. Nil-tolerant: a missing or corrupt
-/// resource yields `nil`, and every consumer treats a `nil` store as "nothing is known-broken"
-/// (links stay live, no exclusion, the export section hides) — never a crash.
-///
-/// Mirrors `VolumeSubjectProfilesStore`'s shape. Loaded on first use — typically the post-launch
-/// `applyBrokenRefsIndexIfNeeded` Task, or the first document open / export view otherwise. The
-/// decode is a 23 KB JSON parse, so no warm-up task is needed.
-enum BrokenRefsIndexStore {
-
-    /// The bundled broken-refs index, or `nil` if unavailable. Loaded once.
-    static let shared: BrokenRefsIndex? = load()
-
-    private static func load() -> BrokenRefsIndex? {
-        guard let url = Bundle.main.url(forResource: "broken-refs-index", withExtension: "json") else {
-            #if DEBUG
-            print("[BrokenRefsIndexStore] broken-refs-index.json not found in bundle.")
-            #endif
-            return nil
-        }
-        do {
-            let data = try Data(contentsOf: url)
-            return try JSONDecoder().decode(BrokenRefsIndex.self, from: data)
-        } catch {
-            #if DEBUG
-            print("[BrokenRefsIndexStore] failed to decode broken-refs-index.json — \(error)")
-            #endif
-            return nil
-        }
-    }
-}
+// `BrokenRefsIndexStore`, which reads the bundled copy through `Bundle.main`, stays in the app
+// (`FRUSExplorer/CrossReference/BrokenRefsIndexStore.swift`): the kit takes an index, never a bundle.

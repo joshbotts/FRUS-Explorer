@@ -72,21 +72,8 @@ public enum CitationStyle: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The user's persisted citation style preference
-    /// (`SettingsKeys.citationStyle`), defaulting to `.historyAtState`
-    /// when unset or unrecognized. Drives `DocumentViewModel.formattedCitation`
-    /// and friends, the iOS `CitationSheetView`, and the macOS citation
-    /// popover's initial selection.
-    public static var current: CitationStyle {
-        get {
-            guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.citationStyle),
-                  let style = CitationStyle(rawValue: raw) else { return .historyAtState }
-            return style
-        }
-        set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: SettingsKeys.citationStyle)
-        }
-    }
+    // The user's preference, `CitationStyle.current`, reads the app's settings, so it stays in the
+    // app: `FRUSExplorer/Citation/CitationStyle+Preference.swift`.
 }
 
 // MARK: - Shared Formatting Helpers
