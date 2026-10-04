@@ -256,6 +256,8 @@ struct SelectGlyphTests {
 ///
 /// Version history:
 ///   1.0 — lane HYG (2026-10-01): initial implementation
+///   1.1 — FRUSCoreKit, part 1: the stale-shortcut scan reads `FRUSCoreKit/` as well as
+///          `FRUSExplorer/`, through `AppSourceTree`, and names each file from the repository root
 @Suite("Mac shortcut copy")
 struct MacShortcutCopyTests {
 

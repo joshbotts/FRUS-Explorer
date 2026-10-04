@@ -136,6 +136,10 @@ import SourceNoteKit
 ///          kept as `.elementSpace` (`TEIParserDelegate.keepsElementSpace`), so the reader draws
 ///          the space between `<placeName>Washington,</placeName>` and `<date>February 28,
 ///          1861</date>`. The node is no text: nothing the index stores moves, so no index bump.
+///   2.12 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/TEI/`. Imports `FoundationXML` where it
+///          exists (Linux) and SourceNoteKit where that is a module of its own, and discards
+///          `XMLParser.parse()`'s result explicitly, which Linux does not mark discardable. Nothing
+///          it parses changes, so no index version
 public actor FRUSDocumentParser {
 
     public init() {}

@@ -691,6 +691,8 @@ struct TEIParserTests {
 ///
 /// Version history:
 ///   1.0 — Session 36: initial implementation
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("DateAttributeParsingTests")
 struct DateAttributeParsingTests {
 
@@ -851,6 +853,8 @@ struct DateAttributeParsingTests {
 ///
 /// Version history:
 ///   1.0 — Session 38: initial implementation
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("EditorialNoteIndexingTests")
 struct EditorialNoteIndexingTests {
 
@@ -2501,6 +2505,8 @@ struct CrossRefResolverTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #659
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("Spurious autolinks (#659)")
 struct SpuriousAutolinkTests {
 
@@ -2600,6 +2606,9 @@ struct SpuriousAutolinkTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-19: #1323
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; `boldIsFlatTextInvariant`'s `bodyHash` check, which reads `IndexingPipeline`,
+///          runs in the app's test target only
 @Suite("TEI — strong is the corpus's bold (#1323)")
 struct StrongEmphasisTests {
 

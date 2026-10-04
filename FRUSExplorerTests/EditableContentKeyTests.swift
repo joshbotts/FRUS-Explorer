@@ -80,6 +80,8 @@ import Foundation
 ///         stand between a typo and a trap
 ///   1.4 — #1424 review round 2: the line-0 fixture asks `parseRanges` first, so its mutant fails
 ///         the test cleanly instead of trapping the host
+///   1.5 — FRUSCoreKit, part 1: the Search Tips key scan reads `FRUSCoreKit/` as well as
+///         `FRUSExplorer/`, through `AppSourceTree`
 @Suite("EditableContent blocks address a live localization key")
 struct EditableContentKeyTests {
 

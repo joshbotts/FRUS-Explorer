@@ -32,6 +32,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — build 42: after the 256/512 drift was found during release prep
+///   1.1 — FRUSCoreKit, part 1: the width scan reads `FRUSCoreKit/` as well as `FRUSExplorer/`,
+///          through `AppSourceTree`
 @Suite("Semantic copy states the artifact's real numbers")
 struct SemanticCopyAccuracyTests {
 

@@ -1146,6 +1146,8 @@ enum FigureImageFetch: Sendable, Equatable {
 /// Version history:
 ///   1.0 — #1516: initial implementation
 ///   1.1 — #1516 review, round 1: the completion record
+///   1.2 — FRUSCoreKit, part 1: `isSafeComponent` forwards to FRUSCoreKit's
+///          `FRUSURLScheme.isSafeComponent`, which the reader's figure URLs are checked by
 public struct FigureImageLibrary: Sendable {
 
     /// The app's volumes directory.

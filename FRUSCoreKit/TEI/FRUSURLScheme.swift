@@ -42,7 +42,9 @@ public enum CrossRefDestination: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: moved from `FRUSURLSchemeHandler` (`resolveCrossRefTarget`,
-///          `figureHost`, `figureURL(for:)`) and `FigureImageLibrary` (`isSafeComponent`)
+///          `figureHost`, `figureURL(for:)`) and `FigureImageLibrary` (`isSafeComponent`).
+///          `CrossRefDestination`, this type and `resolveCrossRefTarget` are public, for FRUS
+///          Explorer Light's reader
 public enum FRUSURLScheme {
 
     /// Splits a raw TEI ref target into a navigable destination, normalising the

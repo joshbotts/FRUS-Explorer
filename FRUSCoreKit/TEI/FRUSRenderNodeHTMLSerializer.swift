@@ -123,6 +123,11 @@ import SourceNoteKit
 ///          figure prints the placeholder. A figure in a paragraph, a cell or an item is a
 ///          `<span>`, since a `<figure>` start tag would close the paragraph around it. The
 ///          fold-in: `.elementSpace` draws one space. Both under `data-skip="1"`, as before.
+///   1.10 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/TEI/`. Paints `HighlightColor`, collapses a
+///          source note through `StoredSourceNote` and names a figure through `FRUSURLScheme`, the
+///          kit's homes of what it called in the app, and imports SourceNoteKit where that is a
+///          module of its own. The reader's settings are `FRUSRenderNodeHTMLSerializer.reader`
+///          (`ReaderRendering.swift`). Its output does not change
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).

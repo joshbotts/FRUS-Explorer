@@ -23,7 +23,7 @@ import Foundation
 /// ## Why it carries no `VolumeStatus`
 /// The obvious extraction — move `ParsedTEIHeader` and the `VolumeStatus`/`DateRange` types it
 /// referenced — collides head-on: `ManifestGeneratorCore/ManifestModels.swift` and
-/// `FRUSExplorer/Models/Manifest/ManifestModels.swift` each declare their own `VolumeManifestEntry`,
+/// `FRUSCoreKit/Models/Manifest/ManifestModels.swift` each declare their own `VolumeManifestEntry`,
 /// `VolumeStatus` and `DateRange`, and the app cannot see the generator's.
 ///
 /// The resolution is that **the kit owns the grammar and each consumer owns its model.** Nothing
@@ -40,6 +40,8 @@ import Foundation
 ///   1.1 — Session 2026-09-09: `publicationStatus` and `publishedWhen`, read from `revisionDesc`.
 ///         OH's release of `frus1981-88v16` arrived with an empty `publicationStmt` print year and
 ///         both facts stated in `revisionDesc` instead.
+///   1.2 — FRUSCoreKit, part 1: names the app's `ManifestModels.swift` at
+///         `FRUSCoreKit/Models/Manifest/`, where it moved
 public struct ParsedTEIHeader: Sendable, Equatable {
 
     /// The volume's full title, e.g. *Foreign Relations of the United States, 1969–1976, Volume I*.

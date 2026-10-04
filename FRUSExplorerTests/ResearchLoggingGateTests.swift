@@ -66,6 +66,8 @@ import Testing
 ///          its comment no longer says a paste arrives straight. `macChecklistAnchorUsesTheWritersSameQueryRule` pins
 ///          that both macOS checklist gates decide "same query" through the writer's own rule, and
 ///          `sameQueryRuleFoldsOnlyQuotationMarks` pins that rule, `SearchHistoryWriter.isSameQuery(_:_:)`
+///   1.5 — FRUSCoreKit, part 1: the preference key's one-declaration scan reads `FRUSCoreKit/` as
+///          well as `FRUSExplorer/`, through `AppSourceTree`
 @MainActor
 struct ResearchLoggingGateTests {
 

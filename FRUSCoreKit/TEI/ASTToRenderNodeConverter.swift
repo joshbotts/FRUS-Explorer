@@ -119,6 +119,10 @@ import Foundation
 ///          `body_hash` are byte-identical, no stored highlight goes stale and nothing re-indexes
 ///          (owner decision D3a: a figure's paragraphs are captions). The index is untouched:
 ///          `IndexingPipeline` reads a figure's text from the AST, where it always was.
+///   1.14 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/TEI/`. Imports swift-crypto's `Crypto` where
+///          `CryptoKit` is missing (Linux), and resolves a page reference through `FRUSURLScheme`.
+///          The reader's converter is `init(readerOf:lookups:brokenRefs:)`
+///          (`ReaderRendering.swift`). Nothing it produces changes, so `kVersion` does not move
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes

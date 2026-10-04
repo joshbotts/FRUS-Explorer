@@ -802,6 +802,8 @@ struct FRUSRenderNodeHTMLSerializerTests {
 /// Version history:
 ///   1.0 — Session 2026-07-04: Source Explorer Phase 5 step 1
 ///   1.1 — Session 2026-09-23: `sourceWithMarking` is static, shared with the render test (#1386)
+///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("FRUSRenderNodeHTMLSerializer — classification chip")
 struct ClassificationChipSerializationTests {
 
@@ -898,6 +900,9 @@ struct ClassificationChipSerializationTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-09-23: #1386
+///   1.1 — FRUSCoreKit, part 1: inside `#if !SWIFT_PACKAGE`, since it loads the app's
+///          `HTMLTemplate` page in WebKit; the package's FRUSCoreKitTests compiles the rest of this
+///          file against FRUSCoreKit alone
 @Suite("Reader footnotes — the hanging indent stops at the item's own first line (#1386)")
 @MainActor
 struct FootnoteListIndentRenderTests {
@@ -1430,6 +1435,8 @@ struct HighlightInjectionTests {
 ///
 /// Version history:
 ///   1.0 — build 38: external targets misrouted as volume ids
+///   1.1 — FRUSCoreKit, part 1: resolves through FRUSCoreKit's `FRUSURLScheme`, so the package's
+///          FRUSCoreKitTests runs it too
 @Suite("External ref target round trip")
 struct ExternalRefTargetRoundTripTests {
 

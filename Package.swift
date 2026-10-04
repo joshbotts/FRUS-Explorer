@@ -713,10 +713,11 @@ let package = Package(
         // MARK: - CrossRefKit
 
         /// The FRUS cross-reference target grammar, mirrored from the app so the offline validator
-        /// classifies `<ref target>` values exactly as the reading view navigates them
-        /// (`CrossRefGrammar.resolveDestination` ≡ `FRUSURLSchemeHandler.resolveCrossRefTarget`),
-        /// plus the existence-oriented `classifyForValidation`. Pure Foundation; parity-tested
-        /// against the app's documented cases. SPM-only this session (a generator dependency);
+        /// classifies `<ref target>` values as the reading view navigates them
+        /// (`CrossRefGrammar.resolveDestination` ≡ FRUSCoreKit's `FRUSURLScheme.resolveCrossRefTarget`,
+        /// except a footnote anchor (#988) and a `mailto:` target, which the app's copy has changed
+        /// since), plus the existence-oriented `classifyForValidation`. Pure Foundation; tested
+        /// against hard-coded fixtures drawn from the app's documented cases. SPM-only this session (a generator dependency);
         /// wiring it into the app targets is a later session's step.
         .target(
             name: "CrossRefKit",

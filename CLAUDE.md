@@ -747,6 +747,7 @@ Service Layer (SearchService, SummarizationService, DownloadManager, etc.)
         ↓
 TEI Rendering Pipeline: XML → FRUSDocumentParser → FRUSASTNode
                              → ASTToRenderNode → FRUSDocumentRenderer → SwiftUI
+  (the parser, the AST, the converter and the HTML serializer are FRUSCoreKit's: Foundation only)
 ```
 
 ### Key Data Flows
@@ -772,18 +773,20 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
 | `App/` | `@main` entry point, `AppState`, `ContentView`, routing |
 | `Models/` | SwiftData model types, manifest structs, tag/person/highlight models |
 | `Search/` | `SearchService`, `IndexingPipeline` (the largest file), `SearchView` |
-| `TEI/` | XML parser, AST types, AST-to-render conversion, renderer |
+| `TEI/` | The reader's web view and its configuration, `HTMLTemplate`, the `frusexplorer://` scheme handler, the AST cache and the rendering config; the XML parser, AST types, AST-to-render conversion and HTML serializer are in `FRUSCoreKit/TEI/` |
 | `Browser/` | Volume/subseries/corpus navigation with breadcrumb trail |
 | `DocumentView/` | Document display, the shared Research rail + floating selection bar, cross-reference links |
 | `CrossReference/` | Graph visualization, `CrossReferenceStore` |
 | `Collections/` | Collection editor, PDF/HTML/DOCX exporters |
-| `Citation/` | Citation formatter, lookup engine, parser, BibTeX/RIS export |
+| `Citation/` | Citation Lookup (its view, the matching engine, the page-range store), BibTeX/RIS/Zotero export and the citation-style preference; the formatter, models, parser, canonical URL and page-span resolver are in `FRUSCoreKit/Citation/` |
 | `Summarization/` | Apple Intelligence integration, prompt management UI |
 | `SourceExplorer/` | NARA catalog integration |
 | `Downloads/` | `DownloadManager`, download queue UI |
 | `Analytics/` | The Analytics family, all Swift Charts: corpus term frequency, Person, Cross-Reference, and Archival (era × archival-unit rankings + the user's own archival profile) |
 | `Theme/` | `FRUSTheme` (colors, typography constants) |
 | `Resources/` | Bundled JSON: manifest, taxonomy, subject tags, TEI config |
+
+`FRUSCoreKit/` sits beside `FRUSExplorer/`, not inside it, with subfolders that mirror the app's (`TEI/`, `Citation/`, `CrossReference/`, `Browser/`, `Models/Manifest/`) and a `Linux/` of stand-ins that Apple platforms compile out. Both app targets compile it, and so does an SPM target of its own: read `FRUSCoreKit` under **SPM package targets** below before editing it.
 
 - `SemanticVectorsKit` — the semantic-vector artifact contract: binary layouts, the
   document-id run-length encoding that keys every row, mmap readers for the bundled
@@ -825,7 +828,7 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
   **downloaded volumes only** — `published − onDisk` would tell a 12-volume library it was missing
   544.
 
-**SPM package targets** (`Package.swift`, package name `FRUSExplorerTools`, macOS 15+). This is a build-tool package, not a library distribution: it declares **no `products:` block at all**, so nothing here is linkable from outside — the app reaches the shared code by compiling the same source directories through `project.yml`. It currently declares **38 library targets, 31 executables and 37 test targets** (106, `swift package describe`, counted 2026-10-01; the line read 37, 30 and 36 until then); every generator listed under *Build & Test Commands* above lives here. Do not read the list below as an inventory — read `Package.swift`.
+**SPM package targets** (`Package.swift`, package name `FRUSExplorerTools`, macOS 15+). This is a build-tool package, not a library distribution: it declares **no `products:` block at all**, so nothing here is linkable from outside — the app reaches the shared code by compiling the same source directories through `project.yml`. It currently declares **39 library targets, 31 executables and 38 test targets** (108, `swift package describe`, counted 2026-10-04 when FRUSCoreKit and FRUSCoreKitTests were added; 38, 31 and 37 from 2026-10-01; the line read 37, 30 and 36 until then); every generator listed under *Build & Test Commands* above lives here. Do not read the list below as an inventory — read `Package.swift`.
 
 The **shared** (non-per-tool) library targets are the ones worth knowing by name:
 - `FTS5Store` — the reusable SQLite FTS5 actor.
@@ -833,7 +836,8 @@ The **shared** (non-per-tool) library targets are the ones worth knowing by name
 - `TEIHeaderKit` — the `<teiHeader>` grammar `manifest.json` was built from (#777).
 - `SemanticVectorsKit` — the semantic-vector artifact contract (see above).
 - `GeneratorKit` — the generators' shared plumbing: `VolumeCorpusEnumerator`, a stderr logger, the reproducible `yyyy-MM-dd` stamp, an RFC-4180 `CSVWriter`.
-- `CrossRefKit` — the cross-reference grammar; **SPM-only**, a parity-tested mirror of the app's `resolveCrossRefTarget` rather than shared source.
+- `CrossRefKit` — the cross-reference grammar; **SPM-only**, a mirror of `FRUSURLScheme.resolveCrossRefTarget` (FRUSCoreKit) rather than shared source, whose hard-coded fixtures never call the app: it has drifted on the two branches the app has changed since, footnote anchors (`.footnote`, #988) and `mailto:` targets.
+- `FRUSCoreKit` — the TEI parser, AST, render nodes, AST-to-render converter and HTML serializer, the reader's lookups and serializer settings (`ReaderRendering.swift`), and the citation formatter, models, parser, canonical URL and page-span resolver: the code FRUS Explorer Light, the web edition, compiles on Linux from a pinned commit. **Foundation only**: FoundationXML, CryptoKit (swift-crypto's `Crypto` on Linux) and SourceNoteKit are imported behind `canImport`, and `Linux/LinuxFoundationShims.swift` compiles to nothing on Apple platforms. A declaration the kit needs that lives in an Apple-only file moves INTO the kit, never the reverse, and the app keeps the old name as a forwarder or typealias (`FRUSURLSchemeHandler.resolveCrossRefTarget` → `FRUSURLScheme`, `DocumentHighlight.Color` → `HighlightColor`, `IndexingPipeline.normalizeSourceNoteWrapper` → `StoredSourceNote`); the kit never reads `Bundle.main` or `UserDefaults` (`BrokenRefsIndexStore` and `CitationStyle.current` stay in the app). What is `public` is what the web edition calls — the reader's lookups, `CrossRefDestination`, the citation text rules — and access changes nothing for the app, which compiles the kit into its own module. Its suites live in `FRUSExplorerTests/FRUSCoreKit/` and are compiled twice, into the app's test target by Xcode and against the kit alone by `FRUSCoreKitTests`, so anything there that needs the app (its module, its bundle or its views' source) goes inside `#if !SWIFT_PACKAGE`. **Both folders are Foundation-only: after editing either, run `swift build --target FRUSCoreKit` and `swift test --filter FRUSCoreKitTests`.** The app builds even when a kit file names an app type, since it compiles both into one module; only the package and `FRUSCoreKitBoundaryTests` catch it.
 
 All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly into both app targets by `project.yml`, so the generators write through the declarations the app reads through.
 - `WordCloudKit` — the word-cloud tokenizer stack (`WordCloudTokenizer`,
@@ -846,7 +850,7 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
   generator from file URLs. `WordCloudMultiLensTokenizer` counts N lenses from one
   `NLTagger` pass; `WordCloudKitTests` pins it against N single-lens runs, and that
   parity suite is what makes the merge safe — do not weaken it.
-- Test targets: **37 of them**, one per tool plus one per shared kit — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
+- Test targets: **38 of them**, one per tool plus one per shared kit — `FRUSCoreKitTests` compiled from `FRUSExplorerTests/FRUSCoreKit/` — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
 
 ## Coding Standards
 
@@ -862,6 +866,8 @@ Enforced by `CodingStandardsAuditTests` — these fail the test suite:
 - **Localization** (spot-check, and a weak one): `keyViewsUseLocalization` opens exactly three views — `CitationLookupView`, `CrossReferenceGraphView`, `AboutView` — and asserts only that each file mentions `localized:` *somewhere*. It cannot see a bare `Text("…")` sitting next to one, and it says nothing about any other view in the tree.
 
 **`Docs/EditableContent/` has a gate of its own, outside `CodingStandardsAuditTests` and the six above.** The owner's editing surface is one markdown file per app area (split from the single `Docs/EditableContent.md` on 2026-09-28; its `README.md` lists them, `History/` holds dated snapshots the tests skip, and a change is logged as one bullet at the end of `Amendment-Log.md`). A block's text is always what the app ships; the owner's unlanded edits sit after a block as ✎ boxes and wording issues as ⚑ callouts, neither of which is written back. `EditableContentKeyTests` fails when a block names a key its source file lacks and, since #1424, when a block's `lines:` range no longer holds that key's quoted literal. So a change that moves lines in a Swift file re-points every ranged block citing that file — start the range on the key's line and keep its length; the failure names each key's real line, and no re-point script is committed — and a RETIRED block carries no range, with its banner kept to four lines, since the marker must sit in the five lines above the annotation. Blocks with no `lines:` field are not checked. Gating the ranges at all is #1424's open owner decision (the issue allowed them to stay advisory); the suite's doc comment says which test to delete if the owner so decides.
+
+**`FRUSCoreKit/` has a gate of its own as well.** `FRUSCoreKitBoundaryTests` fails when a kit file imports anything but Foundation outside the `canImport` that selects FoundationXML, CryptoKit, `Crypto` or SourceNoteKit; reads `Bundle.main` or `UserDefaults`; or names, outside comments and string literals, a type, function, constant or variable declared at the top level of a file under `FRUSExplorer/`. It also fails on code under `FRUSCoreKit/Linux/` that sits outside a `#if !canImport(…)`, and on a suite under `FRUSExplorerTests/FRUSCoreKit/` that, outside Xcode's branches, imports the app or names a top-level declaration of the app's or of the test target's other files — Xcode builds and passes such a suite, and only `swift test` would fail. It reads source, so a member the app adds to a kit or Foundation type is out of its reach; `swift build --target FRUSCoreKit` is not. The scans whose rule a kit file can break — the copy scans, the Search Tips key scan, the localized-Markdown census, the `Used by` check, the unused `private var` check and the space-joined `plainText` check among them — read `FRUSCoreKit/` with `FRUSExplorer/` through `AppSourceTree`; the scans for views, scenes, windows and models read `FRUSExplorer/` alone.
 
 **A view nothing constructs has a gate too, since #1484.** `UnconstructedViewAuditTests` (in `ToolbarAccessibilityAuditTests.swift`) fails when a type under `FRUSExplorer/` whose header names `View` is named by no code besides its own declaration and its extensions — comments and string literals blanked, every `#if` branch kept, so a view only the Mac constructs counts as constructed. It was written after two whole screens nothing presented, `PromptsListView` and `GlobalContextView`, were found by reading. Measured 2026-10-01: 480 files, 394 such types, 2 unnamed — `FilterChip` (`App/SearchSheet.swift`) and `CrossProjectNoteIndicator` (`DocumentView/DocumentView.swift`), both listed in its `knownUnnamed`, which is an exact exception list and not permission. **A pass says nothing is unnamed, not that nothing is dead**: it cannot see a view constructed only by code that is itself never called (`SubseriesListView` was, by `BrowserView.splitLayout`), so before deleting a file by name, still enumerate what it declares and who names each symbol.
 

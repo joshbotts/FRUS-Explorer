@@ -215,6 +215,9 @@ public struct FRUSDocumentMetadata: Sendable {
 ///   1.2 — #1491: ``captionLabel(printed:documentId:)`` and ``headerLabel(printed:documentId:)``, so
 ///         the Mac reader's captions, the citation popover, the Mac Search row and the breadcrumb
 ///         name an unnumbered document through the same ``unnumberedLabel(documentId:volumeId:)``
+///   1.3 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/Citation/` with this file, and public, with
+///         every member, so FRUS Explorer Light's reader and Cite name a document by the number its
+///         citation prints
 public enum CitableDocumentNumber {
 
     /// The number to cite for a document.

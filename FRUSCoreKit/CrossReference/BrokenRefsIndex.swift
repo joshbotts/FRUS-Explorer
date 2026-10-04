@@ -68,6 +68,9 @@ public struct BrokenRefInfo: Sendable, Hashable, Identifiable, Codable {
 ///
 /// Version history:
 ///   1.0 — Session 7 / #240B: initial implementation
+///   1.1 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/CrossReference/`; `BrokenRefsIndexStore`,
+///          which reads the bundled copy through `Bundle.main`, stays in the app
+///          (`BrokenRefsIndexStore.swift`)
 public struct BrokenRefsIndex: Sendable, Decodable {
 
     // MARK: Record

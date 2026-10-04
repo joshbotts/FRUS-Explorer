@@ -30,7 +30,7 @@ import SwiftUI
 /// `volumeKeyVariesWithTheVolume`, `clusterMetadataKeyVariesWithBothComponents` and
 /// `archivalCollectionKeyVariesWithTheRecord` went on passing. A source scan for `.task(id:)` is
 /// not the answer — this repo has MEASURED a scan of that shape to be vacuous
-/// (`VolumeStructure.swift:200`).
+/// (`VolumeStructure.swift:196`).
 ///
 /// So every level this branch keys now loads through a **modifier in this file** that takes the
 /// payload and derives the key itself: there is no key at any call site to get wrong, and a
@@ -58,6 +58,8 @@ import SwiftUI
 ///   1.2 — #1301 round 4: text only. The walk steps into a same-head section ONCE, not twice; the
 ///          side-load retraction names its seven sites; and `clusterMetadataLoad`'s count component
 ///          is recorded as accepted rather than gated
+///   1.3 — FRUSCoreKit, part 1: text only. `VolumeStructure.swift` moved to `FRUSCoreKit/Browser/`
+///          and lost four lines, so the vacuous-scan measurement is cited at line 196
 public enum BrowseLoadKey {
 
     /// One compilation section's documents — **also the cache key** the rows are stored under.

@@ -30,6 +30,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — created with the `volumeLevelConnections` correction
+///   1.1 — FRUSCoreKit, part 1: reads `FRUSCoreKit/` as well as `FRUSExplorer/`, through
+///          `AppSourceTree`: a claim can sit in a file of the kit, and name a type in either
 @Suite("Doc comment callers")
 struct DocCommentCallerTests {
 

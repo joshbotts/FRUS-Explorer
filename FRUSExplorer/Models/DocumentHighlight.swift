@@ -57,6 +57,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 102: initial implementation
+///   1.1 — FRUSCoreKit, part 1: `Color` is a typealias of FRUSCoreKit's `HighlightColor`, which the
+///          serializer paints; the stored `colorTag` does not change
 @Model final class DocumentHighlight {
 
     // MARK: - Identity

@@ -34,6 +34,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-07: #740 / #741
 ///   1.1 — 2026-09-13: `frus1873p1v2`'s `correspondence` spelling, which #740 missed
+///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the v51 index-version check runs in the app's test target only
 @Suite("Persons list encodings")
 struct PersonsListEncodingTests {
 

@@ -10,9 +10,11 @@ import Foundation
 import Testing
 @testable import CrossRefKit
 
-/// Byte-parity fixtures locking `CrossRefGrammar.resolveDestination` to the app's
-/// `FRUSURLSchemeHandler.resolveCrossRefTarget` and `parseVolumePrefix` to
-/// `FRUSDocumentParser.parseRefTarget`. If either copy drifts, a case here fails.
+/// Fixtures for `CrossRefGrammar.resolveDestination`, drawn from the app's
+/// `FRUSURLScheme.resolveCrossRefTarget` (FRUSCoreKit), and for `parseVolumePrefix`, drawn from
+/// `FRUSDocumentParser.parseRefTarget`. They are hard-coded and never call the app, so a change to
+/// the app's copy fails nothing here: since #988 the app resolves `#d100fn2` to `.footnote`, where
+/// the case below expects `.document`.
 struct CrossRefGrammarTests {
 
     private static func url(_ s: String) -> URL { URL(string: s)! }
@@ -22,7 +24,7 @@ struct CrossRefGrammarTests {
     @Test("resolveDestination mirrors the app grammar branch-for-branch")
     func resolveDestinationParity() {
         // (rawTarget, sourceVolumeId, expected) — drawn from the app's documented cases
-        // (FRUSURLSchemeHandler.swift:18-19) plus one case per grammar branch.
+        // (FRUSURLScheme.swift:17-18) plus one case per grammar branch.
         let cases: [(String, String?, RefDestination)] = [
             // Same-volume document.
             ("#d80", nil, .document(volumeId: nil, documentId: "d80")),

@@ -21,6 +21,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #358 (F-8)
+///   1.1 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/Citation/`, and public, with both members,
+///          for FRUS Explorer Light's Cite
 public enum FRUSCanonicalURL {
 
     /// The document's public page, e.g.

@@ -45,6 +45,8 @@ import SwiftUI
 ///   1.0 — Session 141: initial implementation; CSS inlined as Swift string constant.
 ///          Session 146 will refactor `HTMLCollectionExporter` to use this template,
 ///          and `frus-print.css` will be added as an additional CSS layer.
+///   1.1 — FRUSCoreKit, part 1: the fragment is written by `FRUSRenderNodeHTMLSerializer.reader`,
+///          FRUSCoreKit's name for the reader's serializer settings, which do not change
 ///
 /// - Note: The `documentCSS` string constant could be moved to a bundle resource
 ///   (`frus-document.css`) in a future session if live-editing of CSS during

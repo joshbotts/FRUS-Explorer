@@ -385,6 +385,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.28 — 2026-10-02 (#1543, landing round 2): the collection authority's alias fallback no
 ///         longer fills the neighbour list of a document that cites the central files
 ///         (`aliasFallbackServes`). A query rule: nothing stored changes, so no index version.
+///  4.29 — FRUSCoreKit, part 1: the printed-text walk (`FRUSASTNode`'s `plainText`, `printedText`,
+///         `joinPrinted`, `isPrintedBlock` and `children`, and `PrintedText`) and
+///         `normalizedWhitespace` moved, unchanged, to FRUSCoreKit's
+///         `FRUSASTNode+PrintedText.swift`, and `normalizeSourceNoteWrapper` forwards to
+///         `StoredSourceNote.normalizeWrapper`. Nothing stored changes, so no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration

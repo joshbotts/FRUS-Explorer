@@ -106,6 +106,8 @@ import Foundation
 ///         list's row menu declared `graph.contextMenu.openDocument` unconditionally, so iPhone and
 ///         iPad still read "Open in Main Window" there; and
 ///         `referenceListOpenItemSharesTheNodeMenuName` (#1481)
+///   1.12 — FRUSCoreKit, part 1: the scans read `FRUSCoreKit/` too, whose files both app targets
+///         compile and whose strings the app shows; `lexedAppSources` names them `../FRUSCoreKit/…`
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree

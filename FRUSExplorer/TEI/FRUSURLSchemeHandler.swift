@@ -53,6 +53,9 @@ import WebKit
 ///          the links in a figure's head and captions are registered.
 ///   1.4 — #1516 review, round 1: an image fetched after the page asked for it brings a revealed
 ///          footnote back into view once it has loaded (`figureRetryScript`).
+///   1.5 — FRUSCoreKit, part 1: `CrossRefDestination`, `resolveCrossRefTarget`, `figureHost` and
+///          `figureURL(for:)` moved to FRUSCoreKit's `FRUSURLScheme`, and the handler forwards to
+///          it under the old names
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks

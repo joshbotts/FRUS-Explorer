@@ -39,6 +39,8 @@ import Foundation
 ///         the per-feature section ids and per-section glyphs were the retired convention)
 ///   1.2 — Lane STOR review, round 1: every localized default carrying Markdown is drawn as
 ///         Markdown (`localizedMarkdownIsDrawnAsMarkdown`)
+///   1.3 — FRUSCoreKit, part 1: that census reads `FRUSCoreKit/` as well as `FRUSExplorer/`,
+///         through `AppSourceTree`, since the kit's localized defaults are the app's too
 struct EmbeddedMarkdownLinkTests {
 
     // MARK: - Link extraction

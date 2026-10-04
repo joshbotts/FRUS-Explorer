@@ -42,6 +42,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #668
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the index-version check, which reads `IndexingPipeline`, runs in the app's test
+///          target only
 @Suite("Paragraph-encoded front-matter sources (#668)")
 struct FlushLeftSourcesParseTests {
 
@@ -228,6 +231,9 @@ struct FlushLeftSourcesParseTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #668 follow-up
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the index-version check, which reads `IndexingPipeline`, runs in the app's test
+///          target only
 @Suite("Paragraph-encoded sources — owner report on v34 (#668)")
 struct FlushLeftSourcesFollowUpTests {
 
@@ -390,6 +396,9 @@ struct FlushLeftSourcesFollowUpTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #668 follow-up 2
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the library route's five tests, which call the app's `ArchivalResolver`, run in
+///          the app's test target only
 @Suite("Repository headings in a flat sources list (#668)")
 struct FlatSourcesRepositoryHeadingTests {
 
@@ -559,6 +568,8 @@ struct FlatSourcesRepositoryHeadingTests {
 ///   1.0 — 2026-09-25: #1466, #1469
 ///   1.1 — 2026-09-25 (review round 1): `headingClauses` pins the lot clause and
 ///          `takesSiblingHeading`'s repository exclusion with rows that fail without them
+///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("Front-matter sources — sibling headings and nested apparatus (#1466, #1469)")
 struct SiblingHeadingAndApparatusParseTests {
 

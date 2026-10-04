@@ -64,6 +64,9 @@ import SwiftData
 ///          load records too)
 ///   1.9 — #1491: every citation the view model builds cites the document through
 ///          `CitableDocumentNumber.resolve` (`citedDocument`), as the exports do
+///   1.10 — FRUSCoreKit, part 1: `load` builds its lookups and its converter through FRUSCoreKit's
+///          `ReaderLookups` and `ASTToRenderNodeConverter.init(readerOf:lookups:brokenRefs:)`,
+///          which FRUS Explorer Light renders through too
 @Observable
 @MainActor
 public final class DocumentViewModel {

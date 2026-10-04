@@ -141,7 +141,7 @@ public enum BrowserDocumentLoadFailure: Equatable, Sendable {
 /// ## Why this is a free enum and a free `static func`, not a member of the view
 /// The rule used to live inside a `@ViewBuilder` computed property, where nothing but a source
 /// scan could reach it — and this repo has **measured** a source scan of that shape to be vacuous
-/// (`VolumeStructure.swift:200` records a guard that asserted a literal over raw source and stayed
+/// (`VolumeStructure.swift:196` records a guard that asserted a literal over raw source and stayed
 /// green while a mutant reinstated the bug in full). Extracted here it is an ordinary pure
 /// function with ordinary unit tests. It is deliberately *not* a `static` on `CompilationView`:
 /// statics on a `View` are `@MainActor`-isolated, and the fix for that is to move the rule out,
@@ -191,6 +191,8 @@ public enum BrowserDocumentLoadFailure: Equatable, Sendable {
 ///          names no test has (`IndexRequiredWinsOverNotStarted`,
 ///          `LoadingIsProducedOnlyByAnInFlightLoad` — the functions are lower-cased and the
 ///          first is `indexRequiredWinsOverEveryLoadState`)
+///   1.3 — FRUSCoreKit, part 1: text only. `VolumeStructure.swift` moved to `FRUSCoreKit/Browser/`
+///          and lost four lines, so the vacuous-scan measurement is cited at line 196
 public enum CompilationDocumentsPresentation: Equatable {
 
     /// A prose-only front-matter leaf — offer "Read [Title]" instead of a document list.

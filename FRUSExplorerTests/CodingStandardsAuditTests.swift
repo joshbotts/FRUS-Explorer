@@ -24,6 +24,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 31: initial coding standards audit suite
+///   1.1 — FRUSCoreKit, part 1: `CitationParser.swift` is read at `FRUSCoreKit/Citation/`, in the
+///          version-history allowlist and the debug-logging check
 struct CodingStandardsAuditTests {
 
     // MARK: - File URL Helpers

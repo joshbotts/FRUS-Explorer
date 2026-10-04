@@ -1740,6 +1740,9 @@ private enum PrintedJoinFixtures {
 ///
 /// Version history:
 ///   1.0 — #1421: initial implementation
+///   1.1 — FRUSCoreKit, part 1: the space-joined `plainText` scan reads `FRUSCoreKit/` as well as
+///          `FRUSExplorer/`, through `AppSourceTree`: the walk lives there now, and the converter
+///          and the page-span resolver call it
 @Suite("IndexingPipeline — body and note text joined as printed (#1421)")
 struct PrintedBodyTextTests {
 

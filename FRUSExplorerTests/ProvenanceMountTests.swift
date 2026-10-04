@@ -27,6 +27,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — PV-3: initial implementation
+///   1.1 — FRUSCoreKit, part 1: `roleEraSubtitle` is read from `FRUSCoreKit/TEI/FRUSASTNode.swift`
 @Suite("Provenance chip mounts")
 struct ProvenanceMountTests {
 

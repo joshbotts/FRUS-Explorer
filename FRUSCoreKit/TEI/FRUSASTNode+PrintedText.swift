@@ -170,6 +170,9 @@ extension FRUSASTNode {
 /// Version history:
 ///   1.0 — #1421: initial implementation, from #1375's `joinPrinted`
 ///   1.1 — #1421 review: documents that the footnote exception stops at a block the note ends in
+///   1.2 — FRUSCoreKit, part 1: moved, unchanged, from `IndexingPipeline.swift` to
+///          `FRUSCoreKit/TEI/FRUSASTNode+PrintedText.swift`, with the `FRUSASTNode` members it
+///          backs, which the reader's converter and the page-span resolver call too
 struct PrintedText {
 
     /// The text so far. Callers normalise whitespace.

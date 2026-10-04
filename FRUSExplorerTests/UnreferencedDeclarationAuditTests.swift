@@ -41,6 +41,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — O-3 fix: initial implementation
+///   1.1 — FRUSCoreKit, part 1: reads `FRUSCoreKit/` as well as `FRUSExplorer/`, through
+///          `AppSourceTree`
 @Suite("Coding standards — unreferenced private declarations")
 struct UnreferencedDeclarationAuditTests {
 
