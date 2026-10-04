@@ -28,8 +28,8 @@ import Foundation
 /// - **A parenthesis hugs its text** (#1385): "(of 25+ )" shipped with a space before the `)`.
 ///
 /// ## What each scan reads
-/// Every Swift file under `FRUSExplorer/`, through `LexedSource`, which records each string
-/// literal with the call it sits in. A literal is in scope when it is a `defaultValue:` argument,
+/// Every Swift file under `FRUSExplorer/` and `FRUSCoreKit/`, through `LexedSource`, which records
+/// each string literal with the call it sits in. A literal is in scope when it is a `defaultValue:` argument,
 /// or when the innermost call around it is a SwiftUI initialiser or modifier that takes a
 /// `LocalizedStringKey` — `Text`, `Label`, `Button`, `.help`, `.accessibilityLabel` and the rest of
 /// `keyTakingViews` / `keyTakingModifiers`. That second half is what reaches #1374's bare
@@ -106,6 +106,8 @@ import Foundation
 ///         list's row menu declared `graph.contextMenu.openDocument` unconditionally, so iPhone and
 ///         iPad still read "Open in Main Window" there; and
 ///         `referenceListOpenItemSharesTheNodeMenuName` (#1481)
+///   1.12 — FRUSCoreKit, part 1: the scans read `FRUSCoreKit/` too, whose files both app targets
+///         compile and whose strings the app shows; `lexedAppSources` names them `../FRUSCoreKit/…`
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -116,9 +118,15 @@ extension CodingStandardsAuditTests {
         .deletingLastPathComponent()
         .appendingPathComponent("FRUSExplorer")
 
-    /// Every Swift file under `FRUSExplorer/`, lexed, keyed by its path relative to that folder.
+    /// Every Swift file under `FRUSExplorer/` and `FRUSCoreKit/`, lexed, keyed by its path relative
+    /// to `FRUSExplorer/`: `Citation/CitationLookupView.swift`, and
+    /// `../FRUSCoreKit/Citation/CitationFormatter.swift` for a file of the kit, which both app targets
+    /// compile and whose strings the app shows.
     static func lexedAppSources() throws -> [(path: String, source: LexedSource)] {
-        try FileManager.default.subpathsOfDirectory(atPath: copyScanSourceRoot.path)
+        let kitRoot = copyScanSourceRoot.deletingLastPathComponent().appendingPathComponent("FRUSCoreKit")
+        let app = try FileManager.default.subpathsOfDirectory(atPath: copyScanSourceRoot.path)
+        let kit = try FileManager.default.subpathsOfDirectory(atPath: kitRoot.path).map { "../FRUSCoreKit/" + $0 }
+        return try (app + kit)
             .filter { $0.hasSuffix(".swift") }
             .sorted()
             .map { path in
@@ -1176,7 +1184,7 @@ extension CodingStandardsAuditTests {
 /// `hand.tap` glyph beside a chart's hint is `FRUSTheme.selectGlyph`, a clicking pointer on the Mac.
 ///
 /// ## How it reads
-/// Every Swift file under `FRUSExplorer/`, through `LexedSource`, with each literal's line decided
+/// Every Swift file under `FRUSExplorer/` and `FRUSCoreKit/`, through `LexedSource`, with each literal's line decided
 /// by ``CompilationBranches`` as the Mac compiles it — the walk the segmented-picker and Mac sheet
 /// audits read through `MaskedSwift.compiled(for:)`. `os(iOS)` and `canImport(UIKit)` are iOS-only;
 /// `os(macOS)`, `!os(iOS)`, `canImport(AppKit)` and ungated code compile for the Mac; `#else`

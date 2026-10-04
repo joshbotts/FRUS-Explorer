@@ -41,24 +41,24 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — O-3 fix: initial implementation
+///   1.1 — FRUSCoreKit, part 1: reads `FRUSCoreKit/` as well as `FRUSExplorer/`, through
+///          `AppSourceTree`
 @Suite("Coding standards — unreferenced private declarations")
 struct UnreferencedDeclarationAuditTests {
 
     @Test("No `private var` is declared without being used in its own file")
     func noUnreferencedPrivateVars() {
-        let root = URL(fileURLWithPath: #filePath)
+        let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()   // FRUSExplorerTests
             .deletingLastPathComponent()   // repo root
-            .appendingPathComponent("FRUSExplorer")
 
         // A literal regex, so the capture group is statically typed.
         let declaration = /(?m)^[ \t]*(?:@ViewBuilder[ \t]*\n[ \t]*)?private[ \t]+var[ \t]+([A-Za-z_][A-Za-z0-9_]*)[ \t]*:/
         var offenders: [String] = []
         var scanned = 0
 
-        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?
-            .compactMap { $0 as? URL }
-            .filter { $0.pathExtension == "swift" } ?? []
+        // `FRUSExplorer/` and `FRUSCoreKit/`: the kit's files are the app's, compiled by both targets.
+        let files = AppSourceTree.swiftFiles(in: repoRoot)
 
         for file in files {
             guard let source = try? String(contentsOf: file, encoding: .utf8) else { continue }

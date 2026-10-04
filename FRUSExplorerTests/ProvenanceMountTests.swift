@@ -27,6 +27,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — PV-3: initial implementation
+///   1.1 — FRUSCoreKit, part 1: `roleEraSubtitle` is read from `FRUSCoreKit/TEI/FRUSASTNode.swift`
 @Suite("Provenance chip mounts")
 struct ProvenanceMountTests {
 
@@ -311,7 +312,7 @@ struct ProvenanceMountTests {
                 "the container-label hazard that rules a chip out here is gone — revisit the exclusion")
 
         // The subtitle's Tier-1 uniformity is the other leg, and it lives in the TEI type.
-        let ast = try source("FRUSExplorer/TEI/FRUSASTNode.swift")
+        let ast = try source("FRUSCoreKit/TEI/FRUSASTNode.swift")
         let subtitle = try body(of: "var roleEraSubtitle: String? {", in: ast)
         #expect(!subtitle.contains("authority") && !subtitle.contains("pocom"),
                 "the row subtitle now mixes sources, so the invariance argument no longer holds")

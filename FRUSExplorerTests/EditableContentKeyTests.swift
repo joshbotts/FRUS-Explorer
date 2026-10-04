@@ -80,6 +80,8 @@ import Foundation
 ///         stand between a typo and a trap
 ///   1.4 — #1424 review round 2: the line-0 fixture asks `parseRanges` first, so its mutant fails
 ///         the test cleanly instead of trapping the host
+///   1.5 — FRUSCoreKit, part 1: the Search Tips key scan reads `FRUSCoreKit/` as well as
+///         `FRUSExplorer/`, through `AppSourceTree`
 @Suite("EditableContent blocks address a live localization key")
 struct EditableContentKeyTests {
 
@@ -518,14 +520,12 @@ struct EditableContentKeyTests {
         #expect(result.failures.isEmpty)
     }
 
-    /// The literal localization keys under `FRUSExplorer/` that begin with one of `prefixes`, each
-    /// with the files that declare it.
+    /// The literal localization keys under `FRUSExplorer/` and `FRUSCoreKit/` that begin with one of
+    /// `prefixes`, each with the files that declare it.
     private static func sourceKeys(withPrefixes prefixes: [String]) throws -> [String: Set<String>] {
-        let appRoot = repoRoot.appendingPathComponent("FRUSExplorer")
-        let enumerator = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
         let pattern = try NSRegularExpression(pattern: #"localized:\s*"([^"\\]+)""#)
         var keys: [String: Set<String>] = [:]
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
             let text = try String(contentsOf: url, encoding: .utf8)
             let whole = NSRange(text.startIndex..., in: text)
             for match in pattern.matches(in: text, range: whole) {

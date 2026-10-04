@@ -21,11 +21,13 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #358 (F-8)
-enum FRUSCanonicalURL {
+///   1.1 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/Citation/`, and public, with both members,
+///          for FRUS Explorer Light's Cite
+public enum FRUSCanonicalURL {
 
     /// The document's public page, e.g.
     /// `https://history.state.gov/historicaldocuments/frus1969-76v01/d1`.
-    static func string(volumeId: String, documentId: String) -> String {
+    public static func string(volumeId: String, documentId: String) -> String {
         "https://history.state.gov/historicaldocuments/\(volumeId)/\(documentId)"
     }
 
@@ -34,7 +36,7 @@ enum FRUSCanonicalURL {
     /// Percent-encoding is deliberate rather than assumed-unnecessary: FRUS volume and document
     /// ids are ASCII today, and a `URL(string:)` that silently returned nil on some future id
     /// would remove the share entry with no other symptom.
-    static func url(volumeId: String, documentId: String) -> URL? {
+    public static func url(volumeId: String, documentId: String) -> URL? {
         guard !volumeId.isEmpty, !documentId.isEmpty else { return nil }
         return URL(string: string(volumeId: volumeId, documentId: documentId))
     }

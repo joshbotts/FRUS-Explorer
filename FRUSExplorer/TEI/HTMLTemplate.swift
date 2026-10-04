@@ -45,6 +45,8 @@ import SwiftUI
 ///   1.0 — Session 141: initial implementation; CSS inlined as Swift string constant.
 ///          Session 146 will refactor `HTMLCollectionExporter` to use this template,
 ///          and `frus-print.css` will be added as an additional CSS layer.
+///   1.1 — FRUSCoreKit, part 1: the fragment is written by `FRUSRenderNodeHTMLSerializer.reader`,
+///          FRUSCoreKit's name for the reader's serializer settings, which do not change
 ///
 /// - Note: The `documentCSS` string constant could be moved to a bundle resource
 ///   (`frus-document.css`) in a future session if live-editing of CSS during
@@ -65,14 +67,11 @@ enum HTMLTemplate {
         colorScheme: ColorScheme,
         textSize: TextSizePreference = .medium
     ) -> String {
-        // Reading views opt into classification chips on source footnotes
-        // (Source Explorer Phase 5); exports construct their own serializer with
-        // the default (off) so exported output is unchanged.
-        // #1516: the reader names each figure's image by a `frusexplorer://figure/` URL, which
+        // The reader's serializer (FRUSCoreKit's `FRUSRenderNodeHTMLSerializer.reader`):
+        // classification chips on source footnotes (Source Explorer Phase 5), which exports leave
+        // off, and figure images named by `frusexplorer://figure/` URLs (#1516), which
         // `FRUSURLSchemeHandler` answers from the device's figure store.
-        let fragment = FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true,
-                                                    figureImages: .reader)
-            .serialize(model)
+        let fragment = FRUSRenderNodeHTMLSerializer.reader.serialize(model)
         let cssVars  = FRUSTheme.cssVariables(colorScheme: colorScheme, textSize: textSize)
         return """
         <!DOCTYPE html>

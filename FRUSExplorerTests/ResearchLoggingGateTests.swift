@@ -66,6 +66,8 @@ import Testing
 ///          its comment no longer says a paste arrives straight. `macChecklistAnchorUsesTheWritersSameQueryRule` pins
 ///          that both macOS checklist gates decide "same query" through the writer's own rule, and
 ///          `sameQueryRuleFoldsOnlyQuotationMarks` pins that rule, `SearchHistoryWriter.isSameQuery(_:_:)`
+///   1.5 — FRUSCoreKit, part 1: the preference key's one-declaration scan reads `FRUSCoreKit/` as
+///          well as `FRUSExplorer/`, through `AppSourceTree`
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -804,11 +806,9 @@ struct ResearchLoggingGateTests {
     @Test("The research-logging key string is written down in exactly one place")
     func preferenceKeyHasOneDeclaration() throws {
         let literal = "\"researchSessionLoggingEnabled\""
-        let enumerator = try #require(
-            FileManager.default.enumerator(at: Self.sourceRoot,
-                                           includingPropertiesForKeys: nil))
         var files: Set<String> = []
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        // `FRUSExplorer/` and `FRUSCoreKit/`: a second spelling of the key could sit in either.
+        for url in AppSourceTree.swiftFiles(in: Self.projectRoot) {
             let content = try String(contentsOf: url, encoding: .utf8)
             for line in content.split(separator: "\n", omittingEmptySubsequences: false) {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)

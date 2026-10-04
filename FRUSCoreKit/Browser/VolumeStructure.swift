@@ -7,10 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-// For the `NavigationPath` overload of `DocumentJump.apply` below: one reader host
-// (CitationLookupView) keeps a NavigationPath rather than an array, and leaving it as the single
-// hand-written copy of the rule is what let the rule go untested in the first place.
-import SwiftUI
 
 // MARK: - VolumeSection
 
@@ -216,17 +212,8 @@ extension DocumentJump {
         path.append(entry)
     }
 
-    /// The `NavigationPath` overload, for a host that keeps an opaque path rather than an array.
-    ///
-    /// `DocumentBrowserEntry` is `Hashable` and NOT `Codable`, so this resolves to the same
-    /// `append` overload the hand-written call did — a path that was never codable stays
-    /// non-codable, and no state-restoration behaviour changes.
-    public func apply(to path: inout NavigationPath, appending entry: some Hashable) {
-        if self == .replace, !path.isEmpty {
-            path.removeLast()
-        }
-        path.append(entry)
-    }
+    // The `NavigationPath` overload is SwiftUI's, so it stays in the app:
+    // `FRUSExplorer/Browser/DocumentJump+NavigationPath.swift`.
 }
 
 public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {

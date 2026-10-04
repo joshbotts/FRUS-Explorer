@@ -14,7 +14,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 /// Two persons-list encodings the corpus uses and the parser mishandled (#740, #741).
 ///
@@ -28,6 +34,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-08-07: #740 / #741
 ///   1.1 — 2026-09-13: `frus1873p1v2`'s `correspondence` spelling, which #740 missed
+///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the v51 index-version check runs in the app's test target only
 @Suite("Persons list encodings")
 struct PersonsListEncodingTests {
 
@@ -96,9 +104,11 @@ struct PersonsListEncodingTests {
         let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
         #expect(persons.map(\.ref).sorted() == ["p_HF1", "p_JCBD1"])
         #expect(persons.first { $0.ref == "p_HF1" }?.name == "Hamilton Fish")
+        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         // An installed index reads this list only when it re-parses, which only a bump triggers.
         #expect(IndexingPipeline.currentDateIndexVersion >= 51,
                 "the spelling fix changes parse output and needs the v51 re-index")
+        #endif
     }
 
     @Test("The previously-accepted spellings still work (#740)")

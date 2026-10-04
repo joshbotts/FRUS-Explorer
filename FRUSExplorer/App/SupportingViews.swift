@@ -1412,7 +1412,7 @@ struct CitationPopoverView: View {
     // MARK: - Formatted Citation
 
     /// Builds the formatted citation string for `selectedStyle` via the shared
-    /// `CitationFormatter` conformers in `Citation/CitationFormatter.swift`
+    /// `CitationFormatter` conformers in `FRUSCoreKit/Citation/CitationFormatter.swift`
     /// (relocated here from inline string-building in Session 153).
     ///
     /// The returned string contains Markdown italic markers (`_..._` or `*...*`).

@@ -1184,6 +1184,7 @@ struct NaturalLanguageReadinessScanTests {
     /// Every directory `project.yml` compiles into the app targets.
     private static let appSourceDirectories = [
         "FRUSExplorer", "FTS5Store", "WordCloudKit", "SemanticVectorsKit", "SourceNoteKit", "TEIHeaderKit",
+        "FRUSCoreKit",
     ]
 
     /// `source` with each line's `//` comment removed, so a comment naming a call is not a call.

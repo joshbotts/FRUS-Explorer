@@ -7,6 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+// SourceNoteKit is a module of its own only where a package builds it as one (FRUSCoreKit's SPM
+// target); the app compiles its files into the app's own module, where there is nothing to import.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - FRUSRenderNodeHTMLSerializer
 
@@ -118,6 +123,11 @@ import Foundation
 ///          figure prints the placeholder. A figure in a paragraph, a cell or an item is a
 ///          `<span>`, since a `<figure>` start tag would close the paragraph around it. The
 ///          fold-in: `.elementSpace` draws one space. Both under `data-skip="1"`, as before.
+///   1.10 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/TEI/`. Paints `HighlightColor`, collapses a
+///          source note through `StoredSourceNote` and names a figure through `FRUSURLScheme`, the
+///          kit's homes of what it called in the app, and imports SourceNoteKit where that is a
+///          module of its own. The reader's settings are `FRUSRenderNodeHTMLSerializer.reader`
+///          (`ReaderRendering.swift`). Its output does not change
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -388,7 +398,7 @@ public struct FRUSRenderNodeHTMLSerializer {
         var openCSS  = ""          // CSS class of the logically-open highlight
         var markOpen = false       // whether a physical <mark> is currently unclosed
 
-        func cssClass(_ color: DocumentHighlight.Color) -> String {
+        func cssClass(_ color: HighlightColor) -> String {
             "hl-\(color.rawValue)"
         }
 
@@ -888,17 +898,16 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// no confident classification-markings sentence.
     ///
     /// The note text is recovered with the shared flat-text DFS, its `[Source: …]`
-    /// wrapper collapsed exactly as indexing does (`normalizeSourceNoteWrapper`),
+    /// wrapper collapsed exactly as indexing does (`StoredSourceNote.normalizeWrapper`),
     /// and the marking extracted by the same S1 derivation stored in
     /// `document_sources.classification` — so the chip in the reading view always
     /// matches the Source Explorer's.
     private func classificationChipHTML(type: FootnoteType, children: [FRUSRenderNode]) -> String {
         guard annotateSourceClassification, type == .source else { return "" }
-        // Collapse whitespace the same way indexing's `normalizedWhitespace` does
-        // (that helper is file-private to IndexingPipeline.swift).
+        // Collapse whitespace the same way indexing's `normalizedWhitespace` does.
         let collapsed = flatText(of: children)
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        let note = IndexingPipeline.normalizeSourceNoteWrapper(collapsed)
+        let note = StoredSourceNote.normalizeWrapper(collapsed)
         guard let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) else {
             return ""
         }
@@ -986,7 +995,7 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .placeholder:
             return missing
         case .reader:
-            guard let url = FRUSURLSchemeHandler.figureURL(for: image) else { return missing }
+            guard let url = FRUSURLScheme.figureURL(for: image) else { return missing }
             // The handler answers with the image when it is on the device and with a failure
             // when it is not; `onerror` then shows the placeholder in the image's place.
             return "<img class=\"figure-image\" src=\"\(escaped(url.absoluteString))\" alt=\"\(alt)\" "

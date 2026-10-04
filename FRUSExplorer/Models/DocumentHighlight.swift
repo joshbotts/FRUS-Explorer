@@ -57,6 +57,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 102: initial implementation
+///   1.1 — FRUSCoreKit, part 1: `Color` is a typealias of FRUSCoreKit's `HighlightColor`, which the
+///          serializer paints; the stored `colorTag` does not change
 @Model final class DocumentHighlight {
 
     // MARK: - Identity
@@ -136,13 +138,9 @@ import SwiftUI
 
 extension DocumentHighlight {
 
-    /// The four supported highlight colors.
-    enum Color: String, CaseIterable, Sendable {
-        case yellow
-        case green
-        case blue
-        case pink
-    }
+    /// The four supported highlight colors: FRUSCoreKit's `HighlightColor`, whose render pipeline
+    /// paints them, under the name the app calls them by.
+    typealias Color = HighlightColor
 
     /// Convenience accessor for the typed color.
     var color: Color { Color(rawValue: colorTag) ?? .yellow }

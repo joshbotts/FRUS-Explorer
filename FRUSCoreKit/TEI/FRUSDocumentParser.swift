@@ -7,6 +7,14 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
+// SourceNoteKit is a module of its own only where a package builds it as one (FRUSCoreKit's SPM
+// target); the app compiles its files into the app's own module, where there is nothing to import.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - Parser Actor
 
@@ -128,6 +136,10 @@ import Foundation
 ///          kept as `.elementSpace` (`TEIParserDelegate.keepsElementSpace`), so the reader draws
 ///          the space between `<placeName>Washington,</placeName>` and `<date>February 28,
 ///          1861</date>`. The node is no text: nothing the index stores moves, so no index bump.
+///   2.12 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/TEI/`. Imports `FoundationXML` where it
+///          exists (Linux) and SourceNoteKit where that is a module of its own, and discards
+///          `XMLParser.parse()`'s result explicitly, which Linux does not mark discardable. Nothing
+///          it parses changes, so no index version
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -143,7 +155,7 @@ public actor FRUSDocumentParser {
         }
         let delegate = TEIParserDelegate(targetDocumentId: nil)
         xmlParser.delegate = delegate
-        xmlParser.parse()
+        _ = xmlParser.parse()
 
         if let error = delegate.fatalError {
             throw FRUSParserError.xmlError(error)
@@ -181,7 +193,7 @@ public actor FRUSDocumentParser {
         let delegate = TEIParserDelegate(targetDocumentId: documentId)
         delegate.parserRef = xmlParser
         xmlParser.delegate = delegate
-        xmlParser.parse()
+        _ = xmlParser.parse()
 
         if let error = delegate.fatalError {
             // Aborted parsing (document found) is not a real error.
@@ -252,7 +264,7 @@ public actor FRUSDocumentParser {
         }
         let delegate = PersonsParserDelegate()
         xmlParser.delegate = delegate
-        xmlParser.parse()
+        _ = xmlParser.parse()
         #if DEBUG
         print("[TEIParser] Parsed \(delegate.entries.count) person entries from \(volumeURL.lastPathComponent).")
         #endif
@@ -269,7 +281,7 @@ public actor FRUSDocumentParser {
         }
         let delegate = TermsParserDelegate()
         xmlParser.delegate = delegate
-        xmlParser.parse()
+        _ = xmlParser.parse()
         #if DEBUG
         print("[TEIParser] Parsed \(delegate.entries.count) term entries from \(volumeURL.lastPathComponent).")
         #endif
@@ -350,7 +362,7 @@ public actor FRUSDocumentParser {
         }
         let delegate = VolumeStructureParserDelegate()
         xmlParser.delegate = delegate
-        xmlParser.parse()
+        _ = xmlParser.parse()
         if let err = delegate.fatalError { throw FRUSParserError.xmlError(err) }
         let volumeId = volumeURL.deletingPathExtension().lastPathComponent
         #if DEBUG

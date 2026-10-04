@@ -42,7 +42,7 @@ import SQLite3
 /// `FRUSExplorerUITests/BrowseNestedSectionTests`.
 ///
 /// **The presence of `.task(id:)` in the source.** A source scan for that shape is the thing this
-/// repo has already MEASURED to be vacuous — `VolumeStructure.swift:200` records a guard that
+/// repo has already MEASURED to be vacuous — `VolumeStructure.swift:196` records a guard that
 /// asserted a literal over raw source and stayed green while a mutant reinstated the bug in full.
 ///
 /// Version history:
@@ -65,6 +65,8 @@ import SQLite3
 ///          is gated on `isIndexed(_:)`" was false of kick 1, which is gated on an `isIndexing`
 ///          edge instead — one `indexVolume` cannot produce without a pipeline, so the conclusion
 ///          held for a different reason; and one comment still named a pin with a capital L
+///   1.4 — FRUSCoreKit, part 1: text only. `VolumeStructure.swift` moved to `FRUSCoreKit/Browser/`
+///          and lost four lines, so the vacuous-scan measurement is cited at line 196
 @Suite("Compilation document loading — per-section state and the render rule")
 @MainActor
 struct CompilationDocumentLoadingTests {

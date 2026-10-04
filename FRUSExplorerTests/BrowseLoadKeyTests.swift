@@ -25,7 +25,7 @@ import Foundation
 /// These assertions close the half that is a value: a key must **vary with every component of its
 /// payload**, which is what a title-key, a volume-only key, or a count-only key fails. They do not
 /// and cannot show that a view still passes the key to `.task(id:)` — a source scan for that shape
-/// is the thing this repo has already MEASURED to be vacuous (`VolumeStructure.swift:200` records
+/// is the thing this repo has already MEASURED to be vacuous (`VolumeStructure.swift:196` records
 /// a guard that asserted a literal over raw source and stayed green while a mutant reinstated the
 /// bug in full).
 ///
@@ -56,6 +56,8 @@ import Foundation
 ///          fixtures all started at a real id and so never took the line every real drill runs
 ///          through; and re-opening the value for the payload it holds is pinned to keep it. The
 ///          load gate's message names the side-load retraction's seven sites
+///   1.3 — FRUSCoreKit, part 1: text only. `VolumeStructure.swift` moved to `FRUSCoreKit/Browser/`
+///          and lost four lines, so the vacuous-scan measurement is cited at line 196
 @Suite("Browse load keys vary with their payload")
 @MainActor
 struct BrowseLoadKeyTests {

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - FlushLeftSourcesParseTests
 
@@ -36,6 +42,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #668
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the index-version check, which reads `IndexingPipeline`, runs in the app's test
+///          target only
 @Suite("Paragraph-encoded front-matter sources (#668)")
 struct FlushLeftSourcesParseTests {
 
@@ -182,6 +191,7 @@ struct FlushLeftSourcesParseTests {
                 Comment(rawValue: "got \(items.map(\.rawText))"))
     }
 
+    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     /// The index version must move with the parse output, or the owner's store keeps the
     /// old empty rows and none of this is visible.
     @Test("The change is carried by an index-version bump")
@@ -189,6 +199,7 @@ struct FlushLeftSourcesParseTests {
         #expect(IndexingPipeline.currentDateIndexVersion >= 34,
                 "parse output changed without bumping currentDateIndexVersion")
     }
+    #endif
 }
 
 // MARK: - #668 follow-up: the owner's report against the shipped v34
@@ -220,6 +231,9 @@ struct FlushLeftSourcesParseTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #668 follow-up
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the index-version check, which reads `IndexingPipeline`, runs in the app's test
+///          target only
 @Suite("Paragraph-encoded sources — owner report on v34 (#668)")
 struct FlushLeftSourcesFollowUpTests {
 
@@ -355,11 +369,13 @@ struct FlushLeftSourcesFollowUpTests {
                 Comment(rawValue: "notes: \(items.map { $0.note ?? "nil" })"))
     }
 
+    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     @Test("The follow-up is carried by its own index-version bump")
     func indexVersionMovedAgain() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 35,
                 "parse output changed again without bumping currentDateIndexVersion")
     }
+    #endif
 }
 
 // MARK: - #668 follow-up 2: repository headings and the library route
@@ -380,6 +396,9 @@ struct FlushLeftSourcesFollowUpTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #668 follow-up 2
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; the library route's five tests, which call the app's `ArchivalResolver`, run in
+///          the app's test target only
 @Suite("Repository headings in a flat sources list (#668)")
 struct FlatSourcesRepositoryHeadingTests {
 
@@ -456,6 +475,7 @@ struct FlatSourcesRepositoryHeadingTests {
         #expect(items.last?.lotFileNorm == "64D563")
     }
 
+    #if !SWIFT_PACKAGE // ArchivalResolver and the bundled library catalogue are the app's
     // MARK: - The library route
 
     /// The two collections the owner's harvest holds, resolved through the **real** bundled
@@ -522,6 +542,7 @@ struct FlatSourcesRepositoryHeadingTests {
         #expect(resolution?.naId == "580942",
                 Comment(rawValue: "got \(resolution?.naId ?? "nil")"))
     }
+    #endif
 }
 
 // MARK: - SiblingHeadingAndApparatusParseTests
@@ -547,6 +568,8 @@ struct FlatSourcesRepositoryHeadingTests {
 ///   1.0 — 2026-09-25: #1466, #1469
 ///   1.1 — 2026-09-25 (review round 1): `headingClauses` pins the lot clause and
 ///          `takesSiblingHeading`'s repository exclusion with rows that fail without them
+///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("Front-matter sources — sibling headings and nested apparatus (#1466, #1469)")
 struct SiblingHeadingAndApparatusParseTests {
 

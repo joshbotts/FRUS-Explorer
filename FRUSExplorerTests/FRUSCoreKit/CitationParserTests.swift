@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - CitationParserTests
 
@@ -590,6 +596,7 @@ struct CitationParserTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the two suites below test the app's Citation Lookup view
 // MARK: - CitationLookupFieldsTests
 
 /// The Citation Lookup form's fields, driven through the same `refreshed` / `input` calls the view
@@ -740,6 +747,7 @@ struct CitationLookupViewWiringTests {
     /// The view's source.
     private static func viewSource() throws -> String {
         let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests/FRUSCoreKit
             .deletingLastPathComponent()   // FRUSExplorerTests
             .deletingLastPathComponent()   // repo root
             .appendingPathComponent("FRUSExplorer/Citation/CitationLookupView.swift")
@@ -916,3 +924,4 @@ struct CitationLookupViewWiringTests {
         #expect(label.contains("case .bestGuess:"), "\(label)")
     }
 }
+#endif

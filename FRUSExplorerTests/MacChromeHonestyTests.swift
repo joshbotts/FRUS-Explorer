@@ -256,6 +256,8 @@ struct SelectGlyphTests {
 ///
 /// Version history:
 ///   1.0 — lane HYG (2026-10-01): initial implementation
+///   1.1 — FRUSCoreKit, part 1: the stale-shortcut scan reads `FRUSCoreKit/` as well as
+///          `FRUSExplorer/`, through `AppSourceTree`, and names each file from the repository root
 @Suite("Mac shortcut copy")
 struct MacShortcutCopyTests {
 
@@ -392,15 +394,15 @@ struct MacShortcutCopyTests {
     /// between two unescaped quotes on one line.
     @Test("No string in the app names ⌘S, or a bare ⌘F for Search")
     func noStringNamesAStaleSearchShortcut() throws {
-        let root = Self.repoRoot.appending(path: "FRUSExplorer")
-        let paths = try FileManager.default.subpathsOfDirectory(atPath: root.path)
-            .filter { $0.hasSuffix(".swift") }.sorted()
+        // `FRUSExplorer/` and `FRUSCoreKit/`, each file named from the repository root.
+        let paths = AppSourceTree.swiftFiles(in: Self.repoRoot)
+            .map { String($0.path.dropFirst(Self.repoRoot.path.count + 1)) }
         let literal = try NSRegularExpression(pattern: #""((?:[^"\\]|\\.)*)""#)
         var shortcutLiterals = 0
         var stale: [String] = []
         var bound = 0
         for path in paths {
-            let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            let text = try String(contentsOf: Self.repoRoot.appending(path: path), encoding: .utf8)
             for (number, line) in text.components(separatedBy: "\n").enumerated() {
                 let code = line.trimmingCharacters(in: .whitespaces)
                 guard !code.hasPrefix("//") else { continue }
@@ -419,7 +421,7 @@ struct MacShortcutCopyTests {
         }
         // A scan that reads no literal finds none stale, so both counts are asserted.
         print("[MacShortcutCopy] \(paths.count) files, \(shortcutLiterals) string literals naming a ⌘ shortcut")
-        #expect(paths.count > 400, "Read only \(paths.count) Swift files under FRUSExplorer/")
+        #expect(paths.count > 400, "Read only \(paths.count) Swift files under FRUSExplorer/ and FRUSCoreKit/")
         #expect(shortcutLiterals >= 5, "Found only \(shortcutLiterals) string literal(s) naming a ⌘ shortcut")
         #expect(bound == 0, """
             The app binds ⌘S now (\(bound) `.keyboardShortcut("s"` call(s)), so a string naming it \

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - FRUSRenderNodeHTMLSerializerTests
 
@@ -476,6 +482,16 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("role=\"button\""))
         // The display text (children) is preserved as real flat text.
         #expect(out.contains("page 1077"))
+        // VoiceOver's label, by reason. Its sentence is the kit's one `String(localized:)` whose key
+        // is itself an interpolated literal, so on Linux this checks FRUSCoreKit's stand-in for it.
+        #expect(out.contains("aria-label=\"Unresolved cross-reference: the referenced page could not be found. Activate for details.\""),
+                "\(out)")
+        for (reason, detail) in [("unknownVolume", "the referenced volume isn't part of this collection"),
+                                 ("emptyTarget", "it has no destination"),
+                                 ("unknownAnchor", "the referenced document or section no longer exists")] {
+            #expect(FRUSRenderNodeHTMLSerializer.brokenRefAriaLabel(reason: reason)
+                    == "Unresolved cross-reference: \(detail). Activate for details.")
+        }
     }
 
     // MARK: - A page link carries what its footnote names (#1509)
@@ -496,6 +512,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(!broken.contains("no=497"), "\(broken)")
     }
 
+    #if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's
     @Test("The scheme handler hands a page link's hint back with the tap, and none for a link that carries none (#1509)")
     @MainActor
     func schemeHandlerReadsTheHint() throws {
@@ -512,6 +529,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(received.last?.1 == "frus1888p1")
         #expect(received.last?.2 == nil)
     }
+    #endif
 
     @Test("The converter gives a page link the hint of the footnote it sits in, and none to one in an editorial note's own text or to a link that is not to a page (#1509)")
     func converterGivesPageLinksTheirFootnotesHint() {
@@ -560,6 +578,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(links.last { $0.0 == "#pg_683" }.map { $0.1 == nil } == true)
     }
 
+    #if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's
     @Test("brokenref href round-trips hostile targets through the scheme handler dispatch")
     @MainActor
     func brokenRefRoundTrip() throws {
@@ -591,6 +610,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
             #expect(received?.target == target, "round-trip failed for \(target)")
         }
     }
+    #endif
 
     // MARK: - Unknown elements
 
@@ -782,6 +802,8 @@ struct FRUSRenderNodeHTMLSerializerTests {
 /// Version history:
 ///   1.0 — Session 2026-07-04: Source Explorer Phase 5 step 1
 ///   1.1 — Session 2026-09-23: `sourceWithMarking` is static, shared with the render test (#1386)
+///   1.2 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("FRUSRenderNodeHTMLSerializer — classification chip")
 struct ClassificationChipSerializationTests {
 
@@ -859,6 +881,7 @@ struct ClassificationChipSerializationTests {
     }
 }
 
+#if !SWIFT_PACKAGE // HTMLTemplate, TextSizePreference and the WebKit harness are the app's
 // MARK: - FootnoteListIndentRenderTests (#1386)
 
 /// Renders the reader's Footnotes list through its real stylesheet in a `WKWebView` and
@@ -877,6 +900,9 @@ struct ClassificationChipSerializationTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-09-23: #1386
+///   1.1 — FRUSCoreKit, part 1: inside `#if !SWIFT_PACKAGE`, since it loads the app's
+///          `HTMLTemplate` page in WebKit; the package's FRUSCoreKitTests compiles the rest of this
+///          file against FRUSCoreKit alone
 @Suite("Reader footnotes — the hanging indent stops at the item's own first line (#1386)")
 @MainActor
 struct FootnoteListIndentRenderTests {
@@ -1058,6 +1084,7 @@ struct FootnoteListIndentRenderTests {
                 "\(textSize): the text must end inside the border (text \(chip.textRight), border \(chip.borderRight))")
     }
 }
+#endif
 
 // MARK: - HighlightInjectionTests (Session 7 #240B follow-up)
 
@@ -1103,7 +1130,7 @@ struct HighlightInjectionTests {
     }
 
     private func highlighted(_ body: [FRUSRenderNode], mark substring: String,
-                             color: DocumentHighlight.Color = .yellow) -> String {
+                             color: HighlightColor = .yellow) -> String {
         let flat = flatText(of: body)
         guard let (start, end) = utf16Range(of: substring, in: flat) else {
             Issue.record("substring \(substring) not present in flat text \(flat)")
@@ -1360,7 +1387,7 @@ struct HighlightInjectionTests {
         """)
         let flat = buildFlatText(from: model)
         #expect(flat == "Opening paragraph.First item text.Second item text.Closing paragraph.")
-        let marks: [(String, DocumentHighlight.Color)] = [("Second item text.", .yellow), ("Closing paragraph.", .green)]
+        let marks: [(String, HighlightColor)] = [("Second item text.", .yellow), ("Closing paragraph.", .green)]
         let highlights = try marks.map { text, color in
             let (start, end) = try #require(utf16Range(of: text, in: flat))
             return ExportHighlight(startOffset: start, endOffset: end, color: color)
@@ -1408,6 +1435,8 @@ struct HighlightInjectionTests {
 ///
 /// Version history:
 ///   1.0 — build 38: external targets misrouted as volume ids
+///   1.1 — FRUSCoreKit, part 1: resolves through FRUSCoreKit's `FRUSURLScheme`, so the package's
+///          FRUSCoreKitTests runs it too
 @Suite("External ref target round trip")
 struct ExternalRefTargetRoundTripTests {
 
@@ -1430,7 +1459,7 @@ struct ExternalRefTargetRoundTripTests {
         let parts = url.pathComponents.filter { $0 != "/" }.map { $0.removingPercentEncoding ?? $0 }
         let target = parts.first ?? ""
         let volumeId: String? = parts.count >= 2 ? parts[1] : nil
-        return FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId)
+        return FRUSURLScheme.resolveCrossRefTarget(target, volumeId: volumeId)
     }
 
     @Test("An http target round-trips to .external, not to a volume named after its host",

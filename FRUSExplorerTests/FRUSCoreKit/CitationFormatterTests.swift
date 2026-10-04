@@ -8,8 +8,14 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 import SwiftData
 @testable import FRUSExplorer
+#endif
 
 // MARK: - Fixture Helpers
 
@@ -413,6 +419,7 @@ struct TurabianCitationFormatterTests {
 
 struct CitationStyleTests {
 
+    #if !SWIFT_PACKAGE // CitationStyle.current and SettingsKeys are the app's
     @Test("CitationStyle.current defaults to historyAtState when unset")
     func defaultsToHistoryAtState() {
         let defaults = UserDefaults.standard
@@ -442,6 +449,7 @@ struct CitationStyleTests {
         CitationStyle.current = .turabian
         #expect(CitationStyle.current == .turabian)
     }
+    #endif
 
     @Test("makeFormatter() resolves each style to its expected formatter type")
     func makeFormatterResolvesEachStyle() {
@@ -463,6 +471,7 @@ struct CitationStyleTests {
 /// entry rather than a hand-built volume.
 struct CitationPunctuationTests {
 
+    #if !SWIFT_PACKAGE // ManifestStore is the app's
     /// The volume #1392's type case sits beside — its editor list prints "Sanford, Jr., and",
     /// so a citation from it contains ".," that no rule may touch.
     private static let volumeId = "frus1952-54v01p1"
@@ -493,6 +502,7 @@ struct CitationPunctuationTests {
         }
         #expect(checked == 2)
     }
+    #endif
 
     /// The other branch: a string with no terminal period comes back as it was. That is the
     /// data sources' `volumeId/documentId` fallback for a volume the manifest does not know,
@@ -509,6 +519,69 @@ struct CitationPunctuationTests {
     @Test("Only the last of two trailing periods is removed (#1392)")
     func removesOnlyOnePeriod() {
         #expect(CitationPunctuation.withoutTerminalPeriod("Paris Peace Conf..") == "Paris Peace Conf.")
+    }
+}
+
+// MARK: - CitationPlainTextTests
+
+/// Pins `CitationPlainText.plain(_:)` on each style's own citations: the text Copy Citation and the
+/// share sheet hand out, and the text FRUS Explorer Light's Cite will copy.
+///
+/// It reaches that text two ways. On Apple platforms it parses the citation as Markdown; on Linux,
+/// whose Foundation cannot, it strips the paired `_…_` and `*…*` markers. The app's test run checks
+/// the parse and `swift test` on Linux checks the strip, against the same expectations, so a citation
+/// the two would copy differently fails one of them. The titles are real ones with punctuation
+/// Markdown could misread: Potsdam's parentheses, the 1902 appendix's quoted ship names and the 1873
+/// volume's semicolon, each cited with a printed number and without one. Markdown the formatters
+/// never write (an escape, a link, an underscore inside a word) is out of scope, since the two ways
+/// differ there.
+struct CitationPlainTextTests {
+
+    /// Three volumes from the bundled manifest, each with the series name the history.state.gov
+    /// style italicizes.
+    static let volumes: [(volume: FRUSVolumeMetadata, series: String)] = [
+        (makeVolume(title: "Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume II",
+                    editors: ["Richardson Dougall"], publicationDate: "1960"),
+         "Foreign Relations of the United States"),
+        (makeVolume(title: "Foreign Relations of the United States, 1902, Appendix I, Whaling and Sealing Claims Against Russia, On Account of Arrest and Seizure of the American Vessels “Cape Horn Pigeon,” “James Hamilton Lewis,” “C. H. White,” and “Kate and Anna”",
+                    editors: [], publicationDate: "1903"),
+         "Foreign Relations of the United States"),
+        (makeVolume(title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 1, 1873, Part I, General Correspondence; and Papers Relating to Naturalization and Expatriation, Volume I",
+                    editors: [], publicationDate: "1873"),
+         "Papers Relating to the Foreign Relations of the United States"),
+    ]
+
+    @Test("Every style's citation copies with only its title's italic markers removed, with a number and without")
+    func eachStyleCopiesWithoutItsMarkers() {
+        var checked = 0
+        for (volume, series) in Self.volumes {
+            for number in ["710", nil] as [String?] {
+                let document = makeDocument(documentNumber: number)
+                for style in CitationStyle.allCases {
+                    let citation = style.makeFormatter().format(document: document, volume: volume)
+                    // The history.state.gov style italicizes the series name, the other two the title.
+                    let italic = style == .historyAtState ? series : volume.title
+                    let marker = style == .historyAtState ? "_" : "*"
+                    #expect(citation.contains(marker + italic + marker), "\(style): \(citation)")
+                    #expect(CitationPlainText.plain(citation)
+                            == citation.replacingOccurrences(of: marker + italic + marker, with: italic),
+                            "\(style) \(number == nil ? "without" : "with") a number: \(citation)")
+                    checked += 1
+                }
+            }
+        }
+        #expect(checked == 18)
+
+        // What a reader copies, in full.
+        let potsdam = Self.volumes[0].volume
+        let document = makeDocument(documentNumber: "710")
+        let title = "Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume II"
+        #expect(CitationPlainText.plain(HistoryAtStateCitationFormatter().format(document: document, volume: potsdam))
+                == "\(title), ed. Richardson Dougall (Washington: Government Printing Office, 1960), Document 710.")
+        #expect(CitationPlainText.plain(ChicagoCitationFormatter().format(document: document, volume: potsdam))
+                == "\(title), edited by Richardson Dougall (Washington: Government Printing Office, 1960), Document 710.")
+        #expect(CitationPlainText.plain(TurabianCitationFormatter().format(document: document, volume: potsdam))
+                == "\(title). Edited by Richardson Dougall. Washington: Government Printing Office, 1960. Document 710.")
     }
 }
 
@@ -584,6 +657,7 @@ struct CitableDocumentNumberTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the two suites below need IndexingPipeline and the app's exporters
 // MARK: - PrintedDocumentNumberExportTests (#1406)
 
 /// The printed number reaches every export site, through the real index (#1406).
@@ -1074,6 +1148,7 @@ struct GeneratedBlockNumberTests {
         #expect(spanningRows.contains("Document 12 (w)"), "a numbered document keeps its form: \(spanningRows)")
     }
 }
+#endif
 
 // MARK: - InAppCitationNumberTests (#1491)
 
@@ -1089,11 +1164,13 @@ struct GeneratedBlockNumberTests {
 /// found d710, a different document.
 ///
 /// Every test drives a real route — the view model, the exporter, or (for the Mac-only popovers,
-/// which no iOS test host compiles) the source of the one builder every Mac route calls.
+/// which no iOS test host compiles) the source of the one builder every Mac route calls. The
+/// package's FRUSCoreKitTests compiles the kit's half: the caption rules and the initializer check.
 @Suite("In-app citations of an unnumbered document (#1491)")
 @MainActor
 struct InAppCitationNumberTests {
 
+    #if !SWIFT_PACKAGE // the reader's view model, the exporters, the index and the Mac popovers are the app's
     /// A reader's document entry in the fixture volume.
     static func entry(_ documentId: String, number: String?) -> DocumentBrowserEntry {
         DocumentBrowserEntry(documentId: documentId, volumeId: PrintedDocumentNumberExportTests.volumeId,
@@ -1202,7 +1279,7 @@ struct InAppCitationNumberTests {
     @Test("The Mac popovers' one metadata builder, and their Document no. row, resolve the number")
     func macPopoversResolveTheNumber() throws {
         let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/App/SupportingViews.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         let builder = try #require(CitationLookupViewWiringTests.body(
@@ -1220,6 +1297,7 @@ struct InAppCitationNumberTests {
         #expect(source.contains("if let docNum = citedDocumentNumber {"))
         #expect(!source.contains("if let docNum = effectiveDocumentNumber {"))
     }
+    #endif
 
     // MARK: Captions (#1491 review round 1)
 
@@ -1236,6 +1314,9 @@ struct InAppCitationNumberTests {
         #expect(!CitableDocumentNumber.isUnnumbered(printed: nil), "nothing stored says nothing")
         #expect(!CitableDocumentNumber.isUnnumbered(printed: "  "))
         #expect(CitableDocumentNumber.unnumberedLabel(documentId: "d710a-1") == "Unnumbered (d710a-1)")
+        // The form a list spanning volumes prints, its two values placed by position.
+        #expect(CitableDocumentNumber.unnumberedLabel(documentId: "d710a-1", volumeId: "frus1945Berlinv02")
+                == "Unnumbered (d710a-1, frus1945Berlinv02)")
 
         // "Doc N" captions: the popover, the Mac reader's previous/next and position, Mac Search.
         #expect(CitableDocumentNumber.captionLabel(printed: potsdam, documentId: "d710a-1") == "Unnumbered (d710a-1)")
@@ -1254,6 +1335,7 @@ struct InAppCitationNumberTests {
         #expect(CitableDocumentNumber.headerLabel(printed: "475", documentId: "d475") == "Document 475")
         #expect(CitableDocumentNumber.headerLabel(printed: "151 ", documentId: "d151") == "Document 151")
 
+        #if !SWIFT_PACKAGE // MacDocumentTitle and BrowserViewModel are the app's
         // The Mac standalone window's toolbar centre.
         #expect(MacDocumentTitle.principalLabel(volumeLabel: "Potsdam · 1945 Berlin v02", documentNumber: potsdam,
                                                 documentId: "d710a-1")
@@ -1269,15 +1351,17 @@ struct InAppCitationNumberTests {
         let numbered = DocumentBrowserEntry(documentId: "d710", volumeId: "frus1945Berlinv02",
                                             documentNumber: "710", header: "Joint Chiefs of Staff Minutes")
         #expect(BrowserViewModel.BrowserLevel.document(numbered).breadcrumbLabel == "Doc. 710")
+        #endif
     }
 
+    #if !SWIFT_PACKAGE // reads the app's Mac views
     /// The Mac-only captions — the citation popover's identity line, the Mac reader's header and the
     /// previous/next buttons and position beneath it, and the Mac Search row — call the rules above.
     /// The iOS test host compiles none of their files, so their source is read, each scoped to its
     /// own view; a caption still printing the stored number, `"Doc \(…documentNumber…)"`, fails.
     @Test("The Mac captions call the caption rules rather than printing the stored number")
     func macCaptionsCallTheRules() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         func source(_ path: String) throws -> String {
             try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
         }
@@ -1311,6 +1395,7 @@ struct InAppCitationNumberTests {
                 "\(row)")
         #expect(!row.contains("Doc \\("), "\(row)")
     }
+    #endif
 
     /// `FRUSDocumentMetadata` builds from an entry only through `init(citing:printedNumber:)`. The
     /// initializer that passed `entry.documentNumber` to the formatter unresolved — the route
@@ -1319,8 +1404,8 @@ struct InAppCitationNumberTests {
     @Test("No FRUSDocumentMetadata initializer takes an entry's stored number unresolved")
     func noUnresolvedEntryInitializer() throws {
         let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer/Citation/CitationFormatter.swift")
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSCoreKit/Citation/CitationFormatter.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         #expect(source.contains("public init(citing entry: DocumentBrowserEntry, printedNumber: String?)"),
                 "the resolving initializer is gone: the check is vacuous")

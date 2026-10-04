@@ -2373,7 +2373,7 @@ components:
         These are authoritative OH-curated tags embedded in the published TEI.
 
         Corresponds to the `VolumeManifestEntry` Swift struct in
-        `FRUSExplorer/Models/Manifest/ManifestModels.swift`. Introduced in Session 02.
+        `FRUSCoreKit/Models/Manifest/ManifestModels.swift`. Introduced in Session 02.
       required:
         - volumeId
         - filename
@@ -2560,7 +2560,7 @@ components:
         `ASTToRenderNodeConverter` (Session 06).
 
         The full set of node types mirrors the `FRUSRenderNode` Swift enum in
-        `FRUSExplorer/TEI/FRUSRenderNode.swift`. Complex recursive structures
+        `FRUSCoreKit/TEI/FRUSRenderNode.swift`. Complex recursive structures
         (paragraph, heading, blockquote, list) carry a `children` array of
         nested `FRUSRenderNode` objects.
       required:
@@ -3004,7 +3004,7 @@ components:
         `ASTToRenderNodeConverter.personLookup` to resolve `<persName ref="#p_HK1">`
         inline references to this full entry.
 
-        Mirrors `PersonEntry` in `FRUSExplorer/TEI/FRUSASTNode.swift`.
+        Mirrors `PersonEntry` in `FRUSCoreKit/TEI/FRUSASTNode.swift`.
       required:
         - ref
         - name
@@ -3034,7 +3034,7 @@ components:
         Used by `ASTToRenderNodeConverter.glossLookup` to resolve
         `<gloss target="#t_NSC1">` inline references.
 
-        Mirrors `GlossEntry` in `FRUSExplorer/TEI/FRUSASTNode.swift`.
+        Mirrors `GlossEntry` in `FRUSCoreKit/TEI/FRUSASTNode.swift`.
       required:
         - ref
         - term

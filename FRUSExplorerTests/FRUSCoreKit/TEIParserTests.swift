@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - Fixture Helpers
 
@@ -586,6 +592,7 @@ struct TEIParserTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // TEIRenderingConfig and its bundled JSON are the app's
     // MARK: - RenderingConfigLoadTest
 
     @Test("RenderingConfig: loads and decodes tei-rendering-config.json from bundle")
@@ -613,6 +620,7 @@ struct TEIParserTests {
         let behavior = config.behavior(for: "someFutureElement")
         #expect(behavior.renderAs == .passThrough)
     }
+    #endif
 
     // MARK: - Converter: Footnote Numbering
 
@@ -683,6 +691,8 @@ struct TEIParserTests {
 ///
 /// Version history:
 ///   1.0 — Session 36: initial implementation
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("DateAttributeParsingTests")
 struct DateAttributeParsingTests {
 
@@ -843,6 +853,8 @@ struct DateAttributeParsingTests {
 ///
 /// Version history:
 ///   1.0 — Session 38: initial implementation
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("EditorialNoteIndexingTests")
 struct EditorialNoteIndexingTests {
 
@@ -1168,6 +1180,7 @@ struct FootnoteNumberTests {
         #expect(text.contains("Kissinger said"), "Space after italic run lost: \"\(text)\"")
     }
 
+    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     @Test("normalizedText discards whitespace-only nodes")
     func normalizedTextDiscardsWhitespaceOnly() async throws {
         // Inter-element indentation (newlines + spaces between tags) must not become
@@ -1198,6 +1211,7 @@ struct FootnoteNumberTests {
         #expect(body.trimmingCharacters(in: .whitespacesAndNewlines) == body,
                 "Body text has spurious leading/trailing whitespace: \"\(body)\"")
     }
+    #endif
 
     // MARK: - Session 79: Converter test (uses private parseFixture)
 
@@ -1693,6 +1707,7 @@ struct PersonRoleEraTests {
                 == "Counselor of the Legation in Saudi Arabia until June 5, 1953; thereafter Consul General at Barcelona · until 1953")
     }
 
+    #if !SWIFT_PACKAGE // reads the app's views
     /// Every view that shows a person's years reaches them through `eraText` or `roleEraSubtitle`,
     /// so the three shapes above are what the reader sees there: the People list row
     /// (`PersonIndexRow`), the person sheet's **Active** row, a volume's front-matter persons list
@@ -1700,7 +1715,7 @@ struct PersonRoleEraTests {
     /// print its own shape and could drop the end-only one again.
     @Test("The views that show a person's years read them only through eraText or roleEraSubtitle")
     func eraConsumersGoThroughEraText() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let consumers = [
             "FRUSExplorer/Browser/PersonIndexView.swift": ["entry.roleEraSubtitle", "entry.eraText"],
             "FRUSExplorer/Browser/FrontMatterPersonsView.swift": ["person.roleEraSubtitle"],
@@ -1715,6 +1730,7 @@ struct PersonRoleEraTests {
                     "\(path) reads a person's years directly")
         }
     }
+    #endif
 
     @Test("Non-person filter drops 'See …' cross-reference redirects but keeps real names")
     func nonPersonFilter() async throws {
@@ -2384,13 +2400,13 @@ struct TermsDefinitionTests {
 
 // MARK: - CrossRefResolverTests (Session 162)
 
-/// Covers `FRUSURLSchemeHandler.resolveCrossRefTarget` — the normaliser behind
+/// Covers `FRUSURLScheme.resolveCrossRefTarget` — the normaliser behind
 /// every in-document cross-reference tap (Session 162 link audit).
 struct CrossRefResolverTests {
 
     @Test("Same-volume document anchors resolve with the caller's volume untouched")
     func sameVolumeDocument() {
-        let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("#d80", volumeId: nil)
+        let dest = FRUSURLScheme.resolveCrossRefTarget("#d80", volumeId: nil)
         #expect(dest == .document(volumeId: nil, documentId: "d80"))
     }
 
@@ -2398,10 +2414,10 @@ struct CrossRefResolverTests {
     func crossVolumeDocument() {
         // macOS used to pass the raw target through and navigate to
         // "frus1964-68v18#d65" as a document ID.
-        let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("frus1964-68v18#d65", volumeId: nil)
+        let dest = FRUSURLScheme.resolveCrossRefTarget("frus1964-68v18#d65", volumeId: nil)
         #expect(dest == .document(volumeId: "frus1964-68v18", documentId: "d65"))
 
-        let withHint = FRUSURLSchemeHandler.resolveCrossRefTarget(
+        let withHint = FRUSURLScheme.resolveCrossRefTarget(
             "frus1964-68v18#d65", volumeId: "frus1964-68v18")
         #expect(withHint == .document(volumeId: "frus1964-68v18", documentId: "d65"))
     }
@@ -2412,7 +2428,7 @@ struct CrossRefResolverTests {
     /// the reader at the head of a document they had not been reading.
     @Test("A footnote-suffixed id resolves to the footnote, carrying its document")
     func footnoteSuffixedDocument() {
-        let dest = FRUSURLSchemeHandler.resolveCrossRefTarget("#d100fn2", volumeId: nil)
+        let dest = FRUSURLScheme.resolveCrossRefTarget("#d100fn2", volumeId: nil)
         #expect(dest == .footnote(volumeId: nil, documentId: "d100", anchor: "d100fn2"))
     }
 
@@ -2429,14 +2445,14 @@ struct CrossRefResolverTests {
             ("#d705fn-sym1",   "d705",   "d705fn-sym1"),
           ])
     func prefixedFootnoteAnchors(target: String, expectedDoc: String, expectedAnchor: String) {
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: nil)
+        #expect(FRUSURLScheme.resolveCrossRefTarget(target, volumeId: nil)
                 == .footnote(volumeId: nil, documentId: expectedDoc, anchor: expectedAnchor))
     }
 
     /// The volume hint must survive the footnote branch — 120 of these references are cross-volume.
     @Test("A cross-volume footnote reference keeps its volume")
     func crossVolumeFootnoteAnchor() {
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("frus1950v05#d748fn3", volumeId: nil)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1950v05#d748fn3", volumeId: nil)
                 == .footnote(volumeId: "frus1950v05", documentId: "d748", anchor: "d748fn3"))
     }
 
@@ -2444,27 +2460,27 @@ struct CrossRefResolverTests {
     /// stray "fn" and a bare footnote anchor keeps its existing `.unresolved` treatment.
     @Test("The footnote pattern does not capture ordinary document ids")
     func footnotePatternDoesNotOvermatch() {
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#d80", volumeId: nil)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#d80", volumeId: nil)
                 == .document(volumeId: nil, documentId: "d80"))
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#fn3", volumeId: nil) == .unresolved)
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#note4", volumeId: nil) == .unresolved)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#fn3", volumeId: nil) == .unresolved)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#note4", volumeId: nil) == .unresolved)
     }
 
     @Test("Printed-page anchors resolve to page numbers; roman numerals are unresolved")
     func pageAnchors() {
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#pg_313", volumeId: nil)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_313", volumeId: nil)
                 == .page(volumeId: nil, page: 313))
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("frus1955-57v17#pg_313", volumeId: nil)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1955-57v17#pg_313", volumeId: nil)
                 == .page(volumeId: "frus1955-57v17", page: 313))
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#pg_XIII", volumeId: nil)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#pg_XIII", volumeId: nil)
                 == .unresolved)
     }
 
     @Test("Bare footnote/figure anchors and external URLs classify correctly")
     func otherAnchors() {
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("#fn3", volumeId: nil) == .unresolved)
-        #expect(FRUSURLSchemeHandler.resolveCrossRefTarget("", volumeId: nil) == .unresolved)
-        if case .external(let url) = FRUSURLSchemeHandler.resolveCrossRefTarget(
+        #expect(FRUSURLScheme.resolveCrossRefTarget("#fn3", volumeId: nil) == .unresolved)
+        #expect(FRUSURLScheme.resolveCrossRefTarget("", volumeId: nil) == .unresolved)
+        if case .external(let url) = FRUSURLScheme.resolveCrossRefTarget(
             "http://bookstore.gpo.gov", volumeId: nil) {
             #expect(url.host == "bookstore.gpo.gov")
         } else {
@@ -2489,6 +2505,8 @@ struct CrossRefResolverTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #659
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone
 @Suite("Spurious autolinks (#659)")
 struct SpuriousAutolinkTests {
 
@@ -2588,6 +2606,9 @@ struct SpuriousAutolinkTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-19: #1323
+///   1.1 — FRUSCoreKit, part 1: compiled by the package's FRUSCoreKitTests too, against FRUSCoreKit
+///          alone; `boldIsFlatTextInvariant`'s `bodyHash` check, which reads `IndexingPipeline`,
+///          runs in the app's test target only
 @Suite("TEI — strong is the corpus's bold (#1323)")
 struct StrongEmphasisTests {
 
@@ -2729,11 +2750,13 @@ struct StrongEmphasisTests {
             The bold mapping moved the flat text. Every stored highlight in every indexed volume \
             would go stale, and #1323 would need a kVersion bump it does not otherwise need.
             """)
+        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         #expect(IndexingPipeline.bodyHash(for: strongAST)
                 == IndexingPipeline.bodyHash(for: unmappedAST), """
             body_hash moved, so every document would read as revised and re-index for a change \
             that added no character.
             """)
+        #endif
         #expect(containsBold(strongModel.bodyNodes) && !containsBold(unmappedModel.bodyNodes), """
             Neither model contains bold, so the two invariance assertions above are comparing \
             two identical unstyled trees and would pass with the mapping deleted.

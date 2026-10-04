@@ -10,14 +10,16 @@ import Foundation
 
 // MARK: - RefDestination
 
-/// The navigable destination of a TEI `<ref target>`, mirroring the app's
-/// `CrossRefDestination` (`FRUSExplorer/TEI/FRUSURLSchemeHandler.swift`).
+/// The navigable destination of a TEI `<ref target>`, modelled on the app's
+/// `CrossRefDestination` (`FRUSCoreKit/TEI/FRUSURLScheme.swift`), which has since gained a
+/// `.footnote` case (#988) that this lacks.
 ///
 /// This is a Foundation-only twin of the app enum so `CrossRefValidationGenerator` can
-/// reason about ref navigation without linking the app. `CrossRefGrammar.resolveDestination`
-/// reproduces `resolveCrossRefTarget` branch-for-branch; `CrossRefGrammarTests` locks the two
-/// together with a byte-parity fixture table drawn from the app's documented cases, so any drift
-/// in either copy fails a test.
+/// reason about ref navigation without linking the app. `CrossRefGrammar.resolveDestination` was
+/// written branch for branch from `resolveCrossRefTarget`, and `CrossRefGrammarTests` pins it with a
+/// fixture table drawn from the app's documented cases. The table is hard-coded and never calls the
+/// app, so it did not see the app's copy change two branches since: a footnote anchor resolves to
+/// `.footnote` there (#988), and a `mailto:` target is external.
 ///
 /// > Note: Validation (`CrossRefGrammar.classifyForValidation`) does **not** use this type — a
 /// > ref's navigability is a separate question from whether its target xml:id exists. A footnote
@@ -41,7 +43,9 @@ public enum RefDestination: Equatable, Sendable {
 /// classifies `<ref target>` values exactly as the reading view navigates them.
 ///
 /// Two app functions are mirrored:
-///   - `resolveDestination` ≡ `FRUSURLSchemeHandler.resolveCrossRefTarget` (render-time navigation).
+///   - `resolveDestination` ≡ `FRUSURLScheme.resolveCrossRefTarget` (render-time navigation; in
+///     FRUSCoreKit, which `FRUSURLSchemeHandler` forwards to), except the two branches the app's
+///     copy has changed since: a footnote anchor (`.footnote`, #988) and a `mailto:` target.
 ///   - `parseVolumePrefix` ≡ `FRUSDocumentParser.parseRefTarget` (index-time volume-id split).
 ///
 /// Both are pure string transformations with no app dependencies. The app keeps its own copies
@@ -52,8 +56,9 @@ public enum CrossRefGrammar {
 
     // MARK: Navigation parity (mirrors resolveCrossRefTarget)
 
-    /// Resolves a raw `<ref target>` to its navigable destination — a branch-for-branch mirror of
-    /// `FRUSURLSchemeHandler.resolveCrossRefTarget(_:volumeId:)`.
+    /// Resolves a raw `<ref target>` to its navigable destination — written as a branch-for-branch
+    /// mirror of FRUSCoreKit's `FRUSURLScheme.resolveCrossRefTarget(_:volumeId:)`, two of whose
+    /// branches have changed since (``CrossRefGrammar``).
     ///
     /// - Parameters:
     ///   - rawTarget: The verbatim `target` attribute value.

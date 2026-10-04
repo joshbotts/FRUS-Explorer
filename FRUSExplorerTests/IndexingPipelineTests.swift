@@ -1740,6 +1740,9 @@ private enum PrintedJoinFixtures {
 ///
 /// Version history:
 ///   1.0 — #1421: initial implementation
+///   1.1 — FRUSCoreKit, part 1: the space-joined `plainText` scan reads `FRUSCoreKit/` as well as
+///          `FRUSExplorer/`, through `AppSourceTree`: the walk lives there now, and the converter
+///          and the page-span resolver call it
 @Suite("IndexingPipeline — body and note text joined as printed (#1421)")
 struct PrintedBodyTextTests {
 
@@ -1937,18 +1940,18 @@ struct PrintedBodyTextTests {
     }
 
     /// Every stored-text site goes through the printed join (#1421): no `plainText` map joined with a
-    /// bare space survives in the app. Matches the CALL, `map(\.plainText)` or
+    /// bare space survives in the app, `FRUSExplorer/` or `FRUSCoreKit/`, whose converter and
+    /// resolver call `plainText` and `printedText` too. Matches the CALL, `map(\.plainText)` or
     /// `map { $0.plainText }` followed by `.joined(separator: " ")`, not a text window.
     @Test("No app source joins plainText pieces with a bare space")
     func noSpaceJoinedPlainTextRemains() throws {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent()
         let pattern = #"map\s*(?:\(\s*\\\.plainText\s*\)|\{\s*\$0\.plainText\s*\})\s*\.joined\(\s*separator:\s*" "\s*\)"#
         let regex = try NSRegularExpression(pattern: pattern)
         var files = 0, plainTextMentions = 0
         var sites: [String] = []
-        let enumerator = try #require(FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil))
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
             files += 1
             let text = try String(contentsOf: url, encoding: .utf8)
             plainTextMentions += text.components(separatedBy: "plainText").count - 1
@@ -1958,7 +1961,7 @@ struct PrintedBodyTextTests {
                 sites.append("\(url.lastPathComponent):\(line)")
             }
         }
-        #expect(files > 100, "the scan read \(files) Swift files under \(root.path)")
+        #expect(files > 100, "the scan read \(files) Swift files under \(repoRoot.path)")
         #expect(plainTextMentions > 0, "the scan found no plainText at all, so it proves nothing")
         #expect(sites.isEmpty, "space-joined plainText at: \(sites)")
     }

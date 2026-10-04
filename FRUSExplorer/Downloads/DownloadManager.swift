@@ -1146,6 +1146,8 @@ enum FigureImageFetch: Sendable, Equatable {
 /// Version history:
 ///   1.0 — #1516: initial implementation
 ///   1.1 — #1516 review, round 1: the completion record
+///   1.2 — FRUSCoreKit, part 1: `isSafeComponent` forwards to FRUSCoreKit's
+///          `FRUSURLScheme.isSafeComponent`, which the reader's figure URLs are checked by
 public struct FigureImageLibrary: Sendable {
 
     /// The app's volumes directory.
@@ -1174,9 +1176,11 @@ public struct FigureImageLibrary: Sendable {
     /// Whether `component` can be one path component: a volume id or an image's file name. A
     /// value holding a separator, or naming the folder itself or its parent, is refused, so
     /// neither a volume's markup nor a `frusexplorer://figure/` URL can reach outside the folder.
+    ///
+    /// The rule is the kit's `FRUSURLScheme.isSafeComponent(_:)` (FRUSCoreKit), which the reader's
+    /// figure URLs are checked by too.
     public static func isSafeComponent(_ component: String) -> Bool {
-        !component.isEmpty && component != "." && component != ".."
-            && !component.contains("/") && !component.contains("\\") && !component.contains("\0")
+        FRUSURLScheme.isSafeComponent(component)
     }
 
     /// The folder `volumeId`'s images are kept in, whether or not it exists.

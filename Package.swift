@@ -66,6 +66,12 @@ import PackageDescription
 /// - **SourceNoteKit**: the FRUS source-note parser shared between the app targets
 ///   (compiled directly via `project.yml`, like FTS5Store) and the eval harness.
 ///
+/// - **FRUSCoreKit**: the TEI parser, the AST, the render pipeline (converter, render nodes, HTML
+///   serializer) and the citation formatter, models and parser, shared between the app targets
+///   (compiled directly via `project.yml`, like FTS5Store) and FRUS Explorer Light, the web
+///   edition, which compiles the same directory on Linux. Foundation only, behind `canImport`
+///   guards; the Apple-only halves of its types stay in the app.
+///
 /// Each tool is split into a library target (all logic, fully testable) and a thin
 /// executable target (entry point only). Tests import the library targets directly.
 ///
@@ -645,6 +651,34 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - FRUSCoreKit
+
+        /// The TEI parser, AST, render conversion, HTML serializer and citation formatter. Like
+        /// FTS5Store and SourceNoteKit, these sources are ALSO compiled directly into both app
+        /// targets via a `project.yml` path entry, so the app and FRUS Explorer Light, the web
+        /// edition, which compiles this directory on Linux, render and cite through the same code.
+        /// Foundation only: CryptoKit, FoundationXML and SourceNoteKit are imported behind
+        /// `canImport`, and `Linux/LinuxFoundationShims.swift` compiles to nothing on Apple
+        /// platforms. On Linux, the web edition's package supplies swift-crypto's `Crypto`.
+        .target(
+            name: "FRUSCoreKit",
+            dependencies: [.target(name: "SourceNoteKit")],
+            path: "FRUSCoreKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// The app's own suites for the kit's code, compiled a second time against the kit alone.
+        /// They live in `FRUSExplorerTests/FRUSCoreKit`, inside the app's test target, where Xcode
+        /// runs them on iOS as before. Each opens with `#if SWIFT_PACKAGE`, to import FRUSCoreKit
+        /// here and the app module there, and a test or an assertion that needs the app (its
+        /// module, its bundle or its views' source) sits inside `#if !SWIFT_PACKAGE`.
+        .testTarget(
+            name: "FRUSCoreKitTests",
+            dependencies: [.target(name: "FRUSCoreKit")],
+            path: "FRUSExplorerTests/FRUSCoreKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - SourceNoteEvalGenerator
 
         /// All eval-harness logic: streams `citations.csv` (RFC-4180, quoted TEI
@@ -679,10 +713,11 @@ let package = Package(
         // MARK: - CrossRefKit
 
         /// The FRUS cross-reference target grammar, mirrored from the app so the offline validator
-        /// classifies `<ref target>` values exactly as the reading view navigates them
-        /// (`CrossRefGrammar.resolveDestination` ≡ `FRUSURLSchemeHandler.resolveCrossRefTarget`),
-        /// plus the existence-oriented `classifyForValidation`. Pure Foundation; parity-tested
-        /// against the app's documented cases. SPM-only this session (a generator dependency);
+        /// classifies `<ref target>` values as the reading view navigates them
+        /// (`CrossRefGrammar.resolveDestination` ≡ FRUSCoreKit's `FRUSURLScheme.resolveCrossRefTarget`,
+        /// except a footnote anchor (#988) and a `mailto:` target, which the app's copy has changed
+        /// since), plus the existence-oriented `classifyForValidation`. Pure Foundation; tested
+        /// against hard-coded fixtures drawn from the app's documented cases. SPM-only this session (a generator dependency);
         /// wiring it into the app targets is a later session's step.
         .target(
             name: "CrossRefKit",

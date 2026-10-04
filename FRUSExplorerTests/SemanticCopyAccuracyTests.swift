@@ -32,6 +32,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — build 42: after the 256/512 drift was found during release prep
+///   1.1 — FRUSCoreKit, part 1: the width scan reads `FRUSCoreKit/` as well as `FRUSExplorer/`,
+///          through `AppSourceTree`
 @Suite("Semantic copy states the artifact's real numbers")
 struct SemanticCopyAccuracyTests {
 
@@ -90,12 +92,10 @@ struct SemanticCopyAccuracyTests {
 
     @Test("No localized string hardcodes a bit or dimension width")
     func noHardcodedWidthsInCopy() throws {
-        let root = URL(fileURLWithPath: #filePath)
+        let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-            .appending(path: "FRUSExplorer")
-        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?
-            .compactMap { $0 as? URL }
-            .filter { $0.pathExtension == "swift" } ?? []
+        // `FRUSExplorer/` and `FRUSCoreKit/`: the kit's strings are the app's too.
+        let files = AppSourceTree.swiftFiles(in: repoRoot)
 
         // Only `defaultValue:` payloads — the strings a reader sees. Doc comments may name a width
         // when they are describing a specific historical measurement, and often must.

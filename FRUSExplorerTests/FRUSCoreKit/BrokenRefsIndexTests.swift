@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - BrokenRefsIndex decode
 
@@ -96,6 +102,7 @@ struct BrokenRefsIndexTests {
     }
 }
 
+#if !SWIFT_PACKAGE // BrokenRefsReportExporter is the app's
 // MARK: - BrokenRefsReportExporter
 
 struct BrokenRefsReportExporterTests {
@@ -135,3 +142,4 @@ struct BrokenRefsReportExporterTests {
         #expect(csv.contains(",unknownAnchor,,"))
     }
 }
+#endif
