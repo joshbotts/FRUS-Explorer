@@ -877,6 +877,19 @@ Conventions with **no** automated check — reviewer's responsibility:
 - **Localization everywhere else**: all user-facing strings use `String(localized:)` — no raw string literals in views. The three-file spot-check above is not tree-wide coverage.
 - **Doc comments**: every `public`/`internal` type, function, and property requires a doc comment. Nothing verifies that they are *accurate*, either — verify doc claims about runtime behaviour by running the app, not by reading neighbouring comments or commit messages.
 
+## Web edition (FRUS Explorer Light)
+
+joshbotts/FRUS-Explorer-Web-App compiles this repository's shared kits on Linux from a pinned commit. Sessions here follow four rules and do nothing else for it. Web sessions watch this repository, repair Linux breaks, and write every change only the web edition needs, as pull requests here for the owner to merge. The arrangement: https://github.com/joshbotts/FRUS-Explorer-Web-App/blob/main/docs/COORDINATION.md
+
+Shared code: FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit, ManifestGeneratorCore and FRUSCoreKit/, with their test folders (FRUSCoreKit's is FRUSExplorerTests/FRUSCoreKit/; see its entry under SPM package targets). Code inside a kit test's `#if !SWIFT_PACKAGE` branch is the app's own and exempt from rules 1 and 2.
+
+1. In shared code, never import SwiftUI, UIKit, AppKit, WebKit, SwiftData, CoreSpotlight, TipKit or NaturalLanguage. Keep the existing `#if canImport` imports inside their guards; FRUSCoreKit/ allows only Foundation and the guarded modules its entry names. Do not read Bundle.main, UserDefaults or the Keychain: pass them in.
+2. A kit file never uses an app-only type: pass the value in, or move the declaration into the kit. A member that reads app state goes in an extension in an app file.
+3. Leave the `#if canImport` guards in place, though they look redundant here. Change kit behaviour in the kit, never in an app forwarder to it.
+4. After changing shared code, run `swift test` as well as the usual unit target: Xcode never runs the kits' own suites.
+
+Not asked of sessions here: labelling, notifying or checking the web edition's CI; Linux builds or its tools; holding back index-version, export, kit API (`public` included) or refactoring changes; shaping code for it beyond these rules; any feature, API or `public` access only it needs; porting work after a web-authored move. App work goes ahead; the web side follows.
+
 ## CloudKit schema-deploy gate (Wave R-7)
 
 Adding or removing a `@Model` in `frusModelTypes` — **or a stored property on one** — changes the

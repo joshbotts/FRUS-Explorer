@@ -35687,3 +35687,15 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`), the self-hosted web edi
 - **`swift build --target FRUSCoreKit`** "Build complete!", no warnings; `swift test --filter FRUSCoreKitTests` "✔ Test run with 393 tests in 49 suites passed".
 
 **Owed by the owner:** run the boundary suite and the full unit target from a clone at a real path, then merge.
+
+## Session 2026-10-04 — CLAUDE.md states the four rules sessions here follow for FRUS Explorer Light, and what they are not asked to do
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`), the self-hosted web edition, compiles this repository's shared kits and FRUSCoreKit on Linux from a pinned commit. The owner set the terms in #1570: the web edition's sessions carry the coordination work and its cost, and sessions here follow a few rules and are not diverted to web work. The rules lived only in the web repository's `docs/COORDINATION.md` and in #1570.
+
+**Changed**
+- **`CLAUDE.md`** gains a section, **Web edition (FRUS Explorer Light)**, between Coding Standards and the CloudKit schema-deploy gate. It is the appendix block of `docs/COORDINATION.md`, unwrapped to this file's style. It names the shared code, exempts the app-only branches of the kit suites, and states four rules: no UI or app frameworks in shared code, with the existing `canImport` guards kept; no app-only type in a kit file; the guards left in place, with kit behaviour changed in the kit; and `swift test` after changing shared code. It also lists what sessions here are not asked to do. It points to FRUSCoreKit's entry under SPM package targets rather than repeating it, and it replaces the `CLAUDE.md` line #1567 offered as an owner item.
+
+**Checked**
+- Docs only: no Swift file, project or resource changes, and no test reads `CLAUDE.md` (searched every `.swift` file for a path or literal naming it), so the builds and the test suite were not re-run.
+
+Closes #1570.
