@@ -804,11 +804,9 @@ struct ResearchLoggingGateTests {
     @Test("The research-logging key string is written down in exactly one place")
     func preferenceKeyHasOneDeclaration() throws {
         let literal = "\"researchSessionLoggingEnabled\""
-        let enumerator = try #require(
-            FileManager.default.enumerator(at: Self.sourceRoot,
-                                           includingPropertiesForKeys: nil))
         var files: Set<String> = []
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        // `FRUSExplorer/` and `FRUSCoreKit/`: a second spelling of the key could sit in either.
+        for url in AppSourceTree.swiftFiles(in: Self.projectRoot) {
             let content = try String(contentsOf: url, encoding: .utf8)
             for line in content.split(separator: "\n", omittingEmptySubsequences: false) {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)

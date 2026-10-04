@@ -33,19 +33,15 @@ import Testing
 @Suite("Doc comment callers")
 struct DocCommentCallerTests {
 
-    private static var appRoot: URL {
+    private static var repoRoot: URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-            .appending(path: "FRUSExplorer")
     }
 
-    /// Every `.swift` file in the app target, by path.
+    /// Every `.swift` file the app targets compile from `FRUSExplorer/` and `FRUSCoreKit/`: a claim
+    /// can sit in either, and name a type in either.
     private static func swiftFiles() -> [URL] {
-        guard let walker = FileManager.default.enumerator(at: appRoot,
-                                                          includingPropertiesForKeys: nil) else {
-            return []
-        }
-        return walker.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
+        AppSourceTree.swiftFiles(in: repoRoot)
     }
 
     /// One `Used by` claim: the type it names, the symbol it documents, and where it sits.

@@ -518,14 +518,12 @@ struct EditableContentKeyTests {
         #expect(result.failures.isEmpty)
     }
 
-    /// The literal localization keys under `FRUSExplorer/` that begin with one of `prefixes`, each
-    /// with the files that declare it.
+    /// The literal localization keys under `FRUSExplorer/` and `FRUSCoreKit/` that begin with one of
+    /// `prefixes`, each with the files that declare it.
     private static func sourceKeys(withPrefixes prefixes: [String]) throws -> [String: Set<String>] {
-        let appRoot = repoRoot.appendingPathComponent("FRUSExplorer")
-        let enumerator = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
         let pattern = try NSRegularExpression(pattern: #"localized:\s*"([^"\\]+)""#)
         var keys: [String: Set<String>] = [:]
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
             let text = try String(contentsOf: url, encoding: .utf8)
             let whole = NSRange(text.startIndex..., in: text)
             for match in pattern.matches(in: text, range: whole) {

@@ -90,12 +90,10 @@ struct SemanticCopyAccuracyTests {
 
     @Test("No localized string hardcodes a bit or dimension width")
     func noHardcodedWidthsInCopy() throws {
-        let root = URL(fileURLWithPath: #filePath)
+        let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-            .appending(path: "FRUSExplorer")
-        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?
-            .compactMap { $0 as? URL }
-            .filter { $0.pathExtension == "swift" } ?? []
+        // `FRUSExplorer/` and `FRUSCoreKit/`: the kit's strings are the app's too.
+        let files = AppSourceTree.swiftFiles(in: repoRoot)
 
         // Only `defaultValue:` payloads — the strings a reader sees. Doc comments may name a width
         // when they are describing a specific historical measurement, and often must.

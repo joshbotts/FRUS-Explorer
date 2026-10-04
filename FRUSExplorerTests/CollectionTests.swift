@@ -10376,13 +10376,12 @@ struct CollectionListNameTests {
     /// (`MacCollectionManagerView.swift`) — and the lower-case spelling nowhere.
     @Test("Untitled Collection is spelled only where a collection is named, and never in lower case")
     func theFallbackIsSpelledOnlyWhereACollectionIsNamed() throws {
-        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer")
-        let files = try #require(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil))
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         var sites: [String] = []
         var lowerCase: [String] = []
         var read = 0
-        for case let url as URL in files where url.pathExtension == "swift" {
+        // `FRUSExplorer/` and `FRUSCoreKit/`; a site under the first is named from inside it.
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
             read += 1
             let relative = url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
             for (number, line) in try String(contentsOf: url, encoding: .utf8)

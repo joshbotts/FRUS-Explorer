@@ -157,7 +157,8 @@ struct EmbeddedMarkdownLinkTests {
     /// the string goes through `AttributedString(markdownBody:)`. Lane STOR found it in the two
     /// side-loaded Remove messages, and its review two more sites, in Archives (library mode's
     /// intro, “**your**”) and Archival Flows (the unprinted outgoing caption, “*away*”). The census
-    /// is tree-wide so a fifth cannot appear unseen: a new Markdown-carrying default fails
+    /// reads `FRUSExplorer/` and `FRUSCoreKit/` whole, whose defaults the app shows alike, so a fifth
+    /// cannot appear unseen: a new Markdown-carrying default fails
     /// ``localizedMarkdownIsDrawnAsMarkdown()`` until it is listed here with the call that draws it.
     /// A `String(format:)` is formatted FIRST and then wrapped, so the numbers are part of the text
     /// Markdown reads.
@@ -205,8 +206,6 @@ struct EmbeddedMarkdownLinkTests {
     @Test("Every localized default that carries Markdown is drawn as Markdown, so no asterisk prints")
     func localizedMarkdownIsDrawnAsMarkdown() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let enumerator = try #require(FileManager.default.enumerator(
-            at: root.appendingPathComponent("FRUSExplorer"), includingPropertiesForKeys: nil))
         let single = try NSRegularExpression(pattern: #"defaultValue:\s*"((?:[^"\\\n]|\\.)*)""#)
         let triple = try NSRegularExpression(pattern: #"defaultValue:\s*"""\n(.*?)\n\s*""""#,
                                              options: .dotMatchesLineSeparators)
@@ -215,7 +214,9 @@ struct EmbeddedMarkdownLinkTests {
         var files = 0
         var found: [String: (path: String, value: String)] = [:]
         var sources: [String: String] = [:]
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        // `FRUSExplorer/` and `FRUSCoreKit/`, each file named from the repository root: the kit's
+        // localized defaults are the app's too.
+        for url in AppSourceTree.swiftFiles(in: root) {
             files += 1
             let text = try String(contentsOf: url, encoding: .utf8)
             let path = url.path.replacingOccurrences(of: root.path + "/", with: "")
