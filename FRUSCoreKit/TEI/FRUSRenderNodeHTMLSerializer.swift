@@ -7,6 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+// SourceNoteKit is a module of its own only where a package builds it as one (FRUSCoreKit's SPM
+// target); the app compiles its files into the app's own module, where there is nothing to import.
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
 
 // MARK: - FRUSRenderNodeHTMLSerializer
 

@@ -66,6 +66,12 @@ import PackageDescription
 /// - **SourceNoteKit**: the FRUS source-note parser shared between the app targets
 ///   (compiled directly via `project.yml`, like FTS5Store) and the eval harness.
 ///
+/// - **FRUSCoreKit**: the TEI parser, the AST, the render pipeline (converter, render nodes, HTML
+///   serializer) and the citation formatter, models and parser, shared between the app targets
+///   (compiled directly via `project.yml`, like FTS5Store) and FRUS Explorer Light, the web
+///   edition, which compiles the same directory on Linux. Foundation only, behind `canImport`
+///   guards; the Apple-only halves of its types stay in the app.
+///
 /// Each tool is split into a library target (all logic, fully testable) and a thin
 /// executable target (entry point only). Tests import the library targets directly.
 ///
@@ -642,6 +648,22 @@ let package = Package(
             name: "SourceNoteKitTests",
             dependencies: [.target(name: "SourceNoteKit")],
             path: "SourceNoteKitTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        // MARK: - FRUSCoreKit
+
+        /// The TEI parser, AST, render conversion, HTML serializer and citation formatter. Like
+        /// FTS5Store and SourceNoteKit, these sources are ALSO compiled directly into both app
+        /// targets via a `project.yml` path entry, so the app and FRUS Explorer Light, the web
+        /// edition, which compiles this directory on Linux, render and cite through the same code.
+        /// Foundation only: CryptoKit, FoundationXML and SourceNoteKit are imported behind
+        /// `canImport`, and `Linux/LinuxFoundationShims.swift` compiles to nothing on Apple
+        /// platforms. On Linux, the web edition's package supplies swift-crypto's `Crypto`.
+        .target(
+            name: "FRUSCoreKit",
+            dependencies: [.target(name: "SourceNoteKit")],
+            path: "FRUSCoreKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

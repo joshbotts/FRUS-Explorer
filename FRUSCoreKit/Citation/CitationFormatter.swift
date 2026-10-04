@@ -608,10 +608,13 @@ enum CitationPlainText {
 
     /// `formatted` without its Markdown italic markers.
     static func plain(_ formatted: String) -> String {
+        // Linux's Foundation has no Markdown parsing, so there the markers are stripped below.
+        #if canImport(Darwin)
         if let attributed = try? AttributedString(
             markdown: formatted, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
             return String(attributed.characters)
         }
+        #endif
         return formatted
             .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
             .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
