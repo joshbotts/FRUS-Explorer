@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - FlushLeftSourcesParseTests
 
@@ -182,6 +188,7 @@ struct FlushLeftSourcesParseTests {
                 Comment(rawValue: "got \(items.map(\.rawText))"))
     }
 
+    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     /// The index version must move with the parse output, or the owner's store keeps the
     /// old empty rows and none of this is visible.
     @Test("The change is carried by an index-version bump")
@@ -189,6 +196,7 @@ struct FlushLeftSourcesParseTests {
         #expect(IndexingPipeline.currentDateIndexVersion >= 34,
                 "parse output changed without bumping currentDateIndexVersion")
     }
+    #endif
 }
 
 // MARK: - #668 follow-up: the owner's report against the shipped v34
@@ -355,11 +363,13 @@ struct FlushLeftSourcesFollowUpTests {
                 Comment(rawValue: "notes: \(items.map { $0.note ?? "nil" })"))
     }
 
+    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     @Test("The follow-up is carried by its own index-version bump")
     func indexVersionMovedAgain() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 35,
                 "parse output changed again without bumping currentDateIndexVersion")
     }
+    #endif
 }
 
 // MARK: - #668 follow-up 2: repository headings and the library route
@@ -456,6 +466,7 @@ struct FlatSourcesRepositoryHeadingTests {
         #expect(items.last?.lotFileNorm == "64D563")
     }
 
+    #if !SWIFT_PACKAGE // ArchivalResolver and the bundled library catalogue are the app's
     // MARK: - The library route
 
     /// The two collections the owner's harvest holds, resolved through the **real** bundled
@@ -522,6 +533,7 @@ struct FlatSourcesRepositoryHeadingTests {
         #expect(resolution?.naId == "580942",
                 Comment(rawValue: "got \(resolution?.naId ?? "nil")"))
     }
+    #endif
 }
 
 // MARK: - SiblingHeadingAndApparatusParseTests

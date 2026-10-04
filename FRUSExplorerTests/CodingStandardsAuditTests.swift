@@ -449,7 +449,7 @@ struct CodingStandardsAuditTests {
             "FRUSExplorer/App/AppState.swift",
             "FRUSExplorer/Search/SearchService.swift",
             "FRUSExplorer/CrossReference/CrossReferenceGraphView.swift",
-            "FRUSExplorer/Citation/CitationParser.swift",
+            "FRUSCoreKit/Citation/CitationParser.swift",
             "FRUSExplorer/Citation/PageRangeStore.swift",
             "FRUSExplorer/Citation/CitationMatchingEngine.swift",
         ]
@@ -493,7 +493,7 @@ struct CodingStandardsAuditTests {
 
     @Test("CodingStandardsAudit: CitationParser uses #if DEBUG telemetry logging")
     func citationParserHasDebugLogging() throws {
-        let url = Self.projectRoot.appendingPathComponent("FRUSExplorer/Citation/CitationParser.swift")
+        let url = Self.projectRoot.appendingPathComponent("FRUSCoreKit/Citation/CitationParser.swift")
         let content = try String(contentsOf: url, encoding: .utf8)
         #expect(content.contains("#if DEBUG"), "CitationParser must use #if DEBUG logging")
         #expect(content.contains("[CitationParser]"), "CitationParser must use [CitationParser] log prefix")

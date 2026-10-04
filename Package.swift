@@ -667,6 +667,18 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// The app's own suites for the kit's code, compiled a second time against the kit alone.
+        /// They live in `FRUSExplorerTests/FRUSCoreKit`, inside the app's test target, where Xcode
+        /// runs them on iOS as before. Each opens with `#if SWIFT_PACKAGE`, to import FRUSCoreKit
+        /// here and the app module there, and a test or an assertion that needs the app (its
+        /// module, its bundle or its views' source) sits inside `#if !SWIFT_PACKAGE`.
+        .testTarget(
+            name: "FRUSCoreKitTests",
+            dependencies: [.target(name: "FRUSCoreKit")],
+            path: "FRUSExplorerTests/FRUSCoreKit",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - SourceNoteEvalGenerator
 
         /// All eval-harness logic: streams `citations.csv` (RFC-4180, quoted TEI

@@ -165,7 +165,7 @@ struct ManifestStoreTests {
     /// Neither declaration of `VolumeManifestEntry` — the app's, and the generator's, which writes the
     /// file — declares the field, so a regenerated manifest cannot bring it back (#1504).
     @Test("Neither VolumeManifestEntry declares a documentCount (#1504)",
-          arguments: ["FRUSExplorer/Models/Manifest/ManifestModels.swift",
+          arguments: ["FRUSCoreKit/Models/Manifest/ManifestModels.swift",
                       "ManifestGeneratorCore/ManifestModels.swift"])
     func manifestModelsDeclareNoDocumentCount(_ path: String) throws {
         let source = try String(contentsOf: Self.repoRoot.appendingPathComponent(path), encoding: .utf8)

@@ -8,7 +8,13 @@
 
 import Testing
 import Foundation
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - FootnoteLabelTests
 
@@ -281,11 +287,13 @@ struct FootnoteLabelTests {
         #expect(ASTToRenderNodeConverter.printedLabel(from: "*") == "*")
     }
 
+    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     /// The v57 bump is what moves `external_citations.note_label` for frus1961-63v24's four notes.
     @Test("The index version is at least 57, the n=\"0\" label rebuild")
     func indexVersionCoversZeroLabels() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 57)
     }
+    #endif
 
     // MARK: - The key itself
 
