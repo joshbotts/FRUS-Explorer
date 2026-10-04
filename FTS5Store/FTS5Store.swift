@@ -7,8 +7,14 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(OSLog)
 import OSLog
+#endif
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 
 // SQLITE_TRANSIENT is a C macro ((sqlite3_destructor_type)-1) not exposed in Swift's
 // SQLite3 module. It tells SQLite to copy the string immediately rather than hold a
@@ -81,6 +87,9 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///          tokenizer stems inside SQLite and stored values stay unstemmed. Write
 ///          methods throw `FTS5Error.externalContentWrite` for external-content
 ///          schemas — index maintenance happens via content-table triggers.
+///   2.1 — Session 2026-10-04: `OSLog` and `SQLite3` are imported only where they exist. On Linux
+///          `Logger` is the stand-in in `LinuxLogger.swift`, which prints to standard error, and
+///          SQLite comes from `CSQLite`; Apple platforms compile what they did before
 public actor FTS5Store {
 
     // Module-internal rather than private so `FTS5Vocabulary.swift`'s extension can

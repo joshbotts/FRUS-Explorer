@@ -8,7 +8,11 @@
 
 import Testing
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - ExactWordMatcherTests
@@ -23,6 +27,8 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
+///          tests compile there; Apple platforms still import `SQLite3`
 @Suite("Exact-word matching")
 struct ExactWordMatcherTests {
 

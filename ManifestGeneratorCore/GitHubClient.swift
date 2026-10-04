@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Errors thrown by `GitHubClient`.
 public enum GitHubClientError: Error, Sendable {
@@ -36,6 +39,8 @@ public enum GitHubClientError: Error, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — Session 2026-10-04: imports `FoundationNetworking` where it exists (Linux), which holds
+///          `URLSession` there
 public actor GitHubClient {
 
     public static let volumesEndpoint = "https://api.github.com/repos/HistoryAtState/frus/contents/volumes"

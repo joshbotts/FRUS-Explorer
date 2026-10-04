@@ -7,7 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - FTS5Connection
 //
@@ -30,6 +34,8 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
+///   1.1 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so the kit
+///          compiles there; Apple platforms still import `SQLite3`
 final class FTS5Connection {
 
     private(set) var db: OpaquePointer?

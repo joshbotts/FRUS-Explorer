@@ -7,7 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - FTS5QueryCombinationTests
@@ -37,6 +41,8 @@ import SQLite3
 ///          `carrierIdentity` pins that a parsed expression passes through the carrier unchanged
 ///   1.2 — #1297 round-1 fixes: documentation only — no popover sets the structured fields; only restored saved
 ///          searches carry them
+///   1.3 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
+///          tests compile there; Apple platforms still import `SQLite3`
 @Suite("FTS5Query part combination")
 struct FTS5QueryCombinationTests {
 

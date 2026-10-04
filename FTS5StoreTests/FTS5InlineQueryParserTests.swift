@@ -7,7 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - FTS5InlineQueryParserTests
@@ -709,6 +713,8 @@ struct FTS5InlineQueryParserTests {
 ///          `=Cold war OR =cold peace` report the first spelling once; a demoted operator word never makes a mark
 ///          apply, in either scope (the round-3 attack's D01); the order of a word whose first mark is excluded (D10);
 ///          and the order test no longer claims to pin round-2 M20, which D4 made an equivalent mutant
+///   1.5 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
+///          tests compile there; Apple platforms still import `SQLite3`
 @Suite("Exact-word sigil")
 struct FTS5ExactSigilTests {
 
