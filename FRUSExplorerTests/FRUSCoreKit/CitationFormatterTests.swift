@@ -522,6 +522,69 @@ struct CitationPunctuationTests {
     }
 }
 
+// MARK: - CitationPlainTextTests
+
+/// Pins `CitationPlainText.plain(_:)` on each style's own citations: the text Copy Citation and the
+/// share sheet hand out, and the text FRUS Explorer Light's Cite will copy.
+///
+/// It reaches that text two ways. On Apple platforms it parses the citation as Markdown; on Linux,
+/// whose Foundation cannot, it strips the paired `_…_` and `*…*` markers. The app's test run checks
+/// the parse and `swift test` on Linux checks the strip, against the same expectations, so a citation
+/// the two would copy differently fails one of them. The titles are real ones with punctuation
+/// Markdown could misread: Potsdam's parentheses, the 1902 appendix's quoted ship names and the 1873
+/// volume's semicolon, each cited with a printed number and without one. Markdown the formatters
+/// never write (an escape, a link, an underscore inside a word) is out of scope, since the two ways
+/// differ there.
+struct CitationPlainTextTests {
+
+    /// Three volumes from the bundled manifest, each with the series name the history.state.gov
+    /// style italicizes.
+    static let volumes: [(volume: FRUSVolumeMetadata, series: String)] = [
+        (makeVolume(title: "Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume II",
+                    editors: ["Richardson Dougall"], publicationDate: "1960"),
+         "Foreign Relations of the United States"),
+        (makeVolume(title: "Foreign Relations of the United States, 1902, Appendix I, Whaling and Sealing Claims Against Russia, On Account of Arrest and Seizure of the American Vessels “Cape Horn Pigeon,” “James Hamilton Lewis,” “C. H. White,” and “Kate and Anna”",
+                    editors: [], publicationDate: "1903"),
+         "Foreign Relations of the United States"),
+        (makeVolume(title: "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 1, 1873, Part I, General Correspondence; and Papers Relating to Naturalization and Expatriation, Volume I",
+                    editors: [], publicationDate: "1873"),
+         "Papers Relating to the Foreign Relations of the United States"),
+    ]
+
+    @Test("Every style's citation copies with only its title's italic markers removed, with a number and without")
+    func eachStyleCopiesWithoutItsMarkers() {
+        var checked = 0
+        for (volume, series) in Self.volumes {
+            for number in ["710", nil] as [String?] {
+                let document = makeDocument(documentNumber: number)
+                for style in CitationStyle.allCases {
+                    let citation = style.makeFormatter().format(document: document, volume: volume)
+                    // The history.state.gov style italicizes the series name, the other two the title.
+                    let italic = style == .historyAtState ? series : volume.title
+                    let marker = style == .historyAtState ? "_" : "*"
+                    #expect(citation.contains(marker + italic + marker), "\(style): \(citation)")
+                    #expect(CitationPlainText.plain(citation)
+                            == citation.replacingOccurrences(of: marker + italic + marker, with: italic),
+                            "\(style) \(number == nil ? "without" : "with") a number: \(citation)")
+                    checked += 1
+                }
+            }
+        }
+        #expect(checked == 18)
+
+        // What a reader copies, in full.
+        let potsdam = Self.volumes[0].volume
+        let document = makeDocument(documentNumber: "710")
+        let title = "Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume II"
+        #expect(CitationPlainText.plain(HistoryAtStateCitationFormatter().format(document: document, volume: potsdam))
+                == "\(title), ed. Richardson Dougall (Washington: Government Printing Office, 1960), Document 710.")
+        #expect(CitationPlainText.plain(ChicagoCitationFormatter().format(document: document, volume: potsdam))
+                == "\(title), edited by Richardson Dougall (Washington: Government Printing Office, 1960), Document 710.")
+        #expect(CitationPlainText.plain(TurabianCitationFormatter().format(document: document, volume: potsdam))
+                == "\(title). Edited by Richardson Dougall. Washington: Government Printing Office, 1960. Document 710.")
+    }
+}
+
 // MARK: - CitableDocumentNumberTests (#1406)
 
 /// The one rule every export site that starts from an id now calls (#1406), branch by branch.

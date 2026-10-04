@@ -16,7 +16,7 @@ import Foundation
 /// into "treat the anchor as a document ID":
 /// `#d80` · `frus1964-68v20#d104` · `#d100fn2` (footnote of another document) ·
 /// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `http://…`.
-enum CrossRefDestination: Equatable {
+public enum CrossRefDestination: Equatable, Sendable {
     /// A FRUS document.
     case document(volumeId: String?, documentId: String)
     /// A specific footnote inside a FRUS document (#988). `anchor` is the note's TEI `xml:id`
@@ -43,7 +43,7 @@ enum CrossRefDestination: Equatable {
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: moved from `FRUSURLSchemeHandler` (`resolveCrossRefTarget`,
 ///          `figureHost`, `figureURL(for:)`) and `FigureImageLibrary` (`isSafeComponent`)
-enum FRUSURLScheme {
+public enum FRUSURLScheme {
 
     /// Splits a raw TEI ref target into a navigable destination, normalising the
     /// quirks found across the corpus (Session 162 link audit):
@@ -59,7 +59,7 @@ enum FRUSURLScheme {
     /// `nonisolated`: a pure string transformation, callable from any context
     /// (the default-MainActor inference otherwise traps when tests call it off
     /// the main actor).
-    nonisolated static func resolveCrossRefTarget(
+    public nonisolated static func resolveCrossRefTarget(
         _ rawTarget: String,
         volumeId: String?
     ) -> CrossRefDestination {

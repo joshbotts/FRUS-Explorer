@@ -215,7 +215,7 @@ public struct FRUSDocumentMetadata: Sendable {
 ///   1.2 — #1491: ``captionLabel(printed:documentId:)`` and ``headerLabel(printed:documentId:)``, so
 ///         the Mac reader's captions, the citation popover, the Mac Search row and the breadcrumb
 ///         name an unnumbered document through the same ``unnumberedLabel(documentId:volumeId:)``
-enum CitableDocumentNumber {
+public enum CitableDocumentNumber {
 
     /// The number to cite for a document.
     ///
@@ -224,7 +224,7 @@ enum CitableDocumentNumber {
     ///     the document is not indexed. An empty value counts as none.
     ///   - documentId: The document's `xml:id`, used only under rule 3 of the type's note.
     /// - Returns: The number to print after "Document", or `nil` for the number-less form.
-    static func resolve(printed: String?, documentId: String) -> String? {
+    public static func resolve(printed: String?, documentId: String) -> String? {
         if let stored = printed?.trimmingCharacters(in: .whitespacesAndNewlines), !stored.isEmpty {
             return isEditorialDescription(stored) ? nil : stored
         }
@@ -233,14 +233,14 @@ enum CitableDocumentNumber {
 
     /// Whether a stored `@n` is the editors' bracketed description of an unnumbered document
     /// (`[Unnumbered document following Document 710 (#1)]`) rather than a number.
-    static func isEditorialDescription(_ printed: String) -> Bool {
+    public static func isEditorialDescription(_ printed: String) -> Bool {
         printed.hasPrefix("[")
     }
 
     /// The number an id spells, for a document the index does not hold: `d` + digits, with at
     /// most one trailing letter (`d12` → `12`, `d0012` → `12`, `d373a` → `373a`). `nil` for every
     /// other shape (`eta_d1`, `d710a-1`, `appA`), whose number only the volume knows.
-    static func fromDocumentId(_ documentId: String) -> String? {
+    public static func fromDocumentId(_ documentId: String) -> String? {
         guard documentId.hasPrefix("d") else { return nil }
         let body = documentId.dropFirst()
         let digits = body.prefix(while: { $0.isASCII && $0.isWholeNumber })
@@ -255,7 +255,7 @@ enum CitableDocumentNumber {
     /// document the volume prints without one (#1493); else — a number this device has not read —
     /// the document's id, which is what the row showed for every such document before (and what the
     /// iOS row's caption shows for all of them).
-    static func rowLabel(printed: String?, documentId: String) -> String {
+    public static func rowLabel(printed: String?, documentId: String) -> String {
         if let number = resolve(printed: printed, documentId: documentId) {
             return String(format: String(localized: "collection.entry.documentLabel %@",
                                          defaultValue: "Document %@"), number)
@@ -266,7 +266,7 @@ enum CitableDocumentNumber {
     /// Whether the number the index stores for a document says the volume prints it WITHOUT one: a
     /// bracketed `@n`, the editors' description (rule 2). `false` when nothing is stored — the app
     /// cannot tell an unnumbered document from one whose number it has not read.
-    static func isUnnumbered(printed: String?) -> Bool {
+    public static func isUnnumbered(printed: String?) -> Bool {
         guard let stored = printed?.trimmingCharacters(in: .whitespacesAndNewlines), !stored.isEmpty else { return false }
         return isEditorialDescription(stored)
     }
@@ -278,7 +278,7 @@ enum CitableDocumentNumber {
     /// popover, the Mac Search row and the breadcrumb all read it. With `volumeId`, for a list spanning volumes, the volume follows the id
     /// inside the parentheses — "Unnumbered (d710a-1, frus1945Berlinv02)" — as a numbered
     /// document's token is followed by its volume ("12 (frus1969-76v01)").
-    static func unnumberedLabel(documentId: String, volumeId: String? = nil) -> String {
+    public static func unnumberedLabel(documentId: String, volumeId: String? = nil) -> String {
         guard let volumeId else {
             return String(format: String(localized: "document.unnumbered.label %@",
                                          defaultValue: "Unnumbered (%@)"), documentId)
@@ -302,7 +302,7 @@ enum CitableDocumentNumber {
     ///   - printed: The number the caller holds for the document, or `nil` when it holds none.
     ///   - documentId: The document's `xml:id`.
     /// - Returns: The caption's text.
-    static func captionLabel(printed: String?, documentId: String) -> String {
+    public static func captionLabel(printed: String?, documentId: String) -> String {
         if isUnnumbered(printed: printed) { return unnumberedLabel(documentId: documentId) }
         return String(format: String(localized: "document.caption.number %@", defaultValue: "Doc %@"),
                       resolve(printed: printed, documentId: documentId) ?? documentId)
@@ -316,7 +316,7 @@ enum CitableDocumentNumber {
     ///   - printed: The number stored for the document; the header names none when there is none.
     ///   - documentId: The document's `xml:id`, named in place of a number the volume does not print.
     /// - Returns: The header's text.
-    static func headerLabel(printed: String, documentId: String) -> String {
+    public static func headerLabel(printed: String, documentId: String) -> String {
         if isUnnumbered(printed: printed) { return unnumberedLabel(documentId: documentId) }
         return String(format: String(localized: "document.header.number %@", defaultValue: "Document %@"),
                       printed.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -604,10 +604,10 @@ public struct TurabianCitationFormatter: CitationFormatter {
 /// each carried their own copy of this until #1505 made it one, so the round trip of the app's
 /// own citations (`CitationMatchingEngineTests.ownCitationsAreNeverBestGuesses`) runs on the text
 /// the reader copies rather than on a copy of how it is made.
-enum CitationPlainText {
+public enum CitationPlainText {
 
     /// `formatted` without its Markdown italic markers.
-    static func plain(_ formatted: String) -> String {
+    public static func plain(_ formatted: String) -> String {
         // Linux's Foundation has no Markdown parsing, so there the markers are stripped below.
         #if canImport(Darwin)
         if let attributed = try? AttributedString(
@@ -643,14 +643,14 @@ enum CitationPlainText {
 /// The period comes off here rather than by giving the formatter a locator argument because the
 /// drawn-from line continues with a file designation, which is not a locator; each caller ends
 /// its line with its own period.
-enum CitationPunctuation {
+public enum CitationPunctuation {
 
     /// `citation` without its one terminal period.
     ///
     /// Removes exactly one trailing period and nothing else. A string with none comes back
     /// unchanged — which is the `volumeId/documentId` fallback the citation data sources return
     /// when the manifest does not know the volume.
-    static func withoutTerminalPeriod(_ citation: String) -> String {
+    public static func withoutTerminalPeriod(_ citation: String) -> String {
         citation.hasSuffix(".") ? String(citation.dropLast()) : citation
     }
 }
