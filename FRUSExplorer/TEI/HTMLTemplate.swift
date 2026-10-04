@@ -65,14 +65,11 @@ enum HTMLTemplate {
         colorScheme: ColorScheme,
         textSize: TextSizePreference = .medium
     ) -> String {
-        // Reading views opt into classification chips on source footnotes
-        // (Source Explorer Phase 5); exports construct their own serializer with
-        // the default (off) so exported output is unchanged.
-        // #1516: the reader names each figure's image by a `frusexplorer://figure/` URL, which
+        // The reader's serializer (FRUSCoreKit's `FRUSRenderNodeHTMLSerializer.reader`):
+        // classification chips on source footnotes (Source Explorer Phase 5), which exports leave
+        // off, and figure images named by `frusexplorer://figure/` URLs (#1516), which
         // `FRUSURLSchemeHandler` answers from the device's figure store.
-        let fragment = FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true,
-                                                    figureImages: .reader)
-            .serialize(model)
+        let fragment = FRUSRenderNodeHTMLSerializer.reader.serialize(model)
         let cssVars  = FRUSTheme.cssVariables(colorScheme: colorScheme, textSize: textSize)
         return """
         <!DOCTYPE html>

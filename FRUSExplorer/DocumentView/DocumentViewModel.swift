@@ -502,17 +502,11 @@ public final class DocumentViewModel {
                 effectiveIsEditorialNote = ast.isShapedAsEditorialNote
             }
 
-            // Build lookup tables
-            var pByRef: [String: PersonEntry] = [:]
-            for p in persons { pByRef[p.ref] = p }
-            var tByRef:  [String: GlossEntry] = [:]
-            var tByText: [String: GlossEntry] = [:]
-            for t in terms {
-                tByRef[t.ref]              = t
-                tByText[t.term.lowercased()] = t
-            }
-            personsByRef = pByRef
-            termsByRef   = tByRef
+            // Build lookup tables (FRUSCoreKit's `ReaderLookups`, which the web edition's reader
+            // builds them with too)
+            let lookups = ReaderLookups(persons: persons, terms: terms)
+            personsByRef = lookups.personsByRef
+            termsByRef   = lookups.termsByRef
 
             // Extract document title from the first <head> element — through the INDEX's own
             // extractor, not a second walk (#888). This derivation used `plainText`, which
@@ -552,20 +546,12 @@ public final class DocumentViewModel {
             // Extract source note for Source Explorer
             sourceNote = extractSourceNote(from: ast.nodes)
 
-            // Convert AST → render model with lookup closures.
-            // `abbrLookup` matches `<abbr>` element text against the glossary by term
-            // name (case-insensitive) so abbreviations without an explicit @ref still
-            // render as tappable dotted-underline links.
-            var converter = ASTToRenderNodeConverter(
-                volumeId: entry.volumeId, personLookup: { [pByRef] ref in pByRef[ref] },
-                glossLookup:  { [tByRef] ref in tByRef[ref] },
-                abbrLookup:   { [tByText] text in tByText[text.lowercased()] },
-                // Degrade dead cross-references (issue #240). Volume-scoped: brokenness is
-                // independent of the source document, so front/back-matter refs resolve too.
-                brokenRefLookup: { [vol = entry.volumeId] target in
-                    BrokenRefsIndexStore.shared?.degradableInfo(sourceVolume: vol, rawTarget: target)
-                }
-            )
+            // Convert AST → render model with the reader's lookups (FRUSCoreKit's
+            // `ASTToRenderNodeConverter.init(readerOf:lookups:brokenRefs:)`): persons and terms by
+            // ref, `<abbr>` text against the glossary by term name, and dead cross-references
+            // degraded (issue #240) through the bundled broken-refs index.
+            var converter = ASTToRenderNodeConverter(readerOf: entry.volumeId, lookups: lookups,
+                                                     brokenRefs: BrokenRefsIndexStore.shared)
             renderModel = converter.convert(ast)
 
             #if DEBUG
