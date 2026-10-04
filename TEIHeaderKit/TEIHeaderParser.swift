@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
 
 /// Errors thrown by `TEIHeaderParser`.
 /// Parses the `<teiHeader>` of a FRUS TEI XML file into a `ParsedTEIHeader`.
@@ -60,6 +63,8 @@ import Foundation
 ///         `publicationDate` is still the print year and still never a `@when`. The prohibition
 ///         above is about the `<bibl>` build stamps, and `publishedWhen` is a different field
 ///         holding a different fact — over the shipped volumes the two years differ in 26 cases.
+///   1.4 — Session 2026-10-04: imports `FoundationXML` where it exists (Linux), which holds `XMLParser`
+///          there
 public struct TEIHeaderParser {
 
     private init() {}

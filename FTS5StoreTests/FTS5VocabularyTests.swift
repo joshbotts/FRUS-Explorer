@@ -8,7 +8,11 @@
 
 import Testing
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - FTS5VocabularyTests
@@ -27,6 +31,8 @@ import SQLite3
 ///         `indexStem(of:)` and `vocabularyEntry(stem:)`. The wrapper's zero-counts-for-
 ///         unseen-terms contract retired with it: the live path's answer for an unseen
 ///         stem is a missing vocabulary row.
+///   1.2 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
+///          tests compile there; Apple platforms still import `SQLite3`
 @Suite("Corpus vocabulary and stem transparency")
 struct FTS5VocabularyTests {
 

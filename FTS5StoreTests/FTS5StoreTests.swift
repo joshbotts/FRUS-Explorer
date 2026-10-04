@@ -8,10 +8,22 @@
 
 import Testing
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - Test Helpers
+
+/// Whether this platform's Foundation keeps `isExcludedFromBackupKey`. swift-corelibs-foundation
+/// (Linux) does not: setting it is a silent no-op and reading it back gives nil.
+#if canImport(Darwin)
+private let platformKeepsBackupExclusion = true
+#else
+private let platformKeepsBackupExclusion = false
+#endif
 
 /// SQLITE_TRANSIENT for test-side binds (copy the string immediately).
 private let TEST_SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -516,7 +528,9 @@ struct FTS5StoreTests {
 
     // MARK: - Backup Exclusion
 
-    @Test("Database file has isExcludedFromBackupKey set after creation")
+    @Test("Database file has isExcludedFromBackupKey set after creation",
+          .enabled(if: platformKeepsBackupExclusion,
+                   "Linux: swift-corelibs-foundation keeps no backup attribute, so excluding a file from backup is a silent no-op"))
     func backupExclusion() async throws {
         let (_, url) = try makeStore()
         var value: AnyObject?

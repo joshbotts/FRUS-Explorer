@@ -7,7 +7,11 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - #1297: typed exclusions beside the structured fields
@@ -320,6 +324,8 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///          reports 75,924 lists per scope with 1,304 applied marks on cold unreported although filtering on them would
 ///          remove no row the query admits, and 49,776 failures: 24,788 terms that are not a word's first spelling,
 ///          24,748 lists that are not one term per word, and 240 parses whose marks on one word disagree
+///   1.7 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
+///          tests compile there; Apple platforms still import `SQLite3`
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 

@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Errors thrown by `TEIHeaderFetcher`.
 public enum TEIHeaderFetcherError: Error, Sendable {
@@ -27,6 +30,10 @@ public enum TEIHeaderFetcherError: Error, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — Session 2026-10-04: imports `FoundationNetworking` where it exists (Linux), which holds
+///          `URLSession` there. swift-corelibs-foundation has no `URLSession.bytes(for:)`, so on
+///          Linux the response is read whole with `data(for:)` and then scanned for `</teiHeader>`
+///          as before; Apple platforms still stream it with `bytes(for:)`
 public struct TEIHeaderFetcher {
 
     /// Maximum bytes to read before giving up on finding `</teiHeader>`.
@@ -50,7 +57,13 @@ public struct TEIHeaderFetcher {
         var request = URLRequest(url: url)
         request.setValue("FRUSExplorer/ManifestGenerator 2.0", forHTTPHeaderField: "User-Agent")
 
+        #if canImport(FoundationNetworking)
+        // URLSession.bytes(for:) does not exist in swift-corelibs-foundation.
+        let (fullData, response) = try await session.data(for: request)
+        let asyncBytes = AsyncStream<UInt8> { c in for b in fullData { c.yield(b) }; c.finish() }
+        #else
         let (asyncBytes, response) = try await session.bytes(for: request)
+        #endif
 
         guard let http = response as? HTTPURLResponse else {
             throw TEIHeaderFetcherError.unexpectedResponseType

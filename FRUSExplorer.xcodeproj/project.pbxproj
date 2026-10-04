@@ -728,6 +728,7 @@
 		809C5F94BF37A56236138B8B /* FrameTimeProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C593DE6B4B83F7E728E9593 /* FrameTimeProbe.swift */; };
 		80F505597CCF0D78426068D0 /* CollectionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA74E7E22289A1B3801D3E51 /* CollectionDetailView.swift */; };
 		80F862E6521F21BC7F8D0513 /* EducationDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8927AFD7F65221657E7459A4 /* EducationDashboardView.swift */; };
+		81278169791197FE1CB39046 /* LinuxLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 844466A990193C4F62E85630 /* LinuxLogger.swift */; };
 		816481E4224407B8BE51F853 /* CollectionAddDocumentsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9311E82A56418BE80A357A01 /* CollectionAddDocumentsSheet.swift */; };
 		818EE95C2AA6ABD53E5C6419 /* RISExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69230EB5695AC63BFDB59149 /* RISExporter.swift */; };
 		81A3E88E0D3B284FFBABAFB4 /* ConcordanceMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098DBCD31246184178FBB2BD /* ConcordanceMetrics.swift */; };
@@ -1130,6 +1131,7 @@
 		C0ABE7C69D3F469B2464EC0B /* ScopeChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0434D78F159F3F09140BEF00 /* ScopeChip.swift */; };
 		C0B484455AD2909CD188A3BD /* WordCloudLens+UI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CFA94B8E26AC23FF5BE3CD2 /* WordCloudLens+UI.swift */; };
 		C0EC109CB221302021574165 /* FootnoteCitationGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E1B198C69A40DD2BA423A29 /* FootnoteCitationGrammar.swift */; };
+		C103DBFB89A41AA2F42839C4 /* LinuxLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 844466A990193C4F62E85630 /* LinuxLogger.swift */; };
 		C1338E2B8B52145446B84A89 /* TripPacketExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33412FD3ADDE46F894E8B72C /* TripPacketExporter.swift */; };
 		C18061CD97F79FE201E22E73 /* GeneratedSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */; };
 		C1BC832019A8E5C2780B80A5 /* SubseriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 373770EEFB83CBEE8238D8D2 /* SubseriesView.swift */; };
@@ -2052,6 +2054,7 @@
 		836897BD11B28D3B525888EC /* subject-numeric-labels.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "subject-numeric-labels.json"; sourceTree = "<group>"; };
 		839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapPicking.swift; sourceTree = "<group>"; };
 		83C045D23CCE9990D712AF39 /* SeriesProductionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeriesProductionData.swift; sourceTree = "<group>"; };
+		844466A990193C4F62E85630 /* LinuxLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinuxLogger.swift; sourceTree = "<group>"; };
 		8451D12FC5745CBE33E56D7B /* ArchivalAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivalAnalyticsView.swift; sourceTree = "<group>"; };
 		8464DD9BF3C20E420E77D44F /* SimilarityScorers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimilarityScorers.swift; sourceTree = "<group>"; };
 		84775C3C5E64475098DAAE16 /* FRUSRenderNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSRenderNode.swift; sourceTree = "<group>"; };
@@ -3423,6 +3426,7 @@
 				14897C6413138665C6AD33A0 /* FTS5Tokenizer.swift */,
 				CAF0799F904BBDF8A9C941F5 /* FTS5Types.swift */,
 				74A30A6A1986B600047646A7 /* FTS5Vocabulary.swift */,
+				844466A990193C4F62E85630 /* LinuxLogger.swift */,
 			);
 			path = FTS5Store;
 			sourceTree = "<group>";
@@ -4538,6 +4542,7 @@
 				3B6A04600391E3971B50329F /* KeynessCloud.swift in Sources */,
 				A520280B884239A8EFFE8AEC /* LaunchSplashView.swift in Sources */,
 				2B9B702C4E5A0439E5BE3575 /* LexicalSimilarityGenerator.swift in Sources */,
+				81278169791197FE1CB39046 /* LinuxLogger.swift in Sources */,
 				E14F1E496CC0ACC4E590B29F /* ListOrderPreferences.swift in Sources */,
 				FF7528CE3E231F72C5C9D5CD /* LocalVolumeCatalog.swift in Sources */,
 				2F822D369E4DEF216B4F1762 /* LotClaimantsIndex.swift in Sources */,
@@ -5065,6 +5070,7 @@
 				E25099F75FB776E5D7D692BA /* KeynessCloud.swift in Sources */,
 				5F400B93F91B949CFEE78EE3 /* LaunchSplashView.swift in Sources */,
 				5FE2ED317B8FB46D9E98D0D2 /* LexicalSimilarityGenerator.swift in Sources */,
+				C103DBFB89A41AA2F42839C4 /* LinuxLogger.swift in Sources */,
 				6ACACDC08D32B65B34D08CDD /* ListOrderPreferences.swift in Sources */,
 				9B6C24B94E565D1687D31163 /* LocalVolumeCatalog.swift in Sources */,
 				F2A1466FC65DA4EAF3BFCEED /* LotClaimantsIndex.swift in Sources */,

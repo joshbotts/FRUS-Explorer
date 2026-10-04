@@ -8,7 +8,11 @@
 
 import Foundation
 import Testing
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 @testable import FTS5Store
 
 // MARK: - #1297: exclusions FTS5 rejected
@@ -55,6 +59,8 @@ import SQLite3
 ///   1.5 — #1298 follow-up: `Issue1297DepthTests.countedParseFoldsQuotationMarks` pins that `work(parsing:)` folds
 ///          typographic quotation marks as `parseDetailed` does, because a fold moved from `parsedTree` into
 ///          `parseDetailed` alone passed every test (the #1298 attack's P23)
+///   1.6 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
+///          tests compile there; Apple platforms still import `SQLite3`
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
