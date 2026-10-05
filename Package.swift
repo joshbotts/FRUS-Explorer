@@ -653,28 +653,32 @@ let package = Package(
 
         // MARK: - FRUSCoreKit
 
-        /// The TEI parser, AST, render conversion, HTML serializer and citation formatter. Like
-        /// FTS5Store and SourceNoteKit, these sources are ALSO compiled directly into both app
-        /// targets via a `project.yml` path entry, so the app and FRUS Explorer Light, the web
-        /// edition, which compiles this directory on Linux, render and cite through the same code.
-        /// Foundation only: CryptoKit, FoundationXML and SourceNoteKit are imported behind
-        /// `canImport`, and `Linux/LinuxFoundationShims.swift` compiles to nothing on Apple
-        /// platforms. On Linux, the web edition's package supplies swift-crypto's `Crypto`.
+        /// The TEI parser, AST, render conversion, HTML serializer and citation formatter, and the
+        /// indexing pipeline and search service over the shared SQLite index. Like FTS5Store and
+        /// SourceNoteKit, these sources are ALSO compiled directly into both app targets via a
+        /// `project.yml` path entry, so the app and FRUS Explorer Light, the web edition, which
+        /// compiles this directory on Linux, render, cite, index and search through the same code.
+        /// Foundation only: CryptoKit, FoundationXML, OSLog, SQLite3, FTS5Store and SourceNoteKit
+        /// are imported behind `canImport`, and the stand-ins under `Linux/` compile to nothing on
+        /// Apple platforms. On Linux, the web edition's package supplies swift-crypto's `Crypto` and
+        /// the SQLite headers.
         .target(
             name: "FRUSCoreKit",
-            dependencies: [.target(name: "SourceNoteKit")],
+            dependencies: [.target(name: "SourceNoteKit"), .target(name: "FTS5Store")],
             path: "FRUSCoreKit",
-            swiftSettings: [.swiftLanguageMode(.v6)]
+            swiftSettings: [.swiftLanguageMode(.v6)],
+            linkerSettings: [.linkedLibrary("sqlite3")]
         ),
 
         /// The app's own suites for the kit's code, compiled a second time against the kit alone.
         /// They live in `FRUSExplorerTests/FRUSCoreKit`, inside the app's test target, where Xcode
         /// runs them on iOS as before. Each opens with `#if SWIFT_PACKAGE`, to import FRUSCoreKit
         /// here and the app module there, and a test or an assertion that needs the app (its
-        /// module, its bundle or its views' source) sits inside `#if !SWIFT_PACKAGE`.
+        /// module, its bundle or its views' source) sits inside `#if !SWIFT_PACKAGE`. The indexer's
+        /// suites also import FTS5Store, SourceNoteKit and SQLite3, each behind `canImport`.
         .testTarget(
             name: "FRUSCoreKitTests",
-            dependencies: [.target(name: "FRUSCoreKit")],
+            dependencies: [.target(name: "FRUSCoreKit"), .target(name: "FTS5Store"), .target(name: "SourceNoteKit")],
             path: "FRUSExplorerTests/FRUSCoreKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
