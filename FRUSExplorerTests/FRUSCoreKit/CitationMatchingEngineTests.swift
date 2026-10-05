@@ -6,10 +6,25 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
-import SQLite3
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - CitationMatchingEngineTests
 
@@ -40,8 +55,8 @@ struct CitationMatchingEngineTests {
         )
     }
 
-    private func makeManifestStore(volumes: [VolumeManifestEntry]) -> ManifestStore {
-        ManifestStore(bundledEntries: volumes)
+    private func makeManifestStore(volumes: [VolumeManifestEntry]) -> any CitableVolumeCatalogue {
+        makeTestCatalogue(volumes)
     }
 
     // MARK: - Era Detection Tests
@@ -102,8 +117,7 @@ struct CitationMatchingEngineTests {
         // (`measure_supplement_scope.py`, round 3). A sixth volume carries facsimile breaks,
         // `frus1981-88v16`, whose 88 documents each number theirs from 1; it is not a microfiche
         // supplement, and both page rules run there.
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
-        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let entries = try testManifestEntries()
         var skipped: [String] = []
         for entry in entries {
             if await engine.isMicroficheSupplement(entry) { skipped.append(entry.volumeId) }
@@ -500,8 +514,7 @@ struct CitationMatchingEngineTests {
 
     @Test("CitationMatchingEngineTest: the app's own citation of every bundled volume, in all three formats, marked and as Copy Citation copies it, resolves first to that volume and never as a best guess — bar two volumes excused by name (#1474, #1505)")
     func ownCitationsAreNeverBestGuesses() async throws {
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
-        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let entries = try testManifestEntries()
         #expect(entries.count > 500, "the bundled manifest decoded to \(entries.count) volumes")
         let engine = manifestEngine(entries)
         let parser = CitationParser()
@@ -571,8 +584,7 @@ struct CitationMatchingEngineTests {
 
     @Test("CitationMatchingEngineTest: a title the citation prints whole comes first — the Iran retrospective, 1919's Volume I and Russia — and nothing else moves: not the 1915 supplement, not the 1894 appendix; and a volume printed in the cited year is not offered, a control since review round 1 (#1505)")
     func titlesPrintedWholeComeFirst() async throws {
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
-        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let entries = try testManifestEntries()
         let engine = manifestEngine(entries)
         let parser = CitationParser()
         func firstVolumes(_ text: String) async throws -> [String] {
@@ -625,8 +637,7 @@ struct CitationMatchingEngineTests {
 
     @Test("CitationMatchingEngineTest: the series' name chooses no volume — a citation naming only the series, its years and a volume stays in the cited subseries, and one of 1861–1868 reaches that year's volumes (#1505 review round 1)")
     func seriesNameChoosesNoVolume() async throws {
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
-        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let entries = try testManifestEntries()
         let engine = manifestEngine(entries)
         let parser = CitationParser()
         func results(_ text: String) async throws -> [CitationMatch] {
@@ -688,8 +699,7 @@ struct CitationMatchingEngineTests {
 
     @Test("CitationMatchingEngineTest: a footnote that opens with the document's date resolves to the volume it cites, and not as a best guess, over the bundled manifest (#1474 review round 3)")
     func datedFootnoteResolvesToItsVolume() async throws {
-        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
-        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let entries = try testManifestEntries()
         let engine = manifestEngine(entries)
         // Read as the subseries 1962, which no volume has, this fell back to the whole manifest and
         // came back as Volume V labelled "Best guess — … the cited subseries 1962"; v2, with no
@@ -909,7 +919,7 @@ struct CitationLookupIndexedTests {
             let databaseURL = dir.appendingPathComponent("test.sqlite")
             let pages = try PageRangeStore(databaseURL: databaseURL)
             let entries = volumes.map(\.entry)
-            let manifestStore = await MainActor.run { ManifestStore(bundledEntries: entries) }
+            let manifestStore = await makeTestCatalogue(entries)
             let engine = CitationMatchingEngine(manifestStore: manifestStore, searchService: service,
                                                 pageRangeStore: pages,
                                                 downloadedVolumeIds: Set(entries.map(\.volumeId)))
@@ -1252,18 +1262,25 @@ struct CitationLookupIndexedTests {
     ) async throws {
         try await withTempDir { dir in
             // One suite, a fresh handle on it for each owner: `UserDefaults` is not `Sendable`, and
-            // the tracker and the pipeline are actors.
+            // the tracker and the pipeline are actors. The package, which has no suites, gives both
+            // one in-memory store (`IndexingTestSupport.swift`).
             let suiteName = "frus.test.citationIndexState.\(UUID().uuidString)"
-            defer { UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName) }
+            defer { removeIsolatedStamps(suiteName) }
             let databaseURL = dir.appendingPathComponent("test.sqlite")
             let volDir = dir.appendingPathComponent("volumes")
             try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
             let store = try FTS5Store(databaseURL: databaseURL)
+            #if SWIFT_PACKAGE
+            let stamps = makeIsolatedStamps(suiteName)
+            let tracker = IndexingStateTracker(store: stamps)
+            let defaults = stamps
+            #else
             let tracker = IndexingStateTracker(userDefaults: try #require(UserDefaults(suiteName: suiteName)))
+            let defaults = try #require(UserDefaults(suiteName: suiteName))
+            #endif
             let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: databaseURL,
                                                 volumesDirectory: volDir, stateTracker: tracker,
-                                                concurrencyLimit: 2,
-                                                defaults: try #require(UserDefaults(suiteName: suiteName)))
+                                                concurrencyLimit: 2, defaults: defaults)
             for volume in indexed + onDiskOnly {
                 try writeVolume(volume.entry.volumeId, volume.docs, to: volDir)
             }
@@ -1271,7 +1288,7 @@ struct CitationLookupIndexedTests {
                 try await pipeline.indexVolume(volume.entry.volumeId)
             }
             let entries = (indexed + onDiskOnly).map(\.entry)
-            let manifestStore = await MainActor.run { ManifestStore(bundledEntries: entries) }
+            let manifestStore = await makeTestCatalogue(entries)
             let search = SearchService(fts5Store: store, pipeline: pipeline)
             let engine = CitationMatchingEngine(
                 manifestStore: manifestStore,
@@ -1600,7 +1617,7 @@ struct CitationLookupIndexedTests {
         // the link's id, as before #1522.
         let entries = parisVolume.map(\.entry)
         try await withDownloads(indexed: [], onDiskOnly: []) { downloads in
-            let manifest = await MainActor.run { ManifestStore(bundledEntries: entries) }
+            let manifest = await makeTestCatalogue(entries)
             let engine = CitationMatchingEngine(manifestStore: manifest, searchService: nil, pageRangeStore: nil,
                                                 volumesDirectory: downloads.volumesDirectory)
             let parser = CitationParser()
@@ -1616,6 +1633,7 @@ struct CitationLookupIndexedTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // AppState is the app's
     @MainActor
     @Test("The engine AppState builds reads the volumes directory and the index at each lookup: a volume on disk is not yet indexed until its pass finishes, a download that lands is no longer offered for download, and a volume whose file is gone is (#1522)")
     func appStateEngineFollowsTheDiskAndTheIndex() async throws {
@@ -1668,11 +1686,13 @@ struct CitationLookupIndexedTests {
             #expect(erased.first?.awaitingIndex == false, "\(link)")
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // reads the app's source
     @Test("Every citation engine the app builds reads the volumes directory at each lookup, never a list of volume ids taken when it is built (#1522)")
     func everyAppEngineReadsTheVolumesDirectory() throws {
         let appRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer")
+            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
         let files = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
         var sites: [String] = []
         var listed: [String] = []
@@ -1700,6 +1720,7 @@ struct CitationLookupIndexedTests {
         #expect(sites.count == 2, "\(sites)")
         #expect(listed.isEmpty, "built over a list of ids: \(listed)")
     }
+    #endif
 
     @Test("A document number the cited page contradicts is a best guess, and the document on that page follows it (#1474 review round 1)")
     func pageContradictingTheDocumentIsNotExact() async throws {
@@ -2062,6 +2083,7 @@ struct CitationLookupIndexedTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's (WebKit)
     /// The reader's page link, driven the way a tap is: the citing document parsed, converted and
     /// serialized as the reader renders it, its page link's href dispatched through
     /// `FRUSURLSchemeHandler`, and what the handler hands back asked of the store the reader's
@@ -2100,7 +2122,9 @@ struct CitationLookupIndexedTests {
             #expect(checked == tieBreakExpectations.count)
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // reads the app's source
     /// Each reader view hands a page link's footnote hint on at every step from the web view to the
     /// store (#1509 review round 1). `readersPageLinkOpensTheStoredDocument` drives the converter,
     /// the serializer, the scheme handler and the store, but not the views' own closures, which no
@@ -2115,7 +2139,7 @@ struct CitationLookupIndexedTests {
           arguments: ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"])
     func readerViewsPassTheHintThrough(_ path: String) throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer").appendingPathComponent(path)
+            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer").appendingPathComponent(path)
         let source = try String(contentsOf: url, encoding: .utf8)
         /// The argument list of every call of `function` inside `scope`.
         func calls(of function: String, in scope: Substring) throws -> [Substring] {
@@ -2164,6 +2188,7 @@ struct CitationLookupIndexedTests {
         #expect(asked.count == 1 && asked.allSatisfy { $0.contains("citing: citing") },
                 "\(path): the store is not asked with the hint: \(asked)")
     }
+    #endif
 
     // MARK: - Another pagination's breaks (#1511)
 
@@ -2995,7 +3020,7 @@ struct CitationLookupIndexedTests {
     @Test("Batch counts a lone volume row the engine labels a best guess as a best guess, and a plain download row as ambiguous (#1506 review round 1)")
     func batchCountsAVolumeBestGuessAsOne() async throws {
         let volumes = sixtyOneVolumes.map(\.entry)
-        let manifest = await MainActor.run { ManifestStore(bundledEntries: volumes) }
+        let manifest = await makeTestCatalogue(volumes)
         let engine = CitationMatchingEngine(manifestStore: manifest, searchService: nil, pageRangeStore: nil,
                                             downloadedVolumeIds: [])
         let entries = CitationBlockSplitter.split(

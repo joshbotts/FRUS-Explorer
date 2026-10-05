@@ -6,10 +6,21 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
-import SQLite3
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - PageRangeStoreTests
 

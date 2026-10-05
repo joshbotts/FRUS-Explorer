@@ -8070,7 +8070,6 @@ struct CitationDocNumberRegressionTests {
         }
     }
 
-    #if !SWIFT_PACKAGE // CitationMatchingEngine and ManifestStore are the app's
     @Test("engine.match resolves a doc-number citation in a volume saturated with the same digits")
     func matchSurvivesNoisyVolume() async throws {
         try await withTempDir { dir in
@@ -8092,9 +8091,10 @@ struct CitationDocNumberRegressionTests {
             #expect(!keywordHits.contains { $0.documentNumber == "15" },
                     "Fixture must reproduce the BM25 starvation the fix guards against")
 
-            // ManifestStore is MainActor-isolated; construct it there and hand it off.
+            // The catalogue is built on the main actor, where the app's ManifestStore lives, and
+            // handed off (`CitationTestSupport.swift`).
             let entry = makeVolumeEntry(volumeId: volumeId)
-            let manifestStore = await MainActor.run { ManifestStore(bundledEntries: [entry]) }
+            let manifestStore = await makeTestCatalogue([entry])
             let engine = CitationMatchingEngine(
                 manifestStore: manifestStore,
                 searchService: service,
@@ -8118,7 +8118,6 @@ struct CitationDocNumberRegressionTests {
             #expect(exact?.volumeId == volumeId)
         }
     }
-    #endif
 }
 
 // MARK: - CIA Job Neighbors (#808)

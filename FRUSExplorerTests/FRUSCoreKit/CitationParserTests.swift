@@ -596,7 +596,6 @@ struct CitationParserTests {
     }
 }
 
-#if !SWIFT_PACKAGE // the two suites below test the app's Citation Lookup view
 // MARK: - CitationLookupFieldsTests
 
 /// The Citation Lookup form's fields, driven through the same `refreshed` / `input` calls the view
@@ -729,6 +728,7 @@ struct CitationLookupFieldsTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the suite below reads the app's Citation Lookup view's source
 // MARK: - CitationLookupViewWiringTests
 
 /// Pins that `CitationLookupView` makes the `CitationLookupFields` calls `CitationLookupFieldsTests`
