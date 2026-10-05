@@ -110,10 +110,10 @@ targets:
       # show up as a side-loaded volume whose metadata disagreed with the downloaded copy.
       - path: TEIHeaderKit
       # FRUSCoreKit is compiled directly into the app, like the kits above, and is an SPM library
-      # target too: the TEI parser, the render pipeline, the citation formatter, and the indexing
-      # pipeline and search service, which FRUS Explorer Light, the web edition, compiles from this
-      # directory on Linux. Foundation only: a declaration the kit needs that lives in an Apple-only
-      # file moves into the kit, never the reverse.
+      # target too: the TEI parser, the render pipeline, the citation formatter, Citation Lookup's
+      # matcher, and the indexing pipeline and search service, which FRUS Explorer Light, the web
+      # edition, compiles from this directory on Linux. Foundation only: a declaration the kit needs
+      # that lives in an Apple-only file moves into the kit, never the reverse.
       - path: FRUSCoreKit
     # XcodeGen generates Info.plist at info.path and sets INFOPLIST_FILE accordingly.
     # Using an explicit info section (instead of GENERATE_INFOPLIST_FILE) allows
@@ -369,10 +369,10 @@ targets:
       # show up as a side-loaded volume whose metadata disagreed with the downloaded copy.
       - path: TEIHeaderKit
       # FRUSCoreKit is compiled directly into the app, like the kits above, and is an SPM library
-      # target too: the TEI parser, the render pipeline, the citation formatter, and the indexing
-      # pipeline and search service, which FRUS Explorer Light, the web edition, compiles from this
-      # directory on Linux. Foundation only: a declaration the kit needs that lives in an Apple-only
-      # file moves into the kit, never the reverse.
+      # target too: the TEI parser, the render pipeline, the citation formatter, Citation Lookup's
+      # matcher, and the indexing pipeline and search service, which FRUS Explorer Light, the web
+      # edition, compiles from this directory on Linux. Foundation only: a declaration the kit needs
+      # that lives in an Apple-only file moves into the kit, never the reverse.
       - path: FRUSCoreKit
     # Explicit Info.plist (was GENERATE_INFOPLIST_FILE + INFOPLIST_KEY_*). Switched to an
     # explicit plist because CFBundleDocumentTypes / UTExportedTypeDeclarations are arrays of

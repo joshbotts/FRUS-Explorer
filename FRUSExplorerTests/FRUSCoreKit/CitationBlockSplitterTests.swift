@@ -6,9 +6,15 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - CitationBlockSplitterTests
 

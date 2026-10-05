@@ -7,7 +7,13 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
+
+private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 // MARK: - PageRangeStore
 
@@ -78,6 +84,9 @@ import SQLite3
 ///          one's number and day through `PageSpanResolver.citedDocumentFactsSQL`; the page rows are
 ///          read through `PageSpanResolver.arabicPageRowsSQL`, the indexer's query. Review round 1:
 ///          the facts are read only when the page names several and the link carries a hint.
+///   1.8 — FRUSCoreKit, part 2: moved into the kit. It binds text with `SQLITE_TRANSIENT`, so
+///          SQLite keeps its own copy, where it bound a temporary `NSString`'s buffer and relied on
+///          Apple's autorelease pool to keep it alive
 public actor PageRangeStore {
 
     // MARK: - State
@@ -232,7 +241,7 @@ public actor PageRangeStore {
     }
 
     private func bind(text: String, at index: Int32, stmt: OpaquePointer) {
-        sqlite3_bind_text(stmt, index, (text as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, index, text, -1, SQLITE_TRANSIENT_PRS)
     }
 
     private func string(at column: Int32, stmt: OpaquePointer) -> String {

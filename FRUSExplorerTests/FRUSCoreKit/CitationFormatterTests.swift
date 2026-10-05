@@ -471,17 +471,15 @@ struct CitationStyleTests {
 /// entry rather than a hand-built volume.
 struct CitationPunctuationTests {
 
-    #if !SWIFT_PACKAGE // ManifestStore is the app's
     /// The volume #1392's type case sits beside — its editor list prints "Sanford, Jr., and",
     /// so a citation from it contains ".," that no rule may touch.
     private static let volumeId = "frus1952-54v01p1"
 
     @Test("Every style ends in one period, and exactly that one comes off (#1392)",
           arguments: CitationStyle.allCases)
-    @MainActor
     func everyStyleLosesExactlyItsTerminalPeriod(style: CitationStyle) throws {
         let entry = try #require(
-            ManifestStore().bundledEntries.first { $0.volumeId == Self.volumeId },
+            try testManifestEntries().first { $0.volumeId == Self.volumeId },
             "the bundled manifest must carry \(Self.volumeId)")
         let volume = FRUSVolumeMetadata(entry)
         var checked = 0
@@ -502,7 +500,6 @@ struct CitationPunctuationTests {
         }
         #expect(checked == 2)
     }
-    #endif
 
     /// The other branch: a string with no terminal period comes back as it was. That is the
     /// data sources' `volumeId/documentId` fallback for a volume the manifest does not know,

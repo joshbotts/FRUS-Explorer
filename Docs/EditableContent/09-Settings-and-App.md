@@ -1476,37 +1476,37 @@ Diagnostic: %@
 
 *Added 2026-09-30 (lane WB). The Mac status bar's line after a volume indexes, "Indexed <title> · 12,067 docs · 1 person · 78 links", and its detail while indexing, "56 persons · 78 links · 1,200/1,234 dated". They were plain strings that printed "1 persons" and ungrouped numbers; the docs count uses the shared `count.docs.one`/`.many` forms.*
 
-<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.indexedSummary | key: statusBar.indexed %@ -->
+<!-- SOURCE: FRUSCoreKit/Models/CountCopy.swift | StatusBarCopy.indexedSummary | key: statusBar.indexed %@ -->
 
 Indexed %@
 
 <!-- END SOURCE: statusBar.indexed %@ -->
 
-<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.one -->
+<!-- SOURCE: FRUSCoreKit/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.one -->
 
 %@ person
 
 <!-- END SOURCE: statusBar.persons.one -->
 
-<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.many -->
+<!-- SOURCE: FRUSCoreKit/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.many -->
 
 %@ persons
 
 <!-- END SOURCE: statusBar.persons.many -->
 
-<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.one -->
+<!-- SOURCE: FRUSCoreKit/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.one -->
 
 %@ link
 
 <!-- END SOURCE: statusBar.links.one -->
 
-<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.many -->
+<!-- SOURCE: FRUSCoreKit/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.many -->
 
 %@ links
 
 <!-- END SOURCE: statusBar.links.many -->
 
-<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.metaSummary | key: statusBar.dated %@ %@ -->
+<!-- SOURCE: FRUSCoreKit/Models/CountCopy.swift | StatusBarCopy.metaSummary | key: statusBar.dated %@ %@ -->
 
 %1$@/%2$@ dated
 

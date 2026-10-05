@@ -852,7 +852,8 @@ extension CodingStandardsAuditTests {
 
     /// Count literals the tree held when the scan was written, less the ones #1374, #1382 and
     /// #1422 name, which were routed through `CountCopy` in the same change. Keyed by file (under
-    /// `FRUSExplorer/`) and string key — a bare `Text`'s key is its own text — never by line.
+    /// `FRUSExplorer/`, a kit file as `../FRUSCoreKit/…`) and string key — a bare `Text`'s key is its
+    /// own text — never by line. An entry whose file moved keeps its string under the new path.
     ///
     /// **This list only shrinks.** Route an entry through `CountCopy`, delete it here and lower
     /// `countCopyBaselineCeiling`. Never add one for a new string. The one exception is the rule
@@ -877,6 +878,7 @@ extension CodingStandardsAuditTests {
     /// views nothing constructed, each with one listed string: `GlobalContextView`'s documents-accessed
     /// label and `PromptsListView`'s summary count (#1484).
     static let countCopyBaseline: [String] = [
+        #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.dispersion.volumes"#,
@@ -1008,7 +1010,6 @@ extension CodingStandardsAuditTests {
         #"Citation/CitationLookupView.swift | citation.batch.ambiguous %lld"#,
         #"Citation/CitationLookupView.swift | citation.results.count.a11y"#,
         #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.addedToast %lld"#,
-        #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.citations.topOf"#,
         #"Collections/CollectionEntryInspector.swift | collection.inspector.crossRef.many"#,
         #"Collections/CollectionEntryInspector.swift | collection.inspector.highlight.many"#,
         #"Collections/CollectionEntryRows.swift | collection.entry.chip.notes.other %lld"#,

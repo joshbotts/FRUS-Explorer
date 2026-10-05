@@ -103,6 +103,8 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 ///   1.4 — Session 154: live GitHub listing now includes each file's git blob `sha`;
 ///          `ManifestDiffResult.liveInfoByVolumeId` exposes it (with size) for
 ///          `VolumeUpdateChecker` to detect upstream corrections
+///   1.5 — FRUSCoreKit, part 2: conforms to the kit's `CitableVolumeCatalogue`, through which
+///          Citation Lookup's engine, now in the kit, reads `citableEntries`
 @Observable
 @MainActor
 public final class ManifestStore {
@@ -446,6 +448,13 @@ public final class ManifestStore {
         frusSubseries(from: filename)
     }
 }
+
+// MARK: - CitableVolumeCatalogue
+
+/// The app's catalogue for Citation Lookup and Add Documents' citations and links: `citableEntries`,
+/// the bundled entries (#1523). A lookup reads them on the main actor, as it did when the engine held
+/// the store by its own type.
+extension ManifestStore: CitableVolumeCatalogue {}
 
 // MARK: - Subseries Parsing
 

@@ -182,11 +182,13 @@ import Foundation
 ///          answered; #1523: the volumes a lookup answers for are named (`citableEntries`), the
 ///          bundled catalogue, which a side-loaded volume is not. #1506 review round 1: a volume
 ///          row labelled a best guess says so (`CitationMatch.volumeIsBestGuess`)
+///   2.2 — FRUSCoreKit, part 2: moved into the kit. It holds any `CitableVolumeCatalogue`, which
+///          the app's `ManifestStore` satisfies, where it held the store itself
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
 
-    private let manifestStore: ManifestStore
+    private let manifestStore: any CitableVolumeCatalogue
     private let searchService: SearchService?
     private let pageRangeStore: PageRangeStore?
 
@@ -211,7 +213,7 @@ public actor CitationMatchingEngine {
 
     /// An engine that treats exactly `downloadedVolumeIds` as downloaded — what the tests build.
     public init(
-        manifestStore: ManifestStore,
+        manifestStore: any CitableVolumeCatalogue,
         searchService: SearchService?,
         pageRangeStore: PageRangeStore?,
         downloadedVolumeIds: Set<String>
@@ -232,7 +234,7 @@ public actor CitationMatchingEngine {
     /// Erase Local Data every volume that had been on disk still counted as downloaded. Read at
     /// each lookup, the directory is right by construction, as the index is.
     public init(
-        manifestStore: ManifestStore,
+        manifestStore: any CitableVolumeCatalogue,
         searchService: SearchService?,
         pageRangeStore: PageRangeStore?,
         volumesDirectory: URL
