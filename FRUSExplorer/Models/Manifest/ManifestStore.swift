@@ -447,6 +447,13 @@ public final class ManifestStore {
     }
 }
 
+// MARK: - CitableVolumeCatalogue
+
+/// The app's catalogue for Citation Lookup and Add Documents' citations and links: `citableEntries`,
+/// the bundled entries (#1523). A lookup reads them on the main actor, as it did when the engine held
+/// the store by its own type.
+extension ManifestStore: CitableVolumeCatalogue {}
+
 // MARK: - Subseries Parsing
 
 /// Extracts the subseries identifier from a FRUS XML filename.

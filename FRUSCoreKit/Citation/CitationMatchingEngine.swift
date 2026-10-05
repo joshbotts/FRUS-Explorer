@@ -186,7 +186,7 @@ public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
 
-    private let manifestStore: ManifestStore
+    private let manifestStore: any CitableVolumeCatalogue
     private let searchService: SearchService?
     private let pageRangeStore: PageRangeStore?
 
@@ -211,7 +211,7 @@ public actor CitationMatchingEngine {
 
     /// An engine that treats exactly `downloadedVolumeIds` as downloaded — what the tests build.
     public init(
-        manifestStore: ManifestStore,
+        manifestStore: any CitableVolumeCatalogue,
         searchService: SearchService?,
         pageRangeStore: PageRangeStore?,
         downloadedVolumeIds: Set<String>
@@ -232,7 +232,7 @@ public actor CitationMatchingEngine {
     /// Erase Local Data every volume that had been on disk still counted as downloaded. Read at
     /// each lookup, the directory is right by construction, as the index is.
     public init(
-        manifestStore: ManifestStore,
+        manifestStore: any CitableVolumeCatalogue,
         searchService: SearchService?,
         pageRangeStore: PageRangeStore?,
         volumesDirectory: URL
