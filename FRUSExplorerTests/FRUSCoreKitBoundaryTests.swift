@@ -19,7 +19,7 @@ import Testing
 /// a kit file that calls the app from one that does not: it builds either way. Only the package
 /// fails — `swift build --target FRUSCoreKit`, which compiles the kit alone — and nothing runs that
 /// on every change here. FRUS Explorer Light compiles the same files on Linux from a pinned commit,
-/// so a kit file that imported SwiftUI or named `IndexingPipeline` would break the web edition
+/// so a kit file that imported SwiftUI or named `SearchViewModel` would break the web edition
 /// unseen until its pin next moved. These scans read the source, so the app's own test run fails:
 /// - every import but Foundation is a module the kit may use, inside the `#if canImport` that
 ///   selects it (``importRuleViolations(in:)``);
@@ -31,7 +31,8 @@ import Testing
 /// - every line of code under `FRUSCoreKit/Linux/` is inside a `#if !canImport(…)`, so an Apple
 ///   platform compiles nothing from it;
 /// - every suite under `FRUSExplorerTests/FRUSCoreKit/` opens with the header that imports the kit
-///   in the package and the app in Xcode, and imports the app's modules only in Xcode;
+///   in the package and the app in Xcode, imports the app's modules only in Xcode, and imports a
+///   module the kit may use only behind the `canImport` that selects it;
 /// - no suite there names, outside Xcode's branches (``linesByCompiler(_:)``), what the package
 ///   lacks: the app's top-level declarations, or those of the test target's other files, which
 ///   Xcode compiles beside the suites. Xcode builds and passes such a suite; `swift test` does not;
@@ -64,6 +65,11 @@ import Testing
 ///   1.1 — FRUSCoreKit, part 1, review: the name checks read only a name that can mean the app's
 ///         declaration, so a change to the app alone does not fail them by reusing a name the kit
 ///         uses for something of its own
+///   1.2 — FRUSCoreKit, part 2: the kit and its suites may import OSLog, SQLite3 (CSQLite on Linux)
+///         and FTS5Store, each behind the `canImport` that selects it, as the indexer does; the
+///         bundle check also catches a `Bundle = .main` default; the walks' sanity sets name
+///         `SearchViewModel`, `WindowTargetingTests` and `makeAnalyticsPipeline`, since the pipeline
+///         and `makeTestPipeline` moved into the kit and its suites
 @Suite("FRUSCoreKit — Foundation only, and nothing that lives in the app")
 struct FRUSCoreKitBoundaryTests {
 
@@ -92,11 +98,18 @@ struct FRUSCoreKitBoundaryTests {
 
     /// The modules a kit file may import besides Foundation, each with the condition whose branch
     /// it must sit in: swift-crypto's `Crypto` stands in for CryptoKit, so it is the `#else`.
+    /// The indexer's modules joined in part 2: OSLog, whose Linux stand-in is `Linux/LinuxOSLogShims.swift`;
+    /// SQLite3, for which the web edition supplies `CSQLite` on Linux; and FTS5Store, a module of its
+    /// own in a package and compiled into the app in Xcode, where `canImport(FTS5Store)` is false.
     static let permittedImports: [String: (condition: String, inElse: Bool)] = [
         "FoundationXML": ("canImport(FoundationXML)", false),
         "CryptoKit": ("canImport(CryptoKit)", false),
         "Crypto": ("canImport(CryptoKit)", true),
         "SourceNoteKit": ("canImport(SourceNoteKit)", false),
+        "OSLog": ("canImport(OSLog)", false),
+        "SQLite3": ("canImport(SQLite3)", false),
+        "CSQLite": ("canImport(SQLite3)", true),
+        "FTS5Store": ("canImport(FTS5Store)", false),
     ]
 
     /// Each import in `source` that breaks the kit's rule, as `line: import`: Foundation anywhere;
@@ -143,12 +156,22 @@ struct FRUSCoreKitBoundaryTests {
         #expect(Self.importRuleViolations(in: "import Foundation\n").isEmpty)
         #expect(Self.importRuleViolations(in: "#if canImport(FoundationXML)\nimport FoundationXML\n#endif\n").isEmpty)
         #expect(Self.importRuleViolations(in: "#if canImport(CryptoKit)\nimport CryptoKit\n#else\nimport Crypto\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "#if canImport(SQLite3)\nimport SQLite3\n#else\nimport CSQLite\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "#if canImport(OSLog)\nimport OSLog\n#endif\n").isEmpty)
+        #expect(Self.importRuleViolations(in: "#if canImport(FTS5Store)\nimport FTS5Store\n#endif\n").isEmpty)
         // Apple-only, guarded or not.
         #expect(Self.importRuleViolations(in: "import SwiftUI\n") == ["1: import SwiftUI"])
         #expect(Self.importRuleViolations(in: "#if canImport(SwiftUI)\nimport SwiftUI\n#endif\n") == ["2: import SwiftUI"])
         // A permitted module unguarded, in the wrong branch, or under another module's guard.
         #expect(Self.importRuleViolations(in: "import CryptoKit\n") == ["1: import CryptoKit"])
         #expect(Self.importRuleViolations(in: "#if canImport(CryptoKit)\nimport Crypto\n#endif\n") == ["2: import Crypto"])
+        #expect(Self.importRuleViolations(in: "import SQLite3\n") == ["1: import SQLite3"])
+        #expect(Self.importRuleViolations(in: "#if canImport(SQLite3)\nimport CSQLite\n#endif\n") == ["2: import CSQLite"])
+        #expect(Self.importRuleViolations(in: "import OSLog\n") == ["1: import OSLog"])
+        #expect(Self.importRuleViolations(in: "#if canImport(SQLite3)\nimport FTS5Store\n#endif\n") == ["2: import FTS5Store"])
+        // Still forbidden, guarded or not: what the indexer left in the app.
+        #expect(Self.importRuleViolations(in: "#if canImport(CoreSpotlight)\nimport CoreSpotlight\n#endif\n")
+                == ["2: import CoreSpotlight"])
         #expect(Self.importRuleViolations(in: "#if canImport(Darwin)\nimport SourceNoteKit\n#endif\n")
                 == ["2: import SourceNoteKit"])
         // An attributed import is an import, and an import in a comment or a string is not.
@@ -163,13 +186,15 @@ struct FRUSCoreKitBoundaryTests {
         var sites: [String] = []
         for file in try Self.sources(under: "FRUSCoreKit") {
             for (index, line) in Self.codeLines(file.text).enumerated()
-            where line.contains("Bundle.main") || line.contains("UserDefaults") {
+            where line.contains("Bundle.main") || line.contains("UserDefaults")
+                || line.range(of: #"Bundle\s*=\s*\.main"#, options: .regularExpression) != nil {
                 sites.append("\(file.path):\(index + 1)")
             }
         }
         #expect(sites.isEmpty, """
             A kit file reads the app's bundle or settings. The kit is given what the app read — \
-            `BrokenRefsIndexStore` and `CitationStyle.current` stay in the app for this reason:
+            `BrokenRefsIndexStore`, `CitationStyle.current` and the indexer's `IndexingResources.bundled` \
+            and `UserDefaults` stamp store stay in the app for this reason:
             \(sites.joined(separator: "\n"))
             """)
     }
@@ -389,9 +414,9 @@ struct FRUSCoreKitBoundaryTests {
     @Test("No kit file names a type, function, constant or variable the app declares")
     func kitNamesNoAppType() throws {
         let declared = try Self.topLevelDeclarations(under: "FRUSExplorer")
-        // The walk is real: the app's model, view model and pipeline are among them, and two of its
-        // free functions.
-        #expect(declared.isSuperset(of: ["IndexingPipeline", "DocumentViewModel", "AppState", "DocumentHighlight",
+        // The walk is real: the app's model and two view models are among them, and two of its free
+        // functions.
+        #expect(declared.isSuperset(of: ["SearchViewModel", "DocumentViewModel", "AppState", "DocumentHighlight",
                                          "frusSubseries", "formattedBytes"]),
                 "the app's declarations were not read: \(declared.count) found")
         let kit = try Self.sources(under: "FRUSCoreKit")
@@ -490,7 +515,7 @@ struct FRUSCoreKitBoundaryTests {
     @Test("The app-name rule skips a member, a label and the kit's own names, and reads what can mean the app's")
     func appNameRuleReadsWhatCanMeanTheApp() {
         // Names the app declares at the top level, which the first fixture uses for things of its own.
-        let app: Set<String> = ["log", "format", "label", "value", "Entry", "item", "IndexingPipeline",
+        let app: Set<String> = ["log", "format", "label", "value", "Entry", "item", "SearchViewModel",
                                 "frusSubseries", "AppState"]
         let ownUses = """
             struct Report {
@@ -519,14 +544,14 @@ struct FRUSCoreKitBoundaryTests {
         // A type before a `.`, after a colon or as a dictionary's key, a call, and a value passed
         // under a label are read.
         let appUses = """
-            let type = IndexingPipeline.self
+            let type = SearchViewModel.self
             let subseries = frusSubseries(from: id)
             let state: AppState? = nil
             let counts: [AppState: Int] = [:]
             configure(state: AppState.shared, log: log)
             """
         #expect(Self.appNames(in: appUses, among: app, except: Self.declaredNames(in: appUses))
-                == ["1: IndexingPipeline", "2: frusSubseries", "3: AppState", "4: AppState", "5: AppState", "5: log"])
+                == ["1: SearchViewModel", "2: frusSubseries", "3: AppState", "4: AppState", "5: AppState", "5: log"])
 
         // In a suite, Xcode's lines are not read, and the rest are read the same way.
         let suite = """
@@ -536,12 +561,12 @@ struct FRUSCoreKitBoundaryTests {
             @testable import FRUSExplorer
             #endif
             #if !SWIFT_PACKAGE
-            let pipeline = IndexingPipeline.self
+            let pipeline = SearchViewModel.self
             #endif
             let made = makeTestPipeline(label: value.label)
             """
         let lines = Self.linesByCompiler(suite)
-        let uses = Self.nameUses(in: lines.map(\.code), among: ["IndexingPipeline", "makeTestPipeline", "label"],
+        let uses = Self.nameUses(in: lines.map(\.code), among: ["SearchViewModel", "makeTestPipeline", "label"],
                                  where: { !lines[$0].xcodeOnly })
         #expect(uses.map { "\($0.line): \($0.name)" } == ["9: makeTestPipeline"])
     }
@@ -612,11 +637,18 @@ struct FRUSCoreKitBoundaryTests {
         var problems: [String] = []
         for file in suites {
             if !file.text.contains(header) { problems.append("\(file.path): no `#if SWIFT_PACKAGE` header") }
+            // A module the kit itself may import is allowed where the kit allows it, directly inside
+            // the branch of its own condition: the package builds FTS5Store, SourceNoteKit and SQLite
+            // as modules of their own, which the indexer's suites import as the indexer does.
+            let outsideItsBranch = Set(Self.importRuleViolations(in: file.text).compactMap {
+                Int($0.prefix { $0 != ":" })
+            })
             for (index, line) in Self.linesByCompiler(file.text).enumerated() where !line.xcodeOnly {
                 let code = line.code.trimmingCharacters(in: .whitespaces)
                 guard code.hasPrefix("import ") || code.hasPrefix("@testable import ") else { continue }
                 let module = code.components(separatedBy: " ").last ?? ""
                 guard !["Foundation", "Testing", "FRUSCoreKit"].contains(module) else { continue }
+                if Self.permittedImports[module] != nil, !outsideItsBranch.contains(index + 1) { continue }
                 problems.append("\(file.path):\(index + 1): \(code) outside the Xcode branch")
             }
         }
@@ -636,8 +668,10 @@ struct FRUSCoreKitBoundaryTests {
             absent.formUnion(Self.topLevelTypes(in: file.text))
             absent.formUnion(Self.topLevelFunctionsAndGlobals(in: file.text))
         }
-        // The walk is real: the app's pipeline and scheme handler, and a helper of the test target's.
-        #expect(absent.isSuperset(of: ["IndexingPipeline", "FRUSURLSchemeHandler", "makeTestPipeline"]),
+        // The walk is real: the app's view model and scheme handler, and a suite and a helper of the
+        // test target's, so both its types and its free functions are read.
+        #expect(absent.isSuperset(of: ["SearchViewModel", "FRUSURLSchemeHandler", "WindowTargetingTests",
+                                       "makeAnalyticsPipeline"]),
                 "the declarations the package lacks were not read: \(absent.count) found")
         // What the package has of its own: the kit's names, and those the suites declare where the
         // package compiles them.
@@ -676,7 +710,7 @@ struct FRUSCoreKitBoundaryTests {
             #endif
             let kit = FRUSURLScheme.self
             #if !SWIFT_PACKAGE // the app's
-            let app = IndexingPipeline.self
+            let app = SearchViewModel.self
             #else
             let packageOnly = 1
             #endif
