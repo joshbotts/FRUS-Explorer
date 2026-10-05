@@ -67,7 +67,8 @@ import PackageDescription
 ///   (compiled directly via `project.yml`, like FTS5Store) and the eval harness.
 ///
 /// - **FRUSCoreKit**: the TEI parser, the AST, the render pipeline (converter, render nodes, HTML
-///   serializer) and the citation formatter, models and parser, shared between the app targets
+///   serializer), the citation formatter, models and parser, Citation Lookup's matcher, and the
+///   indexing pipeline and search service, shared between the app targets
 ///   (compiled directly via `project.yml`, like FTS5Store) and FRUS Explorer Light, the web
 ///   edition, which compiles the same directory on Linux. Foundation only, behind `canImport`
 ///   guards; the Apple-only halves of its types stay in the app.
@@ -653,11 +654,12 @@ let package = Package(
 
         // MARK: - FRUSCoreKit
 
-        /// The TEI parser, AST, render conversion, HTML serializer and citation formatter, and the
-        /// indexing pipeline and search service over the shared SQLite index. Like FTS5Store and
-        /// SourceNoteKit, these sources are ALSO compiled directly into both app targets via a
-        /// `project.yml` path entry, so the app and FRUS Explorer Light, the web edition, which
-        /// compiles this directory on Linux, render, cite, index and search through the same code.
+        /// The TEI parser, AST, render conversion, HTML serializer and citation formatter, the
+        /// indexing pipeline and search service over the shared SQLite index, and Citation Lookup's
+        /// matcher. Like FTS5Store and SourceNoteKit, these sources are ALSO compiled directly into
+        /// both app targets via a `project.yml` path entry, so the app and FRUS Explorer Light, the
+        /// web edition, which compiles this directory on Linux, render, cite, index, search and look
+        /// up citations through the same code.
         /// Foundation only: CryptoKit, FoundationXML, OSLog, SQLite3, FTS5Store and SourceNoteKit
         /// are imported behind `canImport`, and the stand-ins under `Linux/` compile to nothing on
         /// Apple platforms. On Linux, the web edition's package supplies swift-crypto's `Crypto` and

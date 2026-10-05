@@ -7,7 +7,13 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
+
+private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 // MARK: - PageRangeStore
 
@@ -232,7 +238,7 @@ public actor PageRangeStore {
     }
 
     private func bind(text: String, at index: Int32, stmt: OpaquePointer) {
-        sqlite3_bind_text(stmt, index, (text as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, index, text, -1, SQLITE_TRANSIENT_PRS)
     }
 
     private func string(at column: Int32, stmt: OpaquePointer) -> String {
