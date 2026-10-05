@@ -1977,8 +1977,9 @@ struct PrintedBodyTextTests {
     /// `map { $0.plainText }` followed by `.joined(separator: " ")`, not a text window.
     @Test("No app source joins plainText pieces with a bare space")
     func noSpaceJoinedPlainTextRemains() throws {
+        // This suite is in FRUSExplorerTests/FRUSCoreKit/, a folder below the test target's root.
         let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-            .deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
         let pattern = #"map\s*(?:\(\s*\\\.plainText\s*\)|\{\s*\$0\.plainText\s*\})\s*\.joined\(\s*separator:\s*" "\s*\)"#
         let regex = try NSRegularExpression(pattern: pattern)
         var files = 0, plainTextMentions = 0

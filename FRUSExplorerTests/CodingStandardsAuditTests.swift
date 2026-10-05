@@ -449,7 +449,7 @@ struct CodingStandardsAuditTests {
         let keyFiles: [String] = [
             "FRUSExplorer/App/FRUSExplorerApp.swift",
             "FRUSExplorer/App/AppState.swift",
-            "FRUSExplorer/Search/SearchService.swift",
+            "FRUSCoreKit/Search/SearchService.swift",
             "FRUSExplorer/CrossReference/CrossReferenceGraphView.swift",
             "FRUSCoreKit/Citation/CitationParser.swift",
             "FRUSExplorer/Citation/PageRangeStore.swift",

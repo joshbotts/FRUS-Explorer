@@ -232,7 +232,7 @@ struct WhyRelatedChipTests {
         // makes the number quietly mean something else: a scoped cohort would read "1 of 12" and
         // "1 of 7,056" on two screens showing the same pair, and forgetting the +1 understates
         // every container by one.
-        let pipeline = try source("FRUSExplorer/Search/IndexingPipeline.swift")
+        let pipeline = try source("FRUSCoreKit/Search/IndexingPipeline.swift")
         let cohortLine = try #require(pipeline.range(of: "let cohortCount = "))
         let scopeLine = try #require(pipeline.range(of: "let scoped = Self.applyScope(result"))
         #expect(cohortLine.lowerBound < scopeLine.lowerBound,

@@ -61,7 +61,7 @@ struct ProjectLeadSnippetTests {
                                     contributingSeedKeys: [])
         #expect(lead.documentKey == "frus1958-60v08/d42")
 
-        let pipelineKey = try? Self.source("FRUSExplorer/Search/IndexingPipeline.swift")
+        let pipelineKey = try? Self.source("FRUSCoreKit/Search/IndexingPipeline.swift")
         #expect(pipelineKey?.contains(#"result["\(volumeId)/\(documentId)"] = snippet"#) == true,
                 """
                 documentSnippets no longer keys on volumeId/documentId — every lookup in the view \

@@ -446,16 +446,14 @@ struct SubjectMeaningTests {
     @MainActor
     @Test("Only the two documented sites do arithmetic on ResolvedSubject.score")
     func arithmeticConsumersAreEnumerated() throws {
-        let root = URL(fileURLWithPath: #filePath)
+        // FRUSExplorer/ and FRUSCoreKit/: the type and the two indexes that build it are kit files,
+        // where an aggregator could accumulate the score unseen.
+        let repoRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer")
         let known: Set<String> = ["PersonIndexView.swift", "ProjectFocusSuggestions.swift"]
 
         var found: [String] = []
-        let files = try #require(FileManager.default.enumerator(at: root,
-                                                                includingPropertiesForKeys: nil))
-        for case let url as URL in files {
-            guard url.pathExtension == "swift" else { continue }
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
             guard let source = try? String(contentsOf: url, encoding: .utf8) else { continue }
             for line in source.split(separator: "\n") {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)

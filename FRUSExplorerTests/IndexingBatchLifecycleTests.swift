@@ -415,13 +415,12 @@ struct IndexedVolumeSetTests {
 
     // MARK: - The routing
 
-    /// The app's Swift sources, for the scan, with their repository-relative paths.
+    /// The app's Swift sources, `FRUSExplorer/` and `FRUSCoreKit/` through `AppSourceTree`, for the
+    /// scan, with their repository-relative paths: the pipeline whose pass the rule routes is in the kit.
     private static func appSources() throws -> [(path: String, text: String)] {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-        let appDir = root.appendingPathComponent("FRUSExplorer")
-        let enumerator = try #require(FileManager.default.enumerator(at: appDir, includingPropertiesForKeys: nil))
         var sources: [(String, String)] = []
-        for case let url as URL in enumerator where url.pathExtension == "swift" {
+        for url in AppSourceTree.swiftFiles(in: root) {
             let text = try String(contentsOf: url, encoding: .utf8)
             sources.append((url.path.replacingOccurrences(of: root.path + "/", with: ""), text))
         }
@@ -447,7 +446,7 @@ struct IndexedVolumeSetTests {
         for source in sources {
             for (number, line) in Self.codeLines(source.text) {
                 if line.contains(".indexAllVolumes()"), source.path != "FRUSExplorer/App/AppState.swift",
-                   source.path != "FRUSExplorer/Search/IndexingPipeline.swift" {
+                   source.path != "FRUSCoreKit/Search/IndexingPipeline.swift" {
                     passes.append("\(source.path):\(number): \(line)")
                 }
                 if line.contains(write) { writes.append("\(source.path):\(number): \(line)") }

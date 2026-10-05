@@ -93,10 +93,10 @@ struct AdvancedFilterSignatureTests {
         // Guards the enumeration above from drifting: if `SearchParameters` gains or loses one of
         // these, the list is stale and the test that depends on it is quietly narrower than it
         // reads. A hardcoded list nobody checks is how the M-10 chip survived its own audit.
-        // `SearchParameters` is declared in SearchModels.swift, not the pipeline — a first draft
-        // of this guard read the wrong file and failed three of four scopes, which is the guard
-        // working on itself.
-        let models = try Self.source("FRUSExplorer/Search/SearchModels.swift")
+        // `SearchParameters` is declared in FRUSCoreKit/Search/SearchParameters.swift, not the
+        // pipeline — a first draft of this guard read the wrong file and failed three of four
+        // scopes, which is the guard working on itself.
+        let models = try Self.source("FRUSCoreKit/Search/SearchParameters.swift")
         for scope in Self.booleanScopes {
             #expect(models.contains("var \(scope): Bool"),
                     "\(scope) is listed here but is no longer a SearchParameters field — this suite's enumeration is stale and is testing less than it appears to.")
@@ -107,7 +107,7 @@ struct AdvancedFilterSignatureTests {
     func frontMatterHasEffect() throws {
         // The signature fix is only worth having if the scope does something. Both halves are
         // pinned: the pipeline's SQL-side exclusion and the view model's row-side predicate.
-        let pipeline = try Self.source("FRUSExplorer/Search/IndexingPipeline.swift")
+        let pipeline = try Self.source("FRUSCoreKit/Search/IndexingPipeline.swift")
         #expect(pipeline.contains("if !filters.includeFrontMatter"),
                 "the pipeline no longer excludes front matter — the toggle would be inert again, this time for a different reason")
     }
