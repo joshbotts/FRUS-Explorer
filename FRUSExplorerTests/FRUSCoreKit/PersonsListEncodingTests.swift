@@ -104,11 +104,9 @@ struct PersonsListEncodingTests {
         let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
         #expect(persons.map(\.ref).sorted() == ["p_HF1", "p_JCBD1"])
         #expect(persons.first { $0.ref == "p_HF1" }?.name == "Hamilton Fish")
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         // An installed index reads this list only when it re-parses, which only a bump triggers.
         #expect(IndexingPipeline.currentDateIndexVersion >= 51,
                 "the spelling fix changes parse output and needs the v51 re-index")
-        #endif
     }
 
     @Test("The previously-accepted spellings still work (#740)")

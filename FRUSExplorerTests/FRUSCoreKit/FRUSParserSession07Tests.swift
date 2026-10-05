@@ -466,14 +466,12 @@ struct ContainerTests {
         #expect(ch1.carriedPages.isEmpty)
     }
 
-    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     /// The stored documents, page rows, page references' edges and persons-list years changed, so an
     /// installed index must re-parse (#1509, #1510, #1511).
     @Test("The index version is at least 63, the page-citation rebuild of #1509, #1510 and #1511")
     func indexVersionCoversPageCitations() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 63)
     }
-    #endif
 
     @Test("Opening a left-out container by id still renders everything it holds")
     func aLeftOutContainerStillOpensById() async throws {
@@ -1254,11 +1252,9 @@ struct TableCaptionTests {
         #expect(ASTToRenderNodeConverter.kVersion == "1.2")
         #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
                 == ASTToRenderNodeConverter.renderingVersion(for: baseline))
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         // The index stores that hash as `body_hash`, through the same conversion: no re-index.
         #expect(IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(TableCaptionFixtures.d355))
                 == IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(TableCaptionFixtures.d355WithoutCaption)))
-        #endif
         let flat = buildFlatText(from: model)
         #expect(flat.contains("Year Ending March 20, 1950"), "the cells must still be flat text")
         #expect(!flat.contains("Millions of Dollars"), "the caption entered the flat text")
@@ -1271,14 +1267,12 @@ struct TableCaptionTests {
                 "footnotes collected: \(TableCaptionFixtures.footnoteLabels(model))")
         #expect(flatText(of: model.footnotes).contains("Brzezinski added the columns labeled “SU Strike”"),
                 "footnote 7's body was lost")
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         // The index never lost it: it harvests footnotes from the AST, where the head always was, so
         // the stored footnotes do not change and nothing re-indexes. (The head's source note is
         // not an editorial footnote and is not harvested.)
         let harvested = IndexingPipeline.collectBodyFootnotes(
             from: try await ListShapeFixtures.ast(TableCaptionFixtures.d71).nodes)
         #expect(harvested.map(\.label) == ["6", "7", "8"], "the index's harvest: \(harvested.map(\.label))")
-        #endif
 
         let out = html(model)
         let missing = ListShapeFixtures.firstOutOfOrder([
@@ -1876,10 +1870,8 @@ struct FigureCaptionTests {
         #expect(buildFlatText(from: model) == buildFlatText(from: baseline))
         #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
                 == ASTToRenderNodeConverter.renderingVersion(for: baseline))
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         #expect(IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(fixture))
                 == IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(without)))
-        #endif
     }
 
     @Test("d587's maps print their printed titles above the image's place, and no file name")
@@ -1925,11 +1917,9 @@ struct FigureCaptionTests {
         let flat = buildFlatText(from: model)
         #expect(!flat.contains("Harriman") && !flat.contains("Acheson"), "a caption entered the flat text: \(flat)")
         try await expectFlatTextUnmoved(FigureFixtures.d289, without: FigureFixtures.d289WithoutFigures)
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         // The index always held the words (it reads the AST), so search finds what the reader now shows.
         let body = IndexingPipeline.extractBodyText(from: try await ListShapeFixtures.ast(FigureFixtures.d289).nodes)
         #expect(body.contains("W. Averell Harriman"), "body_text: \(body)")
-        #endif
     }
 
     /// `documentXML` converted with lookups that resolve every person and term it links. Built
@@ -2070,7 +2060,6 @@ struct ElementSpaceTests {
         #expect(flat == buildFlatText(from: glued))
         #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
                 == ASTToRenderNodeConverter.renderingVersion(for: glued))
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         let ast = try await ListShapeFixtures.ast(FigureFixtures.d2)
         let gluedAST = try await ListShapeFixtures.ast(FigureFixtures.d2Glued)
         #expect(IndexingPipeline.bodyHash(for: ast) == IndexingPipeline.bodyHash(for: gluedAST))
@@ -2079,7 +2068,6 @@ struct ElementSpaceTests {
         #expect(IndexingPipeline.extractHeader(from: ast.nodes) == IndexingPipeline.extractHeader(from: gluedAST.nodes))
         #expect(IndexingPipeline.extractDateline(from: ast.nodes) == IndexingPipeline.extractDateline(from: gluedAST.nodes))
         #expect(IndexingPipeline.extractDateline(from: ast.nodes) == "Department of State, Washington, February 28, 1861.")
-        #endif
     }
 }
 
@@ -2357,7 +2345,6 @@ struct ElementSpaceRuleTests {
     @Test("A kept space is no text: the index stores what it stored, and the highlight space does not move")
     func aKeptSpaceIsNoText() async throws {
         let spaced = "<div type=\"document\" xml:id=\"d1\"><p>(<hi>a</hi> <hi>b</hi> <hi>.</hi>)</p></div>"
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         let glued = "<div type=\"document\" xml:id=\"d1\"><p>(<hi>a</hi><hi>b</hi><hi>.</hi>)</p></div>"
         let ast = try await ListShapeFixtures.ast(spaced)
         let gluedAST = try await ListShapeFixtures.ast(glued)
@@ -2366,7 +2353,6 @@ struct ElementSpaceRuleTests {
         #expect(IndexingPipeline.extractBodyText(from: ast.nodes) == "(a b.)")
         #expect(IndexingPipeline.extractBodyText(from: ast.nodes) == IndexingPipeline.extractBodyText(from: gluedAST.nodes))
         #expect(IndexingPipeline.bodyHash(for: ast) == IndexingPipeline.bodyHash(for: gluedAST))
-        #endif
         #expect(buildFlatText(from: try await ListShapeFixtures.renderModel(spaced)) == "(ab.)")
     }
 }

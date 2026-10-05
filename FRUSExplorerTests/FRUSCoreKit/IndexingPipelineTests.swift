@@ -6,13 +6,32 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
-import SQLite3
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
+@testable import FRUSExplorer
 #if canImport(UIKit)
 import UIKit
 #endif
-@testable import FRUSExplorer
+#endif
+// The package builds FTS5Store and SourceNoteKit as modules of their own; Xcode compiles both into
+// the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(SourceNoteKit)
+import SourceNoteKit
+#endif
+// SQLite3 is the system's on Apple platforms; on Linux the web edition supplies CSQLite.
+#if canImport(SQLite3)
+import SQLite3
+#else
+import CSQLite
+#endif
 
 // MARK: - Test Helpers
 
@@ -375,6 +394,7 @@ struct RemoveVolumeTests {
 @Suite("IndexingPipeline — incremental updates")
 struct IncrementalUpdateTests {
 
+    #if !SWIFT_PACKAGE // GeneratedSummary is SwiftData, the app's
     @Test("updateSummary makes summary text searchable via user_content")
     func summaryTextSearchable() async throws {
         try await withTempDir { dir in
@@ -410,7 +430,9 @@ struct IncrementalUpdateTests {
             #expect(corpusOnly.isEmpty, "summary text must not be indexed in frus_documents")
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // ResearchNote is SwiftData, the app's
     @Test("A document's note text is searchable via user_content")
     func noteTextSearchable() async throws {
         try await withTempDir { dir in
@@ -441,6 +463,7 @@ struct IncrementalUpdateTests {
             #expect(!results.isEmpty)
         }
     }
+    #endif
 
     @Test("Re-indexing a volume preserves summary and note text")
     func reindexPreservesUserContent() async throws {
@@ -1405,6 +1428,7 @@ struct TextExtractionTests {
         #expect(IndexingPipeline.extractHeader(from: nodes) == "Memorandum by Prime Minister Churchill")
     }
 
+    #if !SWIFT_PACKAGE // CrossReferenceStore and its target labels are the app's
     /// End to end through the index, and on to the label Cross-Reference Analytics shows and
     /// hands `openDocument` (#1372's 2026-09-23 comment): an indexed note is named by its head.
     @Test("An indexed editorial note is stored, faceted and labelled by its printed head")
@@ -1452,10 +1476,12 @@ struct TextExtractionTests {
             #expect(!absent.isIndexed)
         }
     }
+    #endif
 }
 
 // MARK: - RealTEIPrintedTitleTests
 
+#if !SWIFT_PACKAGE // reads the local TEI mirror and skips without it, and the web CI fails on a skip
 /// #1375 and #1372 against the **real published volumes**, when a local corpus mirror is present.
 ///
 /// The fixtures in `TextExtractionTests` copy the head or dateline under test verbatim (their
@@ -1500,6 +1526,7 @@ struct RealTEIPrintedTitleTests {
                 == "Memorandum by Prime Minister Churchill")
     }
 }
+#endif
 
 // MARK: - PrintedBodyTextTests (#1421)
 
@@ -1873,6 +1900,7 @@ struct PrintedBodyTextTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // ExcerptVerifier is the app's
     /// The excerpt verifier searches `body_text` for a quotation frozen from the rendered text, so
     /// a quotation spanning an inline boundary failed wherever the join had invented a space.
     @Test("A quotation taken from the rendered text verifies against the stored body")
@@ -1889,7 +1917,9 @@ struct PrintedBodyTextTests {
         #expect(ExcerptVerifier.verify(excerpt, against: IndexingPipeline.extractBodyText(from: nodes))
                 == .verified)
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // ProseSnippet is SemanticVectorsKit's, which FRUSCoreKitTests does not depend on
     /// Meaning-search rows show `ProseSnippet`, which strips the document's own header, source note
     /// and dateline from the front of `body_text`. #1375 printed the header while the body kept
     /// "Moscow , January 20, 1961 .", so the strip missed and a row re-showed its own dateline.
@@ -1903,6 +1933,7 @@ struct PrintedBodyTextTests {
             body: IndexingPipeline.extractBodyText(from: nodes))
         #expect(snippet.hasPrefix("Dear Mr. President: We congratulate you"))
     }
+    #endif
 
     /// The whole route, through a real index: what `document_cache`, `external_citations` and
     /// `cross_references` actually store.
@@ -1939,6 +1970,7 @@ struct PrintedBodyTextTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // reads the app's source
     /// Every stored-text site goes through the printed join (#1421): no `plainText` map joined with a
     /// bare space survives in the app, `FRUSExplorer/` or `FRUSCoreKit/`, whose converter and
     /// resolver call `plainText` and `printedText` too. Matches the CALL, `map(\.plainText)` or
@@ -1965,6 +1997,7 @@ struct PrintedBodyTextTests {
         #expect(plainTextMentions > 0, "the scan found no plainText at all, so it proves nothing")
         #expect(sites.isEmpty, "space-joined plainText at: \(sites)")
     }
+    #endif
 
     /// The parse output changed for every stored body, so an installed index must re-parse.
     @Test("The index version is at least 59, the printed-body rebuild")
@@ -1992,6 +2025,7 @@ struct PrintedBodyTextTests {
     }
 }
 
+#if !SWIFT_PACKAGE // the mirrors are CollectionAuthorityGeneratorCore's, which Xcode compiles into the test bundle
 /// The generator's two XML mirrors (`DocumentNoteExtractor`, `DocumentFootnoteExtractor`, compiled
 /// into this bundle) against the pipeline, on the #1421 fixtures. The mirror-gated real-TEI parity
 /// suites compare four volumes; these run everywhere, on the shapes the printed join changes.
@@ -2029,9 +2063,11 @@ struct PrintedJoinMirrorParityTests {
         #expect(compared == 4, "d46, d499 and d29 carry four body footnotes between them")
     }
 }
+#endif
 
 // MARK: - PrintedEdgeRuleTests (#1421 review)
 
+#if !SWIFT_PACKAGE // the mirrors are CollectionAuthorityGeneratorCore's, which Xcode compiles into the test bundle
 /// The printed join's edge rule, one fixture per conjunct, driven through BOTH implementations:
 /// the app's `PrintedText` (through the real parser and `collectBodyFootnotes`) and the generator's
 /// `PrintedTextMirror` (through `DocumentFootnoteExtractor`, compiled into this bundle).
@@ -2184,9 +2220,11 @@ struct PrintedEdgeRuleTests {
         #expect(PrintedText.closers == [")", "]", "}", ".", ",", ";", ":", "!", "?", "\u{201D}", "\u{2019}"])
     }
 }
+#endif
 
 // MARK: - RealTEISectionTitleTests
 
+#if !SWIFT_PACKAGE // reads the local TEI mirror and skips without it, and the web CI fails on a skip
 /// #1389 against the real volumes, when a local corpus mirror is present: a section's title is its
 /// own first `<head>`, without an attachment's or a list's heading and without its own footnote.
 /// Skipped unless `FRUS_TEI_MIRROR` points at the corpus `volumes/` directory.
@@ -2231,6 +2269,7 @@ struct RealTEISectionTitleTests {
                 == "The Greene Mission to the Baltic Provinces")
     }
 }
+#endif
 
 // MARK: - ArchivalNeighborsTests
 
@@ -2301,6 +2340,7 @@ struct ArchivalNeighborsTests {
 
 // MARK: - SpotlightDonationTests
 
+#if !SWIFT_PACKAGE // the Spotlight donation stays in the app (IndexingPipeline+App.swift)
 /// The donated Spotlight item shape (W-9 step 1), pinned against the real builder.
 ///
 /// `textContent` is the property Apple's semantic search matches against; the V-5
@@ -2364,6 +2404,7 @@ struct SpotlightDonationTests {
         #expect(item.attributeSet.title == "Memorandum by Prime Minister Churchill")
     }
 }
+#endif
 
 // MARK: - W17RouteArmsTests
 
@@ -2542,6 +2583,7 @@ struct AliasFallbackCentralFilesTests {
         return pipeline
     }
 
+    #if !SWIFT_PACKAGE // the collection authority behind the alias fallback is the app's
     /// What the alias fallback had to serve for `anchorNote`: the bundled authority's record for
     /// it must be the "Central Files" umbrella, and that record's names, asked of the index the
     /// way the fallback asks, must match the five comma-worded documents.
@@ -2565,7 +2607,9 @@ struct AliasFallbackCentralFilesTests {
         ], "the umbrella record's name must match the five comma-worded documents")
         #expect(pool.basis == "Central Files (collection authority)")
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the collection authority behind the alias fallback is the app's
     @Test("A Subject-Numeric document alone in its file has no neighbours")
     func subjectNumericAnchorAloneInItsFile() async throws {
         try await withTempDir { dir in
@@ -2583,7 +2627,9 @@ struct AliasFallbackCentralFilesTests {
             #expect(result.basis == "POL 13 VIET S", "the basis stays the file the note cites")
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the collection authority behind the alias fallback is the app's
     @Test("A decimal document alone in its file has no neighbours")
     func decimalAnchorAloneInItsFile() async throws {
         try await withTempDir { dir in
@@ -2600,6 +2646,7 @@ struct AliasFallbackCentralFilesTests {
             #expect(result.basis == "751K.5")
         }
     }
+    #endif
 
     @Test("A central-files document still finds the documents in its own file")
     func theDirectRouteIsUnmoved() async throws {
@@ -2622,6 +2669,7 @@ struct AliasFallbackCentralFilesTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // the collection authority behind the alias fallback is the app's
     @Test("A library collection still reaches its neighbours through an authority alias")
     func libraryAliasFallbackIsUnmoved() async throws {
         try await withTempDir { dir in
@@ -2646,7 +2694,9 @@ struct AliasFallbackCentralFilesTests {
             #expect(result.cohortCount == 2)
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the collection authority behind the alias fallback is the app's
     @Test("A named series still reaches its neighbours through the authority")
     func namedSeriesAliasFallbackIsUnmoved() async throws {
         try await withTempDir { dir in
@@ -2668,7 +2718,9 @@ struct AliasFallbackCentralFilesTests {
             #expect(result.basis == "SWNCC Files (collection authority)")
         }
     }
+    #endif
 
+    #if !SWIFT_PACKAGE // the collection authority behind the alias fallback is the app's
     /// The third control: a lot file. A control, so it passes with the gate and without it; it
     /// fails when the gate refuses a lot file, which is the mistake it is here to catch.
     ///
@@ -2726,6 +2778,7 @@ struct AliasFallbackCentralFilesTests {
             #expect(result.cohortCount == 2)
         }
     }
+    #endif
 
     /// One note per arm of `aliasFallbackServes`, with the parse case each must have: a fixture
     /// the parser read another way would pass through a different arm and test nothing.
@@ -3504,6 +3557,7 @@ struct VolumeSourceMatcherTests {
         return rows
     }
 
+    #if !SWIFT_PACKAGE // VolumeSourcesView is the app's
     @Test("makeNeighborsTarget gates every kind and excludes bibliography rows")
     func makeNeighborsTargetKinds() {
         // Bibliography rows never get a target, even if a key slipped in.
@@ -3543,6 +3597,7 @@ struct VolumeSourceMatcherTests {
         let keyless = VolumeSourceEntry(kind: .item, rawText: "Miscellaneous records")
         #expect(VolumeSourcesView.makeNeighborsTarget(for: keyless, volumeId: "frus1969-76v01") == nil)
     }
+    #endif
 }
 
 // MARK: - DateIndexingAccuracyTests
@@ -3665,7 +3720,7 @@ struct DateIndexingAccuracyTests {
     func needsDateReindexTrue() async throws {
         try await withTempDir { dir in
             // Remove any pre-existing key that would make this test flaky
-            UserDefaults.standard.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
+            testStamps.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
             #expect(pipeline.needsDateReindex == true)
         }
@@ -3678,7 +3733,7 @@ struct DateIndexingAccuracyTests {
             await pipeline.markDateReindexComplete()
             #expect(pipeline.needsDateReindex == false)
             // Cleanup
-            UserDefaults.standard.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
+            testStamps.removeObject(forKey: IndexingPipeline.dateIndexVersionKey)
         }
     }
 
@@ -4377,7 +4432,7 @@ struct FTS5RebuildTests {
     @Test("migrationFlagTriggersReindexMarker")
     func migrationFlagTriggersReindexMarker() async throws {
         // Clear any prior state so the test starts clean.
-        UserDefaults.standard.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
+        testStamps.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
 
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
@@ -4389,7 +4444,7 @@ struct FTS5RebuildTests {
             #expect(pipeline.needsFTSRebuildReindex == false)
 
             // Cleanup: restore UserDefaults to a clean state.
-            UserDefaults.standard.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
+            testStamps.removeObject(forKey: IndexingPipeline.ftsSchemaVersionKey)
         }
     }
 
@@ -4758,6 +4813,7 @@ struct DocumentWindowParseTests {
 
 // MARK: - DocumentASTCacheTests
 
+#if !SWIFT_PACKAGE // DocumentASTCache is the app's
 @Suite("DocumentASTCache")
 struct DocumentASTCacheTests {
 
@@ -4786,6 +4842,7 @@ struct DocumentASTCacheTests {
         #expect(await cache.ast(volumeId: "v2", documentId: "d1") != nil)
     }
 }
+#endif
 
 // MARK: - RealCorpusEncodingTests
 
@@ -5225,6 +5282,7 @@ struct RealCorpusEncodingTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // ZoteroJSONExporter is the app's
     @Test("Collection Zotero export resolves editorial-note flags from the index")
     func collectionZoteroExportFlagsEditorialNotes() async throws {
         try await withTempDir { dir in
@@ -5268,6 +5326,7 @@ struct RealCorpusEncodingTests {
             #expect(items[1].extra == nil)
         }
     }
+    #endif
 }
 
 // MARK: - IndexIntegrityTests
@@ -6064,11 +6123,11 @@ struct PersonRollupConsolidationTests {
             // override set's fingerprint into the same global key, and a sibling using
             // identical anchors could stamp exactly the fingerprint this test's gate is about
             // to compare — a spurious skip and a flake. Unique anchors make collision impossible.
-            UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
-            UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
+            testStamps.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
+            testStamps.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
             defer {
-                UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
-                UserDefaults.standard.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
+                testStamps.removeObject(forKey: IndexingPipeline.personRollupVersionKey)
+                testStamps.removeObject(forKey: IndexingPipeline.personRollupOverrideFingerprintKey)
             }
 
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
@@ -6471,12 +6530,17 @@ struct PersonRollupConsolidationTests {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 10)
     }
 
-    /// A pipeline over its own defaults suite, so the gate's stamps cannot race a parallel test's.
+    /// A pipeline over its own stamp store, so the gate's stamps cannot race a parallel test's: a
+    /// defaults suite in Xcode, an in-memory store in the package (`IndexingTestSupport.swift`).
     private func makeIsolatedPipeline(dir: URL, suite: String) throws -> IndexingPipeline {
         let dbURL = dir.appendingPathComponent("test.sqlite")
         let volDir = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        #if SWIFT_PACKAGE
+        let defaults = makeIsolatedStamps(suite)
+        #else
         let defaults = try #require(UserDefaults(suiteName: suite))
+        #endif
         return try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL,
                                     volumesDirectory: volDir, concurrencyLimit: 2, defaults: defaults)
     }
@@ -6491,7 +6555,7 @@ struct PersonRollupConsolidationTests {
     func rollupBuiltMidReindexIsRebuiltAfter() async throws {
         try await withTempDir { dir in
             let suite = "FRUSTests.rollupMidReindex.\(UUID().uuidString)"
-            defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+            defer { removeIsolatedStamps(suite) }
             let pipeline = try makeIsolatedPipeline(dir: dir, suite: suite)
             let defaults = pipeline.defaults
             try writeVolume(
@@ -8005,6 +8069,7 @@ struct CitationDocNumberRegressionTests {
         }
     }
 
+    #if !SWIFT_PACKAGE // CitationMatchingEngine and ManifestStore are the app's
     @Test("engine.match resolves a doc-number citation in a volume saturated with the same digits")
     func matchSurvivesNoisyVolume() async throws {
         try await withTempDir { dir in
@@ -8052,6 +8117,7 @@ struct CitationDocNumberRegressionTests {
             #expect(exact?.volumeId == volumeId)
         }
     }
+    #endif
 }
 
 // MARK: - CIA Job Neighbors (#808)
@@ -8250,6 +8316,7 @@ struct RecordGroupSpellingTests {
 #if DEBUG
 // MARK: - UITestFixtureVolumeTests
 
+#if !SWIFT_PACKAGE // UITestVolumeSeeder is the app's
 /// The synthetic volume UI tests seed must be one a reader can page through.
 ///
 /// `ResearchReadingDepthTests` (#1273) turns a page from `d1` and asserts it reached `d2`. The page-turn
@@ -8331,4 +8398,5 @@ struct UITestFixtureVolumeTests {
         }
     }
 }
+#endif
 #endif

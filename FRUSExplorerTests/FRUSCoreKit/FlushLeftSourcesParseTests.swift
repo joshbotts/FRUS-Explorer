@@ -191,7 +191,6 @@ struct FlushLeftSourcesParseTests {
                 Comment(rawValue: "got \(items.map(\.rawText))"))
     }
 
-    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     /// The index version must move with the parse output, or the owner's store keeps the
     /// old empty rows and none of this is visible.
     @Test("The change is carried by an index-version bump")
@@ -199,7 +198,6 @@ struct FlushLeftSourcesParseTests {
         #expect(IndexingPipeline.currentDateIndexVersion >= 34,
                 "parse output changed without bumping currentDateIndexVersion")
     }
-    #endif
 }
 
 // MARK: - #668 follow-up: the owner's report against the shipped v34
@@ -369,13 +367,11 @@ struct FlushLeftSourcesFollowUpTests {
                 Comment(rawValue: "notes: \(items.map { $0.note ?? "nil" })"))
     }
 
-    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     @Test("The follow-up is carried by its own index-version bump")
     func indexVersionMovedAgain() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 35,
                 "parse output changed again without bumping currentDateIndexVersion")
     }
-    #endif
 }
 
 // MARK: - #668 follow-up 2: repository headings and the library route
