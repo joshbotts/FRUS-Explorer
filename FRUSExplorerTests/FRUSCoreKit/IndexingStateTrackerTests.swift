@@ -6,9 +6,19 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - IndexingStateTrackerTests
 
@@ -21,11 +31,11 @@ struct IndexingStateTrackerTests {
 
     // MARK: - Helpers
 
-    /// Returns a fresh `IndexingStateTracker` backed by an isolated `UserDefaults` suite.
+    /// Returns a fresh `IndexingStateTracker` backed by an isolated stamp store: a `UserDefaults`
+    /// suite in Xcode, an in-memory store in the package (`IndexingTestSupport.swift`).
     private func makeTracker() -> IndexingStateTracker {
         let suiteName = "frus.test.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        return IndexingStateTracker(userDefaults: defaults)
+        return IndexingStateTracker(store: makeIsolatedStamps(suiteName))
     }
 
     // MARK: - Tests

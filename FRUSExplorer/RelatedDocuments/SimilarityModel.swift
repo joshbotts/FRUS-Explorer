@@ -317,27 +317,9 @@ enum WhyRelatedChip: Hashable, Sendable {
 }
 
 // MARK: - Candidate + result value types
-
-/// The display fields for one related-document row, carried alongside the key so the list
-/// renders (and the row-tap hand-off builds a `DocumentBrowserEntry`) without a re-fetch.
-struct CandidateRecord: Sendable, Hashable {
-    /// The document header (title). May be empty; the row falls back to the document id.
-    let header: String
-    /// The human-readable dateline (a display string, e.g. `"Washington, June 3, 1964"`), if any.
-    let dateline: String?
-    /// The document number within its volume, if any.
-    let documentNumber: String?
-    /// Whether the document is an editorial note rather than a primary document.
-    let isEditorialNote: Bool
-
-    /// Creates a display record.
-    init(header: String, dateline: String?, documentNumber: String?, isEditorialNote: Bool) {
-        self.header = header
-        self.dateline = dateline
-        self.documentNumber = documentNumber
-        self.isEditorialNote = isEditorialNote
-    }
-}
+//
+// `CandidateRecord`, the display fields for one row, moved to FRUSCoreKit in part 2
+// (`FRUSCoreKit/RelatedDocuments/CandidateRecord.swift`), since the indexing pipeline builds it.
 
 /// One candidate a generator produced: its key, display record, and a **raw** (pre-normalisation)
 /// strength for its generating axis. The engine normalises each axis's strengths to `[0, 1]`.

@@ -914,7 +914,7 @@ struct FilterOnlyCompletionTests {
         for path in ["FRUSExplorer/Search/SearchView.swift",
                      "FRUSExplorer/Search/SearchViewModel.swift",
                      "FRUSExplorer/App/MacSearchViewModel.swift",
-                     "FRUSExplorer/Search/SearchService.swift",
+                     "FRUSCoreKit/Search/SearchService.swift",
                      "FRUSExplorer/Search/QueryInspection.swift"] {
             let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
             #expect(source.contains("supportsFilterOnlySearch"), """

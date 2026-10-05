@@ -470,7 +470,7 @@ struct R1FollowUpFixTests {
     @Test("IndexingPipeline declares one updateNoteText, and it takes no tags")
     func noteWriterTakesNoTags() throws {
         let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer/Search/IndexingPipeline.swift")
+            .appendingPathComponent("FRUSCoreKit/Search/IndexingPipeline.swift")
         let source = try String(contentsOf: path, encoding: .utf8)
         var parameterLists: [Substring] = []
         var searched = source[...]

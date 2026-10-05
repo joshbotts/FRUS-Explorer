@@ -585,7 +585,7 @@ struct NoteTextWriterScanTests {
     /// accounts for, which a per-document call cannot express.
     private static let permitted: Set<String> = [
         "FRUSExplorer/Models/ResearchNote.swift",
-        "FRUSExplorer/Search/IndexingPipeline.swift",
+        "FRUSCoreKit/Search/IndexingPipeline.swift",
         "FRUSExplorer/App/FRUSExplorerApp.swift",
     ]
 
@@ -633,10 +633,9 @@ struct NoteTextWriterScanTests {
     func onlyTheSharedWriterTouchesTheColumn() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
-        let appDir = root.appendingPathComponent("FRUSExplorer")
-        let files = FileManager.default.enumerator(at: appDir, includingPropertiesForKeys: nil)?
-            .compactMap { $0 as? URL }
-            .filter { $0.pathExtension == "swift" } ?? []
+        // FRUSExplorer/ and FRUSCoreKit/: the pipeline that owns the two methods is in the kit, and
+        // a kit file could call them.
+        let files = AppSourceTree.swiftFiles(in: root)
         #expect(files.count > 100, "the scan found almost no source — it is looking in the wrong place")
 
         var offenders: [String] = []

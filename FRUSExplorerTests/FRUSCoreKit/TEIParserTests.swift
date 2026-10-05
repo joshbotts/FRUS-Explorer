@@ -1180,7 +1180,6 @@ struct FootnoteNumberTests {
         #expect(text.contains("Kissinger said"), "Space after italic run lost: \"\(text)\"")
     }
 
-    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     @Test("normalizedText discards whitespace-only nodes")
     func normalizedTextDiscardsWhitespaceOnly() async throws {
         // Inter-element indentation (newlines + spaces between tags) must not become
@@ -1211,7 +1210,6 @@ struct FootnoteNumberTests {
         #expect(body.trimmingCharacters(in: .whitespacesAndNewlines) == body,
                 "Body text has spurious leading/trailing whitespace: \"\(body)\"")
     }
-    #endif
 
     // MARK: - Session 79: Converter test (uses private parseFixture)
 
@@ -2750,13 +2748,11 @@ struct StrongEmphasisTests {
             The bold mapping moved the flat text. Every stored highlight in every indexed volume \
             would go stale, and #1323 would need a kVersion bump it does not otherwise need.
             """)
-        #if !SWIFT_PACKAGE // IndexingPipeline is the app's
         #expect(IndexingPipeline.bodyHash(for: strongAST)
                 == IndexingPipeline.bodyHash(for: unmappedAST), """
             body_hash moved, so every document would read as revised and re-index for a change \
             that added no character.
             """)
-        #endif
         #expect(containsBold(strongModel.bodyNodes) && !containsBold(unmappedModel.bodyNodes), """
             Neither model contains bold, so the two invariance assertions above are comparing \
             two identical unstyled trees and would pass with the mapping deleted.

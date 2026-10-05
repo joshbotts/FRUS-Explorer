@@ -197,7 +197,7 @@ struct ArchivalPoolWiringTests {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(
-            contentsOf: root.appending(path: "FRUSExplorer/Search/IndexingPipeline.swift"),
+            contentsOf: root.appending(path: "FRUSCoreKit/Search/IndexingPipeline.swift"),
             encoding: .utf8)
         #expect(text.count > 10_000, "IndexingPipeline moved?")
         return text

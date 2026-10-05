@@ -287,13 +287,11 @@ struct FootnoteLabelTests {
         #expect(ASTToRenderNodeConverter.printedLabel(from: "*") == "*")
     }
 
-    #if !SWIFT_PACKAGE // IndexingPipeline is the app's
     /// The v57 bump is what moves `external_citations.note_label` for frus1961-63v24's four notes.
     @Test("The index version is at least 57, the n=\"0\" label rebuild")
     func indexVersionCoversZeroLabels() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 57)
     }
-    #endif
 
     // MARK: - The key itself
 

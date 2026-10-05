@@ -138,6 +138,8 @@ public enum NARACatalogError: Error, LocalizedError {
 ///          added `recordGroup` parameter to `resolveLotFileVariants`
 ///   1.5 — 2026-10-01 (2026-09-28 audit, folded into #1514): a result's `dateRange` reads NARA's
 ///          date objects and both date pairs, and is their union (`seriesDateRange(in:)`)
+///   1.6 — FRUSCoreKit, part 2: `isDecimalFileNumber(_:)` forwards to
+///          `DecimalFileSegment.isDecimalFileNumber(_:)`, in the kit
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -317,9 +319,10 @@ public actor NARACatalogClient {
     /// as decimal — a letter or name (`123M431/163`, `123 F 84/16`, `123 Ward, Angus I.`). The
     /// subject-numeric system leads with letters (`POL`, `DEF`) and the Numerical File is all digits,
     /// so neither can match. Used to resolve the 1963/1973 mid-year boundaries where the calendar
-    /// year alone is ambiguous.
+    /// year alone is ambiguous. Forwards to `DecimalFileSegment.isDecimalFileNumber(_:)`, in
+    /// FRUSCoreKit, whose segments use the same test.
     nonisolated static func isDecimalFileNumber(_ identifier: String) -> Bool {
-        identifier.range(of: #"^\s*\d{2,3}(?:\.|\s*[A-Za-z])"#, options: .regularExpression) != nil
+        DecimalFileSegment.isDecimalFileNumber(identifier)
     }
 
     // MARK: - Presidential Library Fallback URLs (static — no API call)

@@ -26,6 +26,8 @@ import Foundation
 ///   1.1 — Session 2026-08-07: schema v2 fields — POCOM slug, Wikidata QID, role text (#736)
 ///   1.2 — 2026-09-23 (#1370): `b`/`d` are life years for the person sheet only; the rollup no
 ///         longer takes its active span from them
+///   1.3 — FRUSCoreKit, part 2: moved into the kit; `loadBundled(bundle:)` and
+///         `PersonAuthorityIndexStore` stay in the app, in `PersonAuthorityIndexStore.swift`
 public struct PersonAuthorityIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -118,46 +120,4 @@ public struct PersonAuthorityIndex: Codable, Sendable {
 
     /// Total `(volume, ref)` entries in the crosswalk.
     public var crosswalkCount: Int { crosswalk.values.reduce(0) { $0 + $1.count } }
-
-    // MARK: - Bundled loading
-
-    /// Loads the bundled `person-authority-index.json`, or `nil` if it is absent (e.g. the unit-test
-    /// bundle) or fails to decode. Decoding ~1.3 MB is fast; callers cache the result.
-    public static func loadBundled(bundle: Bundle = .main) -> PersonAuthorityIndex? {
-        guard let url = bundle.url(forResource: "person-authority-index", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            #if DEBUG
-            print("[PersonAuthorityIndex] person-authority-index.json not found in bundle")
-            #endif
-            return nil
-        }
-        do {
-            let index = try JSONDecoder().decode(PersonAuthorityIndex.self, from: data)
-            #if DEBUG
-            print("[PersonAuthorityIndex] loaded \(index.crosswalkCount) crosswalk entries, "
-                + "\(index.authority.count) canonical people (generated \(index.generated))")
-            #endif
-            return index
-        } catch {
-            #if DEBUG
-            print("[PersonAuthorityIndex] decode failed: \(error)")
-            #endif
-            return nil
-        }
-    }
-}
-
-// MARK: - PersonAuthorityIndexStore
-
-/// The one decoded copy of the bundled authority index (#736).
-///
-/// `IndexingPipeline` has loaded this since Phase 5 for clustering; the person detail sheet now
-/// needs it too, for the schema-v2 fields (POCOM slug, Wikidata, role text) that the rollup table
-/// does not carry. Two independent `loadBundled()` calls would hold two decoded copies of a 2.4 MB
-/// file resident, so both go through here instead.
-///
-/// The pipeline keeps its own injectable slot for tests — this store is deliberately *not*
-/// settable, because a shared mutable singleton is how one test leaks a fixture into another.
-enum PersonAuthorityIndexStore {
-    static let shared: PersonAuthorityIndex? = PersonAuthorityIndex.loadBundled()
 }

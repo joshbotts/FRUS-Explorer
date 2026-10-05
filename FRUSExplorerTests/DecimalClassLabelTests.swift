@@ -503,13 +503,12 @@ struct DecimalClassLabelTests {
         // The other half of "one label source" is a fact about the codebase rather than about a
         // row: nothing outside the derivation may reach the table, or a surface could quietly
         // grow a second, differently-scoped answer.
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+        // `FRUSExplorer/` and `FRUSCoreKit/`: the indexer that holds the table for `composes(_:)`,
+        // and the table itself, are kit files.
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         var callers: [String] = []
-        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
-        while let url = files?.nextObject() as? URL {
-            guard url.pathExtension == "swift",
-                  let text = try? String(contentsOf: url, encoding: .utf8),
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
+            guard let text = try? String(contentsOf: url, encoding: .utf8),
                   // The GLOSS specifically, not the store. #834 gave `IndexingPipeline` a second,
                   // unrelated use — `composes(_:)`, the indexing-time schedule check — and this
                   // test is about where the human-readable label is attached, not about who may
@@ -525,7 +524,7 @@ struct DecimalClassLabelTests {
                       // #1254 gave the subject-numeric table its own composed reading; scanning
                       // for the decimal call alone would have left that one unguarded.
                       || Self.codeOnly(text).contains(".leafGloss(for:"),
-                  url.lastPathComponent != "DecimalClassLabelStore.swift",
+                  url.lastPathComponent != "DecimalClassLabelTable.swift",
                   url.lastPathComponent != "SubjectNumericLabelStore.swift"
             else { continue }
             callers.append(url.lastPathComponent)

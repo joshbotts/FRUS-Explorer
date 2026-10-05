@@ -86,6 +86,8 @@ import Foundation
 ///   1.3 — Session 2026-09-26: #1407 review, round 1 — `dateFormItem` keeps the month and day,
 ///          and `fileYear(from:documentDay:)` refuses a year that misprints the document's own
 ///          day; `segment` and `filingYear` take the document's day
+///   1.4 — FRUSCoreKit, part 2: moved into the kit, with `isDecimalFileNumber(_:)` from
+///         `NARACatalogClient`, which forwards to it
 enum DecimalFileSegment {
 
     /// The decimal classification before the first `/` (`711.654/11-543` → `711.654`).
@@ -259,6 +261,19 @@ enum DecimalFileSegment {
         }
     }
 
+    /// Whether a central-file number is a **decimal** file number (1910–January 1963) rather than a
+    /// subject-numeric (`POL 27 ARAB-ISR`) or Numerical File (`5276/1`, `195/597`) number.
+    ///
+    /// A decimal number opens with a 2–3 digit class, then **either** a dot (`711.61…`, `862S.01…`,
+    /// `500.A15A4`) **or** — for the dotless class-123 personnel files SourceNoteKit also recognizes
+    /// as decimal — a letter or name (`123M431/163`, `123 F 84/16`, `123 Ward, Angus I.`). The
+    /// subject-numeric system leads with letters (`POL`, `DEF`) and the Numerical File is all digits,
+    /// so neither can match. Moved here from `NARACatalogClient`, which forwards to it, so the kit's
+    /// segments need nothing from the Source Explorer's network client.
+    static func isDecimalFileNumber(_ identifier: String) -> Bool {
+        identifier.range(of: #"^\s*\d{2,3}(?:\.|\s*[A-Za-z])"#, options: .regularExpression) != nil
+    }
+
     /// The segment for a reference, preferring the file's own year
     /// (``fileYear(from:documentDay:)``) and falling back to `fallbackYear` (the document's own
     /// indexed year) for a sequential pre-1940 ref and for a date that misprints the document's
@@ -270,7 +285,7 @@ enum DecimalFileSegment {
     /// it, whatever year rides along. Banding it would cluster it with filings from a
     /// system it was never part of.
     static func segment(for ref: String, fallbackYear: Int?, documentDay: DocumentDay?) -> String? {
-        guard NARACatalogClient.isDecimalFileNumber(ref) else { return nil }
+        guard isDecimalFileNumber(ref) else { return nil }
         let year = fileYear(from: ref, documentDay: documentDay) ?? fallbackYear
         return year.flatMap(segment(forYear:))
     }

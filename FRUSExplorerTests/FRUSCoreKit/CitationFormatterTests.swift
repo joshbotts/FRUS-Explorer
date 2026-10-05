@@ -657,7 +657,7 @@ struct CitableDocumentNumberTests {
     }
 }
 
-#if !SWIFT_PACKAGE // the two suites below need IndexingPipeline and the app's exporters
+#if !SWIFT_PACKAGE // the two suites below need the app's ManifestStore, AppState, cross-reference store, trip packet, exporters and generated blocks
 // MARK: - PrintedDocumentNumberExportTests (#1406)
 
 /// The printed number reaches every export site, through the real index (#1406).
@@ -1170,7 +1170,7 @@ struct GeneratedBlockNumberTests {
 @MainActor
 struct InAppCitationNumberTests {
 
-    #if !SWIFT_PACKAGE // the reader's view model, the exporters, the index and the Mac popovers are the app's
+    #if !SWIFT_PACKAGE // the reader's view model, the exporters, AppState and the Mac popovers are the app's
     /// A reader's document entry in the fixture volume.
     static func entry(_ documentId: String, number: String?) -> DocumentBrowserEntry {
         DocumentBrowserEntry(documentId: documentId, volumeId: PrintedDocumentNumberExportTests.volumeId,

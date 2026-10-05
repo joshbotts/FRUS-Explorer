@@ -245,7 +245,7 @@ struct FacetMatchSetParityTests {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
         let source = try String(
-            contentsOf: root.appending(path: "FRUSExplorer/Search/IndexingPipeline.swift"),
+            contentsOf: root.appending(path: "FRUSCoreKit/Search/IndexingPipeline.swift"),
             encoding: .utf8)
 
         // Four pass-through sites: `resultSetFacets`, `userTagCounts`, `materializeMatchSet`'s own

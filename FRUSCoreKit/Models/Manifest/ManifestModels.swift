@@ -160,4 +160,12 @@ public enum VolumeStatus: String, Codable, Sendable {
 public struct DateRange: Codable, Sendable, Equatable {
     public let earliest: String?
     public let latest: String?
+
+    /// Memberwise, spelled out because `public` suppresses the synthesized one; public because a
+    /// search's date filter (`SearchParameters.dateRange`) is one, and FRUS Explorer Light builds
+    /// its searches from outside the kit (FRUSCoreKit, part 2).
+    public init(earliest: String?, latest: String?) {
+        self.earliest = earliest
+        self.latest = latest
+    }
 }
