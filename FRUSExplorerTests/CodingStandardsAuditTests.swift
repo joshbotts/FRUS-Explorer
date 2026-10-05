@@ -452,8 +452,8 @@ struct CodingStandardsAuditTests {
             "FRUSCoreKit/Search/SearchService.swift",
             "FRUSExplorer/CrossReference/CrossReferenceGraphView.swift",
             "FRUSCoreKit/Citation/CitationParser.swift",
-            "FRUSExplorer/Citation/PageRangeStore.swift",
-            "FRUSExplorer/Citation/CitationMatchingEngine.swift",
+            "FRUSCoreKit/Citation/PageRangeStore.swift",
+            "FRUSCoreKit/Citation/CitationMatchingEngine.swift",
         ]
 
         var missing: [String] = []
@@ -503,7 +503,7 @@ struct CodingStandardsAuditTests {
 
     @Test("CodingStandardsAudit: CitationMatchingEngine uses #if DEBUG telemetry logging")
     func citationMatchingEngineHasDebugLogging() throws {
-        let url = Self.projectRoot.appendingPathComponent("FRUSExplorer/Citation/CitationMatchingEngine.swift")
+        let url = Self.projectRoot.appendingPathComponent("FRUSCoreKit/Citation/CitationMatchingEngine.swift")
         let content = try String(contentsOf: url, encoding: .utf8)
         #expect(content.contains("#if DEBUG"), "CitationMatchingEngine must use #if DEBUG logging")
         #expect(content.contains("[CitationMatcher]"), "CitationMatchingEngine must use [CitationMatcher] log prefix")
@@ -511,7 +511,7 @@ struct CodingStandardsAuditTests {
 
     @Test("CodingStandardsAudit: PageRangeStore uses #if DEBUG telemetry logging")
     func pageRangeStoreHasDebugLogging() throws {
-        let url = Self.projectRoot.appendingPathComponent("FRUSExplorer/Citation/PageRangeStore.swift")
+        let url = Self.projectRoot.appendingPathComponent("FRUSCoreKit/Citation/PageRangeStore.swift")
         let content = try String(contentsOf: url, encoding: .utf8)
         #expect(content.contains("#if DEBUG"), "PageRangeStore must use #if DEBUG logging")
         #expect(content.contains("[PageRangeStore]"), "PageRangeStore must use [PageRangeStore] log prefix")
