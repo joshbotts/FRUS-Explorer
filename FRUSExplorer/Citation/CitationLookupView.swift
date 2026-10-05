@@ -679,6 +679,9 @@ enum CitationLookupFocus: Hashable, Sendable {
     }
 }
 
+// `CitationLookupFields`, the form's Parsed Fields kept as one value, moved to FRUSCoreKit in part 2
+// (`FRUSCoreKit/Citation/CitationLookupFields.swift`), with the engine whose input it builds.
+
 #if os(macOS)
 
 // MARK: - CitationLookupWindowView

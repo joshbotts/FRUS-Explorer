@@ -55,6 +55,10 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
     static func == (lhs: Self, rhs: Self) -> Bool { lhs.key == rhs.key }
 }
 
+// `CollectionCitationLineResolver`, the Citations tab's per-line resolution, moved to FRUSCoreKit
+// in part 2 (`FRUSCoreKit/Collections/CollectionCitationLineResolver.swift`), with the engine it
+// drives.
+
 // MARK: - CollectionDocumentDiscovery
 
 /// Pure helpers shared by the Add Documents sheet and both collection editors:

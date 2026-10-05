@@ -84,6 +84,9 @@ private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type
 ///          one's number and day through `PageSpanResolver.citedDocumentFactsSQL`; the page rows are
 ///          read through `PageSpanResolver.arabicPageRowsSQL`, the indexer's query. Review round 1:
 ///          the facts are read only when the page names several and the link carries a hint.
+///   1.8 — FRUSCoreKit, part 2: moved into the kit. It binds text with `SQLITE_TRANSIENT`, so
+///          SQLite keeps its own copy, where it bound a temporary `NSString`'s buffer and relied on
+///          Apple's autorelease pool to keep it alive
 public actor PageRangeStore {
 
     // MARK: - State

@@ -103,6 +103,8 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 ///   1.4 — Session 154: live GitHub listing now includes each file's git blob `sha`;
 ///          `ManifestDiffResult.liveInfoByVolumeId` exposes it (with size) for
 ///          `VolumeUpdateChecker` to detect upstream corrections
+///   1.5 — FRUSCoreKit, part 2: conforms to the kit's `CitableVolumeCatalogue`, through which
+///          Citation Lookup's engine, now in the kit, reads `citableEntries`
 @Observable
 @MainActor
 public final class ManifestStore {

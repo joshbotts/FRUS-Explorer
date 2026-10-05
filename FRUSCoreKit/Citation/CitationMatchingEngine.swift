@@ -182,6 +182,8 @@ import Foundation
 ///          answered; #1523: the volumes a lookup answers for are named (`citableEntries`), the
 ///          bundled catalogue, which a side-loaded volume is not. #1506 review round 1: a volume
 ///          row labelled a best guess says so (`CitationMatch.volumeIsBestGuess`)
+///   2.2 — FRUSCoreKit, part 2: moved into the kit. It holds any `CitableVolumeCatalogue`, which
+///          the app's `ManifestStore` satisfies, where it held the store itself
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
