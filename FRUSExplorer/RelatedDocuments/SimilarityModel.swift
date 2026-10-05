@@ -317,6 +317,9 @@ enum WhyRelatedChip: Hashable, Sendable {
 }
 
 // MARK: - Candidate + result value types
+//
+// `CandidateRecord`, the display fields for one row, moved to FRUSCoreKit in part 2
+// (`FRUSCoreKit/RelatedDocuments/CandidateRecord.swift`), since the indexing pipeline builds it.
 
 /// One candidate a generator produced: its key, display record, and a **raw** (pre-normalisation)
 /// strength for its generating axis. The engine normalises each axis's strengths to `[0, 1]`.

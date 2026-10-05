@@ -57,6 +57,8 @@ struct DocumentSubjectCategoryGroup: Sendable, Identifiable {
 /// Version history:
 ///   1.0 — #308 Phase 2: seam type, filled by the Phase 3 data drop
 ///   2.0 — Session 2026-08-21: #308 Phase 3 — filled
+///   2.1 — FRUSCoreKit, part 2: moved into the kit, in `DocumentSubjectIndex.swift`; its loader,
+///         `DocumentSubjectStore`, stays in the app
 struct DocumentSubjectIndex: Decodable, Sendable {
 
     /// One subject in the shared vocabulary.

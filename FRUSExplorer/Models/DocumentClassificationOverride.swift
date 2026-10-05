@@ -64,6 +64,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — W-4 (#279): initial implementation
+///   1.1 — FRUSCoreKit, part 2: `DocumentClassificationOverrideData` moved, unchanged, to the
+///         kit's `DocumentClassificationOverrideData.swift`
 @Model final class DocumentClassificationOverride {
 
     // MARK: - Identity

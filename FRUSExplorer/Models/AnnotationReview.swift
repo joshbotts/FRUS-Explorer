@@ -100,6 +100,8 @@ enum AnnotationReviewKind: String, CaseIterable, Sendable {
 ///
 /// Version history:
 ///   1.0 — R-5 P3b-2: initial implementation
+///   1.1 — FRUSCoreKit, part 2: `AnnotationReviewData` moved, unchanged, to the kit's
+///          `AnnotationReviewData.swift`
 @Model
 final class AnnotationReview {
 

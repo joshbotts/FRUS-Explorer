@@ -86,6 +86,8 @@ import Foundation
 ///   1.3 — Session 2026-09-26: #1407 review, round 1 — `dateFormItem` keeps the month and day,
 ///          and `fileYear(from:documentDay:)` refuses a year that misprints the document's own
 ///          day; `segment` and `filingYear` take the document's day
+///   1.4 — FRUSCoreKit, part 2: moved into the kit, with `isDecimalFileNumber(_:)` from
+///         `NARACatalogClient`, which forwards to it
 enum DecimalFileSegment {
 
     /// The decimal classification before the first `/` (`711.654/11-543` → `711.654`).

@@ -32,6 +32,7 @@ import Foundation
 ///   1.1 — Session 9 review: surfaces `provenance` (source-drop MD5 pin) for the
 ///         bundled-artifact integrity test; `generated` doc corrected (it is the
 ///         artifact's own stamp, not the source drop's)
+///   1.2 — FRUSCoreKit, part 2: moved into the kit; `VolumeSubjectProfilesStore` stays in the app
 struct VolumeSubjectProfiles: Decodable, Sendable {
 
     /// One subject characteristic of a volume, fully resolved (name/category/score).

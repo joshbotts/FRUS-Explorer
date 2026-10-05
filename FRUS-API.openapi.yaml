@@ -959,7 +959,7 @@ paths:
             type: string
           description: |
             Space-separated keywords combined via boolean AND (default) or OR.
-            Maps to the `keywords` field of `SearchQuery` in `SearchModels.swift`.
+            Maps to the `keywords` field of `SearchParameters` in `FRUSCoreKit/Search/SearchParameters.swift`.
         - name: phrase
           in: query
           schema:
@@ -2862,7 +2862,7 @@ components:
         the matching context with `<b>…</b>` delimiters around the first
         matching run, suitable for display in result lists.
 
-        Mirrors `SearchResult` in `FRUSExplorer/Search/SearchModels.swift`.
+        Mirrors `SearchResult` in `FRUSCoreKit/Search/SearchParameters.swift`.
         Introduced in Session 09.
       required:
         - documentId

@@ -94,6 +94,10 @@ import FTS5Store
 ///          rather than trusting both callers to have done so.
 ///   2.10 — #1522: `hasFinishedIndexing(_:)`, which the citation lookup asks before it reports a document absent
 ///          from a downloaded volume.
+///   2.11 — FRUSCoreKit, part 2: moved into the kit. It reads the subject index through
+///          `pipeline.resources`; its collocation measure, which tags with NaturalLanguage, moved
+///          to the app's `SearchService+Collocation.swift`, so `pipeline` and
+///          `positiveTerms(from:)` are internal for it
 public actor SearchService {
 
     // MARK: - Dependencies

@@ -276,6 +276,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          figure store (`FigureImageStore.shared`) — not in a unit test's host — and, once downloads
 ///          are resumed at launch and on each reconnect, starts the pass that brings the volumes already
 ///          on the device up to their figure images (`fetchMissingFigureImages(with:appState:)`).
+///   4.27 — FRUSCoreKit, part 2: the three launch branches run the passes after indexing through the
+///          kit's `IndexingPipeline.runPostIndexPasses`, in the same order, and publish a rebuilt
+///          rollup from its callback, as they did between the rollup and the next pass.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///

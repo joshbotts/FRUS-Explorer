@@ -138,6 +138,8 @@ public enum NARACatalogError: Error, LocalizedError {
 ///          added `recordGroup` parameter to `resolveLotFileVariants`
 ///   1.5 — 2026-10-01 (2026-09-28 audit, folded into #1514): a result's `dateRange` reads NARA's
 ///          date objects and both date pairs, and is their union (`seriesDateRange(in:)`)
+///   1.6 — FRUSCoreKit, part 2: `isDecimalFileNumber(_:)` forwards to
+///          `DecimalFileSegment.isDecimalFileNumber(_:)`, in the kit
 public actor NARACatalogClient {
 
     // MARK: - Dependencies

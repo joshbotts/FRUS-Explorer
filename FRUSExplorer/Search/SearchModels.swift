@@ -8,6 +8,11 @@
 
 import Foundation
 
+// `DocumentTypeFilter`, `SearchParameters`, `PersonRollupAnchor`, `SearchResult` and the indexing
+// progress types (`IndexingStage`, `IndexingProgressUpdate`, `VolumeMetadataDiscovered`,
+// `IndexingProgress`) moved to FRUSCoreKit in part 2, with the search service and the indexing
+// pipeline that take and return them: `FRUSCoreKit/Search/SearchParameters.swift`.
+
 // MARK: - SearchSortOrder
 
 /// Ordering applied to search results, shared by the iOS `SearchView` and the macOS Search window

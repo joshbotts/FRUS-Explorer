@@ -137,6 +137,11 @@ enum WordCloudDensity: String, CaseIterable, Sendable, Identifiable {
 // tokens through the same types rather than a second copy. The lens's localised `label`
 // and `systemImage` stayed app-side, in `WordCloudLens+UI`.
 
+// MARK: - WordCloudDocumentKey
+//
+// Moved to FRUSCoreKit in part 2 (`FRUSCoreKit/Analytics/WordCloud/WordCloudDocumentKey.swift`), since
+// the indexing pipeline, which moved there too, reads and returns it.
+
 // MARK: - WordCloudScope
 
 /// Identifies a body of FRUS material to compute a word cloud over.

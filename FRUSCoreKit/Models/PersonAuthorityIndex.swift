@@ -26,6 +26,8 @@ import Foundation
 ///   1.1 — Session 2026-08-07: schema v2 fields — POCOM slug, Wikidata QID, role text (#736)
 ///   1.2 — 2026-09-23 (#1370): `b`/`d` are life years for the person sheet only; the rollup no
 ///         longer takes its active span from them
+///   1.3 — FRUSCoreKit, part 2: moved into the kit; `loadBundled(bundle:)` and
+///         `PersonAuthorityIndexStore` stay in the app, in `PersonAuthorityIndexStore.swift`
 public struct PersonAuthorityIndex: Codable, Sendable {
 
     /// Index schema version.

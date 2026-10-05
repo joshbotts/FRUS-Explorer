@@ -30,6 +30,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Person rollup Phase 3: initial implementation
+///   1.1 — FRUSCoreKit, part 2: `PersonClusterOverrideKind` and `PersonClusterOverrideData` moved,
+///         unchanged, to the kit's `PersonClusterOverrideData.swift`
 @Model final class PersonClusterOverride {
 
     // MARK: - Identity
