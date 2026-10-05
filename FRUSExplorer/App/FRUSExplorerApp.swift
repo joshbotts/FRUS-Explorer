@@ -2439,16 +2439,15 @@ struct FRUSExplorerApp: App {
                     await appState.indexAllVolumes(with: pipeline)
                     await pipeline.markDateReindexComplete()
                     if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
-                    // Rebuild the materialised person rollup after the persons table changes.
+                    // Rebuild the materialised person rollup after the persons table changes, then
+                    // the broken-reference flags and (#308) the subject facet table for any newly
+                    // indexed volumes: the kit's post-index passes, in this order.
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
-                    if (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) == true {
+                    await pipeline.runPostIndexPasses(overrides: overrides) { @MainActor in
                         // A launch-time rebuild renumbers every rollup id, and the People browser
                         // and analytics can already be on screen by the time it finishes (#747).
                         PersonRollupRefresh.published(appState: appState)
                     }
-                    try? await pipeline.applyBrokenRefsIndexIfNeeded()
-                    // #308: populate the subject facet table for any newly indexed volumes.
-                    try? await pipeline.applyDocumentSubjectsIfNeeded()
                     // W-9 step 1: re-donate Spotlight items once per donated-shape bump
                     // (v2 adds textContent, the field semantic search matches against).
                     // Gated + idempotent; a no-op when the current shape has been donated.
@@ -2469,15 +2468,14 @@ struct FRUSExplorerApp: App {
                     if (try? await pipeline.rebuildSearchIndexFromCache()) != nil {
                         await pipeline.markFTSRebuildReindexComplete()
                     }
+                    // The person rollup, the broken-reference flags and (#308) the subject facet
+                    // table: the kit's post-index passes, in this order.
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
-                    if (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) == true {
+                    await pipeline.runPostIndexPasses(overrides: overrides) { @MainActor in
                         // A launch-time rebuild renumbers every rollup id, and the People browser
                         // and analytics can already be on screen by the time it finishes (#747).
                         PersonRollupRefresh.published(appState: appState)
                     }
-                    try? await pipeline.applyBrokenRefsIndexIfNeeded()
-                    // #308: populate the subject facet table for any newly indexed volumes.
-                    try? await pipeline.applyDocumentSubjectsIfNeeded()
                     // W-9 step 1: re-donate Spotlight items once per donated-shape bump
                     // (v2 adds textContent, the field semantic search matches against).
                     // Gated + idempotent; a no-op when the current shape has been donated.
@@ -2492,17 +2490,16 @@ struct FRUSExplorerApp: App {
                 // Normal launch: rebuild the person rollup if its version was bumped or the
                 // member set has drifted (volumes added/removed). Cheap no-op when up to date.
                 Task {
+                    // The kit's post-index passes: the rollup, then the cross_references.is_broken
+                    // backfill for already-indexed volumes (#240B), then (#308) the subject facet
+                    // table for any newly indexed volumes. Each is gated and idempotent, a no-op
+                    // when current.
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
-                    if (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) == true {
+                    await pipeline.runPostIndexPasses(overrides: overrides) { @MainActor in
                         // A launch-time rebuild renumbers every rollup id, and the People browser
                         // and analytics can already be on screen by the time it finishes (#747).
                         PersonRollupRefresh.published(appState: appState)
                     }
-                    // Backfill cross_references.is_broken for already-indexed volumes (#240B).
-                    // Gated + idempotent; a no-op once the current index has been applied.
-                    try? await pipeline.applyBrokenRefsIndexIfNeeded()
-                    // #308: populate the subject facet table for any newly indexed volumes.
-                    try? await pipeline.applyDocumentSubjectsIfNeeded()
                     // W-9 step 1: re-donate Spotlight items once per donated-shape bump
                     // (v2 adds textContent, the field semantic search matches against).
                     // Gated + idempotent; a no-op when the current shape has been donated.

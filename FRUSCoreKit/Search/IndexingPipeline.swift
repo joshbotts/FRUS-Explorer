@@ -6,13 +6,25 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+#if canImport(CryptoKit)
 import CryptoKit
+#else
+import Crypto
+#endif
 import Foundation
+#if canImport(OSLog)
 import OSLog
+#endif
+#if canImport(SQLite3)
 import SQLite3
-import CoreSpotlight
-#if canImport(UIKit)
-import UIKit
+#else
+import CSQLite
+#endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
+#if canImport(SourceNoteKit)
+import SourceNoteKit
 #endif
 
 private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -390,6 +402,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `normalizedWhitespace` moved, unchanged, to FRUSCoreKit's
 ///         `FRUSASTNode+PrintedText.swift`, and `normalizeSourceNoteWrapper` forwards to
 ///         `StoredSourceNote.normalizeWrapper`. Nothing stored changes, so no index version
+///  4.30 — FRUSCoreKit, part 2: the pipeline moved, unchanged, into FRUSCoreKit. Its host now
+///         passes the bundled data files (`IndexingResources`), the stamp store
+///         (`IndexingStampStore`, which `UserDefaults` satisfies; the FTS-schema and broken-refs
+///         stamps now go there too, where they went to `.standard` before) and an optional donor
+///         (`IndexedDocumentDonor`). Spotlight, `updateSummary(_:)` and the app's delegating
+///         initialiser are in the app's `IndexingPipeline+App.swift`; `runPostIndexPasses` runs the
+///         passes after indexing in the app's order. Nothing stored changes, so no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -397,14 +416,23 @@ public actor IndexingPipeline {
     /// Maximum number of volume XML parsers running concurrently. Default 4.
     public let concurrencyLimit: Int
 
-    /// Where the date-index and person-rollup stamps are kept (`dateIndexVersionKey`,
-    /// `personRollupVersionKey`, `personRollupOverrideFingerprintKey`,
-    /// `personRollupDateIndexVersionKey`). `.standard` in the app. A test passes a suite of its own,
-    /// because the gate compares stamps that every parallel test would otherwise share.
+    /// Where the date-index, FTS-schema, person-rollup and broken-refs stamps are kept
+    /// (`dateIndexVersionKey`, `ftsSchemaVersionKey`, `personRollupVersionKey`,
+    /// `personRollupOverrideFingerprintKey`, `personRollupDateIndexVersionKey`,
+    /// `brokenRefsIndexAppliedKey`). `UserDefaults.standard` in the app. A test passes a suite or an
+    /// `InMemoryIndexingStampStore` of its own, because the gate compares stamps that every parallel
+    /// test would otherwise share.
     ///
-    /// `nonisolated(unsafe)` because `needsDateReindex` is read off the actor and `UserDefaults` is
-    /// not declared `Sendable`; it is documented thread-safe, and the reference itself never changes.
-    nonisolated(unsafe) public let defaults: UserDefaults
+    /// `nonisolated` because `needsDateReindex` and `needsFTSRebuildReindex` read it off the actor;
+    /// a stamp store is `Sendable`, and the reference itself never changes.
+    nonisolated public let defaults: any IndexingStampStore
+
+    /// The bundled data files the pipeline and `SearchService` read (`IndexingResources`), passed by
+    /// the host. `nonisolated` so the nonisolated parse step and the search service read it directly.
+    nonisolated public let resources: IndexingResources
+
+    /// What indexing tells a system search index, or `nil`: the app's Spotlight donor.
+    private let donor: (any IndexedDocumentDonor)?
 
     /// Effective concurrency cap used by `indexAllVolumes`.
     ///
@@ -478,13 +506,13 @@ public actor IndexingPipeline {
     /// Returns `true` if a FTS5 schema rebuild occurred this launch and volumes need
     /// re-indexing so that `is_editorial_note` is correctly populated in the index.
     public nonisolated var needsFTSRebuildReindex: Bool {
-        UserDefaults.standard.integer(forKey: Self.ftsSchemaVersionKey) < Self.currentFTSSchemaVersion
+        defaults.integer(forKey: Self.ftsSchemaVersionKey) < Self.currentFTSSchemaVersion
     }
 
     /// Records that the post–FTS5-rebuild re-index is complete.
     /// Call this after `indexAllVolumes()` completes following a schema rebuild.
     public func markFTSRebuildReindexComplete() {
-        UserDefaults.standard.set(Self.currentFTSSchemaVersion, forKey: Self.ftsSchemaVersionKey)
+        defaults.set(Self.currentFTSSchemaVersion, forKey: Self.ftsSchemaVersionKey)
         logger.info("FTS5 schema re-index marked at version \(Self.currentFTSSchemaVersion, privacy: .public)")
     }
 
@@ -1837,12 +1865,13 @@ public actor IndexingPipeline {
     /// so a missing bundle resource is only looked up once. Injectable for tests.
     private var loadedAuthorityIndex: PersonAuthorityIndex??
 
-    /// The authority index, loading it from the app bundle on first use (cached).
+    /// The authority index, asking the host's resources for it on first use (cached).
     func authorityIndex() -> PersonAuthorityIndex? {
         if let cached = loadedAuthorityIndex { return cached }
-        // Through the shared store so the 2.4 MB index is decoded once for the whole app — the
-        // person detail sheet reads the same copy for its schema-v2 fields (#736).
-        let loaded = PersonAuthorityIndexStore.shared
+        // Through the host's provider: in the app, the shared store, so the 2.4 MB index is decoded
+        // once for the whole app — the person detail sheet reads the same copy for its schema-v2
+        // fields (#736).
+        let loaded = resources.personAuthority()
         loadedAuthorityIndex = .some(loaded)
         return loaded
     }
@@ -1917,21 +1946,29 @@ public actor IndexingPipeline {
     ///   - volumesDirectory: Directory containing downloaded volume XML files.
     ///   - stateTracker: Optional tracker for interrupted-indexing sentinel persistence.
     ///   - concurrencyLimit: Maximum simultaneous XML parsers. Default 4.
-    ///   - defaults: Where the date-index and person-rollup stamps are kept. Default `.standard`.
+    ///   - defaults: Where the pipeline's stamps are kept. Required, so no host builds a pipeline
+    ///     whose stamps silently go nowhere; the app's initialiser in `IndexingPipeline+App.swift`
+    ///     passes `UserDefaults.standard` by default.
+    ///   - resources: The bundled data files (`IndexingResources`). Required for the same reason.
+    ///   - donor: What indexing tells a system search index, or `nil`.
     public init(
         fts5Store: FTS5Store,
         databaseURL: URL,
         volumesDirectory: URL,
+        resources: IndexingResources,
         stateTracker: IndexingStateTracker? = nil,
         concurrencyLimit: Int = 4,
-        defaults: UserDefaults = .standard
+        defaults: any IndexingStampStore,
+        donor: (any IndexedDocumentDonor)? = nil
     ) throws {
         self.fts5Store = fts5Store
         self.databaseURL = databaseURL
         self.volumesDirectory = volumesDirectory
+        self.resources = resources
         self.stateTracker = stateTracker
         self.concurrencyLimit = concurrencyLimit
         self.defaults = defaults
+        self.donor = donor
 
         let (stream, continuation) = AsyncStream.makeStream(of: IndexingProgress.self)
         _progress = stream
@@ -1977,9 +2014,11 @@ public actor IndexingPipeline {
         // Register for iOS memory-pressure notifications so we can reduce batch size
         // before the OS terminates the process. The observer fires on the main thread;
         // we hop to the actor via an unstructured Task so isolation is maintained.
+        // Named by its string, which is `UIApplication.didReceiveMemoryWarningNotification`'s raw
+        // value (pinned by a test), because the kit does not import UIKit.
         #if canImport(UIKit)
         NotificationCenter.default.addObserver(
-            forName: UIApplication.didReceiveMemoryWarningNotification,
+            forName: Notification.Name("UIApplicationDidReceiveMemoryWarningNotification"),
             object: nil,
             queue: .main
         ) { [weak self] _ in
@@ -2055,7 +2094,13 @@ public actor IndexingPipeline {
         let optElapsed = Date().timeIntervalSince(optStart)
         logger.info("indexVolume: \(volumeId, privacy: .public) incremental merge in \(String(format: "%.1f", optElapsed), privacy: .public)s")
 
-        submitSpotlightItems(for: data)
+        if let donor {
+            donor.donate(volumeId: data.volumeId, documents: data.documentCache.map { doc in
+                DonatedDocument(volumeId: data.volumeId, documentId: doc.documentId,
+                                header: doc.header, bodyText: doc.bodyText,
+                                documentNumber: doc.documentNumber, isEditorialNote: doc.isEditorialNote)
+            })
+        }
         await stateTracker?.markCompleted(volumeId: volumeId)
         emit(.completed(volumeCount: 1, documentCount: data.documentCache.count))
         // #279 / W-4: re-assert this volume's classification overrides. The upsert just
@@ -2265,7 +2310,7 @@ public actor IndexingPipeline {
         // A volume that borrowed from this one loses what it borrowed, so its people exist exactly
         // while the list they point into is indexed — what a fresh index of the library would hold.
         try resolveBorrowedPersonLists(touching: volumeId)
-        try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
+        await donor?.withdraw(volumeId: volumeId)
 
         logger.info("removeVolume: removed FTS5 and auxiliary rows for \(volumeId, privacy: .public)")
     }
@@ -2555,18 +2600,6 @@ public actor IndexingPipeline {
         return raw.split(separator: " ").map(String.init)
     }
 
-    /// Updates the summary text for a document that is already in the index.
-    ///
-    /// Writes `summary.responseText` to `document_cache`; the `user_content` FTS5
-    /// sync trigger makes the new text immediately searchable.
-    func updateSummary(_ summary: GeneratedSummary) async throws {
-        try await updateSummaryText(
-            volumeId: summary.volumeId,
-            documentId: summary.documentId,
-            responseText: summary.responseText
-        )
-    }
-
     /// Clears a document's note text (#1280) — the twin of ``clearSummaryText(volumeId:documentId:)``.
     ///
     /// Needed because `note_text` holds ONE text per document while a document may have many notes:
@@ -2628,140 +2661,41 @@ public actor IndexingPipeline {
         return rows
     }
 
-    // MARK: - Spotlight
+    // MARK: - Indexed documents, for a donor
 
-    /// Submits CSSearchableItem records for all documents in `data` to the default
-    /// Spotlight index. Errors are silently ignored — Spotlight is best-effort.
-    private func submitSpotlightItems(for data: VolumeIndexData) {
-        let items = data.documentCache.map { doc in
-            Self.makeSearchableItem(
-                volumeId: data.volumeId, documentId: doc.documentId,
-                header: doc.header, bodyText: doc.bodyText,
-                documentNumber: doc.documentNumber, isEditorialNote: doc.isEditorialNote
-            )
+    /// One page of `document_cache`, in rowid order after `afterRowId`, as donated documents: what
+    /// the app's Spotlight rebuild (`IndexingPipeline+App.swift`) re-donates without re-parsing any
+    /// volume. The statement is fully stepped and finalized before this returns, so a caller may
+    /// suspend between pages: the actor is reentrant, and a statement held across an `await` could
+    /// observe (or block) another call mutating the database. Keyset pagination keeps each read
+    /// O(`limit`) whatever the corpus size.
+    ///
+    /// - Returns: The page, and the rowid to pass as `afterRowId` for the next one; an empty page
+    ///   when there is no more.
+    func donatedDocuments(afterRowId: Int64, limit: Int) throws -> (documents: [DonatedDocument], lastRowId: Int64) {
+        let sql = """
+            SELECT rowid, volume_id, document_id, header, body_text,
+                   document_number, is_editorial_note
+            FROM document_cache WHERE rowid > ? ORDER BY rowid LIMIT ?
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_int64(stmt, 1, afterRowId)
+        sqlite3_bind_int64(stmt, 2, Int64(limit))
+        var documents: [DonatedDocument] = []
+        var lastRowId = afterRowId
+        while try auxStep(stmt) {
+            lastRowId = sqlite3_column_int64(stmt, 0)
+            documents.append(DonatedDocument(
+                volumeId: auxColumnString(stmt, 1) ?? "",
+                documentId: auxColumnString(stmt, 2) ?? "",
+                header: auxColumnString(stmt, 3) ?? "",
+                bodyText: auxColumnString(stmt, 4) ?? "",
+                documentNumber: auxColumnString(stmt, 5),
+                isEditorialNote: sqlite3_column_int(stmt, 6) != 0
+            ))
         }
-        CSSearchableIndex.default().indexSearchableItems(items) { _ in }
-    }
-
-    /// Builds a single `CSSearchableItem` from cached document fields, shared by
-    /// `submitSpotlightItems(for:)` and `rebuildSpotlightIndex()`. Internal so the test
-    /// suite pins the donated shape against the real builder.
-    ///
-    /// ## `textContent` is the W-9 step 1 field
-    /// `title` + `contentDescription` + `keywords` made documents findable by exact words.
-    /// **`textContent` is the property Apple's on-device semantic search matches against**
-    /// (`CSUserQuery` ranked results, and the system Spotlight UI) — the V-5 assessment
-    /// measured that it was never set, which made the whole capability silently unavailable
-    /// while every donation looked complete. The bound is **3,200 characters — the corpus's
-    /// own chunk size** (`provenance.chunkChars`): the unit the semantic program already
-    /// treats as one span of meaning, and a ceiling that keeps a full-corpus donation's text
-    /// volume around a gigabyte rather than five.
-    ///
-    /// ## The title is the lists' title (#1372)
-    /// It goes through `DocumentDisplayTitle`, so a Spotlight result names a document exactly as
-    /// every in-app list does — in particular an editorial note whose printed head only says
-    /// *Editorial Note* is *Editorial Note 2*, not one of 2,560 identical results.
-    static func makeSearchableItem(
-        volumeId: String, documentId: String, header: String, bodyText: String,
-        documentNumber: String? = nil, isEditorialNote: Bool = false
-    ) -> CSSearchableItem {
-        let attrs = CSSearchableItemAttributeSet(contentType: .text)
-        attrs.title = DocumentDisplayTitle.text(
-            .init(header: header.isEmpty ? nil : header,
-                  documentNumber: (documentNumber?.isEmpty == false) ? documentNumber : nil,
-                  isEditorialNote: isEditorialNote),
-            documentId: documentId)
-        attrs.contentDescription = String(bodyText.prefix(300))
-        attrs.keywords = [volumeId, documentId]
-        attrs.textContent = String(bodyText.prefix(3_200))
-        return CSSearchableItem(
-            uniqueIdentifier: "\(volumeId)/\(documentId)",
-            domainIdentifier: volumeId,
-            attributeSet: attrs
-        )
-    }
-
-    /// The donated item shape's version. Bump when `makeSearchableItem` changes what it
-    /// donates; `rebuildSpotlightIndexIfNeeded` re-donates every already-indexed document
-    /// once per bump, because Spotlight only learns a new field through re-submission.
-    ///
-    ///   1 — title / contentDescription / keywords (the original donation)
-    ///   2 — + `textContent` (W-9 step 1)
-    ///   3 — #1375 / #1372: re-donate after the index-v55 rebuild, whose titles lose the stray
-    ///       markup-boundary spaces and whose editorial notes gain their heads. The v55 re-index
-    ///       runs `indexAllVolumes()`, which never donates, so without this bump Spotlight would
-    ///       keep "( Kennan )" and titles of the form "d245" until each volume was re-downloaded.
-    ///       The title now also goes through `DocumentDisplayTitle`.
-    ///   4 — #1421: re-donate after the index-v59 rebuild. `contentDescription` (the line under a
-    ///       Spotlight result) and `textContent` are prefixes of `body_text`, which v59 re-joins as
-    ///       printed; like v55's, the v59 re-index runs `indexAllVolumes()`, so without this bump
-    ///       Spotlight would keep showing "Moscow , January 20, 1961 ." until each volume was
-    ///       re-downloaded.
-    static let currentSpotlightSchemaVersion = 4
-
-    /// UserDefaults key holding the last donated schema version.
-    static let spotlightSchemaVersionKey = "spotlightSchemaVersionApplied"
-
-    /// Re-donates the Spotlight index once per `currentSpotlightSchemaVersion` bump — the
-    /// `applyBrokenRefsIndexIfNeeded` idiom: gated, idempotent, cheap no-op when current.
-    /// The stamp is written only after a successful rebuild, so a failed donation retries
-    /// on the next launch rather than recording a coverage the index does not have.
-    public func rebuildSpotlightIndexIfNeeded() async throws {
-        let applied = UserDefaults.standard.integer(forKey: Self.spotlightSchemaVersionKey)
-        guard applied != Self.currentSpotlightSchemaVersion else { return }
-        try await rebuildSpotlightIndex()
-        UserDefaults.standard.set(Self.currentSpotlightSchemaVersion,
-                                  forKey: Self.spotlightSchemaVersionKey)
-    }
-
-    /// Rebuilds the on-device Spotlight index from `document_cache`, without
-    /// re-parsing any volume XML (Session 154).
-    ///
-    /// Deletes every FRUS Explorer item from the system Spotlight index, then
-    /// re-submits one `CSSearchableItem` per cached document using the header and
-    /// body-text prefix already stored in `document_cache` — the same shape as
-    /// `submitSpotlightItems(for:)`, batched to avoid building one enormous array
-    /// for a full-corpus rebuild. Use this to recover from a Spotlight index that
-    /// has drifted from the on-disk search index without a full reindex.
-    public func rebuildSpotlightIndex() async throws {
-        try await CSSearchableIndex.default().deleteAllSearchableItems()
-
-        // Each batch is read with its own statement, fully stepped and finalized
-        // before the Spotlight submission suspends. The actor is reentrant: an
-        // open statement held across an `await` could observe (or block) another
-        // call mutating or rebuilding the database mid-iteration. Keyset
-        // pagination on rowid keeps each read O(batch) regardless of corpus size.
-        var lastRowId: Int64 = 0
-        var total = 0
-        while true {
-            var batch: [CSSearchableItem] = []
-            do {
-                let sql = """
-                    SELECT rowid, volume_id, document_id, header, body_text,
-                           document_number, is_editorial_note
-                    FROM document_cache WHERE rowid > ? ORDER BY rowid LIMIT 500
-                    """
-                let stmt = try auxPrepare(sql)
-                defer { sqlite3_finalize(stmt) }
-                sqlite3_bind_int64(stmt, 1, lastRowId)
-                while try auxStep(stmt) {
-                    lastRowId = sqlite3_column_int64(stmt, 0)
-                    batch.append(Self.makeSearchableItem(
-                        volumeId: auxColumnString(stmt, 1) ?? "",
-                        documentId: auxColumnString(stmt, 2) ?? "",
-                        header: auxColumnString(stmt, 3) ?? "",
-                        bodyText: auxColumnString(stmt, 4) ?? "",
-                        documentNumber: auxColumnString(stmt, 5),
-                        isEditorialNote: sqlite3_column_int(stmt, 6) != 0
-                    ))
-                }
-            }
-            guard !batch.isEmpty else { break }
-            try await CSSearchableIndex.default().indexSearchableItems(batch)
-            total += batch.count
-        }
-
-        logger.info("rebuildSpotlightIndex: resubmitted \(total, privacy: .public) items")
+        return (documents, lastRowId)
     }
 
     // MARK: - Browser Query (used by BrowserViewModel)
@@ -3674,10 +3608,10 @@ public actor IndexingPipeline {
         // de-duplication happens at population — so `COUNT(*)` counts DOCUMENTS here, the same unit
         // every other section counts. Joined on (volume_id, document_id) rather than the rowid for
         // the reason the schema comment gives: VACUUM renumbers `document_cache.rowid`.
-        // Touched only when the section was asked for: `DocumentSubjectStore.shared` forces a 6 MB
-        // JSON decode on first access, and a facet computation for Years must not pay it.
+        // Touched only when the section was asked for: the subject index forces a 6 MB JSON decode
+        // on first access, and a facet computation for Years must not pay it.
         let subjectVocabulary = request.sections.contains(.subjects)
-            ? DocumentSubjectStore.shared?.bucketVocabulary : nil
+            ? resources.documentSubjects()?.bucketVocabulary : nil
         let subjects = try section(
             .subjects,
             sql: """
@@ -4923,11 +4857,11 @@ public actor IndexingPipeline {
         // Every volume a person ref in this volume names (`personRefListVolume`), across all documents.
         var personListVolumes: Set<String> = []
         var externalCitationRows: [ExternalCitationRow] = []
-        // Hoisted once per volume: `shared` is a lazily-initialised static and this scan runs over
-        // every body footnote in the volume. Nil (the artifact missing from the bundle) means no
-        // class citations are indexed — the same degradation #828 chose for labels, and the
-        // condition below reads `?? false` so absence refuses rather than admits.
-        let classSchedule = DecimalClassLabelStore.shared
+        // Hoisted once per volume: the host's provider may decode on first use, and this scan runs
+        // over every body footnote in the volume. Nil (the artifact missing from the host's
+        // resources) means no class citations are indexed — the same degradation #828 chose for
+        // labels, and the condition below reads `?? false` so absence refuses rather than admits.
+        let classSchedule = resources.decimalClassLabels()
 
         // #784: the document-ordered footnote pass. One scanner for the whole volume, reset at
         // each document, because `Ibid.` inherits from a preceding footnote and a per-note pass
@@ -5937,7 +5871,7 @@ public actor IndexingPipeline {
                     // AST as the reader's link builds it (`ASTToRenderNodeConverter`).
                     var citing: PageCitationHint?
                     if let citingNote,
-                       case .page = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
+                       case .page = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
                         citing = PageCitationHint(noteChildren: citingNote)
                     }
                     crossRefs.append(CrossReferenceRow(
@@ -8739,7 +8673,7 @@ public actor IndexingPipeline {
     /// page refs — broken refs are precisely the page refs that pass never rewrites, so they keep
     /// their raw `pg_N` anchor here.
     private func markBrokenCrossReferences(volumeId: String) throws {
-        guard let index = BrokenRefsIndexStore.shared else { return }
+        guard let index = resources.brokenRefs() else { return }
         let targets = index.degradableTargets.filter { $0.sourceVolume == volumeId }
             .map { (sourceVolume: $0.sourceVolume, rawTarget: $0.rawTarget) }
         try markBrokenCrossReferences(volumeId: volumeId, brokenTargets: targets)
@@ -8832,7 +8766,7 @@ public actor IndexingPipeline {
     }
 
     public func applyDocumentSubjectsIfNeeded() throws {
-        guard let index = DocumentSubjectStore.shared else { return }
+        guard let index = resources.documentSubjects() else { return }
         // Rows are produced PER VOLUME, on demand. Materialising every volume's rows up front
         // costs 744,054 tuples on a launch where nothing needs populating — which is every launch
         // after the first.
@@ -8872,7 +8806,7 @@ public actor IndexingPipeline {
     /// The done-marker is cleared first, because the shared populator deliberately skips anything
     /// already marked and a RE-indexed volume may carry different document ids.
     func refreshDocumentSubjects(forVolume volumeId: String) throws {
-        guard let index = DocumentSubjectStore.shared else { return }
+        guard let index = resources.documentSubjects() else { return }
         let clear = try auxPrepare("DELETE FROM document_subject_volumes WHERE volume_id = ?")
         defer { sqlite3_finalize(clear) }
         sqlite3_bind_text(clear, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
@@ -8980,8 +8914,8 @@ public actor IndexingPipeline {
     }
 
     public func applyBrokenRefsIndexIfNeeded() throws {
-        guard let index = BrokenRefsIndexStore.shared else { return }
-        let applied = UserDefaults.standard.string(forKey: Self.brokenRefsIndexAppliedKey)
+        guard let index = resources.brokenRefs() else { return }
+        let applied = defaults.string(forKey: Self.brokenRefsIndexAppliedKey)
         guard applied != index.generated else { return }
 
         let targets = index.degradableTargets.map { (sourceVolume: $0.sourceVolume, rawTarget: $0.rawTarget) }
@@ -8991,7 +8925,7 @@ public actor IndexingPipeline {
         print("[IndexingPipeline] applyBrokenRefsIndexIfNeeded: flagged \(marked) rows for index \(index.generated)")
         #endif
 
-        UserDefaults.standard.set(index.generated, forKey: Self.brokenRefsIndexAppliedKey)
+        defaults.set(index.generated, forKey: Self.brokenRefsIndexAppliedKey)
     }
 
     /// The store/marker-independent core of the backfill (internal so tests can inject synthetic
@@ -9728,8 +9662,7 @@ public actor IndexingPipeline {
         // Never for a citation to the central files (#1543): see `aliasFallbackServes`.
         if result.totalCount == 0,
            Self.aliasFallbackServes(parsed, note: raw),
-           let record = CollectionAuthorityStore.shared?.record(forParsed: parsed, note: raw) {
-            let fallback = IndexingPipeline.CollectionAliasFallback(record: record)
+           let fallback = resources.collectionAliasFallback(parsed, raw) {
             let keys = Self.directKeys(for: parsed)
             // `.stratified` for the same reason the direct paths above are (#645): this is
             // still the anchored axis. The fallback fires precisely when the direct keys all

@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - DocumentTypeFilter
 

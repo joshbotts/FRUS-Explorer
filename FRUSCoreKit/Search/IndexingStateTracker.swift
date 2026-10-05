@@ -24,11 +24,14 @@ import Foundation
 /// unbounded `UserDefaults` growth in pathological cases.
 ///
 /// ## Testability
-/// A custom `UserDefaults` suite can be injected at init time so tests never pollute
-/// `UserDefaults.standard`.
+/// The stamp store is injected at init time, so tests never pollute the app's own: the app's
+/// initialiser (`IndexingStateTracker+App.swift`) takes a `UserDefaults` suite, `.standard` by
+/// default, and a host without one passes an `InMemoryIndexingStampStore`.
 ///
 /// Version history:
 ///   1.0 — Session 115: initial implementation
+///   1.1 — FRUSCoreKit, part 2: moved into the kit; it keeps the sentinel in an
+///          `IndexingStampStore`, which `UserDefaults` satisfies
 public actor IndexingStateTracker {
 
     // MARK: - Configuration
@@ -38,12 +41,13 @@ public actor IndexingStateTracker {
 
     // MARK: - Dependencies
 
-    private let userDefaults: UserDefaults
+    private let userDefaults: any IndexingStampStore
 
     // MARK: - Init
 
-    public init(userDefaults: UserDefaults = .standard) {
-        self.userDefaults = userDefaults
+    /// A tracker that keeps its sentinel in `store`.
+    public init(store: any IndexingStampStore) {
+        self.userDefaults = store
     }
 
     // MARK: - API
