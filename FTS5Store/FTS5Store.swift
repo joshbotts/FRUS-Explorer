@@ -128,6 +128,41 @@ public actor FTS5Store {
         logger.debug("Opened database at \(databaseURL.path, privacy: .public)")
     }
 
+    /// Opens the index at `databaseURL` read-only and immutable, to search an index another program
+    /// built: FRUS Explorer Light's server opens the Mac's exported index this way. The app never
+    /// calls it.
+    ///
+    /// It creates, migrates and marks nothing, and nothing may write the file while it is open.
+    /// It refuses, with `FTS5Error.openFailed`, a database of another schema generation than
+    /// `FTS5Connection.currentSchemaGeneration`, which it cannot migrate, or one that lacks `schema`'s
+    /// table or its vocabulary table. Temporary tables, which stems and vocabulary lookups use,
+    /// live in memory.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: File URL of an existing index.
+    ///   - schema: FTS5 table definition. Defaults to `FTS5Schema.frusDocuments`.
+    public init(readingDatabaseAt databaseURL: URL, schema: FTS5Schema = .frusDocuments) throws {
+        let connection = try FTS5Connection(readingDatabaseAt: databaseURL)
+        let generation = connection.userVersion()
+        guard generation == FTS5Connection.currentSchemaGeneration else {
+            throw FTS5Error.openFailed(path: databaseURL.path, message: "schema generation \(generation); this build reads generation \(FTS5Connection.currentSchemaGeneration)")
+        }
+        for table in [schema.tableName, schema.vocabTableName] where !connection.tableExists(table) {
+            throw FTS5Error.openFailed(path: databaseURL.path, message: "no \(table) table")
+        }
+        self.schema = schema
+        self.connection = connection
+        self.didRebuildSchema = false
+
+        logger.debug("Opened database read-only at \(databaseURL.path, privacy: .public)")
+    }
+
+    /// `databaseURL` as an SQLite URI that opens it read-only and immutable: its percent-encoded
+    /// `file:` URL, then `?mode=ro&immutable=1`. Open it with `SQLITE_OPEN_URI`.
+    public static func immutableURI(for databaseURL: URL) -> String {
+        "\(databaseURL.standardizedFileURL.absoluteString)?mode=ro&immutable=1"
+    }
+
     // MARK: - Insertion
 
     /// Throws `FTS5Error.externalContentWrite` when this store's schema is an

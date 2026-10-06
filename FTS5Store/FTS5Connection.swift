@@ -60,6 +60,31 @@ final class FTS5Connection {
         try enableWAL()
     }
 
+    /// Opens the database at `databaseURL` read-only and immutable (`FTS5Store.immutableURI(for:)`),
+    /// for an index another program wrote that nothing writes while it is open. SQLite takes no
+    /// lock, writes nothing beside the file and refuses every write. Only the pragmas that shape
+    /// reading are set; the journal mode and `synchronous` are left as the file has them.
+    init(readingDatabaseAt databaseURL: URL) throws {
+        self.databaseURL = databaseURL
+        var handle: OpaquePointer?
+        let rc = sqlite3_open_v2(
+            FTS5Store.immutableURI(for: databaseURL),
+            &handle,
+            SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX,
+            nil
+        )
+        guard rc == SQLITE_OK, let h = handle else {
+            let msg = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown error"
+            sqlite3_close(handle)
+            throw FTS5Error.openFailed(path: databaseURL.path, message: msg)
+        }
+        self.db = h
+        try exec("PRAGMA busy_timeout = 5000")
+        try exec("PRAGMA temp_store=MEMORY")
+        try exec("PRAGMA cache_size = -8000")
+        try exec("PRAGMA mmap_size = 134217728")
+    }
+
     deinit {
         if let db { sqlite3_close_v2(db) }
     }
