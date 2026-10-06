@@ -12,7 +12,7 @@ import SwiftUI
 // MARK: - HTMLTemplate
 
 /// Assembles a complete HTML document from a `FRUSDocumentRenderModel` and the current
-/// app theme.
+/// app theme, built by FRUSCoreKit's `ReaderPage`.
 ///
 /// The output is a full `<!DOCTYPE html>` document (not a fragment) suitable for
 /// loading directly into `WKWebView` via `loadHTMLString(_:baseURL:)`.
@@ -47,10 +47,9 @@ import SwiftUI
 ///          and `frus-print.css` will be added as an additional CSS layer.
 ///   1.1 — FRUSCoreKit, part 1: the fragment is written by `FRUSRenderNodeHTMLSerializer.reader`,
 ///          FRUSCoreKit's name for the reader's serializer settings, which do not change
-///
-/// - Note: The `documentCSS` string constant could be moved to a bundle resource
-///   (`frus-document.css`) in a future session if live-editing of CSS during
-///   development becomes a priority. For now, inline keeps the build simple.
+///   1.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): the page, `documentCSS` and `figureCSS`
+///          moved to FRUSCoreKit's `ReaderPage`, which `build`, `documentCSS` and `figureCSS`
+///          forward to with the same bytes, so FRUS Explorer Light serves the app's page
 enum HTMLTemplate {
 
     // MARK: - Public API

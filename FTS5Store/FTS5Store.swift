@@ -90,6 +90,9 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///   2.1 — Session 2026-10-04: `OSLog` and `SQLite3` are imported only where they exist. On Linux
 ///          `Logger` is the stand-in in `LinuxLogger.swift`, which prints to standard error, and
 ///          SQLite comes from `CSQLite`; Apple platforms compile what they did before
+///   2.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): `init(readingDatabaseAt:schema:)` opens an
+///          existing index read-only and immutable, creating and migrating nothing, and
+///          `immutableURI(for:)` builds the URI it opens
 public actor FTS5Store {
 
     // Module-internal rather than private so `FTS5Vocabulary.swift`'s extension can

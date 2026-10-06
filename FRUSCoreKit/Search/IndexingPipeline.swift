@@ -409,6 +409,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         (`IndexedDocumentDonor`). Spotlight, `updateSummary(_:)` and the app's delegating
 ///         initialiser are in the app's `IndexingPipeline+App.swift`; `runPostIndexPasses` runs the
 ///         passes after indexing in the app's order. Nothing stored changes, so no index version
+///  4.31 — Session 2026-10-05 (FRUS Explorer Light, S8a): `init(readingIndexAt:fts5Store:resources:
+///         volumesDirectory:)` opens an index read-only and immutable, for a host that searches and
+///         browses an index another program built (`isReadOnly`). The public initialiser every caller
+///         uses delegates to a private one, which runs its statements as before and in the same order
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1975,12 +1979,15 @@ public actor IndexingPipeline {
     ///
     /// The connection is opened with `?mode=ro&immutable=1` (`FTS5Store.immutableURI(for:)`), so
     /// SQLite takes no lock, writes nothing beside the file and refuses every write with
-    /// `SQLITE_READONLY`, which the pipeline's writing methods report as `IndexingError`. Nothing
-    /// may write the file while it is open. The schema set-up, its migrations and the journal-mode
+    /// `SQLITE_READONLY`. A writing method that throws reports it as `IndexingError.sqliteError`;
+    /// `indexAllVolumes()` reports each volume it could not write as a `.failed` progress event, and
+    /// `checkIndexIntegrity()` lists the checks SQLite refused as problems. Nothing may write the file
+    /// while it is open. The schema set-up, its migrations and the journal-mode
     /// switch are skipped, so the file is read as it stands: it must be an index of this build's
     /// generation, as the host checks before opening it. The `frus_exact_word` function that `=exact`
-    /// queries call is registered as for any connection. The stamps are kept in memory, and nothing
-    /// is indexed, so `volumesDirectory` is read only by `unindexedDownloadedVolumeIds()`.
+    /// queries call is registered as for any connection. The stamps are kept in memory.
+    /// `volumesDirectory` is read by `unindexedDownloadedVolumeIds()`, and by the indexing methods,
+    /// which find and parse a volume's file before its first write is refused.
     ///
     /// - Parameters:
     ///   - databaseURL: The index file, which must exist.

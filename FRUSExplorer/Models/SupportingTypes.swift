@@ -65,6 +65,9 @@ public enum ResponseFormat: Codable, Sendable, Equatable {
     case structured(schema: StructuredSummarySchema)
 }
 
+// `TextSizePreference` moved to FRUSCoreKit (`FRUSCoreKit/TEI/TextSizePreference.swift`) under its
+// name, since the reader's page, `ReaderPage`, now kit code, reads it.
+
 // MARK: - DefaultDocumentMode
 
 /// User preference for which mode a document opens in (Session 154).

@@ -45,6 +45,8 @@ public enum CrossRefDestination: Equatable, Sendable {
 ///          `figureHost`, `figureURL(for:)`) and `FigureImageLibrary` (`isSafeComponent`).
 ///          `CrossRefDestination`, this type and `resolveCrossRefTarget` are public, for FRUS
 ///          Explorer Light's reader
+///   1.1 — Session 2026-10-05 (FRUS Explorer Light, S8a): `figureHost`, `figureURL(for:)` and
+///          `isSafeComponent(_:)` are public, for its figure route
 public enum FRUSURLScheme {
 
     /// Splits a raw TEI ref target into a navigable destination, normalising the

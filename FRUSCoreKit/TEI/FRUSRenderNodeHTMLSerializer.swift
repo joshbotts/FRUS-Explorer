@@ -128,6 +128,9 @@ import SourceNoteKit
 ///          kit's homes of what it called in the app, and imports SourceNoteKit where that is a
 ///          module of its own. The reader's settings are `FRUSRenderNodeHTMLSerializer.reader`
 ///          (`ReaderRendering.swift`). Its output does not change
+///   1.11 — Session 2026-10-05 (FRUS Explorer Light, S8a): `FigureImages.linked(url:)` writes the
+///          reader's figure markup with a host's address for each image
+///          (`FRUSRenderNodeHTMLSerializer.reader(figureURL:)`). Every other case writes what it did
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).

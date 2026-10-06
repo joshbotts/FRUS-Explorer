@@ -444,6 +444,9 @@ extension FeatureInfoButton where Footer == EmptyView {
 ///         cap was inert against a `.system(size:)` font).
 ///   1.3 — #1380: `selectGlyph`, a clicking pointer on the Mac where the chart hints drew a
 ///         tapping hand
+///   1.4 — Session 2026-10-05 (FRUS Explorer Light, S8a): `cssVariables(colorScheme:textSize:)`
+///         forwards to FRUSCoreKit's `ReaderPage.cssVariables(appearance:textSize:)`, where its body
+///         moved, through `ReaderAppearance(_:)`
 enum FRUSTheme {
 
     // MARK: Typography
