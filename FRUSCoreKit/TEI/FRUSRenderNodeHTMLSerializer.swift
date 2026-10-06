@@ -128,6 +128,9 @@ import SourceNoteKit
 ///          kit's homes of what it called in the app, and imports SourceNoteKit where that is a
 ///          module of its own. The reader's settings are `FRUSRenderNodeHTMLSerializer.reader`
 ///          (`ReaderRendering.swift`). Its output does not change
+///   1.11 — Session 2026-10-05 (FRUS Explorer Light, S8a): `FigureImages.linked(url:)` writes the
+///          reader's figure markup with a host's address for each image
+///          (`FRUSRenderNodeHTMLSerializer.reader(figureURL:)`). Every other case writes what it did
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -142,6 +145,10 @@ public struct FRUSRenderNodeHTMLSerializer {
         /// The HTML export and its preview: the image's bytes as a `data:` URL, from `load`; the
         /// placeholder when `load` returns `nil`.
         case embedded(load: @Sendable (FigureImageName) -> Data?)
+        /// A reader outside the app, such as FRUS Explorer Light's: the reader's markup, with the
+        /// image's address from `url`, which names it as the host serves it; the placeholder when
+        /// `url` returns `nil`.
+        case linked(url: @Sendable (FigureImageName) -> URL?)
     }
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -994,8 +1001,14 @@ public struct FRUSRenderNodeHTMLSerializer {
         switch figureImages {
         case .placeholder:
             return missing
-        case .reader:
-            guard let url = FRUSURLScheme.figureURL(for: image) else { return missing }
+        case .reader, .linked:
+            let address: URL?
+            if case .linked(let url) = figureImages {
+                address = url(image)
+            } else {
+                address = FRUSURLScheme.figureURL(for: image)
+            }
+            guard let url = address else { return missing }
             // The handler answers with the image when it is on the device and with a failure
             // when it is not; `onerror` then shows the placeholder in the image's place.
             return "<img class=\"figure-image\" src=\"\(escaped(url.absoluteString))\" alt=\"\(alt)\" "
@@ -1007,16 +1020,19 @@ public struct FRUSRenderNodeHTMLSerializer {
         }
     }
 
-    /// The link an embedded video prints. In the reader it is a `frusexplorer://doc/` link, which
-    /// the app opens in the browser as it opens every external reference; anywhere else it is the
-    /// page's own address, since an exported file is read outside the app.
+    /// The link an embedded video prints. In a reader it is a `frusexplorer://doc/` link, which
+    /// the app opens in the browser as it opens every external reference, and a host's reader
+    /// handles as it handles every reader link; anywhere else it is the page's own address, since an
+    /// exported file is read outside the app.
     private func videoLinkHTML(_ url: URL) -> String {
         let label = escaped(FigureBlock.videoLinkLabel)
-        if case .reader = figureImages {
+        switch figureImages {
+        case .reader, .linked:
             return "<a class=\"cross-ref figure-video\" "
                 + "href=\"frusexplorer://doc/\(urlComponentEncoded(url.absoluteString))\">\(label)</a>"
+        case .placeholder, .embedded:
+            return "<a class=\"cross-ref figure-video\" href=\"\(escaped(url.absoluteString))\">\(label)</a>"
         }
-        return "<a class=\"cross-ref figure-video\" href=\"\(escaped(url.absoluteString))\">\(label)</a>"
     }
 
     // MARK: - Type Helpers

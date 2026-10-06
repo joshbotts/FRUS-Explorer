@@ -23,10 +23,11 @@ import CSQLite
 /// Manages the lifecycle of a SQLite database connection for FTS5Store.
 ///
 /// ## WAL Mode
-/// Write-Ahead Logging is enabled immediately after opening the connection.
+/// `init(databaseURL:)` enables Write-Ahead Logging immediately after opening the connection.
 /// WAL allows readers and a single writer to proceed concurrently without
 /// blocking each other, which is important for the indexing pipeline that runs
-/// alongside live UI queries.
+/// alongside live UI queries. `init(readingDatabaseAt:)` opens read-only and immutable and leaves
+/// the journal mode as the file has it.
 ///
 /// ## Thread Safety
 /// FTS5Connection is not thread-safe. It is always accessed through `FTS5Store`,
@@ -36,6 +37,8 @@ import CSQLite
 ///   1.0 — Session 03: initial implementation
 ///   1.1 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so the kit
 ///          compiles there; Apple platforms still import `SQLite3`
+///   1.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): `init(readingDatabaseAt:)`, the read-only,
+///          immutable open, which sets only the pragmas that shape reading
 final class FTS5Connection {
 
     private(set) var db: OpaquePointer?
@@ -58,6 +61,32 @@ final class FTS5Connection {
         }
         self.db = h
         try enableWAL()
+    }
+
+    /// Opens the database at `databaseURL` read-only and immutable (`FTS5Store.immutableURI(for:)`),
+    /// for an index another program wrote that nothing writes while it is open. SQLite takes no
+    /// lock, writes nothing beside the file and refuses every write. Only the pragmas that shape
+    /// reading are set: the journal mode is left as the file has it, and `synchronous`, a setting of
+    /// the connection that only writing reads, is not set.
+    init(readingDatabaseAt databaseURL: URL) throws {
+        self.databaseURL = databaseURL
+        var handle: OpaquePointer?
+        let rc = sqlite3_open_v2(
+            FTS5Store.immutableURI(for: databaseURL),
+            &handle,
+            SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX,
+            nil
+        )
+        guard rc == SQLITE_OK, let h = handle else {
+            let msg = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown error"
+            sqlite3_close(handle)
+            throw FTS5Error.openFailed(path: databaseURL.path, message: msg)
+        }
+        self.db = h
+        try exec("PRAGMA busy_timeout = 5000")
+        try exec("PRAGMA temp_store=MEMORY")
+        try exec("PRAGMA cache_size = -8000")
+        try exec("PRAGMA mmap_size = 134217728")
     }
 
     deinit {

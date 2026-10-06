@@ -89,4 +89,14 @@ extension FRUSRenderNodeHTMLSerializer {
     public static var reader: FRUSRenderNodeHTMLSerializer {
         FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true, figureImages: .reader)
     }
+
+    /// The reader's serializer for a host outside the app, which names each figure's image by
+    /// `figureURL`, the address it serves the image at, in place of the app's `frusexplorer://figure/`
+    /// URL. Everything else is ``reader``'s, so with `FRUSURLScheme.figureURL(for:)` it writes
+    /// ``reader``'s bytes.
+    public static func reader(
+        figureURL: @escaping @Sendable (FigureImageName) -> URL?
+    ) -> FRUSRenderNodeHTMLSerializer {
+        FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true, figureImages: .linked(url: figureURL))
+    }
 }

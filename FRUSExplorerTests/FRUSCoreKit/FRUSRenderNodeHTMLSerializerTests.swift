@@ -881,7 +881,7 @@ struct ClassificationChipSerializationTests {
     }
 }
 
-#if !SWIFT_PACKAGE // HTMLTemplate, TextSizePreference and the WebKit harness are the app's
+#if !SWIFT_PACKAGE // HTMLTemplate and the WebKit harness are the app's
 // MARK: - FootnoteListIndentRenderTests (#1386)
 
 /// Renders the reader's Footnotes list through its real stylesheet in a `WKWebView` and

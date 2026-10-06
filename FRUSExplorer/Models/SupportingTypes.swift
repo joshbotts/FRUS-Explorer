@@ -65,37 +65,8 @@ public enum ResponseFormat: Codable, Sendable, Equatable {
     case structured(schema: StructuredSummarySchema)
 }
 
-// MARK: - TextSizePreference
-
-/// User preference for document body text size.
-///
-/// Stored in `UserDefaults` via `AppStorage("frus.display.textSize")` and applied
-/// by `FRUSDocumentRenderer` to all paragraph-level text. `Double` body font sizes
-/// avoid a CoreGraphics import in this Foundation-only file.
-public enum TextSizePreference: String, CaseIterable, Identifiable, Sendable {
-    case small, medium, large, extraLarge
-
-    public var id: String { rawValue }
-
-    public var label: String {
-        switch self {
-        case .small:      return "Small"
-        case .medium:     return "Medium"
-        case .large:      return "Large"
-        case .extraLarge: return "Extra Large"
-        }
-    }
-
-    /// Point size for body text (paragraphs, salutations, inline defaults).
-    public var bodyFontSize: Double {
-        switch self {
-        case .small:      return 12
-        case .medium:     return 14
-        case .large:      return 16
-        case .extraLarge: return 19
-        }
-    }
-}
+// `TextSizePreference` moved to FRUSCoreKit (`FRUSCoreKit/TEI/TextSizePreference.swift`) under its
+// name, since the reader's page, `ReaderPage`, now kit code, reads it.
 
 // MARK: - DefaultDocumentMode
 

@@ -2125,13 +2125,10 @@ struct FigureImageMarkupTests {
             + "onerror=\"this.parentNode.classList.add('missing')\">"
             + "<span class=\"figure-missing\">[Figure]</span>"), "\(out)")
         #expect(FigureFixtures.count("<img class=\"figure-image\"", in: out) == 3)
-        #if !SWIFT_PACKAGE // HTMLTemplate is the app's
-        // The reader's page is what HTMLTemplate builds.
-        let page = HTMLTemplate.build(model: try await model(FigureFixtures.d587, volume: "frus1946v01"),
-                                      colorScheme: .light)
+        // The reader's page is what ReaderPage builds, as the app's HTMLTemplate does.
+        let page = ReaderPage.build(model: try await model(FigureFixtures.d587, volume: "frus1946v01"))
         #expect(page.contains("src=\"frusexplorer://figure/frus1946v01/figure_1166.png\""), "the reader's page names no image")
         #expect(page.contains(".frus-figure.missing img.figure-image"), "the reader's stylesheet has no figure rules")
-        #endif
 
         // A name with a space is one path component; the description, when there is one, is the alt text.
         let appendix = FRUSRenderNodeHTMLSerializer(figureImages: .reader)

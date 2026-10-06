@@ -90,6 +90,9 @@ private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.sel
 ///   2.1 — Session 2026-10-04: `OSLog` and `SQLite3` are imported only where they exist. On Linux
 ///          `Logger` is the stand-in in `LinuxLogger.swift`, which prints to standard error, and
 ///          SQLite comes from `CSQLite`; Apple platforms compile what they did before
+///   2.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): `init(readingDatabaseAt:schema:)` opens an
+///          existing index read-only and immutable, creating and migrating nothing, and
+///          `immutableURI(for:)` builds the URI it opens
 public actor FTS5Store {
 
     // Module-internal rather than private so `FTS5Vocabulary.swift`'s extension can
@@ -126,6 +129,41 @@ public actor FTS5Store {
         FTS5Store.excludeFromBackup(url: databaseURL)
 
         logger.debug("Opened database at \(databaseURL.path, privacy: .public)")
+    }
+
+    /// Opens the index at `databaseURL` read-only and immutable, to search an index another program
+    /// built: FRUS Explorer Light's server opens the Mac's exported index this way. The app never
+    /// calls it.
+    ///
+    /// It creates, migrates and marks nothing, and nothing may write the file while it is open.
+    /// It refuses, with `FTS5Error.openFailed`, a database of another schema generation than
+    /// `FTS5Connection.currentSchemaGeneration`, which it cannot migrate, or one that lacks `schema`'s
+    /// table or its vocabulary table. Temporary tables, which stems and vocabulary lookups use,
+    /// live in memory.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: File URL of an existing index.
+    ///   - schema: FTS5 table definition. Defaults to `FTS5Schema.frusDocuments`.
+    public init(readingDatabaseAt databaseURL: URL, schema: FTS5Schema = .frusDocuments) throws {
+        let connection = try FTS5Connection(readingDatabaseAt: databaseURL)
+        let generation = connection.userVersion()
+        guard generation == FTS5Connection.currentSchemaGeneration else {
+            throw FTS5Error.openFailed(path: databaseURL.path, message: "schema generation \(generation); this build reads generation \(FTS5Connection.currentSchemaGeneration)")
+        }
+        for table in [schema.tableName, schema.vocabTableName] where !connection.tableExists(table) {
+            throw FTS5Error.openFailed(path: databaseURL.path, message: "no \(table) table")
+        }
+        self.schema = schema
+        self.connection = connection
+        self.didRebuildSchema = false
+
+        logger.debug("Opened database read-only at \(databaseURL.path, privacy: .public)")
+    }
+
+    /// `databaseURL` as an SQLite URI that opens it read-only and immutable: its percent-encoded
+    /// `file:` URL, then `?mode=ro&immutable=1`. Open it with `SQLITE_OPEN_URI`.
+    public static func immutableURI(for databaseURL: URL) -> String {
+        "\(databaseURL.standardizedFileURL.absoluteString)?mode=ro&immutable=1"
     }
 
     // MARK: - Insertion
