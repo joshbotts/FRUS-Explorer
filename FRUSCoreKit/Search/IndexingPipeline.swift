@@ -431,6 +431,10 @@ public actor IndexingPipeline {
     /// the host. `nonisolated` so the nonisolated parse step and the search service read it directly.
     nonisolated public let resources: IndexingResources
 
+    /// Whether the index was opened read-only and immutable (`init(readingIndexAt:fts5Store:resources:volumesDirectory:)`),
+    /// where every write fails with `SQLITE_READONLY`.
+    nonisolated public let isReadOnly: Bool
+
     /// What indexing tells a system search index, or `nil`: the app's Spotlight donor.
     private let donor: (any IndexedDocumentDonor)?
 
@@ -1961,6 +1965,54 @@ public actor IndexingPipeline {
         defaults: any IndexingStampStore,
         donor: (any IndexedDocumentDonor)? = nil
     ) throws {
+        try self.init(fts5Store: fts5Store, databaseURL: databaseURL, volumesDirectory: volumesDirectory,
+                      resources: resources, stateTracker: stateTracker, concurrencyLimit: concurrencyLimit,
+                      defaults: defaults, donor: donor, readOnly: false)
+    }
+
+    /// Opens an index another program built, read-only and immutable, to search and browse it:
+    /// FRUS Explorer Light's server opens the Mac's exported index this way. The app never calls it.
+    ///
+    /// The connection is opened with `?mode=ro&immutable=1` (`FTS5Store.immutableURI(for:)`), so
+    /// SQLite takes no lock, writes nothing beside the file and refuses every write with
+    /// `SQLITE_READONLY`, which the pipeline's writing methods report as `IndexingError`. Nothing
+    /// may write the file while it is open. The schema set-up, its migrations and the journal-mode
+    /// switch are skipped, so the file is read as it stands: it must be an index of this build's
+    /// generation, as the host checks before opening it. The `frus_exact_word` function that `=exact`
+    /// queries call is registered as for any connection. The stamps are kept in memory, and nothing
+    /// is indexed, so `volumesDirectory` is read only by `unindexedDownloadedVolumeIds()`.
+    ///
+    /// - Parameters:
+    ///   - databaseURL: The index file, which must exist.
+    ///   - fts5Store: A store over the same file, opened with `FTS5Store(readingDatabaseAt:)`.
+    ///   - resources: The bundled data files, which subject filters read (`IndexingResources`).
+    ///   - volumesDirectory: The folder of volume files, or `nil` for the index's own folder.
+    public init(
+        readingIndexAt databaseURL: URL,
+        fts5Store: FTS5Store,
+        resources: IndexingResources,
+        volumesDirectory: URL? = nil
+    ) throws {
+        try self.init(fts5Store: fts5Store, databaseURL: databaseURL,
+                      volumesDirectory: volumesDirectory ?? databaseURL.deletingLastPathComponent(),
+                      resources: resources, stateTracker: nil, concurrencyLimit: 1,
+                      defaults: InMemoryIndexingStampStore(), donor: nil, readOnly: true)
+    }
+
+    /// The initialisers' shared body. Read-write, it opens or creates the file and sets up the schema;
+    /// read-only, it opens the file immutable and changes nothing in it.
+    private init(
+        fts5Store: FTS5Store,
+        databaseURL: URL,
+        volumesDirectory: URL,
+        resources: IndexingResources,
+        stateTracker: IndexingStateTracker?,
+        concurrencyLimit: Int,
+        defaults: any IndexingStampStore,
+        donor: (any IndexedDocumentDonor)?,
+        readOnly: Bool
+    ) throws {
+        self.isReadOnly = readOnly
         self.fts5Store = fts5Store
         self.databaseURL = databaseURL
         self.volumesDirectory = volumesDirectory
@@ -1989,25 +2041,39 @@ public actor IndexingPipeline {
         metadataContinuation = metaContinuation
 
         var handle: OpaquePointer?
-        let rc = sqlite3_open_v2(
-            databaseURL.path,
-            &handle,
-            SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
-            nil
-        )
+        let rc = readOnly
+            ? sqlite3_open_v2(FTS5Store.immutableURI(for: databaseURL), &handle,
+                              SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX, nil)
+            : sqlite3_open_v2(
+                databaseURL.path,
+                &handle,
+                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX,
+                nil
+            )
         guard rc == SQLITE_OK, let h = handle else {
             let msg = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
             sqlite3_close(handle)
             throw IndexingError.databaseOpenFailed(message: msg)
         }
-        try Self.setupDatabase(h)
+        if readOnly {
+            // Only the pragmas that shape reading: the facets' temporary table is kept in memory,
+            // as setupDatabase's `temp_store` keeps it for the app.
+            for pragma in ["PRAGMA busy_timeout = 5000", "PRAGMA temp_store = MEMORY"]
+            where sqlite3_exec(h, pragma, nil, nil, nil) != SQLITE_OK {
+                let msg = String(cString: sqlite3_errmsg(h))
+                sqlite3_close(h)
+                throw IndexingError.databaseOpenFailed(message: msg)
+            }
+        } else {
+            try Self.setupDatabase(h)
+        }
         Self.registerExactWordFunction(h)
         auxDb = h
 
         // Pre-prepare the document_cache UPSERT once after schema setup so every
         // call to auxInsertDocumentCache reuses the compiled statement (#7).
         var cacheStmt: OpaquePointer?
-        if sqlite3_prepare_v2(h, Self.documentCacheUpsertSQL, -1, &cacheStmt, nil) == SQLITE_OK {
+        if !readOnly, sqlite3_prepare_v2(h, Self.documentCacheUpsertSQL, -1, &cacheStmt, nil) == SQLITE_OK {
             preparedCacheInsert = cacheStmt
         }
 
@@ -2017,17 +2083,23 @@ public actor IndexingPipeline {
         // Named by its string, which is `UIApplication.didReceiveMemoryWarningNotification`'s raw
         // value (pinned by a test), because the kit does not import UIKit.
         #if canImport(UIKit)
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("UIApplicationDidReceiveMemoryWarningNotification"),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self else { return }
-            Task { await self.reduceForMemoryPressure() }
+        if !readOnly {
+            NotificationCenter.default.addObserver(
+                forName: Notification.Name("UIApplicationDidReceiveMemoryWarningNotification"),
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self else { return }
+                Task { await self.reduceForMemoryPressure() }
+            }
         }
         #endif
 
-        logger.info("Initialised. volumesDir=\(volumesDirectory.path, privacy: .public)")
+        if readOnly {
+            logger.info("Initialised read-only. volumesDir=\(volumesDirectory.path, privacy: .public)")
+        } else {
+            logger.info("Initialised. volumesDir=\(volumesDirectory.path, privacy: .public)")
+        }
     }
 
     deinit {
