@@ -35766,3 +35766,61 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`), the self-hosted web edi
 - `CountCopyTests` stays in the app's target: one of its tests assumes the host's locale groups digits.
 - `Planning/Manual-Revisions-Pending.md` keeps its old path pointers, as #1573 left its own.
 - The UI suites; iOS 26.x; a device; a signed run. The Mac app was built and not run.
+
+## Session 2026-10-05 — FRUS Explorer Light can open the exported index read-only, name its own figure addresses, and serve the reader's page, which is kit code the app forwards to with the same bytes
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exported index read-only and immutable. Its search, browse and reader endpoints need three things the kit did not have. Every kit opener wrote to the file it opened: it switched the file to WAL and ran the schema set-up's clean-up writes. A browser cannot load `frusexplorer://figure/` images. And the reader's page, `HTMLTemplate`, imported SwiftUI for one colour-scheme parameter. This pull request adds the first two to the kit and moves the third. Nothing the app shows changes.
+
+**Changed**
+- **Read-only opens.** `FTS5Store(readingDatabaseAt:schema:)` and `IndexingPipeline(readingIndexAt:fts5Store:resources:volumesDirectory:)` open with `?mode=ro&immutable=1` (`FTS5Store.immutableURI(for:)`).
+  - They set only the pragmas that shape reading: busy timeout, temporary tables in memory, page cache and memory map. They never set the journal mode.
+  - They skip the schema set-up, its migrations and clean-up writes, the cached `document_cache` upsert and the iOS memory observer. `frus_exact_word` is still registered.
+  - The store refuses another schema generation or a missing table with `FTS5Error.openFailed`. SQLite refuses every write.
+  - `isReadOnly` says which open a pipeline had.
+  - The public initialiser every caller uses now delegates to a private one with `readOnly: false`, which runs its statements as before and in the same order.
+- **A host's figure addresses.**
+  - `FigureImages.linked(url:)` writes the reader's figure markup with the host's address for each image; `FRUSRenderNodeHTMLSerializer.reader(figureURL:)` is the reader's serializer with it, and `.reader` is unchanged.
+  - `FRUSURLScheme.figureHost`, `figureURL(for:)` and `isSafeComponent(_:)` are public.
+- **The reader's page is kit code.** `FRUSCoreKit/TEI/ReaderPage.swift` holds the page around the fragment, `documentCSS` and `figureCSS` (moved verbatim), and `cssVariables(appearance:textSize:)`, moved from `FRUSTheme`.
+  - `ReaderAppearance` (light, dark) replaces `ColorScheme` there. `TextSizePreference` moves into the kit under its name.
+  - `ReaderPage.build` takes the serializer (`.reader` by default) and a host's head markup, which by default adds nothing.
+  - `HTMLTemplate.build(model:colorScheme:textSize:)`, `documentCSS`, `figureCSS` and `FRUSTheme.cssVariables(colorScheme:textSize:)` forward to it, so every caller compiles unchanged.
+- **Tests**, under both compilers:
+  - **IndexReadOnlyOpenTests:**
+    - an index built read-write and copied out of WAL mode, opened read-only, answers nine queries exactly as before (results with score bits, counts, expressions, `=exact`, two refusals) and browses;
+    - it refuses a write, and its folder keeps the same bytes and nothing beside them;
+    - unreadable files are refused.
+  - **ReaderPageTests:**
+    - the page before its fragment has, for both palettes at all four sizes, the SHA-256 that `HTMLTemplate.build` wrote on `v2` before the move;
+    - a host's head and serializer reach the page;
+    - in Xcode, the app's names equal the kit's.
+  - **Existing suites:** the figure test's page check now runs under `swift test` too.
+  - **Count:** FRUSCoreKitTests goes from 878 tests in 116 suites to 884 in 118.
+- **Docs.** `CLAUDE.md` (the TEI row, and what was made public for the web edition), version-history lines, and a note where `TextSizePreference` was. No editable-content block moves. The kit goes from 31,887 lines in 47 files to 32,684 in 49.
+
+**Apple platforms: nothing changes, and how that was checked**
+- **`FRUSExplorerMac`**, clean, unsigned Debug, beside `v2` @ `f69b4a0a` built the same way: "** BUILD SUCCEEDED **" both, with the same five warning lines. The debug dylibs define 233,941 and 233,858 unique symbols.
+- **The symbol diff** (normalized as for #1573 and #1574): 14 removed, 92 added.
+  - **Removed:** `HTMLTemplate.documentCSS` and `figureCSS` as stored constants (now forwarders); `IndexingPipeline.init`'s initialising entry, its closures and its allocating method descriptor, now the private initialiser's; `FRUSTheme.cssVariables`' inner `px`; and the `FigureImages` payload metadata the new case reshapes.
+  - **Added:**
+    - the read-only initialisers of `FTS5Connection`, `FTS5Store` and `IndexingPipeline`, and the private one;
+    - `isReadOnly`, `immutableURI(for:)` and `reader(figureURL:)`;
+    - `ReaderPage` and `ReaderAppearance`, with `ReaderAppearance(_:)`;
+    - their metadata and witnesses.
+- **iOS 27.0**, an iPhone 17 simulator, unsigned:
+  - a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **" in 271 s, with the 7 known warning lines;
+  - the full unit target, the app removed first, with `TEST_RUNNER_FRUS_TEI_MIRROR`: "✘ Test run with 6505 tests in 767 suites failed after 431.863 seconds with 8 issues." `v2` (#1574's head) ran 6498 tests in 765 suites the same way, with the same 8 issues;
+  - the 7 more tests are the two new suites', one of them Xcode only. The 8 are the Keychain tests an unsigned build fails (-34018). Both runs skip the same 17 tests and 2 suites.
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs, 2,547 tests, all passed, none skipped (`FRUSCoreKitTests` 884).
+- **The reader's HTML and the search expressions.** FRUS Explorer Light's `tools/mac-golden`, which compiles the whole app module, built against this branch. It wrote all 392 fixture rows' HTML and all 482 queries' expressions byte-identical to its golden files; only their provenance changed.
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64)
+- **Setup:** FRUS Explorer Light's package, with this branch as its submodule and swift-crypto's `Crypto` added to `FRUSCoreKitTests` for the new suites.
+- **Results:** "✔ Test run with 884 tests in 118 suites passed", none skipped. The other kit targets pass, and its harness fails only on its golden files' provenance until its pin move.
+
+**Owed by the owner:** Mac check 3 for this pull request (FRUS Explorer Light's plan), from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows, with a new three-volume export from the newly pinned build.
+
+**Not done:**
+- The reader scripts stay in `FRUSWebViewConfiguration.swift`, and `Resources/frus-highlights.js` still differs from the script the app injects.
+- Facets, the query inspector, date ordering, display titles and BibTeX/RIS stay app or internal code; FRUS Explorer Light gathers them into one later pull request.
+- The UI suites; iOS 26.x; a device; a signed run. The Mac app was built and not run.
