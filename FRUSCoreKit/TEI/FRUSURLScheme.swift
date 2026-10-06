@@ -117,11 +117,11 @@ public enum FRUSURLScheme {
     }
 
     /// The host of a figure image's URL: `frusexplorer://figure/{volumeId}/{fileName}`.
-    nonisolated static let figureHost = "figure"
+    nonisolated public static let figureHost = "figure"
 
     /// The URL the reader's page names `image` by, or `nil` when its volume is unknown or its
     /// name is no file name — in which case the page prints the placeholder.
-    nonisolated static func figureURL(for image: FigureImageName) -> URL? {
+    nonisolated public static func figureURL(for image: FigureImageName) -> URL? {
         guard let volumeId = image.volumeId, let fileName = image.fileName,
               isSafeComponent(volumeId) else { return nil }
         var components = URLComponents()
@@ -134,7 +134,7 @@ public enum FRUSURLScheme {
     /// Whether `component` can be one path component: a volume id or an image's file name. A
     /// value holding a separator, or naming the folder itself or its parent, is refused, so
     /// neither a volume's markup nor a `frusexplorer://figure/` URL can reach outside the folder.
-    nonisolated static func isSafeComponent(_ component: String) -> Bool {
+    nonisolated public static func isSafeComponent(_ component: String) -> Bool {
         !component.isEmpty && component != "." && component != ".."
             && !component.contains("/") && !component.contains("\\") && !component.contains("\0")
     }
