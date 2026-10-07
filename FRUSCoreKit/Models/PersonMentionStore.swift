@@ -12,6 +12,9 @@ import SQLite3
 #else
 import CSQLite
 #endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - PersonIndexEntry
 
@@ -172,6 +175,9 @@ public struct PersonMentionRanking: Sendable, Identifiable {
 ///   1.7 — Session 4 / #243: `personName(volumeId:ref:)` — tolerant name lookup for a
 ///          stored correction anchor (the corrections manager renders overrides by name;
 ///          `nil` when the anchor's volume is no longer indexed). Read-only.
+///   1.8 — Session 2026-10-06 (FRUS Explorer Light, S9b): `init(readingDatabaseAt:)` opens an
+///          index read-only and immutable (`isImmutable`), for a host that reads an index another
+///          program built. `init(databaseURL:)` opens as before
 public actor PersonMentionStore {
 
     // nonisolated(unsafe): deinit is nonisolated and must close the handle.
@@ -180,6 +186,10 @@ public actor PersonMentionStore {
     nonisolated(unsafe) private var db: OpaquePointer?
     private let databaseURL: URL
 
+    /// Whether the file was opened immutable (`init(readingDatabaseAt:)`), so SQLite takes no lock
+    /// on it and makes no journal or shared-memory file beside it. Either open is read-only.
+    nonisolated public let isImmutable: Bool
+
     // MARK: - Initialisation
 
     /// Opens a read-only SQLite connection to the shared database file.
@@ -187,13 +197,38 @@ public actor PersonMentionStore {
     /// - Parameter databaseURL: The shared database used by `IndexingPipeline`.
     /// - Throws: `PersonMentionError.databaseOpenFailed` if the file cannot be opened.
     public init(databaseURL: URL) throws {
+        try self.init(databaseURL: databaseURL, immutable: false)
+    }
+
+    /// Opens the index at `databaseURL` read-only and immutable, to read an index another program
+    /// built: FRUS Explorer Light's server opens the Mac's exported index this way. The app never
+    /// calls it.
+    ///
+    /// The file is opened with `?mode=ro&immutable=1` (`FTS5Store.immutableURI(for:)`), so SQLite
+    /// takes no lock, writes nothing beside the file and refuses every write. Nothing may write the
+    /// file while it is open. Only the busy timeout is set, as `init(databaseURL:)` sets it.
+    ///
+    /// - Parameter databaseURL: File URL of an existing index.
+    /// - Throws: `PersonMentionError.databaseOpenFailed` if the file cannot be opened, a missing file
+    ///   included, which it does not create.
+    public init(readingDatabaseAt databaseURL: URL) throws {
+        try self.init(databaseURL: databaseURL, immutable: true)
+    }
+
+    /// The initialisers' shared body: the file opened read-only, at its path or, immutable, at its
+    /// immutable URI.
+    private init(databaseURL: URL, immutable: Bool) throws {
         self.databaseURL = databaseURL
+        self.isImmutable = immutable
         var handle: OpaquePointer?
-        let rc = sqlite3_open_v2(
-            databaseURL.path, &handle,
-            SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX,
-            nil
-        )
+        let rc = immutable
+            ? sqlite3_open_v2(FTS5Store.immutableURI(for: databaseURL), &handle,
+                              SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX, nil)
+            : sqlite3_open_v2(
+                databaseURL.path, &handle,
+                SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX,
+                nil
+            )
         guard rc == SQLITE_OK, let h = handle else {
             let msg = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
             sqlite3_close(handle)
@@ -206,7 +241,7 @@ public actor PersonMentionStore {
         sqlite3_busy_timeout(h, 5000)
 
         #if DEBUG
-        print("[PersonMentionStore] Opened read-only connection to \(databaseURL.lastPathComponent)")
+        print("[PersonMentionStore] Opened read-only \(immutable ? "immutable " : "")connection to \(databaseURL.lastPathComponent)")
         #endif
     }
 
@@ -1082,6 +1117,12 @@ public actor PersonMentionStore {
     }
 
     // MARK: - SQLite Helpers
+
+    /// SQLite's result code for `sql` run on this store's connection, so a test can show that the
+    /// connection refuses a write (`SQLITE_READONLY`): the store has no method that writes.
+    func resultCode(executing sql: String) -> Int32 {
+        sqlite3_exec(db, sql, nil, nil, nil)
+    }
 
     private let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 

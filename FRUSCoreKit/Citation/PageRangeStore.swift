@@ -12,6 +12,9 @@ import SQLite3
 #else
 import CSQLite
 #endif
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
@@ -87,6 +90,10 @@ private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type
 ///   1.8 — FRUSCoreKit, part 2: moved into the kit. It binds text with `SQLITE_TRANSIENT`, so
 ///          SQLite keeps its own copy, where it bound a temporary `NSString`'s buffer and relied on
 ///          Apple's autorelease pool to keep it alive
+///   1.9 — Session 2026-10-06 (FRUS Explorer Light, S9b): `init(readingDatabaseAt:)` opens an index
+///          read-only and immutable (`isImmutable`), for a host that reads an index another program
+///          built. `init(databaseURL:)` opens as before; a failed open of either closes the handle
+///          SQLite allocates, which it left open, and the unused private `openDatabase()` is gone
 public actor PageRangeStore {
 
     // MARK: - State
@@ -94,14 +101,45 @@ public actor PageRangeStore {
     private let databaseURL: URL
     private nonisolated(unsafe) var db: OpaquePointer?
 
+    /// Whether the file was opened immutable (`init(readingDatabaseAt:)`), so SQLite takes no lock
+    /// on it and makes no journal or shared-memory file beside it. Either open is read-only.
+    nonisolated public let isImmutable: Bool
+
     // MARK: - Init
 
+    /// Opens the shared index at `databaseURL` read-only, as the app does, beside the indexing
+    /// pipeline that writes it.
     public init(databaseURL: URL) throws {
+        try self.init(databaseURL: databaseURL, immutable: false)
+    }
+
+    /// Opens the index at `databaseURL` read-only and immutable, to read an index another program
+    /// built: FRUS Explorer Light's server opens the Mac's exported index this way. The app never
+    /// calls it.
+    ///
+    /// The file is opened with `?mode=ro&immutable=1` (`FTS5Store.immutableURI(for:)`), so SQLite
+    /// takes no lock, writes nothing beside the file and refuses every write. Nothing may write the
+    /// file while it is open. Only the busy timeout is set, as `init(databaseURL:)` sets it. It
+    /// throws `PageRangeStoreError.databaseOpenFailed` when the file cannot be opened, a missing
+    /// file included, which it does not create.
+    ///
+    /// - Parameter databaseURL: File URL of an existing index.
+    public init(readingDatabaseAt databaseURL: URL) throws {
+        try self.init(databaseURL: databaseURL, immutable: true)
+    }
+
+    /// The initialisers' shared body: the file opened read-only, at its path or, immutable, at its
+    /// immutable URI.
+    private init(databaseURL: URL, immutable: Bool) throws {
         self.databaseURL = databaseURL
+        self.isImmutable = immutable
         var dbPtr: OpaquePointer?
-        let flags = SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX
-        let rc = sqlite3_open_v2(databaseURL.path, &dbPtr, flags, nil)
+        let rc = immutable
+            ? sqlite3_open_v2(FTS5Store.immutableURI(for: databaseURL), &dbPtr,
+                              SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_NOMUTEX, nil)
+            : sqlite3_open_v2(databaseURL.path, &dbPtr, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil)
         guard rc == SQLITE_OK else {
+            sqlite3_close(dbPtr)
             throw PageRangeStoreError.databaseOpenFailed(code: rc)
         }
         // Wait up to 5 s instead of failing instantly with SQLITE_BUSY when a WAL
@@ -223,15 +261,10 @@ public actor PageRangeStore {
         return PageSpanResolver.documentPages(fromRows: rows)
     }
 
-    private func openDatabase() throws {
-        let flags = SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX
-        let rc = sqlite3_open_v2(databaseURL.path, &db, flags, nil)
-        guard rc == SQLITE_OK else {
-            throw PageRangeStoreError.databaseOpenFailed(code: rc)
-        }
-        // Wait up to 5 s instead of failing instantly with SQLITE_BUSY when a WAL
-        // checkpoint or recovery briefly locks the file.
-        sqlite3_busy_timeout(db, 5000)
+    /// SQLite's result code for `sql` run on this store's connection, so a test can show that the
+    /// connection refuses a write (`SQLITE_READONLY`): the store has no method that writes.
+    func resultCode(executing sql: String) -> Int32 {
+        sqlite3_exec(db, sql, nil, nil, nil)
     }
 
     private func prepare(_ sql: String, db: OpaquePointer) -> OpaquePointer? {
