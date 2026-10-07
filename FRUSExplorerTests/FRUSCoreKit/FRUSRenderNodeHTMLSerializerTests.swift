@@ -1431,12 +1431,15 @@ struct HighlightInjectionTests {
 /// Asserting the emitted string alone would pin an encoding without proving it decodes back, and
 /// asserting the resolver alone would pass while the serializer still split the value. The two
 /// halves are only correct *together*, so the test walks the real path: serialize → parse the href
-/// exactly as `dispatch(url:)` does → resolve.
+/// with the parse `dispatch(url:)` calls → resolve.
 ///
 /// Version history:
 ///   1.0 — build 38: external targets misrouted as volume ids
 ///   1.1 — FRUSCoreKit, part 1: resolves through FRUSCoreKit's `FRUSURLScheme`, so the package's
 ///          FRUSCoreKitTests runs it too
+///   1.2 — Session 2026-10-06 (FRUS Explorer Light, S9b): parses the href with
+///          `FRUSURLScheme.readerLink(from:)`, the parse `dispatch(url:)` now calls, where it kept a
+///          copy of it
 @Suite("External ref target round trip")
 struct ExternalRefTargetRoundTripTests {
 
@@ -1454,11 +1457,12 @@ struct ExternalRefTargetRoundTripTests {
         return try #require(URL(string: String(match.1)), "emitted href is not a URL")
     }
 
-    /// Reproduces `FRUSURLSchemeHandler.dispatch(url:)`'s parse, then resolves.
+    /// Reads the href as `FRUSURLSchemeHandler.dispatch(url:)` does (`FRUSURLScheme.readerLink(from:)`),
+    /// then resolves its target.
     private func resolve(_ url: URL) -> CrossRefDestination {
-        let parts = url.pathComponents.filter { $0 != "/" }.map { $0.removingPercentEncoding ?? $0 }
-        let target = parts.first ?? ""
-        let volumeId: String? = parts.count >= 2 ? parts[1] : nil
+        guard case .crossReference(let target, let volumeId, _) = FRUSURLScheme.readerLink(from: url) else {
+            return .unresolved
+        }
         return FRUSURLScheme.resolveCrossRefTarget(target, volumeId: volumeId)
     }
 
