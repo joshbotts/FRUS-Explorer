@@ -33,12 +33,34 @@ public enum CrossRefDestination: Equatable, Sendable {
     case unresolved
 }
 
+// MARK: - ReaderLink
+
+/// What a link in the reader's page names: one of the four `frusexplorer://` links
+/// `FRUSRenderNodeHTMLSerializer` writes, read back by ``FRUSURLScheme/readerLink(from:)``.
+public enum ReaderLink: Equatable, Sendable {
+    /// `frusexplorer://person/{ref}`: a person's `ref` as the render node carries it, without a
+    /// leading `#` (`p_HK1`, or a split set's `frus1918Supp01v01#p_LR1`). The app looks it up among
+    /// the document's persons, and says the person was not found when none has it.
+    case person(ref: String)
+    /// `frusexplorer://gloss/{ref}`: a glossary term's `ref`, without a leading `#` (`t_USSR1`).
+    case gloss(ref: String)
+    /// `frusexplorer://doc/{target}[/{volumeId}][?no=…&day=…]`: a `<ref>`'s verbatim `target`
+    /// (`#d1`, `frus1961-63v14#pg_387`, `#d16fn2`, an `http(s)` or `mailto:` address, or a
+    /// figure's video page), the `volumeId` its render node carries (the volume the target names
+    /// before its `#`), and what the footnote around a page link names (#1509), or `nil` when the
+    /// query names nothing. ``FRUSURLScheme/resolveCrossRefTarget(_:volumeId:)`` says where it goes.
+    case crossReference(target: String, volumeId: String?, citing: PageCitationHint?)
+    /// `frusexplorer://brokenref/{target}`: a dead cross-reference's verbatim `target` (#240), the
+    /// key its `BrokenRefInfo` is registered under. It never navigates.
+    case brokenReference(target: String)
+}
+
 // MARK: - FRUSURLScheme
 
 /// The grammar of the reader's `frusexplorer://` links that the render pipeline writes and reads:
-/// what a TEI `<ref target>` points at, and the address of a figure's image. Pure string work, so it
-/// lives in FRUSCoreKit; `FRUSURLSchemeHandler`, the WebKit side, and `FigureImageLibrary` forward
-/// to it under their old names.
+/// what each link names, what a TEI `<ref target>` points at, and the address of a figure's image.
+/// Pure string work, so it lives in FRUSCoreKit; `FRUSURLSchemeHandler`, the WebKit side, and
+/// `FigureImageLibrary` forward to it under their old names.
 ///
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: moved from `FRUSURLSchemeHandler` (`resolveCrossRefTarget`,
@@ -47,7 +69,53 @@ public enum CrossRefDestination: Equatable, Sendable {
 ///          Explorer Light's reader
 ///   1.1 — Session 2026-10-05 (FRUS Explorer Light, S8a): `figureHost`, `figureURL(for:)` and
 ///          `isSafeComponent(_:)` are public, for its figure route
+///   1.2 — Session 2026-10-06 (FRUS Explorer Light, S9b): `readerLink(from:)` and `ReaderLink`, the
+///          parse of the reader's links that `FRUSURLSchemeHandler.dispatch(url:)` did in the app,
+///          moved here verbatim, so a host outside the app reads each link as the app does
 public enum FRUSURLScheme {
+
+    /// What `url` names when it is a link in the reader's page, or `nil` when it is not one: a
+    /// scheme other than `frusexplorer`, a host other than `person`, `gloss`, `doc` and `brokenref`
+    /// (a `figure` URL is an image the page loads, not a link), or a `doc` or `brokenref` link with
+    /// no path. A `person` or `gloss` link with no path names the empty ref, which no entry has, so
+    /// the app answers it as a person or term not found, as it always has.
+    ///
+    /// **Decoding, exactly as the app's handler has always done it.** Foundation's `pathComponents`
+    /// percent-decodes each path component once. A `person`, `gloss` or `doc` component is then
+    /// decoded a second time (`removingPercentEncoding`, keeping the once-decoded value where that
+    /// fails), so `%2541` reads as `A`. The serializer encodes those once, so only a ref or target
+    /// that itself holds a `%` escape reads back other than as it was written. A `brokenref`
+    /// component is decoded once only: the serializer encodes its target with `.alphanumerics`, and
+    /// the verbatim target, `%` included, is the key its detail is registered under.
+    ///
+    /// A `doc` link's second component is the volume; any further one is ignored. Its query's `no`
+    /// and `day` items are read by `PageCitationHint(queryItems:)`, which is `nil` when they name
+    /// nothing.
+    ///
+    /// `nonisolated`: a pure string transformation, callable from any context.
+    public nonisolated static func readerLink(from url: URL) -> ReaderLink? {
+        guard url.scheme == "frusexplorer" else { return nil }
+        // Decoded once, by Foundation, with the leading "/" dropped.
+        let components = url.pathComponents.filter { $0 != "/" }
+        // Decoded twice, as the person, gloss and doc links have always been read.
+        let parts = components.map { $0.removingPercentEncoding ?? $0 }
+        switch url.host {
+        case "person":
+            return .person(ref: parts.first ?? "")
+        case "gloss":
+            return .gloss(ref: parts.first ?? "")
+        case "doc":
+            guard let target = parts.first else { return nil }
+            let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            return .crossReference(target: target, volumeId: parts.count >= 2 ? parts[1] : nil,
+                                   citing: PageCitationHint(queryItems: query))
+        case "brokenref":
+            guard let target = components.first else { return nil }
+            return .brokenReference(target: target)
+        default:
+            return nil
+        }
+    }
 
     /// Splits a raw TEI ref target into a navigable destination, normalising the
     /// quirks found across the corpus (Session 162 link audit):

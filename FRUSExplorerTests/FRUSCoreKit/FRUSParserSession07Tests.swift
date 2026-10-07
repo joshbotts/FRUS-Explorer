@@ -2186,13 +2186,14 @@ struct FigureImageMarkupTests {
     func aVideoLinksToItsPage() async throws {
         let page = "https://history.state.gov/historicaldocuments/frus1917-72PubDipv06/appendix-1"
         let appendix = try await model(FigureFixtures.appendix1, volume: "frus1917-72PubDipv06")
-        #if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's
         let reader = FRUSRenderNodeHTMLSerializer(figureImages: .reader).serialize(appendix)
         let link = try #require(reader.firstMatch(of: /<a class="cross-ref figure-video" href="([^"]+)">Watch on history\.state\.gov ↗<\/a>/),
                                 "the reader draws no link: \(reader)")
-        // The reader's link is a frusexplorer link, and the app hands its target to the browser.
+        // The reader's link is a frusexplorer link to the page, which the app hands to the browser.
         let href = try #require(URL(string: String(link.output.1)))
         #expect(href.scheme == "frusexplorer" && href.host == "doc")
+        #expect(FRUSURLScheme.readerLink(from: href) == .crossReference(target: page, volumeId: nil, citing: nil))
+        #if !SWIFT_PACKAGE // FRUSURLSchemeHandler is the app's
         let tapped = await MainActor.run { () -> String? in
             let handler = FRUSURLSchemeHandler()
             var target: String?

@@ -35860,3 +35860,50 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the page `ReaderP
 - The #988 arrival wash puts a footnote's number at 4.22:1 (light) and 2.97:1 (dark) for the 2.4 s it shows.
 - The collection export's own layer (`CollectionItemHTMLRenderer`'s styles) names its own colours, and three of them are under 4.5:1 on the ground they are drawn on: `#777` on white (4.48), the colophon and the "See also" label; `#888`, the AI-attribution caption, on the summary block's `#f0f4ff` (3.22) and a headnote's `#f7f7f5` (3.30), and the TOC's `.toc-page`, a rule nothing emits; and the preview's citation-only card note, `#a06a00` on the card's `#fdf8ee` (4.35). Every other text colour there passes on its own ground, the lowest the headnote's missing-summary note (`#8a6d1f` on `#f7f7f5`, 4.57) and the summary label and the preview's summary-placeholder note (`#3a6bc9` on `#f0f4ff`, 4.63).
 - The UI suites; iOS 26.x; a device; a signed run. The Mac app was built and not run, so File ▸ Print was not tried; the screenshots and the print PDFs are Chrome's, not WebKit's.
+
+## Session 2026-10-06 — FRUS Explorer Light can read the reader's links with the app's own parse and open the page-range and person stores immutable, and the app's link handler dispatches what the kit reads with the same calls
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exported index read-only. Its reader (its S9b) follows the links inside a document: `doc/` navigates, `person/` and `gloss/` open cards, and `brokenref/` opens the Unresolved Reference sheet. Two things it needs were not in the kit. The parse that reads a `frusexplorer://` href back into a ref or target lived only in the app's `FRUSURLSchemeHandler.dispatch(url:)`, a WebKit file, with a decoding rule of its own. And `PageRangeStore` and `PersonMentionStore`, which answer a page link and the cards, opened the file by its path, where #1575's other opens read it with `?mode=ro&immutable=1`. Nothing the app shows changes.
+
+**Changed**
+- **The link parse is kit code.** `FRUSURLScheme.readerLink(from:)` returns a `ReaderLink` (`person(ref:)`, `gloss(ref:)`, `crossReference(target:volumeId:citing:)`, `brokenReference(target:)`). It is `dispatch`'s parse, moved verbatim:
+  - a `person`, `gloss` or `doc` path component is percent-decoded twice (Foundation's `pathComponents`, then `removingPercentEncoding`) and a `brokenref` component once, as before, and the doc comment says why;
+  - it returns `nil` for another scheme, another host (a `figure` URL included) or a `doc` or `brokenref` link with no path. A `person` or `gloss` link with no path names the empty ref, which `dispatch` looked up and the app answers as not found;
+  - `citing` is `nil` when the query names no hint, as `PageCitationHint(queryItems:)` returned it to `dispatch`.
+- **The handler forwards.** `dispatch(url:)` switches on what the kit reads and keeps its lookups and callbacks. The navigation delegate passes only `frusexplorer` URLs, and for those every call is the one it made.
+- **Immutable opens.** `PageRangeStore(readingDatabaseAt:)` and `PersonMentionStore(readingDatabaseAt:)` open `FTS5Store.immutableURI(for:)` with `SQLITE_OPEN_READONLY | SQLITE_OPEN_URI` and each store's own mutex flag (`NOMUTEX`, `FULLMUTEX`).
+  - They set only the busy timeout, create nothing, and refuse a missing file with each store's `databaseOpenFailed`. `isImmutable` says which open a store had.
+  - The existing initialisers delegate to a private shared body and open as before. `PageRangeStore`'s failed open now closes the handle SQLite allocates, and its unused private `openDatabase()` is gone.
+  - `resultCode(executing:)`, internal, lets a test show that a connection refuses a write: neither store has a method that writes.
+- **Tests**, under both compilers unless marked:
+  - **ReaderLinkTests** (new): 31 hrefs as the serializer writes them, each to the `ReaderLink` it names or to `nil`; every link the reader's serializer writes for 14 nodes reads back to its ref or target; a ref's own `%` escape is decoded twice and a dead target's once. In Xcode only, the app's handler makes, for every `frusexplorer` href in the table, the call `v2`'s `dispatch` made, with six lookups found.
+  - **IndexReadOnlyOpenTests:** over an index of a volume with persons, terms, mentions, a rollup and two documents beginning on one page, the immutable stores:
+    - answer 17 page questions and 19 person and term questions exactly as the app's opens do;
+    - refuse three writes with `SQLITE_READONLY`, and leave the folder holding the same bytes and nothing beside them;
+    - read while another connection holds the file's exclusive lock, which keeps the app's open out (the control waits out its 5 s busy timeout);
+    - refuse a missing file, and make none.
+  - **Existing suites:** `ExternalRefTargetRoundTripTests` parses with `readerLink(from:)`, where it kept a copy of `dispatch`'s parse; the figure video test checks its link under `swift test` too; `DeepLinkRouteTests` (Xcode) reads the renderer's host switch where it moved and checks that each in-app host names a link.
+  - **Mutated:** seven mutants, each run against the four suites: either immutable open made plain, `brokenref` decoded twice, `person` decoded once, an empty `person` path read as `nil`, the query ignored, the scheme unchecked. Each failed at least one of the new tests.
+  - **Count:** FRUSCoreKitTests goes from 884 tests in 118 suites to 891 in 119.
+- **Docs.** `CLAUDE.md` (the FRUSCoreKit entry's public names for the web edition) and version-history lines. No editable-content block moves. The kit goes from 32,684 lines in 49 files to 32,826 in 49.
+
+**Apple platforms: nothing changes, and how that was checked**
+- **`FRUSExplorerMac`**, clean, unsigned Debug, beside `v2` @ `101e17d7` built the same way: "** BUILD SUCCEEDED **" both, with the same five warning lines. The debug dylibs define 233,982 and 233,941 unique symbols.
+- **The symbol diff** (normalized as for #1573–#1575): 10 removed, 51 added.
+  - **Removed:** the two stores' `init(databaseURL:)` initialising entries and allocating method descriptors (and `PersonMentionStore`'s error-message closure), now the private initialisers'; `PageRangeStore.openDatabase()` and its descriptor; and `dispatch(url:)`'s three path closures.
+  - **Added:** each store's private `init(databaseURL:immutable:)` with its entries and descriptor, `init(readingDatabaseAt:)`, `isImmutable` and `resultCode(executing:)`; `FRUSURLScheme.readerLink(from:)` with the two path closures; and `ReaderLink`, with its metadata, value witnesses and `Equatable` conformance.
+- **iOS 27.0**, an iPhone 17 simulator, unsigned:
+  - a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **", with the 7 known warning lines, as on `v2`;
+  - the full unit target, the app removed first, with `TEST_RUNNER_FRUS_TEI_MIRROR`: "✘ Test run with 6513 tests in 768 suites failed after 463.814 seconds with 8 issues." `v2` @ `101e17d7`, run the same way on the same simulator: "6505 tests in 767 suites … with 9 issues";
+  - the 8 more tests are the new suite's 4 (one Xcode only) and `IndexReadOnlyOpenTests`' 4. The 8 issues on both are the Keychain tests an unsigned build fails (-34018). `v2`'s ninth is the late-image reader test, which flakes on a cold simulator (#1568) and passed alone. Both runs skip the same 17 tests and 2 suites.
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs, 2,554 tests, all passed, none skipped (`FRUSCoreKitTests` 891).
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64)
+- FRUS Explorer Light's package at its `main` (`a506099`), with this branch copied over its submodule: "✔ Test run with 891 tests in 119 suites passed", none skipped.
+
+**Owed by the owner:** Mac check 3 for this pull request (FRUS Explorer Light's plan), from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows.
+
+**Not done:**
+- A `.volume` `CrossRefDestination` case. `resolveCrossRefTarget` reads a target that names a whole volume (`frus1961-63v05`) as a document of that name in the volume being read. FRUS Explorer Light's golden HTML holds 41 such links, 39 of them in `frus1961-63v06` and 2 in `frus1969-76ve09p1`'s preface. A `.volume` case changes what a tap does in the app, so it is left for a pull request of its own.
+- `footnoteDOMKey` is unchanged; it is already public through its public extension.
+- The UI suites; iOS 26.x; a device; a signed run. The Mac app was built and not run.
