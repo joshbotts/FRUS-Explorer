@@ -48,6 +48,10 @@ public enum ReaderAppearance: String, CaseIterable, Sendable {
 ///          stylesheets and `FRUSTheme.cssVariables(colorScheme:textSize:)` moved here, which the app's
 ///          names forward to with the same bytes, so FRUS Explorer Light serves the app's page. A host
 ///          passes its own serializer (`FRUSRenderNodeHTMLSerializer.reader(figureURL:)`) and `head`
+///   1.1 — Session 2026-10-06 (FRUS Explorer Light, S9b): the page meets WCAG 2.2 AA contrast. The
+///          accent, person-name and light secondary colours are at least 4.5:1 against the page and
+///          the editorial note's tint in both palettes, and person and cross-reference links are
+///          underlined, so they differ from the text around them by more than colour (1.4.1)
 public enum ReaderPage {
 
     // MARK: - Page
@@ -102,18 +106,24 @@ public enum ReaderPage {
     /// full HTML string is rebuilt with the new variables.
     ///
     /// ## Color palette
-    /// Colors are hardcoded RGBA values that match the iOS/macOS system appearance
+    /// Colors are hardcoded RGBA values modelled on the iOS/macOS system appearance
     /// semantics for the given appearance. This avoids the complexity of resolving
     /// SwiftUI `Color` or `NSColor`/`UIColor` semantic colors through the platform
-    /// appearance APIs, while producing visually identical results.
+    /// appearance APIs. Every text colour meets WCAG 2.2 AA for small text, 4.5:1, against
+    /// `--color-background` and against `--color-editorial-bg` laid over it, in both palettes;
+    /// the accent and person-name colours are darker (light) or brighter (dark) than the
+    /// system blue and teal they started from for that reason. `ReaderPageTests` computes the
+    /// ratios from this block.
     ///
     /// ## Variable inventory
     /// | Variable                    | Usage                                      |
     /// |-----------------------------|--------------------------------------------|
     /// | `--color-primary`           | Body text                                  |
-    /// | `--color-secondary`         | Dateline, secondary text, table borders    |
+    /// | `--color-secondary`         | Dateline, Footnotes heading, broken refs,  |
+    /// |                             | classification chip, supplied and sic text,|
+    /// |                             | figure placeholder, attachment rule        |
     /// | `--color-footnote-text`     | Visible footnote-list body text            |
-    /// | `--color-accent`            | Links, footnote markers                    |
+    /// | `--color-accent`            | Links, footnote markers and labels         |
     /// | `--color-background`        | Page background, footnote popover bg       |
     /// | `--color-editorial-border`  | Left border of editorial note blocks       |
     /// | `--color-editorial-bg`      | Background tint of editorial note blocks   |
@@ -135,21 +145,33 @@ public enum ReaderPage {
         let dark = appearance == .dark
 
         // ── Colors ────────────────────────────────────────────────────────────
+        // WCAG 2.2 AA: the reader's text is small text for WCAG — the body runs from 12px (Small)
+        // to 19px (Extra Large), the dateline and the footnotes smaller, and a heading is 18px at
+        // weight 600 at Medium — so each text colour must reach 4.5:1 against the page AND against
+        // the editorial note's tint laid over it, the lower of the two. An alpha colour is measured
+        // as it composites over each. The comments below give the ratios, page then editorial
+        // note; `ReaderPageTests` computes them from this block, for every text colour, and fails
+        // under 4.5.
         let primary            = dark ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.85)"
-        let secondary          = dark ? "rgba(255,255,255,0.52)" : "rgba(0,0,0,0.50)"
+        // The dateline, the Footnotes heading, broken references and the classification chip.
+        // Light, 60% black: 5.74 / 5.51 (it was 50%, 3.98 / 3.87). Dark, 52% white: 5.48 / 5.04.
+        let secondary          = dark ? "rgba(255,255,255,0.52)" : "rgba(0,0,0,0.60)"
         // Footnote body text is small (≈0.785× body), so it needs more contrast
         // than ordinary secondary text to stay legible — most noticeably in dark
         // mode, where 52% white at footnote size is hard to read.
         let footnoteText       = dark ? "rgba(255,255,255,0.78)"  : "rgba(0,0,0,0.68)"
-        // System blue, brightened in dark mode to Apple's dark-appearance
-        // systemBlue. The light value sits at ~4.2:1 on the dark page background —
-        // under WCAG AA — which is most noticeable on the tiny footnote markers
-        // and gloss/cross-ref links that all draw in this color.
-        let accent             = dark ? "rgb(10,132,255)" : "rgb(0,122,255)"
+        // Links, the footnote markers and the footnote list's numbers. In light mode a darker blue
+        // than the system blue it started from, rgb(0,122,255), which was 4.02 / 3.52; in dark mode
+        // a lighter one than the dark systemBlue, rgb(10,132,255), which was 4.66 / 3.97. Now
+        // 5.57 / 4.87 light and 6.01 / 5.11 dark.
+        let accent             = dark ? "rgb(64,156,255)" : "rgb(0,102,204)"
         let background         = dark ? "rgb(28,28,30)"           : "rgb(255,255,255)"
         let editorialBorder    = dark ? "rgba(160,120,230,0.60)"  : "rgba(140,0,140,0.50)"
         let editorialBg        = dark ? "rgba(160,120,230,0.12)"  : "rgba(128,0,128,0.07)"
-        let persName           = "rgb(0,150,136)"                  // teal (both modes)
+        // Person-name links: teal, darker in light mode and brighter in dark mode than the one
+        // teal both palettes shared, rgb(0,150,136), which was 3.67 / 3.22 light and 4.63 / 3.94
+        // dark. Now 5.32 / 4.66 light and 6.45 / 5.49 dark.
+        let persName           = dark ? "rgb(0,179,161)" : "rgb(0,121,107)"
         let tableBorder        = dark ? "rgba(255,255,255,0.20)"  : "rgba(0,0,0,0.18)"
 
         // ── Typography ────────────────────────────────────────────────────────
@@ -439,12 +461,18 @@ public enum ReaderPage {
     }
 
     /* ─── Interactive links ─────────────────────────────────────────────────── */
+    /* Each link is marked by more than its colour (WCAG 1.4.1): against the body text around it
+       none reaches the 3:1 that colour alone would need. Person and cross-reference links carry a
+       quiet underline, the font's own thickness set a little below the baseline, which thickens
+       on hover; a gloss keeps its dotted rule, which turns solid. */
     a.pers-name {
       color: var(--color-pers-name);
-      text-decoration: none;
+      text-decoration: underline;
+      text-decoration-thickness: from-font;
+      text-underline-offset: 0.15em;
       cursor: pointer;
     }
-    a.pers-name:hover { text-decoration: underline; }
+    a.pers-name:hover { text-decoration-thickness: 0.125em; }
 
     a.gloss {
       color: var(--color-accent);
@@ -456,10 +484,12 @@ public enum ReaderPage {
 
     a.cross-ref {
       color: var(--color-accent);
-      text-decoration: none;
+      text-decoration: underline;
+      text-decoration-thickness: from-font;
+      text-underline-offset: 0.15em;
       cursor: pointer;
     }
-    a.cross-ref:hover { text-decoration: underline; }
+    a.cross-ref:hover { text-decoration-thickness: 0.125em; }
 
     /* Unresolvable cross-reference (issue #240): muted, dotted underline, help cursor,
        and a superscript marker so it reads as broken without relying on colour alone. */
