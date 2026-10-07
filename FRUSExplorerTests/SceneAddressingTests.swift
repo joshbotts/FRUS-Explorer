@@ -505,6 +505,9 @@ struct SceneAddressingTests {
 ///
 /// Version history:
 ///   1.0 — W-19 L-5: initial implementation
+///   1.1 — Session 2026-10-06 (FRUS Explorer Light, S9b): the renderer's switch is read where it
+///          moved, the kit's `FRUSURLScheme.readerLink(from:)`, and each in-app host is also
+///          checked to name a link there
 @Suite("Deep link route")
 struct DeepLinkRouteTests {
 
@@ -573,10 +576,15 @@ struct DeepLinkRouteTests {
     func inAppHostsMatchTheRenderer() throws {
         // Two lists of the same four strings in different files is a drift waiting to happen: add
         // a host to the renderer and exported HTML gains a link this router silently ignores.
-        let handler = try Self.repoFile("FRUSExplorer/TEI/FRUSURLSchemeHandler.swift")
+        // The switch is the kit's `FRUSURLScheme.readerLink(from:)`, which the handler's dispatch
+        // reads every link with.
+        let parse = try Self.repoFile("FRUSCoreKit/TEI/FRUSURLScheme.swift")
         for host in DeepLinkRoute.inAppHosts {
-            #expect(handler.contains("case \"\(host)\""),
-                    "\(host) is routed here but absent from FRUSURLSchemeHandler's switch")
+            #expect(parse.contains("case \"\(host)\""),
+                    "\(host) is routed here but absent from FRUSURLScheme.readerLink's switch")
+            let link = try #require(URL(string: "frusexplorer://\(host)/x"))
+            #expect(FRUSURLScheme.readerLink(from: link) != nil,
+                    "\(host) is routed here but the reader reads no link from it")
         }
     }
 

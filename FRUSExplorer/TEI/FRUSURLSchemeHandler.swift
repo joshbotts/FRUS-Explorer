@@ -56,6 +56,9 @@ import WebKit
 ///   1.5 — FRUSCoreKit, part 1: `CrossRefDestination`, `resolveCrossRefTarget`, `figureHost` and
 ///          `figureURL(for:)` moved to FRUSCoreKit's `FRUSURLScheme`, and the handler forwards to
 ///          it under the old names
+///   1.6 — Session 2026-10-06 (FRUS Explorer Light, S9b): `dispatch(url:)` reads each link with
+///          the kit's `FRUSURLScheme.readerLink(from:)`, its parse moved there verbatim; the lookups
+///          and the callbacks stay here
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -123,41 +126,31 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     /// `webView(_:start:)` from running (notably on macOS). Dispatching here, in a
     /// single place, keeps person/gloss/cross-ref taps working deterministically on
     /// both platforms without any double dispatch.
+    ///
+    /// The link is read by the kit's `FRUSURLScheme.readerLink(from:)` (FRUSCoreKit), which says
+    /// how each link's path is decoded. The navigation delegate passes only `frusexplorer` URLs;
+    /// anything the kit does not read as a link is ignored.
     @MainActor
     func dispatch(url: URL) {
-        // Path components with leading "/" filtered out; values are percent-decoded.
-        let parts = url.pathComponents
-            .filter { $0 != "/" }
-            .map { $0.removingPercentEncoding ?? $0 }
+        switch FRUSURLScheme.readerLink(from: url) {
 
-        switch url.host {
-
-        case "person":
-            let ref = parts.first ?? ""
+        case .person(let ref):
             onPersonTap?(personsByRef[ref])
 
-        case "gloss":
-            let ref = parts.first ?? ""
+        case .gloss(let ref):
             onGlossTap?(glossByRef[ref])
 
-        case "doc":
-            // URL: frusexplorer://doc/{target}  or  frusexplorer://doc/{target}/{volumeId}, and for a
-            // page link in a footnote a query naming what the footnote names (#1509).
-            guard let target = parts.first else { return }
-            let volumeId: String? = parts.count >= 2 ? parts[1] : nil
-            let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-            onCrossRefTap?(target, volumeId, PageCitationHint(queryItems: query))
+        case .crossReference(let target, let volumeId, let citing):
+            // frusexplorer://doc/{target}[/{volumeId}], and for a page link in a footnote a query
+            // naming what the footnote names (#1509).
+            onCrossRefTap?(target, volumeId, citing)
 
-        case "brokenref":
-            // URL: frusexplorer://brokenref/{target} — a dead cross-reference. Never navigates;
-            // presents the explanation sheet with the registered detail. The serializer encodes
-            // the target with the strict alphanumeric charset and `URL.pathComponents` already
-            // percent-decodes once, so use the single-decoded component — the doubly-decoded
-            // `parts` would corrupt a target containing a literal '%' sequence.
-            guard let target = url.pathComponents.filter({ $0 != "/" }).first else { return }
+        case .brokenReference(let target):
+            // A dead cross-reference. Never navigates; presents the explanation sheet with the
+            // registered detail, keyed by the verbatim target.
             onBrokenRefTap?(brokenByRef[target])
 
-        default:
+        case nil:
             break
         }
     }
