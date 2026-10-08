@@ -52,6 +52,10 @@ public enum ReaderAppearance: String, CaseIterable, Sendable {
 ///          accent, person-name and light secondary colours are at least 4.5:1 against the page and
 ///          the editorial note's tint in both palettes, and person and cross-reference links are
 ///          underlined, so they differ from the text around them by more than colour (1.4.1)
+///   1.2 — Session 2026-10-08: on paper the person and cross-reference links print without their
+///          underline (`@media print`), the owner's answer to the question #1578 left open. The
+///          screen is unchanged. The rule reaches the Mac's File ▸ Print, which prints the reader's
+///          own web view, and a collection's HTML export when a browser prints it
 public enum ReaderPage {
 
     // MARK: - Page
@@ -490,6 +494,12 @@ public enum ReaderPage {
       cursor: pointer;
     }
     a.cross-ref:hover { text-decoration-thickness: 0.125em; }
+
+    /* On paper there is nothing to follow, and an underline in a printed document reads as the
+       writer's own emphasis, so the two links print without theirs. They keep their colour. */
+    @media print {
+      a.pers-name, a.cross-ref { text-decoration: none; }
+    }
 
     /* Unresolvable cross-reference (issue #240): muted, dotted underline, help cursor,
        and a superscript marker so it reads as broken without relying on colour alone. */

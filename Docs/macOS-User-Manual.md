@@ -515,6 +515,8 @@ Each rendered document shows its **header** (document number, classification hea
 | Footnote | Superscript number as printed in the volume | Click to pop up the note; the list at the foot of the document repeats the same numbers |
 | Source note | Archive-box mark (▤) where a footnote number would sit | Click to read it in a popover; the rail's **Sources** tile opens it in Source Explorer (Section 14) |
 
+On screen a person's name and a cross-reference are both underlined. When you print a document (**File ▸ Print…**, ⌘P) they keep their colour and print without the underline, which on paper would read as the writer's own emphasis.
+
 **Footnote numbers are the volume's own.** A marker shows the number as printed, including the symbols some nineteenth-century volumes use (`*`, `†`, `‡`) and the numbers that run continuously across a printed page rather than restarting at 1 in each document — the norm before roughly 1930. A note cited as *FRUS 1915, p. 442 n. 47* is the note the app labels 47. The source note carries a mark rather than a number because the printed volume gives it none.
 
 **Cross-references that cannot be followed.** Occasionally the printed volume cites a page, document, or volume that does not exist in the digital corpus. References that a corpus-wide validation dataset confirms cannot be followed render in **muted gray with a dotted underline and a small dagger (†)** instead of posing as working links — the printed text is preserved, nothing is removed. Click one for an **Unresolved Reference** sheet explaining why it can't be followed and what its apparent destination is. (The corpus-wide list is exportable as CSV or JSON — Section 17.5.)

@@ -33,6 +33,9 @@ import Crypto
 ///   1.1 — Session 2026-10-06 (FRUS Explorer Light, S9b): the heads are re-pinned for the AA palette
 ///          and the underlined links; every text colour is measured against WCAG 2.2 AA, and the
 ///          person and cross-reference links' underline is required
+///   1.2 — Session 2026-10-08: the two links print without their underline (the owner's decision), so
+///          the stylesheet is read by medium: a rule inside `@media print` is paper's alone, the
+///          screen's underline test no longer reads it, and the heads are re-pinned for the block
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -50,15 +53,21 @@ struct ReaderPageTests {
     ///   is as long as the one it replaced. Nothing else in the head moved: with the five colours and
     ///   the link rules put back, all eight heads were #1575's pins byte for byte when these were
     ///   taken. The WCAG tests below say what the colours and the link rules must do.
+    /// - Session 2026-10-08 re-pinned them for the print block: on paper the two links print without
+    ///   their underline, the owner's answer to the question #1578 left open. The stylesheet is in
+    ///   every head, so no pin kept its value. Each head grew by 256 bytes, all of them the stylesheet's
+    ///   (the `@media print` rule, its comment and a blank line). With the block taken out, all eight
+    ///   heads were the 2026-10-06 pins byte for byte when these were taken: the suite passed on them
+    ///   but for the print test, which failed.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("44b16a5f1ab95da2d856f2c85bfab546cbd3181eb394e3d95d737efbcf20b3ce", 18270),
-        "light medium": ("bc70e7e05909a6cac049e796068c211fa6af094b405d2b77d707c7f60e9f60f1", 18271),
-        "light large": ("4da2c8b8f114fc47732749b3695f5e834b4ecef6d1596f70a749a9327f882ed7", 18271),
-        "light extraLarge": ("704866f876dd2ea0849467127b385df9fa268c6253935a42acaf72b3248eb2b9", 18271),
-        "dark small": ("c0cfb5f5ebf35ce8b13b86e4145892592924276bfa74b965193424bae163e712", 18296),
-        "dark medium": ("c6be774220b72242bbfa879f28565d71366765f694d82319c7747568358828be", 18297),
-        "dark large": ("ee1fcf2e362eb325fd68496bb2d12159367b386e4946bf387bc9e31e5b84cacb", 18297),
-        "dark extraLarge": ("d60f90e487288f757bab1950f48231b10f4f53656db8e8af5e359e279ecfb0f9", 18297),
+        "light small": ("f858879eac0b8787caf77898275704828dd52c5a7a5db5ba304714921a9fcbdc", 18526),
+        "light medium": ("ebd69b8804c1b910dd81d69d28da91133b47ef2dae144cc4f47883affd333c53", 18527),
+        "light large": ("177aeb89328539a197bb471d91904d23b34cf9ceef9f6b9369a40bf206ce9190", 18527),
+        "light extraLarge": ("1bacb78710d96294837e6d8212aaf70fbbc1eaf53a6bb0d62d015d44ed9ff849", 18527),
+        "dark small": ("a4091f5085b81a32d8bc6ed3d7361d357f2032b166f4fe209b4dd65c2c4b0e1f", 18552),
+        "dark medium": ("53e13b8e92a897c84638c4de9dc519f49b9e5b084ec608904af28e4bda2f5c3b", 18553),
+        "dark large": ("eaf9ac2566cd765c48699c60c35c45a57e150660539e11aba78e45266ab7e279", 18553),
+        "dark extraLarge": ("5136ad9adc9185aa73028219bbfadf0ed144e6ba52c736e3bbed296fb07d0019", 18553),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
@@ -189,34 +198,60 @@ struct ReaderPageTests {
         return variables
     }
 
-    /// The rules of `css` in order, each its selector list and its declarations (property to
-    /// value). Comments are dropped, and a rule inside `@media` or `@keyframes` is read with its
-    /// own selector.
-    static func rules(in css: String) -> [(selectors: [String], declarations: [String: String])] {
+    /// The rules of `css` in order, each its selector list, its declarations (property to value) and
+    /// the at-rule it sits in, if any (`@media print`, `@keyframes …`). Comments are dropped, and a
+    /// rule inside an at-rule is read with its own selector.
+    static func rules(in css: String) -> [(selectors: [String], declarations: [String: String], atRule: String?)] {
         var text = css
         while let open = text.range(of: "/*"),
               let close = text.range(of: "*/", range: open.upperBound..<text.endIndex) {
             text.removeSubrange(open.lowerBound..<close.upperBound)
         }
-        return text.components(separatedBy: "}").compactMap { rule in
-            guard let brace = rule.lastIndex(of: "{") else { return nil }
-            var head = rule[..<brace]
-            if let outer = head.lastIndex(of: "{") { head = head[head.index(after: outer)...] }
-            var declarations: [String: String] = [:]
-            for declaration in rule[rule.index(after: brace)...].split(separator: ";") {
-                let parts = declaration.split(separator: ":", maxSplits: 1)
-                guard parts.count == 2 else { continue }
-                declarations[parts[0].trimmingCharacters(in: .whitespacesAndNewlines)] =
-                    parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+        var found: [(selectors: [String], declarations: [String: String], atRule: String?)] = []
+        var enclosing: [String] = []
+        var prelude = ""
+        var index = text.startIndex
+        while index < text.endIndex {
+            let character = text[index]
+            index = text.index(after: index)
+            switch character {
+            case "{":
+                let head = prelude.trimmingCharacters(in: .whitespacesAndNewlines)
+                prelude = ""
+                if head.hasPrefix("@") { enclosing.append(head); continue }
+                // A style rule: its declarations run to the next `}`.
+                let close = text[index...].firstIndex(of: "}") ?? text.endIndex
+                var declarations: [String: String] = [:]
+                for declaration in text[index..<close].split(separator: ";") {
+                    let parts = declaration.split(separator: ":", maxSplits: 1)
+                    guard parts.count == 2 else { continue }
+                    declarations[parts[0].trimmingCharacters(in: .whitespacesAndNewlines)] =
+                        parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                found.append((head.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) },
+                              declarations, enclosing.last))
+                index = close < text.endIndex ? text.index(after: close) : close
+            case "}":
+                if !enclosing.isEmpty { enclosing.removeLast() }
+                prelude = ""
+            default:
+                prelude.append(character)
             }
-            return (head.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }, declarations)
         }
+        return found
+    }
+
+    /// Whether `atRule` is `@media print`: a block whose rules apply on paper and not on screen.
+    static func isPrintOnly(_ atRule: String?) -> Bool {
+        guard let atRule else { return false }
+        return atRule.split(whereSeparator: \.isWhitespace).joined(separator: " ") == "@media print"
     }
 
     /// The declarations of every rule in `css` whose selector list names `selector` exactly, a later
-    /// rule's winning, as in the cascade.
-    static func declarations(of selector: String, in css: String) -> [String: String] {
-        rules(in: css).filter { $0.selectors.contains(selector) }
+    /// rule's winning, as in the cascade: on screen, where a rule inside `@media print` does not
+    /// apply, or `onPaper`, where it does.
+    static func declarations(of selector: String, in css: String, onPaper: Bool = false) -> [String: String] {
+        rules(in: css).filter { $0.selectors.contains(selector) && (onPaper || !isPrintOnly($0.atRule)) }
             .reduce(into: [:]) { merged, rule in merged.merge(rule.declarations) { _, later in later } }
     }
 
@@ -287,6 +322,35 @@ struct ReaderPageTests {
         #expect(Self.declarations(of: "a.gloss:hover", in: css)["border-bottom-style"] == "solid")
         let broken = Self.declarations(of: "a.cross-ref-broken", in: css)
         #expect(broken["border-bottom"]?.contains("dotted") == true, "a.cross-ref-broken lost its dotted rule: \(broken)")
+    }
+
+    @Test("On paper the person and cross-reference links print without an underline and keep their colour, and on screen they keep the underline")
+    func linksPrintPlain() {
+        let css = ReaderPage.documentCSS
+        let rules = Self.rules(in: css)
+        // One print block, holding the one rule for the two links.
+        let printRules = rules.filter { Self.isPrintOnly($0.atRule) }
+        #expect(printRules.map(\.selectors) == [["a.pers-name", "a.cross-ref"]],
+                "the print block holds \(printRules.map(\.selectors)), not the one rule for the two links")
+        for link in ["a.pers-name", "a.cross-ref"] {
+            let screen = Self.declarations(of: link, in: css)
+            let paper = Self.declarations(of: link, in: css, onPaper: true)
+            #expect(screen["text-decoration"] == "underline", "\(link) lost its underline on screen: \(screen)")
+            #expect(paper["text-decoration"] == "none", "\(link) prints underlined: \(paper)")
+            #expect(paper["color"] != nil && paper["color"] == screen["color"], "\(link) changes colour on paper: \(paper)")
+        }
+        // A gloss's dotted rule and a broken reference's are not underlines, and print as on screen.
+        for other in ["a.gloss", "a.cross-ref-broken"] {
+            #expect(Self.declarations(of: other, in: css, onPaper: true) == Self.declarations(of: other, in: css),
+                    "\(other) prints differently from the screen")
+        }
+        // The reading attributes a rule to the at-rule it sits in, and leaves the block at its end:
+        // without that, a print rule would be read as the screen's, or a later rule as paper's.
+        let arrived = rules.first { $0.selectors == [".fn-list-item.fn-arrived"] && $0.atRule != nil }
+        #expect(arrived?.atRule?.hasPrefix("@media (prefers-reduced-motion") == true,
+                "the reduced-motion rule was not read inside its block: \(String(describing: arrived))")
+        #expect(rules.contains { $0.selectors == [".fn-list-item"] && $0.atRule == nil },
+                "the rule after the reduced-motion block was not read as a top-level rule")
     }
 
     #if !SWIFT_PACKAGE // HTMLTemplate and FRUSTheme are the app's
