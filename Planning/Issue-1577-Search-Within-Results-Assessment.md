@@ -2,6 +2,8 @@
 
 Assessed 2026-10-07 at v2 f384d2d5 (build 49, index version 65). Read from the code; nothing was built or run.
 
+**Decided 2026-10-08.** The owner took every recommended default in section 8. So Meaning mode ranks inside an applied working corpus, a layered search is not saved, the set-ranking step stays in the app's searcher, and lanes 4 and 5 land after #1576's selection lanes. The implementation plan to work from is on the issue: https://github.com/joshbotts/FRUS-Explorer/issues/1577#issuecomment-6058254302. Two things this document says in the future tense have since happened: the manual update has merged (#1580), and lanes edit the manuals themselves, leaving the AI Generated notice in place (owner, 2026-10-07; `Planning/Manual-Revisions-Pending.md` says so).
+
 **In short**
 
 - Build it as **Search Within These Results**: the reader holds the list on screen as a base, a row names it, and the search field then runs the other engine inside it.

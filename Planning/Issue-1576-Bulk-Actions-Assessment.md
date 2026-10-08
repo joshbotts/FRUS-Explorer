@@ -2,6 +2,8 @@
 
 Assessed 2026-10-07 at v2 f384d2d5 (build 49, index version 65). Read from the code; nothing was built or run.
 
+**Decided 2026-10-08.** The owner took every recommended default in section 8. So "clear" is Mark Reviewed with Undo, the Mac picks with a Select toggle and checkboxes, #1565 is fixed before lane 3, and this issue's selection lanes land before #1577's interface lanes. The implementation plan to work from is on the issue: https://github.com/joshbotts/FRUS-Explorer/issues/1576#issuecomment-6058253884. Two things this document says in the future tense have since happened: the manual update has merged (#1580), and lanes edit the manuals themselves, leaving the AI Generated notice in place (owner, 2026-10-07; `Planning/Manual-Revisions-Pending.md` says so).
+
 Every statement about behaviour comes from reading source at the line cited; paths are relative to the repository root. The one exception is two synthetic timings, quoted in sections 2 and 9, taken on a Mac with stand-in models and not the app's. Nothing is measured on an iPhone or through CloudKit.
 
 **In short**
