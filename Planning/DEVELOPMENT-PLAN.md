@@ -35973,3 +35973,30 @@ Between 4 and 7 October sessions on another account, building FRUS Explorer Ligh
 
 **Changed:** `Planning/Manual-Revisions-Pending.md`, `Planning/Plan-Of-Record-2026-09-28.md`, and a dated note at the head of each of the two assessments. Documentation only; nothing was built or run.
 
+## Session 2026-10-08 — On paper, person and cross-reference links print without their underline, and the open questions of #1578 and #1579 are settled
+
+#1578 underlined person and cross-reference links in the reader and left four questions for the owner, and #1579 three. The owner answered them on 2026-10-08. One answer changes the app.
+
+**Decided by the owner**
+- **The colours stand.**
+- **Underlines do not belong on paper.** A printed document underlines what its writer underlined, so an underlined name on paper reads as the source's emphasis.
+- **An empty person or term reference still reads as "not found"** (`frusexplorer://person/`), the reader's link scheme check stays exact, and the `resultCode(executing:)` test hook on the two read-only stores stays.
+
+**Changed**
+- **`FRUSCoreKit/TEI/ReaderPage.swift`.** One block in the stylesheet: `@media print { a.pers-name, a.cross-ref { text-decoration: none; } }`. The links keep their colour, and the screen is unchanged. The rule reaches the Mac's File ▸ Print, which prints the reader's own web view, and a collection's HTML export when a browser prints it, since the export embeds the same stylesheet. A gloss's dotted rule and a broken reference's are not underlines and print as before.
+- **`FRUSExplorerTests/FRUSCoreKit/ReaderPageTests.swift`.** The suite's reading of the stylesheet now knows which at-rule a rule sits in: a rule inside `@media print` is paper's alone, so the screen's underline test no longer reads it. A new test requires the print block to hold the one rule for the two links, each to print without an underline in the colour it has on screen, and the gloss and broken-reference rules to print as on screen; it also checks the reading itself against the reduced-motion block. The eight head pins are re-taken: each head grew by 256 bytes, all the block's.
+- **`Docs/macOS-User-Manual.md`** §8.2: one sentence saying the two links are underlined on screen and print without the underline. **`CLAUDE.md`**: the reader's page gate paragraph says how the suite reads print. **The plan of record** §0b records the answers.
+
+**Checked**
+- **The new test fails on the stylesheet before the change:** "Test run with 7 tests in 1 suite failed … with 3 issues", all three in the new test (no print block; each link prints underlined), with the other six passing, the pins among them.
+- **A mutant:** with the rule moved out of `@media print`, the screen's underline test fails (2 issues), and so do the print test and the pins.
+- **In WebKit itself.** A page with one person link and one cross-reference was printed to PDF through `WKWebView.printOperation(with:)`, the call `MacDocumentView.printCurrentDocument` makes, with and without the block, and each PDF's first page was rasterised at 4× and scanned for the longest horizontal run of link-coloured pixels. Without the block: teal 1,263 pixels, blue 929 (the underlines). With it: 41 and 42 (letter strokes). The links kept their colour: 23,520 teal and 22,361 blue pixels remained. Both pages were also looked at.
+- `swift test`: exit 0, 38 "Test run with" lines, 2,558 tests (one more than `f384d2d5`'s 2,557), no ✘ line.
+- The iOS unit target on an iPhone 17 simulator (iOS 27.0), with the TEI mirror: `** TEST BUILD SUCCEEDED **`, then "Test run with 6517 tests in 768 suites failed … with 8 issues". All eight are two tests of `SyncEventMonitorTests`, which cannot open the process's system log on this Mac (#1606): the build-49 binaries that passed that suite here on 2026-10-02 fail it today in the same way. Every other suite passed, "FRUSCoreKit — the reader's page" among them.
+- `FRUSExplorerMac`: `** BUILD SUCCEEDED **`.
+
+**Not done**
+- The Mac app's own File ▸ Print was not opened; the WebKit check prints through the same call from a standalone page.
+- The iOS manual is unchanged: it describes no print path.
+- No TestFlight line yet; build 50's notes owe one for #1578 and one for this.
+

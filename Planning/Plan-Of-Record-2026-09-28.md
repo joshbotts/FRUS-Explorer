@@ -221,11 +221,12 @@ Build 49 is archived and tagged (`build-49`, `34a51205`). Three things have happ
 - **Both manuals are brought up to date and marked AI Generated** until the owner reviews them, which will not be before 2026-10-21. From here on a lane that changes behaviour a manual describes edits the manual and leaves the notice: the owner's decision of 2026-10-07, which replaces P2 in §0 and §3. `Planning/Manual-Update-Build-49-Owner-Review.md` is the review's worklist.
 - **Two feature requests are assessed, and the owner took every recommended default on 2026-10-08. Neither is started; each issue carries its implementation plan:** #1576 (bulk actions on search results; `Planning/Issue-1576-Bulk-Actions-Assessment.md`) and #1577 (combined full-text and semantic search; `Planning/Issue-1577-Search-Within-Results-Assessment.md`). Neither needs a CloudKit deploy, an index-version bump or a re-index on its recommended path. Their interface lanes edit the same search menus: #1576's selection lanes land first, after #1565 is fixed, and #1577's lanes 4 and 5 after them. #1577's lanes 1 to 3 can go at any time.
 
-Owed before build 50: a look at #1578's reader in WebKit and the answers to its authors' four questions; a TestFlight line for it; and the twenty-three defects the manual review, the catch-up and the assessments turned up, each checked against the code and filed on 2026-10-07 as #1582–#1604.
+Owed before build 50: a TestFlight line for #1578 and for the print change below; and the twenty-three defects the manual review, the catch-up and the assessments turned up, each checked against the code and filed on 2026-10-07 as #1582–#1604.
 
 **Decided by the owner on 2026-10-07:**
 - **Lanes edit the manuals** (above).
 - **1981–88 vol. XVI's person and term links (#1599)** are built with the next change that bumps the index version (#1535, #1536 or the next volume ingest), not on their own: one re-index for readers and one pin move for the web edition.
+- **#1578 and #1579's open questions (2026-10-08).** The colours stand. Person names and cross-references print without their underline (done: one `@media print` rule in the kit's stylesheet). An empty person or term reference still reads as "not found", the page's link scheme check stays exact, and the test hook on the two read-only stores stays.
 
 ## 1. Where the 47 issues stand
 
