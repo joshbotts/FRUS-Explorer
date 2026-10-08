@@ -35907,3 +35907,25 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exporte
 - A `.volume` `CrossRefDestination` case. `resolveCrossRefTarget` reads a target that names a whole volume (`frus1961-63v05`) as a document of that name in the volume being read. FRUS Explorer Light's golden HTML holds 41 such links, 39 of them in `frus1961-63v06` and 2 in `frus1969-76ve09p1`'s preface. A `.volume` case changes what a tap does in the app, so it is left for a pull request of its own.
 - `footnoteDOMKey` is unchanged; it is already public through its public extension.
 - The UI suites; iOS 26.x; a device; a signed run. The Mac app was built and not run.
+
+## Session 2026-10-07 — Both user manuals are brought up to date for build 49 and marked AI Generated until the owner reviews them
+
+The owner cannot review the manuals for at least two weeks and asked that both be brought up to date and marked until then. Plan decision P2 (no lane edits a manual) was lifted for this work.
+
+**Changed**
+- **`Docs/macOS-User-Manual.md`** (205 edits) and **`Docs/iOS-User-Manual.md`** (285 edits). Each carries, directly under its title: "**AI Generated.** This manual was brought up to date for build 49 by an AI assistant (Claude) and has not yet been reviewed by the author." The wording is the owner's approved text. The notice stays until the owner's review, and not before 2026-10-21.
+- **How the edits were made.** An audit at `252298f8` (2026-10-02) read every statement in both manuals against the code, with the 137 proposals in `Planning/Manual-Revisions-Pending.md`, and wrote 469 change records, each checked by a second reader. On 2026-10-07, at `f384d2d5`, each record was read again by a reviewer told to refute it: 427 confirmed, 41 amended, 9 added, every objection re-checked twice. 21 more edits carry a correction to its twin sentence in the other manual or a sibling in the same one. A script applied the records; it requires each old text to occur exactly once and no two to overlap.
+- **What the second review mostly found:** sentences true on one device, width or condition and stated more broadly. Examples: the Mac's bar of document-number buttons is drawn only while the Research rail sits side by side with the text; a lot cited through the National Archives is answered from the bundled index only where the note prints it as `… Files: Lot …`; the count beside a term in Look up an abbreviation is not the number of volumes that define it; five About the Series charts get no Audio Graph from the app.
+- **#1578** is in the text: the Mac's link table says a person's name is underlined, in teal. The manuals describe the reader as `v2` draws it, which is not what build 49 on TestFlight draws.
+- **`Planning/Manual-Revisions-Pending.md`** records that its entries were applied, and that from here on, unless the owner says otherwise, a lane edits the manual itself and leaves the notice. The Owner boxes are untouched.
+- **`Planning/Manual-Update-Build-49-Owner-Review.md`** (new) is the worklist for the owner's review: the decisions taken by default, the 93 records of medium confidence, and the 52 stale screenshots with what is stale in each.
+
+**Checked**
+- By script, on the applied text of both manuals: every section pointer names a heading that exists; every table row has its header's column count; no heading number is duplicated or lost (the iOS manual gains 5.3a, 13.5 and 14.4a); picture lines are unchanged but for two captions the records rewrite; numbered steps run in order; no editorial comment is left.
+- `ResearchGuideCoverageTests`, `CodingStandardsAuditTests`, `ToolbarAccessibilityAuditTests` and `EditableContentKeyTests` on an iPhone 17 simulator (iOS 27.0), the suites that read the manuals or the docs: `** TEST BUILD SUCCEEDED **`, then "Test run with 90 tests in 4 suites passed". The rest of the unit target was not run: no Swift file, project file or resource changes.
+
+**Not done**
+- Nothing was built or run to check a manual sentence: each rests on the code or the bundled data. The worklist names the sentences where a run would settle something the code cannot (gestures SwiftUI draws, toolbar overflow on a narrow iPad, what a Mac gesture does).
+- No screenshot was recaptured; the owner captures them.
+- Two things found and left: the Mac manual does not say what a saved search fails to bring back when run again, and the iOS manual's "the person's index entry" names no screen. Both are in the worklist.
+- The app defects the review turned up are filed as issues, not fixed here.
