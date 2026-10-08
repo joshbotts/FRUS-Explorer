@@ -6,7 +6,7 @@ export const meta = {
     { title: 'Implement', detail: 'one isolated-worktree agent per lane' },
     { title: 'Review', detail: 'two read-only lenses per lane' },
     { title: 'Verify', detail: 'one skeptic per non-nit finding' },
-    { title: 'Fix', detail: 'resolve confirmed findings, full unit run' },
+    { title: 'Fix', detail: 'resolve confirmed findings, full unit run, swift test when owed' },
     { title: 'Check', detail: 'read-only check of the fix round' },
     { title: 'Draft', detail: 'PR description to the durable folder' },
   ],
@@ -37,11 +37,18 @@ const CONTEXT = A.context || 'a fix list of open issues'
 const EXAMPLE = A.prExample ? `Model its structure and tone on ${A.prExample} (read it). ` : ''
 const LANES = A.lanes || []
 const IPAD_KNOWN = A.knownFailures ? ` Known failures that are not yours: ${A.knownFailures}.` : ''
+// What the package builds or reads. Xcode's schemes run none of the package's suites; only swift test does
+// (CLAUDE.md, "Web edition (FRUS Explorer Light)", rule 4).
+const PACKAGE_INPUT = 'a folder Package.swift names as a target path (every top-level folder except .claude/, Docs/, FRUSExplorer/, FRUSExplorer.xcodeproj/, FRUSExplorerTests/, FRUSExplorerUITests/, FRUSExplorerWidgets/, Planning/, Scripts/, Vendor/ and tools/; and FRUSExplorerTests/FRUSCoreKit/), Package.swift itself, or a data file under FRUSExplorer/Resources/, which package suites read from the repository'
+// The shared kits FRUS Explorer Light compiles on Linux, and the rules that hold in them (the same section, rules 1 to 3).
+const KIT_RULES = 'In shared code (FRUSCoreKit/, FTS5Store, SourceNoteKit, CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit, ManifestGeneratorCore, and their test folders outside #if !SWIFT_PACKAGE): import no UI or app framework (SwiftUI, UIKit, AppKit, WebKit, SwiftData, CoreSpotlight, TipKit, NaturalLanguage); read no Bundle.main, UserDefaults or Keychain; name no type the app alone declares; leave every #if canImport guard in place; change kit behaviour in the kit, never in the forwarder the app keeps'
 
 const COMMON = `
 You are implementing ONE PR of ${CONTEXT}. The house rules — build and test commands, which device
-each UI suite needs, coding standards, Docs/EditableContent/, the DEVELOPMENT-PLAN entry — are in
-CLAUDE.md, which you already have; follow it. ${A.plan ? `Background on past lanes is in ${A.plan}. ` : ''}Your design is in the lane text
+each UI suite needs, coding standards, the shared-kit rules, Docs/EditableContent/, the DEVELOPMENT-PLAN entry — are in
+CLAUDE.md as it stands at ${BASE}; follow it. The copy in your context is the one this session loaded when it began, and it can
+be older than ${BASE}: once your branch exists, read the CLAUDE.md in your worktree, at least "Directory Map", the FRUSCoreKit
+entry under "SPM package targets" and "Web edition (FRUS Explorer Light)". Where the two differ, the file is right. ${A.plan ? `Background on past lanes is in ${A.plan}. ` : ''}Your design is in the lane text
 below and in the issues themselves: read each whole first, gh issue view <N> --repo ${REPO} --comments.
 
 WORKSPACE — the serial merge queue's rules, non-negotiable:
@@ -56,12 +63,36 @@ WORKSPACE — the serial merge queue's rules, non-negotiable:
   session's attribution instructions give.
 - Never edit a file to test a hypothesis outside a deliberate A/B that you restore by re-editing (never git checkout).
 
+WHERE SOURCE LIVES — two trees since October 2026:
+- The app's Swift is under FRUSExplorer/ AND FRUSCoreKit/. The TEI parser, AST, converter and HTML serializer, the citation formatter,
+  parser, matching engine and page-range store, IndexingPipeline and SearchService are in FRUSCoreKit/, in the subfolder they had
+  (FRUSCoreKit/Search/IndexingPipeline.swift), and their suites are in FRUSExplorerTests/FRUSCoreKit/. The app's half stayed:
+  FRUSExplorer/Search/IndexingPipeline+App.swift, SearchService+Collocation.swift, and the stores that read the bundle or the defaults.
+- An issue, plan or note written before 2026-10-04 names the old paths and line numbers. If a path is missing, find the file by name
+  (git ls-files | grep '/<Name>.swift$') and the symbol by grep. A file that moved is not code that is gone.
+- Search every tree the app compiles: git grep -n <pattern> -- FRUSExplorer FRUSCoreKit FTS5Store SourceNoteKit TEIHeaderKit
+  SemanticVectorsKit WordCloudKit.
+- ${KIT_RULES}. What kit code needs from the app is passed in, or its declaration moves into the kit; a member that reads app
+  state goes in an extension in an app file.
+- Nothing else is owed to the web edition and nothing is held back for it. But say in your return, under decisions, whether the lane
+  changes IndexingPipeline.currentDateIndexVersion, FTS5Connection.currentSchemaGeneration, the research-database export, or a
+  public declaration in a kit: the owner is told before it lands.
+
 BUILD AND TEST: DEVELOPER_DIR=${DEV}, \`set -o pipefail\`, -derivedDataPath ${SCR}/<lane key>/dd, and only the simulator
 UDIDs your lane names (xcrun simctl boot <UDID> || true; never \`simctl shutdown all\`; another lane owns every other
 device). build-for-testing takes 10–25 minutes: run it in the background and poll, because a call silent for three minutes
 is killed. test-without-building with -collect-test-diagnostics never and -only-testing FRUSExplorerTests/<TypeName> (the
 type, never the @Suite string), and read back the "Test run with N tests" line: a filter that matches nothing runs zero tests
 and still passes. Before returning, run the FULL unit target (-only-testing FRUSExplorerTests) and record its line.${IPAD_KNOWN}
+- THE PACKAGE RUN: Xcode's schemes never run the package's own suites; only swift test does, in about two minutes. It is owed when
+  git diff --name-only ${BASE}...HEAD names ${PACKAGE_INPUT}. If in doubt, run it:
+  DEVELOPER_DIR=${DEV} swift test --package-path <your worktree> --scratch-path ${SCR}/<lane key>/spm
+  in the background, polled; it counts as a build lane. Record its exit status, every "Test run with N tests" line (one per test
+  target) and every ✘ line. A --filter that matches nothing runs zero tests and exits 0. If it is not owed, write "swift test: not run,
+  no package input changed" in your return.
+- A test you add or change under FRUSExplorerTests/FRUSCoreKit/ is compiled twice. A/B it both ways: -only-testing
+  FRUSExplorerTests/<TypeName> in Xcode, and swift test --filter FRUSCoreKitTests.<TypeName> in the package. Whatever in it needs the
+  app (its module, its bundle, a view's source) goes inside #if !SWIFT_PACKAGE.
 - A/B: every new test must FAIL on the unfixed code first (record the ✘ lines), then pass with the fix. A scan test must
   assert it read more than zero files or sites.
 - Test rules learned the hard way: drive the real code path, never a copy of it; a \`guard … else { return }\` in a test is
@@ -73,7 +104,10 @@ and still passes. Before returning, run the FULL unit target (-only-testing FRUS
   view is re-entered (Back, the iPad two-pane gate, a tab switch, a second window).
 - If the lane's target turns out wrong once you read the code, choose the right one, pin the choice with a test, say why.
 - A NEW source or test file needs \`xcodegen generate --spec project.yml\`, then CLAUDE.md's scheme restore, inside your worktree
-  only, and the project.pbxproj change committed: prefer adding to an existing file.
+  only, and the project.pbxproj change committed: prefer adding to an existing file. That is as true under FRUSCoreKit/ and
+  FRUSExplorerTests/FRUSCoreKit/: the package compiles a new file there with no step at all, so a green swift test does not show that
+  the app targets compile it, and a green Xcode build does not show that the package does. Put new code in the app unless kit code
+  must call it.
 - Every changed user-facing defaultValue: amend its block in Docs/EditableContent/ (one file per app area; its README.md lists them). Moving lines in a file its blocks annotate
   with "lines:" ranges means updating EVERY range for that file. A block's text is always what the app ships; leave any
   ✎ or ⚑ note after a block in place. Record your change as one bullet at the end of Docs/EditableContent/Amendment-Log.md.
@@ -86,12 +120,12 @@ and still passes. Before returning, run the FULL unit target (-only-testing FRUS
   git diff ${BASE}...HEAD > ${SCR}/<lane key>/<branch short name>.diff
 
 Return data only: per PR the branch, commit sha, worktree path, files changed, the A/B evidence (failing line before,
-passing line after, with test counts), the macOS build result, what you could not do or verify, and every decision the
-lane text did not settle.
+passing line after, with test counts), the macOS build result, the swift test result (its lines, or that it was not owed), what
+you could not do or verify, and every decision the lane text did not settle.
 `
 const RESULT = { type: 'object', properties: { prs: { type: 'array', items: { type: 'object', properties: {
   issue: { type: 'string' }, branch: { type: 'string' }, commit: { type: 'string' }, worktree: { type: 'string' }, diffPath: { type: 'string' },
-  filesChanged: { type: 'array', items: { type: 'string' } }, abEvidence: { type: 'string' }, macBuild: { type: 'string' }, unverified: { type: 'string' },
+  filesChanged: { type: 'array', items: { type: 'string' } }, abEvidence: { type: 'string' }, macBuild: { type: 'string' }, swiftTest: { type: 'string' }, unverified: { type: 'string' },
   decisions: { type: 'string' }, summary: { type: 'string' } }, required: ['issue', 'branch', 'commit', 'diffPath', 'abEvidence', 'summary'] } },
   error: { type: 'string' } }, required: ['prs'] }
 const REVIEW_SCHEMA = { type: 'object', properties: { summary: { type: 'string' }, findings: { type: 'array', items: { type: 'object', properties: {
@@ -103,8 +137,8 @@ const RRULES = (pr) => `READ-ONLY review of one PR diff: ${pr.diffPath} (branch 
 git -C ${READER} show ${pr.branch}:<path> and at the base with git -C ${READER} show ${BASE}:<path>. NEVER checkout, switch, stash or edit
 anything anywhere, and never build. Read the issue (gh issue view --repo ${REPO}, with comments)${A.plan ? ` and the plan's section for it in ${A.plan}` : ''}. Cite path:line.`
 const LENSES = [
-  { key: 'correctness', text: 'LENS: correctness and completeness against the issue and the lane design. Does it fix every surface the issue names (both platforms, twin views), break any other caller, or deviate from a recorded owner decision? Grep for every other site of the pattern it fixes.' },
-  { key: 'tests-claims', text: 'LENS: tests and claims. Would each new test fail on the base and on a plausible regression (name the mutation)? Any vacuous guard, wrong -only-testing type, scan that could pass reading zero files, fixture that does not match real data? Is every number and factual claim in comments, Docs/EditableContent/ and the DEVELOPMENT-PLAN entry true?' },
+  { key: 'correctness', text: 'LENS: correctness and completeness against the issue and the lane design. Does it fix every surface the issue names (both platforms, twin views), break any other caller, or deviate from a recorded owner decision? Grep for every other site of the pattern it fixes, in both source trees and the kits the app compiles: git grep -n <pattern> <branch> -- FRUSExplorer FRUSCoreKit FTS5Store SourceNoteKit TEIHeaderKit SemanticVectorsKit WordCloudKit. If the diff touches a kit, does it keep the rules? ' + KIT_RULES + '. Say in your summary, as a fact and not a finding, whether the lane changes the index version, the FTS schema generation, the research-database export or a public kit declaration.' },
+  { key: 'tests-claims', text: 'LENS: tests and claims. Would each new test fail on the base and on a plausible regression (name the mutation)? Any vacuous guard, wrong -only-testing type, scan that could pass reading zero files, fixture that does not match real data? A suite under FRUSExplorerTests/FRUSCoreKit/ is compiled twice, by Xcode and by the package: does a new or changed test there name the app module, its bundle or a view outside #if !SWIFT_PACKAGE, which only swift test would fail? Does a source scan whose rule a kit file can break read FRUSCoreKit/ as well as FRUSExplorer/ (AppSourceTree)? If the diff touches ' + PACKAGE_INPUT + ', is a swift test run recorded with its result lines? Is every number and factual claim in comments, Docs/EditableContent/ and the DEVELOPMENT-PLAN entry true, and does every path they cite exist on the branch?' },
 ]
 const reviewAndVerify = async (key, impl) => {
   if (!impl || !impl.prs || !impl.prs.length) return { lane: key, impl, reviews: [] }
@@ -135,24 +169,33 @@ the rest, and commit once. If git status shows a merge in progress (a MERGE_HEAD
 Build and test: DEVELOPER_DIR=${DEV}, set -o pipefail, -derivedDataPath ${SCR}/${j.key}/dd, destination "platform=iOS Simulator,id=${j.udid}"
 (xcrun simctl boot ${j.udid} || true; never shutdown all). build-for-testing, then test-without-building -collect-test-diagnostics never -only-testing
 FRUSExplorerTests (the FULL unit target): it must be FULLY GREEN.${IPAD_KNOWN} If a runner hangs before establishing a connection, reboot that one UDID
-and re-run. Background + poll (three minutes of silence kills a call). Build FRUSExplorerMac (platform=macOS) if you touched Mac-compiled code.
+and re-run. Background + poll (three minutes of silence kills a call). Build FRUSExplorerMac (platform=macOS) if you touched Mac-compiled code,
+which every file under FRUSCoreKit/ and the other kits is.
+The package run, which Xcode never makes: if git -C ${j.wt} diff --name-only ${BASE}...HEAD names ${PACKAGE_INPUT}, run
+DEVELOPER_DIR=${DEV} swift test --package-path ${j.wt} --scratch-path ${SCR}/${j.key}/spm (background + poll; about two minutes). It must
+exit 0 with no ✘ line; report its "Test run with N tests" lines as swiftTest. Otherwise report swiftTest as "not run: no package input changed".
+green is true only when the unit run is green AND swift test, where owed, is. ${KIT_RULES}.
 Write git -C ${j.wt} diff ${BASE}...HEAD > ${SCR}/${j.key}/final.diff. LAST STEP: xcrun simctl shutdown every simulator you booted. Return data only.`
 const OUT = { type: 'object', properties: { fixCommit: { type: 'string' }, resolutions: { type: 'string' },
-  abEvidence: { type: 'string' }, fullRun: { type: 'string' }, green: { type: 'boolean' }, macBuild: { type: 'string' }, openItems: { type: 'string' } },
-  required: ['fixCommit', 'resolutions', 'fullRun', 'green'] }
+  abEvidence: { type: 'string' }, fullRun: { type: 'string' }, swiftTest: { type: 'string' }, green: { type: 'boolean' }, macBuild: { type: 'string' }, openItems: { type: 'string' } },
+  required: ['fixCommit', 'resolutions', 'fullRun', 'swiftTest', 'green'] }
 const CHECK = (j, work) => `READ-ONLY check. Never edit, checkout, switch, stash, build or push. Branch ${j.branch} in ${j.wt}: git -C ${j.wt} log/show/diff/grep only.
 The review findings this round had to resolve: ${String(j.notes).slice(0, 6000)} The latest work: ${JSON.stringify(work).slice(0, 3000)}
 Check: (1) every CONFIRMED finding and every listed item is resolved (evidence path:line); (2) each new test would fail on the mutant it names;
 (3) no conflict markers and no MERGE_HEAD; (4) every figure in comments, Docs/EditableContent/ and the DEVELOPMENT-PLAN entry is supported by the code
-or a recorded measurement. Classify each problem as BLOCKING (a code defect, a test that cannot fail, a wrong user-facing claim, a lost change) or NIT
-(wording). allClean=true only if nothing is BLOCKING. Return data only.`
+or a recorded measurement; (5) if git -C ${j.wt} diff --name-only ${BASE}...HEAD names ${PACKAGE_INPUT}, the latest work reports a
+swift test run with its result lines, not "not run"; (6) what the branch adds to a kit file keeps the rules: ${KIT_RULES}.
+Classify each problem as BLOCKING (a code defect, a test that cannot fail, a wrong user-facing claim, a lost change, a swift test run that was owed
+and not made, a kit rule broken) or NIT (wording). allClean=true only if nothing is BLOCKING. Return data only.`
 const CHK = { type: 'object', properties: { allClean: { type: 'boolean' }, blocking: { type: 'string' }, nits: { type: 'string' }, perItem: { type: 'string' } },
   required: ['allClean', 'blocking', 'nits', 'perItem'] }
 const DRAFT = (j, history) => `Draft the GitHub PR description for branch ${j.branch} (worktree ${j.wt}, READ-ONLY: git -C ${j.wt} log/show/diff ${BASE}...HEAD;
 never edit the worktree). Write it to ${DUR}/drafts/${j.key}.md and return the title. ${EXAMPLE}Open with a line naming the lane (${j.key} of ${CONTEXT})
 and give the exact closing line "${j.closes}": one "Closes #N." per issue, because GitHub closes only the first number after a single Closes. Sections: "What
-was wrong"; "The fix"; "Tests" (suites, counts, the mutants each kills, UI runs per device); the full unit run as the branch's records state it; review
-rounds; "Filed rather than fixed here" (only issues that relate); "Owner items" (every owner step the DEVELOPMENT-PLAN entry names); a per-platform "Visual
+was wrong"; "The fix"; "Tests" (suites, counts, the mutants each kills, UI runs per device); the full unit run and the swift test run as the branch's
+records state them (or that swift test was not owed); review rounds; "Filed rather than fixed here" (only issues that relate); "Owner items" (every
+owner step the DEVELOPMENT-PLAN entry names); "For the web edition" (one line: whether the lane touches shared code, and any change to the index
+version, the FTS schema generation, the research-database export or a public kit declaration, or "nothing"); a per-platform "Visual
 check" list. Every figure must be one the branch's records state. Tight bullets. End with the PR attribution line your session's instructions give.
 Title: one plain sentence in the repo's commit-subject style stating the fixed behaviour, then " (${j.issue})". Context: ${JSON.stringify(history).slice(0, 3000)}`
 
@@ -204,7 +247,7 @@ for (const lane of LANES) {
   const j = { key: lane.key, issue: lane.issues, closes: lane.closes, wt, branch: pr.branch || lane.branch, udid: lane.udid,
     notes: (confirmed.length ? 'Resolve every CONFIRMED review finding (each was independently verified):\n' + confirmed.join('\n') : 'The review confirmed no finding.')
       + (nits.length ? '\nNits (take the cheap, clearly right ones; say which you left and why):\n' + nits.join('\n') : '')
-      + `\nSimulators: ${lane.udids || lane.udid}. Build FRUSExplorerMac if you touch Mac-compiled code.` }
+      + `\nSimulators: ${lane.udids || lane.udid}. Build FRUSExplorerMac if you touch Mac-compiled code; run swift test if you touch package input.` }
   phase('Fix')
   const fin = await finish(j)
   results.push({ key: lane.key, impl: r.impl, reviews: r.reviews, confirmed, nits, finish: fin })
