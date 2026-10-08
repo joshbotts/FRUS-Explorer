@@ -10,6 +10,10 @@ Format, one entry per change:
 - **Why:** the behaviour change and its code path (path:line), with the issue number
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
+**Applied on 2026-10-07.** Every entry below this note, from WB to CFPF, was applied to both manuals in the build-49 manual update, where the code at `v2` `f384d2d5` bore it out, together with an audit of every other sentence. The owner has not reviewed the result: both manuals carry an **AI Generated** notice under their titles until then, and not before 2026-10-21. `Planning/Manual-Update-Build-49-Owner-Review.md` lists what that review needs. The **Owner** boxes below are left as they were, since they are the owner's. The code pointers in the entries are as their lanes wrote them; fourteen name files that have since moved into `FRUSCoreKit/`.
+
+**From here on, unless the owner says otherwise,** a lane that changes behaviour a manual describes edits the manual itself, leaves the notice in place, and adds nothing to this file. Decision P2 held manual edits back while the owner was reviewing the Mac manual; that review is now deferred and will be of both manuals as they stand. This is a default taken on 2026-10-07, not a recorded owner decision.
+
 <!-- Lanes append below this line, one "## <LANE KEY> — <issues>" heading each. -->
 
 **Index, 2026-10-02** *(added by lane PLAN on 2026-10-01 and brought to the merged file when the
