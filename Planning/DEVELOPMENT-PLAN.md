@@ -35969,6 +35969,7 @@ Between 4 and 7 October sessions on another account, building FRUS Explorer Ligh
 **Decided by the owner**
 - **Lanes edit the manuals from now on**, leaving the AI Generated notice in place. This replaces decision P2. `Planning/Manual-Revisions-Pending.md` and the plan of record §0b say so.
 - **#1599, vol. XVI's `@ana` pointers:** built with the next change that bumps the index version, not on its own.
+- **#1576 and #1577 (2026-10-08):** every recommended default in the two assessments. Each issue now carries an implementation plan as a comment: the decisions, the lanes in order with what each is done when, the checks that are the owner's, and the order between the two issues. Neither is started.
 
-**Changed:** `Planning/Manual-Revisions-Pending.md`, `Planning/Plan-Of-Record-2026-09-28.md`. Documentation only; nothing was built or run.
+**Changed:** `Planning/Manual-Revisions-Pending.md`, `Planning/Plan-Of-Record-2026-09-28.md`, and a dated note at the head of each of the two assessments. Documentation only; nothing was built or run.
 
