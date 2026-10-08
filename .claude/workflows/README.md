@@ -4,9 +4,21 @@ Three Workflow scripts from build 48's fix wave (2026-09-25 to 2026-09-27). They
 for any later wave: every session path, simulator UDID, base sha and issue list is an argument.
 How they fit together, and what each rule in them is for, is
 `Planning/Agentic-Harness-Runbook.md` §9, *The serial merge queue*. House rules are in
-`CLAUDE.md`, which every workflow agent already has. The prompts point at it rather than restating
-it, and carry only what `CLAUDE.md` does not say: the queue's worktree, branch and push rules,
-and the durable lessons of build 48's review rounds.
+`CLAUDE.md`. Every workflow agent has a copy in its context, but it is the copy the session loaded
+when it began, and it can be older than the base branch. On 2026-10-07 a session whose worktree had
+moved from `34a51205` to `f384d2d5` still gave a workflow agent `34a51205`'s text, with no
+*Web edition* section and the Directory Map from before FRUSCoreKit. So the prompts tell an agent
+to read the sections that govern its work from the file in its worktree. Otherwise they point at
+`CLAUDE.md` rather than restating it, and carry only what it does not say: the queue's worktree,
+branch and push rules, the durable lessons of build 48's review rounds, and, since FRUSCoreKit
+(October 2026), where source lives and when the package's own run is owed.
+
+**Two source trees, two test runs.** The app's Swift is under `FRUSExplorer/` and `FRUSCoreKit/`,
+and Xcode's schemes never run the package's suites. A lane whose diff names package input (a
+package target's folder, `FRUSExplorerTests/FRUSCoreKit/`, `Package.swift`, or a data file under
+`FRUSExplorer/Resources/`) owes `swift test` as well as the full unit target, at development and
+again at landing. Each script carries the list as `PACKAGE_INPUT` and the kit rules as `KIT_RULES`;
+both restate `CLAUDE.md`'s *Web edition (FRUS Explorer Light)* section, which is the authority.
 
 Run one with the Workflow tool, `{scriptPath: ".claude/workflows/<name>.js", args: {…}}`, passing
 `args` as a JSON object rather than a string.
@@ -17,13 +29,14 @@ Run one with the Workflow tool, `{scriptPath: ".claude/workflows/<name>.js", arg
    the fix list from its report and settles any decision it raises.
 2. **`lane-dev.js`**: develop the lanes. One run develops the lanes it is given one after
    another, so lanes run in parallel only as separate `lane-dev.js` runs, one per lane or group of
-   lanes. No more than three may be building at once across every workflow on the machine. Each
+   lanes. No more than three may be building at once across every workflow on the machine, and a
+   `swift test` counts as a build. Each
    lane ends committed on its own branch, with a PR draft in `<durable>/drafts/<key>.md`. Nothing
    is merged or pushed.
 3. **Fix the landing order** and tell the owner.
 4. **`land-lane.js`** on the head of the queue ONLY. It merges the current base branch, runs the
-   full unit target, checks the merge read-only, pushes, and opens the PR if the job gives a title
-   and body file. Then wait for the owner to merge it, and land the next lane against the new
+   full unit target and, when the lane adds package input, `swift test`, checks the merge
+   read-only, pushes, and opens the PR if the job gives a title and body file. Then wait for the owner to merge it, and land the next lane against the new
    base. Landing several lanes in one run re-creates the problem the queue exists to solve.
 5. **`open-issue-review.js` again** once the queue is empty: close what landed, and rate what is
    left.
@@ -35,7 +48,7 @@ Per lane, it runs these steps:
 1. Implement, in an isolated worktree branched from the base.
 2. Review through two read-only lenses: correctness, and tests and claims.
 3. Give every non-nit finding to a skeptic who tries to refute it.
-4. Run a fix round and a full unit run.
+4. Run a fix round, a full unit run, and `swift test` when the lane's diff names package input.
 5. Run a read-only check.
 6. Run a second fix round if the check found a blocking problem (`maxRounds`, default 2).
 7. Draft the PR.
@@ -68,10 +81,11 @@ Per lane, it runs these steps:
 ## `land-lane.js`
 
 It merges the base into each job's committed branch. It resolves the conflicts every lane meets:
-two lanes appending to the DEVELOPMENT-PLAN, the EditableContent header, CLAUDE.md's device
-paragraphs, and an index version both lanes took. It also finishes or aborts a merge an
-interrupted run left behind. It then builds, runs the full unit target, has a second agent check
-the merge read-only, and pushes only when both are clean. It never force-pushes. If the base has
+two lanes appending to the DEVELOPMENT-PLAN, the EditableContent amendment log, CLAUDE.md's device
+paragraphs, an index version both lanes took, and a file the base moved into `FRUSCoreKit/` after
+the lane changed it. It also finishes or aborts a merge an interrupted run left behind. It then
+builds, runs the full unit target and, when the lane adds package input, `swift test`, has a second
+agent check the merge read-only, and pushes only when the runs are green and the check is clean. It never force-pushes. If the base has
 moved past `baseSha` by the time the merge fetches, the merge takes the base as it then is and
 reports that sha, and the check reads it as the merge's second parent.
 

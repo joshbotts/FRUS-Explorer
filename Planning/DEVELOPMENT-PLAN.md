@@ -35907,3 +35907,35 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exporte
 - A `.volume` `CrossRefDestination` case. `resolveCrossRefTarget` reads a target that names a whole volume (`frus1961-63v05`) as a document of that name in the volume being read. FRUS Explorer Light's golden HTML holds 41 such links, 39 of them in `frus1961-63v06` and 2 in `frus1969-76ve09p1`'s preface. A `.volume` case changes what a tap does in the app, so it is left for a pull request of its own.
 - `footnoteDOMKey` is unchanged; it is already public through its public extension.
 - The UI suites; iOS 26.x; a device; a signed run. The Mac app was built and not run.
+
+## Session 2026-10-07 — The app's own tooling and records catch up with the web edition's kit moves, upstream is re-assessed at `8e5da08c1`, and #1576 and #1577 are assessed
+
+Between 4 and 7 October sessions on another account, building FRUS Explorer Light, merged nine pull requests here (#1567, #1569, #1571, #1572, #1573, #1574, #1575, #1578, #1579). This session read all nine before resuming app work, and records what it found and what it changed in its own tooling.
+
+**What the nine changed, as read here**
+- `FRUSCoreKit/` holds 49 Swift files that lived under `FRUSExplorer/`: the TEI parser, AST, converter and serializer, the reader's page, the citation code, `IndexingPipeline` and `SearchService`. The app keeps every old name as a forwarder, typealias or extension; no call site, version, schema or bundled resource changed.
+- Two independent readings of the whole diff, one from the moved files and one from the app side, found fourteen differences in the code and one a user can see: #1578's underlined person and cross-reference links and five changed reader colours, which also reach the Mac's printed page and the collection HTML export and its preview. It is not in build 49.
+- #1578 has not been seen in WebKit: its screenshots are headless Chrome's. Owed before build 50: a look at the reader on Mac and iPad in both appearances, at File ▸ Print's preview and at a collection HTML export; a TestFlight line; and the owner's answer to four questions its authors raised and nobody recorded (underlines on paper; the colours; `frusexplorer://person/` with no path read as the empty ref; the exact scheme check).
+
+**Changed**
+- **`.claude/workflows/lane-dev.js`, `land-lane.js`, `open-issue-review.js`, their `README.md`, `Planning/Agentic-Harness-Runbook.md`.** A lane now runs `swift test` when its diff names package input, and `green` means the unit run and, where owed, the package run. Each agent is told to read `CLAUDE.md` from its worktree, since the copy in its context can be older than the base (it was, in this session: every agent was handed `34a51205`'s file). The lane prompt says where source lives since the move, and that a file that moved is not code that is gone. A landing carries a lane's change to the file's new path when the base has moved it. A pull-request body gains a "For the web edition" line. All three scripts pass `tools/workflow-check/check_workflow.js`.
+- **`CLAUDE.md`.** A paragraph on the reader's page gate (`ReaderPageTests`, `ReaderLinkTests`); a paragraph on the three runs a shared-code change owes, with the baseline measured today (`swift test` at `f384d2d5`: exit 0, 38 test targets, 2,557 tests); the Directory Map rows for `Models/`, `Browser/` and `CrossReference/`; the FTS5Store entry's `LinuxLogger`; the reason given for the date-rule mirror, which no longer holds; and the corpus census re-counted at 744 files. The *Web edition* section is the web side's to keep and is not edited.
+- **`Planning/Issue-1576-Bulk-Actions-Assessment.md`** and **`Planning/Issue-1577-Search-Within-Results-Assessment.md`** (new): what each request leaves open, what exists, a recommended design per platform, the pull requests in order, the web edition's part, the release constraints, tests, and the decisions that are the owner's. Each was written from five maps of the code and three designs, then checked claim by claim against the code and rewritten with the corrections.
+
+**Upstream, re-assessed**
+- HistoryAtState/frus is at `8e5da08c1` (2026-09-25), as the app's records already say; `volumes/` last changed at `550a8c5c5` (2026-09-15). Checked without the generators: the live listing equals the local clone by blob hash for all 744 files, and the bundled manifest equals all 553 shipped files in size, status and tags. No bundled artifact needs regenerating.
+- **One gap is real.** 1981–88 vol. XVI names its people and terms on each document through `@ana` (622 person pointers, 419 term pointers, on all 88 documents) and carries no inline `persName` or `gloss`; the app has no reader for it, so that volume's documents have no person or term links here though history.state.gov shows them. An issue is drafted for it. A fix is kit code and a parse-output change, so an index-version bump.
+- Three upstream pull requests are open against shipped volumes and are not on `master`: #467 (a one-word fix in `frus1977-80v19`, in conflict), #438 (three name fixes in `frus1958-60v06`, which keep the file's length, so a manifest overlay would not show the change) and #437 (about ninety person pointers in `frus1964-68v29p1`).
+- The 50 files added on 2026-09-09 are header-only `frus2001-08` volumes; none holds a document. The census in `CLAUDE.md` is re-counted.
+- NARA re-published most of its bulk catalogue export on 2026-09-28 (21 of the 22 record groups the app harvests; RG 59 is still the April snapshot). Not compared: the app's NARA artifacts stand on the April snapshot until the next archival-chain run.
+- `TaxonomyGenerator` writes an empty file and reports success if the page it scrapes changes its markup. An issue is drafted for it.
+
+**Checked**
+- `swift test` at `f384d2d5`, twice: exit 0, 38 "Test run with" lines, 2,557 tests, none failed.
+- The three patched workflow scripts through `check_workflow.js` with the README's example arguments: OK, with the same agent calls and phases as before the patch.
+- Docs and tooling only: no Swift file, project file or resource changes.
+
+**Not done**
+- No lane has been run through the patched scripts yet.
+- The four #1578 questions and the WebKit look are the owner's.
+- Stale references the sweep found and this change leaves: fourteen code pointers in `Planning/Manual-Revisions-Pending.md` (its entries are applied and settled), and three harness scripts under `Planning/early-era-people/reframe-2026-09-13/` that compile two files by their old paths.

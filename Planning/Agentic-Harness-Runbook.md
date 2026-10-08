@@ -209,7 +209,9 @@ those lanes reached `v2` without redoing each other's work. The scripts are in
 
 **[FROM THE RUN] The rule.** Develop lanes in parallel, but none of them merges `v2` or pushes.
 Land them one at a time. For the lane at the head of the queue: merge the current `v2` into it,
-build, run the full unit target, run a read-only check of the merge, push, and open the PR. Then
+build, run the full unit target and, when the lane adds package input, `swift test` (Xcode's
+schemes never run the package's suites: `CLAUDE.md`, *Web edition*, rule 4), run a read-only check
+of the merge, push, and open the PR. Then
 wait for the owner to merge it before the next lane merges `v2`. The owner set this rule on
 2026-09-26, after every landing had been followed by re-merging `v2` into every other open PR. Each
 landing made those merges, and their full unit runs, stale again. Fix the landing order up front

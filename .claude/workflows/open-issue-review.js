@@ -43,6 +43,11 @@ const CONTEXT = [
 const RULES = `READ-ONLY. Never edit, checkout, switch, stash, build, push, comment, close, label or create anything on GitHub.
 Tools: gh issue view <N> --repo ${REPO} --comments; gh pr view <N> --repo ${REPO}; git -C ${READER} fetch -q origin;
 git -C ${READER} log --oneline ${BASE} --grep '#<N>'; git -C ${READER} show ${BASE}:<path>; git -C ${READER} grep -n <pattern> ${BASE} -- <paths>.
+Source is in two trees since 2026-10-04: FRUSExplorer/ and FRUSCoreKit/. The TEI parser and serializer, the citation code, IndexingPipeline and
+SearchService moved to FRUSCoreKit/ under the same subfolder and file name, and their suites to FRUSExplorerTests/FRUSCoreKit/. An issue filed before
+then cites the old paths and line numbers. When git show ${BASE}:<path> fails, find the file by name (git -C ${READER} ls-tree -r --name-only ${BASE}
+| grep '/<Name>.swift$') and the symbol by grep: a file that moved is not code that is gone. Grep every tree the app compiles:
+git -C ${READER} grep -n <pattern> ${BASE} -- FRUSExplorer FRUSCoreKit FTS5Store SourceNoteKit TEIHeaderKit SemanticVectorsKit WordCloudKit.
 ${BASE} is now ${BASE_SHA}. A PR body closes only the FIRST issue after a single "Closes", so read PR bodies for every mention, not only closing refs.
 The ${NEWER.length} newer issues (${NEWER.map(n => '#' + n).join(', ') || 'none'}) were filed from agents' read-only findings, often from code that
 was read and not run: verify each defect is REALLY present at ${BASE} before rating it.
@@ -55,7 +60,7 @@ const TRIAGE_SCHEMA = { type: 'object', properties: { issues: { type: 'array', i
   userImpact: { type: 'string' }, whoSees: { type: 'string' }, platforms: { type: 'string' },
   reindexNeeded: { type: 'string', enum: ['yes', 'no', 'unknown'] }, dataRegenNeeded: { type: 'string' },
   effort: { type: 'string', enum: ['S', 'M', 'L'] }, evidence: { type: 'string' },
-  subsystem: { type: 'string' }, filesLikely: { type: 'string' }, relatedIssues: { type: 'string' },
+  subsystem: { type: 'string' }, filesLikely: { type: 'string' }, sharedCode: { type: 'string' }, webEdition: { type: 'string' }, relatedIssues: { type: 'string' },
   priorVerdictChange: { type: 'string' }, notes: { type: 'string' } },
   required: ['number', 'title', 'status', 'severity', 'userImpact', 'reindexNeeded', 'effort', 'evidence', 'subsystem', 'filesLikely'] } } }, required: ['issues'] }
 const TRIAGE = (b) => `${RULES}
@@ -63,7 +68,8 @@ const TRIAGE = (b) => `${RULES}
 Triage these open issues: ${b.map(n => '#' + n).join(', ')}. For EACH:
 1. Read the issue whole (with comments). Check whether a landed PR fixed it, and CHECK THE CODE OR DATA AT ${BASE} that the defect is actually gone before
    calling it fixed — cite path:line. A PR that fixed a sibling does not fix it. status: fixed, fixed-by-open-pr (open work named above fixes it),
-   partly-fixed (say what remains), still-open, obsolete (premise false or code gone), upstream-only (the defect is in data another party publishes),
+   partly-fixed (say what remains), still-open, obsolete (premise false, or the code deleted: a file that moved into FRUSCoreKit/ is neither),
+   upstream-only (the defect is in data another party publishes),
    owner-decision (blocked on a copy or design choice).
 2. If not closed, classify what it does to users of the current build. incorrect-data = the app shows, exports or cites a wrong fact, count, label, date,
    citation, attribution or document; feature-broken = a user cannot complete something the app offers (a control missing or inert, a sheet unusable, an
@@ -72,7 +78,12 @@ Triage these open issues: ${b.map(n => '#' + n).join(', ')}. For EACH:
    how often (whoSees). Measure reach where cheap, and say when a count is an estimate. For each NEWER issue, reproduce the claim from the code (read the
    named sites); if it does not hold, say so and rate it accordingly.
 3. reindexNeeded (would a correct fix change what IndexingPipeline stores?), dataRegenNeeded (which generator, or "no"), effort S/M/L, subsystem,
-   filesLikely (the files a fix would touch), relatedIssues (open issues a fix should share a PR with, and why). For older issues, priorVerdictChange:
+   filesLikely (the files a fix would touch, at their paths at ${BASE}), sharedCode ("no", or which of FRUSCoreKit/, FTS5Store, SourceNoteKit,
+   CrossRefKit, GeneratorKit, TEIHeaderKit, SemanticVectorsKit and ManifestGeneratorCore a fix would touch: such a fix owes a swift test run and keeps
+   the Web-edition rules in CLAUDE.md, so say if the obvious fix would break one, for instance by reading UserDefaults or a SwiftData type inside the
+   pipeline), webEdition ("none", or what FRUS Explorer Light would meet: an index-version or FTS-generation bump, after which its published server
+   refuses exports from the new build until its pin moves; a change to the research-database export; a changed or removed public kit declaration.
+   This never lowers a rating or defers a fix: it is for the owner's ordering), relatedIssues (open issues a fix should share a PR with, and why). For older issues, priorVerdictChange:
    "unchanged" or what changed.
 Return data only.`
 const VERIFY_SCHEMA = { type: 'object', properties: { verdicts: { type: 'array', items: { type: 'object', properties: {
@@ -83,7 +94,8 @@ const VERIFY = (items) => `${RULES}
 
 A triage agent made the claims below. You are an independent SKEPTIC. For each item:
 - If it says fixed / fixed-by-open-pr / obsolete / upstream-only (that is, "close it"): try to REFUTE that — find any part of the issue still reproducible
-  from the code or data at ${BASE}. Default agreesStatus=false if you cannot confirm the defect is gone.
+  from the code or data at ${BASE}. Default agreesStatus=false if you cannot confirm the defect is gone. A cited file that is absent at ${BASE} is
+  not evidence: look for it under FRUSCoreKit/ before agreeing to obsolete or fixed.
 - If it rates severity incorrect-data or feature-broken: check that the user really sees or exports something false, or really cannot complete the action,
   in the build as shipped (not a test-only or hypothetical path) — read the code path yourself. Downgrade if cosmetic, unreachable, or with an obvious
   workaround.
