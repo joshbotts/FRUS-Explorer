@@ -218,10 +218,14 @@ Recorded by lane PLAN against `v2` @ `dc17d945` on 2026-10-01, and brought to `v
 Build 49 is archived and tagged (`build-49`, `34a51205`). Three things have happened since, and none changes §0.
 
 - **A second set of sessions writes to this repository.** They build FRUS Explorer Light, a self-hosted web edition in `joshbotts/FRUS-Explorer-Web-App`, which compiles this repository's shared kits on Linux from a pinned commit. Between 4 and 7 October they merged nine pull requests here that move the TEI pipeline, the reader's page, the citation code, the indexing pipeline and the search service into `FRUSCoreKit/`. `CLAUDE.md`'s *Web edition* section states the four rules sessions here follow; the arrangement is the web repository's `docs/COORDINATION.md`. The owner's stance (2026-10-07): follow the rules, and where an app goal complicates the web edition, be shown the option that stays within them and the option that sets them aside. An index-version bump is the change that costs the web side most (its server refuses exports from the new build until its pin moves), so bumps are batched into one per build where the work allows.
-- **Both manuals are brought up to date and marked AI Generated** until the owner reviews them, which will not be before 2026-10-21. From here on, unless the owner says otherwise, a lane that changes behaviour a manual describes edits the manual and leaves the notice. `Planning/Manual-Update-Build-49-Owner-Review.md` is the review's worklist.
+- **Both manuals are brought up to date and marked AI Generated** until the owner reviews them, which will not be before 2026-10-21. From here on a lane that changes behaviour a manual describes edits the manual and leaves the notice: the owner's decision of 2026-10-07, which replaces P2 in §0 and §3. `Planning/Manual-Update-Build-49-Owner-Review.md` is the review's worklist.
 - **Two feature requests are assessed and wait on owner decisions:** #1576 (bulk actions on search results; `Planning/Issue-1576-Bulk-Actions-Assessment.md`) and #1577 (combined full-text and semantic search; `Planning/Issue-1577-Search-Within-Results-Assessment.md`). Neither needs a CloudKit deploy, an index-version bump or a re-index on its recommended path. Their interface lanes edit the same search menus, so one issue's are landed before the other's.
 
-Owed before build 50: a look at #1578's reader in WebKit and the answers to its authors' four questions; a TestFlight line for it; and the twenty-three defects the manual review, the catch-up and the assessments turned up, each checked against the code and drafted as an issue on 2026-10-07.
+Owed before build 50: a look at #1578's reader in WebKit and the answers to its authors' four questions; a TestFlight line for it; and the twenty-three defects the manual review, the catch-up and the assessments turned up, each checked against the code and filed on 2026-10-07 as #1582–#1604.
+
+**Decided by the owner on 2026-10-07:**
+- **Lanes edit the manuals** (above).
+- **1981–88 vol. XVI's person and term links (#1599)** are built with the next change that bumps the index version (#1535, #1536 or the next volume ingest), not on their own: one re-index for readers and one pin move for the web edition.
 
 ## 1. Where the 47 issues stand
 

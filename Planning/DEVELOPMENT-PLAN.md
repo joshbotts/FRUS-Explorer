@@ -35961,3 +35961,14 @@ Between 4 and 7 October sessions on another account, building FRUS Explorer Ligh
 - No lane has been run through the patched scripts yet.
 - The four #1578 questions and the WebKit look are the owner's.
 - Stale references the sweep found and this change leaves: fourteen code pointers in `Planning/Manual-Revisions-Pending.md` (its entries are applied and settled), and three harness scripts under `Planning/early-era-people/reframe-2026-09-13/` that compile two files by their old paths.
+
+## Session 2026-10-07 — Twenty-three defects are filed, and two owner decisions are recorded: lanes edit the manuals, and vol. XVI's links wait for the next index bump
+
+**Filed** as #1582–#1604: the defects the manual review, the catch-up on the web edition's pull requests and the two issue assessments turned up. Seventeen were each checked against the code by a reader told to refute them (sixteen held as defects, one as a question for the owner, #1592); six were checked by hand, #1599 by counting the volume's pointers and searching the code for a reader. Each issue says what was not verified. Four further candidates in Search (a hand-off inside an applied corpus, a stale "Inside" banner on the Mac, a saved Meaning search recalled as keywords, the scoped Meaning prompt) were not verified and are recorded in `Planning/Issue-1577-Search-Within-Results-Assessment.md` only.
+
+**Decided by the owner**
+- **Lanes edit the manuals from now on**, leaving the AI Generated notice in place. This replaces decision P2. `Planning/Manual-Revisions-Pending.md` and the plan of record §0b say so.
+- **#1599, vol. XVI's `@ana` pointers:** built with the next change that bumps the index version, not on its own.
+
+**Changed:** `Planning/Manual-Revisions-Pending.md`, `Planning/Plan-Of-Record-2026-09-28.md`. Documentation only; nothing was built or run.
+
