@@ -1129,9 +1129,12 @@ struct ArchivalCollectionsDataTests {
         // index and the umbrella filter, and a regression in any of them moves it.
         let data = try #require(Self.shipped)
         let band = ArchivalEraBand.all[1]
-        #expect(data.noteCount(band: band) == 59_973, """
+        // 59,973 → 59,974 at corpus `deb6a04f8` (2026-10-09): `frus1945Berlinv02`, whose dates
+        // reach 1960, has one more source note, since its `d710a-83` no longer sits inside
+        // another document.
+        #expect(data.noteCount(band: band) == 59_974, """
             The 1948–1960 band's source-note total is \(data.noteCount(band: band) ?? -1), not \
-            59,973. That sum comes straight from volumeNoteCounts and the band attribution.
+            59,974. That sum comes straight from volumeNoteCounts and the band attribution.
             """)
         let ranking = data.ranking(band: band, lens: .namedCollections, weight: .documents,
                                    hidingUmbrella: true)

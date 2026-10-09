@@ -1,12 +1,12 @@
 {
-  "corpusVolumeCount" : 694,
-  "generated" : "2026-07-10",
+  "corpusVolumeCount" : 744,
+  "generated" : "2026-10-09",
   "generator" : "CrossRefValidationGenerator",
   "informationalCounts" : {
-    "external" : 9301,
-    "resolved" : 2695518,
+    "external" : 9353,
+    "resolved" : 2696012,
     "volumeNotInSnapshot" : 0,
-    "wholeVolumeRef" : 6992
+    "wholeVolumeRef" : 6997
   },
   "nonShippableVolumeIds" : [
     "frus1958-60v11mSupp",
@@ -29,7 +29,6 @@
     "frus1981-88v12",
     "frus1981-88v14",
     "frus1981-88v15",
-    "frus1981-88v16",
     "frus1981-88v17p1",
     "frus1981-88v17p2",
     "frus1981-88v18p1",
@@ -68,7 +67,7 @@
     "frus1989-92v28",
     "frus1993-00v20"
   ],
-  "nonShippableVolumeRefCount" : 1273,
+  "nonShippableVolumeRefCount" : 1269,
   "records" : [
     {
       "byteOffset" : 3509089,
@@ -6620,9 +6619,9 @@
     }
   ],
   "schemaVersion" : 1,
-  "seriesVolumeCount" : 552,
+  "seriesVolumeCount" : 553,
   "totalBroken" : 652,
-  "totalRefsScanned" : 2713736,
+  "totalRefsScanned" : 2714283,
   "totalsByReason" : {
     "emptyTarget" : 0,
     "malformedTarget" : 3,

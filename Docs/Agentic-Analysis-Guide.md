@@ -1969,7 +1969,7 @@ The stack, and the question each artifact answers:
 
 | Artifact | Answers | Scale |
 |---|---|---|
-| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,552 notes; 1,834 collections reached; 10,454 class keys |
+| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,553 notes; 1,834 collections reached; 10,454 class keys |
 | `external-citation-index.json` | what the editors cited and did **not** print | 19,614 lot/library refs + 30,524 class refs, 441 volumes |
 | `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,070 lot files, all carrying a NAID |
 | `collection-authority.json` | which collection is this note naming, under every spelling | 4,051 collections, 1,014 with a NAID |
@@ -2740,6 +2740,11 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.24 — 2026-10-09: **§14.11's `collection-usage` row reads 264,553 notes**, one more than
+  before. The Office of the Historian's corrections of 2026-10-09 (corpus `deb6a04f8`) made a
+  document that sat inside another in `frus1945Berlinv02` a document of its own, and its source
+  note is now counted. The same refresh moved only coverage counts in `external-citation` and no
+  other Scale cell.
 - 1.23 — 2026-10-01: **§14.11's artifact table re-measured against the bundle, and the history
   repaired.** Every Scale cell was re-read from the shipped file, and nine had moved since they
   were written: `collection-usage` (264,552 notes, 1,834 collections reached, 10,454 class keys),

@@ -229,8 +229,8 @@ struct VolumeCatalogueGroupingTests {
 // MARK: - VolumeDocumentCountAccessorTests
 
 /// Pins the R-2 accessor against the REAL bundled artifact, so the number Browse shows is
-/// the number the artifact states — 314,483 document divs over 552 volumes, the figure the
-/// semantic pipeline counts independently.
+/// the number the artifact states — 314,483 document divs over 552 volumes when written, the
+/// figure the semantic pipeline counted independently; the test's own comment has it since.
 ///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
@@ -242,7 +242,10 @@ struct VolumeDocumentCountAccessorTests {
         let index = try #require(store.index, "bundled administration-profiles-index.json must decode")
         let sum = index.volumeTotals.keys.reduce(0) { $0 + (store.documentCount(forVolumeId: $1) ?? 0) }
         // 314,483 → 314,571 and 552 → 553 at OH PR #460 (FRUS 1981–1988 vol. XVI).
-        #expect(sum == 314_571)
+        // 314,571 → 314,569 at corpus `deb6a04f8` (2026-10-09): `frus1902app1`'s `s05sub04` and
+        // `s12` are sections and no longer documents. The semantic artifacts were harvested before
+        // that and still count 314,571.
+        #expect(sum == 314_569)
         #expect(index.volumeTotals.count == 553)
     }
 

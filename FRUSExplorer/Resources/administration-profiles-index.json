@@ -362,7 +362,7 @@
       "party" : "Republican",
       "pointDocCount" : 2259,
       "president" : "Rutherford B. Hayes",
-      "rangeDocCount" : 7,
+      "rangeDocCount" : 6,
       "start" : "1877-03-04",
       "volumeCount" : 11,
       "volumeCountPointOnly" : 10,
@@ -419,7 +419,7 @@
         },
         {
           "pointDocs" : 0,
-          "rangeDocs" : 2,
+          "rangeDocs" : 1,
           "volumeId" : "frus1902app1"
         }
       ]
@@ -433,7 +433,7 @@
       "party" : "Republican",
       "pointDocCount" : 430,
       "president" : "James A. Garfield",
-      "rangeDocCount" : 4,
+      "rangeDocCount" : 3,
       "start" : "1881-03-04",
       "volumeCount" : 7,
       "volumeCountPointOnly" : 5,
@@ -466,12 +466,12 @@
         {
           "pointDocs" : 0,
           "rangeDocs" : 2,
-          "volumeId" : "frus1902app1"
+          "volumeId" : "frus1902app2"
         },
         {
           "pointDocs" : 0,
-          "rangeDocs" : 2,
-          "volumeId" : "frus1902app2"
+          "rangeDocs" : 1,
+          "volumeId" : "frus1902app1"
         }
       ]
     },
@@ -484,7 +484,7 @@
       "party" : "Republican",
       "pointDocCount" : 1775,
       "president" : "Chester A. Arthur",
-      "rangeDocCount" : 5,
+      "rangeDocCount" : 4,
       "start" : "1881-09-19",
       "volumeCount" : 12,
       "volumeCountPointOnly" : 12,
@@ -526,7 +526,7 @@
         },
         {
           "pointDocs" : 8,
-          "rangeDocs" : 2,
+          "rangeDocs" : 1,
           "volumeId" : "frus1902app1"
         },
         {
@@ -560,7 +560,7 @@
       "party" : "Democratic",
       "pointDocCount" : 3251,
       "president" : "Grover Cleveland",
-      "rangeDocCount" : 14,
+      "rangeDocCount" : 13,
       "start" : "1885-03-04",
       "volumeCount" : 15,
       "volumeCountPointOnly" : 15,
@@ -617,7 +617,7 @@
         },
         {
           "pointDocs" : 2,
-          "rangeDocs" : 1,
+          "rangeDocs" : 0,
           "volumeId" : "frus1902app1"
         },
         {
@@ -651,7 +651,7 @@
       "party" : "Republican",
       "pointDocCount" : 2581,
       "president" : "Benjamin Harrison",
-      "rangeDocCount" : 21,
+      "rangeDocCount" : 19,
       "start" : "1889-03-04",
       "volumeCount" : 14,
       "volumeCountPointOnly" : 13,
@@ -693,7 +693,7 @@
         },
         {
           "pointDocs" : 67,
-          "rangeDocs" : 13,
+          "rangeDocs" : 11,
           "volumeId" : "frus1902app1"
         },
         {
@@ -737,7 +737,7 @@
       "party" : "Democratic",
       "pointDocCount" : 4809,
       "president" : "Grover Cleveland",
-      "rangeDocCount" : 26,
+      "rangeDocCount" : 25,
       "start" : "1893-03-04",
       "volumeCount" : 14,
       "volumeCountPointOnly" : 14,
@@ -794,7 +794,7 @@
         },
         {
           "pointDocs" : 29,
-          "rangeDocs" : 5,
+          "rangeDocs" : 4,
           "volumeId" : "frus1902app1"
         },
         {
@@ -4906,10 +4906,10 @@
       ]
     }
   ],
-  "generated" : "2026-09-19",
+  "generated" : "2026-10-09",
   "schemaVersion" : 1,
   "totalDocumentsPointDated" : 303404,
-  "totalDocumentsRangeDated" : 11167,
+  "totalDocumentsRangeDated" : 11165,
   "totalDocumentsUndated" : 0,
   "volumeTotals" : {
     "frus1861" : {
@@ -5249,7 +5249,7 @@
     },
     "frus1902app1" : {
       "pointDocs" : 181,
-      "rangeDocs" : 17,
+      "rangeDocs" : 15,
       "undatedDocs" : 0
     },
     "frus1902app2" : {

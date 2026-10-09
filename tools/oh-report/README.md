@@ -97,10 +97,37 @@ which the generator tallies and does not list; anything else it finds beyond the
 | `ohlib.py` | Byte-scan readers: the div tree, page breaks, ids; the simulated repair (`move_close_tags`, `retype_div`) |
 | `build_oh_report.py` | The classes, the adjudicated tables, the CSVs, `counts.json`, `--check` |
 | `check_urls.sh`, `urls.txt` | The public-site checks, with their controls |
+| `status_at_commit.py` | Where each filed row stands at a later corpus revision: `dump` reads one corpus copy, `compare` sets two dumps side by side. Writes only the file it is given |
 | `selftest.py` | The readers, the simulated repair, `--check`, `main()`'s three refusals that need no corpus, and the pagination, part, date, transcription and Sources-list rules, over synthetic volumes in a temporary directory: a fixture for each rule, and controls (one step outside the rule, which must give no row) for the conditions that narrow it. The controls are the ones a mutant has asked for (two reviews' and a sweep's, listed in the session's `DEVELOPMENT-PLAN.md` entry); a condition nobody has mutated may have none. The cross-reference scan, the header scan, the missing-documents check and the structure rows are checked only against the corpus |
 
 ## When the corpus moves
 
-Re-run steps 1 and 2 at the new commit. Line numbers in `STRUCTURE` and `XREF` are those of `550a8c5c5`; a
-volume the Office of the Historian has since corrected fails its "before" assertion, which is the signal to
-delete that row. Rows are never updated to make a run pass without re-reading the file.
+First ask where the filed rows stand, which changes nothing:
+
+```bash
+# A copy of volumes/ at the report's revision (an APFS clone, then the changed files from git), and the clone itself:
+cp -c -R ~/Development/frus/volumes /path/old/volumes
+for f in $(git -C ~/Development/frus diff --name-only 550a8c5c5 HEAD -- volumes); do
+  git -C ~/Development/frus show 550a8c5c5:$f > /path/old/$f; done
+VOLUMES_DIR=/path/old/volumes python3 tools/oh-report/status_at_commit.py dump /path/old.json
+python3 tools/oh-report/status_at_commit.py dump /path/new.json
+python3 tools/oh-report/status_at_commit.py compare /path/old.json /path/new.json
+```
+
+Each structure edit is reported as `as-reported`, `corrected-as-suggested` or `changed-otherwise` (with
+where each division now sits), and each scan as rows gone and rows new, matched on every column but the line
+and the byte offset. Set `XREF_CSV` on each `dump` to a `CrossRefValidationGenerator` CSV made from the same
+copy to include the cross-references. The copy at the old revision is not a git checkout, so its
+missing-documents class is empty there: read that class from the new side alone. The three sweep rows the
+report withdraws (`frus1866p2` ch17, `frus1868p2` ch33, `frus1945v01` persons) are not in `STRUCTURE` and are
+not reported.
+
+At `deb6a04f8` (2026-10-09, upstream pull request #470): 17 of the 19 structure edits are corrected as
+suggested, in 13 volumes, and the two Sources-list edits (`frus1955-57v13`, `frus1964-68v06`) stand as
+reported. No row of any other class is gone or new. Upstream also moved `frus1945v01`'s list of persons
+out of the Introductory Note, a sweep row the report withdraws.
+
+Then, for a new edition of the report, re-run steps 1 and 2 at the new commit. Line numbers in `STRUCTURE`
+and `XREF` are those of `550a8c5c5`; a volume the Office of the Historian has since corrected fails its
+"before" assertion, which is the signal to delete that row. Rows are never updated to make a run pass
+without re-reading the file. The report filed on 2026-10-02 and its CSVs are left as filed.

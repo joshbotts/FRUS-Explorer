@@ -36022,3 +36022,53 @@ The owner asked for sessions that spend less usage, and for a plan for the week'
 - No full unit run, `swift test` or Mac build: the change touches no source, test or bundled resource.
 - The index tables were written by hand from the entries. Each row was read against its entry once; nothing checks them mechanically.
 - `Directory Map` and `Coding Standards` (about 29,000 characters between them) were left as they are.
+
+
+## Session 2026-10-09 — The app's records catch up with upstream at corpus `deb6a04f8`: seventeen of the report's nineteen structure edits are corrected, and #1309 closes
+
+Pull request 1 of the plan of record's §0c. HistoryAtState/frus merged its pull request #470 on 2026-10-09; `volumes/` last changed at `deb6a04f8`, 26 files and 51 lines past `8e5da08c1`. No app code changes here: a reader gets a corrected volume through `VolumeUpdateChecker`, and this session brings the bundled files and the records to the new commit.
+
+**Measured** (the local clone at `deb6a04f8`; the old side is an APFS clone of `volumes/` with the 26 files written from `git show 8e5da08c1:`)
+- **The report filed as HistoryAtState/frus#469.** `tools/oh-report/status_at_commit.py` (new) read each of `STRUCTURE`'s rows at both commits. 17 of the 19 edits are corrected as suggested, in 13 volumes: `frus1945Malta`, `frus1945Berlinv02` (four), `frus1873p1v2`, `frus1943CairoTehran`, `frus1949v07p2`, `frus1874`, `frus1900`, `frus1915`, `frus1943`, `frus1947v03` (two), `frus1868p1` (`comp1` re-typed a compilation), `frus1888p2` and `frus1902app1`. The two Sources-list edits (`frus1955-57v13`, `frus1964-68v06`) are as reported. Every scan (pagination, dates, transcription, headers, Sources lists; 569 rows) gives the same rows at both commits, matched on every column but line and byte offset, and the 47 missing documents of `frus1952-54v09p1` are still missing.
+- **Beyond the report.** Upstream moved `frus1945v01`'s list of persons out of the Introductory Note (a sweep row the report's Part B withdraws as matching the book); re-typed `frus1902app1`'s `s05sub04` and `s12` from documents to sections; took a trailing space from three `@n`; renumbered `frus1981-88v11`'s appendix documents `appA`–`appG` from 331–337 to A–G, which is what that volume's own notes call them ("Appendix A"); repaired mis-encoded characters in four volumes; and replaced no-break spaces in four.
+- **The structure sweep** (`CorpusStructureSweepGenerator`, `CORPUS_COMMIT=deb6a04f8`): 7 sites in 6 volumes, none confirmed, against 23 in 18. The runbook entry says which seven.
+- **Cross-reference validation**: byte-identical output from the old and the new corpus (652 broken of 2,714,283 scanned). No `<ref>` in the corpus points at `s05sub04`, `s12` or the seven appendix documents.
+- **What the kit's parser emits**, old against new, for all 26 volumes (a scratch test in `FRUSExplorerTests/FRUSCoreKit/`, run by `swift test` and removed): 14,180 documents become 14,179.
+  - `frus1902app1`: 202 → 201. `s05sub04` (8,412 characters) and `s12` (4,371) are no longer emitted; `s05`, which no longer holds documents, is promoted (6,060 characters).
+  - `frus1981-88v11`: seven printed numbers change, no text.
+  - Eight documents change text, by 0 to 2 characters: `frus1926v02` d205, `frus1952-54v14p2` d847, `frus1958-60v03mSupp` d471 and five of `frus1958-60v05mSupp`. The no-break-space and trailing-space fixes change no document's text or number as the parser stores them.
+  - `frus1945v01` `ch1`: 24,248 → 9,651 characters.
+  - `VolumeStructure` differs in 14 volumes. `frus1945Malta`'s chapters 9, 10 and 11 are beside chapter 8. The order of `frus1945Berlinv02`'s documents changes, because `d710a-83` is no longer inside another document.
+- **Each corpus-reading generator**, run on the new corpus at its artifact's committed stamp and compared with the bundle. Byte-identical: volume sources, the collection authority, provenance flow, resolved edges, source provenance. Different: the manifest (14 `sizeBytes`, 27 bytes fewer in all), administration profiles, collection usage, external citations. Those three were then run on the old corpus and reproduced the bundle byte for byte, so each difference is the corpus's:
+  - administration profiles: two fewer range-dated documents (`frus1902app1`'s two), in the six administrations their date ranges cross;
+  - collection usage: one more note, 264,553, in `frus1945Berlinv02` (`d710a-83`'s, now a document of its own);
+  - external citations: only the coverage counts (documents scanned 314,567 → 314,569, since three documents left a parent in `frus1902app1` and one in `frus1945Berlinv02` while two parents stopped being documents; body footnotes 471,083 → 471,081).
+- **`CloudVectorsGenerator`**: the three files differ from the bundle in `frus1902app1`, its subseries and the corpus roll-up almost alone (the volume file: 197 of 204 differences), because that volume's nested documents were counted in their parents as well.
+
+**Changed**
+- `FRUSExplorer/Resources/`: `manifest.json`; `administration-profiles-index.json`, `collection-usage-index.json` and `external-citation-index.json` (stamped 2026-10-09); `cloud-vectors-core.json`, `cloud-vectors-volumes.json` and `keyness-baseline.json` (one run, stamped 2026-10-09).
+- `Planning/corpus-structure-sweep/`: the run at `deb6a04f8`. `Planning/cross-ref-validation/`: its index and report JSON, which were a July run over 552 volumes; the CSV is unchanged.
+- `tools/oh-report/status_at_commit.py` (new) and the README's "When the corpus moves".
+- The plan of record's §0c (the result, and two volume names it had the wrong way round), `Planning/Generators-Runbook.md` (the sweep, the report tool, and the collection-usage and external-citation figures) and `Docs/Agentic-Analysis-Guide.md` §14.11's collection-usage row.
+
+- Two tests pin figures the refreshed files move, and each is re-taken with its reason beside it: `VolumeDocumentCountAccessorTests.bundledTotalsSumToTheCorpusDocumentCount` (the sum Browse's per-volume counts come to, 314,571 → 314,569) and `ArchivalCollectionsDataTests.shippedDenominatorReproduces` (the 1948–1960 band's source notes, 59,973 → 59,974, `frus1945Berlinv02`'s dates reaching 1960). `AdministrationProfilesStore`'s doc comment states the new sum.
+
+**Left as they are**
+- `Planning/OH-Report-2026-10-01.md` and its CSVs: the report as filed.
+- The bundled `broken-refs-index.json`: its records are the new run's, and a new stamp would make every device re-apply it for nothing.
+- The semantic artifacts. `semantic-vectors-index.json` still lists `s05sub04` and `s12` as rows 150 and 174 of `frus1902app1`; the plan of record says what that costs and when it is repaired.
+- Figures in code comments and dated records that name the corpus they were measured at.
+
+**Found**
+- `frus1902app1`'s two statements of the case leave the reader and search when the corrected volume is re-indexed, because a section that holds documents shows none of its own text (#1536, which now carries this).
+
+**Checked**
+- `swift test`: exit 0, 38 "Test run with" lines, 2,558 tests, no ✘ line.
+- The iOS unit target on an iPhone 17 simulator (iOS 27.0) with the TEI mirror at `deb6a04f8`: "Test run with 6517 tests in 768 suites failed … with 10 issues". Eight are `SyncEventMonitorTests`' two tests, which cannot open the system log on this Mac (#1606). Two were the pins above; after they were re-taken, `VolumeDocumentCountAccessorTests`, `ArchivalCollectionsDataTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests` were run again and passed (87 tests in 3 suites, then 42 in 1). The whole target was not run a second time.
+- `FRUSExplorerMac`: `** BUILD SUCCEEDED **`.
+- `python3 tools/oh-report/selftest.py`: 130 checks passed.
+
+**Not done**
+- No semantic re-harvest, and no word in either manual about the two phantom rows.
+- Nothing is posted to HistoryAtState/frus#469.
+- `status_at_commit.py` has no test of its own; `selftest.py` covers the readers it calls.
