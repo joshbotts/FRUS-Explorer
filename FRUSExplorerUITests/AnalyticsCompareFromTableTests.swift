@@ -21,14 +21,15 @@ import XCTest
 ///
 /// ## What this observes
 /// The two controls, since they are what was locked. With two terms committed from the table:
-/// the Display control's **Chart** segment is the selected one, and **Values** is enabled. On an
-/// iPhone the Values control is inside the **Options** menu; on an iPad it is in the toolbar. No
-/// index is needed: the controls answer for a comparison whether or not either term matches.
+/// the Display control's **Chart** segment is the selected one, and the two **Values** choices
+/// (Raw count, % of documents) are enabled. On an iPhone they are listed in the **Options** menu;
+/// on an iPad they are a control in the toolbar. No index is needed: the controls answer for a
+/// comparison whether or not either term matches.
 ///
 /// ## Devices
 /// One shared view, so either idiom is the guard. It never skips: a control it cannot find is a
 /// failure that prints the buttons on screen. Measured on iPhone 17 (iOS 27.0) at the commit that
-/// fixed it: 1 test, 1 passed; and on the code before the fix, 1 failed, on the selected segment.
+/// fixed it: 1 test, 1 passed; and on the code before the fix, 1 failed, on both observations.
 ///
 /// Version history:
 ///   1.0 — 2026-10-09: #1583 — initial implementation
@@ -90,29 +91,36 @@ final class AnalyticsCompareFromTableTests: XCTestCase {
         // The comparison is a chart, and the Display control says so.
         let chart = app.segmentedControls.buttons["Chart"].firstMatch
         XCTAssertTrue(chart.waitForExistence(timeout: 5))
-        XCTAssertTrue(chart.isSelected, """
-            #1583: two terms are on screen and the Display control still has Table selected. A \
-            comparison is drawn as a chart, and every control reads the display it is drawn in.
-            """)
+        let chartIsSelected = chart.isSelected
 
-        // Values is live. In the toolbar on a regular width, in the Options menu on a compact one.
-        var values = app.segmentedControls.buttons["% of documents"].firstMatch
+        // Values is live. Its two choices are in the toolbar on a regular width; on a compact one
+        // they are listed in the Options menu, under Measure's two.
+        var share = app.segmentedControls.buttons["% of documents"].firstMatch
+        var raw = app.segmentedControls.buttons["Raw count"].firstMatch
         var openedMenu = false
-        if !values.exists {
+        if !share.exists {
             let options = app.buttons["Options"].firstMatch
             XCTAssertTrue(options.waitForExistence(timeout: 5),
                           "neither a Values control nor an Options menu is on screen. Buttons: \(buttonsOnScreen)")
             options.tap()
             openedMenu = true
-            values = app.buttons["Values"].firstMatch
-            XCTAssertTrue(values.waitForExistence(timeout: 5),
-                          "the Options menu lists no Values item. Buttons: \(buttonsOnScreen)")
+            share = app.buttons["% of documents"].firstMatch
+            raw = app.buttons["Raw count"].firstMatch
+            XCTAssertTrue(share.waitForExistence(timeout: 5) && raw.exists,
+                          "the Options menu lists no Values choices. Buttons: \(buttonsOnScreen)")
         }
-        let enabled = values.isEnabled
+        let valuesAreLive = share.isEnabled && raw.isEnabled
         // Close the menu before asserting, so a failure leaves the screen as teardown expects it.
         if openedMenu { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.92)).tap() }
-        XCTAssertTrue(enabled, """
-            #1583: the Values control is disabled over a comparison, so nothing on the screen can \
+
+        // Both read before either is asserted, so a run on the unfixed code reports both.
+        continueAfterFailure = true
+        XCTAssertTrue(chartIsSelected, """
+            #1583: two terms are on screen and the Display control still has Table selected. A \
+            comparison is drawn as a chart, and every control reads the display it is drawn in.
+            """)
+        XCTAssertTrue(valuesAreLive, """
+            #1583: the Values choices are disabled over a comparison, so nothing on the screen can \
             turn it between raw counts and % of documents.
             """)
     }
