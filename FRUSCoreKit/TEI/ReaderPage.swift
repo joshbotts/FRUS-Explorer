@@ -193,12 +193,16 @@ public enum ReaderPage {
         // light and 5.67 / 5.08 dark over every tint, on the page and in an editorial note.
         let highlightText      = dark ? "rgb(255,255,255)" : "rgb(0,0,0)"
         // #1602: the wash behind a footnote a cross-reference arrived at (`fn-arrived-flash`). The
-        // stylesheet named this variable from the start and the palette never defined it, so both
-        // palettes drew its fallback, rgba(120,170,255,0.35), over which the note's number and any
-        // link in the note were 4.22 light and 2.97 dark, and a person's name 4.03 and 3.19. The
-        // light wash is the same blue at half the strength; the dark one is a deeper blue, which
-        // adds little luminance, so it stays as far from the page (1.31:1) as the old one was.
-        // Every text colour over it is now at least 4.63 light and 4.64 dark.
+        // stylesheet named this variable and no palette defined it, so both palettes drew its
+        // fallback, rgba(120,170,255,0.35), over which the note's number and any link in the note
+        // were 4.22 light and 2.97 dark, and a person's name 4.03 and 3.19. Every text colour over
+        // the wash is now at least 4.63 light and 4.64 dark.
+        //
+        // The price is a fainter wash, and the arithmetic sets it: for a person's name to keep
+        // 4.5:1 a light wash can be no more than 1.18:1 from the page, and for a link to keep it
+        // a dark wash no more than 1.34:1. The old wash was 1.32:1 and 2.02:1. The light one is
+        // the same blue at half the strength (1.15:1); the dark one is a deeper blue (1.30:1),
+        // since blue adds the least luminance for the colour it shows.
         let accentWash         = dark ? "rgba(40,90,255,0.28)" : "rgba(120,170,255,0.18)"
         let tableBorder        = dark ? "rgba(255,255,255,0.20)"  : "rgba(0,0,0,0.18)"
 
