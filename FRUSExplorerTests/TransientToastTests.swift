@@ -8,7 +8,11 @@
 
 import Accessibility
 import Foundation
+import SwiftUI
 import Testing
+#if canImport(UIKit)
+import UIKit
+#endif
 
 @testable import FRUSExplorer
 
@@ -84,3 +88,88 @@ struct TransientToastTests {
         }
     }
 }
+
+#if canImport(UIKit)
+// MARK: - TransientToastLifetimeTests
+
+/// A toast's own life in a window: it clears itself, and a toast that replaces it is left alone (#1594).
+///
+/// The modifier's task used `try?` on its sleep. Setting a second message cancels the first
+/// toast's task, a cancelled sleep throws at once, and `try?` let that task carry on to
+/// `message = nil`, which by then was the second toast. Found while adding the announcement, since
+/// the task now has two sleeps and a cancellation between them must post nothing.
+///
+/// Hosted in the test host's window, because a modifier's `.task` runs only for a view on screen.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1594 — initial implementation
+@Suite("A confirmation toast clears itself, and not the toast that replaced it (#1594)", .serialized)
+@MainActor
+struct TransientToastLifetimeTests {
+
+    /// Holds the message the modifier is bound to, and the window it is drawn in.
+    @MainActor
+    @Observable
+    final class Host {
+        /// The toast's message; the modifier sets it to nil when the toast is over.
+        var message: String?
+        @ObservationIgnored private var window: UIWindow?
+
+        init() throws {
+            let scene = try #require(
+                UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+                "The test host has no window scene to host the toast in")
+            let window = UIWindow(windowScene: scene)
+            window.rootViewController = UIHostingController(rootView: Probe(host: self))
+            window.isHidden = false
+            window.layoutIfNeeded()
+            self.window = window
+        }
+    }
+
+    /// A blank view with the toast mounted on it, as the three screens mount it.
+    private struct Probe: View {
+        @Bindable var host: Host
+        var body: some View { Color.clear.transientToast($host.message) }
+    }
+
+    /// Waits until `condition` holds or `timeout` passes, and says which.
+    private func wait(_ timeout: Duration, until condition: () -> Bool) async throws -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        while !condition() {
+            if ContinuousClock.now >= deadline { return false }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        return true
+    }
+
+    @Test("A second toast set while the first is up stays up, and clears itself in its own time")
+    func aReplacedToastDoesNotClearItsSuccessor() async throws {
+        let host = try Host()
+        host.message = "Duplicated as “Kennan papers copy”"
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(host.message == "Duplicated as “Kennan papers copy”", "the first toast is up")
+
+        // The second Duplicate, inside the first toast's 2.6 seconds.
+        host.message = "Duplicated as “Kennan papers copy 2”"
+        // The first toast's task is cancelled here. With `try?` on its sleep it cleared the
+        // message on its next turn; the second toast's own clearing is 2.6 seconds away.
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(host.message == "Duplicated as “Kennan papers copy 2”",
+                "the toast that replaced the first was cleared by the first one's task")
+
+        // And it clears itself.
+        #expect(try await wait(.seconds(15)) { host.message == nil }, "the second toast never cleared")
+    }
+
+    @Test("A toast left alone clears itself, no sooner than it should")
+    func aToastClearsItself() async throws {
+        let host = try Host()
+        host.message = "Added 3 documents"
+        // Still up after the announcement's delay: posting it does not end the toast.
+        try await Task.sleep(for: TransientToast.announcementDelay + .milliseconds(500))
+        #expect(host.message == "Added 3 documents")
+        #expect(try await wait(.seconds(15)) { host.message == nil }, "the toast never cleared")
+    }
+}
+#endif

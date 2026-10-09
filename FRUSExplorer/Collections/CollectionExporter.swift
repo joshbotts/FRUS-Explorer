@@ -617,8 +617,8 @@ enum ExportFormat: String, CaseIterable, Identifiable {
     ///
     /// On the format, and not in the sheet, so that a test hands an exporter exactly what the
     /// sheet does. Until #1585 the sheet built these itself and asked for the cloud of PDF and
-    /// HTML only, a test older than the Word exporter's cloud (#960): the Word exporter drew the
-    /// cloud whenever it was asked, the parity test asked it directly, and the app never did.
+    /// HTML only, a condition older than the Word exporter's cloud (#960): the Word exporter drew
+    /// the cloud whenever it was asked, the parity test asked it directly, and the app never did.
     ///
     /// - Parameter collection: The collection being exported.
     /// - Returns: The options for this format's exporter.
