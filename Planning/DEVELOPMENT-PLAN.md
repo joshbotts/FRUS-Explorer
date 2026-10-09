@@ -36225,3 +36225,69 @@ Pull request 4 of the plan of record's §0c. Four reports of a lookup that showe
 - **#1603 from a reader inside a sheet, or in a window of its own on iPad,** opens the volume in the main window's Browse tab, beneath the sheet or beside that window: the limit the document fallback has.
 - **The Archives Visit packet's line for a divided lot** cited through the National Archives (the issue's optional fourth step) is unchanged.
 - `CrossRefKit`'s mirror grammar is not given the volume case; the validator classifies whole-volume targets itself.
+
+## Session 2026-10-09 — Search describes its rows by the run that produced them: a complete browse reads as complete, a Meaning list is never a truncated match, and a hand-off runs as a keyword search (#1584, #1592, #1595, #1596, #1597, #1598; #1608 diagnosed)
+
+Pull request 5 of the plan of record's §0c. Six reports about what Search says of the rows it shows, each read in code on 2026-10-07 and none run. No index version, no CloudKit deploy and no re-index.
+
+**The cause under #1584, #1595, #1597 and #1598** (`ResultSetScope.swift`, both view models, both views)
+- `ResultSetScope` is the value type whose sentences name the set on screen. Each search view built its own, from the keyword ceiling as a constant (1,000 on iPhone and iPad, 7,500 on the Mac) and from the Keywords | Meaning picker. A browse is fetched under 7,500 on iPhone and iPad, so a complete one of 3,000 was measured against 1,000; and the picker names the engine of the next search, not of the rows.
+- Both view models now compose it, as `resultSetScope`, from two values written in the statements that assign `results`: `lastFetchLimit`, which was written before the await, and `resultsAreSemantic`, which is new. A run that is cancelled or still under way leaves the rows with the ceiling and the engine they came from. The views forward to the view model's.
+- `ResultSetScope.didHitFetchLimit` answers `false` for a Meaning search. Its list is the nearest documents of a ranking of the whole series, so no larger match exists to load, and narrowing only removes rows. `MacSearchViewModel.isResultSetTruncated` had its own copy of the rule with no such branch; it now asks the scope.
+- The capture sentences have a Meaning branch (#1598): the save sheet's warning (`corpus.save.meaning`), the stored description ("Meaning search — the N closest matches", "the closest match" for one), and `isCapturePartial`, which the sheet stores as `wasTruncatedAtCapture`. The owner chose the partial flag on 2026-10-09, over the complete one: every reader of the flag already treats `true` with care, and `false` reads back as "the capture was every matching document".
+
+**#1597: the mode switch** (`SearchViewModel.switchSearchMode(to:)`)
+- The rows on screen belong to the engine the picker names; every surface beside them assumes it. A search on screen runs again through the new engine when that engine has something to run. When it has nothing (Meaning over a browse, which has no question), the rows are cleared and the pre-search prompt shows, as on the Mac.
+- The cleared search is remembered, so the switch back runs it again. Without that a browse would be lost to one tap: with the field empty the keyboard's Search key is off (seen in the app), so the reader could not run it again from that screen.
+- The issue's other option, keeping the rows and wording them by the engine that produced them, leaves the picker saying Meaning over a keyword list and every picker-keyed surface to be re-classified. The scope reads the rows' engine all the same, so the header is right while a run is under way.
+
+**#1596 and the hand-offs** (`SearchSheet.swift`, `applyHandoff(_:)` on both view models, `SearchParameters.namesASearchToRun`)
+- The Mac's Visualize in Corpus Analytics link is gated on Keywords mode, as the iPhone's is.
+- A hand-off that names something to find sets the picker to Keywords, as a saved search does. The rule was written out in `SearchView.consumePendingSearch`; it is now one property both view models ask. A hand-off that only sets a scope leaves the picker alone.
+
+**#1592** (`ChecklistLoggingNotice`, both views)
+- One function words the line for both platforms; each view observes the switch with `@AppStorage`, as `HistoryView` does. It shows whether or not anything is hidden yet, because the reader who needs it is the one whose list did not shrink.
+
+**Found by running the app, and fixed**
+- **A topic card's Find documents on this topic did not bring Search forward** on iPhone and iPad (`SubjectIndexView.findDocuments`): it set the search hand-off and not the tab's. The card closed, the reader stayed on Topics, and the results waited in a tab nothing had opened. It never had the tab switch (`git log -S`).
+- **The model offer in Meaning mode opened "Keyword search found nothing, but…"** (`SemanticModelOfferCard`). The card is shared with the keyword zero-result fallback, where the sentence is true. `followsKeywordSearch` picks the sentence.
+- Two re-runs are now made only when a search is on screen: leaving a working corpus by its banner's ✕, and a person filter rebound after a rollup rebuild. With none, each ran a search that had nothing to find and put a Search Error panel where the prompt was.
+
+**In the app** (a clone of the full-corpus iPhone 17e simulator, iOS 27.0, 553 volumes, the Debug build, launched with Log Research Sessions off)
+- Browse ▸ Topics ▸ Aerial reconnaissance (1,976 documents, 357 volumes) ▸ Find documents on this topic. Before the tab fix the card closed onto Topics and the search was found on tapping Search; after it, Search comes forward. The count reads "1,976 results · Page 1 of 80" with no line under it, and Save as Working Corpus… shows Documents 1,976, Volumes indexed now 553 and no warning.
+- Meaning over that browse: the rows go, the Meaning strip and "Ask a question to search the FRUS corpus by meaning." show, and the topic's chip stays. Keywords again: "1,976 results".
+- Checklist Mode on: "Opening a result does not hide it while Log Research Sessions is off in Settings. Mark Reviewed still hides a result." under the count.
+- With Search left on Meaning and a question typed, the topic card again: Search comes forward on Keywords, the field empty, with the browse.
+- A Meaning search with no model on the simulator: the offer read "Keyword search found nothing, but…" before and "A Meaning search ranks documents by what an AI model detects your question to mean…" after.
+
+**Tests**
+- `SearchResultRouteTests` (15, in `HybridSearchModeTests.swift`) drives `SearchViewModel` over a real index. A fixture of 1,001 documents is "1,001 results" as a browse and "1,000 loaded · 1,001 total" as a keyword search. `MeaningSearchRunning`, the protocol both view models now hold the engine through, lets a stand-in return rows, since `SemanticSearchBackend` needs the model and the vector files. Seven of the fifteen read source in whole or in part: `MacSearchViewModel` is compiled for the Mac only and the unit target runs on iOS, so its half is pinned where it is written.
+- `ResultSetScopeMeaningTests` (5, in `ResultSetScopeTests.swift`): a Meaning list at three lengths under three ceilings, the capture sentences, and #1584's numbers under the recorded ceiling and under the constant.
+- `HandoffVisibilityTests.searchHandoffPopsFirst` reads `vm.applyHandoff(params)` where it read `vm.applyParameters(params)`.
+- **Seven mutations in one build, each failing the test written for it:** the scope given the keyword ceiling; the scope reading the picker; the switch leaving the rows; a Meaning list able to hit a ceiling; a Meaning capture stored by the keyword rule; a hand-off keeping the picker's mode; the checklist's line shown whatever the switch says.
+
+**#1608: Collocates refuses on about half the owner's attempts** (diagnosed on the issue, not changed)
+- The panel in the report is the refusal the app shows when the session's language check (`NaturalLanguageReadiness`) found no working lemmatiser. The Collocates code reads the verdict on every rebuild and rebuilds when a re-check replaces it; no place was found where a working lemmatiser is reported missing.
+- The verdict can lack the lemmatiser in three ways, each with its own line in the release log: the lemma asset request never answers (the scheme is withheld after 30 seconds); it answers "available" and the lemmatiser returns nothing; or it answers that the assets are absent. On the iOS 27.0 simulators the first was measured in 18 of 75 launches, never recovered in the same process, and was gone at the next launch, which fits "about half" with a relaunch between.
+- Which path the owner's iPhone takes can be read only from its log. The issue says how to capture it (Console, the `NaturalLanguageReadiness` category, a trip to the Home Screen and back) and what each answer means.
+- If it is the first path, the check cannot be made to pass from inside the app. The remedy is a second corpus reference counted as printed, so the panel can compare printed forms with printed forms: a `CloudVectorsGenerator` run and a larger bundled file, a lane of its own. A smaller first step is to show the session's record in Settings ▸ Data & Recovery ▸ Language Analysis, which today shows only the verdict.
+
+**Also changed**
+- Both manuals: the paging passage (a browse that is all loaded reads as a plain count), Checklist Mode's line, what a Meaning capture is recorded as, the mode switch and the hand-offs, and on the Mac the advisory and the Visualize link. The AI Generated notice stays.
+- `Docs/EditableContent`: five blocks for the five new strings, and 59 ranged blocks re-pointed; the Amendment Log says which.
+
+**Checked**
+- A clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0), into an empty build folder: `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues (`GeneratedSummary`'s conformance and the AppIntents note). The later incremental builds added none.
+- The iOS unit target on iPhone 17 (iOS 27.0), on the final code: "Test run with 6581 tests in 775 suites failed … with 8 issues". All eight are `SyncEventMonitorTests`' two tests, which cannot open the system log on this Mac (#1606; the log holds 85 `_OSLogErrorPOSIXErrno=13` lines). That is 20 tests and 2 suites more than pull request 4's run, which are the two new suites.
+- `FRUSExplorerMac` (the DirectDistribution configuration, unsigned): `** BUILD SUCCEEDED **`, with the same two residues.
+- `swift test` is not owed and was not run: the diff names no package input (nothing under `FRUSCoreKit/`, the other kits or `FRUSExplorer/Resources/`).
+- No UI suite was run. None covers these surfaces.
+
+**Not done**
+- **Nothing that needs a Meaning list was seen in an app.** The simulator has no model, and none was downloaded. #1595's advisory, #1596's link, #1598's save sheet and corpus line are covered by tests and listed first in the pull request's visual review.
+- **The Mac was built, not run.**
+- **A corpus already saved from a Meaning list** keeps "Search results" and its complete flag. Nothing on the record tells it from a keyword capture.
+- **The corpus lists' amber line** says "The capture stopped short of every match" of a Meaning capture, in the words written for a keyword one.
+- **A full Meaning list is still recorded in search history as a floor**, so the method appendix prints "at least 100" for it. #1595 noted this and set it aside.
+- **The cleared search field** (`SearchView`'s `onChange` of the keywords) still clears the rows itself, and does not clear the last Meaning run's disclosure counts, which the Meaning strip reads (read in code, not seen).
+- **A re-check of the language analysis** starts only when the app returns to the foreground, so a session the reader never leaves is not checked again (#1608).

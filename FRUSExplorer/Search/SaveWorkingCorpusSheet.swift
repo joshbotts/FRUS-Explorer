@@ -33,6 +33,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — M-1: initial implementation
+///   1.1 — #1598: the stored truncation flag is `ResultSetScope.isCapturePartial`, so a Meaning capture is not
+///         recorded as every matching document
 struct SaveWorkingCorpusSheet: View {
 
     /// The results to capture, in the order the search returned them.
@@ -177,8 +179,9 @@ struct SaveWorkingCorpusSheet: View {
             // cannot see — the fetch did not cap, because the corpus it ran in was already
             // smaller than the ceiling. Recording the fetch's own answer would stamp that
             // capture "complete", which is the precise defect these fields exist to end, one
-            // level of nesting down.
-            wasTruncatedAtCapture: scope.isPartialEvidence,
+            // level of nesting down. `isCapturePartial` is that rule, and also `true` for a
+            // Meaning search, whose list is never every matching document (#1598).
+            wasTruncatedAtCapture: scope.isCapturePartial,
             totalMatchCountAtCapture: scope.totalMatchCount)
         modelContext.insert(corpus)
         try? modelContext.save()

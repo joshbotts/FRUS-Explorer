@@ -41,8 +41,9 @@ import Foundation
 ///         files are downloading only when they are
 ///   1.2 — Session 2026-09-30, review round 1: #1527 — the count is the searcher's own, from its
 ///         answered fetch requests, rather than an ask count gated on the switch at caption time
+///   1.3 — #1595, #1597, #1598: conforms to ``MeaningSearchRunning``, which is how the view models hold it
 @MainActor
-struct SemanticSearchBackend {
+struct SemanticSearchBackend: MeaningSearchRunning {
 
     let searcher: SemanticQuerySearcher
     let searchService: SearchService
@@ -179,4 +180,27 @@ struct SemanticSearchBackend {
                 filteredOut: filteredOut,
                 beyondUncheckedByFilters: filterKeys != nil && !beyond.isEmpty))
     }
+}
+
+// MARK: - MeaningSearchRunning
+
+/// What a search view model needs of the Meaning engine: one run.
+///
+/// `SearchViewModel` and `MacSearchViewModel` hold the engine through this protocol, so a test can drive a Meaning
+/// run through the view model with a list of its own. ``SemanticSearchBackend`` cannot be built in a unit test's
+/// host: it needs the query encoder's model and the vector files, and neither is there.
+///
+/// Version history:
+///   1.0 — #1595, #1597, #1598: initial implementation
+@MainActor
+protocol MeaningSearchRunning {
+
+    /// Runs one Meaning search.
+    ///
+    /// - Parameters:
+    ///   - query: The reader's text, verbatim.
+    ///   - parameters: The current search parameters; only their filters are read.
+    /// - Returns: The ranked rows, the hits beyond the indexed library, and what the caption owes the reader.
+    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, which the view models map to their own states.
+    func run(query: String, parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome
 }

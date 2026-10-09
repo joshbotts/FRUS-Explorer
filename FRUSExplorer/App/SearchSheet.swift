@@ -124,6 +124,10 @@ import SwiftUI
 ///          and the field (#1299 follow-up).
 ///   1.20 — #1491 review round 1: a result row names a document the volume prints without a number "Unnumbered
 ///          (d710a-1)" (`CitableDocumentNumber.captionLabel`), where it printed "Doc [Unnumbered document following …]"
+///   1.21 — #1584, #1592, #1595, #1596: the result-set scope is the view model's, so a full Meaning list no
+///          longer draws the over-cap advisory or its triangle; Visualize in Corpus Analytics is offered in
+///          Keywords mode only; a hand-off goes through `applyHandoff(_:)`; Checklist Mode says when Log Research
+///          Sessions is off (`ChecklistLoggingNotice`).
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -241,6 +245,9 @@ struct MacSearchWindowView: View {
     /// macOS had no concordance loading indicator at all: `rebuildConcordance` set nothing, so a
     /// slow rebuild simply looked frozen. Added here because a collocation scan is heavier still.
     @State private var isLoadingConcordance = false
+    /// Whether Log Research Sessions is on, for the line Checklist Mode shows while it is off (#1592).
+    /// The key and the absent-means-on default are `AppState`'s, as in `HistoryView`.
+    @AppStorage(AppState.researchLoggingPreferenceKey) private var loggingEnabled = true
     @AppStorage(SearchCollocationDefaults.windowKey) private var collocationWindow = 10
     @AppStorage(SearchCollocationDefaults.orderKey)
     private var collocationOrderRaw = CollocationOrder.evidence.rawValue
@@ -584,7 +591,7 @@ struct MacSearchWindowView: View {
             // initial `pendingSearch` that was already set when the Window scene
             // created a fresh `MacSearchWindowView` instance.
             if let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) {
-                searchVM.applyParameters(params)
+                searchVM.applyHandoff(params)
             }
             // #1299: Find ▸ Search Tips… usually opens this window as well, so its request is read here too.
             if appState.consumeHandoff(\.pendingSearchTips, for: .macSearch) != nil {
@@ -607,7 +614,7 @@ struct MacSearchWindowView: View {
         }
         .onChange(of: appState.pendingSearch) { _, _ in
             guard let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) else { return }
-            searchVM.applyParameters(params)
+            searchVM.applyHandoff(params)
         }
         .onChange(of: appState.pendingSearchTips) { _, _ in
             guard appState.consumeHandoff(\.pendingSearchTips, for: .macSearch) != nil else { return }
@@ -1772,8 +1779,11 @@ struct MacSearchWindowView: View {
 
             // Search → Analytics handoff (Direction B): available for any keyword
             // search, not only over-cap ones, so the user can always chart the term's
-            // distribution over time.
-            if loaded > 0, !searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty {
+            // distribution over time. Keywords mode only, as on iPhone and iPad (#1596): the chart
+            // reads its term with the keyword parser, so above a Meaning list it would count the
+            // documents holding every word of the question, which is not the list beside it.
+            if searchVM.searchMode == .keywords,
+               loaded > 0, !searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty {
                 Spacer(minLength: 8)
                 Button {
                     openSearchInAnalytics()
@@ -1858,16 +1868,10 @@ struct MacSearchWindowView: View {
         }
     }
 
-    private var resultSetScope: ResultSetScope {
-        ResultSetScope(loaded: searchVM.results.count,
-                       shown: searchVM.displayedResults.count,
-                       fetchLimit: MacSearchViewModel.searchHardLimit,
-                       totalMatchCount: searchVM.totalMatchCount,
-                       documentsOnPage: searchVM.pagedResults.count,
-                       pageCount: searchVM.totalPages,
-                       appliedCorpusTruncation: searchVM.filterVM?.appliedWorkingCorpusTruncation,
-                       isMeaningSearch: searchVM.searchMode == .meaning)
-    }
+    /// Which set this window is showing: `MacSearchViewModel.resultSetScope`, which composes it from
+    /// what the run recorded with the rows (#1584, #1595). It was composed here from the keyword
+    /// ceiling as a constant and from the picker.
+    private var resultSetScope: ResultSetScope { searchVM.resultSetScope }
 
     /// Advisory banner shown directly below the results header when the underlying
     /// match count exceeds what was loaded (capped at `searchHardLimit`).
@@ -1925,6 +1929,27 @@ struct MacSearchWindowView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 4)
                 .overlay(alignment: .bottom) { Divider() }
+            }
+            // #1592: with Log Research Sessions off nothing records that a result was opened, so
+            // opening one cannot hide it. Shown whether or not anything is hidden yet: the reader
+            // who needs it is the one whose list did not shrink.
+            if let notice = ChecklistLoggingNotice.text(checklistMode: searchVM.checklistMode,
+                                                        loggingEnabled: loggingEnabled) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "info.circle")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text(notice)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 4)
+                .overlay(alignment: .bottom) { Divider() }
+                .accessibilityIdentifier("search.checklist.loggingOff")
             }
         }
     }

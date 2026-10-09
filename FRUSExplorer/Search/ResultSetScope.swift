@@ -61,8 +61,17 @@ import Foundation
 /// states only its own narrowing and never restates the cap. The capture sheet is the exception:
 /// it is a modal with nothing visible behind it, so it states the whole chain.
 ///
+/// ## Who builds one
+/// The two search view models, as `SearchViewModel.resultSetScope` and `MacSearchViewModel.resultSetScope`, from what
+/// they recorded when the rows on screen arrived: the ceiling that fetch ran under and the engine that produced it.
+/// Until #1584 each search view built its own from a constant and from the Keywords | Meaning picker, so a complete
+/// browse of 3,000 documents was measured against the 1,000-row keyword ceiling and read as truncated, and a browse's
+/// rows read "closest matches" as soon as the picker moved (#1597).
+///
 /// Version history:
 ///   1.0 — Q wave: initial implementation
+///   1.1 — #1584, #1595, #1597, #1598: ``fetchLimit`` is the ceiling the fetch recorded; a Meaning search never
+///         reads as a fetch that hit one; the capture sentences and ``isCapturePartial`` have a Meaning branch
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -71,7 +80,12 @@ struct ResultSetScope: Equatable, Sendable {
     let loaded: Int
     /// ``loaded`` minus documents checklist mode is hiding. What the user can see.
     let shown: Int
-    /// The fetch ceiling — 1,000 on iOS, 7,500 on macOS.
+    /// The ceiling this fetch ran under, as the view model recorded it with the rows (`lastFetchLimit`).
+    ///
+    /// On iPhone and iPad that is 1,000 for a search with text in it and 7,500 for a browse with none; on the Mac both
+    /// are 7,500. Never a constant: passing the keyword ceiling for every search is what made a complete browse of
+    /// 1,000 to 7,499 documents read as cut off (#1584). After a Meaning search it is that engine's list length, and
+    /// ``didHitFetchLimit`` does not read it.
     let fetchLimit: Int
     /// Every document matching the query, or `nil` where the platform does not compute one.
     ///
@@ -100,6 +114,9 @@ struct ResultSetScope: Equatable, Sendable {
     // MARK: - The route that produced it
 
     /// Whether these results were ranked by MEANING rather than matched by keyword.
+    ///
+    /// The engine that produced the rows, not the mode the picker shows: the view models record it where they assign
+    /// the rows (`resultsAreSemantic`).
     ///
     /// **A similarity search has no total, and "total unavailable" says the opposite** (#1193). The
     /// keyword grammar above is built on a match that exists and a fetch that may not have reached
@@ -131,7 +148,13 @@ struct ResultSetScope: Equatable, Sendable {
     /// ceiling, or a known total exceeds what was fetched. The second matters because a total can
     /// exceed the fetch below the ceiling — a filter applied after the fetch, say — and reporting
     /// only the ceiling case would call that set complete.
+    ///
+    /// Always `false` for a Meaning search (#1595). Its list is the nearest documents of a ranking of the whole
+    /// series, so there is no larger match the list stopped short of, and narrowing loads nothing more: filters are
+    /// applied to the ranked list and can only remove rows. What a Meaning list is, the header and the capture say in
+    /// their own words (``closestMatchesClause``, ``captureTruncationWarning``).
     var didHitFetchLimit: Bool {
+        if isMeaningSearch { return false }
         if loaded >= fetchLimit { return true }
         if let totalMatchCount { return totalMatchCount > loaded }
         return false
@@ -262,7 +285,14 @@ struct ResultSetScope: Equatable, Sendable {
     /// This is the one place in the app where getting it wrong becomes a wrong published claim:
     /// a working corpus is durable, synced, and cited, and the same query captured on an iPhone
     /// and a Mac at the same instant against the same index yields 1,000 keys and 7,500.
+    ///
+    /// **Never `nil` for a Meaning search** (#1598). Its list is not a match at all, so no count of rows makes it
+    /// "every matching document". The sentence carries no number: the sheet's Documents row is one line above it.
     var captureTruncationWarning: String? {
+        if isMeaningSearch {
+            return String(localized: "corpus.save.meaning",
+                          defaultValue: "These documents are the closest matches a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.")
+        }
         guard didHitFetchLimit else { return nil }
         if let totalMatchCount {
             return String(format: String(
@@ -294,8 +324,22 @@ struct ResultSetScope: Equatable, Sendable {
     /// Goes into `WorkingCorpus.sourceDescription`, an **existing** stored property — so the record
     /// becomes self-describing at zero CloudKit schema cost, which is what makes this affordable.
     /// A corpus read on another device, or a year later, carries its own truncation with it.
+    ///
+    /// A Meaning search names its engine instead of "Search results" (#1598), as a lasso reads "Semantic map
+    /// selection" and a cluster "Semantic cluster, browsed": the screen it was saved from said "closest matches", and
+    /// the record that outlives the screen has to say so too.
     var captureProvenanceDescription: String {
-        var description = String(localized: "corpus.save.source.search", defaultValue: "Search results")
+        var description: String
+        if isMeaningSearch {
+            description = loaded == 1
+                ? String(localized: "corpus.save.source.meaning.one",
+                         defaultValue: "Meaning search — the closest match")
+                : String(format: String(localized: "corpus.save.source.meaning %@",
+                                        defaultValue: "Meaning search — the %@ closest matches"),
+                         grouped(loaded))
+        } else {
+            description = String(localized: "corpus.save.source.search", defaultValue: "Search results")
+        }
         if didHitFetchLimit {
             if let totalMatchCount {
                 description += String(format: String(
@@ -317,6 +361,18 @@ struct ResultSetScope: Equatable, Sendable {
         }
         return description
     }
+
+    /// What a capture of these results stores as `WorkingCorpus.wasTruncatedAtCapture`.
+    ///
+    /// ``isPartialEvidence``, and not ``didHitFetchLimit``, for a keyword search: a capture made inside a corpus that
+    /// was itself cut short is partial for a reason this fetch cannot see.
+    ///
+    /// **Always `true` for a Meaning search** (#1598). The stored flag has two recorded values, and `false` reads back
+    /// as `WorkingCorpus.CaptureTruncation.complete`, "the capture was every matching document", which a ranking's
+    /// nearest documents are not. `true` with no total is the value every reader of the flag already treats with care:
+    /// the corpus lists print their amber line, the method appendix prints its completeness note, and a search run
+    /// inside the corpus is captioned as partial evidence.
+    var isCapturePartial: Bool { isMeaningSearch || isPartialEvidence }
 
     // MARK: - Panels (state only their own narrowing — never restate the cap)
 

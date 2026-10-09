@@ -89,6 +89,10 @@ import SwiftData
 ///          error while the results are empty, the empty-query guards in `performSearch` and `performMeaningSearch`
 ///          clear `searchError` too — a refused `-korea` followed by Return on a cleared field left the refusal
 ///          message under the empty field (#1299 follow-up).
+///   1.9 — #1584, #1595, #1596, #1598: `resultSetScope` is composed here, from `lastFetchLimit` and the new
+///          `resultsAreSemantic`, both now written with the rows; `isResultSetTruncated` asks it, so a full
+///          Meaning list is no longer flagged as truncated; `applyHandoff(_:)` runs a hand-off that names a
+///          search as a keyword search; the engine is held as `MeaningSearchRunning`
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -192,7 +196,8 @@ final class MacSearchViewModel {
     var searchMode: SearchMode = .keywords
 
     /// The Meaning mode's engine, injected by `SearchSheet` once the semantic stack has booted.
-    var semanticBackend: SemanticSearchBackend?
+    /// Held as ``MeaningSearchRunning`` so a test can drive a Meaning run with a list of its own.
+    var semanticBackend: (any MeaningSearchRunning)?
 
     /// Hits beyond the indexed library from the last Meaning search (#262 presentation).
     var beyondLibraryHits: [SemanticSearchBackend.BeyondLibraryHit] = []
@@ -205,6 +210,13 @@ final class MacSearchViewModel {
 
     /// Whether the last completed run was a Meaning run — frozen for the history record.
     private(set) var lastRunWasSemantic = false
+
+    /// Whether the rows in `results` were ranked by a Meaning run (#1595, #1598).
+    ///
+    /// Written in the statements that assign `results`, so it describes the rows on screen: while a run
+    /// is under way after a mode switch, `searchMode` and `lastRunWasSemantic` already name the new
+    /// engine and the rows are still the last one's. ``resultSetScope`` reads this one.
+    private(set) var resultsAreSemantic = false
 
     /// The parameters a search would run with *right now*, from the live text field.
     ///
@@ -302,10 +314,29 @@ final class MacSearchViewModel {
     /// Keyed on the fetch hitting its own cap, which is knowable without the count. When
     /// the count *is* available and exceeds the fetch, that also counts — a filter applied
     /// after the limit could otherwise hide the truncation.
-    var isResultSetTruncated: Bool {
-        if results.count >= lastFetchLimit { return true }
-        if let totalMatchCount { return totalMatchCount > results.count }
-        return false
+    ///
+    /// ``ResultSetScope/didHitFetchLimit`` is that rule, and this asks it, so the window's orange
+    /// advisory and the shared sentences cannot disagree about one result set. They did for a Meaning
+    /// search (#1595): this compared its 100 rows with the engine's own list length and answered
+    /// "truncated", so a full Meaning list sat under "Showing the first 100 matches — the total is
+    /// unavailable" and advice to narrow the search "to load every match", which a Meaning search
+    /// cannot do. A ranking has no larger match to load.
+    var isResultSetTruncated: Bool { resultSetScope.didHitFetchLimit }
+
+    /// Which set this window is showing, composed from what was recorded with the rows.
+    ///
+    /// The Mac twin of `SearchViewModel.resultSetScope`, and on the view model for the same reasons
+    /// (#1584, #1597): the ceiling is the one this fetch ran under and the engine is the one that
+    /// produced the rows, where `SearchSheet` passed a constant and read the picker.
+    var resultSetScope: ResultSetScope {
+        ResultSetScope(loaded: results.count,
+                       shown: displayedResults.count,
+                       fetchLimit: lastFetchLimit,
+                       totalMatchCount: totalMatchCount,
+                       documentsOnPage: pagedResults.count,
+                       pageCount: totalPages,
+                       appliedCorpusTruncation: filterVM?.appliedWorkingCorpusTruncation,
+                       isMeaningSearch: resultsAreSemantic)
     }
 
     /// The count to display, and whether it is the real total.
@@ -335,8 +366,8 @@ final class MacSearchViewModel {
     /// the iOS twin genuinely differs (1,000 keyword, 7,500 browse).
     static let filterOnlyHardLimit: Int = 7_500
 
-    /// The ceiling the CURRENT results were actually fetched at. Recorded at fetch time rather
-    /// than recomputed from `parameters`, which are live filter state and may have moved since.
+    /// The ceiling the CURRENT results were actually fetched at. Recorded with the rows it fetched
+    /// rather than recomputed from `parameters`, which are live filter state and may have moved since.
     private(set) var lastFetchLimit: Int = searchHardLimit
 
     /// Returns `results` ordered according to `sortOrder`.
@@ -881,6 +912,18 @@ final class MacSearchViewModel {
         parametersVersion += 1
     }
 
+    /// Applies a search hand-off (`AppState.pendingSearch`).
+    ///
+    /// A hand-off that names something to find runs as a keyword search whatever the picker showed, as
+    /// a saved search does (``SearchParameters/namesASearchToRun``). The window used to keep the picker's
+    /// mode, so Corpus Analytics' "View N documents", followed while the window was on Meaning, ranked
+    /// the term by meaning and did not show those N documents, and a person's Find all mentions, which
+    /// carries no question, showed an empty list.
+    func applyHandoff(_ params: SearchParameters) {
+        if params.namesASearchToRun { searchMode = .keywords }
+        applyParameters(params)
+    }
+
     /// Re-derives `parameters.documentIds` from the filter VM's current project scope +
     /// engaged-key set and re-runs the search **only if the effective gate changed**
     /// (#377 Phase 2a). Called by `SearchSheet` after it (re)loads the engaged set — on
@@ -989,6 +1032,7 @@ final class MacSearchViewModel {
         let hasStandaloneFilter = parameters.supportsFilterOnlySearch
         guard (!query.isEmpty || hasStandaloneFilter), let service else {
             results = []
+            resultsAreSemantic = false
             totalMatchCount = nil
             lastRenderedExpression = nil
             // `SearchSheet` shows any standing error beside empty results, so the last search's must go with them.
@@ -1009,6 +1053,7 @@ final class MacSearchViewModel {
         guard params.includeDocumentText || params.includeSummaries || params.includeNotes
                 || (params.supportsFilterOnlySearch && !params.hasTextTerms) else {
             results = []
+            resultsAreSemantic = false
             totalMatchCount = nil
             lastRenderedExpression = nil
             searchError = MacSearchError.emptyScope
@@ -1043,11 +1088,10 @@ final class MacSearchViewModel {
         let frozenParams = params
 
         // A browse fetches under its own ceiling because its rows are far smaller — no `body_text`,
-        // since there are no terms to snippet against. Recorded so `isResultSetTruncated` compares
-        // against the ceiling actually used.
+        // since there are no terms to snippet against. Recorded below, with the rows, so
+        // `isResultSetTruncated` compares against the ceiling actually used.
         let fetchLimit = frozenParams.runsAsFilterOnly
             ? Self.filterOnlyHardLimit : Self.searchHardLimit
-        lastFetchLimit = fetchLimit
 
         // Fetch results and total count in parallel. searchCount runs an FTS5 COUNT(*)
         // without snippet/bm25 work so it returns substantially faster than search().
@@ -1057,6 +1101,10 @@ final class MacSearchViewModel {
         do {
             let fetched = try await resultsTask
             results = fetched
+            // With the rows, not before the await: a run that is cancelled keeps the previous rows, and
+            // they keep the ceiling and the engine they came from.
+            lastFetchLimit = fetchLimit
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
@@ -1092,6 +1140,7 @@ final class MacSearchViewModel {
             // Tips, and every other failure is stored unchanged (#1299).
             searchError = SearchQueryRefusal.readable(error, for: frozenParams)
             results = []
+            resultsAreSemantic = false
             totalMatchCount = nil
             lastRenderedExpression = nil
             #if DEBUG
@@ -1107,6 +1156,7 @@ final class MacSearchViewModel {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             results = []
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -1117,6 +1167,7 @@ final class MacSearchViewModel {
         }
         guard let backend = semanticBackend else {
             results = []
+            resultsAreSemantic = false
             searchError = SemanticModeError.unavailable
             return
         }
@@ -1134,10 +1185,11 @@ final class MacSearchViewModel {
             readSinceEnabledKeys.removeAll()
             markedReviewedKeys.removeAll()
         }
-        lastFetchLimit = SemanticSearchBackend.hitLimit
         do {
             let outcome = try await backend.run(query: query, parameters: parameters)
             results = outcome.results
+            lastFetchLimit = SemanticSearchBackend.hitLimit
+            resultsAreSemantic = true
             beyondLibraryHits = outcome.beyondLibrary
             semanticDisclosure = outcome.disclosure
             // nil, not the hit count: the SavedSearch freshness watermark diffs matchCount
@@ -1154,6 +1206,10 @@ final class MacSearchViewModel {
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
+            resultsAreSemantic = false
+            // No rows, so no reader of the scope sees it; recorded for the history row, which has
+            // always carried the Meaning engine's list length for a Meaning run that found no model.
+            lastFetchLimit = SemanticSearchBackend.hitLimit
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -1164,6 +1220,8 @@ final class MacSearchViewModel {
         } catch {
             guard !(error is CancellationError) else { return }
             results = []
+            resultsAreSemantic = false
+            lastFetchLimit = SemanticSearchBackend.hitLimit
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil

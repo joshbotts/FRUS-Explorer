@@ -194,7 +194,7 @@ struct SemanticMeaningEmptyState: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 if needsModel {
-                    SemanticModelOfferCard(onModelReady: onModelReady)
+                    SemanticModelOfferCard(followsKeywordSearch: false, onModelReady: onModelReady)
                 } else {
                     // No strip here: both hosts keep `SemanticModeStrip` mounted persistently
                     // (iOS in the top inset, macOS in the body chain), and a second copy in the

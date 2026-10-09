@@ -491,3 +491,424 @@ struct HybridSearchModeTests {
         #expect(!fallback.contains("semanticShardFetchesRun"))
     }
 }
+
+// MARK: - SearchResultRouteTests (#1584, #1595, #1596, #1597, #1598)
+
+/// A Meaning engine that returns the rows it was given, for driving a Meaning run through the view model.
+///
+/// `SemanticSearchBackend` needs the query encoder's model and the vector files, which a test host has neither of;
+/// the view models hold the engine as `MeaningSearchRunning` so this can stand in for it.
+@MainActor
+private struct FixedMeaningSearch: MeaningSearchRunning {
+
+    /// The rows every run returns.
+    let rows: [SearchResult]
+
+    func run(query: String, parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome {
+        SemanticSearchBackend.Outcome(
+            results: rows, beyondLibrary: [],
+            disclosure: SemanticSearchBackend.Disclosure(
+                unscoredCandidates: 0, unscoredVolumes: 0, downloadingVolumes: 0,
+                filtersApplied: false, filteredOut: 0, beyondUncheckedByFilters: false))
+    }
+
+    /// `count` rows with a semantic score each, as a Meaning run returns them.
+    static func returning(_ count: Int) -> FixedMeaningSearch {
+        FixedMeaningSearch(rows: (0..<count).map { index in
+            SearchResult(documentId: "m\(index)", volumeId: "vol1", header: "\(index + 1). Item",
+                         snippet: "", bm25Score: -Double(count - index),
+                         semanticScore: 0.9 - Double(index) / 1_000)
+        })
+    }
+}
+
+/// What the search screen says of the rows it shows follows the run that produced them: the ceiling that fetch ran
+/// under, and the engine it ran through.
+///
+/// Each of these drives `SearchViewModel` over a real index, because the defects were in the wiring and not in the
+/// sentences. `ResultSetScope`'s sentences had passed their own tests all along while `SearchView` handed them the
+/// keyword ceiling for a browse (#1584) and the picker's mode for the engine (#1597).
+///
+/// Version history:
+///   1.0 — #1584, #1595, #1596, #1597, #1598: initial implementation
+@Suite("Search results are described by the run that produced them")
+@MainActor
+struct SearchResultRouteTests {
+
+    /// A view model over an index of `documents` documents in one volume, every one holding the word
+    /// "containment" and tagged with subject area 2, so one fixture answers a keyword search and a browse.
+    private func makeViewModel(documents: Int) async throws -> (dir: URL, vm: SearchViewModel) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSRoute-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in 0..<documents {
+            xml += "<div type=\"document\" xml:id=\"d\(index)\"><head>\(index + 1). Item</head>"
+                + "<p>The doctrine of containment shaped policy.</p></div>\n"
+        }
+        xml += "</body></text></TEI>"
+        try Data(xml.utf8).write(to: volDir.appendingPathComponent("vol1.xml"))
+        let dbURL = dir.appendingPathComponent("t.sqlite")
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                            volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        let subjectRows: @Sendable (String) -> [(documentId: String, buckets: [Int], subjects: [Int])] = { _ in
+            (0..<documents).map { (documentId: "d\($0)", buckets: [2], subjects: [10]) }
+        }
+        _ = try await pipeline.applyDocumentSubjects(rows: subjectRows, digest: "d1", volumeIds: ["vol1"])
+        return (dir, SearchViewModel(searchService: SearchService(fts5Store: fts5, pipeline: pipeline)))
+    }
+
+    // MARK: - #1584: a browse is measured against the ceiling it was fetched under
+
+    /// One document more than the keyword ceiling. As a browse it is fetched under 7,500 and is all on the device;
+    /// as a keyword search over the same documents it is cut at 1,000. The screen has to tell the two apart.
+    @Test("A complete browse of more than 1,000 documents reads as complete, and a capture of it is whole")
+    func completeBrowsePastTheKeywordCeilingReadsComplete() async throws {
+        let count = SearchViewModel.searchHardLimit + 1
+        let (dir, vm) = try await makeViewModel(documents: count)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        vm.subjectBucket = 2
+        await vm.search()
+        #expect(vm.results.count == count, "the browse loads every tagged document")
+        let browse = vm.resultSetScope
+        #expect(browse.headerDescription == "1,001 results", """
+            A browse that loaded every document it matched is described as cut off. The scope was built with the \
+            keyword ceiling where the fetch ran under the browse ceiling (#1584).
+            """)
+        #expect(browse.overCapGuidance == nil, "nothing more would load, so there is no advice to narrow")
+        #expect(browse.timelineBiasCaption == nil)
+        #expect(browse.captureTruncationWarning == nil)
+        #expect(browse.captureProvenanceDescription == "Search results")
+        #expect(!browse.isCapturePartial, "a working corpus saved from it is every matching document")
+
+        // The control: the same documents through a keyword search stop at 1,000 and say so.
+        vm.subjectBucket = nil
+        vm.keywords = "containment"
+        await vm.search()
+        #expect(vm.results.count == SearchViewModel.searchHardLimit)
+        let keyword = vm.resultSetScope
+        #expect(keyword.headerDescription == "1,000 loaded · 1,001 total")
+        #expect(keyword.overCapGuidance != nil)
+        #expect(keyword.isCapturePartial)
+        #expect(keyword.captureProvenanceDescription == "Search results — the highest-scoring 1,000 of 1,001 matches")
+    }
+
+    // MARK: - #1597: the rows belong to the engine the picker names
+
+    @Test("Switching to Meaning over a browse clears its rows, and switching back runs it again")
+    func modeSwitchOverABrowseClearsItAndTheWayBackRestoresIt() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(3)
+
+        vm.subjectBucket = 2
+        await vm.search()
+        #expect(vm.results.count == 6)
+        #expect(vm.resultSetScope.headerDescription == "6 results")
+
+        // A browse has no question, so the Meaning engine has nothing to run.
+        #expect(!vm.switchSearchMode(to: .meaning), "there is nothing for the Meaning engine to run")
+        #expect(vm.searchMode == .meaning)
+        #expect(vm.results.isEmpty, """
+            The browse's rows stayed on screen after the picker moved to Meaning. They would be drawn under the \
+            Meaning strip although no Meaning search ran (#1597).
+            """)
+        #expect(!vm.hasSearched, "so the pre-search prompt shows, not the Meaning empty state")
+        #expect(vm.searchError == nil)
+        #expect(vm.totalMatchCount == nil)
+        #expect(vm.userTagCountScope == nil)
+        #expect(vm.subjectBucket == 2, "the filter is the reader's and stays")
+
+        // The way back: the browse the switch set aside runs again.
+        #expect(vm.switchSearchMode(to: .keywords), "the browse is run again on the way back")
+        await vm.search()
+        #expect(vm.results.count == 6)
+        #expect(vm.resultSetScope.headerDescription == "6 results")
+    }
+
+    @Test("Until the new engine's rows arrive, the rows on screen are described by the engine they came from")
+    func rowsKeepTheirOwnEngineUntilTheRunReplacesThem() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(3)
+
+        vm.keywords = "containment"
+        await vm.search()
+        #expect(vm.resultSetScope.headerDescription == "6 results")
+
+        // The picker has moved and the run has not happened yet: these are still the keyword search's rows.
+        #expect(vm.switchSearchMode(to: .meaning), "typed text is a question the Meaning engine can run")
+        #expect(vm.searchMode == .meaning)
+        #expect(!vm.resultSetScope.isMeaningSearch)
+        #expect(vm.resultSetScope.headerDescription == "6 results", """
+            Keyword rows are counted as "closest matches" because the picker says Meaning. The scope must read the \
+            engine that produced the rows, not the picker (#1597).
+            """)
+
+        await vm.search()
+        #expect(vm.results.count == 3)
+        #expect(vm.resultSetScope.isMeaningSearch)
+        #expect(vm.resultSetScope.headerDescription == "3 closest matches")
+
+        // And the other way round.
+        #expect(vm.switchSearchMode(to: .keywords))
+        #expect(vm.resultSetScope.headerDescription == "3 closest matches")
+        await vm.search()
+        #expect(vm.resultSetScope.headerDescription == "6 results")
+    }
+
+    @Test("A mode switch before any search runs nothing and clears nothing")
+    func aModeSwitchBeforeAnySearchRunsNothing() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.keywords = "containment"   // typed, never submitted
+        #expect(!vm.switchSearchMode(to: .meaning))
+        #expect(!vm.switchSearchMode(to: .keywords))
+        #expect(!vm.switchSearchMode(to: .keywords), "choosing the mode already chosen does nothing")
+        #expect(vm.keywords == "containment")
+        #expect(!vm.hasSearched)
+    }
+
+    // MARK: - #1598, and #1584's Meaning case: a Meaning list is not a fetch at its ceiling
+
+    @Test("A full Meaning list is not advised to narrow, and a capture of it says what it is")
+    func aFullMeaningListIsDescribedAsARanking() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(SemanticSearchBackend.hitLimit)
+        vm.searchMode = .meaning
+        vm.keywords = "how was containment meant to work"
+        await vm.search()
+
+        #expect(vm.results.count == 100)
+        #expect(vm.lastFetchLimit == 100, "the ceiling recorded with these rows is the Meaning engine's list length")
+        let scope = vm.resultSetScope
+        #expect(!scope.didHitFetchLimit, """
+            A full Meaning list reads as a fetch that hit its ceiling. Its 100 rows are the answer's shape, and \
+            narrowing loads nothing more (#1595, and #1584's Meaning case).
+            """)
+        #expect(scope.headerDescription == "100 closest matches")
+        #expect(scope.overCapGuidance == nil)
+        #expect(scope.captureProvenanceDescription == "Meaning search — the 100 closest matches", """
+            A working corpus saved from a Meaning list is stored as "Search results", the words a complete keyword \
+            capture gets (#1598).
+            """)
+        #expect(scope.captureTruncationWarning?.contains("Meaning search") == true)
+        #expect(scope.isCapturePartial, "a ranking's nearest documents are never every matching document")
+        #expect(scope.totalMatchCount == nil)
+    }
+
+    // MARK: - A hand-off that names a search runs as a keyword search
+
+    @Test("A hand-off that names something to find sets the picker to Keywords; one that only sets a scope does not")
+    func aHandoffThatNamesASearchRunsAsKeywords() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Find all mentions, a topic: no typed text at all.
+        vm.searchMode = .meaning
+        var browse = SearchParameters()
+        browse.subjectBucket = 2
+        #expect(vm.applyHandoff(browse), "a subject-only hand-off names a search to run")
+        #expect(vm.searchMode == .keywords, """
+            A browse hand-off kept the picker on Meaning. The Meaning engine has no question to run for it, so the \
+            reader lands on "Type a question or phrase to search by meaning."
+            """)
+        await vm.search()
+        #expect(vm.results.count == 6)
+        #expect(vm.searchError == nil)
+
+        // Corpus Analytics' "View N documents": a term.
+        vm.searchMode = .meaning
+        #expect(vm.applyHandoff(SearchParameters(keywords: "containment")))
+        #expect(vm.searchMode == .keywords)
+
+        // Search this volume: a scope and nothing to find. It runs nothing and leaves the picker alone.
+        vm.searchMode = .meaning
+        var scopeOnly = SearchParameters()
+        scopeOnly.volumeIds = ["vol1"]
+        #expect(!vm.applyHandoff(scopeOnly))
+        #expect(vm.searchMode == .meaning)
+    }
+
+    @Test("The hand-off rule counts typed text, a phrase, a prefix, a person and a subject, and not an empty string")
+    func handoffRule() {
+        #expect(!SearchParameters().namesASearchToRun)
+        #expect(!SearchParameters(keywords: "").namesASearchToRun, "an empty string is nothing to find")
+        #expect(SearchParameters(keywords: "berlin").namesASearchToRun)
+        var phrase = SearchParameters(); phrase.phrase = "berlin blockade"
+        #expect(phrase.namesASearchToRun)
+        var prefix = SearchParameters(); prefix.prefixWildcard = "negotiat"
+        #expect(prefix.namesASearchToRun)
+        var person = SearchParameters(); person.personRef = "p_KHA1"
+        #expect(person.namesASearchToRun)
+        var subject = SearchParameters(); subject.subjectBucket = 2
+        #expect(subject.namesASearchToRun)
+        var excluded = SearchParameters(); excluded.excludedTerms = ["berlin"]
+        #expect(!excluded.namesASearchToRun, "an exclusion alone names nothing to find")
+        var volume = SearchParameters(); volume.volumeIds = ["vol1"]
+        #expect(!volume.namesASearchToRun)
+    }
+
+    // MARK: - #1592: Checklist Mode says when Log Research Sessions is off
+
+    @Test("The checklist's line shows only while the mode is on and Log Research Sessions is off")
+    func checklistLoggingNotice() throws {
+        #expect(ChecklistLoggingNotice.text(checklistMode: false, loggingEnabled: true) == nil)
+        #expect(ChecklistLoggingNotice.text(checklistMode: false, loggingEnabled: false) == nil,
+                "with the mode off nothing is being hidden, so there is nothing to explain")
+        #expect(ChecklistLoggingNotice.text(checklistMode: true, loggingEnabled: true) == nil)
+        let notice = try #require(ChecklistLoggingNotice.text(checklistMode: true, loggingEnabled: false))
+        #expect(notice.contains("Log Research Sessions"), "it names the switch as Settings labels it")
+        #expect(notice.contains("Mark Reviewed"), "and the way of hiding a result that still works")
+    }
+
+    // MARK: - The wiring a unit test cannot drive
+
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) is missing or empty")
+        return text
+    }
+
+    /// The text of the declaration that starts with `header`, through its closing brace.
+    private static func declaration(_ header: String, in source: String, path: String) throws -> String {
+        let start = try #require(source.range(of: header), "\(path) no longer declares `\(header)`")
+        var depth = 0
+        var opened = false
+        var index = start.lowerBound
+        while index < source.endIndex {
+            let character = source[index]
+            if character == "{" { depth += 1; opened = true }
+            if character == "}" { depth -= 1 }
+            index = source.index(after: index)
+            if opened && depth == 0 { break }
+        }
+        #expect(opened && depth == 0, "\(path): `\(header)` has no balanced body")
+        return String(source[start.lowerBound..<index])
+    }
+
+    /// `MacSearchViewModel` is compiled for the Mac only and this target runs on iOS, so its half of the wiring is
+    /// pinned where it is written. The iPhone view model's half is driven above; both are read here so the two cannot
+    /// part.
+    @Test("Both view models compose the scope from the ceiling and the engine recorded with the rows")
+    func bothViewModelsComposeTheScopeFromTheRun() throws {
+        for path in ["FRUSExplorer/Search/SearchViewModel.swift", "FRUSExplorer/App/MacSearchViewModel.swift"] {
+            let source = try Self.source(path)
+            let scope = try Self.declaration("var resultSetScope: ResultSetScope {", in: source, path: path)
+            #expect(scope.contains("fetchLimit: lastFetchLimit,"),
+                    "\(path): the scope must carry the ceiling this fetch ran under, not a constant (#1584)")
+            #expect(scope.contains("isMeaningSearch: resultsAreSemantic)"),
+                    "\(path): the scope must carry the engine that produced the rows, not the picker (#1597)")
+            #expect(!scope.contains("searchMode"), "\(path): the scope reads the picker")
+            #expect(!scope.contains("HardLimit"), "\(path): the scope reads a ceiling constant")
+        }
+        let mac = try Self.source("FRUSExplorer/App/MacSearchViewModel.swift")
+        let truncated = try Self.declaration("var isResultSetTruncated: Bool {", in: mac,
+                                             path: "MacSearchViewModel.swift")
+        #expect(truncated.contains("resultSetScope.didHitFetchLimit"), """
+            The Mac window's truncation flag has its own rule again. It called a full Meaning list truncated while \
+            the shared scope did not (#1595).
+            """)
+    }
+
+    @Test("Neither search view composes a scope of its own")
+    func neitherViewComposesAScope() throws {
+        let ios = try Self.source("FRUSExplorer/Search/SearchView.swift")
+        let mac = try Self.source("FRUSExplorer/App/SearchSheet.swift")
+        #expect(ios.contains("private var resultSetScope: ResultSetScope { vm.resultSetScope }"))
+        #expect(mac.contains("private var resultSetScope: ResultSetScope { searchVM.resultSetScope }"))
+        for (path, source) in [("SearchView.swift", ios), ("SearchSheet.swift", mac)] {
+            #expect(!source.contains("ResultSetScope("),
+                    "\(path) builds a ResultSetScope itself; the view model's is the one recorded with the rows")
+        }
+    }
+
+    @Test("Visualize in Corpus Analytics is offered in Keywords mode only, on both surfaces (#1596)")
+    func visualizeIsKeywordsOnly() throws {
+        for (path, mode) in [("FRUSExplorer/Search/SearchView.swift", "vm.searchMode == .keywords"),
+                             ("FRUSExplorer/App/SearchSheet.swift", "searchVM.searchMode == .keywords")] {
+            let source = try Self.source(path)
+            // The button, and only the button: from its comment to the call it makes.
+            let comment = try #require(source.range(of: "// Search → Analytics handoff (Direction B)"),
+                                       "\(path) lost the hand-off's comment")
+            let call = try #require(source.range(of: "openSearchInAnalytics()",
+                                                 range: comment.upperBound..<source.endIndex),
+                                    "\(path) lost the hand-off's call")
+            let condition = source[comment.upperBound..<call.lowerBound]
+            #expect(condition.count < 1_200, "\(path): the comment and the call have drifted apart")
+            #expect(condition.contains(mode), """
+                \(path) offers Visualize in Corpus Analytics above a Meaning list. The chart reads its term with \
+                the keyword parser, so it would count the documents holding every word of the question.
+                """)
+        }
+    }
+
+    @Test("Both surfaces run a hand-off through applyHandoff, and show the checklist's line")
+    func bothSurfacesWireTheHandoffAndTheChecklistLine() throws {
+        let ios = try Self.source("FRUSExplorer/Search/SearchView.swift")
+        let consume = try Self.declaration("private func consumePendingSearch() {", in: ios, path: "SearchView.swift")
+        #expect(consume.contains("if vm.applyHandoff(params) {"))
+        #expect(!consume.contains("vm.applyParameters(params)"))
+
+        let mac = try Self.source("FRUSExplorer/App/SearchSheet.swift")
+        #expect(mac.components(separatedBy: "searchVM.applyHandoff(params)").count - 1 == 2,
+                "the Mac window reads a hand-off in two places: when it opens and while it is open")
+        #expect(!mac.contains("searchVM.applyParameters(params)"))
+
+        for (path, source) in [("SearchView.swift", ios), ("SearchSheet.swift", mac)] {
+            #expect(source.contains("@AppStorage(AppState.researchLoggingPreferenceKey) private var loggingEnabled = true"),
+                    "\(path) does not observe Log Research Sessions")
+            #expect(source.contains("ChecklistLoggingNotice.text(checklistMode:"),
+                    "\(path) does not show the checklist's line (#1592)")
+        }
+    }
+
+    // MARK: - Two defects seen in the running app while checking #1584 and #1597
+
+    @Test("The model offer says a keyword search found nothing only where one ran")
+    func modelOfferNamesTheSearchThatRan() throws {
+        let afterKeywords = SemanticModelOfferCard.offerText(followsKeywordSearch: true)
+        let inMeaningMode = SemanticModelOfferCard.offerText(followsKeywordSearch: false)
+        #expect(afterKeywords.hasPrefix("Keyword search found nothing"))
+        #expect(!inMeaningMode.contains("Keyword search"), """
+            In Meaning mode no keyword search ran, and the offer says one found nothing.
+            """)
+        for text in [afterKeywords, inMeaningMode] {
+            #expect(text.contains("229 MB"), "both state the size of the download")
+            #expect(text.contains("entirely on this device"), "and where the model runs")
+        }
+        // The two mounts: Meaning mode's empty state says which it is; the keyword fallback takes the default.
+        let meaning = try Self.source("FRUSExplorer/Search/SemanticMeaningModeViews.swift")
+        #expect(meaning.contains("SemanticModelOfferCard(followsKeywordSearch: false, onModelReady: onModelReady)"))
+        let fallback = try Self.source("FRUSExplorer/Search/SemanticSearchFallbackView.swift")
+        #expect(fallback.contains("SemanticModelOfferCard {"))
+        #expect(!fallback.contains("followsKeywordSearch: false"))
+    }
+
+    @Test("A topic card's Find documents on this topic brings Search forward on iPhone and iPad")
+    func topicCardBringsSearchForward() throws {
+        let path = "FRUSExplorer/Browser/SubjectIndexView.swift"
+        let body = try Self.declaration("private func findDocuments() {", in: try Self.source(path), path: path)
+        let iosBranch = try #require(body.range(of: "#else"), "findDocuments lost its iOS branch")
+        let ios = body[iosBranch.upperBound...]
+        let search = try #require(ios.range(of: "appState.openSearch(params, from: sceneID)"))
+        let tab = try #require(ios.range(of: "appState.openTab(.search, from: sceneID)"), """
+            The topic card hands its search to the Search tab and does not bring the tab forward, so the card \
+            closes and the reader is left on Topics.
+            """)
+        #expect(search.lowerBound < tab.lowerBound)
+    }
+
+    @Test("The capture sheet stores the scope's own answer about the capture")
+    func captureStoresTheScopesAnswer() throws {
+        let sheet = try Self.source("FRUSExplorer/Search/SaveWorkingCorpusSheet.swift")
+        #expect(sheet.contains("wasTruncatedAtCapture: scope.isCapturePartial,"))
+        #expect(sheet.contains("sourceDescription: scope.captureProvenanceDescription,"))
+    }
+}
