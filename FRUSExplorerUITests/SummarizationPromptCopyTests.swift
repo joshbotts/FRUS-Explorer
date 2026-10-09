@@ -29,7 +29,7 @@ import XCTest
 /// ## Devices
 /// One shared pane for iPhone and iPad, so one device is the guard. It never skips. Measured on
 /// iPhone 17 (iOS 27.0) at the commit that fixed it: 1 test, 1 passed; and on the code before the
-/// fix, 1 failed, on the name field's value (empty) and on Choose a Template being up.
+/// fix, 1 failed, on Choose a Template being up over the editor.
 ///
 /// Version history:
 ///   1.0 — 2026-10-09: #1590 — initial implementation

@@ -141,8 +141,12 @@ struct SemanticChipWiringTests {
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift")
         let source = try String(contentsOf: view, encoding: .utf8)
-        #expect(source.contains("case .sharedTerms(let terms):"),
+        // #1586 moved every chip's words out of the view into `WhyRelatedChip.displayText`, so
+        // the render arm is asked for directly, and the view is held to drawing what it returns.
+        #expect(WhyRelatedChip.sharedTerms(["Kearsarge", "raider"]).displayText() == "shares: Kearsarge, raider",
                 "the chip case must have a render arm or it is dead again")
+        #expect(source.contains("let display = chip.displayText()"),
+                "the view no longer draws the chip's own words")
         #expect(source.contains("attachSemanticEvidence"))
         #expect(source.contains("SemanticSharedTerms.sharedTerms"))
     }
