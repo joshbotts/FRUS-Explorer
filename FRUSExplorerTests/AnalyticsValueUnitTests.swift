@@ -333,13 +333,23 @@ struct HandOffCountUnitTests {
                                    unit: .occurrences, range: 1945...1950)
         #expect(inRange == 45, "1975 is outside the range and must not be promised to Search")
     }
+}
 
-    // MARK: The display a comparison is drawn in (#1583)
+// MARK: - AnalyticsDisplayedModeTests
 
-    /// A comparison begun from the table (chart a term, switch to the table, add a second) was
-    /// drawn as a chart, as every comparison is, while each gate went on reading the chart/table
-    /// control's stored `.table`: raw counts under a greyed Values control reading "% of
-    /// documents", and no control left to change either.
+/// The display a Corpus Analytics comparison is drawn in (#1583).
+///
+/// A comparison begun from the table (chart a term, switch to the table, add a second) was drawn
+/// as a chart, as every comparison is, while each gate went on reading the chart/table control's
+/// stored `.table`: raw counts under a greyed Values control reading "% of documents", and no
+/// control left to change either. `AnalyticsCompareFromTableTests` (UI) drives the two controls;
+/// these hold the rule and where the view reads it.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1583 — initial implementation
+@Suite("The display a Corpus Analytics comparison is drawn in (#1583)")
+struct AnalyticsDisplayedModeTests {
+
     @Test("A comparison is drawn as a chart whatever the chart/table control holds; one term is drawn as chosen")
     func displayedModeFollowsTheComparison() {
         #expect(AnalyticsViewMode.displayed(selected: .table, isComparing: true) == .chart)
@@ -352,7 +362,6 @@ struct HandOffCountUnitTests {
 
     /// The view's half, read from its source: the stored value is named in three places and no
     /// gate is one of them. A fourth read of it is how #1583 comes back, one gate at a time.
-    /// `AnalyticsCompareFromTableTests` (UI) drives the controls themselves.
     @Test("AnalyticsView reads the display on screen at every gate, and the control's stored value nowhere else")
     func analyticsViewGatesReadTheDisplayedMode() throws {
         let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
