@@ -59,6 +59,8 @@ import WebKit
 ///   1.6 — Session 2026-10-06 (FRUS Explorer Light, S9b): `dispatch(url:)` reads each link with
 ///          the kit's `FRUSURLScheme.readerLink(from:)`, its parse moved there verbatim; the lookups
 ///          and the callbacks stay here
+///   1.7 — Session 2026-10-09: #1603 — `WholeVolumeLink`, where both readers send a reference to
+///          a whole volume
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -371,5 +373,32 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             case .label(let children), .other(let children): return children
             }
         }
+    }
+}
+
+// MARK: - WholeVolumeLink
+
+/// Where a cross-reference to a whole volume goes (#1603): `CrossRefDestination.volume`, decided
+/// once for the reader on iPhone and iPad (`DocumentView`) and the reader on the Mac
+/// (`MacDocumentView`), so the two cannot come to disagree.
+///
+/// Version history:
+///   1.0 — Session 2026-10-09: #1603
+enum WholeVolumeLink: Equatable {
+    /// The volume's page in Browse. The catalogue holds the volume; the page offers the download
+    /// when the volume is not on the device.
+    case browse(volumeId: String)
+    /// The volume's page on history.state.gov. The catalogue does not hold it: a microfiche
+    /// supplement, or a volume not yet published.
+    case web(URL)
+
+    /// Where a link to `volumeId` goes, or `nil` when the id can name neither.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume the reference names, as its target gives it.
+    ///   - inCatalogue: Whether the app's catalogue holds that volume.
+    static func destination(for volumeId: String, inCatalogue: Bool) -> WholeVolumeLink? {
+        if inCatalogue { return .browse(volumeId: volumeId) }
+        return FRUSCanonicalURL.volumeURL(volumeId: volumeId).map { .web($0) }
     }
 }

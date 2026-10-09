@@ -33,6 +33,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — issue #406: initial implementation — cascading (orphan-free) user-tag deletion
+///   1.1 — Session 2026-10-09: #1591 — `deleteCascading` rewrites the index's tag column for the
+///          documents it touched, and returns them
 @MainActor
 enum UserTagAdmin {
 
@@ -40,16 +42,27 @@ enum UserTagAdmin {
     /// leave an orphaned `DocumentTagAssignment` row or a stale id inside a
     /// `ResearchNote.userTagIds` array. Saves the context.
     ///
-    /// The FTS5 mirror (`document_cache.user_tag_ids`) is intentionally **not** touched here:
-    /// it is rebuilt from `DocumentTagAssignment` at every launch by `FRUSExplorerApp.bootApp()`,
-    /// so removing the assignments is sufficient and this matches the existing merge path, which
-    /// likewise defers the FTS5 reconciliation to the next boot. (An orphaned id lingering in the
-    /// column until then is unreachable anyway — no picker lists a deleted tag.)
+    /// **The index's copy (`document_cache.user_tag_ids`) is rewritten here, for the documents
+    /// whose assignment was deleted (#1591).** It used to be left "for the next launch", on the
+    /// reasoning that the launch pass rebuilds the column and that a deleted tag's id is
+    /// unreachable until then. Neither held. The launch pass visited only documents that still
+    /// had an assignment, so a document whose only tag this was kept the id for good; and both
+    /// search result rows printed an id they could not name, as a 36-character chip that on
+    /// iPhone and iPad filtered by it. The launch sweep cannot be left to do it either: its floor
+    /// refuses to clear when the store holds no assignment at all, which is the state deleting a
+    /// reader's only tag leaves. (`merge` still leaves the index to the next reconcile, which
+    /// does reach its documents: each keeps an assignment, re-pointed.)
     ///
     /// - Parameters:
     ///   - tag: The `UserTag` to delete.
     ///   - context: The SwiftData context owning `tag`.
-    static func deleteCascading(_ tag: UserTag, context: ModelContext) {
+    ///   - pipeline: The index whose tag column to rewrite, or `nil` when there is none to write
+    ///     (the app has not finished launching, or a test has no index). It has no default, so a
+    ///     caller says which.
+    /// - Returns: The documents whose assignment to `tag` was deleted, each once.
+    @discardableResult
+    static func deleteCascading(_ tag: UserTag, context: ModelContext,
+                                pipeline: IndexingPipeline?) -> [DocumentTagAssignment.DocumentKey] {
         let id = tag.id
 
         // Strip the id from every note that carries it. In-memory filter, NOT a `#Predicate`
@@ -66,9 +79,14 @@ enum UserTagAdmin {
             note.userTagIds = note.userTagIds.filter { $0 != id }
         }
 
-        // Delete every direct-tag assignment referencing it.
+        // Delete every direct-tag assignment referencing it, keeping which documents they were on.
         let assignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
+        var touched: [DocumentTagAssignment.DocumentKey] = []
+        var seen: Set<String> = []
         for assignment in assignments where assignment.tagId == id {
+            if seen.insert("\(assignment.volumeId)/\(assignment.documentId)").inserted {
+                touched.append((volumeId: assignment.volumeId, documentId: assignment.documentId))
+            }
             context.delete(assignment)
         }
 
@@ -78,6 +96,18 @@ enum UserTagAdmin {
 
         context.delete(tag)
         try? context.save()
+
+        // After the save: the rewrite re-reads each document's remaining assignments from the
+        // store, in a context of its own, and an unsaved delete would still be there.
+        if let pipeline, !touched.isEmpty {
+            let container = context.container
+            let documents = touched
+            Task.detached(priority: .utility) {
+                await DocumentTagAssignment.reindexTagColumn(
+                    documents: documents, container: container, pipeline: pipeline)
+            }
+        }
+        return touched
     }
 
     /// Merges `source` into `target`: every reference to `source` is re-pointed at `target`, then

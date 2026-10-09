@@ -13,10 +13,10 @@ import SwiftUI
 /// Corpus-wide abbreviation lookup (#265).
 ///
 /// FRUS glossaries are per-volume, so until now the only way to learn what `S/S-S` meant was to
-/// open a volume that happened to define it. This searches all of them at once — measured on the
-/// owner's index, 10,632 distinct terms across 312 volumes.
+/// open a volume that happened to define it. This searches all of them at once — measured on a
+/// full index on 2026-10-09, 10,607 distinct terms across 313 volumes.
 ///
-/// **The editors did not standardise.** `EUR` carries 30 distinct definitions and `S/S` 25, so a
+/// **The editors did not standardise.** `EUR` carries 16 distinct definitions and `USUN` 14, so a
 /// single answer per abbreviation would be picking one volume's wording and hiding the rest. Each
 /// result shows its variants, most widely used first, with the count of volumes behind each.
 ///
@@ -24,6 +24,8 @@ import SwiftUI
 ///   1.0 — Session 2026-08-10: #265 (F-11)
 ///   1.1 — 2026-09-25: #1374 review, round 1 — the expand link through `GlossaryLookupCopy`, and
 ///         a term's volume count through `CountCopy.volumes`
+///   1.2 — Session 2026-10-09: #1582 — the figures above, re-measured; the count beside a term is
+///         now the number of volumes that define it (`GlossaryEntry.volumeCount`)
 struct GlossaryLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -87,7 +89,7 @@ struct GlossaryLookupView: View {
             if let primary = entry.primaryDefinition {
                 Text(primary).font(.callout)
             }
-            // Only the contested terms get a disclosure — for the ~47% defined one way it would
+            // Only the contested terms get a disclosure — for the 66% defined one way it would
             // be a control that never has anything behind it.
             if entry.isContested {
                 if expanded.contains(entry.term) {

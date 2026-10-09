@@ -351,3 +351,165 @@ struct SourceExplorerProvenanceTests {
 /// Locates the test bundle. `CuratedLotResolutionsTests` declares its own `private` token, which is
 /// file-scoped, so this suite needs one of its own rather than reaching for that.
 private final class SourceExplorerProvenanceBundleToken {}
+
+// MARK: - SourceExplorerLotCardsTests (#1589)
+
+/// Which keyless lot cards a source note shows (`SourceExplorerProvenance.lotCards`), for both
+/// Source Explorer twins (#1589).
+///
+/// The notes are the corpus's own, read by the shipped parser, and the three indexes are the
+/// bundled ones, so a fixture here is a document a reader can open.
+///
+/// Version history:
+///   1.0 — Session 2026-10-09: #1589
+@Suite("Source Explorer lot cards (#1589)")
+struct SourceExplorerLotCardsTests {
+
+    /// The cards for `note`, read by the shipped parser against the bundled indexes.
+    private func cards(_ note: String) throws -> SourceExplorerProvenance.LotCards? {
+        try cards(for: SourceNoteParser().parse(note), note: note)
+    }
+
+    private func cards(for parsed: ParsedSourceNote, note: String = "") throws -> SourceExplorerProvenance.LotCards? {
+        // Bound to non-optional names first: handed straight to an optional parameter, `#require`
+        // unwraps nothing and a missing index would read as "no card".
+        let claimants: LotClaimantsIndex = try #require(LotClaimantsIndexStore.shared,
+                                                        "lot-claimants-index.json must decode")
+        let centralFiles: CentralFilesIndex = try #require(CentralFilesIndexStore.shared,
+                                                           "central-files-index.json must decode")
+        let curated: CuratedLotResolutions = try #require(CuratedLotResolutionsStore.shared,
+                                                          "curated-lot-resolutions.json must decode")
+        return SourceExplorerProvenance.lotCards(for: parsed, note: note, claimants: claimants,
+                                                 centralFiles: centralFiles, curated: curated)
+    }
+
+    /// The series titles of a divided lot's card.
+    private func dividedTitles(_ cards: SourceExplorerProvenance.LotCards?) -> [String]? {
+        guard case .divided(.candidates(let series, _, _, _))? = cards?.bundled else { return nil }
+        return series.map(\.title)
+    }
+
+    // frus1969-76v41 d34, the issue's example.
+    private static let nssmNote = "Source: National Archives, RG 59, Executive Secretariat, Files on Select "
+        + "National Security Study Memorandums, 1969–70, Lot 80D212, NSSM 91. Confidential."
+    // frus1917-72PubDipv06 d29.
+    private static let culturalAffairsNote = "Source: National Archives, RG 59, Bureau of Educational and "
+        + "Cultural Affairs, Office of the Assistant Secretary, Subject Files, 1961–1962: Lot 63D135, "
+        + "Entry A1–5072, Box 5, White House—1961. No classification marking."
+    // frus1945-50Intel d269: led by RG 273, and an earlier version is in an RG 59 lot.
+    private static let nscNote = "Source: National Archives and Records Administration, RG 273, Records of "
+        + "the National Security Council, NSC 10/2. Top Secret. No drafting information appears on the "
+        + "source text. An earlier, similar version, April 30, is ibid., RG 59, Records of the Department "
+        + "of State, Policy Planning Staff Files 1944–47: Lot 64 D 563, Box 11."
+
+    @Test("A lot cited through the National Archives is parsed as a collection that carries the lot")
+    func theNotesParseAsTheIssueSays() {
+        // The case the cards were never drawn for. If the parser comes to read these as lot
+        // files, the tests below pass without reaching the new arm.
+        for (note, recordGroup, lot) in [(Self.nssmNote, "59", "80D212"),
+                                         (Self.culturalAffairsNote, "59", "63D135"),
+                                         (Self.nscNote, "273", "64 D 563")] {
+            guard case .naraCollection(let parsedGroup, _, let parsedLot?, _) = SourceNoteParser().parse(note) else {
+                Issue.record("not a National Archives collection with a lot: \(note.prefix(60))")
+                continue
+            }
+            #expect(parsedGroup == recordGroup && parsedLot == lot, "got RG \(parsedGroup), lot \(parsedLot)")
+        }
+    }
+
+    @Test("A divided lot cited through the National Archives shows every series that claims it")
+    func aDividedLotShowsItsSeries() throws {
+        let titles = try #require(dividedTitles(try cards(Self.nssmNote)))
+        #expect(titles.count == 4, "got \(titles)")
+        // The series the citation itself names is one of the four.
+        #expect(titles.contains("Files on Select National Security Study Memorandums"))
+    }
+
+    @Test("A lot the bundle resolves to one series, cited through the National Archives, shows that series")
+    func aSingleSeriesLotShowsItsCard() throws {
+        let found = try #require(try cards(Self.culturalAffairsNote))
+        guard case .single(let entry)? = found.bundled else {
+            Issue.record("expected the one-series card, got \(String(describing: found.bundled))")
+            return
+        }
+        #expect(entry.naId == "2569429" && entry.recordGroup == "59")
+        #expect(found.rawLot == "63D135")
+        #expect(found.curated == nil)
+    }
+
+    @Test("A note led by another record group shows no State Department lot card, though the bundle holds the lot")
+    func anotherRecordGroupShowsNoCard() throws {
+        #expect(try cards(Self.nscNote) == nil)
+        // The bundle does hold that lot, divided across twelve series: worded as a lot file, or
+        // through RG 59, the same lot is answered. So the refusal above is the record group's.
+        let asLotFile = try cards(for: .lotFile(recordGroup: "RG-59", lotNumber: "64 D 563", fileIdentifier: nil))
+        #expect(dividedTitles(asLotFile)?.count == 12)
+        let throughRG59 = try cards(for: .naraCollection(recordGroup: "59", series: nil, lotFile: "64 D 563", box: nil))
+        #expect(dividedTitles(throughRG59)?.count == 12)
+        // And a one-series lot is refused the same way (frus1958-60v11 d39's, under RG 218).
+        #expect(try cards(for: .naraCollection(recordGroup: "218", series: "JCS Files", lotFile: "61 D 417", box: nil)) == nil)
+        guard case .single? = try cards(for: .naraCollection(recordGroup: "59", series: nil,
+                                                             lotFile: "61 D 417", box: nil))?.bundled else {
+            Issue.record("61 D 417 is a one-series RG 59 lot in the bundle")
+            return
+        }
+    }
+
+    @Test("A lot-file citation is answered as it always was, whatever record group its note gives")
+    func aLotFileCitationIsUnchanged() throws {
+        // The parser gives every lot that is not an F lot `RG-59`; the card never depended on it.
+        for recordGroup in ["RG-59", "RG-84", nil] {
+            let found = try cards(for: .lotFile(recordGroup: recordGroup, lotNumber: "63D135", fileIdentifier: nil))
+            guard case .single(let entry)? = found?.bundled else {
+                Issue.record("no one-series card under \(recordGroup ?? "no record group")")
+                continue
+            }
+            #expect(entry.naId == "2569429")
+        }
+    }
+
+    @Test("A curated lot cited through the National Archives is answered under its own record group only")
+    func aCuratedLotFollowsItsRecordGroup() throws {
+        // M-88, the Council of Foreign Ministers files: curated, in RG 43, and in neither bundled index.
+        let curated = try #require(CuratedLotResolutionsStore.shared)
+        #expect(curated.recordGroup(forRawLot: "M-88") == "RG-43")
+        let asLotFile = try #require(try cards(for: .lotFile(recordGroup: "RG-59", lotNumber: "M-88", fileIdentifier: nil)))
+        #expect(asLotFile.bundled == nil && asLotFile.curated != nil)
+        let throughRG43 = try cards(for: .naraCollection(recordGroup: "43", series: nil, lotFile: "M-88", box: nil))
+        #expect(throughRG43?.curated == asLotFile.curated)
+        #expect(try cards(for: .naraCollection(recordGroup: "59", series: nil, lotFile: "M-88", box: nil)) == nil)
+    }
+
+    @Test("A note with no lot, a lot the bundle does not hold, and every other kind of note show no card")
+    func otherNotesShowNoCard() throws {
+        #expect(try cards(for: .naraCollection(recordGroup: "59", series: "Central Files", lotFile: nil, box: nil)) == nil)
+        #expect(try cards(for: .naraCollection(recordGroup: "59", series: nil, lotFile: "99 Z 999", box: nil)) == nil)
+        #expect(try cards(for: .lotFile(recordGroup: "RG-59", lotNumber: "99 Z 999", fileIdentifier: nil)) == nil)
+        #expect(try cards(for: .centralFiles(recordGroup: "59", fileIdentifier: "611.00/1-150")) == nil)
+        #expect(try cards(for: .namedFileSeries(seriesName: "CFM Files", fileIdentifier: nil)) == nil)
+    }
+
+    @Test("A record group is compared by its number, in each of the three forms it is written in")
+    func recordGroupsAreComparedByNumber() {
+        for form in ["59", "RG-59", "RG 59", "059"] {
+            #expect(SourceExplorerProvenance.recordGroupNumber(form) == "59", "\(form)")
+        }
+        #expect(SourceExplorerProvenance.recordGroupNumber("RG-84") == "84")
+    }
+
+    @Test("Both twins draw the lot cards through the shared rule, and neither reads the lot indexes itself")
+    func bothTwinsUseTheSharedRule() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
+                     "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            #expect(source.count > 5_000, "\(path) read back as \(source.count) characters")
+            #expect(source.components(separatedBy: "SourceExplorerProvenance.lotCards(").count == 2,
+                    "\(path) reads the rule in one place")
+            // A call, not a mention: the receiver's `.` or `?.` and the opening parenthesis.
+            for lookup in ["LotClaimantsIndex.candidatesOutcome(", ".lotFile(forRawLot:", ".outcome(forRawLot:"] {
+                #expect(!source.contains(lookup), "\(path) still calls \(lookup)")
+            }
+        }
+    }
+}

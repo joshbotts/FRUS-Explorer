@@ -15,7 +15,8 @@ import Foundation
 /// FRUS TEI ref targets come in several flavours that previously all funnelled
 /// into "treat the anchor as a document ID":
 /// `#d80` · `frus1964-68v20#d104` · `#d100fn2` (footnote of another document) ·
-/// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `http://…`.
+/// `#pg_313` / `frus1955-57v17#pg_313` (printed page) · `frus1961-63v05` (a whole volume) ·
+/// `http://…`.
 public enum CrossRefDestination: Equatable, Sendable {
     /// A FRUS document.
     case document(volumeId: String?, documentId: String)
@@ -26,6 +27,12 @@ public enum CrossRefDestination: Equatable, Sendable {
     /// A printed page in a volume; resolve to the document that begins on it (#1503) via
     /// `PageRangeStore.document(forPage:inVolume:)`.
     case page(volumeId: String?, page: Int)
+    /// A whole volume, not a document in it (#1603): a target with no `#` that is a volume's id
+    /// (`frus1961-63v05`). The id is as the target gives it, and may name a volume a host does not
+    /// hold: of the 8,266 such references in the 553 catalogue volumes at corpus `deb6a04f8`,
+    /// 6,997 name a catalogue volume and 1,269 a volume outside it (a microfiche supplement, or a
+    /// volume not yet published).
+    case volume(volumeId: String)
     /// A non-FRUS absolute URL — open in the browser.
     case external(URL)
     /// Nothing navigable: same-document footnote/figure/table anchors, roman-
@@ -72,6 +79,8 @@ public enum ReaderLink: Equatable, Sendable {
 ///   1.2 — Session 2026-10-06 (FRUS Explorer Light, S9b): `readerLink(from:)` and `ReaderLink`, the
 ///          parse of the reader's links that `FRUSURLSchemeHandler.dispatch(url:)` did in the app,
 ///          moved here verbatim, so a host outside the app reads each link as the app does
+///   1.3 — Session 2026-10-09: #1603 — `CrossRefDestination.volume`, a reference to a whole volume,
+///          which `resolveCrossRefTarget` read as a document of that name in the volume being read
 public enum FRUSURLScheme {
 
     /// What `url` names when it is a link in the reader's page, or `nil` when it is not one: a
@@ -121,6 +130,9 @@ public enum FRUSURLScheme {
     /// quirks found across the corpus (Session 162 link audit):
     ///
     /// - `vol#anchor` prefixes override `volumeId`; bare `#anchor` keeps it.
+    /// - A target with no `#` that is a volume's id (`frus1961-63v05`) is `.volume` (#1603). Any
+    ///   other target with no `#` (`pg_1602`, an anchor printed without its `#`) is read as before,
+    ///   as an anchor in the volume being read.
     /// - `dNNNfnM` footnote-suffixed ids resolve to the base document `dNNN`.
     /// - `pg_313` / `pg313` / `page313` anchors resolve to a page number;
     ///   roman-numeral pages (`pg_XIII`, front matter) are `.unresolved`.
@@ -150,6 +162,11 @@ public enum FRUSURLScheme {
             let prefix = String(target[..<hash])
             if !prefix.isEmpty { vol = prefix }
             anchor = String(target[target.index(after: hash)...])
+        } else if isVolumeId(target) {
+            // #1603: until this, a whole-volume target fell through to the last line below and was
+            // read as a document named `frus1961-63v05` in the volume being read, which no volume
+            // has, so the link did nothing.
+            return .volume(volumeId: target)
         }
         guard !anchor.isEmpty else { return .unresolved }
 
@@ -184,6 +201,18 @@ public enum FRUSURLScheme {
             return .footnote(volumeId: vol, documentId: String(match.1), anchor: anchor)
         }
         return .document(volumeId: vol, documentId: anchor)
+    }
+
+    /// Whether `token` has the form of a volume's id: `frus` and then a digit, the year every
+    /// volume id opens with (`frus1861`, `frus1969-76v41`, `frus1958-60v15-16mSupp1`).
+    ///
+    /// Measured at corpus `deb6a04f8` over every `<ref target>` with no `#` in the 553 catalogue
+    /// volumes: all 8,266 that name a volume have this form, the three that do not (`pg_1602`,
+    /// `pg_1743` twice) are page anchors printed without their `#`, and no division's `xml:id`
+    /// in those volumes begins `frus`, so no document is read as a volume.
+    nonisolated static func isVolumeId(_ token: String) -> Bool {
+        guard token.hasPrefix("frus") else { return false }
+        return token.dropFirst(4).first?.isASCII == true && token.dropFirst(4).first?.isNumber == true
     }
 
     /// The host of a figure image's URL: `frusexplorer://figure/{volumeId}/{fileName}`.

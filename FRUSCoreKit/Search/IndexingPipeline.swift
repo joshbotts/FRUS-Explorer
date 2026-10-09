@@ -420,6 +420,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         from the sentinel, and `volumesAwaitingIndex(excluding:)` and `finishIndexing(of:)` are the launch
 ///         pass that finishes a volume cut short with no sentinel left. Nothing a parse emits changes, so
 ///         no index version
+///  4.33 — 2026-10-09 (#1582, #1591): `glossaryLookup` counts the volumes that define a term, where
+///         it gave the widest wording's count, and folds the TEI source's line breaks in a term and
+///         a definition as it reads them; `documentsWithUserTagIds()` and the partial index
+///         `idx_document_cache_user_tag_ids`, for the app's tag-column reconcile. Nothing a parse
+///         emits or the index stores changes, so no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2757,6 +2762,53 @@ public actor IndexingPipeline {
         }
         return rows
     }
+
+    /// Every document whose `user_tag_ids` is not NULL, with the column as it is stored (#1591).
+    ///
+    /// The tag column's twin of ``documentsWithNoteText()``. A replay can write the tags of every
+    /// document that still HAS a tag assignment, but it visits only those, so a row left behind
+    /// when a document's last tag went away (removed on another device, or deleted with its tag in
+    /// Settings) is invisible to it. This is the set to subtract the live assignments from;
+    /// `DocumentTagAssignment.tagColumnPlan(for:carrying:sweepingStaleRows:)` does the subtracting.
+    ///
+    /// The stored string comes back too, so the plan can leave alone a row that already names the
+    /// document's tags in another order: the column's writers do not agree on one.
+    ///
+    /// NOT NULL rather than "holds an id", as the note read is and for its reason: a row holding
+    /// `''` is reported, cleared to NULL by one sweep, and then stays out of this set.
+    ///
+    /// - Returns: The keyed documents, sorted.
+    ///
+    /// nonisolated: reads `auxDb` directly, as `documentsWithNoteText()` does — a read-only query.
+    nonisolated func documentsWithUserTagIds() throws
+        -> [(volumeId: String, documentId: String, userTagIds: String)] {
+        // `idx_document_cache_user_tag_ids` is PARTIAL on exactly this predicate; the row is then
+        // read for the column, once per TAGGED document. Pinned by `EXPLAIN QUERY PLAN` in
+        // `TagColumnReconcileTests`.
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, Self.documentsWithUserTagIdsSQL, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let handle = stmt else {
+            let message = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: message)
+        }
+        defer { sqlite3_finalize(handle) }
+        var rows: [(volumeId: String, documentId: String, userTagIds: String)] = []
+        while sqlite3_step(handle) == SQLITE_ROW {
+            guard let volume = sqlite3_column_text(handle, 0),
+                  let document = sqlite3_column_text(handle, 1) else { continue }
+            let stored = sqlite3_column_text(handle, 2).map { String(cString: $0) } ?? ""
+            rows.append((volumeId: String(cString: volume), documentId: String(cString: document),
+                         userTagIds: stored))
+        }
+        return rows
+    }
+
+    /// ``documentsWithUserTagIds()``'s query, named so a test can ask SQLite for its plan.
+    nonisolated static let documentsWithUserTagIdsSQL = """
+        SELECT volume_id, document_id, user_tag_ids FROM document_cache
+        WHERE user_tag_ids IS NOT NULL
+        ORDER BY volume_id, document_id
+        """
 
     // MARK: - Indexed documents, for a donor
 
@@ -6985,6 +7037,18 @@ public actor IndexingPipeline {
         try exec("""
             CREATE INDEX IF NOT EXISTS idx_document_cache_note_text
             ON document_cache(volume_id, document_id) WHERE note_text IS NOT NULL
+            """)
+        // #1591: the same index for the tag column, for the same reason. `documentsWithUserTagIds()`
+        // runs on every tag reconciliation pass, and nothing indexed `user_tag_ids`: finding the
+        // tagged rows read the whole table, 7.1 s cold over a full library on a Mac's simulator
+        // (316,768 rows, 2.87 GB). PARTIAL on that query's predicate, so it holds one entry per
+        // TAGGED document. Built once, by one scan of the table, on the first launch after it
+        // ships.
+        //
+        // No `currentDateIndexVersion` bump — an index is derived, not parse output.
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_document_cache_user_tag_ids
+            ON document_cache(volume_id, document_id) WHERE user_tag_ids IS NOT NULL
             """)
         try exec("""
             CREATE TABLE IF NOT EXISTS persons (
@@ -12338,37 +12402,42 @@ extension IndexingPipeline {
     /// "NSC" wants NSC, not "NSC Action No." above it. Within a rank, terms that more volumes
     /// define come first, because breadth is the best available proxy for "this is the one you
     /// meant" in a glossary with no frequency data of its own.
+    ///
+    /// **One row per glossary entry, counted in Swift (#1582).** Every figure the sheet prints is a
+    /// number of VOLUMES, and a term's volumes can be counted once across its wordings only from
+    /// the volumes themselves. Until #1582 the SQL grouped by `(term, definition)` and handed back
+    /// a count per wording, from which no per-term count can be recovered: `assemble` used the
+    /// widest wording's, which read 82 for `EUR` where 231 volumes define it.
     public func glossaryLookup(query: String, limit: Int = 60) async throws -> [GlossaryEntry] {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = Self.collapsingXMLWhitespace(query)
         let sql: String
         var binds: [String] = []
         if trimmed.isEmpty {
-            sql = """
-                SELECT term, definition, COUNT(DISTINCT volume_id) AS n, MIN(volume_id)
-                FROM terms GROUP BY term, definition
-                """
+            sql = "SELECT term, definition, volume_id FROM terms"
         } else {
-            // Three patterns, one pass. LIKE is case-insensitive for ASCII in SQLite, which is
-            // what an abbreviation lookup needs (`nsc` finds `NSC`).
+            // LIKE is case-insensitive for ASCII in SQLite, which is what an abbreviation lookup
+            // needs (`nsc` finds `NSC`). Each space in the query matches any run of characters,
+            // because a stored term keeps the line break and indentation of its TEI source where
+            // the reader types one space; `assemble` then keeps only the terms that hold the query
+            // as typed.
             sql = """
-                SELECT term, definition, COUNT(DISTINCT volume_id) AS n, MIN(volume_id)
+                SELECT term, definition, volume_id
                 FROM terms WHERE term LIKE ? ESCAPE '\\'
-                GROUP BY term, definition
                 """
-            binds = ["%" + Self.escapeLike(trimmed) + "%"]
+            binds = ["%" + trimmed.split(separator: " ").map { Self.escapeLike(String($0)) }
+                .joined(separator: "%") + "%"]
         }
         let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
         for (i, value) in binds.enumerated() {
             sqlite3_bind_text(stmt, Int32(i + 1), value, -1, SQLITE_TRANSIENT_IP)
         }
-        var rows: [(term: String, definition: String, count: Int, volume: String)] = []
+        var rows: [(term: String, definition: String, volume: String)] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             rows.append((
                 auxColumnString(stmt, 0) ?? "",
                 auxColumnString(stmt, 1) ?? "",
-                Int(sqlite3_column_int(stmt, 2)),
-                auxColumnString(stmt, 3) ?? ""
+                auxColumnString(stmt, 2) ?? ""
             ))
         }
         return Self.assemble(rows: rows, query: trimmed, limit: limit)
@@ -12381,31 +12450,63 @@ extension IndexingPipeline {
             .replacingOccurrences(of: "_", with: "\\_")
     }
 
-    /// Groups rows into entries and ranks them. Pure, so the ranking can be tested without a
-    /// database — the rule is the part worth pinning, not the SQL.
+    /// `text` with each run of XML whitespace (space, tab, line feed, carriage return) as one
+    /// space, and none at either end.
+    ///
+    /// The terms parser trims a term and its definition and keeps what lies between, so a wording
+    /// the TEI source wraps is stored with its line break and indentation: 49,517 of the 66,203
+    /// stored definitions hold one, and 198 terms. Read as stored, the same wording wrapped at
+    /// another word is another wording, and the row prints the break. A no-break space is not
+    /// folded: it is a character the editors wrote, not the file's layout.
+    static func collapsingXMLWhitespace(_ text: String) -> String {
+        // "\r\n" is one Character, so it is named beside its two halves.
+        let whitespace: Set<Character> = [" ", "\t", "\n", "\r", "\r\n"]
+        return text.split(whereSeparator: { whitespace.contains($0) }).joined(separator: " ")
+    }
+
+    /// Groups glossary rows into entries, counts their volumes and ranks them. Pure, so the
+    /// counting and the ranking can be tested without a database.
+    ///
+    /// - Parameters:
+    ///   - rows: One row per glossary entry of a volume: the term and definition as stored, and
+    ///     the volume. A row given twice counts once.
+    ///   - query: What the reader typed, or empty. A term that does not hold it, compared without
+    ///     case and with whitespace collapsed, is left out.
+    ///   - limit: Maximum terms returned.
     static func assemble(
-        rows: [(term: String, definition: String, count: Int, volume: String)],
+        rows: [(term: String, definition: String, volume: String)],
         query: String,
         limit: Int
     ) -> [GlossaryEntry] {
-        var byTerm: [String: [(definition: String, count: Int, volume: String)]] = [:]
-        for row in rows where !row.term.isEmpty && !row.definition.isEmpty {
-            byTerm[row.term, default: []].append((row.definition, row.count, row.volume))
+        let lowered = collapsingXMLWhitespace(query).lowercased()
+        // term → wording → the volumes whose glossary gives it
+        var byTerm: [String: [String: Set<String>]] = [:]
+        for row in rows {
+            let term = collapsingXMLWhitespace(row.term)
+            let wording = collapsingXMLWhitespace(row.definition)
+            guard !term.isEmpty, !wording.isEmpty else { continue }
+            guard lowered.isEmpty || term.lowercased().contains(lowered) else { continue }
+            byTerm[term, default: [:]][wording, default: []].insert(row.volume)
         }
-        let lowered = query.lowercased()
-        let entries: [GlossaryEntry] = byTerm.map { term, defs in
-            let variants = defs
-                .sorted {
-                    $0.count == $1.count ? $0.definition < $1.definition : $0.count > $1.count
-                }
-                .map { GlossaryEntry.Variant(definition: $0.definition,
-                                             volumeCount: $0.count,
-                                             sampleVolumeId: $0.volume) }
-            // Volumes defining the term at all — NOT the sum of the per-wording counts, which
-            // double-counts a volume whose glossary gives two wordings of the same abbreviation.
-            let total = defs.map(\.count).max() ?? 0
-            return GlossaryEntry(term: term, variants: variants,
-                                 volumeCount: max(total, variants.count))
+        var entries: [GlossaryEntry] = []
+        entries.reserveCapacity(byTerm.count)
+        for (term, wordings) in byTerm {
+            var variants: [GlossaryEntry.Variant] = []
+            // The union, not the widest wording's count and not the sum (#1582): a term's wordings
+            // sit mostly in different volumes, so the widest undercounts (2,888 of 10,641 terms),
+            // and a volume whose glossary gives two wordings is in the sum twice (95 terms).
+            var volumes: Set<String> = []
+            for (wording, itsVolumes) in wordings {
+                variants.append(GlossaryEntry.Variant(definition: wording,
+                                                      volumeCount: itsVolumes.count,
+                                                      sampleVolumeId: itsVolumes.min() ?? ""))
+                volumes.formUnion(itsVolumes)
+            }
+            variants.sort { (a: GlossaryEntry.Variant, b: GlossaryEntry.Variant) -> Bool in
+                if a.volumeCount != b.volumeCount { return a.volumeCount > b.volumeCount }
+                return a.definition < b.definition
+            }
+            entries.append(GlossaryEntry(term: term, variants: variants, volumeCount: volumes.count))
         }
         func rank(_ term: String) -> Int {
             let t = term.lowercased()
@@ -12431,19 +12532,24 @@ extension IndexingPipeline {
 /// One abbreviation as the corpus defines it, with every distinct definition the editors gave.
 ///
 /// The shape is the finding. FRUS's glossaries are per-volume and the editors did not standardise
-/// them: measured over the owner's index, **`EUR` carries 30 distinct definitions across 231
-/// volumes** and `S/S` 25. A corpus-wide glossary that showed one answer per abbreviation would be
-/// picking one editor's wording and hiding twenty-nine others — so a result carries its variants.
+/// them: measured over a full index (313 volumes with a glossary, 2026-10-09), **`EUR` carries 16
+/// distinct definitions across 231 volumes** and `USUN` 14 across 207. A corpus-wide glossary that
+/// showed one answer per abbreviation would be picking one editor's wording and hiding the others,
+/// so a result carries its variants. (The figures were 30 and 25 until #1582, when a wording the
+/// TEI source wraps at another word stopped counting as another wording.)
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #265 (F-11)
+///   1.1 — Session 2026-10-09: #1582 — `volumeCount` is the number of volumes that define the
+///          term, where it was the widest wording's count; a term and a wording are read with the
+///          source's line breaks and indentation folded to one space
 public struct GlossaryEntry: Sendable, Identifiable, Equatable {
 
     /// One wording, and how widely it is used.
     public struct Variant: Sendable, Equatable {
-        /// The definition text as one volume's glossary gives it.
+        /// The definition as a volume's glossary gives it, each run of whitespace as one space.
         public let definition: String
-        /// How many volumes use this exact wording.
+        /// How many volumes use this wording.
         public let volumeCount: Int
         /// A volume that uses it, so a reader can go and see it in context.
         public let sampleVolumeId: String
@@ -12453,7 +12559,7 @@ public struct GlossaryEntry: Sendable, Identifiable, Equatable {
     public let term: String
     /// Distinct definitions, most widely used first.
     public let variants: [Variant]
-    /// Volumes defining this term at all.
+    /// How many volumes' glossaries define this term, each counted once whatever its wording.
     public let volumeCount: Int
 
     public var id: String { term }

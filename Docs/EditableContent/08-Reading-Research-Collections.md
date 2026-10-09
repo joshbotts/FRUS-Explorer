@@ -529,14 +529,14 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2215–2215 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2243–2243 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2216–2217 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2243–2244 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
@@ -749,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2521–2522 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2548–2549 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -1700,7 +1700,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3091–3092 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3099–3100 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2103,7 +2103,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1438–1439 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1465–1466 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 

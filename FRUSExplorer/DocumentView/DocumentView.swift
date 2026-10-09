@@ -1286,6 +1286,9 @@ struct DocumentView: View {
         case .page(let volumeId, let page):
             resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId, citing: citing)
 
+        case .volume(let volumeId):
+            openCrossRefVolume(volumeId)
+
         case .external(let url):
             // NOT `openURL(url)`. That was `@Environment(\.openURL)` — the very value this view
             // REPLACES a few lines below, in `documentContent`'s
@@ -1305,6 +1308,31 @@ struct DocumentView: View {
         case .unresolved:
             #if DEBUG
             print("[DocumentView] Cross-ref skipped (unresolvable target): \(target)")
+            #endif
+        }
+    }
+
+    /// Follows a reference to a whole volume (#1603), as `WholeVolumeLink` decides: the volume's
+    /// page in this window's Browse tab, or history.state.gov's page for a volume outside the
+    /// catalogue. Browse's page offers the download when the volume is not on the device.
+    ///
+    /// The Browse hand-off is the one `navigateToCrossRef` falls back to for a document, so it has
+    /// that fallback's limit: from a reader inside a sheet, or in a window of its own on iPad, the
+    /// volume opens in the main window's Browse tab, beneath the sheet or beside that window.
+    private func openCrossRefVolume(_ volumeId: String) {
+        let inCatalogue = appState.manifestStore.entry(forVolumeId: volumeId) != nil
+        switch WholeVolumeLink.destination(for: volumeId, inCatalogue: inCatalogue) {
+        case .browse(let volumeId):
+            #if os(iOS)
+            appState.openTab(.browse, from: sceneID)
+            #endif
+            appState.openBrowseVolume(volumeId, from: sceneID)
+        case .web(let url):
+            // The system opener, for the reason `.external` gives above.
+            UIApplication.shared.open(url)
+        case nil:
+            #if DEBUG
+            print("[DocumentView] Cross-ref skipped (unusable volume id): \(volumeId)")
             #endif
         }
     }

@@ -579,6 +579,9 @@ final class RootElementSnifferDelegate: NSObject, XMLParserDelegate {
 private struct UserTagsView: View {
 
     @Environment(\.modelContext) private var modelContext
+    /// The app's state, for the index a deleted tag's documents are rewritten in (#1591). Optional,
+    /// as `TagEditorView`'s is: a host without it leaves the index to the next reconcile.
+    @Environment(AppState.self) private var appState: AppState?
     @Query(sort: \UserTag.name) private var tags: [UserTag]
     /// The preferences record carrying the reader's own tag order (#1275). Observed, so a reorder
     /// from this list's drag, another window or another device re-renders it.
@@ -631,7 +634,8 @@ private struct UserTagsView: View {
                         // Swipes stay as shortcuts — everything they do is also a row in the editor.
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
-                                UserTagAdmin.deleteCascading(tag, context: modelContext)
+                                UserTagAdmin.deleteCascading(tag, context: modelContext,
+                                                             pipeline: appState?.indexingPipeline)
                                 counts = ResearchItemCounts.fetch(from: modelContext)
                             } label: {
                                 Label(String(localized: "settings.tags.delete.swipe",

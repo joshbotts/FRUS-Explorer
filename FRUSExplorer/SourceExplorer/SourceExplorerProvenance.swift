@@ -39,6 +39,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — P-1: initial implementation
+///   1.1 — Session 2026-10-09: #1589 — `lotCards(for:note:claimants:centralFiles:curated:)`, the
+///          keyless lot cards a note shows, read once for both twins. The exception to "not
+///          lookups" above: it is handed the three bundled indexes as values, and reads no store
 enum SourceExplorerProvenance {
 
     /// Which producer answered for a lot file's **Record Group** row.
@@ -89,5 +92,114 @@ enum SourceExplorerProvenance {
     /// - Returns: `.stateDeptSchedule` for a central-file-class pointer, `.frusText` otherwise.
     static func unprintedPointerSource(for citation: ExternalCitation) -> ProvenanceSource {
         citation.anchor == "centralFileClass" ? .stateDeptSchedule : .frusText
+    }
+
+    // MARK: - Lot cards (#1589)
+
+    /// The keyless lot cards one source note shows: what the bundled indexes answer for the lot
+    /// it cites, with no NARA Catalog API key.
+    struct LotCards: Equatable {
+
+        /// What the bundle holds for the lot.
+        enum Bundled: Equatable {
+            /// NARA divided the lot across several series: all of them, as the `.candidates`
+            /// outcome the twins already draw. It takes the place of the one-series card, which
+            /// would assert a choice the data does not support (#675).
+            case divided(CuratedLotOutcome)
+            /// The lot's one series, from `central-files-index.json`.
+            case single(LotFileEntry)
+        }
+
+        /// The lot as the note prints it.
+        let rawLot: String
+        /// The bundle's answer, or `nil` when it holds none the note may show.
+        let bundled: Bundled?
+        /// The hand-curated outcome for a lot NARA's catalogue does not resolve by control number
+        /// (#375), drawn after `bundled`.
+        let curated: CuratedLotOutcome?
+    }
+
+    /// The lot cards `parsed` shows, or `nil` when it shows none.
+    ///
+    /// **A note's parse case records how it was worded, not what it cites.** `S/S Files: Lot 80 D
+    /// 212` is `.lotFile`; `National Archives, RG 59, …, Lot 80D212` is `.naraCollection` with the
+    /// lot attached. Until #1589 both twins drew these cards for `.lotFile` alone, so a reader with
+    /// no API key was shown "NARA Catalog API Key Required" for a lot the bundle answers. Every
+    /// other surface already read both cases as one citation (the keyed query, the
+    /// related-documents line, the Unprinted Material marker, `CollectionKeying.identity`, the
+    /// stored `lot_file`).
+    ///
+    /// **A lot cited through the National Archives is answered only under the record group the
+    /// note names.** A lot-file citation names no record group of its own and is answered as it
+    /// always was. A National Archives citation does, and some are notes led by another record
+    /// group (RG 218, 273, 306, 330, 383, 84) whose State Department lot is named in a later
+    /// remark or as another copy; a State Department lot card would be wrong there. So for
+    /// `.naraCollection` the divided card needs a claimant series of the cited record group, the
+    /// one-series card an entry of it, and a curated outcome a curated record group that is the
+    /// cited one or none.
+    ///
+    /// Measured on 2026-10-09 by running this function over the stored note of every document in
+    /// a full index: 807 notes are a National Archives collection carrying a lot. 719 get a card,
+    /// in 67 volumes (621 the one-series card, 98 the divided one); 10 are refused by the record
+    /// group; 78 cite a lot the bundle does not hold.
+    ///
+    /// **A Subject-Numeric citation shows none.** The iPhone and iPad twin gives such a note its
+    /// own panel in place of this one (`provenanceSection(parsed:)`), and the Mac twin, which
+    /// draws these cards beside its NARA box, is held to the same answer here.
+    ///
+    /// - Parameters:
+    ///   - parsed: The document's parsed source note.
+    ///   - note: Its text, for the Subject-Numeric reading.
+    ///   - claimants: `LotClaimantsIndexStore.shared`.
+    ///   - centralFiles: `CentralFilesIndexStore.shared`.
+    ///   - curated: `CuratedLotResolutionsStore.shared`.
+    static func lotCards(for parsed: ParsedSourceNote?, note: String,
+                         claimants: LotClaimantsIndex?,
+                         centralFiles: CentralFilesIndex?,
+                         curated: CuratedLotResolutions?) -> LotCards? {
+        let lot: String
+        // The record group a National Archives citation names, as its number; `nil` for a
+        // lot-file citation, which is answered whatever the lot's record group.
+        let cited: String?
+        switch parsed {
+        case .lotFile(_, let number, _)?:
+            lot = number
+            cited = nil
+        case .naraCollection(let recordGroup, _, let number?, _)?:
+            guard let parsed,
+                  CollectionKeying.centralFilesReading(parsed: parsed, note: note)?.form != .subjectNumeric
+            else { return nil }
+            lot = number
+            cited = recordGroupNumber(recordGroup)
+        default:
+            return nil
+        }
+        func isCited(_ recordGroup: String?) -> Bool {
+            guard let cited else { return true }
+            return recordGroup.map(recordGroupNumber) == cited
+        }
+
+        let bundled: LotCards.Bundled?
+        if let series = claimants?.claimants(forRawLot: lot),
+           series.contains(where: { isCited($0.recordGroup) }),
+           let divided = LotClaimantsIndex.candidatesOutcome(forRawLot: lot, in: claimants) {
+            bundled = .divided(divided)
+        } else if let entry = centralFiles?.lotFile(forRawLot: lot), isCited(entry.recordGroup) {
+            bundled = .single(entry)
+        } else {
+            bundled = nil
+        }
+        // A curated lot with no record group of its own is answered under any.
+        let curatedRecordGroup = curated?.recordGroup(forRawLot: lot)
+        let outcome = (cited == nil || curatedRecordGroup == nil || isCited(curatedRecordGroup))
+            ? curated?.outcome(forRawLot: lot) : nil
+        guard bundled != nil || outcome != nil else { return nil }
+        return LotCards(rawLot: lot, bundled: bundled, curated: outcome)
+    }
+
+    /// A record group as its number alone: `59` for `59`, `RG-59` and `RG 59`, the three forms the
+    /// parser, the curated file and the bundled indexes write.
+    static func recordGroupNumber(_ recordGroup: String) -> String {
+        String(recordGroup.filter(\.isNumber).drop(while: { $0 == "0" }))
     }
 }

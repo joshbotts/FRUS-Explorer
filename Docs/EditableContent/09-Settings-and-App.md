@@ -19,21 +19,21 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 #### Settings-sync toggle detail
 <!-- S-5b made the "single edit point" claim on the three keys below actually true: the macOS Sync pane used to hardcode its own near-identical copy (and had drifted — "shares those settings" vs "shares the settings above"). Both platforms now render `SyncSettingsSection`. -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1676–1677 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1680–1681 | key: settings.sync.toggle.detail | shared: iOS+macOS (single edit point) -->
 
 Word-cloud filters & stop lists, citation style, default document mode, and research logging.
 
 <!-- END SOURCE: settings.sync.toggle.detail -->
 
 #### Settings-sync unavailable notice
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1688–1689 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.rows | lines: 1692–1693 | key: settings.sync.unavailable | shared: iOS+macOS (single edit point) -->
 
 Settings sync needs iCloud. Sign in to iCloud and enable it for FRUS Explorer to turn this on.
 
 <!-- END SOURCE: settings.sync.unavailable -->
 
 #### iCloud Sync section footer
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.footerText | lines: 1698–1699 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SyncSettingsSection.footerText | lines: 1702–1703 | key: settings.sync.footer | shared: iOS+macOS (single edit point) -->
 
 When this is on, the device shares the settings above with your other devices that also have it on. Turning it on adopts the settings already in iCloud. Leave it off to keep this device’s settings separate.
 
@@ -471,7 +471,7 @@ This deletes every downloaded volume, the search index, and all of your research
 
 #### Erase Everything — first confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1560–1561 | key: settings.erase.confirm1.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1564–1565 | key: settings.erase.confirm1.message | shared: iOS+macOS (single edit point) -->
 
 Everything listed above will be deleted from this device and from iCloud.
 
@@ -479,7 +479,7 @@ Everything listed above will be deleted from this device and from iCloud.
 
 #### Erase Everything — final confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1576–1577 | key: settings.erase.confirm2.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | EraseEverythingView | lines: 1580–1581 | key: settings.erase.confirm2.message | shared: iOS+macOS (single edit point) -->
 
 Export your research data first if you might want it back.
 
@@ -604,7 +604,7 @@ When on, the app keeps summarizing a few documents at a time while you are not u
 
 #### Reading mode — footer (iPad and Mac)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1882–1883 | key: settings.display.reading.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1886–1887 | key: settings.display.reading.footer -->
 
 “Remember Last” reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document.
 
@@ -614,7 +614,7 @@ When on, the app keeps summarizing a few documents at a time while you are not u
 
 #### Reading mode — footer (iPhone)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1879–1880 | key: settings.display.reading.footer.iphone -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1883–1884 | key: settings.display.reading.footer.iphone -->
 
 The Research rail opens as a bottom sheet from the toolbar’s Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed.
 
@@ -900,7 +900,7 @@ Colors group collections by who holds the records — four custodians, not the e
 <!-- END SOURCE: series.provenance.topCollections.method.v4 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2322–2323 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2333–2334 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 
@@ -1213,63 +1213,63 @@ Download With Volumes is off, so these will not arrive on their own.
 <!-- END SOURCE: settings.vectors.downloadAll.detail %lld %@ -->
 
 #### Footer — This order is also the order of your tags in the note…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | UserTagsView.body | lines: 674–675 | key: settings.tags.list.footer.order -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | UserTagsView.body | lines: 678–679 | key: settings.tags.list.footer.order -->
 
 This order is also the order of your tags in the note editor, the document tag picker and Search.
 
 <!-- END SOURCE: settings.tags.list.footer.order -->
 
 #### Footer — This order is also the order of the Active Project picker…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ProjectsSettingsView.body | lines: 910–911 | key: settings.projects.list.footer.order -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | ProjectsSettingsView.body | lines: 914–915 | key: settings.projects.list.footer.order -->
 
 This order is also the order of the Active Project picker, the project switcher and the note editor's project list.
 
 <!-- END SOURCE: settings.projects.list.footer.order -->
 
 #### All notes tagged ‘\(…)’ will be re-tagged with the selected…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | MergeTagSheet.macBody | lines: 1120–1121 | key: settings.tags.merge.explanation -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | MergeTagSheet.macBody | lines: 1124–1125 | key: settings.tags.merge.explanation -->
 
 All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag. ‘\(sourceTag.name)’ will be deleted.
 
 <!-- END SOURCE: settings.tags.merge.explanation -->
 
 #### Footer — How many volumes appear as distinct colors in the…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1809–1810 | key: settings.display.chartColors.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1813–1814 | key: settings.display.chartColors.footer -->
 
 How many volumes appear as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view.
 
 <!-- END SOURCE: settings.display.chartColors.footer -->
 
 #### Footer — Used for Copy Citation, Share Citation, and the citation…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1835–1836 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1839–1840 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
 
 Used for Copy Citation, Share Citation, and the citation popover’s default. The popover can still switch styles per-presentation for comparison.
 
 <!-- END SOURCE: settings.display.citationStyle.footer.mac -->
 
 #### VoiceOver hint — When on, tapping near the left or right edge of a document…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1870–1871 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1874–1875 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
 
 When on, tapping near the left or right edge of a document opens the previous or next one — available whenever the Research rail is closed
 
 <!-- END SOURCE: settings.display.edgeTapNavigation.a11y -->
 
 #### Footer — These defaults can be overridden per-session in the Search…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1963–1964 | key: settings.search.scope.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1967–1968 | key: settings.search.scope.footer -->
 
 These defaults can be overridden per-session in the Search filter panel. At least one scope stays on — searching nothing has no result to show.
 
 <!-- END SOURCE: settings.search.scope.footer -->
 
 #### Footer — Documents you have reclassified between “document” and…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2031–2032 | key: settings.search.classificationCorrections.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2035–2036 | key: settings.search.classificationCorrections.footer -->
 
 Documents you have reclassified between “document” and “editorial note”. This filter, badges, counts, and exports follow your corrections.
 
 <!-- END SOURCE: settings.search.classificationCorrections.footer -->
 
 #### Footer — How many lines of matched context each search result shows.…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2046–2047 | key: settings.search.snippet.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2050–2051 | key: settings.search.snippet.footer -->
 
 How many lines of matched context each search result shows. Individual search screens can override this default.
 
@@ -1283,14 +1283,14 @@ A local, on-device record of iCloud sync events. It contains no personal informa
 <!-- END SOURCE: settings.syncDiag.about -->
 
 #### Footer — Merging needs a second tag to merge into. Deleting removes…
-<!-- SOURCE: FRUSExplorer/Settings/TagEditorView.swift | TagEditorView.editorForm | lines: 186–187 | key: tag.editor.manage.footer.only -->
+<!-- SOURCE: FRUSExplorer/Settings/TagEditorView.swift | TagEditorView.editorForm | lines: 190–191 | key: tag.editor.manage.footer.only -->
 
 Merging needs a second tag to merge into. Deleting removes this tag from every note and document that carries it; nothing else is deleted.
 
 <!-- END SOURCE: tag.editor.manage.footer.only -->
 
 #### Footer — Merging re-tags everything here with the tag you choose…
-<!-- SOURCE: FRUSExplorer/Settings/TagEditorView.swift | TagEditorView.editorForm | lines: 188–189 | key: tag.editor.manage.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/TagEditorView.swift | TagEditorView.editorForm | lines: 192–193 | key: tag.editor.manage.footer -->
 
 Merging re-tags everything here with the tag you choose, then removes this one. Deleting removes this tag from every note and document that carries it; nothing else is deleted.
 
@@ -1632,7 +1632,7 @@ Reset view
 
 #### `personNotFound.dismiss` and `personNotFound.dismiss.mac`
 
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1601–1602 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1601 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1628–1629 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1601 -->
 
 Done
 
@@ -1648,7 +1648,7 @@ OK
 
 #### `glossNotFound.dismiss` and `glossNotFound.dismiss.mac`
 
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1634–1635 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1634 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1661–1662 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1634 -->
 
 Done
 
@@ -1664,13 +1664,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4299–4299 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4296–4296 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3802–3802 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3799–3799 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
 
 Search…
 

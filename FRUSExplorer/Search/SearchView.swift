@@ -2315,12 +2315,13 @@ private struct SearchResultRow: View {
                 }
             }
 
-            // User tag chips — pass userTags so chips show names, not raw UUIDs
-            if !result.userTagIds.isEmpty {
+            // User tag chips: one per stored id the reader's tag list names (#1591), so a chip
+            // shows a name and never a raw UUID, and a row with none draws no empty strip.
+            let chips = UserTag.chips(for: result.userTagIds, among: userTags)
+            if !chips.isEmpty {
                 SearchTagChipsRow(
-                    tagIds: result.userTagIds,
+                    chips: chips,
                     systemImage: "person.crop.circle.badge.plus",
-                    userTags: userTags,
                     onTap: onUserTagTap
                 )
             }
@@ -2408,28 +2409,19 @@ struct SnippetLengthOverridePicker: View {
 
 /// Horizontally scrolling row of tappable user-tag chips for a search result.
 ///
-/// `userTags` is the full list of `UserTag` rows supplied by the parent view.
-/// Each UUID string in `tagIds` is resolved to a `UserTag.name` so the chip
-/// label shows the human-readable name rather than a raw UUID string.
+/// `chips` is `UserTag.chips(for:among:)`: one for each stored tag id the reader's tag list
+/// names. An id it does not name has no chip (#1591); the row used to print the id itself.
 private struct SearchTagChipsRow: View {
-    let tagIds: [String]
+    let chips: [UserTagChip]
     let systemImage: String
-    /// All known user tags, supplied by the parent. Used to resolve UUID strings
-    /// in `tagIds` to display names.
-    let userTags: [UserTag]
     let onTap: (String) -> Void
-
-    /// Returns the display name for a tag UUID string, falling back to the UUID if
-    /// the tag has been deleted or is not yet loaded.
-    private func tagName(for tagId: String) -> String {
-        userTags.first(where: { $0.id.uuidString == tagId })?.name ?? tagId
-    }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(tagIds, id: \.self) { tagId in
-                    let name = tagName(for: tagId)
+                ForEach(chips) { chip in
+                    let tagId = chip.id
+                    let name = chip.name
                     Button {
                         onTap(tagId)
                     } label: {

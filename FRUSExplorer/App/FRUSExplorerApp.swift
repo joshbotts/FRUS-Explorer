@@ -2918,6 +2918,14 @@ struct FRUSExplorerApp: App {
                                     await ResearchNote.reconcileNoteText(
                                         container: modelContainer, pipeline: pipeline,
                                         sweepingStaleRows: true)
+                                    // #1591: the tag column's twin, same debounce and same
+                                    // reason. A document whose last tag was removed on another
+                                    // device leaves an id in the index that no assignment accounts
+                                    // for, and a tag added there reaches Search here within
+                                    // seconds, not at the next launch.
+                                    await DocumentTagAssignment.reconcileTagColumn(
+                                        container: modelContainer, pipeline: pipeline,
+                                        sweepingStaleRows: true)
                                 }
                                 // Wave R-2a: same debounce, same reason. Running the trail
                                 // migration only after imports go quiet means a second device
@@ -3186,7 +3194,8 @@ struct FRUSExplorerApp: App {
 
     /// Synchronises `DocumentTagAssignment` records from SwiftData into
     /// `document_cache.user_tag_ids` (SQLite/FTS5) so that search tag-filtering
-    /// reflects the CloudKit-synced state on every device.
+    /// reflects the CloudKit-synced state on every device, through
+    /// `DocumentTagAssignment.reconcileTagColumn(container:pipeline:sweepingStaleRows:)` (#1591).
     ///
     /// Also performs a **one-time migration** (guarded by a UserDefaults flag) that
     /// promotes legacy `document_cache.user_tag_ids` values written before
@@ -3236,24 +3245,14 @@ struct FRUSExplorerApp: App {
         }
 
         // MARK: Sync DocumentTagAssignment → document_cache.user_tag_ids
-        // Groups assignments by (volumeId, documentId) and pushes the tag string to
-        // the pipeline so the FTS5 search index reflects the SwiftData state.
-        let allAssignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
-        var byDocument: [String: [UUID]] = [:]
-        for a in allAssignments {
-            let key = "\(a.volumeId)/\(a.documentId)"
-            byDocument[key, default: []].append(a.tagId)
-        }
-        for (key, tagIds) in byDocument {
-            let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
-            guard parts.count == 2 else { continue }
-            let tagString = tagIds.map(\.uuidString).joined(separator: " ")
-            try? await pipeline.updateUserTagIds(
-                volumeId: parts[0],
-                documentId: parts[1],
-                userTagIds: tagString.isEmpty ? nil : tagString
-            )
-        }
+        // #1591: through the shared reconcile. This pass used to group the assignments and write
+        // one string per grouped document, so a document that had lost its LAST assignment was
+        // never visited and kept its tag in the index for good. The sweep that clears such a row
+        // runs here only with iCloud off, as the note sweep does and for its reason: with iCloud
+        // on it waits for a settled import (the debounce in `body`).
+        let tagOutcome = await DocumentTagAssignment.reconcileTagColumn(
+            container: modelContainer, pipeline: pipeline,
+            sweepingStaleRows: !_containerSetup.cloudKitEnabled)
         // MARK: Mirror tag NAMES into user_tags (W-19 row L-3)
         // The assignments above carry opaque UUIDs; the names live only in the CloudKit-synced
         // `UserTag` model and were invisible to anything reading the index directly. Mirrored
@@ -3267,9 +3266,7 @@ struct FRUSExplorerApp: App {
         try? await pipeline.replaceUserTagNames(namePairs)
 
         #if DEBUG
-        if !byDocument.isEmpty {
-            print("[FRUSExplorer] Boot sync: pushed \(byDocument.count) document tag assignment(s) to FTS5")
-        }
+        print("[FRUSExplorer] Boot sync: tag column reconciled, \(tagOutcome.written) row(s) written, \(tagOutcome.cleared) cleared (sweeping: \(!_containerSetup.cloudKitEnabled))")
         print("[FRUSExplorer] Boot sync: mirrored \(namePairs.count) tag name(s) into user_tags")
         #endif
     }

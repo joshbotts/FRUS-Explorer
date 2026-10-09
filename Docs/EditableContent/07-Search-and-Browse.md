@@ -1087,21 +1087,21 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2510–2510 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2502–2502 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2499–2499 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2491–2491 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2506–2506 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2498–2498 | key: search.tips.section.filters -->
 
 Filters and scope
 
@@ -1126,7 +1126,7 @@ Save this search or its results, revisit saved searches, find a document by cita
 <!-- END SOURCE: search.moreActions.help.v2 -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2483–2483 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2475–2475 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1135,7 +1135,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3816–3816, 4308–4308 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3813–3813, 4305–4305 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
