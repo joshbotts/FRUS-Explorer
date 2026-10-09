@@ -79,6 +79,10 @@ import Observation
 ///          a query that parses with document text, summaries and research notes all off shows one naming Filters ▸
 ///          Search Scope. Both showed "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)";
 ///          `SearchRefusalMessageTests` measured that on four refused queries and on those three toggles off first.
+///   2.4 — #1584, #1597, #1598: `resultSetScope` is composed here, from `lastFetchLimit` and the new
+///          `resultsAreSemantic`, both now written with the rows; `switchSearchMode(to:)` clears a search the new
+///          engine cannot run and restores it on the way back; `applyHandoff(_:)` runs a hand-off that names a
+///          search as a keyword search; the engine is held as `MeaningSearchRunning`
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -534,7 +538,7 @@ final class SearchViewModel {
 
     /// The ceiling the CURRENT results were actually fetched at.
     ///
-    /// **Recorded at fetch time, not recomputed from `searchParameters`.** Those are the live
+    /// **Recorded with the rows it fetched, not recomputed from `searchParameters`.** Those are the live
     /// filter state and may have moved since the search ran — the same reason `resultsSnapshot`
     /// passes `submittedSearchParameters` rather than the live value. Deriving the cap from them
     /// would make `isResultsCapped` and the facet total answer for a query the user is still
@@ -619,7 +623,8 @@ final class SearchViewModel {
 
     /// The Meaning mode's engine, injected by the view once the semantic stack has booted.
     /// `nil` means the mode is unavailable (a build state) and the picker should not offer it.
-    var semanticBackend: SemanticSearchBackend?
+    /// Held as ``MeaningSearchRunning`` so a test can drive a Meaning run with a list of its own.
+    var semanticBackend: (any MeaningSearchRunning)?
 
     /// Hits beyond the indexed library from the last Meaning search — rendered under the
     /// results list by the #262 rule, never mixed into `results` (they have no metadata rows).
@@ -635,6 +640,18 @@ final class SearchViewModel {
     /// Whether the last completed run was a Meaning run — frozen with the results so the
     /// history record describes the search that ran, not the mode the picker shows now.
     private(set) var lastRunWasSemantic = false
+
+    /// Whether the rows in `results` were ranked by a Meaning run (#1597, #1598).
+    ///
+    /// Written in the statements that assign `results`, so it describes the rows on screen.
+    /// `lastRunWasSemantic` is written before the await, for the history record, and `searchMode` is the
+    /// picker: during a run, and after a mode switch that had nothing to run, each can name an engine
+    /// the rows did not come from. ``resultSetScope`` reads this one.
+    private(set) var resultsAreSemantic = false
+
+    /// Whether a mode switch cleared a search's rows because the new engine had nothing to run, so that
+    /// the switch back runs it again (#1597). See ``switchSearchMode(to:)``.
+    private var searchSetAsideByModeSwitch = false
 
     /// Frozen at the top of `search()` rather than read from `keywords` at recording time:
     /// `keywords` is bound live to the `.searchable` field, so a user who keeps typing while
@@ -653,11 +670,7 @@ final class SearchViewModel {
         // applies it SQL-side, so "Find all mentions" handoffs (which carry only
         // a `personRef`) can run without a keyword. Before Session 162 this guard
         // rejected them, so the person handoff surfaced an error instead of results.
-        let hasPositiveTerm = params.keywords != nil
-            || params.phrase != nil
-            || params.prefixWildcard != nil
-            || params.supportsFilterOnlySearch
-        guard hasPositiveTerm else {
+        guard Self.hasPositiveKeywordTerm(params) else {
             searchError = String(
                 localized: "search.error.empty",
                 defaultValue: "Enter a keyword, phrase, or prefix to search."
@@ -670,6 +683,7 @@ final class SearchViewModel {
         isSearching = true
         searchError = nil
         hasSearched = true
+        searchSetAsideByModeSwitch = false
         do {
             // Concurrently, not sequentially: the two statements share their joins, so the
             // second runs against pages the first has already faulted in. Mirrors
@@ -677,7 +691,6 @@ final class SearchViewModel {
             // A browse fetches deeper than a keyword search because its rows are far smaller —
             // no `body_text`, since there are no terms to snippet against. See `filterOnlyHardLimit`.
             let fetchLimit = params.runsAsFilterOnly ? Self.filterOnlyHardLimit : Self.searchHardLimit
-            lastFetchLimit = fetchLimit
             async let fetched = searchService.search(parameters: params, limit: fetchLimit)
             async let counted: Int? = {
                 // A failed count must not fail the search. The header and the capture warning
@@ -686,6 +699,10 @@ final class SearchViewModel {
                 catch { return nil }
             }()
             results = try await fetched
+            // With the rows, not before the await: `resultSetScope` reads both, and until the rows are
+            // replaced the ones on screen are the last search's, fetched under its ceiling (#1584).
+            lastFetchLimit = fetchLimit
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
@@ -719,6 +736,7 @@ final class SearchViewModel {
             #endif
         } catch {
             results = []
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             // Cleared with the results, at every site that clears them: a total left over from
@@ -767,11 +785,13 @@ final class SearchViewModel {
         isSearching = true
         searchError = nil
         hasSearched = true
+        searchSetAsideByModeSwitch = false
         semanticNeedsModel = false
         lastRunWasSemantic = true
         do {
             let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)
             results = outcome.results
+            resultsAreSemantic = true
             beyondLibraryHits = outcome.beyondLibrary
             semanticDisclosure = outcome.disclosure
             totalMatchCount = nil
@@ -794,6 +814,7 @@ final class SearchViewModel {
             }
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -803,6 +824,7 @@ final class SearchViewModel {
             userTagCountScope = nil
         } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
             results = []
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -814,6 +836,7 @@ final class SearchViewModel {
                 defaultValue: "This search is too long for the model. Try a shorter phrasing.")
         } catch {
             results = []
+            resultsAreSemantic = false
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -828,6 +851,112 @@ final class SearchViewModel {
             #endif
         }
         isSearching = false
+    }
+
+    // MARK: - Switching the engine (#1597)
+
+    /// Whether the keyword engine has anything to run in `params`: typed text, a restored phrase or
+    /// prefix, or a person or subject filter alone, which `SearchService` applies in SQL.
+    ///
+    /// The rule `search()` refuses on. An exclusion is not on the list: alone it names nothing to find.
+    private static func hasPositiveKeywordTerm(_ params: SearchParameters) -> Bool {
+        params.keywords != nil
+            || params.phrase != nil
+            || params.prefixWildcard != nil
+            || params.supportsFilterOnlySearch
+    }
+
+    /// Whether the engine `mode` names has anything to run in the live parameters.
+    ///
+    /// A Meaning search runs on a typed question and reads nothing else as one, so a browse (a person's
+    /// Find all mentions, a topic, a subject area) gives it nothing to run.
+    func hasRunnableQuery(in mode: SearchMode) -> Bool {
+        switch mode {
+        case .keywords:
+            return Self.hasPositiveKeywordTerm(searchParameters)
+        case .meaning:
+            return !keywords.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    /// Moves the Keywords | Meaning picker to `newMode`, and settles what the rows on screen are (#1597).
+    ///
+    /// **The rows on screen belong to the engine the picker names.** Every surface beside them assumes
+    /// so: the strip under the picker, the Examine menu's gate, the facet panel's counts. A search that
+    /// is on screen therefore runs again through the new engine. When that engine has nothing to run
+    /// (Meaning over a browse, which has no question), the rows are cleared and the pre-search prompt
+    /// shows, as the Mac's Search window does. Until #1597 the rows stayed where they were, under the
+    /// count line "412 closest matches" and the Meaning strip, although no Meaning search had run.
+    ///
+    /// The cleared search is remembered, so switching back to an engine that can run it shows it again.
+    /// Without that a browse would be lost to one tap: the keyboard's Search key is off while the field
+    /// is empty, so the reader could not run it again from this screen.
+    ///
+    /// - Parameter newMode: The mode the reader chose.
+    /// - Returns: `true` when the caller must run the search now. It is returned and not run here
+    ///   because every search entry point goes through `SearchView.runSearch()`, which records it.
+    func switchSearchMode(to newMode: SearchMode) -> Bool {
+        guard newMode != searchMode else { return false }
+        searchMode = newMode
+        guard hasSearched || searchSetAsideByModeSwitch else { return false }
+        if hasRunnableQuery(in: newMode) { return true }
+        results = []
+        resultsAreSemantic = false
+        beyondLibraryHits = []
+        semanticDisclosure = nil
+        semanticNeedsModel = false
+        totalMatchCount = nil
+        lastRenderedExpression = nil
+        searchError = nil
+        // As `clearAll()` and the cleared search field do: no search has completed, so the version is
+        // not bumped, and a nil scope shows no tag counts for the rows that have gone (#1310).
+        userTagCountScope = nil
+        hasSearched = false
+        currentPage = 0
+        searchSetAsideByModeSwitch = true
+        return false
+    }
+
+    /// Applies a search hand-off (`AppState.pendingSearch`) and says whether it names a search to run.
+    ///
+    /// A hand-off that names something to find runs as a keyword search whatever the picker showed, as
+    /// a saved search does (``SearchParameters/namesASearchToRun``). The picker used to keep its mode,
+    /// so with Search on Meaning a person's Find all mentions, which carries no question, arrived on a
+    /// Search Error panel ("Type a question or phrase to search by meaning."), and Corpus Analytics'
+    /// "View N documents" ranked the term by meaning and did not show those N documents.
+    ///
+    /// A hand-off that only sets a scope (Search this volume) runs nothing and leaves the picker alone:
+    /// the scope applies to either engine.
+    ///
+    /// - Parameter params: The hand-off's parameters.
+    /// - Returns: `true` when the caller must run the search now, through `SearchView.runSearch()`.
+    func applyHandoff(_ params: SearchParameters) -> Bool {
+        let namesASearch = params.namesASearchToRun
+        if namesASearch { searchMode = .keywords }
+        applyParameters(params)
+        return namesASearch
+    }
+
+    /// Which set this screen is showing, composed from what was recorded with the rows.
+    ///
+    /// The one place iPhone and iPad compose it. `totalMatchCount` is a whole-query count taken beside
+    /// the search; it stays optional because the count can fail, and every sentence in
+    /// ``ResultSetScope`` is true without one.
+    ///
+    /// On the view model, and not in `SearchView`, since #1584. The view passed the 1,000-row keyword
+    /// ceiling for every search, so a complete browse of 3,000 documents, fetched under 7,500, read
+    /// "3,000 loaded · 3,000 total", and a working corpus saved from it was stored as a partial capture.
+    /// It also read the picker for the engine (#1597). Here both come from the run that produced the
+    /// rows, and a test can read the result without a view.
+    var resultSetScope: ResultSetScope {
+        ResultSetScope(loaded: results.count,
+                       shown: displayedResults.count,
+                       fetchLimit: lastFetchLimit,
+                       totalMatchCount: totalMatchCount,
+                       documentsOnPage: pagedResults.count,
+                       pageCount: totalPages,
+                       appliedCorpusTruncation: appliedWorkingCorpusTruncation,
+                       isMeaningSearch: resultsAreSemantic)
     }
 
     // MARK: - Search History
@@ -934,6 +1063,8 @@ final class SearchViewModel {
         searchError = nil
         // #1310: the counts describe a result set that no longer exists.
         userTagCountScope = nil
+        resultsAreSemantic = false
+        searchSetAsideByModeSwitch = false
     }
 
     // MARK: - Computed Properties

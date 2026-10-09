@@ -804,6 +804,10 @@ struct SubjectDetailSheet: View {
         dismiss()
         Task { @MainActor in
             appState.openSearch(params, from: sceneID)
+            // And bring Search forward, as a person's Find all mentions does. Without it the card
+            // closed, the reader was left on Topics, and the results waited in a tab nothing had
+            // opened: seen on iPhone 17e while checking #1584.
+            appState.openTab(.search, from: sceneID)
         }
         #endif
     }

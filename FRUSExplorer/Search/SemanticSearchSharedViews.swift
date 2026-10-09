@@ -91,10 +91,34 @@ struct SemanticUndownloadedRow: View {
 /// path around the Gemma flow-down) → byte progress → verification → `onModelReady`. Mounted by
 /// the zero-result fallback and by the Meaning mode's model-absent state, so the two surfaces
 /// offer identical terms.
+///
+/// The terms are identical; the opening sentence is not. Under a keyword search that found nothing the
+/// card says so. In Meaning mode no keyword search ran, and the card said it had: seen on iPhone 17e
+/// while checking #1597, a Meaning search with no model on the device answered "Keyword search found
+/// nothing, but…". ``followsKeywordSearch`` picks the sentence.
 struct SemanticModelOfferCard: View {
+
+    /// Whether the card stands under a keyword search that found nothing (the zero-result fallback),
+    /// or in Meaning mode's own empty state, where the reader asked for a Meaning search and no
+    /// keyword search ran.
+    var followsKeywordSearch = true
 
     /// Runs once the model is downloaded AND verified — the mounting surface re-runs its search.
     let onModelReady: () -> Void
+
+    /// The card's paragraph for the surface that mounts it.
+    ///
+    /// - Parameter followsKeywordSearch: See the property of the same name.
+    /// - Returns: The sentence, ending in both cases with the size of the download and where the model runs.
+    static func offerText(followsKeywordSearch: Bool) -> String {
+        followsKeywordSearch
+            ? String(
+                localized: "search.semantic.offer.body",
+                defaultValue: "Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.")
+            : String(
+                localized: "search.semantic.offer.body.meaning",
+                defaultValue: "A Meaning search ranks documents by what an AI model detects your question to mean, including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.")
+    }
 
     @Environment(AppState.self) private var appState
     @State private var showingConsent = false
@@ -107,9 +131,7 @@ struct SemanticModelOfferCard: View {
                          defaultValue: "Search by meaning (experimental)"),
                   systemImage: SemanticGlyph.feature)
                 .font(.headline)
-            Text(String(
-                localized: "search.semantic.offer.body",
-                defaultValue: "Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device."))
+            Text(Self.offerText(followsKeywordSearch: followsKeywordSearch))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -230,6 +230,10 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.24 — #1565: `initialPromptView` no longer reserves the banner's height itself. The tab shell now sets the
 ///          banner's room aside in the tab's safe area, so this view's frame already ends above it;
 ///          `\.tabShellBottomOverlay` is gone.
+///   1.25 — #1584, #1592, #1596, #1597: the result-set scope is the view model's; the picker goes through
+///          `switchSearchMode(to:)` and a hand-off through `applyHandoff(_:)`; the working-corpus banner and a
+///          person-filter rebind run a search again only when one is on screen; Checklist Mode says when Log
+///          Research Sessions is off (`ChecklistLoggingNotice`).
 
 struct SearchView: View {
 
@@ -365,6 +369,9 @@ struct SearchView: View {
     @State private var showSaveCorpusSheet = false
     @State private var collocation: CollocationAnalysis.Outcome = .pending
     @State private var isLoadingCollocation = false
+    /// Whether Log Research Sessions is on, for the line Checklist Mode shows while it is off (#1592).
+    /// The key and the absent-means-on default are `AppState`'s, as in `HistoryView`.
+    @AppStorage(AppState.researchLoggingPreferenceKey) private var loggingEnabled = true
     @AppStorage(SearchCollocationDefaults.windowKey) private var collocationWindow = 10
     @AppStorage(SearchCollocationDefaults.orderKey)
     private var collocationOrderRaw = CollocationOrder.evidence.rawValue
@@ -843,6 +850,9 @@ struct SearchView: View {
     /// `recordSearchHistory` de-duplicates a same-query re-run, so this mints no spurious row.
     private func rebindPersonFilter() async {
         guard await vm.refreshPersonRollupBinding(using: appState.personMentionStore) else { return }
+        // The binding is refreshed either way. A search is run again only when one is on screen: after
+        // a mode switch cleared a browse (#1597) the Meaning engine has no question to run.
+        guard vm.hasSearched else { return }
         await runSearch()
     }
 
@@ -934,15 +944,11 @@ struct SearchView: View {
         // Unconditional: the pushed document belongs to the query being replaced, so keeping it
         // would leave the stack describing a search that no longer exists.
         vm.navigationPath.removeAll()
-        vm.applyParameters(params)
-        // The FIFTH enumeration of the same rule, missed when #1022 extracted the other four —
-        // so a subject-only hand-off applied its parameters and then never ran. Anything the
-        // service will execute, this has to be willing to start.
-        let canRun = !(params.keywords ?? "").isEmpty
-            || !(params.phrase ?? "").isEmpty
-            || !(params.prefixWildcard ?? "").isEmpty
-            || params.supportsFilterOnlySearch
-        if canRun {
+        // Anything the service will execute, this has to be willing to start: the rule is
+        // `SearchParameters.namesASearchToRun`, written out here until #1596 (it was the fifth
+        // enumeration of one rule, and missed subject-only hand-offs until #1022). A hand-off it
+        // admits also sets the picker to Keywords, since its parameters are the keyword engine's.
+        if vm.applyHandoff(params) {
             Task { await runSearch() }
         }
     }
@@ -980,20 +986,10 @@ struct SearchView: View {
         )
     }
 
-    /// Which set this screen is showing — the one place iOS composes it, so no surface can
-    /// invent its own account of the same numbers. `totalMatchCount` is now a real whole-query
-    /// count, taken concurrently with the search; it stays `Optional` because the count can fail,
-    /// and every sentence in ``ResultSetScope`` is written to be true without one.
-    private var resultSetScope: ResultSetScope {
-        ResultSetScope(loaded: vm.results.count,
-                       shown: vm.displayedResults.count,
-                       fetchLimit: SearchViewModel.searchHardLimit,
-                       totalMatchCount: vm.totalMatchCount,
-                       documentsOnPage: vm.pagedResults.count,
-                       pageCount: vm.totalPages,
-                       appliedCorpusTruncation: vm.appliedWorkingCorpusTruncation,
-                       isMeaningSearch: vm.searchMode == .meaning)
-    }
+    /// Which set this screen is showing: `SearchViewModel.resultSetScope`, which composes it from
+    /// what the run recorded with the rows. It was composed here until #1584, from the keyword
+    /// ceiling as a constant and from the picker, and both were wrong for a browse.
+    private var resultSetScope: ResultSetScope { vm.resultSetScope }
 
     /// The active reading, derived from the three flags the body and rebuild keys still read.
     ///
@@ -1339,7 +1335,6 @@ struct SearchView: View {
                        get: { vm.searchMode },
                        set: { newMode in
                            guard newMode != vm.searchMode else { return }
-                           vm.searchMode = newMode
                            // Readings and facets are keyword surfaces; leaving one active
                            // across a mode flip would render it against the other engine's
                            // results.
@@ -1347,10 +1342,11 @@ struct SearchView: View {
                            showConcordance = false
                            showCollocates = false
                            showFacetSheet = false
-                           // A standing query re-runs through the newly chosen engine, via
-                           // the one funnel every search entry point must use.
-                           if vm.hasSearched,
-                              !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
+                           // A standing search re-runs through the newly chosen engine, via the
+                           // one funnel every search entry point must use. One the new engine
+                           // cannot run (Meaning over a browse) is cleared by the view model and
+                           // comes back on the way back (#1597).
+                           if vm.switchSearchMode(to: newMode) {
                                Task { await runSearch() }
                            }
                        })) {
@@ -1449,7 +1445,11 @@ struct SearchView: View {
                 Spacer(minLength: 8)
                 Button {
                     vm.clearWorkingCorpus()
-                    Task { await runSearch() }
+                    // Only a search that is on screen is run again. With none, the run had nothing
+                    // to find and put a Search Error panel where the prompt was.
+                    if vm.hasSearched {
+                        Task { await runSearch() }
+                    }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
@@ -1766,6 +1766,20 @@ struct SearchView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
                 .padding(.bottom, 2)
+            }
+            // #1592: with Log Research Sessions off nothing records that a result was opened, so
+            // opening one cannot hide it. Shown whether or not anything is hidden yet: the reader
+            // who needs it is the one whose list did not shrink.
+            if let notice = ChecklistLoggingNotice.text(checklistMode: vm.checklistMode,
+                                                        loggingEnabled: loggingEnabled) {
+                Label(notice, systemImage: "info.circle")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.bottom, 2)
+                    .accessibilityIdentifier("search.checklist.loggingOff")
             }
         }
     }

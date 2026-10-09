@@ -47,9 +47,9 @@ struct ResultSetScopeTests {
     private func meaning(loaded: Int = 100, shown: Int? = nil,
                          onPage: Int = 25, pages: Int = 4) -> ResultSetScope {
         // 100 mirrors `SemanticSearchBackend.hitLimit`, which is `@MainActor` and so cannot be
-        // read here. Nothing in these tests depends on the value: the meaning branch returns
-        // before any `fetchLimit` arithmetic, which is the point — the ceiling is not what the
-        // sentence is about.
+        // read here. It is what both view models pass after a Meaning run (`lastFetchLimit`).
+        // Nothing here depends on the value: no member reads `fetchLimit` for a Meaning search,
+        // which `ResultSetScopeMeaningTests` checks across three ceilings.
         ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: 100,
                        totalMatchCount: nil, documentsOnPage: onPage, pageCount: pages,
                        isMeaningSearch: true)
@@ -509,5 +509,112 @@ struct MacResultCountLabelAuditTests {
         let totalAt = try #require(sheet.range(of: "} else if let total, loaded <= searchVM.pageSize {"))
         #expect(corpusAt.lowerBound < totalAt.lowerBound,
                 "a total is always present inside a corpus, so the total branch would win first")
+    }
+}
+
+
+// MARK: - ResultSetScopeMeaningTests (#1584, #1595, #1598)
+
+/// What the scope says of a Meaning list, and of a complete browse, wherever a ceiling could be mistaken for one.
+///
+/// Until #1598 only the header had a Meaning branch, so a Meaning list's capture was described in the keyword
+/// search's words: "Search results", with no warning, stored as every matching document. And every sentence here
+/// was given the keyword ceiling by its host whatever had been fetched (#1584).
+///
+/// Version history:
+///   1.0 — #1584, #1595, #1598: initial implementation
+@Suite("Result set scope: Meaning lists and browses")
+struct ResultSetScopeMeaningTests {
+
+    private func meaning(loaded: Int, shown: Int? = nil, fetchLimit: Int = 100) -> ResultSetScope {
+        ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: fetchLimit,
+                       totalMatchCount: nil, documentsOnPage: min(loaded, 25),
+                       pageCount: max(1, (loaded + 24) / 25), isMeaningSearch: true)
+    }
+
+    /// A full list, a short one and a single row, under the Meaning engine's own list length and under both keyword
+    /// ceilings, which are what the two hosts passed before they passed the recorded one.
+    private var everyMeaningShape: [ResultSetScope] {
+        [100, 1_000, 7_500].flatMap { limit in
+            [1, 37, 100].map { meaning(loaded: $0, fetchLimit: limit) }
+        }
+    }
+
+    @Test("A Meaning list never reads as a fetch that hit its ceiling, at any length or ceiling")
+    func meaningIsNeverAFetchAtItsCeiling() {
+        for scope in everyMeaningShape {
+            #expect(!scope.didHitFetchLimit, "\(scope.loaded) rows under \(scope.fetchLimit)")
+            #expect(scope.overCapGuidance == nil,
+                    "narrowing a Meaning search loads nothing more, so it is not advised to")
+            #expect(scope.timelineBiasCaption == nil)
+            #expect(!scope.isPartialEvidence)
+        }
+    }
+
+    @Test("A Meaning capture names its engine, warns in the sheet and is stored as partial")
+    func meaningCaptureSaysWhatItIs() throws {
+        for scope in everyMeaningShape {
+            let warning = try #require(scope.captureTruncationWarning,
+                                       "the sheet says nothing of a Meaning capture (#1598)")
+            #expect(warning.contains("Meaning search"))
+            #expect(warning.contains("not every document"))
+            #expect(!warning.contains("highest-scoring"), "the keyword sentence is about a match, which this is not")
+            #expect(scope.captureProvenanceDescription.hasPrefix("Meaning search — the "))
+            #expect(!scope.captureProvenanceDescription.contains("Search results"))
+            #expect(!scope.captureProvenanceDescription.contains("larger match"))
+            #expect(scope.isCapturePartial)
+        }
+        #expect(meaning(loaded: 100).captureProvenanceDescription == "Meaning search — the 100 closest matches")
+        #expect(meaning(loaded: 37).captureProvenanceDescription == "Meaning search — the 37 closest matches")
+        #expect(meaning(loaded: 1).captureProvenanceDescription == "Meaning search — the closest match")
+    }
+
+    @Test("A Meaning capture made with Checklist Mode hiding rows says so, as a keyword capture does")
+    func meaningCaptureNamesTheChecklist() {
+        let scope = meaning(loaded: 100, shown: 96)
+        #expect(scope.captureProvenanceDescription
+                    == "Meaning search — the 100 closest matches; 4 reviewed documents excluded")
+        #expect(scope.captureChecklistWarning?.contains("4") == true)
+    }
+
+    /// The numbers of #1584: 3,000 tagged documents, all loaded. Under the ceiling the browse was fetched at they are
+    /// a complete set; under the keyword ceiling, which the screen passed, they are "truncated".
+    @Test("3,000 loaded of 3,000 is complete under the browse ceiling and was truncated under the keyword one")
+    func aCompleteBrowseIsComplete() {
+        func browse(fetchLimit: Int) -> ResultSetScope {
+            ResultSetScope(loaded: 3_000, shown: 3_000, fetchLimit: fetchLimit, totalMatchCount: 3_000,
+                           documentsOnPage: 25, pageCount: 120)
+        }
+        let recorded = browse(fetchLimit: 7_500)
+        #expect(recorded.headerDescription == "3,000 results")
+        #expect(recorded.overCapGuidance == nil)
+        #expect(recorded.captureTruncationWarning == nil)
+        #expect(recorded.captureProvenanceDescription == "Search results")
+        #expect(!recorded.isCapturePartial)
+
+        // What the screen composed before: the constant. Kept so the difference stays visible.
+        let constant = browse(fetchLimit: 1_000)
+        #expect(constant.headerDescription == "3,000 loaded · 3,000 total")
+        #expect(constant.captureProvenanceDescription == "Search results — the highest-scoring 3,000 of 3,000 matches")
+        #expect(constant.isCapturePartial)
+    }
+
+    @Test("A keyword capture is partial exactly when its evidence is: at its ceiling, or inside a truncated corpus")
+    func keywordCaptureFollowsItsEvidence() {
+        let complete = ResultSetScope(loaded: 412, shown: 412, fetchLimit: 1_000, totalMatchCount: 412,
+                                      documentsOnPage: 25, pageCount: 17)
+        #expect(!complete.isCapturePartial)
+        let atCeiling = ResultSetScope(loaded: 1_000, shown: 1_000, fetchLimit: 1_000, totalMatchCount: 14_462,
+                                       documentsOnPage: 25, pageCount: 40)
+        #expect(atCeiling.isCapturePartial)
+        var insideTruncatedCorpus = complete
+        insideTruncatedCorpus.appliedCorpusTruncation = .truncated(total: 9_000)
+        #expect(insideTruncatedCorpus.isCapturePartial)
+        var insideCompleteCorpus = complete
+        insideCompleteCorpus.appliedCorpusTruncation = .complete
+        #expect(!insideCompleteCorpus.isCapturePartial)
+        var insideUnrecordedCorpus = complete
+        insideUnrecordedCorpus.appliedCorpusTruncation = .unrecorded
+        #expect(!insideUnrecordedCorpus.isCapturePartial, "an unrecorded capture is not known to be partial")
     }
 }

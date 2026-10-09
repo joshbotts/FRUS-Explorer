@@ -208,7 +208,7 @@ struct HandoffVisibilityTests {
         // Order matters: popping after applying would still render the stale document for a frame,
         // and popping after `runSearch()` would race the results in.
         let popIndex = try #require(body.range(of: "vm.navigationPath.removeAll()"))
-        let applyIndex = try #require(body.range(of: "vm.applyParameters(params)"))
+        let applyIndex = try #require(body.range(of: "vm.applyHandoff(params)"))
         #expect(popIndex.lowerBound < applyIndex.lowerBound,
                 "pop before applying the parameters, not after")
     }

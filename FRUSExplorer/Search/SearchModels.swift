@@ -13,6 +13,59 @@ import Foundation
 // `IndexingProgress`) moved to FRUSCoreKit in part 2, with the search service and the indexing
 // pipeline that take and return them: `FRUSCoreKit/Search/SearchParameters.swift`.
 
+// MARK: - Search hand-offs
+
+extension SearchParameters {
+
+    /// Whether a hand-off carrying these parameters names a search to run: keywords, a phrase, a
+    /// prefix, or a person or subject filter that runs on its own.
+    ///
+    /// `false` for a hand-off that only sets a scope, such as Search this volume, which applies the
+    /// scope and waits for the reader to type. Both search view models' `applyHandoff(_:)` ask this, and a
+    /// hand-off for which it is `true` runs as a keyword search: its parameters are the keyword
+    /// engine's, and the count its sender showed (Corpus Analytics' "View N documents", a person's
+    /// mention count) is a count of what that engine finds.
+    ///
+    /// An empty string counts as nothing, as it did where `SearchView.consumePendingSearch` wrote this
+    /// rule out before #1596.
+    var namesASearchToRun: Bool {
+        !(keywords ?? "").isEmpty
+            || !(phrase ?? "").isEmpty
+            || !(prefixWildcard ?? "").isEmpty
+            || supportsFilterOnlySearch
+    }
+}
+
+// MARK: - ChecklistLoggingNotice
+
+/// What Checklist Mode says while Log Research Sessions is off (#1592).
+///
+/// Checklist Mode hides a result in two ways: when the reader marks it reviewed, and when the reader
+/// opens it. The second reads the reading history, and the only writer of that history
+/// (`DocumentViewModel.recordReadingHistory`) writes nothing while Settings ▸ Research ▸ Research
+/// Sessions ▸ Log Research Sessions is off. So with the switch off an opened result stays in the list,
+/// and until this line nothing on screen said why. The owner's decision (2026-10-09): the checklist
+/// keeps depending on the switch, and the app says so.
+///
+/// One function for both search surfaces, so iPhone, iPad and Mac cannot word it differently.
+///
+/// Version history:
+///   1.0 — #1592: initial implementation
+enum ChecklistLoggingNotice {
+
+    /// The line to show under the checklist's banner, or `nil` when there is nothing to say.
+    ///
+    /// - Parameters:
+    ///   - checklistMode: Whether Checklist Mode is on.
+    ///   - loggingEnabled: Whether Log Research Sessions is on (`AppState.isResearchLoggingEnabled`).
+    /// - Returns: The line while the mode is on and the switch is off; `nil` otherwise.
+    static func text(checklistMode: Bool, loggingEnabled: Bool) -> String? {
+        guard checklistMode, !loggingEnabled else { return nil }
+        return String(localized: "search.checklist.loggingOff",
+                      defaultValue: "Opening a result does not hide it while Log Research Sessions is off in Settings. Mark Reviewed still hides a result.")
+    }
+}
+
 // MARK: - SearchSortOrder
 
 /// Ordering applied to search results, shared by the iOS `SearchView` and the macOS Search window
