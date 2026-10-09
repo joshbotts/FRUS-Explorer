@@ -36000,3 +36000,25 @@ Between 4 and 7 October sessions on another account, building FRUS Explorer Ligh
 - The iOS manual is unchanged: it describes no print path.
 - No TestFlight line yet; build 50's notes owe one for #1578 and one for this.
 
+
+## Session 2026-10-09 — `CLAUDE.md`'s suite and generator entries move into two runbooks, the fortnight's usage is measured, and the week's queue is set
+
+The owner asked for sessions that spend less usage, and for a plan for the week's open issues and the upstream changes. The plan of record's new §0c holds the measurement, the rules and the queue; this entry says what changed in the repository.
+
+**Measured**
+- The session transcripts of 2026-09-25 to 2026-10-08: 2,081 model calls in the main sessions and 70,028 in 1,390 subagents; 1.1 billion cache-read tokens against 19.3 billion. A subagent's first call carried a median 127,733 tokens, about half of it `CLAUDE.md`.
+
+**Changed**
+- **`CLAUDE.md`**: 226,886 characters to 54,241. The per-suite device entries (lines 47 to 598) and the command-line tools block (lines 600 to 703) are replaced by two index tables, the four rules that hold for every UI run and the five that span generator entries. The SPM paragraph's pointer names the runbook.
+- **`Planning/UI-Test-Destinations-Runbook.md`** and **`Planning/Generators-Runbook.md`** (new): the moved entries, word for word, each under a short head saying what the file is.
+- **`.claude/workflows/land-lane.js`**: the two lines of its merge advice that named `CLAUDE.md`'s suite paragraphs name the runbook.
+- **The plan of record**: §0c, with the owner's decision on #1592.
+
+**Checked**
+- The script that made the move asserted that each moved block is contained whole in its runbook.
+- No test loads `CLAUDE.md`, either runbook or the workflow script (read by `grep` over both test targets and the package's test folders). One test reads the plan of record, `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`; the suite was run, and its result is in the pull request.
+
+**Not done**
+- No full unit run, `swift test` or Mac build: the change touches no source, test or bundled resource.
+- The index tables were written by hand from the entries. Each row was read against its entry once; nothing checks them mechanically.
+- `Directory Map` and `Coding Standards` (about 29,000 characters between them) were left as they are.

@@ -51,7 +51,7 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
    - Planning/DEVELOPMENT-PLAN.md: both sides append entries at the end. Keep BOTH, the base's entries first, then this branch's, byte for byte.
    - Docs/EditableContent/Amendment-Log.md: many lanes append bullets at its end. Keep every bullet from both sides, the base's first. Any other Docs/EditableContent/ hunk:
      keep both sides' blocks, and recompute any count a section header states.
-   - CLAUDE.md: lanes insert device-specific suite paragraphs, each with its own bash block. Keep BOTH paragraphs whole, the base's first, and check
+   - Planning/UI-Test-Destinations-Runbook.md (the suite entries left CLAUDE.md on 2026-10-09; it keeps one index row per suite): lanes insert device-specific suite paragraphs, each with its own bash block. Keep BOTH paragraphs whole, the base's first, and check
      every code fence is balanced.
    - A number both sides took — an index-version bump (currentDateIndexVersion), a version-history entry: the side that landed first keeps it; this
      branch takes the next number, renumbers its own entries and notes, and raises any guard test that asserts it (e.g. >= 61 becomes >= 62).
@@ -91,7 +91,7 @@ Verify: (a) no change from EITHER parent was dropped — first pair each path wi
 this branch's hunks must then be in the moved file, with nothing left at the old path. Then for each file both parents changed relative to their
 merge base, re-run git merge-file and compare with the merge result, and check one-sided files are blob-identical to their side; (b) no conflict markers anywhere in the tree, and no MERGE_HEAD;
 (c) DEVELOPMENT-PLAN holds the base's entries then the branch's, none duplicated or truncated; (d) Docs/EditableContent/Amendment-Log.md keeps every
-bullet from both sides, and CLAUDE.md keeps both sides' paragraphs with balanced fences; (e) a number both sides took is renumbered on this branch's
+bullet from both sides, and CLAUDE.md and the UI-test runbook keep both sides' paragraphs and index rows with balanced fences; (e) a number both sides took is renumbered on this branch's
 side, with its guard test; (f) any follow-up commit is limited to what it claims; (g) the merge commit carries the Co-Authored-By trailer; (h) if
 git -C ${j.wt} diff --name-only ${m.baseMerged || BASE_SHA} HEAD names ${PACKAGE_INPUT}, the author reports a swift test run with its
 result lines, not "not run"; (i) what this branch adds to a kit file keeps the rules: ${KIT_RULES}.

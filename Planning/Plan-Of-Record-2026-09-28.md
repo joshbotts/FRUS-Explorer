@@ -228,6 +228,59 @@ Owed before build 50: a TestFlight line for #1578 and for the print change below
 - **1981–88 vol. XVI's person and term links (#1599)** are built with the next change that bumps the index version (#1535, #1536 or the next volume ingest), not on their own: one re-index for readers and one pin move for the web edition.
 - **#1578 and #1579's open questions (2026-10-08).** The colours stand. Person names and cross-references print without their underline (done: one `@media print` rule in the kit's stylesheet). An empty person or term reference still reads as "not found", the page's link scheme check stays exact, and the test hook on the two read-only stores stays.
 
+## 0c. The week of 2026-10-12 — usage, and the queue
+
+The owner asked on 2026-10-07 and again on 2026-10-09 for sessions that spend less usage. On 2026-10-09 the session transcripts of 2026-09-25 to 2026-10-08 were totalled: each request's `usage`, counted once per message id and request id, over every transcript under `~/.claude/projects/-Users-jbotts-Development-FRUS-Explorer*/`.
+
+| | Main sessions | Subagents |
+|---|---|---|
+| Model calls | 2,081 | 70,028, from 1,390 agents |
+| Cache-write tokens | 32.0M | 380.9M |
+| Cache-read tokens | 1,136M | 19,293M |
+| Output tokens | 2.1M | 3.4M |
+
+- **Usage is calls × context.** At API price weights (cache read 0.1, cache write 1.25, output 5; the subscription's own weights are not known) subagents were about 94% of the fortnight and output about 1%.
+- **A subagent's first call carried a median 127,733 tokens**, about half of it `CLAUDE.md`, which was 226,886 characters.
+- **The eight largest workflow runs each read 0.7 to 1.25 billion tokens from cache.** Every main session of the fortnight together read 1.1 billion.
+- **Main sessions averaged 546K tokens of context per call**, because one session ran from 27 September to 8 October.
+
+**Changed on 2026-10-09.** `CLAUDE.md` is 54,241 characters. Its per-suite device entries are now `Planning/UI-Test-Destinations-Runbook.md` and its generator entries `Planning/Generators-Runbook.md`, each moved word for word; `CLAUDE.md` keeps one index row per suite and per tool, the rules that span entries, and the instruction to read an entry before using it. On the fortnight's call count that is about 3.5 billion fewer cache-read tokens.
+
+**Rules for the week.**
+- Small defects are fixed inline, several related issues to one pull request, with one review pass on the diff. No two-lens review, no skeptic per finding, no by-eye sweep agents.
+- `lane-dev.js` is not used this week. It returns only for a lane with real design risk (an index bump, a feature lane), one lane per run.
+- One fresh session per pull request, started from this section and the issue numbers, and ended at the merge.
+- Tests are scoped with `-only-testing` while developing. Landing owes one full unit run, `swift test` where the diff names package input, and the Mac build. Build output goes to a file, and the session reads the summary.
+- The queue is serial, as in §0: the next pull request starts when the owner has merged the one before.
+
+**The queue.** 26 of the 35 open issues, with no index bump. A fix in pull request 4 that turns out to need one moves to the bump below.
+
+| | Pull request | Issues |
+|---|---|---|
+| 0 | `CLAUDE.md`'s entries move into two runbooks (this change) | — |
+| 1 | Upstream catch-up at corpus `deb6a04f8` | #1309 |
+| 2 | Interrupted indexing is detected and repaired | #1566 |
+| 3 | The sync and indexing banner no longer covers a list's last rows | #1565 |
+| 4 | Wrong data in lookups | #1582, #1589, #1591, #1603 |
+| 5 | Meaning-mode and browse honesty in Search | #1584, #1595, #1596, #1597, #1598, #1592; #1608 is diagnosed here |
+| 6 | Small interface, accessibility and export fixes | #1583, #1585, #1586, #1587, #1588, #1590, #1593, #1594, #1602 |
+| 7 | Tooling and test reliability | #1568, #1600, #1601, #1604, #1606 |
+
+**Decided by the owner on 2026-10-09: #1592, yes.** Checklist Mode depends on Log Research Sessions. Pull request 5 takes the issue's option 2, a line in the app saying that opened results are not hidden while the switch is off, unless the owner prefers option 3, the manuals alone.
+
+**Upstream (pull request 1).** HistoryAtState/frus is at `0e9f9e0ec` (2026-10-09), nine commits past `8e5da08c1`; `volumes/` last changed at `deb6a04f8`, and the local clone is there. 26 volumes changed, 51 lines:
+- **Div boundaries** in about fifteen volumes, `frus1945Malta` among them. This is upstream pull request #470, which cites the report filed as HistoryAtState/frus#469 and says more is to come; #469 stays open.
+- **Section types.** Two `frus1902app1` divisions are sections and no longer documents (`s05sub04`, `s12`), and `frus1868p1`'s `comp1` is a compilation.
+- **Document numbers.** A trailing space is gone from three `@n` values, and seven of `frus1981-88v16`'s documents are numbered A to G where they were 331 to 337.
+- **Text.** Mis-encoded characters are repaired (`frus1958-60v05mSupp` and others) and no-break spaces replaced (`frus1981-88v11`).
+
+Readers need no new build: `VolumeUpdateChecker` offers a corrected volume by its blob hash, and the download re-indexes it. The work is the records': the manifest's sizes; the structure sweep, the report's re-check and cross-reference validation at the new commit; the two re-typed divisions and the lettered numbers checked against citations and the bundled document ids; an aggregate regenerated only where its diff is not empty; and #1309 closed if Malta's row clears. Do this first, because every generator run and every unit run with the TEI mirror already reads the new corpus.
+
+**Not this week.**
+- **One index bump** carrying #1535, #1536 and #1599, with anything pull request 4 hands it. Its brief is written on 2026-10-16.
+- **#1576 and #1577**, after pull requests 3 and 5, which edit the same search menus.
+- **The owner's to decide:** #1545 and #234.
+
 ## 1. Where the 47 issues stand
 
 *(As of 2026-09-28. §0a has the count at 2026-10-02.)*
