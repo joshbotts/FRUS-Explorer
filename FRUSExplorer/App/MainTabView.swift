@@ -101,6 +101,11 @@ import SwiftData
 ///          (`SceneSessionReader`), so closing an aux window can bring this one forward rather
 ///          than leaving the reader on the Home Screen. Review round 1: `SceneSessionReader`'s doc
 ///          names its second host, `AuxWindowOriginModifier`.
+///   1.18 — #1565: the banner no longer covers a tab's content. Each tab's own view controller
+///          sets aside the banner's height at the bottom of its safe area, and the banner is drawn
+///          in that room (`TabShellBannerModifier`), so lists, a pushed screen's bottom bar and the
+///          reader all end above it. `\.tabShellBottomOverlay` (1.16) is gone: nothing needs to be
+///          told the banner's height any more.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -159,10 +164,6 @@ struct MainTabView: View {
     /// the observers on the `TabView` for the measured occlusion this prevents).
     @State private var keyboardIsVisible = false
 
-    /// The measured height of the banner inset on the Search tab, published to `SearchView` as
-    /// `\.tabShellBottomOverlay` (#1299 follow-up). Zero while the inset renders nothing.
-    @State private var searchTabBottomOverlay: CGFloat = 0
-
     var body: some View {
         @Bindable var appState = appState
         TabView(selection: $selectedTab) {
@@ -172,7 +173,7 @@ struct MainTabView: View {
                 value: AppTab.browse
             ) {
                 BrowserTabView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
+                    .tabShellBanner { indexingBanner }
             }
             Tab(
                 String(localized: "tab.search", defaultValue: "Search"),
@@ -180,15 +181,7 @@ struct MainTabView: View {
                 value: AppTab.search
             ) {
                 SearchTabView()
-                    .environment(\.tabShellBottomOverlay, searchTabBottomOverlay)
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        // Measured through a stack, which lays out at zero height when the banner renders
-                        // nothing, so the published height falls back to 0 instead of keeping a stale one.
-                        VStack(spacing: 0) { indexingBanner }
-                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                                searchTabBottomOverlay = height
-                            }
-                    }
+                    .tabShellBanner { indexingBanner }
             }
             Tab(
                 String(localized: "tab.research", defaultValue: "Research"),
@@ -196,7 +189,7 @@ struct MainTabView: View {
                 value: AppTab.research
             ) {
                 ResearchView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
+                    .tabShellBanner { indexingBanner }
             }
             Tab(
                 String(localized: "tab.collections", defaultValue: "Collections"),
@@ -204,7 +197,7 @@ struct MainTabView: View {
                 value: AppTab.collections
             ) {
                 CollectionListView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
+                    .tabShellBanner { indexingBanner }
             }
             Tab(
                 String(localized: "tab.settings", defaultValue: "Settings"),
@@ -212,7 +205,7 @@ struct MainTabView: View {
                 value: AppTab.settings
             ) {
                 SettingsView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
+                    .tabShellBanner { indexingBanner }
             }
             // Boolean dot badge: shows when any downloaded volumes are awaiting indexing.
             // A raw count badge (the previous behaviour) is misleading — the number is a
@@ -285,8 +278,8 @@ struct MainTabView: View {
         // hand-off producer can address its `Handoff` to this scene, and only this scene consumes it
         // (the foundation for fixing the pendingX fan-out across open iPad windows).
         .environment(\.sceneID, SceneID(sceneIDToken))
-        // #1070: the banner inset yields to the keyboard. A bottom `safeAreaInset` floats
-        // up with the keyboard, landing exactly on the accessory row where the #861 Done
+        // #1070: the banner yields to the keyboard. Anything drawn at the bottom of the safe area
+        // floats up with the keyboard, landing exactly on the accessory row where the #861 Done
         // bar renders — measured on the Browse root, the bar's Done existed but was not
         // hittable, so the keyboard could not be put away and the raised keyboard covered
         // the tab bar (the reported trap). Hiding rather than `.ignoresSafeArea(.keyboard)`
@@ -446,6 +439,9 @@ struct MainTabView: View {
 
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.
     ///
+    /// Every tab draws it through `tabShellBanner`, which also keeps the tab's content clear of
+    /// it (#1565).
+    ///
     /// **The precedence is `IndexingInsetState.resolve`, not this body.** B-6 was a hole in the
     /// old `if`/`else if` chain — a queued download with no batch matched no branch and the inset
     /// collapsed to nothing — and it survived because the chain had no seam a test could reach.
@@ -465,10 +461,10 @@ struct MainTabView: View {
     /// slides up from the tab bar edge when indexing completes.
     @ViewBuilder
     private var indexingBanner: some View {
-        // #1070: nothing in this inset renders while the keyboard is up — the inset floats
-        // onto the keyboard's accessory row and occludes the #861 Done bar (measured: the
-        // bar's Done existed but was unhittable under this banner). Every state here
-        // persists or re-announces, so nothing is lost by waiting out a typing session.
+        // #1070: nothing here renders while the keyboard is up — the banner floats onto the
+        // keyboard's accessory row and occludes the #861 Done bar (measured: the bar's Done
+        // existed but was unhittable under this banner). Every state here persists or
+        // re-announces, so nothing is lost by waiting out a typing session.
         switch IndexingInsetState.resolve(
             keyboardIsVisible: keyboardIsVisible,
             hasBatch: appState.indexingBatch != nil,
@@ -477,10 +473,10 @@ struct MainTabView: View {
             syncIsWorthShowing: SyncStatusBanner.isWorthShowing(appState.iCloudStatusSummary)
         ) {
         case .hidden:
-            // #1070: nothing in this inset renders while the keyboard is up — the inset floats
-            // onto the keyboard's accessory row and occludes the #861 Done bar.
+            // #1070: nothing here renders while the keyboard is up — the banner floats onto the
+            // keyboard's accessory row and occludes the #861 Done bar.
             EmptyView()
-        // #665: the iCloud indicator shares this inset. Transient work wins when both want it —
+        // #665: the iCloud indicator shares this banner's place. Transient work wins when both want it —
         // it finishes, while a local-only or failed-sync state waits and will still be true when
         // the banner frees up.
         case .sync:
@@ -643,17 +639,178 @@ private struct SearchTabView: View {
     }
 }
 
-// MARK: - Tab shell overlay
+// MARK: - Tab shell banner (#1565)
 
-extension EnvironmentValues {
-    /// How much of the bottom of a tab's content the tab shell's banner inset covers, in points (#1299 follow-up).
+extension View {
+    /// Draws the tab shell's banner at the bottom of this tab and keeps the tab's content clear of it (#1565).
     ///
-    /// The shell applies the indexing and iCloud banner as a bottom `safeAreaInset` on each tab's root, and a root that
-    /// hosts its own `NavigationStack` does not pass that inset to the stack's content — so the banner is drawn over the
-    /// content rather than beside it. A view that must keep something reachable above the banner reads this and makes
-    /// room, as `SearchView`'s pre-search screen does. Published only by the Search tab; `0` everywhere else and while
-    /// the banner renders nothing.
-    @Entry var tabShellBottomOverlay: CGFloat = 0
+    /// Applied to each tab's root by `MainTabView`; see ``TabShellBannerModifier`` for how.
+    func tabShellBanner<Banner: View>(@ViewBuilder _ banner: @escaping () -> Banner) -> some View {
+        modifier(TabShellBannerModifier(banner: banner))
+    }
+}
+
+/// Draws the indexing and iCloud banner at the bottom of a tab, in room the tab's own view controller sets aside (#1565).
+///
+/// ## What #1565 found
+/// The shell applied the banner as a bottom `safeAreaInset` on each tab's root, from outside the root's
+/// `NavigationStack`. A stack does not pass that inset to the screens it shows, so the banner was drawn over them.
+/// Measured on iPhone 17 (iOS 26.5) with the Local Only banner up, its top edge at y = 721.7 and the tab bar's at 791:
+/// - the Browse root, Browse ▸ Archives and the Settings root each came to rest with their last row's text at
+///   y 732–755, under the banner, where it could be seen only while a drag was held and could not be tapped;
+/// - Settings ▸ Volumes & Storage ▸ Download from GitHub drew its Download button at y 741–775, wholly under the
+///   banner, so a reader with a banner showing could not start a download from that screen;
+/// - the reader's web view ran to y = 791, its last 69 points under the banner, so the end of a document cleared the
+///   banner only by the page's own bottom padding.
+///
+/// Two reservations made in SwiftUI from outside the stack were measured on the same device. `safeAreaPadding`
+/// changed nothing. `contentMargins(.bottom, _, for: .scrollContent)` did reach the lists, at the root and one push
+/// deep, but only scroll content: the Download button stayed under the banner.
+///
+/// ## What this does
+/// The tab's content is hosted by a view controller of its own (SwiftUI's per-tab hosting controller, a child of the
+/// tab bar controller). ``TabShellBannerReserve`` adds the banner's height to the bottom of THAT controller's safe
+/// area, which is the one inset a navigation stack does pass on: UIKit hands a controller's safe area to every view
+/// and child controller inside it. So everything in the tab ends above the banner without being told its height: a
+/// list's last row, a pushed screen's own bottom bar, the reader, a placeholder centred in what is left. Measured
+/// after: the three lists rest with their last row's text ending at y 685–686 and the Download button sits at
+/// y 671–706; and on a build with this reserve, before the banner's drawing was final, the reader's web view ended
+/// at y = 721.7, the banner's top edge.
+///
+/// The banner is then drawn in the room set aside: hung below the bottom edge of the safe area by its own height
+/// (the alignment guide below). Its place is tied to that edge alone, so it covers nothing that keeps to the safe
+/// area, whichever controller the reserve reached. Before the reserve lands, or if it never did, the banner would
+/// hang behind the tab bar (measured on iPhone 17 with the reserve taken out: its top edge at y = 791, the tab
+/// bar's own) and the content would be whole.
+///
+/// A sheet or a popover is presented, not contained: UIKit gives it a safe area of its own, which this does not
+/// touch.
+///
+/// **The keyboard rule is unchanged (#1070).** While the keyboard is up `MainTabView.indexingBanner` renders
+/// nothing, the stack below measures zero, and the reserve goes back to zero with it.
+///
+/// Version history:
+///   1.0 — #1565: initial implementation
+struct TabShellBannerModifier<Banner: View>: ViewModifier {
+
+    /// The banner, or nothing while the shell has nothing to say.
+    @ViewBuilder let banner: () -> Banner
+
+    /// The banner's measured height, in points. Zero while it renders nothing.
+    @State private var bannerHeight: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .background { TabShellBannerReserve(height: bannerHeight) }
+            .overlay(alignment: .bottom) {
+                // Measured through a stack, which lays out at zero height when the banner renders nothing, so the
+                // reserve falls back to 0 instead of keeping a stale height.
+                VStack(spacing: 0) { banner() }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        bannerHeight = height
+                    }
+                    // The overlay's bottom is the bottom edge of the safe area. Aligning the banner's TOP to it
+                    // hangs the banner below that edge, in the room the reserve sets aside.
+                    .alignmentGuide(.bottom) { $0[.top] }
+            }
+    }
+}
+
+/// Sets aside room at the bottom of the view controller that hosts a tab's content (#1565).
+///
+/// A UIKit view in the tab root's background, which draws nothing: it walks its responder chain to the nearest view
+/// controller and sets that controller's `additionalSafeAreaInsets.bottom`. The nearest controller is the one whose
+/// view holds both this view and the banner ``TabShellBannerModifier`` draws, so the room is set aside exactly where
+/// the banner hangs. Measured on iPhone 17 (iOS 26.5): it is SwiftUI's `TabHostingController`, whose parent is the tab
+/// bar controller.
+///
+/// **It writes after the update, never during it.** `updateUIView` runs inside SwiftUI's update, and changing the
+/// host's safe area there would invalidate the layout SwiftUI is in the middle of computing. The write is queued on
+/// the main queue instead, and reads the height then, so several changes in one update make one write. It also writes
+/// no SwiftUI state at any point (a representable that does so while it is being built is the trap that once blanked
+/// the semantic map).
+///
+/// Version history:
+///   1.0 — #1565: initial implementation
+struct TabShellBannerReserve: UIViewRepresentable {
+
+    /// How much room to set aside, in points.
+    let height: CGFloat
+
+    /// Builds the reserving view. It draws nothing and takes no touches.
+    func makeUIView(context: Context) -> ReservingView {
+        let view = ReservingView()
+        view.isUserInteractionEnabled = false
+        view.height = height
+        return view
+    }
+
+    /// Passes on a new height, to be applied once this update is over.
+    func updateUIView(_ uiView: ReservingView, context: Context) {
+        uiView.height = height
+        uiView.reserveSoon()
+    }
+
+    /// Gives the room back when the tab's content goes away.
+    static func dismantleUIView(_ uiView: ReservingView, coordinator: ()) {
+        uiView.dismantle()
+    }
+
+    /// The UIKit view whose host is inset.
+    final class ReservingView: UIView {
+
+        /// How much room the host should set aside.
+        var height: CGFloat = 0
+
+        /// The controller this view last inset, so the room can be given back if the view leaves it.
+        private weak var reservedHost: UIViewController?
+
+        /// Set once SwiftUI has let go of this view. A write queued before then must not land after it.
+        private var isDismantled = false
+
+        /// Applies the height once the view has a host to apply it to.
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            reserveSoon()
+        }
+
+        /// Queues the write for after the current update.
+        func reserveSoon() {
+            DispatchQueue.main.async { [weak self] in self?.reserve() }
+        }
+
+        /// Gives the room back for good: SwiftUI is done with this view.
+        func dismantle() {
+            isDismantled = true
+            giveBack()
+        }
+
+        /// Takes the reserve off the host it was last applied to.
+        private func giveBack() {
+            reservedHost?.additionalSafeAreaInsets.bottom = 0
+            reservedHost = nil
+        }
+
+        /// Sets the host's bottom inset to the height, if it is not that already.
+        private func reserve() {
+            guard !isDismantled, let host = nearestViewController else { return }
+            if let reservedHost, reservedHost !== host { giveBack() }
+            reservedHost = host
+            if host.additionalSafeAreaInsets.bottom != height {
+                host.additionalSafeAreaInsets.bottom = height
+            }
+        }
+
+        /// The first view controller up this view's responder chain: the one whose view holds it.
+        private var nearestViewController: UIViewController? {
+            var responder = next
+            while let current = responder {
+                if let controller = current as? UIViewController { return controller }
+                responder = current.next
+            }
+            return nil
+        }
+    }
 }
 
 // MARK: - Scene session reader (#1368)

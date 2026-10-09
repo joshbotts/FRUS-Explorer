@@ -488,7 +488,14 @@ measured. An iPad Pro 11-inch (M5) is two-pane even in portrait. The suite seeds
 filter and clearing it leaves the id in the persistent domain, and a later suite would otherwise
 launch narrowed to a scope its in-memory store does not hold — the `.unavailable` state, whose
 subseries list is empty. Expect **3 tests, 3 passed, on each**, measured on the iOS 26.4 runtime
-the destinations below pin; iOS 27 is unmeasured:
+the destinations below pin. **On iOS 27.0 (measured 2026-10-09, with #1565): 3 passed on iPhone 17
+and on iPad Pro 11-inch (M5).** Before #1565 `testBrowseWithinLandsUnderTheBanner` failed on
+iPhone 17 under iOS 27.0: the swipes stopped with My Scopes still under the Local Only banner,
+where `isHittable` is true, and the tap landed on the banner. The helper now swipes until the row
+is above the banner, which the app's fix made possible. Seen once that day, and not looked into:
+the first test of a run on a simulator this build had not been installed on before met the
+onboarding screen in spite of the launch pin and failed on a missing Browse tab; the same test
+passed on the next run. The commands:
 
 ```bash
 xcodebuild test \
@@ -504,6 +511,60 @@ xcodebuild test \
   -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4" \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/BrowseWithinScopeTests
+```
+
+**`TabShellBannerClearanceTests` (#1565) runs on an iPhone and an iPad, and turns the iPad to
+landscape, because in portrait two of an iPad's lists are too short to reach the banner.** Every
+UI-test launch runs without CloudKit, so the Local Only banner is always up. Three scenarios drag a
+list to its end (the Browse root, Browse ▸ Archives, the Settings root) and require its lowest text
+or control to end at or above the banner's top edge; each SKIPS, saying so, when nothing in the list
+ran below that edge before it was scrolled. `testPushedScreenBottomBarSitsAboveTheBanner` requires
+the Download button on Settings ▸ Volumes & Storage ▸ Download from GitHub to sit above the banner.
+`testEveryTabDrawsTheBannerAboveTheTabBar` visits all five tabs and taps the banner's Details.
+`testBannerKeepsItsPlaceWhenTheTabsBecomeASidebar` is iPad-only: it switches the tabs to their other
+arrangement, checks the banner and the Settings list again, and `tearDown` switches them back, since
+the arrangement persists per install. `setUp` turns an iPad to landscape and an iPhone to portrait,
+and `tearDown` returns either to portrait. Measured on 2026-10-09:
+
+- **iPhone 17, iOS 27.0: 6 tests, 5 passed, 1 skipped** (the sidebar scenario, which is iPad-only).
+  Banner top at y 721.7; the three lists rest with their last text ending at y 684.7 to 686.0, and
+  Download sits at y 671.3–705.7. On iOS 26.5 the same five passed with the same figures, before
+  the sidebar scenario was written.
+- **On the old drawing (the banner as a bottom `safeAreaInset` outside the stack), iPhone 17,
+  iOS 26.5: the three list scenarios and the Download scenario FAIL** (last text at y 732–755,
+  Download at y 740.7–775.0) and the five-tab scenario passes. That one guards the new drawing
+  alone: it fails when the banner hangs with no room set aside for it, and a list scenario fails
+  when the room is set aside and the banner is not hung in it.
+- **iPad Pro 11-inch (M5), iOS 27.0, landscape: 6 tests, 6 passed, 0 skipped.** Banner top at
+  y 760.5; lists end at y 723.5 to 725.0; Download at y 710.0–744.5. **On the old drawing there,
+  five FAIL** (lists at y 762.5 to 778.2, Download at y 763.5–798.0) and the five-tab scenario
+  passes. That simulator had its tabs as a sidebar, so the sidebar scenario measured the bar.
+- **The same iPad in portrait, before the suite pinned landscape: 5 tests, 3 passed, 2 skipped.**
+  The Browse root and Browse ▸ Archives fit above the banner (top at y 1136.5).
+
+On the iPad each scenario takes one to two and a half minutes, about ten minutes for the suite. The
+list reading leaves out images and anything wider than its list: while a list has rows under the
+tab bar, iOS keeps an image named `AdditionalDimmingOverlay` inside it (measured on 26.5), which
+reaches below the screen and once ended a scenario halfway down the Settings list. With the tabs as
+a sidebar the reading also includes the sidebar's own list, whose last row is far above the banner.
+The same rule lives in the unit target as `TabShellBannerReserveTests` (4 tests, any iPhone or iPad
+simulator), which hosts the modifier in a window and reads the host's inset, the banner's frame and
+a `List`'s bottom inset inside a `NavigationStack`.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/TabShellBannerClearanceTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5),OS=27.0" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/TabShellBannerClearanceTests
 ```
 
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine

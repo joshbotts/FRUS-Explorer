@@ -149,12 +149,13 @@ final class SearchTipsSheetTests: XCTestCase {
 
     /// At AX5 the pre-search Search tips link scrolls clear of the tab shell's Local Only banner, and opens the sheet.
     ///
-    /// **Why this needs its own scenario, measured on iPhone 17 (402 pt) at #1299:** the banner is a bottom
-    /// `safeAreaInset` the tab shell applies OUTSIDE `SearchView`'s navigation stack, which does not pass it on, so it is
+    /// **Why this needs its own scenario, measured on iPhone 17 (402 pt) at #1299:** the banner was then a bottom
+    /// `safeAreaInset` the tab shell applied OUTSIDE `SearchView`'s navigation stack, which did not pass it on, so it was
     /// drawn OVER the Search content rather than beside it — from y = 551 at AX5, over a prompt area running to y = 791.
     /// The link sat at y 707–770, entirely under it, and the prompt's scroll view reported one page, so no scrolling
-    /// moved it. Every UI-test launch runs without CloudKit, so the banner is always up here, which is what lets the
-    /// scenario require it rather than hope for it.
+    /// moved it. Since #1565 the tab's safe area ends at the banner's top edge and the prompt reserves nothing itself;
+    /// this scenario is what holds that to the link. Every UI-test launch runs without CloudKit, so the banner is
+    /// always up here, which is what lets the scenario require it rather than hope for it.
     ///
     /// The drags start just above the banner and never on it, so a gesture the banner swallowed cannot pass for a view
     /// that would not scroll.

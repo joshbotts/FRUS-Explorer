@@ -74,6 +74,7 @@ import UIKit
 ///   1.0 — #1364: initial implementation
 ///   1.1 — #1364 review round 1: a second seeded scope, the tile's whole caption, Stop Browsing
 ///          Within, and `testAnotherScopeOffersBrowseWithinWhileNarrowed`
+///   1.2 — #1565: `scrollRootUntilHittable` also waits for the row to clear the tab shell's banner
 @MainActor
 final class BrowseWithinScopeTests: XCTestCase {
 
@@ -155,13 +156,23 @@ final class BrowseWithinScopeTests: XCTestCase {
         return app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10)
     }
 
-    /// Swipes the corpus root list up until `element` is hittable. The root is a lazy `List`, so a
-    /// row below the fold is absent from the tree rather than merely off screen.
+    /// Swipes the corpus root list up until `element` is hittable and clear of the tab shell's
+    /// banner. The root is a lazy `List`, so a row below the fold is absent from the tree rather
+    /// than merely off screen.
+    ///
+    /// **`isHittable` alone is not enough, and #1565 measured it.** The Local Only banner is up in
+    /// every UI-test launch, and a row passing under it mid-scroll still reports hittable: on
+    /// iPhone 17 (iOS 27.0) the swipes stopped with My Scopes at y 718–770 under a banner from
+    /// y = 721.7, the tap landed on the banner, and My Scopes never opened. Since #1565 the list
+    /// can be scrolled until the row is above the banner, so the swipes go on until it is.
     private func scrollRootUntilHittable(_ element: XCUIElement) {
         let rootList = app.collectionViews
             .containing(.textField, identifier: "browse.root.searchField").firstMatch
+        let shellBanner = app.descendants(matching: .any)
+            .matching(identifier: "tabShell.syncBanner").firstMatch
         for _ in 0..<6 {
-            if element.exists && element.isHittable { return }
+            if element.exists && element.isHittable,
+               !(shellBanner.exists && element.frame.maxY > shellBanner.frame.minY) { return }
             rootList.swipeUp(velocity: .slow)
             Thread.sleep(forTimeInterval: 0.4)
         }

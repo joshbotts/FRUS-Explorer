@@ -285,6 +285,14 @@ Readers need no new build: `VolumeUpdateChecker` offers a corrected volume by it
 
 **Pull request 2, done (2026-10-09): #1566.** A volume's `volume_structures` row is now the record that its last store pass finished: the pass removes it before it writes anything and writes it last. A volume that holds documents and no such row was cut short, and a launch finishes it unless the interrupted-indexing sentinel names it, in which case it stays on the reader's amber badge as before. No new table, no index bump and no re-index. In the app on a simulator, a volume killed at 600 of its 759 documents stayed at 600 through a relaunch with the sentinel in place, and was whole 8 seconds into a relaunch with the sentinel gone. Not changed: a sentinel left naming a volume that is in fact whole (the report's `frus1936v03`) still shows the badge, which a Re-index clears.
 
+**Pull request 3, done (2026-10-09): #1565.** The banner no longer covers a tab's content. Each tab's own view controller now sets the banner's height aside at the bottom of its safe area, and the banner is drawn in that room (`TabShellBannerModifier` in `MainTabView.swift`); a navigation stack passes its controller's safe area on where it did not pass on the SwiftUI inset the shell used before. Measured on iPhone 17 with the Local Only banner up, its top edge at y 721.7:
+- **Lists.** The Browse root, Browse ▸ Archives and the Settings root rested with their last row's text at y 732–755 and now rest with it ending at y 685–686.
+- **More than the issue reported.** Settings ▸ Volumes & Storage ▸ Download from GitHub drew its Download button at y 741–775, wholly under the banner, so a reader with a banner showing could not start a download from that screen; it is now at y 671–706. The reader's web view ran 69 points under the banner and now ends at its top edge.
+- **Why not the issue's first suggestion.** `contentMargins` applied at the shell was measured too: it cleared the three lists and left the Download button where it was, because it reaches scroll content only.
+- **Search.** The pre-search screen no longer reserves the banner's height itself, and `\.tabShellBottomOverlay` is gone.
+- **Tests.** `TabShellBannerClearanceTests` (UI, six scenarios, one of them iPad-only; on the old drawing four fail on iPhone 17 and five on an iPad Pro 11-inch in landscape) and `TabShellBannerReserveTests` (unit, four tests). `BrowseWithinScopeTests` now scrolls its row clear of the banner before tapping it, which is what failed it on iPhone 17 under iOS 27.0.
+- **For #1576.** A bar pinned to the bottom of the Search stack's safe area now sits above the banner without being told its height; the assessment says so.
+
 **Not this week.**
 - **One index bump** carrying #1535, #1536 and #1599, with anything pull request 4 hands it. Its brief is written on 2026-10-16.
 - **#1576 and #1577**, after pull requests 3 and 5, which edit the same search menus.

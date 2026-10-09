@@ -1399,9 +1399,9 @@ struct SemanticMapSpikeView: View {
                                    defaultValue: "Semantic Analytics"))
         #endif
         // In the toolbar rather than beside the point-size slider, and that is a fix: the controls
-        // row sits at the bottom of the screen where the iCloud status banner overlays it, so the
-        // toggle was drawn but could not be tapped — the drag kept panning. A mode switch has to be
-        // reachable whatever transient chrome the app is showing.
+        // row sits at the bottom of the screen where the iCloud status banner overlaid it until
+        // #1565, so the toggle was drawn but could not be tapped — the drag kept panning. A mode
+        // switch has to be reachable whatever transient chrome the app is showing.
         .toolbar {
             #if os(macOS)
             // ⌘+/⌘−/⌘0 with clickable buttons (MR-12): the keyboard equivalents a Mac window is

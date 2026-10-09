@@ -227,6 +227,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          nothing to scroll. `initialPromptView` now reserves `\.tabShellBottomOverlay` below its content (measured on
 ///          iPhone 17 at AX5 with the banner from y = 551: the link sat at y 707–770 and did not move; one drag now
 ///          brings it to y 472–535, clear of the banner).
+///   1.24 — #1565: `initialPromptView` no longer reserves the banner's height itself. The tab shell now sets the
+///          banner's room aside in the tab's safe area, so this view's frame already ends above it;
+///          `\.tabShellBottomOverlay` is gone.
 
 struct SearchView: View {
 
@@ -373,10 +376,6 @@ struct SearchView: View {
     /// #1299: the Search Tips sheet, opened from More ▸ Search Tips, the pre-search link, the Query Inspector's link and
     /// the iPadOS Find menu. iOS-only in effect: the macOS window is `SearchSheet`, which has its own Tips panel.
     @State private var showSearchTips = false
-    #if os(iOS)
-    /// How much of this view's bottom the tab shell's banner covers (#1299 follow-up) — see `initialPromptView`.
-    @Environment(\.tabShellBottomOverlay) private var tabShellBottomOverlay
-    #endif
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
@@ -1715,19 +1714,14 @@ struct SearchView: View {
     /// Centred in a scroll view rather than a greedy frame, because the glyph is capped but the prompt and the link are
     /// not, and text that grows past its frame has to be scrollable to be reachable.
     ///
-    /// **Centred in the part of the screen the tab shell's banner leaves uncovered, with the covered part reserved as
-    /// scroll room below the content.** The shell draws its Local Only or indexing banner over the Search content
-    /// rather than beside it (`\.tabShellBottomOverlay`), so centring in the whole frame put the link under the banner,
-    /// and at AX5 the content still fitted the frame, leaving nothing to scroll: measured on iPhone 17, the link sat at
-    /// y 707–770 under a banner starting at y = 551. With the reserve, content that fits the uncovered part is centred
-    /// there and does not scroll, and content that does not can scroll up until its end clears the banner.
+    /// **Centred in the part of the screen the tab shell's banner leaves uncovered.** Until #1565 the shell drew its
+    /// Local Only or indexing banner over the Search content, and this view reserved the banner's height itself: at
+    /// AX5 on iPhone 17 the link had sat at y 707–770 under a banner starting at y = 551, with nothing to scroll. The
+    /// shell now sets the banner's room aside in the tab's safe area (`TabShellBannerModifier`), so the frame measured
+    /// here already ends at the banner's top edge: content that fits is centred above the banner and does not scroll,
+    /// and content that does not can scroll until its end clears it.
     private var initialPromptView: some View {
-        #if os(iOS)
-        let bottomOverlay = tabShellBottomOverlay
-        #else
-        let bottomOverlay: CGFloat = 0
-        #endif
-        return GeometryReader { proxy in
+        GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.magnifyingglass")
@@ -1750,9 +1744,8 @@ struct SearchView: View {
                     #endif
                 }
                 .padding()
-                .frame(maxWidth: .infinity, minHeight: max(0, proxy.size.height - bottomOverlay))
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .contentMargins(.bottom, bottomOverlay, for: .scrollContent)
             .scrollBounceBehavior(.basedOnSize)
         }
     }
