@@ -264,7 +264,7 @@ the catalog's:
 
 ### 5.2 Browsing vs. Indexing
 
-The two are distinct, and the app never makes you wait for the second to do the first. Once a volume is *downloaded* you can browse its full structure — front matter, chapters, compilations — immediately, indexed or not. *Indexing* is what enables full-text search, a chapter's document list, and the connections graph. If a volume isn't indexed yet (or a prior pass was interrupted — most likely on the large early annual volumes), a non-blocking banner at the top of its contents explains and offers **Index** / **Re-index**.
+The two are distinct, and the app never makes you wait for the second to do the first. Once a volume is *downloaded* you can browse its full structure — front matter, chapters, compilations — immediately, indexed or not. *Indexing* is what enables full-text search, a chapter's document list, and the connections graph. If a volume isn't indexed yet (or a prior pass was interrupted — most likely on the large early annual volumes), a non-blocking banner at the top of its contents explains and offers **Index** / **Re-index**. If a power loss or a forced restart cuts a volume's indexing short and leaves no mark of it, the app finishes that volume by itself the next time it opens.
 
 ### 5.3 Managing Storage
 

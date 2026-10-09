@@ -8313,6 +8313,187 @@ struct RecordGroupSpellingTests {
     }
 }
 
+// MARK: - UnfinishedStoreTests
+
+/// A store pass cut short, and the launch pass that finishes it (#1566).
+///
+/// Each cut is made by the pipeline's own `storeIndexData`, stopped after a batch of documents by
+/// `setDocumentBatchStoredTestHook`: the batches before the stop are committed and nothing after
+/// them is written, which is what a power loss leaves. A pipeline built without a tracker has no
+/// sentinel, the case the issue reports; one test gives it a tracker, the case of an app that was
+/// quit or killed.
+///
+/// Version history:
+///   1.0 — #1566: initial implementation
+@Suite("IndexingPipeline — a store pass cut short (#1566)")
+struct UnfinishedStoreTests {
+
+    /// What the hook throws to end a pass.
+    private struct CutShort: Error {}
+
+    /// Writes `volumeId` with `count` documents, each holding a word no other document holds
+    /// (`<volumeId>word<n>`).
+    private func writeVolume(_ volumeId: String, documents count: Int, to volDir: URL) throws {
+        try writeTEIVolume(to: volDir.appendingPathComponent("\(volumeId).xml"), volumeId: volumeId,
+                           documents: (1...count).map { n in
+            ("d\(n)", "<head>Paper \(n)</head><p>The text holds \(volumeId)word\(n) once.</p>")
+        })
+    }
+
+    /// The ids `document_cache` holds for `volumeId`, in id order, read on a connection of the
+    /// test's own.
+    private func cachedIds(_ volumeId: String, in dir: URL) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dir.appendingPathComponent("test.sqlite").path, &db, SQLITE_OPEN_READONLY, nil)
+                == SQLITE_OK, let db else { throw NSError(domain: "UnfinishedStoreTests", code: 1) }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        let sql = "SELECT document_id FROM document_cache WHERE volume_id = '\(volumeId)' ORDER BY document_id"
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "UnfinishedStoreTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        var ids: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            ids.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return ids
+    }
+
+    @Test("A first pass cut short after its first batch, with no sentinel, reads as indexed and is known unfinished, and the launch pass finishes it")
+    func firstPassCutShortIsFinishedAtLaunch() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume("frusshort", documents: 5, to: volDir)
+            try writeVolume("fruswhole", documents: 2, to: volDir)
+            try await pipeline.indexVolume("fruswhole")
+            #expect(try pipeline.volumesWithUnfinishedStore().isEmpty, "a finished pass leaves its record")
+            #expect(try pipeline.volumesAwaitingIndex(excluding: []) == ["frusshort"],
+                    "before any pass the short volume is simply not indexed")
+
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { volumeId, batch in
+                if volumeId == "frusshort", batch == 1 { throw CutShort() }
+            }
+            await #expect(throws: CutShort.self) { try await pipeline.indexVolume("frusshort") }
+
+            // The state the issue reports: part of the volume, and a volume that reads as indexed.
+            #expect(try cachedIds("frusshort", in: dir) == ["d1", "d2"],
+                    "the cut must leave the first batch and nothing else, or the test cuts nothing")
+            #expect(try pipeline.isVolumeIndexed("frusshort"))
+            // What tells it from a whole one.
+            #expect(try pipeline.isStoreUnfinished("frusshort"))
+            #expect(try pipeline.isStoreUnfinished("fruswhole") == false)
+            #expect(try pipeline.volumesWithUnfinishedStore() == ["frusshort"])
+            #expect(await pipeline.isIndexingUnfinished("frusshort"),
+                    "the citation lookup's question, answered with no tracker to ask")
+            #expect(await pipeline.isIndexingUnfinished("fruswhole") == false)
+            #expect(try pipeline.volumesAwaitingIndex(excluding: []) == ["frusshort"])
+
+            await pipeline.setDocumentBatchStoredTestHook(nil)
+            // Listed with a finished volume, as a list read a moment too early could be.
+            let finished = await pipeline.finishIndexing(of: ["frusshort", "fruswhole"])
+            #expect(finished == ["frusshort"], "a volume already whole is not indexed again")
+            #expect(try cachedIds("frusshort", in: dir) == ["d1", "d2", "d3", "d4", "d5"])
+            #expect(try pipeline.volumesWithUnfinishedStore().isEmpty)
+            #expect(await pipeline.isIndexingUnfinished("frusshort") == false)
+            #expect(try pipeline.volumesAwaitingIndex(excluding: []).isEmpty)
+            #expect(try await pipeline.cachedVolumeStructure(forVolumeId: "frusshort") != nil)
+            let tail = try await store.search(query: FTS5Query(keywords: ["frusshortword5"]), limit: 5, offset: 0)
+            #expect(tail.map(\.documentId) == ["d5"], "the last document is searchable")
+        }
+    }
+
+    @Test("A re-index cut short is known unfinished though every document is still there, and the launch pass finishes it")
+    func reindexCutShortIsKnownUnfinished() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume("frusagain", documents: 5, to: volDir)
+            try await pipeline.indexVolume("frusagain")
+            #expect(try pipeline.isStoreUnfinished("frusagain") == false)
+            #expect(try await pipeline.cachedVolumeStructure(forVolumeId: "frusagain") != nil)
+
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { _, batch in
+                if batch == 2 { throw CutShort() }
+            }
+            await #expect(throws: CutShort.self) { try await pipeline.indexVolume("frusagain") }
+
+            // The first pass's rows stand, so a count of documents could not tell: only the
+            // withdrawn record does.
+            #expect(try cachedIds("frusagain", in: dir).count == 5)
+            #expect(try pipeline.isStoreUnfinished("frusagain"))
+            #expect(try await pipeline.cachedVolumeStructure(forVolumeId: "frusagain") == nil,
+                    "until the pass finishes the Browser reads the structure from the file")
+
+            await pipeline.setDocumentBatchStoredTestHook(nil)
+            let waiting = try pipeline.volumesAwaitingIndex(excluding: [])
+            #expect(waiting == ["frusagain"])
+            #expect(await pipeline.finishIndexing(of: waiting) == ["frusagain"])
+            #expect(try pipeline.isStoreUnfinished("frusagain") == false)
+            #expect(try await pipeline.cachedVolumeStructure(forVolumeId: "frusagain") != nil)
+        }
+    }
+
+    @Test("A volume the sentinel names is left for the reader, and a volume with no documents in the index is still taken")
+    func sentinelNamedVolumeIsNotRetriedAtLaunch() async throws {
+        try await withTempDir { dir in
+            let suiteName = "frus.test.unfinishedStore.\(UUID().uuidString)"
+            defer { removeIsolatedStamps(suiteName) }
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let tracker = IndexingStateTracker(store: makeIsolatedStamps(suiteName))
+            let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL,
+                                                volumesDirectory: volDir, stateTracker: tracker,
+                                                concurrencyLimit: 2)
+            try writeVolume("frusquit", documents: 5, to: volDir)
+            try writeVolume("frusnew", documents: 2, to: volDir)
+
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { volumeId, batch in
+                if volumeId == "frusquit", batch == 1 { throw CutShort() }
+            }
+            await #expect(throws: CutShort.self) { try await pipeline.indexVolume("frusquit") }
+
+            let interrupted = Set(await tracker.interruptedVolumeIds())
+            #expect(interrupted == ["frusquit"], "a pass that ends with the app running leaves its sentinel")
+            #expect(try pipeline.isStoreUnfinished("frusquit"))
+            #expect(try pipeline.volumesAwaitingIndex(excluding: interrupted) == ["frusnew"])
+            #expect(try pipeline.volumesAwaitingIndex(excluding: []) == ["frusnew", "frusquit"],
+                    "the exclusion is what holds it back, not the index")
+
+            let waiting = try pipeline.volumesAwaitingIndex(excluding: interrupted)
+            #expect(await pipeline.finishIndexing(of: waiting) == ["frusnew"])
+            #expect(try cachedIds("frusquit", in: dir) == ["d1", "d2"], "the launch pass did not touch it")
+            #expect(try pipeline.isStoreUnfinished("frusquit"))
+        }
+    }
+
+    @Test("A store that fails in the whole-library pass leaves that volume known unfinished and the others whole")
+    func batchPassFailureIsKnownUnfinished() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeVolume("frusbad", documents: 5, to: volDir)
+            try writeVolume("frusgood", documents: 5, to: volDir)
+
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { volumeId, batch in
+                if volumeId == "frusbad", batch == 1 { throw CutShort() }
+            }
+            try await pipeline.indexAllVolumes()
+
+            #expect(try cachedIds("frusbad", in: dir) == ["d1", "d2"])
+            #expect(try cachedIds("frusgood", in: dir).count == 5)
+            #expect(try pipeline.volumesWithUnfinishedStore() == ["frusbad"])
+            #expect(try pipeline.volumesAwaitingIndex(excluding: []) == ["frusbad"])
+        }
+    }
+}
+
 #if DEBUG
 // MARK: - UITestFixtureVolumeTests
 

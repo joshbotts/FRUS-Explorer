@@ -36072,3 +36072,42 @@ Pull request 1 of the plan of record's §0c. HistoryAtState/frus merged its pull
 - No semantic re-harvest, and no word in either manual about the two phantom rows.
 - Nothing is posted to HistoryAtState/frus#469.
 - `status_at_commit.py` has no test of its own; `selftest.py` covers the readers it calls.
+
+
+## Session 2026-10-09 — A volume whose indexing a power loss cut short is known to be unfinished, and the next launch finishes it (#1566)
+
+Pull request 2 of the plan of record's §0c. The report: after a host restart mid-index, `frus1937v02` held 550 of its 759 documents, read as indexed, carried no interrupted mark and was never repaired, because the only record of an unfinished pass was a `UserDefaults` sentinel whose last writes the restart lost.
+
+**The fix, in `FRUSCoreKit/Search/IndexingPipeline.swift`**
+- **The index records that a pass finished.** A volume's `volume_structures` row was already the last table row a store pass writes. `storeIndexData` now removes that row before it writes anything and writes it last, for a volume whose structure did not encode too (an empty string, which `cachedVolumeStructure` reads as no structure, as it read the missing row). So a volume with documents and no such row is one whose last pass, a first one or a re-index, did not finish. The index is in WAL mode, which keeps commits in order through a power loss, so the record cannot outlive the rows it vouches for. No new table or column, no index version, no re-index: every volume a pass has finished since the table was added in June 2026 already has its row.
+- **`isStoreUnfinished(_:)` and `volumesWithUnfinishedStore()`** read it. `isIndexingUnfinished(_:)`, the citation lookup's question (#1522), answers from it as well as from the sentinel.
+- **`volumesAwaitingIndex(excluding:)` and `finishIndexing(of:)`** are the launch pass: each downloaded volume with no document in the index, and each one with an unfinished store, less those the sentinel names. A sentinel-named volume stays the reader's to re-index from its amber badge, as before: its pass ended with the app running or killed, and a pass that brings the app down would do so at every launch if a launch retried it.
+- `FRUSExplorerApp`'s launch reconcile takes its list from `volumesAwaitingIndex` and indexes it through `finishIndexing`. The list is read once, on the boot path, before the launch starts any pass, because a volume being stored at that moment has no record yet either. For the same reason `unindexedDownloadedVolumeIds()`, which the indexing banner and the background task read at any time, is unchanged.
+- While a volume is being re-indexed its structure row is absent, so for those seconds the Browser reads its structure from the file, as it does for a volume not indexed.
+
+**Tests** (`UnfinishedStoreTests`, in `FRUSExplorerTests/FRUSCoreKit/IndexingPipelineTests.swift`, run by Xcode and by `swift test`)
+- Each cut is made by `storeIndexData` itself, stopped after a batch of documents by a new test hook (`setDocumentBatchStoredTestHook`), with the batch size set to 2. Four tests: a first pass cut after its first batch with no sentinel (2 of 5 documents, reads as indexed, known unfinished, finished by the launch pass, a whole volume on the same list not indexed again); a re-index cut short, where every document is still there and only the withdrawn record tells; a sentinel-named volume left alone while an unindexed one beside it is taken; and a store that fails inside `indexAllVolumes`.
+- Five mutations, each run against the suite and each failing it: no removal at the start of a pass (the re-index test); the old launch rule, no unfinished stores (all four tests); `isIndexingUnfinished` from the sentinel alone; no exclusion of sentinel-named volumes; no passing over a volume already whole.
+
+**In the app** (a fresh iPhone 17 simulator, iOS 27.0, the Debug build, `frus1937v02` copied into the container)
+- A fresh install runs the whole-library date pass at every launch until one completes (no version is recorded yet), and a first attempt at this check measured that pass, which re-indexes everything whatever the sentinel says. The check was run again with the version stamped first, by a launch with no volume on the device.
+- The reconcile indexed the volume when it arrived; the app was killed mid-store: 600 of 759 documents, no record row, and the sentinel naming it.
+- Relaunched with the sentinel in place and left running 25 seconds: still 600 documents and no record row.
+- Device shut down, the sentinel's key deleted from the app's preferences file, device booted: the state the report describes. Relaunched: the record row was there after 8 seconds, with 759 documents, `d752` the highest.
+
+**Also changed**
+- Both manuals gain one sentence where they describe interrupted indexing. `CLAUDE.md`'s *Download → Index* paragraph states the rule that the structure row is a store pass's last write.
+- Three lines of version history in `FRUSExplorerApp.swift` move its four ranged `EditableContent` blocks down by three; they are re-pointed, and the Amendment Log says so.
+
+**Checked**
+- `swift build --target FRUSCoreKit`: built.
+- `swift test` on the final code: exit 0, 38 "Test run with" lines, 2,562 tests (the four new ones over pull request 1's 2,558), no ✘ line.
+- The iOS unit target on an iPhone 17 simulator (iOS 27.0) with the TEI mirror, on the final code: "Test run with 6521 tests in 769 suites failed … with 8 issues". All eight are `SyncEventMonitorTests`' two tests, which cannot open the system log on this Mac (#1606). `UnfinishedStoreTests`, `EditableContentKeyTests` and `CodingStandardsAuditTests` passed in it.
+- `FRUSExplorerMac`: `** BUILD SUCCEEDED **`.
+
+**Not done**
+- A sentinel left naming a volume that is whole, the report's `frus1936v03`, still shows the amber badge. Clearing it from the index's record would also clear the badge of a volume whose re-index was killed while parsing, before it wrote anything, and that volume does still need its pass.
+- The empty structure row for a volume whose structure does not encode is not tested: nothing in the corpus or the fixtures makes `JSONEncoder` fail on a `VolumeStructure`.
+- The simulator check was not repeated on a build without the fix. The report is the unfixed behaviour, the second mutation is the old launch rule, and the relaunch with the sentinel in place shows that a launch alone repairs nothing.
+- Storage hubs' **Index Remaining** still counts only volumes with no documents in the index.
+

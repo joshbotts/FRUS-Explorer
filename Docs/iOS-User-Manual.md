@@ -274,7 +274,7 @@ the catalog's:
 
 ### 5.2 Indexing
 
-Indexing is what turns a downloaded volume into a searchable one — it parses the TEI XML into the full-text index, the person index, the cross-reference table, and the date table. It runs automatically when a download completes, and the banner narrates it. **Index Remaining** (in Volumes & Storage → Storage & Index) indexes anything downloaded but not yet searchable; a **Needs Attention** section appears only when volumes were interrupted mid-index.
+Indexing is what turns a downloaded volume into a searchable one — it parses the TEI XML into the full-text index, the person index, the cross-reference table, and the date table. It runs automatically when a download completes, and the banner narrates it. **Index Remaining** (in Volumes & Storage → Storage & Index) indexes anything downloaded but not yet searchable; a **Needs Attention** section appears only when volumes were interrupted mid-index. If a power loss or a forced restart cuts a volume's indexing short and leaves no mark of it, the app finishes that volume by itself the next time it opens.
 
 Browsing does not wait for indexing. Once a volume is *downloaded* you can open it and browse its structure — front matter, chapters, back matter — indexed or not. Indexing is what enables full-text search, a chapter's document list, and the volume's cross-volume connections graph. Open a chapter of a volume that isn't indexed yet and it reads **Index Required**, with an **Index Now** button; the documents appear when indexing finishes. In a subseries list, a volume whose indexing was interrupted carries an orange warning triangle in its row, and its long-press menu offers **Re-index**.
 

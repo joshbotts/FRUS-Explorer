@@ -413,6 +413,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         volumesDirectory:)` opens an index read-only and immutable, for a host that searches and
 ///         browses an index another program built (`isReadOnly`). The public initialiser every caller
 ///         uses delegates to a private one, which runs its statements as before and in the same order
+///  4.32 — 2026-10-09 (#1566): a volume's `volume_structures` row is the record that its last store
+///         pass finished. `storeIndexData` withdraws it before it writes a row and writes it last,
+///         for a volume with no structure too (an empty one). `volumesWithUnfinishedStore()` and
+///         `isStoreUnfinished(_:)` read it, `isIndexingUnfinished(_:)` answers from it as well as
+///         from the sentinel, and `volumesAwaitingIndex(excluding:)` and `finishIndexing(of:)` are the launch
+///         pass that finishes a volume cut short with no sentinel left. Nothing a parse emits changes, so
+///         no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1868,6 +1875,17 @@ public actor IndexingPipeline {
         volumeStoredTestHook = hook
     }
 
+    /// Test hook: awaited by `storeIndexData` after each batch of a volume's documents is written,
+    /// with the volume's id and the batch's number from 1. A hook that throws ends the pass there,
+    /// with the batches before it committed and nothing after them written, which is the state a
+    /// power loss leaves (#1566). `nil` in the app.
+    private var documentBatchStoredTestHook: (@Sendable (String, Int) async throws -> Void)?
+
+    /// Test hook: installs `documentBatchStoredTestHook`.
+    func setDocumentBatchStoredTestHook(_ hook: (@Sendable (String, Int) async throws -> Void)?) {
+        documentBatchStoredTestHook = hook
+    }
+
     /// The bundled person-authority crosswalk (Phase 5), loaded lazily on first consolidation. The
     /// double optional distinguishes "not yet loaded" (`nil`) from "loaded, absent" (`.some(nil)`),
     /// so a missing bundle resource is only looked up once. Injectable for tests.
@@ -2996,8 +3014,9 @@ public actor IndexingPipeline {
     /// Whether `volumeId`'s indexing started and has not finished — it is running now, or it was
     /// cut short by a quit or a failed pass — as the interrupted-indexing sentinel records it
     /// (`IndexingStateTracker`: `indexVolume` and `indexAllVolumes` mark a volume started before
-    /// they parse it and completed only once its rows are stored). `false` for a pipeline built
-    /// without a tracker, as most test pipelines are (`makeTestPipeline`) (#1522).
+    /// they parse it and completed only once its rows are stored) or as the index itself does
+    /// (below). A pipeline built without a tracker, as most test pipelines are
+    /// (`makeTestPipeline`), answers from the index alone (#1522, #1566).
     ///
     /// Such a volume can hold some of its rows and not others: a first pass writes its documents
     /// in batches, and one cut short keeps what it wrote. So `isVolumeIndexed(_:)` alone cannot
@@ -3005,11 +3024,116 @@ public actor IndexingPipeline {
     /// lookup reads this beside it (`SearchService.hasFinishedIndexing(_:)`). A volume being
     /// re-indexed is unfinished too, for the moments its pass runs, though its earlier rows stand.
     ///
+    /// The index's own record answers first (#1566): a volume that holds documents and no
+    /// `volume_structures` row is unfinished whatever the sentinel says, since a power loss can
+    /// take the sentinel's last writes with it (`isStoreUnfinished(_:)`). A read that fails counts
+    /// as no evidence, and the sentinel decides.
+    ///
     /// nonisolated: `stateTracker` is a `let` holding an actor of its own, so the question needs no
     /// hop onto this one.
     public nonisolated func isIndexingUnfinished(_ volumeId: String) async -> Bool {
+        if (try? isStoreUnfinished(volumeId)) == true { return true }
         guard let stateTracker else { return false }
         return await stateTracker.interruptedVolumeIds().contains(volumeId)
+    }
+
+    /// Whether `volumeId` holds documents and no record that its last store pass finished (#1566).
+    ///
+    /// The record is the volume's `volume_structures` row: `storeIndexData` removes it before it
+    /// writes anything and writes it last. So this is `true` while a pass is storing the volume,
+    /// and afterwards for a pass that was cut short, by a quit, a failure, or a power loss that
+    /// left no sentinel. `false` for a volume with no documents in the index.
+    ///
+    /// nonisolated: reads `auxDb` directly, as `isVolumeIndexed` does — a read-only query.
+    public nonisolated func isStoreUnfinished(_ volumeId: String) throws -> Bool {
+        let sql = """
+            SELECT 1 FROM document_cache
+             WHERE volume_id = ?1
+               AND NOT EXISTS (SELECT 1 FROM volume_structures WHERE volume_id = ?1)
+             LIMIT 1
+            """
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        sqlite3_bind_text(s, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        return sqlite3_step(s) == SQLITE_ROW
+    }
+
+    /// Every volume that holds documents and no record that its last store pass finished (#1566):
+    /// `isStoreUnfinished(_:)` over the whole index, in one query.
+    ///
+    /// nonisolated: reads `auxDb` directly — safe as a read-only query.
+    public nonisolated func volumesWithUnfinishedStore() throws -> Set<String> {
+        let sql = """
+            SELECT DISTINCT volume_id FROM document_cache
+             WHERE volume_id NOT IN (SELECT volume_id FROM volume_structures)
+            """
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let s = stmt else {
+            let msg = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: msg)
+        }
+        defer { sqlite3_finalize(s) }
+        var ids = Set<String>()
+        while sqlite3_step(s) == SQLITE_ROW {
+            if let cStr = sqlite3_column_text(s, 0) {
+                ids.insert(String(cString: cStr))
+            }
+        }
+        return ids
+    }
+
+    /// The downloaded volumes a launch indexes without being asked, in id order (#1566): each one
+    /// with no document in the index, and each one whose last store pass did not finish
+    /// (`volumesWithUnfinishedStore()`), less those `interrupted` names.
+    ///
+    /// `interrupted` is the sentinel's list (`IndexingStateTracker.interruptedVolumeIds()`). A
+    /// volume on it is the reader's to re-index, from its amber badge: its pass ended with the app
+    /// running or killed, and a pass that brings the app down would do so at every launch if a
+    /// launch retried it. A volume cut short with no sentinel left is what a power loss or a forced
+    /// restart leaves, and nothing would ever name it, so a launch finishes it.
+    ///
+    /// **Read it before this process starts a pass**, as the app does, once, on its boot path. A
+    /// volume a pass is storing at that moment has no record yet either, and would be listed.
+    /// `unindexedDownloadedVolumeIds()`, which the indexing banner and the background task read at
+    /// any time, leaves unfinished stores out for that reason.
+    ///
+    /// nonisolated: reads the volumes directory and `auxDb`, and writes nothing.
+    public nonisolated func volumesAwaitingIndex(excluding interrupted: Set<String>) throws -> [String] {
+        let indexed = try allIndexedVolumeIds()
+        let unfinished = try volumesWithUnfinishedStore()
+        return Self.findDownloadedVolumes(in: volumesDirectory)
+            .map(\.volumeId)
+            .filter { (!indexed.contains($0) || unfinished.contains($0)) && !interrupted.contains($0) }
+    }
+
+    /// Indexes each of `volumeIds` that still awaits it, one at a time and in the order given: the
+    /// launch pass over `volumesAwaitingIndex(excluding:)`, for downloads that finished with the
+    /// app closed, volumes whose indexing failed, and volumes cut short with no sentinel left
+    /// (#1566).
+    ///
+    /// A volume another pass has finished since the list was read is passed over, and so is one
+    /// whose pass fails; the rest go on.
+    ///
+    /// - Returns: The ids it indexed, in order.
+    @discardableResult
+    public func finishIndexing(of volumeIds: [String]) async -> [String] {
+        var indexed: [String] = []
+        for volumeId in volumeIds {
+            if (try? isVolumeIndexed(volumeId)) == true, (try? isStoreUnfinished(volumeId)) == false { continue }
+            do {
+                try await indexVolume(volumeId)
+                indexed.append(volumeId)
+            } catch {
+                logger.error("finishIndexing: \(volumeId, privacy: .public) failed — \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        return indexed
     }
 
     /// The distinct subject-vocabulary digests the indexed rows were written against.
@@ -3070,7 +3194,8 @@ public actor IndexingPipeline {
     /// actor-private `volumesDirectory` directly) so a backgrounding with only
     /// word-cloud precompute work pending no longer triggers a wholesale reindex.
     /// Interrupted volumes are not excluded here — callers tracking interruptions
-    /// filter them separately.
+    /// filter them separately. A volume whose store pass did not finish is not included: it has
+    /// rows, and it is `volumesAwaitingIndex(excluding:)` that lists it, at launch (#1566).
     public func unindexedDownloadedVolumeIds() throws -> [String] {
         let indexed = try allIndexedVolumeIds()
         return Self.findDownloadedVolumes(in: volumesDirectory)
@@ -5275,6 +5400,15 @@ public actor IndexingPipeline {
         var processed = 0
         var batchNumber = 0
 
+        // #1566: withdraw the record that this volume's last pass finished, before this pass
+        // writes anything. The row comes back as the pass's last write (below), so a pass cut
+        // short at any point, a first one or a re-index, leaves a volume with documents and no
+        // such row: `volumesWithUnfinishedStore()`. The index is in WAL mode, which keeps commits
+        // in order through a power loss, so if any later write survives one, this delete has.
+        // Until the row is back the Browser reads the structure from the file, as it does for a
+        // volume not indexed.
+        try auxDeleteVolumeStructure(forVolumeId: data.volumeId)
+
         // Remove cache rows for documents that no longer exist in this volume's
         // TEI (upstream revisions occasionally renumber or drop documents). The
         // UPSERT below updates surviving rows in place — preserving their rowid
@@ -5309,6 +5443,7 @@ public actor IndexingPipeline {
             try auxUpsertDocumentRevisions(data.documentRevisions.filter { row in
                 cacheChunk.contains { $0.documentId == row.documentId }
             }, mode: revisions)
+            if let hook = documentBatchStoredTestHook { try await hook(data.volumeId, batchNumber) }
 
             processed += cacheChunk.count
             volumeDocumentsProcessed = processed
@@ -5400,6 +5535,7 @@ public actor IndexingPipeline {
         // leave stale trailing rows (sort_order ≥ new count) behind as phantom entries.
         try auxDeleteVolumeSources(forVolumeId: data.volumeId)
         try auxInsertVolumeSources(data.volumeSources)
+        // The pass's last write, and the record that it finished (#1566; see the delete above).
         try auxInsertVolumeStructure(volumeId: data.volumeId, structureJSON: data.structureJSON)
         // #308: this volume's subject rows, now that its `document_cache` rows exist. Placed HERE
         // rather than in `indexVolume` because there are two store paths — the single-volume index
@@ -7433,14 +7569,24 @@ public actor IndexingPipeline {
     }
 
     /// Stores (or replaces) the JSON-encoded Browser structure for a volume.
-    /// A `nil` payload (encoding failed during parse) is a no-op.
+    ///
+    /// The row is also the record that the volume's store pass finished (#1566), so one is written
+    /// for a `nil` payload too (encoding failed during parse), with an empty string that
+    /// `cachedVolumeStructure(forVolumeId:)` reads as no structure, as it read the missing row.
     private func auxInsertVolumeStructure(volumeId: String, structureJSON: String?) throws {
-        guard let structureJSON else { return }
         let stmt = try auxPrepare(
             "INSERT OR REPLACE INTO volume_structures (volume_id, structure_json) VALUES (?, ?)")
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
-        sqlite3_bind_text(stmt, 2, structureJSON, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, structureJSON ?? "", -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+    }
+
+    /// Removes a volume's `volume_structures` row: the first write of a store pass (#1566).
+    private func auxDeleteVolumeStructure(forVolumeId volumeId: String) throws {
+        let stmt = try auxPrepare("DELETE FROM volume_structures WHERE volume_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(stmt)
     }
 

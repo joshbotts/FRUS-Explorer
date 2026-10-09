@@ -279,6 +279,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.27 — FRUSCoreKit, part 2: the three launch branches run the passes after indexing through the
 ///          kit's `IndexingPipeline.runPostIndexPasses`, in the same order, and publish a rebuilt
 ///          rollup from its callback, as they did between the rollup and the next pass.
+///   4.28 — #1566: the launch reconcile takes its volumes from the pipeline
+///          (`volumesAwaitingIndex(excluding:)`), which adds a volume whose last store pass did not
+///          finish though no sentinel names it, and indexes them through `finishIndexing(of:)`.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2529,20 +2532,20 @@ struct FRUSExplorerApp: App {
             }
             #endif
             if reconcileUnindexedDownloads {
-                let indexedIds = (try? pipeline.allIndexedVolumeIds()) ?? []
+                // #1566: the pipeline chooses them. Besides a downloaded volume with no document
+                // in the index, it takes one whose last store pass did not finish though no
+                // sentinel names it: a power loss or a forced restart can take the sentinel's last
+                // writes with it, and such a volume read as indexed and stayed short for good.
                 let interrupted = appState.interruptedVolumeIds
-                let unindexed = IndexingPipeline
-                    .findDownloadedVolumes(in: volumesDir)
-                    .map(\.volumeId)
-                    .filter { !indexedIds.contains($0) && !interrupted.contains($0) }
-                if !unindexed.isEmpty {
+                let waiting = (try? pipeline.volumesAwaitingIndex(excluding: interrupted)) ?? []
+                if !waiting.isEmpty {
                     Task {
                         #if DEBUG
-                        print("[FRUSExplorer] Reconciling \(unindexed.count) downloaded-but-unindexed volumes.")
+                        print("[FRUSExplorer] Reconciling \(waiting.count) downloaded volumes not fully indexed.")
                         #endif
-                        for volumeId in unindexed.sorted() {
-                            try? await pipeline.indexVolume(volumeId)
-                        }
+                        // Read above, before this launch starts any pass: a volume being stored
+                        // has no record yet either. In id order; a failure is passed over.
+                        await pipeline.finishIndexing(of: waiting)
                     }
                 }
             }
