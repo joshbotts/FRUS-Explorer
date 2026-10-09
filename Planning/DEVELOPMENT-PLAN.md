@@ -36111,3 +36111,63 @@ Pull request 2 of the plan of record's §0c. The report: after a host restart mi
 - The simulator check was not repeated on a build without the fix. The report is the unfixed behaviour, the second mutation is the old launch rule, and the relaunch with the sentinel in place shows that a launch alone repairs nothing.
 - Storage hubs' **Index Remaining** still counts only volumes with no documents in the index.
 
+
+## Session 2026-10-09 — The sync and indexing banner no longer covers a tab's content: each tab's view controller sets the banner's room aside (#1565)
+
+Pull request 3 of the plan of record's §0c. The report: on an iPhone or iPad the indexing and iCloud banner is drawn over the bottom of each tab's content, so a list's last rows rest under it and cannot be tapped.
+
+**Measured first, on the unfixed code** (iPhone 17, iOS 26.5, the Local Only banner up with its top edge at y 721.7 and the tab bar's at 791)
+- Scrolled to their end, the Browse root, Browse ▸ Archives and the Settings root rest with their last row's text at y 732–755.
+- Settings ▸ Volumes & Storage ▸ Download from GitHub draws its Download button at y 741–775, wholly under the banner. The issue did not report this: a reader with a banner showing (signed out of iCloud, Local Only, a sync failure, or while volumes index) could not start a download from that screen.
+- The reader's web view runs to y 791, so its last 69 points are under the banner. A document's last line cleared it only by the page's own bottom padding (a screenshot at the end of 1964–68 vol. I, Document 434).
+
+**Four candidate fixes, measured in one build behind a temporary switch**
+- `safeAreaPadding(.bottom)` at the shell: no change.
+- `contentMargins(.bottom, _, for: .scrollContent)` at the shell, the issue's first suggestion: the three lists rest above the banner, at the root and one push deep, having moved 49 points for a banner 69 tall. The Download button stays where it was, because the modifier reaches scroll content only.
+- `additionalSafeAreaInsets.bottom` on the navigation controllers found under the tab's host: lists and the Download button both clear the banner. Not taken: a stack that appears later (Research swaps among four, Search builds its own after boot) would need the write repeated, and nothing tells the shell when one appears.
+- `additionalSafeAreaInsets.bottom` on the tab's own host: the same result with no such gap. Taken. (`safeAreaBar` was also tried; its run could not be read, because the probe then counted the system's dimming image as content.)
+
+**The fix, in `FRUSExplorer/App/MainTabView.swift`**
+- `TabShellBannerModifier`, applied to each of the five tab roots as `.tabShellBanner { indexingBanner }`, replaces the five bottom `safeAreaInset`s.
+- `TabShellBannerReserve` is a UIKit view in the tab root's background. It walks its responder chain to the nearest view controller, which is SwiftUI's per-tab hosting controller (`TabHostingController`, a child of the tab bar controller; read from a probe's log), and sets that controller's `additionalSafeAreaInsets.bottom` to the banner's measured height. UIKit hands a controller's safe area to every view and child controller inside it, the navigation stack included. The write is queued for after SwiftUI's update, and the room is given back when the view goes away.
+- The banner is drawn as a bottom overlay whose top edge is aligned to the safe area's bottom edge, so it hangs in the room set aside. Its place depends on that edge alone.
+- The keyboard rule (#1070) is unchanged: while the keyboard is up the shell renders no banner, the measured height is zero, and the reserve is zero.
+- `SearchView.initialPromptView` no longer reserves the banner's height itself, and `\.tabShellBottomOverlay` and the Search tab's own measuring are removed.
+
+**After, on the same device:** the three lists rest with their last row's text ending at y 684.7–686.0; Download is at y 671.3–705.7; the banner is at y 721.7 on all five tabs. On the probe build, with the same reserve and no reservation in `SearchView`, the pre-search link sat where its own reservation had put it (y 531.7–552.0), the reader's web view ended at y 721.7, and the end of the same document rested clear of the banner.
+
+**Tests**
+- `TabShellBannerClearanceTests` (new UI suite, 6 scenarios). Three drag a list to its end and require its lowest text or control to end at or above the banner's top edge; one requires the Download button to sit above the banner; one visits all five tabs, requires the banner above the tab bar on each, and taps Details, which has to open Settings; one, iPad-only, switches the tabs between bar and sidebar and checks the banner and the Settings list again. A list scenario skips, saying so, when nothing in the list ran below the banner before scrolling. The suite turns an iPad to landscape, where every list is long enough, and returns it to portrait. The reading leaves out images and anything wider than its list: iOS keeps an image named `AdditionalDimmingOverlay` inside a list that has rows under the tab bar, and counted as content it once ended the Settings scenario halfway down.
+- `TabShellBannerReserveTests` (new unit suite, 4 tests) hosts the modifier in a real hosting controller in a window: the host's inset follows the banner's height through 40, 64, 0 and 40; the banner's frame is exactly the room set aside; the room is given back when the view goes away; and a `List` inside a `NavigationStack` gains exactly the banner's height of bottom inset.
+- **Three mutations, each built and run on iPhone 17, iOS 26.5.** The old drawing (a bottom `safeAreaInset`): the four content scenarios fail and the five-tab one passes, and three unit tests fail, the list-in-a-stack one among them, which is the report's cause seen in a bare hosting controller. The banner hung with no reserve: the five-tab scenario fails (banner top at y 791) and three unit tests fail. The reserve with the banner not hung: the Browse root scenario fails (banner top at y 652.3, over rows at y 665.7–686.0) and the banner-frame unit test fails. The fourth unit test, for giving the room back, was added after these runs and has not been run against a mutation.
+- **The old drawing on an iPad Pro 11-inch (M5), iOS 27.0, landscape:** five of the six scenarios fail (lists at y 762.5 to 778.2 and Download at y 763.5–798.0, under a banner from y 760.5) and the five-tab one passes. On the fix all six pass (lists end at y 723.5 to 725.0, Download at y 710.0–744.5). That simulator had its tabs as a sidebar, so five scenarios measured the sidebar arrangement and the sidebar scenario measured the bar. In portrait, before the suite pinned landscape, the Browse root and Archives fitted above the banner and their scenarios skipped.
+- `BrowseWithinScopeTests.scrollRootUntilHittable` now also waits for the row to be above the banner. The issue names `testBrowseWithinLandsUnderTheBanner` as failing on iPhone 17 under iOS 27.0, and with the app fixed it still failed there, for the reason the issue gives: `isHittable` is true for a row passing under the banner, so the swipes stopped with My Scopes at y 718–770 and the tap landed on the banner.
+
+**One review pass on the diff** (inline, eight angles, no subagents) gave six findings. Fixed: the iPad sidebar arrangement was unmeasured, which the sixth scenario now measures; two comments still said the banner is drawn over content (`SearchTipsSheetTests`, `SemanticMapSpikeView`); and the modifier's doc gave the reader's figure as measured on the final code. Left: the banner's own slide transition now starts or ends up to its own height out of place, because the reserve lands one turn of the main queue after the banner's height changes (not seen in any run, and listed in the pull request's visual review); and the responder-chain walk repeats a private seven-line helper in `CollectionRichTextEditor`.
+
+**Also changed**
+- `Planning/UI-Test-Destinations-Runbook.md` gains the new suite's entry and `CLAUDE.md` its index row.
+- `Planning/Issue-1576-Bulk-Actions-Assessment.md` says, under its dated header, that #1565 is fixed and what that changes for lane 3's bottom bar.
+- Eight ranged `EditableContent` blocks on `SearchView.swift` are re-pointed (four up one line, four up seven), and the Amendment Log says so.
+- Neither manual describes the overlap or a way round it, so neither is edited.
+
+**Checked**
+- The iOS unit target on iPhone 17 (iOS 27.0) with the TEI mirror, on the final code: "Test run with 6525 tests in 770 suites failed … with 8 issues". All eight are `SyncEventMonitorTests`' two tests, which cannot open the system log on this Mac (#1606). The four new tests and `EditableContentKeyTests` passed in it, and the log has no restart.
+- `swift test` was not run: the diff names no package input (no kit, no generator, no kit test folder, no bundled resource).
+- `FRUSExplorerMac`: `** BUILD SUCCEEDED **`, on the final code. No build that compiled the changed files printed a source warning.
+- **UI, on the final code, iPhone 17 (iOS 27.0):** `TabShellBannerClearanceTests` 6 tests, 5 passed, 1 skipped (the iPad-only scenario); `BrowseWithinScopeTests` 3 passed, the issue's failing test among them.
+- **UI, iPad Pro 11-inch (M5), iOS 27.0, landscape:** `TabShellBannerClearanceTests` 6 passed. That build carried a temporary switch back to the old drawing, used for the comparison above and since removed.
+- **UI, earlier builds of the fix:** `SearchTipsSheetTests` 4 passed and 1 ran out of time on iPhone 17 under iOS 26.5 and under 27.0 (below); `KeyboardDismissBarReachTests` 2 passed on each, with the software keyboard up; `SearchActionsBarFitTests` 6 passed and `UIObstructionTests` 8 passed, 11 skipped (iPad-only) on iOS 26.5; on the iPad in portrait `BrowseWithinScopeTests` 3 passed and `UIObstructionTests` 10 passed, 5 skipped, 2 failed, 2 ran out of time (below).
+
+**Met on the way, and not this change**
+- `UIObstructionTests.testSemanticMapIsNotCompactOniPad` ("Analysis Tools menu was not found") and `testTheBarIsNotPagedWhenEveryTabIsAlreadyVisible` (the Settings tab reached by the sidebar, not the bar) fail on the iPad Pro 11-inch (M5) under iOS 27.0 in portrait. Run from one build on that simulator, they fail with the same messages on the old drawing and on the fix, and pass on both in landscape.
+- Two more `UIObstructionTests` scenarios need longer than the 300 s `CLAUDE.md` tells an iOS 27 run to allow: on that iPad `testSwitchingTheProjectKeepsTheTwoPaneState` passed in 334 s and `testTwoPaneBarNamesTheLevelAndCarriesTheResearchQuestion` in 525 s, on the fix, given 900 s. Cut off at 300 s, the second leaves the simulator in landscape, and every later run on it inherits that: a first comparison of the two failures above was made in landscape on both sides for that reason, and was repeated in portrait.
+- `SearchTipsSheetTests.testSearchTipsAreReachableAtTheLargestAccessibilitySize` took 328 s on the old drawing and 374 s on the fix (iPhone 17, iOS 26.5, one run each, given 600 s), so it too is cut off at 300 s.
+- Once, the first test of a run on a simulator this build had not been installed on met the onboarding screen in spite of the launch pin. It passed on the next run.
+- None of these is filed. They belong with pull request 7 of §0c (tooling and test reliability).
+
+**Not done**
+- The banner was not watched in motion. Its slide in and out is the one thing the review pass expects to look different, by up to the banner's own height at the first or last frames.
+- The reader was measured on the probe build only (same reserve, the banner drawn by an offset). No test opens a long document: the UI-test fixture's documents are a few lines each.
+- On the iPad the Browse root and Archives lists were measured in landscape only; in portrait they fit above the banner.
+- No iPad mini, no 13-inch iPad, no iOS 26.3 or 26.4, no second iPad window, and no device.

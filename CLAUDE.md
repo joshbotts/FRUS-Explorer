@@ -69,6 +69,7 @@ is the index, not the entry.
 | `CrossReferenceMatrixScrollTests` (in `AnalyticsRotationTests.swift`) | iPad Pro 11-inch (M5) and iPhone 17 | 5 tests: 1 skipped on the iPad, 2 on the iPhone |
 | `CrossReferenceRankingChartTests` (same file) | any iPhone or iPad | 1 test, 1 passed; never skips |
 | `BrowseWithinScopeTests` | iPad Pro 11-inch (M5) and iPhone 17 Pro, both `OS=26.4` | 3 passed on each; neither is a control |
+| `TabShellBannerClearanceTests` | iPhone 17 and iPad Pro 11-inch (M5) | 6 tests: 1 skipped on the iPhone, 0 on the iPad, which the suite turns to landscape |
 | `WordCloudLensTests`, `NaturalLanguageReadinessWarmUpTests` (unit target) | iPad Pro 13-inch (M5), `OS=27.0` | a guard only on iOS 27.0; a control elsewhere |
 
 Four rules hold for every UI run, and the runbook gives the measurement behind each:
