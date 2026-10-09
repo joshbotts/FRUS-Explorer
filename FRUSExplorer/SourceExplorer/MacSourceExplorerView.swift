@@ -87,6 +87,9 @@ import AppKit
 ///           (`CatalogQueryEvidence.offersManualSearch`). Mirrors SourceExplorerView 1.15.
 ///           Landing: an empty Archival Neighbors list under those rows says the note cites the
 ///           Subject-Numeric File, by the iOS twin's `SourceExplorerView.relatedEmptyState(for:note:)`.
+///   1.15 — 2026-10-09: #1589 — a lot cited through the National Archives with its record group
+///           gets the bundled, divided and curated lot boxes a lot-file citation gets, read through
+///           `SourceExplorerProvenance.lotCards`. Mirrors SourceExplorerView 1.16.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -499,14 +502,16 @@ struct MacSourceExplorerView: View {
                         manualSearchField
                     }
                     // #675 / N-8b: a lot NARA divided across several series shows all of them,
-                    // in place of the single bundled card. Mirrors iOS `lotFilePanel`.
-                    if case .lotFile(_, let lot, _) = parsed,
-                       let divided = LotClaimantsIndex.candidatesOutcome(
-                        forRawLot: lot, in: LotClaimantsIndexStore.shared) {
+                    // in place of the single bundled card. Mirrors iOS `lotCardSections`, and
+                    // reads the same rule (#1589), so a lot cited through the National Archives
+                    // gets its card here as a lot-file citation does.
+                    switch lotCards?.bundled {
+                    case .divided(let divided)?:
                         curatedLotBox(divided)
-                    } else if case .lotFile(_, let lot, _) = parsed,
-                              let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lot) {
+                    case .single(let entry)?:
                         bundledLotBox(entry)
+                    case nil:
+                        EmptyView()
                     }
                     // Hand-curated outcome for a collection NARA's catalogue does not resolve
                     // by control number (#375). Mirrors iOS `curatedLotSection`. Reached both
@@ -1410,17 +1415,23 @@ struct MacSourceExplorerView: View {
         }
     }
 
-    /// The curated outcome for a parsed note, by lot number or — when the citation names the
+    /// The keyless lot cards this note shows, by the rule both twins share (#1589):
+    /// `SourceExplorerProvenance.lotCards`, which the iOS twin's `lotCardSections` reads too.
+    private var lotCards: SourceExplorerProvenance.LotCards? {
+        SourceExplorerProvenance.lotCards(
+            for: parsed, note: rawSourceNote,
+            claimants: LotClaimantsIndexStore.shared,
+            centralFiles: CentralFilesIndexStore.shared,
+            curated: CuratedLotResolutionsStore.shared)
+    }
+
+    /// The curated outcome for a parsed note, by the lot it cites or — when the citation names the
     /// collection without one — by series name. `nil` for every other parse.
     private func curatedOutcome(for parsed: ParsedSourceNote?) -> CuratedLotOutcome? {
-        switch parsed {
-        case .lotFile(_, let lot, _):
-            return CuratedLotResolutionsStore.shared?.outcome(forRawLot: lot)
-        case .namedFileSeries(let series, _):
+        if case .namedFileSeries(let series, _) = parsed {
             return CuratedLotResolutionsStore.shared?.outcome(forSeriesName: series)
-        default:
-            return nil
         }
+        return lotCards?.curated
     }
 
     // MARK: - Curated Lot Box

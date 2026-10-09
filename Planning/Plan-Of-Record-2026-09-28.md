@@ -293,8 +293,18 @@ Readers need no new build: `VolumeUpdateChecker` offers a corrected volume by it
 - **Tests.** `TabShellBannerClearanceTests` (UI, six scenarios, one of them iPad-only; on the old drawing four fail on iPhone 17 and five on an iPad Pro 11-inch in landscape) and `TabShellBannerReserveTests` (unit, four tests). `BrowseWithinScopeTests` now scrolls its row clear of the banner before tapping it, which is what failed it on iPhone 17 under iOS 27.0.
 - **For #1576.** A bar pinned to the bottom of the Search stack's safe area now sits above the banner without being told its height; the assessment says so.
 
+**Pull request 3, done (2026-10-09): #1565.** Merged as #1612.
+
+**Pull request 4, done (2026-10-09): #1582, #1589, #1591, #1603.** No index bump, no CloudKit deploy and no re-index. The session entry in `DEVELOPMENT-PLAN.md` has the measurements and what was seen in the app.
+- **#1582.** The count beside a term in Look up an abbreviation is the number of volumes that define it: `EUR` reads 231 where it read 82, and is fifth in the opening list where it was nineteenth. A term or a definition the TEI source wraps across lines is read with the break folded to a space, so `EUR` has 16 wordings where it had 30. Nothing stored changes.
+- **#1589.** A lot cited through the National Archives with its record group gets the keyless lot cards on both platforms, under the record group the note names: 719 of the 807 such documents in a full index (621 one series, 98 a divided lot). Ten are refused because the note opens with another record group, and 78 cite a lot the bundle does not hold.
+- **#1591.** The search index's copy of a document's tags is cleared when its last tag is gone. It is reconciled at launch and each time an iCloud import settles, deleting a tag in Settings rewrites its documents at once, and a result row no longer prints a tag id it cannot name. One new partial index on `document_cache`, built once at the first launch after the build ships, by one scan of the table.
+- **#1603.** A cross-reference to a whole volume opens the volume's page in Browse, or history.state.gov's page for a volume outside the catalogue: 8,266 links in the 553 volumes at corpus `deb6a04f8`, 6,997 of them to catalogue volumes.
+
 **Not this week.**
-- **One index bump** carrying #1535, #1536 and #1599, with anything pull request 4 hands it. Its brief is written on 2026-10-16.
+- **One index bump** carrying #1535, #1536, #1599 and #1613, with what pull request 4 hands it. Its brief is written on 2026-10-16. Pull request 4 hands it two things, each a change to what indexing stores:
+  - **Whole-volume references are stored as edges to a document named after the volume** (#1613, filed 2026-10-09; #1603's cause, in `IndexingPipeline.collectDocumentRefs`): 6,944 rows of `cross_references` in a full index, in 406 volumes, carry a volume id as `target_document_id` and no target volume. The tap is fixed; the rows are not. What the cross-reference graph and the analytics show for them was not checked.
+  - **The terms parser keeps the source's line breaks inside a term and a definition** (#1582's contributing cause): 49,517 of the 66,203 stored definitions and 198 terms. The lookup folds them as it reads; the stored values still carry them, and folding them in the parser changes what indexing writes.
 - **#1576 and #1577**, after pull requests 3 and 5, which edit the same search menus.
 - **The owner's to decide:** #1545 and #234.
 

@@ -2485,6 +2485,40 @@ struct CrossRefResolverTests {
             Issue.record("Expected .external for an http target")
         }
     }
+
+    @Test("A target that is a volume's id names the whole volume, whatever volume is being read (#1603)")
+    func wholeVolume() {
+        // Until #1603 this was `.document(volumeId: hint, documentId: "frus1961-63v05")`: a document
+        // of that name in the volume being read, which no volume has, so the link did nothing.
+        for hint in [nil, "frus1961-63v06"] {
+            #expect(FRUSURLScheme.resolveCrossRefTarget("frus1961-63v05", volumeId: hint)
+                    == .volume(volumeId: "frus1961-63v05"))
+        }
+        // The ids' forms: a year alone, a microfiche supplement, and spaces around the target.
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1861", volumeId: nil) == .volume(volumeId: "frus1861"))
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1958-60v15-16mSupp1", volumeId: nil)
+                == .volume(volumeId: "frus1958-60v15-16mSupp1"))
+        #expect(FRUSURLScheme.resolveCrossRefTarget(" frus1952-54v06p1 ", volumeId: nil)
+                == .volume(volumeId: "frus1952-54v06p1"))
+    }
+
+    @Test("A volume's id before a # still names what follows the #, and a bare anchor is read as before (#1603)")
+    func aVolumeIdIsAVolumeOnlyOnItsOwn() {
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1961-63v05#d5", volumeId: nil)
+                == .document(volumeId: "frus1961-63v05", documentId: "d5"))
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus1961-63v05#", volumeId: nil) == .unresolved)
+        // The corpus's three targets with no # that are not volumes are page anchors printed
+        // without it (`pg_1602`, `pg_1743` twice). They, and a document id, are read as they were.
+        #expect(FRUSURLScheme.resolveCrossRefTarget("pg_1602", volumeId: "frus1902app1")
+                == .page(volumeId: "frus1902app1", page: 1602))
+        #expect(FRUSURLScheme.resolveCrossRefTarget("d42", volumeId: "frus1969-76v02")
+                == .document(volumeId: "frus1969-76v02", documentId: "d42"))
+        // `frus` without the year is no volume's id.
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frustration", volumeId: "frus1969-76v02")
+                == .document(volumeId: "frus1969-76v02", documentId: "frustration"))
+        #expect(FRUSURLScheme.resolveCrossRefTarget("frus", volumeId: nil)
+                == .document(volumeId: nil, documentId: "frus"))
+    }
 }
 
 // MARK: - SpuriousAutolinkTests

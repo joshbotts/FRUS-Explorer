@@ -110,6 +110,11 @@ import SwiftUI
 ///           said the note cites no recognized central file.
 ///           Landing round 3: a Department-led designation alone in its file has that sentence
 ///           too, where it had the one every keyed note has; one situation, one sentence.
+///   1.16 — 2026-10-09: #1589 — a lot cited through the National Archives with its record group
+///           (`.naraCollection` with a lot) gets the keyless lot cards a lot-file citation gets,
+///           ahead of the NARA Catalog section, where the panel showed only the API key prompt.
+///           Both panels draw them through `lotCardSections(for:)`, which reads
+///           `SourceExplorerProvenance.lotCards`. Mirrors MacSourceExplorerView 1.15.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -966,8 +971,48 @@ struct SourceExplorerView: View {
             if let lotFile  { LabeledContent(String(localized: "source.explorer.nara.lot", defaultValue: "Lot File"), value: lotFile) }
             if let box     { LabeledContent(String(localized: "source.explorer.nara.box", defaultValue: "Box"), value: box) }
         }
+        // #1589: a lot cited through the National Archives is the same lot, and the bundle
+        // answers it with no API key. Until this the panel went straight to the key prompt.
+        lotCardSections(for: .naraCollection(recordGroup: recordGroup, series: series,
+                                             lotFile: lotFile, box: box))
         let fb = client.resolveRG59CentralFiles(fileIdentifier: [series, lotFile].compactMap { $0 }.joined(separator: " "))
         naraResultSection(requiresKey: true, fallbackURL: fb)
+    }
+
+    /// The keyless lot cards for a note, ahead of the NARA Catalog section: the series NARA
+    /// divided the lot across or else its one bundled series, then any hand-curated outcome.
+    ///
+    /// `SourceExplorerProvenance.lotCards` decides which, for this twin and the Mac's
+    /// (`MacSourceExplorerView.lotCards`), so a lot is answered the same however its note is
+    /// worded and on either platform (#1589).
+    ///
+    /// - Parameter parsed: The note, as `lotFilePanel` or `naraCollectionPanel` was handed it.
+    @ViewBuilder
+    private func lotCardSections(for parsed: ParsedSourceNote) -> some View {
+        let cards = SourceExplorerProvenance.lotCards(
+            for: parsed, note: rawSourceNote,
+            claimants: LotClaimantsIndexStore.shared,
+            centralFiles: CentralFilesIndexStore.shared,
+            curated: CuratedLotResolutionsStore.shared)
+        // Bundle-first: a pre-resolved lot file links straight to its NARA Catalog series
+        // record with no API key. Shown above the live lookup; the live path remains as a
+        // fallback for lots not in the bundle.
+        // #675 / N-8b: where NARA divided the lot across several series, show them all rather
+        // than naming one. Takes precedence over the single bundled card, which would assert a
+        // choice the data does not support.
+        switch cards?.bundled {
+        case .divided(let divided)?:
+            curatedLotSection(divided)
+        case .single(let entry)?:
+            bundledLotSection(entry)
+        case nil:
+            EmptyView()
+        }
+        // Hand-curated outcome for a lot NARA's catalogue does not resolve by control
+        // number (#375). Never a confident card: each kind states its own uncertainty.
+        if let outcome = cards?.curated {
+            curatedLotSection(outcome)
+        }
     }
 
     // MARK: - CIA Panel (new case)
@@ -1875,24 +1920,9 @@ struct SourceExplorerView: View {
             }
         }
 
-        // Bundle-first: a pre-resolved lot file links straight to its NARA Catalog series
-        // record with no API key. Shown above the live lookup; the live path remains as a
-        // fallback for lots not in the bundle.
-        // #675 / N-8b: where NARA divided the lot across several series, show them all rather
-        // than naming one. Takes precedence over the single bundled card, which would assert a
-        // choice the data does not support.
-        if let divided = LotClaimantsIndex.candidatesOutcome(
-            forRawLot: lotNumber, in: LotClaimantsIndexStore.shared) {
-            curatedLotSection(divided)
-        } else if let entry = CentralFilesIndexStore.shared?.lotFile(forRawLot: lotNumber) {
-            bundledLotSection(entry)
-        }
-
-        // Hand-curated outcome for a lot NARA's catalogue does not resolve by control
-        // number (#375). Never a confident card: each kind states its own uncertainty.
-        if let outcome = CuratedLotResolutionsStore.shared?.outcome(forRawLot: lotNumber) {
-            curatedLotSection(outcome)
-        }
+        // The divided, bundled and curated cards, by the rule both twins share (#1589).
+        lotCardSections(for: .lotFile(recordGroup: recordGroup, lotNumber: lotNumber,
+                                      fileIdentifier: fileIdentifier))
 
         // Fallback: pre-scoped NARA Catalog search for the lot number.
         // Use RG 84 fallback URL for F-designator (post record) lot files.

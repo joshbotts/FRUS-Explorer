@@ -1178,12 +1178,34 @@ struct MacDocumentView: View {
                                  volumeId: targetVolumeId ?? entry.volumeId,
                                  citing: citing)
 
+        case .volume(let targetVolumeId):
+            openCrossRefVolume(targetVolumeId)
+
         case .external(let url):
             openURL(url)
 
         case .unresolved:
             #if DEBUG
             print("[MacDocumentView] Cross-ref skipped (unresolvable target): \(target)")
+            #endif
+        }
+    }
+
+    /// Follows a reference to a whole volume (#1603), as `WholeVolumeLink` decides: the volume's
+    /// page in the Corpus Browser window, brought to the front, or history.state.gov's page for a
+    /// volume outside the catalogue. The browser's page offers the download when the volume is
+    /// not on this Mac. The iOS twin makes the same call.
+    private func openCrossRefVolume(_ volumeId: String) {
+        let inCatalogue = appState.manifestStore.entry(forVolumeId: volumeId) != nil
+        switch WholeVolumeLink.destination(for: volumeId, inCatalogue: inCatalogue) {
+        case .browse(let volumeId):
+            appState.openBrowseVolume(volumeId, from: nil)
+            openWindow.fronting(id: "frus.corpusBrowser")
+        case .web(let url):
+            openURL(url)
+        case nil:
+            #if DEBUG
+            print("[MacDocumentView] Cross-ref skipped (unusable volume id): \(volumeId)")
             #endif
         }
     }

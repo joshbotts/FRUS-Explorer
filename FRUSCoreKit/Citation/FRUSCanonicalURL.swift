@@ -23,6 +23,7 @@ import Foundation
 ///   1.0 — Session 2026-08-10: #358 (F-8)
 ///   1.1 — FRUSCoreKit, part 1: moved to `FRUSCoreKit/Citation/`, and public, with both members,
 ///          for FRUS Explorer Light's Cite
+///   1.2 — Session 2026-10-09: #1603 — `volumeURL(volumeId:)`, a volume's own page
 public enum FRUSCanonicalURL {
 
     /// The document's public page, e.g.
@@ -39,5 +40,16 @@ public enum FRUSCanonicalURL {
     public static func url(volumeId: String, documentId: String) -> URL? {
         guard !volumeId.isEmpty, !documentId.isEmpty else { return nil }
         return URL(string: string(volumeId: volumeId, documentId: documentId))
+    }
+
+    /// A volume's public page, e.g. `https://history.state.gov/historicaldocuments/frus1961-63v05`,
+    /// or `nil` when `volumeId` is not one path component.
+    ///
+    /// The site answers for volumes the app's catalogue does not hold: a microfiche supplement
+    /// (`frus1958-60v11mSupp`) and a volume not yet published (`frus1981-88v19`) each returned
+    /// 200 on 2026-10-09, and an invented id 404.
+    static func volumeURL(volumeId: String) -> URL? {
+        guard FRUSURLScheme.isSafeComponent(volumeId) else { return nil }
+        return URL(string: "https://history.state.gov/historicaldocuments/\(volumeId)")
     }
 }

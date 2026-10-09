@@ -46,6 +46,10 @@ struct TagEditorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    /// The app's state, for the index a deleted tag's documents are rewritten in (#1591).
+    /// Optional, so a host that does not provide it draws the editor and leaves the index to the
+    /// next reconcile; the non-optional form traps where the value is missing.
+    @Environment(AppState.self) private var appState: AppState?
 
     @State private var name: String
     @State private var showDeleteConfirmation = false
@@ -197,7 +201,8 @@ struct TagEditorView: View {
         ) {
             Button(String(localized: "tag.editor.delete.confirm", defaultValue: "Delete"),
                    role: .destructive) {
-                UserTagAdmin.deleteCascading(tag, context: modelContext)
+                UserTagAdmin.deleteCascading(tag, context: modelContext,
+                                             pipeline: appState?.indexingPipeline)
                 onDeleted?()
                 dismiss()
             }

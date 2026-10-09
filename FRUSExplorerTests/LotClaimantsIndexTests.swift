@@ -192,6 +192,9 @@ private final class ClaimantsBundleToken {}
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-05: #675 / N-8b
+///   1.1 — Session 2026-10-09: #1589 — both views reach the index through
+///          `SourceExplorerProvenance.lotCards`, so the first test follows it there and the second
+///          asks that rule which card wins, where it compared the order of two calls in each view
 @Suite("Lot claimants wiring")
 struct LotClaimantsWiringAuditTests {
 
@@ -211,30 +214,45 @@ struct LotClaimantsWiringAuditTests {
 
     @Test("Both views consult the claimants index")
     func bothPlatformsConsultTheIndex() throws {
+        // Through the rule the twins share since #1589: each hands it the bundled claimants index,
+        // and the rule asks whether NARA divided the lot.
         for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
                      "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
             let src = Self.code(try Self.source(path))
-            #expect(src.contains("LotClaimantsIndex.candidatesOutcome("),
-                    "\(path) never asks whether NARA divided the lot")
-            #expect(src.contains("LotClaimantsIndexStore.shared"),
-                    "\(path) does not read the bundled claimants index")
+            #expect(src.contains("SourceExplorerProvenance.lotCards("),
+                    "\(path) never asks which lot cards the note shows")
+            #expect(src.contains("claimants: LotClaimantsIndexStore.shared"),
+                    "\(path) does not hand the rule the bundled claimants index")
         }
+        let rule = Self.code(try Self.source("FRUSExplorer/SourceExplorer/SourceExplorerProvenance.swift"))
+        #expect(rule.contains("LotClaimantsIndex.candidatesOutcome("),
+                "the shared rule never asks whether NARA divided the lot")
     }
 
     @Test("A divided lot takes precedence over the single bundled card")
     func dividedLotWinsOverTheSingleCard() throws {
         // The ordering is the fix. With the bundled card first, the artifact changes nothing.
-        for path in ["FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
-                     "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
+        // Since #1589 the ordering is the shared rule's, so it is asked: 80D212 is in both bundled
+        // indexes, one series in `central-files-index.json` and four claimants here.
+        let claimants: LotClaimantsIndex = try #require(LotClaimantsIndexStore.shared)
+        let centralFiles: CentralFilesIndex = try #require(CentralFilesIndexStore.shared)
+        #expect(centralFiles.lotFile(forRawLot: "80D212") != nil,
+                "the fixture is a lot the single card could answer")
+        #expect(claimants.claimants(forRawLot: "80D212")?.count == 4)
+        let cards = SourceExplorerProvenance.lotCards(
+            for: .lotFile(recordGroup: "RG-59", lotNumber: "80D212", fileIdentifier: nil), note: "",
+            claimants: claimants, centralFiles: centralFiles, curated: CuratedLotResolutionsStore.shared)
+        guard case .divided(.candidates(let series, _, _, _))? = cards?.bundled else {
+            Issue.record("the single bundled card is chosen first, so divided lots never show: \(String(describing: cards?.bundled))")
+            return
+        }
+        #expect(series.count == 4)
+        // And each twin draws one card or the other: one switch over the rule's one answer.
+        for (path, value) in [("FRUSExplorer/SourceExplorer/SourceExplorerView.swift", "switch cards?.bundled {"),
+                              ("FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift", "switch lotCards?.bundled {")] {
             let src = Self.code(try Self.source(path))
-            let divided = try #require(src.range(of: "LotClaimantsIndex.candidatesOutcome("),
-                                       "\(path): no divided-lot branch")
-            let single = try #require(src.range(of: "lotFile(forRawLot:"),
-                                      "\(path): no bundled-card branch")
-            #expect(divided.lowerBound < single.lowerBound,
-                    "\(path): the single bundled card is checked first, so divided lots never show")
-            #expect(src.contains("} else if"),
-                    "\(path): the two branches are not exclusive — both cards could render")
+            #expect(src.components(separatedBy: value).count == 2,
+                    "\(path): the two cards are not drawn from one switch — both could render")
         }
     }
 }

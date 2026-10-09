@@ -2449,12 +2449,6 @@ private struct SearchResultRow: View {
     @AppStorage(SearchDefaults.snippetLineCountKey) private var globalSnippetLines = SearchDefaults.defaultSnippetLineCount
     @AppStorage(SearchDefaults.snippetLineCountMainOverrideKey) private var snippetOverride = 0
 
-    /// Returns the display name for a tag UUID string, falling back to the UUID if
-    /// the tag has been deleted or is not yet loaded.
-    private func tagName(for tagId: String) -> String {
-        userTags.first(where: { $0.id.uuidString == tagId })?.name ?? tagId
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
 
@@ -2527,10 +2521,13 @@ private struct SearchResultRow: View {
                 .lineLimit(SearchDefaults.effectiveSnippetLineCount(global: globalSnippetLines, override: snippetOverride))
                 .fixedSize(horizontal: false, vertical: true)
 
-            if !result.userTagIds.isEmpty {
+            // One chip per stored id the reader's tag list names (#1591): an id it does not name
+            // was printed as itself, a raw UUID.
+            let chips = UserTag.chips(for: result.userTagIds, among: userTags)
+            if !chips.isEmpty {
                 HStack(spacing: 4) {
-                    ForEach(result.userTagIds.prefix(3), id: \.self) { tagId in
-                        Text("◆ \(tagName(for: tagId))")
+                    ForEach(chips.prefix(3)) { chip in
+                        Text("◆ \(chip.name)")
                             .font(.caption2)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)

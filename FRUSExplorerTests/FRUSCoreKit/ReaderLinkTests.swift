@@ -24,6 +24,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Session 2026-10-06 (FRUS Explorer Light, S9b): initial implementation
+///   1.1 — Session 2026-10-09: #1603 — a whole-volume link in the table and the round trip, and, in
+///          Xcode, where the app sends one (`WholeVolumeLink`)
 @Suite("FRUSCoreKit — the reader's links read back")
 struct ReaderLinkTests {
 
@@ -47,6 +49,8 @@ struct ReaderLinkTests {
         ("frusexplorer://doc/d42/frus1969-76v02",
          .crossReference(target: "d42", volumeId: "frus1969-76v02", citing: nil)),
         ("frusexplorer://doc/%23d16fn2", .crossReference(target: "#d16fn2", volumeId: nil, citing: nil)),
+        // A whole volume (#1603): the target is the volume's id, and no component follows it.
+        ("frusexplorer://doc/frus1961-63v05", .crossReference(target: "frus1961-63v05", volumeId: nil, citing: nil)),
         ("frusexplorer://doc/frus1961-63v14%23pg_387/frus1961-63v14?day=8-17-1888",
          .crossReference(target: "frus1961-63v14#pg_387", volumeId: "frus1961-63v14",
                          citing: hint([], [(8, 17, 1888)]))),
@@ -134,6 +138,8 @@ struct ReaderLinkTests {
              .crossReference(target: "frus1969-76v02#d42", volumeId: "frus1969-76v02", citing: nil)),
             (.crossRefLink(target: "#d16fn2", volumeId: nil, broken: nil, children: text),
              .crossReference(target: "#d16fn2", volumeId: nil, citing: nil)),
+            (.crossRefLink(target: "frus1961-63v05", volumeId: nil, broken: nil, children: text),
+             .crossReference(target: "frus1961-63v05", volumeId: nil, citing: nil)),
             (.crossRefLink(target: "#pg_683", volumeId: nil, broken: nil, citing: page683, children: text),
              .crossReference(target: "#pg_683", volumeId: nil, citing: page683)),
             (.crossRefLink(target: "frus1961-63v14#pg_387", volumeId: "frus1961-63v14", broken: nil,
@@ -263,6 +269,25 @@ extension ReaderLinkTests {
         // The lookups were reached, not only the misses: p_HK1, the split set's person, t_USSR1,
         // and three dead references (#pg_700 in two spellings, and p%41).
         #expect(answered == 6, "\(answered) lookups found their entry")
+    }
+
+    @Test("A whole-volume link opens Browse for a catalogue volume and history.state.gov for any other (#1603)")
+    func aWholeVolumeLinkGoesToBrowseOrTheWeb() throws {
+        // The table's own whole-volume href, read and resolved as the readers do.
+        let url = try #require(URL(string: "frusexplorer://doc/frus1961-63v05"))
+        guard case .crossReference(let target, let hint, _) = FRUSURLScheme.readerLink(from: url),
+              case .volume(let volumeId) = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: hint) else {
+            Issue.record("\(url.absoluteString) is not read as a whole volume")
+            return
+        }
+        #expect(WholeVolumeLink.destination(for: volumeId, inCatalogue: true) == .browse(volumeId: "frus1961-63v05"))
+        #expect(WholeVolumeLink.destination(for: volumeId, inCatalogue: false)
+                == .web(try #require(URL(string: "https://history.state.gov/historicaldocuments/frus1961-63v05"))))
+        // A microfiche supplement is outside the catalogue, and the site has its page.
+        #expect(WholeVolumeLink.destination(for: "frus1958-60v11mSupp", inCatalogue: false)
+                == .web(try #require(URL(string: "https://history.state.gov/historicaldocuments/frus1958-60v11mSupp"))))
+        // An id that is not one path component names no page.
+        #expect(WholeVolumeLink.destination(for: "frus1961-63v05/../x", inCatalogue: false) == nil)
     }
 }
 #endif
