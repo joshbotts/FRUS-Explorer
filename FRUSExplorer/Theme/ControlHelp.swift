@@ -7,6 +7,8 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+// `accessibilitySpeechAnnouncementPriority`, for `TransientToast.announcement(_:)`.
+import Accessibility
 
 // MARK: - ControlHelpModifier
 
@@ -133,11 +135,51 @@ extension View {
     }
 }
 
+// MARK: - TransientToast
+
+/// The transient toast's timing and what VoiceOver is told when one is shown (#1594).
+///
+/// The toast is the only sign of three results: an Archives Visit duplicated, an inquiry topic
+/// re-seeded from the project, and documents added to a collection. Until #1594 nothing posted
+/// an announcement for it, so a VoiceOver user heard nothing, and the capsule was gone before it
+/// could be found by touch; a reader who chose Duplicate and heard nothing could choose it again
+/// and make a second copy.
+///
+/// **The announcement is posted late and at high priority, and neither was heard on a device.**
+/// A toast is raised as a menu closes or a sheet is dismissed, which is when VoiceOver moves its
+/// focus and speaks the element it lands on. An announcement posted at that moment at the default
+/// priority can be dropped or cut off. So it waits ``announcementDelay`` and is posted at
+/// `.high`, which interrupts what is being spoken and is not itself interrupted. Check both
+/// values with VoiceOver on an iPhone and on the Mac before changing either.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1594 — initial implementation
+enum TransientToast {
+
+    /// How long a toast stays up.
+    static let duration: Duration = .seconds(2.6)
+
+    /// How long after a toast appears its announcement is posted: long enough for a closing menu
+    /// or sheet to have finished moving VoiceOver's focus.
+    static let announcementDelay: Duration = .seconds(0.5)
+
+    /// What VoiceOver is sent for a toast: its words, at high priority.
+    ///
+    /// - Parameter message: The toast's text.
+    /// - Returns: The announcement.
+    static func announcement(_ message: String) -> AttributedString {
+        var announcement = AttributedString(message)
+        announcement.accessibilitySpeechAnnouncementPriority = .high
+        return announcement
+    }
+}
+
 // MARK: - TransientToastModifier
 
 /// A brief confirmation toast pinned to the top of a view, auto-dismissing after ~2.6s
 /// (Composer redesign 5). Set `message` to a non-nil string to show it; it clears itself.
-/// A capsule with the material background so it reads over any content, announced to VoiceOver.
+/// A capsule with the material background so it reads over any content, announced to VoiceOver
+/// (``TransientToast``; it said so from 2026-07-12 and posted nothing until #1594).
 private struct TransientToastModifier: ViewModifier {
     @Binding var message: String?
 
@@ -156,7 +198,16 @@ private struct TransientToastModifier: ViewModifier {
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .accessibilityAddTraits(.isStaticText)
                         .task(id: message) {
-                            try? await Task.sleep(for: .seconds(2.6))
+                            // A second toast set while this one is up cancels this task. The
+                            // sleeps used to be `try?`, so the cancelled task went on to clear
+                            // the message, and with it the toast that had just replaced its own.
+                            do {
+                                try await Task.sleep(for: TransientToast.announcementDelay)
+                                AccessibilityNotification.Announcement(TransientToast.announcement(message)).post()
+                                try await Task.sleep(for: TransientToast.duration - TransientToast.announcementDelay)
+                            } catch {
+                                return
+                            }
                             withAnimation { self.message = nil }
                         }
                 }

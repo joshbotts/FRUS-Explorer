@@ -21,7 +21,7 @@ import SwiftUI
 /// means parsing "1,204" and "38%" in whatever locale rendered them. That silently yields a wrong
 /// range rather than an error, which on an audio graph is inaudible: the tones simply describe the
 /// wrong shape. So the builder takes numbers, and the bridge below refuses rather than guesses.
-struct AXChartPoint: Sendable, Equatable {
+struct AXChartPoint: Sendable, Hashable {
     /// The x label as the chart shows it (a year, a decade, a category).
     let label: String
     /// The x value when the axis is numeric; `nil` for a categorical axis.
@@ -46,7 +46,31 @@ struct AXChartPoint: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #268 (I-1)
+///   1.1 — 2026-10-09: #1587 — `descriptor(title:graph:)`, from the numbers a table's adapter
+///          states, and `isContinuous` on the two builders, for a scatter
 enum AXChartDescriptorBuilder {
+
+    #if canImport(Accessibility)
+    /// Builds a descriptor from the numbers a chart's table carries (``ChartAudioGraph``, #1587).
+    ///
+    /// One series goes through the single-series builder and several through the named one, so
+    /// a chart whose table used to be read by column gets the descriptor it got then.
+    ///
+    /// - Parameters:
+    ///   - title: The chart's localised title, which also names a single series.
+    ///   - graph: The axes' titles and the plotted points.
+    /// - Returns: A descriptor, or `nil` when the graph has no point.
+    @MainActor
+    static func descriptor(title: String, graph: ChartAudioGraph) -> AXChartDescriptor? {
+        if graph.series.count == 1, let only = graph.series.first {
+            return descriptor(title: title, xLabel: graph.xLabel, yLabel: graph.yLabel,
+                              points: only.points, isContinuous: graph.isContinuous)
+        }
+        return descriptor(title: title, xLabel: graph.xLabel, yLabel: graph.yLabel,
+                          namedSeries: graph.series.map { (name: $0.name, points: $0.points) },
+                          isContinuous: graph.isContinuous)
+    }
+    #endif
 
     /// Builds a descriptor for a single-series chart.
     ///
@@ -55,6 +79,9 @@ enum AXChartDescriptorBuilder {
     ///   - xLabel: The x-axis title.
     ///   - yLabel: The y-axis title.
     ///   - points: The plotted points, in chart order.
+    ///   - isContinuous: Whether a line joins the points; `false` for a scatter. `nil`, the
+    ///     default, is the rule this builder has always applied: continuous when every point has
+    ///     a numeric x.
     /// - Returns: A descriptor, or `nil` when there is nothing to describe.
     #if canImport(Accessibility)
     @MainActor
@@ -62,7 +89,8 @@ enum AXChartDescriptorBuilder {
         title: String,
         xLabel: String,
         yLabel: String,
-        points: [AXChartPoint]
+        points: [AXChartPoint],
+        isContinuous: Bool? = nil
     ) -> AXChartDescriptor? {
         guard !points.isEmpty else { return nil }
 
@@ -107,7 +135,7 @@ enum AXChartDescriptorBuilder {
 
         let series = AXDataSeriesDescriptor(
             name: title,
-            isContinuous: points.allSatisfy { $0.x != nil },
+            isContinuous: isContinuous ?? points.allSatisfy { $0.x != nil },
             dataPoints: points.map { point in
                 AXDataPoint(x: point.x ?? Double(points.firstIndex(of: point) ?? 0),
                             y: point.y,
@@ -137,7 +165,8 @@ enum AXChartDescriptorBuilder {
         title: String,
         xLabel: String,
         yLabel: String,
-        namedSeries: [(name: String, points: [AXChartPoint])]
+        namedSeries: [(name: String, points: [AXChartPoint])],
+        isContinuous: Bool? = nil
     ) -> AXChartDescriptor? {
         let nonEmpty = namedSeries.filter { !$0.points.isEmpty }
         guard !nonEmpty.isEmpty else { return nil }
@@ -175,7 +204,7 @@ enum AXChartDescriptorBuilder {
         let series = nonEmpty.map { entry in
             AXDataSeriesDescriptor(
                 name: entry.name,
-                isContinuous: entry.points.allSatisfy { $0.x != nil },
+                isContinuous: isContinuous ?? entry.points.allSatisfy { $0.x != nil },
                 dataPoints: entry.points.map { point in
                     AXDataPoint(x: point.x ?? Double(entry.points.firstIndex(of: point) ?? 0),
                                 y: point.y,

@@ -44,6 +44,10 @@ import SwiftData
 ///   1.6 — 2026-09-24: #1359 review, round 2 — the row prints `CollectionEditorNaming.listName`,
 ///          so a new collection whose editor waits in the Collections tab reads "Untitled
 ///          Collection" rather than a blank row
+///   1.7 — 2026-10-09: #1593 — a smart collection's row says what it is and takes no tap
+///          (`CollectionPickerRow`). The picker had accepted the document and confirmed "Added",
+///          though a smart collection's preview, exports and Archives Visit list come from its
+///          saved search and never showed it
 struct CollectionPickerSheet: View {
 
     /// The document being added (its `volumeId`/`documentId` provenance).
@@ -92,17 +96,17 @@ struct CollectionPickerSheet: View {
     /// `.document` entries (D5) so excerpt/heading/prose/generated entries co-provenanced to this
     /// document don't inflate the collection's document total.
     private func collectionRow(_ collection: Collection) -> some View {
-        Button {
+        let row = CollectionPickerRow(collection)
+        return Button {
             addDocument(to: collection)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(CollectionEditorNaming.listName(savedName: collection.name))
+                    Text(row.name)
                         .font(.body)
-                        .foregroundStyle(.primary)
-                    let count = collection.documentCount
-                    Text(String(localized: "collection.picker.docCount",
-                                defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
+                        // A plain button does not dim its own label when it is disabled.
+                        .foregroundStyle(row.takesEntries ? .primary : .secondary)
+                    Text(row.caption)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -116,6 +120,9 @@ struct CollectionPickerSheet: View {
             }
         }
         .buttonStyle(.plain)
+        // #1593: a smart collection is listed, so it can be found, and takes no tap. Its caption
+        // says why.
+        .disabled(!row.takesEntries)
         // No explicit label override: let the button announce name + document count together (the
         // count is meaningful post-D5), plus the "Added" checkmark when present (C1a review F2).
     }
@@ -299,6 +306,11 @@ struct CollectionPickerSheet: View {
     // MARK: - Add action
 
     private func addDocument(to collection: Collection) {
+        // #1593: a smart collection's contents are its saved search's results, so an entry added
+        // here would be counted, listed in its outline and left out of everything it produces.
+        // The row is disabled; this holds the rule for any caller that is not the row.
+        guard CollectionPickerRow(collection).takesEntries else { return }
+
         // Excerpt mode (Authoring Phase 5): freeze the capture into a `.excerpt` entry.
         // No duplicate guard — several excerpts from one document are expected.
         if let excerpt {
@@ -338,5 +350,56 @@ struct CollectionPickerSheet: View {
 
         addedCollectionId = collection.id
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
+    }
+}
+
+// MARK: - CollectionPickerRow
+
+/// What one row of the Add to Collection picker says, and whether it takes the document or
+/// excerpt (#1593).
+///
+/// A collection linked to a saved search is a smart collection: its preview, every export, its
+/// Archives Visit list and its static snapshot are built from the search's results
+/// (`CollectionContentResolver`, `Collection.savedSearchId`), and its hand-added entries are
+/// ignored there. The picker listed one like any other, under a count of those ignored entries
+/// ("0 documents" for a search that returns hundreds), took the tap and showed the green Added
+/// checkmark. So the row says what the collection is, and takes no tap.
+///
+/// A value type apart from the view so that a test asks it which rows accept: the view's row is
+/// `.disabled(!row.takesEntries)` and `addDocument(to:)` returns early on the same answer.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1593 — initial implementation
+struct CollectionPickerRow: Equatable {
+
+    /// The row's title: the name the Collections list shows.
+    let name: String
+    /// The line under it: the document count, or what a smart collection is.
+    let caption: String
+    /// Whether tapping the row adds the document or excerpt. `false` for a smart collection.
+    let takesEntries: Bool
+
+    /// The row for `collection`.
+    ///
+    /// - Parameter collection: A collection the picker lists.
+    init(_ collection: Collection) {
+        self.init(savedName: collection.name, documentCount: collection.documentCount,
+                  isSmart: collection.savedSearchId != nil)
+    }
+
+    /// The row for a collection's three facts.
+    ///
+    /// - Parameters:
+    ///   - savedName: The collection's stored name; an empty one reads "Untitled Collection".
+    ///   - documentCount: Its `.document` entries (`Collection.documentCount`).
+    ///   - isSmart: Whether it is linked to a saved search.
+    init(savedName: String, documentCount: Int, isSmart: Bool) {
+        name = CollectionEditorNaming.listName(savedName: savedName)
+        takesEntries = !isSmart
+        caption = isSmart
+            ? String(localized: "collection.picker.smart",
+                     defaultValue: "Smart collection. Its documents come from its saved search.")
+            : String(localized: "collection.picker.docCount",
+                     defaultValue: "\(documentCount) document\(documentCount == 1 ? "" : "s")")
     }
 }

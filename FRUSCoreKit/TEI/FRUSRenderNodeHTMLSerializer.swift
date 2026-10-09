@@ -131,6 +131,8 @@ import SourceNoteKit
 ///   1.11 — Session 2026-10-05 (FRUS Explorer Light, S8a): `FigureImages.linked(url:)` writes the
 ///          reader's figure markup with a host's address for each image
 ///          (`FRUSRenderNodeHTMLSerializer.reader(figureURL:)`). Every other case writes what it did
+///   1.12 — Session 2026-10-09: #1602 — `highlightCSS` draws a link inside an export's highlight
+///          in the highlight's text colour. The markup is unchanged
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -610,12 +612,17 @@ public struct FRUSRenderNodeHTMLSerializer {
         openTagName(tag) == name && !isSelfClosing(tag)
     }
 
-    /// CSS for the five highlight colours. Embed in the export stylesheet.
+    /// CSS for the export's highlight colours. Embed in the export stylesheet.
     public static let highlightCSS = """
     mark.hl-yellow   { background: rgba(255,230, 50,0.45); color: inherit; }
     mark.hl-green    { background: rgba( 80,200, 80,0.35); color: inherit; }
     mark.hl-blue     { background: rgba( 80,150,240,0.35); color: inherit; }
     mark.hl-pink     { background: rgba(240, 80,160,0.30); color: inherit; }
+    /* #1602: a link inside a highlight is drawn in the highlight's text colour, whichever of the
+       two is the outer element. Over these tints a link's own colour is as low as 3.72:1 (a
+       person's name on pink). It keeps its underline. */
+    mark.hl-yellow a, mark.hl-green a, mark.hl-blue a, mark.hl-pink a,
+    a mark.hl-yellow, a mark.hl-green, a mark.hl-blue, a mark.hl-pink { color: var(--color-highlight-text, rgb(0,0,0)); }
     """
 
     /// Renders a traditional numbered footnote section for visible display below

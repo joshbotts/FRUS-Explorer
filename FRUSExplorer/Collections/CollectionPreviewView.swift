@@ -475,8 +475,8 @@ struct CollectionPreviewView: View {
         }
     }
 
-    /// Preview rendering options mirroring the export sheet's `buildExportOptions`,
-    /// minus the format-dependent word cloud (export-only decoration).
+    /// Preview rendering options mirroring the ones the export sheet takes from
+    /// `ExportFormat.exportOptions(for:)`, minus the word cloud (export-only decoration).
     private func previewOptions() -> CollectionExportOptions {
         CollectionExportOptions(
             tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,

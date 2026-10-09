@@ -56,6 +56,11 @@ public enum ReaderAppearance: String, CaseIterable, Sendable {
 ///          underline (`@media print`), the owner's answer to the question #1578 left open. The
 ///          screen is unchanged. The rule reaches the Mac's File ▸ Print, which prints the reader's
 ///          own web view, and a collection's HTML export when a browser prints it
+///   1.3 — Session 2026-10-09: #1602 — two places #1578 left under 4.5:1. Text inside one of the
+///          reader's highlights is drawn in `--color-highlight-text`, since a link over a tint was
+///          as low as 2.00:1; and the wash behind a footnote a cross-reference arrives at is
+///          `--color-accent-wash`, a variable the stylesheet had always named and the palette never
+///          defined, now light enough (and in the dark palette blue enough) for every text colour
 public enum ReaderPage {
 
     // MARK: - Page
@@ -132,6 +137,10 @@ public enum ReaderPage {
     /// | `--color-editorial-border`  | Left border of editorial note blocks       |
     /// | `--color-editorial-bg`      | Background tint of editorial note blocks   |
     /// | `--color-pers-name`         | Person name link color (teal)              |
+    /// | `--color-highlight-text`    | All text inside one of the reader's        |
+    /// |                             | highlights                                 |
+    /// | `--color-accent-wash`       | The wash behind a footnote a               |
+    /// |                             | cross-reference arrived at                 |
     /// | `--color-table-border`      | Table cell borders and footnote outlines   |
     /// | `--font-size-body`          | Paragraph text; derived from `textSize`    |
     /// | `--font-size-heading`       | h2.doc-heading (≈ 1.28× body)             |
@@ -176,6 +185,21 @@ public enum ReaderPage {
         // teal both palettes shared, rgb(0,150,136), which was 3.67 / 3.22 light and 4.63 / 3.94
         // dark. Now 5.32 / 4.66 light and 6.45 / 5.49 dark.
         let persName           = dark ? "rgb(0,179,161)" : "rgb(0,121,107)"
+        // #1602: text inside one of the reader's highlights, whatever colour it has outside one.
+        // The tints (`::highlight(frus-…)` below) are the highlight colours the native views share,
+        // and over them a link fell to 3.24 (light, blue) and 2.00 (dark, yellow), secondary text to
+        // 2.76 (dark, yellow), and body text itself to 4.35 on a yellow highlight inside an
+        // editorial note in the dark palette. Full black and full white are at least 11.79 / 10.77
+        // light and 5.67 / 5.08 dark over every tint, on the page and in an editorial note.
+        let highlightText      = dark ? "rgb(255,255,255)" : "rgb(0,0,0)"
+        // #1602: the wash behind a footnote a cross-reference arrived at (`fn-arrived-flash`). The
+        // stylesheet named this variable from the start and the palette never defined it, so both
+        // palettes drew its fallback, rgba(120,170,255,0.35), over which the note's number and any
+        // link in the note were 4.22 light and 2.97 dark, and a person's name 4.03 and 3.19. The
+        // light wash is the same blue at half the strength; the dark one is a deeper blue, which
+        // adds little luminance, so it stays as far from the page (1.31:1) as the old one was.
+        // Every text colour over it is now at least 4.63 light and 4.64 dark.
+        let accentWash         = dark ? "rgba(40,90,255,0.28)" : "rgba(120,170,255,0.18)"
         let tableBorder        = dark ? "rgba(255,255,255,0.20)"  : "rgba(0,0,0,0.18)"
 
         // ── Typography ────────────────────────────────────────────────────────
@@ -197,6 +221,8 @@ public enum ReaderPage {
           --color-editorial-border:  \(editorialBorder);
           --color-editorial-bg:      \(editorialBg);
           --color-pers-name:         \(persName);
+          --color-highlight-text:    \(highlightText);
+          --color-accent-wash:       \(accentWash);
           --color-table-border:      \(tableBorder);
           --font-size-body:          \(px(bodyPt));
           --font-size-heading:       \(px(headingPt));
@@ -605,7 +631,9 @@ public enum ReaderPage {
 
     /* #988: a cross-reference can name a specific footnote, and the reader is scrolled to it.
        The offset keeps it clear of the viewport edge; the wash says which note was meant, since
-       the endnote list is a wall of similar-looking entries. */
+       the endnote list is a wall of similar-looking entries. The wash is the palette's
+       --color-accent-wash (#1602), under which every text colour keeps 4.5:1; the fallback is
+       the light palette's. */
     .fn-list-item {
       scroll-margin-block: 30vh;
     }
@@ -616,8 +644,8 @@ public enum ReaderPage {
     }
 
     @keyframes fn-arrived-flash {
-      0%   { background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.35)); }
-      70%  { background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.35)); }
+      0%   { background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.18)); }
+      70%  { background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.18)); }
       100% { background-color: transparent; }
     }
 
@@ -628,7 +656,7 @@ public enum ReaderPage {
     @media (prefers-reduced-motion: reduce) {
       .fn-list-item.fn-arrived {
         animation: none;
-        background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.35));
+        background-color: var(--color-accent-wash, rgba(120, 170, 255, 0.18));
       }
     }
 
@@ -680,10 +708,13 @@ public enum ReaderPage {
 
     /* ─── CSS Custom Highlight API — document highlights (Session 144) ──────── */
     /* Color names map 1:1 to DocumentHighlight.Color raw values.                */
-    ::highlight(frus-yellow) { background-color: rgba(255, 214,   0, 0.40); }
-    ::highlight(frus-green)  { background-color: rgba(  0, 200,  83, 0.40); }
-    ::highlight(frus-blue)   { background-color: rgba(  0, 122, 255, 0.40); }
-    ::highlight(frus-pink)   { background-color: rgba(255,  45,  85, 0.40); }
-    ::highlight(frus-stale)  { background-color: rgba(255, 149,   0, 0.30); }
+    /* #1602: all text inside a highlight is drawn in --color-highlight-text. A link's own colour
+       over these tints was as low as 2.00:1, and a link keeps what marks it besides colour: its
+       underline, a gloss's dotted rule, a footnote number's raised position. */
+    ::highlight(frus-yellow) { background-color: rgba(255, 214,   0, 0.40); color: var(--color-highlight-text); }
+    ::highlight(frus-green)  { background-color: rgba(  0, 200,  83, 0.40); color: var(--color-highlight-text); }
+    ::highlight(frus-blue)   { background-color: rgba(  0, 122, 255, 0.40); color: var(--color-highlight-text); }
+    ::highlight(frus-pink)   { background-color: rgba(255,  45,  85, 0.40); color: var(--color-highlight-text); }
+    ::highlight(frus-stale)  { background-color: rgba(255, 149,   0, 0.30); color: var(--color-highlight-text); }
     """
 }

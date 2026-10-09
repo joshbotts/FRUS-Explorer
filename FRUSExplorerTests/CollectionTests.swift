@@ -5475,6 +5475,59 @@ struct CollectionExportParityTests {
             """)
     }
 
+    // ── 2b. The same, through the options the export sheet hands each exporter (#1585). ──
+
+    /// `wordCloudReachesEveryFormat` sets the option itself, so it passed for seven weeks while
+    /// the export sheet asked for the cloud of PDF and HTML only and no Word export from the app
+    /// carried one. This drives what the sheet sends: `ExportFormat.exportOptions(for:)`, the
+    /// call `ExportSheetView.runExport` makes, into the exporter `makeExporter()` returns.
+    @Test("A collection with the word cloud on exports it in PDF, HTML and Word, through the sheet's own options")
+    func sheetAsksEveryDrawingFormatForTheCloud() async throws {
+        let collection = Collection(name: "Parity Fixture")
+        collection.includeWordCloud = true
+        let docs = Self.fixtureDocuments()
+
+        var drawn: [ExportFormat] = []
+        for format in ExportFormat.allCases {
+            let options = format.exportOptions(for: collection)
+            #expect(options.includeWordCloud == format.drawsWordCloud,
+                    "\(format.rawValue) is asked for the cloud exactly when it draws one")
+            guard format.drawsWordCloud else { continue }
+            let exporter = try #require(format.makeExporter(), "\(format.rawValue) has no exporter")
+            let data = try Data(contentsOf: try await exporter.export(
+                metadata: Self.metadata, documents: docs, options: options))
+            let marker: [String]
+            switch format {
+            case .html: marker = ["data:image/png;base64,"]
+            case .pdf: marker = ["/Subtype /Image", "/Subtype/Image"]
+            case .docx: marker = ["word/media/"]
+            default: marker = []
+            }
+            #expect(marker.contains { data.range(of: Data($0.utf8)) != nil },
+                    "The \(format.rawValue) export carries no word cloud")
+            drawn.append(format)
+        }
+        // Counted, so that a `drawsWordCloud` answering `false` everywhere fails here and does
+        // not pass by exporting nothing.
+        #expect(Set(drawn) == [.pdf, .html, .docx])
+
+        // With the setting off, no format is asked.
+        collection.includeWordCloud = false
+        #expect(ExportFormat.allCases.allSatisfy { !$0.exportOptions(for: collection).includeWordCloud })
+    }
+
+    /// The sheet builds no options of its own: it asks the format, at both of its export calls.
+    @Test("The export sheet takes its options from the format")
+    func exportSheetAsksTheFormat() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionExportSheet.swift"), encoding: .utf8)
+        #expect(!source.contains("CollectionExportOptions("),
+                "The sheet builds export options itself; ExportFormat.exportOptions(for:) is where the word-cloud rule lives")
+        #expect(source.contains("options: selectedFormat.exportOptions(for: collection)"))
+        #expect(source.contains("options: ExportFormat.zoteroJSON.exportOptions(for: collection)"))
+    }
+
     // ── 3. The label rule: `Source:` appears once, in every format and the preview. ──
 
     @Test("A stored note already leading with Source: is not double-labelled")
@@ -6018,12 +6071,18 @@ struct CollectionEditorNamingTests {
                                  "CollectionPickerSheet.collectionRow is gone — moved or renamed?")
         let end = try #require(source.range(of: "// MARK: - macOS Body", range: start.upperBound..<source.endIndex),
                                "The MARK after collectionRow is gone, so its extent is unknown")
-        let names = source[start.upperBound..<end.lowerBound]
+        let lines = source[start.upperBound..<end.lowerBound]
             .split(separator: "\n")
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.hasPrefix("//") && $0.contains("collection.name") }
-        #expect(names == ["Text(CollectionEditorNaming.listName(savedName: collection.name))"],
-                "The picker's row prints a collection's name some other way: \(names)")
+            .filter { !$0.hasPrefix("//") }
+        // #1593: the row's words come from `CollectionPickerRow`, whose `name` is `listName`.
+        #expect(lines.contains("let row = CollectionPickerRow(collection)"))
+        #expect(lines.contains("Text(row.name)"))
+        let names = lines.filter { $0.contains("collection.name") }
+        #expect(names.isEmpty, "The picker's row prints a collection's name some other way: \(names)")
+        #expect(CollectionPickerRow(savedName: " \n", documentCount: 0, isSmart: false).name == "Untitled Collection")
+        #expect(CollectionPickerRow(savedName: "  Suez Crisis ", documentCount: 0, isSmart: false).name
+                == CollectionEditorNaming.listName(savedName: "  Suez Crisis "))
     }
 
     /// The Research rail's Collections section lists the collections a document is in, so a document added from the
@@ -10452,6 +10511,85 @@ struct CollectionListNameTests {
         #expect(body.contains("CollectionEditorNaming.listNameMatches(savedName: $0.name, searchText: searchText)"),
                 "the picker's search does not match through listNameMatches:\n\(body)")
         #expect(!body.contains("$0.name.localizedCaseInsensitiveContains"), "the picker still searches the raw name")
+    }
+}
+
+// MARK: - CollectionPickerRowTests (#1593)
+
+/// The Add to Collection picker took a smart collection's tap and confirmed "Added", though that collection's
+/// preview, every export, its Archives Visit list and its static snapshot are built from its saved search and
+/// never showed the document (#1593). These seed a static and a smart collection and ask which row accepts.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1593 — initial implementation
+@MainActor
+@Suite("Add to Collection lists a smart collection and does not take its tap (#1593)")
+struct CollectionPickerRowTests {
+
+    @Test("A static collection's row takes the document; a smart collection's says what it is and does not")
+    func smartCollectionsDoNotTakeEntries() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let fixed = Collection(name: "Suez Crisis")
+        let smart = Collection(name: "Berlin, as searched")
+        smart.savedSearchId = UUID()
+        context.insert(fixed)
+        context.insert(smart)
+        // One hand-added document in each: the count the picker printed for both.
+        for collection in [fixed, smart] {
+            _ = CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d12", volumeId: "frus1955-57v16", collection: collection, modelContext: context)
+        }
+        try context.save()
+        #expect(fixed.documentCount == 1)
+        #expect(smart.documentCount == 1)
+
+        let fixedRow = CollectionPickerRow(fixed)
+        #expect(fixedRow.takesEntries)
+        #expect(fixedRow.caption == "1 document")
+        #expect(fixedRow.name == "Suez Crisis")
+
+        let smartRow = CollectionPickerRow(smart)
+        #expect(!smartRow.takesEntries, "a smart collection's entries are ignored by everything it produces")
+        #expect(smartRow.caption == "Smart collection. Its documents come from its saved search.")
+        #expect(smartRow.name == "Berlin, as searched", "the row is still listed, under its own name")
+
+        // Unlinking the search makes it an ordinary collection again, and its row takes the tap.
+        smart.savedSearchId = nil
+        #expect(CollectionPickerRow(smart).takesEntries)
+        #expect(CollectionPickerRow(smart).caption == "1 document")
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("The count line says one and many")
+    func captionCounts() {
+        #expect(CollectionPickerRow(savedName: "A", documentCount: 0, isSmart: false).caption == "0 documents")
+        #expect(CollectionPickerRow(savedName: "A", documentCount: 1, isSmart: false).caption == "1 document")
+        #expect(CollectionPickerRow(savedName: "A", documentCount: 12, isSmart: false).caption == "12 documents")
+        // A smart collection's count of hand-added entries is not what it holds, so it is not printed.
+        #expect(!CollectionPickerRow(savedName: "A", documentCount: 12, isSmart: true).caption.contains("12"))
+    }
+
+    /// The view's half, read from the source since nothing hosts the picker (see `pickerRowUsesListName`): the row
+    /// is disabled by the row's answer, and the add itself returns early on it.
+    @Test("The picker's row is disabled, and its add refused, by the row's answer")
+    func pickerAsksTheRow() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionPickerSheet.swift"), encoding: .utf8)
+        let rowStart = try #require(source.range(of: "private func collectionRow(_ collection: Collection) -> some View {"))
+        let rowEnd = try #require(source.range(of: "// MARK: - macOS Body", range: rowStart.upperBound..<source.endIndex))
+        let row = source[rowStart.upperBound..<rowEnd.lowerBound]
+        #expect(row.contains(".disabled(!row.takesEntries)"))
+        #expect(row.contains("Text(row.caption)"))
+
+        let addStart = try #require(source.range(of: "private func addDocument(to collection: Collection) {"))
+        let addBody = try #require(WindowTargetingTests.balancedBlock(in: source, from: addStart.lowerBound))
+        let guardLine = try #require(addBody.range(of: "guard CollectionPickerRow(collection).takesEntries else { return }"))
+        // Before either branch that writes.
+        let excerpt = try #require(addBody.range(of: "CollectionExcerpts.appendToCollection("))
+        let document = try #require(addBody.range(of: "CollectionDocumentDiscovery.appendToCollection("))
+        #expect(guardLine.lowerBound < excerpt.lowerBound && guardLine.lowerBound < document.lowerBound)
     }
 }
 

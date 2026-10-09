@@ -602,7 +602,7 @@ Every search you ran, in a Markdown table and a CSV. Each row gives the scope th
 
 *Source: `FRUSExplorer/Analytics/OccurrenceAvailability.swift, AnalyticsView.swift`*
 
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 2982–2983 | key: analytics.measure.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 3023–3024 | key: analytics.measure.help -->
 
 Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions.
 
@@ -721,16 +721,17 @@ Reclaimed %@.
 
 <!-- END SOURCE: settings.storage.compact.done %@ -->
 
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | key: related.why.cohort %@ %lld -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.cohort | lines: 385–386 | key: related.why.cohort %@ %@ -->
 
-*The archival “why related” chip (#644). Interpolated with the container name and its size.
+*The archival “why related” chip (#644). Interpolated with the container name and its size, which is
+grouped since #1586 (“1 of 1,063”).
 Replaces a bare “same provenance”, which read identically for a lot file holding two documents and
 for Nixon’s NSC Files holding 7,056 — and that difference is what tells a researcher whether sharing
 the container is a finding or a filing-cabinet coincidence.*
 
-%@ · 1 of %lld
+%1$@ · 1 of %2$@
 
-<!-- END SOURCE: related.why.cohort %@ %lld -->
+<!-- END SOURCE: related.why.cohort %@ %@ -->
 
 ---
 

@@ -122,8 +122,9 @@ import SwiftData
 
     /// These describe *what the exported product contains* — the editorial decisions that
     /// used to be re-chosen ephemerally in the export sheet (before Session-… Phase 1a).
-    /// They are edited in the collection manager and read by `buildExportOptions` at export
-    /// time, so a collection's composition is stable and re-exportable to any format.
+    /// They are edited in the collection manager and read by
+    /// `CollectionExportOptions.init(composing:)` at export time, so a collection's composition is
+    /// stable and re-exportable to any format.
     /// Enum-backed fields store the `rawValue` for CloudKit compatibility.
 
     /// Default document-body depth for exports — a `CollectionBodyDepth` raw value
@@ -232,7 +233,8 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
-    /// When `true`, a word-cloud overview is prepended to PDF/HTML exports.
+    /// When `true`, a word-cloud overview is prepended to PDF, HTML and Word exports
+    /// (`ExportFormat.drawsWordCloud`).
     var includeWordCloud: Bool = false {
         didSet { lastModified = .now }
     }

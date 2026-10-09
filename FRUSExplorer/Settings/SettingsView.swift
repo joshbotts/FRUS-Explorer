@@ -1221,6 +1221,9 @@ struct MergeTagSheet: View {
 ///   1.0 — Session 20: initial implementation
 ///   1.1 — S-3d: availability row, run form moves to a sheet, per-prompt counts come from a
 ///          one-shot `PromptSummaryTally` rather than a per-row scan of every summary
+///   1.2 — 2026-10-09: #1590 — the New Prompt sheet is presented from an item
+///          (`NewPromptRequest`) that carries the copy Use as Template or Duplicate made, where a
+///          Bool beside a sibling `@State` opened the first one of a visit blank
 private struct SummarizationPromptsSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -1229,11 +1232,9 @@ private struct SummarizationPromptsSettingsView: View {
 
     /// Non-nil when editing an existing user prompt.
     @State private var editingPrompt: SummarizationPrompt? = nil
-    /// Controls the new-prompt creation sheet.
-    @State private var showNewPromptSheet: Bool = false
-    /// When set, the new-prompt sheet opens pre-populated from this template
-    /// (used by "Use as Template" on standard prompts and "Duplicate" on user prompts).
-    @State private var newPromptInitialTemplate: PromptTemplate? = nil
+    /// The New Prompt sheet's item: non-nil while it is up, carrying the copy "Use as Template"
+    /// (standard prompts) or "Duplicate" (user prompts) made, or no copy for New Prompt… (#1590).
+    @State private var newPromptRequest: NewPromptRequest? = nil
     /// Controls the batch-run sheet.
     @State private var showRunSheet = false
     /// Per-prompt summary counts, tallied once per appearance rather than per row.
@@ -1254,11 +1255,10 @@ private struct SummarizationPromptsSettingsView: View {
         .sheet(item: $editingPrompt, onDismiss: refreshTally) { prompt in
             PromptEditorView(promptToEdit: prompt)
         }
-        .sheet(isPresented: $showNewPromptSheet, onDismiss: {
-            newPromptInitialTemplate = nil
-            refreshTally()
-        }) {
-            PromptEditorView(initialTemplate: newPromptInitialTemplate)
+        // #1590: the copy rides in the item. As a sibling `@State` beside a Bool it reached the
+        // sheet as it stood before the tap, and the first Use as Template opened a blank prompt.
+        .sheet(item: $newPromptRequest, onDismiss: refreshTally) { request in
+            PromptEditorView(initialTemplate: request.template)
         }
         .sheet(isPresented: $showRunSheet, onDismiss: refreshTally) {
             BatchRunSheet().environment(appState)
@@ -1308,8 +1308,7 @@ private struct SummarizationPromptsSettingsView: View {
                         SettingsNavRow(label: prompt.name, detail: tally.rowSummary(for: prompt.id))
                         Spacer(minLength: 8)
                         Button {
-                            newPromptInitialTemplate = templateFrom(prompt)
-                            showNewPromptSheet = true
+                            newPromptRequest = NewPromptRequest(template: templateFrom(prompt))
                         } label: {
                             Text(String(localized: "settings.summarization.useAsTemplate",
                                         defaultValue: "Use as Template"))
@@ -1356,8 +1355,7 @@ private struct SummarizationPromptsSettingsView: View {
                     // Swipes stay as shortcuts; everything they do is also reachable from the row.
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                         Button {
-                            newPromptInitialTemplate = templateFrom(prompt)
-                            showNewPromptSheet = true
+                            newPromptRequest = NewPromptRequest(template: templateFrom(prompt))
                         } label: {
                             Label(String(localized: "settings.summarization.duplicate",
                                          defaultValue: "Duplicate"),
@@ -1374,8 +1372,7 @@ private struct SummarizationPromptsSettingsView: View {
 
             SettingsNewItemRow(label: String(localized: "settings.summarization.newPrompt",
                                              defaultValue: "New Prompt…")) {
-                newPromptInitialTemplate = nil
-                showNewPromptSheet = true
+                newPromptRequest = NewPromptRequest(template: nil)
             }
         } header: {
             Text(String(localized: "settings.summarization.user.header",

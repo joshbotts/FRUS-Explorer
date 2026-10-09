@@ -837,7 +837,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 291
+    static let countCopyBaselineCeiling = 290
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -1057,7 +1057,6 @@ extension CodingStandardsAuditTests {
         #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.caption.capped %lld %lld"#,
         #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.moreVolumes %lld"#,
         #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.volumeCount %lld"#,
-        #"RelatedDocuments/RelatedDocumentsView.swift | related.poolCut %lld %lld"#,
         #"Research/ResearchView.swift | research.row.noteCount %lld"#,
         #"Research/ResearchView.swift | research.row.summaries %lld"#,
         #"Search/CollocationView.swift | search.collocation.caveat.bounded.v2 %lld %lld"#,

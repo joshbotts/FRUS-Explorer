@@ -37,6 +37,9 @@ import UIKit
 ///          "Untitled Collection" through `CollectionExportNaming`
 ///   1.4 — #1497: Send to Zotero Library names its Zotero collection through
 ///          `CollectionExportNaming.zoteroCollectionName` — trimmed, or "FRUS Explorer Collection - yyyy-mm-dd"
+///   1.5 — 2026-10-09: #1585 — the exporter's options come from `ExportFormat.exportOptions(for:)`
+///          where the sheet built them itself, asking for the word cloud of PDF and HTML only; a
+///          Word export now carries the cloud the Composition section turned on
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -473,8 +476,10 @@ struct ExportSheetView: View {
             let metadata = CollectionExportMetadata.forExport(
                 of: collection, activeProject: activeProject, modelContext: modelContext)
             guard let exporter = selectedFormat.makeExporter() else { return }
+            // #1585: the format builds the options, so Word is asked for the word cloud as PDF
+            // and HTML are, and `CollectionExportParityTests` hands each exporter these same ones.
             let url = try await exporter.export(
-                metadata: metadata, items: items, options: buildExportOptions())
+                metadata: metadata, items: items, options: selectedFormat.exportOptions(for: collection))
             exportedURL = url
             recordExport(format: selectedFormat.rawValue,
                          documentCount: items.documents.count)
@@ -577,21 +582,6 @@ struct ExportSheetView: View {
             modelContext: modelContext,
             onPreparingStatus: { preparingMessage = $0 },
             onSummaryStatus: { summaryGeneratingMessage = $0 }
-        )
-    }
-
-    /// Assembles `CollectionExportOptions` from the collection's persisted composition
-    /// (edited in the manager's Composition section) plus the format-dependent word-cloud gate.
-    private func buildExportOptions() -> CollectionExportOptions {
-        CollectionExportOptions(
-            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            includeFootnotes:  collection.effectiveIncludeFootnotes,
-            includeSourceNote: collection.effectiveIncludeSourceNote,
-            applyHighlights:   collection.applyHighlights,
-            includeNotes:      collection.includeNotes,
-            summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud: collection.includeWordCloud && (selectedFormat == .pdf || selectedFormat == .html),
-            includeHeadnoteDefault: collection.defaultIncludeHeadnote
         )
     }
 
@@ -718,7 +708,8 @@ struct ExportSheetView: View {
             }
             let metadata = CollectionExportMetadata(name: collection.name, note: collection.note)
             let url = try await ZoteroCollectionExporter().export(
-                metadata: metadata, documents: docs, options: buildExportOptions())
+                metadata: metadata, documents: docs,
+                options: ExportFormat.zoteroJSON.exportOptions(for: collection))
             exportedURL = url
             recordExport(format: ExportFormat.zoteroJSON.rawValue, documentCount: docs.count)
         } catch is CancellationError {

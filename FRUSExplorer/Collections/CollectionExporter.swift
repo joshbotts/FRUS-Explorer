@@ -443,6 +443,8 @@ final class HighlightPaintTracker {
 ///          `includeSourceNote` Bool pair (both now expressible together). Callers build
 ///          these from `Collection.effectiveIncludeFootnotes`/`effectiveIncludeSourceNote`,
 ///          whose nil-pair derivation reproduces each legacy tri-state value exactly
+///   1.4 — 2026-10-09: #1585 — `init(composing:)`, the one place a collection's composition
+///          becomes options, which the export sheet and the content resolver each wrote out
 struct CollectionExportOptions: Sendable {
     /// Which label style to use in the table of contents.
     var tocStyle: CollectionToCStyle = .citation
@@ -468,12 +470,37 @@ struct CollectionExportOptions: Sendable {
     /// Summaries are generated on demand if none exist for this prompt.
     var summaryPromptId: UUID? = nil
     /// When `true`, a word-cloud overview page/section of the collection's most
-    /// frequent terms is included. Supported by the PDF and HTML exporters.
+    /// frequent terms is included. The PDF, HTML and Word exporters draw it.
     var includeWordCloud: Bool = false
     /// The collection-level default a document entry's `includeHeadnote == nil` (Default) resolves
     /// to (Composer redesign). `false` by default, so collections that never set a headnote default
     /// resolve exactly as before. Set from `Collection.defaultIncludeHeadnote`.
     var includeHeadnoteDefault: Bool = false
+}
+
+extension CollectionExportOptions {
+
+    /// The options `collection`'s own composition settings give: what the Composition section
+    /// stores, with nothing decided by the format.
+    ///
+    /// One builder for the two callers that used to write the same eight lines apart: the export
+    /// sheet (through ``ExportFormat/exportOptions(for:)``) and the content resolver's
+    /// `resolutionOptions(for:)`. The sheet's copy had grown a format test on the word cloud that
+    /// the resolver's never had, which is how the Word export lost its cloud (#1585).
+    ///
+    /// - Parameter collection: The collection being exported.
+    init(composing collection: Collection) {
+        self.init(
+            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
+            includeFootnotes:  collection.effectiveIncludeFootnotes,
+            includeSourceNote: collection.effectiveIncludeSourceNote,
+            applyHighlights:   collection.applyHighlights,
+            includeNotes:      collection.includeNotes,
+            summaryPromptId:   collection.summaryPromptId,
+            includeWordCloud:  collection.includeWordCloud,
+            includeHeadnoteDefault: collection.defaultIncludeHeadnote
+        )
+    }
 }
 
 // MARK: - ExportFormat
@@ -495,6 +522,9 @@ struct CollectionExportOptions: Sendable {
 ///          round-trippable collection file. It is not a `CollectionExporter` (it
 ///          serializes the collection's *source* via `NativeCollectionSerializer`), so
 ///          `makeExporter()` returns `nil` for it and the export flow special-cases it.
+///   1.7 — 2026-10-09: #1585 — `drawsWordCloud` and `exportOptions(for:)`: the format says
+///          whether it draws the word cloud, Word included, and builds the options its exporter
+///          is handed
 enum ExportFormat: String, CaseIterable, Identifiable {
     case pdf
     case html
@@ -570,6 +600,32 @@ enum ExportFormat: String, CaseIterable, Identifiable {
         case .pdf, .html, .docx: return true
         case .zoteroJSON, .bibtex, .fruscollection: return false
         }
+    }
+
+    /// Whether an export in this format draws the collection's word-cloud overview when the
+    /// collection asks for one: PDF, HTML and Word do (#1585). BibTeX and RIS print citations, and
+    /// the native file carries the setting itself, not a drawing.
+    var drawsWordCloud: Bool {
+        switch self {
+        case .pdf, .html, .docx: return true
+        case .zoteroJSON, .bibtex, .fruscollection: return false
+        }
+    }
+
+    /// The options the export sheet hands this format's exporter for `collection`: the
+    /// collection's composition, with the word cloud asked for only of a format that draws one.
+    ///
+    /// On the format, and not in the sheet, so that a test hands an exporter exactly what the
+    /// sheet does. Until #1585 the sheet built these itself and asked for the cloud of PDF and
+    /// HTML only, a test older than the Word exporter's cloud (#960): the Word exporter drew the
+    /// cloud whenever it was asked, the parity test asked it directly, and the app never did.
+    ///
+    /// - Parameter collection: The collection being exported.
+    /// - Returns: The options for this format's exporter.
+    func exportOptions(for collection: Collection) -> CollectionExportOptions {
+        var options = CollectionExportOptions(composing: collection)
+        options.includeWordCloud = options.includeWordCloud && drawsWordCloud
+        return options
     }
 
     /// Returns a fresh exporter instance for this format, or `nil` for `.fruscollection`,
@@ -963,8 +1019,8 @@ enum CollectionColophon {
     /// not use. Empty for a collection of headings alone, and the callers render nothing then.
     ///
     /// The one addition the items cannot show is the word cloud a rich export can embed
-    /// (`CollectionExportOptions.includeWordCloud`, which the export sheet sets for PDF and HTML, and
-    /// which the Word exporter honours too): it is an export option, not an item, and it is
+    /// (`CollectionExportOptions.includeWordCloud`, which the export sheet sets for PDF, HTML and
+    /// Word, `ExportFormat.drawsWordCloud`): it is an export option, not an item, and it is
     /// counted through the app's own lexicons and stopwords, so it adds ``ProvenanceSource/appWordLists``
     /// — what the standalone word-cloud export states (`WordCloudView`). Each renderer passes whether
     /// it actually drew one (the image it holds, not the option, since a collection with no countable

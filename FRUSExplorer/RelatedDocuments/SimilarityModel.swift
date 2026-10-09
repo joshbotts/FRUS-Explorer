@@ -280,6 +280,9 @@ struct AxisWeights: Codable, Hashable, Sendable {
 ///
 /// Version history:
 ///   1.0 — cross-reference chip honesty: initial implementation
+///   1.1 — 2026-10-09: #1586 — `displayText(locale:)`, the chip's words, moved out of
+///          `RelatedDocumentsContent.whyRelated` so a test reads them; the archival chip groups
+///          its container's size
 enum WhyRelatedChip: Hashable, Sendable {
     /// A cross-reference axis, stating the citation multiplicity it actually found.
     case citations(Int)
@@ -314,6 +317,92 @@ enum WhyRelatedChip: Hashable, Sendable {
     case sharedSubjects([String])
     /// A scorer axis, whose `[0, 1]` score is an absolute measure and rounds to a percent.
     case percent(Int)
+
+    /// The chip's words, which are also what VoiceOver reads after the axis's name: one string
+    /// for both, so the two cannot disagree.
+    ///
+    /// - Parameter locale: The locale that groups the archival chip's count; the user's own
+    ///   unless a test passes one.
+    /// - Returns: The text beside the axis's glyph.
+    func displayText(locale: Locale = .autoupdatingCurrent) -> String {
+        switch self {
+        case .citations(let count):
+            return String(format: String(localized: "related.why.cited %lld",
+                                         defaultValue: "cited %lld×"), Int64(count))
+        case .cohort(let container, let size):
+            // Names the container and how big it is: sharing a 6-document lot is a finding,
+            // sharing one of 7,056 is a filing-cabinet coincidence, and "same provenance" said
+            // the same thing for both (#644).
+            return RelatedDocumentsCounts.cohort(container: container, size: size, locale: locale)
+        case .presence:
+            return String(localized: "related.why.sameProvenance",
+                          defaultValue: "same provenance")
+        case .sharedTerms(let terms):
+            // The anchor's own spelling, never a lemma — see SemanticSharedTerms.
+            return String(format: String(localized: "related.why.sharedTerms %@",
+                                         defaultValue: "shares: %@"),
+                          terms.joined(separator: ", "))
+        case .sharedSubjects(let names):
+            // "topics", not "shares" — the semantic chip already owns that verb on the same
+            // row, and these are detected topics rather than the document's own words.
+            return String(format: String(localized: "related.why.sharedSubjects %@",
+                                         defaultValue: "topics: %@"),
+                          names.joined(separator: ", "))
+        case .percent(let pct):
+            // A real but sub-1% contribution reads as "<1%", never "0%".
+            return pct == 0
+                ? String(localized: "related.why.subOnePercent", defaultValue: "<1%")
+                : String(format: String(localized: "related.why.percent %lld",
+                                        defaultValue: "%lld%%"), Int64(pct))
+        }
+    }
+}
+
+// MARK: - RelatedDocumentsCounts
+
+/// Related Documents' two lines that say how many documents share the anchor's archival
+/// container, with their numbers grouped (#1586).
+///
+/// Both were `String(format:)` over `%lld`, which does not group, so the container the chip
+/// exists to size read "1 of 1063" once it passed 999, and the footer "the first 120 of 1063".
+/// `CodingStandardsAuditTests.countsGoThroughCountCopy` listed the footer in its baseline and
+/// could not see the chip at all: its rule needs a noun after the placeholder, and "1 of %lld"
+/// ends the string. So the two are here, where `CountCopySiteTests` reads them.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1586 — initial implementation
+enum RelatedDocumentsCounts {
+
+    /// The archival chip: "Lot 54 D 270 · 1 of 1,063".
+    ///
+    /// - Parameters:
+    ///   - container: The container's name.
+    ///   - size: How many documents the live index holds in it, the anchor included.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The chip's text.
+    static func cohort(container: String, size: Int,
+                       locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(localized: "related.why.cohort %@ %@",
+                              defaultValue: "%1$@ · 1 of %2$@"),
+               container, size.formatted(.number.locale(locale)))
+    }
+
+    /// The footer under a list whose candidate pool was cut: "Ranked from the first 120 of 1,063
+    /// documents that share this anchor’s archival container. …"
+    ///
+    /// The second number is always larger than the pool, so the sentence has no singular form.
+    ///
+    /// - Parameters:
+    ///   - ranked: How many documents the scorers saw.
+    ///   - total: How many share the container.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func poolCut(ranked: Int, of total: Int,
+                        locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(localized: "related.poolCut %@ %@",
+                              defaultValue: "Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them."),
+               ranked.formatted(.number.locale(locale)), total.formatted(.number.locale(locale)))
+    }
 }
 
 // MARK: - Candidate + result value types

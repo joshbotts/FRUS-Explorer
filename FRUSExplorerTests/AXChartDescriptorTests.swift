@@ -245,4 +245,277 @@ struct AXChartDescriptorShapeTests {
         #expect(d?.series.map(\.name) == ["Berlin", "Vietnam"])
     }
 }
+
+// MARK: - SeriesAudioGraphTests
+
+/// The About the Series charts' Audio Graphs, against the arrays the charts draw (#1587).
+///
+/// The shared card built each chart's descriptor from columns 0 and 1 of its "View as table" data,
+/// and none of the four dashboards said otherwise. For six of the eleven tables column 1 is not the
+/// plotted value: the Publication lag chart played each volume's publication year, and five charts
+/// whose column 1 is a name were refused and got no descriptor. No test drove a Series adapter
+/// through the descriptor builder, which is how the default went unchecked.
+///
+/// Each adapter now states the numbers its chart plots (`ChartInspectorData.audioGraph`). These
+/// tests build every one of the eleven real tables and compare that statement with the property
+/// the chart's mark reads, then with what the descriptor carries.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1587 — initial implementation
+@Suite("About the Series Audio Graphs (#1587)")
+@MainActor
+struct SeriesAudioGraphTests {
+
+    // MARK: Fixtures
+
+    /// Lag values no print year, coverage year or row index could be mistaken for, in an order
+    /// that is not publication order.
+    private static let lagPoints: [SeriesProductionData.LagPoint] = [
+        .init(volumeId: "frus1969-76v01", subseries: "1969-76", coverageEndYear: 1972,
+              printYear: 2003, lagYears: 31, coverageEra: .coldWar),
+        .init(volumeId: "frus1861", subseries: "1861", coverageEndYear: 1861,
+              printYear: 1861, lagYears: 0, coverageEra: .pre1900),
+        .init(volumeId: "frus1945v05", subseries: "1945", coverageEndYear: 1945,
+              printYear: 1967, lagYears: 22, coverageEra: .coldWar),
+        .init(volumeId: "frus1945v02", subseries: "1945", coverageEndYear: 1945,
+              printYear: 1967, lagYears: 23, coverageEra: .coldWar),
+    ]
+
+    private static func profile(_ id: String, _ president: String, _ party: PoliticalParty,
+                                documents: Int, perYear: Double) -> AdministrationProfilesData.Profile {
+        .init(id: id, number: 1, president: president, party: party, start: "1961-01-20", end: nil,
+              pointDocCount: documents, rangeDocCount: 0, documentCount: documents, volumeCount: 3,
+              termYears: 4, volumesPerAdministrationYear: perYear,
+              coverageEarliest: nil, coverageLatest: nil)
+    }
+
+    private static let profiles = [
+        profile("kennedy", "John F. Kennedy", .democratic, documents: 12_345, perYear: 8.66),
+        profile("nixon", "Richard M. Nixon", .republican, documents: 20_001, perYear: 10.04),
+    ]
+
+    /// The y values of each series in `table`'s graph, by series name.
+    private func plotted(_ table: ChartInspectorData) throws -> [(name: String, y: [Double])] {
+        let graph = try #require(table.audioGraph, "\(table.id) states no graph: the card would read columns 0 and 1")
+        return graph.series.map { ($0.name, $0.points.map(\.y)) }
+    }
+
+    /// The y values the descriptor carries for `table`, by series, through the call the card makes.
+    private func described(_ table: ChartInspectorData) throws -> [[Double]] {
+        let graph = try #require(table.audioGraph)
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph),
+                                      "\(table.id) builds no descriptor")
+        // `__number`: the header marks `number` as refined for Swift and the overlay gives no reader.
+        return descriptor.series.map { $0.dataPoints.compactMap { $0.yValue?.__number } }
+    }
+
+    // MARK: The lag chart: the wrong series
+
+    @Test("Publication lag plays each volume's lag against its publication year, as a scatter")
+    func lagPlaysTheLag() throws {
+        let table = ChartInspectorAdapters.lagTable(Self.lagPoints)
+        let graph = try #require(table.audioGraph)
+        let points = try #require(graph.series.first).points
+
+        // In publication order, ties by volume id; the table keeps the order it was given.
+        #expect(points.map(\.label) == ["frus1861", "frus1945v02", "frus1945v05", "frus1969-76v01"])
+        #expect(points.map(\.y) == [0, 23, 22, 31], "the lag, which is what the chart plots")
+        #expect(points.map(\.x) == [1861, 1967, 1967, 2003], "against the publication year")
+        #expect(table.rows.map { $0.cells[0] } == Self.lagPoints.map(\.volumeId))
+        #expect(graph.xLabel == "Publication year")
+        #expect(graph.yLabel == "Lag (years)")
+
+        // Two volumes share 1967, so no line joins the points.
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph))
+        #expect(descriptor.series.count == 1)
+        #expect(descriptor.series.first?.isContinuous == false)
+        #expect(try described(table) == [[0, 23, 22, 31]])
+        #expect(descriptor.yAxis?.title == "Lag (years)")
+        #expect((descriptor.xAxis as? AXNumericDataAxisDescriptor)?.range == 1861...2003)
+
+        // What the card's default columns read from this same table, and played until #1587:
+        // the volume id as the label and the PUBLICATION YEAR as the value.
+        let old = try #require(AXChartDescriptorBuilder.points(from: table))
+        #expect(old.map(\.y) == [2003, 1861, 1967, 1967])
+        #expect(old.map(\.label) == Self.lagPoints.map(\.volumeId))
+    }
+
+    // MARK: The five that had no descriptor
+
+    @Test("Volumes published per year plays the count of each year, not its era's name")
+    func perYearPlaysCounts() throws {
+        let buckets: [SeriesProductionData.PrintYearCount] = [
+            .init(printYear: 1899, pubEra: .pre1900, count: 2),
+            .init(printYear: 1946, pubEra: .coldWar, count: 7),
+            .init(printYear: 2014, pubEra: .contemporary, count: 11),
+        ]
+        let table = ChartInspectorAdapters.perYearTable(buckets)
+        #expect(AXChartDescriptorBuilder.points(from: table) == nil, "the default columns refused this table")
+        let series = try plotted(table)
+        #expect(series.count == 1)
+        #expect(series.first?.y == [2, 7, 11])
+        #expect(table.audioGraph?.series.first?.points.map(\.x) == [1899, 1946, 2014])
+        #expect(try described(table) == [[2, 7, 11]])
+        #expect(table.audioGraph?.yLabel == "Volumes")
+    }
+
+    @Test("Regional emphasis over time plays one series per region, each its share by decade")
+    func regionTrendSplitsByRegion() throws {
+        let shares: [SeriesGeographyData.RegionDecadeShare] = [
+            .init(decade: 1940, region: .europe, share: 0.5),
+            .init(decade: 1940, region: .nearEast, share: 0.125),
+            .init(decade: 1950, region: .europe, share: 0.423),
+            .init(decade: 1950, region: .nearEast, share: 0.2),
+        ]
+        let table = ChartInspectorAdapters.regionTrendTable(shares)
+        #expect(AXChartDescriptorBuilder.points(from: table) == nil, "the default columns refused this table")
+        let series = try plotted(table)
+        #expect(series.map { $0.name } == [GeographicRegion.europe.displayName, GeographicRegion.nearEast.displayName])
+        // The share in percent, to the decimal the table prints.
+        #expect(series.map { $0.y } == [[50, 42.3], [12.5, 20]])
+        #expect(try described(table) == [[50, 42.3], [12.5, 20]])
+        #expect(table.audioGraph?.series.allSatisfy { $0.points.map(\.x) == [1940, 1950] } == true)
+        // Read flat, by the columns that do hold the decade and the share, the four rows are one
+        // series that crosses both regions.
+        #expect(AXChartDescriptorBuilder.points(from: table, labelColumn: 0, valueColumn: 2)?.count == 4)
+    }
+
+    @Test("The two administration charts play documents and volumes per year, not the party's name")
+    func administrationChartsPlayTheirValues() throws {
+        let documents = ChartInspectorAdapters.administrationDocumentsTable(Self.profiles)
+        #expect(AXChartDescriptorBuilder.points(from: documents) == nil, "the default columns refused this table")
+        #expect(try plotted(documents).first?.y == [12_345, 20_001])
+        #expect(documents.audioGraph?.series.first?.points.map(\.label) == ["John F. Kennedy", "Richard M. Nixon"])
+        #expect(try described(documents) == [[12_345, 20_001]])
+
+        let perYear = ChartInspectorAdapters.administrationVolumesPerYearTable(Self.profiles)
+        #expect(AXChartDescriptorBuilder.points(from: perYear) == nil, "the default columns refused this table")
+        // To one decimal, the figure the table prints and the bar's VoiceOver value reads.
+        #expect(try plotted(perYear).first?.y == [8.7, 10])
+        #expect(try described(perYear) == [[8.7, 10]])
+        #expect(perYear.audioGraph?.yLabel == "Volumes per year")
+    }
+
+    @Test("Archival provenance over time plays one series per category, zero where the band is at zero")
+    func provenanceMixKeepsItsZeroRows() throws {
+        // The chart's rows: every category in every decade (#1543). The Lot File has no notes
+        // in the 1950s here.
+        let shares: [SourceProvenanceData.CategoryDecadeShare] = [
+            .init(decade: 1940, category: .centralDecimalFile, share: 0.75),
+            .init(decade: 1940, category: .lotFile, share: 0.25),
+            .init(decade: 1950, category: .centralDecimalFile, share: 1),
+            .init(decade: 1950, category: .lotFile, share: 0),
+            .init(decade: 1960, category: .centralDecimalFile, share: 0.4),
+            .init(decade: 1960, category: .lotFile, share: 0.6),
+        ]
+        let table = ChartInspectorAdapters.provenanceMixTable(shares)
+        #expect(AXChartDescriptorBuilder.points(from: table) == nil, "the default columns refused this table")
+        // The table leaves the zero row out, as it always has.
+        #expect(table.rows.count == 5)
+
+        let series = try plotted(table)
+        #expect(series.map { $0.name } == [SourceProvenanceCategory.centralDecimalFile.displayName,
+                                       SourceProvenanceCategory.lotFile.displayName])
+        #expect(series.map { $0.y } == [[75, 100, 40], [25, 0, 60]],
+                "the lot file's series passes through zero in the 1950s, where its band closes")
+        #expect(try described(table) == [[75, 100, 40], [25, 0, 60]])
+        #expect(table.audioGraph?.series.allSatisfy { $0.points.map(\.x) == [1940, 1950, 1960] } == true)
+    }
+
+    // MARK: The five that were read correctly: nothing they played has changed
+
+    @Test("The five tables the default columns read correctly state the same points")
+    func theFiveUnchangedTables() throws {
+        let tables: [ChartInspectorData] = [
+            ChartInspectorAdapters.cumulativeTable([
+                .init(printYear: 1861, cumulativeCount: 1), .init(printYear: 1862, cumulativeCount: 3),
+                .init(printYear: 2026, cumulativeCount: 553)]),
+            ChartInspectorAdapters.regionTotalsTable([
+                .init(region: .europe, volumeCount: 212), .init(region: .eastAsiaPacific, volumeCount: 97)]),
+            ChartInspectorAdapters.topCountriesTable(
+                [.init(slug: "soviet-union", volumeCount: 68), .init(slug: "china", volumeCount: 41)],
+                displayName: { $0 == "china" ? "China" : "Soviet Union" }),
+            ChartInspectorAdapters.compositionTable([
+                .init(category: .centralDecimalFile, noteCount: 135_668, share: 0.52),
+                .init(category: .lotFile, noteCount: 40_112, share: 0.154)]),
+            ChartInspectorAdapters.densityTable([
+                .init(decade: 1940, totalNotes: 30_524, volumeCount: 64),
+                .init(decade: 1950, totalNotes: 59_973, volumeCount: 120)]),
+        ]
+        #expect(tables.map(\.id) == ["sa1.cumulative", "sa2.regionTotals", "sa2.topCountries",
+                                     "sa3.composition", "sa3.density"])
+        for table in tables {
+            let graph = try #require(table.audioGraph, "\(table.id) states no graph")
+            let fromColumns = try #require(AXChartDescriptorBuilder.points(from: table),
+                                           "\(table.id) was readable by column")
+            #expect(graph.series.count == 1)
+            #expect(graph.series.first?.points == fromColumns, "\(table.id) plays different points")
+            #expect(graph.series.first?.name == table.title)
+            #expect(graph.xLabel == table.columns[0])
+            #expect(graph.yLabel == table.columns[1])
+            #expect(graph.isContinuous == nil)
+            #expect(try described(table) == [fromColumns.map(\.y)])
+        }
+    }
+
+    // MARK: Every table states its graph
+
+    @Test("All eleven About the Series tables state a graph, and the card reads it first")
+    func everySeriesTableStatesAGraph() throws {
+        let tables: [ChartInspectorData] = [
+            ChartInspectorAdapters.lagTable(Self.lagPoints),
+            ChartInspectorAdapters.perYearTable([.init(printYear: 1946, pubEra: .coldWar, count: 7)]),
+            ChartInspectorAdapters.cumulativeTable([.init(printYear: 1861, cumulativeCount: 1)]),
+            ChartInspectorAdapters.regionTrendTable([.init(decade: 1940, region: .europe, share: 0.5)]),
+            ChartInspectorAdapters.regionTotalsTable([.init(region: .europe, volumeCount: 212)]),
+            ChartInspectorAdapters.topCountriesTable([.init(slug: "china", volumeCount: 41)], displayName: { $0 }),
+            ChartInspectorAdapters.administrationDocumentsTable(Self.profiles),
+            ChartInspectorAdapters.administrationVolumesPerYearTable(Self.profiles),
+            ChartInspectorAdapters.provenanceMixTable([.init(decade: 1940, category: .lotFile, share: 1)]),
+            ChartInspectorAdapters.compositionTable([.init(category: .lotFile, noteCount: 9, share: 1)]),
+            ChartInspectorAdapters.densityTable([.init(decade: 1940, totalNotes: 9, volumeCount: 1)]),
+        ]
+        #expect(Set(tables.map(\.id)).count == 11)
+        for table in tables {
+            let graph = try #require(table.audioGraph, "\(table.id) states no graph")
+            #expect(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph) != nil,
+                    "\(table.id) builds no descriptor")
+            #expect(!graph.xLabel.isEmpty && !graph.yLabel.isEmpty)
+        }
+        // A table that states none is still read by column, as the archival cards' are.
+        let plain = ChartInspectorData(id: "t", title: "T", columns: ["Year", "Count"], rowCells: [["1969", "12"]])
+        #expect(plain.audioGraph == nil)
+
+        // The card's modifier asks the table before it reads any column.
+        let card = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/SeriesAnalytics/SeriesChartCard.swift"), encoding: .utf8)
+        let asks = try #require(card.range(of: "if let graph = inspector.audioGraph {"))
+        let columns = try #require(card.range(of: "let xLabel = inspector.columns.indices.contains(labelColumn)"))
+        #expect(asks.lowerBound < columns.lowerBound)
+        #expect(card.contains("return AXChartDescriptorBuilder.descriptor(title: title, graph: graph)"))
+    }
+
+    @Test("A scatter is not continuous; a series left to the rule is continuous when its x is numeric")
+    func continuityFollowsTheGraph() throws {
+        let numeric = [AXChartPoint(label: "1969", x: 1969, y: 1), AXChartPoint(label: "1970", x: 1970, y: 2)]
+        let named = [AXChartPoint(label: "Europe", x: nil, y: 1)]
+        func continuous(_ points: [AXChartPoint], _ flag: Bool?) -> Bool? {
+            AXChartDescriptorBuilder.descriptor(
+                title: "T", graph: ChartAudioGraph(xLabel: "x", yLabel: "y",
+                                                   series: [.init(name: "T", points: points)],
+                                                   isContinuous: flag))?.series.first?.isContinuous
+        }
+        #expect(continuous(numeric, nil) == true)
+        #expect(continuous(named, nil) == false)
+        #expect(continuous(numeric, false) == false)
+        // Several series take the flag too.
+        let two = ChartAudioGraph(xLabel: "x", yLabel: "y",
+                                  series: [.init(name: "A", points: numeric), .init(name: "B", points: numeric)],
+                                  isContinuous: false)
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: "T", graph: two))
+        #expect(descriptor.series.map(\.isContinuous) == [false, false])
+        #expect(descriptor.series.map { $0.name } == ["A", "B"])
+    }
+}
 #endif

@@ -96,6 +96,10 @@ import SwiftUI
 ///   1.12 — #1465: a heading with no text prints as "Untitled section", set apart by the preview stylesheet, in its
 ///          body element and its Contents row. Only the preview meets one — an export's resolve leaves it out — so
 ///          exported HTML is unchanged for every heading that has text
+///   1.13 — 2026-10-09: #1602 — four of this layer's text colours reach 4.5:1 against the
+///          backgrounds they are drawn on: the contents panel's page numbers and the
+///          AI-attribution caption (#888 to #6e6e6e), the colophon and the "See also" label
+///          (#777 to #757575), and the preview's citation-only card note (#a06a00 to #986500)
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -771,6 +775,14 @@ struct CollectionItemHTMLRenderer {
         + "\n" + printCSS
     }
 
+    /// Every stylesheet layer this renderer writes of its own, joined: the layout layer every
+    /// page carries and the seven a page carries only when it uses them. What
+    /// `CollectionExportContrastTests` measures (#1602); no page is built from it.
+    static var ownLayersCSS: String {
+        [collectionExportCSS, frameCSS, headnoteCSS, excerptCSS, relatedCSS, attributionCSS,
+         generatedCSS, previewCSS].joined(separator: "\n")
+    }
+
     /// Collection-specific layout styles not covered by `HTMLTemplate.documentCSS`.
     private static let collectionExportCSS = """
     /* ── Page layout ─────────────────────────────────────────────────────── */
@@ -819,7 +831,8 @@ struct CollectionItemHTMLRenderer {
     nav a   { color: #1a4c8f; text-decoration: none; }
     nav a:hover { text-decoration: underline; }
     .toc-entry { display: flex; justify-content: space-between; }
-    .toc-page  { color: #888; font-size: 0.9em; }
+    /* #1602: #6e6e6e is 4.75:1 on the contents panel's #f7f7f5; #888 was 3.30. */
+    .toc-page  { color: #6e6e6e; font-size: 0.9em; }
 
     /* ── Document sections ────────────────────────────────────────────────── */
     section {
@@ -934,7 +947,8 @@ struct CollectionItemHTMLRenderer {
       border-top: 1px solid #ddd;
       padding-top: 1rem;
       font-size: 0.8rem;
-      color: #777;
+      /* #1602: #757575 is 4.61:1 on white; #777 was 4.48. */
+      color: #757575;
     }
     section.method-appendix {
       margin-top: 3rem;
@@ -1025,7 +1039,8 @@ struct CollectionItemHTMLRenderer {
       text-transform: uppercase;
       font-size: 0.75rem;
       letter-spacing: 0.06em;
-      color: #777;
+      /* #1602: 4.61:1 on white, where #777 was 4.48. */
+      color: #757575;
     }
     """
 
@@ -1041,7 +1056,9 @@ struct CollectionItemHTMLRenderer {
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #888;
+      /* #1602: the caption sits in a summary block (#f0f4ff) or a headnote (#f7f7f5). #6e6e6e is
+         4.63:1 and 4.75:1 there; #888 was 3.22 and 3.30. */
+      color: #6e6e6e;
     }
     """
 
@@ -1092,7 +1109,8 @@ struct CollectionItemHTMLRenderer {
       font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: #a06a00;
+      /* #1602: #986500 is 4.73:1 on the card's #fdf8ee; #a06a00 was 4.35. */
+      color: #986500;
     }
 
     /* ── Summary-placeholder card (preview: summary pending at export) ─────── */
