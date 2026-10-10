@@ -51,6 +51,7 @@ import UIKit
 ///         cannot reach (`SemanticGlyph`, `SimilarityAxis.systemImage`), plus the family
 ///         contract — every semantic surface shares the hexagon-grid motif and none may
 ///         borrow the cross-reference graph's glyph again
+///   1.2 — #1604: the literal scan reads `FRUSCoreKit/` as well as `FRUSExplorer/`
 @Suite("SF Symbol name audit")
 struct SymbolNameAuditTests {
 
@@ -74,17 +75,11 @@ struct SymbolNameAuditTests {
         return true
     }
 
+    /// The app's two source trees (#1604): a literal after `systemImage:` is a string, and the kit
+    /// can hold one as well as the app.
     private static func appSources() throws -> [URL] {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appending(path: "FRUSExplorer")
-        let walker = FileManager.default.enumerator(at: root,
-                                                   includingPropertiesForKeys: nil)
-        var out: [URL] = []
-        while let url = walker?.nextObject() as? URL {
-            if url.pathExtension == "swift" { out.append(url) }
-        }
-        return out
+        AppSourceTree.swiftFiles(in: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent())
     }
 
     /// Every literal passed to `systemImage:` / `systemName:` across the app's sources.

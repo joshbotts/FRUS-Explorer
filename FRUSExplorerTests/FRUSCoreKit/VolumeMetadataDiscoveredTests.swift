@@ -26,7 +26,7 @@ import FTS5Store
 ///
 /// Verifies that `VolumeMetadataDiscovered` is emitted exactly once per
 /// `indexVolume()` call, that its field values match the parsed document set,
-/// and that the event arrives before the first `.storingBatch` progress update.
+/// and that the event has been sent by the time the volume's first batch is stored.
 @Suite("VolumeMetadataDiscovered — metadataStream (Session 113)")
 struct VolumeMetadataDiscoveredTests {
 
@@ -179,8 +179,56 @@ struct VolumeMetadataDiscoveredTests {
         }
     }
 
-    @Test("metadataStream event arrives before first storingBatch progress update")
-    func metadataArrivesBeforeFirstBatch() async throws {
+    /// The pipeline's two ways in. Each sends the metadata event itself, so each is held to the
+    /// order below.
+    enum EntryPoint: String, CaseIterable, Sendable, CustomTestStringConvertible {
+        /// `indexVolume(_:)`, which a download runs.
+        case oneVolume = "indexVolume"
+        /// `indexAllVolumes()`, which a re-index of the library runs.
+        case everyVolume = "indexAllVolumes"
+
+        /// The method's name, which is how a failure names its case.
+        var testDescription: String { rawValue }
+    }
+
+    /// Whether `stream` gives an element within `limit`. One already sent is read at once, so the
+    /// limit is only how long a stream that holds none is waited on.
+    private static func givesAnElement<Element: Sendable>(
+        _ stream: AsyncStream<Element>, within limit: Duration
+    ) async -> Bool {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                for await _ in stream { return true }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(for: limit)
+                return false
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
+    }
+
+    /// The metadata event has been sent by the time a volume's first batch of documents is stored,
+    /// so a progress display has the volume's counts while its batches are still being written.
+    ///
+    /// ## Why the pipeline is stopped to ask (#1601)
+    /// The metadata event and the batch updates travel on two streams, and each stream wakes its
+    /// own task: which of two tasks runs first is the scheduler's choice, whatever order the
+    /// pipeline sent in. Until #1601 this test stamped the clock in a task per stream and compared
+    /// the stamps, and failed about one full `swift test` run in five with the pipeline unchanged.
+    ///
+    /// It now holds the pipeline where the first batch has just been written
+    /// (`setDocumentBatchStoredTestHook`) and reads the metadata stream there. The pipeline is
+    /// suspended in the hook, so an event it has not sent yet cannot arrive and the read gives up
+    /// after `limit`; one it has sent is read at once. That is the order as the pipeline ran it,
+    /// read in one place. What it cannot tell apart is an event sent after the first batch's own
+    /// `.storingBatch` update and before that batch's write: nothing outside the pipeline happens
+    /// between the two.
+    @Test("The metadata event has been sent by the time the first batch is stored", arguments: EntryPoint.allCases)
+    func metadataIsSentBeforeTheFirstBatchIsStored(_ entryPoint: EntryPoint) async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try makeTestPipeline(dir: dir)
             let volDir = dir.appendingPathComponent("volumes")
@@ -194,45 +242,24 @@ struct VolumeMetadataDiscoveredTests {
                 documents: docs
             )
 
-            // Track interleaved events with timestamps.
-            final class Box: @unchecked Sendable {
-                var metaTime: Date? = nil
-                var firstBatchTime: Date? = nil
+            let atFirstBatch = FirstBatchReadings()
+            let metadata = pipeline.metadataStream
+            await pipeline.setDocumentBatchStoredTestHook { _, batch in
+                guard batch == 1 else { return }
+                await atFirstBatch.append(await Self.givesAnElement(metadata, within: .seconds(30)))
             }
-            let box = Box()
+            switch entryPoint {
+            case .oneVolume: try await pipeline.indexVolume("frus1969-76v01")
+            case .everyVolume: try await pipeline.indexAllVolumes()
+            }
+            await pipeline.setDocumentBatchStoredTestHook(nil)
 
-            let metaTask = Task {
-                for await _ in pipeline.metadataStream {
-                    box.metaTime = .now
-                    break
-                }
-            }
-            let progressTask = Task {
-                for await update in pipeline.progressStream {
-                    if update.stage == .complete { break }
-                }
-            }
-            // Collect storingBatch updates to find the first one.
-            let batchTask = Task {
-                for await update in pipeline.progressStream {
-                    if case .storingBatch = update.stage {
-                        if box.firstBatchTime == nil { box.firstBatchTime = .now }
-                    }
-                    if update.stage == .complete { break }
-                }
-            }
-
-            try await pipeline.indexVolume("frus1969-76v01")
-            try await Task.sleep(for: .milliseconds(50))
-            metaTask.cancel()
-            progressTask.cancel()
-            batchTask.cancel()
-
-            // If both were recorded, metadata must have arrived first.
-            if let metaTime = box.metaTime, let batchTime = box.firstBatchTime {
-                #expect(metaTime <= batchTime,
-                        "VolumeMetadataDiscovered must arrive before or at the first storingBatch update")
-            }
+            // One reading, taken at the one volume's first batch: none means the pass stored no
+            // batch and nothing was read.
+            #expect(await atFirstBatch.values == [true], """
+                \(entryPoint.rawValue) had not sent the volume's metadata when its first batch was \
+                stored: the event must go out after the parse and before the store pass.
+                """)
         }
     }
 
@@ -271,4 +298,13 @@ struct VolumeMetadataDiscoveredTests {
             }
         }
     }
+}
+
+/// What the hook found each time the pipeline stopped at a volume's first batch: whether the
+/// metadata event was already on its stream.
+private actor FirstBatchReadings {
+    /// One reading per first batch, in order.
+    private(set) var values: [Bool] = []
+    /// Records a reading.
+    func append(_ value: Bool) { values.append(value) }
 }

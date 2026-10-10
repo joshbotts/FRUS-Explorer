@@ -1181,11 +1181,9 @@ struct NaturalLanguageReadinessScanTests {
     static let repoRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
 
-    /// Every directory `project.yml` compiles into the app targets.
-    private static let appSourceDirectories = [
-        "FRUSExplorer", "FTS5Store", "WordCloudKit", "SemanticVectorsKit", "SourceNoteKit", "TEIHeaderKit",
-        "FRUSCoreKit",
-    ]
+    /// Every directory `project.yml` compiles into the app targets (`AppSourceTreeTests` holds the
+    /// list to that file).
+    private static let appSourceDirectories = AppSourceTree.compiledDirectories
 
     /// `source` with each line's `//` comment removed, so a comment naming a call is not a call.
     static func code(_ source: String) -> String {

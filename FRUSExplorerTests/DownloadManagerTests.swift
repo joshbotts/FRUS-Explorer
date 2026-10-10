@@ -1125,6 +1125,60 @@ struct FigureImageDownloadTests {
         }
     }
 
+    /// An image is written through a temporary file in its volume's folder, under a name no text
+    /// gives (`store`'s atomic write: `figure_1162.png.sb-…`, seen in the simulator on 2026-10-09).
+    /// A run that prunes the folder while that file is there must leave it: removing it fails
+    /// the write, and the image is reported as not fetched. That is how
+    /// `anUpdateMidFetchReadsTheNewText` failed 2 runs in 12 until the prune was held to images:
+    /// the held image's write, made off the manager, met the update's own run pruning the folder.
+    @Test("A prune of the folder removes images the text no longer names, and nothing that is not an image")
+    func aPruneLeavesWhatIsNotAnImage() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 8, height: 8)
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png"))
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1163.png"))
+            let folder = library.directory(for: "frus1946v01")
+            // The temporary file of a write in progress, as the system names one.
+            try png.write(to: folder.appendingPathComponent("figure_2000.png.sb-b670e519-2iWkdT"))
+
+            library.removeImages(notIn: ["figure_1162.png", "figure_2000.png"], for: "frus1946v01")
+            #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).sorted()
+                    == ["figure_1162.png", "figure_2000.png.sb-b670e519-2iWkdT"])
+
+            // A text that names nothing still takes the whole folder.
+            library.removeImages(notIn: [], for: "frus1946v01")
+            #expect(!FileManager.default.fileExists(atPath: folder.path))
+        }
+    }
+
+    /// The race itself, run: one task stores an image again and again while another prunes the
+    /// folder as an update's run does. Every store must succeed. Before the prune was held to
+    /// images this lost stores whenever the prune listed the folder during a write.
+    @Test("An image stored while its folder is being pruned is stored every time")
+    func aStoreBesideAPruneIsNotLost() async throws {
+        try await FigureTestImages.withLibrary { library in
+            let png = try FigureTestImages.png(width: 256, height: 256)
+            #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_2000.png"))
+            let pruning = Task.detached {
+                var passes = 0
+                while !Task.isCancelled {
+                    library.removeImages(notIn: ["figure_1162.png", "figure_2000.png"], for: "frus1946v01")
+                    passes += 1
+                }
+                return passes
+            }
+            var lost = 0
+            for _ in 0..<400 where !library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png") {
+                lost += 1
+            }
+            pruning.cancel()
+            let passes = await pruning.value
+            // The prune has to have run beside the stores, or nothing was tried.
+            #expect(passes > 50, "the prune ran \(passes) times beside 400 stores")
+            #expect(lost == 0, "\(lost) of 400 stores were lost to the prune")
+        }
+    }
+
     @Test("A download that finished in an earlier process has its figure images fetched when its completion arrives")
     func anUntrackedCompletionFetchesTheFigures() async throws {
         try await FigureTestImages.withLibrary { library in

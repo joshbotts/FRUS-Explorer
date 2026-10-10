@@ -1148,6 +1148,8 @@ enum FigureImageFetch: Sendable, Equatable {
 ///   1.1 — #1516 review, round 1: the completion record
 ///   1.2 — FRUSCoreKit, part 1: `isSafeComponent` forwards to FRUSCoreKit's
 ///          `FRUSURLScheme.isSafeComponent`, which the reader's figure URLs are checked by
+///   1.3 — 2026-10-09: `removeImages(notIn:for:)` removes images only, so a prune no longer
+///          takes the temporary file of an image being written
 public struct FigureImageLibrary: Sendable {
 
     /// The app's volumes directory.
@@ -1272,10 +1274,18 @@ public struct FigureImageLibrary: Sendable {
 
     /// Removes the images of `volumeId` whose file names are not in `fileNames`: what an updated
     /// volume's text no longer names. The folder goes too when nothing is left to name.
+    ///
+    /// Images only, which is every name ending `.png` (`FigureImageName.fileName(forGraphic:)`
+    /// adds it to each). ``store(_:volumeId:fileName:)`` writes an image through a temporary file
+    /// in this folder, under a name no text gives, and a fetch stores from a task that does not
+    /// run on the download manager, so a run's prune can meet a write in progress. Removing the
+    /// temporary file fails the write: until the prune was held to images, an update that landed
+    /// while an image was in flight could lose that image to its own run's prune, and a store
+    /// beside a prune lost 211 times in 400 (`FigureImageDownloadTests`).
     func removeImages(notIn fileNames: Set<String>, for volumeId: String) {
         let folder = directory(for: volumeId)
         guard let present = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return }
-        for name in present where !fileNames.contains(name) {
+        for name in present where name.hasSuffix(".png") && !fileNames.contains(name) {
             try? FileManager.default.removeItem(at: folder.appendingPathComponent(name))
         }
         if fileNames.isEmpty { try? FileManager.default.removeItem(at: folder) }

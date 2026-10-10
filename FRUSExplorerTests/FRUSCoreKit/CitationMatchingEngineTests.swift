@@ -1691,13 +1691,14 @@ struct CitationLookupIndexedTests {
     #if !SWIFT_PACKAGE // reads the app's source
     @Test("Every citation engine the app builds reads the volumes directory at each lookup, never a list of volume ids taken when it is built (#1522)")
     func everyAppEngineReadsTheVolumesDirectory() throws {
-        let appRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
-        let files = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
+        // Both of the app's source trees (#1604): the engine is the kit's, and code there that
+        // built one over a list of ids would be the app's engine wherever the app called it.
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         var sites: [String] = []
         var listed: [String] = []
         var scanned = 0
-        for case let url as URL in files where url.pathExtension == "swift" {
+        for url in AppSourceTree.swiftFiles(in: repoRoot) {
             scanned += 1
             let source = try String(contentsOf: url, encoding: .utf8)
             var from = source.startIndex
@@ -1715,7 +1716,8 @@ struct CitationLookupIndexedTests {
                 from = arguments.endIndex
             }
         }
-        #expect(scanned > 100, "read only \(scanned) Swift files")
+        // 508 on 2026-10-09: 459 of the app's and 49 of the kit's.
+        #expect(scanned > 400, "read only \(scanned) Swift files")
         // Boot (FRUSExplorerApp) and `AppState.refreshReadOnlyStores`.
         #expect(sites.count == 2, "\(sites)")
         #expect(listed.isEmpty, "built over a list of ids: \(listed)")
