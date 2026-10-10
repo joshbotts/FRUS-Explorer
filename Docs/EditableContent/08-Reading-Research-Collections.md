@@ -1598,11 +1598,27 @@ Denominator: the era’s volumes carry %1$@ in all, and this table — every uni
 <!-- END SOURCE: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 #### ranked by meaning (on-device model), not by keywords — the…
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 165–166 | key: appendix.scope.semantic -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 190–191 | key: appendix.scope.semantic -->
 
 ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear
 
 <!-- END SOURCE: appendix.scope.semantic -->
+
+#### ranked inside a set of %@, not across the whole series
+<!-- #1577 lane 1 (2026-10-10): the method appendix's second phrase for a Meaning search that ran inside
+     a document set, after the phrase above. %@ is the set's size with its noun ("212 documents").
+     The second text is for a set that held no documents. -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 319–320 | key: appendix.scope.semantic.within %@ -->
+
+ranked inside a set of %@, not across the whole series
+
+<!-- END SOURCE: appendix.scope.semantic.within %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 199–200 | key: appendix.scope.semantic.within.empty -->
+
+ranked inside a set that held no documents
+
+<!-- END SOURCE: appendix.scope.semantic.within.empty -->
 
 #### Corpus: the map is a bundled artifact covering all %1$lld…
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 152–153 | key: semanticMap.export.caveat.corpus.whole %lld -->

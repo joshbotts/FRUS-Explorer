@@ -45,6 +45,8 @@ import Foundation
 ///   1.0 — M-2: initial implementation
 ///   1.1 — M-2 commit 3: `describe(_:)` — the decoder this type's overview promised, so the
 ///          method appendix can print a scope as prose without the trail comparing prose
+///   1.2 — #1577 lane 1: `semanticSignature(for:)` — a Meaning search inside a document set signs
+///          the set, and `describe(_:)` says so
 enum SearchScopeSignature {
 
     /// The signature for `parameters`.
@@ -58,6 +60,29 @@ enum SearchScopeSignature {
     /// keyword grammar fails closed and prints it verbatim rather than paraphrasing a semantic
     /// run as a keyword scope.
     static let semanticRouteSignature = "route=semantic;engine=on-device"
+
+    /// The signature a Meaning search records (#1577 lane 1).
+    ///
+    /// With no document set this is ``semanticRouteSignature``, byte for byte, so every row
+    /// written before the change still compares equal to one written after it. Inside a set — an
+    /// applied working corpus, a project's History scope — it adds the set as `docs=`, in the
+    /// keyword grammar's own form (`<count>/<digest>`, or `empty`): two Meaning searches of one
+    /// question inside different sets ranked different documents, and must not sign alike.
+    ///
+    /// It still begins `route=semantic`, which is what `QueryMethodAppendix` and
+    /// ``describe(_:)`` read, in this build and in every earlier one. An earlier build therefore
+    /// prints such a row as a Meaning search and ignores the set, which is true as far as it goes;
+    /// it never reads the row as a keyword search, whose zero would mean a term is absent.
+    ///
+    /// Only the set is signed. The other filters narrow a Meaning list after ranking and are not
+    /// recorded for a Meaning row today, with or without a set.
+    ///
+    /// - Parameter parameters: The executed search's parameters.
+    /// - Returns: The signature.
+    static func semanticSignature(for parameters: SearchParameters) -> String {
+        guard parameters.documentIds != nil else { return semanticRouteSignature }
+        return semanticRouteSignature + ";docs=\(idComponent(parameters.documentIds))"
+    }
 
     static func signature(for parameters: SearchParameters) -> String {
         // Fixed order, written out rather than derived, so a reordering is a visible diff.
@@ -162,8 +187,18 @@ enum SearchScopeSignature {
         // The Meaning route, stated as method rather than decoded as a keyword scope: what the
         // reader must know is that this was NOT a term search, so a zero is not term absence.
         if signature.hasPrefix("route=semantic") {
-            return [String(localized: "appendix.scope.semantic",
-                           defaultValue: "ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear")]
+            var phrases = [String(localized: "appendix.scope.semantic",
+                                  defaultValue: "ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear")]
+            // #1577 lane 1: the set a Meaning search ranked inside. A part this decoder does not
+            // know is passed over, as an earlier build passes over this one.
+            let documents = signature.split(separator: ";")
+                .first { $0.hasPrefix("docs=") }
+                .map { String($0.dropFirst("docs=".count)) }
+            phrases += countPhrase(documents,
+                                   some: { Self.rankedInsidePhrase(documents: $0) },
+                                   empty: String(localized: "appendix.scope.semantic.within.empty",
+                                                 defaultValue: "ranked inside a set that held no documents"))
+            return phrases
         }
         var pairs: [String: String] = [:]
         for part in signature.split(separator: ";") {
@@ -273,6 +308,17 @@ enum SearchScopeSignature {
             phrases.append(String(localized: "appendix.scope.project", defaultValue: "gated to a project"))
         }
         return phrases
+    }
+
+    /// "ranked inside a set of 212 documents, not across the whole series" — what the appendix
+    /// says of a Meaning search that ran inside a document set.
+    ///
+    /// - Parameter documents: The set's size as the signature recorded it.
+    /// - Returns: The phrase.
+    private static func rankedInsidePhrase(documents: Int) -> String {
+        String(format: String(localized: "appendix.scope.semantic.within %@",
+                              defaultValue: "ranked inside a set of %@, not across the whole series"),
+               CountCopy.documents(documents))
     }
 
     /// Renders a `count/digest`, `empty` or `none` component. `none` is no constraint and yields

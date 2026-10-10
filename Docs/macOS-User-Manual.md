@@ -464,7 +464,7 @@ Once you have run a saved search, the app watches it: when the index has grown s
 
 Two reusable kinds of scope, both managed in Settings and both built for reproducibility:
 
-**A working corpus** is a fixed set of *documents* you capture once and then work inside. Run a search, then **Save as Working Corpus**: the current results freeze as a named set you apply from the search filters (**My Working Corpora**) — every later search then runs only inside it. A corpus saved from a Meaning list (Section 7.11a) is recorded as *Meaning search — the N closest matches*; its save sheet says the documents are the closest matches and not every document on your subject, and the corpus lists mark it as a capture that stopped short of every match. While a corpus is applied, a banner under the query field reads *Inside “name”*; its ✕, or **Clear working corpus** under **My Working Corpora**, returns you to the full scope. The set is fixed at capture, which is what makes counts taken inside it reproducible: re-running the query later may find different documents, but the corpus will not change. Corpora sync whole to your other devices, and every screen that shows one states how much of it is indexed here ("142 of 267 documents indexed on this device"), so a corpus means the same thing everywhere. Manage them in **Settings → Research → Working Corpora**; you can also capture one graphically, by lassoing a region of the semantic map (Section 15.6).
+**A working corpus** is a fixed set of *documents* you capture once and then work inside. Run a search, then **Save as Working Corpus**: the current results freeze as a named set you apply from the search filters (**My Working Corpora**) — every later search then runs only inside it, in both search modes: a keyword search matches only the corpus's documents, and a Meaning search ranks them against your question and lists no document outside it (Section 7.11a). A corpus saved from a Meaning list (Section 7.11a) is recorded as *Meaning search — the N closest matches*; its save sheet says the documents are the closest matches and not every document on your subject, and the corpus lists mark it as a capture that stopped short of every match. While a corpus is applied, a banner under the query field reads *Inside “name”*; its ✕, or **Clear working corpus** under **My Working Corpora**, returns you to the full scope. The set is fixed at capture, which is what makes counts taken inside it reproducible: re-running the query later may find different documents, but the corpus will not change. Corpora sync whole to your other devices, and every screen that shows one states how much of it is indexed here ("142 of 267 documents indexed on this device"), so a corpus means the same thing everywhere. Manage them in **Settings → Research → Working Corpora**; you can also capture one graphically, by lassoing a region of the semantic map (Section 15.6).
 
 **A volume scope** is a named, reusable set of *volumes* — every volume covering a crisis, a region, an administration, a syllabus — applied anywhere the app scopes work: the Search filters, the analytics scope menus, the Word Cloud picker, and the About the Series dashboards. Manage them in **Settings → Research → Volume Scopes**: the editor picks members from the whole manifest, grouped by subseries, with a title filter, per-subseries Add All / Remove All, and an honest footer ("N volumes selected · M indexed" — undownloaded members stay in the scope and take effect once indexed). The **Add Volumes By…** menu adds members in bulk by facet — **Subject…**, **Person…**, **Manifest Tag…**, or **Coverage Years / Editor…** — and facets only ever *add*, never remove. Applying a scope is a **snapshot**: it copies the scope's currently-indexed members into the target's volume picker, so later edits don't retroactively change a search until you re-apply. Wherever a scope has no indexed members yet, the app says so rather than quietly running unscoped under the scope's name.
 
@@ -486,7 +486,9 @@ Like every semantic surface it is **experimental**: its quality on nineteenth-ce
 
 The Search window carries the same **Keywords | Meaning** control beside the query field (present
 once the semantic stack is available). Meaning mode behaves as on iPad and iPhone: full result
-rows with prose excerpts and **Semantic match · N%** scores; filters intersected (with the strip
+rows with prose excerpts and **Semantic match · N%** scores; the ranking run inside an applied
+working corpus or a project's **History** scope, where one is set, and across the whole series
+otherwise; the other filters intersected after the ranking (with the strip
 above the results disclosing what they removed, and that beyond-library matches are checked
 against volume scope only); a separate "In volumes you have not downloaded" section with
 Download Volume buttons; sorting, paging and checklist unchanged; a corpus saved from the list
@@ -495,6 +497,29 @@ Reading picker (Timeline, Concordance, Collocates) disabled, the "Search in" sco
 recorded searches carrying a route marker so the method appendix never misdescribes them. Saved
 Searches always run as keyword searches, and so does a search handed over from elsewhere in the
 app (Find all mentions, a topic, a chart's documents link). The mode resets to Keywords each session.
+
+**Inside a working corpus or a History scope.** With a corpus applied (Section 7.9), or **History**
+chosen for the active project in the filters, a Meaning search scores every document in the set
+against your question and lists the closest, up to 100. No document outside the set is listed,
+however close it is. The strip says where the ranking ran: *ranked by what your question means,
+inside the 212 documents you are searching within*. It also counts the documents in the set that
+could not be ranked, in two kinds. Some have no match data at all: front matter and chapter
+headings never do, and a document added to a volume after this version of the app was built has
+none until the app is updated. Others are in a volume whose match file is not on this Mac;
+**Download Missing Vectors** in **Settings → Volumes & Storage** fetches the files for the volumes
+you have downloaded, and while every one of them is already downloading the strip says that
+instead. An edition pair (*1951–1954, Iran* and its second edition) is listed as two rows here,
+where a search of the whole series folds the pair into one. A date range, a volume scope and the
+other filters still narrow the ranked list afterwards: they keep those of the closest 100 that
+pass, and do not go looking for the closest 100 that would. In the method appendix such a search
+reads *ranked inside a set of 212 documents, not across the whole series*.
+
+**A close match this Mac cannot list is counted.** In a search of the whole series and inside a
+set alike, the match data comes with the app and a volume is the copy you downloaded, so the two
+can differ: upstream may have added a document to a volume since you downloaded it, or removed
+one. A close match of that kind has no row to show, and the strip says how many there were: *2
+close matches are not listed: this device's index does not hold those documents.* Updating the
+volume in **Settings → Volumes & Storage** brings a document that was added.
 
 ---
 

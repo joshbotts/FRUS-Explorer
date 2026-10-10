@@ -114,13 +114,13 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1080–1081 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1086–1087 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1141–1142 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1145–1146 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1768–1770 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1772–1774 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1773–1775 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1777–1779 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -766,31 +766,146 @@ Ranked by meaning, not keywords, across the whole series — your exact words ma
      volume's fetch failed; the second otherwise. Both search surfaces read them from
      SemanticUnscoredCopy. %@ in each is the volume count with its noun ("1 volume", "12 volumes");
      the first was "%lld volumes" until review round 1 (2026-09-30), which read "1 volumes". -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 130–131 | key: search.semantic.empty.warming.v2 %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 200–201 | key: search.semantic.empty.warming.v2 %@ -->
 
 Match files for %@ are still downloading in the background. Searching again in a moment may find more.
 
 <!-- END SOURCE: search.semantic.empty.warming.v2 %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 135–136 | key: search.semantic.empty.notFetching %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 205–206 | key: search.semantic.empty.notFetching %@ -->
 
 Match files for %@ are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search.
 
 <!-- END SOURCE: search.semantic.empty.notFetching %@ -->
 
+<!-- #1577 lane 1 (2026-10-10): the sentence under "No semantic matches yet" when the search ran
+     inside a document set. A set is ranked whole, with no threshold, so an empty list there never
+     means that nothing was close, and each of the six says what did happen: the set is empty on
+     this device; the closest matches were ranked and the other filters removed them; they were
+     ranked, no filter removed any, and none is indexed here (a set made only of documents this
+     device's copy of a volume does not hold); no document in the set has match data; the match
+     files are downloading; or they are not on the device. The first is also the pre-search prompt for an
+     empty set. In the last two %@ is the volume count with its noun. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 293–294 | key: search.semantic.empty.set.none -->
+
+The set you are searching within holds no documents on this device, so there is nothing to rank.
+
+<!-- END SOURCE: search.semantic.empty.set.none -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 298–299 | key: search.semantic.empty.set.filtered -->
+
+None of the closest matches inside the documents you are searching within passes your other filters.
+
+<!-- END SOURCE: search.semantic.empty.set.filtered -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 300–301 | key: search.semantic.empty.set.notIndexed -->
+
+None of the closest matches inside the documents you are searching within is indexed on this device.
+
+<!-- END SOURCE: search.semantic.empty.set.notIndexed -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 304–305 | key: search.semantic.empty.set.noVectors -->
+
+None of the documents you are searching within can be ranked by meaning: the app has no match data for them. Front matter and chapter headings never have any.
+
+<!-- END SOURCE: search.semantic.empty.set.noVectors -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 309–310 | key: search.semantic.empty.set.warming %@ -->
+
+Match files for %@ are still downloading in the background. Searching again in a moment may rank the documents you are searching within.
+
+<!-- END SOURCE: search.semantic.empty.set.warming %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 314–315 | key: search.semantic.empty.set.notFetching %@ -->
+
+The documents you are searching within could not be ranked: match files for %@ are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.
+
+<!-- END SOURCE: search.semantic.empty.set.notFetching %@ -->
+
 ---
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 42–43 | key: search.meaning.strip.base -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 106–107 | key: search.meaning.strip.base -->
 
 Meaning search (experimental): ranked by what your question means, across the whole series — your exact words may not appear. Front matter and chapter headings are not reachable this way.
 
 <!-- END SOURCE: search.meaning.strip.base -->
 
+<!-- #1577 lane 1 (2026-10-10): a Meaning search inside a document set (an applied working corpus,
+     a project's History scope) ranks that set's members and no others, so the strip's opening
+     names the set where it said "across the whole series". The block above is still what a search
+     of the whole series shows. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 115–116 | key: search.meaning.strip.base.within %@ -->
+
+Meaning search (experimental): ranked by what your question means, inside the %@ you are searching within — your exact words may not appear. Front matter and chapter headings are not reachable this way. *(%@ is the set's size with its noun, “1 document” or “212 documents”.)*
+
+<!-- END SOURCE: search.meaning.strip.base.within %@ -->
+
+<!-- The same opening when the set is empty here: a History scope with nothing in it yet, or a
+     corpus and a History scope with no document in common. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 111–112 | key: search.meaning.strip.base.emptySet -->
+
+Meaning search (experimental): the set you are searching within holds no documents on this device, so there is nothing to rank.
+
+<!-- END SOURCE: search.meaning.strip.base.emptySet -->
+
+<!-- #1577 lane 1 (2026-10-10): appended to the strip, in a search of the whole series and inside a set
+     alike, when some of the closest matches are in a volume this device has indexed and its index
+     holds no row for them. The match data is the build's and the volume is whatever the device
+     downloaded, so the two can disagree: a document added to a volume since it was downloaded, or
+     removed since the build's match data was made. Such a match was dropped without a word, or
+     counted under "Your filters removed" when any filter was set. One and many forms; %@ is the
+     count. It names no cause, because the app cannot tell which applies. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 245–246 | key: search.meaning.strip.notIndexed.one -->
+
+%@ close match is not listed: this device's index does not hold that document.
+
+<!-- END SOURCE: search.meaning.strip.notIndexed.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 247–248 | key: search.meaning.strip.notIndexed.many -->
+
+%@ close matches are not listed: this device's index does not hold those documents.
+
+<!-- END SOURCE: search.meaning.strip.notIndexed.many -->
+
+<!-- Appended inside a set when some of its documents have no match data at all. One and many
+     forms; %@ is the count. Kept short: it follows the opening, which has just said that front
+     matter and chapter headings are not reachable, and on an iPhone the strip sits above the
+     results. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 265–266 | key: search.meaning.strip.withoutVector.one -->
+
+%@ document in the set has no match data and cannot be ranked.
+
+<!-- END SOURCE: search.meaning.strip.withoutVector.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 267–268 | key: search.meaning.strip.withoutVector.many -->
+
+%@ documents in the set have no match data and cannot be ranked.
+
+<!-- END SOURCE: search.meaning.strip.withoutVector.many -->
+
+<!-- Appended inside a set when some of its documents are in volumes whose match files are not
+     on the device. Two texts, by #1527's rule: the first only while every such volume's file is
+     really downloading, the second otherwise. They differ from the corpus-wide pair below in two
+     ways: the count is of the reader's own documents ("12 documents", not "12 possible matches"),
+     and the control named is Download Missing Vectors, which fetches files for downloaded volumes.
+     %1$@ is the documents with their noun and %2$@ the volumes with theirs. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 222–223 | key: search.meaning.strip.unranked.downloading %@ %@ -->
+
+%1$@ in %2$@ could not be ranked yet; their match files are downloading.
+
+<!-- END SOURCE: search.meaning.strip.unranked.downloading %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 227–228 | key: search.meaning.strip.unranked.notFetching %@ %@ -->
+
+%1$@ in %2$@ could not be ranked: their match files are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.
+
+<!-- END SOURCE: search.meaning.strip.unranked.notFetching %@ %@ -->
+
 <!-- Appended to the strip when matches land in undownloaded volumes while non-volume filters are
      active (#1127). The claim is precise: the volume scope IS checked for those matches, the other
      filters are NOT — a rewrite that says "filters are ignored" would claim too much, one that
      stays silent would claim too little. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 53–54 | key: search.meaning.strip.beyondUnchecked -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 74–75 | key: search.meaning.strip.beyondUnchecked -->
 
 Matches in volumes you have not downloaded are checked against your volume scope only, not your other filters.
 
@@ -807,13 +922,13 @@ Matches in volumes you have not downloaded are checked against your volume scope
 *Owner decisions behind the wording (2026-09-17): the prefix row warns that a long prefix misses forms, because it is matched against word stems (Q6); the NEAR row says OR, NOT and parentheses cannot go inside and that only NOT NEAR(…) excludes, and describes no fallback (Q7); there is no person note (Q1); and in Meaning mode the Meaning-mode note replaces the rows (Q3).*
 
 #### 1. All the words — `berlin crisis`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .allWords | lines: 341–342 | key: search.tips.allWords.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .allWords | lines: 367–368 | key: search.tips.allWords.detail | shared: iOS+macOS (single edit point) -->
 
 Finds documents containing every word, in any order.
 
 <!-- END SOURCE: search.tips.allWords.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .allWords | lines: 340–340 | key: search.tips.allWords.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .allWords | lines: 366–366 | key: search.tips.allWords.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `berlin crisis`, before the detail. Name every symbol in words.*
 
@@ -822,13 +937,13 @@ berlin crisis
 <!-- END SOURCE: search.tips.allWords.spoken -->
 
 #### 2. Other forms of a word — `negotiate`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .stemming | lines: 346–347 | key: search.tips.stemming.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .stemming | lines: 372–373 | key: search.tips.stemming.detail | shared: iOS+macOS (single edit point) -->
 
 Each word also matches its other forms, so negotiate finds negotiated and negotiations.
 
 <!-- END SOURCE: search.tips.stemming.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .stemming | lines: 345–345 | key: search.tips.stemming.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .stemming | lines: 371–371 | key: search.tips.stemming.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `negotiate`, before the detail. Name every symbol in words.*
 
@@ -837,13 +952,13 @@ negotiate
 <!-- END SOURCE: search.tips.stemming.spoken -->
 
 #### 3. A phrase — `"cold war"`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .phrase | lines: 351–352 | key: search.tips.phrase.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .phrase | lines: 377–378 | key: search.tips.phrase.detail | shared: iOS+macOS (single edit point) -->
 
 Words in double quotation marks, straight or curly, must appear together and in that order. A phrase cannot contain quotation marks of its own.
 
 <!-- END SOURCE: search.tips.phrase.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .phrase | lines: 350–350 | key: search.tips.phrase.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .phrase | lines: 376–376 | key: search.tips.phrase.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `"cold war"`, before the detail. Name every symbol in words.*
 
@@ -852,13 +967,13 @@ quote, cold war, quote
 <!-- END SOURCE: search.tips.phrase.spoken -->
 
 #### 4. Either word — `rusk OR bundy`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .either | lines: 356–357 | key: search.tips.either.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .either | lines: 382–383 | key: search.tips.either.detail | shared: iOS+macOS (single edit point) -->
 
 Finds documents with either word. OR divides everything before it from everything after it, so use parentheses to limit it.
 
 <!-- END SOURCE: search.tips.either.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .either | lines: 355–355 | key: search.tips.either.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .either | lines: 381–381 | key: search.tips.either.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `rusk OR bundy`, before the detail. Name every symbol in words.*
 
@@ -867,13 +982,13 @@ rusk OR bundy
 <!-- END SOURCE: search.tips.either.spoken -->
 
 #### 5. Searching for and, or, not — `"will not intervene"`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .operatorWords | lines: 362–363 | key: search.tips.operatorWords.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .operatorWords | lines: 388–389 | key: search.tips.operatorWords.detail | shared: iOS+macOS (single edit point) -->
 
 AND, OR and NOT work in any case, so put a phrase that contains and, or or not in quotation marks.
 
 <!-- END SOURCE: search.tips.operatorWords.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .operatorWords | lines: 360–361 | key: search.tips.operatorWords.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .operatorWords | lines: 386–387 | key: search.tips.operatorWords.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `"will not intervene"`, before the detail. Name every symbol in words.*
 
@@ -882,13 +997,13 @@ quote, will not intervene, quote
 <!-- END SOURCE: search.tips.operatorWords.spoken -->
 
 #### 6. Leaving a word out — `vietnam -laos`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exclude | lines: 367–368 | key: search.tips.exclude.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exclude | lines: 393–394 | key: search.tips.exclude.detail | shared: iOS+macOS (single edit point) -->
 
 A minus sign touching a word, or NOT before it, leaves out documents containing that word, wherever it sits among the words typed with it.
 
 <!-- END SOURCE: search.tips.exclude.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .exclude | lines: 366–366 | key: search.tips.exclude.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .exclude | lines: 392–392 | key: search.tips.exclude.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `vietnam -laos`, before the detail. Name every symbol in words.*
 
@@ -897,13 +1012,13 @@ vietnam, minus sign, laos
 <!-- END SOURCE: search.tips.exclude.spoken -->
 
 #### 7. Exclusions and OR — `(cold OR war) -korea`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .excludeAcrossOr | lines: 373–374 | key: search.tips.excludeAcrossOr.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .excludeAcrossOr | lines: 399–400 | key: search.tips.excludeAcrossOr.detail | shared: iOS+macOS (single edit point) -->
 
 An exclusion does not reach across OR. To exclude a word from every alternative, put the alternatives in parentheses.
 
 <!-- END SOURCE: search.tips.excludeAcrossOr.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .excludeAcrossOr | lines: 371–372 | key: search.tips.excludeAcrossOr.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .excludeAcrossOr | lines: 397–398 | key: search.tips.excludeAcrossOr.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `(cold OR war) -korea`, before the detail. Name every symbol in words.*
 
@@ -912,13 +1027,13 @@ open parenthesis, cold OR war, close parenthesis, minus sign, korea
 <!-- END SOURCE: search.tips.excludeAcrossOr.spoken -->
 
 #### 8. Groups — `(aqaba OR tiran) navig*`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .group | lines: 379–380 | key: search.tips.group.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .group | lines: 405–406 | key: search.tips.group.detail | shared: iOS+macOS (single edit point) -->
 
 Parentheses group alternatives, and the group must match along with the words beside it.
 
 <!-- END SOURCE: search.tips.group.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .group | lines: 377–378 | key: search.tips.group.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .group | lines: 403–404 | key: search.tips.group.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `(aqaba OR tiran) navig*`, before the detail. Name every symbol in words.*
 
@@ -927,13 +1042,13 @@ open parenthesis, aqaba OR tiran, close parenthesis, navig, star
 <!-- END SOURCE: search.tips.group.spoken -->
 
 #### 9. Leaving a group out — `vietnam -(laos OR cambodia)`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .excludeGroup | lines: 385–386 | key: search.tips.excludeGroup.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .excludeGroup | lines: 411–412 | key: search.tips.excludeGroup.detail | shared: iOS+macOS (single edit point) -->
 
 NOT, or a minus sign touching the parenthesis, leaves out everything the group matches. A minus sign followed by a space is ignored.
 
 <!-- END SOURCE: search.tips.excludeGroup.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .excludeGroup | lines: 383–384 | key: search.tips.excludeGroup.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .excludeGroup | lines: 409–410 | key: search.tips.excludeGroup.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `vietnam -(laos OR cambodia)`, before the detail. Name every symbol in words.*
 
@@ -942,7 +1057,7 @@ vietnam, minus sign, open parenthesis, laos OR cambodia, close parenthesis
 <!-- END SOURCE: search.tips.excludeGroup.spoken -->
 
 #### 10. Prefixes — `negoti*`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .prefix | lines: 390–391 | key: search.tips.prefix.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .prefix | lines: 416–417 | key: search.tips.prefix.detail | shared: iOS+macOS (single edit point) -->
 
 Finds words beginning with these letters. Keep the prefix short, because it is matched against word stems: negotiat* misses negotiations, which negoti* finds.
 
@@ -950,7 +1065,7 @@ Finds words beginning with these letters. Keep the prefix short, because it is m
 
 Note: reworded in place before shipping (#1299 follow-up). It said "negoti* finds negotiations, but negotiat* finds nothing", which a reader who tried it would find false: `negotiat*` still matches a word whose own stem keeps those letters — *negotiatory*, printed 21 times in the shipped corpus, and a run of misspellings such as *negotiatons*. What it misses is every form whose stem is *negoti*: negotiate, negotiated, negotiating, negotiations, negotiator.
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .prefix | lines: 389–389 | key: search.tips.prefix.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .prefix | lines: 415–415 | key: search.tips.prefix.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `negoti*`, before the detail. Name every symbol in words.*
 
@@ -959,13 +1074,13 @@ negoti, star
 <!-- END SOURCE: search.tips.prefix.spoken -->
 
 #### 11. Words near each other — `NEAR(military europe, 5)`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .near | lines: 396–397 | key: search.tips.near.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .near | lines: 422–423 | key: search.tips.near.detail | shared: iOS+macOS (single edit point) -->
 
 Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes. OR, NOT, AND, a minus sign and parentheses cannot go inside one, and a search that puts them there is refused rather than run as something else. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.
 
 <!-- END SOURCE: search.tips.near.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .near | lines: 394–395 | key: search.tips.near.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .near | lines: 420–421 | key: search.tips.near.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `NEAR(military europe, 5)`, before the detail. Name every symbol in words.*
 
@@ -974,7 +1089,7 @@ NEAR, open parenthesis, military europe, comma, 5, close parenthesis
 <!-- END SOURCE: search.tips.near.spoken -->
 
 #### 12. A word without stemming — `=containment`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exactWord | lines: 401–402 | key: search.tips.exactWord.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exactWord | lines: 427–428 | key: search.tips.exactWord.detail | shared: iOS+macOS (single edit point) -->
 
 Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent, and/or punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.
 
@@ -982,7 +1097,7 @@ Turns off stemming for this word, so containment no longer matches contain or co
 
 Note: reworded in place before shipping (#1299 follow-up). It said the mark "matches the word only as you typed it", but the exact-word filter folds capitalization, a single accent and punctuation at either end — `=Hull`, typed for Cordell Hull, still counts every ship's hull — so a reader could have cited a count as capitalized-only when it was not. It also left out NEAR(…): inside one the mark is dropped, and `NEAR(=containment policy, 5)` still finds *containers policy*. Round 2 added the last case, which both user manuals and the Corpus Analytics Multiple words row already named: a word the index splits into several terms has no single word to filter on, so `=anti-Communist` still counts *anti-Communists* (the corpus prints 4,578 of the one and 185 of the other). `SearchTipsTests` requires the row to name it.
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .exactWord | lines: 400–400 | key: search.tips.exactWord.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .exactWord | lines: 426–426 | key: search.tips.exactWord.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `=containment`, before the detail. Name every symbol in words.*
 
@@ -991,7 +1106,7 @@ equals sign, containment
 <!-- END SOURCE: search.tips.exactWord.spoken -->
 
 #### 13. A search needs a word — `-korea`
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .needsAWord | lines: 406–407 | key: search.tips.needsAWord.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .needsAWord | lines: 432–433 | key: search.tips.needsAWord.detail | shared: iOS+macOS (single edit point) -->
 
 A search needs a word to find. A query made only of exclusions does not run, and an OR alternative made only of exclusions is left out and marked NOT APPLIED in the Query Inspector, unless its parentheses sit beside a word to search for.
 
@@ -999,7 +1114,7 @@ A search needs a word to find. A query made only of exclusions does not run, and
 
 Note: reworded in place before shipping (#1299 follow-up). Without the last clause it said every such alternative is left out, which steered a reader away from a query that works: `war (cold OR -korea)` is searched exactly — the *war* documents that mention *cold* or do not mention *korea* — and nothing is marked. `cold OR -korea`, `(cold OR -korea)` on its own, and `war OR (cold OR -korea)` still leave `-korea` out. The user manuals' §7.2 explain the whole rule.
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .needsAWord | lines: 405–405 | key: search.tips.needsAWord.spoken | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .needsAWord | lines: 431–431 | key: search.tips.needsAWord.spoken | shared: iOS+macOS (single edit point) -->
 
 *Spoken by VoiceOver in place of the example chip `-korea`, before the detail. Name every symbol in words.*
 
@@ -1012,28 +1127,28 @@ minus sign, korea
 *iOS and iPadOS show the dates note and the iOS scope note under the rows; the macOS panel shows the dates note and the macOS scope note. In Meaning mode both show the Meaning-mode note instead of the rows.*
 
 ##### Dates (both platforms)
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 467–468 | key: search.tips.note.dates | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 493–494 | key: search.tips.note.dates | shared: iOS+macOS (single edit point) -->
 
 A date filter keeps documents whose dates overlap the range you set, and leaves out documents with no date.
 
 <!-- END SOURCE: search.tips.note.dates -->
 
 ##### Search scope (iOS and iPadOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 470–471 | key: search.tips.note.scope.ios | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 496–497 | key: search.tips.note.scope.ios | shared: iOS+macOS (single edit point) -->
 
 Filters ▸ Search Scope sets what a search reads. Its defaults live in Settings ▸ Reading & Search ▸ Search, and a change made in Filters is not saved as a default.
 
 <!-- END SOURCE: search.tips.note.scope.ios -->
 
 ##### Search scope (macOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 473–474 | key: search.tips.note.scope.mac | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 499–500 | key: search.tips.note.scope.mac | shared: iOS+macOS (single edit point) -->
 
 The Search in chips set what this window searches. Their defaults live in Settings ▸ Reading & Search ▸ Search, and a change made with the chips is not saved as a default.
 
 <!-- END SOURCE: search.tips.note.scope.mac -->
 
 ##### Meaning mode (both platforms)
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 476–477 | key: search.tips.note.meaningMode | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 502–503 | key: search.tips.note.meaningMode | shared: iOS+macOS (single edit point) -->
 
 These tips are for Keywords search. A Meaning search reads your words as a whole, so quotation marks, AND, OR, NOT, a minus sign, parentheses, *, NEAR and = have no special effect.
 
@@ -1047,7 +1162,7 @@ Why it is true: a meaning search hands your words to the model as typed, and onl
 
 *Shown when a submitted keyword search holds nothing it can search for — for example `-korea`, or groups nested more than 32 deep. It replaced "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)" on iOS, where the same code also answered a search with document text, summaries and research notes all turned off; that case now has its own message, below. Keep the pointer to Search Tips: `SearchRefusalMessageTests` requires it. The "for example" is deliberate, because the same message also answers a query with nothing searchable in it at all, such as a lone quotation mark, for which neither reason is true. Both platforms show it under the title Search Error: on the Mac the Search window rendered no search error at all until #1299, so this message, the empty-scope message and the Meaning-mode errors had all been an empty result list there.*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 562–563 | key: search.error.refusedQuery | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 588–589 | key: search.error.refusedQuery | shared: iOS+macOS (single edit point) -->
 
 This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.
 
@@ -1067,7 +1182,7 @@ Order results by relevance or by document date
 
 *Shown when a submitted keyword search puts a boolean, a minus sign, a nested group or an unparseable distance inside a `NEAR(…)` — `NEAR(military OR europe, 5)`, `NEAR(military -europe, 5)`, `NEAR(military europe, 3.5)`. Until #1304 the app DEGRADED these: it dropped the NEAR keyword and searched the parentheses as an ordinary boolean group, so the distance was looked for as a word and a minus sign became a corpus-wide exclusion — a plausible count for a search nobody typed. The `%@` is the NEAR as the reader typed it, quoted back so they can see which one. Keep the sentence saying nothing was searched: the reader's next question is whether a partial search ran, and it did not.*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 569–570 | key: search.error.malformedNear %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 595–596 | key: search.error.malformedNear %@ | shared: iOS+macOS (single edit point) -->
 
 %@ cannot be searched as written: a NEAR(…) holds only words, phrases and prefixes, with an optional distance. OR, NOT, AND, a minus sign and parentheses cannot go inside one. Nothing was searched, because dropping the NEAR would run a different search.
 
@@ -1087,7 +1202,7 @@ No expression — %@ holds something a NEAR cannot: a boolean, a minus sign, a n
 
 *Shown on iPhone and iPad when a keyword search could run but Include document text, Include summaries and Include research notes under Filters ▸ Search Scope are all off, so there is nowhere to search. A query that cannot run gets the message above instead, whatever the scope. The same section's Include front matter toggle does not count and is usually still on, so the message names the three it means rather than saying every scope is off. Until #1299's follow-up it read "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)". Keep "Filters ▸ Search Scope" and the names of the three toggles, and do not say "every": `SearchRefusalMessageTests` requires all three. The Mac never shows it — its Search window stops a search with all three Search in chips off before it runs, with the macOS message below.*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 565–566 | key: search.error.emptyScope.ios | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 591–592 | key: search.error.emptyScope.ios | shared: iOS only -->
 
 Document text, summaries and research notes are all turned off, so there is nothing to search. Turn one on in Filters ▸ Search Scope.
 
@@ -1095,7 +1210,7 @@ Document text, summaries and research notes are all turned off, so there is noth
 
 #### A search with every Search in chip turned off (macOS)
 
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1328–1329 | key: search.error.emptyScope | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1345–1346 | key: search.error.emptyScope | shared: macOS only -->
 
 *Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
 
@@ -1115,7 +1230,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1591–1591 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1597–1597 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1128,28 +1243,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2516–2516 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2523–2523 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2505–2505 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2512–2512 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2512–2512 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2519–2519 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1181–1181 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1187–1187 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1158,7 +1273,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1206–1207 | key: search.moreActions.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1212–1213 | key: search.moreActions.help.v2 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. Replaces `search.moreActions.help`, which named neither the abbreviation lookup nor the tips.*
 
@@ -1167,7 +1282,7 @@ Save this search or its results, revisit saved searches, find a document by cita
 <!-- END SOURCE: search.moreActions.help.v2 -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2489–2489 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2496–2496 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1185,14 +1300,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 735–735 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 739–739 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 742–743 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 746–747 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1201,7 +1316,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2226–2226 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2230–2230 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1390,7 +1505,7 @@ Retry
 *The Search screen's explanatory text outside the Search Tips (§7.13) and the result-set copy §7 already carries: the filter and project-scope footers, the Meaning-mode prompts and notices, the facet panel's coverage lines, the collocation refusals, and the notice when a saved corpus had to be truncated.*
 
 #### The person filter was cleared — \(…) is no longer in the…
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 667–668 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 673–674 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.
@@ -1398,14 +1513,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1086–1087 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1090–1091 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1517–1518 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1521–1522 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 
@@ -1509,18 +1624,28 @@ Ask a question to search within the selected volumes.
 
 <!-- END SOURCE: search.prompt.meaning.scoped -->
 
+#### Ask a question to rank the %@ you are searching within by meaning.
+<!-- #1577 lane 1 (2026-10-10): the pre-search prompt in Meaning mode while a working corpus or a
+     project's History scope is applied, in place of the two prompts above. iPhone and iPad only;
+     the Mac window has no pre-search prompt. The Keywords prompts are unchanged. -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchMode.documentSetPrompt | lines: 176–177 | key: search.prompt.meaning.withinSet %@ -->
+
+Ask a question to rank the %@ you are searching within by meaning. *(%@ is the set's size with its noun, “1 document” or “212 documents”.)*
+
+<!-- END SOURCE: search.prompt.meaning.withinSet %@ -->
+
 #### %1$@ in %2$@ could not be scored…
 <!-- #1527 (2026-09-30): two texts, your option (a), by the same rule as the empty state's pair
      above. In each, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
      ("1 possible match", "1 volume"), from the forms below; the first was "%lld … %lld" until review
      round 1 (2026-09-30), which read "1 possible matches in 1 volumes". -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 109–110 | key: search.semantic.results.unscored.v2 %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 179–180 | key: search.semantic.results.unscored.v2 %@ %@ -->
 
 %1$@ in %2$@ could not be scored yet; their match files are downloading.
 
 <!-- END SOURCE: search.semantic.results.unscored.v2 %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 114–115 | key: search.semantic.results.unscored.notFetching %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 184–185 | key: search.semantic.results.unscored.notFetching %@ %@ -->
 
 %1$@ in %2$@ could not be scored. Try Download Vectors for Every Volume in Settings to enable scoring.
 

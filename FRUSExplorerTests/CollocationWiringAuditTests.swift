@@ -210,7 +210,12 @@ struct CollocationWiringAuditTests {
         // Anchored on the assignment, not on the call: the search and the whole-query count are
         // now started together with `async let`, so the fetch no longer appears inline here.
         let body = try #require(vm.range(of: "results = try await fetched"))
-        let after = String(vm[body.lowerBound...].prefix(1_600))
+        // The success path: from the assignment to the `catch` that ends it. A window of 1,600
+        // characters stood here until #1577 lane 1, whose timing lines pushed the bump past it;
+        // the bound is the path's own end now, so the catch's own bump can never satisfy this.
+        let tail = vm[body.lowerBound...]
+        let pathEnd = try #require(tail.range(of: "} catch {"))
+        let after = String(tail[..<pathEnd.lowerBound])
         // Bumped in the synchronous prefix, every `.task(id:)` keyed on it fires during the await —
         // against the PREVIOUS query's results, and never again.
         #expect(after.contains("executedSearchVersion &+= 1"),

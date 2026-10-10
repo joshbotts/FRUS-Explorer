@@ -691,6 +691,9 @@ final class SearchViewModel {
             // A browse fetches deeper than a keyword search because its rows are far smaller —
             // no `body_text`, since there are no terms to snippet against. See `filterOnlyHardLimit`.
             let fetchLimit = params.runsAsFilterOnly ? Self.filterOnlyHardLimit : Self.searchHardLimit
+            // #1577 lane 1: a search inside a document set is timed, for `SearchTimingLog`.
+            let clock = ContinuousClock()
+            let sent = clock.now
             async let fetched = searchService.search(parameters: params, limit: fetchLimit)
             async let counted: Int? = {
                 // A failed count must not fail the search. The header and the capture warning
@@ -699,6 +702,7 @@ final class SearchViewModel {
                 catch { return nil }
             }()
             results = try await fetched
+            let rowsTime = clock.now - sent
             // With the rows, not before the await: `resultSetScope` reads both, and until the rows are
             // replaced the ones on screen are the last search's, fetched under its ceiling (#1584).
             lastFetchLimit = fetchLimit
@@ -707,6 +711,11 @@ final class SearchViewModel {
             semanticDisclosure = nil
             semanticNeedsModel = false
             totalMatchCount = await counted
+            if let documentSet = params.documentIds {
+                SearchTimingLog.record(SearchTimingLog.GatedKeyword(
+                    setSize: documentSet.count, rowCount: results.count,
+                    rows: rowsTime, total: clock.now - sent))
+            }
             // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
             lastRenderedExpression = try? await searchService.matchExpressions(for: params).corpus
             // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
@@ -1006,8 +1015,9 @@ final class SearchViewModel {
                 // A Meaning run must not be stamped with an FTS-shaped scope signature — the
                 // appendix would decode it into "searched document text" claims. The route
                 // signature has no `mode=` key, so the fails-closed decoder prints it verbatim.
+                // Inside a document set it names the set as well (#1577 lane 1).
                 signatureOverride: lastRunWasSemantic
-                    ? SearchScopeSignature.semanticRouteSignature : nil,
+                    ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil,
                 projectId: projectId,
                 hasError: searchError != nil),
             anchor: &historyAnchor,
@@ -1065,6 +1075,9 @@ final class SearchViewModel {
         userTagCountScope = nil
         resultsAreSemantic = false
         searchSetAsideByModeSwitch = false
+        // #1577 lane 1: nor does the Meaning strip describe one.
+        semanticDisclosure = nil
+        beyondLibraryHits = []
     }
 
     // MARK: - Computed Properties
@@ -1107,6 +1120,14 @@ final class SearchViewModel {
     /// unique (`WorkingCorpus` says so — uniqueness cannot be guaranteed across CloudKit devices),
     /// so a by-name lookup could resolve the wrong corpus's truncation onto the applied one.
     var appliedWorkingCorpusTruncation: WorkingCorpus.CaptureTruncation?
+
+    /// How many documents the next search would run inside, or `nil` when no document set is
+    /// applied: the live gate's size, an applied working corpus intersected with the project's
+    /// History scope (#1577 lane 1).
+    ///
+    /// The Meaning strip and the pre-search prompt read it to say where a Meaning search will
+    /// rank. Zero is a set that holds nothing, which is not the same as no set.
+    var documentSetSize: Int? { searchParameters.documentIds?.count }
 
     /// Clears any applied working corpus.
     func clearWorkingCorpus() {

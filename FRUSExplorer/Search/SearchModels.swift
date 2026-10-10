@@ -151,6 +151,32 @@ enum SearchMode: String, CaseIterable {
                           defaultValue: "Ask a question to search within the selected volumes.")
         }
     }
+
+    /// The pre-search prompt while a document set is applied, or `nil` where ``initialPrompt(scoped:)``
+    /// still stands (#1577 lane 1).
+    ///
+    /// A Meaning search ranks inside an applied working corpus or a project's History scope, so
+    /// "search the FRUS corpus by meaning" names the wrong extent there, and the prompt gives the
+    /// set's size instead. It outranks the volume prompt: the set is what the ranking runs inside,
+    /// and a volume scope narrows the ranked list afterwards.
+    ///
+    /// `nil` in Keywords mode, whose prompt is left as it was. A keyword search inside a corpus is
+    /// named by the banner above the results, and its two strings are not this change's to reword.
+    ///
+    /// - Parameter size: How many documents the next search would run inside, or `nil` when no
+    ///   document set is applied.
+    /// - Returns: The prompt, or `nil` to use ``initialPrompt(scoped:)``.
+    func documentSetPrompt(size: Int?) -> String? {
+        guard self == .meaning, let size else { return nil }
+        guard size > 0 else {
+            return SemanticUnscoredCopy.emptyInsideSet(setSize: 0, ranked: 0, filteredOut: 0,
+                                                       volumes: 0, downloading: 0)
+        }
+        return String(format: String(
+            localized: "search.prompt.meaning.withinSet %@",
+            defaultValue: "Ask a question to rank the %@ you are searching within by meaning."),
+            CountCopy.documents(size))
+    }
 }
 
 enum SearchSortOrder: CaseIterable {
