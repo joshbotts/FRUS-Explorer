@@ -27,6 +27,8 @@ public enum TaxonomyRefusal: Error, Equatable, Sendable, CustomStringConvertible
     /// the new list. `lost` holds them, sorted.
     case slugsLost(lost: [String], existing: Int)
 
+    /// What the run prints after "Refusing to write": what was found, and for a list that has
+    /// lost slugs, what to do if the loss is real.
     public var description: String {
         switch self {
         case .noEntries:
@@ -65,7 +67,7 @@ public enum TaxonomyRefusal: Error, Equatable, Sendable, CustomStringConvertible
 ///    slug (`manifest.json`), so a list that keeps its size and loses its slugs breaks the join
 ///    as surely as an empty one. Measured against the file at the output path; with no file
 ///    there, or one that does not decode, this rule has nothing to compare and the first two
-///    stand alone.
+///    stand alone. Of a file with fewer than ten slugs, any loss is more than one in ten.
 ///
 /// Version history:
 ///   1.0 — #1600: initial implementation

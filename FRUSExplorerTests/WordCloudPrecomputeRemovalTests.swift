@@ -32,7 +32,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — removal of the precompute
-///   1.1 — #1604: the scan reads `FRUSCoreKit/` and `WordCloudKit/` as well as `FRUSExplorer/`
+///   1.1 — #1604: the scan reads every directory the app compiles, where it read `FRUSExplorer/`
 @Suite("The word-cloud precompute is removed")
 struct WordCloudPrecomputeRemovalTests {
 
@@ -42,20 +42,16 @@ struct WordCloudPrecomputeRemovalTests {
 
     private static var appRoot: URL { repoRoot.appending(path: "FRUSExplorer") }
 
-    /// Every Swift file the machinery could come back in: the app's two source trees
-    /// (`AppSourceTree`) and `WordCloudKit/`, the tokenizers a precompute would run, which the app
-    /// compiles too.
+    /// Every Swift file the app compiles (`AppSourceTree.compiledDirectories`), by its path from the
+    /// repository root.
     ///
     /// Until #1604 this walked `FRUSExplorer/` alone. The precompute was enqueued at the end of
     /// indexing a volume, and `IndexingPipeline.swift` has been `FRUSCoreKit/`'s since 2026-10-05,
     /// so the scan had stopped reading the file likeliest to bring it back.
     private static func sources() throws -> [(String, String)] {
-        let wordCloudKit = (FileManager.default.enumerator(at: repoRoot.appending(path: "WordCloudKit"),
-                                                           includingPropertiesForKeys: nil)?
-            .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? [])
-            .sorted { $0.path < $1.path }
-        return try (AppSourceTree.swiftFiles(in: repoRoot) + wordCloudKit)
-            .map { ($0.lastPathComponent, try String(contentsOf: $0, encoding: .utf8)) }
+        try AppSourceTree.swiftFiles(in: repoRoot, directories: AppSourceTree.compiledDirectories).map {
+            (String($0.path.dropFirst(repoRoot.path.count + 1)), try String(contentsOf: $0, encoding: .utf8))
+        }
     }
 
     /// Nothing may reference the machinery — a leftover call site is how a removed feature comes
@@ -63,19 +59,17 @@ struct WordCloudPrecomputeRemovalTests {
     @Test("No code references the retired precompute machinery")
     func machineryIsGone() throws {
         let sources = try Self.sources()
-        // A walk that reads nothing finds nothing. 518 files on 2026-10-09: 459 of the app's, 49 of
-        // the kit's and 10 of WordCloudKit's.
+        // A walk that reads nothing finds nothing. 549 files on 2026-10-09, in seven directories.
         #expect(sources.count > 400, "read only \(sources.count) Swift files — the walk is broken")
-        for file in ["IndexingPipeline.swift", "AppState.swift", "WordCloudTokenizer.swift"] {
-            #expect(sources.contains { $0.0 == file }, "the scan did not read \(file)")
-        }
+        #expect(sources.contains { $0.0 == "FRUSCoreKit/Search/IndexingPipeline.swift" },
+                "the scan did not read the indexing pipeline, where the precompute was enqueued")
         var offenders: [String] = []
-        for (name, text) in sources {
+        for (path, text) in sources {
             // The cleanup function names the retired keys on purpose; it is the one exception.
-            if name == "WordCloudSettings.swift" { continue }
+            if path == "FRUSExplorer/Analytics/WordCloud/WordCloudSettings.swift" { continue }
             for symbol in ["WordCloudPrecomputeQueue", "drainWordCloudPrecompute",
                            "WordCloudLoader.precompute", "backgroundPrecompute"] where text.contains(symbol) {
-                offenders.append("\(name): \(symbol)")
+                offenders.append("\(path): \(symbol)")
             }
         }
         #expect(offenders.isEmpty, """

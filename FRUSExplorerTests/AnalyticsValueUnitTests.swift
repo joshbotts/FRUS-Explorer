@@ -121,7 +121,9 @@ struct AnalyticsValueUnitTests {
                               url: Self.kitAnalyticsDirectory.appendingPathComponent($0)) }
         for (path, url) in files {
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            let owns = path.hasSuffix("AnalyticsValueUnit.swift")
+            // The app's own file, by its whole path under `FRUSExplorer/Analytics/`: a kit file's
+            // path here starts `FRUSCoreKit/`, so no file there is taken for the owner by its name.
+            let owns = path == "AnalyticsValueUnit.swift"
             for needle in needles where text.contains(needle) {
                 // Comments in other files may DISCUSS the strings; only code should carry them.
                 let inCodeOnly = text

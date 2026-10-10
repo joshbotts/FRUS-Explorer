@@ -568,6 +568,33 @@ struct SyncEventMonitorTests {
         }
     }
 
+    /// The monitor's own read is the process's log, read off its initialiser.
+    ///
+    /// `systemLogReachesTheRowAndTheRun` is the test of this by running it, and it is the test that
+    /// records a known issue wherever the log store is refused (#1606). There, a default changed
+    /// to anything else would pass every test, and every build would file its failed syncs as
+    /// "system log: could not be read". So the default is read from the source as well, from the
+    /// initialiser's own parameter list, and the app's monitor is checked to pass no read of its own.
+    @Test("The monitor's own system-log read is the process's log, and the app's monitor takes it")
+    func theDefaultReadIsTheProcessLog() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Diagnostics/SyncDiagnosticsLog.swift"), encoding: .utf8)
+        let type = try #require(source.range(of: "final class SyncEventMonitor {"))
+        let initializer = try #require(source.range(of: "    init(", range: type.upperBound..<source.endIndex))
+        let parameters = try #require(WindowTargetingTests.balancedBlock(
+            in: source, from: source.index(before: initializer.upperBound), open: "(", close: ")"))
+        let label = try #require(parameters.range(of: "systemLog:"),
+                                 "SyncEventMonitor's initialiser has no systemLog parameter: \(parameters)")
+        // The parameter's own text: up to the next parameter's line, or the list's closing bracket.
+        var declared = String(parameters[label.upperBound...].components(separatedBy: ",\n").first ?? "")
+        if declared.hasSuffix(")") { declared.removeLast() }
+        #expect(declared.trimmingCharacters(in: .whitespaces).hasSuffix("= SystemLogSchemaScan.scanCurrentProcess"),
+                "the monitor's default system-log read is no longer the process's own log:\(declared)")
+        #expect(source.contains("static let shared = SyncEventMonitor()\n"),
+                "the app's monitor is no longer built with the default read")
+    }
+
     /// What a system-log read names reaches the failed row and the remembered run, and the app is
     /// told: the monitor's half of the channel above, with the read passed in so it runs wherever
     /// the log store does not. The event runs a minute and the line sits in the middle of it, so

@@ -98,7 +98,9 @@ public struct TaxonomyGeneratorRunner {
 
         do {
             let outcome = try generate(fromHTML: html, outputPath: outputPath)
-            print("[TaxonomyGenerator] Parsed \(outcome.entries.count) tag entries.")
+            // Printed after the write, which `generate` has made by now: the count is of what the
+            // file holds.
+            print("[TaxonomyGenerator] \(outcome.entries.count) tag entries:")
 
             // Summary by category.
             let byCategory = Dictionary(grouping: outcome.entries, by: \.category)

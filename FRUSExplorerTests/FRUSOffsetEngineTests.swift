@@ -1992,12 +1992,20 @@ struct FigureReaderTests {
         }
     }
 
+    /// How far the web view's own scroll view is from its top: its offset, plus the inset the system
+    /// keeps above the page, which is where the page's `scrollY` is measured from too. The inset
+    /// is zero in this harness, whose web view is in no window.
+    private func scrollViewPosition(_ harness: OffsetEngineTestHarness) -> Double {
+        let scrollView = harness.webView.scrollView
+        return Double(scrollView.contentOffset.y + scrollView.adjustedContentInset.top)
+    }
+
     /// Where the page is scrolled to, read on both sides of the web view, and whether the two had
     /// come to rest together.
     private struct ScrollRest: CustomStringConvertible {
         /// `window.scrollY`: the web process's answer.
         let page: Double
-        /// The web view's own scroll view's offset: the app process's.
+        /// The web view's own scroll view's position (`scrollViewPosition`): the app process's.
         let view: Double
         /// Whether the two agreed, at a position the caller accepts, three readings in a row.
         let rested: Bool
@@ -2019,7 +2027,7 @@ struct FigureReaderTests {
             let raw = try #require(try await harness.evaluateString("String(window.scrollY)"),
                                    "the page gave no scroll position")
             page = try #require(Double(raw), "scrollY read as \(raw)")
-            view = Double(harness.webView.scrollView.contentOffset.y)
+            view = scrollViewPosition(harness)
             steady = abs(page - view) < 1 && isThere(page) ? steady + 1 : 0
             if steady == 3 { return ScrollRest(page: page, view: view, rested: true) }
             try await Task.sleep(for: .milliseconds(50))
@@ -2077,7 +2085,8 @@ struct FigureReaderTests {
             _ = try await harness.evaluateString("""
                 (() => { window.dispatchEvent(new WheelEvent("wheel", { deltaY: -400 })); return "ok"; })()
                 """)
-            harness.webView.scrollView.setContentOffset(.zero, animated: false)
+            let scrollView = harness.webView.scrollView
+            scrollView.setContentOffset(CGPoint(x: 0, y: -scrollView.adjustedContentInset.top), animated: false)
             let atTheTop = try await rest(harness) { $0 == 0 }
             try #require(atTheTop.rested, "the reader's scroll never came to rest at the top: \(atTheTop)")
 
@@ -2091,8 +2100,8 @@ struct FigureReaderTests {
             try await Task.sleep(for: .milliseconds(300))
             let after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
             #expect(after.scrollY == 0, "the page was scrolled back to a note the reader had left: \(after)")
-            #expect(harness.webView.scrollView.contentOffset.y == 0,
-                    "the scroll view was moved from the top: \(harness.webView.scrollView.contentOffset.y)")
+            #expect(scrollViewPosition(harness) == 0,
+                    "the scroll view was moved from the top: \(scrollViewPosition(harness))")
         }
     }
 

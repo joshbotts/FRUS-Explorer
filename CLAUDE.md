@@ -60,7 +60,7 @@ is the index, not the entry.
 | `CollectionProseRowRestTests` (in `CollectionEditorTitleTests.swift`) | iPad Air 11-inch (M4) and iPhone Air, both `OS=26.5` | 5 tests, 0 skipped on each |
 | `SelectionEditMenuTests` (in `ResearchReadingStaysInTabTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5) | 4 tests, 0 skipped on each |
 | `ResearchReadingDepthTests` | iPad mini (A17 Pro) | skips on an iPad whose portrait is already two-pane |
-| `AnalyticsKeyboardTests`, `KeyboardDismissBarReachTests`, `ToolbarOverflowAccessibilityTests` | iPad mini (A17 Pro) | green on iPhone 17 and iPad Pro 13-inch too, but only the mini catches a restored analytics window (#1279) |
+| `AnalyticsKeyboardTests`, `KeyboardDismissBarReachTests`, `ToolbarOverflowAccessibilityTests` | iPad mini (A17 Pro), `OS=26.5` | 9 tests, 0 skipped; green on iPhone 17 and iPad Pro 13-inch too, but only the mini catches a restored analytics window (#1279); under iOS 27.0 an iPad simulator kills each test that opens Corpus Analytics (#1620) |
 | `SearchActionsBarFitTests` | iPhone 17 and iPhone SE (3rd generation), iOS 27 | iPhone-only; self-skips at iPad width |
 | `AuxWindowCloseTests` | iPad Pro 13-inch (M5), `OS=27.0`, in Windowed Apps | iPad-only; which cases guard depends on the multitasking mode |
 | `VolumeRemovalTests` | an iPad on iOS 27 and one on iOS 26, full screen | 5 tests, 0 skipped; an iPhone skips the 2 popover-anchor tests |
@@ -70,7 +70,7 @@ is the index, not the entry.
 | `CrossReferenceRankingChartTests` (same file) | any iPhone or iPad | 1 test, 1 passed; never skips |
 | `BrowseWithinScopeTests` | iPad Pro 11-inch (M5) and iPhone 17 Pro, both `OS=26.4` | 3 passed on each; neither is a control |
 | `SummarizationPromptCopyTests` | iPhone 17 or iPad Pro 11-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; its test must stay the pane's first action |
-| `AnalyticsCompareFromTableTests` | iPhone 17, `OS=27.0` | 1 test, 1 passed; never skips; needs no index; on an iPad simulator the run is killed at teardown (#1620) |
+| `AnalyticsCompareFromTableTests` | iPhone 17, `OS=27.0`, or iPad mini (A17 Pro), `OS=26.5` | 1 test, 1 passed on each; never skips; needs no index; on an iPad simulator under iOS 27.0 the run is killed at teardown (#1620) |
 | `TabShellBannerClearanceTests` | iPhone 17 and iPad Pro 11-inch (M5) | 6 tests: 1 skipped on the iPhone, 0 on the iPad, which the suite turns to landscape |
 | `WordCloudLensTests`, `NaturalLanguageReadinessWarmUpTests` (unit target) | iPad Pro 13-inch (M5), `OS=27.0` | a guard only on iOS 27.0; a control elsewhere |
 
