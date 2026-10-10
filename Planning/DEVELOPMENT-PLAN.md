@@ -36716,3 +36716,63 @@ Lane 1 of the implementation plan on #1576 (bulk actions on search results), aft
 **Docs**
 - Both manuals' §7.7: the strip, Mark Page Reviewed, Undo, and how long the marks last. The AI Generated notice stays.
 - `Docs/EditableContent/`: no block added and none changed; 8 ranged blocks re-pointed.
+
+## Session 2026-10-10 — A search result's menu adds its document to a collection, and the bulk add a selection will use is in place (#1576 lane 2)
+
+Lane 2 of the implementation plan on #1576 (bulk actions on search results), after lane 1 merged as #1627. No index version, no CloudKit deploy, no re-index, no shared kit file, and no `@Model` or stored property added.
+
+**What a reader gets**
+- **Add to Collection… on a result row**, without opening the document: touch and hold a result on iPhone or iPad, right-click it on the Mac. It opens the collection picker the document view already uses.
+- **A document the collection already holds is not added again** (the owner's decision 3). The picker shows its checkmark and closes, and the collection's count stays as it was. An excerpt of the same document does not count as the document.
+- On iPhone and iPad VoiceOver has the same command among a row's actions. On the Mac it reaches the command through the row's menu, as it does every other.
+- **Three changes to the picker in every mode**, a document's own Add to Collection and Add Excerpt included. A row takes a tap anywhere on it, where it took one only on its name and caption. The list keeps the order it opened in while it is open. And one presentation adds once: a second tap before the sheet closes does nothing.
+
+**How** (`CollectionDocumentAppend.swift`, `BulkResultRequest.swift`, `CollectionPickerSheet.swift`, both search views)
+- `CollectionDocumentDiscovery.appendDocuments(_:to:modelContext:)` refuses a smart collection and a list over 1,000 documents (`bulkDocumentLimit`, decision 5) before writing anything; treats a document named twice as one; skips a document that already has a `.document` entry among the collection's live entries; adds the rest in the order given through the editor's own `appendEntries`, so they take one `nextSortOrder` and are linked by the inverse; sets `lastModified`; and saves once, itself. With nothing to add it writes nothing. A save that fails adds nothing: the entries are unlinked and deleted and the stamp is put back before the error is thrown. It answers with the ids of the entries it inserted, which lane 3's Undo will re-fetch, and how many documents were already there.
+- `BulkResultRequest` is the command and its documents, frozen in the order on screen when the command is chosen, and whether a Meaning search listed them. It holds each document once and cannot be empty. `bulkResultSheets(_:)` presents the sheet with `.sheet(item:)` on that value, so each host holds a request and mounts one modifier, and neither builds the picker from whatever is on screen when the sheet opens (#862).
+- `CollectionPickerSheet` gains a documents mode, `init(documents:fromMeaningSearch:)`. The two older modes keep their initialiser's shape, so the four call sites in three files are unchanged. Its title carries the count past one document ("Add 37 Documents to Collection"); a list a Meaning search made shows "This app's model" beside "FRUS text" (decision 6); a refused add, or a save that fails, is said in an alert and the sheet stays. One row is one document, so the counted title is first seen in lane 3.
+- `CollectionPickerOrder.held` is the list's order while the sheet is open: the order it opened with, and a collection made since ahead of it. The picker's query sorts by `lastModified`, and a documents-mode add stamps the collection it adds to, so without it the tapped row left for the top of the list at the tap.
+- Each host adds a state value, one mount and a menu item, and the iPhone's row a VoiceOver action.
+
+**One review pass** (one agent, on the diff). It found no defect in the write, and these, all acted on.
+1. The picker's list is sorted by `lastModified`, and documents mode stamps and saves at the tap, so the tapped row jumped to the top: its checkmark out of sight on a long list, and another collection under the reader's finger for the 0.6 s before the sheet closes. The list now holds its opening order, and a presentation adds once.
+2. After a failed save the entries stayed in the context under an alert titled "Not Added": counted by the row behind it, read as held by a second attempt, and written by whatever saved next. A failed save now takes them back, and the message says nothing was added.
+3. The sheet's title counted the request's documents raw while the add took each once, and an empty request could present and confirm an add of nothing. The request now holds each document once and cannot be empty. Handing the outcome to the host is lane 3's.
+4. On the Mac the row is a stack of texts under a tap gesture, not one accessibility element, so a named action had nothing certain to land on and could not be checked here. It is removed from the Mac; the menu is the route there.
+5. Test gaps closed: the initialiser's Meaning flag, which every scan missed; the limit when most of the list is already held; the UI test's oracle, which now adds two different documents; the menu item's place outside any condition; the action's place on the row; and the mount's own body.
+6. Three comments and one figure in the Amendment Log corrected.
+
+**Tests**
+- `CollectionAttachmentTests`, eleven added, each driving `appendDocuments` on a real store: a never-saved collection links each entry both ways and a second context reads the rows; five documents with two present adds three, in order, at positions 8, 9 and 10 after 3 and 7; an excerpt does not count as present; the same document id in another volume is another document; a document named twice is added once; with every document present nothing is written; an add stamps the collection and the stamp is saved; a document whose entry was just deleted is not counted as present; a smart collection is refused; 1,001 documents are refused, 1,000 are taken, and the 1,001 are still refused once the 1,000 are held; and a save that fails takes the entries back out, after which the next attempt adds them.
+- `BulkResultRequestTests` (6): the order, the engine, identity, no request for no results, each document once, and the reference's key.
+- `CollectionPickerDocumentsModeTests` (12): the title and the failure messages; the initialiser's stored values; the held order as a rule; and source scans matched on the call for what nothing hosts: the picker adds through `appendDocuments` after the smart-collection guard and the one-add guard; both bodies badge a Meaning list; the row's content shape; the held order's wiring; the modifier presents `CollectionPickerSheet(documents:` from the request and the mount applies it; each host builds the request from the row, places the item directly after Archival Neighbors… at the menu's own level, and constructs no picker itself; the iPhone's row carries the action directly after its menu and the Mac's carries none.
+- `SearchResultAddToCollectionTests` (UI, 2): see the runbook. On iPhone 17 and iPad Pro 13-inch (M5), both iOS 27.0: 2 tests, 2 passed on each.
+- **Eighteen mutations, in nine builds, each failing the tests written for it**; the ninth build ran one of them against the UI test, which failed on it too. Before the review: a held document is added again; a smart collection is not refused; the limit is not held; `lastModified` is not set; an excerpt counts as the document; a document named twice is added twice; an entry just deleted counts as present; presence is the document id alone; the add does not save; the request reverses the rows. After it: a failed save leaves the entries in; the limit counts what is missing; the request keeps a repeat; the documents initialiser drops the Meaning flag; the list follows the live order; the rollback deletes without unlinking; a request is made for no results; a failed save leaves `lastModified` moved.
+
+**In the app**
+- The clone of the full-corpus iPhone 17e simulator (iOS 27.0), a Debug build of this branch before the review's changes: a keyword search for `Olney`, a long press on the first result, and the menu reads **Archival Neighbors…**, a divider, **Add to Collection…**. Choosing it opens a sheet titled **Add to Collection** with the "FRUS text" chip; that store has no collections, so it shows "No Collections".
+- The add itself was driven by the UI test on the final code, on an iPhone and an iPad.
+- **The picker's row took no tap on its blank part.** Found by the UI test's first iPad run, which taps a row's centre: on iPad Pro 13-inch (M5), iOS 27.0, the picker did not close; with the content shape it did; with the shape taken out again on the same warmed simulator it failed again at the same step.
+
+**Checked**
+- A clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0) on the final code: `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues (`GeneratedSummary`'s conformance and the AppIntents note).
+- The iOS unit target, from a shut-down iPhone 17 (iOS 27.0), on the final code: "Test run with 6745 tests in 792 suites passed after 545.825 seconds with 6 known issues", `** TEST EXECUTE SUCCEEDED **`, no relaunch of the host. That is 29 tests and 2 suites more than `v2`'s 6,716 in 790. The six known issues are `systemLogReachesTheRowAndTheRun`'s (#1606).
+- `FRUSExplorerMac` (the DirectDistribution configuration, unsigned), a clean build of the final code: `** BUILD SUCCEEDED **`, with the same two residues.
+- `SearchResultAddToCollectionTests` on the final code: iPhone 17, iOS 27.0, 2 tests, 2 passed; iPad Pro 13-inch (M5), iOS 27.0, 2 tests, 2 passed.
+- `CodingStandardsAuditTests` and `EditableContentKeyTests` run again after this entry was written: both pass.
+- `swift test` is not owed and was not run: the diff names no package input.
+
+**Not done**
+- Nothing was run on the Mac.
+- VoiceOver was not listened to. The iPhone and iPad row's action is there by code and by scan.
+- "This app's model" on the picker was not seen: the simulator has no search model, so no row there comes from a Meaning search. The initialiser's test and the bodies' scan hold it.
+- The counted title was not seen: one row is one document.
+- The held order and the one-add guard were not seen with several collections on screen. The order is tested as a rule; its wiring and the guard are read from source.
+- The alert was not seen. `appendDocuments` is run with a save that throws; the picker's catch is read from source.
+- The UI test adds to a seeded collection, where the plan said a new one: making one through the editor would have spent the test on the editor. The never-saved state the picker's New Collection button leaves is `appendDocumentsLinksBothWaysAndSaves`'s.
+- The outcome of an add is not handed to the host. Lane 3's outcome line needs it.
+
+**Docs**
+- Both manuals: the result row's menu, a third route in 12.2 Adding Documents, and the smart-collection paragraph, which now names both ways into the picker. The AI Generated notice stays.
+- `Docs/EditableContent/`: five blocks added in `08-Reading-Research-Collections.md` (the picker's counted title, and the failed-add alert's title and three messages); 17 ranged blocks re-pointed; the README's table reads 294 blocks for `08`.
+- `CLAUDE.md` and `Planning/UI-Test-Destinations-Runbook.md`: the new UI suite's row and entry.

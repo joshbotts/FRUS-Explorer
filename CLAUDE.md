@@ -72,6 +72,7 @@ is the index, not the entry.
 | `SummarizationPromptCopyTests` | iPhone 17 or iPad Pro 11-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; its test must stay the pane's first action |
 | `AnalyticsCompareFromTableTests` | iPhone 17, `OS=27.0`, or iPad mini (A17 Pro), `OS=26.5` | 1 test, 1 passed on each; never skips; needs no index; on an iPad simulator under iOS 27.0 the run is killed at teardown (#1620) |
 | `TabShellBannerClearanceTests` | iPhone 17 and iPad Pro 11-inch (M5) | 6 tests: 1 skipped on the iPhone, 0 on the iPad, which the suite turns to landscape |
+| `SearchResultAddToCollectionTests` | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 2 tests, 2 passed on each; never skips; only the iPad's wide sheet guards the picker row's tap |
 | `WordCloudLensTests`, `NaturalLanguageReadinessWarmUpTests` (unit target) | iPad Pro 13-inch (M5), `OS=27.0` | a guard only on iOS 27.0; a control elsewhere |
 
 Four rules hold for every UI run, and the runbook gives the measurement behind each:

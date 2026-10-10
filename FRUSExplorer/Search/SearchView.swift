@@ -387,6 +387,9 @@ struct SearchView: View {
     @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
+    /// A command chosen on a result row, with its documents frozen (#1576 lane 2). Presented by
+    /// `bulkResultSheets`.
+    @State private var bulkRequest: BulkResultRequest? = nil
     private let initialParameters: SearchParameters?
 
     init(
@@ -712,6 +715,9 @@ struct SearchView: View {
                         // #338 step 4: address THIS window for the sheet's open-document action.
                         .environment(\.sceneID, sceneID)
                 }
+                // #1576 lane 2: Add to Collection from a result row. iOS only for the same
+                // reason: the actions that set the request are the row's, inside `#if os(iOS)`.
+                .bulkResultSheets($bulkRequest)
                 #endif
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
@@ -2186,10 +2192,31 @@ struct SearchView: View {
                             systemImage: "archivebox"
                         )
                     }
+                    // #1576 lane 2: the result's document into a collection, without opening it.
+                    Divider()
+                    Button {
+                        bulkRequest = addToCollectionRequest(for: result)
+                    } label: {
+                        Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                    }
+                }
+                // The same command as a VoiceOver action, which reaches a row's actions without
+                // opening its menu (#1576 lane 2).
+                .accessibilityAction(named: Text(BulkResultCopy.addToCollection)) {
+                    bulkRequest = addToCollectionRequest(for: result)
                 }
                 #endif
             }
     }
+
+    #if os(iOS)
+    /// The request to add one result row's document to a collection (#1576 lane 2): the row's
+    /// document and the engine that listed it, taken now, so that the sheet reads nothing that a
+    /// search completing behind it could change.
+    private func addToCollectionRequest(for result: SearchResult) -> BulkResultRequest? {
+        BulkResultRequest(.addToCollection, results: [result], fromMeaningSearch: vm.resultsAreSemantic)
+    }
+    #endif
 }
 
 // MARK: - ChecklistReviewedObserver

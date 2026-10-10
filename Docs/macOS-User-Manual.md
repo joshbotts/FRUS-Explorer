@@ -362,7 +362,7 @@ Type and press Return. The search itself runs on Return — at this corpus size 
 - Each result shows a highlighted snippet of 1–10 lines of context (**Result Preview** in the Filters popover; global default in Settings → Reading & Search → Search). Rows also carry chips for *editorial note*, *front matter*, a classification marking, up to three of your tags, and, in Meaning mode, **Semantic match · N%**.
 - The sort bar holds the count, a **Show** page size (10, 20, 50, or 100 per page, with a **Page N of M** bar under the list), and **Sort** — **Relevance**, **Date ↑**, or **Date ↓**, undated documents last and ties broken by relevance.
 - **Reading the count.** "N of M results" is the plain case, when every result fits on one page; with more than a page the line reads "1–20 of N loaded · M total", and in Meaning mode it counts "N closest matches". "total unavailable" means the engine could not price the whole match; "· narrowed from N" appears while Facets is open and a facet filter is in force; inside a working corpus that was itself captured from a capped search the line ends "N in this corpus · captured from M matches". A ⚠ advisory appears when the match ran past the cap: *Showing N of M matches — narrow with a date range, volume filter, or more specific terms.* It never appears over a Meaning list: its 100 rows are the nearest the model found, not a match cut short, and narrowing would load nothing more.
-- **Keyboard and context menu.** ↑/↓ move through the rows and ↩ opens the selected one. Right-click a row for **Open**, **Open in New Window** (a tab or a window, following System Settings' *Prefer tabs*), **Archival Neighbors…** (Section 14.3), and, in Checklist Mode, **Mark Reviewed**.
+- **Keyboard and context menu.** ↑/↓ move through the rows and ↩ opens the selected one. Right-click a row for **Open**, **Open in New Window** (a tab or a window, following System Settings' *Prefer tabs*), **Archival Neighbors…** (Section 14.3), **Add to Collection…** (12.2), and, in Checklist Mode, **Mark Reviewed**.
 - The result list is capped at **7,500** on the Mac; when a count matters to your argument, remember a capped fetch is a floor, not a total (the method appendix records it that way — Section 17.5).
 - While a search runs, the sort bar shows "Searching…" and the previous results stay on screen so you can keep reading them.
 - **When a search returns nothing**, the app does better than "try different keywords": it runs each of your terms on its own and names the one that matched nothing — so a typo, a stemming surprise, and a genuine historical absence stop looking alike. If every term matches on its own, it says that too: the *combination* is what appears in no single document. Either way the denominator is stated, because "0 results" means "0 in the volumes indexed on this Mac."
@@ -731,9 +731,10 @@ The window has no permanent sidebar; you switch collections from the **collectio
 
 ### 12.2 Adding Documents
 
-Two routes:
+Three routes:
 
 - **While reading**: the Research rail's **Collections** accordion adds the open document to a collection (or creates a new one). If the Collections window is showing that collection, the document appears at the end of its Contents right away, and the live preview and an export made from it include it.
+- **From search results**: right-click a result in the Search window and choose **Add to Collection…**, then pick a collection. The result's document is added without being opened. A document the collection already holds is not added a second time.
 - **In bulk**: **＋ Add → Add Documents…** (⇧⌘A) opens a picker with four ways in:
   - **Search** the full text of your indexed volumes — each result with a matched-text snippet and the archival source note, so you can judge it before adding.
   - **Browse** any volume's document list, with Select All for whole volumes and a Download button for volumes you don't have.
@@ -806,7 +807,7 @@ The preview sits beside the Contents outline by default (toggle with **⌥⌘P**
 
 ### 12.8 Smart Collections
 
-A collection linked to a **saved search** resolves its membership from that search at export time — a reading list that keeps itself current. The link is made in the collection editor: with a document open, use the rail's **Collections ▸ Add to Collection**, click **＋ New Collection**, and choose **Link to Saved Search…** in the editor's Smart Collection section. Because membership is dynamic, a smart collection can't be hand-edited or shared as a native file — right-click it and **Create Static Snapshot** to capture the current results as an ordinary collection you can then section, annotate, and share. A document's **Add to Collection** lists a smart collection under the line *Smart collection. Its documents come from its saved search.* and does not take the click.
+A collection linked to a **saved search** resolves its membership from that search at export time — a reading list that keeps itself current. The link is made in the collection editor: with a document open, use the rail's **Collections ▸ Add to Collection**, click **＋ New Collection**, and choose **Link to Saved Search…** in the editor's Smart Collection section. Because membership is dynamic, a smart collection can't be hand-edited or shared as a native file — right-click it and **Create Static Snapshot** to capture the current results as an ordinary collection you can then section, annotate, and share. **Add to Collection**, from a document or from a search result, lists a smart collection under the line *Smart collection. Its documents come from its saved search.* and does not take the click.
 
 ### 12.9 Export
 
