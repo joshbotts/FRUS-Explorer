@@ -54,6 +54,8 @@ import Foundation
 ///   1.2 — Session 2026-09-30, review round 1: #1527 — the fetch request answers whether a
 ///         download started, and every search asks again, so an ask declined while the switch was
 ///         off or the device offline no longer counts as downloading once they change
+///   1.3 — #1577 lane 1: `search(_:within:limit:)` ranks a given set of documents, every member
+///         scored exactly, where the corpus-wide search could only be filtered down to the set
 actor SemanticQuerySearcher {
 
     /// One ranked hit.
@@ -84,6 +86,37 @@ actor SemanticQuerySearcher {
         /// offline, with no fetcher, for a volume with no published file, and for one whose fetch
         /// already failed this session.
         let downloadingVolumes: Int
+        /// How many documents the search ranked inside, for ``search(_:within:limit:)``: the
+        /// distinct keys it was given. `nil` for the corpus-wide search, which ranks the series.
+        ///
+        /// Every member is in exactly one of three counts, so
+        /// `ranked + withoutVector + unscoredCandidates == rankedWithin`, where `ranked` is the
+        /// number of members scored (``hits`` is its best `limit`).
+        let rankedWithin: Int?
+        /// Members of that set the bundled vectors hold no row for, which no search can rank:
+        /// front matter, chapter headings and appendix structure are never embedded, and a
+        /// document newer than this build's vectors has none yet. Zero for the corpus-wide
+        /// search, whose candidates all come from the vectors.
+        let withoutVector: Int
+
+        /// Creates a result.
+        ///
+        /// - Parameters:
+        ///   - hits: Ranked hits, best first.
+        ///   - unscoredCandidates: Documents not scored for want of their volume's match file.
+        ///   - unscoredVolumes: Distinct volumes those came from.
+        ///   - downloadingVolumes: Of those volumes, the ones with a download under way.
+        ///   - rankedWithin: The size of the set ranked inside, or `nil` for the whole series.
+        ///   - withoutVector: Members of that set with no vector.
+        init(hits: [Hit], unscoredCandidates: Int, unscoredVolumes: Int, downloadingVolumes: Int,
+             rankedWithin: Int? = nil, withoutVector: Int = 0) {
+            self.hits = hits
+            self.unscoredCandidates = unscoredCandidates
+            self.unscoredVolumes = unscoredVolumes
+            self.downloadingVolumes = downloadingVolumes
+            self.rankedWithin = rankedWithin
+            self.withoutVector = withoutVector
+        }
     }
 
     /// Why a search could not run at all.
@@ -125,6 +158,14 @@ actor SemanticQuerySearcher {
     /// is where the next search's answers live.
     static let fetchQueueDepth = 100
 
+    /// How many volumes a search inside a document set asks for at most, when their match files
+    /// are missing (#1577). The corpus-wide bound above is a depth in candidate order and has no
+    /// meaning here, where there is no candidate order: every member is scored or it is not. So
+    /// the bound is a count of volumes, taken from those with most unranked members first, since
+    /// they are what the next search gains most from. At the mean file size of 294 KB, 24 volumes
+    /// are about 7 MB a search. Download Missing Vectors in Settings fetches the rest.
+    static let setFetchVolumeLimit = 24
+
     init(
         index: SemanticVectorIndex,
         corpus: SemanticCorpusVectors,
@@ -149,13 +190,7 @@ actor SemanticQuerySearcher {
     /// - Returns: Hits plus the unscored disclosure.
     /// - Throws: `SearchUnavailable`.
     func search(_ query: String, limit: Int = 10) async throws -> Results {
-        let embedding = try await embed(query)
-
-        guard let cut = SemanticQuantization.truncate(embedding, to: index.provenance.shippingDims)
-        else { throw SearchUnavailable.encodingFailed("query vector would not truncate") }
-        guard let int8 = SemanticQuantization.quantizeInt8(cut)
-        else { throw SearchUnavailable.encodingFailed("query vector quantized to nothing") }
-        let bits = SemanticQuantization.packSignBits(cut)
+        let (bits, int8) = try await quantizedQuery(query)
 
         let pool = max(limit, index.file.retrieval.rerankPool)
         let rows = SemanticRetrievalKernel.hammingCandidates(
@@ -205,6 +240,200 @@ actor SemanticQuerySearcher {
             downloadingVolumes: downloading.count)
     }
 
+    /// Ranks a given set of documents by meaning: every member that can be scored is scored
+    /// exactly, and the best `limit` are returned (#1577 lane 1).
+    ///
+    /// ## Why this is not the corpus-wide search with a filter
+    ///
+    /// ``search(_:limit:)`` returns the closest documents in the whole series. Asked for the
+    /// closest inside a working corpus, it could only be filtered afterwards, and a set whose
+    /// members all rank below the series' top hundred came back empty though every one of them
+    /// had a score to give. Here there is no candidate stage at all. The Hamming scan exists to
+    /// choose which 800 of 314,616 documents are worth an exact score; a set of a few thousand
+    /// needs no choosing, so each member goes straight to the kernel's `rerank`, the same exact
+    /// int8 cosine and the same tie-break the corpus-wide search ends with. The kit's restricted
+    /// scan (`hammingCandidates(…isEligible:)`) is left alone for that reason: it would have to
+    /// return as many candidates as rows shown, above the pool its recall was measured at.
+    ///
+    /// ## Every member is accounted for
+    ///
+    /// A member is ranked, or it has no vector (``Results/withoutVector``), or its volume's match
+    /// file is not on this device (``Results/unscoredCandidates``). None is dropped in silence and
+    /// none is scored as zero, which would be a claim of unlikeness. `rerank` drops a row it
+    /// cannot score, so the three are counted here, around the call.
+    ///
+    /// ## What it does not do
+    ///
+    /// **Edition twins are not folded.** The corpus-wide search folds them because it chose the
+    /// documents; here the reader did, and removing one of two documents they put in the set
+    /// would be an edit to their set.
+    ///
+    /// **A set with nothing to score never loads the encoder.** That is an empty set, a set with
+    /// no vectors, and a set whose every rankable member is in a volume with no match file on the
+    /// device. The 229 MB model is not read and its absence is not reported, because the reader
+    /// would be offered a download that could not rank a single document; in the last case the
+    /// missing files are asked for, and they are what the reader is told about. So the match
+    /// files are looked for before the question is encoded, the other way round from the
+    /// corpus-wide search, which needs the embedding to choose its candidates at all.
+    ///
+    /// - Parameters:
+    ///   - query: The reader's text, verbatim; the query template is applied inside.
+    ///   - keys: The set, each member keyed `"volumeId/documentId"` as `SearchParameters.documentIds`
+    ///     keys it. Order carries no meaning and a repeated key counts once.
+    ///   - limit: Ranked hits to return.
+    /// - Returns: The best `limit` members, best first, with the set's accounting.
+    /// - Throws: `SearchUnavailable`.
+    func search(_ query: String, within keys: [String], limit: Int) async throws -> Results {
+        let clock = ContinuousClock()
+
+        // Keys to corpus rows. A key the vectors hold no row for cannot be ranked by anyone.
+        let resolveStart = clock.now
+        var distinct: Set<String> = []
+        var members: [(row: Int, slot: Int)] = []
+        var identityByRow: [Int: (volumeID: String, documentID: String)] = [:]
+        var withoutVector = 0
+        for key in keys where distinct.insert(key).inserted {
+            guard let slash = key.firstIndex(of: "/") else {
+                withoutVector += 1
+                continue
+            }
+            let volumeID = String(key[..<slash])
+            let documentID = String(key[key.index(after: slash)...])
+            // A row already claimed cannot be claimed twice: the index maps one id to one row, so
+            // this is unreachable today, and counting such a key keeps the accounting whole if a
+            // later index ever let two spellings share a row.
+            guard let row = index.row(documentID: documentID, volumeID: volumeID),
+                  let located = index.volumeSlot(containing: row),
+                  identityByRow[row] == nil
+            else {
+                withoutVector += 1
+                continue
+            }
+            identityByRow[row] = (volumeID, documentID)
+            members.append((row: row, slot: located.slot))
+        }
+        let resolveTime = clock.now - resolveStart
+
+        guard !members.isEmpty else {
+            return Results(hits: [], unscoredCandidates: 0, unscoredVolumes: 0,
+                           downloadingVolumes: 0, rankedWithin: distinct.count,
+                           withoutVector: withoutVector)
+        }
+
+        // Each volume's match file is asked for once. `rerank` scores through a synchronous
+        // closure, so the files are in hand before it is called.
+        let shardStart = clock.now
+        var shards: [Int: SemanticShard] = [:]
+        var volumesAsked = 0
+        for slot in Set(members.map(\.slot)).sorted() {
+            volumesAsked += 1
+            if let shard = await shardStore.shard(for: index.volumes[slot].volumeID) {
+                shards[slot] = shard
+            }
+        }
+        var candidates: [Int] = []
+        candidates.reserveCapacity(members.count)
+        var unscoredByVolume: [String: Int] = [:]
+        for member in members {
+            if shards[member.slot] != nil {
+                candidates.append(member.row)
+            } else {
+                unscoredByVolume[index.volumes[member.slot].volumeID, default: 0] += 1
+            }
+        }
+        let shardTime = clock.now - shardStart
+        let unscored = unscoredByVolume.values.reduce(0, +)
+
+        // Nothing to score: every rankable member's file is missing. The files are asked for and
+        // the question is not encoded.
+        guard !candidates.isEmpty else {
+            let downloading = await Self.requestFetches(
+                for: Set(Self.volumesWorthFetching(unscoredByVolume)), using: requestShardFetch)
+            return Results(hits: [], unscoredCandidates: unscored,
+                           unscoredVolumes: unscoredByVolume.count,
+                           downloadingVolumes: downloading.count,
+                           rankedWithin: distinct.count, withoutVector: withoutVector)
+        }
+
+        let encodeStart = clock.now
+        let (_, int8) = try await quantizedQuery(query)
+        let encodeTime = clock.now - encodeStart
+
+        // Asked for in full, and cut to `limit` below, so the count of what was scored is the
+        // kernel's own and not a guess at what it dropped.
+        let scoreStart = clock.now
+        let ranked = SemanticRetrievalKernel.rerank(
+            candidates: candidates, limit: candidates.count
+        ) { row in
+            guard let located = index.volumeSlot(containing: row),
+                  let shard = shards[located.slot] else { return nil }
+            return shard.cosine(row: located.localRow, query: int8.codes, queryScale: int8.scale)
+        }
+        let scoreTime = clock.now - scoreStart
+        // A member whose file is here and whose row it would not score: no usable vector.
+        withoutVector += candidates.count - ranked.count
+
+        let hits: [Hit] = ranked.prefix(max(0, limit)).compactMap { neighbour in
+            guard let identity = identityByRow[neighbour.row] else { return nil }
+            return Hit(volumeID: identity.volumeID, documentID: identity.documentID,
+                       score: neighbour.score)
+        }
+
+        let downloading = await Self.requestFetches(
+            for: Set(Self.volumesWorthFetching(unscoredByVolume)), using: requestShardFetch)
+
+        SearchTimingLog.record(SearchTimingLog.MeaningInSet(
+            setSize: distinct.count,
+            withVector: members.count,
+            volumes: volumesAsked,
+            ranked: ranked.count,
+            encode: encodeTime,
+            resolve: resolveTime,
+            shards: shardTime,
+            score: scoreTime))
+
+        return Results(
+            hits: hits,
+            unscoredCandidates: unscored,
+            unscoredVolumes: unscoredByVolume.count,
+            downloadingVolumes: downloading.count,
+            rankedWithin: distinct.count,
+            withoutVector: withoutVector)
+    }
+
+    /// The volumes a search inside a set asks for, of those whose match files are missing: the
+    /// ``setFetchVolumeLimit`` with most unranked members, most first, a tie going to the volume
+    /// whose id sorts first so that the choice is the same on every search.
+    ///
+    /// - Parameter unrankedByVolume: Volume id to the count of the set's members in it that went
+    ///   unranked for want of its match file.
+    /// - Returns: The volumes to ask for, most unranked members first.
+    static func volumesWorthFetching(_ unrankedByVolume: [String: Int]) -> [String] {
+        unrankedByVolume
+            .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            .prefix(setFetchVolumeLimit)
+            .map(\.key)
+    }
+
+    /// The query as both searches score with it: embedded, cut to the artifact's shipping width,
+    /// and quantized by the pinned rules — the judged pipeline's first three steps, in one place
+    /// so the two searches cannot take them differently.
+    ///
+    /// - Parameter query: The reader's text, verbatim.
+    /// - Returns: The packed sign bits for the Hamming scan, and the int8 codes and scale for the
+    ///   exact cosine.
+    /// - Throws: `SearchUnavailable`.
+    private func quantizedQuery(
+        _ query: String
+    ) async throws -> (bits: [UInt8], int8: (codes: [Int8], scale: Float)) {
+        let embedding = try await embed(query)
+        guard let cut = SemanticQuantization.truncate(embedding, to: index.provenance.shippingDims)
+        else { throw SearchUnavailable.encodingFailed("query vector would not truncate") }
+        guard let int8 = SemanticQuantization.quantizeInt8(cut)
+        else { throw SearchUnavailable.encodingFailed("query vector quantized to nothing") }
+        return (SemanticQuantization.packSignBits(cut), int8)
+    }
+
     /// Asks for each volume's match file and returns the volumes whose request was answered with a
     /// download under way (#1527).
     ///
@@ -214,7 +443,8 @@ actor SemanticQuerySearcher {
     /// already running. Sorted so the requests go out in a stable order.
     ///
     /// - Parameters:
-    ///   - volumes: The volumes to ask for — the unscored ones in the top ``fetchQueueDepth``.
+    ///   - volumes: The volumes to ask for — the unscored ones in the top ``fetchQueueDepth``, or
+    ///     for a search inside a set the ``setFetchVolumeLimit`` with most unranked members.
     ///   - request: The request, answering whether that volume's download is under way.
     /// - Returns: The volumes answered `true`.
     static func requestFetches(

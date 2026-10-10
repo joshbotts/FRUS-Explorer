@@ -515,6 +515,11 @@ struct SearchView: View {
                         // not re-run — but a nil scope shows no counts rather than the last
                         // query's.
                         vm.userTagCountScope = nil
+                        // #1577 lane 1: the Meaning strip describes the run that produced the rows,
+                        // and the rows have gone. Left in place, the last run's disclosure kept the
+                        // strip naming that run's set (or the whole series) over a prompt that
+                        // names the set the next search will rank inside.
+                        vm.semanticDisclosure = nil
                     }
                 }
                 // Active volume scope (e.g. the post-indexing "Search this volume"
@@ -553,7 +558,8 @@ struct SearchView: View {
                             // The Meaning strip replaces the MATCH inspector: there is no FTS
                             // expression to show, and the strip carries the route's disclosures.
                             SemanticModeStrip(disclosure: vm.semanticDisclosure,
-                                              beyondCount: vm.beyondLibraryHits.count)
+                                              beyondCount: vm.beyondLibraryHits.count,
+                                              pendingSetSize: vm.documentSetSize)
                         } else {
                             queryInspectorCard
                         }
@@ -1728,7 +1734,8 @@ struct SearchView: View {
                         .font(.system(size: FRUSTheme.cappedGlyphSize(promptGlyphSize, base: 48)))
                         .foregroundStyle(.tertiary)
                         .accessibilityHidden(true)
-                    Text(vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty))
+                    Text(vm.searchMode.documentSetPrompt(size: vm.documentSetSize)
+                         ?? vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     #if os(iOS)

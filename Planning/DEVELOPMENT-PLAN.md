@@ -36575,3 +36575,78 @@ The same session as the entry above, after its pull request (#1624) merged as `f
 
 **Not done**
 - The recall figures in that README were not measured again. The README says so.
+
+## Session 2026-10-10 — A Meaning search ranks inside an applied working corpus or a project's History scope (#1577 lane 1)
+
+Lane 1 of the implementation plan on #1577 (Search Within These Results), the engine half. No interface is added: the control comes in lanes 4 and 5. No index version, no CloudKit deploy, no re-index, and no shared kit file is edited.
+
+**What was wrong** (`SemanticSearchBackend.run`, read on 2026-10-07 and run here)
+- A document set reaches a search as `SearchParameters.documentIds`: an applied working corpus, a project's History scope, or the two intersected (`DocumentScopeGate.combine`). A keyword search runs inside it. A Meaning search took the series' closest hundred and then discarded what fell outside the set, so a small corpus returned few rows or none, under a footer that says "Applying one searches only inside it".
+- Run on `v2` @ `477ee9b6` against a synthetic corpus in which 120 documents of another volume are nearer the question than any member of the set: the backend listed **0 rows and reported `filteredOut` 100**. The same call now lists the set's twelve rankable members.
+
+**The engine** (`SemanticQuerySearcher.search(_:within:limit:)`, new)
+- Each key is resolved to its corpus row, each volume's match file is asked for once, and every member that can be scored goes to the kit's `SemanticRetrievalKernel.rerank`: the same exact int8 cosine and the same tie-break the corpus-wide search ends with. There is no candidate stage. The Hamming scan exists to choose which 800 of 314,616 documents deserve an exact score, and a set needs no choosing.
+- Every member is in one of three counts, and they sum to the set: ranked; without a vector (`withoutVector`: front matter and headings, or a document newer than the build's vectors); or in a volume whose match file is not on the device (`unscoredCandidates`). None is dropped in silence and none is scored as zero.
+- Edition twins are not folded. The corpus-wide search folds them because it chose the documents; here the reader did.
+- A set with nothing to score returns without loading the encoder: an empty set, one with no vectors, and one whose every rankable member is in a volume with no match file here. So the match files are looked for before the question is encoded, the other way round from the corpus-wide search, which needs the embedding to choose its candidates. In the last case the missing files are asked for all the same, and the reader is told about the files and not offered the 229 MB model.
+- Missing match files are asked for at most 24 volumes a search (`setFetchVolumeLimit`), those with most unranked members first; the corpus-wide bound is a depth in candidate order and has no meaning where there is no candidate order.
+- `SemanticSearchBackend.run` sends a non-nil set there and takes it out of the parameters before the filter key set is built, so it is not scanned twice. Every other filter still narrows after ranking, which is what the facet panel's "Narrowing to a row returns exactly its documents" needs.
+- **A ranked hit the device's index holds no row for is counted, in either kind of search** (`Disclosure.notIndexedHere`). The vectors are the build's and a volume is whatever the device downloaded, so a hit can name a document the index lacks: the 47 documents restored to 1952–1954, vol. IX, Part 1 on a device still holding the older file are the case at hand. Such a hit was dropped without a word, and when any filter was set it was counted under "Your filters removed", because it is missing from the filter's key set as well. The display rows are now looked up before the filter intersection, and the strip says "2 close matches are not listed: this device's index does not hold those documents."
+
+**The record** (`SearchScopeSignature.semanticSignature(for:)`, both view models)
+- Inside a set a Meaning search signs `route=semantic;engine=on-device;docs=<count>/<digest>`, the set in the keyword grammar's own form. With no set the signature is the old constant, byte for byte. It still begins `route=semantic`, which is what the method appendix and every earlier build read, so an earlier build prints such a row as a Meaning search and never as a keyword search whose zero means a term is absent.
+- `describe` adds "ranked inside a set of 212 documents, not across the whole series".
+
+**What the reader is told** (`SemanticModeStrip`, `SemanticUnscoredCopy`, `SemanticMeaningEmptyState`, `SearchMode.documentSetPrompt`)
+- The strip's opening names the set: "ranked by what your question means, inside the 212 documents you are searching within". It describes the run that produced the rows (`Disclosure.rankedWithin`) and reads the live set only while there is no run to describe, so a corpus applied or cleared since does not relabel the rows.
+- It counts the members with no match data, and the members whose match files are missing. The second names **Download Missing Vectors**, which fetches files for downloaded volumes; the corpus-wide sentences still name Download Vectors for Every Volume, which is right for a search of the series.
+- The empty state inside a set never says "Nothing in the scorable corpus reads close": a set is ranked whole, with no threshold. It says which of six things happened, and it never blames a filter that removed nothing.
+- **Where rows are cleared without a run, the last Meaning run's disclosure is cleared with them**: the emptied search field on iPhone and iPad, and a rebuilt index on the Mac. Left in place it kept the strip naming the last run's set, or the whole series, above a prompt naming the set the next search would rank inside.
+- On iPhone and iPad the pre-search prompt in Meaning mode reads "Ask a question to rank the 212 documents you are searching within by meaning." The Keywords prompts are unchanged.
+
+**Two timing lines** (`SearchTimingLog`, new; `subsystem:bottsywattsy.FRUS-Explorer category:SearchTiming`, at `notice`)
+- `meaning-in-set docs=… vectors=… volumes=… ranked=… encode_ms=… resolve_ms=… shards_ms=… score_ms=…`, written by the searcher.
+- `gated-keyword docs=… rows=… rows_ms=… total_ms=…`, written by both view models for a keyword search that ran inside a set. The rows and the count are two statements sent to the index at once, so `rows_ms` is the wait for the rows and is an upper bound on the row statement alone.
+- Counts and durations only: no query text and no identifier.
+- They are for the owner's three timings on an iPhone with the search model, which lane 4 waits on.
+
+**Tests** (`SemanticSetSearchTests`, `SemanticSetBackendTests`, `SemanticSetRecordAndCopyTests`: 45 tests, new)
+- On a synthetic index, corpus tier and shards written with the kit's own writers (`SemanticSetFixture`), with the embedding injected. The suites have no enabling condition; `SemanticQuerySearcherTests`, which reads gitignored shards, is disabled on a new checkout and reports green.
+- The expected order is a brute-force cosine computed in the fixture from the planted vectors. Two ties are planted so that a tie broken by key would order them the other way round from one broken by row.
+- The view model is driven through the real backend with a corpus applied, and the trail row it writes is read back.
+- **The control, on `v2`:** the acceptance test's own call "listed 0 row(s), with filteredOut 100".
+- **Eight mutations, in three builds, each failing the test written for it:** a tie broken by key; the set left among the filters; the live set outranking the run's record in the strip; twins folded; the fetch order's tie-break flipped; the question encoded before the empty check; the question encoded before the match files are looked for; and a hit the index lacks left to reach the filters.
+- The fetch rule is a function of its own (`volumesWorthFetching`), tested on a plan in which thirty volumes tie and the bound takes twenty-two: a tie left to dictionary order would pick the right twenty-two about once in six million.
+- `CollocationWiringAuditTests.versionBumpFollowsTheResults` read a window of 1,600 characters after the assignment of `results`, and the bump sat 44 characters inside it. Its bound is now the success path's own end, the `catch`, so the catch's own bump cannot satisfy it.
+
+**Docs**
+- Both manuals: the working-corpus section and the Meaning-mode section say where the ranking runs, what the strip counts, and that the other filters narrow afterwards. The AI Generated notice stays.
+- `Docs/EditableContent/`: seventeen blocks added and 58 ranged blocks re-pointed; `Amendment-Log.md` has the bullet.
+- Search Tips and the Research Guide need no change: neither says what a working corpus does in Meaning mode, and the Guide's "run every later search inside it" is now true of both modes.
+
+**In the app** (a clone of the full-corpus iPhone 17e simulator, iOS 27.0, 553 volumes, this branch's Debug build; the clone has no search model and had no match files)
+- A keyword search for `Olney` (1,000 loaded of 1,665), saved as a working corpus and applied under Filters ▸ My Working Corpora. Switching to Meaning with the field empty: the strip reads "Meaning search (experimental): ranked by what your question means, inside the 1,000 documents you are searching within — your exact words may not appear. Front matter and chapter headings are not reachable this way.", and the screen reads "Ask a question to rank the 1,000 documents you are searching within by meaning."
+- A question asked there, with no match file on the device: no model offer. The strip adds "1,000 documents in 9 volumes could not be ranked yet; their match files are downloading.", and under "No semantic matches yet" the screen reads "Match files for 9 volumes are still downloading in the background. Searching again in a moment may rank the documents you are searching within." Nine files arrived in the clone's `SemanticVectors` folder within seconds.
+- The same question again, with the nine files present: the search reaches the encoder, and the model offer shows ("A Meaning search ranks documents by what an AI model detects your question to mean…"), under a strip that still names the 1,000 documents. The model was not downloaded, so no Meaning list was seen.
+- Keywords again, with the corpus still applied: the simulator's log holds `gated-keyword docs=1000 rows=1 rows_ms=361.2 total_ms=393.3`, read with `log show` on the category. The figure is a loaded Mac's simulator and is no measurement of a phone.
+- **Found there, not this lane's, and not filed.** The first launch was made straight onto the Search tab, and for that whole launch the Filters sheet showed no My Working Corpora, no volume scopes and no subject section, though a search ran and the save sheet read "Volumes indexed now 553". `SearchView`'s task calls `loadAvailableVolumes` once, with the indexed set as it stands when the view first appears, and nothing calls it again; `Filters` shows those sections only when that list is not empty. The app restores the last tab at launch (`frus.activeTab`), so a reader who quits on Search may meet it. A second launch that opened on Browse showed the sections. Seen once; the cause is read from the code and not confirmed by a second run.
+
+**One review pass** (a single reader given the diff and the intent, not my conclusions)
+- Five findings. Three are fixed above: the encoder loaded before the match files were looked for; a ranked hit the index lacks dropped, or charged to a filter; and a stale disclosure outranking the live set once the field was emptied. Its test findings are taken: the engine's call and the searcher's timing line are pinned by scans matched on the call, and the fetch test's single tied pair is the thirty-way tie above.
+- **One is not this lane's, and is not filed.** On the Mac a hand-off or a saved-search recall clears the set from the parameters a search runs with and leaves the "Inside …" banner up, so the next search, in either mode, runs across the series under a banner that says otherwise. The assessment listed it as an existing defect that deserves its own issue (`MacSearchViewModel.applyParameters`; the banner reads the filter view model). The Meaning strip is truthful there: it says "across the whole series", which is what the search does.
+
+**Checked**
+- A clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0) on the final code: `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues (`GeneratedSummary`'s conformance and the AppIntents note).
+- **The iOS unit target, from a shut-down iPhone 17 (iOS 27.0), on the final code: "Test run with 6666 tests in 787 suites passed after 516.939 seconds with 6 known issues", `** TEST EXECUTE SUCCEEDED **`, no relaunch of the host.** That is 45 tests and 3 suites more than `v2`'s 6,621 in 784, which are the three new suites. The run before the review's fixes had one failure, the window scan re-bounded above.
+- `FRUSExplorerMac` (the DirectDistribution configuration, unsigned), a clean build of the final code: `** BUILD SUCCEEDED **`, with the same two residues.
+- `swift test` is not owed and was not run: the diff names no package input (nothing under `SemanticVectorsKit/`, `FRUSCoreKit/`, the other kits or `FRUSExplorer/Resources/`).
+- No UI suite was run. None reaches a Meaning result: lane 3 is the seam for that.
+
+**Not done**
+- **No Meaning list was seen in an app**, on a simulator or a device, and nothing was run on the Mac.
+- **Nothing was timed on a device.** The owner's three timings are what lane 4 waits on (the plan of record lists them).
+- **The appendix's CSV** still prints `top=100` for a Meaning search inside a set and does not name the set; the signature beside it does.
+- **The Keywords pre-search prompt** still reads "Enter keywords to search the FRUS corpus." with a corpus applied. The banner names the corpus.
+- **A close match the index lacks still takes one of the hundred places.** It is counted, and the list is not refilled from deeper in the ranking.
+- **Two findings are not filed:** the Mac's hand-off under a corpus banner, and the Filters sheet after a launch onto Search (both above).
+- **TestFlight notes** are written at the build bump.

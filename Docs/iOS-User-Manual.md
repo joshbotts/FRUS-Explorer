@@ -597,7 +597,7 @@ Once you have run a saved search, the app watches it for you: when the index has
 
 ### 7.9 Working Corpora
 
-A **working corpus** is a fixed set of documents you capture once and then work inside. Run a search, then choose **Save as Working Corpus…** from the **•••** menu: the current results are frozen as a named set. The capture is every result the search loaded, not just the page on screen; when the search matched more than it loaded, the save sheet says the corpus holds only the highest-scoring matches, and results Checklist Mode is hiding are left out. A corpus saved from a Meaning search (Section 7.12a) is recorded as what it is: see that section. Apply it from the search filters (**My Working Corpora**) and every later search runs only inside it. While a corpus is applied, a banner above the results reads *Inside “name”*; its ✕ leaves the corpus and runs the search again, and **Clear working corpus** under **My Working Corpora** leaves it from the next search.
+A **working corpus** is a fixed set of documents you capture once and then work inside. Run a search, then choose **Save as Working Corpus…** from the **•••** menu: the current results are frozen as a named set. The capture is every result the search loaded, not just the page on screen; when the search matched more than it loaded, the save sheet says the corpus holds only the highest-scoring matches, and results Checklist Mode is hiding are left out. A corpus saved from a Meaning search (Section 7.12a) is recorded as what it is: see that section. Apply it from the search filters (**My Working Corpora**) and every later search runs only inside it. That holds in both search modes: a keyword search matches only the corpus's documents, and a Meaning search ranks them against your question and lists no document outside it (Section 7.12a). While a corpus is applied, a banner above the results reads *Inside “name”*; its ✕ leaves the corpus and runs the search again, and **Clear working corpus** under **My Working Corpora** leaves it from the next search.
 
 The point is reproducibility. A query's results drift as you index more volumes or as your terms evolve; a working corpus does not. A count taken inside it means the same thing next month — which is what makes it quotable in a chapter. Corpora sync whole to your other devices, and every screen that shows one states how much of it is indexed here ("142 of 267 documents indexed on this device"), so the set means the same thing everywhere even where fewer volumes are downloaded. Manage them in **Settings → Research → Working Corpora**; you can also capture one graphically, by lassoing a region of the semantic map (Section 15.6).
 
@@ -641,6 +641,20 @@ your submitted query runs through. In Meaning mode:
   work as in keyword mode.
   The header counts *N closest matches* — at most 100, the nearest the model found, not a
   total — and front matter and chapter headings cannot be reached this way.
+- **Inside a working corpus or a project's History scope, the ranking runs inside that set.**
+  With a corpus applied (Section 7.9), or **History** chosen under the project's section of
+  **Filters**, a Meaning search scores every document in the set against your question and lists
+  the closest, up to 100. No document outside the set is listed, however close it is. The strip
+  above the results says where the ranking ran — *ranked by what your question means, inside the
+  212 documents you are searching within* — and, before you search, the screen invites a question
+  *to rank the 212 documents you are searching within*. The strip also counts the documents in
+  the set that could not be ranked, in two kinds. Some have no match data at all: front matter
+  and chapter headings never do, and a document added to a volume after this version of the app
+  was built has none until the app is updated. Others are in a volume whose match file is not on
+  this device; **Download Missing Vectors** in **Settings → Volumes & Storage** fetches the files
+  for the volumes you have downloaded, and while every one of them is already downloading the
+  strip says that instead. An edition pair (*1951–1954, Iran* and its second edition) is listed
+  as two rows here, where a search of the whole series folds the pair into one: the set is yours.
 - **Save as Working Corpus** works here too, and the corpus says what it is. Its save sheet
   states that the documents are the closest matches a Meaning search found, not every document
   on your subject. The corpus is recorded as *Meaning search — the N closest matches*, and
@@ -652,8 +666,16 @@ your submitted query runs through. In Meaning mode:
   and switching back to Keywords shows the browse again. A hand-off from elsewhere in the app
   that names something to find (Find all mentions, a topic, the documents link in Corpus
   Analytics) always runs as a keyword search and sets the control to Keywords.
-- **Your filters apply** — volume scope, dates, people, subjects, tags are intersected against
-  the semantic matches, and the strip above the results says how many matches they removed.
+- **Your other filters apply after the ranking** — volume scope, dates, people, subjects, tags
+  are intersected against the semantic matches, and the strip above the results says how many
+  matches they removed. So a date range over a Meaning search keeps those of the closest 100 that
+  fall inside it; it does not go looking for the closest 100 inside the range.
+- **A close match this device cannot list is counted.** The match data comes with the app and a
+  volume is the copy you downloaded, so the two can differ: upstream may have added a document to
+  a volume since you downloaded it, or removed one. A close match of that kind has no row to
+  show, and the strip says how many there were: *2 close matches are not listed: this device's
+  index does not hold those documents.* Updating the volume in **Settings → Volumes & Storage**
+  brings a document that was added.
   Matches in volumes you have not downloaded are listed separately below the results ("In
   volumes you have not downloaded"), checked against your volume scope only — the strip
   discloses that too.
@@ -663,7 +685,8 @@ your submitted query runs through. In Meaning mode:
   expression exists.
 - Recorded searches from Meaning mode carry a **route marker** instead of a keyword scope, and
   the method appendix states their counts are ranked lists — a semantic zero never prints as
-  "the term is absent."
+  "the term is absent." A Meaning search that ran inside a set records the set, and the appendix
+  says so: *ranked inside a set of 212 documents, not across the whole series*.
 - Saved Searches always run as keyword searches, whatever the picker shows — they archive
   keyword parameters and their freshness badges compare keyword counts.
 

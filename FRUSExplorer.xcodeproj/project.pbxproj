@@ -121,6 +121,7 @@
 		11675C62D0C39F2F1F7C291A /* SemanticMapPicking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839F51227E15A56358E13AB9 /* SemanticMapPicking.swift */; };
 		1179C1C3EC3495DB879DFA7C /* BundledArtifactProvenance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4868AB20550665D487DCE906 /* BundledArtifactProvenance.swift */; };
 		11CD24BCD38112373C2CE737 /* SourceNoteParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7054B9A8AF2304B2C17F34BF /* SourceNoteParser.swift */; };
+		120BAD1A9AD5E960B6CAA572 /* SemanticSetSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 708F89C25F581D72F136AA35 /* SemanticSetSearchTests.swift */; };
 		1217B46F1BDD8A434E5EE6A2 /* ProjectContextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3072096E5D180CCA514717CA /* ProjectContextView.swift */; };
 		124B1615811292FE81B4EAFA /* FRUSTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B864FAA0FBEB4ECA349A89 /* FRUSTheme.swift */; };
 		127391F9F98DF89B0D084750 /* DocxCollectionExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BB1028F3812398A57E3411 /* DocxCollectionExporter.swift */; };
@@ -298,6 +299,7 @@
 		321C4E617AC35374258139A6 /* Collection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D5FF807E3273A5463B838B /* Collection.swift */; };
 		322C57F73A518F4496EFA1F4 /* AdvancedFilterSignatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF11222CAC14076F15420469 /* AdvancedFilterSignatureTests.swift */; };
 		3273C593F2189ABB7580E82D /* NARAAPIKeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73AD5E4C3F5410E494B55EEF /* NARAAPIKeyStore.swift */; };
+		32C3C6954FA97113B6FFDD12 /* SearchTimingLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC5A4697055BCA9C9F9E094 /* SearchTimingLog.swift */; };
 		32FCD80C2CDE206F7303163A /* ArchivalNetworkData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C05281A2398C42990D9535 /* ArchivalNetworkData.swift */; };
 		3336EC0C1C47F8E8610CC902 /* CorpusAnalyticsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8CD93F51265ECCE42D3C95D /* CorpusAnalyticsServiceTests.swift */; };
 		33372F4A8FE3B9FC5A8358B8 /* VolumeSubjectProfiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E7C36736758920E7769097 /* VolumeSubjectProfiles.swift */; };
@@ -1402,6 +1404,7 @@
 		E3A9BFC287A7FFBE875EB56D /* CollectionPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7551596FDF143C34D587CB9 /* CollectionPickerSheet.swift */; };
 		E3D76309E350421F307A4FE6 /* DocumentASTCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */; };
 		E3F856DF02689CB52541EE2D /* ResponseFormatCodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69E9AFFBFB5AAA0F89AC6BC /* ResponseFormatCodingTests.swift */; };
+		E40408EF9A9254DA41DC64BD /* SearchTimingLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC5A4697055BCA9C9F9E094 /* SearchTimingLog.swift */; };
 		E42571DC4B131E713C2AA127 /* PublishedCitationGrammar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B884F6CEB54DE14ABD1201 /* PublishedCitationGrammar.swift */; };
 		E44167532316A537E2B69962 /* frus-highlights.js in Resources */ = {isa = PBXBuildFile; fileRef = B20D6C9B01A86FECCB5F0C69 /* frus-highlights.js */; };
 		E47495FFB5764E0A3C84F536 /* SearchFilterTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA38BC1F0B8ADE0413E86C4B /* SearchFilterTokens.swift */; };
@@ -1509,6 +1512,7 @@
 		F347C81E72B07D808A8151FA /* SummarizationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575AE87338FE62F1C04F2C21 /* SummarizationModels.swift */; };
 		F34B646E5AE0BE67CCD34CB9 /* PendingCloudBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5BFCC7AFB5CE81483D61BA1 /* PendingCloudBackdrop.swift */; };
 		F36097A1142EFC14C3BB9B2A /* SourceExplorerLoadIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92591E59620EC7B177E71E25 /* SourceExplorerLoadIdentity.swift */; };
+		F365B4AF9FD0EE74788E9558 /* SemanticSetFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD5B45CAF2194C6CD9C02AE /* SemanticSetFixture.swift */; };
 		F38326ED7268F68B3EC17242 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = FF735149F415370F2B4A807F /* Localizable.strings */; };
 		F414BEB175F2472E3FCDF9DC /* AccessionSeriesIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71077BDF3F234357D106FDD0 /* AccessionSeriesIndexTests.swift */; };
 		F45C48F7BDDA29ECC75CF20F /* VolumeStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59767193ABC63073093EB3F3 /* VolumeStructure.swift */; };
@@ -2046,6 +2050,7 @@
 		6B341C7D359DE26CC1435689 /* ProjectAdminService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAdminService.swift; sourceTree = "<group>"; };
 		6B3F094755ED88E959244A13 /* SemanticMapCameraTransitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapCameraTransitTests.swift; sourceTree = "<group>"; };
 		6BD6E3D1EFB096F5392BB555 /* AboutViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewTests.swift; sourceTree = "<group>"; };
+		6CC5A4697055BCA9C9F9E094 /* SearchTimingLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTimingLog.swift; sourceTree = "<group>"; };
 		6CEBCC915167AB40F815AD6B /* NARACatalogClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NARACatalogClient.swift; sourceTree = "<group>"; };
 		6D3D36C3120683A02B651204 /* WhyRelatedChipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhyRelatedChipTests.swift; sourceTree = "<group>"; };
 		6DF3800E6EA9F402E0F8B123 /* CorpusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorpusView.swift; sourceTree = "<group>"; };
@@ -2056,6 +2061,7 @@
 		7054B9A8AF2304B2C17F34BF /* SourceNoteParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceNoteParser.swift; sourceTree = "<group>"; };
 		70831314E6A38B3694F53B78 /* RelatedDocumentsRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatedDocumentsRequest.swift; sourceTree = "<group>"; };
 		7089A37ED1E472A07CD99D7D /* BundledKeynessBaseline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledKeynessBaseline.swift; sourceTree = "<group>"; };
+		708F89C25F581D72F136AA35 /* SemanticSetSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticSetSearchTests.swift; sourceTree = "<group>"; };
 		71077BDF3F234357D106FDD0 /* AccessionSeriesIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessionSeriesIndexTests.swift; sourceTree = "<group>"; };
 		713E06E56BABEFADBABB5DED /* ProvenanceMountTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProvenanceMountTests.swift; sourceTree = "<group>"; };
 		71424C2AA6C6C985A477647A /* ResetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetService.swift; sourceTree = "<group>"; };
@@ -2490,6 +2496,7 @@
 		DA38BC1F0B8ADE0413E86C4B /* SearchFilterTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchFilterTokens.swift; sourceTree = "<group>"; };
 		DA74E7E22289A1B3801D3E51 /* CollectionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionDetailView.swift; sourceTree = "<group>"; };
 		DAAF5658EA508F2B59DBB168 /* FRUSExplorer-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-iOS.entitlements"; sourceTree = "<group>"; };
+		DAD5B45CAF2194C6CD9C02AE /* SemanticSetFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticSetFixture.swift; sourceTree = "<group>"; };
 		DB9C16E209B29BC65286AE8F /* FRUSASTNode+PrintedText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FRUSASTNode+PrintedText.swift"; sourceTree = "<group>"; };
 		DBE157BE22FD0C22F3BB4DB4 /* BundledCloudVectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledCloudVectors.swift; sourceTree = "<group>"; };
 		DC6D7E3181FDAAEF8E3287F9 /* ProvenanceStatementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProvenanceStatementTests.swift; sourceTree = "<group>"; };
@@ -2723,6 +2730,7 @@
 				9D18FFCBBDD8710C84CA7540 /* SearchModels.swift */,
 				90A1036E60878EE613B166A3 /* SearchScopeSignature.swift */,
 				9270E34F5FB833B6D4E003BA /* SearchService+Collocation.swift */,
+				6CC5A4697055BCA9C9F9E094 /* SearchTimingLog.swift */,
 				5175DA5DB0C781AF94092EFC /* SearchView.swift */,
 				1FC5CACE74CF80F1108393BA /* SearchViewModel.swift */,
 				C36B6D274D5B2E1889C1E23B /* SemanticMeaningModeViews.swift */,
@@ -3485,6 +3493,8 @@
 				D1DBC8A05B4E925541FB9B76 /* SemanticMapSurfaceTests.swift */,
 				4A518F36A87F41B3A99187C4 /* SemanticModelStoreTests.swift */,
 				0E27C905850229161DA4D412 /* SemanticQuerySearcherTests.swift */,
+				DAD5B45CAF2194C6CD9C02AE /* SemanticSetFixture.swift */,
+				708F89C25F581D72F136AA35 /* SemanticSetSearchTests.swift */,
 				D7080A5712E6CAE599E2BACE /* SemanticShardFetcherTests.swift */,
 				A681DE69BB3AFAEA0BC588F8 /* SemanticSliceGuidanceTests.swift */,
 				A50E38C9A958835840AE43B5 /* SemanticStorageReportTests.swift */,
@@ -4980,6 +4990,7 @@
 				C26CF777A49657C4F1089DAD /* SearchService+Collocation.swift in Sources */,
 				910EE6AD947ABD351627CC07 /* SearchService.swift in Sources */,
 				A22C595327FE000A48C669BD /* SearchSheet.swift in Sources */,
+				32C3C6954FA97113B6FFDD12 /* SearchTimingLog.swift in Sources */,
 				06EAC57BB27383F03E11AB88 /* SearchView.swift in Sources */,
 				979A7C4D67D61AF058C8F5AE /* SearchViewModel.swift in Sources */,
 				8B133EE9AD4FD60E72EA25FC /* SemanticAnalyticsView.swift in Sources */,
@@ -5536,6 +5547,7 @@
 				8080D631722711796A4F16A0 /* SearchService+Collocation.swift in Sources */,
 				34A8322D0206ED13B1402CA1 /* SearchService.swift in Sources */,
 				B72DF8B6CFFEA31016B26B0F /* SearchSheet.swift in Sources */,
+				E40408EF9A9254DA41DC64BD /* SearchTimingLog.swift in Sources */,
 				60F22FAC6A69B29BECC423AC /* SearchView.swift in Sources */,
 				10261AAAA628A1097825EB9F /* SearchViewModel.swift in Sources */,
 				60C5D7ECBCC4DABF879CB19B /* SemanticAnalyticsView.swift in Sources */,
@@ -5991,6 +6003,8 @@
 				20DB5A7E2D734E5CA460A136 /* SemanticMapSurfaceTests.swift in Sources */,
 				E7B346B56C0B27F759697AC1 /* SemanticModelStoreTests.swift in Sources */,
 				BDDA69686AE67CAA492C2FEC /* SemanticQuerySearcherTests.swift in Sources */,
+				F365B4AF9FD0EE74788E9558 /* SemanticSetFixture.swift in Sources */,
+				120BAD1A9AD5E960B6CAA572 /* SemanticSetSearchTests.swift in Sources */,
 				1DA1B05DCFD9DB16EDFA5B93 /* SemanticShardFetcherTests.swift in Sources */,
 				B9907E30C9380E630B1C65FC /* SemanticSliceGuidanceTests.swift in Sources */,
 				5000240C4196EB318366CB1A /* SemanticStorageReportTests.swift in Sources */,

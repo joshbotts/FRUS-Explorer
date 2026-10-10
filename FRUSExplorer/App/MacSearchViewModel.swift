@@ -218,6 +218,12 @@ final class MacSearchViewModel {
     /// engine and the rows are still the last one's. ``resultSetScope`` reads this one.
     private(set) var resultsAreSemantic = false
 
+    /// How many documents the next search would run inside, or `nil` when no document set is
+    /// applied: the size of the gate in `parameters`, an applied working corpus intersected with
+    /// the project's History scope (#1577 lane 1). The Meaning strip reads it to say where a
+    /// Meaning search will rank. `SearchViewModel.documentSetSize` is its twin.
+    var documentSetSize: Int? { parameters.documentIds?.count }
+
     /// The parameters a search would run with *right now*, from the live text field.
     ///
     /// Distinct from what `performSearch` uses, which reads `submittedQuery`. The Query
@@ -1093,6 +1099,10 @@ final class MacSearchViewModel {
         let fetchLimit = frozenParams.runsAsFilterOnly
             ? Self.filterOnlyHardLimit : Self.searchHardLimit
 
+        // #1577 lane 1: a search inside a document set is timed, for `SearchTimingLog`.
+        let clock = ContinuousClock()
+        let sent = clock.now
+
         // Fetch results and total count in parallel. searchCount runs an FTS5 COUNT(*)
         // without snippet/bm25 work so it returns substantially faster than search().
         async let resultsTask  = service.search(parameters: frozenParams, limit: fetchLimit)
@@ -1100,6 +1110,7 @@ final class MacSearchViewModel {
         async let expressionTask = try? service.matchExpressions(for: frozenParams).corpus
         do {
             let fetched = try await resultsTask
+            let rowsTime = clock.now - sent
             results = fetched
             // With the rows, not before the await: a run that is cancelled keeps the previous rows, and
             // they keep the ceiling and the engine they came from.
@@ -1121,6 +1132,11 @@ final class MacSearchViewModel {
                 totalMatchCount = max(total, fetched.count)
             } else {
                 totalMatchCount = nil
+            }
+            if let documentSet = frozenParams.documentIds {
+                SearchTimingLog.record(SearchTimingLog.GatedKeyword(
+                    setSize: documentSet.count, rowCount: fetched.count,
+                    rows: rowsTime, total: clock.now - sent))
             }
             // Clamp page index to the new result set.
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
@@ -1273,9 +1289,10 @@ final class MacSearchViewModel {
                 appliedCorpusId: filterVM?.appliedWorkingCorpusId,
                 renderedExpression: lastRenderedExpression,
                 // See the iOS twin: a Meaning run records the route signature, never an
-                // FTS-shaped scope the appendix would decode into keyword claims.
+                // FTS-shaped scope the appendix would decode into keyword claims. Inside a
+                // document set it names the set as well (#1577 lane 1).
                 signatureOverride: lastRunWasSemantic
-                    ? SearchScopeSignature.semanticRouteSignature : nil,
+                    ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil,
                 projectId: projectId,
                 hasError: searchError != nil),
             anchor: &historyAnchor,

@@ -334,7 +334,8 @@ struct MacSearchWindowView: View {
                 // The Meaning strip replaces the MATCH inspector — no FTS expression exists,
                 // and the strip carries the route's own disclosures.
                 SemanticModeStrip(disclosure: searchVM.semanticDisclosure,
-                                  beyondCount: searchVM.beyondLibraryHits.count)
+                                  beyondCount: searchVM.beyondLibraryHits.count,
+                                  pendingSetSize: searchVM.documentSetSize)
             } else {
                 queryInspectorStrip
             }
@@ -625,6 +626,9 @@ struct MacSearchWindowView: View {
             searchVM.queryText = ""
             // #1299: `searchErrorView` shows any standing error beside empty results, so it goes with them.
             searchVM.searchError = nil
+            // #1577 lane 1: and so does the last Meaning run's disclosure, which the strip and
+            // the empty state would go on reading as a description of rows that are gone.
+            searchVM.semanticDisclosure = nil
         }
         // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
         // Window scene, so an active-project change must reset the scope and drop any stale
