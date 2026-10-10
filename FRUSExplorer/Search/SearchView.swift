@@ -1757,37 +1757,28 @@ struct SearchView: View {
         }
     }
 
-    /// A subtle banner shown while checklist mode is on and at least one result is hidden, so the
-    /// shrunken result count is explained (#189-D).
+    /// The checklist's strip, shown whenever Checklist Mode is on (#189-D, #1576 lane 1): how many
+    /// results are hidden as reviewed, Mark Page Reviewed, and Undo after a bulk mark.
+    ///
+    /// Until #1576 this was one line, drawn only once a result was hidden. ``ChecklistStrip`` is
+    /// the Mac window's strip too, so the two cannot differ on what a page mark hides.
     @ViewBuilder
     private var checklistHiddenBanner: some View {
         if vm.checklistMode {
-            let hidden = vm.results.count - vm.displayedResults.count
-            if hidden > 0 {
-                Label(
-                    String(format: String(localized: "search.checklist.hiddenBanner %lld",
-                                          defaultValue: "%lld reviewed hidden"), Int64(hidden)),
-                    systemImage: "checklist"
-                )
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal)
-                .padding(.bottom, 2)
-            }
-            // #1592: with Log Research Sessions off nothing records that a result was opened, so
-            // opening one cannot hide it. Shown whether or not anything is hidden yet: the reader
-            // who needs it is the one whose list did not shrink.
-            if let notice = ChecklistLoggingNotice.text(checklistMode: vm.checklistMode,
-                                                        loggingEnabled: loggingEnabled) {
-                Label(notice, systemImage: "info.circle")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.bottom, 2)
-                    .accessibilityIdentifier("search.checklist.loggingOff")
-            }
+            ChecklistStrip(
+                hiddenCount: vm.results.count - vm.displayedResults.count,
+                // The timeline and the collocates cover the whole retained set, so there is no
+                // page under them to mark, and none to bring back: a collocation is not rebuilt
+                // when a mark changes, so an undo under it would leave a ranking of another set.
+                pageRowCount: activeReading.isPaged ? vm.pagedResults.count : 0,
+                canUndo: activeReading.isPaged && vm.canUndoBulkMark,
+                // #1592: with Log Research Sessions off nothing records that a result was opened,
+                // so opening one cannot hide it. Shown whether or not anything is hidden yet: the
+                // reader who needs it is the one whose list did not shrink.
+                loggingNotice: ChecklistLoggingNotice.text(checklistMode: vm.checklistMode,
+                                                           loggingEnabled: loggingEnabled),
+                markPage: { vm.markReviewed(vm.pagedResults) },
+                undo: { vm.undoLastBulkMark() })
         }
     }
 
@@ -2099,8 +2090,11 @@ struct SearchView: View {
         .listStyle(.inset)
         #endif
         // Re-identify the list when the page changes so it scrolls back to the top
-        // instead of retaining the previous page's offset.
-        .id(vm.currentPage)
+        // instead of retaining the previous page's offset. A page marked reviewed, or brought
+        // back, changes every row under the same index, so it counts as a change of page
+        // (#1576 lane 1): the reader who pressed Mark Page Reviewed at the foot of a page would
+        // otherwise be left at the foot of the next.
+        .id([vm.currentPage, vm.bulkMarkGeneration])
     }
 
     /// The paged result rows — extracted so the List can hold them AND the beyond-library

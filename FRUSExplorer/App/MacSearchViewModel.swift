@@ -453,20 +453,28 @@ final class MacSearchViewModel {
         didSet { clampCurrentPage() }
     }
 
-    /// `(volumeId|documentId)` keys the user marked reviewed this session via the row context
-    /// menu — an in-memory set, never a fabricated `ReadingHistoryEntry`.
-    var markedReviewedKeys: Set<String> = [] {
+    /// The results the reader marked reviewed this session, from a row's menu or with Mark Page
+    /// Reviewed, and the last bulk mark apart so that it can be undone (#1576 lane 1). An in-memory
+    /// value, never a fabricated `ReadingHistoryEntry`.
+    private(set) var reviewedMarks = ReviewedMarks() {
         didSet { clampCurrentPage() }
     }
 
-    /// The trimmed submitted query the checklist is currently anchored to. `performSearch` re-runs
-    /// on every filter/scope change (not only on a new query, unlike iOS's `search()`), so the
-    /// re-anchor is gated on this changing — otherwise a filter edit mid-session would wipe the
-    /// user's reviewed marks. Mirrors ``SearchHistoryWriter/Anchor``'s "one row per distinct query"
-    /// pattern by asking the writer's own ``SearchHistoryWriter/isSameQuery(_:_:)``, so a query
-    /// re-run in other quotation marks (`“cold war”` as `"cold war"`, #1298) keeps its marks exactly
-    /// as it keeps its history row. Held in the spelling that anchored it; the comparison folds.
-    private var lastChecklistAnchorQuery: String?
+    /// `(volumeId|documentId)` keys the reader marked reviewed this session: ``reviewedMarks``' keys.
+    /// A read, since #1576: the marks are written through ``markReviewed(volumeId:documentId:)``,
+    /// ``markReviewed(_:)`` and ``undoLastBulkMark()``.
+    var markedReviewedKeys: Set<String> { reviewedMarks.keys }
+
+    /// The search the checklist is anchored to, or `nil` while the mode is off. `performSearch`
+    /// re-runs on every filter/scope change (not only on a new query), so the re-anchor is gated on
+    /// the search itself changing — otherwise a filter edit mid-session would wipe the reader's
+    /// reviewed marks. ``ChecklistAnchor`` decides "the same search": for a search with words, the
+    /// writer's own ``SearchHistoryWriter/isSameQuery(_:_:)``, so a query re-run in other quotation
+    /// marks (`“cold war”` as `"cold war"`, #1298) keeps its marks exactly as it keeps its history
+    /// row; and for a browse with no words, the same person and subject (#1576 lane 1). Until then
+    /// this was the typed text alone, which is empty for every browse, so marks made in one person's
+    /// Find all mentions hid documents in the next person's.
+    private(set) var checklistAnchor: ChecklistAnchor?
 
     /// A stable reviewed-set key for a `(volume, document)` pair.
     nonisolated static func reviewedKey(volumeId: String, documentId: String) -> String {
@@ -495,20 +503,72 @@ final class MacSearchViewModel {
         checklistMode = on
         if on {
             checklistEnabledAt = .now
-            lastChecklistAnchorQuery = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-            markedReviewedKeys.removeAll()
+            checklistAnchor = ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
+            reviewedMarks.reset()
         } else {
             checklistEnabledAt = nil
-            lastChecklistAnchorQuery = nil
+            checklistAnchor = nil
             readSinceEnabledKeys.removeAll()
-            markedReviewedKeys.removeAll()
+            reviewedMarks.reset()
         }
         currentPage = 0
     }
 
     /// Marks a document reviewed for this checklist session (hides it without opening it).
     func markReviewed(volumeId: String, documentId: String) {
-        markedReviewedKeys.insert(Self.reviewedKey(volumeId: volumeId, documentId: documentId))
+        reviewedMarks.mark(Self.reviewedKey(volumeId: volumeId, documentId: documentId))
+    }
+
+    /// Marks several results reviewed at one stroke — Mark Page Reviewed hands this the page — and
+    /// remembers the ones it newly hid, so that ``undoLastBulkMark()`` can bring them back
+    /// (#1576 lane 1). `SearchViewModel.markReviewed(_:)` is its twin, and ``ReviewedMarks`` holds
+    /// the rule for both.
+    ///
+    /// - Parameter results: The results to mark, in any order.
+    /// - Returns: How many rows left the list: the results newly marked, less any a document
+    ///   opened since the mode came on was hiding already.
+    @discardableResult
+    func markReviewed(_ results: [SearchResult]) -> Int {
+        reviewedMarks.markBulk(results.map {
+            Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)
+        }).subtracting(readSinceEnabledKeys).count
+    }
+
+    /// How many rows of the loaded results Undo would bring back
+    /// (``ReviewedMarks/undoableCount(among:otherwiseHidden:)``).
+    private var undoableRowCount: Int {
+        reviewedMarks.undoableCount(
+            among: results.lazy.map { Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId) },
+            otherwiseHidden: readSinceEnabledKeys)
+    }
+
+    /// Whether Undo would bring a row back: there is a bulk mark, and at least one result it hid
+    /// is among the loaded results and hidden by nothing else. `SearchViewModel.canUndoBulkMark`
+    /// is its twin.
+    var canUndoBulkMark: Bool { undoableRowCount > 0 }
+
+    /// Takes back the last bulk mark, and only that: marks made a row at a time stay.
+    ///
+    /// - Returns: How many rows came back to the list, which is not always the size of the mark:
+    ///   see ``ReviewedMarks/undoableCount(among:otherwiseHidden:)``.
+    @discardableResult
+    func undoLastBulkMark() -> Int {
+        let restored = undoableRowCount
+        reviewedMarks.undoLastBulk()
+        return restored
+    }
+
+    /// Settles the checklist against a search that is about to run (#1576 lane 1): the same search
+    /// keeps its marks and its anchor time, and another search starts the checklist again.
+    /// `SearchViewModel.settleChecklist(for:)` is its twin.
+    ///
+    /// - Parameter anchor: The anchor of the search being run.
+    private func settleChecklist(for anchor: ChecklistAnchor) {
+        guard checklistMode, checklistAnchor?.isSameSearch(as: anchor) != true else { return }
+        checklistAnchor = anchor
+        checklistEnabledAt = .now
+        readSinceEnabledKeys.removeAll()
+        reviewedMarks.reset()
     }
 
     /// Resets `currentPage` to 0 when a reviewed-set change shrank the list below the current page.
@@ -1071,23 +1131,16 @@ final class MacSearchViewModel {
         currentPage = 0
         defer { isSearching = false }
 
-        // Re-anchor the checklist ONLY when the submitted query actually changed (#189-D).
-        // Unlike iOS's `search()` — which fires only for deliberate new queries — macOS
-        // `performSearch` also re-runs on every filter/scope change (those bump
-        // `parametersVersion`, part of `searchTrigger`), so an unconditional re-anchor would
-        // silently wipe the user's reviewed marks whenever they touched a filter mid-session.
-        // Gating on the query keeps marks across filter re-runs of the same query while still
-        // clearing them for a genuine new query. "The same query" is the history writer's own rule
-        // (`SearchHistoryWriter.isSameQuery`, the test that decides a `historyAnchor` refresh), so the
-        // same query in other quotation marks keeps its marks as it keeps its history row (#1298).
-        // Reviewed identity is document identity, which recurs across searches, so a stale mark
-        // must not leak into an unrelated query.
-        if checklistMode, !SearchHistoryWriter.isSameQuery(lastChecklistAnchorQuery, query) {
-            lastChecklistAnchorQuery = query
-            checklistEnabledAt = .now
-            readSinceEnabledKeys.removeAll()
-            markedReviewedKeys.removeAll()
-        }
+        // Re-anchor the checklist ONLY when the search itself changed (#189-D). `performSearch`
+        // also re-runs on every filter/scope change (those bump `parametersVersion`, part of
+        // `searchTrigger`), so an unconditional re-anchor would silently wipe the user's reviewed
+        // marks whenever they touched a filter mid-session. `ChecklistAnchor` keeps marks across
+        // re-runs of the same search while still clearing them for a new one: the same words by
+        // the history writer's own rule (`SearchHistoryWriter.isSameQuery`, #1298), and for a
+        // browse with no words the same person and subject (#1576 lane 1). Reviewed identity is
+        // document identity, which recurs across searches, so a stale mark must not leak into an
+        // unrelated search. Built from the parameters this run is about to send.
+        settleChecklist(for: ChecklistAnchor(query: query, parameters: params))
 
         // Capture an immutable copy so Swift 6 region-based isolation is happy
         // when the same parameters value is sent to two actor-isolated calls below.
@@ -1193,14 +1246,10 @@ final class MacSearchViewModel {
         semanticNeedsModel = false
         lastRunWasSemantic = true
         defer { isSearching = false }
-        // The same-query rule `performSearch` gates on, and the one the history writer refreshes a
-        // Meaning run's row by, so a respelled Meaning query keeps its marks as it keeps its row.
-        if checklistMode, !SearchHistoryWriter.isSameQuery(lastChecklistAnchorQuery, query) {
-            lastChecklistAnchorQuery = query
-            checklistEnabledAt = .now
-            readSinceEnabledKeys.removeAll()
-            markedReviewedKeys.removeAll()
-        }
+        // The same-search rule `performSearch` settles by, and for a question the one the history
+        // writer refreshes a Meaning run's row by, so a respelled Meaning query keeps its marks as
+        // it keeps its row.
+        settleChecklist(for: ChecklistAnchor(query: query, parameters: parameters))
         do {
             let outcome = try await backend.run(query: query, parameters: parameters)
             results = outcome.results
