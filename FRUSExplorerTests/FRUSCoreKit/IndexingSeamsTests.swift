@@ -30,6 +30,7 @@ import FTS5Store
 ///
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 2: initial implementation
+///   1.1 — #1604: the pipeline the app builds is given the Spotlight donor
 @Suite("FRUSCoreKit — the indexer's seams")
 struct IndexingSeamsTests {
 
@@ -184,6 +185,32 @@ struct IndexingSeamsTests {
         #expect((resources.decimalClassLabels() != nil) == (DecimalClassLabelStore.shared != nil))
         #expect(resources.brokenRefs()?.generated == BrokenRefsIndexStore.shared?.generated)
         #expect(resources.brokenRefs() != nil)
+    }
+
+    /// The app builds its one pipeline through the initialiser in `IndexingPipeline+App.swift`
+    /// (`FRUSExplorerApp`'s boot passes no `resources:`, which the kit's own initialiser requires).
+    /// That initialiser is where the Spotlight donor is passed, and the kit's `donor:` defaults to
+    /// `nil`: dropping the argument there compiles, indexes as before, and donates nothing to
+    /// Spotlight for any reader. `aDonorHearsOfEachVolume` covers what a pipeline does with the
+    /// donor it has; this covers that the app's has one. The stamps go to a suite of the test's
+    /// own, removed after it.
+    @Test("The pipeline the app builds is given the Spotlight donor (#1604)")
+    func theAppsPipelineHasTheSpotlightDonor() async throws {
+        try await withTempDir { dir in
+            let database = dir.appendingPathComponent("seams.sqlite")
+            let volumes = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+            let suite = "frus.test.\(UUID().uuidString)"
+            let defaults = try #require(UserDefaults(suiteName: suite))
+            defer { defaults.removePersistentDomain(forName: suite) }
+            let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: database),
+                                                databaseURL: database, volumesDirectory: volumes,
+                                                defaults: defaults)
+            #expect(pipeline.donor is SpotlightDonor,
+                    "the app's pipeline was built with \(String(describing: pipeline.donor)) for a donor")
+            // The same call hands it the app's data files, by the same argument list.
+            #expect(pipeline.resources.personAuthority() != nil)
+        }
     }
     #endif
 }

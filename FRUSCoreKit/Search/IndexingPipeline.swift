@@ -452,7 +452,11 @@ public actor IndexingPipeline {
     nonisolated public let isReadOnly: Bool
 
     /// What indexing tells a system search index, or `nil`: the app's Spotlight donor.
-    private let donor: (any IndexedDocumentDonor)?
+    ///
+    /// Readable inside the module, and `nonisolated` as `defaults` and `resources` are, so a test
+    /// can ask which donor a host's initialiser passed (#1604): a host that passed none indexes as
+    /// before and tells no search index anything, and no other test would say so.
+    nonisolated let donor: (any IndexedDocumentDonor)?
 
     /// Effective concurrency cap used by `indexAllVolumes`.
     ///

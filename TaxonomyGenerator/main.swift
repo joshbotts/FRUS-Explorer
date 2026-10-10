@@ -16,7 +16,9 @@ import TaxonomyGeneratorCore
 /// swift run TaxonomyGenerator
 /// ```
 /// Review the JSON diff before committing — unexpected changes may indicate a page
-/// redesign requiring updates to `TaxonomyParser`.
+/// redesign requiring updates to `TaxonomyParser`. A run whose page gave no tags, tags outside
+/// the three categories, or a list missing more than one in ten of the file's slugs leaves the
+/// file as it was and exits 1 (`TaxonomyGate`, #1600).
 ///
 /// Optional environment variables:
 ///   OUTPUT_PATH    — Override the default output path

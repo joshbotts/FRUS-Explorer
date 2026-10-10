@@ -294,6 +294,15 @@ struct SyncDiagnosticsRowSourceTests {
 /// `DebugStoreSeparationTests.containerFactoryWiring`. Each test's monitor has its own
 /// `UserDefaults` suite and log file, so nothing reaches the device's real memory or Sync Log.
 /// Idiom-agnostic.
+///
+/// ## The system log, and a simulator that refuses it (#1606)
+/// What the monitor does with a system-log read is tested with a read of the test's own
+/// (`reader(over:)`), which applies the app's selection rule to lines the test writes. One test,
+/// `systemLogReachesTheRowAndTheRun`, goes through the real log store, with the monitor's own
+/// read. Since October 2026 the simulators on the owner's Mac refuse a process its own log
+/// (`OSLogErrorDomain` 6, errno 13, on three simulators and on binaries that had passed); a Mac
+/// process on the same machine reads its own. Where the store cannot be read that test records a
+/// known issue and the run stays green; where it can, a failure there is a failure.
 @Suite("Sync event monitor (#1531)")
 @MainActor
 struct SyncEventMonitorTests {
@@ -313,17 +322,53 @@ struct SyncEventMonitorTests {
         }
     }
 
-    private func makeFixture(scans: Bool = false, delay: Duration = .zero) throws -> Fixture {
+    /// A monitor over its own defaults and log file. `systemLog` is its system-log read; `nil`
+    /// leaves the monitor its own, the app's, by passing no argument at all.
+    private func makeFixture(scans: Bool = false, delay: Duration = .zero,
+                             systemLog: (@Sendable (Date, Date) -> [String]?)? = nil) throws -> Fixture {
         let suite = "frus.test.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
         let directory = URL.temporaryDirectory.appending(path: "frus-monitor-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let log = SyncDiagnosticsLog(fileURL: directory.appending(path: "sync-diagnostics.json"))
-        let monitor = SyncEventMonitor(center: NotificationCenter(), defaults: defaults,
-                                       configuration: .debug, log: log,
-                                       scansSystemLog: scans, scanDelay: delay)
+        let monitor = if let systemLog {
+            SyncEventMonitor(center: NotificationCenter(), defaults: defaults,
+                             configuration: .debug, log: log,
+                             scansSystemLog: scans, scanDelay: delay, systemLog: systemLog)
+        } else {
+            SyncEventMonitor(center: NotificationCenter(), defaults: defaults,
+                             configuration: .debug, log: log,
+                             scansSystemLog: scans, scanDelay: delay)
+        }
         return Fixture(monitor: monitor, defaults: defaults, suite: suite, log: log,
                        directory: directory)
+    }
+
+    /// A system-log read over `lines` in place of the log store: the app's own selection rule
+    /// (`SystemLogSchemaScan.identifiers(in:from:to:)`), so a line outside the event's window or
+    /// from another subsystem is left out here as it is in the app.
+    private static func reader(over lines: [SystemLogSchemaScan.Line]) -> @Sendable (Date, Date) -> [String]? {
+        { start, end in SystemLogSchemaScan.identifiers(in: lines, from: start, to: end) }
+    }
+
+    /// A Core Data error line as #1531's was worded, naming `field` in `record`.
+    private static func rejection(of field: String, in record: String, at date: Date) -> SystemLogSchemaScan.Line {
+        SystemLogSchemaScan.Line(
+            date: date, subsystem: "com.apple.coredata", isError: true,
+            message: "Export failed: Cannot create or modify field '\(field)' in record '\(record)' in production schema")
+    }
+
+    /// Whether this process is refused its own log store here: the open or the first read throws.
+    /// The two calls `SystemLogSchemaScan.scanCurrentProcess` makes, made by the test itself, so
+    /// the answer does not depend on the code under test.
+    private static func logStoreIsUnreadable() -> Bool {
+        do {
+            let store = try OSLogStore(scope: .currentProcessIdentifier)
+            _ = try store.getEntries(at: store.position(date: .now))
+            return false
+        } catch {
+            return true
+        }
     }
 
     /// A failed export or import ending `seconds` after `base` — real dates, so a system-log read
@@ -482,35 +527,95 @@ struct SyncEventMonitorTests {
     /// a test subsystem under `com.apple.coredata` at error level, the shape Core Data's own fatal
     /// export errors take; the scan is read until the line has reached the log store, so the
     /// monitor's own read cannot race it.
+    ///
+    /// The monitor here is given no read of its own, so this is also the one test that the
+    /// monitor's default read is the log store's. Where this process is refused its log store
+    /// (#1606) nothing in it can pass, and its failures are recorded as a known issue;
+    /// `whatTheLogNamedReachesTheRowAndTheRun` checks the same row and run without the store.
     @Test("A failure's row and remembered run carry what this process's system log named")
     func systemLogReachesTheRowAndTheRun() async throws {
-        let fixture = try makeFixture(scans: true, delay: .milliseconds(50))
-        defer { fixture.cleanUp() }
-        let failedAt = Date.now
-        Logger(subsystem: "com.apple.coredata.frus-test", category: "cloudkit").error(
-            "Export failed: Cannot create or modify field 'CD_frusTestField' in record 'CD_FRUSTestRecord' in production schema")
-        var found: [String]? = nil
-        for _ in 0..<40 {
-            found = SystemLogSchemaScan.scanCurrentProcess(from: failedAt, to: Date.now)
-            if found?.contains("CD_frusTestField") == true { break }
-            try await Task.sleep(for: .milliseconds(250))
-        }
-        #expect(found?.contains("CD_frusTestField") == true,
-                "this process's own log never showed the line — OSLogStore is unreadable here")
+        try await withKnownIssue("#1606: this process's own system log cannot be opened here") {
+            let fixture = try makeFixture(scans: true, delay: .milliseconds(50))
+            defer { fixture.cleanUp() }
+            let failedAt = Date.now
+            Logger(subsystem: "com.apple.coredata.frus-test", category: "cloudkit").error(
+                "Export failed: Cannot create or modify field 'CD_frusTestField' in record 'CD_FRUSTestRecord' in production schema")
+            var found: [String]? = nil
+            for _ in 0..<40 {
+                found = SystemLogSchemaScan.scanCurrentProcess(from: failedAt, to: Date.now)
+                // `nil` is a store that cannot be read, which no wait will change.
+                if found == nil || found?.contains("CD_frusTestField") == true { break }
+                try await Task.sleep(for: .milliseconds(250))
+            }
+            #expect(found?.contains("CD_frusTestField") == true,
+                    "this process's own log never showed the line — OSLogStore is unreadable here")
 
+            var memory: UnrecoveredExport?
+            fixture.monitor.attach(memory: { memory = $0 }, events: { _ in })
+            fixture.monitor.receive(SyncEventSnapshot(
+                phase: "export", hasEnded: true, succeeded: false, startDate: failedAt,
+                endDate: Date.now, diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure)))
+            await fixture.monitor.waitForRows()
+            let row = try #require(await fixture.log.entries().last)
+            #expect(row.systemLogScanned == true)
+            #expect(row.systemLogSchemaIdentifiers?.contains("CD_FRUSTestRecord") == true)
+            #expect(row.systemLogSchemaIdentifiers?.contains("CD_frusTestField") == true)
+            #expect(row.isUndiagnosedFailure == false)
+            #expect(memory?.schemaIdentifiers?.contains("CD_frusTestField") == true,
+                    "the remembered run did not take up what the log named")
+        } when: {
+            Self.logStoreIsUnreadable()
+        }
+    }
+
+    /// What a system-log read names reaches the failed row and the remembered run, and the app is
+    /// told: the monitor's half of the channel above, with the read passed in so it runs wherever
+    /// the log store does not. The event runs a minute and the line sits in the middle of it, so
+    /// a monitor that asked for the wrong dates would be handed nothing.
+    @Test("What a system-log read names reaches the failed row and the remembered run")
+    func whatTheLogNamedReachesTheRowAndTheRun() async throws {
+        let failedAt = Date.now
+        let fixture = try makeFixture(scans: true, systemLog: Self.reader(over: [
+            Self.rejection(of: "CD_frusTestField", in: "CD_FRUSTestRecord", at: failedAt.addingTimeInterval(30)),
+        ]))
+        defer { fixture.cleanUp() }
         var memory: UnrecoveredExport?
         fixture.monitor.attach(memory: { memory = $0 }, events: { _ in })
         fixture.monitor.receive(SyncEventSnapshot(
             phase: "export", hasEnded: true, succeeded: false, startDate: failedAt,
-            endDate: Date.now, diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure)))
+            endDate: failedAt.addingTimeInterval(60),
+            diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure)))
         await fixture.monitor.waitForRows()
         let row = try #require(await fixture.log.entries().last)
         #expect(row.systemLogScanned == true)
-        #expect(row.systemLogSchemaIdentifiers?.contains("CD_FRUSTestRecord") == true)
-        #expect(row.systemLogSchemaIdentifiers?.contains("CD_frusTestField") == true)
+        #expect(row.systemLogSchemaIdentifiers == ["CD_FRUSTestRecord", "CD_frusTestField"])
         #expect(row.isUndiagnosedFailure == false)
-        #expect(memory?.schemaIdentifiers?.contains("CD_frusTestField") == true,
+        #expect(memory?.schemaIdentifiers == ["CD_FRUSTestRecord", "CD_frusTestField"],
                 "the remembered run did not take up what the log named")
+        #expect(SyncExportFailureMemory.load(defaults: fixture.defaults, configuration: .debug)?
+                    .schemaIdentifiers == ["CD_FRUSTestRecord", "CD_frusTestField"])
+    }
+
+    /// A log that cannot be read is a fact about the row, not a missing one: the row is filed,
+    /// says the log was not read, and stays an undescribed failure; the remembered run gains no
+    /// names. This is what the app records wherever a process is refused its own log (#1606).
+    @Test("A system log that cannot be read is filed as unread, and names nothing")
+    func anUnreadableLogIsFiledAsUnread() async throws {
+        let fixture = try makeFixture(scans: true, systemLog: { _, _ in nil })
+        defer { fixture.cleanUp() }
+        var memories: [UnrecoveredExport?] = []
+        fixture.monitor.attach(memory: { memories.append($0) }, events: { _ in })
+        let before = memories.count
+        fixture.monitor.receive(failure("export", at: .now))
+        await fixture.monitor.waitForRows()
+        let row = try #require(await fixture.log.entries().last)
+        #expect(row.systemLogScanned == false)
+        #expect(row.systemLogSchemaIdentifiers == nil)
+        #expect(row.isUndiagnosedFailure)
+        let run = try #require(SyncExportFailureMemory.load(defaults: fixture.defaults, configuration: .debug))
+        #expect(run.schemaIdentifiers == nil)
+        // One change reached the app, the failure itself; an unread log is not a second.
+        #expect(memories.count == before + 1, "\(memories.count - before) changes reached the app")
     }
 
     /// The order promise, with the wait it is about. A failed row waits for the system log (2 s
@@ -559,29 +664,21 @@ struct SyncEventMonitorTests {
     /// device, and a download's failure says nothing about which of them iCloud refused.
     @Test("A failed import's system-log names stay on its row and out of the upload failure")
     func importScanDoesNotJoinTheRun() async throws {
-        let fixture = try makeFixture(scans: true, delay: .milliseconds(50))
+        let failedAt = Date.now
+        let fixture = try makeFixture(scans: true, systemLog: Self.reader(over: [
+            Self.rejection(of: "CD_frusImportField", in: "CD_FRUSImportRecord", at: failedAt),
+        ]))
         defer { fixture.cleanUp() }
         SyncExportFailureMemory.recordExport(succeeded: false, at: .now, message: "m",
                                              schemaIdentifiers: nil, defaults: fixture.defaults,
                                              configuration: .debug)
-        let failedAt = Date.now
-        Logger(subsystem: "com.apple.coredata.frus-test", category: "cloudkit").error(
-            "Import failed: Cannot create or modify field 'CD_frusImportField' in record 'CD_FRUSImportRecord' in production schema")
-        var found: [String]? = nil
-        for _ in 0..<40 {
-            found = SystemLogSchemaScan.scanCurrentProcess(from: failedAt, to: Date.now)
-            if found?.contains("CD_frusImportField") == true { break }
-            try await Task.sleep(for: .milliseconds(250))
-        }
-        #expect(found?.contains("CD_frusImportField") == true,
-                "fixture guard: this process's own log never showed the line")
 
         fixture.monitor.receive(SyncEventSnapshot(
             phase: "import", hasEnded: true, succeeded: false, startDate: failedAt,
             endDate: Date.now, diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure)))
         await fixture.monitor.waitForRows()
         let row = try #require(await fixture.log.entries().last)
-        #expect(row.systemLogSchemaIdentifiers?.contains("CD_frusImportField") == true,
+        #expect(row.systemLogSchemaIdentifiers == ["CD_FRUSImportRecord", "CD_frusImportField"],
                 "fixture guard: the import's own row did not get what the log named")
         let run = try #require(SyncExportFailureMemory.load(defaults: fixture.defaults,
                                                             configuration: .debug))

@@ -496,6 +496,7 @@ struct SyncEventSnapshot: Sendable {
 ///
 /// Version history:
 ///   1.0 — #1531
+///   1.1 — #1606: the system-log read is passed in (`systemLog:`), the app's by default
 @MainActor
 final class SyncEventMonitor {
 
@@ -516,6 +517,7 @@ final class SyncEventMonitor {
     private let log: SyncDiagnosticsLog?
     private let scansSystemLog: Bool
     private let scanDelay: Duration
+    private let systemLog: @Sendable (Date, Date) -> [String]?
 
     private var observer: (any NSObjectProtocol)?
     private var consumer: ((SyncEventSnapshot) -> Void)?
@@ -535,18 +537,23 @@ final class SyncEventMonitor {
     ///   - scansSystemLog: whether a failed event has this process's system log read.
     ///   - scanDelay: how long the read waits first, so the lines Core Data logged around the
     ///     failure have reached the log store.
+    ///   - systemLog: the read itself: the schema names logged between two dates, or `nil` when
+    ///     the log could not be read. The app's is ``SystemLogSchemaScan/scanCurrentProcess(from:to:)``;
+    ///     a test passes its own, because a simulator may refuse a process its own log (#1606).
     init(center: NotificationCenter = .default,
          defaults: UserDefaults = .standard,
          configuration: FRUSStoreConfiguration = .current,
          log: SyncDiagnosticsLog? = .shared,
          scansSystemLog: Bool = true,
-         scanDelay: Duration = .seconds(2)) {
+         scanDelay: Duration = .seconds(2),
+         systemLog: @escaping @Sendable (Date, Date) -> [String]? = SystemLogSchemaScan.scanCurrentProcess) {
         self.center = center
         self.defaults = defaults
         self.configuration = configuration
         self.log = log
         self.scansSystemLog = scansSystemLog
         self.scanDelay = scanDelay
+        self.systemLog = systemLog
     }
 
     /// Whether ``install()`` has run.
@@ -629,6 +636,7 @@ final class SyncEventMonitor {
         guard let log else { return }
         let scan = !snapshot.succeeded && scansSystemLog && claimScan(at: snapshot.endDate)
         let delay = scanDelay
+        let readSystemLog = systemLog
         let previous = recordingTail
         recordingTail = Task.detached(priority: .utility) { [self] in
             await previous?.value
@@ -636,8 +644,7 @@ final class SyncEventMonitor {
             var found: [String]? = nil
             if scan {
                 try? await Task.sleep(for: delay)
-                let result = SystemLogSchemaScan.scanCurrentProcess(from: snapshot.startDate,
-                                                                    to: snapshot.endDate)
+                let result = readSystemLog(snapshot.startDate, snapshot.endDate)
                 scanned = result != nil
                 found = result.flatMap { $0.isEmpty ? nil : $0 }
             }

@@ -86,6 +86,13 @@ struct AnalyticsValueUnitTests {
         .deletingLastPathComponent()
         .appendingPathComponent("FRUSExplorer/Analytics")
 
+    /// `FRUSCoreKit/Analytics/`, which took two of the app's analytics files when the kit was made:
+    /// the scan reads it too, so they stay inside the rule they were under (#1604).
+    private static let kitAnalyticsDirectory: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSCoreKit/Analytics")
+
     @Test("The unit noun is written out in exactly one file")
     func unitNounIsNotHardcodedElsewhere() throws {
         // Both the localization key and the English default are checked: someone could reintroduce
@@ -97,16 +104,22 @@ struct AnalyticsValueUnitTests {
         let paths = try fileManager
             .subpathsOfDirectory(atPath: Self.analyticsDirectory.path)
             .filter { $0.hasSuffix(".swift") }
+        let kitPaths = try fileManager
+            .subpathsOfDirectory(atPath: Self.kitAnalyticsDirectory.path)
+            .filter { $0.hasSuffix(".swift") }
 
         // Anti-vacuity: if the scan path breaks, every needle is trivially absent and this passes
         // while auditing nothing.
         #expect(paths.count > 10, "Only \(paths.count) Swift files under Analytics/; the scan path is wrong")
         #expect(paths.contains { $0.hasSuffix("AnalyticsValueUnit.swift") },
                 "The file that is supposed to own these strings is not in the scan")
+        #expect(!kitPaths.isEmpty, "No Swift files under FRUSCoreKit/Analytics/; the scan path is wrong")
 
         var offenders: [String] = []
-        for path in paths {
-            let url = Self.analyticsDirectory.appendingPathComponent(path)
+        let files = paths.map { (path: $0, url: Self.analyticsDirectory.appendingPathComponent($0)) }
+            + kitPaths.map { (path: "FRUSCoreKit/Analytics/\($0)",
+                              url: Self.kitAnalyticsDirectory.appendingPathComponent($0)) }
+        for (path, url) in files {
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
             let owns = path.hasSuffix("AnalyticsValueUnit.swift")
             for needle in needles where text.contains(needle) {
