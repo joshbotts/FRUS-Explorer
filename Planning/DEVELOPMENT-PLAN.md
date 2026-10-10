@@ -36518,7 +36518,7 @@ After the week's queue (plan of record §0c). HistoryAtState/frus merged its pul
 - The five volumes whose text alone moved by a few characters since they were embedded.
 - `document-subject-index.json`: the subject export of 2026-08-20 has Documents 1–899 of this volume.
 - `Planning/source-explorer-export/`, a sample of an export this session did not re-run.
-- `joshbotts/frus-semantic-vectors`' own `README.md` and `shards-manifest.json`, which describe 552 shards and have since the vol. XVI shard was added on 2026-09-09. The app reads neither.
+- `joshbotts/frus-semantic-vectors`' own `README.md` and `shards-manifest.json`, which describe 552 shards and have since the vol. XVI shard was added on 2026-09-09. The app reads neither. *(Brought up to date later the same day: the next entry.)*
 - `Planning/OH-Report-2026-10-01.md` and its CSVs: the report as filed.
 
 **Found**
@@ -36541,5 +36541,37 @@ After the week's queue (plan of record §0c). HistoryAtState/frus merged its pul
 - **The 47 documents' subject tags** wait on the Office of the Historian's next subject export.
 - **Nothing is posted to HistoryAtState/frus#469.** The status of its rows is above if the owner wants to reply there.
 - **The cost of a relayout is not filed as an issue.** Whether it is one is the owner's to say.
-- **The shards repository's own README and manifest** (above).
+- **The shards repository's own README and manifest** (above). *(Done later the same day: the next entry.)*
 - **TestFlight notes** are written at the build bump; the plan of record's §0b lists the line owed.
+
+## Session 2026-10-10 — The shards repository's README and manifest describe the 553 shards, and the release plan says to keep them so
+
+The same session as the entry above, after its pull request (#1624) merged as `f23092ec`. The owner asked for the shards repository's documentation to be brought up to date, and then for this record. No app code, no bundled file and no test changes here: three planning documents.
+
+**Done in `joshbotts/frus-semantic-vectors`** (commit `38793f0`, pushed, and read back from GitHub)
+- **`shards-manifest.json`** is the manifest the app bundles on `v2`, byte for byte: 553 rows, each matching its file. It had been the file of 2026-08-16: 552 rows, none for `frus1981-88v16`, and since that morning's push two that no longer matched their files.
+- **`README.md`**:
+  - 553 files under "What is here". The sizes it gives still hold.
+  - What the manifest is: a copy, where each build verifies a download against the one it shipped with.
+  - A new section, "Changes since publication": the three files changed since August, and what replacing a file in place means for build 49 and earlier.
+  - The Provenance table at 553 volumes, 314,616 documents and 605,978 chunks, with the three harvest dates and the pack of 2026-10-10.
+  - A sentence saying the quality figures were measured on the first publication and not since.
+- **The repository's one-line description** says 553 volumes.
+- **Not touched:** the README's "Model weights" and "Licence" sections and the `NOTICE` file. The first and the last are the Gemma compliance text. The README from "## Model weights" to its end is identical before and after, and `NOTICE` is the file of `fb33b4f`.
+
+**Measured**
+- **Every figure the README states**, from the manifest and the 553 files: 162,377,248 bytes, which is 155 MB in the binary units the README uses; mean 287 KB, median 242 KB, smallest 1 KB (`frus1919Parisv13`), largest 965 KB (`frus1915`). Every shard is 64 bytes and 516 a document, for the bundled index's count of that volume. The three files changed since publication hold 1,230 of the 314,616 documents.
+- **What builds through 49 expect.** The tag `build-49` bundles a manifest stamped 2026-09-09. Its rows for the two replaced files are 102,232 and 463,948 bytes, and they are the files at `dd8295f` in the shards repository's history, which is where the README now sends such a build's reader.
+
+**Changed here**
+- `Planning/New-Volume-Release-Plan.md`: step 13a, which makes that repository's manifest copy, README and description part of a shard push and names what not to edit; a paragraph closing §4.4, which says the repository describes itself and that nothing had kept the description true; a line under D-c3; and the head note.
+- The entry above: its two lines that left the README and manifest say where they were taken up.
+- The plan of record's §0c: one sentence.
+
+**Checked**
+- The iOS unit target on an iPhone 17 simulator (iOS 27.0), without the corpus mirror, so the suites that read it skipped: "Test run with 6621 tests in 784 suites passed after 455.978 seconds with 6 known issues", `** TEST SUCCEEDED **`, exit 0, no relaunch of the host.
+- `CodingStandardsAuditTests` and `EditableContentKeyTests` again after this entry was written: 84 tests in 2 suites passed.
+- `swift test` and the Mac build were not run: the diff is three Markdown files under `Planning/`, which neither reads or compiles.
+
+**Not done**
+- The recall figures in that README were not measured again. The README says so.
