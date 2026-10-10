@@ -45,7 +45,7 @@ import Foundation
 /// ## The pipeline, and why each stage is where it is
 ///
 /// 1. **Candidates come from the bundled Tier-1 block**, a sign vector per document (one bit per
-///    shipping dimension) for all 314,571 documents — so candidate generation works with *zero
+///    shipping dimension) for all 314,616 documents — so candidate generation works with *zero
 ///    volumes downloaded* and reaches volumes the reader does not have. A full corpus scan is
 ///    1.43 ms, measured at the 256 width on an M1 Max; the ladder spike puts the same kernel
 ///    about 1.6x slower at the shipped 512.

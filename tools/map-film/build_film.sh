@@ -39,7 +39,7 @@
 # THREE INVARIANTS ARE CHECKED BEFORE ANYTHING IS ENCODED, because each fails silently otherwise:
 #
 #   1. THE BOUNDING BOX MUST BE THE SAME ON THE FIRST FRAME AS ON THE LAST. It is, today, because
-#      out-of-scope documents are GHOSTED rather than removed, so every frame draws all 314,571
+#      out-of-scope documents are GHOSTED rather than removed, so every frame draws all 314,616
 #      points and the extent never moves. If a future harness stopped drawing the ghosts, the box
 #      would grow through the film and a single crop would clip the later frames — with no error.
 #   2. THE WIDTH CROP MUST NOT CLIP THE CONTENT. A width chosen for composition can be narrower than

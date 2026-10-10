@@ -15,7 +15,7 @@ import Foundation
 /// (#764).
 ///
 /// ## Read this before rendering a cell
-/// **95.3% of these references are footnotes.** Measured on the shipped corpus: 74,204 of 77,850
+/// **95.3% of these references are footnotes.** Measured on the shipped corpus: 74,220 of 77,866
 /// document-to-document references sit in an editor's note, and 3,646 in document body text. A
 /// cell therefore says *the editors, annotating material from this collection, pointed the reader
 /// at material from that one* — a real and unmapped thing, but **not** "these two archives cite

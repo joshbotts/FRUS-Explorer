@@ -119,18 +119,18 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 32405,
+        "centralDecimalFile" : 32442,
         "foreignArchive" : 21,
         "intelligence" : 576,
-        "lotFile" : 7061,
+        "lotFile" : 7068,
         "namedFileSeries" : 1290,
         "naraCollection" : 270,
-        "presidentialLibrary" : 3387,
+        "presidentialLibrary" : 3388,
         "previouslyPublished" : 54,
-        "unrecognized" : 1908
+        "unrecognized" : 1909
       },
       "decade" : 1950,
-      "totalNotes" : 46972,
+      "totalNotes" : 47018,
       "volumeCount" : 100
     },
     {
@@ -3037,15 +3037,15 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 751,
-        "lotFile" : 92,
+        "centralDecimalFile" : 788,
+        "lotFile" : 99,
         "namedFileSeries" : 3,
-        "presidentialLibrary" : 3,
+        "presidentialLibrary" : 4,
         "previouslyPublished" : 4,
-        "unrecognized" : 56
+        "unrecognized" : 57
       },
       "decade" : 1950,
-      "totalNotes" : 909,
+      "totalNotes" : 955,
       "volumeId" : "frus1952-54v09p1"
     },
     {
@@ -6115,8 +6115,8 @@
     "previouslyPublished",
     "unrecognized"
   ],
-  "generated" : "2026-10-02",
+  "generated" : "2026-10-10",
   "schemaVersion" : 2,
-  "totalSourceNotes" : 269242,
+  "totalSourceNotes" : 269288,
   "volumesCovered" : 523
 }

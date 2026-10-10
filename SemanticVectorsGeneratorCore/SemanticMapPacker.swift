@@ -159,7 +159,7 @@ public enum SemanticMapPacker {
     /// That is every `throw` in `pack`. `pack` keeps its own, because its count is the exact one —
     /// the rows the vector pass really pooled — where the runner hands this the sum of the store's
     /// volume heads. The two agreed on all 553 volumes of the shipped store (measured 2026-10-01:
-    /// 314,571 by either count), so a store whose heads misstate its documents is the one case
+    /// 314,571 by either count; 314,616 by either on 2026-10-10), so a store whose heads misstate its documents is the one case
     /// that can still refuse after the vectors are written.
     ///
     /// **`pack`'s throws are not the runner's whole map block.** The runner also decodes the

@@ -201,7 +201,7 @@ enum SemanticProjectReach {
     /// passes that nothing could stop.
     ///
     /// The held mask is built HERE rather than by the caller for the same reason the scan is: it is
-    /// one byte per corpus row — 314,571 writes — which has no business on a frame.
+    /// one byte per corpus row — 314,616 writes — which has no business on a frame.
     ///
     /// - Parameters:
     ///   - probeRows: The seeds' corpus rows.

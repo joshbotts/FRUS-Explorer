@@ -14,7 +14,7 @@ import Foundation
 /// (UI review M-20 / F-28).
 ///
 /// ## Why a table of regions and not a table of documents
-/// The map draws 314,571 points, and "the data behind it" read literally is 314,571 coordinate
+/// The map draws 314,616 points, and "the data behind it" read literally is 314,616 coordinate
 /// rows — a file nobody can check against anything. The regions table is the one the reader can
 /// audit: every row is a label they can see on screen, with the count the map itself drew it
 /// from. It is also the only grain at which the artifact has something to say beyond position.
@@ -84,7 +84,7 @@ enum SemanticMapExport {
     /// **`corpusStatement` is supplied and must stay supplied.** `AnalyticsProvenance`'s default
     /// corpus caveat says counts "cover only the N volume(s) indexed on this device" — which is
     /// false here and would be a false methods statement in a file written to outlive the screen.
-    /// The map is a bundled whole-series artifact: it draws all 314,571 documents with zero
+    /// The map is a bundled whole-series artifact: it draws all 314,616 documents with zero
     /// volumes downloaded. That is precisely the case `corpusStatement` was added for.
     ///
     /// - Parameters:

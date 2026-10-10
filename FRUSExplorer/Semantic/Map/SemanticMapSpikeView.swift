@@ -161,7 +161,7 @@ final class SemanticMapModel {
     ///
     /// Two things happen here and both are necessary. A region with (almost) nothing in scope is
     /// **dropped**, because the artifact's cluster centres are whole-corpus and scoping to one
-    /// subseries otherwise left the label layer choosing its dozen from all 171 regions, most of them
+    /// subseries otherwise left the label layer choosing its dozen from all 172 regions, most of them
     /// naming a place that now held nothing but ghosts.
     /// And a surviving region's `documentCount` is **replaced by its in-scope count**, because the
     /// label layer ranks by size and keeps a dozen: rank by the series and a narrow scope gives its
@@ -475,7 +475,7 @@ final class SemanticMapModel {
     /// The three ways a reveal can end.
     ///
     /// **`.notReady` exists because collapsing it into failure shipped a broken feature.** The map
-    /// opens, `prepare()` starts uploading 314,571 points, and the continuation can arrive before
+    /// opens, `prepare()` starts uploading 314,616 points, and the continuation can arrive before
     /// the index exists — at which point a `Bool`-returning reveal says "false", the caller records
     /// the continuation as applied, and the retry that would have worked never happens. The document
     /// simply never gets selected, which is exactly what a reader reported. `setScope` had solved
@@ -493,7 +493,7 @@ final class SemanticMapModel {
     ///
     /// **The same shape as `requestedScope`, and for the same reason.** The caller's copy of the
     /// request does not survive: measured on macOS, the continuation reaches the view, `reveal`
-    /// answers `.notReady` because `prepare()` is still uploading 314,571 points, and by the time
+    /// answers `.notReady` because `prepare()` is still uploading 314,616 points, and by the time
     /// prepare finishes the view's `continued` has gone back to nil — so a retry driven from the
     /// caller's value finds nothing to apply. Storing the key HERE makes the retry independent of
     /// whatever happens to the caller's state.
@@ -508,7 +508,7 @@ final class SemanticMapModel {
     /// Focuses a region by artifact cluster id (#1051 B-7 — Browse's "See on the semantic map").
     ///
     /// The reveal's twin, with the reveal's `.notReady` deferral — a focus that arrives while
-    /// `prepare()` is still uploading 314,571 points is stored and re-applied, never dropped. The
+    /// `prepare()` is still uploading 314,616 points is stored and re-applied, never dropped. The
     /// one extra guard is the DIGEST: cluster ids re-mint per artifact generation, and this request
     /// can ride window restoration across an app update that regenerated the artifact, so a focus
     /// whose digest does not match the loaded artifact is refused (`.notFound` — the map opens
@@ -840,7 +840,7 @@ final class SemanticMapModel {
         guard let index, let vectors = BundledSemanticVectors.corpusVectors else { return }
 
         // Year per ROW, resolved once per volume rather than once per document: 553 lookups instead
-        // of 314,571.
+        // of 314,616.
         var yearByRow = [Int16](repeating: 0, count: map.documentCount)
         var minYear = Int.max, maxYear = Int.min
         for volume in index.volumes {
@@ -969,7 +969,7 @@ final class SemanticMapModel {
     /// **A camera write is exactly one frame.** The renderer is `isPaused = true` with
     /// `enableSetNeedsDisplay`, and `camera` carries `didSet { setNeedsRedraw() }`, so a transit is
     /// N dirty marks and costs nothing when idle. That property is why this is affordable on a
-    /// 314,571-point map at all.
+    /// 314,616-point map at all.
     private func moveCamera(to target: SemanticMapCamera) {
         transitTask?.cancel()
         transitTask = nil
@@ -1087,7 +1087,7 @@ final class SemanticMapModel {
     /// **A dip, not a cross-dissolve, and that is forced by the artifact.** `colourIndex` means a
     /// different thing under each lens — region id here, era there — so interpolating between two
     /// palettes produces colours that belong to neither, and a true dissolve needs two draws of
-    /// 314,571 points. Fading through the floor is the honest form: it says *the colouring is
+    /// 314,616 points. Fading through the floor is the honest form: it says *the colouring is
     /// changing* without asserting an intermediate colouring that means nothing.
     ///
     /// The swap happens at the BOTTOM of the dip, so the reader never sees the two colourings at
@@ -1146,7 +1146,7 @@ final class SemanticMapModel {
 
 /// The corpus as a map of its own vocabulary.
 ///
-/// Draws the bundled Tier-0 artifact — 314,571 documents placed by the layout stage, coloured by a
+/// Draws the bundled Tier-0 artifact — 314,616 documents placed by the layout stage, coloured by a
 /// lens the reader picks, with tap-to-open, lasso capture and axis slices over it.
 ///
 /// It is the body of `SemanticAnalyticsView`, which is where it ended up after starting as a
@@ -1606,7 +1606,7 @@ struct SemanticMapSpikeView: View {
         // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
         // first line of the method, so the continuation was banked before the reveal was even
         // attempted — and since recording it is exactly what stops the retry, a reveal that arrived
-        // while `prepare()` was still uploading 314,571 points was discarded and never asked again.
+        // while `prepare()` was still uploading 314,616 points was discarded and never asked again.
         // The map opened with nothing selected, which is what a reader reported.
         guard Self.continuationIsSettled(outcome) else { return }
         appliedContinuation = continued
@@ -2365,7 +2365,7 @@ struct SemanticMapSpikeView: View {
     /// **Reuses `SemanticSimilarityGenerator`, which is the answer to "does the Related Documents
     /// axis provide this path".** It does, and taking it whole rather than re-deriving the funnel
     /// means a neighbour here is a neighbour there: the same Tier-1 Hamming candidates over all
-    /// 314,571 documents, the same exact int8 rerank, the same tie-breaks, the same shard fetches
+    /// 314,616 documents, the same exact int8 rerank, the same tie-breaks, the same shard fetches
     /// queued for next time. A second implementation would be a second thing to drift.
     ///
     /// **What it inherits is a fence, and the map is exactly where that matters.** The generator
@@ -2952,7 +2952,7 @@ struct SemanticMapSpikeView: View {
     ///
     /// Uses `labelledClusters` — the scope-aware list, whose counts are re-tallied against the
     /// current scope — so the numbers in the file are the numbers on the screen. Under no scope
-    /// that property returns the whole set, so the unscoped export is the full 171 regions.
+    /// that property returns the whole set, so the unscoped export is the full 172 regions.
     private func exportRegionsCSV() {
         guard let index = BundledSemanticMap.index else { return }
         let clusters = model.labelledClusters
@@ -3041,7 +3041,7 @@ struct SemanticMapSpikeView: View {
     ///
     /// Two rules inherited from those precedents: list what the **data** has rather than what the
     /// drawing had room for (the canvas keeps ~22 labels; this lists every region), and state what
-    /// the list cannot cover — 89,449 of 314,571 documents sit between regions, and a region list
+    /// the list cannot cover — 92,268 of 314,616 documents sit between regions, and a region list
     /// is structurally incapable of reaching them.
     @ViewBuilder
     private var mapAccessibilityList: some View {
@@ -3121,7 +3121,7 @@ struct SemanticMapSpikeView: View {
     private func applyScope(_ ids: [String]?, label: String?) {
         // **The set is compared before the mask is rebuilt**, because `AnalyticsScopeBar` writes its
         // two bindings separately: one menu tap calls this twice, once for the ids and once for the
-        // label. Rebuilding on both meant two passes over 314,571 rows per selection, the second of
+        // label. Rebuilding on both meant two passes over 314,616 rows per selection, the second of
         // them redundant. The label still updates either way.
         let changed = ids.map(Set.init) != scopeVolumeIds.map(Set.init)
         scopeVolumeIds = ids
@@ -3390,7 +3390,7 @@ struct SemanticMapSurface {
         // `enableSetNeedsDisplay` makes a dirty mark the thing that produces a frame; the renderer
         // marks itself dirty from every mutator (`SemanticMapRenderer.register(_:)` and its `didSet`
         // hooks). The map is a still image unless the camera moves, so the free-running loop this
-        // replaces spent 60 identical 314,571-point draw calls a second for as long as a window
+        // replaces spent 60 identical 314,616-point draw calls a second for as long as a window
         // stayed open — which was a fair trade for a spike being measured and is not one for a
         // window a reader leaves open beside their work.
         view.enableSetNeedsDisplay = true

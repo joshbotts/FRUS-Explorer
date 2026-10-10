@@ -110,7 +110,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
 
     /// Whether the key under the map can name every colour the lens produces.
     ///
-    /// **`cluster` cannot, and says so rather than pretending.** It cycles 171 regions through 15
+    /// **`cluster` cannot, and says so rather than pretending.** It cycles 172 regions through 15
     /// slots — adjacency, not identity, is what its colour conveys, and the region *names* are drawn
     /// on the map itself. Every other lens names each colour exactly once, and
     /// `SemanticMapSurfaceTests` holds them to it against the slots the colouring actually hands out.
@@ -126,7 +126,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     var legend: [String] {
         switch self {
         case .cluster:
-            // One entry, and `namesEveryColour` is false: the other fifteen slots cycle through 171
+            // One entry, and `namesEveryColour` is false: the other fifteen slots cycle through 172
             // regions, which the map labels by name where they sit.
             return [String(localized: "semanticMap.legend.unclustered",
                            defaultValue: "Between regions")]
@@ -154,7 +154,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
 ///
 /// The work is deliberately **per volume, not per document**: every lens except `cluster` is a
 /// property of the volume, and the map's rows are contiguous per volume, so a lens is a few hundred
-/// range fills rather than 314,571 lookups. `cluster` reads the map's own bytes.
+/// range fills rather than 314,616 lookups. `cluster` reads the map's own bytes.
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
@@ -183,7 +183,7 @@ enum SemanticMapColouring {
         var colours = [UInt8](repeating: 0, count: map.documentCount)
         switch lens {
         case .cluster:
-            // Clusters are cycled through the palette rather than given unique colours: there are 171
+            // Clusters are cycled through the palette rather than given unique colours: there are 172
             // of them and 16 slots, and a map that tried to distinguish all of them by hue would
             // distinguish none of them. Adjacency, not identity, is what the colour conveys — the
             // label at a region's centre is what names it.

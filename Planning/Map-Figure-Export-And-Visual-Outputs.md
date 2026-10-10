@@ -11,8 +11,8 @@ sequenced. §7.1 (a randomised splash lens) is superseded — the lens is seeded
 (that plan's refusal 12, and its step 9, shipped); §7.2's title-only plates are declined (refusal
 3); §7.6's figure plates for the graph surfaces are declined (refusal 7); §7.3, §7.4 and §7.5 are
 that plan's step 16, still open. The figures below are the 2026-08-20 measurements and are left as
-written; the bundle today holds 553 volumes × 4 lenses in `cloud-vectors-volumes.json` and 171
-regions over 314,571 documents in `semantic-map-index.json`, and §8's provenance-lens line is
+written; the bundle today holds 553 volumes × 4 lenses in `cloud-vectors-volumes.json` and 172
+regions over 314,616 documents in `semantic-map-index.json`, and §8's provenance-lens line is
 corrected in place.
 
 **Why this document exists.** `SemanticMapExport.swift` ships a deliberate refusal: the map gets the

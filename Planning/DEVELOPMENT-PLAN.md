@@ -36469,3 +36469,77 @@ Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests
 - **#1600's second source** (#1622).
 - **#1620's cause.**
 - **The Mac was built, not run.** The download manager's prune is the one change it compiles that does anything, and its tests run in the iOS host.
+
+## Session 2026-10-10 — The app's data catches up with upstream at corpus `99d851c79`: the 47 documents restored to 1952–1954, vol. IX, Part 1 are in the bundle, the vectors and the map
+
+After the week's queue (plan of record §0c). HistoryAtState/frus merged its pull request #471 on 2026-10-09: Documents 900–946 and pages 1661–1741 are back in `frus1952-54v09p1`, which had lacked them since a vendor redelivery in October 2016. They were the first item of the report filed as HistoryAtState/frus#469, and the pull request cites it. The clone is at `99d851c79`; `volumes/` last changed at `3a375bddf`, one file past `deb6a04f8`, 5,054 lines added and 2 removed. The session first reviewed the plan of record and recommended this ahead of #1576 and #1577; the owner then asked for it here, and gave the word for the harvest and for pushing the shards. No app code changes: a reader gets the corrected volume through `VolumeUpdateChecker`, and this session brings the bundled files, the semantic artifacts and the records to the new commit. One tool is fixed (`tools/oh-report`).
+
+**Measured**
+- **The volume.** 899 → 946 documents (`d900`–`d946`, 1 October to 31 December 1954, the Arab states and Israel) and 1,700 → 1,781 page breaks. The two removed lines are `ch4`'s start tag, whose date range upstream recomputed. By the harvester's own `extract_documents` the 899 older documents are byte-identical to the text embedded in August, and the 47 are 191,866 characters in 83 chunks.
+- **What the kit's pipeline stores**, old against new (a scratch package test that indexed both parts from each corpus copy and was removed). 1,533 rows are in both indexes and none differs in any stored column. 47 are only in the new one. Each has a number, a heading and text; 46 have a dateline and 45 a source note (37 decimal files, 7 lot files, 1 library); one is an editorial note; none has subject tags. The volume gains 16 `cross_references` rows, all to itself, 115 page-range rows for pages 1661–1741, 180 person mentions and 5 external citations.
+- **Each corpus-reading generator**, run on the new corpus at its artifact's committed stamp and compared with the bundle, then on a copy of the corpus as it was (an APFS clone with the one file written from `git show deb6a04f8:`). All seven controls reproduced the bundle byte for byte, so each difference is the corpus's:
+  - volume sources: byte-identical, untouched;
+  - the manifest: one field, the volume's `sizeBytes` (9,468,521 → 9,876,428);
+  - the collection authority: the same 4,051 records and ids; `lot:59D518` and `lot:64D199` gain the volume in their lists;
+  - collection usage: 264,553 → 264,598 notes, 75,037 → 75,045 in a collection, 190,428 → 190,465 with a class, 10,454 → 10,455 class keys (`784A.53`);
+  - external citations: documents scanned 314,569 → 314,616, body footnotes 471,081 → 471,131, lot references 8,450 → 8,452, decimal references 30,524 → 30,527;
+  - provenance flow and resolved edges: the funnel's four counters each by 16 (2,714,106 scanned, 181,907 inside a document, 77,866 edges, 69,229 same-volume). Resolved edges stores the same 8,637 edges; flow gains one collection pair and two class pairs;
+  - source provenance: 269,242 → 269,288 notes (the volume 909 → 955: decimal +37, lot +7, library +1, unrecognized +1);
+  - administration profiles: point-dated 303,404 → 303,450 and range-dated 11,165 → 11,166, in all 314,616.
+- **Cross-reference validation.** 2,714,299 references scanned; 652 broken → 300, and 213 distinct keys → 142. The 352 and 71 that left are `frus1952-54v09p2`'s references to pages 1661–1741, none is new, and every kept record is unchanged. On the old corpus the run reproduced the committed CSV byte for byte.
+- **Where those 352 references sit.** All are in the second part's back-of-book index, which covers both parts (9,168 references to pages of the first). The app does not index or draw an index, so they were never rows of `cross_references` (504 rows for the second part on either side, none flagged) and no reader span was drawn for them. The session's review, written before this was measured, said build 49 showed them as dead links; it did not. They were in the report export alone.
+- **`CloudVectorsGenerator`.** 20 minutes 52 seconds on this Mac. Against the bundle three scopes differ: the volume, its subseries `1952-54` and the corpus. The keyness baseline counts 314,616 documents and 94,682,065 `allTerms` tokens (94,667,887 before).
+- **Which volumes the vector store no longer described** (the harvester's extraction over all 553 against the store's text layer, 35 seconds): seven. Two changed their documents, `frus1952-54v09p1` (+47) and `frus1902app1` (−2, `s05sub04` and `s12`). Five changed a few characters only (`frus1926v02`, `frus1952-54v14p2`, `frus1958-60v03mSupp`, `frus1958-60v05mSupp`, `frus1981-88v16`) and are left, as the release plan's waiver allows.
+- **The harvest.** The two volumes' store entries were moved to `~/frus-semantic-raw-backup-2026-10-10` and checked against the store's own `SHA256SUMS`. LM Studio 0.4.25 was already serving on this Mac; the model was loaded at context 2048 and unloaded afterwards. 1,142 documents, 2,347 chunks, 117.8 seconds. In `run-manifest.json` only `generated`, `models_listing`, `totals_this_run` and `volumes_requested` differ; the six fields that must not move did not. For the 2,264 chunks both stores hold, with the same character spans, old against new: cosine 0.999999 at worst, none bit-identical (another machine embedded the old ones), at most 2 of the first 512 sign bits different in a chunk.
+- **The layout** (`build_layout.py` over the pooled matrix, SHA-256 `c46337c4…`): 314,616 documents, PCA 58.36% as before, 172 clusters, 92,268 unclustered (29.3%); UMAP 181.1 s and HDBSCAN 158.2 s with other generators running. Every parameter is the shipped one.
+- **The pack** (`DIMS=512`, `EXPECT_DIGEST` set): digest `a726ca60…` unchanged; 553 volumes in the same order; 314,616 documents in 1,603 id segments; binary 20,476,048 bytes; map 1,887,760 bytes. The sign-bit blocks of the 551 other volumes are byte-identical to the shipped binary's, and so are their 551 shards. The two new shards are 488,200 and 101,200 bytes. In `frus1952-54v09p1`, 68 of the 899 older rows differ, in 71 of 460,288 sign bits.
+- **The new map against the old**, keyed by volume and document id over the 314,569 documents on both:
+  - 184,177 are in a cluster on both, and 79,067 changed between a cluster and none;
+  - over those in a cluster on both, the adjusted Rand index is 0.554; the median old cluster keeps 98% of them together, and 6 of 171 keep under half;
+  - 349 of 570 label terms carried over, 16 labels verbatim and 20 more reordered; the largest cluster has 15,218 documents where it had 37,865;
+  - the best rigid alignment is a turn of 1.4 degrees with no reflection, and a document moved a median 2,791 grid units, 4.7% of the width;
+  - the 47 new documents are all in cluster 16, `israel, israeli, arab, uar` (12,130), with the 40 documents printed before them;
+  - no label has two or more general words, every label has four terms, and all 172 were read.
+- **The shards on the remote.** Pushed to `joshbotts/frus-semantic-vectors` as `08e4817`. All 553 files in the local clone match the new bundled manifest. Fetched from the address the app builds, the two new shards and five others (the largest, the smallest, three at random) are byte-exact.
+- **In the app, on a new iPhone 17 simulator (iOS 27.0)**, the unit run's own build, given the corrected volume, the second part and the *old* shards of both: the launch log reads "discarded 1 shard(s) whose bundled digest moved: frus1952-54v09p1", the second part's shard was kept and recorded, and the index holds 949 and 631 rows. Documents 900, 941 and 939 were opened and looked at: the telegram's heading, dateline, classification, footnotes and links; the letter's closer, postscript and enclosure; the editorial note in its tinted block.
+- **The report filed as HistoryAtState/frus#469**, by `status_at_commit.py` against a copy at `550a8c5c5`: the missing-documents and part-gap classes stop, as they should; 352 of 653 cross-reference rows are gone, all `target-in-missing-pages`, and none is new; dates 205, glued tags 77, headers 13, pagination 73, Sources lists 32 and transcription 169 are as filed; structure is as at `deb6a04f8`.
+- **The structure sweep** at `99d851c79`: the same seven rows (the CSV is byte-identical) over 339,436 divs.
+- **The parser replica** (`tools/page-citations/replica.py`): 316,814 emitted, 314,616 documents and 2,198 promoted sections.
+
+**Changed**
+- `FRUSExplorer/Resources/`, seventeen files: `manifest.json`; `broken-refs-index.json`; `collection-authority.json`, `collection-usage-index.json`, `external-citation-index.json`, `provenance-flow-index.json`, `resolved-edge-index.json`, `source-provenance-index.json` and `administration-profiles-index.json` (stamped 2026-10-10); `cloud-vectors-core.json`, `cloud-vectors-volumes.json` and `keyness-baseline.json` (one run); `semantic-vectors-index.json`, `semantic-vectors-binary.bin`, `semantic-shards-manifest.json`, `semantic-map.bin` and `semantic-map-index.json` (one pack).
+- `Planning/semantic-map/layout-meta.json`, `Planning/cross-ref-validation/` (three files) and `Planning/corpus-structure-sweep/` (three files; the CSV is unchanged).
+- Seven pins, each re-taken with its reason beside it: the document count in `SemanticVectorsArtifactTests`, `SemanticSubstrateTests` and `VolumeDocumentCountAccessorTests` (314,616), the funnel in `ResolvedEdgeIndexTests` (77,866 and 69,229), the notes in `SourceProvenanceDataTests` (269,288, and 267,255 shown) and the 1948–1960 band's denominator in `ArchivalAnalyticsTests` (60,019).
+- `tools/oh-report/build_oh_report.py`: the `ch4` heading misprint is found from the chapter's own start tag. It was read at line 67638, so `status_at_commit.py` reported the row gone at this commit, where the heading stands unchanged at line 68286. At the report's revision the tool's output is the same before and after (`diff -r` empty). `selftest.py` gains the case: the same row at line 67638 and at 68286, and a stop when the heading is corrected. On the tool as it was, the first reading passes and the second stops with the message the real run gave.
+- Comments that state a bundled file's figures, in 20 Swift files (47 lines changed in place, each a comment line), and `tools/map-film`. A figure inside a dated measurement is left.
+- Documents: both manuals' one sentence that counts the map (314,616); `Docs/Agentic-Analysis-Guide.md` 1.25 (§14.9, §14.10, §14.11's rows, A.1 and A.5, with every cluster reading re-derived); `CLAUDE.md`'s binary size; `Planning/Generators-Runbook.md` (twelve entries); `Planning/New-Volume-Release-Plan.md` (step D-c0, the notes under D-c1 and D-c3, the measured cost of a relayout); `tools/oh-report/README.md`; `Planning/Store-Listing-Draft.md`, `Visual-Marketing-Plan.md` and two more planning notes that state the map's figures; the plan of record's §0b and §0c.
+
+**Left as they are**
+- The five volumes whose text alone moved by a few characters since they were embedded.
+- `document-subject-index.json`: the subject export of 2026-08-20 has Documents 1–899 of this volume.
+- `Planning/source-explorer-export/`, a sample of an export this session did not re-run.
+- `joshbotts/frus-semantic-vectors`' own `README.md` and `shards-manifest.json`, which describe 552 shards and have since the vol. XVI shard was added on 2026-09-09. The app reads neither.
+- `Planning/OH-Report-2026-10-01.md` and its CSVs: the report as filed.
+
+**Found**
+- **A relayout is a new partition.** 47 documents on one subject, added to 314,569, moved a quarter of the corpus across the line between a cluster and none and replaced 221 of 570 label terms. The owner's decision D-2 accepts a relayout at every release; what it costs a reading of a region had not been measured. Not filed.
+- **The analyst guide's verified example had been untrue for a month.** `frus1881/d625` was unclustered in the 2026-09-09 layout, where A.5 still placed it in a region labelled `shah, iran, iranian, mosadeq`. It is replaced by `frus1929v03/d17`, and the guide says an example is a reading of one layout.
+- **Replacing a shard in place costs builds already out.** The address carries no version and each build verifies against its own bundled manifest, so builds through 49 refuse a fresh download of the two shards from the push on. Read from `SemanticShardFetcher.fetchShard`, not seen on a device. The release plan's D-c3 says so now.
+- **The bundled broken-reference index said `corpusVolumeCount` 694**; the corpus has held 744 files since fifty header-only volumes were registered on 2026-09-09. The regenerated file says 744.
+
+**Checked**
+- `swift build --target FRUSCoreKit`: "Build complete!". `swift test`: exit 0, 38 "Test run with" lines, 2,574 tests, no failed run and no ✘ line. On its first run one test failed, the semantic artifact's document count, which is one of the seven pins.
+- The iOS unit target on an iPhone 17 simulator (iOS 27.0) with the TEI mirror at `99d851c79`, twice. The first run: "Test run with 6621 tests in 784 suites failed … with 8 issues (including 6 known issues)". The two were pins the regenerated files move, the 1948–1960 band's denominator and the shown-note count, and each was re-taken from the run's own reading. The second run, on the tree as committed but for this entry and the report tool's self-test: "Test run with 6621 tests in 784 suites passed after 484.665 seconds with 6 known issues", `** TEST SUCCEEDED **`, exit 0, no relaunch of the host, and the seven suites that read the mirror ran.
+- `CodingStandardsAuditTests`, `EditableContentKeyTests`, `AppSourceTreeTests` and `FRUSCoreKitBoundaryTests` again after the last document edit: 98 tests in 4 suites passed.
+- `FRUSExplorerMac`: `** BUILD SUCCEEDED **`.
+- `python3 tools/oh-report/selftest.py`: 133 checks passed (130 before).
+
+**Not done**
+- **The owner's reading of the 172 labels**, owed before build 50.
+- **The new shard's download was not driven in the simulator**: nothing there asked for vectors. The file on the remote is byte-exact against the bundled manifest, and the fetcher's own tests cover the rest.
+- **No device was used, and the Mac app was built, not run.**
+- **The 47 documents' subject tags** wait on the Office of the Historian's next subject export.
+- **Nothing is posted to HistoryAtState/frus#469.** The status of its rows is above if the owner wants to reply there.
+- **The cost of a relayout is not filed as an issue.** Whether it is one is the owner's to say.
+- **The shards repository's own README and manifest** (above).
+- **TestFlight notes** are written at the build bump; the plan of record's §0b lists the line owed.

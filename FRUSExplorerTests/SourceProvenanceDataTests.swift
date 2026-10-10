@@ -30,6 +30,8 @@ import Charts
 ///   1.2 — Session 3 review: the all-zero-decade test asserts explicit zero rows
 ///          (no x-gap) instead of the dropped decade it previously locked in
 ///   1.3 — Regenerated after OH's 2026-09-14 correction to frus1981-88v16: 269,248 → 269,242
+///          (and 269,242 → 269,288 at corpus `99d851c79`, 2026-10-10: the 46 source notes of
+///          `frus1952-54v09p1`'s restored Documents 900–946)
 ///   1.4 — 2026-10-02 (#1543): eleven categories; the bundled index places the Subject-Numeric
 ///          File in the 1960s and 1970s and nowhere else; the Categories menu's count is derived
 ///   1.5 — 2026-10-02 (#1543, review round 1): the count test reads the call's two arguments,
@@ -258,7 +260,9 @@ struct SourceProvenanceDataTests {
         // 268,757 → 269,248 and 522 → 523, which reconciles exactly to that volume's own count.
         // Then 269,248 → 269,242 at corpus 1995d4485 (2026-09-14), when OH stopped marking six
         // attachment classification lines in that volume as `type="source"` (491 → 485 notes).
-        #expect(index.totalSourceNotes == 269242)
+        // Then 269,242 → 269,288 at corpus `99d851c79` (2026-10-10): upstream restored Documents
+        // 900–946 to `frus1952-54v09p1`, which carry 46 `type="source"` notes (909 → 955 there).
+        #expect(index.totalSourceNotes == 269288)
         #expect(index.volumesCovered == 523)
         #expect(index.byVolume?.count == 523,
                 "schema 2 must carry one row per covered volume; got \(index.byVolume?.count ?? -1)")
@@ -622,7 +626,7 @@ struct SourceProvenanceDataTests {
     /// category now has a row in every decade, zero where it has no notes.
     ///
     /// The second half is that nothing else moved. The rows with notes are the rows as they were
-    /// (65 of them, 267,209 notes), each with the share its count gives, and `listed(_:)` returns
+    /// (65 of them, 267,255 notes), each with the share its count gives, and `listed(_:)` returns
     /// exactly those.
     @Test("Over the bundled index every category has a share row in every decade, zero where it has no notes")
     func bundledSharesAreDense() throws {
@@ -661,7 +665,9 @@ struct SourceProvenanceDataTests {
         let withNotes = rows.filter { $0.share > 0 }
         #expect(withNotes.map(\.id) == before.map(\.id))
         #expect(withNotes.map(\.share) == before.map(\.share))
-        #expect(data.shownNoteCount == 267_209)
+        // 267,209 → 267,255 at corpus `99d851c79` (2026-10-10): the 46 source notes of
+        // `frus1952-54v09p1`'s restored Documents 900–946, all in the 1950s.
+        #expect(data.shownNoteCount == 267_255)
         // And they are what a table lists.
         #expect(SourceProvenanceData.listed(rows) == withNotes)
         #expect(SourceProvenanceData.listed(data.shareByDecade(in: 1861...1993, excluding: [])) == withNotes)

@@ -1,5 +1,5 @@
 {
-  "corpusCommit" : "deb6a04f8",
+  "corpusCommit" : "99d851c79",
   "findings" : [
     {
       "adjudication" : "NO-TOC-UNADJUDICATED",
@@ -93,5 +93,5 @@
       "whatIsWrong" : "apparatus below the volume root: “Sources” (sources, section) sits inside its parent"
     }
   ],
-  "generated" : "2026-10-09"
+  "generated" : "2026-10-10"
 }

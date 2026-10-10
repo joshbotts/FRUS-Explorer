@@ -325,7 +325,7 @@ public enum SemanticVectorsArtifacts {
     ///   prose said half. Float32 costs 629 KB across the whole corpus tier and removes a rounding
     ///   step between the score a device computes and the score the gates measured.
     /// * **No id rows.** The design put per-volume id exceptions in the shard; the bundled index
-    ///   already carries every volume's ids in 1,607 run segments (48 KB encoded), and a shard that
+    ///   already carries every volume's ids in 1,603 run segments (48 KB encoded), and a shard that
     ///   repeated them would be a second place for identity to be wrong.
     ///
     /// - Parameters:

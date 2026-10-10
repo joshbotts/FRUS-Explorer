@@ -6,8 +6,9 @@ Reconciles against `Planning/Map-Figure-Export-And-Visual-Outputs.md` §7–§9 
 
 **Status at 2026-10-01: live.** §7's steps 0–4, 6–9, 11 and 14 are done (struck there); steps 5,
 10, 12, 13, 15 and 16 and GATE A's owner half are open. **§4.3, §5 and §7's figures were
-re-measured on 2026-10-01** against the bundle at `v2` `dc17d945`: the manifest holds 553 volumes
-and the map 314,571 documents in 171 regions, where this plan was written at 552, 314,483 and 179.
+re-measured on 2026-10-01** against the bundle at `v2` `dc17d945`, and the map's again on 2026-10-10
+after its relayout: the manifest holds 553 volumes
+and the map 314,616 documents in 172 regions, where this plan was written at 552, 314,483 and 179.
 Figures in §1–§3 and §8–§10 are left as measured on the dates those sections carry.
 
 **Method.** Eight verified probes over the shipped code, three independent plan drafts scored by
@@ -503,7 +504,7 @@ in place of the scoped-map grain sentence, which stays line 1 of the harness's `
    moved twice since: 499 coloured of 523 covered, and see the Provenance-lens row above for the
    2026-10-01 count.)*
 
-**Two copy rules.** The map draws **314,571** documents; the app indexes **316,768** (the index
+**Two copy rules.** The map draws **314,616** documents; the app indexes **316,814** (the index
 v63 parser's emission over the 553 volumes, `tools/page-citations/replica.py`; a device count is
 owed to the release's re-index census) — a title card reading "every document" would be wrong. And
 **no marketing number may come from `CLAUDE.md` or a generator doc comment**: when this was written

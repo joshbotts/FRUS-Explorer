@@ -114,7 +114,7 @@ public struct SemanticCorpusVectors: Sendable {
     /// Runs `body` over the raw sign-bit block.
     ///
     /// The block is exposed as a pointer rather than as rows because the scan reads it as
-    /// `UInt64` quads; handing out `[UInt8]` per row would allocate 314,571 arrays per query.
+    /// `UInt64` quads; handing out `[UInt8]` per row would allocate 314,616 arrays per query.
     ///
     /// - Parameter body: Receives a pointer to the first row and the row count.
     /// - Returns: Whatever `body` returns.

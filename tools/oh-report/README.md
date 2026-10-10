@@ -127,6 +127,21 @@ suggested, in 13 volumes, and the two Sources-list edits (`frus1955-57v13`, `fru
 reported. No row of any other class is gone or new. Upstream also moved `frus1945v01`'s list of persons
 out of the Introductory Note, a sweep row the report withdraws.
 
+At `99d851c79` (2026-10-10, upstream pull request #471): Documents 900–946 are back in
+`frus1952-54v09p1`, so the missing-documents class and the part-gap class stop at the new revision,
+which is this tool's way of saying a class no longer holds. 352 of the 653 cross-reference rows are
+gone, every one of them `target-in-missing-pages` in `frus1952-54v09p2`, and none is new. Structure
+is as at `deb6a04f8`, and the dates, glued tags, headers, pagination, Sources lists and
+transcription classes are as filed, row for row.
+
+Two things changed with that run. The `ch4` heading misprint in `frus1952-54v09p1` is found from
+the chapter's own start tag: read by its line number at `550a8c5c5`, it was reported gone at
+`99d851c79`, where it stands 648 lines lower. At the report's revision the row and its line are
+what they were (`diff -r` of the two runs' outputs is empty). And the committed
+`Planning/cross-ref-validation/broken-refs-report.csv`, this tool's default `XREF_CSV`, is the
+validator's run at `99d851c79`: to reproduce the report as filed, make the CSV from a copy of the
+corpus at `550a8c5c5` with `CrossRefValidationGenerator` and name it.
+
 Then, for a new edition of the report, re-run steps 1 and 2 at the new commit. Line numbers in `STRUCTURE`
 and `XREF` are those of `550a8c5c5`; a volume the Office of the Historian has since corrected fails its
 "before" assertion, which is the signal to delete that row. Rows are never updated to make a run pass

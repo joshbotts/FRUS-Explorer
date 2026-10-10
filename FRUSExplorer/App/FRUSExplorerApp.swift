@@ -1521,7 +1521,7 @@ struct FRUSExplorerApp: App {
                 .auxWindowCloseOnly(appState)
                 #endif
         }
-        // Wider and taller than the two sibling scenes on purpose: this one draws a 314,571-point
+        // Wider and taller than the two sibling scenes on purpose: this one draws a 314,616-point
         // projection, where they show a list.
         .defaultSize(width: 900, height: 720)
     }
@@ -1685,7 +1685,7 @@ struct FRUSExplorerApp: App {
                     // `.unavailable(.noArtifact)` — a failure indistinguishable from a missing
                     // bundle resource, so the feature would look wired and be permanently dark.
                     await BundledKeynessBaseline.prepare()
-                    // Same schedule again: the semantic index decode and the 19.52 MB binary's
+                    // Same schedule again: the semantic index decode and the 19.53 MB binary's
                     // mapping both belong after the first frame. The shard store is built only
                     // once the pin it validates against exists, so a build with missing or
                     // mismatched artifacts leaves it nil and every semantic surface reports

@@ -245,7 +245,7 @@ The `#if os(iOS)` / `#if os(macOS)` conditional compilation pattern is used exte
   1.43 ms and the whole funnel 2.44 ms (so no ANN index, measured rather than assumed) — but **both were measured at the 256 width**, and the bundle has shipped at 512 since #933: `Planning/semantic-vectors/Dimension-Ladder-Spike.md` drove this same kernel over both artifact sets and got a Hamming scan of 0.96–1.11 ms at 256 against **1.53–1.68 ms** at 512, and a whole funnel of ~1.03 ms against **~1.64 ms**, so the CONCLUSION survives the width change and neither quoted number does,
   and identity NEVER comes from a shard's position in local XML but always from the
   bundled index's segments, because a re-published volume changes the XML and not the
-  artifact. App-side, `BundledSemanticVectors` (prepare()-shape loader, maps the 19.52 MB
+  artifact. App-side, `BundledSemanticVectors` (prepare()-shape loader, maps the 19.53 MB
   binary) and `SemanticShardStore` (filesystem-truthed, no SQLite registry — the app
   already reads downloaded-ness from disk, and a table would drift) are in
   `FRUSExplorer/Semantic/`. **Tier 2 now has a host**: `SemanticShardFetcher` fetches through

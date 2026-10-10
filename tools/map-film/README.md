@@ -71,7 +71,7 @@ rather than estimated. The crop takes 1440, reclaiming 480 px and leaving ~178 p
 Vertically the box is taken from row 220 rather than 58 — see the top trim above.
 
 **The box is identical on the first frame and the last**, because out-of-scope documents are
-*ghosted* rather than removed — every frame draws all 314,571 points. `build_film.sh` re-checks that
+*ghosted* rather than removed — every frame draws all 314,616 points. `build_film.sh` re-checks that
 before it encodes, since a harness that stopped drawing the ghosts would make the extent grow through
 the film and one crop would clip the later frames with no error anywhere.
 

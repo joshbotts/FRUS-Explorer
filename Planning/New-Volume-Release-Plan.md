@@ -14,6 +14,12 @@ notes and the encoder's debug symbols add. Where a passage below still says 552,
 the tree this plan was written against. The line references that refresh rewrote, and step 12's
 #1439 note, were read again at `v2` `1d6fc032` on 2026-10-02, after lanes HYG and READ had merged.
 
+**Used for a corrected volume on 2026-10-10**, the first time: upstream restored Documents 900–946
+to `frus1952-54v09p1` (HistoryAtState/frus pull request #471), and `frus1902app1`'s two phantom
+rows went with it. That day's session entry in `DEVELOPMENT-PLAN.md` is the record of the run. It
+added three things here: step D-c0 and the two notes under D-c1 and D-c3 in §10, and the measured
+cost of a relayout at the end of §4.5.
+
 **What this document is for.** When OH publishes a volume, the work is not "add a row to the
 manifest". It is a **release**: 38 bundled data resources, 48.9 MB of them (36 when this was
 written — `accession-series-index.json` and `subject-numeric-labels.json` have joined), of which 18 are
@@ -273,6 +279,25 @@ Three consequences worth deciding in advance:
   `SemanticMapPacker` checks both the byte length and the document count
   (`SemanticMapPacker.swift:95,137`) — but it catches it at the end of a 15-minute Python stage.
 
+**What a relayout moved, measured on 2026-10-10** (47 documents added to one volume and 2 removed
+from another, of 314,616; the read-only comparison keyed both maps by volume and document id):
+
+- 172 clusters where there were 171, and 92,268 documents unclustered (29.3%) where there were
+  89,449 (28.4%).
+- Of the 314,569 documents on both maps, **79,067 changed between clustered and unclustered**. Over
+  the 184,177 clustered on both, the adjusted Rand index of the two partitions is 0.554; the median
+  old cluster keeps 98% of those members together in one new cluster, and 6 of the 171 keep under
+  half.
+- 349 of the 570 label terms carried over, 16 labels verbatim and 20 more with their four terms
+  reordered. The largest cluster holds 15,218 documents where it held 37,865.
+- The picture kept its orientation: the best rigid alignment is a turn of 1.4 degrees with no
+  reflection, and a document moved a median 4.7% of the grid's width (3.2% after that alignment).
+- The 47 new documents all landed in one cluster, `israel, israeli, arab, uar`, with the 40
+  documents printed before them.
+
+So D-2 buys a map that is right about the corpus and costs every reading of a region. The compute
+was 3.0 minutes of UMAP and 2.6 of HDBSCAN on the M5 MacBook with other generators running.
+
 ---
 
 ## 5. The row-order hazard
@@ -522,12 +547,32 @@ Steps marked **[owner]** cannot be done from this repository.
 **Phase D for a CORRECTED volume** (added 2026-10-01; §13's release rule, which steps 10–13 did
 not cover because they name only new shards). The harvester skips any volume whose `head.json`
 exists and has no force option, so a correction is invisible to it until its store entry is gone:
+- **D-c0.** Find which volumes need it before touching the store (added 2026-10-10). Import
+  `extract_documents` from `tools/semantic-harvest/harvest_embeddings.py` and compare its output
+  over each corpus file with the store's `text/<volume>.jsonl.gz` rows (`d` is the id, `t` the
+  text): 553 volumes in 35 seconds, read-only. A volume whose list of ids differs must be harvested
+  again; one whose text alone differs is the case the last bullet below waives. On 2026-10-10 that
+  was two and five.
 - **D-c1.** Delete the corrected volume's entry from the raw store (its vectors, text and
   `head.json`) on the harvest machine, then run step 10. Snapshot `run-manifest.json` first, as
-  for a new volume (§4.2).
+  for a new volume (§4.2). *Move the four files to a dated folder beside the store, and keep
+  them: they are what the new vectors are checked against.* For every chunk both hold, the cosine
+  of the old vector and the new should be 1 to five or six places (0.999999 at worst on
+  2026-10-10, over 2,264 chunks), which is the one check that the model, the prefix and the
+  context length were what they were. A different machine or runtime makes none bit-identical,
+  so a few sign bits move in the unchanged documents' rows (71 of 460,288 that day). The store,
+  LM Studio and the model file with the pinned SHA-256 are on the M5 MacBook since 2026-09-09:
+  load the model with `lms load text-embedding-embeddinggemma-300m-qat --context-length 2048`.
 - **D-c2.** Step 11 as written. The volume's shard changes its SHA-256 in
   `semantic-shards-manifest.json`, and its length only if its document count moved.
 - **D-c3.** **[owner]** Push the re-packed shard over the old one, before the build ships.
+  *What that does to builds already out (read from `SemanticShardFetcher.fetchShard`,
+  2026-10-10, not seen on a device):* the address has no version in it, and a build verifies a
+  download against its own bundled length and SHA-256. So from the push on, every earlier build
+  refuses a fresh download of that volume's shard and scores the volume from the bundled tier
+  alone; a copy it already holds stays. The web edition's pinned manifest disagrees the same way
+  until its pin moves. A new volume's shard has no such cost, since no earlier build names it.
+  Push close to the build, and say so in the pull request's line for the web edition.
 - **D-c4.** Confirm a device holding the old shard re-fetches it: R-1c's per-shard purge compares
   each on-disk shard with the manifest's SHA-256 at launch
   (`SemanticShardStore.purgeShardsFailingBundledDigest`, called from `FRUSExplorerApp.swift:1707`).
