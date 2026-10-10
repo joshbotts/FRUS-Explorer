@@ -1987,6 +1987,63 @@ struct FigureReaderTests {
         }
     }
 
+    /// Where the page is scrolled to, read on both sides of the web view, and whether the two had
+    /// come to rest together.
+    private struct ScrollRest: CustomStringConvertible {
+        /// `window.scrollY`: the web process's answer.
+        let page: Double
+        /// The web view's own scroll view's offset: the app process's.
+        let view: Double
+        /// Whether the two agreed, at a position the caller accepts, three readings in a row.
+        let rested: Bool
+
+        var description: String { "the page says \(page), its scroll view \(view)" }
+    }
+
+    /// Waits for the page and the scroll view to come to rest together at a position `isThere`
+    /// accepts: three readings in a row, 50 ms apart, within five seconds. Returns the last
+    /// reading either way.
+    ///
+    /// One reading is not rest. A scroll crosses two processes, and for a moment after one the
+    /// page can report a position its scroll view has not reached, or has already left.
+    private func rest(_ harness: OffsetEngineTestHarness, where isThere: (Double) -> Bool) async throws -> ScrollRest {
+        var steady = 0
+        var page = 0.0
+        var view = 0.0
+        for _ in 0..<100 {
+            let raw = try #require(try await harness.evaluateString("String(window.scrollY)"),
+                                   "the page gave no scroll position")
+            page = try #require(Double(raw), "scrollY read as \(raw)")
+            view = Double(harness.webView.scrollView.contentOffset.y)
+            steady = abs(page - view) < 1 && isThere(page) ? steady + 1 : 0
+            if steady == 3 { return ScrollRest(page: page, view: view, rested: true) }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        return ScrollRest(page: page, view: view, rested: false)
+    }
+
+    /// The reader leaves the note for the top of the document, and the late image must leave them
+    /// there.
+    ///
+    /// ## The reader's scroll is the scroll view's (#1568)
+    /// Until #1568 the reader's move was `window.scrollTo(0, 0)`, sent in the script that
+    /// dispatched the wheel, straight after the reveal. From a newly booted simulator it failed
+    /// two runs in three, the page ending at the note's place. Traced in the page on 2026-10-09,
+    /// with every scroll, script and image event logged, two of six cold runs failed, and in
+    /// both:
+    /// - the script that brings a revealed note back did not run after the image arrived, and
+    ///   the wheel had cleared what it reads. The app did what it should.
+    /// - the test's own scroll did nothing. Within three milliseconds of the reveal's scroll,
+    ///   and before the scroll view had answered it, the page reported position 0 again;
+    ///   `scrollTo(0, 0)` arrived then, at a page that said it was already there. The scroll
+    ///   view took up the reveal's scroll afterwards (1835 pt), and the page ended there, or at
+    ///   3612 pt in the run where the image landed after it and WebKit kept the reader's place
+    ///   by the image's height (1777 pt). The reader had never left the note.
+    ///
+    /// So the reveal is waited to rest at the note, the reader's scroll is made where a finger
+    /// makes it, in the web view's own scroll view, and that is waited to rest at the top before
+    /// the image is let through. The wheel is still dispatched in the page: it is what the
+    /// reveal's script listens for.
     @Test("A late image does not bring the reader back to a footnote they have since scrolled away from")
     func aLateImageLeavesAReaderWhoMovedOn() async throws {
         try await FigureTestImages.withLibrary { library in
@@ -2008,10 +2065,17 @@ struct FigureReaderTests {
             try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
             harness.coordinator.pendingFootnoteAnchor = "d1fn1"
             #expect(await harness.coordinator.revealFootnote(on: harness.webView))
+            let atTheNote = try await rest(harness) { $0 > 0 }
+            try #require(atTheNote.rested, "the reveal never came to rest at the note: \(atTheNote)")
+
             // The reader turns the wheel and goes back to the top of the document.
             _ = try await harness.evaluateString("""
-                (() => { window.dispatchEvent(new WheelEvent("wheel", { deltaY: -400 })); window.scrollTo(0, 0); return "ok"; })()
+                (() => { window.dispatchEvent(new WheelEvent("wheel", { deltaY: -400 })); return "ok"; })()
                 """)
+            harness.webView.scrollView.setContentOffset(.zero, animated: false)
+            let atTheTop = try await rest(harness) { $0 == 0 }
+            try #require(atTheTop.rested, "the reader's scroll never came to rest at the top: \(atTheTop)")
+
             await gate.open()
             var drawn = try await figures(harness).first
             for _ in 0..<400 where drawn?.naturalWidth != 400 {
@@ -2022,6 +2086,8 @@ struct FigureReaderTests {
             try await Task.sleep(for: .milliseconds(300))
             let after = try await footnotePlace(harness, id: "fnote-x-d1fn1")
             #expect(after.scrollY == 0, "the page was scrolled back to a note the reader had left: \(after)")
+            #expect(harness.webView.scrollView.contentOffset.y == 0,
+                    "the scroll view was moved from the top: \(harness.webView.scrollView.contentOffset.y)")
         }
     }
 

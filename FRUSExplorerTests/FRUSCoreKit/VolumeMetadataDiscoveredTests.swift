@@ -187,6 +187,7 @@ struct VolumeMetadataDiscoveredTests {
         /// `indexAllVolumes()`, which a re-index of the library runs.
         case everyVolume = "indexAllVolumes"
 
+        /// The method's name, which is how a failure names its case.
         var testDescription: String { rawValue }
     }
 

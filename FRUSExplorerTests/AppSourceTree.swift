@@ -20,8 +20,19 @@ import Foundation
 /// models or services reads `FRUSExplorer/` alone, because the kit cannot name any of them
 /// (`FRUSCoreKitBoundaryTests`).
 ///
+/// ## Read on 2026-10-09 (#1604)
+/// Every test file that walks a source folder without this type was read, 34 of them. Four had a
+/// rule a kit file could break, and read both trees now: the word-cloud precompute removal scan
+/// (a banned name), the Corpus Analytics unit-noun scan (a string, in the two `Analytics/`
+/// folders), the citation-engine construction scan (the kit's own initialiser) and the SF Symbol
+/// literal scan (a string). Of the other thirty, four already read the kit by a list of their
+/// own, six list data folders or the tests themselves, and twenty hold a rule about the app's
+/// views, scenes, windows, charts, tips or SwiftData models, or about `AppState` or another type
+/// the app declares, none of which a kit file can name.
+///
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: initial implementation
+///   1.1 — #1604: the survey above; no change to what this type reads
 enum AppSourceTree {
 
     /// The directories, relative to the repository root.
