@@ -18,7 +18,8 @@ the tree this plan was written against. The line references that refresh rewrote
 to `frus1952-54v09p1` (HistoryAtState/frus pull request #471), and `frus1902app1`'s two phantom
 rows went with it. That day's session entry in `DEVELOPMENT-PLAN.md` is the record of the run. It
 added three things here: step D-c0 and the two notes under D-c1 and D-c3 in §10, and the measured
-cost of a relayout at the end of §4.5.
+cost of a relayout at the end of §4.5. Step 13a and §4.4's last paragraph followed the same day,
+when the shards repository's own README and manifest were brought up to date.
 
 **What this document is for.** When OH publishes a volume, the work is not "add a row to the
 manifest". It is a **release**: 38 bundled data resources, 48.9 MB of them (36 when this was
@@ -238,6 +239,15 @@ step.
 The 552 existing shards are unaffected: a repack is byte-identical (verified 2026-08-12 across all
 three artifact kinds and all 552 shards), so their SHA-256s in `semantic-shards-manifest.json` do
 not move and no device re-downloads anything.
+
+**That repository also describes itself, and nothing here kept the description true.** Its
+`README.md` states the file count, the sizes, the corpus and the harvest and pack dates; its
+`shards-manifest.json` is a copy of the app's bundled manifest; and its one-line description on
+GitHub states the volume count. Vol. XVI's shard was pushed on 2026-09-09 as one file and nothing
+else, so all three said 552 for a month, and from the morning of 2026-10-10 two rows of its
+manifest no longer matched their files. The app reads none of the three: each build verifies a
+download against the manifest it shipped with. They were brought up to date on 2026-10-10
+(`joshbotts/frus-semantic-vectors@38793f0`), and step 13a keeps them so.
 
 ### 4.5 The map: relayout, or the map goes dark
 
@@ -543,6 +553,22 @@ Steps marked **[owner]** cannot be done from this repository.
     whose heads misstate its documents; `CLAUDE.md`'s `SemanticVectorsGenerator` entry has it.
 13. **[owner]** Push the new `.vec` shard(s) to `joshbotts/frus-semantic-vectors`, `main`,
     `shards/`. **Before** the app build ships.
+13a. **With that push, the repository's own record** (added 2026-10-10; §4.4's last paragraph):
+    - Copy `FRUSExplorer/Resources/semantic-shards-manifest.json`, as it is or will be on `v2`,
+      over its `shards-manifest.json`, and check every file in its `shards/` against it (553 of
+      553 on 2026-10-10).
+    - In its `README.md`: the count and sizes under "What is here", a row in "Changes since
+      publication", and the corpus, harvest and pack lines of the Provenance table. The README
+      counts in binary units and calls them MB and KB: 155 MB there is 162.4 million bytes.
+      Its quality figures are marked as measured on the first publication; measure them again or
+      leave that sentence.
+    - Its one-line description, which states the volume count
+      (`gh repo edit joshbotts/frus-semantic-vectors --description …`).
+    - **Leave its "Model weights" section and its `NOTICE` file byte for byte.** They are the
+      Gemma compliance text (`Planning/semantic-vectors/Gemma-Compliance-Runbook.md` §3), and an
+      edit there is a compliance change, not a documentation one. Leave its "Licence" section
+      too: it says what the vectors are under those terms.
+    - Read the manifest and the README back from the pushed commit.
 
 **Phase D for a CORRECTED volume** (added 2026-10-01; §13's release rule, which steps 10–13 did
 not cover because they name only new shards). The harvester skips any volume whose `head.json`
@@ -573,6 +599,8 @@ exists and has no force option, so a correction is invisible to it until its sto
   alone; a copy it already holds stays. The web edition's pinned manifest disagrees the same way
   until its pin moves. A new volume's shard has no such cost, since no earlier build names it.
   Push close to the build, and say so in the pull request's line for the web edition.
+  Step 13a applies to a replacement as to an addition, and its README row says which builds the
+  replacement leaves behind and where their file is in that repository's history.
 - **D-c4.** Confirm a device holding the old shard re-fetches it: R-1c's per-shard purge compares
   each on-disk shard with the manifest's SHA-256 at launch
   (`SemanticShardStore.purgeShardsFailingBundledDigest`, called from `FRUSExplorerApp.swift:1707`).
