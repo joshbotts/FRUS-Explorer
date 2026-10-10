@@ -671,6 +671,11 @@ struct ResearchLoggingGateTests {
     /// every reviewed mark. Both now decide "same query" through `SearchHistoryWriter.isSameQuery(_:_:)`, whose
     /// behaviour `sameQueryRuleFoldsOnlyQuotationMarks` pins.
     ///
+    /// Since #1576 lane 1 the checklist asks through `ChecklistAnchor`, which both search view models hold: it calls
+    /// the writer's rule for the words, and adds the person and subject of a browse that has none. So this reads the
+    /// anchor for the call, and the Mac view model for its use of the anchor on both search paths.
+    /// `ChecklistAnchorTests.quotationMarksAreFolded` runs the rule itself.
+    ///
     /// Read from source because `MacSearchViewModel` is `#if os(macOS)` and this bundle builds for iOS, so the macOS
     /// suite beside `SearchViewTests.checklistSurvivesFilterRerun` compiles nowhere and runs never. The calls are
     /// matched whole, and the forbidden raw comparison only on lines that are not comments, so this doc and the view
@@ -679,21 +684,33 @@ struct ResearchLoggingGateTests {
     func macChecklistAnchorUsesTheWritersSameQueryRule() throws {
         let mac = try String(contentsOf: Self.sourceRoot.appendingPathComponent("App/MacSearchViewModel.swift"),
                              encoding: .utf8)
+        let anchor = try String(contentsOf: Self.sourceRoot.appendingPathComponent("Search/ReviewedMarks.swift"),
+                                encoding: .utf8)
         let writer = try String(contentsOf: Self.sourceRoot.appendingPathComponent("Search/SearchHistoryWriter.swift"),
                                 encoding: .utf8)
         let code = mac.split(separator: "\n", omittingEmptySubsequences: false)
             .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
 
-        // `performSearch` and `performMeaningSearch` each carry the gate once.
-        let gate = "if checklistMode, !SearchHistoryWriter.isSameQuery(lastChecklistAnchorQuery, query) {"
-        #expect(code.filter { $0.contains(gate) }.count == 2,
-                "both macOS search paths must re-anchor through the writer's same-query rule")
-        // No exact comparison of the anchored text survives in code.
+        // `performSearch` and `performMeaningSearch` each settle the checklist once, through the anchor.
+        let settle = "settleChecklist(for: ChecklistAnchor(query: query, parameters:"
+        #expect(code.filter { $0.contains(settle) }.count == 2,
+                "both macOS search paths must re-anchor through ChecklistAnchor")
+        // The anchor decides the same words by the writer's rule.
+        #expect(anchor.contains("guard SearchHistoryWriter.isSameQuery(query, next.query),"),
+                "ChecklistAnchor must decide the same words through the writer's same-query rule")
+        // The one comparison of the anchor is the rule's. `ChecklistAnchor` is `Equatable`, so `==` would compile and
+        // would compare the spelling: these are the shapes an exact comparison of it, or of its text, would take.
+        #expect(code.filter { $0.contains("checklistAnchor?.isSameSearch(as: anchor) != true") }.count == 1,
+                "the macOS checklist must settle through ChecklistAnchor.isSameSearch")
         let raw = code.filter {
-            $0.contains("!= lastChecklistAnchorQuery") || $0.contains("== lastChecklistAnchorQuery")
-                || $0.contains("lastChecklistAnchorQuery !=") || $0.contains("lastChecklistAnchorQuery ==")
+            $0.contains("checklistAnchor == anchor") || $0.contains("checklistAnchor != anchor")
+                || $0.contains("anchor == checklistAnchor") || $0.contains("anchor != checklistAnchor")
+                || $0.contains("checklistAnchor?.query ==") || $0.contains("checklistAnchor?.query !=")
         }
         #expect(raw.isEmpty, "an exact comparison of the checklist anchor remains: \(raw)")
+        // The string the Mac anchored to until #1576 is gone, and with it the comparison this test first forbade.
+        #expect(!code.contains { $0.contains("lastChecklistAnchorQuery") },
+                "the anchored string is back; the anchor is ChecklistAnchor")
         // The writer recognises a re-run through the same function, so the two cannot drift apart.
         #expect(writer.contains("isSameQuery(existing.queryText, reading.queryText)"),
                 "SearchHistoryWriter.record must decide a re-run through isSameQuery")

@@ -443,11 +443,26 @@ final class SearchViewModel {
         didSet { clampCurrentPage() }
     }
 
-    /// `(volumeId|documentId)` keys the user tapped "Mark reviewed" on this session — a
-    /// lightweight in-memory set, NOT a fabricated `ReadingHistoryEntry`.
-    var markedReviewedKeys: Set<String> = [] {
+    /// The results the reader marked reviewed this session, by hand or with Mark Page Reviewed,
+    /// and the last bulk mark apart so that it can be undone (#1576 lane 1). A lightweight
+    /// in-memory value, NOT a fabricated `ReadingHistoryEntry`.
+    private(set) var reviewedMarks = ReviewedMarks() {
         didSet { clampCurrentPage() }
     }
+
+    /// `(volumeId|documentId)` keys the reader marked reviewed this session: ``reviewedMarks``' keys.
+    /// A read, since #1576: the marks are written through ``markReviewed(volumeId:documentId:)``,
+    /// ``markReviewed(_:)`` and ``undoLastBulkMark()``.
+    var markedReviewedKeys: Set<String> { reviewedMarks.keys }
+
+    /// The search the checklist's marks belong to, or `nil` while the mode is off (#1576 lane 1).
+    ///
+    /// A completed search keeps the marks when it is the same search (``ChecklistAnchor``) and
+    /// clears them, re-anchoring, when it is another. Until #1576 every completed search cleared
+    /// them here, so one tap on a tag chip, which re-runs the search on screen, undid every mark;
+    /// the Mac kept them across a re-run of the same query, and this is now the Mac's rule, with
+    /// both platforms telling one wordless browse from another.
+    private(set) var checklistAnchor: ChecklistAnchor?
 
     /// A stable reviewed-set key for a `(volume, document)` pair.
     nonisolated static func reviewedKey(volumeId: String, documentId: String) -> String {
@@ -467,25 +482,105 @@ final class SearchViewModel {
         return sortedResults.filter { !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)) }
     }
 
-    /// Enables/disables checklist mode. Enabling stamps the anchor time and clears prior marks;
-    /// disabling clears all reviewed state so the full list returns.
+    /// Enables/disables checklist mode. Enabling stamps the anchor time, anchors the checklist to
+    /// the search on screen and clears prior marks; disabling clears all reviewed state so the full
+    /// list returns.
     func setChecklistMode(_ on: Bool) {
         checklistMode = on
         if on {
             checklistEnabledAt = .now
-            markedReviewedKeys.removeAll()
+            // The search whose rows are on screen, not the Filters fields as they stand now: a
+            // filter edited and not yet run is no part of the list the marks will be made in.
+            checklistAnchor = lastCompletedSearchAnchor
+                ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
+            reviewedMarks.reset()
         } else {
             checklistEnabledAt = nil
+            checklistAnchor = nil
             readSinceEnabledKeys.removeAll()
-            markedReviewedKeys.removeAll()
+            reviewedMarks.reset()
         }
         currentPage = 0
     }
 
     /// Marks a document reviewed for this checklist session (hides it without opening it).
     func markReviewed(volumeId: String, documentId: String) {
-        markedReviewedKeys.insert(Self.reviewedKey(volumeId: volumeId, documentId: documentId))
+        reviewedMarks.mark(Self.reviewedKey(volumeId: volumeId, documentId: documentId))
     }
+
+    /// Marks several results reviewed at one stroke — Mark Page Reviewed hands this the page — and
+    /// remembers the ones it newly hid, so that ``undoLastBulkMark()`` can bring them back
+    /// (#1576 lane 1).
+    ///
+    /// The page index is left where it is: with a page hidden, the rows that follow move up into
+    /// it, which is what a reader working down a list wants next.
+    ///
+    /// - Parameter results: The results to mark, in any order.
+    /// - Returns: How many rows left the list: the results newly marked, less any a document
+    ///   opened since the mode came on was hiding already.
+    @discardableResult
+    func markReviewed(_ results: [SearchResult]) -> Int {
+        let hidden = reviewedMarks.markBulk(results.map {
+            Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)
+        }).subtracting(readSinceEnabledKeys).count
+        if hidden > 0 { bulkMarkGeneration &+= 1 }
+        return hidden
+    }
+
+    /// How many rows of the loaded results Undo would bring back
+    /// (``ReviewedMarks/undoableCount(among:otherwiseHidden:)``).
+    private var undoableRowCount: Int {
+        reviewedMarks.undoableCount(
+            among: results.lazy.map { Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId) },
+            otherwiseHidden: readSinceEnabledKeys)
+    }
+
+    /// Whether Undo would bring a row back: there is a bulk mark, and at least one result it hid
+    /// is among the loaded results and hidden by nothing else. After a re-run that loaded none of
+    /// the marked page there is nothing here to bring back, and the control is dimmed.
+    var canUndoBulkMark: Bool { undoableRowCount > 0 }
+
+    /// Takes back the last bulk mark, and only that: marks made a row at a time stay.
+    ///
+    /// - Returns: How many rows came back to the list, which is not always the size of the mark:
+    ///   see ``ReviewedMarks/undoableCount(among:otherwiseHidden:)``.
+    @discardableResult
+    func undoLastBulkMark() -> Int {
+        let restored = undoableRowCount
+        reviewedMarks.undoLastBulk()
+        if restored > 0 { bulkMarkGeneration &+= 1 }
+        return restored
+    }
+
+    /// Counts the bulk marks and undos that changed the list. The result list is identified by
+    /// it with the page index, so that after Mark Page Reviewed the list stands at the top of the
+    /// rows that moved up, as it does after a page turn, and not at the offset the reader had
+    /// scrolled the marked page to. A mark made on one row does not move it: the reader is in
+    /// mid-list.
+    private(set) var bulkMarkGeneration = 0
+
+    /// Settles the checklist against a search that has just completed (#1576 lane 1).
+    ///
+    /// The same search keeps its marks, the documents opened since the mode came on, and its
+    /// anchor time. Another search starts the checklist again: reviewed identity is document
+    /// identity, which recurs across searches, so a mark kept past its search would hide a result
+    /// the reader has not reviewed under this one.
+    ///
+    /// - Parameter anchor: The anchor of the search that ran.
+    private func settleChecklist(for anchor: ChecklistAnchor) {
+        lastCompletedSearchAnchor = anchor
+        guard checklistMode, checklistAnchor?.isSameSearch(as: anchor) != true else { return }
+        checklistAnchor = anchor
+        checklistEnabledAt = .now
+        readSinceEnabledKeys.removeAll()
+        reviewedMarks.reset()
+    }
+
+    /// The search that last completed, which is the one any rows on screen came from; `nil`
+    /// before the first. Recorded whether or not Checklist Mode is on, so that turning the mode on
+    /// anchors it to those rows' search. `submittedSearchParameters` cannot serve: it freezes the
+    /// words alone, and the Filters fields under it can be edited without a run.
+    private var lastCompletedSearchAnchor: ChecklistAnchor?
 
     /// Resets `currentPage` to 0 when a reviewed-set change shrank the list below the current page.
     private func clampCurrentPage() {
@@ -731,15 +826,11 @@ final class SearchViewModel {
             // #1310: the parameters that RAN, frozen here. The live field may already have moved.
             userTagCountScope = .match(params)
             currentPage = 0
-            // A new query is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
-            // clear prior marks, so results reviewed under a *previous* query aren't silently
-            // hidden in this one (the reviewed key is document identity, which recurs across
-            // searches). The read-since observer re-queries against the new anchor.
-            if checklistMode {
-                checklistEnabledAt = .now
-                readSinceEnabledKeys.removeAll()
-                markedReviewedKeys.removeAll()
-            }
+            // A new search is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
+            // clear prior marks, so results reviewed under a *previous* search aren't silently
+            // hidden in this one. A re-run of the same search keeps them (#1576 lane 1). Built
+            // from the parameters that ran, not the live ones.
+            settleChecklist(for: ChecklistAnchor(query: submittedQuery, parameters: params))
             #if DEBUG
             print("[SearchView] Search returned \(results.count) results")
             #endif
@@ -797,6 +888,9 @@ final class SearchViewModel {
         searchSetAsideByModeSwitch = false
         semanticNeedsModel = false
         lastRunWasSemantic = true
+        // The checklist's anchor is of the search that ran: read here, before the await, as the
+        // engine's parameters are on the next line.
+        let checklistAnchorOfThisRun = ChecklistAnchor(query: submittedQuery, parameters: searchParameters)
         do {
             let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)
             results = outcome.results
@@ -816,11 +910,7 @@ final class SearchViewModel {
                 UserTagCountScope.DocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
             })
             currentPage = 0
-            if checklistMode {
-                checklistEnabledAt = .now
-                readSinceEnabledKeys.removeAll()
-                markedReviewedKeys.removeAll()
-            }
+            settleChecklist(for: checklistAnchorOfThisRun)
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
             resultsAreSemantic = false

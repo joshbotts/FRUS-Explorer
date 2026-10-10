@@ -36650,3 +36650,69 @@ Lane 1 of the implementation plan on #1577 (Search Within These Results), the en
 - **A close match the index lacks still takes one of the hundred places.** It is counted, and the list is not refilled from deeper in the ranking.
 - **Two findings are not filed:** the Mac's hand-off under a corpus banner, and the Filters sheet after a launch onto Search (both above).
 - **TestFlight notes** are written at the build bump.
+
+## Session 2026-10-10 — Checklist Mode gains Mark Page Reviewed with Undo, and its marks last for the search they were made in (#1576 lane 1)
+
+Lane 1 of the implementation plan on #1576 (bulk actions on search results), after #1577's lane 1 merged as #1626. The first bulk action in Search, and the rule for how long a checklist's marks live. No index version, no CloudKit deploy, no re-index, no shared kit file, and no new stored property: checklist state is in memory, for the session, as it was.
+
+**What a reader gets**
+- **A strip whenever Checklist Mode is on**, on iPhone, iPad and Mac: a line that counts what the mode hides ("25 reviewed hidden", or "Nothing hidden") and two buttons. Until now one line, "N reviewed hidden", was drawn only once a row had gone, so nothing on screen said the mode was on until then.
+- **Mark Page Reviewed** hides every result on the page at one stroke. The page index stays where it is, so the results that follow move up into its place, and on iPhone and iPad the list returns to its top, as after a page turn.
+- **Undo** brings back the page last marked and nothing else: a result marked on its own row stays hidden, and so does an earlier page. One level. It is dimmed until a page is marked, and while none of that page's results is in the list.
+- **Nothing in the strip moves when a page is marked.** The line and both buttons are drawn from the start, so a reader working down a list presses the same spot again.
+- **Both buttons are dimmed under the Timeline and Collocates readings**, which cover every result and have no page.
+- **On iPhone and iPad the marks survive a re-run of the same search** (the owner's decision 4). Every completed search used to clear them, so a tap on a tag chip, a facet or a filter, each of which runs the search on screen again, undid every mark. The Mac already kept them.
+- **On every platform two browses with no words are the same search only when they are of the same person and subject.** The Mac compared the typed text, which is empty for every browse, so marks made in one person's Find all mentions hid documents in the next person's.
+- VoiceOver is told what a page mark and an undo did ("25 results marked reviewed", "25 results are back in the list"), with the number of rows that left or came back.
+
+**How** (`ReviewedMarks.swift`, `ChecklistStrip.swift`, both view models, both views)
+- `ReviewedMarks` is a value type: every marked key, and the keys the last bulk mark newly hid. A bulk mark leaves a key already marked out of its batch, so Undo cannot take back a hand mark; a bulk mark that hides nothing new leaves the earlier batch undoable. Both view models store one, and `markedReviewedKeys` stays as a read over it, so the tests that read it pass unchanged.
+- `ReviewedMarks.undoableCount(among:otherwiseHidden:)` is what Undo offers and reports: the batch's keys that the search loaded and nothing else hides. The batch outlives a re-run of its search, which may load fewer of the page's results or none, and a marked result opened since is hidden on that account too.
+- `ChecklistAnchor` is the search the marks belong to. With words: the same words, by the history writer's own rule (`SearchHistoryWriter.isSameQuery`, so `“cold war”` and `"cold war"` are one search, #1298), with the restored phrase, prefix and excluded terms compared as they stand; filters may change. With no words: each of the person, the topic and the subject area the browse named when it was anchored must be unchanged. One it did not name may be added, which is a narrowing, as a date range is.
+- A person is compared by the most durable handle the two sides share: the rollup anchor where both carry one, else the slot, else a volume's reference. A person filter gains its anchor after the fact and a rollup rebuild renumbers the slot, so comparing one identifier alone would clear the marks for the same person, or keep them for another in the old slot.
+- An anchor made before anything was searched is not a browse, so the first browse takes the anchor over; without that the browse after it would inherit the first one's marks.
+- Both view models settle the checklist through one private function on the keyword path and the Meaning path, built from the parameters that ran. `SearchViewModel` also records the anchor of every search that completes, and the mode anchors to that when it is turned on: on iPhone and iPad a Filters field can be edited without a run, and the rows on screen are then still the earlier search's.
+- `ChecklistStrip` is one view for both hosts. One row where there is room; at compact width and at accessibility text sizes the line has the first row and the buttons the second, side by side where they fit and one above the other where they do not. The layout follows the size class and the text size alone.
+- `SearchViewModel.bulkMarkGeneration` counts the bulk marks and undos that changed the list, and the iPhone's result list is identified by it with the page index.
+
+**One review pass** (one agent, on the diff). Six findings, all acted on.
+1. Undo was live under the Collocates reading, whose ranking is rebuilt when a search completes and not when a mark changes, so an undo there changed the set the panel says it measured and left the ranking. Both buttons are now dimmed where there is no page.
+2. On iPhone and iPad the list kept its scroll offset after Mark Page Reviewed, so a reader who pressed it at the foot of a page was left at the foot of the next. The list is re-identified by a bulk mark.
+3. Undo reported the size of the mark, which a re-run or an opened document makes more than the rows that return, and stayed live where pressing it changed nothing. It now counts, and is offered for, the rows that would come back.
+4. At compact width the first mark put a count line above the buttons and an Undo before Mark Page Reviewed, moving the button the reader had just pressed. The line and Undo are now always drawn.
+5. On iPhone and iPad the mode anchored to the Filters fields as they stood when it was turned on, not to the search that ran. It now anchors to the last completed search.
+6. Three test gaps: no scan pinned the Mac's anchor line in `setChecklistMode`; two re-run steps asserted only that nothing changed; and four alternatives of a scan named a property that no longer exists. All three are closed.
+
+**Tests**
+- `ReviewedMarksTests` (12), one fixture per branch, with one each for the two conditions of the undo count.
+- `ChecklistAnchorTests` (15): each rule above, among them the renumbered slot, the anchor captured after the fact, the subject added to a person's browse and the person taken away, and the anchor made before any search.
+- `SearchChecklistModeTests`, thirteen added, driving `SearchViewModel`: 60 results with page 1 marked leaves 35, first row `d26`, page 0, and Undo restores 60; Undo leaves a hand mark; marking the last page re-clamps the index; after a re-run that loaded five of the marked page, Undo answers 5; with none of it loaded Undo is not offered; a marked result opened since is not counted; a bulk mark and its undo move the list's generation and a hand mark does not; a re-run of the same search keeps the marks, the undo, the documents opened and the anchor time, through a real index; a browse of another person clears them; the mode turned on after a filter was edited and not run anchors to the search that ran; and the Meaning path settles by the same rule, through a stand-in engine. The existing five pass unchanged.
+- `ChecklistStripTests` (10): the words, and source scans matched on the call for what no test can run: each host mounts the strip inside the mode's condition with no test of the hidden count in between, hands it the page, and offers Undo only under a paged reading; the strip's body adds nothing by the count or by the undo; both view models store the shared types and count an undo over the loaded results before it is made; the Mac anchors the mode to the parameters it runs; and the iPhone's list is identified by the generation.
+- `ResearchLoggingGateTests.macChecklistAnchorUsesTheWritersSameQueryRule` is rewritten for the anchor: the Mac's two paths settle through `ChecklistAnchor.isSameSearch`, no exact comparison of the anchor stands in code, and the anchor asks the writer's rule.
+- **Ten mutations, in five builds, each failing the tests written for it.** Before the review: every completed search wipes the marks; the anchor compares the words alone; Undo takes every mark back. After it: Undo answers with the size of the mark; the mode anchors to the Filters fields as they stand; a page mark does not move the list's generation; a page mark answers with the keys newly marked; Undo is offered whenever there is a batch; the count ignores what an opening still hides; the count ignores which results are loaded.
+
+**In the app** (the clone of the full-corpus iPhone 17e simulator, iOS 27.0, this branch's Debug build, after the review's changes)
+- A keyword search for `Olney` (1,000 loaded of 1,665). Checklist Mode on: "Nothing hidden" under the count, then **Mark Page Reviewed** and a dimmed **Undo** on the next line.
+- The list scrolled most of the way down the page, then Mark Page Reviewed: the header reads "975 shown · 1,000 loaded · 1,665 total · Page 1 of 39", the strip reads "25 reviewed hidden", both buttons are where they were with Undo now live, and the list stands at the top of the rows that moved up.
+- Undo: "1,000 loaded · 1,665 total · Page 1 of 40", "Nothing hidden", Undo dimmed, and the list begins at its first result.
+- The page marked again and the reading changed to Collocates: both buttons are dimmed, and the panel's caveat says 25 reviewed documents are excluded.
+- At the first accessibility text size the line and the two buttons, side by side, fit an iPhone's width.
+
+**Checked**
+- A clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0) on the final code: `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues (`GeneratedSummary`'s conformance and the AppIntents note).
+- The iOS unit target, from a shut-down iPhone 17 (iOS 27.0), on the final code: "Test run with 6716 tests in 790 suites passed after 561.921 seconds with 6 known issues", `** TEST EXECUTE SUCCEEDED **`, no relaunch of the host. That is 50 tests and 3 suites more than `v2`'s 6,666 in 787. The six known issues are `systemLogReachesTheRowAndTheRun`'s (#1606).
+- `FRUSExplorerMac` (the DirectDistribution configuration, unsigned), a clean build of the final code: `** BUILD SUCCEEDED **`, with the same two residues.
+- `CodingStandardsAuditTests` and `EditableContentKeyTests` run again after this entry and the manuals were written: both pass.
+- `swift test` is not owed and was not run: the diff names no package input.
+- No UI suite was run. None drives the checklist; lane 3's `SearchBulkActionsTests` will.
+
+**Not done**
+- Nothing was run on the Mac, and no iPad was looked at.
+- VoiceOver was not listened to.
+- The largest accessibility text sizes were not seen: at the largest, the simulator's "not signed in to iCloud" banner leaves the result area no room. The strip's fit is not measured by a test; lane 3's fit test covers the selection and command bars.
+- The Mac's list keeps its scroll offset after Mark Page Reviewed, as it does after a page turn.
+- The Mac settles the checklist before a search is sent, where the iPhone settles when the rows are in. That placement is older than this lane.
+
+**Docs**
+- Both manuals' §7.7: the strip, Mark Page Reviewed, Undo, and how long the marks last. The AI Generated notice stays.
+- `Docs/EditableContent/`: no block added and none changed; 8 ranged blocks re-pointed.
