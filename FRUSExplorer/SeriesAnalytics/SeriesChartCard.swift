@@ -28,6 +28,9 @@ import Accessibility
 ///          `.isHeader` accessibility trait
 ///   1.1 — Session 2026-08-10: #832(b) — the Audio Graph descriptor gains a
 ///          `View.axChartDescriptor` entry point for charts this card cannot host
+///   1.2 — 2026-10-09: #1587 — a table that carries its chart's numbers
+///          (`ChartInspectorData.audioGraph`) gives the descriptor from them; the column
+///          parameters remain for a table that does not
 struct SeriesChartCard<Controls: View, Content: View>: View {
 
     /// The chart's title, shown in the header and exposed as a VoiceOver heading.
@@ -38,10 +41,13 @@ struct SeriesChartCard<Controls: View, Content: View>: View {
     /// appears in the header and invokes `onInspect` with this value.
     let inspector: ChartInspectorData?
     /// Which inspector columns feed the Audio Graph descriptor — see
-    /// `AXChartDescriptorModifier`. Defaults fit the Series tables; the archival ranking and
-    /// bands tables carry their category NAME at column 1 and their count at column 2, so the
-    /// default silently refused there for as long as the card has hosted them (#268: adopted
-    /// in source, nothing delivered at runtime).
+    /// `AXChartDescriptorModifier`. Read only for a table that states no graph of its own
+    /// (`ChartInspectorData.audioGraph`), which since #1587 is the archival cards alone: the
+    /// defaults fitted five of the eleven About the Series tables, gave the Publication lag chart
+    /// its publication years as the series, and refused the other five, whose column 1 is a name.
+    /// The archival ranking and bands tables carry their category NAME at column 1 and their
+    /// count at column 2, so the default silently refused there for as long as the card has
+    /// hosted them (#268: adopted in source, nothing delivered at runtime).
     var axLabelColumn: Int = 0
     var axValueColumn: Int = 1
     /// Invoked with `inspector` when the user taps "View as table" — the host opens
@@ -136,6 +142,11 @@ struct AXChartDescriptorModifier: ViewModifier {
     #if canImport(Accessibility)
     private var builtDescriptor: AXChartDescriptor? {
         guard let inspector else { return nil }
+        // #1587: a table that carries the numbers its chart plots is read from them, never from
+        // its formatted cells.
+        if let graph = inspector.audioGraph {
+            return AXChartDescriptorBuilder.descriptor(title: title, graph: graph)
+        }
         let xLabel = inspector.columns.indices.contains(labelColumn)
             ? inspector.columns[labelColumn] : ""
         let yLabel = inspector.columns.indices.contains(valueColumn)

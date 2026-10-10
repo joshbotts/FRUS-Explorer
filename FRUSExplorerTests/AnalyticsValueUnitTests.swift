@@ -334,3 +334,59 @@ struct HandOffCountUnitTests {
         #expect(inRange == 45, "1975 is outside the range and must not be promised to Search")
     }
 }
+
+// MARK: - AnalyticsDisplayedModeTests
+
+/// The display a Corpus Analytics comparison is drawn in (#1583).
+///
+/// A comparison begun from the table (chart a term, switch to the table, add a second) was drawn
+/// as a chart, as every comparison is, while each gate went on reading the chart/table control's
+/// stored `.table`: raw counts under a greyed Values control reading "% of documents", and no
+/// control left to change either. `AnalyticsCompareFromTableTests` (UI) drives the two controls;
+/// these hold the rule and where the view reads it.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1583 — initial implementation
+@Suite("The display a Corpus Analytics comparison is drawn in (#1583)")
+struct AnalyticsDisplayedModeTests {
+
+    @Test("A comparison is drawn as a chart whatever the chart/table control holds; one term is drawn as chosen")
+    func displayedModeFollowsTheComparison() {
+        #expect(AnalyticsViewMode.displayed(selected: .table, isComparing: true) == .chart)
+        #expect(AnalyticsViewMode.displayed(selected: .chart, isComparing: true) == .chart)
+        // The control's choice stands for one term, so removing the second term of a comparison
+        // begun from the table returns to the table.
+        #expect(AnalyticsViewMode.displayed(selected: .table, isComparing: false) == .table)
+        #expect(AnalyticsViewMode.displayed(selected: .chart, isComparing: false) == .chart)
+    }
+
+    /// The view's half, read from its source: the stored value is named in three places and no
+    /// gate is one of them. A fourth read of it is how #1583 comes back, one gate at a time.
+    @Test("AnalyticsView reads the display on screen at every gate, and the control's stored value nowhere else")
+    func analyticsViewGatesReadTheDisplayedMode() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Analytics/AnalyticsView.swift"), encoding: .utf8)
+        let code = source.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") }
+        let stored = code.filter { $0.contains("selectedViewMode") }
+        #expect(stored == [
+            "@State private var selectedViewMode: AnalyticsViewMode = .chart",
+            ".displayed(selected: selectedViewMode, isComparing: isComparing)",
+            "Binding(get: { viewMode }, set: { selectedViewMode = $0 })",
+        ], "the control's stored value is read somewhere else: \(stored)")
+        // The control shows the display on screen, so its chart segment is selected over a comparison.
+        #expect(code.contains {
+            $0.hasPrefix("AnalyticsViewModePicker(viewMode: viewModeBinding,")
+        })
+        // The rule every gate reads, and the gate the defect was reported through.
+        #expect(code.contains("normalizationApplies && viewMode == .chart && valueUnit == .documents"))
+        // The content switch has no branch of its own for a comparison any more.
+        #expect(!code.contains("} else if isComparing {"))
+        // Measured 2026-10-09: eight gates read `viewMode ==` or `viewMode !=`. Fewer means a gate
+        // went back to reading something else.
+        let gates = code.filter { $0.contains("viewMode == .chart") || $0.contains("viewMode != .chart") }
+        #expect(gates.count == 8, "\(gates.count) gates read the display on screen: \(gates)")
+    }
+}

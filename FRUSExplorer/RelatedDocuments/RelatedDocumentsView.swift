@@ -141,6 +141,8 @@ extension AxisWeights: RawRepresentable {
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2b: initial implementation
+///   1.1 — 2026-10-09: #1586 — the archival chip's words and the pool-cut footer come from
+///          `WhyRelatedChip.displayText` and `RelatedDocumentsCounts`, which group their counts
 struct RelatedDocumentsContent: View {
 
     /// Shared app state — resolves the scope, runs the ranking, and receives the row-tap hand-off.
@@ -260,10 +262,8 @@ struct RelatedDocumentsContent: View {
                         // ranking can only surface a document the pool contained: an anchor with
                         // 1,063 neighbours and a 120-row pool has 943 the scorers never saw.
                         if let poolCutFrom, poolCutFrom > totalBeforeLimit {
-                            Text(String(
-                                format: String(localized: "related.poolCut %lld %lld",
-                                               defaultValue: "Ranked from the first %1$lld of %2$lld documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them."),
-                                Int64(totalBeforeLimit), Int64(poolCutFrom)))
+                            // #1586: both numbers grouped, in `RelatedDocumentsCounts`.
+                            Text(RelatedDocumentsCounts.poolCut(ranked: totalBeforeLimit, of: poolCutFrom))
                                 .font(.caption2).foregroundStyle(.tertiary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -705,42 +705,8 @@ struct RelatedDocumentsContent: View {
             HStack(spacing: 8) {
                 ForEach(chips, id: \.axis) { axis, chip in
                     // One computed string drives both the visible chip and the a11y label, so they
-                    // can never disagree.
-                    let display: String = {
-                        switch chip {
-                        case .citations(let count):
-                            return String(format: String(localized: "related.why.cited %lld",
-                                                         defaultValue: "cited %lld×"), Int64(count))
-                        case .cohort(let container, let size):
-                            // Names the container and how big it is: sharing a 6-document lot is
-                            // a finding, sharing one of 7,056 is a filing-cabinet coincidence, and
-                            // "same provenance" said the same thing for both (#644).
-                            return String(format: String(localized: "related.why.cohort %@ %lld",
-                                                         defaultValue: "%@ · 1 of %lld"),
-                                          container, Int64(size))
-                        case .presence:
-                            return String(localized: "related.why.sameProvenance",
-                                          defaultValue: "same provenance")
-                        case .sharedTerms(let terms):
-                            // The anchor's own spelling, never a lemma — see SemanticSharedTerms.
-                            return String(format: String(localized: "related.why.sharedTerms %@",
-                                                         defaultValue: "shares: %@"),
-                                          terms.joined(separator: ", "))
-                        case .sharedSubjects(let names):
-                            // "topics", not "shares" — the semantic chip already owns that verb on
-                            // the same row, and these are detected topics rather than the
-                            // document's own words.
-                            return String(format: String(localized: "related.why.sharedSubjects %@",
-                                                         defaultValue: "topics: %@"),
-                                          names.joined(separator: ", "))
-                        case .percent(let pct):
-                            // A real but sub-1% contribution reads as "<1%", never "0%".
-                            return pct == 0
-                                ? String(localized: "related.why.subOnePercent", defaultValue: "<1%")
-                                : String(format: String(localized: "related.why.percent %lld",
-                                                        defaultValue: "%lld%%"), Int64(pct))
-                        }
-                    }()
+                    // can never disagree. The words are `WhyRelatedChip.displayText` (#1586).
+                    let display = chip.displayText()
                     HStack(spacing: 2) {
                         Image(systemName: axis.systemImage)
                         // The shared-terms chip is far wider than a percentage and this row is a

@@ -156,7 +156,7 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         var applyHighlights: Bool
         /// Whether attached research notes appear in exports.
         var includeNotes: Bool
-        /// Whether a word-cloud overview is prepended to PDF/HTML exports.
+        /// Whether a word-cloud overview is prepended to PDF, HTML and Word exports.
         var includeWordCloud: Bool
         /// The collection-level headnote default (Composer redesign; v2 optional key). `nil` (its
         /// default `false`) is omitted so collections without a headnote default stay byte-identical.

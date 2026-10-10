@@ -1005,22 +1005,13 @@ class CollectionContentResolver {
 
     /// Composition options derived from the collection's persisted settings, used to gate
     /// resolution work (highlights, source notes, summary prompt). The word-cloud flag is
-    /// format-dependent and irrelevant to resolution; exporters receive the export sheet's
-    /// own `CollectionExportOptions`, which applies that gate.
+    /// format-dependent and irrelevant to resolution; exporters receive the options the export
+    /// sheet takes from `ExportFormat.exportOptions(for:)`, which applies that gate.
     ///
     /// Internal (not private) so tests can assert the legacy `footnoteStyle` → Bool-pair
     /// mapping end-to-end without standing up a full resolve.
     func resolutionOptions(for collection: Collection) -> CollectionExportOptions {
-        CollectionExportOptions(
-            tocStyle:          CollectionToCStyle(rawValue: collection.tocStyle) ?? .citation,
-            includeFootnotes:  collection.effectiveIncludeFootnotes,
-            includeSourceNote: collection.effectiveIncludeSourceNote,
-            applyHighlights:   collection.applyHighlights,
-            includeNotes:      collection.includeNotes,
-            summaryPromptId:   collection.summaryPromptId,
-            includeWordCloud:  collection.includeWordCloud,
-            includeHeadnoteDefault: collection.defaultIncludeHeadnote
-        )
+        CollectionExportOptions(composing: collection)
     }
 
     // MARK: - Per-entry pipeline

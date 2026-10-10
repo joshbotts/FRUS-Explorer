@@ -158,7 +158,8 @@ struct GeneratedPoolTruncationTests {
         let source = try String(
             contentsOf: root.appending(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"),
             encoding: .utf8)
-        #expect(source.contains("related.poolCut"), """
+        // #1586: the sentence is `RelatedDocumentsCounts.poolCut`, which groups both numbers.
+        #expect(source.contains("RelatedDocumentsCounts.poolCut(ranked: totalBeforeLimit, of: poolCutFrom)"), """
             The overflow line counts what scored inside the pool; a second line has to say the \
             pool itself was cut, or the first one is a truncated total presented as complete — \
             which is the convention #645 cited against it.

@@ -123,6 +123,7 @@ struct CountCopyTests {
 ///   1.2 — 2026-09-30: lane WB — #1478's dock, era rows and Mac status bar; then the owner's close-out
 ///         answers for the Word Cloud export's stop-lists sentence and the Archival ranking export's
 ///         Scope sentence
+///   1.3 — 2026-10-09: #1586 — Related Documents' archival chip and its pool-cut footer
 struct CountCopySiteTests {
 
     /// 12,067 as this host groups it.
@@ -342,6 +343,48 @@ struct CountCopySiteTests {
     func seriesLagYears() {
         #expect(SeriesProductionCounts.years(1) == "1 year")
         #expect(SeriesProductionCounts.years(25) == "25 years")
+    }
+
+    /// #1586: Related Documents' archival chip read "… · 1 of 1063" and the footer under a cut
+    /// pool "the first 120 of 1063 documents". The scan cannot see the chip (no noun follows its
+    /// placeholder), so this is what holds it; 1,063 is lot 54 D 270's size in the bundled usage
+    /// index, the container the issue measured.
+    @Test("Related Documents groups its container's size, on the chip and in the pool-cut footer (#1586)")
+    func relatedDocumentsContainerCounts() {
+        let us = Locale(identifier: "en_US")
+        #expect(WhyRelatedChip.cohort(container: "Lot 54 D 270", size: 1_063).displayText(locale: us)
+                == "Lot 54 D 270 · 1 of 1,063")
+        #expect(WhyRelatedChip.cohort(container: "NSC Files", size: 6).displayText(locale: us)
+                == "NSC Files · 1 of 6")
+        #expect(RelatedDocumentsCounts.poolCut(ranked: 120, of: 1_063, locale: us)
+                == "Ranked from the first 120 of 1,063 documents that share this anchor’s archival container. "
+                    + "The rest were not scored. Narrow the scope to reach them.")
+        // Both numbers go through the formatter, the first as well as the second.
+        #expect(RelatedDocumentsCounts.poolCut(ranked: 4_096, of: 12_067, locale: us)
+            .hasPrefix("Ranked from the first 4,096 of 12,067 documents"))
+        // The locale passed is the one that groups.
+        #expect(RelatedDocumentsCounts.cohort(container: "X", size: 1_063, locale: Locale(identifier: "de_DE"))
+                == "X · 1 of 1.063")
+        // The chips that state no count are the words they were.
+        #expect(WhyRelatedChip.citations(3).displayText() == "cited 3×")
+        #expect(WhyRelatedChip.presence.displayText() == "same provenance")
+        #expect(WhyRelatedChip.sharedTerms(["Berlin", "airlift"]).displayText() == "shares: Berlin, airlift")
+        #expect(WhyRelatedChip.sharedSubjects(["Berlin blockade"]).displayText() == "topics: Berlin blockade")
+        #expect(WhyRelatedChip.percent(0).displayText() == "<1%")
+        #expect(WhyRelatedChip.percent(38).displayText() == "38%")
+    }
+
+    /// The view prints the type's words: the chip and its VoiceOver label from one call, and the
+    /// footer from the other.
+    @Test("The Related Documents view takes both lines from RelatedDocumentsCounts (#1586)")
+    func relatedDocumentsViewUsesTheSharedLines() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"), encoding: .utf8)
+        #expect(source.contains("let display = chip.displayText()"))
+        #expect(source.contains("Text(RelatedDocumentsCounts.poolCut(ranked: totalBeforeLimit, of: poolCutFrom))"))
+        #expect(!source.contains("related.why.cohort"), "the chip's format is back in the view")
+        #expect(!source.contains("related.poolCut"), "the footer's format is back in the view")
     }
 
     /// #1478: the Archival network dock read "1 of the 1 nodes above the current threshold are

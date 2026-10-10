@@ -36,6 +36,10 @@ import Crypto
 ///   1.2 — Session 2026-10-08: the two links print without their underline (the owner's decision), so
 ///          the stylesheet is read by medium: a rule inside `@media print` is paper's alone, the
 ///          screen's underline test no longer reads it, and the heads are re-pinned for the block
+///   1.3 — Session 2026-10-09: #1602 — the heads are re-pinned for the highlight text colour and
+///          the footnote wash; every text colour is measured on the wash, and a highlight's text
+///          colour over every tint. `CollectionExportContrastTests`, Xcode's alone, measures the
+///          collection HTML export's own layer
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -59,15 +63,22 @@ struct ReaderPageTests {
     ///   (the `@media print` rule, its comment and a blank line). With the block taken out, all eight
     ///   heads were the 2026-10-06 pins byte for byte when these were taken: the suite passed on them
     ///   but for the print test, which failed.
+    /// - Session 2026-10-09 re-pinned them for #1602, two of the places #1578 left under 4.5:1. The
+    ///   variables gain `--color-highlight-text` and `--color-accent-wash`; the stylesheet draws all
+    ///   text inside a `::highlight(frus-…)` in the first, names the palette's own wash where it had
+    ///   named a variable no palette defined, and gains the two comments that say so. Each light head
+    ///   grew by 679 bytes and each dark one by 683: the dark palette's two new values are four
+    ///   characters longer than the light one's. The tests under "#1602" below say what the two
+    ///   variables must do.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("f858879eac0b8787caf77898275704828dd52c5a7a5db5ba304714921a9fcbdc", 18526),
-        "light medium": ("ebd69b8804c1b910dd81d69d28da91133b47ef2dae144cc4f47883affd333c53", 18527),
-        "light large": ("177aeb89328539a197bb471d91904d23b34cf9ceef9f6b9369a40bf206ce9190", 18527),
-        "light extraLarge": ("1bacb78710d96294837e6d8212aaf70fbbc1eaf53a6bb0d62d015d44ed9ff849", 18527),
-        "dark small": ("a4091f5085b81a32d8bc6ed3d7361d357f2032b166f4fe209b4dd65c2c4b0e1f", 18552),
-        "dark medium": ("53e13b8e92a897c84638c4de9dc519f49b9e5b084ec608904af28e4bda2f5c3b", 18553),
-        "dark large": ("eaf9ac2566cd765c48699c60c35c45a57e150660539e11aba78e45266ab7e279", 18553),
-        "dark extraLarge": ("5136ad9adc9185aa73028219bbfadf0ed144e6ba52c736e3bbed296fb07d0019", 18553),
+        "light small": ("a00353fe5bde07dae0368a5ee9c696bb71a7a4a5492bb3be951b4a75cd0ded3b", 19205),
+        "light medium": ("c5fa4f34dcb0c8a6a48f89852fe2f10a59d1cefcadee91f54a24a150b71c5300", 19206),
+        "light large": ("bb5bba549ab26bebd6de8857ba5c21f0da8e6bc285dd1297363c1751f30663ce", 19206),
+        "light extraLarge": ("e837d46784b85a9e59d6e8b57ca3463e38f33a441577ba0f36dd1d46a6deaba4", 19206),
+        "dark small": ("6f0861ad19ece1b6c539b6612a39cce00f6cd15bc9c86fd1955505bb5d723eab", 19235),
+        "dark medium": ("4dfad17b1285d5a2b14354edc1107e920ea95237b62754fa2c0f18af4d86078c", 19236),
+        "dark large": ("57df36eb12c40adf2719b7d4f2e00f9405c481c6f2bdd55c2bde6025a9ce3724", 19236),
+        "dark extraLarge": ("be6526419650c0e1599cb909f1f7899a1861c31a82901432d020ac25b1a32e59", 19236),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
@@ -128,9 +139,9 @@ struct ReaderPageTests {
     // MARK: - WCAG 2.2 AA
 
     /// The custom properties the stylesheet draws text in. The reader's text is small text for WCAG
-    /// at every size, so each needs 4.5:1.
+    /// at every size, so each needs 4.5:1. The last is the colour of text inside a highlight (#1602).
     static let textColourVariables: Set<String> = ["color-primary", "color-secondary", "color-footnote-text",
-                                                   "color-accent", "color-pers-name"]
+                                                   "color-accent", "color-pers-name", "color-highlight-text"]
 
     /// A colour as `cssVariables` writes one, `rgb(r,g,b)` or `rgba(r,g,b,a)`: sRGB channels from 0
     /// to 255 and an alpha from 0 to 1.
@@ -156,6 +167,19 @@ struct ReaderPageTests {
         /// A colour from its channels and alpha.
         init(red: Double, green: Double, blue: Double, alpha: Double) {
             (self.red, self.green, self.blue, self.alpha) = (red, green, blue, alpha)
+        }
+
+        /// An opaque colour from `#rgb` or `#rrggbb`, as the collection export's own stylesheet
+        /// writes one, or nil for anything else. Apart from `init(_:)`, which must go on refusing
+        /// a hex colour: `cssVariables` writes none.
+        static func hex(_ css: String) -> CSSColour? {
+            var digits = Substring(css.trimmingCharacters(in: .whitespaces))
+            guard digits.hasPrefix("#") else { return nil }
+            digits = digits.dropFirst()
+            if digits.count == 3 { digits = Substring(digits.map { "\($0)\($0)" }.joined()) }
+            guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return nil }
+            return CSSColour(red: Double((value >> 16) & 0xFF), green: Double((value >> 8) & 0xFF),
+                             blue: Double(value & 0xFF), alpha: 1)
         }
 
         /// The opaque colour this one makes laid over an opaque `ground` (source-over), as a
@@ -303,6 +327,132 @@ struct ReaderPageTests {
         #expect(drawn == Self.textColourVariables, "the stylesheet draws text in \(drawn.sorted())")
     }
 
+    // MARK: - #1602: the highlight tints and the footnote wash
+
+    /// The page and the editorial note's tint over it, the two grounds text is drawn on.
+    private static func grounds(_ appearance: ReaderAppearance) throws -> (page: CSSColour, note: CSSColour) {
+        let variables = variables(appearance)
+        let page = try #require(CSSColour(variables["color-background"] ?? ""), "\(appearance): no background")
+        let note = try #require(CSSColour(variables["color-editorial-bg"] ?? ""), "\(appearance): no editorial tint")
+        return (page, note.over(page))
+    }
+
+    /// The reader's highlight rules, `::highlight(frus-…)`: each one's name and declarations.
+    private static var highlightRules: [(name: String, declarations: [String: String])] {
+        rules(in: ReaderPage.documentCSS).compactMap { rule in
+            guard rule.selectors.count == 1, let selector = rule.selectors.first,
+                  selector.hasPrefix("::highlight("), selector.hasSuffix(")") else { return nil }
+            return (String(selector.dropFirst("::highlight(".count).dropLast()), rule.declarations)
+        }
+    }
+
+    @Test("Text inside a highlight is drawn in the highlight text colour, at least 4.5:1 over every tint, on the page and in an editorial note")
+    func textInsideAHighlightMeetsAA() throws {
+        let rules = Self.highlightRules
+        #expect(rules.map(\.name) == ["frus-yellow", "frus-green", "frus-blue", "frus-pink", "frus-stale"])
+        var measured = 0
+        var lowest = Double.infinity
+        for appearance in ReaderAppearance.allCases {
+            let variables = Self.variables(appearance)
+            let grounds = try Self.grounds(appearance)
+            let text = try #require(CSSColour(variables["color-highlight-text"] ?? ""),
+                                    "\(appearance): --color-highlight-text is not a colour")
+            let accent = try #require(CSSColour(variables["color-accent"] ?? ""))
+            var linkUnder = 0
+            for rule in rules {
+                // The rule draws its text in the variable, which is what makes the tint's own
+                // contrast the only one that matters: no link, footnote or secondary colour
+                // reaches a highlight.
+                #expect(rule.declarations["color"] == "var(--color-highlight-text)",
+                        "::highlight(\(rule.name)) draws text in \(rule.declarations["color"] ?? "its own colour")")
+                let tint = try #require(CSSColour(rule.declarations["background-color"] ?? ""),
+                                        "::highlight(\(rule.name)) has no tint")
+                for (name, ground) in [("the page", grounds.page), ("an editorial note", grounds.note)] {
+                    let under = tint.over(ground)
+                    let ratio = text.over(under).contrast(with: under)
+                    #expect(ratio >= 4.5,
+                            "\(appearance): text in a \(rule.name) highlight on \(name) is \(String(format: "%.2f", ratio)):1")
+                    lowest = min(lowest, ratio)
+                    measured += 1
+                }
+                // What #1602 reported: over the tint, a link in its own colour.
+                let onPage = tint.over(grounds.page)
+                if accent.over(onPage).contrast(with: onPage) < 4.5 { linkUnder += 1 }
+            }
+            // Four of the five tints in each palette put a link's own colour under 4.5:1 (all but
+            // yellow in light, where it is 4.77; all five in dark). If this stops being true the
+            // tints have changed, and the rule above may no longer be needed.
+            #expect(linkUnder >= 4, "\(appearance): a link's own colour is under 4.5:1 on \(linkUnder) tints")
+        }
+        #expect(measured == 20, "two palettes, five tints, two grounds")
+        // The lowest is white on a yellow highlight inside an editorial note, dark palette: 5.08.
+        #expect(abs(lowest - 5.08) < 0.01, "the lowest ratio is \(String(format: "%.2f", lowest))")
+    }
+
+    @Test("Every text colour is at least 4.5:1 on the wash behind a footnote a cross-reference arrived at")
+    func everyTextColourMeetsAAOnTheArrivalWash() throws {
+        for appearance in ReaderAppearance.allCases {
+            let variables = Self.variables(appearance)
+            let page = try Self.grounds(appearance).page
+            let wash = try #require(CSSColour(variables["color-accent-wash"] ?? ""),
+                                    "\(appearance): --color-accent-wash is not defined").over(page)
+            for name in Self.textColourVariables.sorted() {
+                let colour = try #require(CSSColour(variables[name] ?? ""))
+                let ratio = colour.over(wash).contrast(with: wash)
+                #expect(ratio >= 4.5, "\(appearance): --\(name) is \(String(format: "%.2f", ratio)):1 on the footnote wash")
+            }
+            // The wash is still a wash: it differs from the page it is laid on.
+            #expect(wash.contrast(with: page) >= 1.1, "\(appearance): the wash is the page's own colour")
+            // The fallback both palettes drew until #1602, since the variable was never defined.
+            let old = try #require(CSSColour("rgba(120, 170, 255, 0.35)")).over(page)
+            let accent = try #require(CSSColour(variables["color-accent"] ?? ""))
+            #expect(accent.over(old).contrast(with: old) < 4.5)
+        }
+        // The stylesheet draws the wash through the variable in all three places, and its fallback
+        // is the light palette's value, so a host without the variable gets a wash that passes on
+        // a white page.
+        let css = ReaderPage.documentCSS
+        let light = try #require(Self.variables(.light)["color-accent-wash"])
+        let washes = Self.rules(in: css).compactMap { $0.declarations["background-color"] }
+            .filter { $0.contains("--color-accent-wash") }
+        #expect(washes.count == 3, "the wash is drawn in \(washes.count) places")
+        for wash in washes {
+            let fallback = wash.dropFirst("var(--color-accent-wash,".count).dropLast()
+            #expect(CSSColour(String(fallback)).map { [$0.red, $0.green, $0.blue, $0.alpha] }
+                    == CSSColour(light).map { [$0.red, $0.green, $0.blue, $0.alpha] },
+                    "the wash's fallback is \(fallback), not the light palette's \(light)")
+        }
+    }
+
+    @Test("A link inside an export's highlight is drawn in the highlight text colour, whichever element is outside")
+    func exportHighlightsDrawLinksInTheHighlightTextColour() throws {
+        let rules = Self.rules(in: FRUSRenderNodeHTMLSerializer.highlightCSS)
+        let marks = ["mark.hl-yellow", "mark.hl-green", "mark.hl-blue", "mark.hl-pink"]
+        let links = try #require(rules.first { $0.selectors.contains("mark.hl-yellow a") })
+        // Both nestings the injector writes: the link inside the mark, and the mark inside the link.
+        #expect(Set(links.selectors) == Set(marks.map { "\($0) a" } + marks.map { "a \($0)" }))
+        let colour = try #require(links.declarations["color"])
+        #expect(colour.hasPrefix("var(--color-highlight-text,"))
+        let fallback = try #require(CSSColour(String(colour.dropFirst("var(--color-highlight-text,".count).dropLast())))
+        // An export is drawn in the light palette, on white.
+        let white = try #require(CSSColour("rgb(255,255,255)"))
+        let variables = Self.variables(.light)
+        let text = try #require(CSSColour(variables["color-highlight-text"] ?? ""))
+        #expect([fallback.red, fallback.green, fallback.blue, fallback.alpha] == [text.red, text.green, text.blue, text.alpha])
+        var linkUnder = 0
+        for mark in marks {
+            let tint = try #require(CSSColour(Self.declarations(of: mark, in: FRUSRenderNodeHTMLSerializer.highlightCSS)["background"] ?? ""),
+                                    "\(mark) has no tint").over(white)
+            #expect(text.over(tint).contrast(with: tint) >= 4.5)
+            for link in ["color-accent", "color-pers-name"] {
+                let own = try #require(CSSColour(variables[link] ?? ""))
+                if own.over(tint).contrast(with: tint) < 4.5 { linkUnder += 1 }
+            }
+        }
+        // Green, blue and pink put both link colours under 4.5:1; yellow neither.
+        #expect(linkUnder == 6, "\(linkUnder) link-and-tint pairs are under 4.5:1 in their own colour")
+    }
+
     @Test("Person and cross-reference links are underlined, so colour is not all that marks them, and a gloss keeps its dotted rule")
     func linksAreMarkedByMoreThanColour() {
         let css = ReaderPage.documentCSS
@@ -371,3 +521,87 @@ struct ReaderPageTests {
     }
     #endif
 }
+
+#if !SWIFT_PACKAGE // CollectionItemHTMLRenderer is the app's
+// MARK: - CollectionExportContrastTests
+
+/// The collection HTML export's own stylesheet layer, measured against WCAG 2.2 AA (#1602).
+///
+/// #1578 brought the reader's page to 4.5:1 and named this layer as left under it. The layer draws
+/// its text in literal colours on literal backgrounds, so no test read them: `ReaderPageTests`
+/// reads the kit's variables. Five rules were under 4.5:1, the three #1602 listed and two it did
+/// not: the contents panel's page numbers, and the AI-attribution caption on its second ground.
+///
+/// Each text colour is listed with the element whose background it is drawn on, and a rule that
+/// draws text and is not listed fails, so a new rule is measured or the suite says so.
+///
+/// Version history:
+///   1.0 — Session 2026-10-09: #1602 — initial implementation
+@Suite("The collection HTML export's own colours meet 4.5:1 (#1602)")
+struct CollectionExportContrastTests {
+
+    /// Each rule that draws text in a colour of its own, and the selector of every element it is
+    /// drawn inside that sets a background. `body` is the page, white.
+    static let grounds: [String: [String]] = [
+        ".collection-note": ["body"], "nav h2": ["nav"], "nav a": ["nav"], ".toc-page": ["nav"],
+        ".doc-url": ["body"],
+        "aside.research-note strong": ["aside.research-note"], "aside.research-note p": ["aside.research-note"],
+        ".summary-label": [".summary-block"], ".source-note": ["body"],
+        ".collection-subtitle": ["body"], ".collection-author": ["body"], ".collection-project": ["body"],
+        ".collection-project-question": ["body"],
+        "footer.colophon": ["body"], "section.method-appendix": ["body"], "section.method-appendix h2": ["body"],
+        ".headnote-label": [".headnote"], ".headnote em": [".headnote"], ".headnote-missing": [".headnote"],
+        ".excerpt-block blockquote p": ["figure.excerpt-block"], "figcaption.excerpt-source": ["figure.excerpt-block"],
+        ".see-also": ["body"], ".see-also strong": ["body"],
+        // The caption closes a summary block and a filled headnote.
+        ".ai-attribution": [".summary-block", ".headnote"],
+        "ul.generated-rows a": ["body"], ".generated-secondary": ["body"],
+        ".citation-card-citation": [".citation-card"], ".citation-card-note": [".citation-card"],
+        ".summary-placeholder-note": [".summary-placeholder"],
+    ]
+
+    @Test("Every text colour of the export's own layer is at least 4.5:1 on each background it is drawn on")
+    func everyOwnColourMeetsAA() throws {
+        let css = CollectionItemHTMLRenderer.ownLayersCSS
+        let rules = ReaderPageTests.rules(in: css).filter { !ReaderPageTests.isPrintOnly($0.atRule) }
+        var measured = 0
+        var seen: Set<String> = []
+        for rule in rules {
+            guard let value = rule.declarations["color"], value != "inherit" else { continue }
+            let colour = try #require(ReaderPageTests.CSSColour.hex(value), "\(rule.selectors): \(value) is not a hex colour")
+            for selector in rule.selectors {
+                seen.insert(selector)
+                let grounds = try #require(Self.grounds[selector],
+                                           "\(selector) draws text in \(value) and is not listed with its background")
+                for ground in grounds {
+                    let background = try #require(
+                        ReaderPageTests.CSSColour.hex(ReaderPageTests.declarations(of: ground, in: css)["background"] ?? ""),
+                        "\(ground) sets no background")
+                    let ratio = colour.contrast(with: background)
+                    #expect(ratio >= 4.5, "\(selector) (\(value)) is \(String(format: "%.2f", ratio)):1 on \(ground)")
+                    measured += 1
+                }
+            }
+        }
+        // Counted: a parser that read no rule, or a layer left out of `ownLayersCSS`, would pass
+        // by measuring nothing. 29 rules draw text; one is drawn on two grounds.
+        #expect(seen == Set(Self.grounds.keys), "listed and not found: \(Set(Self.grounds.keys).subtracting(seen).sorted())")
+        #expect(measured == 30)
+    }
+
+    @Test("The five colours #1602 replaced were under 4.5:1 where they were drawn")
+    func theReplacedColoursFailed() throws {
+        let hex = ReaderPageTests.CSSColour.hex
+        let pairs: [(String, String, Double)] = [
+            ("#777", "#fff", 4.48), ("#888", "#f0f4ff", 3.22), ("#888", "#f7f7f5", 3.30), ("#a06a00", "#fdf8ee", 4.35),
+        ]
+        for (text, ground, expected) in pairs {
+            let ratio = try #require(hex(text)).contrast(with: try #require(hex(ground)))
+            #expect(abs(ratio - expected) < 0.005, "\(text) on \(ground) is \(ratio)")
+        }
+        #expect(hex("#0066cc").map { [$0.red, $0.green, $0.blue] } == [0, 102, 204])
+        #expect(hex("#fff").map { [$0.red, $0.green, $0.blue] } == [255, 255, 255])
+        #expect(hex("rgb(0,0,0)") == nil && hex("#12") == nil && hex("#gggggg") == nil)
+    }
+}
+#endif

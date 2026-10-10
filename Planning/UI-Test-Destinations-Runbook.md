@@ -619,3 +619,46 @@ Nothing in the app restores it (`showAnalytics` is plain `@State`), so do not go
 `UITestPresentation.dismissAnyPresentation(in:)` is the helper, and it is scoped to
 `app.navigationBars.buttons` for two measured reasons: a bare `app.buttons["Done"]` closes the #861
 keyboard accessory bar instead, and `isHittable` on a dying popover button fails the test outright.
+
+**`SummarizationPromptCopyTests` (#1590) runs on an iPhone or an iPad, and its test must stay the
+Summarization pane's FIRST action.** It opens Settings ▸ Summarization, presses **Use as Template**
+on the first standard prompt, and requires the New Prompt editor's name field to read "Copy of
+<that prompt>" with no **Choose a Template** sheet over it. The defect it guards showed only on the
+first Use as Template or Duplicate of a visit to the pane: the pane kept the copy in a `@State`
+beside the sheet's Bool and read it only inside the sheet's content closure, so the sheet was built
+from the closure made before the tap. Anything that reads that state first hides it (pressing **New
+Prompt…** is enough), so the test touches nothing in the pane before the button, and each test
+method is a fresh launch. One pane serves both idioms, so one device is the guard, and it never
+skips. Measured on 2026-10-09 on **iPhone 17, iOS 27.0: 1 test, 1 passed**, and on **iPad Pro
+11-inch (M5), iOS 27.0: 1 test, 1 passed**; and on the code before the fix (the three app files at
+`9c774265`), on iPhone 17, **1 failed**, on Choose a Template being up.
+```bash
+xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/SummarizationPromptCopyTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+```
+
+**`AnalyticsCompareFromTableTests` (#1583) is measured on an iPhone and needs no index; on an iPad
+simulator its run is killed at teardown, as every suite that opens Corpus Analytics is (#1620).** It
+opens Corpus Analytics, commits one term, switches the Display control to **Table**, commits a
+second term, and reads two things before asserting either: the Display control's **Chart** segment
+is the selected one, and the two **Values** choices (Raw count, % of documents) are enabled. On an
+iPhone the choices are listed in the **Options** menu, under Measure's two; on a regular width they
+are a segmented control in the toolbar, and the test looks there first. The controls answer for a
+comparison whether or not either term matches a document, so an empty index is enough. It never
+skips: a control it cannot find fails and prints the buttons on screen. `tearDown` closes Corpus
+Analytics, which on an iPad is a window scene the next launch would restore (#1279). Measured on
+2026-10-09 on **iPhone 17, iOS 27.0: 1 test, 1 passed**; and with `AnalyticsView.swift` as it was
+at `9c774265`, **1 failed, on both observations** (Table selected, both Values choices disabled).
+**On iPad Pro 11-inch (M5) and iPad mini (A17 Pro), iOS 27.0, every step ran and no assertion
+failed, and then the simulator's `backboardd` aborted about two seconds after `tearDown`
+terminated the app and took the test runner with it** ("Test crashed with signal kill"). That is
+not this suite's: `v2`'s own `AnalyticsKeyboardTests` does the same on a newly booted iPad mini, 3
+tests of 3 (#1620). Until that is settled an iPad run of this suite says nothing either way.
+```bash
+xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/AnalyticsCompareFromTableTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+```

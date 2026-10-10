@@ -894,7 +894,7 @@ One quotation cites a document that is no longer in its volume.
 ### Collections Export
 
 #### Native-format export explanation
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 607–608 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | CollectionExportSheet.nativeShareOptions | lines: 597–598 | key: export.native.hint | shared: iOS+macOS (single edit point) -->
 
 Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above.
 
@@ -2130,12 +2130,12 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 
 <!-- END SOURCE: panel.summary.unavailable -->
 
-#### Ranked from the first %1$lld of %2$lld documents that share…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.body | lines: 264–265 | key: related.poolCut %lld %lld -->
+#### Ranked from the first %1$@ of %2$@ documents that share…
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.poolCut | lines: 402–403 | key: related.poolCut %@ %@ -->
 
-Ranked from the first %1$lld of %2$lld documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them.
+Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them.
 
-<!-- END SOURCE: related.poolCut %lld %lld -->
+<!-- END SOURCE: related.poolCut %@ %@ -->
 
 #### No indexed documents share this document’s archival…
 <!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 440–441 | key: related.empty.detail -->
@@ -2233,7 +2233,7 @@ A collection can belong to more than one project. Attaching it here doesn’t re
      this one key through `CollectionEditorNaming.listName`, trimmed. The two Project Home keys
      (`project.home.collections.untitled`, `project.collections.manage.untitled`) are gone, so their
      two blocks are this one, the one place the wording lives. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 968–968 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 970–970 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Untitled Collection
@@ -2344,6 +2344,15 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
+#### Smart collection. Its documents come from its saved search.
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerRow.init(savedName:documentCount:isSmart:) | lines: 400–401 | key: collection.picker.smart -->
+
+*The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count. The row is listed and does not take a tap (#1593).*
+
+Smart collection. Its documents come from its saved search.
+
+<!-- END SOURCE: collection.picker.smart -->
+
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
 <!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1416–1417 | key: collection.add.menu | shared: iOS only -->
 
@@ -2415,14 +2424,14 @@ No headnote yet. Edit to write a key takeaway, or generate a document summary to
 <!-- END SOURCE: collection.inspector.headnote.empty -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 679–680 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 669–670 | key: export.zotero.send.caption.iosNoAccount | shared: iOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.
 
 <!-- END SOURCE: export.zotero.send.caption.iosNoAccount -->
 
 #### Connect a Zotero account to send with your tags & research…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 682–683 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExportSheet.swift | ExportSheetView.zoteroCaption | lines: 672–673 | key: export.zotero.send.caption.macNoAccount | shared: macOS only -->
 
 Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero’s File → Import.
 
@@ -2431,7 +2440,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1544–1545 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1600–1601 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2444,21 +2453,21 @@ FRUS Explorer Collection - %@
      name, in its body and its Contents, set apart in grey italics; every export leaves the heading
      out, and the editor's own row keeps its "Section heading" prompt. The inspector's identity row
      has always used it. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 1015–1015 | key: collection.inspector.section.untitled -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 1017–1017 | key: collection.inspector.section.untitled -->
 
 Untitled section
 
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 951–952 | key: export.colophon.line -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1007–1008 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 
 <!-- END SOURCE: export.colophon.line -->
 
 #### No stored summary for this document — generate one in the…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 452–453 | key: collection.headnote.missing | same text also in: FRUSExplorer/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionItemHTMLRenderer.swift | CollectionItemHTMLRenderer.headnoteHTML | lines: 456–457 | key: collection.headnote.missing | same text also in: FRUSExplorer/Collections/DocxCollectionExporter.swift, FRUSExplorer/Collections/PDFCollectionExporter.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 No stored summary for this document — generate one in the document view to fill this headnote.

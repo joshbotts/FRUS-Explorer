@@ -15,8 +15,30 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — Session 99: initial implementation
+///   1.1 — 2026-10-09: #1583 — `displayed(selected:isComparing:)`, the mode the content area
+///          draws, which every gate in `AnalyticsView` reads where it read the picker's value
 enum AnalyticsViewMode: String, CaseIterable {
     case chart, table
+
+    /// The mode the content area draws.
+    ///
+    /// A comparison is drawn as a chart whatever the chart/table control last held, because the
+    /// table shows one term. The control's stored value is not that answer: a reader who charts a
+    /// term, switches to the table and adds a second term has `.table` stored under a chart. Until
+    /// #1583 each gate read the stored value, so that comparison was drawn in raw counts under a
+    /// greyed Values control that read "% of documents", and no control on the screen could
+    /// change it.
+    ///
+    /// The stored value is kept, not overwritten: removing the second term returns the reader to
+    /// the single-term table they chose.
+    ///
+    /// - Parameters:
+    ///   - selected: What the chart/table control holds.
+    ///   - isComparing: Whether two or more terms are committed.
+    /// - Returns: `.chart` for a comparison, `selected` otherwise.
+    static func displayed(selected: AnalyticsViewMode, isComparing: Bool) -> AnalyticsViewMode {
+        isComparing ? .chart : selected
+    }
 }
 
 // MARK: - AnalyticsNormalizationMode
@@ -219,6 +241,10 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          window the search goes to the main window the close brings forward
 ///   1.11 — #1380: the drill-in hint says "Select a bar" beside `FRUSTheme.selectGlyph`, and the
 ///          empty state names the Search button with "click" on the Mac, under a key of its own
+///   1.12 — 2026-10-09: #1583 — every gate reads the mode on screen (`viewMode`, from
+///          `AnalyticsViewMode.displayed(selected:isComparing:)`) where it read the chart/table
+///          control's stored value, so a comparison begun from the table is drawn in % of documents
+///          with its Values control live
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -287,7 +313,8 @@ struct AnalyticsView: View {
     @State private var exportError: String?
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
-    @State private var viewMode: AnalyticsViewMode = .chart
+    /// What the chart/table control holds. Gates read ``viewMode``, the mode on screen (#1583).
+    @State private var selectedViewMode: AnalyticsViewMode = .chart
     @State private var chartAxis: AnalyticsChartAxis = .byYear
 
     /// Start year for the chart x-axis and year-data filter. Defaults to 1861
@@ -505,6 +532,9 @@ struct AnalyticsView: View {
     /// `exportProvenance` stamped the exported CSV "% of documents" while `exportTable` wrote those
     /// same raw counts. Coupling it here fixes the screen, the provenance and the export together,
     /// because all three read this one property.
+    ///
+    /// `viewMode` is the mode on screen, not the control's stored value (#1583): a comparison
+    /// begun from the table is a chart, and is drawn in its default, % of documents.
     private var isNormalized: Bool {
         // `valueUnit == .documents` is load-bearing, not defensive. `normalizedValue` divides by the
         // period's DOCUMENT total and every consumer calls the result a percentage; occurrences
@@ -543,6 +573,19 @@ struct AnalyticsView: View {
     /// `true` once two or more terms are committed — the compare charts (per-term line marks) replace
     /// the single-term source-colored bars.
     private var isComparing: Bool { committedTerms.count >= 2 }
+
+    /// The mode the content area draws: the chart while comparing, the control's choice otherwise
+    /// (`AnalyticsViewMode.displayed(selected:isComparing:)`, #1583). Every gate reads this.
+    private var viewMode: AnalyticsViewMode {
+        .displayed(selected: selectedViewMode, isComparing: isComparing)
+    }
+
+    /// The chart/table control's binding. It shows the mode on screen, so the control, which is
+    /// disabled while comparing, has its chart segment selected above a comparison; a choice the
+    /// reader makes is stored.
+    private var viewModeBinding: Binding<AnalyticsViewMode> {
+        Binding(get: { viewMode }, set: { selectedViewMode = $0 })
+    }
 
     /// `true` when the committed set has reached `maxCompareTerms` (disables the add affordance).
     private var atCompareCap: Bool { committedTerms.count >= Self.maxCompareTerms }
@@ -1666,11 +1709,9 @@ struct AnalyticsView: View {
                     : String(localized: "analytics.empty.detail",
                              defaultValue: "No indexed documents match “\(committedTerm)”."))
             )
-        } else if isComparing {
-            // Compare mode is chart-only — the table shows a single term (D1 review fix); the
-            // view-mode toggle is disabled while comparing.
-            chartContent
         } else {
+            // A comparison is chart-only, since the table shows a single term (D1 review fix), and
+            // the view-mode toggle is disabled while comparing: `viewMode` is `.chart` then (#1583).
             switch viewMode {
             case .chart:
                 chartContent
@@ -2933,7 +2974,7 @@ struct AnalyticsView: View {
     private var toolbarContent: some ToolbarContent {
         // View mode: chart vs table (reusable chrome component, Prep-B).
         ToolbarItem(placement: .primaryAction) {
-            AnalyticsViewModePicker(viewMode: $viewMode, isDisabled: committedTerm.isEmpty || isComparing)
+            AnalyticsViewModePicker(viewMode: viewModeBinding, isDisabled: committedTerm.isEmpty || isComparing)
         }
 
         if horizontalSizeClass == .compact {

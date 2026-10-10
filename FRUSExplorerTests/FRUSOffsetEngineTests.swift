@@ -2240,3 +2240,96 @@ struct FigureReaderTests {
         #expect(selection.text == "Washington, ")
     }
 }
+
+// MARK: - HighlightTextRenderTests (#1602)
+
+/// What WebKit computes for text inside one of the reader's highlights (#1602).
+///
+/// `ReaderPageTests` reads the stylesheet as text: each `::highlight(frus-…)` rule names
+/// `--color-highlight-text`, and that colour is at least 4.5:1 over every tint. Neither says the
+/// engine applies a `color` written with a variable inside `::highlight()`. If it did not, the
+/// declaration would be dropped, a link in a highlight would keep its own colour, and every
+/// arithmetic test would still pass. So this loads the real variables and stylesheet in the
+/// reader's web view, highlights a link, a person's name and plain text through the CSS Custom
+/// Highlight API the reader uses, and asks the page what colour each is drawn in.
+///
+/// Measured first outside the app, in WebKit on macOS 27.0.1, where a snapshot's pixels agreed
+/// with these computed values: a link in a highlight was painted rgb(0,124,213) with no colour
+/// rule and rgb(29,40,50) with one.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1602 — initial implementation
+@Suite("Text inside a reader highlight is drawn in the highlight text colour, in a web view (#1602)")
+@MainActor
+struct HighlightTextRenderTests {
+
+    /// What the page reports for one element.
+    private struct Drawn: Decodable {
+        /// The element's own colour, outside any highlight.
+        let own: String
+        /// The colour of its text inside the highlight.
+        let highlighted: String
+        /// The highlight's tint.
+        let tint: String
+        /// The colour reported for a highlight no rule names: the element's own.
+        let unnamed: String
+    }
+
+    /// The reader's variables and stylesheet around a paragraph holding a cross-reference, a
+    /// person's name and plain text, as the serializer writes each.
+    private static func page(_ appearance: ReaderAppearance) -> String {
+        """
+        <!DOCTYPE html><html><head><style>
+        \(ReaderPage.cssVariables(appearance: appearance))
+        \(ReaderPage.documentCSS)
+        </style></head><body><div class="frus-document"><p class="body">See \
+        <a class="cross-ref" id="link" href="#">Document 12</a>, sent by \
+        <a class="pers-name" id="person" href="#">Kennan</a> <span id="plain">from Moscow</span>.</p></div></body></html>
+        """
+    }
+
+    private static let script = """
+    (() => {
+      const ids = ['link', 'person', 'plain'];
+      const ranges = ids.map(id => { const r = new Range(); r.selectNodeContents(document.getElementById(id)); return r; });
+      CSS.highlights.set('frus-blue', new Highlight(...ranges));
+      const out = {};
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        const inside = getComputedStyle(el, '::highlight(frus-blue)');
+        out[id] = { own: getComputedStyle(el).color, highlighted: inside.color, tint: inside.backgroundColor,
+                    unnamed: getComputedStyle(el, '::highlight(frus-no-such-colour)').color };
+      }
+      return JSON.stringify(out);
+    })()
+    """
+
+    @Test("A link, a person's name and plain text in a highlight are all drawn in the highlight text colour, in both palettes")
+    func highlightedTextTakesTheHighlightTextColour() async throws {
+        let expected: [ReaderAppearance: (text: String, link: String, person: String)] = [
+            .light: ("rgb(0, 0, 0)", "rgb(0, 102, 204)", "rgb(0, 121, 107)"),
+            .dark: ("rgb(255, 255, 255)", "rgb(64, 156, 255)", "rgb(0, 179, 161)"),
+        ]
+        for appearance in ReaderAppearance.allCases {
+            let harness = OffsetEngineTestHarness()
+            try await harness.load(Self.page(appearance))
+            let raw = try #require(try await harness.evaluateString(Self.script), "\(appearance): the page returned nothing")
+            let drawn = try JSONDecoder().decode([String: Drawn].self, from: Data(raw.utf8))
+            let want = try #require(expected[appearance])
+            let link = try #require(drawn["link"]), person = try #require(drawn["person"]), plain = try #require(drawn["plain"])
+
+            // Outside a highlight the two links have the colours #1602 measured over the tints.
+            #expect(link.own == want.link, "\(appearance): the cross-reference's own colour is \(link.own)")
+            #expect(person.own == want.person, "\(appearance): the person's own colour is \(person.own)")
+            // Inside one, all three are the highlight text colour.
+            for (name, element) in [("the cross-reference", link), ("the person's name", person), ("plain text", plain)] {
+                #expect(element.highlighted == want.text,
+                        "\(appearance): \(name) in a highlight is drawn in \(element.highlighted)")
+                #expect(element.tint == "rgba(0, 122, 255, 0.4)", "\(appearance): the highlight's tint is \(element.tint)")
+                // The reading is of the rule: a highlight no rule names reports the element's own colour.
+                #expect(element.unnamed == element.own,
+                        "\(appearance): an unnamed highlight reports \(element.unnamed), not the element's \(element.own)")
+            }
+        }
+    }
+}

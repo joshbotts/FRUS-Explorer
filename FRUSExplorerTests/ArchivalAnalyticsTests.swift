@@ -1179,6 +1179,48 @@ struct ArchivalCollectionsDataTests {
         #expect(!documentIds.subtracting(pointerIds).isEmpty)
     }
 
+    /// The two figures About These Figures states in words, held to the bundled indexes (#1588).
+    ///
+    /// The popover said "a hundred and eighty-one collections appear only under pointers" from
+    /// the day it was written, 2026-08-14, when the figure was 181. Four regenerations of the
+    /// indexes later it was 189, and nothing compared the sentence with the data: the test above
+    /// pins a direction because "the exact figures move with the artifacts". So the sentence now
+    /// rounds, as its first figure always has, and this recomputes both through the app's own
+    /// derivation. When either leaves its band, reword the sentence
+    /// (`archival.info.weights.detail.v2` in `FRUSTheme.swift`), its two blocks in
+    /// `Docs/EditableContent/06-Archives.md`, and the Count by paragraph of both manuals, then
+    /// move the band here. Measured 2026-10-09: 1,017 and 189.
+    @Test("About These Figures' two rounded counts are what the bundled indexes give (#1588)")
+    @MainActor
+    func infoTextCountsMatchTheIndexes() throws {
+        let data = try #require(Self.shipped)
+        var documentIds: Set<String> = []
+        var pointerIds: Set<String> = []
+        for band in ArchivalEraBand.all {
+            documentIds.formUnion(data.ranking(band: band, lens: .namedCollections,
+                                               weight: .documents, hidingUmbrella: false,
+                                               limit: .max).rows.map(\.id))
+            pointerIds.formUnion(data.ranking(band: band, lens: .namedCollections,
+                                              weight: .unprintedPointers, hidingUmbrella: false,
+                                              limit: .max).rows.map(\.id))
+        }
+        let documentsNoPointers = documentIds.subtracting(pointerIds).count
+        let pointersNoDocuments = pointerIds.subtracting(documentIds).count
+
+        let detail = try #require(FeatureInfoButton.archivalAnalytics.items
+            .first { $0.title == "The three counts measure different things" }?.detail)
+        #expect(detail.contains("a thousand collections that supplied documents have no pointers"))
+        #expect((950...1_049).contains(documentsNoPointers), """
+            \(documentsNoPointers) collections supplied documents and have no pointers. The \
+            popover says "a thousand".
+            """)
+        #expect(detail.contains("about a hundred and ninety collections appear only under pointers"))
+        #expect((185...194).contains(pointersNoDocuments), """
+            \(pointersNoDocuments) collections are pointed at and supplied no printed document. \
+            The popover says "about a hundred and ninety".
+            """)
+    }
+
     /// The class lens ranks the pointer weight, which it could not do before #834.
     ///
     /// **This test previously asserted the opposite** — that the combination yielded nothing —

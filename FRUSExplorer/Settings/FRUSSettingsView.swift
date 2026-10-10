@@ -736,14 +736,18 @@ private struct SettingsTagsPane: View {
 /// Availability first, receipt last, prompts in between; the batch-run form moves behind a "New
 /// Batch Run…" door. Native `Form(.grouped)` replaces the hand-rolled `ScrollView` + card stack and
 /// its fixed 11–13pt type, so S-5's conversion list loses this pane too.
+///
+/// The New Prompt sheet is presented from an item (`NewPromptRequest`), which carries the copy Use
+/// as Template or Duplicate made (#1590).
 private struct SettingsSummarizationPane: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SummarizationPrompt.createdAt) private var allPrompts: [SummarizationPrompt]
 
     @State private var promptToEdit: SummarizationPrompt? = nil
-    @State private var showNewPromptSheet: Bool = false
-    @State private var newPromptInitialTemplate: PromptTemplate? = nil
+    /// The New Prompt sheet's item: non-nil while it is up, carrying the copy Use as Template or
+    /// Duplicate made (#1590).
+    @State private var newPromptRequest: NewPromptRequest? = nil
     @State private var showRunSheet = false
     /// Per-prompt summary counts, tallied once per appearance rather than per row.
     @State private var tally: PromptSummaryTally = .empty
@@ -782,8 +786,7 @@ private struct SettingsSummarizationPane: View {
                             Spacer(minLength: 8)
                             Button(String(localized: "settings.summarization.useAsTemplate",
                                           defaultValue: "Use as Template")) {
-                                newPromptInitialTemplate = templateFrom(prompt)
-                                showNewPromptSheet = true
+                                newPromptRequest = NewPromptRequest(template: templateFrom(prompt))
                             }
                             .buttonStyle(.borderless)
                             .accessibilityLabel(
@@ -833,8 +836,7 @@ private struct SettingsSummarizationPane: View {
                                       systemImage: "pencil")
                             }
                             Button {
-                                newPromptInitialTemplate = templateFrom(prompt)
-                                showNewPromptSheet = true
+                                newPromptRequest = NewPromptRequest(template: templateFrom(prompt))
                             } label: {
                                 Label(String(localized: "settings.summarization.duplicate",
                                              defaultValue: "Duplicate"), systemImage: "doc.on.doc")
@@ -853,8 +855,7 @@ private struct SettingsSummarizationPane: View {
 
                 SettingsNewItemRow(label: String(localized: "settings.summarization.newPrompt",
                                                  defaultValue: "New Prompt…")) {
-                    newPromptInitialTemplate = nil
-                    showNewPromptSheet = true
+                    newPromptRequest = NewPromptRequest(template: nil)
                 }
             } header: {
                 Text(String(localized: "settings.summarization.user.header",
@@ -870,11 +871,10 @@ private struct SettingsSummarizationPane: View {
         .sheet(item: $promptToEdit, onDismiss: refreshTally) { prompt in
             PromptEditorView(promptToEdit: prompt)
         }
-        .sheet(isPresented: $showNewPromptSheet, onDismiss: {
-            newPromptInitialTemplate = nil
-            refreshTally()
-        }) {
-            PromptEditorView(initialTemplate: newPromptInitialTemplate)
+        // #1590: the copy rides in the item. As a sibling `@State` beside a Bool it reached the
+        // sheet as it stood before the tap, and the first Use as Template opened a blank prompt.
+        .sheet(item: $newPromptRequest, onDismiss: refreshTally) { request in
+            PromptEditorView(initialTemplate: request.template)
         }
         .sheet(isPresented: $showRunSheet, onDismiss: refreshTally) {
             BatchRunSheet().environment(appState)

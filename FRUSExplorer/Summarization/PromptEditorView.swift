@@ -9,6 +9,29 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - NewPromptRequest
+
+/// What a New Prompt sheet opens with: the copy Use as Template or Duplicate made, or nothing,
+/// for New Prompt… (#1590).
+///
+/// The item both Summarization panes present the editor from, with `.sheet(item:)`. Each used to
+/// keep the copy in one `@State` and a Bool for the sheet in another, and read the copy only
+/// inside the sheet's content closure. Their bodies had never read it, so setting it did not
+/// re-run them, and the sheet was built from the closure made before the tap: the first Use as
+/// Template or Duplicate of a visit opened a blank New Prompt under Choose a Template, and the
+/// second worked. An item carries the copy to the sheet as its argument. `BrowserView`'s
+/// `SemanticMapSheetItem` records the same measurement, and #862 the `.sheet(item:)` form of it.
+///
+/// Version history:
+///   1.0 — 2026-10-09: #1590 — initial implementation
+struct NewPromptRequest: Identifiable {
+    /// A new identity for each request, so two requests in a row are two presentations.
+    let id = UUID()
+    /// The copy the editor opens filled in from, or `nil` for a blank prompt, which opens under
+    /// Choose a Template.
+    let template: PromptTemplate?
+}
+
 // MARK: - PromptEditorView
 
 /// Sheet-based editor for creating or editing a user `SummarizationPrompt`.
