@@ -36377,3 +36377,81 @@ Pull request 6 of the plan of record's §0c. Nine reports, each read in code on 
 - **Two questions about the Audio Graph builder that #1587 did not change**, each read in code and filed: a share read back from a table's cell is read with US conventions, so Corpus Analytics and the person trajectories in % of documents play some values ten times too large on a device whose region writes decimals with a comma (#1616); and a categorical axis's points are given a number for their x where the framework asks for the category's name (#1617).
 - **The HTML format card still reads "Web page + word cloud"**, though PDF and Word carry the cloud too.
 - **The export's contents links** have no underline; the links in its documents do.
+
+## Session 2026-10-09 — Five reports about tests and tools: a reader test that scrolls as a reader does, sync-monitor tests that no longer need the simulator's log store, an order read from the pipeline, four scans that read the kit again, and a taxonomy generator that refuses an empty page (#1568, #1600, #1601, #1604, #1606)
+
+Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests, one test seam in the app, one access level in the kit and one generator. Nothing a reader sees changes: no index version, no CloudKit deploy, no re-index, no manual edit and no TestFlight line.
+
+**#1568: the late-image test, which failed from a newly booted simulator** (`FRUSOffsetEngineTests.swift`)
+- **Reproduced on `v2`'s binaries.** `FigureReaderTests`' "A late image does not bring the reader back to a footnote they have since scrolled away from", run alone from a shut-down iPhone 17 (iOS 27.0), failed 1 run in 3 (the issue measured 2 in 3), at the same line with the same position, 3612 pt.
+- **Traced in the page.** A copy of the test logged every `scrollIntoView`, `scrollTo`, scroll event, image load and document resize, each with `window.scrollY`, the document's scroll range and the reveal's global, and beside them the scroll view's own offset. With the tracer installed by a script call after the load, which is one more round trip before the reveal, five cold runs passed. With the tracer in the page's own `<head>`, two cold runs in six failed.
+- **In both failing runs the app did what it should.** The wheel had cleared `FRUSRevealedFootnote`, and no `scrollIntoView` ran after the image loaded: the script that brings a revealed note back did not fire.
+- **What failed was the test's own scroll.** A few milliseconds after the reveal's `scrollIntoView`, which the page answered with position 1835 (three milliseconds after in one run, nine in the other), the page reported position 0 again, while its scroll view was at the note or reached it afterwards. The test's `window.scrollTo(0, 0)` arrived then, at a page that said it was already at the top, and did nothing. One run ended at 1835 pt. In the other the image landed after the scroll view had moved, and WebKit kept the reader's place by the image's height (1777 pt), which is 3612 pt. The simulated reader had never left the note.
+- **The test now scrolls as a reader does.** It waits for the reveal to rest (the page and its scroll view agreeing on a position past the top, three readings in a row 50 ms apart), dispatches the wheel in the page, sets the scroll view's own offset to its top, waits for that to rest, and only then lets the image through. It asserts the scroll view's position at the end as well as the page's. Both are measured from the scroll view's top, its offset plus its adjusted inset, which is zero in this harness.
+- **After: 10 runs of 10 from a shut-down simulator passed**, while three full `swift test` runs held the Mac's load average above 100 at each of three readings. The suite also passed from a cold boot on an iPad mini (A17 Pro) under iOS 26.5 and under iOS 27.0, 9 tests each.
+- **It still catches the defect it is for.** With `"wheel"` taken out of the reveal script's list of events, the test fails on both of its last assertions.
+- **The other late-image test**, "An image fetched after the reader was brought to a footnote leaves that footnote in view", reads the page at the same moment. It was not seen to fail: 8 runs of 8 from a shut-down simulator passed unchanged. It now waits for the reveal to rest before its first reading, the same two lines.
+
+**#1606: the two sync-monitor tests that could not open the system log** (`SyncDiagnosticsLog.swift`, `SyncDiagnosticsEntryTests.swift`)
+- **Reproduced:** `SyncEventMonitorTests`, 11 tests, 8 issues, and 85 lines of `OSLogErrorDomain` 6 with `_OSLogErrorPOSIXErrno=13` in the run's log.
+- **It is the simulator's log store, for any process, and not macOS's.** A twenty-line program that writes one error line under `com.apple.coredata…` and reads it back through `OSLogStore(scope: .currentProcessIdentifier)` found its line at the first attempt as a Mac process on this Mac (macOS 27.0.1). Built for the simulator and run with `simctl spawn` in the booted iPhone 17 (iOS 27.0), outside any test host, it opened the store and `getEntries` threw at each of eight attempts. That simulator's `logd` writes "Failed to get persona for <pid>, 1 Operation not permitted" for each process it meets; whether that is the cause was not established.
+- **What the tests do now.** `SyncEventMonitor` takes its system-log read as a parameter (`systemLog:`), `SystemLogSchemaScan.scanCurrentProcess` by default, so the app is unchanged. The monitor's half of the channel is tested with a read of the test's own, which applies the app's selection rule to lines the test writes: `whatTheLogNamedReachesTheRowAndTheRun` (new), `importScanDoesNotJoinTheRun` (rewritten) and `anUnreadableLogIsFiledAsUnread` (new: a log that cannot be read is filed as unread, leaves the failure undescribed and tells the app nothing more). `systemLogReachesTheRowAndTheRun` keeps the real log store and the monitor's default read, and is wrapped in `withKnownIssue` on one condition, that the test's own `OSLogStore` open or first read throws. It stops polling as soon as the scan answers `nil`.
+- **The default read is also pinned by source** (`theDefaultReadIsTheProcessLog`): the one test that runs it is the one that records a known issue here, so a default changed to a stub would have passed every test on this Mac.
+- **Result on this Mac:** 14 tests, passed with 6 known issues, in one second where the suite took 21.7. Where the store can be read the wrapper does nothing and a failure there is a failure.
+- **Five mutations, each failing its test:** the read called with the event's dates transposed; a read that answered `nil` recorded as read; a failed import's names added to the remembered upload failure; the default read replaced by a stub; and the app's monitor built with an argument.
+
+**#1601: the metadata-before-first-batch test** (`VolumeMetadataDiscoveredTests.swift`)
+- The two events travel on two `AsyncStream`s, and each wakes its own task. The test stamped the clock in a task per stream and compared the stamps, so it measured the scheduler. No arrangement of readers outside the pipeline can tell which of two streams was written first.
+- It now installs `setDocumentBatchStoredTestHook`, which the pipeline awaits after it writes each batch, and at the first batch reads the metadata stream with a 30-second limit. The pipeline is suspended in the hook, so an event it has not sent cannot arrive, and one it has sent is read at once. The test runs for `indexVolume` and for `indexAllVolumes`, which sends the event from a line of its own.
+- **Two mutations:** the emission moved after the store pass in `indexVolume`, and then in `indexAllVolumes`. Each failed its own case, after the 30 seconds, and left the other passing.
+- **Three full `swift test` runs passed**, 2,574 tests each; the issue measured one failure in five.
+- **What it cannot tell apart** is an event sent after the first batch's `.storingBatch` update and before that batch's write. Nothing outside the pipeline happens between the two, and the test's name says "by the time the first batch is stored". The review listed this, and it is left.
+
+**#1604: two guards that had stopped covering code that moved into the kit** (`AppSourceTree.swift`, `WordCloudPrecomputeRemovalTests.swift`, `AnalyticsValueUnitTests.swift`, `CitationMatchingEngineTests.swift`, `SymbolNameAuditTests.swift`, `WordCloudTests.swift`, `IndexingSeamsTests.swift`, `IndexingPipeline.swift`)
+- **Every test file that walks a source folder without `AppSourceTree` was read: 34.** Four had a rule a kit file could break, and read the kit now:
+  - the word-cloud precompute removal scan (four banned names), which reads every directory the app compiles, 549 files in seven directories, and requires that it read `FRUSCoreKit/Search/IndexingPipeline.swift`;
+  - the Corpus Analytics unit-noun scan, which reads `FRUSCoreKit/Analytics/` beside `FRUSExplorer/Analytics/`: two of the app's analytics files moved there;
+  - the citation-engine scan (#1522), since the engine and its fixed-list initialiser are the kit's;
+  - the SF Symbol literal scan.
+- Of the other thirty, four already read the kit by a list of their own, six list data folders or the test folder, and twenty hold a rule about the app's views, scenes, windows, charts, tips or models, or about `AppState` or another type the app declares, none of which a kit file can name.
+- **Shown both ways.** One violation per rule was appended to a kit file (a `drainWordCloudPrecompute` in `IndexingPipeline.swift`, the unit noun's key in `DecimalClassLabelTable.swift`, an engine built over a list of ids in the line resolver, and `systemImage: "cloud.slash"` in `CountCopy.swift`). The scans as they were on `v2` passed, 62 tests in 4 suites. The scans as they are failed, one test for each.
+- **The reading is now two tests** (`AppSourceTreeTests`, in `AppSourceTree.swift`), so that the next scan does not need another one:
+  - `AppSourceTree.compiledDirectories` is the seven directories both app targets compile, and the test reads `project.yml`'s `sources:` for each target and requires the same list. `WordCloudTests` had a private copy of it, and uses this one.
+  - A test file that enumerates a folder and names `FRUSExplorer`, or a folder under it, without `AppSourceTree` must be on `walksTheAppFolderAlone`, 25 files, each with its reason. One that is not listed fails, and so does a listed one that no longer walks.
+- **Two exemptions are by path.** The unit-noun scan excused any path ending `AnalyticsValueUnit.swift`, and the precompute scan any file of the name `WordCloudSettings.swift`; widening the scans had widened both. Each now names the app's one file.
+- **The Spotlight donor.** `IndexingPipeline.donor` is `nonisolated let` where it was `private let`: internal, not public. `IndexingSeamsTests.theAppsPipelineHasTheSpotlightDonor` (Xcode's alone) builds a pipeline through the app's initialiser and requires a `SpotlightDonor`. With the argument dropped from `IndexingPipeline+App.swift` the app builds, and that test fails.
+- **Seven more mutations, each failing its test:** a folder added to one app target in `project.yml`; an unlisted test file that walks the app's folder; a listed one that no longer does; a kit file of each excused name holding what its scan refuses; and the donor argument.
+
+**#1600: the taxonomy generator** (`TaxonomyGate.swift` (new), `TaxonomyGeneratorRunner.swift`, `main.swift`)
+- `TaxonomyGeneratorRunner.generate(fromHTML:outputPath:)` is everything a run does after its fetch, and asks `TaxonomyGate` before it writes. Three refusals, each leaving the file as it was, with exit 1:
+  - the page gave no tags;
+  - a tag sits outside people, places and topics, which is what a page with renamed or restructured roots parses to, in any number;
+  - more than one in ten of the slugs in the file being replaced are missing. By slug and not by count, because volumes carry tags by slug: a list that keeps its size and loses its slugs breaks the join as an empty one does. With no file at the output path, or one that does not decode, there is nothing to measure against, and the message says to delete the file to accept a taxonomy that has really changed that much.
+- A run that writes prints the slugs the new list drops and adds.
+- **Against the live page**, writing over a copy of the bundled file: 508 tags (people 121, places 274, topics 113), none dropped or added, and the copy byte-identical afterwards.
+- `TaxonomyGateTests`, 7 tests, each driving `generate` over a file in a temporary folder and reading the file's bytes afterwards. **Five mutations**, each failing the tests written for it: the gate not asked; the limit at one in ten inclusive; the limit at one in five; the category rule off; the empty rule off.
+- **Not done: the issue's second step**, a source that outlives the page. Filed as #1622: `taxonomy/taxonomy.xml` in the public HistoryAtState/tags repository, which this session did not read.
+
+**#1620, looked at and left open: it follows the iOS 27.0 simulator**
+- One build, an iPad mini (A17 Pro) shut down and booted for each run. Under **iOS 27.0**, `AnalyticsKeyboardTests` ended 3 tests of 3 with "Restarting after unexpected exit, crash, or test timeout", "Executed 0 tests" and three new `backboardd` reports, as filed. Under **iOS 26.5** it passed 3 of 3 with none, and then the index row's three suites with `AnalyticsCompareFromTableTests` ran 10 tests with 0 failures and 0 skipped, again with none.
+- So the guard that could not be read on this Mac can be, on `OS=26.5`. `CLAUDE.md`'s two rows and the runbook's two entries say so, and the issue has the table.
+- Not determined: what in the 27.0 runtime's render server refuses the surface, whether a later 27 runtime does it, and whether a device does. The Mac was not restarted, and one 26.5 iPad was used.
+
+**The one review pass** (the week's rule), on the diff: ten findings. Eight are fixed and are in the sections above: the default read pinned by source, the reader test measured from the scroll view's top, the two exemptions by path, the census, the one list of compiled directories, a missing doc comment, a check that named two files it had no business naming, and a run log that stated the write before the parse. One is left, the order test's boundary. One is as designed: of a taxonomy file with fewer than ten slugs, any loss is more than one in ten.
+
+**Also changed**
+- `Planning/Generators-Runbook.md`: `TaxonomyGenerator`'s entry, which was one line, says when it refuses and what it measured.
+- `Planning/UI-Test-Destinations-Runbook.md`: the keyboard and toolbar suites' entry and `AnalyticsCompareFromTableTests`', with the two runtimes' results and `OS=26.5` in the command.
+- `CLAUDE.md`: the sentence that named the metadata test as one to run again alone is gone; two rows of the UI suite index name `OS=26.5`; and the paragraph on which scans read the kit names `AppSourceTreeTests`.
+- The plan of record's §0c: this pull request's entry.
+
+**Checked**
+TODO-FILL-CHECKED
+
+**Not done**
+- **Whether the shipped app is refused its own log** on a device, or as the sandboxed Mac app, is still not known. A Mac process outside the sandbox is not refused. A copy of the program signed with the app-sandbox entitlement trapped at launch when run from a shell, so that was not measured either. The owner's check from #1606 stands: after any sync event on the Mac, Settings ▸ Data & Recovery ▸ Sync Log, and whether a failed row says "system log: could not be read".
+- **Why the simulators refuse it** was not found. It follows the Mac and not the code, which was the issue's control.
+- **Nothing run on this Mac shows that the monitor's default read reads the log store.** `systemLogReachesTheRowAndTheRun` is the test that runs it, and it records a known issue here; the default is held by a source test meanwhile.
+- **The order test's boundary** (above).
+- **#1600's second source** (#1622).
+- **#1620's cause.**
