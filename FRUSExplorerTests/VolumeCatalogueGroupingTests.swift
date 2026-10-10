@@ -243,9 +243,11 @@ struct VolumeDocumentCountAccessorTests {
         let sum = index.volumeTotals.keys.reduce(0) { $0 + (store.documentCount(forVolumeId: $1) ?? 0) }
         // 314,483 → 314,571 and 552 → 553 at OH PR #460 (FRUS 1981–1988 vol. XVI).
         // 314,571 → 314,569 at corpus `deb6a04f8` (2026-10-09): `frus1902app1`'s `s05sub04` and
-        // `s12` are sections and no longer documents. The semantic artifacts were harvested before
-        // that and still count 314,571.
-        #expect(sum == 314_569)
+        // `s12` are sections and no longer documents.
+        // 314,569 → 314,616 at corpus `99d851c79` (2026-10-10): upstream restored Documents
+        // 900–946 to `frus1952-54v09p1`, 46 of them dated to a day and one across a span. The
+        // semantic artifacts were packed again at that corpus and count the same 314,616.
+        #expect(sum == 314_616)
         #expect(index.volumeTotals.count == 553)
     }
 

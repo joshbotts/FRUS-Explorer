@@ -24,6 +24,9 @@ import Testing
 ///   1.0 — Session 2026-08-09: #262
 ///   1.1 — Regenerated after OH's 2026-09-11/14 corrections to frus1981-88v16 (84 in-document refs
 ///         where there were none): document edges 77,792 → 77,850, same-volume 69,164 → 69,213
+///   1.2 — Regenerated at corpus `99d851c79` (2026-10-10), where `frus1952-54v09p1` has its
+///         Documents 900–946 again: their 16 references are all to their own volume, so document
+///         edges 77,850 → 77,866, same-volume 69,213 → 69,229, and no stored edge moved
 @Suite("Resolved edge index — artifact")
 struct ResolvedEdgeIndexTests {
 
@@ -61,7 +64,7 @@ struct ResolvedEdgeIndexTests {
 
     @Test("Nothing in the index is a same-volume citation")
     func noSameVolumeEdges() throws {
-        // The whole size argument rests on this: 69,213 of the corpus's 77,850 document-to-document
+        // The whole size argument rests on this: 69,229 of the corpus's 77,866 document-to-document
         // citations are same-volume, and every one of them is already in the reader's local table
         // whenever they can see the document at all. One leaking through would be dead weight and,
         // worse, would be merged as a duplicate of an edge the graph already has.
@@ -84,12 +87,12 @@ struct ResolvedEdgeIndexTests {
         #expect(coverage.sameVolumeEdges < coverage.documentEdges)
         #expect(coverage.storedEdges == coverage.documentEdges - coverage.sameVolumeEdges)
         // The same harvest #764 reports, so the two artifacts cannot disagree about the corpus.
-        #expect(coverage.documentEdges == 77_850, """
-            \(coverage.documentEdges) document edges, not the 77,850 the provenance flow index \
+        #expect(coverage.documentEdges == 77_866, """
+            \(coverage.documentEdges) document edges, not the 77,866 the provenance flow index \
             reports from the same harvester. Two artifacts disagreeing about the corpus means one \
             of them is reading it differently.
             """)
-        #expect(coverage.sameVolumeEdges == 69_213)
+        #expect(coverage.sameVolumeEdges == 69_229)
     }
 
     @Test("Most citations are same-volume, which is why this artifact is small")

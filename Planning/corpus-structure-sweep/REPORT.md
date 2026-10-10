@@ -1,10 +1,10 @@
 # FRUS TEI — structural encoding defects found by an independent scan
 
-Generated 2026-10-09 against the corpus at commit `deb6a04f8`. **Every line and byte offset below is relative to that revision.**
+Generated 2026-10-10 against the corpus at commit `99d851c79`. **Every line and byte offset below is relative to that revision.**
 
 ## What this is
 
-We maintain [FRUS Explorer](https://github.com/joshbotts/FRUS-Explorer), an independent reader that parses your TEI. Scanning all 744 files (339,389 `<div>` elements) for structural consistency turned up **7 places in 6 volumes** where a `</div>` appears to sit in the wrong place, nesting material one level deeper than the printed book puts it.
+We maintain [FRUS Explorer](https://github.com/joshbotts/FRUS-Explorer), an independent reader that parses your TEI. Scanning all 744 files (339,436 `<div>` elements) for structural consistency turned up **7 places in 6 volumes** where a `</div>` appears to sit in the wrong place, nesting material one level deeper than the printed book puts it.
 
 **Every one of these files is well-formed, and every `</div>` count balances.** The closing tag is simply written after the divisions it should close before, so no XML validator, no schema and no ODD can see any of it — which is presumably why it has gone unnoticed. It follows that **every correction below is a move, never an insertion**: the tag count does not change.
 

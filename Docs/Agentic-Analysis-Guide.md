@@ -1866,7 +1866,7 @@ both pairs the `Ed2` is the *later* publication (2018 over 2017; 2021 over 2014)
 fold — suppress the `Ed2` — keeps the earlier text, which is right for a count and wrong for a quote.
 If a claim turns on the wording of a document in either pair, read the volume.
 
-Related, and worth stating once: the semantic artifacts count **314,571** documents, while this
+Related, and worth stating once: the semantic artifacts count **314,616** documents, while this
 project's own settled corpus figure from its query work is **316,839**. The two count different
 surfaces. Whichever you use, name it — a run that publishes densities to two decimals owes the reader
 its denominator.
@@ -1894,7 +1894,7 @@ the profiles is by construction; rank it from `document_subject_refs` instead. S
 never a subcategory — *Trade and Commercial Policy/Agreements* has 17 members, eight of them prices,
 wages and credit.
 
-**`semantic-map-index.json`** carries 171 unsupervised cluster labels — read `len(clusters)` from
+**`semantic-map-index.json`** carries 172 unsupervised cluster labels — read `len(clusters)` from
 the file rather than trusting this number.
 
 **A cluster id is a row number, not a name.** Ids are assigned when the layout is built, and a
@@ -1911,14 +1911,16 @@ your subject forms a region of the corpus at all — and the answer differs shar
 
 | Question | Clusters found | Reading |
 |---|---|---|
-| Wartime critical materials | **4** clusters, **2,514** documents in the 2026-09-09 layout — `jordana, wendelin, bowers, barcelona` (1,336); `chrome, turkish, clodius, numan` (436); `chalkley, rubber, tin, todd` (477); `salazar, azore, portuguese, lagen` (265). The 2026-08-16 layout also found four, at 2,405 documents, under labels reading differently (`wolfram`, `hayes`, `vile`, `gwatkin` are gone) — so re-derive before quoting either | Sustained named negotiations cluster hard, and did so across a relayout. The vector layer is the right instrument. |
-| Foreign Service reform | **0** of 171 in the 2026-09-09 layout (controls pass: 13 match `soviet`, 3 match `nuclear`) | This institution did not form a labelled region — but read the claim narrowly. Some institutions do cluster: `cia, nsc, dci, intelligence` is the seventeenth-largest region at 2,441 documents. |
+| Wartime critical materials | **4** clusters, **2,017** documents in the 2026-10-10 layout — `wolfram, bowers, wendelin, jordana` (908); `chrome, clodius, numan, steinhardt` (364); `rubber, tin, chalkley, vile` (487); `salazar, lagen, azore, portuguese` (258). The 2026-09-09 layout also found four, at 2,514 documents (`jordana, wendelin, bowers, barcelona` 1,336; `chrome, turkish, clodius, numan` 436; `chalkley, rubber, tin, todd` 477; `salazar, azore, portuguese, lagen` 265), and the 2026-08-16 layout four at 2,405. The labels read differently each time: `wolfram` and `vile` left in the second layout and are back in the third, `hayes` and `gwatkin` are still gone — so re-derive before quoting any of them | Sustained named negotiations cluster hard, and did so across two relayouts, though the documents counted fell by a fifth in the second. The vector layer is the right instrument. |
+| Foreign Service reform | **0** of 171 in the 2026-09-09 layout (controls pass: 13 match `soviet`, 3 match `nuclear`). The 2026-10-10 layout has not been put to the same test; its controls read 11 and 3 of 172, and one of its labels now carries Foreign Service terms: `human, fso, eeo, fsr`, 313 documents, 134 of them in `frus1977-80v02` and 92 in `frus1977-80v28` | This institution did not form a labelled region in the layout tested — but read the claim narrowly, and as a claim about that layout: a relayout that added 47 documents on another subject produced a label the zero would not have survived. Some institutions do cluster in both: `nsc, cig, cia, intelligence` is the thirtieth-largest region at 1,733 documents (`cia, nsc, dci, intelligence` was the seventeenth at 2,441). |
 | Commercial diplomacy, 1930s | label test: **1** of 179 in the 2026-08-16 layout (controls pass). Cluster-purity harvest: 4 clusters at 25–59% RTAA-stratum share held 1,030 non-stratum documents, 776 of 1,030 (75.3%) commercial by the editors' own headings after a refuter fixed an unanchored `tin` (it matched *PanamaContinued*), 284 of 849 unreachable by all twenty of the project's phrase families; corpus-wide they sized a third editorial stratum of 1,228 documents, 878 outside every prior stratum | A label test is a test of labelling. When a subject is filed by counterpart, the map labels by counterpart (in the 2026-08-16 layout the cluster labelled `chalkley · australian · australia · sydney`, 363 documents, was 59% reciprocal-trade). **That reading is now void, and it shows exactly why an id must never be quoted:** the 2026-09-09 layout has no such cluster, its `chalkley` cluster reads `chalkley, rubber, tin, todd` at 477 documents, and id 92 there is `bulgarian, rumania, rumanian, soviet` at 2,830 — a subject with no relation to the reading. |
 
 The map's twenty largest clusters are overwhelmingly places and crises — but not without exception,
 and the exceptions matter to the row above. In the 2026-09-09 layout `nato, edc, ger, wld` (3,999),
 `pasvolsky, trusteeship, gromyko, soviet` (3,291), `cia, nsc, dci, intelligence` (2,441) and
 `winant, eito, irish, igc` (2,054) are institutions and negotiating bodies rather than countries.
+In the 2026-10-10 layout three of the twenty are: `shevardnadze, missile, soviet, abm` (4,113),
+`gibson, craigie, kato, disarmament` (2,630) and `pasvolsky, gildersleeve, stassen, eec` (2,379).
 Places and crises are still what it is mostly organised around, and that constrains what it can find
 for you. Note also the asymmetry *within* a
 question: the wartime *denial* operations clustered; the hemispheric *acquisition* program did not,
@@ -1969,8 +1971,8 @@ The stack, and the question each artifact answers:
 
 | Artifact | Answers | Scale |
 |---|---|---|
-| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,553 notes; 1,834 collections reached; 10,454 class keys |
-| `external-citation-index.json` | what the editors cited and did **not** print | 19,614 lot/library refs + 30,524 class refs, 441 volumes |
+| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,598 notes; 1,834 collections reached; 10,455 class keys |
+| `external-citation-index.json` | what the editors cited and did **not** print | 19,616 lot/library refs + 30,527 class refs, 441 volumes |
 | `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,070 lot files, all carrying a NAID |
 | `collection-authority.json` | which collection is this note naming, under every spelling | 4,051 collections, 1,014 with a NAID |
 | `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 174 of 698 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 698 series, 398 creator headings, 174 with a coverage pair |
@@ -1982,9 +1984,9 @@ The stack, and the question each artifact answers:
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
 | `accession-series-index.json` | which NARA series a Federal Records Center accession became — the join a lot number cannot make, for front matter that says "now part of … Accession No. 71 A 6682". **Keys are `<record group>/<accession>` and the group is load-bearing**: an accession number is unique only within its group (`68A5612` = 1 series in RG 59, 18 in RG 84), so matching bare raises apparent coverage from 7% to 15% by answering State citations with Foreign Service Post records. **Know the ceiling before you lean on it**: counted anchor-first (the accession must directly follow *FRC* / *Federal Records Center* / *WNRC* / *Accession* — a proximity window sweeps in the lot numbers printed beside it and inflated this count from 995 mentions to 2,371), the corpus cites 116 accessions over 995 mentions, and **22 resolve — 150 mentions, 15%**; the most-cited of all, `53A278` at 115 mentions, is absent from the harvest entirely. Every claimant is stored, never chosen, because a key reaches **59**: state the division. One-letter row keys, `legend` in the file. NOTHING IN THE APP READS THIS — it is data for you, not a feature. | 4,750 keys, 7,346 stored claimants (7,349 occurrences before the dedupe by NAID), max 59 |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
-| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,850 edges, 4,885 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
+| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,866 edges, 4,886 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 8,637 cross-volume edges into 5,747 documents from 185 volumes — its `volumes` array (237) is a shared vocabulary of target *and* citing volumes, not a target list (distinct targets: 208), and its own footnote share is 7,631 of 8,637 = 88.4%, not the corpus-wide 95.3% |
-| `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,242 notes, 523 volumes, 16 decades |
+| `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,288 notes, 523 volumes, 16 decades |
 
 Three rules govern using them, and the second is easy to get backwards.
 
@@ -2451,7 +2453,7 @@ to you.)*
 | Artifact | Contents | Where |
 |---|---|---|
 | `semantic-vectors-index.json` (~73 KB) | Identity and provenance: per-volume row offsets, run-length-encoded document ids, the provenance pin, measured retrieval parameters | App bundle `Resources/` |
-| `semantic-vectors-binary.bin` (~19.5 MB) | Tier 1: one 512-bit **sign vector** per document (314,571 of them), then 660 int8 **centroids** (553 volumes + 107 subseries) | App bundle `Resources/` |
+| `semantic-vectors-binary.bin` (~19.5 MB) | Tier 1: one 512-bit **sign vector** per document (314,616 of them), then 660 int8 **centroids** (553 volumes + 107 subseries) | App bundle `Resources/` |
 | `<volume>.vec` shards (~150 KB each) | Tier 2: full **int8 512-dim vectors** with a per-document scale, one file per volume | `…/Application Support/FRUSExplorer/SemanticVectors/` |
 | `semantic-map.bin` (~1.9 MB) | One `(int16 x, int16 y, uint16 cluster)` placement per document — a 2-D UMAP layout with HDBSCAN clusters | App bundle `Resources/` |
 | `semantic-map-index.json` (~25 KB) | Per-cluster labels (c-TF-IDF terms), centres, document counts, era histograms | App bundle `Resources/` |
@@ -2608,14 +2610,21 @@ as they should be. A document's distance from its own volume's centroid is an of
 outlier detector: "the least typical document in this volume."
 
 **The map.** Six bytes per document give a 2-D position and a cluster; the map index names each
-cluster with sampled c-TF-IDF terms and an era histogram. Verified example: `frus1881/d625` sits
-in cluster 0, whose terms are `shah, iran, iranian, mosadeq` — a nineteenth-century Persia
-despatch landing in the same region as the 1950s Iran crisis, which is exactly the kind of
-long-arc continuity the layout exists to show. 89,449 of 314,571 placements (28.4%) are
+cluster with sampled c-TF-IDF terms and an era histogram. Verified example, in the 2026-10-10
+layout: `frus1929v03/d17`, the Jerusalem consul general's despatch of 23 August 1929, sits in
+cluster 16, whose terms are `israel, israeli, arab, uar` and 11,624 of whose 12,130 documents come
+from volumes of 1945 and later — a Mandate-era despatch landing in the region of the Arab–Israeli
+dispute, which is the kind of long-arc continuity the layout exists to show. (The example this
+paragraph gave until 2026-10-10, `frus1881/d625` in a region labelled `shah, iran, iranian,
+mosadeq`, was true of the 2026-08-16 layout alone: that despatch was unclustered in the 2026-09-09
+layout and sits in `porte, constantinople, terrell, ottoman` now. An example is a reading of one
+layout, like an id.) 92,268 of 314,616 placements (29.3%) are
 unclustered (`0xFFFF`); that share is a property of the corpus, not an error, and any figure built
-on clusters owes the reader the number. The 28.0% is corpus-wide and strongly era-dependent — 46.7%
-of 1861–1899 documents are unclustered against 22.3% of 1945–1964 (working scope: apparatus
-excluded, Ed2 folded). Compare any set's unclustered share to an era-matched baseline, never to 28%.
+on clusters owes the reader the number. It is corpus-wide and strongly era-dependent: over all
+placements, by the midpoint of each volume's date range in the manifest, 37.5% of 1861–1899
+documents are unclustered against 24.4% of 1945–1964 (the 2026-08-16 layout, over a narrower
+working scope with apparatus excluded and Ed2 folded, gave 46.7% against 22.3%). Compare any
+set's unclustered share to an era-matched baseline, never to the corpus figure.
 
 **Near-duplicate detection.** FRUS reprints some documents across volumes. Very small Hamming
 distances flag reprints — worth running over any sample before counting anything, so a document
@@ -2740,6 +2749,25 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.25 — 2026-10-10: **the semantic artifacts were packed again, and the map was laid out again.**
+  The Office of the Historian restored Documents 900–946 to `frus1952-54v09p1` on 2026-10-09
+  (corpus `99d851c79`), 47 documents that file had lacked since 2016. Two volumes were embedded
+  again under the unchanged contract: that one, and `frus1902app1`, which had carried two rows for
+  divisions that are sections since `deb6a04f8`. So the vectors, the map and the bundled
+  per-volume document counts agree on **314,616** documents, the figure §14.9 now gives. The
+  provenance digest is unchanged, and 551 of the 553 shards are byte-identical.
+  **Every cluster reading in §14.10 and Appendix A.5 is re-derived, because the layout is new**: 172
+  clusters where there were 171, 92,268 placements unclustered (29.3%) where there were 89,449,
+  and 349 of the 570 label terms carried over. Of the 314,569 documents on both maps, 79,067
+  changed between clustered and unclustered. The critical-materials row and the institutions
+  paragraph give the 2026-10-10 reading beside the earlier ones, the Foreign Service row says what
+  its zero was a zero of, and A.5's verified example is replaced: `frus1881/d625` had not sat in
+  the region the paragraph named since the 2026-08-16 layout. §14.11's rows are re-measured:
+  `collection-usage` 264,598 notes and 10,455 class keys, `external-citation` 19,616 + 30,527
+  references, `provenance-flow` 77,866 edges and 4,886 collection pairs, `source-provenance`
+  269,288 notes. `broken-refs-index.json` (not in that table) holds 142 distinct references and
+  300 occurrences where it held 213 and 652: the 71 that left are the second part's index entries
+  for pages 1661–1741 of the first.
 - 1.24 — 2026-10-09: **§14.11's `collection-usage` row reads 264,553 notes**, one more than
   before. The Office of the Historian's corrections of 2026-10-09 (corpus `deb6a04f8`) made a
   document that sat inside another in `frus1945Berlinv02` a document of its own, and its source

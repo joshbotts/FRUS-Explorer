@@ -21,7 +21,7 @@ import Foundation
 /// the missing edge was never in the table to be flagged.
 ///
 /// ## Cross-volume only, and why that is the whole answer
-/// 69,213 of the corpus's 77,850 document-to-document citations are **same-volume**. If you can
+/// 69,229 of the corpus's 77,866 document-to-document citations are **same-volume**. If you can
 /// see a document you have its volume, so the local table already holds every one of those. What
 /// is left — 8,637 edges into 5,747 documents from 185 volumes — is exactly the set that is
 /// structurally unreachable without this file, and it fits in 282 KB.

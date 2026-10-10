@@ -47,8 +47,10 @@ struct SemanticSubstrateTests {
         #expect(vectors.documentCount == index.documentCount)
         #expect(vectors.dims == index.provenance.shippingDims)
         // 552 → 553 and 314,483 → 314,571 when FRUS 1981–1988 vol. XVI was harvested and packed.
+        // 314,571 → 314,616 at corpus `99d851c79` (2026-10-10): `frus1952-54v09p1`'s 47 restored
+        // documents came in, and `frus1902app1`'s two re-typed sections went out.
         #expect(index.volumes.count == 553)
-        #expect(index.documentCount == 314_571)
+        #expect(index.documentCount == 314_616)
         // 553 volume centroids + 107 subseries centroids. The subseries count does not move —
         // v16 joins the existing 1981-88 group rather than opening one.
         #expect(vectors.centroidCount == index.volumes.count + index.file.subseries.count)

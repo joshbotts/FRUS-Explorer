@@ -277,7 +277,7 @@ final class AppState {
     ///
     /// ## Why the app is worth entering empty
     /// A great deal of FRUS Explorer needs no downloads at all: the bundled volume manifest the
-    /// Browse tab lists (and downloads from), the word-cloud vectors, the semantic map's 314,571
+    /// Browse tab lists (and downloads from), the word-cloud vectors, the semantic map's 314,616
     /// placements, and every archival-analytics index. Declining the 3.5 GB is a reasonable
     /// first-run choice, and it should not cost the reader the app.
     ///

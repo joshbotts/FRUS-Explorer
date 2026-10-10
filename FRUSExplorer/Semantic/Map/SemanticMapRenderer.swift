@@ -287,7 +287,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     ///
     /// **The map draws on demand, not on a clock.** It is a static image unless the camera moves,
     /// the lens changes or the corpus is re-uploaded, so a free-running display link re-issued the
-    /// same 314,571-point draw call sixty times a second for as long as a window stayed open —
+    /// same 314,616-point draw call sixty times a second for as long as a window stayed open —
     /// affordable while this was a spike being measured, not for a window a reader leaves open
     /// beside their work. Every mutator above marks the surface instead, which is why they are
     /// `didSet` rather than plain stored properties.

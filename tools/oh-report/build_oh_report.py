@@ -1320,11 +1320,18 @@ def transcription(counts, rows, glued_rows):
     # Three statements the report makes about one volume each, asserted where that volume is read. The
     # self-test's synthetic corpus holds none of them; main() refuses a corpus that lacks one (NAMED).
     # The heading is one misprint met while reading section 1's volume; it is asserted, not scanned for.
+    # It is found from the chapter's own start tag, not by a line number: the heading was line 67638 at
+    # `550a8c5c5` and is line 68286 once Documents 900-946 are back above it, and status_at_commit.py
+    # asks this at other revisions. Read by line, the row was reported gone while the misprint stood.
     if 'frus1952-54v09p1.xml' in volume_files():
         v = volume('frus1952-54v09p1')
-        require('Hashe\u2013Mite Kingdom' in re.sub(r'\s+', ' ', v.line_text(67638) + v.line_text(67639)),
+        ch4 = v.div('ch4')
+        opening = v.raw[ch4['off']:ch4['off'] + 1500] if ch4 else b''
+        at = opening.find('Hashe\u2013Mite'.encode('utf-8'))
+        require(at != -1 and 'Hashe\u2013Mite Kingdom' in re.sub(r'\s+', ' ', opening.decode('utf-8', 'replace')),
                 'frus1952-54v09p1: the ch4 heading no longer reads Hashe-Mite')
-        add('heading-misprint', v, 67638, 'ch4', 'United States Relations with Israel, the Hashe\u2013Mite Kingdom of Jordan',
+        add('heading-misprint', v, v.line(ch4['off'] + at), 'ch4',
+            'United States Relations with Israel, the Hashe\u2013Mite Kingdom of Jordan',
             '"Hashe\u2013Mite" for "Hashemite" in the chapter heading.')
     require(files > 0 and rows and glued_rows, 'the transcription scan read nothing')
     for kind in ('unbalanced-parenthesis', 'viei-for-viet', 'no-stop-before-classification', 'doubled-full-stop',

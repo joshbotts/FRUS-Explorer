@@ -106,7 +106,7 @@ LOD's job for a fraction of LOD's complexity.
 3. ~~**Pack Tier-0 into the bundled artifact**: extend `SemanticVectorsGenerator` to read `layout.bin`,
    emit coordinates + cluster ids, and generate c-TF-IDF cluster labels through `WordCloudKit`. This
    is the next step and the last one before the surface itself.~~ **Done** — `semantic-map.bin` and
-   `semantic-map-index.json` are bundled (171 clusters over 314,571 documents today).
+   `semantic-map-index.json` are bundled (172 clusters over 314,616 documents since the 2026-10-10 layout).
 4. ~~Only then the interaction design: lenses, slices, lasso, selection → `WorkingCorpus`.~~ **Done**
    — the map shipped as V-4 (#870–#883; `FRUSExplorer/Semantic/Map/`).
 

@@ -122,10 +122,10 @@ National Archives and is subject to their terms of use.
 
 ### What is deliberately not in it
 
-- **"Every document."** A full library indexes **316,768** documents (the 314,571 printed
-  documents plus 2,197 prose sections the parser promotes; counted by the parser's replica, not
+- **"Every document."** A full library indexes **316,814** documents (the 314,616 printed
+  documents plus 2,198 prose sections the parser promotes; counted by the parser's replica, not
   yet on a device — §5) while the semantic map places
-  **314,571** — two different surfaces, two honest numbers, and neither is "every".
+  **314,616** — two different surfaces, two honest numbers, and neither is "every".
   The description says *553 volumes*, which is the one count that is fixed and checkable.
 - **Any claim of endorsement by Google.** *"using Google's EmbeddingGemma model"* is the permitted
   form — describe, never brand. Nothing here implies endorsement.
@@ -148,8 +148,8 @@ at `dc17d945`; the wording is the owner's to choose, so the block is unchanged.
   offers a figure", and the Person Network graph does not export
   (`Docs/macOS-User-Manual.md` §15.8, `Docs/iOS-User-Manual.md` §15.8).
 - ***"Every document carries the editors' own note saying where it came from."***
-  `collection-usage-index.json` counts 264,552 source notes paired with a document, in 502 of the
-  553 volumes, against 314,571 printed documents: 51 volumes carry none.
+  `collection-usage-index.json` counts 264,598 source notes paired with a document, in 502 of the
+  553 volumes, against 314,616 printed documents: 51 volumes carry none.
 
 ---
 
@@ -199,11 +199,11 @@ Not one is quoted from prose.
 | Figure | Value | Measured from |
 |---|---|---|
 | Volumes | 553 | `manifest.json`, entry count |
-| Documents indexed | 316,768 | the index v63 parser's emission over the 553 volumes, reproduced 2026-10-01 with `tools/page-citations/replica.py` at corpus `8e5da08c1`; index v64 changed no document count. **A device's own `SELECT COUNT(*) FROM document_cache` is owed to the release's re-index census** — the draft's 316,839 was that query at 552 volumes |
-| Documents on the map | 314,571 | `semantic-vectors-index.json`, `documentCount` |
-| Regions | 171 | `semantic-map-index.json`, `clusters` |
-| Documents in a region | 225,122 | `documentCount` − `layout.unclusteredCount` |
-| Documents between regions | 89,449 | `semantic-map-index.json`, `layout.unclusteredCount` |
+| Documents indexed | 316,814 | the index v63 parser's emission over the 553 volumes, reproduced 2026-10-10 with `tools/page-citations/replica.py` at corpus `99d851c79` (316,768 at `8e5da08c1` on 2026-10-01: one fewer since `frus1902app1`'s two re-typed divisions, 47 more since `frus1952-54v09p1`'s restored documents); index v64 and v65 changed no document count. **A device's own `SELECT COUNT(*) FROM document_cache` is owed to the release's re-index census** — the draft's 316,839 was that query at 552 volumes |
+| Documents on the map | 314,616 | `semantic-vectors-index.json`, `documentCount` |
+| Regions | 172 | `semantic-map-index.json`, `clusters` |
+| Documents in a region | 222,348 | `documentCount` − `layout.unclusteredCount` |
+| Documents between regions | 92,268 | `semantic-map-index.json`, `layout.unclusteredCount` |
 | Series published since | 1861 | `manifest.json`, earliest `publicationDate` |
 | Subseries | 107 | `manifest.json`, distinct `subseries` |
 

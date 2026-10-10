@@ -29,6 +29,8 @@ What it covers, and what it does not:
 - `--check`: the whole-figure match, Part A alone, the stated count above Part A, and the arguments.
 - main()'s refusals that need no corpus: no CORPUS_COMMIT, no volumes, and a corpus that lacks a
   volume the report names (NAMED), each before anything is scanned or written.
+- The chapter-heading misprint the transcription scan asserts in `frus1952-54v09p1`: the same row
+  at the report's line and 648 lines lower, and a stop when the heading is corrected.
 - NOT covered: the cross-reference scan, the header scan, the missing-documents check and the
   adjudicated structure rows. They read the corpus, or name its files and lines, and are checked
   only by a run over it. Nor is figure_sentences(): no self-test calls it (the `--check` tests
@@ -550,6 +552,36 @@ def test_transcription(directory):
     check(counts['transcription']['rows'] == 12 and counts['transcription']['noStopInTopTwoVolumes'] == 1, 'the totals the report states')
 
 
+def test_heading_misprint(directory):
+    """The one row the report asserts and does not scan for: `frus1952-54v09p1`'s chapter heading.
+
+    It is found from the chapter's own start tag, so it is the same row wherever the lines above put
+    it. Read by line number, it was reported gone once Documents 900-946 came back 648 lines above.
+    Runs after test_transcription and keeps its two volumes, which the scan's other classes need."""
+    heading = ('<div type="chapter" xml:id="ch4">\n<head>United States Relations with Israel, the %s\n'
+               'Kingdom of Jordan, Lebanon, and Syria</head>\n')
+
+    def scan(lines_above, word='Hashe\u2013Mite'):
+        write(directory, 'frus1952-54v09p1.xml',
+              '<div type="compilation" xml:id="comp1">\n' + '<p>x</p>\n' * lines_above
+              + heading % word + doc('d1', '<p>x</p>') + '</div>\n</div>\n')
+        report._VOLUMES.clear()
+        counts, rows, glued = {}, [], []
+        report.transcription(counts, rows, glued)
+        return rows_of(rows, 'heading-misprint')
+    # 67,634 lines above put the misprint on line 67638, where it stood at the report's revision.
+    first = scan(67634)
+    check(len(first) == 1 and (first[0]['volume'], first[0]['element'], first[0]['line']) == ('frus1952-54v09p1', 'ch4', 67638),
+          'the heading is one row, on its chapter, at the line the report gave: %s' % first)
+    lower = scan(67634 + 648)
+    check(len(lower) == 1 and lower[0]['line'] == 68286
+          and {k: v for k, v in lower[0].items() if k != 'line'} == {k: v for k, v in first[0].items() if k != 'line'},
+          'with 648 more lines above it, it is the same row at line 68286: %s then %s' % (first, lower))
+    raises(report.Failed, lambda: scan(67634, 'Hashemite'), 'a heading that reads Hashemite stops the class')
+    os.remove(os.path.join(directory, 'frus1952-54v09p1.xml'))
+    report._VOLUMES.clear()
+
+
 def test_sources_lists(directory):
     for name in os.listdir(directory):
         os.remove(os.path.join(directory, name))
@@ -734,6 +766,7 @@ def main():
             test_parts(directory)
             test_dates(directory)
             test_transcription(directory)
+            test_heading_misprint(directory)
             test_sources_lists(directory)
             test_refusals(directory)
         finally:

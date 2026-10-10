@@ -2241,7 +2241,7 @@
       "party" : "Democratic",
       "pointDocCount" : 53000,
       "president" : "Harry S. Truman",
-      "rangeDocCount" : 3564,
+      "rangeDocCount" : 3565,
       "start" : "1945-04-12",
       "volumeCount" : 103,
       "volumeCountPointOnly" : 103,
@@ -2598,7 +2598,7 @@
         },
         {
           "pointDocs" : 254,
-          "rangeDocs" : 41,
+          "rangeDocs" : 42,
           "volumeId" : "frus1952-54v09p1"
         },
         {
@@ -2770,9 +2770,9 @@
       "id" : "eisenhower",
       "number" : 34,
       "party" : "Republican",
-      "pointDocCount" : 29453,
+      "pointDocCount" : 29499,
       "president" : "Dwight D. Eisenhower",
-      "rangeDocCount" : 4318,
+      "rangeDocCount" : 4319,
       "start" : "1953-01-20",
       "volumeCount" : 108,
       "volumeCountPointOnly" : 107,
@@ -2793,14 +2793,14 @@
           "volumeId" : "frus1952-54v03"
         },
         {
+          "pointDocs" : 646,
+          "rangeDocs" : 46,
+          "volumeId" : "frus1952-54v09p1"
+        },
+        {
           "pointDocs" : 601,
           "rangeDocs" : 7,
           "volumeId" : "frus1958-60v03mSupp"
-        },
-        {
-          "pointDocs" : 600,
-          "rangeDocs" : 45,
-          "volumeId" : "frus1952-54v09p1"
         },
         {
           "pointDocs" : 598,
@@ -4906,10 +4906,10 @@
       ]
     }
   ],
-  "generated" : "2026-10-09",
+  "generated" : "2026-10-10",
   "schemaVersion" : 1,
-  "totalDocumentsPointDated" : 303404,
-  "totalDocumentsRangeDated" : 11165,
+  "totalDocumentsPointDated" : 303450,
+  "totalDocumentsRangeDated" : 11166,
   "totalDocumentsUndated" : 0,
   "volumeTotals" : {
     "frus1861" : {
@@ -6503,8 +6503,8 @@
       "undatedDocs" : 0
     },
     "frus1952-54v09p1" : {
-      "pointDocs" : 854,
-      "rangeDocs" : 45,
+      "pointDocs" : 900,
+      "rangeDocs" : 46,
       "undatedDocs" : 0
     },
     "frus1952-54v09p2" : {

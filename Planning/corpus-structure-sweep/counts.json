@@ -5,8 +5,8 @@
     "R6-id-level" : 11
   },
   "confirmed" : 0,
-  "corpusCommit" : "deb6a04f8",
-  "divsScanned" : 339389,
+  "corpusCommit" : "99d851c79",
+  "divsScanned" : 339436,
   "duplicateDocumentNumbers" : 0,
   "duplicateXmlIds" : 0,
   "filesScanned" : 744,
@@ -16,7 +16,7 @@
     "INTRA-VOLUME-CONVENTION" : 2,
     "NO-TOC-UNADJUDICATED" : 2
   },
-  "generated" : "2026-10-09",
+  "generated" : "2026-10-10",
   "pleaseVerify" : 7,
   "volumesAffected" : 6,
   "volumesWithMachineReadableContents" : 473
