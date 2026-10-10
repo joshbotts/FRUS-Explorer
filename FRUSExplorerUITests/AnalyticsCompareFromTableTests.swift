@@ -27,9 +27,11 @@ import XCTest
 /// comparison whether or not either term matches.
 ///
 /// ## Devices
-/// One shared view, so either idiom is the guard. It never skips: a control it cannot find is a
-/// failure that prints the buttons on screen. Measured on iPhone 17 (iOS 27.0) at the commit that
-/// fixed it: 1 test, 1 passed; and on the code before the fix, 1 failed, on both observations.
+/// One shared view. It never skips: a control it cannot find is a failure that prints the buttons
+/// on screen. Measured on iPhone 17 (iOS 27.0) at the commit that fixed it: 1 test, 1 passed; and
+/// on the code before the fix, 1 failed, on both observations. On an iPad simulator (iPad Pro
+/// 11-inch and iPad mini, iOS 27.0) every step ran with no failed assertion, and the run was then
+/// killed with the simulator at teardown, as `AnalyticsKeyboardTests` is on `v2` (#1620).
 ///
 /// Version history:
 ///   1.0 — 2026-10-09: #1583 — initial implementation
