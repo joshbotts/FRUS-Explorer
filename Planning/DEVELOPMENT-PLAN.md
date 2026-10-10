@@ -36380,7 +36380,7 @@ Pull request 6 of the plan of record's §0c. Nine reports, each read in code on 
 
 ## Session 2026-10-09 — Five reports about tests and tools: a reader test that scrolls as a reader does, sync-monitor tests that no longer need the simulator's log store, an order read from the pipeline, four scans that read the kit again, and a taxonomy generator that refuses an empty page (#1568, #1600, #1601, #1604, #1606)
 
-Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests, one test seam in the app, one access level in the kit and one generator. Nothing a reader sees changes: no index version, no CloudKit deploy, no re-index, no manual edit and no TestFlight line.
+Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests, one test seam in the app, one access level in the kit, one generator, and one line of the download manager that the full run found. No index version, no CloudKit deploy, no re-index and no manual edit. What a reader could have seen of the one app change is a figure missing offline after an update, until the next launch.
 
 **#1568: the late-image test, which failed from a newly booted simulator** (`FRUSOffsetEngineTests.swift`)
 - **Reproduced on `v2`'s binaries.** `FigureReaderTests`' "A late image does not bring the reader back to a footnote they have since scrolled away from", run alone from a shut-down iPhone 17 (iOS 27.0), failed 1 run in 3 (the issue measured 2 in 3), at the same line with the same position, 3612 pt.
@@ -36420,7 +36420,7 @@ Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests
   - A test file that enumerates a folder and names `FRUSExplorer`, or a folder under it, without `AppSourceTree` must be on `walksTheAppFolderAlone`, 25 files, each with its reason. One that is not listed fails, and so does a listed one that no longer walks.
 - **Two exemptions are by path.** The unit-noun scan excused any path ending `AnalyticsValueUnit.swift`, and the precompute scan any file of the name `WordCloudSettings.swift`; widening the scans had widened both. Each now names the app's one file.
 - **The Spotlight donor.** `IndexingPipeline.donor` is `nonisolated let` where it was `private let`: internal, not public. `IndexingSeamsTests.theAppsPipelineHasTheSpotlightDonor` (Xcode's alone) builds a pipeline through the app's initialiser and requires a `SpotlightDonor`. With the argument dropped from `IndexingPipeline+App.swift` the app builds, and that test fails.
-- **Seven more mutations, each failing its test:** a folder added to one app target in `project.yml`; an unlisted test file that walks the app's folder; a listed one that no longer does; a kit file of each excused name holding what its scan refuses; and the donor argument.
+- **Six more mutations, each failing its test:** a folder added to one app target in `project.yml`; an unlisted test file that walks the app's folder; a listed one that no longer does; a kit file of each excused name holding what its scan refuses; and the donor argument.
 
 **#1600: the taxonomy generator** (`TaxonomyGate.swift` (new), `TaxonomyGeneratorRunner.swift`, `main.swift`)
 - `TaxonomyGeneratorRunner.generate(fromHTML:outputPath:)` is everything a run does after its fetch, and asks `TaxonomyGate` before it writes. Three refusals, each leaving the file as it was, with exit 1:
@@ -36437,6 +36437,13 @@ Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests
 - So the guard that could not be read on this Mac can be, on `OS=26.5`. `CLAUDE.md`'s two rows and the runbook's two entries say so, and the issue has the table.
 - Not determined: what in the 27.0 runtime's render server refuses the surface, whether a later 27 runtime does it, and whether a device does. The Mac was not restarted, and one 26.5 iPad was used.
 
+**Found by the full unit run, and fixed: an update could lose an image to its own prune** (`DownloadManager.swift`, `DownloadManagerTests.swift`)
+- The first full unit run from a shut-down simulator failed one test this diff had not touched: `FigureImageDownloadTests`' "An update that lands while a volume's images are being fetched stops the old text's names and fetches the new text's" found `figure_1162.png` missing, the update's run reporting "stored: 1, failed: 1". Alone on a warm simulator it then failed 2 runs in 12. `DownloadManager.swift` and the test were as on `v2`.
+- **The cause is in the app.** `FigureImageLibrary.store` writes atomically, through a temporary file in the volume's figure folder: `figure_1162.png.sb-…`, seen by listing a folder during five writes, on macOS and inside the simulator. `removeImages(notIn:for:)`, which each whole-volume run calls to drop the images its text no longer names, removed every name not on the text's list, that file among them. The task that stores a fetched image captures nothing of the manager's and so does not run on it; the update's run could prune the folder during the held image's write, the write's rename failed, and the image was reported as not fetched.
+- **On a device** that is an update landing while one of the volume's images is in flight. The image was lost that time, the volume was not recorded complete, and the next launch's pass or the reader's own request fetched it: a figure missing offline until then.
+- **The prune removes images only**, every name ending `.png`, which is every name the library stores (`FigureImageName.fileName(forGraphic:)`).
+- **Shown both ways, at one scope.** `aStoreBesideAPruneIsNotLost` stores an image 400 times while another task prunes the folder: 211 stores were lost on the old prune, none on the new. `aPruneLeavesWhatIsNotAnImage` is the rule. And sixty iterations of the test that had failed, in one run: 15 updates of 60 lost the image on the old prune, 0 of 60 on the new.
+
 **The one review pass** (the week's rule), on the diff: ten findings. Eight are fixed and are in the sections above: the default read pinned by source, the reader test measured from the scroll view's top, the two exemptions by path, the census, the one list of compiled directories, a missing doc comment, a check that named two files it had no business naming, and a run log that stated the write before the parse. One is left, the order test's boundary. One is as designed: of a taxonomy file with fewer than ten slugs, any loss is more than one in ten.
 
 **Also changed**
@@ -36446,12 +36453,19 @@ Pull request 7 of the plan of record's §0c, the last of the week's queue. Tests
 - The plan of record's §0c: this pull request's entry.
 
 **Checked**
-TODO-FILL-CHECKED
+- A clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0) on the final code: `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues (`GeneratedSummary`'s conformance and the AppIntents note). The session's first build, a clean one of `v2` at `0c8b052a`, had the same two.
+- **The iOS unit target, from a shut-down iPhone 17 (iOS 27.0), on the final code: "Test run with 6621 tests in 784 suites passed after 472.049 seconds with 6 known issues", `** TEST EXECUTE SUCCEEDED **`, no ✘ line.** The six are `systemLogReachesTheRowAndTheRun`'s. That is 8 tests and 1 suite more than pull request 6's run, which are this pull request's. The run before it, also from a shut-down simulator, had 7 issues: those six, and the download manager's test, which is how the prune was found.
+- `FRUSExplorerMac` (the DirectDistribution configuration, unsigned), a clean build of the final code: `** BUILD SUCCEEDED **`, with the same two residues.
+- `swift test`, owed because the diff names `FRUSCoreKit/` and the kit's suites: exit 0, 38 `Test run with` lines, 2,574 tests, on the final code. Three more full runs earlier in the session, before the review's changes, gave the same counts. That is 7 tests more than pull request 6's run, `TaxonomyGateTests`.
+- **UI suites, none of them changed:** `AnalyticsKeyboardTests` on an iPad mini (A17 Pro) under iOS 27.0 and under iOS 26.5, and then that row's three suites with `AnalyticsCompareFromTableTests` under iOS 26.5: 10 tests, 0 failures, 0 skipped (#1620's section above).
+- **Nineteen mutations, each failing the test written for it**, counted in the sections above, and two comparisons made at one scope on the code before and after: the four scans against one planted violation each, and the prune over sixty iterations.
+- **Also run against the live page:** `swift run TaxonomyGenerator` over a copy of the bundled file (#1600's section).
 
 **Not done**
-- **Whether the shipped app is refused its own log** on a device, or as the sandboxed Mac app, is still not known. A Mac process outside the sandbox is not refused. A copy of the program signed with the app-sandbox entitlement trapped at launch when run from a shell, so that was not measured either. The owner's check from #1606 stands: after any sync event on the Mac, Settings ▸ Data & Recovery ▸ Sync Log, and whether a failed row says "system log: could not be read".
+- **Whether the shipped app is refused its own log** on a device, or as the sandboxed Mac app, is still not known. A Mac process without the App Sandbox is not refused. A copy of the program signed with the app-sandbox entitlement trapped at launch when run from a shell, so the sandboxed case was not measured. The owner's check from #1606 stands: after any sync event on the Mac, Settings ▸ Data & Recovery ▸ Sync Log, and whether a failed row says "system log: could not be read".
 - **Why the simulators refuse it** was not found. It follows the Mac and not the code, which was the issue's control.
 - **Nothing run on this Mac shows that the monitor's default read reads the log store.** `systemLogReachesTheRowAndTheRun` is the test that runs it, and it records a known issue here; the default is held by a source test meanwhile.
 - **The order test's boundary** (above).
 - **#1600's second source** (#1622).
 - **#1620's cause.**
+- **The Mac was built, not run.** The download manager's prune is the one change it compiles that does anything, and its tests run in the iOS host.
