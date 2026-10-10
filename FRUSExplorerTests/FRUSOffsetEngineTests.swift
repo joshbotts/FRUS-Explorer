@@ -2038,12 +2038,12 @@ struct FigureReaderTests {
     /// both:
     /// - the script that brings a revealed note back did not run after the image arrived, and
     ///   the wheel had cleared what it reads. The app did what it should.
-    /// - the test's own scroll did nothing. Within three milliseconds of the reveal's scroll,
-    ///   and before the scroll view had answered it, the page reported position 0 again;
-    ///   `scrollTo(0, 0)` arrived then, at a page that said it was already there. The scroll
-    ///   view took up the reveal's scroll afterwards (1835 pt), and the page ended there, or at
-    ///   3612 pt in the run where the image landed after it and WebKit kept the reader's place
-    ///   by the image's height (1777 pt). The reader had never left the note.
+    /// - the test's own scroll did nothing. A few milliseconds after the reveal's scroll (three
+    ///   in one run, nine in the other) the page reported position 0 again, while its scroll
+    ///   view was at the note (1835 pt) or reached it afterwards; `scrollTo(0, 0)` arrived then,
+    ///   at a page that said it was already there. The page ended at the note, 1835 pt, or at
+    ///   3612 pt in the run where the image landed after the scroll view had moved and WebKit
+    ///   kept the reader's place by the image's height (1777 pt). The reader had never left.
     ///
     /// So the reveal is waited to rest at the note, the reader's scroll is made where a finger
     /// makes it, in the web view's own scroll view, and that is waited to rest at the top before
