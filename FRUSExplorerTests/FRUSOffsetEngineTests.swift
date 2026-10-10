@@ -1963,9 +1963,14 @@ struct FigureReaderTests {
             let harness = OffsetEngineTestHarness(figureImages: store)
             try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
 
-            // The reader arrives at the note while the map is still its placeholder.
+            // The reader arrives at the note while the map is still its placeholder. The reveal is
+            // over when the page and its scroll view agree on it (`rest`, #1568): this test reads
+            // the page at the moment the one below was found reading a position its scroll view had
+            // not reached. It was not seen to fail for it, in eight runs from a shut-down simulator.
             harness.coordinator.pendingFootnoteAnchor = "d1fn1"
             #expect(await harness.coordinator.revealFootnote(on: harness.webView), "the note is not on the page")
+            let atTheNote = try await rest(harness) { $0 > 0 }
+            try #require(atTheNote.rested, "the reveal never came to rest at the note: \(atTheNote)")
             let before = try await footnotePlace(harness, id: "fnote-x-d1fn1")
             #expect(before.inView && before.scrollY > 0, "the reveal did not bring the note into view: \(before)")
 
