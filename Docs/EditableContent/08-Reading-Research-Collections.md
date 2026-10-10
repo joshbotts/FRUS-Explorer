@@ -2361,13 +2361,58 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerRow.init(savedName:documentCount:isSmart:) | lines: 400–401 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerRow.init(savedName:documentCount:isSmart:) | lines: 610–611 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count. The row is listed and does not take a tap (#1593).*
 
 Smart collection. Its documents come from its saved search.
 
 <!-- END SOURCE: collection.picker.smart -->
+
+#### Add %@ Documents to Collection
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 497–498 | key: collection.picker.title.documents.many -->
+
+*The Add to Collection sheet's title when a command on search results carries more than one document (#1576), on iPhone, iPad and Mac: "Add 37 Documents to Collection". `%@` is the count. For one document the sheet keeps its plain title, "Add to Collection".*
+
+Add %@ Documents to Collection
+
+<!-- END SOURCE: collection.picker.title.documents.many -->
+
+#### Not Added
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 504–504 | key: collection.picker.addFailed.title -->
+
+*The title of the alert the Add to Collection sheet shows when documents from search results could not be added (#1576). One of the three messages below follows it, and the sheet stays open.*
+
+Not Added
+
+<!-- END SOURCE: collection.picker.addFailed.title -->
+
+#### This is a smart collection. Its documents come from its saved search, so nothing…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 516–517 | key: collection.picker.addFailed.smart -->
+
+*The alert's message when the collection is a smart one. A smart collection's row takes no tap, so the sheet does not reach this today; it is what the add itself answers with if anything else asks.*
+
+This is a smart collection. Its documents come from its saved search, so nothing can be added to it by hand.
+
+<!-- END SOURCE: collection.picker.addFailed.smart -->
+
+#### A collection takes up to %2$@ at a time, and %1$@ were chosen.
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 520–521 | key: collection.picker.addFailed.overLimit %@ %@ -->
+
+*The alert's message when more documents were chosen than one add takes: "A collection takes up to 1,000 documents at a time, and 1,200 documents were chosen." `%1$@` is the number chosen and `%2$@` the limit, each with its noun. Keep both tokens and their numbers.*
+
+A collection takes up to %2$@ at a time, and %1$@ were chosen.
+
+<!-- END SOURCE: collection.picker.addFailed.overLimit %@ %@ -->
+
+#### The collection could not be saved, so nothing was added. %@
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 526–527 | key: collection.picker.addFailed.save %@ -->
+
+*The alert's message when saving failed. The documents are taken back out of the collection, so the sentence is true as it stands. `%@` is the system's own description of the failure.*
+
+The collection could not be saved, so nothing was added. %@
+
+<!-- END SOURCE: collection.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
 <!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1416–1417 | key: collection.add.menu | shared: iOS only -->

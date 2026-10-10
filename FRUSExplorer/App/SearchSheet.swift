@@ -240,6 +240,9 @@ struct MacSearchWindowView: View {
         )
     }
     @State private var showSaveCorpusSheet = false
+    /// A command chosen on a result row, with its documents frozen (#1576 lane 2). Presented by
+    /// `bulkResultSheets`.
+    @State private var bulkRequest: BulkResultRequest? = nil
     @State private var collocation: CollocationAnalysis.Outcome = .pending
     @State private var isLoadingCollocation = false
     /// macOS had no concordance loading indicator at all: `rebuildConcordance` set nothing, so a
@@ -608,6 +611,9 @@ struct MacSearchWindowView: View {
                 indexedVolumeCount: appState.indexedVolumeIds.count,
                 scope: resultSetScope)
         }
+        // #1576 lane 2: Add to Collection from a result row, presented from the request's own
+        // frozen list.
+        .bulkResultSheets($bulkRequest)
         .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
                                         version: searchVM.executedSearchVersion,
                                         language: LanguageAnalysisMonitor.shared.revision)) {
@@ -2054,6 +2060,14 @@ struct MacSearchWindowView: View {
             indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
     }
 
+    /// The request to add one result row's document to a collection (#1576 lane 2): the row's
+    /// document and the engine that listed it, taken now, so that the sheet reads nothing that a
+    /// search completing behind it could change.
+    private func addToCollectionRequest(for result: SearchResult) -> BulkResultRequest? {
+        BulkResultRequest(.addToCollection, results: [result],
+                          fromMeaningSearch: searchVM.resultsAreSemantic)
+    }
+
     private var resultsList: some View {
         // Selection (UI audit A7) gives the NSTableView-backed List its native
         // arrow-key traversal once focus is in the list (click a row or Tab to it);
@@ -2109,6 +2123,16 @@ struct MacSearchWindowView: View {
                                    defaultValue: "Archival Neighbors…"),
                             systemImage: "archivebox"
                         )
+                    }
+
+                    // #1576 lane 2: the result's document into a collection, without opening it.
+                    // The menu is VoiceOver's route to it here too, as to every command on this
+                    // row; the row is not one accessibility element, so it carries no named action.
+                    Divider()
+                    Button {
+                        bulkRequest = addToCollectionRequest(for: result)
+                    } label: {
+                        Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
                     }
 
                     // Checklist mode (#189-D): mark a result reviewed — hides it without

@@ -48,14 +48,56 @@ import SwiftData
 ///          (`CollectionPickerRow`). The picker had accepted the document and confirmed "Added",
 ///          though a smart collection's preview, exports and Archives Visit list come from its
 ///          saved search and never showed it
+///   1.8 — #1576 lane 2: documents mode (`init(documents:fromMeaningSearch:)`), for a command
+///          chosen on search results. It adds through
+///          `CollectionDocumentDiscovery.appendDocuments`, which skips what the collection holds
+///          and saves; the title carries the count past one; a list from a Meaning search shows
+///          the model's chip beside the volumes'; a failed add is said in an alert. The two
+///          older modes keep their initialiser's shape, so no caller changed. In every mode a
+///          row now takes a tap anywhere on it (it took one only on its name and caption), the
+///          list keeps the order it opened in, and a presentation adds once
 struct CollectionPickerSheet: View {
 
-    /// The document being added (its `volumeId`/`documentId` provenance).
-    let entry: DocumentBrowserEntry
+    /// The document being added (its `volumeId`/`documentId` provenance), in the single-document
+    /// and excerpt modes; `nil` in documents mode.
+    let entry: DocumentBrowserEntry?
 
     /// When non-nil, the picker runs in excerpt mode: the chosen collection receives this capture
     /// as a `.excerpt` entry rather than the document.
-    var excerpt: CollectionExcerptCapture? = nil
+    let excerpt: CollectionExcerptCapture?
+
+    /// Documents mode (#1576 lane 2): the documents a command on search results adds, frozen when
+    /// the command was chosen and in the order they were on screen. `nil` in the other two modes.
+    let documents: [CollectionDocumentRef]?
+
+    /// Whether `documents` came from a Meaning search's results: the documents are the volumes',
+    /// and that these are the ones listed is this app's model's doing (#1576, decision 6).
+    let fromMeaningSearch: Bool
+
+    /// The picker for one document, or for an excerpt of it.
+    ///
+    /// - Parameters:
+    ///   - entry: The document.
+    ///   - excerpt: A capture to add as a `.excerpt` entry in place of the document, or `nil`.
+    init(entry: DocumentBrowserEntry, excerpt: CollectionExcerptCapture? = nil) {
+        self.entry = entry
+        self.excerpt = excerpt
+        self.documents = nil
+        self.fromMeaningSearch = false
+    }
+
+    /// The picker in documents mode (#1576 lane 2): the chosen collection takes every document it
+    /// does not already hold.
+    ///
+    /// - Parameters:
+    ///   - documents: The documents to add, already frozen by the caller.
+    ///   - fromMeaningSearch: Whether a Meaning search listed them.
+    init(documents: [CollectionDocumentRef], fromMeaningSearch: Bool = false) {
+        self.entry = nil
+        self.excerpt = nil
+        self.documents = documents
+        self.fromMeaningSearch = fromMeaningSearch
+    }
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -64,25 +106,60 @@ struct CollectionPickerSheet: View {
     @State private var searchText: String = ""
     @State private var showNewCollection = false
     @State private var addedCollectionId: UUID? = nil
+    /// Why a documents-mode add wrote nothing or could not be saved, while its alert is up.
+    @State private var addFailure: String? = nil
+    /// The collections' ids in the order the sheet opened with (#1576 lane 2), or `nil` before
+    /// its first appearance. See ``ordered``.
+    @State private var orderAtOpen: [UUID]? = nil
+
+    /// The collections in the order the sheet opened with, most recently modified first, with any
+    /// made since (the New Collection button) ahead of them.
+    ///
+    /// The query's own order is live, and an add changes it: documents mode stamps the
+    /// collection it adds to, so the tapped row would leave for the top of the list at the tap,
+    /// taking its checkmark out of sight on a long list and putting another collection under the
+    /// reader's finger.
+    private var ordered: [Collection] {
+        CollectionPickerOrder.held(collections, id: \.id, listed: orderAtOpen)
+    }
 
     /// The collections the search lists: each whose row's name — not its raw saved name — holds the text (#1464).
     private var filtered: [Collection] {
-        guard !searchText.isEmpty else { return collections }
-        return collections.filter {
+        guard !searchText.isEmpty else { return ordered }
+        return ordered.filter {
             CollectionEditorNaming.listNameMatches(savedName: $0.name, searchText: searchText)
         }
     }
 
-    /// The sheet title — names the excerpt mode when active.
+    /// The sheet title: names the excerpt mode when active, and in documents mode the count.
     private var pickerTitle: String {
-        excerpt == nil
-            ? String(localized: "collection.picker.nav.title",
-                     defaultValue: "Add to Collection")
+        if let documents { return CollectionPickerCopy.documentsTitle(count: documents.count) }
+        return excerpt == nil
+            ? CollectionPickerCopy.title
             : String(localized: "collection.picker.title.excerpt",
                      defaultValue: "Add Excerpt to Collection")
     }
 
     var body: some View {
+        platformBody
+            .onAppear {
+                if orderAtOpen == nil { orderAtOpen = collections.map(\.id) }
+            }
+            // Documents mode's add can be refused, and its save can fail (#1576 lane 2). One
+            // alert on the body, so that neither platform's layout carries a line for it.
+            .alert(CollectionPickerCopy.addFailedTitle,
+                   isPresented: Binding(get: { addFailure != nil },
+                                        set: { if !$0 { addFailure = nil } })) {
+                Button(String(localized: "collection.picker.addFailed.ok", defaultValue: "OK")) {
+                    addFailure = nil
+                }
+            } message: {
+                Text(addFailure ?? "")
+            }
+    }
+
+    @ViewBuilder
+    private var platformBody: some View {
         #if os(macOS)
         macBody
         #else
@@ -118,6 +195,10 @@ struct CollectionPickerSheet: View {
                                                    defaultValue: "Added"))
                 }
             }
+            // The whole row takes the tap (#1576 lane 2). A plain button is hit only where its
+            // label draws, and between the name and the trailing edge this one draws nothing:
+            // a tap there did nothing, which on an iPad's wide sheet is most of the row.
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         // #1593: a smart collection is listed, so it can be found, and takes no tap. Its caption
@@ -142,12 +223,14 @@ struct CollectionPickerSheet: View {
                 // naming its sources. Saying it here means the two agree, and it must be readable
                 // from presentation until dismissal rather than appearing as confirmation.
                 //
-                // `.frusText` is not conditional, because nothing else can be captured here: the
-                // entry is a FRUS document, and an excerpt is a frozen span of that document's own
-                // text (`CollectionExcerptCapture` stores offsets into it). The chip is invariant
-                // BY CONSTRUCTION rather than by omission — if a capture path ever adds a summary
-                // or a model-derived set, this is where it stops being invariant.
+                // `.frusText` is not conditional, because what is captured is always FRUS's: the
+                // entry is a FRUS document, an excerpt is a frozen span of that document's own
+                // text (`CollectionExcerptCapture` stores offsets into it), and documents mode
+                // adds documents. What documents mode can add to the claim is WHICH documents: a
+                // list a Meaning search made is the model's grouping, so its chip joins this one
+                // (#1576, decision 6).
                 ProvenanceChip(source: .frusText)
+                if fromMeaningSearch { ProvenanceChip(source: .appModel) }
                 Spacer()
                 Button {
                     showNewCollection = true
@@ -266,6 +349,8 @@ struct CollectionPickerSheet: View {
                 // which is the placement that composites under the bar rather than over it (#486).
                 HStack {
                     ProvenanceChip(source: .frusText)
+                    // #1576, decision 6: see the macOS title bar's note.
+                    if fromMeaningSearch { ProvenanceChip(source: .appModel) }
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
@@ -310,6 +395,16 @@ struct CollectionPickerSheet: View {
         // here would be counted, listed in its outline and left out of everything it produces.
         // The row is disabled; this holds the rule for any caller that is not the row.
         guard CollectionPickerRow(collection).takesEntries else { return }
+        // One add to a presentation, in every mode. The sheet closes itself a moment after a
+        // tap; until it has, a second tap is on a row the reader did not choose it for.
+        guard addedCollectionId == nil else { return }
+
+        // Documents mode (#1576 lane 2): the frozen list a command on search results carries.
+        if let documents {
+            addDocuments(documents, to: collection)
+            return
+        }
+        guard let entry else { return }
 
         // Excerpt mode (Authoring Phase 5): freeze the capture into a `.excerpt` entry.
         // No duplicate guard — several excerpts from one document are expected.
@@ -350,6 +445,121 @@ struct CollectionPickerSheet: View {
 
         addedCollectionId = collection.id
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
+    }
+
+    /// Documents mode's add (#1576 lane 2): every document the collection does not hold, in the
+    /// order given, saved before the sheet says so.
+    ///
+    /// The row's checkmark is the confirmation, as it is for one document, and the sheet leaves
+    /// after the same pause: a little longer when every document was there already, which is
+    /// the pause the single-document add gives a duplicate.
+    private func addDocuments(_ documents: [CollectionDocumentRef], to collection: Collection) {
+        do {
+            let outcome = try CollectionDocumentDiscovery.appendDocuments(
+                documents, to: collection, modelContext: modelContext)
+            addedCollectionId = collection.id
+            let pause = outcome.insertedCount == 0 ? 0.8 : 0.6
+            DispatchQueue.main.asyncAfter(deadline: .now() + pause) { dismiss() }
+        } catch {
+            // Said, and the sheet stays: the reader can pick another collection or cancel.
+            addFailure = CollectionPickerCopy.addFailure(error)
+        }
+    }
+}
+
+// MARK: - CollectionPickerCopy
+
+/// The picker's words that a rule chooses, apart from the view so that a test can read them off
+/// the main actor (#1576 lane 2).
+///
+/// Version history:
+///   1.0 — #1576 lane 2: initial implementation
+enum CollectionPickerCopy {
+
+    /// The picker's title for one document.
+    static var title: String {
+        String(localized: "collection.picker.nav.title", defaultValue: "Add to Collection")
+    }
+
+    /// The picker's title in documents mode: "Add to Collection" for one document, which is what
+    /// the document's own picker says, and "Add 37 Documents to Collection" for several.
+    ///
+    /// - Parameters:
+    ///   - count: The documents the command carries.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The title.
+    static func documentsTitle(count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        // The singular form is the plain title, which has no place for a count: one document
+        // reads here as it does in the document's own picker.
+        CountCopy.phrase(
+            count,
+            one: title,
+            many: String(localized: "collection.picker.title.documents.many",
+                         defaultValue: "Add %@ Documents to Collection"),
+            locale: locale)
+    }
+
+    /// The title of the alert a failed documents-mode add shows.
+    static var addFailedTitle: String {
+        String(localized: "collection.picker.addFailed.title", defaultValue: "Not Added")
+    }
+
+    /// What a failed documents-mode add says.
+    ///
+    /// - Parameters:
+    ///   - error: What `CollectionDocumentDiscovery.appendDocuments` threw.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The alert's message.
+    static func addFailure(_ error: any Error, locale: Locale = .autoupdatingCurrent) -> String {
+        switch error as? CollectionDocumentAppendRefusal {
+        case .smartCollection:
+            return String(localized: "collection.picker.addFailed.smart",
+                          defaultValue: "This is a smart collection. Its documents come from its saved search, so nothing can be added to it by hand.")
+        case .overLimit(let count, let limit):
+            return String(format: String(
+                localized: "collection.picker.addFailed.overLimit %@ %@",
+                defaultValue: "A collection takes up to %2$@ at a time, and %1$@ were chosen."),
+                CountCopy.documents(count, locale: locale),
+                CountCopy.documents(limit, locale: locale))
+        case nil:
+            return String(format: String(
+                localized: "collection.picker.addFailed.save %@",
+                defaultValue: "The collection could not be saved, so nothing was added. %@"),
+                error.localizedDescription)
+        }
+    }
+}
+
+// MARK: - CollectionPickerOrder
+
+/// The order the picker lists its collections in while it is open (#1576 lane 2).
+///
+/// A value apart from the view so that a test can run it: the view hands it the query's results
+/// and the ids it opened with.
+///
+/// Version history:
+///   1.0 — #1576 lane 2: initial implementation
+enum CollectionPickerOrder {
+
+    /// `items` in the order `listed` names them, with any `listed` does not name ahead of those,
+    /// in the order given.
+    ///
+    /// - Parameters:
+    ///   - items: The collections now, in the query's live order.
+    ///   - id: An item's identifier.
+    ///   - listed: The identifiers in the order the sheet opened with, or `nil` before it has
+    ///     appeared, when the live order is the answer.
+    /// - Returns: The items, each once, in the held order.
+    static func held<Item>(_ items: [Item], id: (Item) -> UUID, listed: [UUID]?) -> [Item] {
+        guard let listed else { return items }
+        let place = Dictionary(listed.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        var known: [(place: Int, item: Item)] = []
+        var new: [Item] = []
+        for item in items {
+            if let at = place[id(item)] { known.append((at, item)) } else { new.append(item) }
+        }
+        // Stable: two items cannot share a place, since each id has one.
+        return new + known.sorted { $0.place < $1.place }.map(\.item)
     }
 }
 

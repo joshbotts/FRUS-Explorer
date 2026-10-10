@@ -5871,6 +5871,301 @@ struct CollectionAttachmentTests {
         #expect(first.sortOrder == 0)
         #expect(second.sortOrder == 1)
     }
+
+    // MARK: appendDocuments (#1576 lane 2)
+
+    /// A document reference in volume `v1`.
+    private func ref(_ documentId: String) -> CollectionDocumentRef {
+        CollectionDocumentRef(volumeId: "v1", documentId: documentId)
+    }
+
+    /// The `.document` entries a fresh context reads for the store's one collection, in position
+    /// order. A fresh context reads only what was saved.
+    @MainActor
+    private func savedDocuments(in container: ModelContainer) throws -> [CollectionEntry] {
+        try ModelContext(container).fetch(FetchDescriptor<CollectionEntry>())
+            .filter { $0.entryKind == .document }
+            .sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    /// The bulk add against the state the picker's New Collection button leaves: inserted and
+    /// never saved, so `documentEntries` is nil. Both directions are asserted, and a second
+    /// context reads the rows, which only a save puts there.
+    @Test("A bulk add to a never-saved collection links each entry both ways, and saves")
+    @MainActor
+    func appendDocumentsLinksBothWaysAndSaves() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Created moments ago")
+        context.insert(collection)
+        try #require(collection.documentEntries == nil)
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            [ref("d1"), ref("d2")], to: collection, modelContext: context)
+
+        #expect(outcome.insertedCount == 2)
+        #expect(outcome.alreadyPresent == 0)
+        let entries = try #require(collection.documentEntries)
+        #expect(entries.count == 2, "the entries are not reachable from the collection")
+        #expect(entries.allSatisfy { $0.collection?.id == collection.id }, "the inverse is unset")
+        #expect(entries.allSatisfy { $0.collectionId == collection.id })
+        #expect(Set(entries.map(\.id)) == Set(outcome.insertedEntryIds))
+
+        #expect(!context.hasChanges, "the add must save, not leave a thousand entries to the next autosave")
+        let saved = try savedDocuments(in: container)
+        #expect(saved.map(\.documentId) == ["d1", "d2"], "a second context does not see the rows: nothing was saved")
+        let refetched = try #require(try ModelContext(container).fetch(FetchDescriptor<Collection>()).first)
+        #expect(refetched.documentEntries?.count == 2)
+    }
+
+    /// Decision 3: a document already in the collection is skipped and counted. The collection
+    /// holds `d1` at position 3 and `d2` at position 7, so "after the maximum" is 8 and not the
+    /// count, 2.
+    @Test("Five documents with two present adds three, in order, after the highest position")
+    @MainActor
+    func appendDocumentsSkipsWhatIsPresent() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Chile")
+        context.insert(collection)
+        for (documentId, position) in [("d1", 3), ("d2", 7)] {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: documentId,
+                                        volumeId: "v1", sortOrder: position)
+            entry.collection = collection
+            context.insert(entry)
+        }
+        try context.save()
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            [ref("d5"), ref("d1"), ref("d3"), ref("d2"), ref("d4")], to: collection, modelContext: context)
+
+        #expect(outcome.insertedCount == 3)
+        #expect(outcome.alreadyPresent == 2)
+        let saved = try savedDocuments(in: container)
+        #expect(saved.map(\.documentId) == ["d1", "d2", "d5", "d3", "d4"],
+                "the three new documents sit after the two held, in the order given")
+        #expect(saved.map(\.sortOrder) == [3, 7, 8, 9, 10], "ascending from one past the highest position")
+        // The ids come back in the order given, which is what an undo walks.
+        let byId = Dictionary(uniqueKeysWithValues: saved.map { ($0.id, $0.documentId) })
+        #expect(outcome.insertedEntryIds.map { byId[$0] } == ["d5", "d3", "d4"])
+        #expect(collection.documentCount == 5)
+    }
+
+    /// An excerpt carries its document's volume and document identifiers. Read as the document,
+    /// it would block the add and leave the collection with the excerpt and "0 documents".
+    @Test("An excerpt of the same document does not count as present")
+    @MainActor
+    func appendDocumentsDoesNotCountAnExcerpt() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Suez")
+        context.insert(collection)
+        let excerpt = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        excerpt.entryKind = .excerpt
+        excerpt.collection = collection
+        context.insert(excerpt)
+        try context.save()
+        try #require(collection.documentCount == 0)
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments([ref("d1")], to: collection, modelContext: context)
+
+        #expect(outcome.insertedCount == 1)
+        #expect(outcome.alreadyPresent == 0)
+        #expect(collection.documentCount == 1)
+        #expect(try savedDocuments(in: container).map(\.sortOrder) == [1], "after the excerpt, which keeps its place")
+    }
+
+    /// Volume `v2`'s `d1` is another document: presence is the pair, not the document id alone.
+    @Test("The same document id in another volume is another document")
+    @MainActor
+    func appendDocumentsKeysOnVolumeAndDocument() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Two volumes")
+        context.insert(collection)
+        try CollectionDocumentDiscovery.appendDocuments([ref("d1")], to: collection, modelContext: context)
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            [CollectionDocumentRef(volumeId: "v2", documentId: "d1"), ref("d1")],
+            to: collection, modelContext: context)
+
+        #expect(outcome.insertedCount == 1)
+        #expect(outcome.alreadyPresent == 1)
+        #expect(try savedDocuments(in: container).map(\.volumeId) == ["v1", "v2"])
+    }
+
+    @Test("A document named twice in the list is added once, and is not counted as present")
+    @MainActor
+    func appendDocumentsAddsARepeatOnce() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Repeats")
+        context.insert(collection)
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            [ref("d1"), ref("d2"), ref("d1")], to: collection, modelContext: context)
+
+        #expect(outcome.insertedCount == 2)
+        #expect(outcome.alreadyPresent == 0, "a repeat in the list is one document asked for, not one found")
+        #expect(try savedDocuments(in: container).map(\.documentId) == ["d1", "d2"])
+    }
+
+    /// With every document held there is nothing to write: no entry, no save, and the collection
+    /// is not moved to the top of the picker by a `lastModified` it did not earn.
+    @Test("With every document present nothing is written")
+    @MainActor
+    func appendDocumentsWritesNothingWhenAllArePresent() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Already there")
+        context.insert(collection)
+        try CollectionDocumentDiscovery.appendDocuments([ref("d1"), ref("d2")], to: collection, modelContext: context)
+        let stamp = Date(timeIntervalSince1970: 1_000)
+        collection.lastModified = stamp
+        try context.save()
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            [ref("d2"), ref("d1")], to: collection, modelContext: context)
+
+        #expect(outcome.insertedEntryIds.isEmpty)
+        #expect(outcome.alreadyPresent == 2)
+        #expect(collection.lastModified == stamp)
+        #expect(!context.hasChanges)
+        #expect(try savedDocuments(in: container).count == 2)
+    }
+
+    @Test("An add that inserts something sets the collection's lastModified")
+    @MainActor
+    func appendDocumentsStampsTheCollection() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Stamped")
+        context.insert(collection)
+        let stamp = Date(timeIntervalSince1970: 1_000)
+        collection.lastModified = stamp
+        try context.save()
+
+        try CollectionDocumentDiscovery.appendDocuments([ref("d1")], to: collection, modelContext: context)
+
+        let after = try #require(collection.lastModified)
+        #expect(after > stamp)
+        let refetched = try #require(try ModelContext(container).fetch(FetchDescriptor<Collection>()).first)
+        #expect(refetched.lastModified == after, "the stamp is saved with the entries")
+    }
+
+    /// An entry deleted from the context is still listed by `documentEntries` until the context
+    /// processes the deletion. It is not content, so its document can be added again in the
+    /// same turn.
+    @Test("A document whose entry was just deleted is not counted as present")
+    @MainActor
+    func appendDocumentsIgnoresADeletedEntry() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Removed and added")
+        context.insert(collection)
+        try CollectionDocumentDiscovery.appendDocuments([ref("d1")], to: collection, modelContext: context)
+        let entry = try #require(collection.documentEntries?.first)
+        context.delete(entry)
+        try #require(entry.isDeleted)
+
+        let outcome = try CollectionDocumentDiscovery.appendDocuments([ref("d1")], to: collection, modelContext: context)
+
+        #expect(outcome.insertedCount == 1)
+        #expect(outcome.alreadyPresent == 0)
+        #expect(try savedDocuments(in: container).count == 1)
+    }
+
+    /// #1593: a smart collection's preview, exports and Archives Visit list are built from its
+    /// saved search, so an entry added by hand is in none of them.
+    @Test("A smart collection is refused, and nothing is written")
+    @MainActor
+    func appendDocumentsRefusesASmartCollection() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Berlin, as searched")
+        collection.savedSearchId = UUID()
+        context.insert(collection)
+        try context.save()
+
+        #expect(throws: CollectionDocumentAppendRefusal.smartCollection) {
+            try CollectionDocumentDiscovery.appendDocuments([self.ref("d1")], to: collection, modelContext: context)
+        }
+        #expect(!context.hasChanges)
+        #expect(try savedDocuments(in: container).isEmpty)
+    }
+
+    /// Decision 5. A thousand is taken; a thousand and one is refused before anything is written.
+    /// The limit counts documents, so a thousand named twice each is a thousand.
+    @Test("A list over the limit is refused, and a list at the limit is taken")
+    @MainActor
+    func appendDocumentsHoldsTheLimit() throws {
+        let limit = CollectionDocumentDiscovery.bulkDocumentLimit
+        #expect(limit == 1_000)
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "At the limit")
+        context.insert(collection)
+        try context.save()
+        let overLimit = (1...(limit + 1)).map { ref("d\($0)") }
+
+        #expect(throws: CollectionDocumentAppendRefusal.overLimit(count: limit + 1, limit: limit)) {
+            try CollectionDocumentDiscovery.appendDocuments(overLimit, to: collection, modelContext: context)
+        }
+        #expect(!context.hasChanges)
+        #expect(try savedDocuments(in: container).isEmpty)
+
+        let atLimit = Array(overLimit.prefix(limit))
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            atLimit + atLimit, to: collection, modelContext: context)
+        #expect(outcome.insertedCount == limit)
+        #expect(try savedDocuments(in: container).count == limit)
+
+        // The limit is on what one command carries, not on what is left to add: with the
+        // thousand held, the thousand and one would add a single document, and is still refused.
+        #expect(throws: CollectionDocumentAppendRefusal.overLimit(count: limit + 1, limit: limit)) {
+            try CollectionDocumentDiscovery.appendDocuments(overLimit, to: collection, modelContext: context)
+        }
+        #expect(try savedDocuments(in: container).count == limit)
+    }
+
+    /// An error a test's save throws, to stand for a store that refuses the write.
+    private struct SaveRefused: Error, Equatable {}
+
+    /// A save that fails must add nothing. Left in the context, the entries would be counted by
+    /// the collection's row behind an alert saying they were not added, read as present by the
+    /// next attempt, and written by whatever saved next.
+    @Test("A save that fails takes the entries back out, and the next attempt adds them")
+    @MainActor
+    func appendDocumentsTakesBackAFailedSave() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Refused once")
+        context.insert(collection)
+        try CollectionDocumentDiscovery.appendDocuments([ref("d1")], to: collection, modelContext: context)
+        let stamp = Date(timeIntervalSince1970: 1_000)
+        collection.lastModified = stamp
+        try context.save()
+
+        #expect(throws: SaveRefused()) {
+            try CollectionDocumentDiscovery.appendDocuments(
+                [self.ref("d1"), self.ref("d2"), self.ref("d3")], to: collection, modelContext: context,
+                save: { _ in throw SaveRefused() })
+        }
+
+        #expect(collection.documentCount == 1, "the row behind the alert must not count what was not added")
+        #expect(CollectionEntryOrdering.liveEntries(of: collection).map(\.documentId) == ["d1"])
+        #expect(collection.lastModified == stamp, "the collection was not changed, so its stamp is put back")
+        // Whatever saves next must not write the refused batch.
+        try context.save()
+        #expect(try savedDocuments(in: container).map(\.documentId) == ["d1"])
+
+        // A second attempt finds them missing, not held, and adds them after the one that was.
+        let outcome = try CollectionDocumentDiscovery.appendDocuments(
+            [ref("d1"), ref("d2"), ref("d3")], to: collection, modelContext: context)
+        #expect(outcome.insertedCount == 2)
+        #expect(outcome.alreadyPresent == 1)
+        #expect(try savedDocuments(in: container).map(\.documentId) == ["d1", "d2", "d3"])
+    }
 }
 
 // MARK: - CollectionEditorNamingTests (#1359, #1413, #1415)

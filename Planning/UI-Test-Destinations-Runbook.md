@@ -675,3 +675,43 @@ xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -only-testing FRUSExplorerUITests/AnalyticsCompareFromTableTests \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
 ```
+
+**`SearchResultAddToCollectionTests` (#1576 lane 2) runs on an iPhone and an iPad, and only the
+iPad guards the picker row's tap.** Each of its two tests seeds the six-document volume
+(`FRUS_UI_TEST_SEED_VOLUME`) and `UITestProjectSeeder`'s collection, "UI Test Unattached
+Collection", which holds `d1` (`FRUS_UI_TEST_SEED_PROJECT`; the seeded project is not made active),
+and runs a keyword search for "Synthetic", which every fixture paragraph holds. The search is
+submitted until its rows are there, five times at most, because the seeded volume is indexed
+during launch and a search that runs first lists nothing. Each then long-presses a result row,
+chooses **Add to Collection…**, taps the seeded collection's row, and reads that row's count from
+a picker presented again:
+- `testAResultAddedFromItsMenuRaisesTheCollectionsCount` adds "UI Test Document Two" and reads
+  "1 document" then "2 documents", and adds "UI Test Document Three" and reads "3 documents". Two
+  different documents, so a request that carried the wrong row, or always the same document, comes
+  out at the wrong count.
+- `testADocumentTheCollectionHoldsIsNotAddedAgain` adds "UI Test Document One", which the
+  collection holds, and reads "1 document" before and after.
+
+Neither skips. The count is read in the app's one context, and the UI-test store is in memory, so
+this proves the entry was linked and does not prove the save; `CollectionAttachmentTests` reads a
+second context for that. `tearDown` taps the picker's Cancel by name before the shared helper
+runs, since that helper does not choose Cancel.
+
+The row is tapped at its centre. On an iPhone that is over the collection's name. On an iPad's
+wider sheet it is the blank part of the row, and a plain button takes a tap only where its label
+draws, so until this lane gave the row a content shape the tap did nothing there. Measured on
+2026-10-10 on **iPhone 17, iOS 27.0: 2 tests, 2 passed**, and on **iPad Pro 13-inch (M5),
+iOS 27.0: 2 tests, 2 passed**. Before the split into two tests, the one test that held all five
+sheets was run on that iPad with the content shape taken out, twice, and **failed** each time on
+"The picker did not close after adding UI Test Document Two"; and with `appendDocuments` changed to
+add a document the collection holds, it failed on the iPhone on the row reading "3 documents".
+**It was split because of time:** as one test it took 130 s on a quiet Mac and 292 s on the iPhone
+while other sessions' builds had the load average over 300, against the 300 s a test is allowed
+under iOS 27. As two, run as that load was coming down, they took 144 s and 173 s on the iPhone
+and 140 s and 114 s on the iPad.
+```bash
+xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/SearchResultAddToCollectionTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+```
