@@ -655,8 +655,8 @@ your submitted query runs through. In Meaning mode:
 
 - Results arrive **ranked by meaning across the whole series**, as full rows — title, date,
   a prose excerpt (there are no keywords to highlight, so the snippet shows the document's
-  opening prose), and a **Semantic match · N%** score. Sorting, paging and checklist review
-  work as in keyword mode.
+  opening prose), and a **Semantic match · N%** score, which VoiceOver reads after the row's
+  heading. Sorting, paging and checklist review work as in keyword mode.
   The header counts *N closest matches* — at most 100, the nearest the model found, not a
   total — and front matter and chapter headings cannot be reached this way.
 - **Inside a working corpus or a project's History scope, the ranking runs inside that set.**
