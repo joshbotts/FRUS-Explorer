@@ -40,6 +40,11 @@ struct FacetMeaningModeTests {
     private static let root = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
 
+    /// What each host calls its view model.
+    private static func owner(_ path: String) -> String {
+        path.hasSuffix("SearchSheet.swift") ? "searchVM" : "vm"
+    }
+
     private func source(_ path: String) throws -> String {
         try String(contentsOf: Self.root.appendingPathComponent(path), encoding: .utf8)
     }
@@ -54,7 +59,7 @@ struct FacetMeaningModeTests {
 
     /// **Both hosts must tell the panel which route ran.** They are hand-maintained twins, and a
     /// gate honoured by one is a panel that lies on the other platform.
-    @Test("Both search hosts tell the facet panel when the search ran by meaning")
+    @Test("Both search hosts give the facet panel its count and its wording from the view model")
     func bothHostsPassTheRoute() throws {
         var checked = 0
         for path in ["FRUSExplorer/Search/SearchView.swift",
@@ -67,6 +72,20 @@ struct FacetMeaningModeTests {
             let arguments = String(file[call.lowerBound...].prefix(1200))
             #expect(arguments.contains("isMeaningSearch:"),
                     Comment(rawValue: "\(path) does not tell the panel which route ran"))
+            // #1577 lane 2: both are the view model's, which answers from the route recorded with the
+            // rows. The host took them from the picker, which names the engine of the NEXT search:
+            // between a switch and the new rows it described keyword rows as a Meaning list, and a
+            // Meaning list as a keyword match. The host passes them through and decides nothing, so
+            // that the rule is in a place a test can drive (`SearchResultRouteTests`).
+            let owner = Self.owner(path)
+            #expect(arguments.contains("matchCount: \(owner).facetMatchCount,"),
+                    Comment(rawValue: "\(path) works out the panel's count itself"))
+            #expect(arguments.contains("isMeaningSearch: \(owner).resultsAreSemantic,"),
+                    Comment(rawValue: "\(path) words the panel by something other than the rows' route"))
+            #expect(!arguments.contains("searchMode"),
+                    Comment(rawValue: "\(path) describes the facet panel's rows by the picker"))
+            #expect(!arguments.contains("executedRoute"),
+                    Comment(rawValue: "\(path) asks the route itself, where the view model's members are the rule"))
             checked += 1
         }
         #expect(checked == 2, "the host sweep ran over \(checked) hosts")
@@ -74,7 +93,7 @@ struct FacetMeaningModeTests {
 
     /// **Both hosts must hand over the keys**, or the panel falls back to the keyword expression
     /// and the counts describe a different set again — the #1193 defect, returning by omission.
-    @Test("Both search hosts give the panel the semantic keys to describe")
+    @Test("Both search hosts give the panel the view model's keys, and choose none themselves")
     func bothHostsPassTheKeys() throws {
         var checked = 0
         for path in ["FRUSExplorer/Search/SearchView.swift",
@@ -87,8 +106,12 @@ struct FacetMeaningModeTests {
             let arguments = String(file[call.lowerBound...].prefix(700))
             #expect(arguments.contains("documentKeys:"),
                     Comment(rawValue: "\(path) does not hand the panel its result keys"))
-            #expect(arguments.contains(".meaning"),
-                    Comment(rawValue: "\(path) passes keys unconditionally rather than for the meaning route"))
+            // The whole argument, to its closing parenthesis: a host that chose between the keys and
+            // `nil` itself could choose the wrong way round, and nothing on iOS would run it.
+            #expect(arguments.contains("documentKeys: \(Self.owner(path)).facetDocumentKeys)"),
+                    Comment(rawValue: "\(path) does not pass the view model's keys through as they are"))
+            #expect(!arguments.contains("searchMode"),
+                    Comment(rawValue: "\(path) hands over keys by the picker, which names the next search's engine"))
             checked += 1
         }
         #expect(checked == 2, "the host sweep ran over \(checked) hosts")

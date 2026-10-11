@@ -128,6 +128,9 @@ import SwiftUI
 ///          longer draws the over-cap advisory or its triangle; Visualize in Corpus Analytics is offered in
 ///          Keywords mode only; a hand-off goes through `applyHandoff(_:)`; Checklist Mode says when Log Research
 ///          Sessions is off (`ChecklistLoggingNotice`).
+///   1.22 — #1577 lane 2: the facet panel's count, wording and keys, and the Reading picker's gate, are asked of
+///          the view model, which answers from the route recorded with the rows; a reading that is open when its
+///          gate shuts goes back to the list.
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -493,15 +496,14 @@ struct MacSearchWindowView: View {
         .inspector(isPresented: $showFacetPanel) {
             FacetPanelView(
                 controller: facetController,
-                // Exact in meaning mode — the results are the set — where `totalMatchCount` is
-                // the whole match and is deliberately nil for a semantic run.
-                matchCount: searchVM.searchMode == .meaning
-                    ? searchVM.results.count : searchVM.totalMatchCount,
+                // The count, the wording and the keys below are the view model's, which answers from the
+                // route recorded with the rows and not from the picker (#1577 lane 2).
+                matchCount: searchVM.facetMatchCount,
                 displayedCount: searchVM.displayedResults.count,
                 isPartialEvidence: resultSetScope.isPartialEvidence,
                 isChecklistHiding: searchVM.checklistMode
                     && searchVM.displayedResults.count < searchVM.results.count,
-                isMeaningSearch: searchVM.searchMode == .meaning,
+                isMeaningSearch: searchVM.resultsAreSemantic,
                 onNarrow: { narrowing in
                     // Captured here because the narrow re-runs the search, and by the time
                     // the panel recomputes, its match count describes the narrowed set.
@@ -523,12 +525,8 @@ struct MacSearchWindowView: View {
                             parameters: searchVM.submittedSearchParameters,
                             service: appState.searchService,
                             pipeline: appState.indexingPipeline,
-                            // A meaning search has no MATCH; it describes the keys it returned.
-                            documentKeys: searchVM.searchMode == .meaning
-                                ? searchVM.results.map {
-                                    (volumeId: $0.volumeId, documentId: $0.documentId)
-                                  }
-                                : nil)
+                            // Every route but a keyword match describes the keys of the list it holds.
+                            documentKeys: searchVM.facetDocumentKeys)
                     }
                 })
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 420)
@@ -648,6 +646,13 @@ struct MacSearchWindowView: View {
             // #1577 lane 1: and so does the last Meaning run's disclosure, which the strip and
             // the empty state would go on reading as a description of rows that are gone.
             searchVM.semanticDisclosure = nil
+        }
+        // #1577 lane 2: a reading that is open when its door shuts goes back to the list. The picker's
+        // own setter closes the readings on a switch; this is for rows that arrive by another route
+        // while a reading is open, which would otherwise leave it behind a dimmed control. Here and
+        // not on the toolbar's picker, which is not in the window while it is folded into the » menu.
+        .onChange(of: searchVM.offersReadings) { _, offered in
+            if !offered { readingSelection.wrappedValue = .list }
         }
         // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
         // Window scene, so an active-project change must reset the scope and drop any stale
@@ -1103,8 +1108,9 @@ struct MacSearchWindowView: View {
             .pickerStyle(.segmented)
             // macOS renders a toolbar `Label` icon-only unless the style is forced.
             .labelStyle(.titleAndIcon)
-            // Meaning mode: every reading is keyword-dependent — see the iOS examineMenu gate.
-            .disabled(searchVM.results.isEmpty || searchVM.searchMode == .meaning)
+            // Every reading reads the words a keyword match found: the view model's rule, as on iOS
+            // (#1577 lane 2). A reading open when the door shuts is closed with it, in `body`.
+            .disabled(searchVM.results.isEmpty || !searchVM.offersReadings)
             .help(String(
                 format: String(localized: "search.reading.help %@",
                                defaultValue: "How to read these results. The concordance covers %@; the others cover the whole retained set."),
