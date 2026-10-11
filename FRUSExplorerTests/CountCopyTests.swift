@@ -495,6 +495,7 @@ struct CountCopySiteTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1374 review, round 1
+///   1.1 — 2026-10-11: #1618 — the three sites of Related Documents' Beyond your library section
 struct CountCopyWiringTests {
 
     private typealias Scan = NaturalLanguageReadinessScanTests
@@ -545,6 +546,16 @@ struct CountCopyWiringTests {
         Site(path: "FRUSExplorer/App/SupportingViews.swift",
              declaration: "private func statusBarMetaSummary(_ meta: VolumeMetadataDiscovered) -> String",
              needle: "StatusBarCopy.metaSummary(persons: meta.uniquePersonCount,"),
+        // #1618's sites, each driven by `RelatedDocumentsOffIndexCountTests`.
+        Site(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift",
+             declaration: "private var offIndexSection: some View",
+             needle: "Text(RelatedDocumentsCounts.offIndexCaption(\n documents: offIndexLeads.documentCount,\n volumes: offIndexLeads.volumes.count,\n isCapped: offIndexLeads.isCapped))"),
+        Site(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift",
+             declaration: "private var offIndexSection: some View",
+             needle: "Text(RelatedDocumentsCounts.offIndexMoreVolumes(\n offIndexLeads.volumes.count - Self.offIndexVolumeDisplayLimit))"),
+        Site(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift",
+             declaration: "private struct OffIndexVolumeRow: View",
+             needle: "Text(RelatedDocumentsCounts.offIndexVolumeCount(lead.count))"),
     ]
 
     /// `text` with every whitespace character removed.
@@ -563,6 +574,87 @@ struct CountCopyWiringTests {
         let body = Self.squeezed(source[try #require(Scan.braceBody(in: source, after: declaration.upperBound))])
         #expect(body.contains(Self.squeezed(site.needle)),
                 "\(site.path): \(site.declaration) no longer calls \(site.needle)")
+    }
+}
+
+// MARK: - RelatedDocumentsOffIndexCountTests
+
+/// Related Documents' Beyond your library section: its four counts, at one and past 999 (#1618).
+///
+/// The section stated them through `%lld`, which does not group and has no singular: "At least
+/// 4096 documents" whenever the scan stopped at its cap, and "1 documents in 1 volumes … read as
+/// close", "1 matching documents" and "and 1 more volumes" at one. The view built them in a
+/// private property and a private row, so nothing could call them; they are
+/// `RelatedDocumentsCounts`' now, and `CountCopyWiringTests` holds the view to them.
+///
+/// Version history:
+///   1.0 — 2026-10-11: #1618 — initial implementation
+struct RelatedDocumentsOffIndexCountTests {
+
+    private static let us = Locale(identifier: "en_US")
+    private static let tail = "you have not downloaded read as close to this one as the matches ranked above."
+
+    @Test("The opening sentence says one document in one volume, and its verb agrees")
+    func captionAtOne() {
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: 1, volumes: 1, isCapped: false, locale: Self.us)
+                == "1 document in 1 volume you have not downloaded reads as close to this one as the matches ranked above.")
+        // What the `%lld` form printed for the same counts.
+        #expect(String(format: "%1$lld documents in %2$lld volumes you have not downloaded read as close",
+                       Int64(1), Int64(1))
+                == "1 documents in 1 volumes you have not downloaded read as close")
+    }
+
+    @Test("The opening sentence groups both counts, and each noun follows its own count")
+    func captionAtMany() {
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: 94, volumes: 19, isCapped: false, locale: Self.us)
+                == "94 documents in 19 volumes \(Self.tail)")
+        // Many documents in one volume, so the two nouns cannot be following one count.
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: 1_204, volumes: 1, isCapped: false, locale: Self.us)
+                == "1,204 documents in 1 volume \(Self.tail)")
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: 2, volumes: 2, isCapped: false, locale: Self.us)
+                == "2 documents in 2 volumes \(Self.tail)")
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: 12_067, volumes: 1_204, isCapped: false,
+                                                       locale: Self.us)
+                == "12,067 documents in 1,204 volumes \(Self.tail)")
+    }
+
+    @Test("A capped scan says At least, with its floor grouped")
+    @MainActor
+    func captionWhenCapped() {
+        let cap = SemanticSimilarityGenerator.offIndexScanCap
+        #expect(cap == 4_096)
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: cap, volumes: 12, isCapped: true, locale: Self.us)
+                == "At least 4,096 documents in 12 volumes \(Self.tail)")
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: cap, volumes: 1, isCapped: true, locale: Self.us)
+                == "At least 4,096 documents in 1 volume \(Self.tail)")
+        // The locale passed is the one that groups.
+        #expect(RelatedDocumentsCounts.offIndexCaption(documents: cap, volumes: 1_204, isCapped: true,
+                                                       locale: Locale(identifier: "de_DE"))
+                == "At least 4.096 documents in 1.204 volumes \(Self.tail)")
+        // What the `%lld` form printed whenever the cap bound.
+        #expect(String(format: "At least %1$lld documents in %2$lld volumes", Int64(cap), Int64(12))
+                == "At least 4096 documents in 12 volumes")
+    }
+
+    @Test("A volume's count and the line for the volumes not named say one and group many")
+    func rowLines() {
+        #expect(RelatedDocumentsCounts.offIndexVolumeCount(1, locale: Self.us) == "1 matching document")
+        #expect(RelatedDocumentsCounts.offIndexVolumeCount(14, locale: Self.us) == "14 matching documents")
+        #expect(RelatedDocumentsCounts.offIndexVolumeCount(1_063, locale: Self.us) == "1,063 matching documents")
+        #expect(RelatedDocumentsCounts.offIndexMoreVolumes(1, locale: Self.us) == "and 1 more volume")
+        #expect(RelatedDocumentsCounts.offIndexMoreVolumes(14, locale: Self.us) == "and 14 more volumes")
+        #expect(RelatedDocumentsCounts.offIndexMoreVolumes(1_204, locale: Self.us) == "and 1,204 more volumes")
+    }
+
+    @Test("The view states none of the four itself")
+    func theViewHoldsNoneOfTheFourFormats() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"), encoding: .utf8)
+        #expect(source.contains("related.offIndex.header"), "the section is no longer in this file")
+        for key in ["related.offIndex.caption", "related.offIndex.volumeCount", "related.offIndex.moreVolumes"] {
+            #expect(!source.contains(key), "\(key) is back in the view")
+        }
     }
 }
 

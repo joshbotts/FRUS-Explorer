@@ -31,6 +31,8 @@ import Accessibility
 ///   1.2 — 2026-10-09: #1587 — a table that carries its chart's numbers
 ///          (`ChartInspectorData.audioGraph`) gives the descriptor from them; the column
 ///          parameters remain for a table that does not
+///   1.3 — 2026-10-11: #1616 — the Corpus Analytics series and the mention trajectories state
+///          their graphs too, so the modifier reads no cell of theirs
 struct SeriesChartCard<Controls: View, Content: View>: View {
 
     /// The chart's title, shown in the header and exposed as a VoiceOver heading.
@@ -119,6 +121,12 @@ struct AXChartDescriptorModifier: ViewModifier {
     /// column 0 is the term and column 1 the period, and "1969" PARSES, so the default would
     /// have sonified years as values without a sound of complaint. Every adoption states its
     /// columns; `AXChartDescriptorTests` pins each table's indices against the real builders.
+    ///
+    /// **Read only for a table that states no graph.** The Corpus Analytics series table and the
+    /// mention-trajectory table have stated theirs since #1616, because their Plotted column
+    /// holds a share written for the reader's region, and `12,4` read back by column is 124. The
+    /// columns their charts name here are the ones each graph is held to
+    /// (`AnalyticsAudioGraphTests`), and no cell of theirs is read.
     var labelColumn: Int = 0
     var valueColumn: Int = 1
     /// Set for an interleaved multi-series table (a compare table, the trajectory table):

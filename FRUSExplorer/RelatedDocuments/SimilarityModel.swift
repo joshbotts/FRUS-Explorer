@@ -361,7 +361,8 @@ enum WhyRelatedChip: Hashable, Sendable {
 // MARK: - RelatedDocumentsCounts
 
 /// Related Documents' two lines that say how many documents share the anchor's archival
-/// container, with their numbers grouped (#1586).
+/// container, with their numbers grouped (#1586), and the four counts of its Beyond your library
+/// section, grouped and with a form for one (#1618).
 ///
 /// Both were `String(format:)` over `%lld`, which does not group, so the container the chip
 /// exists to size read "1 of 1063" once it passed 999, and the footer "the first 120 of 1063".
@@ -369,8 +370,14 @@ enum WhyRelatedChip: Hashable, Sendable {
 /// could not see the chip at all: its rule needs a noun after the placeholder, and "1 of %lld"
 /// ends the string. So the two are here, where `CountCopySiteTests` reads them.
 ///
+/// Beyond your library's four were `%lld` too, and each stood before a noun with no singular:
+/// "At least 4096 documents", "1 documents in 1 volumes … read as close", "1 matching documents"
+/// and "and 1 more volumes". The view built them in two private places no test could call.
+///
 /// Version history:
 ///   1.0 — 2026-10-09: #1586 — initial implementation
+///   1.1 — 2026-10-11: #1618 — Beyond your library's opening sentence, a volume's count and
+///          the line for the volumes it does not name
 enum RelatedDocumentsCounts {
 
     /// The archival chip: "Lot 54 D 270 · 1 of 1,063".
@@ -402,6 +409,69 @@ enum RelatedDocumentsCounts {
         String(format: String(localized: "related.poolCut %@ %@",
                               defaultValue: "Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them."),
                ranked.formatted(.number.locale(locale)), total.formatted(.number.locale(locale)))
+    }
+
+    // MARK: Beyond your library (#1618)
+
+    /// The section's opening sentence: "94 documents in 19 volumes you have not downloaded read
+    /// as close to this one as the matches ranked above."
+    ///
+    /// One document is in one volume, and the verb agrees with it: "1 document in 1 volume you
+    /// have not downloaded reads as close …". When the scan stopped at its cap the count is a
+    /// floor and the sentence opens "At least"; a capped scan kept every row it took, 4,096 of
+    /// them (`SemanticSimilarityGenerator.offIndexScanCap`), so that form has no singular.
+    ///
+    /// - Parameters:
+    ///   - documents: How many documents cleared the anchor's cut.
+    ///   - volumes: How many volumes hold them.
+    ///   - isCapped: Whether the scan stopped at its cap.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func offIndexCaption(documents: Int, volumes: Int, isCapped: Bool,
+                                locale: Locale = .autoupdatingCurrent) -> String {
+        let inVolumes = CountCopy.volumes(volumes, locale: locale)
+        if isCapped {
+            return String(format: String(localized: "related.offIndex.caption.capped %@ %@",
+                                         defaultValue: "At least %1$@ documents in %2$@ you have not downloaded read as close to this one as the matches ranked above."),
+                          documents.formatted(.number.locale(locale)), inVolumes)
+        }
+        return CountCopy.phrase(
+            documents,
+            one: String(localized: "related.offIndex.caption.one %@ %@",
+                        defaultValue: "%1$@ document in %2$@ you have not downloaded reads as close to this one as the matches ranked above."),
+            many: String(localized: "related.offIndex.caption.many %@ %@",
+                         defaultValue: "%1$@ documents in %2$@ you have not downloaded read as close to this one as the matches ranked above."),
+            then: [inVolumes], locale: locale)
+    }
+
+    /// The count under a volume the section names: "14 matching documents", "1 matching document".
+    ///
+    /// - Parameters:
+    ///   - count: How many of the volume's documents cleared the anchor's cut.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The phrase.
+    static func offIndexVolumeCount(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "related.offIndex.volumeCount.one %@",
+                                     defaultValue: "%@ matching document"),
+                         many: String(localized: "related.offIndex.volumeCount.many %@",
+                                      defaultValue: "%@ matching documents"),
+                         locale: locale)
+    }
+
+    /// The line under the last volume the section names: "and 14 more volumes", "and 1 more volume".
+    ///
+    /// - Parameters:
+    ///   - count: How many volumes the section does not name.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The line.
+    static func offIndexMoreVolumes(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "related.offIndex.moreVolumes.one %@",
+                                     defaultValue: "and %@ more volume"),
+                         many: String(localized: "related.offIndex.moreVolumes.many %@",
+                                      defaultValue: "and %@ more volumes"),
+                         locale: locale)
     }
 }
 

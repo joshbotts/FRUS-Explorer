@@ -143,6 +143,8 @@ extension AxisWeights: RawRepresentable {
 ///   1.0 — #308 Phase 2b: initial implementation
 ///   1.1 — 2026-10-09: #1586 — the archival chip's words and the pool-cut footer come from
 ///          `WhyRelatedChip.displayText` and `RelatedDocumentsCounts`, which group their counts
+///   1.2 — 2026-10-11: #1618 — Beyond your library's sentence, each volume's count and the
+///          "more volumes" line come from `RelatedDocumentsCounts` too
 struct RelatedDocumentsContent: View {
 
     /// Shared app state — resolves the scope, runs the ranking, and receives the row-tap hand-off.
@@ -610,7 +612,14 @@ struct RelatedDocumentsContent: View {
     private var offIndexSection: some View {
         if offIndexLeads.documentCount > 0 {
             Section {
-                Text(offIndexCaption)
+                // **`isCapped` changes the claim, not the wording around it.** The scan stops at
+                // `SemanticSimilarityGenerator.offIndexScanCap`, and when it stopped without
+                // falling past the anchor's band the count is a floor, so the sentence says "At
+                // least" where it would otherwise report a cap as a total.
+                Text(RelatedDocumentsCounts.offIndexCaption(
+                    documents: offIndexLeads.documentCount,
+                    volumes: offIndexLeads.volumes.count,
+                    isCapped: offIndexLeads.isCapped))
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 ForEach(offIndexLeads.documents) { document in
@@ -630,10 +639,8 @@ struct RelatedDocumentsContent: View {
                             .entry(forVolumeId: lead.volumeID)?.downloadUrl != nil)
                 }
                 if offIndexLeads.volumes.count > Self.offIndexVolumeDisplayLimit {
-                    Text(String(
-                        format: String(localized: "related.offIndex.moreVolumes %lld",
-                                       defaultValue: "and %lld more volumes"),
-                        Int64(offIndexLeads.volumes.count - Self.offIndexVolumeDisplayLimit)))
+                    Text(RelatedDocumentsCounts.offIndexMoreVolumes(
+                        offIndexLeads.volumes.count - Self.offIndexVolumeDisplayLimit))
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
             } header: {
@@ -642,22 +649,6 @@ struct RelatedDocumentsContent: View {
                       systemImage: SemanticGlyph.feature)
             }
         }
-    }
-
-    /// The section's opening sentence.
-    ///
-    /// **`isCapped` changes the claim, not the wording around it.** The scan stops at
-    /// `SemanticSimilarityGenerator.offIndexScanCap`, and when it stopped without falling past the
-    /// anchor's band the count is a floor — so the sentence says "at least" rather than reporting a
-    /// cap as though it were a total.
-    private var offIndexCaption: String {
-        let format = offIndexLeads.isCapped
-            ? String(localized: "related.offIndex.caption.capped %lld %lld",
-                     defaultValue: "At least %1$lld documents in %2$lld volumes you have not downloaded read as close to this one as the matches ranked above.")
-            : String(localized: "related.offIndex.caption %lld %lld",
-                     defaultValue: "%1$lld documents in %2$lld volumes you have not downloaded read as close to this one as the matches ranked above.")
-        return String(format: format,
-                      Int64(offIndexLeads.documentCount), Int64(offIndexLeads.volumes.count))
     }
 
     // MARK: Rows
@@ -779,10 +770,7 @@ private struct OffIndexVolumeRow: View {
                 .font(.callout)
                 .multilineTextAlignment(.leading)
             HStack(spacing: 12) {
-                Text(String(format: String(
-                    localized: "related.offIndex.volumeCount %lld",
-                    defaultValue: "%lld matching documents"),
-                    Int64(lead.count)))
+                Text(RelatedDocumentsCounts.offIndexVolumeCount(lead.count))
                     .font(.caption).foregroundStyle(.secondary)
                 if downloadQueued {
                     Text(String(localized: "related.offIndex.downloadQueued",

@@ -837,7 +837,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 290
+    static let countCopyBaselineCeiling = 286
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -876,7 +876,9 @@ extension CodingStandardsAuditTests {
     /// Citation Lookup Batch summary was rebuilt with a best-guess bucket (`BatchCitationOutcome.summary`),
     /// its citation and best-guess counts through `CountCopy`. Lane HYG took it to 291 by deleting two
     /// views nothing constructed, each with one listed string: `GlobalContextView`'s documents-accessed
-    /// label and `PromptsListView`'s summary count (#1484).
+    /// label and `PromptsListView`'s summary count (#1484). Related Documents took it to 290 and then
+    /// 286: its pool-cut footer (#1586), and the four counts of its Beyond your library section, which
+    /// go through `CountCopy` in `RelatedDocumentsCounts` (#1618).
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
@@ -1053,10 +1055,6 @@ extension CodingStandardsAuditTests {
         #"ProjectContext/ProjectHomeView.swift | project.reach.volumeDetail %lld %lld"#,
         #"ProjectContext/SessionLogView.swift | sessionLog.documents.many %lld"#,
         #"ProjectContext/SessionLogView.swift | sessionLog.results.many %lld"#,
-        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.caption %lld %lld"#,
-        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.caption.capped %lld %lld"#,
-        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.moreVolumes %lld"#,
-        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.volumeCount %lld"#,
         #"Research/ResearchView.swift | research.row.noteCount %lld"#,
         #"Research/ResearchView.swift | research.row.summaries %lld"#,
         #"Search/CollocationView.swift | search.collocation.caveat.bounded.v2 %lld %lld"#,

@@ -38,6 +38,10 @@ struct CorpusSeriesPoint: Sendable, Equatable {
 ///         `analytics.export.column.wordcloud.occurrences` ("Occurrences"), so
 ///         `analytics.export.column.occurrences` is Corpus Analytics' "Occurrences (index stems)"
 ///         alone: the two count different things, NLTagger lemmas against FTS index stems
+///   1.2 — 2026-10-11: #1616 — the Corpus Analytics series table and the mention-trajectory table
+///         state the numbers their charts plot (`ChartInspectorData.audioGraph`), a share as
+///         `shareValue(_:)`. VoiceOver's Audio Graph read each Plotted cell back, and read `12,4`
+///         as 124 on a device whose region writes decimals with a comma
 enum AnalyticsChartTables {
 
     /// The Corpus Analytics series table: one row per (term, period).
@@ -60,7 +64,10 @@ enum AnalyticsChartTables {
     ///   - totals: The corpus document totals keyed the same way as `denominatorKey`; empty when the
     ///     axis has no denominator.
     ///   - isNormalized: Whether the chart is plotting shares rather than raw counts.
-    /// - Returns: The table backing this chart.
+    ///   - locale: The locale that writes a share's decimal; the user's own unless a test passes one.
+    /// - Returns: The table backing this chart. It states the numbers the chart plots
+    ///   (`ChartInspectorData.audioGraph`, #1616): one series a term, a point for each period the
+    ///   chart draws, and none where a share has no denominator.
     static func corpusSeriesTable(
         id: String,
         title: String,
@@ -68,7 +75,8 @@ enum AnalyticsChartTables {
         seriesByTerm: [(term: String, points: [CorpusSeriesPoint])],
         totals: [Int: Int],
         isNormalized: Bool,
-        unit: AnalyticsValueUnit = .documents
+        unit: AnalyticsValueUnit = .documents,
+        locale: Locale = .autoupdatingCurrent
     ) -> ChartInspectorData {
         let columns = [
             String(localized: "analytics.export.column.term", defaultValue: "Term"),
@@ -82,7 +90,9 @@ enum AnalyticsChartTables {
             String(localized: "analytics.export.column.plotted", defaultValue: "Plotted value"),
         ]
         var rows: [[String]] = []
+        var graphSeries: [ChartAudioGraph.Series] = []
         for series in seriesByTerm {
+            var plottedPoints: [AXChartPoint] = []
             for point in series.points {
                 let total = point.denominatorKey.flatMap { totals[$0] }
                 let share: Double? = {
@@ -93,27 +103,63 @@ enum AnalyticsChartTables {
                     guard isNormalized else { return "\(point.count)" }
                     // Matches `normalizedValue`: no denominator ⇒ the chart plots nothing here.
                     guard let share else { return "" }
-                    return formatShare(share)
+                    return formatShare(share, locale: locale)
                 }()
                 rows.append([
                     series.term,
                     point.periodLabel,
                     "\(point.count)",
                     total.map(String.init) ?? "",
-                    share.map(formatShare) ?? "",
+                    share.map { formatShare($0, locale: locale) } ?? "",
                     plotted,
                 ])
+                // The Plotted cell as a number, and no point where the cell is empty. The x is
+                // the one the cell's reader gave: a year's label is its year, and any other
+                // label (`1960s`, a month, a subseries) is a category.
+                if let value = isNormalized ? share.map(shareValue) : Double(point.count) {
+                    plottedPoints.append(AXChartPoint(
+                        label: point.periodLabel,
+                        x: AXChartDescriptorBuilder.numeric(point.periodLabel),
+                        y: value))
+                }
             }
+            graphSeries.append(.init(name: series.term, points: plottedPoints))
         }
-        return ChartInspectorData(id: id, title: title, columns: columns, rowCells: rows)
+        return ChartInspectorData(
+            id: id, title: title, columns: columns, rowCells: rows,
+            audioGraph: ChartAudioGraph(xLabel: columns[1], yLabel: columns[5], series: graphSeries))
     }
 
     /// A share formatted to one decimal place, matching the chart's axis labels.
     ///
-    /// - Parameter share: A percentage in `0...100`.
+    /// The decimal is written for `locale`: `12.4` where decimals take a point, `12,4` where they
+    /// take a comma. So the cell is for reading and for the CSV, and nothing reads a number back
+    /// out of it: ``shareValue(_:)`` is the number.
+    ///
+    /// - Parameters:
+    ///   - share: A percentage in `0...100`.
+    ///   - locale: The locale that writes the decimal; the user's own unless a test passes one.
     /// - Returns: The formatted value, e.g. `12.4`.
-    static func formatShare(_ share: Double) -> String {
-        share.formatted(.number.precision(.fractionLength(0...1)))
+    static func formatShare(_ share: Double, locale: Locale = .autoupdatingCurrent) -> String {
+        share.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
+    }
+
+    /// A share to the one decimal ``formatShare(_:locale:)`` prints, as a number: what VoiceOver's
+    /// Audio Graph plays for a share (#1616).
+    ///
+    /// The descriptor used to read the Plotted cell back to a number, and its reader takes a comma
+    /// for a thousands separator. Where decimals take a comma the cell for 12.4 is `12,4`, which
+    /// it read as 124, while `12` read as 12: a series ten times too large wherever a share had a
+    /// decimal digit, on any device with such a region and VoiceOver on.
+    ///
+    /// Half to even, which is the formatter's rule (6.25 prints `6.2`), so this is the number the
+    /// cell shows. `AnalyticsAudioGraphTests` holds the two together for every share that a count
+    /// of 0 to n documents in n gives, n up to 400.
+    ///
+    /// - Parameter share: A percentage in `0...100`.
+    /// - Returns: The share rounded to one decimal.
+    static func shareValue(_ share: Double) -> Double {
+        (share * 10).rounded(.toNearestOrEven) / 10
     }
 
     // MARK: - Person Analytics
@@ -156,12 +202,16 @@ enum AnalyticsChartTables {
     ///   - periodColumn: `Year` or `Decade`, matching the by-decade toggle.
     ///   - series: Each compared person with their per-period values.
     ///   - isNormalized: Whether the chart plots shares rather than raw mention counts.
-    /// - Returns: The table backing the trajectory chart.
+    ///   - locale: The locale that writes a share's decimal; the user's own unless a test passes one.
+    /// - Returns: The table backing the trajectory chart. It states the numbers the chart plots
+    ///   (`ChartInspectorData.audioGraph`, #1616): one series a person, under that person's name
+    ///   when one person is charted as when several are.
     static func personTrajectoryTable(
         title: String,
         periodColumn: String,
         series: [(rollupId: Int, name: String, points: [(period: Int, mentions: Int, mentioningDocs: Int?, datedTotal: Int?, plotted: Double)])],
-        isNormalized: Bool
+        isNormalized: Bool,
+        locale: Locale = .autoupdatingCurrent
     ) -> ChartInspectorData {
         let columns = [
             String(localized: "analytics.export.column.person", defaultValue: "Person"),
@@ -173,7 +223,9 @@ enum AnalyticsChartTables {
             String(localized: "analytics.export.column.plotted", defaultValue: "Plotted value"),
         ]
         var cells: [[String]] = []
+        var graphSeries: [ChartAudioGraph.Series] = []
         for person in series {
+            var plottedPoints: [AXChartPoint] = []
             for point in person.points {
                 cells.append([
                     person.name,
@@ -182,11 +234,20 @@ enum AnalyticsChartTables {
                     "\(point.mentions)",
                     point.mentioningDocs.map(String.init) ?? "",
                     point.datedTotal.map(String.init) ?? "",
-                    isNormalized ? formatShare(point.plotted * 100) : "\(Int(point.plotted))",
+                    isNormalized ? formatShare(point.plotted * 100, locale: locale) : "\(Int(point.plotted))",
                 ])
+                // The Plotted cell as a number: a share in percent, or a count of mentions.
+                plottedPoints.append(AXChartPoint(
+                    label: "\(point.period)",
+                    x: Double(point.period),
+                    y: isNormalized ? shareValue(point.plotted * 100) : Double(Int(point.plotted))))
             }
+            graphSeries.append(.init(name: person.name, points: plottedPoints))
         }
-        return ChartInspectorData(id: "person.trajectory", title: title, columns: columns, rowCells: cells)
+        return ChartInspectorData(
+            id: "person.trajectory", title: title, columns: columns, rowCells: cells,
+            audioGraph: ChartAudioGraph(xLabel: columns[2], yLabel: columns[6], series: graphSeries,
+                                        namesEverySeries: true))
     }
 
     /// The two-person relationship table: documents co-mentioning both people, per period.
