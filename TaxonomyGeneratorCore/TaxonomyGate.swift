@@ -14,9 +14,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1600: initial implementation
+///   1.1 — #1622: `explanation(for:)`, since a list is now read from the page or from the file
+///         the page is drawn from, and each is told what its own parser reads
 public enum TaxonomyRefusal: Error, Equatable, Sendable, CustomStringConvertible {
 
-    /// The page gave no tag at all.
+    /// The source gave no tag at all.
     case noEntries
 
     /// `count` tags sit under a category the app does not have. `slug` and `category` are the
@@ -27,22 +29,37 @@ public enum TaxonomyRefusal: Error, Equatable, Sendable, CustomStringConvertible
     /// the new list. `lost` holds them, sorted.
     case slugsLost(lost: [String], existing: Int)
 
-    /// What the run prints after "Refusing to write": what was found, and for a list that has
-    /// lost slugs, what to do if the loss is real.
-    public var description: String {
+    /// The refusal of a list read from the page, as ``explanation(for:)`` words it.
+    public var description: String { explanation(for: .page) }
+
+    /// What the run prints for a list read from `source`: what was found, what that source's
+    /// parser reads, and for a list that has lost slugs, what to do if the loss is real.
+    ///
+    /// - Parameter source: Where the refused list was read from.
+    /// - Returns: The sentence, which opens mid-line after the source is named or after
+    ///   "Refusing to write".
+    public func explanation(for source: TaxonomySource) -> String {
         switch self {
         case .noEntries:
-            return "the page gave no tags. Its markup has probably changed: TaxonomyParser reads "
-                + "<ul class=\"hsg-tag-list\"> lists of href=\"/tags/…\" links."
+            switch source {
+            case .page:
+                return "the page gave no tags. Its markup has probably changed: TaxonomyParser reads "
+                    + "<ul class=\"hsg-tag-list\"> lists of href=\"/tags/…\" links."
+            case .repository:
+                return "the repository's file gave no tags. Its structure has probably changed: "
+                    + "TaxonomyXMLParser reads <category> and <tag> elements, each with an <id> "
+                    + "and a <label>."
+            }
         case .unknownCategory(let slug, let category, let count):
             let named = category.isEmpty ? "no category" : "the category \"\(category)\""
+            let roots = source == .page ? "The page's" : "The file's"
             return "\(count) tag(s) were read under a category the app does not have "
-                + "(the first is \"\(slug)\", under \(named)). The page's three roots, "
+                + "(the first is \"\(slug)\", under \(named)). \(roots) three roots, "
                 + "people, places and topics, were not read as the parser expects."
         case .slugsLost(let lost, let existing):
             let shown = lost.prefix(8).joined(separator: ", ") + (lost.count > 8 ? ", …" : "")
             return "\(lost.count) of the \(existing) tags in the file this would replace are missing "
-                + "from the page (\(shown)), which is more than one in ten. If the taxonomy has "
+                + "from \(source.name) (\(shown)), which is more than one in ten. If the taxonomy has "
                 + "really changed that much, delete the file and run again."
         }
     }
@@ -59,10 +76,12 @@ public enum TaxonomyRefusal: Error, Equatable, Sendable, CustomStringConvertible
 /// in the hierarchy (`TagTaxonomyFileEntry`).
 ///
 /// ## The three rules
+/// They are asked of a list from either source (`TaxonomySource`, #1622).
 /// 1. **No tags**: refused.
 /// 2. **A tag outside people, places and topics**: refused. The parser sets a tag's category from
 ///    the root it sits under, so a page whose roots are renamed or restructured yields tags with
-///    an empty category, in any number.
+///    an empty category, in any number, and a file whose roots are renamed yields tags under the
+///    new names.
 /// 3. **More than one in ten of the replaced file's slugs gone**: refused. Volumes carry tags by
 ///    slug (`manifest.json`), so a list that keeps its size and loses its slugs breaks the join
 ///    as surely as an empty one. Measured against the file at the output path; with no file
@@ -73,7 +92,7 @@ public enum TaxonomyRefusal: Error, Equatable, Sendable, CustomStringConvertible
 ///   1.0 — #1600: initial implementation
 public enum TaxonomyGate {
 
-    /// The taxonomy's three categories: the page's roots, and what the app groups tags by.
+    /// The taxonomy's three categories: each source's roots, and what the app groups tags by.
     public static let categories: Set<String> = ["people", "places", "topics"]
 
     /// Why `entries` must not be written over `existing`, or `nil` when they may be. Pure.

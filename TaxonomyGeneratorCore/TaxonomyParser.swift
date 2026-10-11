@@ -52,13 +52,16 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 02: initial implementation (h2/h3 approach)
 ///   1.1 — Session 02: rewritten for actual nested ul.hsg-tag-list structure
+///   1.2 — #1622: `structuralSlugs` is shared with `TaxonomyXMLParser`, which reads the file this
+///         page is drawn from
 public struct TaxonomyParser {
 
     private init() {}
 
     // Slugs used only for structural grouping in Places — not real content tags.
     // Entries whose parent is one of these are treated as subcategory roots, not leaves.
-    private static let structuralSlugs = Set([
+    // `TaxonomyXMLParser` reads the same set, so the two sources place an entry alike (#1622).
+    static let structuralSlugs = Set([
         "sovereign-territories",
         "dependencies-and-areas-of-special-sovereignty",
     ])

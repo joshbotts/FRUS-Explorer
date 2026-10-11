@@ -37168,3 +37168,67 @@ The owner asked for a review of the plan of record and for what, apart from #157
 - `Docs/EditableContent/08-Reading-Research-Collections.md`: the opening sentence's two blocks are re-keyed and a third added, each with a note on what its placeholders hold, and all three point at `SimilarityModel.swift`. Five ranged blocks are re-pointed for the lines the change moved (`SimilarityModel.swift` 2, down 7; `RelatedDocumentsView.swift` 3, down 2), in `05-Analytics.md`, `07-Search-and-Browse.md` and `08`. The README's table counts the new block, and the Amendment Log has the bullet.
 - Neither user manual is edited: both describe the section's lines without quoting a count, and neither says what an Audio Graph plays for a share.
 - No TestFlight line is written here; the plan of record lists #1616 and #1618 among the fixes build 50's notes owe one line.
+
+## Session 2026-10-11 — The taxonomy generator has a second source: the Office of the Historian's own taxonomy file, read before the page, and writing the bundled taxonomy byte for byte (#1622)
+
+The pull request after #1635, on the owner's word, and the third of the five issues filed during the week of the plan of record's §0c. Tooling alone: no file the app compiles is changed, and no bundled resource. No index version, no CloudKit deploy, no re-index, no shared kit file.
+
+**Why.** `TaxonomyGenerator` had one source, the page `history.state.gov/tags/all`, and a parse that turns on the page's markup. The site is being rebuilt. Since #1600 a page with other markup stops the run where it used to empty the bundled file, and then the tool cannot regenerate `volume-tag-taxonomy.json` at all.
+
+**The file** (`taxonomy/taxonomy.xml` of the public HistoryAtState/tags repository, read 2026-10-11 at commit `0e701226`: blob `6fd68631`, 101,303 bytes, last changed upstream on 2025-01-24. The repository's licence puts it in the public domain in the United States and under CC0 elsewhere, and its README calls it the source data of the site's taxonomy.)
+- 11 `<category>` and 500 `<tag>` elements, each with an `<id>` and a `<label>`: three roots, eight categories and eight tags below them, 292 tags at the third level and 200 at the fourth. The 508 ids below the roots are the bundled taxonomy's slugs, none more and none fewer.
+- One comment, which holds a whole tag: `lgbtq-rights`. A count of `<id>` in the text gives 512.
+- 28 definitions, two of them on roots, and ten usage hints, which are the Office's notes to its own taggers.
+- Six `<ptr target="…"/>` pointers: three in the definitions of two entries (`detainees`, `military-intervention-presence-and-withdrawal`) and three in usage hints. One `<a href>`, in the definition of the root `places`.
+- No ampersand and no CDATA section.
+
+**What it took to write the same bytes**, each found by comparing a prototype's entries with the bundled file's, field by field, until all 508 were equal:
+- *Where an entry sits* is the page parser's rule stated on depth: under a root an entry is its own subcategory and has no parent; under `sovereign-territories` or `dependencies-and-areas-of-special-sovereignty` it is its own subcategory and keeps that parent; anywhere else its subcategory and its parent are the entry it sits in. The two parsers now read one list of those two slugs (`TaxonomyParser.structuralSlugs`).
+- *A definition is kept as the file writes it*, line breaks and indentation included, with only its ends trimmed. Nineteen of the 26 bundled descriptions hold a line break followed by sixteen to twenty-four spaces: the page prints the file's text unchanged, and the page's parse trims no more than the ends.
+- *A pointer in a definition is the page's link markup.* The bundled description of `detainees` ends `<a href="/tags/asylum">Asylum</a> or <a href="/tags/refugees">Refugees</a>`, and `military-intervention-presence-and-withdrawal`'s ends with a link to Warfare. The file's `<ptr target="asylum"/>` is written as that link, under the target's label.
+
+**What was built** (`TaxonomySource.swift` and `TaxonomyXMLParser.swift`, new; `TaxonomyGeneratorRunner.swift`, `TaxonomyGate.swift`, `TaxonomyFetcher.swift`, `TaxonomyParser.swift`, `TaxonomyModels.swift`, `main.swift`)
+- `TaxonomySource`: the repository's file and the page, with each one's address and the order a run reads them in. The file is fetched from the head of the repository's default branch (`…/HistoryAtState/tags/HEAD/taxonomy/taxonomy.xml`), so a renamed branch does not move it.
+- `TaxonomyXMLParser`: Foundation's `XMLParser` over the file. An id, a label or a definition counts only as the child of a category or a tag. A comment's content and a usage hint are not read. Four things it will not guess at are errors: text that is not XML, an entry with no id, an entry with no label, and two entries with one id.
+- `TaxonomyGeneratorRunner.generate(from:outputPath:read:)`: reads the sources in order and writes the first that `TaxonomyGate` accepts. A source that cannot be read, cannot be parsed or is refused is passed over with its reason; a write that fails is thrown as it is. `generate(fromTaxonomyXML:outputPath:)` is the file's half, beside `generate(fromHTML:outputPath:)`, and the gate and the write are one function under both.
+- `TaxonomyRefusal.explanation(for:)`: the three refusals worded for the source the list came from. `description` is the page's wording, as before.
+- `TAXONOMY_SOURCE=repository` or `page` reads that one source and no other. Any other value stops the run before it reads anything.
+
+**The file first, and why.** The issue allowed the file in place of the page or the file when the page gives no tags. This reads the file first and keeps the page as the second source, because the file is the data and the page a drawing of it, because `manifest.json`, whose volumes carry these tags by slug, is read from the Office's repositories too, and because the test below holds the bundled file to what the file writes. The cost is that a run no longer reads what the public site shows unless it is told to, and the repository's head can be ahead of the site. The other order is one constant, `TaxonomySource.automaticOrder`.
+
+**Measured with the tool itself** (2026-10-11, `swift run -c release TaxonomyGenerator`, each over a copy of the bundled file with `OUTPUT_PATH`)
+- `TAXONOMY_SOURCE=repository`: 508 tags (people 121, places 274, topics 113), none dropped or added, the copy byte-identical afterwards.
+- `TAXONOMY_SOURCE=page`: the same, from the live page.
+- No source named: the file was read, with the same result.
+- `TAXONOMY_SOURCE=repository` over no file at all: the bundled file byte for byte.
+- `TAXONOMY_SOURCE=xml`: exit 1, the copy untouched, and a line naming the two values.
+
+**Tests** (`TaxonomyXMLParserTests.swift`, new: four suites, 25 tests; `TaxonomyGeneratorTests/Fixtures/taxonomy.xml`, new)
+- `TaxonomyXMLParserTests`: one small file with a case for each thing the parser decides, and a file for each of the four errors.
+- `TaxonomySourceParityTests`: the same taxonomy as a file and as a page in the site's markup gives the same entries in the same order and the same bytes, through the two real parsers.
+- `TaxonomyRepositoryFileTests`: the committed copy of the Office's file writes the bundled taxonomy byte for byte, over nothing and over itself; and its entries are the ids a second reading finds in its text outside comments, less the three roots. **The copy and the bundled file are committed together from here on**: a run that changes the bundled file fails this until the copy is replaced with the file the run read.
+- `TaxonomySourceOrderTests`: the file is read first and the page is not asked for when the file is written; an unreachable file, a file that is not XML and a file the gate refuses are each passed over with their own reason; with neither source the output file keeps its bytes; and a run told one source asks for no other.
+- **Seventeen mutations, one at a time, each caught by the test written for it**: a root taken for a parent, the structural rule dropped, a definition's whitespace collapsed, a pointer written as its label alone, an unknown pointer left blank, a definition untrimmed, a link written as its text, an id read anywhere, each of the three checks removed, the page read first, an unreadable source made fatal, an XML error made fatal, the page's wording used for the file, an unknown `TAXONOMY_SOURCE` read as either, and a run that reads on after it has written.
+
+**Found on the way**
+- **The bundled descriptions are not clean text**, as above: hard line breaks with their indentation in nineteen, and anchor markup in two. **No screen shows a tag's description**: `VolumeLevelTagStore` copies it into `VolumeLevelTag.description`, and no view reads that property. So nothing a reader sees is wrong, and the byte-for-byte match keeps the text as it is. If a screen is ever to show one, the generator is where it would be cleaned.
+- **`lgbtq-rights`.** Four volumes of `manifest.json` carry it: `frus1952-54v01p2`, `frus1958-60v03mSupp`, `frus1977-80v28` and `frus1981-88v41`. Neither source gives it a name, since the file holds it inside a comment and the page is drawn from the file. `VolumeLevelTagStore.resolve(slugs:)` skips a slug the taxonomy does not name (read, not seen in the app). Whether the tag joins the bundled taxonomy is the owner's decision, as the issue said.
+
+**Checked**
+- `swift test`, owed because the diff is package input: exit 0, 38 `Test run with` lines, 2,599 tests, of which 25 are new, and no failed line. `swift test --filter TaxonomyGeneratorTests`: 42 tests in 6 suites.
+- A clean `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0): `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues.
+- The iOS unit target on iPhone 17 (iOS 27.0): "Test run with 6961 tests in 817 suites passed after 413.741 seconds with 6 known issues", exit 0, no failed line. The same counts as #1635's run: this pull request adds no app test. It was run because two of its suites read what this pull request changes, the license-header scan and the scan of each generator's inputs. This entry was written after it.
+- `FRUSExplorerMac` (the DirectDistribution configuration, unsigned), a clean build: `** BUILD SUCCEEDED **`, with the same two residues.
+- The package build printed no warning for the generator's files or for the fixture's folder, which the test target excludes.
+
+**Not done**
+- **`lgbtq-rights` is not added**, and the descriptions are not cleaned: either would end the byte-for-byte match, and the first is the owner's.
+- **A run does not compare its two sources.** It reads the second only when the first gives nothing, so a page and a file that disagree are not noticed by a run. The committed copy's test notices when the bundled file stops matching the file.
+- **The page's parser is kept as it was**, and will stop giving tags when the site's markup changes; the run then says so and writes from the file alone.
+- **The fetch has no test**, as before: the tests hand each source its text.
+- **A CDATA section and an ampersand in the file were not tried**: the file has neither. The parser's doc comment says what an ampersand would do.
+- No manual, README, editable-content or TestFlight change: nothing a reader meets has changed.
+
+**Docs**
+- `Planning/Generators-Runbook.md`: the tool's entry, with the two sources, the new variable, the measurements above, and the rule that the copy is committed with the bundled file. `CLAUDE.md`: the index row's inputs. `Package.swift`: the tool's line in the header comment, and the test target excludes `Fixtures`.
+- `Planning/Plan-Of-Record-2026-09-28.md`: §0c's paragraph for this pull request, and *Where the queue stands* brought to the present.
