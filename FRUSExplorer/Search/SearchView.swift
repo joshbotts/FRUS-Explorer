@@ -730,9 +730,14 @@ struct SearchView: View {
                 // #1576 lane 2: Add to Collection from a result row. iOS only for the same
                 // reason: the actions that set the request are the row's, inside `#if os(iOS)`.
                 // Lane 3: the outcome of a selection's add stays on screen, above the results.
-                .bulkResultSheets($bulkRequest, onAdded: { outcome, collection in
+                // Lane 5: Add Tags, whose outcome also goes to the rows, which show the new tag
+                // at once.
+                .bulkResultSheets($bulkRequest, indexingPipeline: appState.indexingPipeline,
+                                  onAdded: { outcome, collection in
                     vm.recordCollectionAdd(
                         outcome, collectionName: CollectionEditorNaming.listName(savedName: collection.name))
+                }, onTagged: { outcome, tagNames in
+                    vm.recordTagAssign(outcome, tagNames: tagNames)
                 })
                 #endif
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
@@ -2329,6 +2334,12 @@ struct SearchView: View {
                         } label: {
                             Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
                         }
+                        // #1576 lane 5: tags onto the result's document, keeping the ones it has.
+                        Button {
+                            bulkRequest = addTagsRequest(for: result)
+                        } label: {
+                            Label(BulkResultCopy.addTags, systemImage: "tag")
+                        }
                         // #1576 lane 3: into selection, with this row picked.
                         Button {
                             vm.beginSelecting(with: result)
@@ -2341,6 +2352,9 @@ struct SearchView: View {
                 // opening its menu (#1576 lane 2).
                 .accessibilityAction(named: Text(BulkResultCopy.addToCollection)) {
                     bulkRequest = addToCollectionRequest(for: result)
+                }
+                .accessibilityAction(named: Text(BulkResultCopy.addTags)) {
+                    bulkRequest = addTagsRequest(for: result)
                 }
                 #endif
             }
@@ -2369,6 +2383,10 @@ struct SearchView: View {
                 bulkRequest = BulkResultRequest(.addToCollection, results: vm.selectedResults,
                                                 fromMeaningSearch: vm.resultsAreSemantic)
             },
+            addTags: {
+                bulkRequest = BulkResultRequest(.addTags, results: vm.selectedResults,
+                                                fromMeaningSearch: vm.resultsAreSemantic)
+            },
             markReviewed: { vm.markSelectionReviewed() })
     }
 
@@ -2382,9 +2400,12 @@ struct SearchView: View {
                     ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
                 outcome: vm.bulkOutcome,
                 undo: {
-                    vm.undoBulkOutcome { ids in
+                    vm.undoBulkOutcome(removingEntries: { ids in
                         try CollectionDocumentDiscovery.removeEntries(withIds: ids, modelContext: modelContext)
-                    }
+                    }, removingTagAssignments: { ids in
+                        try UserTagAdmin.removeAssignmentsAndIndex(
+                            withIds: ids, context: modelContext, pipeline: appState.indexingPipeline)
+                    })
                 })
         }
     }
@@ -2394,6 +2415,12 @@ struct SearchView: View {
     /// search completing behind it could change.
     private func addToCollectionRequest(for result: SearchResult) -> BulkResultRequest? {
         BulkResultRequest(.addToCollection, results: [result], fromMeaningSearch: vm.resultsAreSemantic)
+    }
+
+    /// The request to add tags to one result row's document (#1576 lane 5), frozen as the
+    /// collection's is.
+    private func addTagsRequest(for result: SearchResult) -> BulkResultRequest? {
+        BulkResultRequest(.addTags, results: [result], fromMeaningSearch: vm.resultsAreSemantic)
     }
     #endif
 }

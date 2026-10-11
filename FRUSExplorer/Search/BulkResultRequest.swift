@@ -34,12 +34,15 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — #1576 lane 2: initial implementation, Add to Collection
+///   1.1 — #1576 lane 5: Add Tags
 struct BulkResultRequest: Identifiable, Equatable {
 
     /// What the reader chose to do with the documents.
     enum Command: Equatable, Sendable {
         /// Add them to a collection the reader picks.
         case addToCollection
+        /// Give them tags the reader picks, keeping the tags each has (#1576 lane 5).
+        case addTags
     }
 
     /// A new identity per request, so that asking twice for the same documents presents twice.
@@ -88,6 +91,12 @@ enum BulkResultCopy {
     static var addToCollection: String {
         String(localized: "search.result.addToCollection", defaultValue: "Add to Collection…")
     }
+
+    /// The row menu's item that opens the tag picker to add tags, and on iPhone and iPad the
+    /// row's VoiceOver action as well (#1576 lane 5).
+    static var addTags: String {
+        String(localized: "search.result.addTags", defaultValue: "Add Tags…")
+    }
 }
 
 // MARK: - BulkResultSheets
@@ -101,13 +110,18 @@ enum BulkResultCopy {
 /// Version history:
 ///   1.0 — #1576 lane 2: initial implementation
 ///   1.1 — #1576 lane 3: `onAdded`, the outcome of an Add to Collection handed to the host
+///   1.2 — #1576 lane 5: Add Tags, with the index it writes to and `onTagged`
 private struct BulkResultSheets: ViewModifier {
 
     /// The request to present, or `nil`. Cleared when the sheet is dismissed.
     @Binding var request: BulkResultRequest?
+    /// The index whose tag column an Add Tags rewrites, or `nil` when there is none yet.
+    let indexingPipeline: IndexingPipeline?
     /// Told what an Add to Collection did (#1576 lane 3), or `nil` for a host that keeps no
     /// outcome on screen.
     let onAdded: ((CollectionDocumentAppend, Collection) -> Void)?
+    /// Told what an Add Tags did and the names of the tags it gave (#1576 lane 5), or `nil`.
+    let onTagged: ((UserTagAssign, [String]) -> Void)?
 
     func body(content: Content) -> some View {
         content.sheet(item: $request) { request in
@@ -116,6 +130,10 @@ private struct BulkResultSheets: ViewModifier {
                 CollectionPickerSheet(documents: request.documents,
                                       fromMeaningSearch: request.fromMeaningSearch,
                                       onAdded: onAdded)
+            case .addTags:
+                UserTagPickerSheet(adding: request.documents,
+                                   indexingPipeline: indexingPipeline,
+                                   onTagged: onTagged)
             }
         }
     }
@@ -128,11 +146,18 @@ extension View {
     ///
     /// - Parameters:
     ///   - request: The host's request; set it to present, and it is cleared on dismissal.
+    ///   - indexingPipeline: The index an Add Tags writes each document's tags to (#1576 lane 5).
+    ///     It has no default, so a host says which, or that it has none.
     ///   - onAdded: Told the outcome of an Add to Collection and the collection it went to, for a
     ///     host that shows it (#1576 lane 3).
+    ///   - onTagged: Told the outcome of an Add Tags and the names of the tags given, for a host
+    ///     that shows them on its rows (#1576 lane 5).
     /// - Returns: The view, with the sheet attached.
     func bulkResultSheets(_ request: Binding<BulkResultRequest?>,
-                          onAdded: ((CollectionDocumentAppend, Collection) -> Void)? = nil) -> some View {
-        modifier(BulkResultSheets(request: request, onAdded: onAdded))
+                          indexingPipeline: IndexingPipeline?,
+                          onAdded: ((CollectionDocumentAppend, Collection) -> Void)? = nil,
+                          onTagged: ((UserTagAssign, [String]) -> Void)? = nil) -> some View {
+        modifier(BulkResultSheets(request: request, indexingPipeline: indexingPipeline,
+                                  onAdded: onAdded, onTagged: onTagged))
     }
 }

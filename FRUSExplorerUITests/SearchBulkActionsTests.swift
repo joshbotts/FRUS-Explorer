@@ -33,6 +33,11 @@ struct BulkActionsScreen {
     static let titlePrefix = "UI Test Bulk Document"
     /// The seeded collection's name (`UITestProjectSeeder.collectionName`).
     static let collectionName = "UI Test Unattached Collection"
+    /// The tag picker's title in its adding mode, for two documents (#1576 lane 5).
+    static let tagPickerTitle = "Tag 2 Documents"
+    /// The tag the tagging test makes. The UI-test store is in memory, so no earlier run's tag
+    /// of this name is there.
+    static let tagName = "UI Test Tag"
 
     /// How long a wait waits. Long, because a wait that is met returns at once and this Mac is not
     /// always quiet: on 2026-10-10, with other sessions' builds holding the load average over
@@ -149,7 +154,7 @@ struct BulkActionsScreen {
     /// Leaves selection and closes any sheet, so the next launch restores a plain list.
     func leave() {
         guard app.state == .runningForeground else { return }
-        for title in ["Add 2 Documents to Collection", "Add to Collection"] {
+        for title in ["Add 2 Documents to Collection", "Add to Collection", Self.tagPickerTitle] {
             let cancel = app.navigationBars[title].buttons["Cancel"].firstMatch
             if cancel.exists { cancel.tap() }
         }
@@ -182,6 +187,7 @@ struct BulkActionsScreen {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1576 lane 5: a selection is tagged, and Undo takes the tag back
 @MainActor
 final class SearchBulkActionsTests: XCTestCase {
 
@@ -277,6 +283,77 @@ final class SearchBulkActionsTests: XCTestCase {
                       "Undo did not remove the two documents: the collection's row reads \"\(collection.label)\"")
         app.navigationBars["Add 2 Documents to Collection"].buttons["Cancel"].firstMatch.tap()
         waitForThePickerToClose()
+    }
+
+    /// The two picked documents are given a tag made in the picker (#1576 lane 5). A line above
+    /// the results says so; the picker, opened again, says both documents carry the tag; Undo
+    /// takes it back off both, and the picker then says neither does.
+    ///
+    /// The tag is read back from the picker and not from the rows: a result row is one
+    /// accessibility element named by its heading, so its tag chips are not elements a test can
+    /// find. `SearchSelectionModelTests` holds the rows' refresh.
+    func testASelectionIsTaggedAndUndoTakesTheTagBack() throws {
+        screen.enterSelectionFromTheMoreMenu()
+        screen.rows.element(boundBy: 0).tap()
+        screen.rows.element(boundBy: 1).tap()
+        screen.waitForCount("2 selected", "after tapping two rows")
+
+        let picker = try openTheTagPickerForTheSelection()
+        let field = app.textFields["New tag name"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: BulkActionsScreen.patience), "The tag picker has no New Tag field")
+        field.tap()
+        // Return creates the tag, which the picker lists switched on.
+        field.typeText(BulkActionsScreen.tagName + "\n")
+        XCTAssertTrue(tagSwitch.waitForExistence(timeout: BulkActionsScreen.patience), "The tag made in the picker is not listed")
+        picker.buttons["Done"].firstMatch.tap()
+        waitForTheTagPickerToClose()
+        screen.waitFor("search.selection.outcome", toHold: "Added “\(BulkActionsScreen.tagName)” to 2 documents.",
+                       "after tagging the two picked rows")
+        screen.waitForCount("2 selected", "after the tagging: the picks stay")
+
+        // Read back from the picker: both documents carry the tag, and it starts switched off.
+        var reopened = try openTheTagPickerForTheSelection()
+        XCTAssertTrue(tagSwitch.waitForExistence(timeout: BulkActionsScreen.patience), "The tag is not listed when the picker is opened again")
+        XCTAssertTrue(tagSwitch.label.contains("All 2 have it"),
+                      "The tagging did not reach the store: the tag's row reads \"\(tagSwitch.label)\"")
+        XCTAssertEqual(tagSwitch.value as? String, "0", "In the adding mode every tag starts switched off")
+        reopened.buttons["Cancel"].firstMatch.tap()
+        waitForTheTagPickerToClose()
+
+        let undo = screen.element("search.selection.undo")
+        XCTAssertTrue(undo.waitForExistence(timeout: BulkActionsScreen.patience), "The outcome offers no Undo")
+        undo.tap()
+        screen.waitFor("search.selection.outcome", toHold: "Removed “\(BulkActionsScreen.tagName)” from 2 documents.",
+                       "after Undo")
+        XCTAssertFalse(screen.element("search.selection.undo").exists, "Undo is still offered after it was used")
+
+        // And again from the picker: neither document carries it now.
+        reopened = try openTheTagPickerForTheSelection()
+        XCTAssertTrue(tagSwitch.waitForExistence(timeout: BulkActionsScreen.patience), "The tag itself should outlive the Undo")
+        XCTAssertFalse(tagSwitch.label.contains("have it"),
+                       "Undo did not take the tag off the documents: the tag's row reads \"\(tagSwitch.label)\"")
+        reopened.buttons["Cancel"].firstMatch.tap()
+        waitForTheTagPickerToClose()
+    }
+
+    /// The picker's row for the tag this suite makes: a switch whose label starts with its name.
+    private var tagSwitch: XCUIElement {
+        app.switches.matching(NSPredicate(format: "label BEGINSWITH %@", BulkActionsScreen.tagName)).firstMatch
+    }
+
+    /// Chooses Add Tags… for the two picked rows and returns the tag picker's navigation bar.
+    private func openTheTagPickerForTheSelection() throws -> XCUIElement {
+        screen.chooseAction("Add Tags…")
+        let picker = app.navigationBars[BulkActionsScreen.tagPickerTitle]
+        XCTAssertTrue(picker.waitForExistence(timeout: BulkActionsScreen.patience),
+                      "Add Tags… did not present the tag picker titled for the two documents")
+        return picker
+    }
+
+    private func waitForTheTagPickerToClose() {
+        let bar = app.navigationBars[BulkActionsScreen.tagPickerTitle]
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: bar)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: BulkActionsScreen.patience), .completed, "The tag picker did not close")
     }
 
     /// The same two documents twice: the second add finds them there and says so, with nothing

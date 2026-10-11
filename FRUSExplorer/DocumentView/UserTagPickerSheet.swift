@@ -51,9 +51,26 @@ import SwiftData
 ///          (mid-dismissal SwiftData trap).
 ///   1.3 — #1275: "Your Tags" follows the reader's own order over the alphabetical baseline; tags
 ///          created in this session still pin to the top.
+///   1.4 — #1576 lane 5: an adding mode, for the documents of a search result or a selection.
+///          Its Done adds the tags switched on and takes none off: the writer that replaces a
+///          document's tag set takes the one document as its argument, and the adding mode has
+///          none to give it.
 struct UserTagPickerSheet: View {
-    let entry: DocumentBrowserEntry
+
+    /// What the sheet writes on Done.
+    private enum Mode {
+        /// One document. The toggles show its tags, and Done replaces its tag set with them.
+        case document(DocumentBrowserEntry)
+        /// The documents of a command chosen on search results (#1576 lane 5). Every toggle
+        /// starts off, and Done adds the tags switched on to each document, keeping the tags it
+        /// has. The list is frozen by the request that carries it.
+        case adding([CollectionDocumentRef])
+    }
+
+    private let mode: Mode
     let indexingPipeline: IndexingPipeline?
+    /// Told what an adding-mode Done did, and the names of the tags it gave.
+    private let onTagged: ((UserTagAssign, [String]) -> Void)?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
@@ -71,16 +88,75 @@ struct UserTagPickerSheet: View {
     /// Drives VoiceOver focus onto a tag row the moment it is created, confirming the
     /// creation to a VoiceOver user even though the field they were typing in is elsewhere.
     @AccessibilityFocusState private var focusedTagID: UUID?
+    /// Adding mode: how many of the documents carry each tag already, read once as the sheet
+    /// opens. Empty in document mode, and when the assignments could not be read.
+    @State private var carriedCounts: [UUID: Int] = [:]
+    /// Adding mode: why Done added nothing, shown as an alert; `nil` otherwise.
+    @State private var addFailure: String?
+    /// Whether Done or Cancel has already closed the sheet. One of the two, once, to a
+    /// presentation: the sheet stays up for a moment after it is dismissed, and a second Return or
+    /// Esc in that moment would run the other. Cancel after a Done deletes the tags made in the
+    /// sheet, which documents have just been given; a second Done in the adding mode adds nothing
+    /// and replaces the line that offered to undo the first.
+    @State private var isClosed = false
 
     init(entry: DocumentBrowserEntry,
          indexingPipeline: IndexingPipeline?,
          initialTagIds: Set<UUID>) {
-        self.entry = entry
+        self.mode = .document(entry)
         self.indexingPipeline = indexingPipeline
+        self.onTagged = nil
         _selectedTagIds = State(initialValue: initialTagIds)
     }
 
+    /// The picker in its adding mode (#1576 lane 5).
+    ///
+    /// - Parameters:
+    ///   - documents: The documents to tag, frozen when the command was chosen.
+    ///   - indexingPipeline: The index whose tag column is rewritten for the documents that gain
+    ///     a tag, or `nil` when there is none.
+    ///   - onTagged: Told what Done did and the names of the tags it gave.
+    init(adding documents: [CollectionDocumentRef],
+         indexingPipeline: IndexingPipeline?,
+         onTagged: ((UserTagAssign, [String]) -> Void)?) {
+        self.mode = .adding(documents)
+        self.indexingPipeline = indexingPipeline
+        self.onTagged = onTagged
+        _selectedTagIds = State(initialValue: [])
+    }
+
+    /// The documents of the adding mode, or `nil` in document mode.
+    private var addingDocuments: [CollectionDocumentRef]? {
+        if case .adding(let documents) = mode { return documents }
+        return nil
+    }
+
     var body: some View {
+        platformBody
+            .onAppear {
+                guard let documents = addingDocuments, carriedCounts.isEmpty else { return }
+                // A failed fetch leaves the counts out. Done makes the same read, and its alert
+                // says the tags could not be read or saved.
+                let assignments = (try? modelContext.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
+                carriedCounts = UserTagPickerCopy.carriedCounts(
+                    of: documents,
+                    in: assignments.map { (volumeId: $0.volumeId, documentId: $0.documentId, tagId: $0.tagId) })
+            }
+            // The adding mode's write can be refused, and its fetch or save can fail. One alert
+            // on the body, as the collection picker has for its own.
+            .alert(UserTagPickerCopy.addFailedTitle,
+                   isPresented: Binding(get: { addFailure != nil },
+                                        set: { if !$0 { addFailure = nil } })) {
+                Button(String(localized: "tags.picker.addFailed.ok", defaultValue: "OK")) {
+                    addFailure = nil
+                }
+            } message: {
+                Text(addFailure ?? "")
+            }
+    }
+
+    @ViewBuilder
+    private var platformBody: some View {
         #if os(macOS)
         macBody
         #else
@@ -135,8 +211,7 @@ struct UserTagPickerSheet: View {
                         .font(.callout)
                 }
             } else {
-                Section(String(localized: "tags.picker.section.yourTags",
-                               defaultValue: "Your Tags")) {
+                yourTagsSection {
                     ForEach(displayTags) { tag in
                         Toggle(isOn: Binding(
                             get: { selectedTagIds.contains(tag.id) },
@@ -159,6 +234,16 @@ struct UserTagPickerSheet: View {
                                         .padding(.vertical, 1)
                                         .background(.quaternary, in: Capsule())
                                 }
+                                // Adding mode: how many of the documents carry this tag already,
+                                // so the reader sees what switching it on would change.
+                                if let documents = addingDocuments,
+                                   let carried = UserTagPickerCopy.carried(carriedCounts[tag.id] ?? 0,
+                                                                           of: documents.count) {
+                                    Spacer(minLength: 8)
+                                    Text(carried)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
                         .accessibilityFocused($focusedTagID, equals: tag.id)
@@ -168,17 +253,42 @@ struct UserTagPickerSheet: View {
         }
     }
 
+    /// The "Your Tags" section around its rows. The document mode's is the titled section it has always
+    /// been; the adding mode's has under it the line that tags are only added, wrapped on the Mac (#1475).
+    @ViewBuilder
+    private func yourTagsSection<Rows: View>(@ViewBuilder rows: () -> Rows) -> some View {
+        let title = String(localized: "tags.picker.section.yourTags", defaultValue: "Your Tags")
+        if addingDocuments != nil {
+            WrappingFooterSection {
+                rows()
+            } header: {
+                Text(title)
+            } footer: {
+                Text(UserTagPickerCopy.addingFooter)
+            }
+        } else {
+            Section(title) {
+                rows()
+            }
+        }
+    }
+
     /// The document-scoped sheet title: "Tags — Doc N" when the printed document number is
     /// known, falling back to the document's xml:id (editorial notes and unnumbered
     /// front-matter entries have no number) so the sheet always identifies WHICH document is
     /// being tagged — parity with the original iOS picker.
     private var navTitle: String {
-        if let docNum = entry.documentNumber {
-            return String(localized: "tags.picker.nav.titleDoc",
-                          defaultValue: "Tags — Doc \(docNum)")
+        switch mode {
+        case .adding(let documents):
+            return UserTagPickerCopy.addingTitle(count: documents.count)
+        case .document(let entry):
+            if let docNum = entry.documentNumber {
+                return String(localized: "tags.picker.nav.titleDoc",
+                              defaultValue: "Tags — Doc \(docNum)")
+            }
+            return String(localized: "tags.picker.nav.titleId",
+                          defaultValue: "Tags — \(entry.documentId)")
         }
-        return String(localized: "tags.picker.nav.titleId",
-                      defaultValue: "Tags — \(entry.documentId)")
     }
 
     // MARK: - macOS Body
@@ -188,14 +298,20 @@ struct UserTagPickerSheet: View {
         VStack(spacing: 0) {
             // Title bar
             HStack {
-                Text(String(localized: "tags.picker.nav.title",
-                            defaultValue: "Tags"))
-                    .font(.headline)
-                if let docNum = entry.documentNumber {
-                    Text(String(localized: "tags.picker.nav.docSuffix",
-                                defaultValue: "— Doc \(docNum)"))
+                switch mode {
+                case .adding(let documents):
+                    Text(UserTagPickerCopy.addingTitle(count: documents.count))
                         .font(.headline)
-                        .foregroundStyle(.secondary)
+                case .document(let entry):
+                    Text(String(localized: "tags.picker.nav.title",
+                                defaultValue: "Tags"))
+                        .font(.headline)
+                    if let docNum = entry.documentNumber {
+                        Text(String(localized: "tags.picker.nav.docSuffix",
+                                    defaultValue: "— Doc \(docNum)"))
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
             }
@@ -286,6 +402,8 @@ struct UserTagPickerSheet: View {
     }
 
     private func cancelAndDismiss() {
+        guard !isClosed else { return }
+        isClosed = true
         // Snapshot-and-clear BEFORE deleting: `displayTags`/`newTagIDs` render directly from
         // `newlyCreatedTags`, and deleting a model the body still references re-renders the
         // sheet mid-dismissal against context-deleted instances (SwiftData traps on property
@@ -297,13 +415,60 @@ struct UserTagPickerSheet: View {
         dismiss()
     }
 
+    /// Done. Each mode has a writer of its own, and the one that replaces a tag set is given the
+    /// one document it replaces them for: the adding mode has no such document to hand it.
     private func saveAndDismiss() {
-        // SwiftData write and dismissal happen immediately on the main thread.
-        // The FTS5 virtual table update (delete + full re-insert) can take 100–500 ms
-        // on iPhone storage; running it in the background eliminates visible lag.
-        // For unindexed documents the FTS5 path is skipped entirely.
-        syncAssignmentsToSwiftData()
+        guard !isClosed else { return }
+        switch mode {
+        case .document(let entry):
+            replaceTags(of: entry)
+        case .adding(let documents):
+            // A write that was refused or failed has said why, and the sheet stays up.
+            guard addTags(to: documents) else { return }
+        }
+        isClosed = true
         dismiss()
+    }
+
+    /// The adding mode's Done (#1576 lane 5): gives each document the tags switched on, keeping
+    /// the tags it has, and tells the host.
+    ///
+    /// - Returns: Whether the sheet may close. `false` when the write was refused or failed: the
+    ///   alert says why, and the sheet stays up.
+    private func addTags(to documents: [CollectionDocumentRef]) -> Bool {
+        // In the order the list shows them, which is the order the outcome names them in.
+        let chosen = displayTags.filter { selectedTagIds.contains($0.id) }
+        guard !chosen.isEmpty else {
+            keepNewTags()
+            return true
+        }
+        do {
+            let outcome = try UserTagAdmin.assignAndIndex(
+                tagIds: chosen.map(\.id), to: documents, context: modelContext, pipeline: indexingPipeline)
+            keepNewTags()
+            onTagged?(outcome, chosen.map(\.name))
+            return true
+        } catch {
+            addFailure = UserTagPickerCopy.addFailure(error)
+            return false
+        }
+    }
+
+    /// Saves a tag made in this sheet that Done did not give to any document: one made and then
+    /// switched off. The bulk writer saves only when it inserts an assignment, and the document
+    /// mode's Done always saves, so without this the two modes would differ in whether such a
+    /// tag is on disk when the sheet closes.
+    private func keepNewTags() {
+        guard !newlyCreatedTags.isEmpty, modelContext.hasChanges else { return }
+        try? modelContext.save()
+    }
+
+    /// The document mode's Done: replaces the document's tag set with the toggles', in the store
+    /// and then in the index.
+    private func replaceTags(of entry: DocumentBrowserEntry) {
+        // The SwiftData write happens at once on the main thread, and the caller dismisses.
+        // The index write runs in the background. For unindexed documents it is skipped.
+        syncAssignmentsToSwiftData(for: entry)
         guard let pipeline = indexingPipeline else { return }
         let tagString = selectedTagIds.isEmpty
             ? nil
@@ -319,12 +484,15 @@ struct UserTagPickerSheet: View {
         }
     }
 
-    /// Replaces all `DocumentTagAssignment` records for the current document with the
+    /// Replaces all `DocumentTagAssignment` records for one document with the
     /// current `selectedTagIds` selection, then saves the context.
     ///
     /// This keeps `DocumentTagAssignment` (SwiftData/CloudKit) in sync with
     /// `document_cache.user_tag_ids` (SQLite/FTS5) written by the pipeline.
-    private func syncAssignmentsToSwiftData() {
+    ///
+    /// - Parameter entry: The document whose tag set is replaced. A parameter and not a property:
+    ///   the adding mode has many documents and must never reach this.
+    private func syncAssignmentsToSwiftData(for entry: DocumentBrowserEntry) {
         let vId = entry.volumeId
         let dId = entry.documentId
 
@@ -346,5 +514,107 @@ struct UserTagPickerSheet: View {
         }
 
         try? modelContext.save()
+    }
+}
+
+// MARK: - UserTagPickerCopy
+
+/// The words and the one count of the tag picker's adding mode, apart from the view so that a
+/// test can read them off the main actor (#1576 lane 5).
+///
+/// Version history:
+///   1.0 — #1576 lane 5: initial implementation
+enum UserTagPickerCopy {
+
+    /// The adding mode's title: "Tag 37 Documents", and "Tag 1 Document" for one.
+    ///
+    /// - Parameters:
+    ///   - count: The documents the command carries.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    static func addingTitle(count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(
+            count,
+            one: String(localized: "tags.picker.adding.title.one %@", defaultValue: "Tag %@ Document"),
+            many: String(localized: "tags.picker.adding.title.many %@", defaultValue: "Tag %@ Documents"),
+            locale: locale)
+    }
+
+    /// The line under the adding mode's tags.
+    static var addingFooter: String {
+        String(localized: "tags.picker.adding.footer",
+               defaultValue: "Tags are added. A document keeps the tags it already has.")
+    }
+
+    /// Beside a tag in the adding mode: how many of the documents carry it already. Nothing when
+    /// none does, so that the common case is a plain list.
+    ///
+    /// - Parameters:
+    ///   - carried: Documents of the command that carry the tag.
+    ///   - total: Documents the command carries.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The words, or `nil` when no document carries the tag.
+    static func carried(_ carried: Int, of total: Int, locale: Locale = .autoupdatingCurrent) -> String? {
+        guard carried > 0, total > 0 else { return nil }
+        if total == 1 {
+            return String(localized: "tags.picker.adding.carried.single", defaultValue: "Already has it")
+        }
+        if carried >= total {
+            return String(format: String(localized: "tags.picker.adding.carried.all %@",
+                                         defaultValue: "All %@ have it"),
+                          total.formatted(.number.locale(locale)))
+        }
+        return CountCopy.phrase(
+            carried,
+            one: String(localized: "tags.picker.adding.carried.one %@ %@", defaultValue: "%1$@ of %2$@ has it"),
+            many: String(localized: "tags.picker.adding.carried.many %@ %@", defaultValue: "%1$@ of %2$@ have it"),
+            then: [total.formatted(.number.locale(locale))], locale: locale)
+    }
+
+    /// How many of `documents` carry each tag, from every assignment in the store. A tag a
+    /// document carries twice (two devices tagged it before they synced) is counted once for it.
+    ///
+    /// - Parameters:
+    ///   - documents: The documents the command carries.
+    ///   - assignments: Every assignment in the store.
+    /// - Returns: For each tag at least one of the documents carries, how many carry it.
+    static func carriedCounts(
+        of documents: [CollectionDocumentRef],
+        in assignments: [(volumeId: String, documentId: String, tagId: UUID)]
+    ) -> [UUID: Int] {
+        let asked = Set(documents)
+        var holders: [UUID: Set<CollectionDocumentRef>] = [:]
+        for assignment in assignments {
+            let document = CollectionDocumentRef(volumeId: assignment.volumeId, documentId: assignment.documentId)
+            guard asked.contains(document) else { continue }
+            holders[assignment.tagId, default: []].insert(document)
+        }
+        return holders.mapValues(\.count)
+    }
+
+    /// The title of the alert a failed adding-mode Done shows.
+    static var addFailedTitle: String {
+        String(localized: "tags.picker.addFailed.title", defaultValue: "Not Tagged")
+    }
+
+    /// What a failed adding-mode Done says.
+    ///
+    /// - Parameters:
+    ///   - error: What `UserTagAdmin.assign` threw.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The alert's message.
+    static func addFailure(_ error: any Error, locale: Locale = .autoupdatingCurrent) -> String {
+        switch error as? UserTagAssignRefusal {
+        case .overLimit(let count, let limit):
+            return String(format: String(
+                localized: "tags.picker.addFailed.overLimit %@ %@",
+                defaultValue: "Up to %2$@ can be tagged at a time, and %1$@ were chosen."),
+                CountCopy.documents(count, locale: locale),
+                CountCopy.documents(limit, locale: locale))
+        case nil:
+            return String(format: String(
+                localized: "tags.picker.addFailed.save %@",
+                defaultValue: "The tags could not be read or saved, so no document was tagged. %@"),
+                error.localizedDescription)
+        }
     }
 }

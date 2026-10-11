@@ -619,9 +619,13 @@ struct MacSearchWindowView: View {
         // #1576 lane 2: Add to Collection from a result row, presented from the request's own
         // frozen list. Lane 4: what an add did while selecting goes to the strip, the selection's
         // or one row's from its own menu.
-        .bulkResultSheets($bulkRequest, onAdded: { outcome, collection in
+        // Lane 5: Add Tags, whose outcome also goes to the rows, which show the new tag at once.
+        .bulkResultSheets($bulkRequest, indexingPipeline: appState.indexingPipeline,
+                          onAdded: { outcome, collection in
             searchVM.recordCollectionAdd(
                 outcome, collectionName: CollectionEditorNaming.listName(savedName: collection.name))
+        }, onTagged: { outcome, tagNames in
+            searchVM.recordTagAssign(outcome, tagNames: tagNames)
         })
         .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
                                         version: searchVM.executedSearchVersion,
@@ -2106,6 +2110,13 @@ struct MacSearchWindowView: View {
                           fromMeaningSearch: searchVM.resultsAreSemantic)
     }
 
+    /// The request to add tags to one result row's document (#1576 lane 5), frozen as the
+    /// collection's is.
+    private func addTagsRequest(for result: SearchResult) -> BulkResultRequest? {
+        BulkResultRequest(.addTags, results: [result],
+                          fromMeaningSearch: searchVM.resultsAreSemantic)
+    }
+
     private var resultsList: some View {
         // Selection (UI audit A7) gives the NSTableView-backed List its native
         // arrow-key traversal once focus is in the list (click a row or Tab to it);
@@ -2198,11 +2209,25 @@ struct MacSearchWindowView: View {
                                   systemImage: "plus.circle")
                         }
                         .disabled(!searchVM.canAddSelectionToCollection)
+                        // #1576 lane 5: and so are its tags.
+                        Button {
+                            bulkRequest = selectionTagRequest
+                        } label: {
+                            Label(ResultSelectionCopy.addTagsToSelected(searchVM.resultSelection.count),
+                                  systemImage: "tag")
+                        }
+                        .disabled(!searchVM.canAddSelectionToCollection)
                     } else {
                         Button {
                             bulkRequest = addToCollectionRequest(for: result)
                         } label: {
                             Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                        }
+                        // #1576 lane 5: tags onto the result's document, keeping the ones it has.
+                        Button {
+                            bulkRequest = addTagsRequest(for: result)
+                        } label: {
+                            Label(BulkResultCopy.addTags, systemImage: "tag")
                         }
                     }
 
@@ -2252,10 +2277,10 @@ struct MacSearchWindowView: View {
         }
     }
 
-    /// Whether a row's Add to Collection is the selection's: the row is checked, and it is not the
-    /// only one (#1576 lane 4). That one item then says how many it is for. Every other item on
-    /// the menu is the row's own, Mark Reviewed among them, and an unchecked row's menu is that
-    /// row's throughout, in selection or out of it.
+    /// Whether a row's Add to Collection and Add Tags are the selection's: the row is checked, and
+    /// it is not the only one (#1576 lane 4, and lane 5 for the tags). Those two items then say
+    /// how many they are for. Every other item on the menu is the row's own, Mark Reviewed among
+    /// them, and an unchecked row's menu is that row's throughout, in selection or out of it.
     private func checkedTogether(with result: SearchResult) -> Bool {
         searchVM.resultSelection.contains(result.id) && searchVM.resultSelection.count > 1
     }
@@ -2264,6 +2289,12 @@ struct MacSearchWindowView: View {
     /// stand in the list now, in its order, and the engine that listed them.
     private var selectionAddRequest: BulkResultRequest? {
         BulkResultRequest(.addToCollection, results: searchVM.selectedResults,
+                          fromMeaningSearch: searchVM.resultsAreSemantic)
+    }
+
+    /// The request to add tags to the selection (#1576 lane 5), made as the collection's is.
+    private var selectionTagRequest: BulkResultRequest? {
+        BulkResultRequest(.addTags, results: searchVM.selectedResults,
                           fromMeaningSearch: searchVM.resultsAreSemantic)
     }
 
@@ -2288,11 +2319,15 @@ struct MacSearchWindowView: View {
                 selectAllShown: { searchVM.selectAllShown() },
                 selectNone: { searchVM.selectNone() },
                 addToCollection: { bulkRequest = selectionAddRequest },
+                addTags: { bulkRequest = selectionTagRequest },
                 markReviewed: { searchVM.markSelectionReviewed() },
                 undo: {
-                    searchVM.undoBulkOutcome { ids in
+                    searchVM.undoBulkOutcome(removingEntries: { ids in
                         try CollectionDocumentDiscovery.removeEntries(withIds: ids, modelContext: modelContext)
-                    }
+                    }, removingTagAssignments: { ids in
+                        try UserTagAdmin.removeAssignmentsAndIndex(
+                            withIds: ids, context: modelContext, pipeline: appState.indexingPipeline)
+                    })
                 })
         }
     }

@@ -709,19 +709,59 @@ final class SearchViewModel {
         selectionSession.recordAdd(outcome, collectionName: collectionName)
     }
 
+    /// Records what an Add Tags did, and shows the documents' tags on their rows at once
+    /// (#1576 lane 5). The rows are refreshed in selection and out of it; the line and its Undo
+    /// are kept in selection only, where there is a place for them.
+    ///
+    /// - Parameters:
+    ///   - outcome: What `UserTagAdmin.assign` answered.
+    ///   - tagNames: The names of the tags given.
+    func recordTagAssign(_ outcome: UserTagAssign, tagNames: [String]) {
+        refreshUserTags(outcome.tagIdsByDocument)
+        selectionSession.recordTagging(outcome, tagNames: tagNames)
+    }
+
+    /// Gives the rows of the named documents the tags the store says they carry now, in memory
+    /// (#1576 lane 5). A row's tags are a snapshot from when its search ran; without this a
+    /// tagged row would show its new tag only after the next search. No other row changes, and
+    /// neither do the picks, the page or the checklist's marks: the rows are the same rows.
+    ///
+    /// - Parameter tagIdsByDocument: Each document's whole tag set, keyed by `SearchResult.id`.
+    func refreshUserTags(_ tagIdsByDocument: [String: Set<UUID>]) {
+        guard results.contains(where: { tagIdsByDocument[$0.id] != nil }) else { return }
+        results = results.map { row in
+            tagIdsByDocument[row.id].map { row.replacingUserTagIds($0) } ?? row
+        }
+    }
+
     /// Takes the last command back and says what that did.
     ///
-    /// The marks are this view model's to restore. Collection entries are the store's, so the
-    /// caller, which holds the model context, removes them and answers how many went.
+    /// The marks are this view model's to restore. Collection entries and tag assignments are
+    /// the store's, so the caller, which holds the model context, removes them.
     ///
-    /// - Parameter removingEntries: Removes the collection entries with these ids and answers
-    ///   how many it removed (`CollectionDocumentDiscovery.removeEntries`).
-    func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int) {
+    /// - Parameters:
+    ///   - removingEntries: Removes the collection entries with these ids and answers how many
+    ///     it removed (`CollectionDocumentDiscovery.removeEntries`).
+    ///   - removingTagAssignments: Removes the tag assignments with these ids and answers which
+    ///     documents lost one and what each still carries
+    ///     (`UserTagAdmin.removeAssignmentsAndIndex`).
+    func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int,
+                         removingTagAssignments: ([UUID]) throws -> UserTagRemoval) {
         // A copy, so that restoring the marks, which writes this view model's own state, is not
         // a second write to the session while the session is being changed.
         var session = selectionSession
-        session.undo(removingEntries: removingEntries, restoringMarks: { undoLastBulkMark() })
+        var removal: UserTagRemoval?
+        session.undo(
+            removingEntries: removingEntries,
+            removingTagAssignments: { ids in
+                let removed = try removingTagAssignments(ids)
+                removal = removed
+                return removed.documents.count
+            },
+            restoringMarks: { undoLastBulkMark() })
         selectionSession = session
+        // The rows lose the tags the Undo took back, as they gained them: in memory, at once.
+        if let removal { refreshUserTags(removal.tagIdsByDocument) }
     }
 
     /// Follows a replaced result list. An emptied list ends selection; otherwise the picks the
