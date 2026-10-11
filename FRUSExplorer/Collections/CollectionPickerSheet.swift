@@ -56,6 +56,7 @@ import SwiftData
 ///          older modes keep their initialiser's shape, so no caller changed. In every mode a
 ///          row now takes a tap anywhere on it (it took one only on its name and caption), the
 ///          list keeps the order it opened in, and a presentation adds once
+///   1.9 — #1576 lane 3: documents mode tells its host what an add did (`onAdded`)
 struct CollectionPickerSheet: View {
 
     /// The document being added (its `volumeId`/`documentId` provenance), in the single-document
@@ -74,6 +75,11 @@ struct CollectionPickerSheet: View {
     /// and that these are the ones listed is this app's model's doing (#1576, decision 6).
     let fromMeaningSearch: Bool
 
+    /// Told what a documents-mode add did, and to which collection, before the sheet closes
+    /// (#1576 lane 3): the host keeps the outcome on screen and offers its Undo. `nil` where the
+    /// row's checkmark is the whole of the feedback.
+    let onAdded: ((CollectionDocumentAppend, Collection) -> Void)?
+
     /// The picker for one document, or for an excerpt of it.
     ///
     /// - Parameters:
@@ -84,6 +90,7 @@ struct CollectionPickerSheet: View {
         self.excerpt = excerpt
         self.documents = nil
         self.fromMeaningSearch = false
+        self.onAdded = nil
     }
 
     /// The picker in documents mode (#1576 lane 2): the chosen collection takes every document it
@@ -92,11 +99,14 @@ struct CollectionPickerSheet: View {
     /// - Parameters:
     ///   - documents: The documents to add, already frozen by the caller.
     ///   - fromMeaningSearch: Whether a Meaning search listed them.
-    init(documents: [CollectionDocumentRef], fromMeaningSearch: Bool = false) {
+    ///   - onAdded: Told the outcome and the collection after an add that was saved.
+    init(documents: [CollectionDocumentRef], fromMeaningSearch: Bool = false,
+         onAdded: ((CollectionDocumentAppend, Collection) -> Void)? = nil) {
         self.entry = nil
         self.excerpt = nil
         self.documents = documents
         self.fromMeaningSearch = fromMeaningSearch
+        self.onAdded = onAdded
     }
 
     @Environment(\.modelContext) private var modelContext
@@ -458,6 +468,7 @@ struct CollectionPickerSheet: View {
             let outcome = try CollectionDocumentDiscovery.appendDocuments(
                 documents, to: collection, modelContext: modelContext)
             addedCollectionId = collection.id
+            onAdded?(outcome, collection)
             let pause = outcome.insertedCount == 0 ? 0.8 : 0.6
             DispatchQueue.main.asyncAfter(deadline: .now() + pause) { dismiss() }
         } catch {

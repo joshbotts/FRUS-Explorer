@@ -1716,7 +1716,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3099–3100 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3103–3104 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2361,7 +2361,7 @@ This is a smart collection. Its documents are resolved from the linked saved sea
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerRow.init(savedName:documentCount:isSmart:) | lines: 610–611 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerRow.init(savedName:documentCount:isSmart:) | lines: 621–622 | key: collection.picker.smart -->
 
 *The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count. The row is listed and does not take a tap (#1593).*
 
@@ -2370,7 +2370,7 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Add %@ Documents to Collection
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 497–498 | key: collection.picker.title.documents.many -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 508–509 | key: collection.picker.title.documents.many -->
 
 *The Add to Collection sheet's title when a command on search results carries more than one document (#1576), on iPhone, iPad and Mac: "Add 37 Documents to Collection". `%@` is the count. For one document the sheet keeps its plain title, "Add to Collection".*
 
@@ -2379,7 +2379,7 @@ Add %@ Documents to Collection
 <!-- END SOURCE: collection.picker.title.documents.many -->
 
 #### Not Added
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 504–504 | key: collection.picker.addFailed.title -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailedTitle | lines: 515–515 | key: collection.picker.addFailed.title -->
 
 *The title of the alert the Add to Collection sheet shows when documents from search results could not be added (#1576). One of the three messages below follows it, and the sheet stays open.*
 
@@ -2388,7 +2388,7 @@ Not Added
 <!-- END SOURCE: collection.picker.addFailed.title -->
 
 #### This is a smart collection. Its documents come from its saved search, so nothing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 516–517 | key: collection.picker.addFailed.smart -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 527–528 | key: collection.picker.addFailed.smart -->
 
 *The alert's message when the collection is a smart one. A smart collection's row takes no tap, so the sheet does not reach this today; it is what the add itself answers with if anything else asks.*
 
@@ -2397,7 +2397,7 @@ This is a smart collection. Its documents come from its saved search, so nothing
 <!-- END SOURCE: collection.picker.addFailed.smart -->
 
 #### A collection takes up to %2$@ at a time, and %1$@ were chosen.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 520–521 | key: collection.picker.addFailed.overLimit %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 531–532 | key: collection.picker.addFailed.overLimit %@ %@ -->
 
 *The alert's message when more documents were chosen than one add takes: "A collection takes up to 1,000 documents at a time, and 1,200 documents were chosen." `%1$@` is the number chosen and `%2$@` the limit, each with its noun. Keep both tokens and their numbers.*
 
@@ -2406,7 +2406,7 @@ A collection takes up to %2$@ at a time, and %1$@ were chosen.
 <!-- END SOURCE: collection.picker.addFailed.overLimit %@ %@ -->
 
 #### The collection could not be saved, so nothing was added. %@
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 526–527 | key: collection.picker.addFailed.save %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.addFailure(_:locale:) | lines: 537–538 | key: collection.picker.addFailed.save %@ -->
 
 *The alert's message when saving failed. The documents are taken back out of the collection, so the sentence is true as it stands. `%@` is the system's own description of the failure.*
 
