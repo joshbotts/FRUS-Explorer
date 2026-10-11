@@ -322,14 +322,20 @@ struct CollectionPickerDocumentsModeTests {
                     CollectionPickerSheet(documents: request.documents,
                                           fromMeaningSearch: request.fromMeaningSearch,
                                           onAdded: onAdded)
+                case .addTags:
+                    UserTagPickerSheet(adding: request.documents,
+                                       indexingPipeline: indexingPipeline,
+                                       onTagged: onTagged)
                 }
             }
-            """)))
+            """)), "each command's sheet is built from the request's documents: the tag picker in its adding mode (#1576 lane 5)")
         // And the hosts' one call reaches that modifier.
         let mount = Self.squeezed(Self.code(String(try Self.declaration(
             "func bulkResultSheets(_ request: Binding<BulkResultRequest?>,", in: file))))
-        #expect(mount.contains(Self.squeezed("modifier(BulkResultSheets(request: request, onAdded: onAdded))")),
-                "bulkResultSheets does not apply the presenter, or drops the host's outcome handler")
+        #expect(mount.contains(Self.squeezed("""
+            modifier(BulkResultSheets(request: request, indexingPipeline: indexingPipeline,
+                                      onAdded: onAdded, onTagged: onTagged))
+            """)), "bulkResultSheets does not apply the presenter, or drops the index or one of the host's outcome handlers")
     }
 
     @Test("Each search host makes the request from the row and mounts the one presenter",
@@ -375,8 +381,16 @@ struct CollectionPickerDocumentsModeTests {
             // (`MacResultSelectionWiringTests.menuBranchesOnMembership` reads that branch).
             #expect(squeezed.contains(afterNeighbors + Self.squeezed("if checkedTogether(with: result) {")),
                     "\(host.path): the row's menu has no Add to Collection branch after Archival Neighbors…")
-            #expect(squeezed.contains(Self.squeezed("} else {") + rowItem + "}"),
-                    "\(host.path): an unchecked row's menu must add that row")
+            // Since lane 5 the row's Add Tags… follows it, in the same branch.
+            let tagItem = Self.squeezed("""
+                        Button {
+                            bulkRequest = addTagsRequest(for: result)
+                        } label: {
+                            Label(BulkResultCopy.addTags, systemImage: "tag")
+                        }
+                """)
+            #expect(squeezed.contains(Self.squeezed("} else {") + rowItem + tagItem + "}"),
+                    "\(host.path): an unchecked row's menu must add that row, and tag that row")
         }
 
         let makers = code.components(separatedBy: "bulkRequest = addToCollectionRequest(for: result)").count - 1

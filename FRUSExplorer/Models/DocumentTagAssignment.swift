@@ -204,10 +204,12 @@ extension DocumentTagAssignment {
     /// Rewrites the tag column of each of `documents` from the assignments it still has, clearing
     /// it for a document that has none.
     ///
-    /// For a caller that has just removed assignments from documents it can name, and saved:
-    /// `UserTagAdmin.deleteCascading`. It has no floor, because the caller, not a subtraction,
-    /// says which rows changed. It re-reads rather than being told, since a document can carry
-    /// other tags. When the assignments cannot be read, nothing is written.
+    /// For a caller that has just added or removed assignments on documents it can name, and
+    /// saved: `UserTagAdmin.deleteCascading`, and the bulk tag writer and its Undo
+    /// (`UserTagAdmin.assignAndIndex`, `removeAssignmentsAndIndex`, #1576 lane 5). It has no floor,
+    /// because the caller, not a subtraction, says which rows changed. It re-reads rather than
+    /// being told, since a document can carry other tags. When the assignments cannot be read,
+    /// nothing is written.
     ///
     /// - Parameters:
     ///   - documents: The documents whose rows to rewrite.

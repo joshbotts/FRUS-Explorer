@@ -127,6 +127,7 @@ struct ResultSelection: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1576 lane 5: an Add Tags' outcome and its Undo
 struct BulkOutcome: Equatable, Sendable {
 
     /// What Undo takes back.
@@ -137,6 +138,9 @@ struct BulkOutcome: Equatable, Sendable {
         case collectionEntries(ids: [UUID], collectionName: String)
         /// The last bulk Mark Reviewed (`ReviewedMarks.undoLastBulk`).
         case reviewedMarks
+        /// The assignment rows an Add Tags inserted, by id, and the tags' names for the line
+        /// that follows (#1576 lane 5). By id, for the reason the collection's entries are.
+        case tagAssignments(ids: [UUID], tagNames: [String])
     }
 
     /// The line shown above the results.
@@ -184,6 +188,7 @@ struct BulkOutcome: Equatable, Sendable {
 /// Version history:
 ///   1.0 — #1576 lane 4: the rules moved here from `SearchViewModel`, which lane 3 gave them to
 ///   1.1 — #1576 lane 4, review: a mark is recorded in selection only, as an add is
+///   1.2 — #1576 lane 5: `recordTagging`, and Undo takes a bulk tag back
 struct ResultSelectionSession: Equatable, Sendable {
 
     /// The picks, and whether the list is in selection.
@@ -294,18 +299,47 @@ struct ResultSelectionSession: Equatable, Sendable {
                 ? nil : .collectionEntries(ids: append.insertedEntryIds, collectionName: collectionName)))
     }
 
+    /// Records what an Add Tags did while selecting: the selection's, or one row's from its own
+    /// menu (#1576 lane 5). Outside selection nothing shows an outcome, and the tag on the row is
+    /// the feedback.
+    ///
+    /// - Parameters:
+    ///   - assign: What `UserTagAdmin.assign` answered.
+    ///   - tagNames: The names of the tags given, as the picker showed them.
+    mutating func recordTagging(_ assign: UserTagAssign, tagNames: [String]) {
+        guard selection.isSelecting else { return }
+        setOutcome(BulkOutcome(
+            message: ResultSelectionCopy.tagged(assign.taggedDocuments.count,
+                                                alreadyTagged: assign.alreadyTagged, tagNames: tagNames),
+            undo: assign.insertedAssignmentIds.isEmpty
+                ? nil : .tagAssignments(ids: assign.insertedAssignmentIds, tagNames: tagNames)))
+    }
+
     /// Takes the last command back and says what that did.
     ///
-    /// The marks are the host's to restore, and collection entries the store's, so the host
-    /// passes both in.
+    /// The marks are the host's to restore, and collection entries and tag assignments the
+    /// store's, so the host passes all three in.
     ///
     /// - Parameters:
     ///   - removingEntries: Removes the collection entries with these ids and answers how many
     ///     it removed (`CollectionDocumentDiscovery.removeEntries`).
+    ///   - removingTagAssignments: Removes the tag assignments with these ids and answers how
+    ///     many documents lost one (`UserTagAdmin.removeAssignments`).
     ///   - restoringMarks: Takes the last bulk mark back and answers how many rows returned.
-    mutating func undo(removingEntries: ([UUID]) throws -> Int, restoringMarks: () -> Int) {
+    mutating func undo(removingEntries: ([UUID]) throws -> Int,
+                       removingTagAssignments: ([UUID]) throws -> Int,
+                       restoringMarks: () -> Int) {
         guard let undo = outcome?.undo else { return }
         switch undo {
+        case .tagAssignments(let ids, let tagNames):
+            do {
+                let documents = try removingTagAssignments(ids)
+                setOutcome(BulkOutcome(message: ResultSelectionCopy.untagged(documents, tagNames: tagNames),
+                                       undo: nil))
+            } catch {
+                // No second try, for the reason an add's Undo offers none.
+                setOutcome(BulkOutcome(message: ResultSelectionCopy.undoFailed(error), undo: nil))
+            }
         case .collectionEntries(let ids, let collectionName):
             do {
                 let removed = try removingEntries(ids)
@@ -361,6 +395,42 @@ struct ResultSelectionSession: Equatable, Sendable {
     }
 }
 
+// MARK: - A row with the tags the store has now
+
+extension SearchResult {
+
+    /// This result with another set of the reader's tags and nothing else changed (#1576 lane 5).
+    ///
+    /// A row's tags are read from the index when its search runs. After an Add Tags, or its
+    /// Undo, the store knows the document's tags and the row does not, and a view model swaps
+    /// the row for this one so that the chip shows without another search.
+    ///
+    /// The ids are written in the order `DocumentTagAssignment.tagColumnValue` writes the index's
+    /// column in, which is the order a later search lists them in once the rewrite has run.
+    /// `SearchResult` is the kit's and every field is a `let`; this is the one place the app
+    /// copies one, and `SearchResultTagRefreshTests` fails if a field is added and not carried.
+    ///
+    /// - Parameter tagIds: Every tag the document carries now.
+    /// - Returns: The same result, carrying those tags.
+    func replacingUserTagIds(_ tagIds: Set<UUID>) -> SearchResult {
+        SearchResult(
+            documentId: documentId,
+            volumeId: volumeId,
+            documentNumber: documentNumber,
+            header: header,
+            dateline: dateline,
+            dateISO: dateISO,
+            sourceNote: sourceNote,
+            snippet: snippet,
+            bm25Score: bm25Score,
+            semanticScore: semanticScore,
+            subjectTagIds: subjectTagIds,
+            userTagIds: tagIds.map(\.uuidString).sorted(),
+            isEditorialNote: isEditorialNote,
+            isFrontMatter: isFrontMatter)
+    }
+}
+
 // MARK: - ResultSelectionCopy
 
 /// The words of selection: the bar, its two menus, the commands and their outcomes, apart from
@@ -406,6 +476,18 @@ enum ResultSelectionCopy {
     static func addSelectedToCollection(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         let form = String(localized: "search.selection.row.addSelected %@",
                           defaultValue: "Add %@ Selected to Collection…")
+        return CountCopy.phrase(count, one: form, many: form, locale: locale)
+    }
+
+    /// "Add Tags to 12 Selected…": a checked row's menu item on the Mac, when more than one row
+    /// is checked (#1576 lane 5). One form: it is offered for two or more.
+    ///
+    /// - Parameters:
+    ///   - count: Results checked.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    static func addTagsToSelected(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        let form = String(localized: "search.selection.row.tagSelected %@",
+                          defaultValue: "Add Tags to %@ Selected…")
         return CountCopy.phrase(count, one: form, many: form, locale: locale)
     }
 
@@ -479,6 +561,9 @@ enum ResultSelectionCopy {
         case .reviewedMarks:
             String(localized: "search.selection.undo.hint.mark",
                    defaultValue: "Brings back the results this command hid")
+        case .tagAssignments:
+            String(localized: "search.selection.undo.hint.tag",
+                   defaultValue: "Takes the tags this command added back off the documents")
         }
     }
 
@@ -493,15 +578,85 @@ enum ResultSelectionCopy {
         String(localized: "search.selection.row.open", defaultValue: "Open")
     }
 
-    /// Why Add to Collection is dimmed: more results are picked than one add takes.
+    /// Why Add to Collection and Add Tags are dimmed: more results are picked than one of them
+    /// takes. Re-keyed in #1576 lane 5, when the line came to speak for two commands.
     ///
     /// - Parameters:
-    ///   - limit: The most documents one add takes (`CollectionDocumentDiscovery.bulkDocumentLimit`).
+    ///   - limit: The most documents one command takes (`CollectionDocumentDiscovery.bulkDocumentLimit`).
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     static func overLimit(_ limit: Int, locale: Locale = .autoupdatingCurrent) -> String {
-        String(format: String(localized: "search.selection.overLimit %@",
-                              defaultValue: "Select %@ or fewer to add them to a collection."),
+        String(format: String(localized: "search.selection.overLimit.v2 %@",
+                              defaultValue: "Select %@ or fewer to add them to a collection or to tag them."),
                CountCopy.documents(limit, locale: locale))
+    }
+
+    /// What an Add Tags did: "Added “Chile” to 31 documents. 6 already had it." With more than
+    /// one tag the tags are counted and not named: "Added 3 tags to 31 documents."
+    ///
+    /// - Parameters:
+    ///   - documents: Documents that gained at least one tag.
+    ///   - alreadyTagged: Documents that carried every tag asked for already.
+    ///   - tagNames: The names of the tags given.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    static func tagged(_ documents: Int, alreadyTagged: Int, tagNames: [String],
+                       locale: Locale = .autoupdatingCurrent) -> String {
+        let single = tagNames.count == 1 ? tagNames[0] : nil
+        guard documents > 0 else {
+            if let single {
+                return CountCopy.phrase(
+                    alreadyTagged,
+                    one: String(localized: "search.selection.outcome.noneTagged.one %@ %@",
+                                defaultValue: "Nothing added: %1$@ document already had “%2$@”."),
+                    many: String(localized: "search.selection.outcome.noneTagged.many %@ %@",
+                                 defaultValue: "Nothing added: %1$@ documents already had “%2$@”."),
+                    then: [single], locale: locale)
+            }
+            return CountCopy.phrase(
+                alreadyTagged,
+                one: String(localized: "search.selection.outcome.noneTagged.tags.one %@",
+                            defaultValue: "Nothing added: %@ document already had those tags."),
+                many: String(localized: "search.selection.outcome.noneTagged.tags.many %@",
+                             defaultValue: "Nothing added: %@ documents already had those tags."),
+                locale: locale)
+        }
+        let added: String
+        if let single {
+            added = String(format: String(localized: "search.selection.outcome.tagged %@ %@",
+                                          defaultValue: "Added “%1$@” to %2$@."),
+                           single, CountCopy.documents(documents, locale: locale))
+        } else {
+            added = String(format: String(localized: "search.selection.outcome.tagged.tags %@ %@",
+                                          defaultValue: "Added %1$@ tags to %2$@."),
+                           tagNames.count.formatted(.number.locale(locale)),
+                           CountCopy.documents(documents, locale: locale))
+        }
+        guard alreadyTagged > 0 else { return added }
+        // One form for one and for many: "6 already had it" and "1 already had it".
+        let already = single != nil
+            ? String(localized: "search.selection.outcome.alreadyTagged %@", defaultValue: "%@ already had it.")
+            : String(localized: "search.selection.outcome.alreadyTagged.tags %@",
+                     defaultValue: "%@ already had them.")
+        return added + " " + CountCopy.phrase(alreadyTagged, one: already, many: already, locale: locale)
+    }
+
+    /// What undoing an Add Tags did: "Removed “Chile” from 31 documents."
+    ///
+    /// - Parameters:
+    ///   - documents: Documents a tag was taken back off. Fewer than were tagged when some of
+    ///     the tags were removed another way.
+    ///   - tagNames: The names of the tags the command gave.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    static func untagged(_ documents: Int, tagNames: [String],
+                         locale: Locale = .autoupdatingCurrent) -> String {
+        if tagNames.count == 1 {
+            return String(format: String(localized: "search.selection.outcome.untagged %@ %@",
+                                         defaultValue: "Removed “%1$@” from %2$@."),
+                          tagNames[0], CountCopy.documents(documents, locale: locale))
+        }
+        return String(format: String(localized: "search.selection.outcome.untagged.tags %@ %@",
+                                     defaultValue: "Removed %1$@ tags from %2$@."),
+                      tagNames.count.formatted(.number.locale(locale)),
+                      CountCopy.documents(documents, locale: locale))
     }
 
     /// What an Add to Collection did: "Added 31 documents to “Chile”. 6 were already in it."

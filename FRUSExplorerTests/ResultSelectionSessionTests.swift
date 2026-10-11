@@ -47,6 +47,12 @@ struct ResultSelectionSessionTests {
         var errorDescription: String? { "The disk is full." }
     }
 
+    /// The tag half of an Undo, for a test whose command gave no tag: it must not be asked.
+    private static func noTagUndo(_ ids: [UUID]) -> Int {
+        Issue.record("no tag assignment is involved")
+        return 0
+    }
+
     @Test("Beginning enters selection with the row picked; a second begin adds its row and keeps the search and the line")
     func beginEnters() {
         var session = ResultSelectionSession()
@@ -172,7 +178,8 @@ struct ResultSelectionSessionTests {
         session.recordAdd(CollectionDocumentAppend(insertedEntryIds: ids, alreadyPresent: 0), collectionName: "Chile")
         var asked: [UUID] = []
         var marksRestored = 0
-        session.undo(removingEntries: { asked = $0; return 1 }, restoringMarks: { marksRestored += 1; return 0 })
+        session.undo(removingEntries: { asked = $0; return 1 }, removingTagAssignments: Self.noTagUndo,
+                     restoringMarks: { marksRestored += 1; return 0 })
         #expect(asked == ids)
         #expect(marksRestored == 0, "an add's Undo does not touch the marks")
         #expect(session.outcome == BulkOutcome(message: ResultSelectionCopy.removed(1, from: "Chile"), undo: nil))
@@ -182,7 +189,8 @@ struct ResultSelectionSessionTests {
     func undoThatThrows() {
         var session = Self.selecting(["v/d1"])
         session.recordAdd(CollectionDocumentAppend(insertedEntryIds: [UUID()], alreadyPresent: 0), collectionName: "Chile")
-        session.undo(removingEntries: { _ in throw Refused() }, restoringMarks: { 0 })
+        session.undo(removingEntries: { _ in throw Refused() }, removingTagAssignments: Self.noTagUndo,
+                     restoringMarks: { 0 })
         #expect(session.outcome == BulkOutcome(message: "Undo did not finish: The disk is full.", undo: nil))
     }
 
@@ -191,9 +199,77 @@ struct ResultSelectionSessionTests {
         var session = Self.selecting()
         session.recordMark(hidden: 4)
         var removed = 0
-        session.undo(removingEntries: { _ in removed += 1; return 0 }, restoringMarks: { 4 })
+        session.undo(removingEntries: { _ in removed += 1; return 0 },
+                     removingTagAssignments: { _ in removed += 1; return 0 }, restoringMarks: { 4 })
         #expect(removed == 0, "a mark's Undo removes nothing from a collection")
         #expect(session.outcome == BulkOutcome(message: ChecklistCopy.undoneAnnouncement(4), undo: nil))
+    }
+
+    // MARK: Tagging (#1576 lane 5)
+
+    private static func doc(_ documentId: String) -> CollectionDocumentRef {
+        CollectionDocumentRef(volumeId: "v", documentId: documentId)
+    }
+
+    @Test("A tagging is recorded in selection only, with its Undo when it inserted something")
+    func taggingOutcome() {
+        let ids = [UUID(), UUID()]
+        let tagged = UserTagAssign(insertedAssignmentIds: ids, taggedDocuments: [Self.doc("d1"), Self.doc("d2")],
+                                   alreadyTagged: 1, tagIdsByDocument: [:])
+        var outside = ResultSelectionSession()
+        outside.recordTagging(tagged, tagNames: ["Chile"])
+        #expect(outside.outcome == nil && outside.outcomeSerial == 0)
+
+        var session = Self.selecting(["v/d1", "v/d2", "v/d3"])
+        session.recordTagging(tagged, tagNames: ["Chile"])
+        #expect(session.outcome == BulkOutcome(
+            message: ResultSelectionCopy.tagged(2, alreadyTagged: 1, tagNames: ["Chile"]),
+            undo: .tagAssignments(ids: ids, tagNames: ["Chile"])))
+        #expect(session.selection.count == 3, "the picks stay after a tagging")
+
+        session.recordTagging(UserTagAssign(insertedAssignmentIds: [], taggedDocuments: [], alreadyTagged: 3,
+                                            tagIdsByDocument: [:]), tagNames: ["Chile"])
+        #expect(session.outcome == BulkOutcome(
+            message: ResultSelectionCopy.tagged(0, alreadyTagged: 3, tagNames: ["Chile"]), undo: nil))
+    }
+
+    @Test("Undo of a tagging removes the rows by id, says how many documents lost the tag, and offers no second Undo")
+    func undoOfATagging() {
+        let ids = [UUID(), UUID(), UUID()]
+        var session = Self.selecting(["v/d1"])
+        session.recordTagging(UserTagAssign(insertedAssignmentIds: ids,
+                                            taggedDocuments: [Self.doc("d1"), Self.doc("d2"), Self.doc("d3")],
+                                            alreadyTagged: 0, tagIdsByDocument: [:]),
+                              tagNames: ["Chile", "Copper"])
+        var asked: [UUID] = []
+        var others = 0
+        session.undo(removingEntries: { _ in others += 1; return 0 },
+                     removingTagAssignments: { asked = $0; return 2 },
+                     restoringMarks: { others += 1; return 0 })
+        #expect(asked == ids)
+        #expect(others == 0, "a tagging's Undo touches neither a collection nor the marks")
+        #expect(session.outcome == BulkOutcome(
+            message: ResultSelectionCopy.untagged(2, tagNames: ["Chile", "Copper"]), undo: nil))
+    }
+
+    @Test("A tagging's Undo that throws says it did not finish, and offers no second try")
+    func taggingUndoThatThrows() {
+        var session = Self.selecting(["v/d1"])
+        session.recordTagging(UserTagAssign(insertedAssignmentIds: [UUID()], taggedDocuments: [Self.doc("d1")],
+                                            alreadyTagged: 0, tagIdsByDocument: [:]), tagNames: ["Chile"])
+        session.undo(removingEntries: { _ in 0 }, removingTagAssignments: { _ in throw Refused() },
+                     restoringMarks: { 0 })
+        #expect(session.outcome == BulkOutcome(message: "Undo did not finish: The disk is full.", undo: nil))
+    }
+
+    @Test("A tagging's line is no business of the checklist's, and stays when the marks change")
+    func taggingLineIsNotWithdrawn() {
+        var session = Self.selecting(["v/d1"])
+        session.recordTagging(UserTagAssign(insertedAssignmentIds: [UUID()], taggedDocuments: [Self.doc("d1")],
+                                            alreadyTagged: 0, tagIdsByDocument: [:]), tagNames: ["Chile"])
+        let line = session.outcome
+        session.withdrawOutcomeOfferingToUndoMarks()
+        #expect(session.outcome == line)
     }
 
     @Test("With nothing to undo, Undo does nothing")
@@ -202,7 +278,9 @@ struct ResultSelectionSessionTests {
         session.recordMark(hidden: 0)
         let counted = session.outcomeSerial
         var called = 0
-        session.undo(removingEntries: { _ in called += 1; return 0 }, restoringMarks: { called += 1; return 0 })
+        session.undo(removingEntries: { _ in called += 1; return 0 },
+                     removingTagAssignments: { _ in called += 1; return 0 },
+                     restoringMarks: { called += 1; return 0 })
         #expect(called == 0)
         #expect(session.outcomeSerial == counted)
     }
@@ -399,6 +477,76 @@ struct ResultSelectionMacCopyTests {
         #expect(ResultSelectionCopy.addSelectedToCollection(12, locale: Self.enUS) == "Add 12 Selected to Collection…")
         #expect(ResultSelectionCopy.addSelectedToCollection(1_250, locale: Self.enUS)
                 == "Add 1,250 Selected to Collection…")
+        #expect(ResultSelectionCopy.addTagsToSelected(12, locale: Self.enUS) == "Add Tags to 12 Selected…")
+        #expect(ResultSelectionCopy.addTagsToSelected(1_250, locale: Self.enUS) == "Add Tags to 1,250 Selected…")
+    }
+}
+
+// MARK: - ResultTaggingCopyTests
+
+/// The words of Add Tags on search results (#1576 lane 5).
+///
+/// Version history:
+///   1.0 — #1576 lane 5: initial implementation
+@Suite("Result tagging, the words (#1576 lane 5)")
+struct ResultTaggingCopyTests {
+
+    private static let enUS = Locale(identifier: "en_US")
+
+    @Test("The command's name, on a row and in the two selection bars")
+    func command() {
+        #expect(BulkResultCopy.addTags == "Add Tags…")
+    }
+
+    @Test("One tag is named, and the documents that had it already are counted")
+    func oneTag() {
+        #expect(ResultSelectionCopy.tagged(31, alreadyTagged: 0, tagNames: ["Chile"], locale: Self.enUS)
+                == "Added “Chile” to 31 documents.")
+        #expect(ResultSelectionCopy.tagged(1, alreadyTagged: 0, tagNames: ["Chile"], locale: Self.enUS)
+                == "Added “Chile” to 1 document.")
+        #expect(ResultSelectionCopy.tagged(31, alreadyTagged: 6, tagNames: ["Chile"], locale: Self.enUS)
+                == "Added “Chile” to 31 documents. 6 already had it.")
+        #expect(ResultSelectionCopy.tagged(1_200, alreadyTagged: 1, tagNames: ["Chile"], locale: Self.enUS)
+                == "Added “Chile” to 1,200 documents. 1 already had it.")
+    }
+
+    @Test("Several tags are counted, not named")
+    func severalTags() {
+        #expect(ResultSelectionCopy.tagged(31, alreadyTagged: 0, tagNames: ["Chile", "Copper", "ITT"], locale: Self.enUS)
+                == "Added 3 tags to 31 documents.")
+        #expect(ResultSelectionCopy.tagged(31, alreadyTagged: 6, tagNames: ["Chile", "Copper"], locale: Self.enUS)
+                == "Added 2 tags to 31 documents. 6 already had them.")
+    }
+
+    @Test("Nothing added says who had the tags already")
+    func nothingAdded() {
+        #expect(ResultSelectionCopy.tagged(0, alreadyTagged: 1, tagNames: ["Chile"], locale: Self.enUS)
+                == "Nothing added: 1 document already had “Chile”.")
+        #expect(ResultSelectionCopy.tagged(0, alreadyTagged: 37, tagNames: ["Chile"], locale: Self.enUS)
+                == "Nothing added: 37 documents already had “Chile”.")
+        #expect(ResultSelectionCopy.tagged(0, alreadyTagged: 1, tagNames: ["Chile", "Copper"], locale: Self.enUS)
+                == "Nothing added: 1 document already had those tags.")
+        #expect(ResultSelectionCopy.tagged(0, alreadyTagged: 37, tagNames: ["Chile", "Copper"], locale: Self.enUS)
+                == "Nothing added: 37 documents already had those tags.")
+    }
+
+    @Test("An undone tagging, and what its Undo says it takes back")
+    func undone() {
+        #expect(ResultSelectionCopy.untagged(31, tagNames: ["Chile"], locale: Self.enUS)
+                == "Removed “Chile” from 31 documents.")
+        #expect(ResultSelectionCopy.untagged(1, tagNames: ["Chile"], locale: Self.enUS)
+                == "Removed “Chile” from 1 document.")
+        #expect(ResultSelectionCopy.untagged(31, tagNames: ["Chile", "Copper"], locale: Self.enUS)
+                == "Removed 2 tags from 31 documents.")
+        let hint = ResultSelectionCopy.undoHint(for: .tagAssignments(ids: [], tagNames: ["Chile"]))
+        #expect(hint == "Takes the tags this command added back off the documents")
+        #expect(!hint.lowercased().contains("tap"), "compiled for the Mac, where `macTextNeverSaysTap` refuses the word")
+    }
+
+    @Test("The limit's line speaks for both commands it dims")
+    func overLimit() {
+        #expect(ResultSelectionCopy.overLimit(1_000, locale: Self.enUS)
+                == "Select 1,000 documents or fewer to add them to a collection or to tag them.")
     }
 }
 
@@ -453,7 +601,7 @@ struct MacResultSelectionWiringTests {
     /// The members a view reads or calls, the two that follow the list, and the one that forgets
     /// the checklist's marks. Each is the same text in the two view models, so a twin that drifts
     /// is a twin that differs here. Most are one call into the session; `beginSelecting`,
-    /// `undoBulkOutcome` and `forgetReviewedMarks` are a few lines each.
+    /// `undoBulkOutcome`, `forgetReviewedMarks` and lane 5's two for tags are a few lines each.
     private static let twins = [
         "var resultSelection: ResultSelection {",
         "var bulkOutcome: BulkOutcome? {",
@@ -468,7 +616,9 @@ struct MacResultSelectionWiringTests {
         "func selectAllShown() {",
         "func selectNone() {",
         "func recordCollectionAdd(_ outcome: CollectionDocumentAppend, collectionName: String) {",
-        "func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int) {",
+        "func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int,",
+        "func recordTagAssign(_ outcome: UserTagAssign, tagNames: [String]) {",
+        "func refreshUserTags(_ tagIdsByDocument: [String: Set<UUID>]) {",
         "private func selectionFollowsReplacedResults() {",
         "private func pruneSelection() {",
         "private func forgetReviewedMarks() {",
@@ -496,7 +646,7 @@ struct MacResultSelectionWiringTests {
             #expect(macBody == iOSBody, "\(header) differs between the two view models")
             compared += 1
         }
-        #expect(compared == 17)
+        #expect(compared == 19)
     }
 
     /// A line in the strip that offers to undo a mark is true only while the mark can be undone.
@@ -674,13 +824,23 @@ struct MacResultSelectionWiringTests {
             """)))
         #expect(strip.contains(Self.squeezed("""
             addToCollection: { bulkRequest = selectionAddRequest },
+            addTags: { bulkRequest = selectionTagRequest },
             markReviewed: { searchVM.markSelectionReviewed() },
             undo: {
-                searchVM.undoBulkOutcome { ids in
+                searchVM.undoBulkOutcome(removingEntries: { ids in
                     try CollectionDocumentDiscovery.removeEntries(withIds: ids, modelContext: modelContext)
-                }
+                }, removingTagAssignments: { ids in
+                    try UserTagAdmin.removeAssignmentsAndIndex(
+                        withIds: ids, context: modelContext, pipeline: appState.indexingPipeline)
+                })
             })
             """)))
+        #expect(Self.squeezedCode(window).contains(Self.squeezed("""
+            private var selectionTagRequest: BulkResultRequest? {
+                BulkResultRequest(.addTags, results: searchVM.selectedResults,
+                                  fromMeaningSearch: searchVM.resultsAreSemantic)
+            }
+            """)), "the tag request is made from the checked rows, as the collection's is (#1576 lane 5)")
         #expect(Self.squeezedCode(window).contains(Self.squeezed("""
             private var selectionAddRequest: BulkResultRequest? {
                 BulkResultRequest(.addToCollection, results: searchVM.selectedResults,
@@ -688,9 +848,12 @@ struct MacResultSelectionWiringTests {
             }
             """)), "the request is made from the checked rows as the list shows them now")
         #expect(Self.squeezedCode(window).contains(Self.squeezed("""
-            .bulkResultSheets($bulkRequest, onAdded: { outcome, collection in
+            .bulkResultSheets($bulkRequest, indexingPipeline: appState.indexingPipeline,
+                              onAdded: { outcome, collection in
                 searchVM.recordCollectionAdd(
                     outcome, collectionName: CollectionEditorNaming.listName(savedName: collection.name))
+            }, onTagged: { outcome, tagNames in
+                searchVM.recordTagAssign(outcome, tagNames: tagNames)
             })
             """)))
     }
@@ -768,14 +931,26 @@ struct MacResultSelectionWiringTests {
                           systemImage: "plus.circle")
                 }
                 .disabled(!searchVM.canAddSelectionToCollection)
+                Button {
+                    bulkRequest = selectionTagRequest
+                } label: {
+                    Label(ResultSelectionCopy.addTagsToSelected(searchVM.resultSelection.count),
+                          systemImage: "tag")
+                }
+                .disabled(!searchVM.canAddSelectionToCollection)
             } else {
                 Button {
                     bulkRequest = addToCollectionRequest(for: result)
                 } label: {
                     Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
                 }
+                Button {
+                    bulkRequest = addTagsRequest(for: result)
+                } label: {
+                    Label(BulkResultCopy.addTags, systemImage: "tag")
+                }
             }
-            """)))
+            """)), "both commands are the selection's on a checked row among others, and the row's own otherwise (lane 5 for the tags)")
         #expect(Self.squeezedCode(window).contains(Self.squeezed("""
             private func checkedTogether(with result: SearchResult) -> Bool {
                 searchVM.resultSelection.contains(result.id) && searchVM.resultSelection.count > 1
@@ -802,6 +977,10 @@ struct MacResultSelectionWiringTests {
             Button(BulkResultCopy.addToCollection, action: addToCollection)
                 .disabled(!canAdd)
             """)))
+        #expect(strip.contains(Self.squeezed("""
+            Button(BulkResultCopy.addTags, action: addTags)
+                .disabled(!canAdd)
+            """)), "Add Tags is beside Add to Collection and dimmed by the same limit (#1576 lane 5)")
         #expect(strip.contains(Self.squeezed("""
             if showsMarkReviewed {
                 Button(ResultSelectionCopy.markReviewed, action: markReviewed)

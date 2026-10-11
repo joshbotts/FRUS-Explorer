@@ -2414,6 +2414,37 @@ The collection could not be saved, so nothing was added. %@
 
 <!-- END SOURCE: collection.picker.addFailed.save %@ -->
 
+### Adding tags to search results: the tag picker's adding mode (iOS and macOS)
+
+*The tag picker as Add Tags… on search results opens it (#1576 lane 5), for one result or a selection. It is titled "Tag 37 Documents", every tag starts off, and Done adds the tags switched on and takes none off.*
+
+#### Tags are added. A document keeps the tags it already has.
+<!-- SOURCE: FRUSExplorer/DocumentView/UserTagPickerSheet.swift | UserTagPickerCopy.addingFooter | lines: 544–545 | key: tags.picker.adding.footer -->
+
+*The line under the list of tags in the adding mode. It is what tells a reader that switching a tag on here cannot take another tag off.*
+
+Tags are added. A document keeps the tags it already has.
+
+<!-- END SOURCE: tags.picker.adding.footer -->
+
+#### Up to %2$@ can be tagged at a time, and %1$@ were chosen.
+<!-- SOURCE: FRUSExplorer/DocumentView/UserTagPickerSheet.swift | UserTagPickerCopy.addFailure(_:locale:) | lines: 609–610 | key: tags.picker.addFailed.overLimit %@ %@ -->
+
+*The message of the "Not Tagged" alert when more documents were chosen than one Add Tags takes. `%1$@` is the number chosen and `%2$@` the limit, each with its noun. The command is dimmed over the limit, so a reader should not reach this.*
+
+Up to %2$@ can be tagged at a time, and %1$@ were chosen.
+
+<!-- END SOURCE: tags.picker.addFailed.overLimit %@ %@ -->
+
+#### The tags could not be read or saved, so no document was tagged. %@
+<!-- SOURCE: FRUSExplorer/DocumentView/UserTagPickerSheet.swift | UserTagPickerCopy.addFailure(_:locale:) | lines: 615–616 | key: tags.picker.addFailed.save %@ -->
+
+*The alert's message when the tags could not be read or saved. Nothing is written then, so the sentence is true as it stands. `%@` is the system's own description of the failure.*
+
+The tags could not be read or saved, so no document was tagged. %@
+
+<!-- END SOURCE: tags.picker.addFailed.save %@ -->
+
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
 <!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1416–1417 | key: collection.add.menu | shared: iOS only -->
 

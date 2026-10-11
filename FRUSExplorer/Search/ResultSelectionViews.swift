@@ -74,6 +74,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1576 lane 5: Add Tags, in the Actions menu
 struct ResultSelectionBar: View {
 
     /// Results picked. Zero dims Mark Reviewed.
@@ -82,7 +83,8 @@ struct ResultSelectionBar: View {
     let pageRowCount: Int
     /// Results the list shows, which All Shown picks.
     let shownCount: Int
-    /// Whether Add to Collection can run: something is picked, and no more than one add takes.
+    /// Whether Add to Collection and Add Tags can run: something is picked, and no more than
+    /// one of them takes.
     let canAdd: Bool
     /// Whether Mark Reviewed is offered: Checklist Mode is on.
     let showsMarkReviewed: Bool
@@ -103,6 +105,8 @@ struct ResultSelectionBar: View {
     let selectNone: () -> Void
     /// Opens the collection picker for the selection.
     let addToCollection: () -> Void
+    /// Opens the tag picker, in its adding mode, for the selection (#1576 lane 5).
+    let addTags: () -> Void
     /// Hides the selection as reviewed.
     let markReviewed: () -> Void
 
@@ -187,6 +191,10 @@ struct ResultSelectionBar: View {
         Menu {
             Button(action: addToCollection) {
                 Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+            }
+            .disabled(!canAdd)
+            Button(action: addTags) {
+                Label(BulkResultCopy.addTags, systemImage: "tag")
             }
             .disabled(!canAdd)
             if showsMarkReviewed {
@@ -290,6 +298,7 @@ struct ResultSelectionStatus: View {
 /// Version history:
 ///   1.0 — #1576 lane 4: initial implementation
 ///   1.1 — #1576 lane 4, review: `canMarkReviewed`
+///   1.2 — #1576 lane 5: Add Tags
 struct ResultSelectionStrip: View {
 
     /// Results checked. Zero dims Mark Reviewed.
@@ -298,7 +307,8 @@ struct ResultSelectionStrip: View {
     let pageRowCount: Int
     /// Results the list shows, which All Shown checks.
     let shownCount: Int
-    /// Whether Add to Collection can run: something is checked, and no more than one add takes.
+    /// Whether Add to Collection and Add Tags can run: something is checked, and no more than
+    /// one of them takes.
     let canAdd: Bool
     /// Whether Mark Reviewed is offered: Checklist Mode is on.
     let showsMarkReviewed: Bool
@@ -321,6 +331,8 @@ struct ResultSelectionStrip: View {
     let selectNone: () -> Void
     /// Opens the collection picker for the selection.
     let addToCollection: () -> Void
+    /// Opens the tag picker, in its adding mode, for the selection (#1576 lane 5).
+    let addTags: () -> Void
     /// Hides the selection as reviewed.
     let markReviewed: () -> Void
     /// Takes the last command back.
@@ -350,6 +362,9 @@ struct ResultSelectionStrip: View {
                 Button(BulkResultCopy.addToCollection, action: addToCollection)
                     .disabled(!canAdd)
                     .accessibilityIdentifier("search.selection.addToCollection")
+                Button(BulkResultCopy.addTags, action: addTags)
+                    .disabled(!canAdd)
+                    .accessibilityIdentifier("search.selection.addTags")
                 if showsMarkReviewed {
                     Button(ResultSelectionCopy.markReviewed, action: markReviewed)
                         .disabled(count == 0 || !canMarkReviewed)

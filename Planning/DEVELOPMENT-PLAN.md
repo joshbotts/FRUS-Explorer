@@ -36916,3 +36916,66 @@ Lane 4 of the implementation plan on #1576, after lane 3 merged as #1629. No ind
 - `Docs/macOS-User-Manual.md`: a new 7.7a, Selecting Results; Select named in 7.6's titlebar sentence, which now says where the buttons are in a narrow window; a pointer in 7.1 and in 12.2. The AI Generated notice stays.
 - `Docs/EditableContent/`: two blocks added in `07-Search-and-Browse.md` for the Select button's help; 21 ranged blocks re-pointed; the README's table reads 248 blocks for `07`.
 - `tools/mac-check-copy/`: `axread.swift`, and a section in the README on driving and reading the copy, each line measured in this walk.
+
+## Session 2026-10-11 — Search results can be tagged, one from its menu or a selection at one stroke, and the tags are added to what a document has (#1576 lane 5)
+
+Lane 5 of the implementation plan on #1576, after lane 4 (#1630). No index version, no CloudKit deploy, no re-index, no shared kit file, and no `@Model` or stored property added. **The plan gave this lane a guarded clear in the launch tag sync, and with it #1591. That was already on `v2`**: #1591 was fixed on its own on 2026-10-09 (#1614, `DocumentTagAssignment.reconcileTagColumn`), so the lane adds no clear and uses that fix's `reindexTagColumn` for its own writes. **The Mac half has not been run.** The isolated check copy was built for it, and the Mac's screen locked before the walk: computer use cannot act on a locked screen, and unlocking it is the owner's. The Mac target compiles clean, its wiring is held by scans, and its picker, writer and session are the code the iPhone ran.
+
+**What a reader gets**
+- **Add Tags…** on a result's menu on iPhone, iPad and Mac, and among a row's VoiceOver actions on iPhone and iPad.
+- **Add Tags…** for a selection: in the Actions menu on iPhone and iPad, a button in the Mac's strip, and "Add Tags to 12 Selected…" on a checked row's menu on the Mac.
+- The tag picker in an adding mode, titled "Tag 37 Documents": every tag off, beside each how many of the documents carry it already, and a line saying that a document keeps the tags it has. Done adds the tags switched on and takes none off.
+- The tagged rows show the tag at once. In selection a line says what was added, with Undo, which takes off the tags that command added and no others.
+- The 1,000 limit is the collection's, and one line speaks for both commands it dims.
+
+**How** (`UserTagAssign.swift`, `UserTagPickerSheet.swift`, `BulkResultRequest.swift`, `ResultSelection.swift`, `ResultSelectionViews.swift`, both view models, `SearchView.swift`, `SearchSheet.swift`)
+- `UserTagAdmin.assign` makes one fetch of every assignment, inserts only the pairs the store does not hold, and saves once. A fetch that fails stops it; a save that fails takes the rows back out; a list over the limit is refused first. Its answer carries each document's whole tag set as the store has it.
+- `UserTagAdmin.removeAssignments` deletes the rows the command inserted, by id. A row gone already is not an error, and no other row is touched.
+- `assignAndIndex` and `removeAssignmentsAndIndex` follow each store write with `DocumentTagAssignment.reindexTagColumn` for the documents touched. The rewrites are chained, each waiting for the one before, so that a tagging's rewrite cannot finish after its Undo's.
+- The picker has a `Mode`. The writer that replaces a document's tag set takes the document as its argument, and the adding mode has none to give it; its Done calls `assignAndIndex`. The sheet closes once to a presentation, in both modes.
+- `BulkResultRequest.Command.addTags`, presented by lane 2's modifier, which is now given the index and `onTagged`.
+- `BulkOutcome.Undo.tagAssignments`; `ResultSelectionSession.recordTagging`; a third closure on the session's `undo`.
+- `SearchResult.replacingUserTagIds` copies a row with other tags, and both view models' `refreshUserTags` swaps the named rows in memory. `recordTagAssign` and the wider `undoBulkOutcome` are the same text in both.
+
+**On an iPhone simulator, by eye** (a clone of the full-corpus simulator, iOS 27.0, a search for "Olney")
+- One result: its menu lists Add Tags… after Add to Collection…; the picker was titled "Tag 1 Document"; a tag made there was on the row when the sheet closed, with no line about it, since nothing was selected.
+- Three rows picked, one of them that row: Actions ▸ Add Tags… gave "Tag 3 Documents", the tag off, "1 of 3 has it" beside it, and the line under the list. Done: "Added “Venezuela boundary” to 2 documents. 1 already had it.", with Undo, the tag on all three rows, and the three still selected.
+- Undo: "Removed “Venezuela boundary” from 2 documents." The two rows lost the tag and the first kept it.
+- Filters ▸ My Tags then counted 1 document under the tag, and with the filter on the search found 1 result, the document that kept it: the index was as the store is after a tagging and its Undo.
+- All 1,000 loaded results selected (Select ▸ All 1,000 Shown), which is the limit and not over it, so both commands were live. The picker was titled "Tag 1,000 Documents" and said "1 of 1,000 has it". Done: "Added “Venezuela boundary” to 999 documents. 1 already had it." The simulator's index was read beside the run, a read-only count every 50 ms of the rows that carry a tag: it went from 1 to 1,000 in under 0.2 s, and after Undo ("Removed “Venezuela boundary” from 999 documents.") back to 1 in about 0.1 s. That is a simulator on this Mac and not a phone.
+
+**What the review and the full run changed** (one agent, one pass over the diff)
+- *Done and Cancel could each run after the other on a sheet that was closing.* A Cancel after a Done would have deleted a tag made in that sheet, which the Done had just given to the documents; a second Done would have replaced the line and its Undo with "Nothing added". Read, not seen. The sheet now closes once to a presentation.
+- *The test of the order of rewrites did not guard the order.* It ran a tagging and its Undo back to back on a real index and passed with the chain cut, since the two rewrites are quick. The writer gained a seam for the rewrite, and a test holds the first rewrite open and sees that the second has not started.
+- *A removal's failed save had no test, and the writer filtered rows the context's fetch never returns.* A test holds what a failed removal leaves; another holds that a row deleted and not yet saved is not in a fetch, and the two filters are gone.
+- *The picker a document opens had lost its plain section title* in the reshaping, and the failure alert said "saved" where a read can fail too. Both put right.
+- *The line under the tag list would have been cut to one line on the Mac.* The full unit run failed #1475's tree-wide census: a `List` section's footer that the Mac draws must be a `WrappingFooterSection`'s. The adding mode's section is one now. The lane's scoped runs had not named that suite.
+- *Comments and two test titles that said more than the code.* Rewritten.
+
+**Tests**
+- `UserTagAdminTests` (17) drive the writer on a real in-memory store: a document tagged A and B gains C and keeps A and B; a second run inserts nothing and does not save; a pair held twice counts as present; the limit, refused before anything is read; a fetch that fails; a save that fails, and the next try; a row deleted and not yet saved; and the Undo, by id, with its own failures.
+- `UserTagAssignIndexTests` (6) on a real index in a temporary folder: a search filtered by the tag returns exactly the tagged documents, and none after Undo; the tag a document had is still found beside the new one; a rewrite asked for second waits for the first; an Undo's rewrite does not start while the tagging's is at work.
+- `TagPickerAddingModeTests` (7): the title, the count beside a tag, the line under the list and the two failures, and scans of the picker: a writer for each mode, one close to a presentation, every toggle off at the start, the section whose footer wraps on the Mac.
+- `ResultSelectionSessionTests` gains four (23) and `ResultTaggingCopyTests` is new (6); `SearchSelectionModelTests` gains three (33), one with a row that carries a tag of its own beside the rows tagged; `SearchResultTagRefreshTests` (2) reads a copied row field by field; `ResultTaggingWiringTests` (2) and the scans of lanes 2 to 4 hold the two hosts, and the twins scan compares nineteen members.
+- UI: `SearchBulkActionsTests.testASelectionIsTaggedAndUndoTakesTheTagBack`, the suite's fifth. It reads the tag back from the picker, opened again ("All 2 have it"), since on iPhone and iPad a result row is one accessibility element named by its heading.
+- **Forty mutations, each failing a test written for it.** Thirty-four in a first run of nineteen builds; five after the review and one after the footer's fix, each in a build of its own. In the first run three shared a failing test with a mutation in the same build and a fourth was caught by a suite the run had not named: those four, and one on the code the review reshaped, were run again alone, and each failed a test of its own.
+
+**Checked**
+- A clean `build-for-testing`: succeeded, with no warning beyond the two known residues.
+- The unit target from a shut-down iPhone 17 simulator (iOS 27.0): 6,899 tests in 810 suites passed, with the 6 known issues of #1606 (lane 4's 6,852 in 804, and this lane's 47 in 6). **A first run of it failed one test**, #1475's census of `List` footers, on the line under the adding mode's tag list. That was fixed as above, and the whole landing was run again.
+- A clean Mac build (`FRUSExplorerMac`, DirectDistribution): succeeded, with the same two residues.
+- The UI suites on that build. `SearchBulkActionsTests`: 5 of 5 on an iPhone 17, and 5 of 5 on an iPad Pro 13-inch (M5) that had been given one test first. `ResultSelectionBarFitTests`: 6 of 6 on an iPhone 17. On an iPhone SE (3rd generation) booted for the run, 5 of 6: the first test failed before it could type ("Neither element nor any descendant has keyboard focus"), which is what the runbook describes for a just-booted iPad, and it passed when run by itself afterwards with the measurements lane 3 recorded.
+- The docs gates after the last doc change: `CodingStandardsAuditTests` and `EditableContentKeyTests` passed.
+
+**Not done**
+- The Mac half was not run, for the reason above. Its list is in the pull request.
+- VoiceOver was not listened to, and dark mode was not looked at. The iPad was not looked at by eye; its UI test passed.
+- The watched run of a 1,000-document add and tag on a Development build signed into iCloud, with a second device, is the owner's by the plan.
+- No command takes a tag off a selection: the plan lists it under Later.
+- Left as they are, and said in the pull request: the order of rewrites covers the bulk writer's own two, a tagging and its Undo, while the picker a document opens, the rail's Remove Tag, a deleted tag's cascade and the reconcile each write the same column on their own, as on `v2`; a failed save of an Undo tells neither the index nor the rows on screen, which keep the tag until the next reconcile; #1614's reconcile clears nothing when the store holds no assignment at all, which a bulk Undo on another device makes easier to reach; and "Added 3 tags to 31 documents" counts the documents that gained at least one.
+- Not filed, from before this lane: on iPhone and iPad a result row's tags are not read by VoiceOver, since the row is one element named by its heading; and the count line reads "1 results" for one result (`ResultSetScope`).
+
+**Docs**
+- `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md`: Add Tags… in the row menu's sentence (7.1), in 7.7a's commands with the Undo's rule, a paragraph in 9.3 on tagging without opening, and a row in the iPhone manual's quick reference. The AI Generated notice stays.
+- `Docs/EditableContent/`: ten blocks added in `07-Search-and-Browse.md` for the lines an Add Tags leaves, and the limit's line re-keyed there; three added in `08-Reading-Research-Collections.md` for the picker's adding mode. Thirty ranged blocks are re-pointed, and the README's table reads 258 blocks for `07` and 297 for `08`.
+- `CLAUDE.md` and `Planning/UI-Test-Destinations-Runbook.md`: `SearchBulkActionsTests` has five tests; the new one's entry; and what a just-booted simulator does to a run's first test, seen on an iPad and on an iPhone SE.
