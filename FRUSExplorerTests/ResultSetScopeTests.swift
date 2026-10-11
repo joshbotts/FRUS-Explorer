@@ -52,7 +52,7 @@ struct ResultSetScopeTests {
         // which `ResultSetScopeMeaningTests` checks across three ceilings.
         ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: 100,
                        totalMatchCount: nil, documentsOnPage: onPage, pageCount: pages,
-                       isMeaningSearch: true)
+                       route: .meaning)
     }
 
     // MARK: - A meaning search has no total to be unavailable (#1193)
@@ -529,7 +529,7 @@ struct ResultSetScopeMeaningTests {
     private func meaning(loaded: Int, shown: Int? = nil, fetchLimit: Int = 100) -> ResultSetScope {
         ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: fetchLimit,
                        totalMatchCount: nil, documentsOnPage: min(loaded, 25),
-                       pageCount: max(1, (loaded + 24) / 25), isMeaningSearch: true)
+                       pageCount: max(1, (loaded + 24) / 25), route: .meaning)
     }
 
     /// A full list, a short one and a single row, under the Meaning engine's own list length and under both keyword
@@ -616,5 +616,250 @@ struct ResultSetScopeMeaningTests {
         var insideUnrecordedCorpus = complete
         insideUnrecordedCorpus.appliedCorpusTruncation = .unrecorded
         #expect(!insideUnrecordedCorpus.isCapturePartial, "an unrecorded capture is not known to be partial")
+    }
+}
+
+// MARK: - ResultSetScopeRouteTests
+
+/// The four routes a list of results can have come by, and what each makes the scope say (#1577 lane 2).
+///
+/// One fixture to a route for each rule and each sentence, so that a route which borrowed another's answer fails a
+/// test of its own. Two of the routes, words found in a Meaning list and a keyword list ranked by a question, are
+/// produced by no search until lanes 4 and 5: these are the sentences those lanes are to adopt.
+///
+/// Version history:
+///   1.0 — #1577 lane 2: initial implementation
+@Suite("Result set scope: the route that produced the rows")
+struct ResultSetScopeRouteTests {
+
+    /// A scope of `loaded` rows, `shown` of them on screen, that came by `route` under `fetchLimit`.
+    private func scope(_ route: ExecutedSearchRoute, loaded: Int, shown: Int? = nil,
+                       fetchLimit: Int = 1_000, total: Int? = nil) -> ResultSetScope {
+        ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: fetchLimit,
+                       totalMatchCount: total, documentsOnPage: min(loaded, 25),
+                       pageCount: max(1, (loaded + 24) / 25), route: route)
+    }
+
+    // MARK: The route's own answers
+
+    @Test("Facets describe the list for every route but a keyword match")
+    func facetsDescribeTheListForEveryRouteButKeywords() {
+        #expect(!ExecutedSearchRoute.keywords.facetsDescribeTheList)
+        #expect(ExecutedSearchRoute.meaning.facetsDescribeTheList)
+        #expect(ExecutedSearchRoute.wordsInMatches(base: 100).facetsDescribeTheList)
+        #expect(ExecutedSearchRoute.rankedByMeaning(unranked: 0).facetsDescribeTheList)
+    }
+
+    @Test("Readings are offered where the last step was a keyword match: a keyword search, and words found in a Meaning list")
+    func readingsFollowTheKeywordMatch() {
+        #expect(ExecutedSearchRoute.keywords.offersReadings)
+        #expect(!ExecutedSearchRoute.meaning.offersReadings)
+        #expect(ExecutedSearchRoute.wordsInMatches(base: 100).offersReadings)
+        #expect(!ExecutedSearchRoute.rankedByMeaning(unranked: 0).offersReadings)
+    }
+
+    @Test("A scope built with no route is a keyword search's, and only a Meaning search is one")
+    func theDefaultRouteIsKeywords() {
+        let plain = ResultSetScope(loaded: 5, shown: 5, fetchLimit: 1_000, totalMatchCount: 5,
+                                   documentsOnPage: 5, pageCount: 1)
+        #expect(plain.route == .keywords)
+        #expect(!plain.isMeaningSearch)
+        #expect(scope(.meaning, loaded: 5).isMeaningSearch)
+        #expect(!scope(.wordsInMatches(base: 100), loaded: 5).isMeaningSearch)
+        #expect(!scope(.rankedByMeaning(unranked: 0), loaded: 5).isMeaningSearch)
+    }
+
+    // MARK: Whether the fetch stopped short
+
+    @Test("A list at its ceiling stopped short for a keyword search and a ranked keyword list, and for neither Meaning route")
+    func theCeilingMeansAFetchOnlyForAKeywordFetch() {
+        #expect(scope(.keywords, loaded: 1_000).didHitFetchLimit)
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000).didHitFetchLimit)
+        #expect(!scope(.meaning, loaded: 100, fetchLimit: 100).didHitFetchLimit)
+        #expect(!scope(.wordsInMatches(base: 100), loaded: 100, fetchLimit: 100).didHitFetchLimit)
+    }
+
+    @Test("A total above what was loaded stops a ranked keyword list short too, and says nothing of a Meaning route")
+    func aLargerTotalMeansAFetchOnlyForAKeywordFetch() {
+        #expect(scope(.keywords, loaded: 40, total: 90).didHitFetchLimit)
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 40, total: 90).didHitFetchLimit)
+        #expect(!scope(.meaning, loaded: 40, fetchLimit: 100, total: 90).didHitFetchLimit)
+        #expect(!scope(.wordsInMatches(base: 100), loaded: 40, fetchLimit: 100, total: 90).didHitFetchLimit)
+        #expect(!scope(.keywords, loaded: 40, total: 40).didHitFetchLimit, "the control: a complete keyword search")
+    }
+
+    @Test("Words found in a Meaning list are partial evidence with nothing else said; the other routes are not")
+    func wordsInMatchesArePartialEvidence() {
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, fetchLimit: 100).isPartialEvidence)
+        #expect(!scope(.keywords, loaded: 7, total: 7).isPartialEvidence)
+        #expect(!scope(.meaning, loaded: 7, fetchLimit: 100).isPartialEvidence)
+        #expect(!scope(.rankedByMeaning(unranked: 0), loaded: 7, total: 7).isPartialEvidence)
+    }
+
+    // MARK: The header
+
+    @Test("A keyword search's header counts its results, and one result is singular")
+    func keywordHeader() {
+        #expect(scope(.keywords, loaded: 412, total: 412).headerDescription == "412 results")
+        #expect(scope(.keywords, loaded: 1, total: 1).headerDescription == "1 result")
+        #expect(scope(.keywords, loaded: 2, total: 2).headerDescription == "2 results")
+        #expect(scope(.keywords, loaded: 1_204, fetchLimit: 7_500, total: 1_204).headerDescription == "1,204 results")
+        #expect(scope(.keywords, loaded: 412, total: 412).layeredHeaderClause == nil)
+    }
+
+    @Test("A Meaning search's header is its closest matches, one of them singular, with no layered clause")
+    func meaningHeader() {
+        let list = scope(.meaning, loaded: 100, fetchLimit: 100)
+        #expect(list.headerDescription == "100 closest matches")
+        #expect(list.layeredHeaderClause == nil)
+        #expect(scope(.meaning, loaded: 1, fetchLimit: 100).headerDescription == "1 closest match")
+        #expect(scope(.meaning, loaded: 2, fetchLimit: 100).headerDescription == "2 closest matches")
+        // The clause counts what is shown, and its number follows that count.
+        #expect(scope(.meaning, loaded: 3, shown: 1, fetchLimit: 100).closestMatchesClause == "1 closest match")
+        #expect(scope(.meaning, loaded: 1, fetchLimit: 100).closestMatchesClause == "1 closest match")
+        #expect(scope(.meaning, loaded: 1_204, fetchLimit: 7_500).closestMatchesClause == "1,204 closest matches")
+    }
+
+    @Test("Words in matches: how many of the list hold the words, one, none, and a list of one")
+    func wordsInMatchesHeader() {
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, fetchLimit: 100).headerDescription
+                == "7 of your 100 closest matches contain these words")
+        #expect(scope(.wordsInMatches(base: 100), loaded: 1, fetchLimit: 100).headerDescription
+                == "1 of your 100 closest matches contains these words")
+        #expect(scope(.wordsInMatches(base: 100), loaded: 0, fetchLimit: 100).headerDescription
+                == "None of your 100 closest matches contains these words")
+        #expect(scope(.wordsInMatches(base: 1), loaded: 1, fetchLimit: 100).headerDescription
+                == "Your closest match contains these words")
+        #expect(scope(.wordsInMatches(base: 1), loaded: 0, fetchLimit: 100).headerDescription
+                == "Your closest match does not contain these words")
+        // The two numbers are not interchangeable: seven of a hundred, never a hundred of seven.
+        #expect(scope(.wordsInMatches(base: 37), loaded: 12, fetchLimit: 100).headerDescription
+                == "12 of your 37 closest matches contain these words")
+    }
+
+    @Test("Words in matches with rows the checklist hides: what is shown, beside what was found")
+    func wordsInMatchesHeaderUnderTheChecklist() {
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, shown: 5, fetchLimit: 100).headerDescription
+                == "5 shown · 7 of your 100 closest matches contain these words")
+        // Every found row hidden is still a find: neither "No results" nor "None of your…", which is for a search
+        // that found nothing.
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, shown: 0, fetchLimit: 100).headerDescription
+                == "0 shown · 7 of your 100 closest matches contain these words")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 212, shown: 0, total: 212).headerDescription
+                == "0 shown · 212 results, closest first")
+        // The routes that had a header before keep the one they had.
+        #expect(scope(.keywords, loaded: 7, shown: 0, total: 7).headerDescription == "No results")
+        #expect(scope(.meaning, loaded: 7, shown: 0, fetchLimit: 100).headerDescription == "No results")
+    }
+
+    @Test("Ranked by meaning: the keyword list's count, closest first, and the split when some rows were not ranked")
+    func rankedByMeaningHeader() {
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 212, total: 212).headerDescription
+                == "212 results, closest first")
+        #expect(scope(.rankedByMeaning(unranked: 9), loaded: 212, total: 212).headerDescription
+                == "212 results · 203 ranked · 9 not ranked")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1, total: 1).headerDescription
+                == "1 result, closest first")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_204, fetchLimit: 7_500, total: 1_204).headerDescription
+                == "1,204 results, closest first")
+        #expect(scope(.rankedByMeaning(unranked: 1_100), loaded: 1_204, fetchLimit: 7_500, total: 1_204)
+                    .headerDescription == "1,204 results · 104 ranked · 1,100 not ranked")
+    }
+
+    @Test("Ranked by meaning with rows the checklist hides, and at the keyword ceiling")
+    func rankedByMeaningHeaderUnderTheChecklistAndAtTheCeiling() {
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 212, shown: 200, total: 212).headerDescription
+                == "200 shown · 212 results, closest first")
+        // Cut where the keyword fetch was cut: the header keeps the layer's words, and the scope still knows.
+        let cut = scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275)
+        #expect(cut.headerDescription == "1,000 results, closest first")
+        #expect(cut.didHitFetchLimit)
+        // A ranked list of nothing has no sentence of its own: there is no list to be closest first.
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 0, total: 0).headerDescription == "No results")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 0, total: 0).layeredHeaderClause == nil)
+    }
+
+    // MARK: The capture
+
+    @Test("What a capture is warned of, by route")
+    func captureWarningByRoute() {
+        #expect(scope(.keywords, loaded: 412, total: 412).captureTruncationWarning == nil)
+        #expect(scope(.meaning, loaded: 100, fetchLimit: 100).captureTruncationWarning
+                == "These documents are the closest matches a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.")
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, fetchLimit: 100).captureTruncationWarning
+                == "These documents are the ones among a Meaning search’s closest matches that contain your words, not every document that contains them. Counts taken inside this corpus are counts inside that set.")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 212, total: 212).captureTruncationWarning == nil,
+                "a keyword list is the same set in any order")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275).captureTruncationWarning
+                == "These 1,000 documents are the highest-scoring of 35,275 matching documents. Counts taken inside this corpus are counts inside that subset.")
+    }
+
+    @Test("Words in matches: the capture's caution is singular when the capture is one document")
+    func captureWarningForOneDocumentFound() {
+        let one = "This document is the one among a Meaning search’s closest matches that contains your words, not every document that contains them. Counts taken inside this corpus are counts inside that set."
+        #expect(scope(.wordsInMatches(base: 100), loaded: 1, fetchLimit: 100).captureTruncationWarning == one)
+        // The capture is of what is shown: three found, two of them hidden by the checklist, is a capture of one.
+        #expect(scope(.wordsInMatches(base: 100), loaded: 3, shown: 1, fetchLimit: 100).captureTruncationWarning == one)
+        #expect(scope(.wordsInMatches(base: 100), loaded: 2, fetchLimit: 100).captureTruncationWarning?
+                    .hasPrefix("These documents are the ones") == true)
+    }
+
+    @Test("The advice to add keywords is given under a keyword list at its ceiling, and not under one a question has ranked")
+    func overCapGuidanceByRoute() {
+        #expect(scope(.keywords, loaded: 1_000, total: 35_275).overCapGuidance
+                == "Add more keywords or filters to see more specific results.")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275).overCapGuidance == nil)
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275).didHitFetchLimit,
+                "the precondition: it is cut, and the advice is withheld for the route's sake")
+        #expect(scope(.meaning, loaded: 100, fetchLimit: 100).overCapGuidance == nil)
+        #expect(scope(.wordsInMatches(base: 100), loaded: 100, fetchLimit: 100).overCapGuidance == nil)
+    }
+
+    @Test("What a capture's record says it came from, by route")
+    func captureProvenanceByRoute() {
+        #expect(scope(.keywords, loaded: 412, total: 412).captureProvenanceDescription == "Search results")
+        #expect(scope(.meaning, loaded: 100, fetchLimit: 100).captureProvenanceDescription
+                == "Meaning search — the 100 closest matches")
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, fetchLimit: 100).captureProvenanceDescription
+                == "Words found in a Meaning search’s closest matches — 7 of 100")
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, shown: 5, fetchLimit: 100).captureProvenanceDescription
+                == "Words found in a Meaning search’s closest matches — 7 of 100; 2 reviewed documents excluded")
+        #expect(scope(.rankedByMeaning(unranked: 9), loaded: 212, total: 212).captureProvenanceDescription
+                == "Search results")
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275).captureProvenanceDescription
+                == "Search results — the highest-scoring 1,000 of 35,275 matches")
+    }
+
+    @Test("Whether a capture is stored as partial, by route")
+    func capturePartialByRoute() {
+        #expect(!scope(.keywords, loaded: 412, total: 412).isCapturePartial)
+        #expect(scope(.meaning, loaded: 100, fetchLimit: 100).isCapturePartial)
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, fetchLimit: 100).isCapturePartial)
+        #expect(!scope(.rankedByMeaning(unranked: 9), loaded: 212, total: 212).isCapturePartial)
+        #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275).isCapturePartial)
+    }
+
+    /// The two captions a reading shows over partial evidence say "the highest-scoring matches", which is what a
+    /// keyword fetch at its ceiling holds. Words found in a Meaning list were chosen by a question and kept for their
+    /// words, so they have captions of their own, and the keyword captions are unchanged.
+    @Test("A reading taken over words found in a Meaning list is captioned in its own words")
+    func readingsOverWordsInMatchesHaveTheirOwnCaptions() {
+        let found = scope(.wordsInMatches(base: 100), loaded: 7, fetchLimit: 100)
+        #expect(found.timelineBiasCaption
+                == "These are the closest matches that contain your words, not a sample across time — this shape is theirs, not the whole match’s.")
+        #expect(found.collocationScopeDescription
+                == "Measured over every result this search loaded, not the page on screen — those are the closest matches that contain your words, not every document that contains them.")
+        #expect(scope(.wordsInMatches(base: 100), loaded: 7, shown: 5, fetchLimit: 100).collocationScopeDescription
+                == "Measured over every result this search loaded, not the page on screen — those are the closest matches that contain your words, not every document that contains them. 2 reviewed documents are excluded.")
+
+        let complete = scope(.keywords, loaded: 7, total: 7)
+        #expect(complete.timelineBiasCaption == nil)
+        #expect(complete.collocationScopeDescription
+                == "Measured over every result this search loaded, which is every matching document.")
+        let cut = scope(.keywords, loaded: 1_000, total: 35_275)
+        #expect(cut.timelineBiasCaption
+                == "These are the highest-scoring matches, not a sample across time — this shape is theirs, not the whole match’s.")
+        #expect(cut.collocationScopeDescription
+                == "Measured over every result this search loaded, not the page on screen — those are the highest-scoring matches, not a sample of all of them.")
     }
 }

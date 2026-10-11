@@ -37001,3 +37001,57 @@ Lane 6 of the implementation plan on #1576, the notes, after lane 5. Manuals and
 **Not done**
 - The TestFlight notes for #1576, which the plan leaves to the next build bump. The plan of record's note for this lane lists what they should cover.
 - Neither sentence was watched happening on two devices: both are read from the code. The owner's watched run of a 1,000-document add and tag (lane 5's pull request) is where they would be seen.
+
+## Session 2026-10-11 — The list on screen is described by one recorded route, which the readings and the facet panel follow when the picker and the rows disagree (#1577 lane 2)
+
+Lane 2 of the implementation plan on #1577, what was left of it. **Most of the lane landed with #1615** (2026-10-09), which composed `ResultSetScope` in both view models from what the run recorded and fixed the five defects the plan gave this lane (#1584, #1595, #1596, #1597, #1598). What remained is the type the later lanes build on, and two places where a window still asked the Keywords | Meaning picker about the rows on screen. No index version, no CloudKit deploy, no re-index, no shared kit file, and no `@Model` or stored property added. **The Mac half has not been run**: the Mac's screen was locked for the whole of this lane, and computer use cannot act on a locked screen. The Mac target compiles clean, its view model is held to the iPhone's by scans, and its two changed controls are read where they are written. **Not seen with a Meaning list**: no simulator here has the search model and none was downloaded, so what follows a switch of the picker was driven through the iPhone's view model with a stand-in engine on a real index.
+
+**What a reader gets**
+- The readings (Timeline, Concordance, Collocates) are offered when the field's engine is Keywords and the rows are a keyword search's, both. The control asked the picker alone: after a switch back from Meaning it was live at once, over the Meaning list still on screen.
+- A reading that is open when its control dims goes back to the list. A Meaning run sent before a switch can land after the keyword search that followed it, since nothing drops a superseded search, and a reading opened in between would have been left open over a Meaning list behind a dimmed control.
+- On the Mac the facet panel, an inspector with its own button, describes the rows that are on screen. It took its count, its wording and the documents it counts over from the picker. On iPhone and iPad Facets is inside the readings menu, so the panel opens over a keyword list only, and this changes nothing a reader can reach there.
+- One result reads "1 result" and one closest match "1 closest match" on iPhone and iPad, where the header read "1 results" and "1 closest matches". The Mac's Meaning label shares the clause.
+
+**How** (`ResultSetScope.swift`, both view models, `SearchView.swift`, `SearchSheet.swift`)
+- `ExecutedSearchRoute`: `keywords`, `meaning`, and the two layers lanes 4 and 5 add, `wordsInMatches(base:)` and `rankedByMeaning(unranked:)`. `ResultSetScope.route` takes the place of the stored `isMeaningSearch` flag, which is now a read of it.
+- Both view models store `executedRoute` where they stored the flag, written beside every statement that assigns the rows (eight on iPhone, nine on the Mac, one of them a Meaning run's in each). Each host also empties the rows itself in one place, where it cannot write the route, so the rows' own observer resets it for an emptied list. `resultsAreSemantic`, which the bulk commands read, is a read of the route.
+- What asks the route is on the view models, in the same words in both: `offersReadings` (the field's engine is Keywords and the rows' route offers readings), and the facet panel's `facetMatchCount` and `facetDocumentKeys`. The hosts pass them through.
+- Each host sends an open reading back to the list when `offersReadings` turns false, in its body and not on the control, since the Mac's Reading picker is not in the window while it is folded into the titlebar's » menu.
+- The two layered routes have their rules and sentences, and no search produces them yet. Words found in a Meaning list never read as a fetch at its ceiling, and are always partial evidence, with captions of their own for the Timeline and Collocates readings, and a partial capture. A keyword list reordered by a question is cut where the keyword fetch was cut, and is not advised to add keywords. The header ("7 of your 100 closest matches contain these words", "212 results, closest first", "212 results · 203 ranked · 9 not ranked"), the capture's caution and its record are from the assessment's *What the reader sees*.
+- **Owed by lane 4, and written on the two cases in `ExecutedSearchRoute`**: "closest first" is false of a list sorted by date; "contain these words" attributes the whole count to the words where a filter may have removed rows; a words-in-matches run must leave `totalMatchCount` nil, or a capture reads back "captured from 7 matches"; and the rank path must not overwrite `lastFetchLimit` as a Meaning run does.
+- Left on the picker, as concerning the field: the Meaning strip in the Query Inspector's place, the searching label, the field's prompts, the Search Tips links, the Mac's Search in chips, the Meaning empty state, and Visualize in Corpus Analytics, which #1615 pinned there.
+
+**What the review changed** (one agent, one pass over the diff, read at the commit while the first mutation run had the worktree)
+- *A reading could still be left open behind a dimmed control*, by a Meaning run that lands late. The reason for asking both conditions covered a switch made through the picker and nothing else. Each host now closes an open reading as the door shuts, and a test lands a Meaning run after the keyword search that followed it.
+- *Two statements empty the rows from the hosts*, where the route cannot be written. After either over a Meaning list the route still said Meaning; nothing on screen showed it. The rows' observer resets it.
+- *Three scans passed with their rule broken*: the keys scan with the two arms of its choice swapped, the door's scan with the line commented out or moved to another control, and the driven facet test, which asserted the route and not what the panel is given. The choice moved into the view models, where a driven test reads the count and the keys through a switch, and the scans read code on the control.
+- *Two captions were false for words found in a Meaning list*, "the highest-scoring matches", and the test pinned only that they were there. They have captions of their own.
+- *A layer whose finds the checklist hides entirely read "No results"*; it says "0 shown" beside what it found.
+- *"1 closest matches"* was on the header line just fixed for "1 results", and was fixed with it.
+- *Comments, doc comments and three test titles said more than the code.* Rewritten.
+
+**Tests**
+- `ResultSetScopeRouteTests`, new (18): one fixture to a route for each rule and each sentence, with one row, none, a list of one, rows the checklist hides in part and entirely, and a list cut at the keyword ceiling.
+- `SearchResultRouteTests` gains ten. Six driven on a real index: the route is written with the rows; what the facet panel is given follows the rows through a switch in both directions; the door needs the engine and the rows; a Meaning run that lands late shuts the door; a list emptied from outside a search loses a Meaning route; a Meaning run that finds nothing keeps its own. Four scans: the route beside every assignment of the rows; both view models in the same words; the door on the control, in code; an open reading closed when the door shuts.
+- `FacetMeaningModeTests`' two host scans require the view model's members in the panel's count, wording and keys, and refuse the picker there, as the plan named. Lane 4's scan of the Mac's row observer reads its new first line.
+- **Sixty-six mutations on the final code, one to a build, each failing a test.** Twenty-six are of the scope's rules and sentences for the four routes, nine more of the sentences the review added, nineteen of the two view models (the route beside the rows, the door's two conditions, the facet panel's count and keys, the emptied list), and twelve of the two hosts' wiring, each a line a scan reads. A first run of forty-six, before the review, had been caught whole as well; eight of those were on lines the review then reshaped, and their successors are among the sixty-six.
+
+**Checked**
+- A clean `build-for-testing`: succeeded, with no warning beyond the two known residues.
+- The unit target from a shut-down iPhone 17 simulator (iOS 27.0): 6,927 tests in 811 suites passed, with the 6 known issues of #1606 (lane 6's 6,899 in 810, and this lane's 28 in 1).
+- A clean Mac build (`FRUSExplorerMac`, DirectDistribution): succeeded, with the same two residues.
+- The UI suites that go through Search, on that build, each simulator given one test first: `ResultSelectionBarFitTests`, whose Collocates test opens a reading through the control this lane changed, 6 of 6 on an iPhone 17; `SearchBulkActionsTests` 5 of 5 on an iPhone 17 and 5 of 5 on an iPad Pro 13-inch (M5).
+- By eye on an iPhone simulator (a clone of the full-corpus one, iOS 27.0): a search narrowed to one tagged document reads "1 result"; the readings menu is live on a keyword list; the facet panel opens with its keyword wording.
+- The docs gates after the last doc change: `CodingStandardsAuditTests` and `EditableContentKeyTests` passed.
+
+**Not done**
+- Not seen with a Meaning list, on any device: see above. The owner's iPhone with the model is where the switch can be watched, and lane 3's seam is what will let a UI test reach a Meaning list.
+- The Mac half was not run, for the reason above. Its list is in the pull request.
+- A search that a later one has superseded is not dropped. That is the root of the late-landing case and is older than this lane; `aMeaningRunThatLandsLateShutsTheDoor` shows it on the iPhone's view model. This lane makes the door and the facet panel right for that state and does not prevent it. On the Mac the superseded task is cancelled and nothing checks for it (read, not run). Not filed.
+- The layered routes are shown by no screen yet: the Mac's count label has no words for them (lane 5; `layeredHeaderClause` is shared for it) and the facet panel's preamble has none (lane 4).
+- Not filed, number agreement outside the header line: the facet panel's "Describing all 1 matches" and "Describing the 1 closest matches"; the capture's caution for a Meaning list of one document; and three sentences that say "1 reviewed documents".
+- Unverified, from the review by reading: for one update pass after a switch over a search that found nothing, the other engine's empty state may be drawn before "Searching…".
+
+**Docs**
+- `Docs/EditableContent/07-Search-and-Browse.md`: fourteen blocks added for the new sentences, twelve of them saying that no search produces their line yet; the README's table reads 272 blocks for `07`. Twenty-five ranged blocks are re-pointed for the lines the lane moved (`ResultSetScope.swift` 6, `SearchView.swift` 8, `SearchSheet.swift` 8, `MacSearchViewModel.swift` 2, `SearchViewModel.swift` 1).
+- No manual changes: nothing a reader is told how to do changes, and the manuals quote the header's count only in the plural.

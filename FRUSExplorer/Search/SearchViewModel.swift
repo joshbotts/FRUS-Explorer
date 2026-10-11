@@ -83,6 +83,9 @@ import Observation
 ///          `resultsAreSemantic`, both now written with the rows; `switchSearchMode(to:)` clears a search the new
 ///          engine cannot run and restores it on the way back; `applyHandoff(_:)` runs a hand-off that names a
 ///          search as a keyword search; the engine is held as `MeaningSearchRunning`
+///   2.5 — #1577 lane 2: `executedRoute`, an `ExecutedSearchRoute`, is what is written with the rows, and
+///          `resultsAreSemantic` reads it; `offersReadings` is the readings' door, asked of the field's engine and
+///          of the rows' route
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -342,6 +345,9 @@ final class SearchViewModel {
     var results: [SearchResult] = [] {
         didSet {
             if currentPage >= totalPages { currentPage = 0 }
+            // No rows, no route (#1577 lane 2): an emptied list is a keyword list until rows arrive,
+            // whoever emptied it. The view clears the rows itself when the field is emptied.
+            if results.isEmpty { executedRoute = .keywords }
             selectionFollowsReplacedResults()
         }
     }
@@ -938,13 +944,48 @@ final class SearchViewModel {
     /// history record describes the search that ran, not the mode the picker shows now.
     private(set) var lastRunWasSemantic = false
 
-    /// Whether the rows in `results` were ranked by a Meaning run (#1597, #1598).
+    /// The route that produced the rows in `results` (#1597, #1598; a route and not a flag since
+    /// #1577 lane 2).
     ///
     /// Written in the statements that assign `results`, so it describes the rows on screen.
     /// `lastRunWasSemantic` is written before the await, for the history record, and `searchMode` is the
     /// picker: during a run, and after a mode switch that had nothing to run, each can name an engine
-    /// the rows did not come from. ``resultSetScope`` reads this one.
-    private(set) var resultsAreSemantic = false
+    /// the rows did not come from. ``resultSetScope`` reads this one, and so does whatever else
+    /// describes the rows: the facet panel's counts and ``offersReadings``.
+    private(set) var executedRoute: ExecutedSearchRoute = .keywords
+
+    /// Whether the rows in `results` were ranked by a Meaning run: a read of ``executedRoute``.
+    var resultsAreSemantic: Bool { executedRoute == .meaning }
+
+    /// Whether the Timeline, Concordance and Collocates readings are offered (#1577 lane 2).
+    ///
+    /// Two conditions, and the door needs both. The rows on screen are a keyword match's own
+    /// (`ExecutedSearchRoute.offersReadings`): after a switch back from Meaning, until the keyword
+    /// rows arrive, the picker says Keywords over a Meaning list, and a reading opened then read that
+    /// list. And the field's engine is Keywords: after a switch to Meaning the keyword rows stay
+    /// until the Meaning list arrives, and a reading opened over them would be left open over that
+    /// list. The view asked the picker alone until this lane. It also closes an open reading when
+    /// this turns false, so that a reading is never left behind a dimmed control.
+    var offersReadings: Bool { searchMode == .keywords && executedRoute.offersReadings }
+
+    /// The count the facet panel heads its preamble with (#1577 lane 2), or `nil` when it is not known.
+    ///
+    /// For a route whose facets describe the list, the list's own size, which is exact. For a keyword
+    /// match, the whole match (``totalMatchCountForFacets``). The route is the rows' and not the
+    /// picker's, so between a switch of the picker and the new rows the panel goes on describing the
+    /// rows that are on screen.
+    var facetMatchCount: Int? {
+        guard hasSearched else { return nil }
+        return executedRoute.facetsDescribeTheList ? results.count : totalMatchCountForFacets
+    }
+
+    /// The documents the facet panel counts over (#1577 lane 2), or `nil` for a keyword match, which
+    /// the panel aggregates in the index. The route is the rows', as for ``facetMatchCount``.
+    var facetDocumentKeys: [(volumeId: String, documentId: String)]? {
+        executedRoute.facetsDescribeTheList
+            ? results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            : nil
+    }
 
     /// Whether a mode switch cleared a search's rows because the new engine had nothing to run, so that
     /// the switch back runs it again (#1597). See ``switchSearchMode(to:)``.
@@ -1003,7 +1044,7 @@ final class SearchViewModel {
             // With the rows, not before the await: `resultSetScope` reads both, and until the rows are
             // replaced the ones on screen are the last search's, fetched under its ceiling (#1584).
             lastFetchLimit = fetchLimit
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
@@ -1040,7 +1081,7 @@ final class SearchViewModel {
             #endif
         } catch {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             // Cleared with the results, at every site that clears them: a total left over from
@@ -1098,7 +1139,7 @@ final class SearchViewModel {
         do {
             let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)
             results = outcome.results
-            resultsAreSemantic = true
+            executedRoute = .meaning
             beyondLibraryHits = outcome.beyondLibrary
             semanticDisclosure = outcome.disclosure
             totalMatchCount = nil
@@ -1118,7 +1159,7 @@ final class SearchViewModel {
             settleSelection(for: checklistAnchorOfThisRun)
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -1128,7 +1169,7 @@ final class SearchViewModel {
             userTagCountScope = nil
         } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -1140,7 +1181,7 @@ final class SearchViewModel {
                 defaultValue: "This search is too long for the model. Try a shorter phrasing.")
         } catch {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -1185,9 +1226,10 @@ final class SearchViewModel {
 
     /// Moves the Keywords | Meaning picker to `newMode`, and settles what the rows on screen are (#1597).
     ///
-    /// **The rows on screen belong to the engine the picker names.** Every surface beside them assumes
-    /// so: the strip under the picker, the Examine menu's gate, the facet panel's counts. A search that
-    /// is on screen therefore runs again through the new engine. When that engine has nothing to run
+    /// **The rows on screen should belong to the engine the picker names.** The strip under the picker
+    /// assumes so. (The Examine menu's gate and the facet panel's counts did until #1577 lane 2; they ask
+    /// the route recorded with the rows now.) A search that is on screen therefore runs again through
+    /// the new engine. When that engine has nothing to run
     /// (Meaning over a browse, which has no question), the rows are cleared and the pre-search prompt
     /// shows, as the Mac's Search window does. Until #1597 the rows stayed where they were, under the
     /// count line "412 closest matches" and the Meaning strip, although no Meaning search had run.
@@ -1205,7 +1247,7 @@ final class SearchViewModel {
         guard hasSearched || searchSetAsideByModeSwitch else { return false }
         if hasRunnableQuery(in: newMode) { return true }
         results = []
-        resultsAreSemantic = false
+        executedRoute = .keywords
         beyondLibraryHits = []
         semanticDisclosure = nil
         semanticNeedsModel = false
@@ -1260,7 +1302,7 @@ final class SearchViewModel {
                        documentsOnPage: pagedResults.count,
                        pageCount: totalPages,
                        appliedCorpusTruncation: appliedWorkingCorpusTruncation,
-                       isMeaningSearch: resultsAreSemantic)
+                       route: executedRoute)
     }
 
     // MARK: - Search History
@@ -1368,7 +1410,7 @@ final class SearchViewModel {
         searchError = nil
         // #1310: the counts describe a result set that no longer exists.
         userTagCountScope = nil
-        resultsAreSemantic = false
+        executedRoute = .keywords
         searchSetAsideByModeSwitch = false
         // #1577 lane 1: nor does the Meaning strip describe one.
         semanticDisclosure = nil

@@ -14,6 +14,71 @@
 
 import Foundation
 
+// MARK: - ExecutedSearchRoute
+
+/// The route that produced the rows on screen, recorded when they arrived (#1577 lane 2).
+///
+/// It is a description of results that is frozen with them, as `UserTagCountScope` is. The
+/// Keywords | Meaning picker names the engine the NEXT search will run through: between a switch
+/// and the new rows' arrival it names an engine the rows on screen did not come from. Whatever
+/// describes those rows asks this, and whatever concerns the field asks the picker.
+///
+/// **No search produces two of the four yet.** ``wordsInMatches(base:)`` and
+/// ``rankedByMeaning(unranked:)`` are the two layers of Search Within These Results (#1577 lanes 4
+/// and 5). They are here, with their sentences in ``ResultSetScope``, so that those lanes adopt one
+/// vocabulary that was tested before the control existed.
+///
+/// Version history:
+///   1.0 — #1577 lane 2: initial implementation, in place of `ResultSetScope`'s `isMeaningSearch` flag
+enum ExecutedSearchRoute: Equatable, Sendable {
+
+    /// A keyword match, or a browse with no words: rows the index matched.
+    case keywords
+    /// A Meaning search: the nearest documents of a ranking of the whole series.
+    case meaning
+    /// Words found inside a held Meaning list of `base` rows: the rows of it that a keyword match
+    /// kept, still closest first.
+    ///
+    /// Owed by lane 4, which is to produce it. The header's sentence attributes the whole count to
+    /// the words, so a filter that removes rows of the layer has to be said beside it. And a capture
+    /// stores `totalMatchCount` beside its partial flag, so the run must leave that total `nil`: its
+    /// own row count there would read back as "captured from 7 matches".
+    case wordsInMatches(base: Int)
+    /// A held keyword list reordered by a question: every row of it, closest first, with the
+    /// `unranked` rows that could not be scored last.
+    ///
+    /// Owed by lane 4. The header says "closest first", which is false of a list sorted by date, so
+    /// that sort must not be offered over a ranked list or the clause not shown under it. And
+    /// ``ResultSetScope/didHitFetchLimit`` reads the keyword fetch's ceiling for this route, so the
+    /// ranking must not overwrite `lastFetchLimit` as a Meaning run does.
+    case rankedByMeaning(unranked: Int)
+
+    /// Whether the facet panel describes the rows on screen and not a match in the index.
+    ///
+    /// A keyword match is aggregated in SQL over every document it matched, of which the list may be
+    /// a sample. For every other route the list is the unit the reader is looking at: a Meaning list
+    /// is a ranking with no match expression to aggregate (#1193), and a layer is made of a list that
+    /// is held. Their facets count the rows of the list itself.
+    var facetsDescribeTheList: Bool {
+        switch self {
+        case .keywords: return false
+        case .meaning, .wordsInMatches, .rankedByMeaning: return true
+        }
+    }
+
+    /// Whether the Timeline, Concordance and Collocates readings are offered over these rows: whether
+    /// the last step that produced them was a keyword match. A keyword search's was, and so was the
+    /// search for words inside a Meaning list, whose rows carry the words. A Meaning list's was a
+    /// ranking. So was a keyword list's once a question has reordered it, and the design keeps its
+    /// readings shut as it does a Meaning list's.
+    var offersReadings: Bool {
+        switch self {
+        case .keywords, .wordsInMatches: return true
+        case .meaning, .rankedByMeaning: return false
+        }
+    }
+}
+
 // MARK: - ResultSetScope
 
 /// Which set a search surface is actually looking at, and the sentences that say so.
@@ -63,7 +128,8 @@ import Foundation
 ///
 /// ## Who builds one
 /// The two search view models, as `SearchViewModel.resultSetScope` and `MacSearchViewModel.resultSetScope`, from what
-/// they recorded when the rows on screen arrived: the ceiling that fetch ran under and the engine that produced it.
+/// they recorded when the rows on screen arrived: the ceiling that fetch ran under and the route that produced them
+/// (``ExecutedSearchRoute``).
 /// Until #1584 each search view built its own from a constant and from the Keywords | Meaning picker, so a complete
 /// browse of 3,000 documents was measured against the 1,000-row keyword ceiling and read as truncated, and a browse's
 /// rows read "closest matches" as soon as the picker moved (#1597).
@@ -72,6 +138,8 @@ import Foundation
 ///   1.0 — Q wave: initial implementation
 ///   1.1 — #1584, #1595, #1597, #1598: ``fetchLimit`` is the ceiling the fetch recorded; a Meaning search never
 ///         reads as a fetch that hit one; the capture sentences and ``isCapturePartial`` have a Meaning branch
+///   1.2 — #1577 lane 2: ``route`` in place of the `isMeaningSearch` flag, with the header and capture sentences of
+///         the two layered routes
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -113,10 +181,11 @@ struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The route that produced it
 
-    /// Whether these results were ranked by MEANING rather than matched by keyword.
-    ///
-    /// The engine that produced the rows, not the mode the picker shows: the view models record it where they assign
-    /// the rows (`resultsAreSemantic`).
+    /// The route that produced these rows: the view models record it where they assign the rows
+    /// (`executedRoute`), so it is never the mode the picker shows.
+    var route: ExecutedSearchRoute = .keywords
+
+    /// Whether these results are a Meaning search's: ranked by MEANING, not matched by keyword.
     ///
     /// **A similarity search has no total, and "total unavailable" says the opposite** (#1193). The
     /// keyword grammar above is built on a match that exists and a fetch that may not have reached
@@ -128,16 +197,21 @@ struct ResultSetScope: Equatable, Sendable {
     /// `MacSearchViewModel.performMeaningSearch` sets `totalMatchCount = nil` deliberately — a
     /// semantic number there would mint phantom deltas in the SavedSearch freshness watermark —
     /// so the nil is correct and it is the *sentence* that was wrong.
-    var isMeaningSearch: Bool = false
+    var isMeaningSearch: Bool { route == .meaning }
 
     /// The header clause for a meaning search: the shape of the answer, not a count of a match.
     ///
     /// Shared so the two platforms cannot word it differently — `headerDescription` renders it on
     /// iOS and `SearchSheet.resultCountLabel` on macOS, which is the same division of labour the
     /// corpus clause above already uses.
+    ///
+    /// One row is "1 closest match" since #1577 lane 2, which gave the keyword header its singular: a Meaning search
+    /// that filters leave one row of, or one inside a set of one document, read "1 closest matches".
     var closestMatchesClause: String {
-        String(format: String(localized: "search.count.closest %@",
-                              defaultValue: "%@ closest matches"), grouped(shown))
+        shown == 1
+            ? String(localized: "search.count.closest.one", defaultValue: "1 closest match")
+            : String(format: String(localized: "search.count.closest %@",
+                                    defaultValue: "%@ closest matches"), grouped(shown))
     }
 
     // MARK: - Derived
@@ -153,8 +227,14 @@ struct ResultSetScope: Equatable, Sendable {
     /// series, so there is no larger match the list stopped short of, and narrowing loads nothing more: filters are
     /// applied to the ranked list and can only remove rows. What a Meaning list is, the header and the capture say in
     /// their own words (``closestMatchesClause``, ``captureTruncationWarning``).
+    ///
+    /// By route (#1577 lane 2): words found inside a Meaning list are a subset of that list, so the same holds for
+    /// them; a keyword list reordered by a question is still the keyword fetch, cut where that fetch was cut.
     var didHitFetchLimit: Bool {
-        if isMeaningSearch { return false }
+        switch route {
+        case .meaning, .wordsInMatches: return false
+        case .keywords, .rankedByMeaning: break
+        }
         if loaded >= fetchLimit { return true }
         if let totalMatchCount { return totalMatchCount > loaded }
         return false
@@ -170,9 +250,13 @@ struct ResultSetScope: Equatable, Sendable {
     /// `unrecorded` does **not** count. A corpus captured before the app recorded truncation might
     /// have been complete, and captioning every legacy corpus as partial would be a different
     /// false claim rather than a repair of the first one.
+    ///
+    /// Words found inside a Meaning list always count (#1577 lane 2): they are some of a ranking's nearest documents,
+    /// and no reading taken over them is a reading of every document that holds the words.
     var isPartialEvidence: Bool {
         if didHitFetchLimit { return true }
         if case .truncated = appliedCorpusTruncation { return true }
+        if case .wordsInMatches = route { return true }
         return false
     }
 
@@ -214,6 +298,64 @@ struct ResultSetScope: Equatable, Sendable {
                       defaultValue: "a partial capture")
     }
 
+    /// "1 result" or "412 results": the count the plain keyword header and the ranked header share.
+    ///
+    /// The header read "1 results" for a search that found one document until #1577 lane 2: its one string had no
+    /// singular. The Mac's count label has had one all along.
+    private func resultsPhrase(_ count: Int) -> String {
+        count == 1
+            ? String(localized: "search.count.one", defaultValue: "1 result")
+            : String(format: String(localized: "search.count %@", defaultValue: "%@ results"), grouped(count))
+    }
+
+    /// The header clause of the two layered routes (#1577 lane 2), or `nil` for a search through one engine and for a
+    /// ranked list of no rows.
+    ///
+    /// Shared for the reason ``closestMatchesClause`` is: iPhone and iPad render it through ``headerDescription``,
+    /// and the Mac's count label is to render the same words when lane 5 gives that window a layer.
+    ///
+    /// - Words in matches: how many of the held Meaning list's rows hold the words, with the list's size, and a
+    ///   sentence of its own when none does.
+    /// - Ranked by meaning: the count the keyword list had, said to be closest first, and split into ranked and
+    ///   not ranked when some rows could not be scored.
+    var layeredHeaderClause: String? {
+        switch route {
+        case .keywords, .meaning:
+            return nil
+        case .wordsInMatches(let base):
+            if base == 1 {
+                return loaded == 0
+                    ? String(localized: "search.count.wordsInMatches.single.none",
+                             defaultValue: "Your closest match does not contain these words")
+                    : String(localized: "search.count.wordsInMatches.single",
+                             defaultValue: "Your closest match contains these words")
+            }
+            switch loaded {
+            case 0:
+                return String(format: String(localized: "search.count.wordsInMatches.none %@",
+                                             defaultValue: "None of your %@ closest matches contains these words"),
+                              grouped(base))
+            case 1:
+                return String(format: String(localized: "search.count.wordsInMatches.one %@",
+                                             defaultValue: "1 of your %@ closest matches contains these words"),
+                              grouped(base))
+            default:
+                return String(format: String(localized: "search.count.wordsInMatches %@ %@",
+                                             defaultValue: "%1$@ of your %2$@ closest matches contain these words"),
+                              grouped(loaded), grouped(base))
+            }
+        case .rankedByMeaning(let unranked):
+            guard loaded > 0 else { return nil }
+            guard unranked > 0 else {
+                return String(format: String(localized: "search.count.rankedByMeaning %@",
+                                             defaultValue: "%@, closest first"), resultsPhrase(loaded))
+            }
+            return String(format: String(localized: "search.count.rankedByMeaning.partial %@ %@ %@",
+                                         defaultValue: "%1$@ · %2$@ ranked · %3$@ not ranked"),
+                          resultsPhrase(loaded), grouped(max(0, loaded - unranked)), grouped(unranked))
+        }
+    }
+
     /// The results-count header — the line where the three-way collision lived.
     ///
     /// It read `"%lld results"` over the checklist-**filtered** count while the line beneath read
@@ -226,6 +368,15 @@ struct ResultSetScope: Equatable, Sendable {
     /// follows macOS's existing `resultCountLabel` — "loaded", "total", "total unavailable" —
     /// rather than inventing a third dialect for the same facts.
     var headerDescription: String {
+        // The layered routes first. A layer that found nothing says what it looked in, which "No results" would not.
+        // And its clause counts what was loaded, so what the checklist hides is said beside it, down to "0 shown":
+        // finds that are all hidden are still finds.
+        if let layered = layeredHeaderClause {
+            guard hiddenByChecklist > 0 else { return layered }
+            return [String(format: String(localized: "search.count.shown %@", defaultValue: "%@ shown"),
+                           grouped(shown)),
+                    layered].joined(separator: " · ")
+        }
         if shown == 0 {
             return String(localized: "search.count.none", defaultValue: "No results")
         }
@@ -242,8 +393,7 @@ struct ResultSetScope: Equatable, Sendable {
                     defaultValue: "%1$@ in this corpus · %2$@"),
                     grouped(shown), clause)
             }
-            return String(format: String(localized: "search.count %@",
-                                         defaultValue: "%@ results"), grouped(shown))
+            return resultsPhrase(shown)
         }
         if !didHitFetchLimit {
             return String(format: String(localized: "search.count.shownOf %@ %@",
@@ -269,8 +419,12 @@ struct ResultSetScope: Equatable, Sendable {
     ///
     /// It used to carry `searchHardLimit`, which is what put a second unlabelled "results" count
     /// on screen. ``headerDescription`` states the numbers now, once, with labels.
+    ///
+    /// None for a keyword list ranked by a question (#1577 lane 2). It was cut where the keyword fetch was cut, and the
+    /// field now holds the question, so advice to add keywords is not advice the reader can take there.
     var overCapGuidance: String? {
         guard didHitFetchLimit else { return nil }
+        if case .rankedByMeaning = route { return nil }
         return String(localized: "search.capped.guidance",
                       defaultValue: "Add more keywords or filters to see more specific results.")
     }
@@ -292,6 +446,15 @@ struct ResultSetScope: Equatable, Sendable {
         if isMeaningSearch {
             return String(localized: "corpus.save.meaning",
                           defaultValue: "These documents are the closest matches a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.")
+        }
+        // Never `nil` for words found in a Meaning list either: they are some of that list (#1577 lane 2).
+        if case .wordsInMatches = route {
+            // The capture is of what is shown, so the number agrees with that.
+            return shown == 1
+                ? String(localized: "corpus.save.wordsInMatches.one",
+                         defaultValue: "This document is the one among a Meaning search’s closest matches that contains your words, not every document that contains them. Counts taken inside this corpus are counts inside that set.")
+                : String(localized: "corpus.save.wordsInMatches",
+                         defaultValue: "These documents are the ones among a Meaning search’s closest matches that contain your words, not every document that contains them. Counts taken inside this corpus are counts inside that set.")
         }
         guard didHitFetchLimit else { return nil }
         if let totalMatchCount {
@@ -337,7 +500,14 @@ struct ResultSetScope: Equatable, Sendable {
                 : String(format: String(localized: "corpus.save.source.meaning %@",
                                         defaultValue: "Meaning search — the %@ closest matches"),
                          grouped(loaded))
+        } else if case .wordsInMatches(let base) = route {
+            // Named for what it is, as a Meaning list is: the record outlives the screen that said so.
+            description = String(format: String(
+                localized: "corpus.save.source.wordsInMatches %@ %@",
+                defaultValue: "Words found in a Meaning search’s closest matches — %1$@ of %2$@"),
+                grouped(loaded), grouped(base))
         } else {
+            // A keyword list, in its own order or reordered by a question: a corpus stores a set and not an order.
             description = String(localized: "corpus.save.source.search", defaultValue: "Search results")
         }
         if didHitFetchLimit {
@@ -372,6 +542,9 @@ struct ResultSetScope: Equatable, Sendable {
     /// nearest documents are not. `true` with no total is the value every reader of the flag already treats with care:
     /// the corpus lists print their amber line, the method appendix prints its completeness note, and a search run
     /// inside the corpus is captioned as partial evidence.
+    ///
+    /// Words found inside a Meaning list are partial too, through ``isPartialEvidence``. A keyword list reordered by a
+    /// question is as whole as the keyword fetch was.
     var isCapturePartial: Bool { isMeaningSearch || isPartialEvidence }
 
     // MARK: - Panels (state only their own narrowing — never restate the cap)
@@ -398,11 +571,18 @@ struct ResultSetScope: Equatable, Sendable {
     /// with the same two figures, and the sort bar's result count is a third. The distinction this
     /// draws — the whole loaded set, not the page — is the one nothing else on screen states.
     var collocationScopeDescription: String {
-        var description = isPartialEvidence
-            ? String(localized: "search.collocation.caveat.scope.loaded.capped",
-                     defaultValue: "Measured over every result this search loaded, not the page on screen — those are the highest-scoring matches, not a sample of all of them.")
-            : String(localized: "search.collocation.caveat.scope.loaded.complete",
-                     defaultValue: "Measured over every result this search loaded, which is every matching document.")
+        var description: String
+        if case .wordsInMatches = route {
+            // Not "the highest-scoring matches": these rows were chosen by a question, and kept for their words.
+            description = String(localized: "search.collocation.caveat.scope.loaded.wordsInMatches",
+                                 defaultValue: "Measured over every result this search loaded, not the page on screen — those are the closest matches that contain your words, not every document that contains them.")
+        } else {
+            description = isPartialEvidence
+                ? String(localized: "search.collocation.caveat.scope.loaded.capped",
+                         defaultValue: "Measured over every result this search loaded, not the page on screen — those are the highest-scoring matches, not a sample of all of them.")
+                : String(localized: "search.collocation.caveat.scope.loaded.complete",
+                         defaultValue: "Measured over every result this search loaded, which is every matching document.")
+        }
         if hiddenByChecklist > 0 {
             description += String(format: String(
                 localized: "search.collocation.caveat.scope.checklist %@",
@@ -419,8 +599,15 @@ struct ResultSetScope: Equatable, Sendable {
     /// distribution, and a BM25 top-1,000 is not date-neutral — so a caveat about *size* cannot
     /// correct a *shape*. `nil` when the fetch did not hit its ceiling: an uncapped "plotting all
     /// 412 results" caption is chrome carrying no information.
+    ///
+    /// Words found in a Meaning list have a caption of their own (#1577 lane 2): they are not the highest-scoring of a
+    /// larger keyword match, they are the rows of a ranking that hold the words.
     var timelineBiasCaption: String? {
         guard isPartialEvidence else { return nil }
+        if case .wordsInMatches = route {
+            return String(localized: "search.timeline.bias.wordsInMatches",
+                          defaultValue: "These are the closest matches that contain your words, not a sample across time — this shape is theirs, not the whole match’s.")
+        }
         return String(localized: "search.timeline.bias",
                       defaultValue: "These are the highest-scoring matches, not a sample across time — this shape is theirs, not the whole match’s.")
     }

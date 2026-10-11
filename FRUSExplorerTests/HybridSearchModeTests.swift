@@ -522,6 +522,38 @@ private struct FixedMeaningSearch: MeaningSearchRunning {
     }
 }
 
+/// A Meaning engine whose runs wait to be let go (#1577 lane 2), so a test can land a keyword search
+/// while a Meaning run that was sent first is still out.
+@MainActor
+private final class GatedMeaningSearch: MeaningSearchRunning {
+
+    /// The rows every run returns once it is released.
+    private let rows: [SearchResult]
+    /// The runs that are waiting.
+    private var waiting: [CheckedContinuation<Void, Never>] = []
+    /// How many runs have reached the engine.
+    private(set) var started = 0
+
+    init(returning count: Int) { rows = FixedMeaningSearch.returning(count).rows }
+
+    func run(query: String, parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome {
+        started += 1
+        await withCheckedContinuation { waiting.append($0) }
+        return SemanticSearchBackend.Outcome(
+            results: rows, beyondLibrary: [],
+            disclosure: SemanticSearchBackend.Disclosure(
+                unscoredCandidates: 0, unscoredVolumes: 0, downloadingVolumes: 0,
+                filtersApplied: false, filteredOut: 0, beyondUncheckedByFilters: false))
+    }
+
+    /// Lets every waiting run return.
+    func release() {
+        let held = waiting
+        waiting = []
+        held.forEach { $0.resume() }
+    }
+}
+
 /// What the search screen says of the rows it shows follows the run that produced them: the ceiling that fetch ran
 /// under, and the engine it ran through.
 ///
@@ -661,6 +693,169 @@ struct SearchResultRouteTests {
         #expect(vm.resultSetScope.headerDescription == "6 results")
     }
 
+    // MARK: - #1577 lane 2: the route, and what asks it
+
+    @Test("The route is written with the rows, and a switch of the picker alone does not move it")
+    func theRouteIsWrittenWithTheRows() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(3)
+        #expect(vm.executedRoute == .keywords, "before any search")
+
+        vm.keywords = "containment"
+        await vm.search()
+        #expect(vm.executedRoute == .keywords)
+        #expect(!vm.resultsAreSemantic)
+
+        #expect(vm.switchSearchMode(to: .meaning))
+        #expect(vm.executedRoute == .keywords, "the picker moved; the rows are still the keyword search's")
+        await vm.search()
+        #expect(vm.executedRoute == .meaning)
+        #expect(vm.resultsAreSemantic)
+        #expect(vm.resultSetScope.route == .meaning)
+
+        #expect(vm.switchSearchMode(to: .keywords))
+        #expect(vm.executedRoute == .meaning, "the picker moved back; the rows are still the Meaning search's")
+        await vm.search()
+        #expect(vm.executedRoute == .keywords)
+        #expect(vm.resultSetScope.route == .keywords)
+    }
+
+    /// The facet panel is given three things: the count it heads its preamble with, whether to word that preamble for
+    /// a Meaning list, and the keys to count over. Each host worked all three out from the picker, so between a switch
+    /// and the new rows the panel described keyword rows as a Meaning list, or ran the keyword match of a question
+    /// beside a Meaning list. They are the view model's now, and each host passes them through
+    /// (`FacetMeaningModeTests`).
+    @Test("What the facet panel is given follows the rows through a switch, in both directions")
+    func theFacetPanelsInputsFollowTheRows() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(3)
+        #expect(vm.facetMatchCount == nil, "before any search there is no count to head the panel with")
+
+        vm.keywords = "containment"
+        await vm.search()
+        #expect(vm.facetMatchCount == 6)
+        #expect(vm.facetDocumentKeys == nil, "a keyword match is aggregated in the index, not over keys")
+        #expect(!vm.resultsAreSemantic)
+
+        #expect(vm.switchSearchMode(to: .meaning))
+        #expect(vm.searchMode == .meaning)
+        #expect(vm.facetDocumentKeys == nil, """
+            The picker says Meaning and the six rows are a keyword match's. Asked of the picker, the panel would \
+            be handed their six keys and would word them as "the 6 closest matches".
+            """)
+        #expect(!vm.resultsAreSemantic)
+
+        await vm.search()
+        #expect(vm.facetMatchCount == 3)
+        #expect(vm.facetDocumentKeys?.map(\.documentId) == ["m0", "m1", "m2"], "a Meaning list's facets count its own rows")
+        #expect(vm.resultsAreSemantic)
+
+        #expect(vm.switchSearchMode(to: .keywords))
+        #expect(vm.searchMode == .keywords)
+        #expect(vm.facetMatchCount == 3)
+        #expect(vm.facetDocumentKeys?.map(\.documentId) == ["m0", "m1", "m2"], """
+            The picker says Keywords and the three rows are a Meaning list. Asked of the picker, the panel would \
+            be handed no keys and would aggregate the keyword match of the question beside that list.
+            """)
+        #expect(vm.resultsAreSemantic)
+
+        await vm.search()
+        #expect(vm.facetMatchCount == 6)
+        #expect(vm.facetDocumentKeys == nil)
+    }
+
+    @Test("The readings are offered for keyword rows under the Keywords engine, and not across a switch in either direction")
+    func theReadingsDoorNeedsTheEngineAndTheRows() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(3)
+
+        vm.keywords = "containment"
+        await vm.search()
+        #expect(vm.offersReadings)
+
+        // Keywords to Meaning: the field's engine is Meaning at once, so the door shuts at once.
+        #expect(vm.switchSearchMode(to: .meaning))
+        #expect(!vm.offersReadings, "a reading opened now would be left open over the Meaning list about to arrive")
+        await vm.search()
+        #expect(!vm.offersReadings)
+
+        // Meaning to Keywords: the engine is Keywords at once, and the rows are still a Meaning list.
+        #expect(vm.switchSearchMode(to: .keywords))
+        #expect(vm.searchMode == .keywords)
+        #expect(!vm.offersReadings, """
+            The door opened on the picker alone, over a Meaning list: a concordance opened in that moment scanned \
+            the Meaning list's rows for the words of the question.
+            """)
+        await vm.search()
+        #expect(vm.offersReadings)
+    }
+
+    /// Nothing drops a search that has been superseded, so a Meaning run sent before a switch can land after the
+    /// keyword search that followed it. The rows are then a Meaning list under a picker that says Keywords. The door
+    /// has to shut in that state, and each host closes an open reading as it shuts
+    /// (`bothHostsCloseAReadingWhenItsDoorShuts`): until this lane the door stayed open over that list.
+    @Test("A Meaning run that lands after the keyword search which followed it shuts the readings' door")
+    func aMeaningRunThatLandsLateShutsTheDoor() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = GatedMeaningSearch(returning: 3)
+        vm.semanticBackend = engine
+
+        vm.searchMode = .meaning
+        vm.keywords = "containment"
+        let meaningRun = Task { await vm.search() }
+        while engine.started == 0 { await Task.yield() }
+
+        // The reader goes back to Keywords, and that search lands while the Meaning run is still out.
+        #expect(vm.switchSearchMode(to: .keywords), "a search that is under way runs again through the new engine")
+        await vm.search()
+        #expect(vm.results.count == 6)
+        #expect(vm.executedRoute == .keywords)
+        #expect(vm.offersReadings, "keyword rows under the Keywords engine: a reading can be opened here")
+
+        engine.release()
+        await meaningRun.value
+        #expect(vm.searchMode == .keywords)
+        #expect(vm.results.count == 3, "the precondition: the Meaning run's rows replaced the keyword search's")
+        #expect(vm.executedRoute == .meaning)
+        #expect(!vm.offersReadings)
+        #expect(vm.facetDocumentKeys?.count == 3)
+        #expect(vm.resultSetScope.headerDescription == "3 closest matches")
+    }
+
+    /// `results` can be assigned from outside the search functions: each host empties it itself, the iPhone's view when
+    /// the field is emptied and the Mac's window when the index is rebuilt. Neither can write the route.
+    @Test("A list emptied from outside a search has no Meaning route left on it")
+    func anEmptiedListIsNoLongerAMeaningList() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(3)
+        vm.searchMode = .meaning
+        vm.keywords = "how was containment meant to work"
+        await vm.search()
+        #expect(vm.executedRoute == .meaning)
+
+        vm.results = []          // what `SearchView` does when the field is emptied
+        #expect(vm.executedRoute == .keywords)
+        #expect(!vm.resultsAreSemantic)
+        #expect(vm.facetDocumentKeys == nil)
+    }
+
+    @Test("A Meaning run that finds nothing is still recorded as a Meaning run")
+    func aMeaningRunThatFindsNothingKeepsItsRoute() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.semanticBackend = FixedMeaningSearch.returning(0)
+        vm.searchMode = .meaning
+        vm.keywords = "how was containment meant to work"
+        await vm.search()
+        #expect(vm.results.isEmpty)
+        #expect(vm.executedRoute == .meaning, "the route is written after the rows, so emptiness does not reset it here")
+    }
+
     @Test("A mode switch before any search runs nothing and clears nothing")
     func aModeSwitchBeforeAnySearchRunsNothing() async throws {
         let (dir, vm) = try await makeViewModel(documents: 6)
@@ -776,6 +971,13 @@ struct SearchResultRouteTests {
         return text
     }
 
+    /// `text` without its comment lines, so that a scan reads code.
+    private static func code(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
     /// The text of the declaration that starts with `header`, through its closing brace.
     private static func declaration(_ header: String, in source: String, path: String) throws -> String {
         let start = try #require(source.range(of: header), "\(path) no longer declares `\(header)`")
@@ -803,8 +1005,8 @@ struct SearchResultRouteTests {
             let scope = try Self.declaration("var resultSetScope: ResultSetScope {", in: source, path: path)
             #expect(scope.contains("fetchLimit: lastFetchLimit,"),
                     "\(path): the scope must carry the ceiling this fetch ran under, not a constant (#1584)")
-            #expect(scope.contains("isMeaningSearch: resultsAreSemantic)"),
-                    "\(path): the scope must carry the engine that produced the rows, not the picker (#1597)")
+            #expect(scope.contains("route: executedRoute)"),
+                    "\(path): the scope must carry the route that produced the rows, not the picker (#1597)")
             #expect(!scope.contains("searchMode"), "\(path): the scope reads the picker")
             #expect(!scope.contains("HardLimit"), "\(path): the scope reads a ceiling constant")
         }
@@ -815,6 +1017,116 @@ struct SearchResultRouteTests {
             The Mac window's truncation flag has its own rule again. It called a full Meaning list truncated while \
             the shared scope did not (#1595).
             """)
+    }
+
+    /// "Written with the rows" is a rule about statements: the route is assigned beside each assignment of `results`,
+    /// in the same branch, so no path can show rows under another route. Counted in each file, so that a new
+    /// assignment of rows without one fails here. The one exception rewrites rows in place and cannot change their
+    /// route: the tag refresh of #1576 lane 5.
+    @Test("Each view model writes the route beside every statement that assigns the rows")
+    func theRouteIsAssignedBesideEveryAssignmentOfRows() throws {
+        for (path, expected) in [("FRUSExplorer/Search/SearchViewModel.swift", 8),
+                                 ("FRUSExplorer/App/MacSearchViewModel.swift", 9)] {
+            let lines = try Self.source(path).components(separatedBy: "\n")
+            var assignments = 0
+            var meaning = 0
+            for (index, line) in lines.enumerated() {
+                let code = line.trimmingCharacters(in: .whitespaces)
+                guard code.hasPrefix("results = "), !code.hasPrefix("results = results.map") else { continue }
+                assignments += 1
+                let window = lines[index..<min(lines.count, index + 9)].map { $0.trimmingCharacters(in: .whitespaces) }
+                let route = window.first { $0.hasPrefix("executedRoute = ") }
+                #expect(route != nil, "\(path):\(index + 1): rows are assigned with no route beside them")
+                // A Meaning run's rows are the only ones that are a Meaning list, and they are never anything else.
+                let isMeaningRows = code == "results = outcome.results"
+                #expect((route == "executedRoute = .meaning") == isMeaningRows,
+                        "\(path):\(index + 1): `\(code)` is given `\(route ?? "no route")`")
+                if isMeaningRows { meaning += 1 }
+            }
+            #expect(assignments == expected, "\(path) assigns its rows in \(assignments) statements; this test read \(expected)")
+            #expect(meaning == 1, "\(path) has \(meaning) statements that assign a Meaning run's rows")
+            let writes = lines.filter { $0.trimmingCharacters(in: .whitespaces).hasPrefix("executedRoute = ") }.count
+            #expect(writes == expected, "\(path) writes the route \(writes) times for \(expected) assignments of rows")
+        }
+    }
+
+    /// `MacSearchViewModel` is compiled for the Mac alone, so what the driven tests above hold for the iPhone's view
+    /// model is held for the Mac's by its being the same text. One member differs by design, the facet panel's count:
+    /// the Mac takes a whole-match count beside every search, and the iPhone shows none before a search has run.
+    @Test("Both view models hold the route, the door and the facet panel's inputs in the same words")
+    func bothViewModelsHoldTheRouteAndWhatAsksItAlike() throws {
+        let keys = """
+                var facetDocumentKeys: [(volumeId: String, documentId: String)]? {
+                    executedRoute.facetsDescribeTheList
+                        ? results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+                        : nil
+                }
+
+            """
+        let counts = [
+            "FRUSExplorer/Search/SearchViewModel.swift": """
+                    var facetMatchCount: Int? {
+                        guard hasSearched else { return nil }
+                        return executedRoute.facetsDescribeTheList ? results.count : totalMatchCountForFacets
+                    }
+
+                """,
+            "FRUSExplorer/App/MacSearchViewModel.swift": """
+                    var facetMatchCount: Int? {
+                        executedRoute.facetsDescribeTheList ? results.count : totalMatchCount
+                    }
+
+                """,
+        ]
+        for (path, count) in counts.sorted(by: { $0.key < $1.key }) {
+            let source = try Self.source(path)
+            #expect(source.contains("    private(set) var executedRoute: ExecutedSearchRoute = .keywords\n"),
+                    "\(path): the route is not a stored property only the view model writes")
+            #expect(source.contains("    var resultsAreSemantic: Bool { executedRoute == .meaning }\n"),
+                    "\(path): the flag the bulk commands and the facet panel read is no longer a read of the route")
+            #expect(source.contains(
+                "    var offersReadings: Bool { searchMode == .keywords && executedRoute.offersReadings }\n"),
+                    "\(path): the readings' door no longer asks both the field's engine and the rows' route")
+            #expect(source.contains(keys), "\(path): the facet panel's keys are not chosen by the rows' route in these words")
+            #expect(source.contains(count), "\(path): the facet panel's count is not chosen by the rows' route in these words")
+            // The rows' own observer: a list emptied from outside a search function loses a Meaning route.
+            let rows = try Self.declaration("    var results: [SearchResult] = [] {", in: source, path: path)
+            #expect(rows.contains("            if results.isEmpty { executedRoute = .keywords }\n"),
+                    "\(path): an emptied list keeps the route of the rows it held")
+        }
+    }
+
+    /// The door's line, read where the control is and with comments set aside: the same words in a comment, or on
+    /// another control of the file, would not dim the readings.
+    @Test("Both hosts dim the readings' control by the view model's rule, on the control itself")
+    func bothHostsAskTheViewModelForTheReadingsDoor() throws {
+        for (path, header, control, door) in [
+            ("FRUSExplorer/Search/SearchView.swift", "    private var examineMenu: some View {",
+             "selection: readingSelection) {", ".disabled(vm.results.isEmpty || !vm.offersReadings)"),
+            ("FRUSExplorer/App/SearchSheet.swift", "    private var searchToolbar: some ToolbarContent {",
+             "Picker(selection: readingSelection) {", ".disabled(searchVM.results.isEmpty || !searchVM.offersReadings)"),
+        ] {
+            let declaration = Self.code(try Self.declaration(header, in: try Self.source(path), path: path))
+            let picker = try #require(declaration.range(of: control), "\(path): `\(header)` no longer holds the reading picker")
+            let after = declaration[picker.upperBound...]
+            #expect(after.components(separatedBy: door).count - 1 == 1,
+                    "\(path): the reading picker is not followed by `\(door)` in code")
+            #expect(!declaration.contains("searchMode"), "\(path): `\(header)` asks the picker about the rows")
+        }
+    }
+
+    /// The other half of the door: a reading that is open when it shuts. The picker's setter closes the readings on a
+    /// switch, and that is not the only way a Meaning list arrives (`aMeaningRunThatLandsLateShutsTheDoor`).
+    @Test("Both hosts send an open reading back to the list when its door shuts")
+    func bothHostsCloseAReadingWhenItsDoorShuts() throws {
+        for (path, owner) in [("FRUSExplorer/Search/SearchView.swift", "vm"),
+                              ("FRUSExplorer/App/SearchSheet.swift", "searchVM")] {
+            let code = Self.code(try Self.source(path)).filter { !$0.isWhitespace }
+            let handler = ".onChange(of:\(owner).offersReadings){_,offeredin"
+                + "if!offered{readingSelection.wrappedValue=.list}}"
+            #expect(code.components(separatedBy: handler).count - 1 == 1,
+                    "\(path) does not close an open reading when the view model stops offering readings")
+        }
     }
 
     @Test("Neither search view composes a scope of its own")

@@ -700,9 +700,13 @@ struct MacResultSelectionWiringTests {
     @Test("Six properties of the Mac's view model take rows off its list, and each tells the selection")
     func observersFollowTheList() throws {
         let code = Self.squeezedCode(try Self.source(Self.macModel))
+        // The first line of the observer is #1577 lane 2's: an emptied list loses a Meaning route.
         #expect(code.contains(Self.squeezed("""
             var results: [SearchResult] = [] {
-                didSet { selectionFollowsReplacedResults() }
+                didSet {
+                    if results.isEmpty { executedRoute = .keywords }
+                    selectionFollowsReplacedResults()
+                }
             }
             """)))
         #expect(code.contains(Self.squeezed("""

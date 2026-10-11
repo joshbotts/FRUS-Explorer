@@ -93,6 +93,9 @@ import SwiftData
 ///          `resultsAreSemantic`, both now written with the rows; `isResultSetTruncated` asks it, so a full
 ///          Meaning list is no longer flagged as truncated; `applyHandoff(_:)` runs a hand-off that names a
 ///          search as a keyword search; the engine is held as `MeaningSearchRunning`
+///   1.10 — #1577 lane 2: `executedRoute`, an `ExecutedSearchRoute`, is what is written with the rows, and
+///          `resultsAreSemantic` reads it; `offersReadings` is the readings' door, asked of the field's engine and
+///          of the rows' route
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -214,12 +217,46 @@ final class MacSearchViewModel {
     /// Whether the last completed run was a Meaning run — frozen for the history record.
     private(set) var lastRunWasSemantic = false
 
-    /// Whether the rows in `results` were ranked by a Meaning run (#1595, #1598).
+    /// The route that produced the rows in `results` (#1595, #1598; a route and not a flag since
+    /// #1577 lane 2).
     ///
     /// Written in the statements that assign `results`, so it describes the rows on screen: while a run
     /// is under way after a mode switch, `searchMode` and `lastRunWasSemantic` already name the new
-    /// engine and the rows are still the last one's. ``resultSetScope`` reads this one.
-    private(set) var resultsAreSemantic = false
+    /// engine and the rows are still the last one's. ``resultSetScope`` reads this one, and so does
+    /// whatever else describes the rows: the facet panel's counts and ``offersReadings``.
+    private(set) var executedRoute: ExecutedSearchRoute = .keywords
+
+    /// Whether the rows in `results` were ranked by a Meaning run: a read of ``executedRoute``.
+    var resultsAreSemantic: Bool { executedRoute == .meaning }
+
+    /// Whether the Timeline, Concordance and Collocates readings are offered (#1577 lane 2).
+    ///
+    /// Two conditions, and the door needs both. The rows on screen are a keyword match's own
+    /// (`ExecutedSearchRoute.offersReadings`): after a switch back from Meaning, until the keyword
+    /// rows arrive, the picker says Keywords over a Meaning list, and a reading opened then read that
+    /// list. And the field's engine is Keywords: after a switch to Meaning the keyword rows stay
+    /// until the Meaning list arrives, and a reading opened over them would be left open over that
+    /// list. The view asked the picker alone until this lane. It also closes an open reading when
+    /// this turns false, so that a reading is never left behind a dimmed control.
+    var offersReadings: Bool { searchMode == .keywords && executedRoute.offersReadings }
+
+    /// The count the facet panel heads its preamble with (#1577 lane 2), or `nil` when it is not known.
+    ///
+    /// For a route whose facets describe the list, the list's own size, which is exact. For a keyword
+    /// match, the whole match (``totalMatchCount``, `nil` when the count did not come back). The route
+    /// is the rows' and not the picker's, so between a switch of the picker and the new rows the panel
+    /// goes on describing the rows that are on screen.
+    var facetMatchCount: Int? {
+        executedRoute.facetsDescribeTheList ? results.count : totalMatchCount
+    }
+
+    /// The documents the facet panel counts over (#1577 lane 2), or `nil` for a keyword match, which
+    /// the panel aggregates in the index. The route is the rows', as for ``facetMatchCount``.
+    var facetDocumentKeys: [(volumeId: String, documentId: String)]? {
+        executedRoute.facetsDescribeTheList
+            ? results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            : nil
+    }
 
     /// How many documents the next search would run inside, or `nil` when no document set is
     /// applied: the size of the gate in `parameters`, an applied working corpus intersected with
@@ -283,7 +320,7 @@ final class MacSearchViewModel {
     /// Which set the My Tags counts describe, frozen when a search COMPLETES (#1310).
     ///
     /// The macOS twin of `SearchViewModel.userTagCountScope`, and set at the same points for the
-    /// same reason: the route flag is written before the await, so deriving this when the popover
+    /// same reason: `lastRunWasSemantic` is written before the await, so deriving this when the popover
     /// opens would describe a run that has not produced results yet.
     private(set) var userTagCountScope: UserTagCountScope?
 
@@ -296,7 +333,12 @@ final class MacSearchViewModel {
     /// The loaded results. A selection follows every replacement of them (#1576 lane 4): an
     /// emptied list ends it, and the picks a new list does not show are dropped.
     var results: [SearchResult] = [] {
-        didSet { selectionFollowsReplacedResults() }
+        didSet {
+            // No rows, no route (#1577 lane 2): an emptied list is a keyword list until rows arrive,
+            // whoever emptied it. The window clears the rows itself when the index is rebuilt.
+            if results.isEmpty { executedRoute = .keywords }
+            selectionFollowsReplacedResults()
+        }
     }
     var isSearching: Bool = false
     /// What the last search failed with. The window draws it in the rows' place, so setting one
@@ -353,7 +395,7 @@ final class MacSearchViewModel {
                        documentsOnPage: pagedResults.count,
                        pageCount: totalPages,
                        appliedCorpusTruncation: filterVM?.appliedWorkingCorpusTruncation,
-                       isMeaningSearch: resultsAreSemantic)
+                       route: executedRoute)
     }
 
     /// The count to display, and whether it is the real total.
@@ -1309,7 +1351,7 @@ final class MacSearchViewModel {
         let hasStandaloneFilter = parameters.supportsFilterOnlySearch
         guard (!query.isEmpty || hasStandaloneFilter), let service else {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             totalMatchCount = nil
             lastRenderedExpression = nil
             // `SearchSheet` shows any standing error beside empty results, so the last search's must go with them.
@@ -1330,7 +1372,7 @@ final class MacSearchViewModel {
         guard params.includeDocumentText || params.includeSummaries || params.includeNotes
                 || (params.supportsFilterOnlySearch && !params.hasTextTerms) else {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             totalMatchCount = nil
             lastRenderedExpression = nil
             searchError = MacSearchError.emptyScope
@@ -1383,7 +1425,7 @@ final class MacSearchViewModel {
             // With the rows, not before the await: a run that is cancelled keeps the previous rows, and
             // they keep the ceiling and the engine they came from.
             lastFetchLimit = fetchLimit
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
@@ -1424,7 +1466,7 @@ final class MacSearchViewModel {
             // Tips, and every other failure is stored unchanged (#1299).
             searchError = SearchQueryRefusal.readable(error, for: frozenParams)
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             totalMatchCount = nil
             lastRenderedExpression = nil
             #if DEBUG
@@ -1440,7 +1482,7 @@ final class MacSearchViewModel {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             totalMatchCount = nil
@@ -1451,7 +1493,7 @@ final class MacSearchViewModel {
         }
         guard let backend = semanticBackend else {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             searchError = SemanticModeError.unavailable
             return
         }
@@ -1473,7 +1515,7 @@ final class MacSearchViewModel {
             results = outcome.results
             settleSelection(for: sentAnchor)
             lastFetchLimit = SemanticSearchBackend.hitLimit
-            resultsAreSemantic = true
+            executedRoute = .meaning
             beyondLibraryHits = outcome.beyondLibrary
             semanticDisclosure = outcome.disclosure
             // nil, not the hit count: the SavedSearch freshness watermark diffs matchCount
@@ -1490,7 +1532,7 @@ final class MacSearchViewModel {
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             // No rows, so no reader of the scope sees it; recorded for the history row, which has
             // always carried the Meaning engine's list length for a Meaning run that found no model.
             lastFetchLimit = SemanticSearchBackend.hitLimit
@@ -1504,7 +1546,7 @@ final class MacSearchViewModel {
         } catch {
             guard !(error is CancellationError) else { return }
             results = []
-            resultsAreSemantic = false
+            executedRoute = .keywords
             lastFetchLimit = SemanticSearchBackend.hitLimit
             beyondLibraryHits = []
             semanticDisclosure = nil

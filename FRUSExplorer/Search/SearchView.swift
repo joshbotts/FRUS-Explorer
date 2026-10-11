@@ -238,6 +238,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          bar's slot while selecting, with the commands in its Actions menu, and a row's tap picks it. The
 ///          results branch is one column whose fixed rows scroll where they do not fit (`resultsColumn`),
 ///          inside `TopAnchoredOverflow`, so results too tall for their room no longer move the bars.
+///   1.27 — #1577 lane 2: the facet panel's count, wording and keys, and the Examine menu's gate, are asked of
+///          the view model, which answers from the route recorded with the rows; a reading that is open when its
+///          gate shuts goes back to the list.
 
 struct SearchView: View {
 
@@ -317,16 +320,14 @@ struct SearchView: View {
     private func facetPanel(dismissesOnApply: Bool) -> some View {
         FacetPanelView(
             controller: facetController,
-            // In meaning mode the results ARE the set the facets describe, so the count is
-            // exact — where the keyword route's is the whole match, which the list only samples.
-            matchCount: vm.hasSearched
-                ? (vm.searchMode == .meaning ? vm.results.count : vm.totalMatchCountForFacets)
-                : nil,
+            // The count, the wording and the keys below are the view model's, which answers from the
+            // route recorded with the rows and not from the picker (#1577 lane 2).
+            matchCount: vm.facetMatchCount,
             displayedCount: vm.displayedResults.count,
             isPartialEvidence: resultSetScope.isPartialEvidence,
             isChecklistHiding: vm.checklistMode
                 && vm.displayedResults.count < vm.results.count,
-            isMeaningSearch: vm.searchMode == .meaning,
+            isMeaningSearch: vm.resultsAreSemantic,
             onNarrow: { narrowing in
                 facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
                 vm.applyFacetNarrowing(narrowing)
@@ -350,10 +351,8 @@ struct SearchView: View {
                         parameters: vm.searchParameters,
                         service: appState.searchService,
                         pipeline: appState.indexingPipeline,
-                        // A meaning search has no MATCH; it describes the keys it returned.
-                        documentKeys: vm.searchMode == .meaning
-                            ? vm.results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
-                            : nil)
+                        // Every route but a keyword match describes the keys of the list it holds.
+                        documentKeys: vm.facetDocumentKeys)
                 }
             })
     }
@@ -677,6 +676,13 @@ struct SearchView: View {
                 // Phase 2a) — parity with the macOS Advanced panel, which reloads on open.
                 .onChange(of: vm.showFilterPanel) { _, isOpen in
                     if isOpen { refreshEngagedKeys() }
+                }
+                // #1577 lane 2: a reading that is open when its door shuts goes back to the list. The
+                // picker's own setter closes the readings on a switch; this is for rows that arrive
+                // by another route while a reading is open, which would otherwise leave it behind a
+                // dimmed control with no way back.
+                .onChange(of: vm.offersReadings) { _, offered in
+                    if !offered { readingSelection.wrappedValue = .list }
                 }
                 .sheet(isPresented: $showSaveSearchSheet) {
                     saveSearchSheet
@@ -1119,10 +1125,10 @@ struct SearchView: View {
         // The control had no value at all: with a reading active, the whole results region is
         // replaced while nothing announces which control did it.
         .accessibilityValue(activeReading.title)
-        // Meaning mode: every reading here is keyword-dependent — concordance and collocates
-        // KWIC-scan for terms, facets aggregate the FTS match — so the door closes whole
-        // rather than opening onto surfaces that would quietly describe a different query.
-        .disabled(vm.results.isEmpty || vm.searchMode == .meaning)
+        // Every reading here reads the words a keyword match found, so the door is the view model's
+        // rule: the field's engine is Keywords and the rows on screen are a keyword match's own
+        // (#1577 lane 2). A reading that is open when the door shuts is closed with it, in `body`.
+        .disabled(vm.results.isEmpty || !vm.offersReadings)
     }
 
     #if os(iOS)
