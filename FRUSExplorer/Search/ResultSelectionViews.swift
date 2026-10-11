@@ -270,6 +270,134 @@ struct ResultSelectionStatus: View {
     }
 }
 
+// MARK: - ResultSelectionStrip
+
+/// The Mac Search window's strip while results are being selected (#1576 lane 4): the count, the
+/// Select menu, the commands and Done, and under them why Add to Collection is dimmed and what
+/// the last command did.
+///
+/// The window has room for the commands as buttons, where the iPhone's bar holds them in a menu
+/// (``ResultSelectionBar``). The strip is above the list, with the checklist's strip, and not in
+/// the toolbar, which has no room to give: it folds its own items into its » menu from the
+/// right, and under 940 pt of width, the 820 pt the window opens at included, all four of its
+/// trailing items are there, the toggle that brings this strip up among them.
+///
+/// Measured in the Mac check copy on 2026-10-10, with Checklist Mode on and every result of a
+/// 1,852-result search checked: at the window's 640 pt minimum the row fits on one line. The
+/// lines under the row wrap. Each outcome is announced to VoiceOver once, by the rule the
+/// iPhone's bar uses (`BulkOutcome.owesAnnouncement`). **Not heard on a Mac.**
+///
+/// Version history:
+///   1.0 — #1576 lane 4: initial implementation
+///   1.1 — #1576 lane 4, review: `canMarkReviewed`
+struct ResultSelectionStrip: View {
+
+    /// Results checked. Zero dims Mark Reviewed.
+    let count: Int
+    /// Rows on the page on screen, which This Page checks. Zero dims the item.
+    let pageRowCount: Int
+    /// Results the list shows, which All Shown checks.
+    let shownCount: Int
+    /// Whether Add to Collection can run: something is checked, and no more than one add takes.
+    let canAdd: Bool
+    /// Whether Mark Reviewed is offered: Checklist Mode is on.
+    let showsMarkReviewed: Bool
+    /// Whether Mark Reviewed can run: the checklist is on the search these rows came from. It is
+    /// not between another search being sent and its rows arriving.
+    let canMarkReviewed: Bool
+    /// Why Add to Collection is dimmed, when more are checked than one add takes; `nil` otherwise.
+    let addRefusal: String?
+    /// What the last command did, or `nil`.
+    let outcome: BulkOutcome?
+    /// How many outcomes the host has set. Each new one is announced, whatever its words.
+    let outcomeSerial: Int
+    /// Leaves selection.
+    let done: () -> Void
+    /// Checks the page on screen.
+    let selectPage: () -> Void
+    /// Checks every result shown.
+    let selectAllShown: () -> Void
+    /// Clears every checkbox.
+    let selectNone: () -> Void
+    /// Opens the collection picker for the selection.
+    let addToCollection: () -> Void
+    /// Hides the selection as reviewed.
+    let markReviewed: () -> Void
+    /// Takes the last command back.
+    let undo: () -> Void
+
+    /// The count of outcomes whose announcement was last posted.
+    @State private var announcedSerial = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 12) {
+                Text(ResultSelectionCopy.selected(count))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("search.selection.count")
+                Menu(ResultSelectionCopy.selectMenu) {
+                    Button(ResultSelectionCopy.thisPage, action: selectPage)
+                        .disabled(pageRowCount == 0)
+                    Button(ResultSelectionCopy.allShown(shownCount), action: selectAllShown)
+                        .disabled(shownCount == 0)
+                    Button(ResultSelectionCopy.none, action: selectNone)
+                        .disabled(count == 0)
+                }
+                .fixedSize()
+                .accessibilityIdentifier("search.selection.menu")
+                Spacer(minLength: 8)
+                Button(BulkResultCopy.addToCollection, action: addToCollection)
+                    .disabled(!canAdd)
+                    .accessibilityIdentifier("search.selection.addToCollection")
+                if showsMarkReviewed {
+                    Button(ResultSelectionCopy.markReviewed, action: markReviewed)
+                        .disabled(count == 0 || !canMarkReviewed)
+                        .accessibilityIdentifier("search.selection.markReviewed")
+                }
+                Button(ResultSelectionCopy.done, action: done)
+                    .accessibilityIdentifier("search.selection.done")
+            }
+            .controlSize(.small)
+            if let addRefusal {
+                Text(addRefusal)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("search.selection.overLimit")
+            }
+            if let outcome {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(outcome.message)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("search.selection.outcome")
+                    if let kind = outcome.undo {
+                        Button(ResultSelectionCopy.undo, action: undo)
+                            .controlSize(.small)
+                            // The checklist's strip, under this one, has an Undo of its own.
+                            .help(ResultSelectionCopy.undoHint(for: kind))
+                            .accessibilityHint(ResultSelectionCopy.undoHint(for: kind))
+                            .accessibilityIdentifier("search.selection.undo")
+                    }
+                }
+            }
+        }
+        .font(.subheadline)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
+        .overlay(alignment: .bottom) { Divider() }
+        .task(id: outcomeSerial) {
+            guard BulkOutcome.owesAnnouncement(serial: outcomeSerial, lastAnnounced: announcedSerial,
+                                               message: outcome?.message),
+                  let message = outcome?.message else { return }
+            do { try await Task.sleep(for: ResultSelectionBar.announcementDelay) } catch { return }
+            announcedSerial = outcomeSerial
+            AccessibilityNotification.Announcement(TransientToast.announcement(message)).post()
+        }
+    }
+}
+
 // MARK: - ResultSelectionMark
 
 /// The mark at a result row's leading edge while the list is in selection (#1576 lane 3): an

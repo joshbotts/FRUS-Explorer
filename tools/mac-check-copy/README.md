@@ -91,6 +91,40 @@ launched from a shell. To drive the copy with computer use, grant access to its 
 - **No iCloud, by construction.** Nothing a check does in the copy syncs. Check sync on a signed,
   entitled build.
 
+## Driving and reading the copy, measured on 2026-10-10
+
+Found while walking #1576 lane 4's list in the copy.
+
+- **Type with real keystrokes.** Text set through the background accessibility route did not
+  reach the Search field as typing does: Return was written into the field as a line break, and
+  the search that followed listed nothing. The same query typed through the full-screen tools
+  listed 5,079 results.
+- **Resize a window with System Events, not by dragging.** A drag that would end over the desktop
+  is refused. This sets a width, and the window keeps its own minimum:
+  ```bash
+  osascript -e 'tell application "System Events" to tell (first process whose bundle identifier is "bottsywattsy.FRUS-Explorer.maccheck") to set size of window "Search" to {640, 680}'
+  ```
+  `description of every UI element of toolbar 1 of window "Search"`, asked the same way, lists the
+  items a toolbar is showing. Stepping the width and asking again gives the widths at which a
+  titlebar folds each item into its » menu.
+- **Read accessibility names with `axread.swift`, not with System Events.** A SwiftUI control in
+  a window's content gives its name as an attributed string (`AXAttributedDescription`), which
+  AppleScript cannot read: a named checkbox looks nameless there. `axread.swift` reads the
+  accessibility API itself and prints the name, value, help, identifier and enabled state of
+  every element of one role in one window:
+  ```bash
+  MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
+  swiftc -O -o "$MCS/axread" tools/mac-check-copy/axread.swift
+  "$MCS/axread" Search AXCheckBox 5
+  ```
+  A toolbar item is AppKit's and gives a plain `AXDescription`, which is its title: an
+  `.accessibilityLabel` on a toolbar button does not replace it, and `.accessibilityValue` does
+  come through.
+- **A toolbar button's `.help` did show** under a pointer moved by computer use: the main
+  window's Search button, and the Search window's Reading picker and Select button. The note
+  above found the opposite on the Collections toolbar, so a tooltip that does not appear is no
+  proof that it is missing, and one that does appear can be read.
+
 ## Cleanup
 
 Once the checks are done:

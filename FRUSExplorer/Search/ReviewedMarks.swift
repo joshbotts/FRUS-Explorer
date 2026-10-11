@@ -143,6 +143,7 @@ struct ReviewedMarks: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 1: initial implementation
+///   1.1 — #1576 lane 4: `isOnTheSearch(shown:)`, for a command that marks rows on the Mac
 struct ChecklistAnchor: Equatable, Sendable {
 
     /// The submitted query text, trimmed, in the spelling that anchored it.
@@ -241,5 +242,27 @@ struct ChecklistAnchor: Equatable, Sendable {
             // before anything was searched), or taken from one that had.
             return false
         }
+    }
+
+    /// Whether a checklist anchored to this search is on the search whose rows are on screen
+    /// (#1576 lane 4).
+    ///
+    /// The Mac's Search window anchors its checklist to a search when the search is sent, and
+    /// shows the last search's rows until the new ones arrive. Rows marked in between would be
+    /// kept under the new search and hide their documents in its list, so a command that marks
+    /// several rows asks this first. The iPhone's and iPad's checklist is settled as the rows
+    /// arrive, and has no such gap.
+    ///
+    /// The checklist's anchor is asked about the rows' search, and not the other way: a checklist
+    /// keeps its anchor through a narrowing of the same browse, which the rows' search then is
+    /// and the anchor is not.
+    ///
+    /// - Parameter shown: The search that last completed, whose rows are on screen, or `nil`
+    ///   when none has.
+    /// - Returns: `true` when a mark of those rows belongs to this checklist. With no completed
+    ///   search to compare, nothing is known against it.
+    func isOnTheSearch(shown: ChecklistAnchor?) -> Bool {
+        guard let shown else { return true }
+        return isSameSearch(as: shown)
     }
 }

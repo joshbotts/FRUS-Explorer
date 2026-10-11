@@ -353,17 +353,31 @@ struct CollectionPickerDocumentsModeTests {
         // outside the Checklist Mode condition: it is there whether or not that mode is on. (On
         // iPhone and iPad the menu's items are the `else` of lane 3's selection test, which a
         // squeezed match does not see; `ResultSelectionWiringTests` reads that branch.)
-        #expect(squeezed.contains(Self.squeezed("""
-                            systemImage: "archivebox"
-                        )
-                    }
-                    Divider()
+        let rowItem = Self.squeezed("""
                     Button {
                         bulkRequest = addToCollectionRequest(for: result)
                     } label: {
                         Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
                     }
-            """)), "\(host.path): the row's menu has no Add to Collection item after Archival Neighbors…")
+            """)
+        let afterNeighbors = Self.squeezed("""
+                            systemImage: "archivebox"
+                        )
+                    }
+                    Divider()
+            """)
+        if host.voiceOverAction {
+            #expect(squeezed.contains(afterNeighbors + rowItem),
+                    "\(host.path): the row's menu has no Add to Collection item after Archival Neighbors…")
+        } else {
+            // On the Mac, since lane 4, the item is the `else` of a test on the row's checkbox:
+            // a checked row among others offers the selection's add in its place
+            // (`MacResultSelectionWiringTests.menuBranchesOnMembership` reads that branch).
+            #expect(squeezed.contains(afterNeighbors + Self.squeezed("if checkedTogether(with: result) {")),
+                    "\(host.path): the row's menu has no Add to Collection branch after Archival Neighbors…")
+            #expect(squeezed.contains(Self.squeezed("} else {") + rowItem + "}"),
+                    "\(host.path): an unchecked row's menu must add that row")
+        }
 
         let makers = code.components(separatedBy: "bulkRequest = addToCollectionRequest(for: result)").count - 1
         // After the menu's last item (lane 3's Select), the two braces that close the menu's

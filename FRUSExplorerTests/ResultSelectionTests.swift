@@ -674,6 +674,36 @@ struct SearchSelectionModelTests {
         #expect(vm.bulkOutcome == nil)
     }
 
+    /// Turning Checklist Mode off forgets the marks, and the rows come back by themselves. A line
+    /// still offering to undo the mark would then bring nothing back: in the Mac's window, whose
+    /// Checklist toggle stays in reach while selecting, it stayed and its Undo said that no result
+    /// was back in the list (#1576 lane 4). The rule is this view model's and its twin's alike.
+    @Test("Turning Checklist Mode off withdraws a line that offered to undo a mark, and keeps one about an add")
+    func checklistOffWithdrawsTheMarksLine() throws {
+        let (vm, dir) = try makeVM()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.results = rows(30)
+        vm.setChecklistMode(true)
+        vm.beginSelecting(with: vm.results[3])
+        vm.markSelectionReviewed()
+        try #require(vm.bulkOutcome?.undo == .reviewedMarks)
+        try #require(vm.displayedResults.count == 29)
+
+        vm.setChecklistMode(false)
+        #expect(vm.displayedResults.count == 30, "the row is back by itself")
+        #expect(vm.bulkOutcome == nil, "and there is no mark left for an Undo to take back")
+        #expect(vm.resultSelection.isSelecting, "the selection itself stays")
+
+        // What an add did is no business of the checklist's: its line and its Undo stay.
+        vm.toggleSelection(of: vm.results[0])
+        vm.recordCollectionAdd(CollectionDocumentAppend(insertedEntryIds: [UUID()], alreadyPresent: 0),
+                               collectionName: "Chile")
+        let line = try #require(vm.bulkOutcome)
+        vm.setChecklistMode(true)
+        vm.setChecklistMode(false)
+        #expect(vm.bulkOutcome == line)
+    }
+
     @Test("An add's outcome stays with its Undo, and Undo says how many were removed")
     func collectionAddOutcomeAndUndo() throws {
         let (vm, dir) = try makeVM()
