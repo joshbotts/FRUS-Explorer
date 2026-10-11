@@ -4,7 +4,7 @@
 
 **Read against** `v2` @ `54506caa`, corpus `99d851c79`, `IndexingPipeline.currentDateIndexVersion` 65. **Measured on** the 553 catalogue volumes' XML at that corpus, and on a full index of them built 2026-10-08 at version 65 (the `iPhone 17e` simulator's `frus.db`, opened read-only; 316,768 rows of `document_cache`). The scripts were scratch files and are not committed; each figure below says which of the two it was read from.
 
-Nothing here is decided for the owner. §4 lists six decisions, each with a recommendation and what a session does if none is given.
+**The owner answered §4's six decisions on 2026-10-11**, after joshbotts/FRUS-Explorer#1637 merged; §4 records each. The first five are as recommended, except that the Subject-Numeric files, which this brief declined, are now pull request D. The sixth is not as recommended: build 50 carries the bump.
 
 ## 1. What it carries
 
@@ -18,18 +18,18 @@ Nothing here is decided for the owner. §4 lists six decisions, each with a reco
 | f | "until January, 1953" in a persons-list entry | Yes | About 20 years, by lane PAGE's count; not measured again | Pull request A |
 | g | #1599, 1981–88 vol. XVI's people and terms | Yes | 88 documents, 1,041 pointers | Pull request B |
 | h | #1536, text printed at a section's own level | Yes | 1,332 sections in 137 volumes, 1,287,278 characters | Pull request C |
-| i | References to a footnote stored as edges to a document named after the note (found here) | Yes | 17,087 rows in 232 volumes | Owner decision 4 |
-| j | Subject-Numeric files stored without a designation | Yes | Not measured again | **Declined** (§3.7) |
+| i | References to a footnote stored as edges to a document named after the note (found here) | Yes | 17,087 rows in 232 volumes | Pull request A (decision 4) |
+| j | Subject-Numeric files stored without a designation | Yes | 9,443 citations at version 65: 2,419 with a series and no class key, 194 with neither | Pull request D (§3.7) |
 
 ## 2. How it lands
 
 - **#1535 needs no bump** (§3.1), so it leaves this group and goes first, on its own.
-- **The rest is three pull requests in series**, each raising the version in its own commit as the bump rule asks: A to 66, B to 67, C to 68, in whatever order they land. This is how build 49 took versions 63, 64 and 65. A reader re-indexes once, at the build that carries all three.
-- **A build is cut before the first of them merges or after the last, never between** (decision 6). A build cut between would give readers two re-indexes and the web edition two pin moves.
-- **The web edition.** Each pull request says in its "For the web edition" line that it raises the index version. None of the three adds a table or a column as designed here. The web side moves its pin once, after the last.
-- **How each is developed** (§0c's rules): A inline, in one session. B and C are the lanes with design risk, so each is one `lane-dev` run of one lane, or inline if its session judges the design settled by then. One session per pull request, and the next starts when the owner has merged the one before.
+- **The rest is four pull requests in series**, each raising the version in its own commit as the bump rule asks: A to 66, B to 67, C to 68 and D to 69, in whatever order they land. This is how build 49 took versions 63, 64 and 65. A reader re-indexes once, at the build that carries all four.
+- **Build 50 carries the bump** (decision 6, the owner's, 2026-10-11): no build is cut until A, B, C and D have merged. A build cut between would give readers two re-indexes and the web edition two pin moves.
+- **The web edition.** Each pull request says in its "For the web edition" line that it raises the index version. None of A, B and C adds a table or a column as designed here; D is not designed yet. The web side moves its pin once, after the last.
+- **How each is developed** (§0c's rules): A inline. B and C are the lanes with design risk, so each is one `lane-dev` run of one lane, or inline if its session judges the design settled by then. D begins with a measurement of its own (§3.7). The next starts when the owner has merged the one before.
 - **Each lane edits the manuals** where it changes what they describe, and leaves the AI Generated notice (§0b).
-- **Build 50's TestFlight notes** owe one line saying the library re-indexes once on first launch, and a line each for #1535, #1536 and #1599.
+- **Build 50's TestFlight notes** owe one line saying the library re-indexes once on first launch, and a line each for #1535, #1536 and #1599, with what D changes for a reader.
 
 ## 3. The items
 
@@ -100,31 +100,44 @@ Nothing here is decided for the owner. §4 lists six decisions, each with a reco
 - **The film sections' text.** §0a estimated 12 sections of `frus1917-72PubDip` from the code. In the index it is **2 rows**, `appendix-5` and `appendix-11`, whose text holds `298x530` and `brightcove.createExperiences();`. The transcripts in the other volumes are printed text and stay.
 - **"until January, 1953".** `PersonsParserDelegate`'s month-and-day pattern takes a comma only after a day, so the year reads as a start. Lane PAGE counted about 20 such years, 7 of them an entry's only year. The fix is the one its entry gives; the lane measures every list entry through the kit's parser before and after.
 
-### 3.7 Declined: Subject-Numeric files stored without a designation
+### 3.7 Pull request D: Subject-Numeric files stored without a designation
 
-Lane NOTE left 126 central-file notes, 55 `AID` notes and about 778 notes led by the National Archives; its entry adds that the Archives Visit packet prints no designation for any note of that last kind, 5,951 of them citing `RG 59, Central Files`. A fix changes `SourceNoteKit`'s routing and the bundled indexes built from it, which is a lane of its own with its own measurements, and lane CFPF's version 65 may have moved the counts. It is not in this bump. It waits for an issue, and for the next build's bump if it is taken.
+This brief first declined the item, on lane NOTE's counts of 2026-10-01. The owner asked for the reasons, was given them with the figures below, and on 2026-10-11 asked for it to be pull request D.
+
+- **In the index at version 65** (lane CFPF's `subject_numeric` form): 9,443 documents cite a Subject-Numeric file.
+  - 6,830 store a designation and a class key, so the file is matched.
+  - 2,419 store a series and no class key: 1,496 worded through the National Archives, where the stored series is the block of years (`Central Files 1970–73`, for `RG 59, Central Files 1970–73, AID 3 India`); 911 worded through the Department, where it is the designation (`POL GER W–US`); 12 worded as neither.
+  - 194 store neither: 184 through the Department (`AID (US) S VIET`, `INCO–GRAINS GATT`, `POL Pol–US`) and 10 through the National Archives.
+- **It is three changes.**
+  - *A country element that is not in capitals.* Roughly 1,100 of the 2,613 without a class key print a category and a subject number the parser does not read (`AID 3 India`, `POL 27–14 Arab-Israeli`); the figure is from a rough pattern over the note text. The rule refuses lower case so that prose stays out, and admitting these needs a word list of countries. Whether the bundled `subject-numeric-labels.json` can supply one was not checked.
+  - *No subject number.* The rest print no number (`POL US–USSR`), so there is no class key to store, only a designation, which the notes worded through the National Archives do not store.
+  - *The Archives Visit packet.* `TripPacketBuilder.fileDesignation` prints no designation for a note parsed as a National Archives collection. Lane NOTE counted 5,951 notes citing `RG 59, Central Files` that way; how many reach that rule since version 65 was not counted.
+- **What it touches.** `SourceNoteKit`, which the generators and the web edition share. A change to what it stores moves `collection-usage-index.json` and the files regenerated after it (CLAUDE.md's central-files chain), and `subject-numeric-labels.json`, which is regenerated from the handbooks on the owner's Mac and whose coverage block is already out of date.
+- **What a reader has meanwhile.** These documents are in the Subject-Numeric File category already. For those without a class key, Source Explorer matches by series or says the citation is not in a form it can match on. Nothing shown is wrong.
+- **The session starts by measuring**, over every document source note through `SourceNoteKit` itself: each shape's count, what a word list would admit that is prose, and what the packet prints. Lane NOTE's 126, 55 and "about 778" are not today's 184, 10 and 1,496.
 
 ## 4. Owner decisions
 
-Each has a recommendation. A session goes ahead on the recommendation unless the owner has said otherwise by the time it starts, and says so in its pull request.
+**Answered by the owner on 2026-10-11**, after #1637 merged: "take first five recommendations. build 50 will carry the bump.", and then "add subject-numeric to the brief as pull request D."
 
-1. **#1536, how a section's own text is kept.** *Recommended:* a row of its own, searchable, first in the section in Browse (§3.2). *The other choice:* shown in Browse only and kept out of Search, stored with the volume's outline. It is less work in Search and the counts, and it leaves 485 lists of those present at a meeting unsearchable.
-2. **#1599, where a document's people and terms show.** *Recommended:* stored as mentions, and listed at the foot of the document (§3.3). *The other choice:* stored as mentions only, so People counts them and the reader shows nothing.
-3. **#1613, a reference to a whole volume.** *Recommended:* (b), a volume-to-volume row, because the reference is a link between two volumes and the volume graph is where those are counted: about one more row for every nine it counts now. *The other choice:* (a), no row, which is the smaller change and leaves the volume graph as it is. Either way the placeholder nodes go. Taking (a) now and (b) in a later build costs readers a second re-index. If (b)'s guards turn out to reach past the queries §3.4 names, the session takes (a) and says so.
-4. **References to a footnote.** *Recommended:* store the document that holds the note, in pull request A, so a citation of a note counts as a citation of its document. It moves the cross-reference rankings: 17,087 more edges on 116,602. *The other choice:* leave them, and file it.
-5. **The leftovers.** *Recommended:* take the three small ones (§3.5, §3.6) and decline Subject-Numeric (§3.7).
-6. **Build 50.** §0c left open whether it goes out before the bump or carries it. *Recommended:* it goes out before pull request A merges, carrying #1576, #1577's lanes so far and #1535, since through build 49 a fresh download of the two re-packed shards is refused, and pull request C is the longest lane of the three. The bump then ships together in build 51.
+1. **#1536, how a section's own text is kept.** *Decided:* a row of its own, searchable, first in the section in Browse (§3.2). The other choice was Browse only, kept out of Search.
+2. **#1599, where a document's people and terms show.** *Decided:* stored as mentions, and listed at the foot of the document (§3.3). The other choice was mentions only.
+3. **#1613, a reference to a whole volume.** *Decided:* (b), a volume-to-volume row. If its guards reach past the queries §3.4 names, the session takes (a), no row, and says so.
+4. **References to a footnote.** *Decided:* store the document that holds the note, in pull request A. It moves the cross-reference rankings: 17,087 more edges on 116,602.
+5. **The leftovers.** *Decided:* take the three small ones (§3.5, §3.6). The Subject-Numeric designations, which this brief recommended declining, are **pull request D** (§3.7).
+6. **Build 50.** *Decided, and not as recommended:* build 50 carries the bump. No build is cut until A, B, C and D have merged. Until it is out, builds through 49 refuse a fresh download of the two re-packed shards (§0c).
 
 ## 5. Order
 
 | | Pull request | Issues | Version | Session starts from |
 |---|---|---|---|---|
-| 0 | Browse opens prose-only sections; this brief | #1535 | — | Done with this brief |
-| A | Stored values that name nothing or carry noise | #1613, items c to f, and i if decision 4 says so | 66 | §3.4 to §3.6 |
+| 0 | Browse opens prose-only sections; this brief | #1535 | — | Merged, #1637 |
+| A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | §3.4 to §3.6 |
 | B | Vol. XVI's people and terms | #1599 | 67 | §3.3 |
 | C | A section's own text | #1536 | 68 | §3.2 |
+| D | Subject-Numeric files stored without a designation | To be filed | 69 | §3.7 |
 
-B and C can change places. C is the largest and the one a corrected volume has already made worse, so if only one more can land before a build, it is C.
+B, C and D can change places. C is the largest and the one a corrected volume has already made worse. Build 50 waits for all four.
 
 ## 6. Not measured, and not verified
 

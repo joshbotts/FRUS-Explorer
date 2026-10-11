@@ -2034,7 +2034,11 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// — and as some lists print one without its space: "June1959", "April 17,1956" (#1370 review:
     /// seven entries in six volumes read such an end year as a start because the pattern wanted the
     /// space).
-    private static let monthDayPattern = "(?:" + monthPattern + #"\.?\s*(?:\d{1,2}(?:st|nd|rd|th)?,?\s*)?)"#
+    ///
+    /// A month may also carry a comma before its year with no day between: "until January, 1953",
+    /// "from October, 1955" (index version 66). The pattern took a comma only after a day, so a cue
+    /// word before such a month was not read and an end year was stored as a start.
+    private static let monthDayPattern = "(?:" + monthPattern + #"\.?,?\s*(?:\d{1,2}(?:st|nd|rd|th)?,?\s*)?)"#
     /// What may stand between a cue word and its date without changing what the cue says: "until
     /// mid-1969", "until summer 1954", "through spring 1959", "until the winter of 1959", "until the
     /// end of 1953" (#1370 review: 47 entries in 27 volumes put a season or "the end of" there, and
@@ -2363,7 +2367,9 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
         defer { elementDepth -= 1 }
         guard inTermsSection else { return }
         if elementName == "term" && currentTerm == nil {
-            currentTerm = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Folded (index version 66): the source wraps a long term across lines, and the break
+            // and its indentation were stored inside the term (198 terms in a full index at 65).
+            currentTerm = textBuffer.normalizedWhitespace
             textBuffer = ""
         }
         if elementName == "item" {
@@ -2383,14 +2389,16 @@ private final class TermsParserDelegate: NSObject, XMLParserDelegate, @unchecked
                     term = captured
                     let separators = CharacterSet(charactersIn: ",;:—–-")
                         .union(.whitespacesAndNewlines)
-                    let trimmedDef = raw.trimmingCharacters(in: separators)
+                    // Folded as the term is: 49,517 of 66,203 stored definitions held the
+                    // source's line break (#1582's contributing cause; the lookup folds too).
+                    let trimmedDef = raw.trimmingCharacters(in: separators).normalizedWhitespace
                     def = trimmedDef.isEmpty ? nil : trimmedDef
                 } else {
                     // Fallback shape without a nested <term>: "TERM: definition".
                     let parts = raw.components(separatedBy: ":")
-                    term = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? raw
+                    term = parts.first?.normalizedWhitespace ?? raw.normalizedWhitespace
                     let joined = parts.count > 1
-                        ? parts[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
+                        ? parts[1...].joined(separator: ":").normalizedWhitespace
                         : ""
                     def = joined.isEmpty ? nil : joined
                 }

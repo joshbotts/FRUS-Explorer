@@ -36,6 +36,11 @@ import SQLite3
 ///   1.6 — Session 7 / #240B: `is_broken = 0` exclusion across every edge/degree/count
 ///          query (validated-broken refs never reach graphs or analytics) +
 ///          `excludedBrokenCount(yearRange:volumeIds:)` for the disclosure caption
+///   1.7 — 2026-10-11 (#1613, index version 66): a reference to a whole volume is a row with an
+///          empty `target_document_id`, which the volume-to-volume queries count as they stand and
+///          `outboundEdges`, `edgeCount` and `documentTargetPredicate` now refuse
+///          (`namesADocumentPredicate`); a reference to a footnote is stored as its document, so
+///          `inboundEdges` and the rankings take it with no change here
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -623,7 +628,15 @@ public actor CrossReferenceStore {
         return try collectEdges(stmt)
     }
 
-    /// Returns all edges whose source is `(documentId, volumeId)`.
+    /// Whether a row names a document at all (#1613, index version 66): a reference to a whole
+    /// volume is stored with the volume as `target_volume_id` and an empty `target_document_id`.
+    /// The volume-to-volume queries count such a row, and it is no edge of any document, so every
+    /// query that lists or counts a document's own edges asks this. (Unaliased: the queries that
+    /// alias the table ask through ``documentTargetPredicate``.)
+    static let namesADocumentPredicate = "target_document_id != ''"
+
+    /// Returns all edges whose source is `(documentId, volumeId)` and whose target is a document:
+    /// a reference to a whole volume is not one (``namesADocumentPredicate``).
     public func outboundEdges(
         forDocumentId documentId: String,
         volumeId: String
@@ -637,6 +650,7 @@ public actor CrossReferenceStore {
             WHERE source_document_id = ?
               AND source_volume_id = ?
               AND is_broken = 0
+              AND \(Self.namesADocumentPredicate)
             """
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
@@ -953,7 +967,7 @@ public actor CrossReferenceStore {
         let sql = """
             SELECT COUNT(*) FROM cross_references
             WHERE is_broken = 0
-              AND ((source_document_id = ? AND source_volume_id = ?)
+              AND ((source_document_id = ? AND source_volume_id = ? AND \(Self.namesADocumentPredicate))
                 OR (target_document_id = ? AND COALESCE(target_volume_id, source_volume_id) = ?))
             """
         let stmt = try prepare(sql)
@@ -1003,7 +1017,8 @@ public actor CrossReferenceStore {
     ///     cross-volume `pg_*` fragments `resolvePageBasedCrossReferences` leaves unresolved),
     ///   - footnote anchors — any id containing `fn` (e.g. `d197fn2`),
     ///   - back-of-book index items (`in5`), chapter / appendix anchors (`ch3`, `app*`),
-    ///   - bare volume ids (`frus…`) and URLs (`*://*`).
+    ///   - bare volume ids (`frus…`) and URLs (`*://*`), which an index older than version 66 holds;
+    ///   - and, from 66, the empty id a reference to a whole volume is stored with (#1613).
     ///
     /// A denylist (rather than a `d[0-9]*` allow-list) because document ids in the wild aren't
     /// strictly `d`+digits, and the store's own fixtures use bare stand-in ids. Applied to **every**
@@ -1016,7 +1031,8 @@ public actor CrossReferenceStore {
         AND cr.target_document_id NOT GLOB 'ch[0-9]*' \
         AND cr.target_document_id NOT GLOB 'app*' \
         AND cr.target_document_id NOT GLOB 'frus*' \
-        AND cr.target_document_id NOT GLOB '*://*'
+        AND cr.target_document_id NOT GLOB '*://*' \
+        AND cr.target_document_id != ''
         """
 
     /// Excludes cross-references the corpus validation dataset flags as unresolvable (#240B), so the

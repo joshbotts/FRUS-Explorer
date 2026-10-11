@@ -632,12 +632,9 @@ public struct ASTToRenderNodeConverter {
 
     // MARK: - Figures (#1516)
 
-    /// The XHTML elements of the video players three public-diplomacy volumes embed in a
-    /// `<figure>`: 12 `<object>` players with their `<script>`s and `<param>`s in
-    /// `frus1917-72PubDip`, and 8 `<iframe>`s in volumes VI and VII. Their wrapping XHTML `<div>`s
-    /// are transparent to the parser, so these reach the figure as its own children. The app
-    /// cannot play them and prints none of their content — a `<script>`'s text least of all.
-    private static let videoPlayerElements: Set<String> = ["iframe", "object", "script", "embed", "param"]
+    /// The XHTML elements of a video player (`FRUSASTNode.videoPlayerElements`): the reader and the
+    /// text the index stores leave out the same ones.
+    private static let videoPlayerElements = FRUSASTNode.videoPlayerElements
 
     /// Converts a `<figure>`'s content, or returns `nil` for a figure that prints nothing: one
     /// with no graphic, no head, no text and no video.
