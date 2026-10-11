@@ -18,8 +18,8 @@ import SwiftUI
 /// an "Index Now" action that triggers `BrowserViewModel.indexVolume(_:)`.
 ///
 /// ## Front Matter Support
-/// Structural sections whose `divType` is one of `"preface"`, `"intro"`,
-/// `"introduction"`, `"errata"`, `"prefatoryNote"`, or `"terms"` and that contain bare
+/// Structural sections whose `divType` is in `VolumeSection.proseReadableKinds` (a preface,
+/// the terms, and since #1535 a chapter, subchapter or compilation) and that contain bare
 /// prose (no nested `<div type="document">` children) are handled specially: instead of
 /// showing "No documents in this section", `CompilationView` shows a "Read [Title]" button.
 /// Tapping it creates a synthetic `DocumentBrowserEntry` (using the section's
@@ -423,7 +423,7 @@ struct CompilationView: View {
             loadState: loadState
         ).rowKind {
         case .readDirectly:
-            // Prose-only front matter section — bypass indexing and open directly.
+            // Prose-only section (front matter, or a chapter of prose alone, #1535): open directly.
             readSectionDirectlySection
         case .personsList:
             // Persons list — rendered by FrontMatterPersonsView without requiring indexing.

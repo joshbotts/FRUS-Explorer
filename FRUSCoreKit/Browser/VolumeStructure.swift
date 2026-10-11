@@ -31,6 +31,9 @@ import Foundation
 ///          (`isFrontMatterKind`, `canReadDirectly`, `isPersonsList`, …) centralise
 ///          the routing rules previously duplicated across `VolumeView`,
 ///          `CompilationView`, and the macOS corpus browser.
+///   2.1 — 2026-10-11 (#1535): `proseReadableKinds` takes `compilation`, `chapter` and
+///          `subchapter`, so a chapter that holds prose and no documents opens in the reader
+///          where Browse said it held no documents. No stored value changes.
 public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
 
     /// The `xml:id` attribute of the enclosing `<div>`, or a generated stable string
@@ -83,11 +86,21 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
     ///
     /// `"persons"` and `"sources"` are deliberately absent: they route to the
     /// structured `FrontMatterPersonsView` / `VolumeSourcesView` instead.
+    ///
+    /// `"compilation"`, `"chapter"` and `"subchapter"` are here for the ones that hold prose and
+    /// nothing else (#1535): a treaty printed as a chapter, or a chapter that is one line referring
+    /// the reader to another volume. ``canReadDirectly`` still refuses a section that holds a
+    /// document or another section, which is every other section of these kinds. At corpus
+    /// `99d851c79` the 553 catalogue volumes hold 1,136 such sections in 144 volumes (660
+    /// chapters, 422 subchapters, 54 compilations), counted in a full index: 774 are a referral
+    /// of 400 characters or fewer, 357 hold other text and 5 are a heading alone. Each was
+    /// already an indexed row that Search found, since `TEIParserDelegate` promotes these kinds.
     public static let proseReadableKinds: Set<String> = [
         "preface", "intro", "introduction", "errata", "foreword",
         "prefatoryNote", "terms", "appendix",
         "table-of-contents", "press-release", "volume-summary",
         "about-frus-series", "historical-document", "index", "section",
+        "compilation", "chapter", "subchapter",
     ]
 
     /// `true` when this section belongs in the browser's "Front Matter" group.
@@ -105,7 +118,8 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
 
     /// `true` when this is a prose-only leaf section that can be opened directly in
     /// `DocumentView` (the parser locates the `<div>` by `xml:id`, so a real ID from
-    /// the TEI source is required — auto-generated fallback IDs are excluded).
+    /// the TEI source is required — auto-generated fallback IDs are excluded). A leaf holds
+    /// no document and no section: a chapter with either is a list, not a page.
     public var canReadDirectly: Bool {
         guard Self.proseReadableKinds.contains(divType),
               documentIds.isEmpty,
