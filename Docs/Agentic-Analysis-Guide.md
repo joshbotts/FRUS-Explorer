@@ -310,7 +310,7 @@ first-appearance table, or read `date_iso_max` beside `date_iso`.
 | Column | Meaning |
 |---|---|
 | `source_volume_id`, `source_document_id` | The citing document. |
-| `target_volume_id`, `target_document_id` | The cited document. `target_volume_id` is `NULL` for same-volume references in some encodings — handle it. |
+| `target_volume_id`, `target_document_id` | The cited document. `target_volume_id` is `NULL` for same-volume references in some encodings — handle it. From index version 66, an **empty** `target_document_id` is a reference to a whole volume (`target_volume_id`), not to a document: keep it out of any per-document count. From the same version a reference to a footnote names the document that holds the note, and a web or mail address is not stored. |
 | `is_broken` | 1 when corpus-wide validation found the target unresolvable. **Filter these out of every count.** |
 | `reference_type` | `footnote` or `editorialNote`. **Do not trust this to separate body text from footnotes** — see [§7.3](#73-reference_type-defaults-body-references-to-footnote). |
 | `context` | Truncated surrounding text, useful for reading an edge rather than counting it. |
@@ -810,6 +810,7 @@ SELECT target_volume_id, target_document_id, COUNT(*) AS inbound
 FROM cross_references
 WHERE is_broken = 0
   AND target_volume_id IS NOT NULL
+  AND target_document_id != ''   -- a reference to a whole volume names no document
 GROUP BY target_volume_id, target_document_id
 ORDER BY inbound DESC
 LIMIT 25;

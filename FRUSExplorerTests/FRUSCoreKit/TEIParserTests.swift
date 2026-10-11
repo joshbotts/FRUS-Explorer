@@ -2909,3 +2909,125 @@ struct ProseOnlySectionReadingTests {
         }
     }
 }
+
+// MARK: - Index version 66: stored values that carried noise
+
+/// Three values the parse handed the index with something in them that the page does not print
+/// (index version 66): a glossary entry's line breaks, a video player's hidden text and script,
+/// and a persons-list year read as a start because a comma stood between its month and it.
+@Suite("Index version 66: terms, video figures and a persons-list date")
+struct StoredNoiseTests {
+
+    /// A volume with a terms list, a persons list and one document, as the corpus encodes them.
+    private func makeVolume(front: String = "", document: String = "<p>Text.</p>") throws -> URL {
+        let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt></fileDesc></teiHeader>
+              <text>
+                <front>\(front)</front>
+                <body>
+                  <div type="compilation" xml:id="comp1"><head>Compilation</head>
+                    <div type="document" xml:id="d1" n="1"><head>1. Film</head>\(document)</div>
+                  </div>
+                </body>
+              </text>
+            </TEI>
+            """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-noise-\(UUID().uuidString).xml")
+        try xml.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
+    @Test("A term and its definition are stored without the source's line breaks")
+    func termsAreFolded() async throws {
+        let url = try makeVolume(front: """
+            <div type="section" xml:id="terms"><head>Abbreviations and Terms</head>
+              <list>
+                <item><term xml:id="t_ACDA1">Arms Control and
+                    Disarmament Agency</term>, the agency established in 1961 to
+                    advise the President on arms control,
+                    and abolished in 1999</item>
+                <item><term xml:id="t_AE1">AE</term>, atomic energy</item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let terms = try await FRUSDocumentParser().parseTerms(volumeURL: url)
+        let wrapped = try #require(terms.first { $0.ref == "t_ACDA1" })
+        #expect(wrapped.term == "Arms Control and Disarmament Agency")
+        #expect(wrapped.definition == """
+            the agency established in 1961 to advise the President on arms control, and abolished in 1999
+            """)
+        // One that never held a break is as it was.
+        let plain = try #require(terms.first { $0.ref == "t_AE1" })
+        #expect(plain.term == "AE" && plain.definition == "atomic energy")
+    }
+
+    @Test("A video figure's printed text is its head, without the player's hidden text and script")
+    func videoFigureTextLeavesThePlayerOut() async throws {
+        let url = try makeVolume(document: """
+            <p>Distributed by the Committee on Public Information.</p>
+            <figure>
+              <head>Reel 1</head>
+              <div style="display:none" xmlns="http://www.w3.org/1999/xhtml"> 298x530 </div>
+              <script language="JavaScript" src="https://example.org/player.js"
+                      type="text/javascript" xmlns="http://www.w3.org/1999/xhtml"/>
+              <object class="BrightcoveExperience" xmlns="http://www.w3.org/1999/xhtml">
+                <param name="width" value="530"/>
+              </object>
+              <script type="text/javascript" xmlns="http://www.w3.org/1999/xhtml"
+                >brightcove.createExperiences();</script>
+            </figure>
+            <figure>
+              <head>A chart</head>
+              <p>Its caption.</p>
+              printed beside it
+            </figure>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let documents = try await FRUSDocumentParser().parse(volumeURL: url)
+        let document = try #require(documents.first { $0.documentId == "d1" })
+        let text = FRUSASTNode.printedText(of: document.nodes)
+
+        #expect(text.contains("Reel 1"), "the figure's head is printed")
+        #expect(!text.contains("298x530"), "the player's hidden text is not")
+        #expect(!text.contains("brightcove"), "nor is its script")
+        // A figure with no player keeps everything it holds, loose text included.
+        #expect(text.contains("A chart") && text.contains("Its caption."))
+        #expect(text.contains("printed beside it"))
+    }
+
+    @Test("A year after a month and a comma is read by its cue: until January, 1953")
+    func aCommaBetweenAMonthAndItsYear() async throws {
+        let url = try makeVolume(front: """
+            <div type="section" xml:id="persons"><head>Persons</head>
+              <list>
+                <item><hi rend="strong"><persName xml:id="p_KLH1">Keyserling, Leon H.</persName></hi>,
+                    Chairman, Council of Economic Advisers, until January, 1953</item>
+                <item><hi rend="strong"><persName xml:id="p_AA1">Able, Arthur</persName></hi>,
+                    Minister of Finance from October, 1955</item>
+                <item><hi rend="strong"><persName xml:id="p_BB1">Baker, Beatrice</persName></hi>,
+                    Ambassador to France until June 5, 1953</item>
+                <item><hi rend="strong"><persName xml:id="p_CC1">Clark, Charles</persName></hi>,
+                    Director, 1950–Jan., 1952</item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        func years(_ ref: String) throws -> [Int?] {
+            let person = try #require(persons.first { $0.ref == ref }, "no entry \(ref)")
+            return [person.startYear, person.endYear]
+        }
+        // The year someone left, where it was stored as the year they began.
+        #expect(try years("p_KLH1") == [nil, 1953])
+        // With no end cue the year is a start, as before.
+        #expect(try years("p_AA1") == [1955, nil])
+        // A day between the month and the year was always read.
+        #expect(try years("p_BB1") == [nil, 1953])
+        // And a span whose end carries the comma keeps both ends.
+        #expect(try years("p_CC1") == [1950, 1952])
+    }
+}

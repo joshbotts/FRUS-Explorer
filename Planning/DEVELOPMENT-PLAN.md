@@ -37291,3 +37291,61 @@ The owner asked for the index-bumping sessions of the plan of record's §0c to b
 - `Planning/Plan-Of-Record-2026-09-28.md`: §0c's paragraph for this pull request, *Where the queue stands*, and the *Not this week* entry now points at the brief.
 - `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md`: one sentence each on a chapter that holds text and no documents. The AI Generated notice stays.
 - `FRUSCoreKit/Browser/VolumeStructure.swift`: version history 2.1 and the measured figures in `proseReadableKinds`'s comment.
+
+## Session 2026-10-11 — Index version 66: a cross-reference to a footnote is an edge to its document and one to a whole volume a link between volumes, and three stored values lose their noise (#1613); the owner's answers to the brief
+
+Pull request A of the index bump (`Planning/Index-Bump-Brief-2026-10-11.md`), begun in the session that wrote the brief, on the owner's word, after #1637 merged. Index version 66, so every library re-indexes once at the build that carries it. No CloudKit deploy, no `@Model` or stored property, no table or column, no bundled file. Kit code.
+
+**The owner's answers** (2026-10-11): "take first five recommendations. build 50 will carry the bump.", and, after asking why the Subject-Numeric files were declined and being given the reasons with fresh counts, "add subject-numeric to the brief as pull request D." The brief's §4 records the six, its §3.7 is now pull request D with the counts read from the version 65 index (9,443 citations: 6,830 with a class key, 2,419 with a series and none, 194 with neither), and its §2 and §5 say four pull requests and build 50 after the last.
+
+**What was built**
+- **Cross-references** (`FRUSCoreKit/Search/IndexingPipeline.swift`).
+  - `crossReferenceRow(…)` builds the row for both walks, `collectDocumentRefs` and `extractCrossReferences`. It returns none for a web or mail address, and gives a row that names a footnote or a whole volume what it settles as (`SettledCrossReferenceTarget`), by `FRUSURLScheme.resolveCrossRefTarget`, the rule the reader's link follows.
+  - The rows are inserted as written, as before. `settleCrossReferenceTargets` rewrites them in the store pass after `markBrokenCrossReferences`, which matches a row by its raw target, and beside page resolution. A footnote's row takes the document that holds the note; a volume's row takes the volume as `target_volume_id` and an empty `target_document_id`. A row the broken-reference pass marked is left raw, so the library-wide re-marking still finds it.
+  - `auxInsertCrossReferences` hands back both maps the later passes need (`InsertedCrossReferences`).
+- **The app's queries** (`FRUSExplorer/CrossReference/CrossReferenceStore.swift`): `outboundEdges`, `edgeCount` and `documentTargetPredicate` refuse the empty id (`namesADocumentPredicate`). The volume-to-volume queries are untouched and count the new rows as they stand. `inboundEdges` and the rankings take a footnote's reference with no change, since it now names a document.
+- **Terms** (`TermsParserDelegate`): a term and its definition are folded with `normalizedWhitespace`. The lookup's fold from #1582 stays.
+- **Video figures** (`FRUSASTNode.printedFigureChildren`, `FRUSASTNode.videoPlayerElements`): the text the index stores leaves out a video player's elements and the loose text beside them, as the reader's converter already did. The converter now reads the same list. `body_hash` is the reader's text and does not move.
+- **Persons** (`PersonsParserDelegate.monthDayPattern`): a month may carry a comma before its year with no day between.
+
+**Measured through the kit's own parser and extraction**, over the 553 catalogue volumes at corpus `99d851c79` (a throwaway package test, 76 seconds, not committed), against the version 65 index of 2026-10-08:
+- 316,814 documents and sections. Version 65 collected 185,655 references; 66 collects 185,529. The 126 between are the addresses: the index held 80 beginning `http` and 46 that were `mailto:history@state.gov`.
+- 17,088 rows settle as a note's document, in 232 volumes, 273 of them in another volume. The index held 17,087, every one naming a note of a document that exists, and none marked broken.
+- 6,944 rows settle as a volume, in 406 volumes: 5,688 name a catalogue volume, 1,256 one of 57 volumes outside it, and 249 the citing volume itself, which the volume queries leave out as a self-reference.
+- **Why 6,944 and not the corpus's 8,266:** the index collects a reference only inside a document or a section it holds. The other 1,322 are in text it does not hold, a section's own text (#1536) among them. They were not broken down.
+- 66,203 terms and definitions, none holding a line break, where the index held 198 terms and 49,517 definitions that did.
+- No document's text holds `298x530` or `brightcove`, where two rows did.
+- 63,033 persons-list entries. Ten, in six volumes, differ in their years from the index, and each prints "until Month, year": six go from a start to an end (Keyserling in `frus1952-54v02p1` and `p2`, Robertson and Dillon in `frus1958-60v17`, Davies in `frus1964-68v21`, Mestiri in `frus1969-76ve05p2`), and four gain the end beside a start the same entry gives ("until April, 1972; … from May 1972"). Lane PAGE had estimated about twenty years, seven of them an entry's only one.
+- The bundled broken-reference index names no footnote, whole volume or address (0 of 142 records), so the raw-row rule leaves no row today.
+
+**Tests**
+- `SettledCrossReferenceTests` (`FRUSExplorerTests/FRUSCoreKit/BrokenRefsPipelineTests.swift`, 4 tests): a volume indexed through the pipeline's own store pass leaves the five rows expected and none for the addresses; a footnote and a whole volume that a broken-reference index names keep their raw targets and marks, and the library-wide pass finds the row again; both walks collect the same rows.
+- `StoredNoiseTests` (`TEIParserTests.swift`, 3 tests): the terms, a video figure beside a figure with no player, and four persons entries, through the kit's parser.
+- `WholeVolumeReferenceRowTests` (`FRUSExplorerTests/CrossReferenceStoreTests.swift`, 4 tests, the app's alone): a document's outbound edges, its edge count and the ranking leave a volume's row out, and the volume queries count it.
+- **Each fix removed in turn**, one at a time, with the test that failed named: eleven in the kit (an address collected again, a footnote and a volume not settled, each of the two statements settling a broken row, the pass not called, a term and a definition unfolded, a video figure printing everything and keeping its loose text, the comma refused) and three in the store (the edge list, the edge count, the ranking). The first run found none failing for the volume statement's broken-row condition; `aBrokenWholeVolumeReferenceStaysRaw` was written for it and fails without it. The kit's were run in a second worktree, since the first attempt ran them in the tree an Xcode build was reading, and both were stopped and restarted.
+
+**Seen in the app** (1969–76 vol. XXXVIII Part 1, `frus1969-76v38p1`: 231 references, 23 to a whole volume and 58 to a footnote)
+- *iPhone 17, iOS 27.0* (the simulator, the volume copied in and indexed by the app): Document 24 cites Document 8 and, as a whole, `frus1969-76ve15p2`. Its Cross-References sheet lists **Cited By This Document: 8. Address by the President's Assistant for National Security Affairs (Kissinger)** and nothing else. Document 7 lists **Cites This Document: 12. Remarks by President Nixon** and **13. Memorandum for the President's File…**, each "See footnote 4, Document 7."; the version 65 index held no reference to Document 7 from either.
+- *The Mac* (the check copy, built from this branch): its index was at version 65 with one volume, and on launch the app re-indexed it and stamped 66. Read by SQL, the same volume holds 231 rows, 23 with an empty document id and none in footnote or volume form; Document 24's two rows are `d8` and the volume; Document 7 is cited by `d12` and `d13`; and none of 175 terms holds a line break. **The Mac's screen locked before the graph could be clicked**, so nothing of this was seen drawn on the Mac.
+- The simulator was put back as found, the volume removed through `IndexingPipeline.removeVolume`. Its index stamp is now 66, and its research History holds the documents opened on the two walks.
+
+**Checked**
+- `swift build --target FRUSCoreKit`: complete. `swift test`: exit 0, 38 `Test run with` lines, 2,610 tests, of which 7 are new, and no failed line.
+- `build-for-testing` of the `FRUSExplorer` scheme (iPhone 17, iOS 27.0), over the build folder #1637's session filled: `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues.
+- The iOS unit target on iPhone 17 (iOS 27.0): "Test run with 6976 tests in 821 suites passed after 409.429 seconds with 6 known issues", `** TEST EXECUTE SUCCEEDED **`, exit 0, no failed line and no restart of the host. 11 tests and 3 suites more than #1637's run.
+- The Mac: the check copy's build of `FRUSExplorerMac` (AppStore configuration, signed ad hoc, with the copy's `FRUS_MAC_CHECK` condition): `** BUILD SUCCEEDED **`, with the two known residues and the condition's own expected warning. No other Mac build was made.
+- No UI suite was run.
+
+**Not done**
+- **The Mac's graph and volume connections were not seen**, and neither was an iPad. The plan of record lists the Mac walk with the two it already owed.
+- **How the volume graph draws a volume outside the catalogue** was not looked at. It held 12 such references and now holds 1,256, to 57 volumes (microfiche supplements and volumes not yet published).
+- **The bundled resolved-edge index is not regenerated.** `CrossRefKit` has no footnote case, so a document's inbound list from a volume not on the device still lacks the 273 references to a footnote in another volume.
+- **A footnote the corpus's validation later reports as missing** would have its reference stored as its document's until the volume is next indexed, since the library-wide pass matches raw targets. No record is of that kind today.
+- **A document's graph does not show the volumes it cites as wholes.** The rows are there for it.
+- **Seen and left:** the Cross-References sheet's banner reads "1 documents in 1 volumes you have not downloaded also cite this one."
+- No TestFlight note: build 50's are written when its number is bumped, and the plan's list of what they owe has the re-index.
+
+**Docs**
+- `Planning/Index-Bump-Brief-2026-10-11.md`: the owner's answers in §4, pull request D in §1, §2, §3.7 and §5.
+- `Planning/Plan-Of-Record-2026-09-28.md`: §0c's paragraph for this pull request and *Where the queue stands*.
+- Both manuals: how a reference to a footnote and one to a whole volume count, in the Cross-Reference Analytics paragraph. `Docs/Agentic-Analysis-Guide.md`: the `cross_references` table's target columns and §6.6's query.

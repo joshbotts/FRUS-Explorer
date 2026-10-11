@@ -125,7 +125,7 @@ extension FRUSASTNode {
         case .persName(_, let c): return c
         case .gloss(_, let c):    return c
         case .crossReference(_, _, let c): return c
-        case .figure(_, let c):   return c
+        case .figure(_, let c):   return Self.printedFigureChildren(c)
         case .footnote(_, _, _, let c): return c
         case .table(let rows):    return rows
         case .tableRow(let cells): return cells
@@ -133,6 +133,41 @@ extension FRUSASTNode {
         case .list(_, let items): return items
         case .listItem(let c):    return c
         case .unknown(_, _, let c): return c
+        }
+    }
+}
+
+// MARK: - Video figures
+
+extension FRUSASTNode {
+    /// The XHTML elements of the video players three public-diplomacy volumes embed in a
+    /// `<figure>`: 12 `<object>` players with their `<script>`s and `<param>`s in
+    /// `frus1917-72PubDip`, and 8 `<iframe>`s in volumes VI and VII. Their wrapping XHTML `<div>`s
+    /// are transparent to the parser, so these reach the figure as its own children. The app
+    /// cannot play them and prints none of their content — a `<script>`'s text least of all.
+    ///
+    /// One list for the reader (`ASTToRenderNodeConverter.figureBlock`) and for the text the index
+    /// stores (``printedFigureChildren(_:)``). Until index version 66 only the reader read it, and
+    /// `body_text` of `frus1917-72PubDip`'s `appendix-5` and `appendix-11` held the players'
+    /// `298x530` and `brightcove.createExperiences();` (two rows in a full index at version 65).
+    static let videoPlayerElements: Set<String> = ["iframe", "object", "script", "embed", "param"]
+
+    /// A figure's children as its printed text reads them: all of them, unless the figure holds a
+    /// video player, when the player's elements and the loose text beside them are left out, as the
+    /// reader leaves them out. The loose text is the player's own hidden text: each of
+    /// `frus1917-72PubDip`'s players opens with `<div style="display:none"> 298x530 </div>`, and
+    /// the parser passes an XHTML `<div>`'s content up to the figure. The figure's head and its
+    /// paragraphs are printed text and stay.
+    static func printedFigureChildren(_ children: [FRUSASTNode]) -> [FRUSASTNode] {
+        let isPlayer: (FRUSASTNode) -> Bool = { child in
+            if case .unknown(let name, _, _) = child { return videoPlayerElements.contains(name) }
+            return false
+        }
+        guard children.contains(where: isPlayer) else { return children }
+        return children.filter { child in
+            if isPlayer(child) { return false }
+            if case .text = child { return false }
+            return true
         }
     }
 }

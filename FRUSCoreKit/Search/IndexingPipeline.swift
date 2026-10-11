@@ -425,6 +425,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         a definition as it reads them; `documentsWithUserTagIds()` and the partial index
 ///         `idx_document_cache_user_tag_ids`, for the app's tag-column reconcile. Nothing a parse
 ///         emits or the index stores changes, so no index version
+///  4.34 — 2026-10-11 (#1613): `currentDateIndexVersion` → 66 — a cross-reference to a footnote is
+///         stored as an edge to the note's document and one to a whole volume as a
+///         volume-to-volume row, both settled after the broken-reference pass
+///         (`settleCrossReferenceTargets`); a web or mail address is not collected
+///         (`crossReferenceRow`); and the terms, the video figures' text and one persons-list
+///         date form are stored without their noise (see the v66 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1337,7 +1343,19 @@ public actor IndexingPipeline {
     ///   `source-provenance-index.json` and `collection-usage-index.json`, which were regenerated
     ///   by the same rule. No collection identity moves, so no other artifact does.
     ///   A device still on v62 re-indexes once, for v63's and v64's changes and these together.
-    public static let currentDateIndexVersion: Int = 65
+    /// - v65→66 — #1613 and three stored values that carried noise. (1) A cross-reference to a
+    ///   footnote is stored as an edge to the document that holds the note, and one to a whole
+    ///   volume as a volume-to-volume row with an empty `target_document_id`
+    ///   (``SettledCrossReferenceTarget``); a web or mail address is not stored. (2) A glossary
+    ///   term and its definition are stored with the source's line breaks folded
+    ///   (`TermsParserDelegate`). (3) `body_text` of a section whose figure holds a video player
+    ///   leaves out the player's hidden text and script (`FRUSASTNode.printedFigureChildren`).
+    ///   (4) A persons-list entry that prints a comma between a month and its year ("until
+    ///   January, 1953") stores that year as the end it is (`PersonsParserDelegate`). Without the
+    ///   bump an installed index keeps every one of the old rows. The first of the four pull
+    ///   requests of `Planning/Index-Bump-Brief-2026-10-11.md`: build 50 carries all four, so a
+    ///   reader re-indexes once.
+    public static let currentDateIndexVersion: Int = 66
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -5536,7 +5554,7 @@ public actor IndexingPipeline {
         try auxDeletePersonMentions(forVolumeId: data.volumeId)
         try auxDeletePageRanges(forVolumeId: data.volumeId)
 
-        let pageCitations = try auxInsertCrossReferences(data.crossReferences)
+        let insertedReferences = try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
 
         // Flag this volume's dead cross-references (#240B) BEFORE page resolution rewrites
@@ -5570,8 +5588,12 @@ public actor IndexingPipeline {
         // correctness (atomic resolution) without holding a long combined transaction.
         // After the dates (#1509): which of several documents on a page a reference means reads
         // each one's stored day, as the reader's page link does.
+        // #1613: and the rows that name a footnote or a whole volume, which the broken-reference
+        // pass above has now read raw.
         try inTransaction {
-            try resolvePageBasedCrossReferences(volumeId: data.volumeId, citing: pageCitations)
+            try resolvePageBasedCrossReferences(volumeId: data.volumeId,
+                                                citing: insertedReferences.citing)
+            try settleCrossReferenceTargets(insertedReferences.settled)
         }
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
@@ -6133,25 +6155,18 @@ public actor IndexingPipeline {
 
             // ── Cross-references ───────────────────────────────────────────────
             case .crossReference(let target, let targetVolumeId, let children):
-                let targetDocId = target.hasPrefix("#")
-                    ? String(target.dropFirst())
-                    : (target.components(separatedBy: "#").last ?? target)
-                if !targetDocId.isEmpty {
+                if var row = crossReferenceRow(
+                    target: target, targetVolumeId: targetVolumeId,
+                    sourceVolumeId: volumeId, sourceDocumentId: documentId,
+                    referenceType: parentReferenceType, context: enclosingText) {
                     // #1509: a reference to a page carries what its footnote names, which decides
                     // among several documents the page names — built from the footnote's
                     // AST as the reader's link builds it (`ASTToRenderNodeConverter`).
-                    var citing: PageCitationHint?
                     if let citingNote,
                        case .page = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
-                        citing = PageCitationHint(noteChildren: citingNote)
+                        row.citing = PageCitationHint(noteChildren: citingNote)
                     }
-                    crossRefs.append(CrossReferenceRow(
-                        sourceVolumeId: volumeId, sourceDocumentId: documentId,
-                        targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
-                        referenceType: parentReferenceType ?? "footnote",
-                        context: enclosingText,
-                        citing: citing
-                    ))
+                    crossRefs.append(row)
                 }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
@@ -6212,6 +6227,39 @@ public actor IndexingPipeline {
         }
     }
 
+    /// The row one `<ref>` is collected as, or `nil` for a `<ref>` that is no cross-reference: one
+    /// with an empty target, and (#1613) a web or mail address, which until index version 66 was
+    /// stored as a document named after the address (80 rows beginning `http` and 46 that were
+    /// `mailto:history@state.gov`, in a full index at version 65).
+    ///
+    /// The row holds the target as written: `target_document_id` is the text after the `#`, or
+    /// the whole target when it has none. A target that names a footnote or a whole volume also
+    /// carries what it settles as (``SettledCrossReferenceTarget``), applied by
+    /// `settleCrossReferenceTargets` once the broken-reference pass has read the raw row. Both
+    /// walks build their rows here, so they cannot disagree about a target.
+    nonisolated static func crossReferenceRow(
+        target: String,
+        targetVolumeId: String?,
+        sourceVolumeId: String,
+        sourceDocumentId: String,
+        referenceType: String?,
+        context: String?
+    ) -> CrossReferenceRow? {
+        let targetDocId = target.hasPrefix("#")
+            ? String(target.dropFirst())
+            : (target.components(separatedBy: "#").last ?? target)
+        guard !targetDocId.isEmpty else { return nil }
+        let destination = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: targetVolumeId)
+        if case .external = destination { return nil }
+        return CrossReferenceRow(
+            sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+            targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
+            referenceType: referenceType ?? "footnote",
+            context: context,
+            settled: SettledCrossReferenceTarget(destination)
+        )
+    }
+
     /// Recursively extracts `<ref>` cross-references from an AST node array.
     ///
     /// When a `<ref>` element appears inside a `<note>` or `<div type="editorialNote">`,
@@ -6241,16 +6289,11 @@ public actor IndexingPipeline {
         for node in nodes {
             switch node {
             case .crossReference(let target, let targetVolumeId, let children):
-                let targetDocId = target.hasPrefix("#")
-                    ? String(target.dropFirst())
-                    : (target.components(separatedBy: "#").last ?? target)
-                if !targetDocId.isEmpty {
-                    result.append(CrossReferenceRow(
-                        sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
-                        targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
-                        referenceType: parentReferenceType ?? "footnote",
-                        context: enclosingText
-                    ))
+                if let row = crossReferenceRow(
+                    target: target, targetVolumeId: targetVolumeId,
+                    sourceVolumeId: sourceVolumeId, sourceDocumentId: sourceDocumentId,
+                    referenceType: parentReferenceType, context: enclosingText) {
+                    result.append(row)
                 }
                 result.append(contentsOf: extractCrossReferences(
                     from: children,
@@ -7486,20 +7529,30 @@ public actor IndexingPipeline {
 
     // MARK: - Auxiliary Table DML
 
-    /// Inserts a volume's cross-references, and returns, by the `rowid` each was given, what the
-    /// footnote of every page reference that sits in one names (`CrossReferenceRow.citing`, #1509),
-    /// for `resolvePageBasedCrossReferences` in the same store pass.
+    /// What `auxInsertCrossReferences` hands the passes that follow it in the same store pass, each
+    /// keyed by the `rowid` a row was given.
+    struct InsertedCrossReferences {
+        /// What the footnote of a page reference names (`CrossReferenceRow.citing`, #1509), for
+        /// `resolvePageBasedCrossReferences`.
+        var citing: [Int64: PageCitationHint] = [:]
+        /// What a row that names a footnote or a whole volume settles as
+        /// (`CrossReferenceRow.settled`, #1613), for `settleCrossReferenceTargets`.
+        var settled: [Int64: SettledCrossReferenceTarget] = [:]
+    }
+
+    /// Inserts a volume's cross-references as collected, and returns what two later passes of the
+    /// same store pass need for some of them (``InsertedCrossReferences``).
     @discardableResult
     private func auxInsertCrossReferences(_ rows: [CrossReferenceRow],
-                                          inExternalTransaction: Bool = false) throws -> [Int64: PageCitationHint] {
-        guard !rows.isEmpty else { return [:] }
+                                          inExternalTransaction: Bool = false) throws -> InsertedCrossReferences {
+        guard !rows.isEmpty else { return InsertedCrossReferences() }
         let sql = """
             INSERT INTO cross_references
             (source_volume_id, source_document_id, target_volume_id, target_document_id,
              reference_type, context)
             VALUES (?, ?, ?, ?, ?, ?)
             """
-        var citing: [Int64: PageCitationHint] = [:]
+        var inserted = InsertedCrossReferences()
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
@@ -7511,11 +7564,47 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 5, row.referenceType)
                 auxBindOptional(stmt, 6, row.context)
                 try auxStep(stmt)
-                if let hint = row.citing { citing[sqlite3_last_insert_rowid(auxDb)] = hint }
+                if let hint = row.citing { inserted.citing[sqlite3_last_insert_rowid(auxDb)] = hint }
+                if let settled = row.settled { inserted.settled[sqlite3_last_insert_rowid(auxDb)] = settled }
                 sqlite3_reset(stmt)
             }
         }
-        return citing
+        return inserted
+    }
+
+    /// Rewrites each row that names a footnote or a whole volume to what it settles as (#1613):
+    /// the document that holds the note, or the volume with no document.
+    ///
+    /// Called in `storeIndexData` after `markBrokenCrossReferences`, which matches a row by its
+    /// raw target, and beside page resolution, which rewrites its own rows for the same reason. A
+    /// row the broken-reference pass marked is left raw, so the library-wide re-marking
+    /// (`applyBrokenRefsIndex`), which clears every mark and matches raw targets again, still
+    /// finds it. The bundled index names no footnote and no whole volume (0 of its 142 records,
+    /// generated 2026-10-10), so today the condition leaves no row.
+    private func settleCrossReferenceTargets(_ settled: [Int64: SettledCrossReferenceTarget]) throws {
+        guard !settled.isEmpty else { return }
+        let toDocument = try auxPrepare(
+            "UPDATE cross_references SET target_document_id = ? WHERE rowid = ? AND is_broken = 0")
+        defer { sqlite3_finalize(toDocument) }
+        let toVolume = try auxPrepare(
+            "UPDATE cross_references SET target_volume_id = ?, target_document_id = '' "
+                + "WHERE rowid = ? AND is_broken = 0")
+        defer { sqlite3_finalize(toVolume) }
+        for (rowid, target) in settled {
+            let stmt: OpaquePointer
+            switch target {
+            case .document(let documentId):
+                stmt = toDocument
+                sqlite3_reset(stmt)
+                sqlite3_bind_text(stmt, 1, documentId, -1, SQLITE_TRANSIENT_IP)
+            case .volume(let volumeId):
+                stmt = toVolume
+                sqlite3_reset(stmt)
+                sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            }
+            sqlite3_bind_int64(stmt, 2, rowid)
+            try auxStep(stmt)
+        }
     }
 
     private func auxInsertPageRanges(_ rows: [PageRangeRow], inExternalTransaction: Bool = false) throws {
@@ -12594,6 +12683,45 @@ struct CrossReferenceRow: Sendable {
     /// (`PageCitationHint(noteChildren:)`), which decides among several documents beginning on the
     /// page (#1509). Not stored: `resolvePageBasedCrossReferences` reads it in the same pass.
     var citing: PageCitationHint? = nil
+    /// What the row becomes once the broken-reference pass has read its raw target (#1613), or
+    /// `nil` for a row stored as it is collected. Not stored: `settleCrossReferenceTargets` reads
+    /// it in the same pass.
+    var settled: SettledCrossReferenceTarget? = nil
+}
+
+/// What a cross-reference that names no document is stored as (#1613, index version 66).
+///
+/// Until 66 the index stored every `<ref>` by the text after its `#`, or by its whole target when
+/// it had none, as the id of a document. Three kinds of target name no document that way:
+/// - a footnote (`#d748fn3`, `frus1955-57v09#d12fn3`): 17,087 rows in a full index at version 65,
+///   each naming a note of a document that exists. `CrossReferenceStore.inboundEdges` matches the
+///   id exactly and its rankings refuse `*fn*`, so a document cited through one of its notes
+///   gained nothing from it.
+/// - a whole volume (`frus1961-63v05`): 6,944 rows, each drawn in a document's graph as a
+///   placeholder document named after the volume, in the reader's own volume.
+/// - a web or mail address: 80 and 46 rows. These are not collected at all
+///   (`IndexingPipeline.crossReferenceRow`).
+///
+/// The rows are inserted raw and settled afterwards, because
+/// `IndexingPipeline.markBrokenCrossReferences` matches a row by its raw target, as it does before
+/// a page reference is resolved. A row that pass marked broken keeps its raw target.
+enum SettledCrossReferenceTarget: Sendable, Equatable {
+    /// A reference to a footnote: `target_document_id` becomes the document that holds the note,
+    /// which is where the reader's link goes (#988).
+    case document(String)
+    /// A reference to a whole volume: `target_volume_id` becomes the volume and
+    /// `target_document_id` the empty string, so the volume-to-volume counts take it and no
+    /// document-level query does.
+    case volume(String)
+
+    /// What `destination`'s row settles as, or `nil` when it is stored as collected.
+    init?(_ destination: CrossRefDestination) {
+        switch destination {
+        case .footnote(_, let documentId, _): self = .document(documentId)
+        case .volume(let volumeId):           self = .volume(volumeId)
+        case .document, .page, .external, .unresolved: return nil
+        }
+    }
 }
 
 /// One `page_ranges` row: a `<pb>` inside a document, or (`isStart`) the page the document begins

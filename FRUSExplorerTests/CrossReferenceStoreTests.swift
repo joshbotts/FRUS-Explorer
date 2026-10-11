@@ -1043,3 +1043,74 @@ private func setBroken(dbURL: URL, sourceVolumeId: String, targetDocumentId: Str
     sqlite3_bind_text(stmt, 2, targetDocumentId, -1, TRANSIENT)
     sqlite3_step(stmt)
 }
+
+// MARK: - A reference to a whole volume (#1613, index version 66)
+
+/// From index version 66 a `<ref>` to a whole volume is a row with the volume as its target and an
+/// empty `target_document_id`. It is a link between two volumes and no edge of any document, so
+/// the volume-to-volume queries count it and every document-level query leaves it out.
+///
+/// One document of `volA` cites: a document of its own volume twice (once through a footnote,
+/// stored as that document), a document of `volB`, and `volB` as a whole twice.
+@Suite("A reference to a whole volume is a volume's edge and no document's (#1613)")
+struct WholeVolumeReferenceRowTests {
+
+    private func makeStore() throws -> (dir: URL, store: CrossReferenceStore) {
+        let (dir, dbURL, store) = try makeTempStore()
+        try insertDocumentCache(dbURL: dbURL, volumeId: "volA", documentId: "d1")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "volA", documentId: "d2")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "volB", documentId: "d7")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "volA", sourceDocumentId: "d1",
+                       targetVolumeId: nil, targetDocumentId: "d2")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "volA", sourceDocumentId: "d1",
+                       targetVolumeId: nil, targetDocumentId: "d2")
+        try insertEdge(dbURL: dbURL, sourceVolumeId: "volA", sourceDocumentId: "d1",
+                       targetVolumeId: "volB", targetDocumentId: "d7")
+        for _ in 0..<2 {
+            try insertEdge(dbURL: dbURL, sourceVolumeId: "volA", sourceDocumentId: "d1",
+                           targetVolumeId: "volB", targetDocumentId: "")
+        }
+        return (dir, store)
+    }
+
+    @Test("A document's outbound edges are its three references to documents")
+    func outboundEdgesNameDocuments() async throws {
+        let (dir, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let edges = try await store.outboundEdges(forDocumentId: "d1", volumeId: "volA")
+        #expect(edges.map(\.targetDocumentId).sorted() == ["d2", "d2", "d7"])
+        #expect(edges.allSatisfy { !$0.targetDocumentId.isEmpty })
+    }
+
+    @Test("A document's edge count leaves the whole-volume references out")
+    func edgeCountNamesDocuments() async throws {
+        let (dir, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(try await store.edgeCount(forDocumentId: "d1", volumeId: "volA") == 3)
+        // The cited documents count what cites them, the footnote's reference among them.
+        #expect(try await store.edgeCount(forDocumentId: "d2", volumeId: "volA") == 2)
+        #expect(try await store.inboundEdges(forDocumentId: "d2", volumeId: "volA").count == 2)
+    }
+
+    @Test("The ranking crowns no document with an empty id")
+    func rankingNamesDocuments() async throws {
+        let (dir, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let top = try await store.topDocumentsByInDegree(limit: 10)
+        #expect(top.map { "\($0.volumeId)/\($0.documentId)=\($0.inDegree)" }
+                == ["volA/d2=2", "volB/d7=1"])
+    }
+
+    @Test("Between the two volumes, all three references count")
+    func volumeQueriesCountThem() async throws {
+        let (dir, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let connections = try await store.volumeLevelConnections()
+        #expect(connections.map { "\($0.sourceVolumeId)>\($0.targetVolumeId)=\($0.count)" }
+                == ["volA>volB=3"])
+        let ego = try await store.volumeEgoGraph(forVolumeId: "volA")
+        #expect(ego.outboundEdges.map { "\($0.targetVolumeId)=\($0.count)" } == ["volB=3"])
+        let cited = try await store.volumeEgoGraph(forVolumeId: "volB")
+        #expect(cited.inboundEdges.map { "\($0.sourceVolumeId)=\($0.count)" } == ["volA=3"])
+    }
+}
