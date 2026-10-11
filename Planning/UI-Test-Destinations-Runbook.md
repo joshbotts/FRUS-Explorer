@@ -1,7 +1,7 @@
 # UI test destinations runbook
 
 Which simulators each UI suite needs, what it measured, and the commands. `CLAUDE.md`'s *Build &
-Test Commands* section holds the index (suite, devices, expected counts) and the four rules that
+Test Commands* section holds the index (suite, devices, expected counts) and the five rules that
 hold for every UI run; this file holds each suite's full entry. The entries were moved here from
 `CLAUDE.md` word for word on 2026-10-09, so that a session loads them when it needs one and not
 with every request. Add a new suite's entry here, and its row to the index.
@@ -52,23 +52,62 @@ xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
-  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -test-timeouts-enabled YES \
+  -default-test-execution-time-allowance 1500 -maximum-test-execution-time-allowance 1500 \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17" \
-  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600 \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad mini (A17 Pro)" \
-  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 600 \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests/testLevelStateSurvivesTheTwoPaneGate
 ```
+
+**The late-pipeline test and the progress test release their seams themselves** (2026-10-11). Each
+used to hold its seam back for a number of seconds counted from launch, 25 for the pipeline and 30
+for the seeded download, and then check the screen it expected to find in the meantime. On iPhone 17
+(iOS 27.0) the walk to the compilation took 46 to 50 seconds that day, each query 2 to 3.5, so the
+pipeline had attached and the volume was indexed before either test looked, and both failed on their
+own premise, on `v2` @ `af64ceae` as on a branch. Now `FRUS_UI_TEST_HOLD_PIPELINE=1` and
+`FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL=1` hold each seam until the test posts a Darwin
+notification (`notify_post`, which crosses from the runner to the app in one simulator), and each
+test posts it once it has seen "Search Index Unavailable" or "Index Required". `BrowseSeamSignalTests`
+(unit target) holds the names the two sides share. **Give the suite 600 seconds a test on the
+iPhone, not 300, and 1,500 on the iPad:**
+`testLevelStateSurvivesBackOnPushPath`, the phone's control, took 368 and 358 seconds in two runs
+that day, the second with the load average under 8, so the 300 the commands above used to pass
+ends it as a failure with no assertion failed.
+
+**The suite's walk opens the fixture's own subseries, by name** (2026-10-11). It launches with
+downloaded volumes only and used to tap the first row labelled "Subseries". The UI-test app shares a
+simulator's volumes with every other run on it, so a simulator that holds a real volume lists more
+than one subseries: on an iPad Pro 13-inch (iOS 27.0) holding `frus1964-68v01` and `v02`, the first
+match was "Subseries 1964-68, 35 volumes" and the test failed one step on, with "The seeded volume's
+row did not appear in the subseries list". An iPhone 17 under iOS 26.5 that held another session's
+volumes had failed with the same message that afternoon. The walk now asks for "Subseries 1961-63".
+`UIObstructionTests`, `TwoPaneDocumentTests`, `AuxWindowCloseTests` and `CompilationDocumentsTests`
+still take the first subseries row, so on a simulator that holds real volumes read that message as
+the simulator's state before the diff's.
+
+**A typed search is waited for in its field** (2026-10-11). `typeSearch` read the field in the
+statement after `typeText` and, on the iPad Pro 13-inch (iOS 27.0) with another job running on the
+Mac, got "Bator Pape" where "Bator Papers" had been typed: `testLevelStateSurvivesBackInTwoPane`
+stopped on that precondition. The read now waits up to 30 seconds for the field to hold the text.
+**On the iPad that test needs more than ten minutes now, and one flag does not give it them.** Run by
+itself on that iPad the same evening, with the load average under 7, it passed in 677 seconds. A test
+gets the DEFAULT allowance, 600 seconds, whatever `-maximum-test-execution-time-allowance` says above
+that: it was ended at ten minutes twice, still walking, once with the maximum at 600 and once with
+the maximum alone at 1,500 ("exceeded execution time allowance of 10 minutes"). Pass
+`-default-test-execution-time-allowance` with it, as the iPad's command above does. (A maximum under
+600, like the 300 other entries pass, does cap.)
 
 **`TopicIndexArrivalTests` (#1365) must run on an iPad two-pane AND an iPhone. It never skips, so
 either destination alone reports green.** Its guard for the iPad's Back,
@@ -629,6 +668,39 @@ Nothing in the app restores it (`showAnalytics` is plain `@State`), so do not go
 `UITestPresentation.dismissAnyPresentation(in:)` is the helper, and it is scoped to
 `app.navigationBars.buttons` for two measured reasons: a bare `app.buttons["Done"]` closes the #861
 keyboard accessory bar instead, and `isHittable` on a dying popover button fails the test outright.
+
+**A test that opens on the onboarding wizard was handed another process, and a Live Activity is
+why.** The system opens the app in the background when one of its Live Activities is dismissed while
+the app is not running. A launch a test asks for while that background launch is starting is given
+its process, which has none of the test's launch arguments and none of its environment: the wizard
+(no `-hasCompletedOnboarding 1`), over the simulator's real store and with CloudKit set up (no
+`FRUS_UI_TEST_MODE`). The test fails in 12 to 15 seconds on its first tab selection. Measured on
+2026-10-11 on iPhone 17 (iOS 27.0), from the simulator's own log, two ways an activity is dismissed
+with the app gone:
+- **Nothing ended it.** A UI test that taps Index Now passes once the rows are drawn and its app is
+  killed while it indexes; a unit run that takes a second ends while its host indexes a volume it
+  found at launch. The next `xcodebuild` run's install stops the activity (`liveactivitiesd`:
+  "Stopping uninstalled activity") and the request to open follows. Four installs stopped an
+  activity left over, two by chance and two made on purpose, and the launch after each came up in
+  the background (SpringBoard: "Bootstrapping … with intent background", "Initial launch state:
+  BG-Active") and showed the wizard, the test's request 9 to 23 ms behind `liveactivitiesd`'s. No
+  other launch did: of the 20 the log holds up to the third, after 11 installs, the other 17 came
+  up in front.
+- **The app ended it**, and its dismissal came due three seconds later, the host having exited: the
+  request followed 3.013 seconds after the end, twice out of two. Neither met a test's launch.
+
+**A test's process now starts no Live Activity** (`LiveActivityPolicy`, in `AppState.swift`: a unit
+test's host and a UI test's app), so the suites no longer do this to each other. Measured after: the
+test that left an activity behind leaves none, and the test run first after it passed, in front.
+What still can: **the tests of a build older than the rule** (a control build of a commit before
+2026-10-11) and **the app killed by hand while it indexes**. The next run's first test then fails
+once, and `TabBarNavigator` says why when it meets the wizard. Run again. To see it in the log:
+```bash
+xcrun simctl spawn <UDID> log show --last 10m --style compact --predicate \
+  '(process == "liveactivitiesd" AND eventMessage BEGINSWITH "Stopping uninstalled activity") OR (process == "SpringBoard" AND (eventMessage CONTAINS "Received request to open \"bottsywattsy.FRUS-Explorer\"" OR eventMessage CONTAINS "Initial launch state"))'
+```
+A launch the test got reads `from CoreSimulatorBr` and then `FV-Focal`; one it did not get has a
+line `from liveactivitiesd` just above it and reads `BG-Active`.
 
 **`SummarizationPromptCopyTests` (#1590) runs on an iPhone or an iPad, and its test must stay the
 Summarization pane's FIRST action.** It opens Settings ▸ Summarization, presses **Use as Template**

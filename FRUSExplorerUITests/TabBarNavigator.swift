@@ -128,6 +128,7 @@ enum TabDestination: String, CaseIterable {
 ///   1.1 — 2026-09-18: `isSelected` reads the sidebar ROW when no tab button exists
 ///   1.2 — #1431: `settledContentAreaWidth(timeout:logTag:)`, the width the 820 pt two-pane gates
 ///          measure, moved here from `ResearchSidebarSelectionTests` so Browse's suite reads the same
+///   1.3 — 2026-10-11: a selection that fails over the onboarding wizard says so, and why
 @MainActor
 final class TabBarNavigator {
 
@@ -243,10 +244,45 @@ final class TabBarNavigator {
         }
         print("[TabBarNavigator] '\(destination.label)' not found in any representation; tree:\n"
               + app.debugDescription)
-        XCTFail("Could not reach the '\(destination.label)' tab. Tried the current page, every page "
-                + "of the floating tab bar in both directions, and the expanded sidebar (element "
-                + "tree printed to the test log).", file: file, line: line)
+        if showsOnboarding {
+            XCTFail(Self.onboardingFailure(for: destination), file: file, line: line)
+        } else {
+            XCTFail("Could not reach the '\(destination.label)' tab. Tried the current page, every page "
+                    + "of the floating tab bar in both directions, and the expanded sidebar (element "
+                    + "tree printed to the test log).", file: file, line: line)
+        }
         return Outcome(tapped: false, reveal: .none, tappedAnUnhittableControl: false)
+    }
+
+    // MARK: - A launch that lost its arguments
+
+    /// Whether the app is showing the first page of its onboarding wizard.
+    ///
+    /// Read only once every route has failed, so a selection that works pays nothing for it.
+    private var showsOnboarding: Bool {
+        app.buttons["Get Started"].firstMatch.exists
+            || app.staticTexts["Welcome to FRUS Explorer"].firstMatch.exists
+    }
+
+    /// What a failed selection says when the wizard is what is on screen.
+    ///
+    /// Every suite launches with `-hasCompletedOnboarding 1` (``UITestLaunch``), so the wizard means
+    /// the process on screen is not the one the test launched. The one measured cause is in the
+    /// message, and in full on the app's `LiveActivityPolicy`: a Live Activity that an earlier run
+    /// left behind is stopped by the install that begins the next run, the system opens the app in
+    /// the background to tell it, and the first test's launch, milliseconds later, is given that
+    /// process. Reproduced on 2026-10-11 on iPhone 17 (iOS 27.0) three times out of three with an
+    /// activity left over, and never without one.
+    ///
+    /// - Parameter destination: The tab the caller asked for.
+    /// - Returns: The failure message.
+    static func onboardingFailure(for destination: TabDestination) -> String {
+        "Could not reach the '\(destination.label)' tab: the app is showing its onboarding wizard, so "
+            + "this process did not get the suite's launch arguments or its environment. The measured "
+            + "cause is a Live Activity left by an earlier run (an older build's tests, or the app "
+            + "killed while it indexed): the install that begins a run stops it, the system opens the "
+            + "app in the background, and the run's first launch is handed that process. Run again. "
+            + "The simulator's log names it: liveactivitiesd, \"Stopping uninstalled activity\"."
     }
 
     // MARK: - Tapping

@@ -2553,7 +2553,8 @@ final class AppState {
     /// requesting or updating an activity; when the user has turned the preference
     /// off, any already-running activity is ended instead.
     private func syncIndexingLiveActivity(update: IndexingProgressUpdate) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment),
+              ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
         guard liveActivityEnabled else {
             endIndexingLiveActivity()
@@ -2633,7 +2634,8 @@ final class AppState {
     /// Starts/updates/ends the summarization Live Activity from the current progress
     /// state. Mirrors `syncIndexingLiveActivity` but for the on-device summarizer.
     private func syncSummarizationLiveActivity() {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment),
+              ActivityAuthorizationInfo().areActivitiesEnabled else { return }
         let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
 
         switch backgroundSummarizationProgress.state {
@@ -3904,6 +3906,53 @@ extension SceneID {
     static func tabHandoffOpensInFront(from sceneID: SceneID?) -> Bool {
         guard let sceneID, sceneID != .anyWindow else { return false }
         return !sceneID.isBorrowed
+    }
+}
+#endif
+
+// MARK: - LiveActivityPolicy
+
+#if os(iOS)
+/// Whether this process may show a Live Activity: any process but a test's.
+///
+/// ## Why a test's process shows none
+/// The system opens the app in the background when one of its activities is dismissed and the
+/// app is not running, and a test's app is seldom running by then: it is killed when its test
+/// ends, often while it indexes. Two ways were measured, on iPhone 17 (iOS 27.0, simulator),
+/// 2026-10-11, from the simulator's own log.
+///
+/// - **An activity nothing ended.** A UI test that taps Index Now passes once the rows are
+///   drawn, and a unit run that takes a second ends while the host is still indexing a volume
+///   it found at launch. The next `xcodebuild` run installs the app again, the system stops the
+///   activity ("Stopping uninstalled activity"), and `liveactivitiesd` asks SpringBoard to open
+///   the app.
+/// - **An activity the app ended.** Its dismissal comes due three seconds later
+///   (`endIndexingLiveActivity`), and the same request follows: twice out of two, 3.013 seconds
+///   after the end, the host having exited.
+///
+/// A launch a test asks for while that background launch is starting is given its process,
+/// which has none of the test's launch arguments and none of its environment: the onboarding
+/// wizard, over the simulator's real store, with CloudKit set up. In an afternoon of 11
+/// installs and 20 launches, three installs stopped an activity left over, and the launch after
+/// each was the one that came up in the background (`BG-Active`) and showed onboarding, its
+/// request 9 to 23 ms behind `liveactivitiesd`'s; the other 17 came up in front. The third was
+/// made on purpose, by running `testIndexingFromTheCompilationFillsItsDocumentList` and then
+/// another test in a new run. Each of the three tests failed in 12 to 15 seconds with "Could
+/// not reach the 'Browse' tab".
+///
+/// So a unit test's host (`FigureImageStore.isUnitTestHost(_:)`) and a UI test's app
+/// (`FRUS_UI_TEST_MODE`) start none. An activity left by something else — a build older than
+/// this rule, or the app killed by hand while it indexed — still does it to the next run's first
+/// test, once: `TabBarNavigator` names the cause when it meets the wizard.
+///
+/// Version history:
+///   1.0 — 2026-10-11: initial implementation
+enum LiveActivityPolicy {
+
+    /// - Parameter environment: `ProcessInfo.processInfo.environment`.
+    /// - Returns: Whether a Live Activity may be requested or updated from this process.
+    static func mayShow(in environment: [String: String]) -> Bool {
+        !FigureImageStore.isUnitTestHost(environment) && environment["FRUS_UI_TEST_MODE"] != "1"
     }
 }
 #endif

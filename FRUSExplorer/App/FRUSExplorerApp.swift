@@ -2351,9 +2351,9 @@ struct FRUSExplorerApp: App {
             UITestVolumeSeeder.prepareCrossReferenceMatrixIfRequested(databaseURL: dbURL)
             // And publish the pipeline late when a run wants R-9's boot race, which is the only
             // way a test can stand on a compilation whose keyed task has already declined for want
-            // of one. Nothing else in boot is delayed: the statements below use `pipeline`.
-            if let delay = UITestBrowseSeams.pipelineAttachDelay {
-                UITestBrowseSeams.attachPipeline(after: delay) {
+            // of one: on the test's signal. Nothing else in boot waits: the rest uses `pipeline`.
+            if UITestBrowseSeams.holdsPipeline {
+                UITestBrowseSeams.attachPipelineOnSignal {
                     appState.indexingPipeline = pipeline
                     appState.connectIndexingProgress(pipeline: pipeline)
                 }
@@ -2789,12 +2789,12 @@ struct FRUSExplorerApp: App {
         }
 
         #if DEBUG
-        // #1301 round 4: finish the seeded fixture's "download" after a delay, through the manager's
-        // own completion router, so a UI test can stand on a compilation while the automatic
+        // #1301 round 4: finish the seeded fixture's "download" on the test's signal, through the
+        // manager's own completion router, so a UI test can stand on a compilation while the automatic
         // post-download index runs — the index `CompilationView`'s progress kick is the only loader
-        // for. Inert without FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER.
-        if let seededVolume, let delay = UITestBrowseSeams.seededDownloadFinishDelay {
-            UITestBrowseSeams.finishSeededDownload(seededVolume.volumeId, after: delay, in: dm)
+        // for. Inert without FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL.
+        if let seededVolume, UITestBrowseSeams.finishesSeededDownloadOnSignal {
+            UITestBrowseSeams.finishSeededDownloadOnSignal(seededVolume.volumeId, in: dm)
         }
         #endif
 

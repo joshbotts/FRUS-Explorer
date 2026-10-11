@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 import SQLite3
+import notify
 @testable import FRUSExplorer
 
 // MARK: - UITestVolumeSeederTests
@@ -44,6 +45,7 @@ import SQLite3
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
 ///   1.1 — #1301 round 3: the seeded-fixture preparation plan and the two boot stand-downs
+///   1.2 — 2026-10-11: `BrowseSeamSignalTests`, for the signal two Browse seams now wait for
 @Suite("The UI-test fixture seeder reports whether it changed anything")
 struct UITestVolumeSeederTests {
 
@@ -522,5 +524,83 @@ struct UITestCrossReferenceMatrixSeederTests {
         defer { sqlite3_finalize(statement) }
         try #require(sqlite3_step(statement) == SQLITE_ROW)
         #expect(sqlite3_column_int(statement, 0) == 0, "the refusal created the table it was refused for")
+    }
+}
+
+// MARK: - BrowseSeamSignalTests
+
+/// The signal two Browse seams wait for (`UITestBrowseSeams.Signal`).
+///
+/// `BrowseNestedSectionTests` holds a pipeline back, or leaves a download unfinished, until it has
+/// walked to a compilation and seen the state it came for, and then releases the seam with a
+/// Darwin notification. Until 2026-10-11 each seam fired a fixed time after launch, and the walk
+/// had come to take longer than both. These tests hold the two halves a UI run cannot tell apart
+/// when it fails: that the app runs the action when the signal arrives, and that the UI suite
+/// sends the names and sets the keys the app reads.
+@Suite("Browse seams released by a signal from the test")
+@MainActor
+struct BrowseSeamSignalTests {
+
+    /// How often an action has run.
+    @MainActor
+    private final class Counter {
+        var count = 0
+    }
+
+    /// Waits until `condition` holds, for thirty seconds at most; a wait that is met returns at
+    /// once. A Darwin notification is delivered through the main queue, so the wait has to give
+    /// the main actor up.
+    private func wait(until condition: () -> Bool) async throws {
+        for _ in 0..<600 where !condition() {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    @Test("An action runs when its signal is posted: once, and not for the other signal")
+    func anActionRunsOnItsOwnSignalOnce() async throws {
+        let attached = Counter(), finished = Counter()
+        #expect(UITestBrowseSeams.onSignal(.attachPipeline) { attached.count += 1 })
+        #expect(UITestBrowseSeams.onSignal(.finishSeededDownload) { finished.count += 1 })
+
+        #expect(notify_post(UITestBrowseSeams.Signal.attachPipeline.rawValue) == NOTIFY_STATUS_OK)
+        try await wait { attached.count > 0 }
+        #expect(attached.count == 1, "the pipeline's signal did not run the pipeline's action")
+        #expect(finished.count == 0, "the pipeline's signal ran the download's action")
+
+        // A second post must do nothing: a seam attaches a pipeline, or finishes a download, once.
+        #expect(notify_post(UITestBrowseSeams.Signal.attachPipeline.rawValue) == NOTIFY_STATUS_OK)
+        #expect(notify_post(UITestBrowseSeams.Signal.finishSeededDownload.rawValue) == NOTIFY_STATUS_OK)
+        try await wait { finished.count > 0 }
+        #expect(finished.count == 1)
+        // The download's action has run, so the main queue has delivered what was posted before it.
+        #expect(attached.count == 1, "a second signal ran the action again")
+    }
+
+    @Test("The UI suite sends the signals, and sets the launch keys, the app listens for")
+    func theUISuiteSendsTheSignalsTheAppListensFor() throws {
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let suite = try String(
+            contentsOf: repoRoot.appendingPathComponent("FRUSExplorerUITests/BrowseNestedSectionTests.swift"),
+            encoding: .utf8)
+
+        #expect(UITestBrowseSeams.Signal.allCases.count == 2)
+        for signal in UITestBrowseSeams.Signal.allCases {
+            #expect(suite.contains("case \(signal) = \"\(signal.rawValue)\""),
+                    "the UI suite has no `\(signal)` signal named \(signal.rawValue)")
+        }
+        // And no third name the app would never hear.
+        let named = suite.components(separatedBy: " = \"bottsywattsy.FRUS-Explorer.uitest.").count - 1
+        #expect(named == UITestBrowseSeams.Signal.allCases.count)
+
+        // Each seam is armed by its own key, and released by its own signal after it.
+        for (key, signal) in [(UITestBrowseSeams.holdPipelineKey, "attachPipeline"),
+                              (UITestBrowseSeams.finishSeededDownloadKey, "finishSeededDownload")] {
+            let armed = try #require(suite.range(of: "\"\(key)\": \"1\""),
+                                     "the UI suite no longer arms \(key)")
+            let sent = try #require(suite.range(of: "send(.\(signal))", range: armed.upperBound..<suite.endIndex),
+                                    "the test that arms \(key) never sends .\(signal)")
+            #expect(suite[armed.upperBound..<sent.lowerBound].contains("XCTAssertTrue("),
+                    "\(signal) is sent before the test has asserted the state the seam holds")
+        }
     }
 }

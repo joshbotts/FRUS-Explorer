@@ -54,7 +54,7 @@ is the index, not the entry.
 | Suite (name the TYPE in `-only-testing`) | Run it on | Expect |
 |---|---|---|
 | `UIObstructionTests` | an iPhone and any iPad | scenario 4 (#238) self-skips on an iPhone |
-| `BrowseNestedSectionTests` | iPad Pro 13-inch (M5) and iPhone 17; `testLevelStateSurvivesTheTwoPaneGate` on iPad mini (A17 Pro) | 11 tests: 3 skipped on the iPad, 4 on the iPhone |
+| `BrowseNestedSectionTests` | iPad Pro 13-inch (M5) and iPhone 17; `testLevelStateSurvivesTheTwoPaneGate` on iPad mini (A17 Pro) | 11 tests: 3 skipped on the iPad, 4 on the iPhone; allow 600 s a test on the iPhone and 1,500 on the iPad, which takes both allowance flags |
 | `TopicIndexArrivalTests` | iPad Pro 13-inch (M5), two-pane, and iPhone 17 | 3 passed on each; it never skips, so one device alone is not the guard |
 | `CollectionEditorTitleTests` | iPhone 17, iPad Pro 13-inch (M5), iPad Air 11-inch (M4) `OS=26.5` | 8 tests: 0, 3 and 3 skipped; only the Air folds ＋ Add into the overflow |
 | `CollectionProseRowRestTests` (in `CollectionEditorTitleTests.swift`) | iPad Air 11-inch (M4) and iPhone Air, both `OS=26.5` | 5 tests, 0 skipped on each |
@@ -78,7 +78,7 @@ is the index, not the entry.
 | `ResultSelectionBarFitTests` (in `SearchBulkActionsTests.swift`) | iPhone 17 and iPhone SE (3rd generation), `OS=27.0` | 6 tests, 6 passed on each; iPhone-only, self-skips at iPad width; fails when the tab shell's banner is not showing; on a simulator just booted, run one test first |
 | `WordCloudLensTests`, `NaturalLanguageReadinessWarmUpTests` (unit target) | iPad Pro 13-inch (M5), `OS=27.0` | a guard only on iOS 27.0; a control elsewhere |
 
-Four rules hold for every UI run, and the runbook gives the measurement behind each:
+Five rules hold for every UI run, and the runbook gives the measurement behind each:
 
 - **Name the test type, not its file.** An `-only-testing` name that matches nothing runs zero tests
   and reports green, so read the test count back.
@@ -91,6 +91,11 @@ Four rules hold for every UI run, and the runbook gives the measurement behind e
 - **A suite that opens a presentation closes it in `tearDown`** with
   `UITestPresentation.dismissAnyPresentation(in:)`. Terminating the app is not enough: the next
   launch restores what the last one had open.
+- **A test that opens on the onboarding wizard was handed another process.** A Live Activity
+  dismissed while the app is not running makes the system open the app in the background, and a
+  launch that arrives then gets that process, without the suite's arguments. A test's process starts
+  none (`LiveActivityPolicy`); the tests of a build older than 2026-10-11 can leave one, and so can
+  the app killed while it indexes. `TabBarNavigator` names it in the failure: run again.
 
 **Command-line tools: what exists, and where the detail is.** Every generator is a package target
 run from the repo root (`swift run -c release <Name>`); a few corpus tools are stdlib-only Python
