@@ -8581,3 +8581,452 @@ struct UITestFixtureVolumeTests {
 }
 #endif
 #endif
+
+// MARK: - Index version 68: text printed at a section's own level (#1536)
+
+/// A section that holds documents and prints text of its own — the list of those present above a
+/// meeting's minutes, a treaty's signature and ratification dates — passed that text up to the
+/// root, where it was dropped. From index version 68 it has a row of its own. These tests follow
+/// one volume from its file to the parse, to the index's rows through the pipeline's own store
+/// pass, to the page the reader is given, and to the order Browse and the reader put it in.
+///
+/// Each section of the fixture is there for one rule, and none tests two:
+/// - `comp1` holds chapters that hold documents, a synopsis of its own above them and a
+///   paragraph below. Break 9 follows the synopsis and is followed by a chapter.
+/// - `ch1` prints a table above its documents and a paragraph below them. Its heading carries a
+///   footnote. Breaks 10 and 12 are followed by a document, 13 by its closing paragraph, 14 by
+///   nothing of its own.
+/// - `ch2` prints a heading, `ch3` a heading with a footnote, `ch4` an empty paragraph: none has
+///   text of its own.
+/// - `ch5` prints an image and no words.
+/// - `sub1` is a `subsection`, a kind the index does not promote as prose.
+/// - `ch7` holds a division the index does not decide, whose text is that division's.
+/// - `s01` is a `historical-document` section, a front-matter kind.
+/// - `comp2` holds prose chapters and text of its own, and `comp3` prose chapters and a heading:
+///   the containers of #1510, the first with a row and the second left out.
+/// - The chapter after `comp3` has no `xml:id`, and the `index` in the back matter is a list.
+///   Each holds a document and text of its own, and neither is a division the index decides.
+@Suite("Index version 68: a section's own text has a row (#1536)")
+struct SectionOwnTextTests {
+
+    /// The fixture's volume. The app's Browse tests index the same file.
+    static let volumeId = "frus1969-76v01"
+
+    /// The fixture, whose sections the suite's comment describes.
+    static let volumeXML = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt></fileDesc></teiHeader>
+          <text>
+          <front>
+            <div type="section" xml:id="preface"><head>Preface</head><p>Prefatory words.</p></div>
+          </front>
+          <body>
+            <div type="compilation" xml:id="comp1"><head>The Conference</head>
+              <p>Synopsis of the conference.</p>
+              <pb n="9" xml:id="pg_9"/>
+              <div type="chapter" xml:id="ch1"><head>First Meeting<note n="1" xml:id="ch1fn1">Held at Anfa Camp.</note></head>
+                <table><row><cell>Present</cell></row><row><cell>Marshall and Brooke</cell></row></table>
+                <pb n="10" xml:id="pg_10"/>
+                <div type="document" xml:id="d1" n="1"><head>1. Minutes</head><p>Agreed minutes.</p>
+                  <pb n="11" xml:id="pg_11"/><p>Continued minutes.</p></div>
+                <pb n="12" xml:id="pg_12"/>
+                <div type="document" xml:id="d2" n="2"><head>2. Memorandum</head><p>Annexed memorandum.</p></div>
+                <pb n="13" xml:id="pg_13"/>
+                <p>Closing communiqué, see <ref target="#d1">Document 1</ref>.</p>
+                <pb n="14" xml:id="pg_14"/>
+              </div>
+              <div type="chapter" xml:id="ch2"><head>Second Meeting</head>
+                <div type="document" xml:id="d3" n="3"><head>3. Minutes</head><p>Second minutes.</p></div>
+              </div>
+              <div type="chapter" xml:id="ch3"><head>Third Meeting<note n="2" xml:id="ch3fn1">Postponed twice.</note></head>
+                <div type="document" xml:id="d4" n="4"><head>4. Minutes</head><p>Third minutes.</p></div>
+              </div>
+              <div type="chapter" xml:id="ch4"><head>Fourth Meeting</head>
+                <p> </p>
+                <div type="document" xml:id="d5" n="5"><head>5. Minutes</head><p>Fourth minutes.</p></div>
+              </div>
+              <div type="chapter" xml:id="ch5"><head>Fifth Meeting</head>
+                <figure><graphic url="seating-plan"/></figure>
+                <div type="document" xml:id="d6" n="6"><head>6. Minutes</head><p>Fifth minutes.</p></div>
+              </div>
+              <div type="section" subtype="subsection" xml:id="sub1"><head>Sixth Meeting</head>
+                <p>Those attending the sixth.</p>
+                <div type="document" xml:id="d7" n="7"><head>7. Minutes</head><p>Sixth minutes.</p></div>
+              </div>
+              <div type="chapter" xml:id="ch7"><head>Seventh Meeting</head>
+                <p>Agenda of the seventh.</p>
+                <div type="section" subtype="editorial-note" xml:id="ch7note"><head>Editorial Note</head>
+                  <p>Background the editors supply.</p></div>
+                <div type="document" xml:id="d8" n="8"><head>8. Minutes</head><p>Seventh minutes.</p></div>
+              </div>
+              <p>Adjournment of the conference.</p>
+            </div>
+            <div type="section" subtype="historical-document" xml:id="s01"><head>Statement of the Case</head>
+              <p>The claimants allege a seizure.</p>
+              <div type="document" xml:id="d9" n="9"><head>9. Exhibit</head><p>Exhibit text.</p></div>
+            </div>
+            <div type="compilation" xml:id="comp2"><head>Treaties</head>
+              <p>Notes to the treaties.</p>
+              <div type="chapter" xml:id="t1"><head>Treaty One</head><p>Article one.</p></div>
+              <div type="chapter" xml:id="t2"><head>Treaty Two</head><p>Article two.</p></div>
+            </div>
+            <div type="compilation" xml:id="comp3"><head>Conventions</head>
+              <div type="chapter" xml:id="t3"><head>Convention One</head><p>Article three.</p></div>
+            </div>
+            <div type="chapter"><head>Unnamed</head>
+              <p>Words of a chapter nothing can open.</p>
+              <div type="document" xml:id="d10" n="10"><head>10. Note</head><p>A late note.</p></div>
+            </div>
+          </body>
+          <back>
+            <div type="section" subtype="index" xml:id="index"><head>Index</head>
+              <p>Anfa Camp, 10</p>
+              <div type="document" xml:id="d11" n="11"><head>11. Errata</head><p>An errata slip.</p></div>
+            </div>
+          </back></text>
+        </TEI>
+        """
+
+    /// The fixture volume, written to a directory of its own.
+    private func makeVolume() throws -> (dir: URL, url: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSectionOwnText-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let url = volumes.appendingPathComponent("\(Self.volumeId).xml")
+        try Self.volumeXML.write(to: url, atomically: true, encoding: .utf8)
+        return (dir, url)
+    }
+
+    /// The fixture indexed through the pipeline's own store pass, with no bundled data file.
+    private func makeIndexedVolume() async throws -> (dir: URL, dbURL: URL, pipeline: IndexingPipeline, store: FTS5Store) {
+        let (dir, _) = try makeVolume()
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let resources = IndexingResources(
+            personAuthority: { nil }, documentSubjects: { nil },
+            decimalClassLabels: { nil }, brokenRefs: { nil })
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL,
+            volumesDirectory: dir.appendingPathComponent("volumes"), resources: resources,
+            concurrencyLimit: 1, defaults: InMemoryIndexingStampStore())
+        try await pipeline.indexVolume(Self.volumeId)
+        return (dir, dbURL, pipeline, store)
+    }
+
+    /// The first column of each row `sql` returns, as text.
+    private func column(_ sql: String, in dbURL: URL) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            Issue.record("the test index did not open")
+            return []
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            Issue.record("\(String(cString: sqlite3_errmsg(db))): \(sql)")
+            return []
+        }
+        defer { sqlite3_finalize(stmt) }
+        var values: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            values.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return values
+    }
+
+    /// Every page break in `nodes`, at any depth.
+    private func pageBreaks(in nodes: [FRUSASTNode]) -> [PageNumber] {
+        nodes.flatMap { node -> [PageNumber] in
+            if case .pageBreak(let page) = node { return [page] }
+            return pageBreaks(in: node.children)
+        }
+    }
+
+    /// A description of a node tree in which a dictionary's entries are in key order, so two equal
+    /// trees describe alike. `"\(nodes)"` does not: an element's attributes are a dictionary, and
+    /// two equal dictionaries can print their entries in different orders.
+    private func canonical(_ value: Any) -> String {
+        if let attributes = value as? [String: String] {
+            return "[" + attributes.keys.sorted().map { "\($0): \(attributes[$0] ?? "")" }.joined(separator: ", ") + "]"
+        }
+        let mirror = Mirror(reflecting: value)
+        if mirror.children.isEmpty { return "\(value)" }
+        return "(" + mirror.children.map { "\($0.label ?? "_"): \(canonical($0.value))" }.joined(separator: ", ") + ")"
+    }
+
+    /// The words a row prints, on one line.
+    private func words(_ ast: FRUSDocumentAST) -> String {
+        FRUSASTNode.printedText(of: ast.nodes).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// Every section of the outline by its id, at any depth.
+    private func sectionsById(_ sections: [VolumeSection]) -> [String: VolumeSection] {
+        var found: [String: VolumeSection] = [:]
+        for section in sections {
+            found[section.sectionId] = section
+            found.merge(sectionsById(section.subsections)) { first, _ in first }
+        }
+        return found
+    }
+
+    // MARK: The parse
+
+    @Test("A section that prints text of its own has a row, and one that prints only a heading has none")
+    func whichSectionsHaveARow() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        // A section is emitted when it closes, so after everything it holds.
+        #expect(rows.map(\.documentId) == [
+            "preface", "d1", "d2", "ch1", "d3", "d4", "d5", "d6", "ch5", "d7", "sub1", "d8", "ch7",
+            "comp1", "d9", "s01", "t1", "t2", "comp2", "t3", "d10", "d11",
+        ])
+    }
+
+    @Test("The row holds the section's heading and its own text, above and below its documents, and nothing its documents hold")
+    func theRowIsTheSectionsOwnText() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        let ch1 = try #require(rows.first { $0.documentId == "ch1" })
+        #expect(words(ch1) == "First Meeting Held at Anfa Camp. Present Marshall and Brooke Closing communiqué, see Document 1.")
+        #expect(ch1.startPage == nil && ch1.carriedPages.isEmpty)
+        #expect(!ch1.isFrontMatter)
+        // The documents are as they were.
+        #expect(words(try #require(rows.first { $0.documentId == "d1" })) == "1. Minutes Agreed minutes. Continued minutes.")
+    }
+
+    @Test("A section around other sections has its own text alone: no heading or text from the sections inside it")
+    func aSectionAroundSectionsHasItsOwnTextAlone() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        // comp1 holds seven sections, four of which have no row. None of their headings lands here.
+        let comp1 = try #require(rows.first { $0.documentId == "comp1" })
+        #expect(words(comp1) == "The Conference Synopsis of the conference. Adjournment of the conference.")
+        // Break 9 is followed by a chapter, though the compilation prints more below its chapters.
+        #expect(pageBreaks(in: comp1.nodes).isEmpty)
+    }
+
+    @Test("A page break is the row's only when its own text follows: one before a document is the page that document begins on")
+    func theRowKeepsOnlyTheBreaksItsOwnTextFollows() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        let ch1 = try #require(rows.first { $0.documentId == "ch1" })
+        #expect(pageBreaks(in: ch1.nodes) == [.arabic(13)])
+        #expect(rows.first { $0.documentId == "d1" }?.startPage == .arabic(10))
+        #expect(rows.first { $0.documentId == "d2" }?.startPage == .arabic(12))
+        // 14 closes ch1 with nothing of its own after it: the next document begins on it.
+        #expect(rows.first { $0.documentId == "d3" }?.startPage == .arabic(14))
+    }
+
+    @Test("An image with no words is text of its own; an empty paragraph and a footnote on the heading are not")
+    func whatCountsAsTextOfItsOwn() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let ids = Set(try await FRUSDocumentParser().parse(volumeURL: url).map(\.documentId))
+        #expect(ids.contains("ch5"), "a seating plan is printed at the section's own level")
+        #expect(!ids.contains("ch2"), "a heading alone")
+        #expect(!ids.contains("ch3"), "a heading with a footnote, which is the heading's")
+        #expect(!ids.contains("ch4"), "an empty paragraph prints nothing")
+    }
+
+    @Test("The row needs no kind the index promotes, and takes the front-matter flag of its kind")
+    func theRowsKind() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        let sub1 = try #require(rows.first { $0.documentId == "sub1" }, "a subsection that holds documents")
+        #expect(words(sub1) == "Sixth Meeting Those attending the sixth.")
+        #expect(!sub1.isFrontMatter)
+        let s01 = try #require(rows.first { $0.documentId == "s01" })
+        #expect(words(s01) == "Statement of the Case The claimants allege a seizure.")
+        #expect(s01.isFrontMatter, "a historical-document section is front matter by its kind")
+    }
+
+    @Test("Text of a division the index does not decide is that division's, and no part of the row around it")
+    func aDivisionInsideKeepsItsText() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(words(try #require(rows.first { $0.documentId == "ch7" })) == "Seventh Meeting Agenda of the seventh.")
+        #expect(!rows.contains { words($0).contains("Background the editors supply") })
+    }
+
+    @Test("A list, and a section with no id, have no row whatever they print: the reader could not open one by its id, and a list has a view of its own")
+    func divisionsTheIndexDoesNotDecide() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(!rows.contains { $0.documentId == "index" })
+        #expect(!rows.contains { words($0).contains("Anfa Camp, 10") })
+        #expect(!rows.contains { words($0).contains("Words of a chapter nothing can open") })
+        // Their documents are rows all the same.
+        #expect(rows.contains { $0.documentId == "d10" } && rows.contains { $0.documentId == "d11" })
+        // A list asked for by its id opens whole, without its documents, as it always has.
+        let index = try #require(try await FRUSDocumentParser().parseDocument(documentId: "index", volumeURL: url))
+        #expect(words(index) == "Index Anfa Camp, 10")
+    }
+
+    // MARK: The reader's page
+
+    @Test("The page the reader opens for a row is the row: a parse for one section gives the nodes the whole volume's parse gives")
+    func theReadersPageIsTheRow() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(rows.count == 22)
+        for row in rows {
+            let page = try #require(
+                try await FRUSDocumentParser().parseDocument(documentId: row.documentId, volumeURL: url),
+                "the reader is given no page for \(row.documentId)")
+            #expect(canonical(page.nodes) == canonical(row.nodes), "\(row.documentId)'s page is not its row")
+            #expect(page.isFrontMatter == row.isFrontMatter, "\(row.documentId)")
+        }
+    }
+
+    @Test("A section the index leaves out still opens, whole and without its documents")
+    func aSectionWithNoRowStillOpens() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // ch2 holds a document and a heading; comp3 holds a prose chapter and a heading.
+        let ch2 = try #require(try await FRUSDocumentParser().parseDocument(documentId: "ch2", volumeURL: url))
+        #expect(words(ch2) == "Second Meeting")
+        let comp3 = try #require(try await FRUSDocumentParser().parseDocument(documentId: "comp3", volumeURL: url))
+        #expect(words(comp3) == "Conventions Convention One Article three.")
+        // The window parse the reader runs reads it the same way.
+        let window = try await FRUSDocumentParser().parseDocumentWindow(documentId: "comp3", volumeURL: url)
+        #expect(window.last.map(words) == "Conventions Convention One Article three.")
+    }
+
+    // MARK: The index
+
+    @Test("The index holds the row: Search finds its words in it, and its documents' words in them")
+    func theIndexHoldsTheRow() async throws {
+        let (dir, dbURL, pipeline, store) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let cached = try await pipeline.documents(forVolume: Self.volumeId)
+        #expect(cached.first { $0.documentId == "ch1" }?.header == "First Meeting")
+        let own = try await store.search(query: FTS5Query(keywords: ["Brooke"]), limit: 20, offset: 0)
+        #expect(own.map(\.documentId) == ["ch1"])
+        let closing = try await store.search(query: FTS5Query(keywords: ["communiqué"]), limit: 20, offset: 0)
+        #expect(closing.map(\.documentId) == ["ch1"])
+        let minutes = try await store.search(query: FTS5Query(keywords: ["Agreed"]), limit: 20, offset: 0)
+        #expect(minutes.map(\.documentId) == ["d1"])
+        // The flags a row is stored with: front matter by its kind, and never an editorial note.
+        #expect(try column("""
+            SELECT document_id FROM document_cache
+            WHERE volume_id = '\(Self.volumeId)' AND is_front_matter = 1 ORDER BY rowid
+            """, in: dbURL) == ["preface", "s01"])
+        #expect(try column("""
+            SELECT document_id FROM document_cache
+            WHERE volume_id = '\(Self.volumeId)' AND is_editorial_note = 1
+            """, in: dbURL).isEmpty)
+    }
+
+    @Test("A reference in the section's own text is an edge from the section")
+    func theRowsReferencesAreStored() async throws {
+        let (dir, dbURL, _, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(try column("""
+            SELECT source_document_id || '>' || target_document_id FROM cross_references
+            WHERE source_volume_id = '\(Self.volumeId)' ORDER BY rowid
+            """, in: dbURL) == ["ch1>d1"])
+    }
+
+    @Test("A page of the section's own text names the section, and a page of one of its documents names that document alone")
+    func pagesNameWhatIsPrintedOnThem() async throws {
+        let (dir, dbURL, _, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let pages = try PageRangeStore(databaseURL: dbURL)
+        func named(_ page: Int) async throws -> [String] {
+            try await pages.documents(forPage: page, inVolume: Self.volumeId)?.documents.map(\.documentId) ?? []
+        }
+        // 9 is the page the first meeting's list of those present is on. A section has no start
+        // page, so the page names nothing, as it did.
+        #expect(try await named(9) == [])
+        #expect(try await named(10) == ["d1"])
+        // 11 is inside d1. The section's breaks before and after its documents must not make it
+        // one of the page's answers.
+        #expect(try await named(11) == ["d1"])
+        #expect(try await named(12) == ["d2"])
+        #expect(try await named(13) == ["ch1"], "the closing paragraph is printed after break 13")
+        // No break follows 14 in the fixture, so every later document begins on it; no section does.
+        #expect(try await named(14) == ["d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11"])
+        // The section's stored pages are its own break alone, with no start.
+        #expect(try column("""
+            SELECT page_number_int || '/' || is_start FROM page_ranges
+            WHERE volume_id = '\(Self.volumeId)' AND document_id = 'ch1'
+            """, in: dbURL) == ["13/0"])
+    }
+
+    // MARK: Where the row is put
+
+    @Test("The reader's order puts a section's own text first in the section, and makes up no page for a section without one")
+    func theReadingOrderPutsTheRowFirst() async throws {
+        let (dir, _, pipeline, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let order = try await pipeline.readingSequence(forVolume: Self.volumeId).map(\.documentId)
+        #expect(order == [
+            "preface",
+            "comp1",
+            "ch1", "d1", "d2",
+            "d3", "d4", "d5",
+            "ch5", "d6",
+            "sub1", "d7",
+            "ch7", "d8", "ch7note",
+            "s01", "d9",
+            "comp2", "t1", "t2",
+            "t3",
+            "d10",
+            "d11",
+        ])
+    }
+
+    @Test("Browse finds a section's own row among the volume's rows, and none for a leaf or a section without one")
+    func browseFindsTheRow() async throws {
+        let (dir, _, pipeline, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await pipeline.documents(forVolume: Self.volumeId)
+        let structure = try #require(try await pipeline.cachedVolumeStructure(forVolumeId: Self.volumeId))
+        let sections = sectionsById(structure.sections)
+
+        for id in ["comp1", "ch1", "ch5", "sub1", "ch7", "s01", "comp2"] {
+            let section = try #require(sections[id], "the outline holds no section \(id)")
+            #expect(section.ownTextEntry(among: rows)?.documentId == id)
+        }
+        for id in ["ch2", "ch3", "ch4", "comp3", "index"] {
+            let section = try #require(sections[id], "the outline holds no section \(id)")
+            #expect(section.ownTextRowId == id)
+            #expect(section.ownTextEntry(among: rows) == nil, "\(id) prints nothing of its own")
+        }
+        // A leaf's page is the section itself, which Browse opens directly: it is not a row above
+        // a list, though the index holds a row under its id.
+        let leaf = try #require(sections["t1"])
+        #expect(rows.contains { $0.documentId == "t1" })
+        #expect(leaf.ownTextRowId == nil && leaf.ownTextEntry(among: rows) == nil)
+    }
+
+    @Test("A section with a made-up id has no row to open, whatever the index holds under that id")
+    func aGeneratedIdNamesNoRow() {
+        let entry = DocumentBrowserEntry(documentId: "chapter-3", volumeId: Self.volumeId, header: "A chapter")
+        let generated = VolumeSection(sectionId: "chapter-3", divType: "chapter", title: "A chapter",
+                                      documentIds: ["d1"], subsections: [])
+        #expect(!generated.hasExplicitSectionId)
+        #expect(generated.ownTextRowId == nil && generated.ownTextEntry(among: [entry]) == nil)
+        // The same section under an id of its own is found.
+        let named = VolumeSection(sectionId: "ch3", divType: "chapter", title: "A chapter",
+                                  documentIds: ["d1"], subsections: [])
+        let own = DocumentBrowserEntry(documentId: "ch3", volumeId: Self.volumeId, header: "A chapter")
+        #expect(named.ownTextEntry(among: [entry, own]) == own)
+    }
+
+    /// Without the bump an installed index holds none of these rows.
+    @Test("The index version is at least 68")
+    func indexVersionCoversSectionRows() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 68)
+    }
+}

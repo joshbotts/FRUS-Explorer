@@ -1471,6 +1471,9 @@ private struct DiscoveredMetadataRow: View {
 ///   1.6 — Session 2026-07-08: the full-title header is now `BoundedTitleHeader` (height
 ///          capped, scrolls when longer) — an unbounded `fixedSize` title overflowed the
 ///          non-scrolling column and blanked the section's contents for long chapter titles
+///   1.7 — 2026-10-11 (#1536): a section that holds documents or sections and prints text of
+///          its own lists that text's row first, above both lists; `loadDocuments` finds the
+///          row by `VolumeSection.ownTextEntry(among:)`
 private struct CorpusSectionDocumentView: View {
     let volumeId: String
     let section: VolumeSection
@@ -1481,6 +1484,9 @@ private struct CorpusSectionDocumentView: View {
     @Environment(\.openWindow) private var openWindow
 
     @State private var documents: [DocumentBrowserEntry] = []
+    /// The row the index holds for the text this section prints at its own level (#1536), or
+    /// `nil`: `VolumeSection.ownTextEntry(among:)`, the rule Browse on iPhone and iPad asks.
+    @State private var ownText: DocumentBrowserEntry? = nil
     @State private var isLoading = true
     /// Whether this section's volume is indexed. Defaults `true` so an indexed volume never
     /// flashes the prompt; set in `loadDocuments`. When `false`, an empty leaf section shows an
@@ -1635,6 +1641,30 @@ private struct CorpusSectionDocumentView: View {
     @ViewBuilder
     private var structuralList: some View {
         List {
+            // The section's own text (#1536), when the index holds a row for it: first, above the
+            // sections and documents it holds. It opens the index's row, as a document row does.
+            if let ownText {
+                WrappingFooterSection {
+                    Button {
+                        appState.openDocument(ownText, from: .tool(.corpusBrowser), using: openWindow)
+                    } label: {
+                        Label(
+                            String(
+                                format: String(localized: "browser.compilation.readSection",
+                                               defaultValue: "Read %@"),
+                                section.title
+                            ),
+                            systemImage: "doc.text"
+                        )
+                        .labelStyle(.titleAndIcon)
+                    }
+                    .buttonStyle(.link)
+                    .accessibilityIdentifier("corpus-section-own-text")
+                } footer: {
+                    Text(String(localized: "browser.compilation.ownText.footer",
+                                defaultValue: "The text this section prints outside the documents and sections it holds."))
+                }
+            }
             if !section.subsections.isEmpty {
                 Section(String(localized: "corpus.section.subsections", defaultValue: "Sections")) {
                     ForEach(section.subsections) { sub in
@@ -1717,6 +1747,7 @@ private struct CorpusSectionDocumentView: View {
         // load their own, so a compilation with chapters isn't flattened into one long list.
         let sectionIds = Set(section.documentIds)
         documents = all.filter { sectionIds.contains($0.documentId) }
+        ownText = section.ownTextEntry(among: all)
         isLoading = false
     }
 }

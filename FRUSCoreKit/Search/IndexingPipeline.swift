@@ -434,6 +434,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.35 — 2026-10-11 (#1599): `currentDateIndexVersion` → 67 — a document's `@ana` pointers into
 ///         its volume's persons list are stored as person mentions (`annotatedPersonRefs`), which
 ///         is how 1981–88 vol. XVI names the people its documents mention (see the v67 note).
+///  4.36 — 2026-10-11 (#1536): `currentDateIndexVersion` → 68 — a section that holds documents and
+///         prints text of its own has a row for that text, which the parser now emits (see the v68
+///         note). `mergeReadingSequence` puts a section's own row first in the section, above the
+///         documents and sections it holds, where it was appended after the volume's last row.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1368,7 +1372,24 @@ public actor IndexingPipeline {
     ///   people at no mentions. The reader's two lists below such a document need no index: they
     ///   are resolved from the parse (`ASTToRenderNodeConverter`). The second of the four pull
     ///   requests of `Planning/Index-Bump-Brief-2026-10-11.md`.
-    public static let currentDateIndexVersion: Int = 67
+    /// - v67→68 — #1536: text printed at a section's own level has a row. A division that holds
+    ///   documents and prints text of its own — the list of those present above a meeting's
+    ///   minutes, a treaty's signature and ratification dates under its title, the statement of a
+    ///   case above the documents filed with it — passed that text up to the root, where it was
+    ///   dropped. The parser now gives the division a row under its own `xml:id`, holding its
+    ///   heading and what is written directly inside it and none of what its documents hold
+    ///   (`TEIParserDelegate.sectionDecision`). By two full indexes of the 553 catalogue volumes
+    ///   at corpus `99d851c79`, built at 67 and at 68 and compared: 1,337 rows in 139 volumes,
+    ///   1,421,459 characters of stored text, and every other row as it was and in the order it
+    ///   was. The row is stored as a promoted section's is: no start page, the page breaks its
+    ///   own text follows (106 rows have one), its cross-references (1,789), the people it names
+    ///   (4,461 mentions) and its source note collected, and `is_front_matter` by its kind (14
+    ///   rows, `frus1902app1`'s). Without the bump an installed index holds none of the rows, and
+    ///   Search, the graph, a person's mentions and a page lookup reach none of the text. The
+    ///   reading order needs no index: ``mergeReadingSequence(structure:cached:volumeId:)`` puts
+    ///   the row first in its section. The third of the four pull requests of
+    ///   `Planning/Index-Bump-Brief-2026-10-11.md`.
+    public static let currentDateIndexVersion: Int = 68
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3035,12 +3056,16 @@ public actor IndexingPipeline {
     /// reading-ordered list. Pure (no I/O) so it is unit-testable without a database.
     ///
     /// Walks `structure.sections` depth-first in source order. Container sections
-    /// (compilations, chapters, the `<front>`/`<back>` wrappers) contribute their direct
-    /// documents and then their subsections; leaf sections contribute themselves. Each
-    /// id is enriched from `cached` when present, otherwise synthesised from the
-    /// section's title. Sections without an explicit `xml:id` are skipped — they can't
-    /// be reopened by id. Any cached document the walk doesn't reach is appended last so
-    /// the result never loses a document relative to `cached`.
+    /// (compilations, chapters, the `<front>`/`<back>` wrappers) contribute the row the index
+    /// holds for their own text, when it holds one (#1510, #1536), then their direct documents
+    /// and then their subsections; leaf sections contribute themselves. Each id is enriched
+    /// from `cached` when present, otherwise synthesised from the section's title. Sections
+    /// without an explicit `xml:id` are skipped — they can't be reopened by id. Any cached
+    /// document the walk doesn't reach is appended last so the result never loses a document
+    /// relative to `cached`.
+    ///
+    /// A container's own row was not reached by the walk until index version 68, so the safety
+    /// net put it after everything the walk had reached, at the end of the volume.
     nonisolated static func mergeReadingSequence(
         structure: VolumeStructure,
         cached: [DocumentBrowserEntry],
@@ -3060,7 +3085,12 @@ public actor IndexingPipeline {
         func walk(_ sections: [VolumeSection]) {
             for section in sections {
                 if !section.documentIds.isEmpty || !section.subsections.isEmpty {
-                    // Container: direct documents first, then nested subsections.
+                    // Container: its own text first, when the index holds a row for it — never
+                    // synthesised, since a container that prints nothing of its own has no page
+                    // to open — then its direct documents, then its nested subsections.
+                    if let own = section.ownTextRowId, byId[own] != nil {
+                        append(id: own, fallbackTitle: section.title)
+                    }
                     for docId in section.documentIds { append(id: docId, fallbackTitle: "") }
                     walk(section.subsections)
                 } else if section.hasExplicitSectionId {

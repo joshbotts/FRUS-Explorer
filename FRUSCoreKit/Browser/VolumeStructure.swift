@@ -34,6 +34,9 @@ import Foundation
 ///   2.1 — 2026-10-11 (#1535): `proseReadableKinds` takes `compilation`, `chapter` and
 ///          `subchapter`, so a chapter that holds prose and no documents opens in the reader
 ///          where Browse said it held no documents. No stored value changes.
+///   2.2 — 2026-10-11 (#1536): ``ownTextRowId`` and ``ownTextEntry(among:)``, the row the index
+///          holds for the text a section prints outside the documents and sections it holds.
+///          Browse on both platforms and the reading sequence ask here. No stored value changes.
 public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
 
     /// The `xml:id` attribute of the enclosing `<div>`, or a generated stable string
@@ -138,6 +141,36 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
             if !suffix.isEmpty, suffix.allSatisfy(\.isNumber) { return false }
         }
         return true
+    }
+
+    // MARK: - A section's own text (#1510, #1536)
+
+    /// The document id under which the index holds the text this section prints at its own
+    /// level, when the section is one that can have such a row: it holds a document or another
+    /// section, and has an `xml:id` of its own to be opened by. `nil` for a leaf, whose page is
+    /// the section itself (``canReadDirectly``), and for a section with a generated id.
+    ///
+    /// The id says where the row would be, not that there is one. Most sections that hold
+    /// documents print nothing but a heading and have no row: at corpus `99d851c79` the index
+    /// holds one for 1,337 that hold documents (#1536, index version 68) and for 33 that hold
+    /// only sections (#1510). ``ownTextEntry(among:)`` answers from the index's rows.
+    public var ownTextRowId: String? {
+        guard hasExplicitSectionId, !documentIds.isEmpty || !subsections.isEmpty else { return nil }
+        return sectionId
+    }
+
+    /// The row the index holds for this section's own text, among one volume's rows: a meeting's
+    /// list of those present, a treaty's signature and ratification dates, the statement of a
+    /// case. `nil` when the section is a leaf or the index holds no such row.
+    ///
+    /// Browse draws it first in the section, above the sections and documents it holds, on both
+    /// platforms, and `IndexingPipeline.mergeReadingSequence` puts it first in the reader's
+    /// order, so the three agree by asking here.
+    ///
+    /// - Parameter rows: The volume's indexed rows (`IndexingPipeline.documents(forVolume:)`).
+    public func ownTextEntry(among rows: [DocumentBrowserEntry]) -> DocumentBrowserEntry? {
+        guard let id = ownTextRowId else { return nil }
+        return rows.first { $0.documentId == id }
     }
 }
 

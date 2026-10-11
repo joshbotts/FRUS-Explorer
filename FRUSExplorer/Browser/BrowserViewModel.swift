@@ -73,6 +73,8 @@ import Observation
 ///   1.8 — #1301 round 4: that comment's reason is corrected for kick 1, which is gated on an
 ///          `isIndexing` edge rather than on `isIndexed(_:)`; `indexVolume(_:)` cannot produce the
 ///          edge without a pipeline, so the conclusion stands. Comment only
+///   1.9 — 2026-10-11 (#1536): `compilationOwnText`, the row the index holds for the text a
+///          section prints at its own level, which `loadDocuments` sets with the section's rows
 ///   1.9 — #1365: `topicIndex` holds the Topic index's state for every index Browse mounts, and
 ///          `openTopicIndex()` is the Topics row's entry, which resets it to the whole index
 ///   1.10 — #1363: the per-level memory — `LevelMemory` by path position in `levelMemorySlots`,
@@ -436,6 +438,13 @@ public final class BrowserViewModel {
     /// Documents in a compiled section, keyed by `"volumeId/sectionId"`.
     public var compilationDocuments: [String: [DocumentBrowserEntry]] = [:]
 
+    /// The row the index holds for the text a section prints at its own level, keyed as
+    /// ``compilationDocuments`` is (#1536): a meeting's list of those present, a treaty's
+    /// signature and ratification dates. No entry for a section that prints only its heading,
+    /// for a leaf, or before the section's load has finished. Which row it is, is
+    /// `VolumeSection.ownTextEntry(among:)`'s to say; the Mac's browser asks the same rule.
+    public var compilationOwnText: [String: DocumentBrowserEntry] = [:]
+
     /// How far each section's document load has got, keyed the same way as
     /// ``compilationDocuments`` (#1301).
     ///
@@ -776,6 +785,8 @@ public final class BrowserViewModel {
             // Rows first, THEN the state. The view reads both, and this order means a render
             // triggered by the state's write always finds the rows already there.
             compilationDocuments[key] = all.filter { sectionIds.contains($0.documentId) }
+            // The section's own text (#1536) comes from the same read, so it is there with them.
+            compilationOwnText[key] = section.ownTextEntry(among: all)
             documentLoadStates[key] = .loaded
         } catch {
             documentLoadStates[key] = .failed(error)

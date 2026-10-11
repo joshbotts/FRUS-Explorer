@@ -95,6 +95,10 @@ import SwiftUI
 ///          every index not started from this view — the automatic index after a download above
 ///          all, which makes it the only loader on the download → open → browse path — and
 ///          `BrowseNestedSectionTests` now walks it. Comment only; no behaviour changed.
+///   2.5 — 2026-10-11 (#1536): a section that holds documents or sections and prints text of its
+///          own shows that text's row first, under the title and above both lists
+///          (`ownTextSection`). The row is the index's, kept by the view model with the section's
+///          documents, so it appears when they do and not before the volume is indexed.
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -188,6 +192,12 @@ struct CompilationView: View {
                     .textSelection(.enabled)
                     // Canonical full-title display; expose to the VoiceOver headings rotor.
                     .accessibilityAddTraits(.isHeader)
+            }
+
+            // The section's own text (#1536), when the index holds a row for it: first in the
+            // section, above the sections and documents it holds.
+            if let ownText = vm.compilationOwnText[cacheKey] {
+                ownTextSection(ownText)
             }
 
             // Subsection navigation if this section has subsections
@@ -356,6 +366,42 @@ struct CompilationView: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+
+    // MARK: - The Section's Own Text (#1536)
+
+    /// The row that opens the text a section prints at its own level: a meeting's list of those
+    /// present above its minutes, a treaty's signature and ratification dates under its title.
+    ///
+    /// A row of the list and not the prominent button a prose-only section gets
+    /// (`readSectionDirectlySection`): this section's content is the lists below, and its own
+    /// text is one thing among them. It opens the index's own row, so the reader shows the row's
+    /// heading and Search, the row's notes and its highlights are the same document.
+    ///
+    /// - Parameter entry: The row, from `BrowserViewModel.compilationOwnText`.
+    @ViewBuilder
+    private func ownTextSection(_ entry: DocumentBrowserEntry) -> some View {
+        WrappingFooterSection {
+            Button {
+                vm.navigationPath.append(.document(entry))
+                #if DEBUG
+                print("[BrowserView] Navigate → section text \(entry.documentId)")
+                #endif
+            } label: {
+                Label(
+                    String(
+                        format: String(localized: "browser.compilation.readSection",
+                                       defaultValue: "Read %@"),
+                        section.title
+                    ),
+                    systemImage: "doc.text"
+                )
+            }
+            .accessibilityIdentifier("browse-section-own-text")
+        } footer: {
+            Text(String(localized: "browser.compilation.ownText.footer",
+                        defaultValue: "The text this section prints outside the documents and sections it holds."))
         }
     }
 
