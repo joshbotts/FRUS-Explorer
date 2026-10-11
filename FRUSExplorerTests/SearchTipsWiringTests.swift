@@ -372,8 +372,9 @@ struct SearchTipsWiringTests {
         let corpus = try #require(more.range(of: "search.corpus.save"))
         #expect(!more[save.upperBound..<corpus.lowerBound].contains("search.tips.open"))
 
-        #expect(more.contains("\"search.moreActions.help.v2\""))
+        #expect(more.contains("\"search.moreActions.help.v3\""))
         #expect(!more.contains("\"search.moreActions.help\""), "the help text still omits the lookup and the tips")
+        #expect(!more.contains("\"search.moreActions.help.v2\""), "the help text still omits Select Results (#1576)")
     }
 
     @Test("iOS: no sixth icon in the actions bar")

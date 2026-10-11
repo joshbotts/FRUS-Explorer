@@ -174,3 +174,53 @@ extension CollectionDocumentDiscovery {
                                         alreadyPresent: distinct.count - missing.count)
     }
 }
+
+// MARK: - removeEntries
+
+extension CollectionDocumentDiscovery {
+
+    /// Takes an add back: deletes the entries with these ids, and saves (#1576 lane 3).
+    ///
+    /// It is the Undo of ``appendDocuments(_:to:modelContext:save:)``, which answers with the ids
+    /// it inserted. The entries are **re-fetched by id**, and an id that finds nothing is one the
+    /// reader, another window or another device removed since: that entry is already undone, and
+    /// is not an error. An entry that was moved into the outline's middle, or given a note, is
+    /// still the entry the add inserted, and goes.
+    ///
+    /// Each entry is unlinked before it is deleted, because `documentEntries` lists a deleted
+    /// entry until the context processes the deletion and the collection's count reads that list.
+    /// Nothing is renumbered: positions tolerate a gap.
+    ///
+    /// - Parameters:
+    ///   - ids: The ids `appendDocuments` returned.
+    ///   - modelContext: The context to delete in and save through.
+    ///   - save: How the context is saved; a test passes one that throws.
+    /// - Returns: How many entries were removed.
+    /// - Throws: The fetch's or the save's error. After a failed save nothing is put back: the
+    ///   entries are deleted in the context and will go with its next save.
+    @MainActor
+    @discardableResult
+    static func removeEntries(
+        withIds ids: [UUID],
+        modelContext: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws -> Int {
+        var removed = 0
+        // In batches: a predicate over a thousand ids is a thousand bound values in one statement.
+        for start in stride(from: 0, to: ids.count, by: 200) {
+            let batch = Array(ids[start..<min(start + 200, ids.count)])
+            let entries = try modelContext.fetch(FetchDescriptor<CollectionEntry>(
+                predicate: #Predicate { batch.contains($0.id) }))
+            for entry in entries where !entry.isDeleted {
+                let collection = entry.collection
+                entry.collection = nil
+                modelContext.delete(entry)
+                collection?.lastModified = .now
+                removed += 1
+            }
+        }
+        guard removed > 0 else { return 0 }
+        try save(modelContext)
+        return removed
+    }
+}

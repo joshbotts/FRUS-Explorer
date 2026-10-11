@@ -114,7 +114,7 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1092–1093 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1108–1109 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
@@ -1220,7 +1220,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 770–771 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 968–969 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1230,7 +1230,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1603–1603 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1631–1631 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1243,28 +1243,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2544–2544 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2723–2723 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2533–2533 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2712–2712 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2540–2540 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2719–2719 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1193–1193 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1221–1221 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1273,16 +1273,110 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1218–1219 | key: search.moreActions.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1246–1247 | key: search.moreActions.help.v3 -->
 
-*The VoiceOver hint and Large Content Viewer detail for the More menu. Replaces `search.moreActions.help`, which named neither the abbreviation lookup nor the tips.*
+*The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, and `.v3` adds Select Results (#1576).*
 
-Save this search or its results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips
+Save this search or its results, select results to act on several at once, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips
 
-<!-- END SOURCE: search.moreActions.help.v2 -->
+<!-- END SOURCE: search.moreActions.help.v3 -->
+
+#### Selecting results: what a command did (iOS)
+
+*The lines shown above the results after a command on the picked results (#1576), on iPhone and iPad. Each is also announced to VoiceOver. Mark Reviewed's two lines are the checklist strip's own announcements, "25 results marked reviewed" and "25 results are back in the list".*
+
+##### Added %1$@ to “%2$@”.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 294–295 | key: search.selection.outcome.added %@ %@ -->
+
+*The line after Add to Collection added documents: "Added 31 documents to “Chile”." `%1$@` is the number added, with its noun, and `%2$@` the collection's name. When some were already in the collection, one of the two sentences below follows it.*
+
+Added %1$@ to “%2$@”.
+
+<!-- END SOURCE: search.selection.outcome.added %@ %@ -->
+
+##### %@ was already in it.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 300–301 | key: search.selection.outcome.already.one %@ -->
+
+*Follows the line above when one of the documents was already in the collection: "1 was already in it." `%@` is the number.*
+
+%@ was already in it.
+
+<!-- END SOURCE: search.selection.outcome.already.one %@ -->
+
+##### %@ were already in it.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 302–303 | key: search.selection.outcome.already.many %@ -->
+
+*The same for more than one: "6 were already in it."*
+
+%@ were already in it.
+
+<!-- END SOURCE: search.selection.outcome.already.many %@ -->
+
+##### Nothing added: %1$@ was already in “%2$@”.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 288–289 | key: search.selection.outcome.noneAdded.one %@ %@ -->
+
+*The line when every picked document was already in the collection, for one document. `%1$@` is the number and `%2$@` the collection's name. No Undo is offered beside it.*
+
+Nothing added: %1$@ was already in “%2$@”.
+
+<!-- END SOURCE: search.selection.outcome.noneAdded.one %@ %@ -->
+
+##### Nothing added: %1$@ were already in “%2$@”.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 290–291 | key: search.selection.outcome.noneAdded.many %@ %@ -->
+
+*The same for more than one: "Nothing added: 6 were already in “Chile”."*
+
+Nothing added: %1$@ were already in “%2$@”.
+
+<!-- END SOURCE: search.selection.outcome.noneAdded.many %@ %@ -->
+
+##### Removed %1$@ from “%2$@”.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 315–316 | key: search.selection.outcome.removed %@ %@ -->
+
+*The line after Undo took an add back: "Removed 31 documents from “Chile”." `%1$@` is the number removed, with its noun, and `%2$@` the collection's name.*
+
+Removed %1$@ from “%2$@”.
+
+<!-- END SOURCE: search.selection.outcome.removed %@ %@ -->
+
+##### %@ selected result is not in this list now.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 328–329 | key: search.selection.outcome.dropped.one %@ -->
+
+*The line when the same search was run again, under a changed filter, and one picked result is no longer in the list. `%@` is the number.*
+
+%@ selected result is not in this list now.
+
+<!-- END SOURCE: search.selection.outcome.dropped.one %@ -->
+
+##### %@ selected results are not in this list now.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 330–331 | key: search.selection.outcome.dropped.many %@ -->
+
+*The same for more than one: "12 selected results are not in this list now."*
+
+%@ selected results are not in this list now.
+
+<!-- END SOURCE: search.selection.outcome.dropped.many %@ -->
+
+##### Select %@ or fewer to add them to a collection.
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 271–272 | key: search.selection.overLimit %@ -->
+
+*Shown above the results when more results are picked than one add takes, with Add to Collection dimmed in the Actions menu: "Select 1,000 documents or fewer to add them to a collection." `%@` is the limit, with its noun. Mark Reviewed stays live.*
+
+Select %@ or fewer to add them to a collection.
+
+<!-- END SOURCE: search.selection.overLimit %@ -->
+
+##### Undo did not finish: %@
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 341–342 | key: search.selection.outcome.undoFailed %@ -->
+
+*The line when the Undo of an add threw. `%@` is the system's own description of the failure. No Undo is offered beside it. It does not say that nothing changed: a removal whose save failed has already taken the documents out of the collection in memory.*
+
+Undo did not finish: %@
+
+<!-- END SOURCE: search.selection.outcome.undoFailed %@ -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2517–2517 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2696–2696 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1291,7 +1385,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3813–3813, 4305–4305 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3817–3817, 4309–4309 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 

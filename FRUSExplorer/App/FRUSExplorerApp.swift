@@ -2203,6 +2203,8 @@ struct FRUSExplorerApp: App {
         // #1356/#1357: five side-loaded rows for the full volume list's UI test, written when a run
         // asks for them and swept away when it does not, so no other suite ever sees them.
         UITestVolumeSeeder.prepareStorageRowsIfRequested(in: volumesDir)
+        // #1576 lane 3: a thirty-document volume for the bulk-actions UI suite, on the same terms.
+        UITestVolumeSeeder.prepareBulkVolumeIfRequested(in: volumesDir)
         // #1364: two scopes with fixed ids, for BrowseWithinScopeTests. HERE, before the first
         // await, and not beside the research seeder below, which runs only once the search
         // pipeline has been built. Placed there, the suite's first iPhone run found My Scopes
@@ -2321,6 +2323,8 @@ struct FRUSExplorerApp: App {
             await UITestBrowseSeams.prepareSeededVolume(seededVolume, pipeline: pipeline)
             // #1356/#1357: the storage rows' index rows, silently, for the same reason.
             await UITestVolumeSeeder.prepareStorageRowIndex(pipeline: pipeline)
+            // #1576 lane 3: and the bulk volume's.
+            await UITestVolumeSeeder.prepareBulkVolumeIndex(pipeline: pipeline)
             // #1379: fifteen volumes' worth of citations for the heat matrix's UI test, written when
             // a run asks for them and swept on every launch that does not — before the
             // cross-reference store below opens on this database.

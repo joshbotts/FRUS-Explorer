@@ -340,7 +340,10 @@ final class SearchViewModel {
     // MARK: - Results
 
     var results: [SearchResult] = [] {
-        didSet { if currentPage >= totalPages { currentPage = 0 } }
+        didSet {
+            if currentPage >= totalPages { currentPage = 0 }
+            selectionFollowsReplacedResults()
+        }
     }
     /// Every document matching the query, uncapped — or `nil` when the count could not be taken.
     ///
@@ -378,7 +381,11 @@ final class SearchViewModel {
     var lastRenderedExpression: String?
 
     var isSearching: Bool = false
-    var searchError: String? = nil
+    var searchError: String? = nil {
+        // #1576 lane 3: an error takes the rows off the screen, and some refusals leave `results`
+        // as it was. A selection of rows that are not drawn is one a command must not act on.
+        didSet { if searchError != nil { endSelecting() } }
+    }
     var hasSearched: Bool = false
 
     /// Increments once per executed search — a stable `.task(id:)` key for views that
@@ -430,7 +437,7 @@ final class SearchViewModel {
     /// True when checklist mode is active. Session-scoped; not persisted (resets on relaunch).
     /// While on, results the user has reviewed this session are hidden.
     var checklistMode: Bool = false {
-        didSet { clampCurrentPage() }
+        didSet { clampCurrentPage(); pruneSelection() }
     }
 
     /// The instant checklist mode was last enabled. Documents opened at or after this instant
@@ -440,14 +447,14 @@ final class SearchViewModel {
     /// `(volumeId|documentId)` keys the user opened since `checklistEnabledAt`, fetched from
     /// `ReadingHistoryEntry` by `SearchView` and pushed in (mirrors `availableUserTags`).
     var readSinceEnabledKeys: Set<String> = [] {
-        didSet { clampCurrentPage() }
+        didSet { clampCurrentPage(); pruneSelection() }
     }
 
     /// The results the reader marked reviewed this session, by hand or with Mark Page Reviewed,
     /// and the last bulk mark apart so that it can be undone (#1576 lane 1). A lightweight
     /// in-memory value, NOT a fabricated `ReadingHistoryEntry`.
     private(set) var reviewedMarks = ReviewedMarks() {
-        didSet { clampCurrentPage() }
+        didSet { clampCurrentPage(); pruneSelection() }
     }
 
     /// `(volumeId|documentId)` keys the reader marked reviewed this session: ``reviewedMarks``' keys.
@@ -520,10 +527,25 @@ final class SearchViewModel {
     ///   opened since the mode came on was hiding already.
     @discardableResult
     func markReviewed(_ results: [SearchResult]) -> Int {
+        markBulk(results, returnsListToTop: true)
+    }
+
+    /// The bulk mark itself.
+    ///
+    /// - Parameters:
+    ///   - results: The results to mark.
+    ///   - returnsListToTop: Whether the marked rows were the page, so that the rows that move
+    ///     up should be shown from their top. A selection's rows are scattered down the list and
+    ///     the reader is among them: marking those must leave the list where it is.
+    /// - Returns: How many rows left the list.
+    private func markBulk(_ results: [SearchResult], returnsListToTop: Bool) -> Int {
         let hidden = reviewedMarks.markBulk(results.map {
             Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)
         }).subtracting(readSinceEnabledKeys).count
-        if hidden > 0 { bulkMarkGeneration &+= 1 }
+        if hidden > 0, returnsListToTop { bulkMarkGeneration &+= 1 }
+        // A new bulk mark is what Undo takes back now, so a line offering to undo an earlier
+        // one would name the wrong rows (#1576 lane 3).
+        if bulkOutcome?.undo == .reviewedMarks { bulkOutcome = nil }
         return hidden
     }
 
@@ -549,6 +571,7 @@ final class SearchViewModel {
         let restored = undoableRowCount
         reviewedMarks.undoLastBulk()
         if restored > 0 { bulkMarkGeneration &+= 1 }
+        if bulkOutcome?.undo == .reviewedMarks { bulkOutcome = nil }
         return restored
     }
 
@@ -585,6 +608,177 @@ final class SearchViewModel {
     /// Resets `currentPage` to 0 when a reviewed-set change shrank the list below the current page.
     private func clampCurrentPage() {
         if currentPage >= totalPages { currentPage = 0 }
+    }
+
+    // MARK: - Selection (#1576 lane 3)
+
+    /// The results the reader has picked to act on at once, and whether the list is in selection.
+    /// Written only through the functions below; pruned here whenever the shown results change,
+    /// and ended when an error takes the rows off the screen, so that no pick is ever of a row
+    /// the list does not show (``ResultSelection``).
+    private(set) var resultSelection = ResultSelection()
+
+    /// What the last command on the selection did, shown above the results until the next
+    /// command, the next completed search or Done.
+    private(set) var bulkOutcome: BulkOutcome?
+
+    /// Counts the outcomes set, so that the bar can announce each one. Two commands in a row can
+    /// leave the same words ("25 results marked reviewed" for one full page and then the next),
+    /// and a change of value is then no signal that anything happened.
+    private(set) var bulkOutcomeSerial = 0
+
+    /// Sets the outcome line and counts it.
+    private func setOutcome(_ outcome: BulkOutcome) {
+        bulkOutcome = outcome
+        bulkOutcomeSerial &+= 1
+    }
+
+    /// The search the picks were made in. A completed search that is the same search keeps the
+    /// picks it still shows; another ends selection (``settleSelection(for:)``).
+    private var selectionAnchor: ChecklistAnchor?
+
+    /// Picks that a replaced result list no longer held, counted until the search that replaced
+    /// it completes and ``settleSelection(for:)`` reports or discards them.
+    private var droppedByRerun = 0
+
+    /// The picked results, in the order the list shows them: what a command acts on.
+    var selectedResults: [SearchResult] { resultSelection.resolved(in: displayedResults) }
+
+    /// Whether more results are picked than one Add to Collection takes (the owner's decision 5).
+    /// Mark Reviewed has no limit.
+    var selectionExceedsAddLimit: Bool {
+        resultSelection.count > CollectionDocumentDiscovery.bulkDocumentLimit
+    }
+
+    /// Whether Add to Collection can run: something is picked, and no more than one add takes.
+    var canAddSelectionToCollection: Bool {
+        resultSelection.count > 0 && !selectionExceedsAddLimit
+    }
+
+    /// Enters selection, with one row picked when the reader chose Select on it.
+    ///
+    /// - Parameter result: The row whose menu was used, or `nil` from the More menu.
+    func beginSelecting(with result: SearchResult? = nil) {
+        // An error is drawn in the rows' place, whatever `results` still holds.
+        guard searchError == nil, !displayedResults.isEmpty else { return }
+        if !resultSelection.isSelecting {
+            selectionAnchor = lastCompletedSearchAnchor
+                ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
+            droppedByRerun = 0
+            bulkOutcome = nil
+        }
+        resultSelection.begin(picking: result?.id)
+    }
+
+    /// Leaves selection: Done, a new search, a Keywords/Meaning flip, an emptied list.
+    func endSelecting() {
+        resultSelection.end()
+        selectionAnchor = nil
+        droppedByRerun = 0
+        bulkOutcome = nil
+    }
+
+    /// Picks a row, or un-picks it.
+    func toggleSelection(of result: SearchResult) {
+        resultSelection.toggle(result.id)
+    }
+
+    /// Picks every row on the page on screen.
+    func selectPage() {
+        resultSelection.pick(pagedResults.map(\.id))
+    }
+
+    /// Picks every result the list shows: the loaded results less those Checklist Mode hides.
+    /// Never a match that was not loaded.
+    func selectAllShown() {
+        resultSelection.pick(displayedResults.map(\.id))
+    }
+
+    /// Un-picks everything and stays in selection.
+    func selectNone() {
+        resultSelection.clear()
+    }
+
+    /// Mark Reviewed for the selection: hides the picked rows, which takes them out of the
+    /// selection, and keeps the line and its Undo.
+    func markSelectionReviewed() {
+        // The picked rows are scattered and the reader is among them, so the list stays put.
+        let hidden = markBulk(selectedResults, returnsListToTop: false)
+        setOutcome(BulkOutcome(message: ChecklistCopy.markedAnnouncement(hidden),
+                               undo: hidden > 0 ? .reviewedMarks : nil))
+    }
+
+    /// Records what an Add to Collection of the selection did. Outside selection nothing shows
+    /// an outcome, and the picker's checkmark is the feedback.
+    ///
+    /// - Parameters:
+    ///   - outcome: What `CollectionDocumentDiscovery.appendDocuments` answered.
+    ///   - collectionName: The collection's name as its row shows it.
+    func recordCollectionAdd(_ outcome: CollectionDocumentAppend, collectionName: String) {
+        guard resultSelection.isSelecting else { return }
+        setOutcome(BulkOutcome(
+            message: ResultSelectionCopy.added(outcome.insertedCount, alreadyPresent: outcome.alreadyPresent,
+                                               to: collectionName),
+            undo: outcome.insertedEntryIds.isEmpty
+                ? nil : .collectionEntries(ids: outcome.insertedEntryIds, collectionName: collectionName)))
+    }
+
+    /// Takes the last command back and says what that did.
+    ///
+    /// The marks are this view model's to restore. Collection entries are the store's, so the
+    /// caller, which holds the model context, removes them and answers how many went.
+    ///
+    /// - Parameter removingEntries: Removes the collection entries with these ids and answers
+    ///   how many it removed (`CollectionDocumentDiscovery.removeEntries`).
+    func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int) {
+        guard let undo = bulkOutcome?.undo else { return }
+        switch undo {
+        case .collectionEntries(let ids, let collectionName):
+            do {
+                let removed = try removingEntries(ids)
+                setOutcome(BulkOutcome(message: ResultSelectionCopy.removed(removed, from: collectionName),
+                                       undo: nil))
+            } catch {
+                // No second try is offered. A removal whose save failed has already taken the
+                // entries out in memory, so another would find none and report nothing removed.
+                setOutcome(BulkOutcome(message: ResultSelectionCopy.undoFailed(error), undo: nil))
+            }
+        case .reviewedMarks:
+            let restored = undoLastBulkMark()
+            setOutcome(BulkOutcome(message: ChecklistCopy.undoneAnnouncement(restored), undo: nil))
+        }
+    }
+
+    /// Follows a replaced result list. An emptied list ends selection; otherwise the picks the
+    /// new list does not show are dropped and counted, for the completed search to settle.
+    private func selectionFollowsReplacedResults() {
+        guard resultSelection.isSelecting else { return }
+        guard !results.isEmpty else { endSelecting(); return }
+        droppedByRerun += resultSelection.prune(toShown: Set(displayedResults.map(\.id)))
+    }
+
+    /// Drops the picks the list no longer shows: a row Checklist Mode has just hidden, because
+    /// its document was opened or it was marked reviewed.
+    private func pruneSelection() {
+        guard resultSelection.isSelecting, resultSelection.count > 0 else { return }
+        resultSelection.prune(toShown: Set(displayedResults.map(\.id)))
+    }
+
+    /// Settles the selection against a search that has just completed. The same search keeps the
+    /// picks it still shows and says how many it does not; another search ends selection.
+    ///
+    /// - Parameter anchor: The anchor of the search that ran.
+    private func settleSelection(for anchor: ChecklistAnchor) {
+        guard resultSelection.isSelecting else { return }
+        guard selectionAnchor?.isSameSearch(as: anchor) == true else { endSelecting(); return }
+        // A completed search ends the last command's line and its Undo, as the next command
+        // does. What takes its place, when the re-run dropped picks, is how many.
+        if droppedByRerun > 0 {
+            setOutcome(BulkOutcome(message: ResultSelectionCopy.dropped(droppedByRerun), undo: nil))
+        } else {
+            bulkOutcome = nil
+        }
+        droppedByRerun = 0
     }
 
     // MARK: - Available Filter Options
@@ -714,7 +908,11 @@ final class SearchViewModel {
 
     /// Which engine a submitted search runs through. Per-session, defaulting to Keywords —
     /// see `SearchMode`'s reasoning for why this is deliberately not persisted.
-    var searchMode: SearchMode = .keywords
+    var searchMode: SearchMode = .keywords {
+        // #1576 lane 3: picks made in one engine's list end with it, whoever changes the engine
+        // (the picker, a hand-off, a restored search).
+        didSet { if searchMode != oldValue { endSelecting() } }
+    }
 
     /// The Meaning mode's engine, injected by the view once the semantic stack has booted.
     /// `nil` means the mode is unavailable (a build state) and the picker should not offer it.
@@ -831,6 +1029,8 @@ final class SearchViewModel {
             // hidden in this one. A re-run of the same search keeps them (#1576 lane 1). Built
             // from the parameters that ran, not the live ones.
             settleChecklist(for: ChecklistAnchor(query: submittedQuery, parameters: params))
+            // #1576 lane 3: the picks last as long as the checklist's marks do, by the same rule.
+            settleSelection(for: ChecklistAnchor(query: submittedQuery, parameters: params))
             #if DEBUG
             print("[SearchView] Search returned \(results.count) results")
             #endif
@@ -911,6 +1111,7 @@ final class SearchViewModel {
             })
             currentPage = 0
             settleChecklist(for: checklistAnchorOfThisRun)
+            settleSelection(for: checklistAnchorOfThisRun)
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
             resultsAreSemantic = false

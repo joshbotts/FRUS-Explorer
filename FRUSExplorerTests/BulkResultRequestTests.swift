@@ -320,15 +320,16 @@ struct CollectionPickerDocumentsModeTests {
                 switch request.command {
                 case .addToCollection:
                     CollectionPickerSheet(documents: request.documents,
-                                          fromMeaningSearch: request.fromMeaningSearch)
+                                          fromMeaningSearch: request.fromMeaningSearch,
+                                          onAdded: onAdded)
                 }
             }
             """)))
         // And the hosts' one call reaches that modifier.
         let mount = Self.squeezed(Self.code(String(try Self.declaration(
-            "func bulkResultSheets(_ request: Binding<BulkResultRequest?>) -> some View {", in: file))))
-        #expect(mount.contains(Self.squeezed("modifier(BulkResultSheets(request: request))")),
-                "bulkResultSheets does not apply the presenter")
+            "func bulkResultSheets(_ request: Binding<BulkResultRequest?>,", in: file))))
+        #expect(mount.contains(Self.squeezed("modifier(BulkResultSheets(request: request, onAdded: onAdded))")),
+                "bulkResultSheets does not apply the presenter, or drops the host's outcome handler")
     }
 
     @Test("Each search host makes the request from the row and mounts the one presenter",
@@ -348,8 +349,10 @@ struct CollectionPickerDocumentsModeTests {
             }
             """)), "\(host.path) does not build the request from the row")
 
-        // The menu item, at the menu's own level directly after Archival Neighbors…: inside no
-        // condition, so it is there whether or not Checklist Mode is on.
+        // The menu item, among the menu's own items directly after Archival Neighbors…, and so
+        // outside the Checklist Mode condition: it is there whether or not that mode is on. (On
+        // iPhone and iPad the menu's items are the `else` of lane 3's selection test, which a
+        // squeezed match does not see; `ResultSelectionWiringTests` reads that branch.)
         #expect(squeezed.contains(Self.squeezed("""
                             systemImage: "archivebox"
                         )
@@ -363,8 +366,11 @@ struct CollectionPickerDocumentsModeTests {
             """)), "\(host.path): the row's menu has no Add to Collection item after Archival Neighbors…")
 
         let makers = code.components(separatedBy: "bulkRequest = addToCollectionRequest(for: result)").count - 1
+        // After the menu's last item (lane 3's Select), the two braces that close the menu's
+        // branch and the menu, and then the action: on the row, not on the list.
         let action = Self.squeezed("""
-                        Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                            Label(ResultSelectionCopy.selectRow, systemImage: "checkmark.circle")
+                        }
                     }
                 }
                 .accessibilityAction(named: Text(BulkResultCopy.addToCollection)) {
@@ -384,7 +390,7 @@ struct CollectionPickerDocumentsModeTests {
         }
 
         // One presenter, and no sheet of the host's own making.
-        #expect(code.components(separatedBy: ".bulkResultSheets($bulkRequest)").count - 1 == 1,
+        #expect(code.components(separatedBy: ".bulkResultSheets($bulkRequest").count - 1 == 1,
                 "\(host.path) must mount the presenter once")
         #expect(!code.contains("CollectionPickerSheet("),
                 "\(host.path) builds the picker itself, from live state, where it should hand over a request")

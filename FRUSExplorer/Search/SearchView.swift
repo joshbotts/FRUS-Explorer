@@ -234,6 +234,10 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          `switchSearchMode(to:)` and a hand-off through `applyHandoff(_:)`; the working-corpus banner and a
 ///          person-filter rebind run a search again only when one is on screen; Checklist Mode says when Log
 ///          Research Sessions is off (`ChecklistLoggingNotice`).
+///   1.26 — #1576 lane 3: results can be selected on iPhone and iPad. `ResultSelectionBar` takes the actions
+///          bar's slot while selecting, with the commands in its Actions menu, and a row's tap picks it. The
+///          results branch is one column whose fixed rows scroll where they do not fit (`resultsColumn`),
+///          inside `TopAnchoredOverflow`, so results too tall for their room no longer move the bars.
 
 struct SearchView: View {
 
@@ -462,7 +466,9 @@ struct SearchView: View {
     var body: some View {
         @Bindable var vm = vm
         NavigationStack(path: $vm.navigationPath) {
-            resultsSection
+            // #1576 lane 3: content taller than its room runs out at the bottom, and does not
+            // move the bars that the insets further down this chain attach to it.
+            TopAnchoredOverflow { resultsSection }
                 // Checklist mode (#189-D): a hidden, always-mounted observer keeps the reviewed
                 // set live as documents are opened, independent of which results branch (list or
                 // timeline) is showing or how the document was opened. Re-created when the anchor
@@ -556,7 +562,13 @@ struct SearchView: View {
                 .safeAreaInset(edge: .top, spacing: 0) {
                     VStack(spacing: 0) {
                         searchModePicker
-                        searchActionsBar
+                        // #1576 lane 3: while results are being selected the bar's slot is the
+                        // selection's. The five controls and their fit test are untouched.
+                        if vm.resultSelection.isSelecting {
+                            selectionBar
+                        } else {
+                            searchActionsBar
+                        }
                         if vm.searchMode == .meaning {
                             // The Meaning strip replaces the MATCH inspector: there is no FTS
                             // expression to show, and the strip carries the route's disclosures.
@@ -717,7 +729,11 @@ struct SearchView: View {
                 }
                 // #1576 lane 2: Add to Collection from a result row. iOS only for the same
                 // reason: the actions that set the request are the row's, inside `#if os(iOS)`.
-                .bulkResultSheets($bulkRequest)
+                // Lane 3: the outcome of a selection's add stays on screen, above the results.
+                .bulkResultSheets($bulkRequest, onAdded: { outcome, collection in
+                    vm.recordCollectionAdd(
+                        outcome, collectionName: CollectionEditorNaming.listName(savedName: collection.name))
+                })
                 #endif
                 .navigationDestination(for: DocumentBrowserEntry.self) { entry in
                     #if os(iOS)
@@ -1005,7 +1021,7 @@ struct SearchView: View {
 
     /// The active reading, derived from the three flags the body and rebuild keys still read.
     ///
-    /// The precedence order mirrors the `else if` chain in `resultsList` exactly. If the two ever
+    /// The precedence order mirrors the `else if` chain in `resultsReading` exactly. If the two ever
     /// disagree, the control would name one reading while the screen showed another.
     private var activeReading: ResultReading {
         ResultReading.active(timeline: showTimeline,
@@ -1161,6 +1177,18 @@ struct SearchView: View {
                       systemImage: "tray.full")
             }
             .disabled(vm.displayedResults.isEmpty)
+            #if os(iOS)
+            // #1576 lane 3: selection, after the two save items, which
+            // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. The list reading only:
+            // the other readings have no rows to pick. And not under an error, which is drawn in
+            // the rows' place while `results` may still hold them.
+            Button {
+                vm.beginSelecting()
+            } label: {
+                Label(ResultSelectionCopy.selectResults, systemImage: "checkmark.circle")
+            }
+            .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil)
+            #endif
             Button {
                 showSavedSearches = true
             } label: {
@@ -1215,8 +1243,8 @@ struct SearchView: View {
         }
         .controlHelp(
             String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
-            detail: String(localized: "search.moreActions.help.v2",
-                           defaultValue: "Save this search or its results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips"),
+            detail: String(localized: "search.moreActions.help.v3",
+                           defaultValue: "Save this search or its results, select results to act on several at once, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips"),
             systemImage: "ellipsis.circle"
         )
     }
@@ -1641,75 +1669,136 @@ struct SearchView: View {
                     parameters: vm.submittedSearchParameters, service: appState.searchService)
             }
         } else if !vm.results.isEmpty {
-            resultCountHeader
-            checklistHiddenBanner
-            if vm.checklistMode && vm.displayedResults.isEmpty {
-                // Checklist mode has hidden every result (#189-D) — applies in both list and
-                // timeline modes (checked before the timeline branch).
-                ContentUnavailableView(
-                    String(localized: "search.checklist.allReviewed.title",
-                           defaultValue: "All Results Reviewed"),
-                    systemImage: "checkmark.circle",
-                    description: Text(String(localized: "search.checklist.allReviewed.detail",
-                                             defaultValue: "You’ve reviewed every result. Turn off Checklist Mode to see them again."))
-                )
-            } else if showCollocates {
-                CollocationView(
-                    scope: resultSetScope,
-                    outcome: collocation,
-                    windowSize: $collocationWindow,
-                    order: Binding(get: { CollocationOrder(rawValue: collocationOrderRaw) ?? .evidence },
-                                   set: { collocationOrderRaw = $0.rawValue }),
-                    isLoading: isLoadingCollocation)
-            } else if showConcordance {
-                ConcordanceView(scope: resultSetScope, result: concordance, sort: $concordanceSort) { line in
-                    // Open the line's document through the same path a list row uses, so a
-                    // concordance line and a result row land in exactly the same place.
-                    if let result = vm.pagedResults.first(where: {
-                        $0.volumeId == line.volumeId && $0.documentId == line.documentId
-                    }) {
-                        openResult(vm.makeEntry(from: result))
-                    }
-                }
-                .overlay { if isLoadingConcordance { ProgressView() } }
-            } else if showTimeline {
-                // The bias caption, above the chart rather than below it — a distribution is read
-                // before a footnote. It states that the SHAPE is skewed, which nothing else on
-                // screen says: the cap notice reports a size, and a reader can discount a size.
-                // A relevance-ranked top-N is not date-neutral, so no amount of knowing "there are
-                // more" corrects the shape of what is plotted.
-                if let bias = resultSetScope.timelineBiasCaption {
-                    Text(bias)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                        .padding(.top, 6)
-                }
-                // Plot the checklist-filtered set so the timeline hides reviewed documents the
-                // same way the list does (#189-D).
-                DocumentTimelineView(
-                    items: vm.displayedResults.map {
-                        DocumentTimelineView.Item(
-                            volumeId: $0.volumeId,
-                            documentId: $0.documentId,
-                            header: $0.header
-                        )
-                    },
-                    onSelect: { item in
-                        if let r = vm.displayedResults.first(where: {
-                            $0.volumeId == item.volumeId && $0.documentId == item.documentId
-                        }) {
-                            openResult(vm.makeEntry(from: r))
-                        }
-                    }
-                )
-            } else {
-                resultsList
-            }
+            resultsColumn
         } else {
             initialPromptView
+        }
+    }
+
+    /// The results with the rows fixed above them: the count header and, in Checklist Mode, its
+    /// strip (#1576 lane 3).
+    ///
+    /// One view, where until lane 3 the header, the strip and the reading were three siblings in
+    /// the navigation root's own stack. That stack could not give way: the header and the strip
+    /// take the height their text needs, and at the accessibility sizes, on an iPhone with the
+    /// tab shell's banner showing, the two are taller than the room between the Query Inspector
+    /// and the banner. The list was then given nothing, and the overflow moved the bars above
+    /// (see ``TopAnchoredOverflow``, which records what was seen).
+    ///
+    /// So the fixed rows take their own height where that is no more than their share of the
+    /// column, and scroll within that share where it is more. The stack decides: it offers its
+    /// children the room that is left in equal shares, the least flexible first, and
+    /// `ViewThatFits` takes the plain rows if they fit the share it is offered and the scrolling
+    /// ones if they do not. With the list, the concordance or the collocates under them the share
+    /// is half the column, so the reading always has half or more; the timeline's caption, where
+    /// it has one, is given its height first. At the standard text sizes on an upright iPhone
+    /// the rows fit. They scroll at the accessibility sizes, and at any size where the column is
+    /// short: with the keyboard up, or on an iPhone on its side.
+    ///
+    /// A reading with fixed rows of its own, as Collocates has its two controls, can still be
+    /// taller than what is left; ``TopAnchoredOverflow`` is what keeps that from moving the bars.
+    ///
+    /// The choice follows the rows' height, so a line added to the strip at a size where the rows
+    /// only just fit turns them into the scrolling copy, which is a new view: VoiceOver's focus,
+    /// if it was on one of them, starts again at the rows' first.
+    private var resultsColumn: some View {
+        // Built once and used twice: the rows read the shown results several times over, and
+        // those are sorted and filtered again at each read.
+        let rows = resultsFixedRows
+        // The default spacing in both stacks, which is what the root's own stack gave the three.
+        return VStack {
+            ViewThatFits(in: .vertical) {
+                rows
+                ScrollView { rows }
+                    .scrollBounceBehavior(.basedOnSize)
+                    // A selection's outcome is the first of the rows: each new one brings the
+                    // scrolling rows back to their top, where it is.
+                    .id(vm.bulkOutcomeSerial)
+            }
+            resultsReading
+        }
+    }
+
+    /// The rows above the reading: in selection what its last command did (#1576 lane 3), then
+    /// how many results there are and which page is showing, and in Checklist Mode its strip.
+    private var resultsFixedRows: some View {
+        VStack {
+            #if os(iOS)
+            selectionStatus
+            #endif
+            resultCountHeader
+            checklistHiddenBanner
+        }
+    }
+
+    /// The reading of the results that is showing: the list, the concordance, the collocates or
+    /// the timeline, or the note that Checklist Mode has hidden every result.
+    @ViewBuilder
+    private var resultsReading: some View {
+        if vm.checklistMode && vm.displayedResults.isEmpty {
+            // Checklist mode has hidden every result (#189-D) — applies in both list and
+            // timeline modes (checked before the timeline branch).
+            ContentUnavailableView(
+                String(localized: "search.checklist.allReviewed.title",
+                       defaultValue: "All Results Reviewed"),
+                systemImage: "checkmark.circle",
+                description: Text(String(localized: "search.checklist.allReviewed.detail",
+                                         defaultValue: "You’ve reviewed every result. Turn off Checklist Mode to see them again."))
+            )
+        } else if showCollocates {
+            CollocationView(
+                scope: resultSetScope,
+                outcome: collocation,
+                windowSize: $collocationWindow,
+                order: Binding(get: { CollocationOrder(rawValue: collocationOrderRaw) ?? .evidence },
+                               set: { collocationOrderRaw = $0.rawValue }),
+                isLoading: isLoadingCollocation)
+        } else if showConcordance {
+            ConcordanceView(scope: resultSetScope, result: concordance, sort: $concordanceSort) { line in
+                // Open the line's document through the same path a list row uses, so a
+                // concordance line and a result row land in exactly the same place.
+                if let result = vm.pagedResults.first(where: {
+                    $0.volumeId == line.volumeId && $0.documentId == line.documentId
+                }) {
+                    openResult(vm.makeEntry(from: result))
+                }
+            }
+            .overlay { if isLoadingConcordance { ProgressView() } }
+        } else if showTimeline {
+            // The bias caption, above the chart rather than below it — a distribution is read
+            // before a footnote. It states that the SHAPE is skewed, which nothing else on
+            // screen says: the cap notice reports a size, and a reader can discount a size.
+            // A relevance-ranked top-N is not date-neutral, so no amount of knowing "there are
+            // more" corrects the shape of what is plotted.
+            if let bias = resultSetScope.timelineBiasCaption {
+                Text(bias)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.top, 6)
+            }
+            // Plot the checklist-filtered set so the timeline hides reviewed documents the
+            // same way the list does (#189-D).
+            DocumentTimelineView(
+                items: vm.displayedResults.map {
+                    DocumentTimelineView.Item(
+                        volumeId: $0.volumeId,
+                        documentId: $0.documentId,
+                        header: $0.header
+                    )
+                },
+                onSelect: { item in
+                    if let r = vm.displayedResults.first(where: {
+                        $0.volumeId == item.volumeId && $0.documentId == item.documentId
+                    }) {
+                        openResult(vm.makeEntry(from: r))
+                    }
+                }
+            )
+        } else {
+            resultsList
         }
     }
 
@@ -2108,25 +2197,43 @@ struct SearchView: View {
     private var resultRows: some View {
             ForEach(vm.pagedResults) { result in
                 Button {
-                    openResult(vm.makeEntry(from: result))
+                    // #1576 lane 3: in selection a tap picks the row, and its menu opens it.
+                    if vm.resultSelection.isSelecting {
+                        vm.toggleSelection(of: result)
+                    } else {
+                        openResult(vm.makeEntry(from: result))
+                    }
                 } label: {
-                    SearchResultRow(
-                        result: result,
-                        userTags: vm.availableUserTags,
-                        onUserTagTap: { tagId in
-                            if let uuid = UUID(uuidString: tagId) {
-                                vm.selectedUserTagIds.insert(uuid)
-                                Task { await runSearch() }
-                            }
+                    HStack(alignment: .top, spacing: 10) {
+                        if vm.resultSelection.isSelecting {
+                            ResultSelectionMark(isSelected: vm.resultSelection.contains(result.id))
                         }
-                    )
+                        SearchResultRow(
+                            result: result,
+                            userTags: vm.availableUserTags,
+                            onUserTagTap: { tagId in
+                                // In selection a chip is part of its row: it picks, and narrows nothing.
+                                guard !vm.resultSelection.isSelecting else {
+                                    vm.toggleSelection(of: result)
+                                    return
+                                }
+                                if let uuid = UUID(uuidString: tagId) {
+                                    vm.selectedUserTagIds.insert(uuid)
+                                    Task { await runSearch() }
+                                }
+                            }
+                        )
+                    }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(result.header)
+                // The trait is what tells VoiceOver a row is picked; the mark is hidden from it.
+                .accessibilityAddTraits(vm.resultSelection.contains(result.id) ? .isSelected : [])
+                .accessibilityHint(vm.resultSelection.isSelecting ? ResultSelectionCopy.rowHint : "")
                 // Checklist mode (#189-D): swipe (and the context menu) to mark a result
                 // reviewed — hides it without opening it. Only offered while checklist mode is on.
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    if vm.checklistMode {
+                    if vm.checklistMode && !vm.resultSelection.isSelecting {
                         Button {
                             vm.markReviewed(volumeId: result.volumeId, documentId: result.documentId)
                         } label: {
@@ -2142,62 +2249,92 @@ struct SearchView: View {
                 // "Open in New Window" as the explicit alternative that keeps the results list visible
                 // alongside while several documents are opened in turn.
                 .contextMenu {
-                    if vm.checklistMode {
+                    if vm.resultSelection.isSelecting {
+                        // #1576 lane 3: the row's tap is picking, so its menu is how it is opened.
                         Button {
-                            vm.markReviewed(volumeId: result.volumeId, documentId: result.documentId)
+                            openResult(vm.makeEntry(from: result))
                         } label: {
-                            Label(String(localized: "search.checklist.markReviewed",
-                                         defaultValue: "Mark Reviewed"),
-                                  systemImage: "checkmark.circle")
+                            Label(ResultSelectionCopy.open, systemImage: "arrow.up.right.square")
                         }
-                        Divider()
-                    }
-                    if supportsMultipleWindows {
+                        if supportsMultipleWindows {
+                            Button {
+                                appState.openAuxWindow(DocumentWindowID(
+                                    volumeId: result.volumeId,
+                                    documentId: result.documentId,
+                                    header: result.header
+                                ), from: sceneID, using: openWindow)
+                            } label: {
+                                Label(
+                                    String(localized: "search.result.openInNewWindow",
+                                           defaultValue: "Open in New Window"),
+                                    systemImage: "rectangle.badge.plus"
+                                )
+                            }
+                        }
+                    } else {
+                        if vm.checklistMode {
+                            Button {
+                                vm.markReviewed(volumeId: result.volumeId, documentId: result.documentId)
+                            } label: {
+                                Label(String(localized: "search.checklist.markReviewed",
+                                             defaultValue: "Mark Reviewed"),
+                                      systemImage: "checkmark.circle")
+                            }
+                            Divider()
+                        }
+                        if supportsMultipleWindows {
+                            Button {
+                                appState.openAuxWindow(DocumentWindowID(
+                                    volumeId: result.volumeId,
+                                    documentId: result.documentId,
+                                    header: result.header
+                                ), from: sceneID, using: openWindow)
+                            } label: {
+                                Label(
+                                    String(localized: "search.result.openInNewWindow",
+                                           defaultValue: "Open in New Window"),
+                                    systemImage: "rectangle.badge.plus"
+                                )
+                            }
+                        }
                         Button {
-                            appState.openAuxWindow(DocumentWindowID(
-                                volumeId: result.volumeId,
-                                documentId: result.documentId,
-                                header: result.header
-                            ), from: sceneID, using: openWindow)
+                            // #241: on a Stage-Manager iPad the neighbor list opens as its own
+                            // window, so it survives opening result after result from this list
+                            // — the same reason `openResult` prefers a document window above.
+                            // Elsewhere (iPhone, iPads without Stage Manager) it stays a sheet.
+                            if supportsMultipleWindows {
+                                appState.openAuxWindow(ArchivalNeighborsRequest.document(
+                                    volumeId:     result.volumeId,
+                                    documentId:   result.documentId,
+                                    documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
+                                ), from: sceneID, using: openWindow)
+                            } else {
+                                archivalNeighborsTarget = ArchivalNeighborsDocKey(
+                                    volumeId:     result.volumeId,
+                                    documentId:   result.documentId,
+                                    documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
+                                )
+                            }
                         } label: {
                             Label(
-                                String(localized: "search.result.openInNewWindow",
-                                       defaultValue: "Open in New Window"),
-                                systemImage: "rectangle.badge.plus"
+                                String(localized: "search.result.archivalNeighbors",
+                                       defaultValue: "Archival Neighbors…"),
+                                systemImage: "archivebox"
                             )
                         }
-                    }
-                    Button {
-                        // #241: on a Stage-Manager iPad the neighbor list opens as its own
-                        // window, so it survives opening result after result from this list
-                        // — the same reason `openResult` prefers a document window above.
-                        // Elsewhere (iPhone, iPads without Stage Manager) it stays a sheet.
-                        if supportsMultipleWindows {
-                            appState.openAuxWindow(ArchivalNeighborsRequest.document(
-                                volumeId:     result.volumeId,
-                                documentId:   result.documentId,
-                                documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
-                            ), from: sceneID, using: openWindow)
-                        } else {
-                            archivalNeighborsTarget = ArchivalNeighborsDocKey(
-                                volumeId:     result.volumeId,
-                                documentId:   result.documentId,
-                                documentYear: result.dateISO.flatMap { Int($0.prefix(4)) }
-                            )
+                        // #1576 lane 2: the result's document into a collection, without opening it.
+                        Divider()
+                        Button {
+                            bulkRequest = addToCollectionRequest(for: result)
+                        } label: {
+                            Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
                         }
-                    } label: {
-                        Label(
-                            String(localized: "search.result.archivalNeighbors",
-                                   defaultValue: "Archival Neighbors…"),
-                            systemImage: "archivebox"
-                        )
-                    }
-                    // #1576 lane 2: the result's document into a collection, without opening it.
-                    Divider()
-                    Button {
-                        bulkRequest = addToCollectionRequest(for: result)
-                    } label: {
-                        Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                        // #1576 lane 3: into selection, with this row picked.
+                        Button {
+                            vm.beginSelecting(with: result)
+                        } label: {
+                            Label(ResultSelectionCopy.selectRow, systemImage: "checkmark.circle")
+                        }
                     }
                 }
                 // The same command as a VoiceOver action, which reaches a row's actions without
@@ -2210,6 +2347,48 @@ struct SearchView: View {
     }
 
     #if os(iOS)
+    /// The selection bar, in the actions bar's slot (#1576 lane 3). Add to Collection makes its
+    /// request from the picked rows as they stand in the list now, and the sheet reads that
+    /// request and nothing else.
+    private var selectionBar: some View {
+        ResultSelectionBar(
+            count: vm.resultSelection.count,
+            pageRowCount: vm.pagedResults.count,
+            shownCount: vm.displayedResults.count,
+            canAdd: vm.canAddSelectionToCollection,
+            showsMarkReviewed: vm.checklistMode,
+            outcomeMessage: vm.bulkOutcome?.message,
+            outcomeSerial: vm.bulkOutcomeSerial,
+            rowGlyphSize: FRUSTheme.cappedGlyphSize(actionGlyphSize, base: 20,
+                                                    maxScale: FRUSTheme.barGlyphMaxScale),
+            done: { vm.endSelecting() },
+            selectPage: { vm.selectPage() },
+            selectAllShown: { vm.selectAllShown() },
+            selectNone: { vm.selectNone() },
+            addToCollection: {
+                bulkRequest = BulkResultRequest(.addToCollection, results: vm.selectedResults,
+                                                fromMeaningSearch: vm.resultsAreSemantic)
+            },
+            markReviewed: { vm.markSelectionReviewed() })
+    }
+
+    /// The lines a selection adds above the results (#1576 lane 3): why Add to Collection is
+    /// dimmed, and what the last command did. Nothing outside selection.
+    @ViewBuilder
+    private var selectionStatus: some View {
+        if vm.resultSelection.isSelecting {
+            ResultSelectionStatus(
+                addRefusal: vm.selectionExceedsAddLimit
+                    ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
+                outcome: vm.bulkOutcome,
+                undo: {
+                    vm.undoBulkOutcome { ids in
+                        try CollectionDocumentDiscovery.removeEntries(withIds: ids, modelContext: modelContext)
+                    }
+                })
+        }
+    }
+
     /// The request to add one result row's document to a collection (#1576 lane 2): the row's
     /// document and the engine that listed it, taken now, so that the sheet reads nothing that a
     /// search completing behind it could change.

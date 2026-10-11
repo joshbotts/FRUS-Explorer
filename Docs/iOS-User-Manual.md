@@ -589,7 +589,22 @@ Working systematically through a few hundred matches — deciding which to actua
 
 While the mode is on, a strip sits above the results. It counts what the mode is hiding ("N reviewed hidden", or "Nothing hidden") and carries two buttons, which stay where they are as the list shrinks. **Mark Page Reviewed** hides every result on the page at one stroke; the results that follow move up into its place and the list returns to its top, so you can work down a long list a page at a time. **Undo** brings back the page you last marked and nothing else: a result you marked on its own row stays hidden, and so does an earlier page. It is dimmed until you mark a page, and while none of that page's results is in the list (after a filter that leaves them out, say). Both buttons are dimmed under the Timeline and Collocates readings, which cover every result and have no page. On an iPhone the two buttons take a line of their own under the count.
 
+At the largest text sizes the lines above the results (the count of results with the page controls, this strip, and a selection's line, Section 7.7a) can need more than half of the room the results have. They then scroll within half of it, apart from the results, which keep the other half.
+
 Checklist Mode is a per-session working aid: it isn't saved, and it resets on relaunch. Your marks last for as long as you stay in the same search. Running the same words again keeps them, so changing a filter, narrowing from the Facets panel, tapping a tag chip or removing a chip does not bring reviewed results back; nor does the same query in other quotation marks, `“cold war”` as `"cold war"`. A new query starts the checklist over, because the same document can appear in unrelated searches. A browse with no words (a person's **Find all mentions**, a topic) is the same search for as long as it is of the same person and subject: narrowing it keeps your marks, and opening another person's mentions starts over. The mode never changes your reading history or the underlying result set — only what the list shows. It does read that history to know what you have opened: with **Log Research Sessions** off (Section 17.5) the app keeps no record of the documents you open, so opening a result no longer hides it, and only **Reviewed** and **Mark Reviewed** do. While Checklist Mode is on with that switch off, a line under the result count says so.
+
+### 7.7a Selecting Results
+
+To act on several results at once, select them. Open the **•••** menu and choose **Select Results**, or touch and hold a result and choose **Select**, which starts with that result picked. The actions bar gives its place to a selection bar: **Done**, a count ("12 selected"), a **Select** menu with **This Page**, **All N Shown** and **None**, and at the end of the bar, where the **•••** menu was, an Actions menu drawn with the same **•••**. Tap a result to pick it or un-pick it; a picked result shows a filled circle with a check. To read a result while you are selecting, touch and hold it and choose **Open**.
+
+The commands are in the Actions menu:
+
+- **Add to Collection…** opens the collection picker, titled with the number of documents when there is more than one ("Add 12 Documents to Collection"). Documents the collection already holds are skipped. Up to 1,000 documents can be added at a time; with more picked the command is dimmed, and a line above the results says so.
+- **Mark Reviewed**, in Checklist Mode (Section 7.7), hides the picked results. It has no limit.
+
+After a command a line above the results says what it did — "Added 31 documents to “Chile”. 6 were already in it." — and, where the command changed something, offers **Undo**, which takes it back. The line stays until the next command, the next search or **Done**.
+
+Your picks last as long as the search does. Turning the page keeps them. So does running the same search again, as removing a filter chip does, or narrowing from the Facets panel on an iPad: picks that are no longer in the list are dropped, and a line above the results says how many. A new query, a switch between Keywords and Meaning, a search that finds nothing or cannot run, and **Done** end the selection. The actions bar's own controls, Filters among them, are away while you are selecting; tap **Done** to get them back. **All N Shown** picks every result the list shows, and never a match beyond the ones the search loaded (Section 7.1). A result that Checklist Mode hides, because you opened it or marked it, leaves the selection, and comes back unpicked if it comes back. Selection belongs to the list reading: Select Results is dimmed under Timeline, Concordance and Collocates. In a Meaning search the rows under *In volumes you have not downloaded* cannot be picked.
 
 ### 7.8 Saved Searches
 
@@ -954,7 +969,7 @@ The editor's toolbar carries the authoring verbs. On iPad it shows four buttons:
 Three routes:
 
 - **While reading**: open the **Collections** accordion in any document's Research rail, tap **Add to Collection**, and pick a collection (the picker's **New Collection** button, a folder with a plus, opens the editor on a new one). If that collection is open in the Collections tab, or in another window on iPad, the document appears at the end of its list right away, and the preview and an export made from it include it.
-- **From search results**: touch and hold a result and choose **Add to Collection…**, then pick a collection. The result's document is added without being opened. A document the collection already holds is not added a second time.
+- **From search results**: touch and hold a result and choose **Add to Collection…**, then pick a collection. The result's document is added without being opened. A document the collection already holds is not added a second time. To add several results at once, select them first (Section 7.7a).
 - **From the editor**: **Add Documents…** opens a picker with four ways in:
   - **Search** the full text of your indexed volumes — each result shows a matched-text snippet and the archival source note so you can judge it before adding, with its own snippet-length control.
   - **Browse** any volume's document list, with Select All for whole volumes and a Download button for volumes you don't have.
@@ -1521,6 +1536,7 @@ Ready-made demonstrations that need nothing but the app and a screen:
 | Open a document in its own window (iPad) | Research rail header → **Open in New Window** |
 | Find a document from a footnote | Search tab → **•••** → **Find by citation** |
 | Freeze a result set to work inside | Search tab → **•••** → **Save as Working Corpus…** |
+| Act on several results at once | Search tab → **•••** → **Select Results** (Section 7.7a) |
 | Switch research projects | Browse toolbar → project picker |
 | Open any analytics surface | Browse toolbar → **Analysis Tools** menu |
 | Manage volumes and storage | Settings → **Volumes & Storage** |

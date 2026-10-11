@@ -100,17 +100,22 @@ enum BulkResultCopy {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 2: initial implementation
+///   1.1 — #1576 lane 3: `onAdded`, the outcome of an Add to Collection handed to the host
 private struct BulkResultSheets: ViewModifier {
 
     /// The request to present, or `nil`. Cleared when the sheet is dismissed.
     @Binding var request: BulkResultRequest?
+    /// Told what an Add to Collection did (#1576 lane 3), or `nil` for a host that keeps no
+    /// outcome on screen.
+    let onAdded: ((CollectionDocumentAppend, Collection) -> Void)?
 
     func body(content: Content) -> some View {
         content.sheet(item: $request) { request in
             switch request.command {
             case .addToCollection:
                 CollectionPickerSheet(documents: request.documents,
-                                      fromMeaningSearch: request.fromMeaningSearch)
+                                      fromMeaningSearch: request.fromMeaningSearch,
+                                      onAdded: onAdded)
             }
         }
     }
@@ -121,9 +126,13 @@ extension View {
     /// Presents the sheet for a command chosen on search results, from the request's own frozen
     /// list (#1576 lane 2).
     ///
-    /// - Parameter request: The host's request; set it to present, and it is cleared on dismissal.
+    /// - Parameters:
+    ///   - request: The host's request; set it to present, and it is cleared on dismissal.
+    ///   - onAdded: Told the outcome of an Add to Collection and the collection it went to, for a
+    ///     host that shows it (#1576 lane 3).
     /// - Returns: The view, with the sheet attached.
-    func bulkResultSheets(_ request: Binding<BulkResultRequest?>) -> some View {
-        modifier(BulkResultSheets(request: request))
+    func bulkResultSheets(_ request: Binding<BulkResultRequest?>,
+                          onAdded: ((CollectionDocumentAppend, Collection) -> Void)? = nil) -> some View {
+        modifier(BulkResultSheets(request: request, onAdded: onAdded))
     }
 }
