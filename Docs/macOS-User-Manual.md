@@ -460,8 +460,8 @@ To act on several results at once, select them. Click the labeled **Select** but
 
 The strip holds the count ("12 selected"), a **Select** menu with **This Page**, **All N Shown** and **None**, the commands, and **Done**. The commands are these:
 
-- **Add to Collection…** opens the collection picker, titled with the number of documents when there is more than one ("Add 12 Documents to Collection"). Documents the collection already holds are skipped. Up to 1,000 documents can be added at a time. This window loads up to 7,500 results, so **All N Shown** often checks more than that: the command is then dimmed, and a line in the strip says so.
-- **Add Tags…** opens the tag picker for the checked documents, titled with their number ("Tag 12 Documents"). Every tag starts unchecked. Check the tags to add, or make one in the **New Tag** field, and click **Done**: each document gains those tags and keeps the tags it already has. Beside a tag the picker says how many of the documents carry it already ("5 of 12 have it"). The tagged results show the tag at once. The same limit of 1,000 documents applies.
+- **Add to Collection…** opens the collection picker, titled with the number of documents when there is more than one ("Add 12 Documents to Collection"). Documents the collection already holds are skipped. Up to 1,000 documents can be added at a time. This window loads up to 7,500 results, so **All N Shown** often checks more than that: the command is then dimmed, and a line in the strip says so. A collection filed under a project (10) carries its documents into that project's **History** (7.4). The scope takes them in the next time you open **Advanced…**: from then a search scoped to History finds them, and a **Focus** search with **Only new to this project** on leaves them out.
+- **Add Tags…** opens the tag picker for the checked documents, titled with their number ("Tag 12 Documents"). Every tag starts unchecked. Check the tags to add, or make one in the **New Tag** field, and click **Done**: each document gains those tags and keeps the tags it already has. Beside a tag the picker says how many of the documents carry it already ("5 of 12 have it"). The tagged results show the tag at once. The same limit of 1,000 documents applies. The tags reach your other devices through iCloud, and a search there narrowed by **My Tags** finds the documents once that device has them: a few seconds after the sync when the app is open, and shortly after it is next opened when it is not.
 - **Mark Reviewed**, in Checklist Mode (7.7), hides the checked results. It has no limit. It is dimmed from the moment you send a different search until that search's results arrive.
 
 Right-click a checked result while others are checked too, and the menu's **Add to Collection…** and **Add Tags…** are the selection's: **Add 12 Selected to Collection…** and **Add Tags to 12 Selected…**. The menu's other commands, **Mark Reviewed** among them, still act on that one result. On an unchecked result the whole menu is that result's own.
@@ -1361,6 +1361,7 @@ There is no Back or Forward key equivalent: the toolbar's back button steps out 
 |--------|----------|
 | Run search | Return |
 | Open document from result | Return (with a result selected) |
+| Check or clear the highlighted result, with **Select** on (Section 7.7a) | Space |
 
 ### In a Document
 
