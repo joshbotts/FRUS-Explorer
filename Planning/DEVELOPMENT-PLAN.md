@@ -36979,3 +36979,25 @@ Lane 5 of the implementation plan on #1576, after lane 4 (#1630). No index versi
 - `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md`: Add Tags… in the row menu's sentence (7.1), in 7.7a's commands with the Undo's rule, a paragraph in 9.3 on tagging without opening, and a row in the iPhone manual's quick reference. The AI Generated notice stays.
 - `Docs/EditableContent/`: ten blocks added in `07-Search-and-Browse.md` for the lines an Add Tags leaves, and the limit's line re-keyed there; three added in `08-Reading-Research-Collections.md` for the picker's adding mode. Thirty ranged blocks are re-pointed, and the README's table reads 258 blocks for `07` and 297 for `08`.
 - `CLAUDE.md` and `Planning/UI-Test-Destinations-Runbook.md`: `SearchBulkActionsTests` has five tests; the new one's entry; and what a just-booted simulator does to a run's first test, seen on an iPad and on an iPhone SE.
+
+## Session 2026-10-11 — The manuals say what a bulk add does to a project's History, and when a bulk tag reaches another device (#1576 lane 6)
+
+Lane 6 of the implementation plan on #1576, the notes, after lane 5. Manuals and planning files only: no Swift file and no string the app shows, so no `Docs/EditableContent` block.
+
+**What the manuals gained** (`Docs/iOS-User-Manual.md`, `Docs/macOS-User-Manual.md`, section 7.7a in each; the AI Generated notice stays)
+- Under **Add to Collection…**: a collection filed under a project carries its documents into that project's History. The scope takes them in the next time the filter panel is opened; from then a search scoped to History finds them, and a Focus search with Only new to this project on leaves them out.
+- Under **Add Tags…**: the tags reach the reader's other devices through iCloud, and a search there narrowed by My Tags finds the documents once that device has them, a few seconds after the sync when the app is open and shortly after it is next opened when it is not.
+- From reading the bulk-actions part as a whole: **Select** in the iPhone manual's list of what a row's menu holds (7.1), which named every other item; and **Space** in the Mac manual's table of the Search window's keys (19), which lane 4 gave to a selection.
+
+**Checked by reading, before either sentence was written**
+- *History.* `ProjectEngagedDocuments`: a project's engaged set is every document in the collections whose `projectIds` holds it, with its anchored notes and its visits. The History scope gates on that set, and `SearchViewModel` passes it as `excludeDocumentIds` under Focus with Only new to this project on; the Mac's view model does the same. The set is read again when the active project changes and each time the filter panel opens, on both platforms (`SearchView.refreshEngagedKeys`, `SearchSheet.refreshProjectScope`), and at no other time: a search run again with the panel shut uses the set it had, which is why the manuals name the panel.
+- *Another device.* **The plan's sentence was out of date.** It says another device's tag filter picks up a bulk tag at its next launch. Since #1614 (2026-10-09) the app reconciles the index's tag column when an iCloud import settles, eight seconds after imports go quiet, on both platforms (`FRUSExplorerApp.swift`, beside the note reconcile), so with the app open the tag reaches Search there within seconds. The manuals say that.
+
+**Checked**
+- The unit target from a shut-down iPhone 17 simulator (iOS 27.0): 6,899 tests in 810 suites passed, with the 6 known issues of #1606. It ran on lane 5's build, since no Swift file and no project file differs from that build's; tests read the manuals and the planning files as they run, which is why the whole target was run for a change to documents.
+- No build of its own: nothing that is compiled changed. Lane 5's clean `build-for-testing` and clean Mac build are this tree's.
+- The docs gates after the last doc change: `CodingStandardsAuditTests` and `EditableContentKeyTests` passed.
+
+**Not done**
+- The TestFlight notes for #1576, which the plan leaves to the next build bump. The plan of record's note for this lane lists what they should cover.
+- Neither sentence was watched happening on two devices: both are read from the code. The owner's watched run of a 1,000-document add and tag (lane 5's pull request) is where they would be seen.
