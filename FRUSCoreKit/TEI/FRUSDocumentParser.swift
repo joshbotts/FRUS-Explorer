@@ -140,6 +140,12 @@ import SourceNoteKit
 ///          exists (Linux) and SourceNoteKit where that is a module of its own, and discards
 ///          `XMLParser.parse()`'s result explicitly, which Linux does not mark discardable. Nothing
 ///          it parses changes, so no index version
+///   2.13 — 2026-10-11 (#1536, index version 68): a section that holds documents and prints text
+///          of its own is emitted as a row for that text (`TEIParserDelegate.sectionDecision`,
+///          `ParseFrame.ownChildren`), where the text was passed up to the root and dropped. A
+///          parse for one section decides that section as the whole volume's parse does, so
+///          `parseDocument` returns the row the index holds, and reads a section the index leaves
+///          out a second time to return it whole (`parseTarget`)
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -174,12 +180,16 @@ public actor FRUSDocumentParser {
     /// Parsing stops immediately after the target element's closing `</div>` tag,
     /// avoiding the cost of processing the remainder of potentially large volume files.
     ///
-    /// Handles two cases:
+    /// Handles three cases:
     ///   - `<div type="document" xml:id="...">` — a normal numbered FRUS document.
     ///   - Structural sections (`<div type="preface">`, `<div type="introduction">`, etc.)
     ///     that contain prose directly (no document sub-divs). These are matched by
     ///     `xml:id` and captured as quasi-documents so front matter is accessible via
     ///     `DocumentView` without requiring FTS indexing.
+    ///   - A section that holds documents or other sections (#1510, #1536). One the index gives
+    ///     a row for its own text is returned as that row: its heading and its own text, and
+    ///     none of what it holds. One the index leaves out is returned whole, without its
+    ///     documents.
     ///
     /// - Parameters:
     ///   - documentId: The `xml:id` of the target `<div>`.
@@ -187,21 +197,8 @@ public actor FRUSDocumentParser {
     /// - Returns: The parsed document, or `nil` if no element with that ID exists.
     /// - Throws: `FRUSParserError` if the file cannot be read or parsed.
     public func parseDocument(documentId: String, volumeURL: URL) async throws -> FRUSDocumentAST? {
-        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
-            throw FRUSParserError.fileUnreadable(volumeURL)
-        }
-        let delegate = TEIParserDelegate(targetDocumentId: documentId)
-        delegate.parserRef = xmlParser
-        xmlParser.delegate = delegate
-        _ = xmlParser.parse()
-
-        if let error = delegate.fatalError {
-            // Aborted parsing (document found) is not a real error.
-            if delegate.foundTargetDocument { /* expected */ } else {
-                throw FRUSParserError.xmlError(error)
-            }
-        }
-
+        let delegate = try Self.parseTarget(documentId: documentId, volumeURL: volumeURL,
+                                            trailingDocuments: 0)
         let result = delegate.documents.first { $0.documentId == documentId }
         #if DEBUG
         if result == nil {
@@ -231,27 +228,47 @@ public actor FRUSDocumentParser {
         volumeURL: URL,
         trailingDocuments: Int = 1
     ) async throws -> [FRUSDocumentAST] {
-        guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
-            throw FRUSParserError.fileUnreadable(volumeURL)
-        }
-        let delegate = TEIParserDelegate(
-            targetDocumentId: documentId,
-            trailingDocumentsAfterTarget: trailingDocuments
-        )
-        delegate.parserRef = xmlParser
-        xmlParser.delegate = delegate
-        _ = autoreleasepool { xmlParser.parse() }
-
-        if let error = delegate.fatalError {
-            // Aborted parsing (target found) is not a real error. Reaching EOF with
-            // fewer trailing documents than requested (target near the end of the
-            // volume) is also fine — XMLParser reports no error for clean EOF.
-            if delegate.foundTargetDocument { /* expected */ } else {
-                throw FRUSParserError.xmlError(error)
-            }
-        }
+        let delegate = try Self.parseTarget(documentId: documentId, volumeURL: volumeURL,
+                                            trailingDocuments: trailingDocuments)
         guard delegate.foundTargetDocument else { return [] }
         return delegate.documents
+    }
+
+    /// Runs a parse for one document or section, to its close and `trailingDocuments` documents
+    /// past it, and returns the delegate that ran it.
+    ///
+    /// A section the index gives a row is parsed as the whole volume's parse emits it, so the
+    /// reader's page is the text the index stored (#1536). A section the index leaves out — a
+    /// container that prints nothing but its heading — has no row to agree with, and still opens
+    /// when a link asks for it: the file is read a second time with nothing inside the section
+    /// decided, which gives the section with everything it holds but its documents, as every
+    /// parse for one section did until index version 68.
+    ///
+    /// - Throws: `FRUSParserError` if the file cannot be read or parsed.
+    private static func parseTarget(documentId: String, volumeURL: URL,
+                                    trailingDocuments: Int) throws -> TEIParserDelegate {
+        func run(decidingTargetSection: Bool) throws -> TEIParserDelegate {
+            guard let xmlParser = XMLParser(contentsOf: volumeURL) else {
+                throw FRUSParserError.fileUnreadable(volumeURL)
+            }
+            let delegate = TEIParserDelegate(
+                targetDocumentId: documentId,
+                trailingDocumentsAfterTarget: trailingDocuments,
+                decidesTargetSection: decidingTargetSection
+            )
+            delegate.parserRef = xmlParser
+            xmlParser.delegate = delegate
+            _ = autoreleasepool { xmlParser.parse() }
+            // An aborted parse (the target was found) is not a real error. Reaching the end of
+            // the file with fewer trailing documents than asked for is fine too: XMLParser
+            // reports no error for a clean end.
+            if let error = delegate.fatalError, !delegate.foundTargetDocument, !delegate.targetIsLeftOut {
+                throw FRUSParserError.xmlError(error)
+            }
+            return delegate
+        }
+        let delegate = try run(decidingTargetSection: true)
+        return delegate.targetIsLeftOut ? try run(decidingTargetSection: false) : delegate
     }
 
     /// Parses all person entries from `<div type="persons">` or `<listPerson>` in the volume.
@@ -846,10 +863,18 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     var documents: [FRUSDocumentAST] = []
     var fatalError: Error?
     var foundTargetDocument = false
+    /// Set when a parse for one section reached that section's close and found it one the index
+    /// leaves out (#1536): the caller parses again without deciding it (`decidesTargetSection`).
+    private(set) var targetIsLeftOut = false
 
     // MARK: Configuration
 
     private let targetDocumentId: String?
+
+    /// Whether a parse for one section decides that section, and the divisions inside it, as the
+    /// index does (``sectionTargetDepth``). `false` for the second reading of a section the index
+    /// leaves out, which captures it whole.
+    private let decidesTargetSection: Bool
 
     /// Number of additional documents to parse *after* the target before aborting.
     ///
@@ -894,6 +919,37 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// ``finishParse()``, once every section that could begin after them has been emitted.
     private var carriedBreaks: [(divsOpenedBefore: Int, page: PageNumber)] = []
 
+    /// In a parse for one section (`targetDocumentId`), the stack index of that section's frame
+    /// once it has opened, when it is a division the index decides (``decidedKind(of:)``);
+    /// `nil` otherwise, and always in a parse of the whole volume (#1536).
+    ///
+    /// Until index version 68 a parse for one section decided nothing: every division inside the
+    /// target passed its content up, so the page the reader opened for a section that holds other
+    /// sections was that section and everything in them, while the index held its own text alone
+    /// (the 33 containers #1510 indexes for their own text, 32 of them in `frus1919Parisv13`).
+    /// From the target's opening tag the parse now makes each decision the whole volume's parse
+    /// makes, so the two give a section with a row the same nodes. A section the index leaves
+    /// out has no row to agree with, and is read again whole (``targetIsLeftOut``).
+    private var sectionTargetDepth: Int?
+
+    /// The lists the index keeps in tables of its own or leaves out, which are never given a row
+    /// as a section: `promotableQuasiDocumentKinds` says why of each.
+    private static let listKinds: Set<String> = ["persons", "sources", "table-of-contents", "index"]
+
+    /// The kind of a `<div>` the index decides, or `nil` for one it does not: a div with no
+    /// `xml:id` to open it by, one of no structural kind — a document and a legacy editorial-note
+    /// div among them, which have rules of their own — and a list (``listKinds``). A div the
+    /// index does not decide is transparent: what it holds passes to the division around it.
+    private static func decidedKind(of attributes: [String: String]) -> String? {
+        let id = attributes["xml:id"] ?? attributes["id"] ?? ""
+        guard !id.isEmpty,
+              let kind = VolumeStructureParserDelegate.structuralKind(
+                  type: attributes["type"] ?? "", subtype: attributes["subtype"] ?? "", xmlId: id),
+              !listKinds.contains(kind)
+        else { return nil }
+        return kind
+    }
+
     /// The section kinds whose containers the index leaves out when they hold only a heading, and
     /// narrows when they hold text of their own (#1510, owner decision D1): compilation, chapter and
     /// subchapter. A heading-only appendix or historical-document container — seven in the corpus,
@@ -919,9 +975,11 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
     // MARK: Init
 
-    init(targetDocumentId: String?, trailingDocumentsAfterTarget: Int = 0) {
+    init(targetDocumentId: String?, trailingDocumentsAfterTarget: Int = 0,
+         decidesTargetSection: Bool = true) {
         self.targetDocumentId = targetDocumentId
         self.trailingDocumentsAfterTarget = trailingDocumentsAfterTarget
+        self.decidesTargetSection = decidesTargetSection
     }
 
     // MARK: - XMLParserDelegate
@@ -948,6 +1006,13 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // order they are emitted in, where a section follows everything it holds.
             frame.openIndex = divsOpened
             divsOpened += 1
+            // #1536: a parse for one section follows the index's rules from here to its close.
+            if decidesTargetSection, sectionTargetDepth == nil,
+               let target = targetDocumentId, !target.isEmpty,
+               (attributeDict["xml:id"] ?? attributeDict["id"]) == target,
+               Self.decidedKind(of: attributeDict) != nil {
+                sectionTargetDepth = stack.count
+            }
         }
         stack.append(frame)
     }
@@ -981,6 +1046,17 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         let normalized = normalizedText(frame.textBuffer)
         if !normalized.isEmpty {
             frame.children.append(.text(normalized))
+        }
+
+        // #1536: where this division sat among the children of the element around it — the
+        // range of what it passes up below, which is empty for one that passes up nothing. A
+        // division that holds documents tells its own text from its divisions' by these.
+        let divisionPlace = elementName == "div" ? stack.last?.children.count : nil
+        defer {
+            if let divisionPlace, !stack.isEmpty {
+                stack[stack.count - 1].childDivisionRanges.append(
+                    divisionPlace..<stack[stack.count - 1].children.count)
+            }
         }
 
         // Handle based on element type.
@@ -1050,14 +1126,58 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 foundTargetDocument = true
             }
         } else if elementName == "div",
+                  targetDocumentId == nil || sectionTargetDepth != nil,
+                  let decision = sectionDecision(for: frame) {
+            // A structural division the index decides (#1510, #1536): it is given a row of its
+            // own, or it is left out and nothing of it passes to the division around it. The whole
+            // volume's parse decides every division this way; a parse for one section
+            // (`sectionTargetDepth`) decides that section and everything inside it the same way,
+            // so the page the reader opens holds the text the index stored for it.
+            let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
+            let isTarget = sectionTargetDepth == stack.count
+            if isTarget, decision.nodes == nil {
+                // The section asked for is one the index leaves out. It still opens, whole: the
+                // caller reads the file again without deciding it (`parseTarget`).
+                targetIsLeftOut = true
+                parserRef?.abortParsing()
+                return
+            }
+            carriedBreaks.append(contentsOf: decision.carried)
+            if let nodes = decision.nodes {
+                // No start page (#1503 review round 1): a page names the documents printed on it,
+                // and a section beginning on one — a referral stub, an errata list, a President's
+                // message under its own pagination — would otherwise be the page's answer. Its own
+                // breaks, in its nodes, are indexed as they always were.
+                documents.append(FRUSDocumentAST(documentId: docId, nodes: nodes,
+                                                 isFrontMatter: decision.isFrontMatter))
+                emitted.append((frame.openIndex, true))
+            }
+            if !stack.isEmpty {
+                if frame.hasChildDocuments {
+                    // What it holds are documents, whether or not it has a row of its own (#1536).
+                    stack[stack.count - 1].hasChildDocuments = true
+                } else {
+                    // The section it sits in now holds a promoted section, or a container left
+                    // out of the index (#1510).
+                    stack[stack.count - 1].holdsPromotedSection = true
+                }
+            }
+            if isTarget {
+                foundTargetDocument = true
+                parserRef?.abortParsing()
+                return
+            }
+        } else if elementName == "div",
                   let targetId = targetDocumentId,
                   !targetId.isEmpty,
                   (frame.attributes["xml:id"] ?? frame.attributes["id"]) == targetId {
-            // Structural section div (e.g. preface, introduction) whose xml:id matches the
-            // search target. Captured as a quasi-document so that `CompilationView` can open
-            // prose-only front matter sections in DocumentView without FTS indexing.
-            // Only reached when targetDocumentId is set (i.e. called from parseDocument). A section
-            // names no page, so it carries no start page (#1503 review round 1).
+            // A div whose xml:id is the target of a parse for one section, and which the index's
+            // rules do not decide (`sectionTargetDepth` is unset): a list the index keeps in
+            // tables of its own (persons, sources, a table of contents, an index), a div of no
+            // structural kind, or, on a second reading, a section the index leaves out
+            // (`targetIsLeftOut`). Captured whole, with everything inside it but its documents,
+            // so the reader can open it by id. A section names no page, so it carries no start
+            // page (#1503 review round 1).
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
             documents.append(doc)
@@ -1078,63 +1198,6 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             if !stack.isEmpty {
                 stack[stack.count - 1].hasChildDocuments = true
             }
-        } else if elementName == "div",
-                  targetDocumentId == nil,
-                  let kind = VolumeStructureParserDelegate.structuralKind(
-                      type: frame.attributes["type"] ?? "",
-                      subtype: frame.attributes["subtype"] ?? "",
-                      xmlId: frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
-                  ),
-                  Self.promotableQuasiDocumentKinds.contains(kind),
-                  !frame.hasChildDocuments,
-                  !(frame.attributes["xml:id"] ?? frame.attributes["id"] ?? "").isEmpty,
-                  !frame.children.isEmpty {
-            // Prose-only structural section (preface, press release, summary, etc.)
-            // with no child document divs. Promote to a quasi-document so the
-            // full-volume parse indexes its content and makes it searchable. The
-            // section's *kind* is resolved from the real corpus encoding
-            // (`type="section"` + `subtype` + `xml:id`); persons, sources, tables of
-            // contents, and name indexes are excluded — they are structured data
-            // with dedicated views, or navigation aids whose text would only add
-            // noise to full-text search. The section becomes its own indexed
-            // entity; children are not bubbled to the parent.
-            let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
-            // #1510 (owner decision D1): a compilation, chapter or subchapter holding a section the
-            // parser promotes is a CONTAINER, which history.state.gov shows as a list of what it
-            // holds. One that holds nothing but its heading is not indexed at all; one with text of
-            // its own is indexed for that text, and the breaks that follow the text — between or
-            // after the sections it holds — belong to the section that begins after them.
-            var nodes = frame.children
-            if frame.holdsPromotedSection, Self.containerKindsLeftOut.contains(kind) {
-                let ownBreaks = Self.directPageBreaks(frame)
-                if frame.children.allSatisfy(Self.isHeadingOrPageBreak) {
-                    // Left out: its breaks are carried, and its heading goes nowhere — passing it up
-                    // would put "I: The Treaty of Peace…" into the text of a section around it.
-                    carriedBreaks.append(contentsOf: ownBreaks)
-                    if !stack.isEmpty { stack[stack.count - 1].holdsPromotedSection = true }
-                    return
-                }
-                let trailing = frame.children.reversed().prefix { node in
-                    if case .pageBreak = node { return true }
-                    return false
-                }.count
-                if trailing > 0 {
-                    carriedBreaks.append(contentsOf: ownBreaks.suffix(trailing))
-                    nodes.removeLast(trailing)
-                }
-            }
-            // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
-            // No start page (#1503 review round 1): a page names the documents printed on it, and
-            // a section beginning on one — a referral stub, an errata list, a President's message
-            // under its own pagination — would otherwise be the page's answer. Its own breaks, in
-            // its nodes, are indexed as they always were.
-            let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
-            let doc = FRUSDocumentAST(documentId: docId, nodes: nodes,
-                                      isFrontMatter: isFrontMatter)
-            documents.append(doc)
-            emitted.append((frame.openIndex, true))
-            // The section it sits in now holds a promoted section (#1510).
-            if !stack.isEmpty { stack[stack.count - 1].holdsPromotedSection = true }
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.
             // Propagate hasChildDocuments so that ancestor structural sections know a
@@ -1168,11 +1231,115 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
 
     func parser(_ parser: XMLParser, parseErrorOccurred parseError: Error) {
         // Aborted parsing due to target document found — not a real error.
-        if foundTargetDocument { return }
+        if foundTargetDocument || targetIsLeftOut { return }
         fatalError = parseError
         #if DEBUG
         print("[TEIParser] Parse error: \(parseError)")
         #endif
+    }
+
+    // MARK: - Sections the index decides (#1510, #1536)
+
+    /// What the index does with one structural division: the nodes of the row it is given, or none
+    /// for a division left out, and the breaks it gives the section that begins after them.
+    private struct SectionDecision {
+        /// The row's nodes, or `nil` for a division the index leaves out.
+        var nodes: [FRUSASTNode]?
+        /// Whether the row is front matter (`document_cache.is_front_matter`).
+        var isFrontMatter = false
+        /// The breaks a container of sections leaves, for ``finishParse()`` (#1510).
+        var carried: [(divsOpenedBefore: Int, page: PageNumber)] = []
+    }
+
+    /// Decides a `<div>` that has closed, or returns `nil` for one the index does not decide: a
+    /// div of no structural kind, one with no `xml:id` to open it by, a list (``listKinds``), and
+    /// a prose section of a kind the index does not promote (``promotableQuasiDocumentKinds``).
+    /// Such a div is transparent, and its content passes to the division around it.
+    ///
+    /// **A division that holds documents (#1536, index version 68).** Text printed at its own
+    /// level — a meeting's list of those present above its minutes, a treaty's signature and
+    /// ratification dates under its title, a statement of a case above the documents filed with
+    /// it — was passed up to the root and dropped: 1,332 divisions in 137 of the 553 catalogue
+    /// volumes at corpus `99d851c79`, by a count over the XML. Such a division is now given a row
+    /// for that text, under its own `xml:id`: its heading and what is written directly inside it
+    /// (`ParseFrame.ownChildren`), and none of what its documents and the divisions inside it
+    /// hold. Its kind need not be one the index promotes: the 107 meetings of `frus1952-54v05p1`
+    /// and `p2` are `subsection`s. A page break is part of the row only when text of the
+    /// division's own follows it before the next division inside it; one between or after what it
+    /// holds is the page the next document begins on, as before, and is no part of the row. A
+    /// division that prints nothing of its own has no row, as before, and its heading goes
+    /// nowhere: passed up, it would now land in the text of a division around it that has a row.
+    ///
+    /// **A prose section, and a section that holds only sections (#1510),** as before 68.
+    private func sectionDecision(for frame: ParseFrame) -> SectionDecision? {
+        guard let kind = Self.decidedKind(of: frame.attributes) else { return nil }
+        // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
+        let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
+
+        if frame.hasChildDocuments {
+            // Its own text is what is written directly inside it. What a division inside it
+            // passed up is that division's: a table of contents, a persons list, the placeholder
+            // of a chapter not yet released. None of that reached the index before, and none
+            // does now.
+            let nodes = frame.ownChildren
+            guard Self.printsTextOfItsOwn(nodes) else { return SectionDecision(nodes: nil) }
+            return SectionDecision(nodes: nodes, isFrontMatter: isFrontMatter)
+        }
+
+        // Prose-only structural section (preface, press release, summary, etc.)
+        // with no child document divs. Promote to a quasi-document so the
+        // full-volume parse indexes its content and makes it searchable. The
+        // section's *kind* is resolved from the real corpus encoding
+        // (`type="section"` + `subtype` + `xml:id`); persons, sources, tables of
+        // contents, and name indexes are excluded — they are structured data
+        // with dedicated views, or navigation aids whose text would only add
+        // noise to full-text search. The section becomes its own indexed
+        // entity; children are not bubbled to the parent.
+        guard Self.promotableQuasiDocumentKinds.contains(kind), !frame.children.isEmpty else { return nil }
+        var decision = SectionDecision(nodes: frame.children, isFrontMatter: isFrontMatter)
+        // #1510 (owner decision D1): a compilation, chapter or subchapter holding a section the
+        // parser promotes is a CONTAINER, which history.state.gov shows as a list of what it
+        // holds. One that holds nothing but its heading is not indexed at all; one with text of
+        // its own is indexed for that text, and the breaks that follow the text — between or
+        // after the sections it holds — belong to the section that begins after them.
+        if frame.holdsPromotedSection, Self.containerKindsLeftOut.contains(kind) {
+            let ownBreaks = Self.directPageBreaks(frame)
+            if frame.children.allSatisfy(Self.isHeadingOrPageBreak) {
+                // Left out: its breaks are carried, and its heading goes nowhere — passing it up
+                // would put "I: The Treaty of Peace…" into the text of a section around it.
+                return SectionDecision(nodes: nil, carried: ownBreaks)
+            }
+            let trailing = Self.trailingPageBreaks(in: frame.children)
+            if trailing > 0 {
+                decision.carried = Array(ownBreaks.suffix(trailing))
+                decision.nodes?.removeLast(trailing)
+            }
+        }
+        return decision
+    }
+
+    /// How many page breaks close `nodes`, with nothing printed after them.
+    private static func trailingPageBreaks(in nodes: [FRUSASTNode]) -> Int {
+        nodes.reversed().prefix { node in
+            if case .pageBreak = node { return true }
+            return false
+        }.count
+    }
+
+    /// Whether a division that holds documents prints something of its own (#1536): among its
+    /// children that are neither a heading nor a page break, some printed text, or a figure that
+    /// names an image. An empty paragraph or an empty table is nothing printed.
+    private static func printsTextOfItsOwn(_ children: [FRUSASTNode]) -> Bool {
+        let own = children.filter { !isHeadingOrPageBreak($0) }
+        guard !own.isEmpty else { return false }
+        if FRUSASTNode.printedText(of: own).contains(where: { !$0.isWhitespace }) { return true }
+        return own.contains(where: holdsImage)
+    }
+
+    /// Whether `node` is, or holds, a figure that names an image.
+    private static func holdsImage(_ node: FRUSASTNode) -> Bool {
+        if case .figure(let graphic, _) = node, graphic != nil { return true }
+        return node.children.contains(where: holdsImage)
     }
 
     // MARK: - Containers (#1510)
@@ -1665,6 +1832,35 @@ private struct ParseFrame {
     /// `<pb>` frame or spliced from a transparent child with that child's entries, so the two
     /// always line up.
     var directBreakOpenCounts: [Int] = []
+    /// Where each `<div>` inside this element sits among `children`, in order (#1536): the range
+    /// of what it passed up — a wrapper of no structural kind, a list, a prose section the index
+    /// does not promote — or an empty range at the place of one that passed up nothing: a document,
+    /// an editorial note, a section with a row of its own, a section left out. Everything outside
+    /// the ranges was written directly inside this element.
+    var childDivisionRanges: [Range<Int>] = []
+
+    /// This element's own text (#1536): the children written directly inside it, in order, without
+    /// what a `<div>` inside it passed up, and without the page breaks that close a stretch of
+    /// them. A break with a division or nothing after it is the page the next division begins on,
+    /// and nothing of this element's is printed after it; one with text of this element's after it
+    /// is the page that text is on, and stays.
+    var ownChildren: [FRUSASTNode] {
+        var own: [FRUSASTNode] = []
+        var next = 0
+        for range in childDivisionRanges where range.lowerBound >= next {
+            own.append(contentsOf: Self.withoutClosingBreaks(children[next..<range.lowerBound]))
+            next = range.upperBound
+        }
+        own.append(contentsOf: Self.withoutClosingBreaks(children[next...]))
+        return own
+    }
+
+    /// `stretch` without the page breaks it ends with.
+    private static func withoutClosingBreaks(_ stretch: ArraySlice<FRUSASTNode>) -> ArraySlice<FRUSASTNode> {
+        var stretch = stretch
+        while case .pageBreak? = stretch.last { stretch.removeLast() }
+        return stretch
+    }
 }
 
 // MARK: - Person List Heuristics

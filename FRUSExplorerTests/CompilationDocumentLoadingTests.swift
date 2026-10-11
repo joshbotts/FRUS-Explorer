@@ -744,3 +744,134 @@ struct CompilationDocumentLoadingTests {
         // would otherwise draw the error row over a persons list.
     }
 }
+
+// MARK: - A section's own text in Browse (#1536)
+
+/// Browse draws the text a section prints at its own level first in the section, above the
+/// sections and documents it holds. The row is the index's, and the view model keeps it with the
+/// section's documents, so these tests drive the real loader over a real index of
+/// `SectionOwnTextTests`' fixture and read what it kept.
+///
+/// The Mac's corpus browser has a loader of its own, which no test target can run (the unit
+/// target is iOS-only). It asks the same kit rule, `VolumeSection.ownTextEntry(among:)`, and the
+/// last test here holds its call and the two views' order by their source.
+@Suite("Browse — a section's own text is loaded with its documents (#1536)")
+@MainActor
+struct SectionOwnTextBrowseTests {
+
+    /// A pipeline over a temporary index of `SectionOwnTextTests`' fixture volume, and the
+    /// volume's sections by id, read back from the outline the pipeline stored.
+    private func makeFixture() async throws -> (dir: URL, pipeline: IndexingPipeline, sections: [String: VolumeSection]) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-1536-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let pipeline = try IndexingPipeline(
+            fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL, volumesDirectory: volumes)
+        try SectionOwnTextTests.volumeXML
+            .write(to: volumes.appendingPathComponent("\(SectionOwnTextTests.volumeId).xml"),
+                   atomically: true, encoding: .utf8)
+        try await pipeline.indexVolume(SectionOwnTextTests.volumeId)
+        let structure = try #require(
+            try await pipeline.cachedVolumeStructure(forVolumeId: SectionOwnTextTests.volumeId))
+        func byId(_ sections: [VolumeSection]) -> [String: VolumeSection] {
+            var found: [String: VolumeSection] = [:]
+            for section in sections {
+                found[section.sectionId] = section
+                found.merge(byId(section.subsections)) { first, _ in first }
+            }
+            return found
+        }
+        return (dir, pipeline, byId(structure.sections))
+    }
+
+    /// A view model over `pipeline`, with no manifest: the loader reads none.
+    private func makeViewModel(_ pipeline: IndexingPipeline) -> BrowserViewModel {
+        BrowserViewModel(manifestStore: ManifestStore(bundledEntries: []), tagStore: VolumeLevelTagStore(),
+                         downloadManager: nil, indexingPipeline: pipeline)
+    }
+
+    @Test("Loading a section keeps its own row, apart from its documents")
+    func loadingKeepsTheSectionsOwnRow() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(fixture.pipeline)
+        let meeting = try #require(fixture.sections["ch1"])
+        let key = vm.compilationKey(volumeId: SectionOwnTextTests.volumeId, sectionId: "ch1")
+        #expect(vm.compilationOwnText[key] == nil, "nothing is kept before the load")
+
+        await vm.loadDocuments(for: meeting, volumeId: SectionOwnTextTests.volumeId)
+
+        #expect(vm.documentLoadState(forKey: key).isLoaded)
+        let own = try #require(vm.compilationOwnText[key], "the meeting prints a list of those present")
+        #expect(own.documentId == "ch1" && own.volumeId == SectionOwnTextTests.volumeId)
+        #expect(own.header == "First Meeting")
+        // The row is not one of the section's documents: the list below it is as it was.
+        #expect(vm.compilationDocuments[key]?.map(\.documentId) == ["d1", "d2"])
+    }
+
+    @Test("A section that prints only its heading keeps none, and neither does a leaf")
+    func aSectionWithoutOwnTextKeepsNone() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(fixture.pipeline)
+        for id in ["ch2", "comp3", "t1"] {
+            let section = try #require(fixture.sections[id])
+            let key = vm.compilationKey(volumeId: SectionOwnTextTests.volumeId, sectionId: id)
+            await vm.loadDocuments(for: section, volumeId: SectionOwnTextTests.volumeId)
+            #expect(vm.documentLoadState(forKey: key).isLoaded, "\(id)")
+            #expect(vm.compilationOwnText[key] == nil, "\(id) has no text of its own to open")
+        }
+    }
+
+    @Test("A section that holds only sections keeps its own row too")
+    func aSectionOfSectionsKeepsItsOwnRow() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(fixture.pipeline)
+        let treaties = try #require(fixture.sections["comp2"])
+        let key = vm.compilationKey(volumeId: SectionOwnTextTests.volumeId, sectionId: "comp2")
+        await vm.loadDocuments(for: treaties, volumeId: SectionOwnTextTests.volumeId)
+        #expect(vm.compilationOwnText[key]?.documentId == "comp2")
+        #expect(vm.compilationDocuments[key]?.isEmpty == true)
+    }
+
+    @Test("Both platforms draw the row first, and the Mac finds it by the kit's rule")
+    func bothPlatformsDrawTheRowFirst() throws {
+        let repoRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        func source(_ path: String) throws -> String {
+            try String(contentsOf: repoRoot.appendingPathComponent(path), encoding: .utf8)
+        }
+        /// `text` from `start` up to `end`, both of which it must hold in that order.
+        func slice(_ text: String, from start: String, to end: String) throws -> Substring {
+            let from = try #require(text.range(of: start), "the source no longer holds \(start)")
+            let to = try #require(text.range(of: end, range: from.upperBound..<text.endIndex),
+                                  "the source no longer holds \(end) after \(start)")
+            return text[from.lowerBound..<to.lowerBound]
+        }
+
+        // iPhone and iPad: the row is drawn from what the loader kept, before the list of sections.
+        let compilation = try source("FRUSExplorer/Browser/CompilationView.swift")
+        let body = try slice(compilation, from: "var body: some View {", to: "documentListSection\n        }")
+        let drawn = try #require(body.range(of: "if let ownText = vm.compilationOwnText[cacheKey] {\n                ownTextSection(ownText)"),
+                                 "the section view no longer draws the section's own row")
+        let sections = try #require(body.range(of: "subsectionsList"))
+        #expect(drawn.lowerBound < sections.lowerBound, "the row comes above the section's sections")
+
+        // The Mac: its loader asks the kit's rule over the rows it read, and its list draws the
+        // row before the sections and the documents.
+        let mac = try source("FRUSExplorer/App/MacCorpusBrowserWindow.swift")
+        let loader = try slice(mac, from: "private func loadDocuments() async {", to: "isLoading = false\n    }\n}")
+        #expect(loader.contains("let all = (try? await pipeline.documents(forVolume: volumeId)) ?? []"))
+        #expect(loader.contains("ownText = section.ownTextEntry(among: all)"),
+                "the Mac's browser no longer finds a section's own row by the rule Browse uses")
+        let list = try slice(mac, from: "private var structuralList: some View {", to: "private func documentButton(")
+        let macRow = try #require(list.range(of: "if let ownText {"), "the Mac's list no longer draws the row")
+        let macSections = try #require(list.range(of: "if !section.subsections.isEmpty {"))
+        let macDocuments = try #require(list.range(of: "ForEach(documents, id: \\.documentId)"))
+        #expect(macRow.lowerBound < macSections.lowerBound && macSections.lowerBound < macDocuments.lowerBound)
+        #expect(list.contains("appState.openDocument(ownText, from: .tool(.corpusBrowser), using: openWindow)"),
+                "the row opens the index's own row, as a document row does")
+    }
+}

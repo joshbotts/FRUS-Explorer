@@ -634,7 +634,7 @@ Adds volumes whose coverage overlaps the years you set. You can also narrow by e
 
 #### Browse — the search index could not be opened
 
-<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 943–944 | key: browser.indexing.pipelineUnavailable -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 954–955 | key: browser.indexing.pipelineUnavailable -->
 
 FRUS Explorer could not open its search index. This volume cannot be indexed or checked until you restart. Relaunch the app. If the message comes back, the index database is damaged and only reinstalling will rebuild it.
 

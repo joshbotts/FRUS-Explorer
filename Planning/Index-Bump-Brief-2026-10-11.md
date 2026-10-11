@@ -43,6 +43,28 @@
 
 ### 3.2 #1536 — text printed at a section's own level is discarded
 
+**Done on 2026-10-11 as pull request C, index version 68**, as recommended below, with four things the design did not have. The session entry in `DEVELOPMENT-PLAN.md` has the method and what was seen.
+
+- **Which page breaks are the row's.** A break is part of the row only when text of the section's own follows it before the next division inside it. The design said "its span is its own breaks", and 324 of the rows have breaks that sit between their documents: read that way, a first build made a section an answer for every page between its first and last break, 114 pages in six volumes where the page had named one document.
+- **The reader's page is the row.** A parse for one section now makes the index's decisions from the section's opening tag. Until now it decided nothing, so the reader opened a section that holds sections with everything inside it, while the index held its own text alone (the 33 rows of #1510). A section the index leaves out still opens whole, by a second reading of the file.
+- **Browse finds the row in the index's rows** it already loads for the section (`VolumeSection.ownTextEntry(among:)`). Nothing is added to the stored outline.
+- **The reading order** puts a section's own row first in the section. A row of this kind used to come after everything else in the volume.
+
+**What the lane measured**, on two full indexes of the 553 volumes built through the kit's own pipeline, one from `v2` at version 67 and one from the branch, and compared by SQL:
+
+- **The rows.** 1,337 rows in 139 volumes (316,814 to 318,151), 1,421,459 characters of stored text, median 351. They are the 1,332 counted from the XML and five whose own content is an image and no words. No other row changed, in text or in order. 14 are front matter by their kind, all in `frus1902app1`.
+- **Page references:** two stored references change, both from a page that named nothing to the section that prints a diagram on it (`frus1919Parisv01`, "See diagram on page 112."). None moves from a document to a section.
+- **Citation Lookup's page answers:** of 504,863 pages that name something in either index, 208 in 20 volumes named nothing and now name a section; in `frus1969-76ve05p2`, which numbers its pages in every document, one page number gains a section among the 158 documents that already shared it; no other answer changes.
+- **Cross-references:** 1,789 rows from 316 of the sections, 445 of them into another volume (62 to a whole volume); one is marked broken, by the bundled index, which is read by volume and target and so needs no regeneration.
+- **People:** 4,461 mentions in 358 of the sections, most of them the lists of those present (`frus1945Berlinv02` 1,245, `frus1943CairoTehran` 1,012, `frus1945Malta` 911). In `frus1945Berlinv02`, 30 people its list of persons names had no mention and now have one.
+- **Dates and sources:** 110 of the rows are dated, by a date their own text prints (86 are meetings of `frus1952-54v05p1` and `p2`, which print a dateline under the heading); 15 have a source note, of which 8 are a decimal file number, 2 a named file and 5 no archival citation ("[Translation.]", "No. 131."); 33 footnote citations in 3 sections are stored as external citations.
+- **Search, the counts, Spotlight, the exports, a citation:** a section's row is treated as a prose section's row already was, since it is stored the same way. The volume and series document counts the app shows come from bundled files and do not move. Read in the code; Search was also seen.
+- **Previous and next:** from a section's row, Next is its first document and Previous the row before the section. Seen.
+- **`frus1902app1`:** `s05sub04` and `s12` are rows again, 8,410 and 4,370 characters. The item about rows 150 and 174 of the semantic index no longer applies: the re-pack of 2026-10-10 gave the volume 196 rows, `d1` to `d196`. No section row has a vector, so a Meaning search does not return one.
+- **Bundled indexes:** none is regenerated. `resolved-edge-index.json` takes only references inside a document, so it lacks the 383 references to documents of other volumes that sections' own text makes; `external-citation-index.json` lacks the 33 citations and `source-provenance-index.json` the 15 source rows.
+
+*What follows is the item as the brief first gave it.*
+
 - **Cause.** A `<div>` that is neither a document nor a promoted section is transparent: its children pass to the element around it, and at the root they are dropped. A section that holds documents is never promoted (`!frame.hasChildDocuments`), so its own paragraphs, tables and lists reach nothing.
 - **Measured in the XML:** **1,332** document-holding sections print text of their own, in **137 volumes**: 2,205 paragraphs, 554 tables, 137 lists; 1,287,278 characters, median 249, the longest 85,724 (`frus1872p2v1` `comp3`). By `@type`: 656 subchapters, 501 chapters, 51 compilations, 2 referral chapters, and 122 `section` divisions (107 `subsection`, 14 `historical-document`, 1 plain). The issue's 1,237 in 141 was the count for the first three kinds at an earlier corpus; it is 1,210 now.
 - **What the text is:**
@@ -135,11 +157,11 @@ This brief first declined the item, on lane NOTE's counts of 2026-10-01. The own
 |---|---|---|---|---|
 | 0 | Browse opens prose-only sections; this brief | #1535 | — | Merged, #1637 |
 | A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | Merged, #1638 |
-| B | Vol. XVI's people and terms | #1599 | 67 | Done; its pull request is open |
-| C | A section's own text | #1536 | 68 | §3.2 |
+| B | Vol. XVI's people and terms | #1599 | 67 | Merged, #1639 |
+| C | A section's own text | #1536 | 68 | Done; its pull request is open |
 | D | Subject-Numeric files stored without a designation | To be filed | 69 | §3.7 |
 
-C and D can change places. C is the largest and the one a corrected volume has already made worse. Build 50 waits for all four.
+C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. Build 50 waits for all four.
 
 ## 6. Not measured, and not verified
 

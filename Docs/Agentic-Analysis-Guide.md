@@ -256,10 +256,18 @@ one, or use one as an identifier across two copies of the database** — it is n
 ### 4.2 Corpus text
 
 **`document_cache`** — one row per document, keyed `(volume_id, document_id)`. The spine of
-everything. About 1,350 rows carry container ids rather than `dN` (`ch1`, `ch10subch1` — chapter
-and subchapter divs, 155 volumes), and a `<back>` appendix div is stored as a document with
-`is_editorial_note = 0` (`frus1944v01/appendix`). Reconcile any TEI document count against this
-table with those two classes named.
+everything. Not every row is a `<div type="document">`. On a full index at version 68, 3,370 rows
+in 230 volumes that are not front matter carry an id that is not `d` and a number (`ch1`,
+`ch10subch1`, `s05sub04`). They are of two kinds: a section that is prose alone, and, from index
+version 68, **the text a section prints at its own level when it also holds documents** — a
+meeting's list of those present, a treaty's signature and ratification dates, the statement of a
+case (1,337 rows in 139 volumes; version 67 held 2,047 such ids in 161 volumes). A row of the
+second kind holds the section's heading and its own text and none of its documents' text, so a
+word in a document is never also counted in the section around it. `is_editorial_note` is 0 on
+both kinds and `is_front_matter` follows the section's kind, so the usual
+`is_front_matter = 0 AND is_editorial_note = 0` keeps them. A `<back>` appendix div is stored as a
+document with `is_editorial_note = 0` (`frus1944v01/appendix`). Reconcile any TEI document count
+against this table with those classes named.
 
 | Column | Meaning |
 |---|---|
@@ -320,7 +328,9 @@ more per document with `is_start = 1`: the page it begins on, which is the last 
 its first printed text. That break often sits between two documents, where it is no document's own.
 Only a document or an editorial note has a start row; a prose section the index also holds as a
 document — a chapter that is only a cross-reference, a list of errata — has its own breaks and no
-start. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable` and, from index
+start. So has the row for a section's own text (version 68), and it keeps only the breaks its own
+text follows: a break between two of the section's documents is the page the next document begins
+on, and is no row of the section's. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable` and, from index
 version 63, `other-pagination`; `page_number_int` is populated for `arabic`, `roman` and
 `other-pagination`, and a page printed as `[31]` is `arabic` 31 when its break's
 id is `pg_31` or `pg_031` (one of a separately paginated section, `pg-seq-3`, stays
@@ -344,7 +354,10 @@ is page 1.
 
 **`person_mentions`** — `(volume_id, document_id, person_ref)`, one row per tagged mention. From
 index version 67 a row may also come from the document's own list of the people it mentions (its
-`@ana`), which is how 1981–88 vol. XVI tags them: that volume had no rows before 67.
+`@ana`), which is how 1981–88 vol. XVI tags them: that volume had no rows before 67. From version
+68 a person tagged in a section's own text is a mention on the section's row (4,461 rows in 358
+sections), most of them in the lists of those present at the wartime conferences: a person who
+attended a meeting and is named nowhere in its minutes had no mention there before.
 
 **`person_rollup`, `person_rollup_member`** — the cross-volume identity layer. `person_rollup_member`
 maps a volume-local `(volume_id, ref)` to a `rollup_id`; `person_rollup` carries the canonical name,
