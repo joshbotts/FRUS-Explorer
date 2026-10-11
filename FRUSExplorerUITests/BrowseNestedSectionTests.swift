@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import XCTest
+import notify
 
 /// #1301 — a **nested** Browse section loads its documents without leaving the tab.
 ///
@@ -141,6 +142,14 @@ import XCTest
 ///          tapped at the foot of a phone's list is first lifted clear of the tab bar
 ///          (`scrollIntoOpenView`), and a level that comes back with no search field fails an
 ///          assertion instead of a tap on a button that is not there
+///   1.6 — 2026-10-11: the late pipeline and the finished download are released by a signal each
+///          test sends (``send(_:)``) once it has seen the state it needs, where each fired a fixed
+///          time after launch. The walk to the compilation took 46 to 50 seconds (iPhone 17,
+///          iOS 27.0) against delays of 25 and 30, and both tests failed on their own check of
+///          the premise, on `v2`. The walk also opens the fixture's own subseries by name
+///          (``seededSubseriesLabel``), since a simulator that holds other volumes lists more
+///          than one, and a typed search is waited for in its field where it was read at
+///          once
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -227,6 +236,27 @@ final class BrowseNestedSectionTests: XCTestCase {
         ]
     }
 
+    /// What this suite can tell the running app: `UITestBrowseSeams.Signal`'s raw values, repeated
+    /// here because a UI suite cannot reference the app's constants.
+    /// `BrowseSeamSignalTests.theUISuiteSendsTheSignalsTheAppListensFor` holds the two lists equal.
+    private enum SeamSignal: String {
+        /// Release the pipeline `FRUS_UI_TEST_HOLD_PIPELINE` is holding back.
+        case attachPipeline = "bottsywattsy.FRUS-Explorer.uitest.attach-pipeline"
+        /// Finish the seeded volume's download (`FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL`).
+        case finishSeededDownload = "bottsywattsy.FRUS-Explorer.uitest.finish-seeded-download"
+    }
+
+    /// Sends `signal` to the app, as a Darwin notification: the app registered for it at boot, long
+    /// before a test can have walked anywhere, so none is sent to an app that is not yet listening.
+    ///
+    /// A test sends its signal AFTER it has asserted the state the seam exists to hold. That
+    /// order is what makes the held state certain where a delay from launch only made it likely.
+    private func send(_ signal: SeamSignal) {
+        XCTAssertTrue(notify_post(signal.rawValue) == NOTIFY_STATUS_OK,
+                      "The system refused to post \(signal.rawValue), so the app will never release "
+                          + "what it is holding and the rows below cannot arrive.")
+    }
+
     /// Launches, with any seam this test needs added to the common environment.
     ///
     /// The launch is per TEST rather than in `setUp` because five of the eleven tests below need a
@@ -248,11 +278,20 @@ final class BrowseNestedSectionTests: XCTestCase {
 
     // MARK: - Element queries
 
+    /// The head of the seeded volume's own subseries row (`frus1961-63v06`).
+    ///
+    /// The fixture's subseries by name, and not the first row that says "Subseries": the launch
+    /// shows downloaded volumes only, and the UI-test app shares the simulator's volumes with
+    /// every other run on it. On 2026-10-11 an iPad Pro 13-inch (iOS 27.0) that held two real
+    /// 1964–68 volumes gave "Subseries 1964-68, 35 volumes" as the first match, and the walk
+    /// failed one step later on "The seeded volume's row did not appear in the subseries list".
+    private static let seededSubseriesLabel = "Subseries 1961-63"
+
     private var subseriesRow: XCUIElement {
         // Built fresh on each access: NSPredicate is not Sendable and the XCUI APIs are
         // main-actor-isolated, so a hoisted predicate would be sent twice out of this
         // nonisolated context — a hard error under Swift 6.
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.seededSubseriesLabel)).firstMatch
     }
 
     private var volumeRow: XCUIElement {
@@ -742,16 +781,22 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// "Search Index Unavailable"; the task will not re-run afterwards, because `cacheKey` has not
     /// changed. The assertion on the banner is what makes this test non-vacuous: it proves the
     /// pipeline really was missing when the level rendered.
+    ///
+    /// The pipeline is held until this test releases it (`FRUS_UI_TEST_HOLD_PIPELINE`), and it is
+    /// released only once the banner has been seen. Until 2026-10-11 it arrived 25 seconds after
+    /// launch, whether or not the walk had reached the compilation by then.
     func testAPipelineArrivingLateFillsTheOpenCompilation() throws {
-        launch(seams: ["FRUS_UI_TEST_DELAY_PIPELINE": "25"])
+        launch(seams: ["FRUS_UI_TEST_HOLD_PIPELINE": "1"])
         navigateToSeededCompilation()
 
         XCTAssertTrue(
-            app.staticTexts[Self.indexUnavailableLabel].waitForExistence(timeout: 20),
-            "The compilation opened with a pipeline already attached, so this run never reached "
-                + "the state the back-fill kick exists for and everything below it would pass "
-                + "whatever that kick did. Raise FRUS_UI_TEST_DELAY_PIPELINE."
+            app.staticTexts[Self.indexUnavailableLabel].waitForExistence(timeout: 30),
+            "The compilation opened with a pipeline already attached, though this test holds it "
+                + "back until the line below. So the hold did not take, this run never reached the "
+                + "state the back-fill kick exists for, and everything below it would pass whatever "
+                + "that kick did."
         )
+        send(.attachPipeline)
 
         XCTAssertTrue(
             row(containing: Self.firstDocumentTitle).waitForExistence(timeout: 90),
@@ -773,10 +818,11 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// path it is the ONLY loader: the keyed task declined on the unindexed volume and its key will
     /// not change, and the pipeline already exists, so the back-fill kick cannot fire either.
     ///
-    /// `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER` hands the cold fixture to `DownloadManager`'s
-    /// completion router while this test stands on the compilation, which runs the app's own
-    /// `onVolumeDownloaded` closure — nothing below that call is simulated. "Index Now" is required
-    /// and then deliberately NOT tapped: tapping it is ``testIndexingFromTheCompilationFillsItsDocumentList``.
+    /// `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL` hands the cold fixture to `DownloadManager`'s
+    /// completion router when this test, standing on the compilation, asks for it, which runs the
+    /// app's own `onVolumeDownloaded` closure — nothing below that call is simulated. "Index Now" is
+    /// required and then deliberately NOT tapped: tapping it is ``testIndexingFromTheCompilationFillsItsDocumentList``.
+    /// Until 2026-10-11 the download finished 30 seconds after launch, wherever the walk had got to.
     func testAnIndexStartedElsewhereFillsTheOpenCompilation() throws {
         // The same closure also fetches the finished volume's semantic shard, which has nothing to
         // do with this screen; the reader's own "download vectors automatically" switch, off, keeps
@@ -785,17 +831,18 @@ final class BrowseNestedSectionTests: XCTestCase {
         // `SettingsKeys.autoDownloadSemanticShards` — a UI suite cannot reference app constants.
         app.launchArguments += ["-frus.semantic.autoDownloadShards", "<false/>"]
         launch(seams: ["FRUS_UI_TEST_COLD_SEEDED_VOLUME": "1",
-                       "FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER": "30"])
+                       "FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL": "1"])
         navigateToSeededCompilation(requireIndexNow: true, tapIndexNow: false)
 
         XCTAssertTrue(
             app.staticTexts[Self.indexRequiredLabel].exists,
-            "The cold compilation is not showing '\(Self.indexRequiredLabel)', so the download "
-                + "finished before this test reached it and everything below would pass whatever "
-                + "the progress kick did. Raise FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER."
+            "The cold compilation is not showing '\(Self.indexRequiredLabel)', though the download "
+                + "is not finished until the line below. So something else indexed the volume, and "
+                + "everything below would pass whatever the progress kick did."
         )
+        send(.finishSeededDownload)
 
-        // Touch nothing. The seam finishes the download, the app's own post-download closure
+        // Touch nothing on screen. The seam finishes the download, the app's own post-download closure
         // indexes the volume, and the progress kick is the only thing left that asks for the rows.
         XCTAssertTrue(
             row(containing: Self.firstDocumentTitle).waitForExistence(timeout: 120),
@@ -1297,13 +1344,20 @@ final class BrowseNestedSectionTests: XCTestCase {
         return field
     }
 
-    /// Types `text` into the search field with `prompt`.
+    /// Types `text` into the search field with `prompt`, and waits for the field to hold it.
+    ///
+    /// Waited for, and not read at once: the characters reach the field after `typeText` returns.
+    /// On 2026-10-11, on an iPad Pro 13-inch (iOS 27.0) with another job running on the Mac, the
+    /// field read "Bator Pape" where "Bator Papers" had been typed, and the walk stopped here.
     private func typeSearch(_ text: String, prompt: String, idiom: String) {
         let field = searchField(prompt: prompt, idiom: idiom)
         field.tap()
         field.typeText(text)
-        XCTAssertEqual(field.value as? String, text,
-                       "[\(idiom)] Precondition: the '\(prompt)' field does not hold what was typed")
+        let holdsIt = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", text),
+                                                object: field)
+        XCTAssertEqual(XCTWaiter.wait(for: [holdsIt], timeout: 30), .completed,
+                       "[\(idiom)] Precondition: the '\(prompt)' field holds "
+                           + "'\(field.value as? String ?? "")' and not what was typed, '\(text)'")
     }
 
     /// Checks that the search field with `prompt` still holds `text` after Back.

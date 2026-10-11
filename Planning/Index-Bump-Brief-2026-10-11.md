@@ -158,7 +158,7 @@ This brief first declined the item, on lane NOTE's counts of 2026-10-01. The own
 | 0 | Browse opens prose-only sections; this brief | #1535 | — | Merged, #1637 |
 | A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | Merged, #1638 |
 | B | Vol. XVI's people and terms | #1599 | 67 | Merged, #1639 |
-| C | A section's own text | #1536 | 68 | Done; its pull request is open |
+| C | A section's own text | #1536 | 68 | Merged, #1640 |
 | D | Subject-Numeric files stored without a designation | To be filed | 69 | §3.7 |
 
 C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. Build 50 waits for all four.

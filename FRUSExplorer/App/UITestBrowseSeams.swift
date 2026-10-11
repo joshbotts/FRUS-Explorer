@@ -9,6 +9,7 @@
 import Foundation
 
 #if DEBUG
+import notify
 
 // MARK: - UITestBrowseSeams
 
@@ -31,6 +32,17 @@ import Foundation
 /// delays a real assignment; the finished-download seam hands a volume already on disk to
 /// `DownloadManager`'s real completion router.
 ///
+/// ## The two late seams wait for the test, not for a clock
+/// The attach seam and the finished-download seam each need the test to be standing on a
+/// compilation first. Both used to fire a fixed number of seconds after launch (25 and 30), on
+/// the measurement that the walk there took less. On 2026-10-11 the same walk took 46 to 50
+/// seconds on iPhone 17 under iOS 27.0 (each element query cost 2 to 3.5 seconds, as it did on
+/// an iPhone 17 under iOS 26.5), so the pipeline had attached and the download had finished
+/// before the test arrived, and both tests failed on their own check of that premise, on `v2`
+/// as on a branch. A longer delay is the same race with a longer fuse, and it costs every run
+/// the wait. So each seam now holds until the test sends it a ``Signal``, which the test does
+/// once it has seen the state it came for: no clock is involved.
+///
 /// ## The cold seam is why three suites' "Index Now" branch was never entered
 /// `CompilationDocumentsTests`, `TwoPaneDocumentTests` and `BrowseNestedSectionTests` all tolerate
 /// the Index Now button rather than requiring it (`if indexNow.waitForExistence(…)`), because on a
@@ -46,7 +58,7 @@ import Foundation
 /// has a seam: kick 1 (`vm.isIndexing` falling) a cold volume indexed from the compilation itself;
 /// kick 3 (the pipeline back-filled) a pipeline held back past the first render; and kick 2
 /// (`AppState.currentIndexingProgress` returning to `nil`) a download that finishes while the
-/// compilation is open — ``finishSeededDownload(_:after:in:)``, added in round 4.
+/// compilation is open — ``finishSeededDownloadOnSignal(_:in:)``, added in round 4.
 ///
 /// **Round 3 accepted kick 2 as unreachable, and understated it.** It called kick 2 the kick for a
 /// bulk index started from Settings, "where the reader is not standing on a compilation". But
@@ -70,11 +82,54 @@ import Foundation
 ///   1.1 — #1301 round 3: the two boot stand-downs and the seeded-fixture repair are values with
 ///          unit tests (``bootIndexingStandDown(coldVolumeRequested:)``, ``SeedPreparation``);
 ///          both were previously branches whose deletion no suite could see
-///   1.2 — #1301 round 4: a fifth seam, ``finishSeededDownload(_:after:in:)``, starts the automatic
+///   1.2 — #1301 round 4: a fifth seam, `finishSeededDownload(_:after:in:)`, starts the automatic
 ///          post-download index through `DownloadManager`'s own completion router while a
 ///          compilation is open — kick 2's scenario, which round 3 accepted as unstageable on a
 ///          premise that was false
+///   1.3 — 2026-10-11: the attach seam and the finished-download seam fire on a ``Signal`` the
+///          test sends, where each fired a fixed time after launch
+///          (`FRUS_UI_TEST_DELAY_PIPELINE`, `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER`). The
+///          walk to a compilation had outgrown both delays, and `BrowseNestedSectionTests`' two
+///          tests of them failed on `v2`
 enum UITestBrowseSeams {
+
+    // MARK: - 0. A signal from the test
+
+    /// What a UI test can tell the running app, as a Darwin notification: the one channel from
+    /// the test runner's process into the app's that needs nothing drawn on screen.
+    ///
+    /// The test posts the raw value with `notify_post`; `BrowseNestedSectionTests` keeps a copy of
+    /// each string, since a UI suite cannot reference the app's constants.
+    enum Signal: String, CaseIterable {
+        /// Release the pipeline the attach seam is holding (``holdsPipeline``).
+        case attachPipeline = "bottsywattsy.FRUS-Explorer.uitest.attach-pipeline"
+        /// Finish the seeded volume's download (``finishesSeededDownloadOnSignal``).
+        case finishSeededDownload = "bottsywattsy.FRUS-Explorer.uitest.finish-seeded-download"
+    }
+
+    /// Runs `action` on the main actor the first time `signal` arrives, and not again.
+    ///
+    /// - Parameters:
+    ///   - signal: The signal to wait for.
+    ///   - action: What to do when it arrives.
+    /// - Returns: Whether the app is listening. `false` means the system refused the
+    ///   registration, and the action will never run.
+    @MainActor
+    @discardableResult
+    static func onSignal(_ signal: Signal, _ action: @escaping @MainActor () -> Void) -> Bool {
+        var token: Int32 = 0
+        let status = notify_register_dispatch(signal.rawValue, &token, DispatchQueue.main) { token in
+            // One signal, one run: a second post must not attach or finish anything twice.
+            notify_cancel(token)
+            MainActor.assumeIsolated { action() }
+        }
+        guard status == NOTIFY_STATUS_OK else {
+            print("[UITestBrowseSeams] Could not listen for \(signal.rawValue): status \(status)")
+            return false
+        }
+        print("[UITestBrowseSeams] Listening for \(signal.rawValue)")
+        return true
+    }
 
     // MARK: - 1. An injected document-load failure
 
@@ -259,17 +314,16 @@ enum UITestBrowseSeams {
 
     // MARK: - 3. A late pipeline
 
-    /// Launch key for the attach seam. Its value is a number of seconds.
-    static let pipelineDelayKey = "FRUS_UI_TEST_DELAY_PIPELINE"
+    /// Launch key for the attach seam: set to `1` to leave `AppState` without a pipeline until the
+    /// test sends ``Signal/attachPipeline``.
+    static let holdPipelineKey = "FRUS_UI_TEST_HOLD_PIPELINE"
 
-    /// How long `AppState` should go without a pipeline, or `nil` when the seam is not armed.
-    static var pipelineAttachDelay: Double? {
-        guard let raw = ProcessInfo.processInfo.environment[pipelineDelayKey],
-              let seconds = Double(raw), seconds > 0 else { return nil }
-        return seconds
+    /// Whether the attach seam is armed.
+    static var holdsPipeline: Bool {
+        ProcessInfo.processInfo.environment[holdPipelineKey] == "1"
     }
 
-    /// Runs `attach` after ``pipelineAttachDelay`` seconds instead of now.
+    /// Runs `attach` when the test sends ``Signal/attachPipeline``, instead of now.
     ///
     /// This reproduces R-9's boot race on purpose. `BrowserViewModel.isIndexed(_:)` answers
     /// `false` without a pipeline, so a compilation opened during the delay draws "Search Index
@@ -280,34 +334,29 @@ enum UITestBrowseSeams {
     ///
     /// Nothing else in boot is delayed: every other statement uses the local pipeline value.
     ///
-    /// - Parameters:
-    ///   - delay: Seconds to wait.
-    ///   - attach: The assignment to run afterwards.
+    /// - Parameter attach: The assignment to run when the signal arrives.
     @MainActor
-    static func attachPipeline(after delay: Double, _ attach: @escaping @MainActor () -> Void) {
-        print("[UITestBrowseSeams] Holding the pipeline back for \(delay)s")
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(delay))
+    static func attachPipelineOnSignal(_ attach: @escaping @MainActor () -> Void) {
+        print("[UITestBrowseSeams] Holding the pipeline back until the test releases it")
+        onSignal(.attachPipeline) {
             attach()
-            print("[UITestBrowseSeams] Pipeline attached after \(delay)s")
+            print("[UITestBrowseSeams] Pipeline attached on the test's signal")
         }
     }
 
     // MARK: - 4. A download that finishes while a compilation is open
 
-    /// Launch key for the finished-download seam. Its value is a number of seconds.
-    static let finishSeededDownloadKey = "FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER"
+    /// Launch key for the finished-download seam: set to `1` to finish the seeded volume's
+    /// download when the test sends ``Signal/finishSeededDownload``.
+    static let finishSeededDownloadKey = "FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL"
 
-    /// How long boot should wait before finishing the seeded volume's download, or `nil` when the
-    /// seam is not armed.
-    static var seededDownloadFinishDelay: Double? {
-        guard let raw = ProcessInfo.processInfo.environment[finishSeededDownloadKey],
-              let seconds = Double(raw), seconds > 0 else { return nil }
-        return seconds
+    /// Whether the finished-download seam is armed.
+    static var finishesSeededDownloadOnSignal: Bool {
+        ProcessInfo.processInfo.environment[finishSeededDownloadKey] == "1"
     }
 
-    /// Hands the seeded volume to `DownloadManager`'s completion router after `delay` seconds, as
-    /// though its download had just finished (#1301 round 4).
+    /// Hands the seeded volume to `DownloadManager`'s completion router when the test sends
+    /// ``Signal/finishSeededDownload``, as though its download had just finished (#1301 round 4).
     ///
     /// Armed with the cold seam, this is the ordinary download → open → browse path: the fixture is
     /// on disk and unindexed, the reader opens its compilation and sees "Index Required", and then —
@@ -322,17 +371,15 @@ enum UITestBrowseSeams {
     ///
     /// - Parameters:
     ///   - volumeId: The seeded volume, already on disk.
-    ///   - delay: Seconds to wait — long enough for a test to reach the compilation first.
     ///   - manager: The app's download manager.
     @MainActor
-    static func finishSeededDownload(_ volumeId: String,
-                                     after delay: Double,
-                                     in manager: DownloadManager) {
-        print("[UITestBrowseSeams] Finishing \(volumeId)'s download in \(delay)s")
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(delay))
-            await manager.replayFinishedTransferForUITest(volumeId: volumeId)
-            print("[UITestBrowseSeams] Finished \(volumeId)'s download: its automatic index runs now")
+    static func finishSeededDownloadOnSignal(_ volumeId: String, in manager: DownloadManager) {
+        print("[UITestBrowseSeams] Finishing \(volumeId)'s download when the test asks for it")
+        onSignal(.finishSeededDownload) {
+            Task { @MainActor in
+                await manager.replayFinishedTransferForUITest(volumeId: volumeId)
+                print("[UITestBrowseSeams] Finished \(volumeId)'s download: its automatic index runs now")
+            }
         }
     }
 }
