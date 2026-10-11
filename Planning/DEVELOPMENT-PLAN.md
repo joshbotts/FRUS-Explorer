@@ -37232,3 +37232,62 @@ The pull request after #1635, on the owner's word, and the third of the five iss
 **Docs**
 - `Planning/Generators-Runbook.md`: the tool's entry, with the two sources, the new variable, the measurements above, and the rule that the copy is committed with the bundled file. `CLAUDE.md`: the index row's inputs. `Package.swift`: the tool's line in the header comment, and the test target excludes `Fixtures`.
 - `Planning/Plan-Of-Record-2026-09-28.md`: §0c's paragraph for this pull request, and *Where the queue stands* brought to the present.
+
+## Session 2026-10-11 — The index bump's brief, and Browse opens a chapter, subchapter or compilation that holds prose and no documents (#1535)
+
+The owner asked for the index-bumping sessions of the plan of record's §0c to begin. This is the first: the brief the plan dated 2026-10-16, written five days early, and the one issue of the four that turned out to need no index change. One pull request. No index version, no CloudKit deploy, no re-index. One shared kit file.
+
+**The brief** is `Planning/Index-Bump-Brief-2026-10-11.md`. It measures each item, says what each fix stores and touches, gives the order, and lists six decisions for the owner with a recommendation each. What it found that the plan did not have:
+- **#1535 is not an indexing defect.** `TEIParserDelegate` already promotes a prose-only compilation, chapter or subchapter, and each is a row Search finds. Only Browse's rule refused them.
+- **#1536 is larger than filed and is not mostly lists of papers.** 1,332 document-holding sections in 137 volumes print text of their own at corpus `99d851c79`, 1,210 of them of the three kinds the issue counted (it gave 1,237 at an earlier corpus). 485 are the table of those present at a meeting, in five wartime conference volumes. The text carries 1,609 cross-references that no table holds.
+- **#1599: history.state.gov lists a document's people and terms in its sidebar** from the `ana` pointers, with no link in the text (document 368: 7 persons and 5 terms, its 12 pointers). The app has no list of a document's people, so the fix needs one or the reader shows nothing.
+- **#1613's rows are drawn**, as a placeholder node in a document's graph named after the volume, and counted by the collection inspector and `edgeCount`. The rankings already refuse them.
+- **The same shape for footnotes: 17,087 rows** store a reference to a note as an edge to a document named after the note. `inboundEdges` matches the id exactly and the rankings refuse `*fn*`, so a document cited through one of its notes gains nothing from it. 80 web addresses and 46 mail addresses are stored as cross-references too.
+- **The film sections' leaked player text is 2 rows**, where §0a estimated 12 from the code.
+- **The bump is three pull requests**, each with its own version (66, 67, 68), as build 49 took 63 to 65. A reader re-indexes once, at the build that carries all three.
+
+**How it was measured**
+- *The index:* the full index on the `iPhone 17e` simulator (553 volumes, 316,768 rows of `document_cache`, built 2026-10-08 at version 65), opened read-only with `sqlite3` and from Python. Cross-reference targets were classed by `GLOB` on `target_document_id`; sections by walking each volume's stored outline and looking each section up in `document_cache`.
+- *The corpus:* Python's `xml.etree` over the 553 files `manifest.json` names, at `99d851c79`. A section "holds documents" when a `<div type="document">` is anywhere inside it, and its own text is what its children other than `<head>`, `<pb>` and `<div>` hold.
+- *history.state.gov:* documents 1 and 368 of 1981–88 vol. XVI and document 1 of vol. XI, opened in a browser; the sidebar's two panels were read from the page after its script ran.
+- The scripts were scratch files and are not committed. The brief's §6 says what was not measured.
+
+**#1535, what was built**
+- `FRUSCoreKit/Browser/VolumeStructure.swift`: `compilation`, `chapter` and `subchapter` join `VolumeSection.proseReadableKinds`. `canReadDirectly` is unchanged: it still refuses a section that holds a document or a section, or has no `xml:id` of its own.
+- On iPhone and iPad such a section shows **Read** and its title where it said "No documents in this section."; on the Mac its row in the volume's contents opens in the reader. Both paths already existed for front matter.
+- Comments in `CompilationView.swift` and `MacCorpusBrowserWindow.swift`, edited in place so no line moved and no `Docs/EditableContent` range needed re-pointing.
+
+**Tests** (`ProseOnlySectionReadingTests`, a new suite in `FRUSExplorerTests/FRUSCoreKit/TEIParserTests.swift`, run by Xcode and by `swift test`)
+- The kit's own structure parser reads a small volume, and a prose-only chapter, subchapter and compilation each answer `canReadDirectly`.
+- One section breaks each rule and none breaks two: one holds a document, one holds a section, one has no `xml:id`. Each stays a list.
+- `parseDocument(documentId:volumeURL:)` gives each prose-only section its own text and neither of the others'.
+- **Against the unfixed code** (the three kinds taken out again, the suite alone through `swift test --filter`): 3 issues, one for each kind, and exit 1. With the fix: 4 tests passed.
+
+**Seen in the app** (1919 Paris Peace Conference, vol. XIII, whose Introduction holds four chapters of prose)
+- *iPhone 17, iOS 27.0* (the simulator, the volume copied into the app's library and indexed there): Browse, the volume, **Introduction**, then **The Paris Peace Conference, 1919**. The chapter shows **Read The Paris Peace Conference, 1919** over the line "This section contains prose content rather than individual numbered documents.", where it said "No documents in this section." The button opens the chapter in the reader, beginning "The treaty of peace with Germany brought to an end the principal phase of a war which lasted 51 months".
+- *The Mac* (the check copy, `tools/mac-check-copy`, built from this branch with the one volume seeded): the Corpus Browser, subseries 1919, the volume, **Introduction**, the same chapter. It shows the Prose Section page with **Read The Paris Peace Conference, 1919**, and the button opens `frus1919Parisv13/ch1` in the reader with the same text.
+- **Not seen:** a prose-only section listed directly in a volume's own contents on the Mac, which `openSection` opens without the Read page. The volume walked has none at that level. An iPad was not run; it draws the iPhone's view.
+- The simulator was put back as found: the volume's rows removed with `IndexingPipeline.removeVolume` from a throwaway package test, since deleted, and its file, images and completion record removed. A stray tap turned Sync Settings Across Devices on there and it was turned off again.
+
+**Checked**
+- `swift build --target FRUSCoreKit`: "Build complete!".
+- `swift test`, owed because the diff is kit code: exit 0, 38 `Test run with` lines, 2,603 tests, of which 4 are new, and no failed line.
+- A `build-for-testing` of the `FRUSExplorer` scheme into an empty build folder (iPhone 17, iOS 27.0): `** TEST BUILD SUCCEEDED **`, and no warning line but the two known residues.
+- The iOS unit target on iPhone 17 (iOS 27.0), from those products: "Test run with 6965 tests in 818 suites passed after 392.295 seconds with 6 known issues", `** TEST EXECUTE SUCCEEDED **`, exit 0, no failed line and no restart of the host. 4 tests and 1 suite more than #1636's run, which are the new suite.
+- The Mac: the check copy's build is the `FRUSExplorerMac` scheme (AppStore configuration, signed ad hoc, with the copy's `FRUS_MAC_CHECK` condition) into an empty build folder, from this branch's commit before the last documentation edits: `** BUILD SUCCEEDED **`. Its warnings are the two known residues and the condition's own "code after 'return' will never be executed". No other Mac build was made.
+- No UI suite was run. `BrowseNestedSectionTests` reads "No documents in this section." on the seeded chapter, which holds a section and so is not a page; `CompilationDocumentLoadingTests`, which builds the same shape, is in the unit run.
+
+**Not done**
+- **Nothing of the bump itself is built.** Pull requests A, B and C wait on the owner's merge of this one, and each takes the brief's recommendation where the owner has given none.
+- **The 5 heading-only sections** of the 1,136 now show Read and open to a heading alone. Telling them apart needs the index or the file, which the routing rule does not read.
+- **A section that holds other sections and no documents still says "No documents in this section."** under its list of sections, as the volume's Introduction does. That is #1536's Browse half for the 33 such sections with text of their own, and wording for the rest.
+- **The reader's previous and next buttons name a section by its id** ("Doc toc", "Doc ch2") on the Mac. As before; seen on this walk.
+- **On iPhone, the reader's "Tap the Edges to Turn the Page" tip stayed up over the Settings tab** after the tab was changed with the tip showing, and took the first tap there. Seen once, on iOS 27.0, not looked into.
+- **The brief's measuring scripts are not committed.** The brief gives each figure's source and method; a lane that needs one again measures through the kit's own parser, which is the better instrument.
+- No TestFlight note is written: build 50's are written at the bump of the build number. The plan of record's list of what they owe now names #1535.
+
+**Docs**
+- `Planning/Index-Bump-Brief-2026-10-11.md`, new.
+- `Planning/Plan-Of-Record-2026-09-28.md`: §0c's paragraph for this pull request, *Where the queue stands*, and the *Not this week* entry now points at the brief.
+- `Docs/iOS-User-Manual.md` and `Docs/macOS-User-Manual.md`: one sentence each on a chapter that holds text and no documents. The AI Generated notice stays.
+- `FRUSCoreKit/Browser/VolumeStructure.swift`: version history 2.1 and the measured figures in `proseReadableKinds`'s comment.

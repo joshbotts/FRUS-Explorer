@@ -1254,7 +1254,7 @@ private struct CorpusVolumeDetailView: View {
 
     /// Handles a tap on a section row in the volume structure list.
     ///
-    /// Prose-readable sections (preface, introduction, errata, etc.) open straight
+    /// Prose-readable sections (preface, errata, a chapter of prose alone, etc.) open straight
     /// into this browser's provenance host on the first tap — the same one-tap behaviour
     /// as a numbered document — via `AppState.openDocument(_:from: .tool(.corpusBrowser))`.
     /// Sections that need an intermediate list or a structured view (compilations with
@@ -1501,7 +1501,7 @@ private struct CorpusSectionDocumentView: View {
 
     // MARK: - Section Routing
 
-    /// `true` when this section is a prose-only front-matter div that can be opened
+    /// `true` when this section is a prose-only div (front matter, or a chapter) that can be opened
     /// directly as a document, bypassing the indexed document list.
     private var canReadSectionDirectly: Bool { section.canReadDirectly }
 

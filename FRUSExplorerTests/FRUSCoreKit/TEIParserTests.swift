@@ -2793,3 +2793,119 @@ struct StrongEmphasisTests {
             """)
     }
 }
+
+// MARK: - Prose-only sections open in the reader (#1535)
+
+/// A chapter, subchapter or compilation that holds prose and nothing else opens as a page.
+///
+/// Browse asks ``VolumeSection/canReadDirectly`` whether to offer a section's own page, and until
+/// #1535 it refused these three kinds, so 1,136 sections in 144 volumes said "No documents in this
+/// section." over text the index already held. Each test here reads the outline the kit's own
+/// parser builds, and the last reads the page a reader is then given.
+///
+/// One section of the fixture breaks each rule a section must meet, and no section breaks two:
+/// `ch2` holds a document, `ch3` holds a section, and the last chapter has no `xml:id`.
+@Suite("Prose-only sections open in the reader (#1535)")
+struct ProseOnlySectionReadingTests {
+
+    /// A volume with a prose-only section of each of the three kinds, and one section for each
+    /// rule that keeps a section a list.
+    private func makeFixture() throws -> URL {
+        try makeTEIFixture(body: """
+            <div type="compilation" xml:id="comp1"><head>Treaties</head>
+              <div type="chapter" xml:id="ch1"><head>The Treaty of Peace</head>
+                <p>The High Contracting Parties agree.</p>
+              </div>
+              <div type="chapter" xml:id="ch2"><head>Germany</head>
+                <div type="document" xml:id="d1" n="1"><head>Telegram</head><p>Text.</p></div>
+              </div>
+              <div type="chapter" xml:id="ch3"><head>Parts of the Treaty</head>
+                <div type="subchapter" xml:id="ch3subch1"><head>Section I</head>
+                  <p>Article 1 of the Covenant.</p>
+                </div>
+              </div>
+              <div type="chapter"><head>A chapter with no id</head>
+                <p>Prose the parser cannot find again.</p>
+              </div>
+            </div>
+            <div type="compilation" xml:id="comp2"><head>Mexico</head>
+              <p>For documentation on Mexico, see volume II.</p>
+            </div>
+            """)
+    }
+
+    /// Every section of the outline by its id, at any depth.
+    private func sectionsById(_ sections: [VolumeSection]) -> [String: VolumeSection] {
+        var found: [String: VolumeSection] = [:]
+        for section in sections {
+            found[section.sectionId] = section
+            found.merge(sectionsById(section.subsections)) { first, _ in first }
+        }
+        return found
+    }
+
+    @Test("A prose-only chapter, subchapter and compilation each open directly")
+    func proseOnlySectionsOpenDirectly() async throws {
+        let url = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let structure = try await FRUSDocumentParser().parseVolumeStructure(volumeURL: url)
+        let sections = sectionsById(structure.sections)
+
+        for (id, kind) in [("ch1", "chapter"), ("ch3subch1", "subchapter"), ("comp2", "compilation")] {
+            let section = try #require(sections[id], "the outline holds no section \(id)")
+            #expect(section.divType == kind)
+            #expect(section.documentIds.isEmpty && section.subsections.isEmpty)
+            #expect(section.canReadDirectly, "\(id) holds prose and nothing else, so it is a page")
+        }
+    }
+
+    @Test("A section that holds a document, holds a section, or has no id stays a list")
+    func otherSectionsStayLists() async throws {
+        let url = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let structure = try await FRUSDocumentParser().parseVolumeStructure(volumeURL: url)
+        let sections = sectionsById(structure.sections)
+
+        let holdsDocument = try #require(sections["ch2"])
+        #expect(holdsDocument.documentIds == ["d1"] && holdsDocument.subsections.isEmpty)
+        #expect(!holdsDocument.canReadDirectly)
+
+        let holdsSection = try #require(sections["ch3"])
+        #expect(holdsSection.documentIds.isEmpty && holdsSection.subsections.count == 1)
+        #expect(!holdsSection.canReadDirectly)
+
+        let comp1 = try #require(sections["comp1"])
+        let noId = try #require(comp1.subsections.first { $0.title == "A chapter with no id" })
+        #expect(noId.documentIds.isEmpty && noId.subsections.isEmpty)
+        #expect(!noId.hasExplicitSectionId)
+        #expect(!noId.canReadDirectly, "the reader finds a section by its xml:id, and this has none")
+    }
+
+    @Test("The persons and sources lists keep their own views")
+    func structuredListsAreNotProse() {
+        #expect(!VolumeSection.proseReadableKinds.contains("persons"))
+        #expect(!VolumeSection.proseReadableKinds.contains("sources"))
+    }
+
+    @Test("Opening one gives its own text, and not a neighbour's")
+    func aProseOnlySectionReadsAsItsOwnPage() async throws {
+        let url = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let expected = [
+            "ch1": "The High Contracting Parties agree.",
+            "ch3subch1": "Article 1 of the Covenant.",
+            "comp2": "For documentation on Mexico, see volume II.",
+        ]
+        for (id, text) in expected {
+            let page = try #require(
+                try await FRUSDocumentParser().parseDocument(documentId: id, volumeURL: url),
+                "the reader is given no page for \(id)")
+            #expect(page.documentId == id)
+            let read = extractAllText(from: page.nodes)
+            #expect(read.contains(text))
+            for (other, otherText) in expected where other != id {
+                #expect(!read.contains(otherText), "\(id)'s page holds \(other)'s text")
+            }
+        }
+    }
+}
