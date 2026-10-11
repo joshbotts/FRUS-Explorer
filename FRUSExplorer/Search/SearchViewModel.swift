@@ -500,14 +500,24 @@ final class SearchViewModel {
             // filter edited and not yet run is no part of the list the marks will be made in.
             checklistAnchor = lastCompletedSearchAnchor
                 ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
-            reviewedMarks.reset()
+            forgetReviewedMarks()
         } else {
             checklistEnabledAt = nil
             checklistAnchor = nil
             readSinceEnabledKeys.removeAll()
-            reviewedMarks.reset()
+            forgetReviewedMarks()
         }
         currentPage = 0
+    }
+
+    /// Forgets every mark, and with them a line in the selection's bar that offers to undo one
+    /// (#1576 lane 4): after this there is nothing for that Undo to bring back. The one place the
+    /// marks are reset, so that no reset leaves the line behind. Here the selection bar takes the
+    /// Checklist toggle's place, so no control turns the mode off while a line stands; the Mac's
+    /// window has one that does. `MacSearchViewModel`'s is this function's twin.
+    private func forgetReviewedMarks() {
+        reviewedMarks.reset()
+        selectionSession.withdrawOutcomeOfferingToUndoMarks()
     }
 
     /// Marks a document reviewed for this checklist session (hides it without opening it).
@@ -545,7 +555,7 @@ final class SearchViewModel {
         if hidden > 0, returnsListToTop { bulkMarkGeneration &+= 1 }
         // A new bulk mark is what Undo takes back now, so a line offering to undo an earlier
         // one would name the wrong rows (#1576 lane 3).
-        if bulkOutcome?.undo == .reviewedMarks { bulkOutcome = nil }
+        selectionSession.withdrawOutcomeOfferingToUndoMarks()
         return hidden
     }
 
@@ -571,7 +581,7 @@ final class SearchViewModel {
         let restored = undoableRowCount
         reviewedMarks.undoLastBulk()
         if restored > 0 { bulkMarkGeneration &+= 1 }
-        if bulkOutcome?.undo == .reviewedMarks { bulkOutcome = nil }
+        selectionSession.withdrawOutcomeOfferingToUndoMarks()
         return restored
     }
 
@@ -596,7 +606,7 @@ final class SearchViewModel {
         checklistAnchor = anchor
         checklistEnabledAt = .now
         readSinceEnabledKeys.removeAll()
-        reviewedMarks.reset()
+        forgetReviewedMarks()
     }
 
     /// The search that last completed, which is the one any rows on screen came from; `nil`
@@ -612,48 +622,33 @@ final class SearchViewModel {
 
     // MARK: - Selection (#1576 lane 3)
 
+    /// The selection and what follows it: the picks, the search they were made in, and what the
+    /// last command did. The rules are ``ResultSelectionSession``'s, which the Mac's view model
+    /// holds too (#1576 lane 4); this view model tells it what only it knows. Written only
+    /// through the functions below; pruned whenever the shown results change, and ended when an
+    /// error takes the rows off the screen, so that no pick is ever of a row the list does not
+    /// show.
+    private var selectionSession = ResultSelectionSession()
+
     /// The results the reader has picked to act on at once, and whether the list is in selection.
-    /// Written only through the functions below; pruned here whenever the shown results change,
-    /// and ended when an error takes the rows off the screen, so that no pick is ever of a row
-    /// the list does not show (``ResultSelection``).
-    private(set) var resultSelection = ResultSelection()
+    var resultSelection: ResultSelection { selectionSession.selection }
 
     /// What the last command on the selection did, shown above the results until the next
     /// command, the next completed search or Done.
-    private(set) var bulkOutcome: BulkOutcome?
+    var bulkOutcome: BulkOutcome? { selectionSession.outcome }
 
-    /// Counts the outcomes set, so that the bar can announce each one. Two commands in a row can
-    /// leave the same words ("25 results marked reviewed" for one full page and then the next),
-    /// and a change of value is then no signal that anything happened.
-    private(set) var bulkOutcomeSerial = 0
-
-    /// Sets the outcome line and counts it.
-    private func setOutcome(_ outcome: BulkOutcome) {
-        bulkOutcome = outcome
-        bulkOutcomeSerial &+= 1
-    }
-
-    /// The search the picks were made in. A completed search that is the same search keeps the
-    /// picks it still shows; another ends selection (``settleSelection(for:)``).
-    private var selectionAnchor: ChecklistAnchor?
-
-    /// Picks that a replaced result list no longer held, counted until the search that replaced
-    /// it completes and ``settleSelection(for:)`` reports or discards them.
-    private var droppedByRerun = 0
+    /// Counts the outcomes set, so that the bar can announce each one.
+    var bulkOutcomeSerial: Int { selectionSession.outcomeSerial }
 
     /// The picked results, in the order the list shows them: what a command acts on.
     var selectedResults: [SearchResult] { resultSelection.resolved(in: displayedResults) }
 
     /// Whether more results are picked than one Add to Collection takes (the owner's decision 5).
     /// Mark Reviewed has no limit.
-    var selectionExceedsAddLimit: Bool {
-        resultSelection.count > CollectionDocumentDiscovery.bulkDocumentLimit
-    }
+    var selectionExceedsAddLimit: Bool { selectionSession.exceedsAddLimit }
 
     /// Whether Add to Collection can run: something is picked, and no more than one add takes.
-    var canAddSelectionToCollection: Bool {
-        resultSelection.count > 0 && !selectionExceedsAddLimit
-    }
+    var canAddSelectionToCollection: Bool { selectionSession.canAdd }
 
     /// Enters selection, with one row picked when the reader chose Select on it.
     ///
@@ -661,66 +656,57 @@ final class SearchViewModel {
     func beginSelecting(with result: SearchResult? = nil) {
         // An error is drawn in the rows' place, whatever `results` still holds.
         guard searchError == nil, !displayedResults.isEmpty else { return }
-        if !resultSelection.isSelecting {
-            selectionAnchor = lastCompletedSearchAnchor
-                ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
-            droppedByRerun = 0
-            bulkOutcome = nil
-        }
-        resultSelection.begin(picking: result?.id)
+        selectionSession.begin(
+            picking: result?.id,
+            anchor: lastCompletedSearchAnchor
+                ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters))
     }
 
     /// Leaves selection: Done, a new search, a Keywords/Meaning flip, an emptied list.
     func endSelecting() {
-        resultSelection.end()
-        selectionAnchor = nil
-        droppedByRerun = 0
-        bulkOutcome = nil
+        selectionSession.end()
     }
 
     /// Picks a row, or un-picks it.
     func toggleSelection(of result: SearchResult) {
-        resultSelection.toggle(result.id)
+        selectionSession.toggle(result.id)
     }
 
     /// Picks every row on the page on screen.
     func selectPage() {
-        resultSelection.pick(pagedResults.map(\.id))
+        selectionSession.pick(pagedResults.map(\.id))
     }
 
     /// Picks every result the list shows: the loaded results less those Checklist Mode hides.
     /// Never a match that was not loaded.
     func selectAllShown() {
-        resultSelection.pick(displayedResults.map(\.id))
+        selectionSession.pick(displayedResults.map(\.id))
     }
 
     /// Un-picks everything and stays in selection.
     func selectNone() {
-        resultSelection.clear()
+        selectionSession.clear()
     }
 
     /// Mark Reviewed for the selection: hides the picked rows, which takes them out of the
     /// selection, and keeps the line and its Undo.
     func markSelectionReviewed() {
         // The picked rows are scattered and the reader is among them, so the list stays put.
+        // Marked first and recorded after: marking prunes the session, and the two writes to it
+        // must not overlap.
         let hidden = markBulk(selectedResults, returnsListToTop: false)
-        setOutcome(BulkOutcome(message: ChecklistCopy.markedAnnouncement(hidden),
-                               undo: hidden > 0 ? .reviewedMarks : nil))
+        selectionSession.recordMark(hidden: hidden)
     }
 
-    /// Records what an Add to Collection of the selection did. Outside selection nothing shows
-    /// an outcome, and the picker's checkmark is the feedback.
+    /// Records what an Add to Collection did while selecting: the selection's, or one row's from
+    /// its own menu. Outside selection nothing shows an outcome, and the picker's checkmark is the
+    /// feedback.
     ///
     /// - Parameters:
     ///   - outcome: What `CollectionDocumentDiscovery.appendDocuments` answered.
     ///   - collectionName: The collection's name as its row shows it.
     func recordCollectionAdd(_ outcome: CollectionDocumentAppend, collectionName: String) {
-        guard resultSelection.isSelecting else { return }
-        setOutcome(BulkOutcome(
-            message: ResultSelectionCopy.added(outcome.insertedCount, alreadyPresent: outcome.alreadyPresent,
-                                               to: collectionName),
-            undo: outcome.insertedEntryIds.isEmpty
-                ? nil : .collectionEntries(ids: outcome.insertedEntryIds, collectionName: collectionName)))
+        selectionSession.recordAdd(outcome, collectionName: collectionName)
     }
 
     /// Takes the last command back and says what that did.
@@ -731,37 +717,24 @@ final class SearchViewModel {
     /// - Parameter removingEntries: Removes the collection entries with these ids and answers
     ///   how many it removed (`CollectionDocumentDiscovery.removeEntries`).
     func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int) {
-        guard let undo = bulkOutcome?.undo else { return }
-        switch undo {
-        case .collectionEntries(let ids, let collectionName):
-            do {
-                let removed = try removingEntries(ids)
-                setOutcome(BulkOutcome(message: ResultSelectionCopy.removed(removed, from: collectionName),
-                                       undo: nil))
-            } catch {
-                // No second try is offered. A removal whose save failed has already taken the
-                // entries out in memory, so another would find none and report nothing removed.
-                setOutcome(BulkOutcome(message: ResultSelectionCopy.undoFailed(error), undo: nil))
-            }
-        case .reviewedMarks:
-            let restored = undoLastBulkMark()
-            setOutcome(BulkOutcome(message: ChecklistCopy.undoneAnnouncement(restored), undo: nil))
-        }
+        // A copy, so that restoring the marks, which writes this view model's own state, is not
+        // a second write to the session while the session is being changed.
+        var session = selectionSession
+        session.undo(removingEntries: removingEntries, restoringMarks: { undoLastBulkMark() })
+        selectionSession = session
     }
 
     /// Follows a replaced result list. An emptied list ends selection; otherwise the picks the
     /// new list does not show are dropped and counted, for the completed search to settle.
     private func selectionFollowsReplacedResults() {
-        guard resultSelection.isSelecting else { return }
-        guard !results.isEmpty else { endSelecting(); return }
-        droppedByRerun += resultSelection.prune(toShown: Set(displayedResults.map(\.id)))
+        selectionSession.resultsWereReplaced(nowEmpty: results.isEmpty,
+                                             shown: Set(displayedResults.map(\.id)))
     }
 
     /// Drops the picks the list no longer shows: a row Checklist Mode has just hidden, because
     /// its document was opened or it was marked reviewed.
     private func pruneSelection() {
-        guard resultSelection.isSelecting, resultSelection.count > 0 else { return }
-        resultSelection.prune(toShown: Set(displayedResults.map(\.id)))
+        selectionSession.prune(toShown: Set(displayedResults.map(\.id)))
     }
 
     /// Settles the selection against a search that has just completed. The same search keeps the
@@ -769,16 +742,7 @@ final class SearchViewModel {
     ///
     /// - Parameter anchor: The anchor of the search that ran.
     private func settleSelection(for anchor: ChecklistAnchor) {
-        guard resultSelection.isSelecting else { return }
-        guard selectionAnchor?.isSameSearch(as: anchor) == true else { endSelecting(); return }
-        // A completed search ends the last command's line and its Undo, as the next command
-        // does. What takes its place, when the re-run dropped picks, is how many.
-        if droppedByRerun > 0 {
-            setOutcome(BulkOutcome(message: ResultSelectionCopy.dropped(droppedByRerun), undo: nil))
-        } else {
-            bulkOutcome = nil
-        }
-        droppedByRerun = 0
+        selectionSession.settle(for: anchor)
     }
 
     // MARK: - Available Filter Options

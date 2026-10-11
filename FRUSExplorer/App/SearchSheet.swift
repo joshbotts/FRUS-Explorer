@@ -236,6 +236,9 @@ struct MacSearchWindowView: View {
                 showTimeline = flags.timeline
                 showConcordance = flags.concordance
                 showCollocates = flags.collocates
+                // #1576 lane 4: the rows a selection is of are the list's. Another reading has
+                // none to check, and the toolbar's toggle is dimmed under it.
+                if selected != .list { searchVM.endSelecting() }
             }
         )
     }
@@ -350,6 +353,8 @@ struct MacSearchWindowView: View {
             Divider()
 
             overCapAdvisory
+
+            selectionStrip
 
             checklistHiddenBanner
 
@@ -612,8 +617,12 @@ struct MacSearchWindowView: View {
                 scope: resultSetScope)
         }
         // #1576 lane 2: Add to Collection from a result row, presented from the request's own
-        // frozen list.
-        .bulkResultSheets($bulkRequest)
+        // frozen list. Lane 4: what an add did while selecting goes to the strip, the selection's
+        // or one row's from its own menu.
+        .bulkResultSheets($bulkRequest, onAdded: { outcome, collection in
+            searchVM.recordCollectionAdd(
+                outcome, collectionName: CollectionEditorNaming.listName(savedName: collection.name))
+        })
         .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
                                         version: searchVM.executedSearchVersion,
                                         language: LanguageAnalysisMonitor.shared.revision)) {
@@ -1130,6 +1139,35 @@ struct MacSearchWindowView: View {
                            defaultValue: "Checklist review mode — hide results as you review them"))
             .accessibilityLabel(String(localized: "search.checklist.toggle", defaultValue: "Checklist Mode"))
             .accessibilityValue(searchVM.checklistMode
+                                ? String(localized: "search.checklist.state.on", defaultValue: "On")
+                                : String(localized: "search.checklist.state.off", defaultValue: "Off"))
+        }
+
+        // #1576 lane 4: selection, beside Checklist. Titled, like its neighbours, and a toggle:
+        // on, every row shows a checkbox and the strip above the list holds the commands. It
+        // turns on for the list reading only, with rows to check and no error, which is drawn in
+        // the rows' place; and it is never dimmed while on, so that it can always turn off: a
+        // selection marked reviewed to its last row leaves a list with nothing in it.
+        ToolbarItem(placement: .primaryAction) {
+            Button {
+                if searchVM.resultSelection.isSelecting {
+                    searchVM.endSelecting()
+                } else {
+                    searchVM.beginSelecting()
+                }
+            } label: {
+                Label(ResultSelectionCopy.selectToggle, systemImage: "checkmark.circle")
+            }
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(searchVM.resultSelection.isSelecting ? Color.accentColor : Color.secondary)
+            .disabled(!searchVM.resultSelection.isSelecting
+                      && (searchVM.displayedResults.isEmpty || activeReading != .list
+                          || searchVM.searchError != nil))
+            .help(searchVM.resultSelection.isSelecting
+                  ? ResultSelectionCopy.selectToggleOffHelp
+                  : ResultSelectionCopy.selectToggleOnHelp)
+            .accessibilityLabel(ResultSelectionCopy.selectResults)
+            .accessibilityValue(searchVM.resultSelection.isSelecting
                                 ? String(localized: "search.checklist.state.on", defaultValue: "On")
                                 : String(localized: "search.checklist.state.off", defaultValue: "Off"))
         }
@@ -2076,14 +2114,35 @@ struct MacSearchWindowView: View {
         // so ↑/↓ continue from the result the user last opened.
         List(selection: $selectedResultId) {
             ForEach(searchVM.pagedResults, id: \.id) { result in
-            SearchResultRow(result: result, userTags: allUserTags)
+            // #1576 lane 4: in selection every row has a checkbox at its leading edge. It is
+            // beside the row and not in it: `SearchResultRow` is private, `InAppCitationNumberTests`
+            // reads it, and the click that opens a document is the row's own, so a click on the
+            // checkbox checks it and a click anywhere else on the row still opens. The row is not
+            // highlighted by a checkbox click, so Space goes on acting on the row last opened or
+            // reached with the arrow keys.
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                if searchVM.resultSelection.isSelecting {
+                    Toggle(isOn: Binding(
+                        get: { searchVM.resultSelection.contains(result.id) },
+                        set: { _ in searchVM.toggleSelection(of: result) })) {
+                        Text(result.header)
+                    }
+                    .toggleStyle(.checkbox)
+                    // Hidden from sight and still the checkbox's name: VoiceOver reads the
+                    // result's heading from this label. An `.accessibilityLabel` on top of it
+                    // is read as well, and the heading is then said twice.
+                    .labelsHidden()
+                    .help(ResultSelectionCopy.rowHint)
+                }
+                SearchResultRow(result: result, userTags: allUserTags)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        selectedResultId = result.id
+                        navigateToResult(result)
+                    }
+            }
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
                 .listRowSeparator(.visible, edges: .bottom)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    selectedResultId = result.id
-                    navigateToResult(result)
-                }
                 .contextMenu {
                     // Default click routes to this Search window's provenance host
                     // (navigateToResult → appState.openDocument); offered explicitly here too.
@@ -2129,10 +2188,22 @@ struct MacSearchWindowView: View {
                     // The menu is VoiceOver's route to it here too, as to every command on this
                     // row; the row is not one accessibility element, so it carries no named action.
                     Divider()
-                    Button {
-                        bulkRequest = addToCollectionRequest(for: result)
-                    } label: {
-                        Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                    if checkedTogether(with: result) {
+                        // #1576 lane 4: on a checked row with others checked, the command is the
+                        // selection's, and says how many.
+                        Button {
+                            bulkRequest = selectionAddRequest
+                        } label: {
+                            Label(ResultSelectionCopy.addSelectedToCollection(searchVM.resultSelection.count),
+                                  systemImage: "plus.circle")
+                        }
+                        .disabled(!searchVM.canAddSelectionToCollection)
+                    } else {
+                        Button {
+                            bulkRequest = addToCollectionRequest(for: result)
+                        } label: {
+                            Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                        }
                     }
 
                     // Checklist mode (#189-D): mark a result reviewed — hides it without
@@ -2167,6 +2238,62 @@ struct MacSearchWindowView: View {
             else { return .ignored }
             navigateToResult(result)
             return .handled
+        }
+        // #1576 lane 4: Space checks or clears the highlighted row while selecting, once for
+        // each press: a key held down repeats, and would flip the box back and forth. Outside
+        // selection it is handed back, so the list keeps whatever Space did before.
+        .onKeyPress(.space, phases: .down) { _ in
+            guard searchVM.resultSelection.isSelecting,
+                  let id = selectedResultId,
+                  let result = searchVM.pagedResults.first(where: { $0.id == id })
+            else { return .ignored }
+            searchVM.toggleSelection(of: result)
+            return .handled
+        }
+    }
+
+    /// Whether a row's Add to Collection is the selection's: the row is checked, and it is not the
+    /// only one (#1576 lane 4). That one item then says how many it is for. Every other item on
+    /// the menu is the row's own, Mark Reviewed among them, and an unchecked row's menu is that
+    /// row's throughout, in selection or out of it.
+    private func checkedTogether(with result: SearchResult) -> Bool {
+        searchVM.resultSelection.contains(result.id) && searchVM.resultSelection.count > 1
+    }
+
+    /// The request to add the selection to a collection (#1576 lane 4): the checked rows as they
+    /// stand in the list now, in its order, and the engine that listed them.
+    private var selectionAddRequest: BulkResultRequest? {
+        BulkResultRequest(.addToCollection, results: searchVM.selectedResults,
+                          fromMeaningSearch: searchVM.resultsAreSemantic)
+    }
+
+    /// The strip the Select toggle brings up, above the list and the checklist's own strip
+    /// (#1576 lane 4). Nothing outside selection.
+    @ViewBuilder
+    private var selectionStrip: some View {
+        if searchVM.resultSelection.isSelecting {
+            ResultSelectionStrip(
+                count: searchVM.resultSelection.count,
+                pageRowCount: searchVM.pagedResults.count,
+                shownCount: searchVM.displayedResults.count,
+                canAdd: searchVM.canAddSelectionToCollection,
+                showsMarkReviewed: searchVM.checklistMode,
+                canMarkReviewed: searchVM.canMarkSelectionReviewed,
+                addRefusal: searchVM.selectionExceedsAddLimit
+                    ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
+                outcome: searchVM.bulkOutcome,
+                outcomeSerial: searchVM.bulkOutcomeSerial,
+                done: { searchVM.endSelecting() },
+                selectPage: { searchVM.selectPage() },
+                selectAllShown: { searchVM.selectAllShown() },
+                selectNone: { searchVM.selectNone() },
+                addToCollection: { bulkRequest = selectionAddRequest },
+                markReviewed: { searchVM.markSelectionReviewed() },
+                undo: {
+                    searchVM.undoBulkOutcome { ids in
+                        try CollectionDocumentDiscovery.removeEntries(withIds: ids, modelContext: modelContext)
+                    }
+                })
         }
     }
 

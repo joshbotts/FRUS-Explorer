@@ -120,7 +120,7 @@ Read the results you have as a timeline, as your search term in context, or as t
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1151–1152 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1189–1190 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1778–1780 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1816–1818 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1783–1785 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1821–1823 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -1210,7 +1210,7 @@ Document text, summaries and research notes are all turned off, so there is noth
 
 #### A search with every Search in chip turned off (macOS)
 
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1394–1395 | key: search.error.emptyScope | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1573–1574 | key: search.error.emptyScope | shared: macOS only -->
 
 *Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
 
@@ -1220,7 +1220,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 968–969 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 932–933 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1286,7 +1286,7 @@ Save this search or its results, select results to act on several at once, revis
 *The lines shown above the results after a command on the picked results (#1576), on iPhone and iPad. Each is also announced to VoiceOver. Mark Reviewed's two lines are the checklist strip's own announcements, "25 results marked reviewed" and "25 results are back in the list".*
 
 ##### Added %1$@ to “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 294–295 | key: search.selection.outcome.added %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 525–526 | key: search.selection.outcome.added %@ %@ -->
 
 *The line after Add to Collection added documents: "Added 31 documents to “Chile”." `%1$@` is the number added, with its noun, and `%2$@` the collection's name. When some were already in the collection, one of the two sentences below follows it.*
 
@@ -1295,7 +1295,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.added %@ %@ -->
 
 ##### %@ was already in it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 300–301 | key: search.selection.outcome.already.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 531–532 | key: search.selection.outcome.already.one %@ -->
 
 *Follows the line above when one of the documents was already in the collection: "1 was already in it." `%@` is the number.*
 
@@ -1304,7 +1304,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.already.one %@ -->
 
 ##### %@ were already in it.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 302–303 | key: search.selection.outcome.already.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 533–534 | key: search.selection.outcome.already.many %@ -->
 
 *The same for more than one: "6 were already in it."*
 
@@ -1313,7 +1313,7 @@ Added %1$@ to “%2$@”.
 <!-- END SOURCE: search.selection.outcome.already.many %@ -->
 
 ##### Nothing added: %1$@ was already in “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 288–289 | key: search.selection.outcome.noneAdded.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 519–520 | key: search.selection.outcome.noneAdded.one %@ %@ -->
 
 *The line when every picked document was already in the collection, for one document. `%1$@` is the number and `%2$@` the collection's name. No Undo is offered beside it.*
 
@@ -1322,7 +1322,7 @@ Nothing added: %1$@ was already in “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneAdded.one %@ %@ -->
 
 ##### Nothing added: %1$@ were already in “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 290–291 | key: search.selection.outcome.noneAdded.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.added(_:alreadyPresent:to:locale:) | lines: 521–522 | key: search.selection.outcome.noneAdded.many %@ %@ -->
 
 *The same for more than one: "Nothing added: 6 were already in “Chile”."*
 
@@ -1331,7 +1331,7 @@ Nothing added: %1$@ were already in “%2$@”.
 <!-- END SOURCE: search.selection.outcome.noneAdded.many %@ %@ -->
 
 ##### Removed %1$@ from “%2$@”.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 315–316 | key: search.selection.outcome.removed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.removed(_:from:locale:) | lines: 546–547 | key: search.selection.outcome.removed %@ %@ -->
 
 *The line after Undo took an add back: "Removed 31 documents from “Chile”." `%1$@` is the number removed, with its noun, and `%2$@` the collection's name.*
 
@@ -1340,7 +1340,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.removed %@ %@ -->
 
 ##### %@ selected result is not in this list now.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 328–329 | key: search.selection.outcome.dropped.one %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 559–560 | key: search.selection.outcome.dropped.one %@ -->
 
 *The line when the same search was run again, under a changed filter, and one picked result is no longer in the list. `%@` is the number.*
 
@@ -1349,7 +1349,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.dropped.one %@ -->
 
 ##### %@ selected results are not in this list now.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 330–331 | key: search.selection.outcome.dropped.many %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.dropped(_:locale:) | lines: 561–562 | key: search.selection.outcome.dropped.many %@ -->
 
 *The same for more than one: "12 selected results are not in this list now."*
 
@@ -1358,7 +1358,7 @@ Removed %1$@ from “%2$@”.
 <!-- END SOURCE: search.selection.outcome.dropped.many %@ -->
 
 ##### Select %@ or fewer to add them to a collection.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 271–272 | key: search.selection.overLimit %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 502–503 | key: search.selection.overLimit %@ -->
 
 *Shown above the results when more results are picked than one add takes, with Add to Collection dimmed in the Actions menu: "Select 1,000 documents or fewer to add them to a collection." `%@` is the limit, with its noun. Mark Reviewed stays live.*
 
@@ -1367,13 +1367,35 @@ Select %@ or fewer to add them to a collection.
 <!-- END SOURCE: search.selection.overLimit %@ -->
 
 ##### Undo did not finish: %@
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 341–342 | key: search.selection.outcome.undoFailed %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 572–573 | key: search.selection.outcome.undoFailed %@ -->
 
 *The line when the Undo of an add threw. `%@` is the system's own description of the failure. No Undo is offered beside it. It does not say that nothing changed: a removal whose save failed has already taken the documents out of the collection in memory.*
 
 Undo did not finish: %@
 
 <!-- END SOURCE: search.selection.outcome.undoFailed %@ -->
+
+#### Selecting results: the Select button's help (macOS)
+
+*The help the Mac Search window's Select button shows when the pointer rests on it (#1576 lane 4). The button is in the titlebar beside Checklist; on, every result has a checkbox and a strip above the list holds the commands.*
+
+##### Select results, to add several to a collection or mark them reviewed at once
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOnHelp | lines: 390–391 | key: search.selection.toggle.on.help -->
+
+*While selection is off.*
+
+Select results, to add several to a collection or mark them reviewed at once
+
+<!-- END SOURCE: search.selection.toggle.on.help -->
+
+##### Leave selection and clear the checkboxes
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.selectToggleOffHelp | lines: 396–397 | key: search.selection.toggle.off.help -->
+
+*While selection is on.*
+
+Leave selection and clear the checkboxes
+
+<!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
 <!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2696–2696 | key: search.tips.link -->
@@ -1394,14 +1416,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 745–745 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 754–754 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 752–753 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 761–762 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1410,7 +1432,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2234–2234 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2361–2361 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1599,7 +1621,7 @@ Retry
 *The Search screen's explanatory text outside the Search Tips (§7.13) and the result-set copy §7 already carries: the filter and project-scope footers, the Meaning-mode prompts and notices, the facet panel's coverage lines, the collocation refusals, and the notice when a saved corpus had to be truncated.*
 
 #### The person filter was cleared — \(…) is no longer in the…
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 733–734 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 904–905 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.
@@ -1607,14 +1629,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1096–1097 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1105–1106 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1527–1528 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1565–1566 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 

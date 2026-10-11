@@ -461,12 +461,15 @@ struct ChecklistStripTests {
                 """)), "\(name) must read the count before the undo, and undo through ReviewedMarks")
             #expect(!squeezed.contains("reviewedMarks.undoLastBulk().count"),
                     "\(name) reports the size of the mark where it should report the rows that came back")
+            // The marks are reset through `forgetReviewedMarks()` since #1576 lane 4, which also
+            // withdraws a line that offered to undo one. `MacResultSelectionWiringTests` holds
+            // that function to the reset, and each view model to resetting nowhere else.
             #expect(squeezed.contains(Self.squeezed("""
                 guard checklistMode, checklistAnchor?.isSameSearch(as: anchor) != true else { return }
                 checklistAnchor = anchor
                 checklistEnabledAt = .now
                 readSinceEnabledKeys.removeAll()
-                reviewedMarks.reset()
+                forgetReviewedMarks()
                 """)), "\(name) must settle the checklist through the anchor's rule")
         }
     }
@@ -505,7 +508,7 @@ struct ChecklistStripTests {
         #expect(macOn.contains(Self.squeezed("""
             checklistEnabledAt = .now
             checklistAnchor = ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
-            reviewedMarks.reset()
+            forgetReviewedMarks()
             """)), "the Mac anchors the mode to the submitted query and the parameters it runs with")
 
         let iOS = try Self.source("FRUSExplorer/Search/SearchViewModel.swift")
@@ -513,7 +516,7 @@ struct ChecklistStripTests {
         #expect(iOSOn.contains(Self.squeezed("""
             checklistAnchor = lastCompletedSearchAnchor
                 ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
-            reviewedMarks.reset()
+            forgetReviewedMarks()
             """)), "the iPhone anchors the mode to the search that last completed")
         let settle = Self.squeezed(String(try Self.declaration(
             "private func settleChecklist(for anchor: ChecklistAnchor) {", in: iOS)))

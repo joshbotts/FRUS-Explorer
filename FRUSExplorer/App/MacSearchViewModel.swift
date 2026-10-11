@@ -192,8 +192,11 @@ final class MacSearchViewModel {
 
     // MARK: - Meaning mode (V-5 hybrid page) — the iOS twin's block, mirrored
 
-    /// Which engine a submitted search runs through. Per-session; see `SearchMode`.
-    var searchMode: SearchMode = .keywords
+    /// Which engine a submitted search runs through. Per-session; see `SearchMode`. A change ends
+    /// a selection, whoever makes it: the rows are the other engine's (#1576 lane 4).
+    var searchMode: SearchMode = .keywords {
+        didSet { if searchMode != oldValue { endSelecting() } }
+    }
 
     /// The Meaning mode's engine, injected by `SearchSheet` once the semantic stack has booted.
     /// Held as ``MeaningSearchRunning`` so a test can drive a Meaning run with a list of its own.
@@ -290,9 +293,17 @@ final class MacSearchViewModel {
 
     // MARK: - Results
 
-    var results: [SearchResult] = []
+    /// The loaded results. A selection follows every replacement of them (#1576 lane 4): an
+    /// emptied list ends it, and the picks a new list does not show are dropped.
+    var results: [SearchResult] = [] {
+        didSet { selectionFollowsReplacedResults() }
+    }
     var isSearching: Bool = false
-    var searchError: Error? = nil
+    /// What the last search failed with. The window draws it in the rows' place, so setting one
+    /// ends a selection (#1576 lane 4).
+    var searchError: Error? = nil {
+        didSet { if searchError != nil { endSelecting() } }
+    }
 
     /// True total number of matches for the current query, independent of
     /// `searchHardLimit` — or `nil` when the count could not be obtained.
@@ -438,7 +449,7 @@ final class MacSearchViewModel {
     /// the timeline, and the page math. Mirrors `SearchViewModel`'s iOS implementation so the
     /// macOS Search window behaves identically.
     var checklistMode: Bool = false {
-        didSet { clampCurrentPage() }
+        didSet { clampCurrentPage(); pruneSelection() }
     }
 
     /// The instant checklist mode was last enabled (or a new search re-anchored it). Documents
@@ -450,14 +461,14 @@ final class MacSearchViewModel {
     /// `ReadingHistoryEntry` `@Query` in `MacSearchWindowView` (mirrors `readSinceEnabledKeys`
     /// on iOS).
     var readSinceEnabledKeys: Set<String> = [] {
-        didSet { clampCurrentPage() }
+        didSet { clampCurrentPage(); pruneSelection() }
     }
 
     /// The results the reader marked reviewed this session, from a row's menu or with Mark Page
     /// Reviewed, and the last bulk mark apart so that it can be undone (#1576 lane 1). An in-memory
     /// value, never a fabricated `ReadingHistoryEntry`.
     private(set) var reviewedMarks = ReviewedMarks() {
-        didSet { clampCurrentPage() }
+        didSet { clampCurrentPage(); pruneSelection() }
     }
 
     /// `(volumeId|documentId)` keys the reader marked reviewed this session: ``reviewedMarks``' keys.
@@ -504,14 +515,22 @@ final class MacSearchViewModel {
         if on {
             checklistEnabledAt = .now
             checklistAnchor = ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
-            reviewedMarks.reset()
+            forgetReviewedMarks()
         } else {
             checklistEnabledAt = nil
             checklistAnchor = nil
             readSinceEnabledKeys.removeAll()
-            reviewedMarks.reset()
+            forgetReviewedMarks()
         }
         currentPage = 0
+    }
+
+    /// Forgets every mark, and with them a line in the selection's strip that offers to undo one
+    /// (#1576 lane 4): after this there is nothing for that Undo to bring back. The one place the
+    /// marks are reset, so that no reset leaves the line behind. `SearchViewModel`'s is its twin.
+    private func forgetReviewedMarks() {
+        reviewedMarks.reset()
+        selectionSession.withdrawOutcomeOfferingToUndoMarks()
     }
 
     /// Marks a document reviewed for this checklist session (hides it without opening it).
@@ -529,9 +548,13 @@ final class MacSearchViewModel {
     ///   opened since the mode came on was hiding already.
     @discardableResult
     func markReviewed(_ results: [SearchResult]) -> Int {
-        reviewedMarks.markBulk(results.map {
+        let hidden = reviewedMarks.markBulk(results.map {
             Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId)
         }).subtracting(readSinceEnabledKeys).count
+        // A new bulk mark is what Undo takes back now, so a line offering to undo an earlier
+        // one would name the wrong rows (#1576 lane 4).
+        selectionSession.withdrawOutcomeOfferingToUndoMarks()
+        return hidden
     }
 
     /// How many rows of the loaded results Undo would bring back
@@ -555,6 +578,7 @@ final class MacSearchViewModel {
     func undoLastBulkMark() -> Int {
         let restored = undoableRowCount
         reviewedMarks.undoLastBulk()
+        selectionSession.withdrawOutcomeOfferingToUndoMarks()
         return restored
     }
 
@@ -568,12 +592,159 @@ final class MacSearchViewModel {
         checklistAnchor = anchor
         checklistEnabledAt = .now
         readSinceEnabledKeys.removeAll()
-        reviewedMarks.reset()
+        forgetReviewedMarks()
     }
 
     /// Resets `currentPage` to 0 when a reviewed-set change shrank the list below the current page.
     private func clampCurrentPage() {
         if currentPage >= totalPages { currentPage = 0 }
+    }
+
+    // MARK: - Selection (#1576 lane 4)
+
+    /// The selection and what follows it: the picks, the search they were made in, and what the
+    /// last command did. The rules are ``ResultSelectionSession``'s, which `SearchViewModel` holds
+    /// too and whose tests drive them; this view model tells it what only it knows. Nothing runs
+    /// this file's half, so each function below is its twin's, line for line, and
+    /// `MacResultSelectionWiringTests` reads the two against each other. Two are not, each for a
+    /// reason of this window: ``markSelectionReviewed()`` and ``settleSelection(for:)``, with
+    /// ``canMarkSelectionReviewed``, which the iPhone has no need of.
+    private var selectionSession = ResultSelectionSession()
+
+    /// The results the reader has picked to act on at once, and whether the list is in selection.
+    var resultSelection: ResultSelection { selectionSession.selection }
+
+    /// What the last command on the selection did, shown above the results until the next
+    /// command, the next completed search or Done.
+    var bulkOutcome: BulkOutcome? { selectionSession.outcome }
+
+    /// Counts the outcomes set, so that the strip can announce each one.
+    var bulkOutcomeSerial: Int { selectionSession.outcomeSerial }
+
+    /// The picked results, in the order the list shows them: what a command acts on.
+    var selectedResults: [SearchResult] { resultSelection.resolved(in: displayedResults) }
+
+    /// Whether more results are picked than one Add to Collection takes (the owner's decision 5).
+    /// Mark Reviewed has no limit. This window loads up to 7,500 results, so All Shown is often
+    /// over it.
+    var selectionExceedsAddLimit: Bool { selectionSession.exceedsAddLimit }
+
+    /// Whether Add to Collection can run: something is picked, and no more than one add takes.
+    var canAddSelectionToCollection: Bool { selectionSession.canAdd }
+
+    /// The search that last completed, which is the one any rows on screen came from; `nil`
+    /// before the first. A selection is anchored to it, so that a re-run of the same search keeps
+    /// its picks and another search ends it.
+    private var lastCompletedSearchAnchor: ChecklistAnchor?
+
+    /// Enters selection, with one row picked when the reader chose Select on it.
+    ///
+    /// - Parameter result: The row whose menu was used, or `nil` from the toolbar.
+    func beginSelecting(with result: SearchResult? = nil) {
+        // An error is drawn in the rows' place, whatever `results` still holds.
+        guard searchError == nil, !displayedResults.isEmpty else { return }
+        selectionSession.begin(
+            picking: result?.id,
+            anchor: lastCompletedSearchAnchor
+                ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters))
+    }
+
+    /// Leaves selection: Done, a new search, a Keywords/Meaning flip, an emptied list.
+    func endSelecting() {
+        selectionSession.end()
+    }
+
+    /// Picks a row, or un-picks it.
+    func toggleSelection(of result: SearchResult) {
+        selectionSession.toggle(result.id)
+    }
+
+    /// Picks every row on the page on screen.
+    func selectPage() {
+        selectionSession.pick(pagedResults.map(\.id))
+    }
+
+    /// Picks every result the list shows: the loaded results less those Checklist Mode hides.
+    /// Never a match that was not loaded.
+    func selectAllShown() {
+        selectionSession.pick(displayedResults.map(\.id))
+    }
+
+    /// Un-picks everything and stays in selection.
+    func selectNone() {
+        selectionSession.clear()
+    }
+
+    /// Whether Mark Reviewed can run on the selection: Checklist Mode is on, and on the search
+    /// whose rows are on screen (``ChecklistAnchor/isOnTheSearch(shown:)``).
+    ///
+    /// `performSearch` anchors the checklist to a search before it runs, and the last search's
+    /// rows stay on screen until the new ones arrive. A selection marked in that gap, which All
+    /// Shown can make of every loaded row, would be kept under the new search and hide those
+    /// documents in its list. So the strip's Mark Reviewed is dimmed until the rows arrive, by
+    /// which time another search has ended the selection. The iPhone's checklist is settled with
+    /// the rows, so `SearchViewModel` has no twin of this.
+    var canMarkSelectionReviewed: Bool {
+        checklistMode && (checklistAnchor?.isOnTheSearch(shown: lastCompletedSearchAnchor) ?? true)
+    }
+
+    /// Mark Reviewed for the selection: hides the picked rows, which takes them out of the
+    /// selection, and keeps the line and its Undo.
+    func markSelectionReviewed() {
+        guard canMarkSelectionReviewed else { return }
+        // Marked first and recorded after: marking prunes the session, and the two writes to it
+        // must not overlap.
+        let hidden = markReviewed(selectedResults)
+        selectionSession.recordMark(hidden: hidden)
+    }
+
+    /// Records what an Add to Collection did while selecting: the selection's, or one row's from
+    /// its own menu. Outside selection nothing shows an outcome, and the picker's checkmark is the
+    /// feedback.
+    ///
+    /// - Parameters:
+    ///   - outcome: What `CollectionDocumentDiscovery.appendDocuments` answered.
+    ///   - collectionName: The collection's name as its row shows it.
+    func recordCollectionAdd(_ outcome: CollectionDocumentAppend, collectionName: String) {
+        selectionSession.recordAdd(outcome, collectionName: collectionName)
+    }
+
+    /// Takes the last command back and says what that did.
+    ///
+    /// The marks are this view model's to restore. Collection entries are the store's, so the
+    /// caller, which holds the model context, removes them and answers how many went.
+    ///
+    /// - Parameter removingEntries: Removes the collection entries with these ids and answers
+    ///   how many it removed (`CollectionDocumentDiscovery.removeEntries`).
+    func undoBulkOutcome(removingEntries: ([UUID]) throws -> Int) {
+        // A copy, so that restoring the marks, which writes this view model's own state, is not
+        // a second write to the session while the session is being changed.
+        var session = selectionSession
+        session.undo(removingEntries: removingEntries, restoringMarks: { undoLastBulkMark() })
+        selectionSession = session
+    }
+
+    /// Follows a replaced result list. An emptied list ends selection; otherwise the picks the
+    /// new list does not show are dropped and counted, for the completed search to settle.
+    private func selectionFollowsReplacedResults() {
+        selectionSession.resultsWereReplaced(nowEmpty: results.isEmpty,
+                                             shown: Set(displayedResults.map(\.id)))
+    }
+
+    /// Drops the picks the list no longer shows: a row Checklist Mode has just hidden, because
+    /// its document was opened or it was marked reviewed.
+    private func pruneSelection() {
+        selectionSession.prune(toShown: Set(displayedResults.map(\.id)))
+    }
+
+    /// Settles the selection against a search whose rows have just arrived. The same search
+    /// keeps the picks it still shows and says how many it does not; another search ends
+    /// selection.
+    ///
+    /// - Parameter anchor: The anchor of the search that ran.
+    private func settleSelection(for anchor: ChecklistAnchor) {
+        lastCompletedSearchAnchor = anchor
+        selectionSession.settle(for: anchor)
     }
 
     // MARK: - UI State
@@ -1165,6 +1336,10 @@ final class MacSearchViewModel {
             let fetched = try await resultsTask
             let rowsTime = clock.now - sent
             results = fetched
+            // With the rows and before the next suspension, so that no pass draws another
+            // search's rows under this one's selection (#1576 lane 4). The anchor is the one the
+            // checklist was settled by above: `params` has not changed since.
+            settleSelection(for: ChecklistAnchor(query: query, parameters: params))
             // With the rows, not before the await: a run that is cancelled keeps the previous rows, and
             // they keep the ceiling and the engine they came from.
             lastFetchLimit = fetchLimit
@@ -1250,9 +1425,13 @@ final class MacSearchViewModel {
         // writer refreshes a Meaning run's row by, so a respelled Meaning query keeps its marks as
         // it keeps its row.
         settleChecklist(for: ChecklistAnchor(query: query, parameters: parameters))
+        // Taken before the run: the filters can change while it is under way, and the selection
+        // is settled by the search that was sent (#1576 lane 4).
+        let sentAnchor = ChecklistAnchor(query: query, parameters: parameters)
         do {
             let outcome = try await backend.run(query: query, parameters: parameters)
             results = outcome.results
+            settleSelection(for: sentAnchor)
             lastFetchLimit = SemanticSearchBackend.hitLimit
             resultsAreSemantic = true
             beyondLibraryHits = outcome.beyondLibrary

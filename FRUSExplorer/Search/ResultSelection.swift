@@ -44,7 +44,8 @@ import Foundation
 ///   1.0 — #1576 lane 3: initial implementation
 struct ResultSelection: Equatable, Sendable {
 
-    /// Whether the list is in selection: a tap on a row picks it where it opened its document.
+    /// Whether the list is in selection. On iPhone and iPad a tap on a row then picks it where it
+    /// opened its document; on the Mac every row has a checkbox, and a click on the row still opens.
     private(set) var isSelecting = false
 
     /// The picked results' ids (`SearchResult.id`).
@@ -159,6 +160,207 @@ struct BulkOutcome: Equatable, Sendable {
     }
 }
 
+// MARK: - ResultSelectionSession
+
+/// A selection with what follows it for as long as it lasts: the search it was made in, what its
+/// last command did, and the picks a re-run of that search dropped (#1576 lane 4).
+///
+/// ## Why it is a value apart from the view models
+///
+/// The iPhone's and the Mac's search view models are twins kept by hand, and nothing runs the
+/// Mac's. In lane 3 these rules were `SearchViewModel`'s own. They are here so that the two hold
+/// one copy of them, and so that the tests which drive `SearchViewModel` run the rules the Mac's
+/// window uses. A view model keeps what only it knows: which rows it shows, when one of its
+/// searches completes, and how its checklist marks.
+///
+/// ## The order a host calls it in
+///
+/// When the host's results are replaced it calls ``resultsWereReplaced(nowEmpty:shown:)``, and
+/// when the search that replaced them completes it calls ``settle(for:)``. The first counts the
+/// picks the new list does not show; the second decides, by the search's anchor, whether they
+/// were dropped by a re-run of the same search (which it says) or by another search (which ends
+/// selection). When Checklist Mode hides a row the host calls ``prune(toShown:)``.
+///
+/// Version history:
+///   1.0 — #1576 lane 4: the rules moved here from `SearchViewModel`, which lane 3 gave them to
+///   1.1 — #1576 lane 4, review: a mark is recorded in selection only, as an add is
+struct ResultSelectionSession: Equatable, Sendable {
+
+    /// The picks, and whether the list is in selection.
+    private(set) var selection = ResultSelection()
+
+    /// What the last command on the selection did, shown above the results until the next
+    /// command, the next completed search or Done.
+    private(set) var outcome: BulkOutcome?
+
+    /// Counts the outcomes set, so that a host can announce each one. Two commands in a row can
+    /// leave the same words ("25 results marked reviewed" for one full page and then the next),
+    /// and a change of value is then no signal that anything happened.
+    private(set) var outcomeSerial = 0
+
+    /// The search the picks were made in. A completed search that is the same search keeps the
+    /// picks it still shows; another ends selection (``settle(for:)``).
+    private var anchor: ChecklistAnchor?
+
+    /// Picks that a replaced result list no longer held, counted until the search that replaced
+    /// it completes and ``settle(for:)`` reports or discards them.
+    private var droppedByRerun = 0
+
+    /// Whether more results are picked than one Add to Collection takes (the owner's decision 5).
+    /// Mark Reviewed has no limit.
+    var exceedsAddLimit: Bool {
+        selection.count > CollectionDocumentDiscovery.bulkDocumentLimit
+    }
+
+    /// Whether Add to Collection can run: something is picked, and no more than one add takes.
+    var canAdd: Bool {
+        selection.count > 0 && !exceedsAddLimit
+    }
+
+    /// Enters selection, with one row picked when the reader chose Select on it. Entering an
+    /// existing selection again keeps its search, its outcome and its picks, and adds the row.
+    ///
+    /// A new selection starts with no line and nothing counted because none is kept outside one:
+    /// ``end()`` forgets both, and nothing is recorded outside selection.
+    ///
+    /// - Parameters:
+    ///   - key: The id of the row whose menu was used, or `nil`.
+    ///   - anchor: The search the rows on screen came from.
+    mutating func begin(picking key: String? = nil, anchor: ChecklistAnchor) {
+        if !selection.isSelecting { self.anchor = anchor }
+        selection.begin(picking: key)
+    }
+
+    /// Leaves selection: Done, another search, a change of engine, an emptied list, an error.
+    mutating func end() {
+        selection.end()
+        anchor = nil
+        droppedByRerun = 0
+        outcome = nil
+    }
+
+    /// Picks a row, or un-picks it.
+    mutating func toggle(_ key: String) {
+        selection.toggle(key)
+    }
+
+    /// Adds rows to the picks: This Page, and All Shown.
+    mutating func pick(_ keys: some Sequence<String>) {
+        selection.pick(keys)
+    }
+
+    /// Un-picks everything and stays in selection.
+    mutating func clear() {
+        selection.clear()
+    }
+
+    /// Sets the outcome line and counts it.
+    private mutating func setOutcome(_ outcome: BulkOutcome) {
+        self.outcome = outcome
+        outcomeSerial &+= 1
+    }
+
+    /// Withdraws a line that offers to undo a bulk mark, when that mark has been replaced, taken
+    /// back or forgotten some other way: by the checklist strip's own Mark Page Reviewed or Undo,
+    /// or by the checklist starting again, as it does when Checklist Mode is turned off and when
+    /// another search is run.
+    mutating func withdrawOutcomeOfferingToUndoMarks() {
+        if outcome?.undo == .reviewedMarks { outcome = nil }
+    }
+
+    /// Records what a Mark Reviewed of the selection did. Outside selection nothing shows an
+    /// outcome, and none is kept.
+    ///
+    /// - Parameter hidden: How many rows left the list.
+    mutating func recordMark(hidden: Int) {
+        guard selection.isSelecting else { return }
+        setOutcome(BulkOutcome(message: ChecklistCopy.markedAnnouncement(hidden),
+                               undo: hidden > 0 ? .reviewedMarks : nil))
+    }
+
+    /// Records what an Add to Collection did while selecting: the selection's, or one row's from
+    /// its own menu, which is then the last command and takes the line. Outside selection nothing
+    /// shows an outcome, and the picker's checkmark is the feedback.
+    ///
+    /// - Parameters:
+    ///   - append: What `CollectionDocumentDiscovery.appendDocuments` answered.
+    ///   - collectionName: The collection's name as its row shows it.
+    mutating func recordAdd(_ append: CollectionDocumentAppend, collectionName: String) {
+        guard selection.isSelecting else { return }
+        setOutcome(BulkOutcome(
+            message: ResultSelectionCopy.added(append.insertedCount, alreadyPresent: append.alreadyPresent,
+                                               to: collectionName),
+            undo: append.insertedEntryIds.isEmpty
+                ? nil : .collectionEntries(ids: append.insertedEntryIds, collectionName: collectionName)))
+    }
+
+    /// Takes the last command back and says what that did.
+    ///
+    /// The marks are the host's to restore, and collection entries the store's, so the host
+    /// passes both in.
+    ///
+    /// - Parameters:
+    ///   - removingEntries: Removes the collection entries with these ids and answers how many
+    ///     it removed (`CollectionDocumentDiscovery.removeEntries`).
+    ///   - restoringMarks: Takes the last bulk mark back and answers how many rows returned.
+    mutating func undo(removingEntries: ([UUID]) throws -> Int, restoringMarks: () -> Int) {
+        guard let undo = outcome?.undo else { return }
+        switch undo {
+        case .collectionEntries(let ids, let collectionName):
+            do {
+                let removed = try removingEntries(ids)
+                setOutcome(BulkOutcome(message: ResultSelectionCopy.removed(removed, from: collectionName),
+                                       undo: nil))
+            } catch {
+                // No second try is offered. A removal whose save failed has already taken the
+                // entries out in memory, so another would find none and report nothing removed.
+                setOutcome(BulkOutcome(message: ResultSelectionCopy.undoFailed(error), undo: nil))
+            }
+        case .reviewedMarks:
+            let restored = restoringMarks()
+            setOutcome(BulkOutcome(message: ChecklistCopy.undoneAnnouncement(restored), undo: nil))
+        }
+    }
+
+    /// Follows a replaced result list. An emptied list ends selection; otherwise the picks the
+    /// new list does not show are dropped and counted, for the completed search to settle.
+    ///
+    /// - Parameters:
+    ///   - nowEmpty: Whether the new list holds no result at all.
+    ///   - shown: The ids of the results the list shows now. Read only while selecting.
+    mutating func resultsWereReplaced(nowEmpty: Bool, shown: @autoclosure () -> Set<String>) {
+        guard selection.isSelecting else { return }
+        guard !nowEmpty else { end(); return }
+        droppedByRerun += selection.prune(toShown: shown())
+    }
+
+    /// Drops the picks the list no longer shows: a row Checklist Mode has just hidden, because
+    /// its document was opened or it was marked reviewed.
+    ///
+    /// - Parameter shown: The ids of the results the list shows now. Read only with picks to drop.
+    mutating func prune(toShown shown: @autoclosure () -> Set<String>) {
+        guard selection.isSelecting, selection.count > 0 else { return }
+        selection.prune(toShown: shown())
+    }
+
+    /// Settles the selection against a search that has just completed. The same search keeps the
+    /// picks it still shows and says how many it does not; another search ends selection.
+    ///
+    /// - Parameter anchor: The anchor of the search that ran.
+    mutating func settle(for anchor: ChecklistAnchor) {
+        // Outside selection there is no anchor, and this ends a selection that is not on.
+        guard self.anchor?.isSameSearch(as: anchor) == true else { end(); return }
+        // A completed search ends the last command's line and its Undo, as the next command
+        // does. What takes its place, when the re-run dropped picks, is how many.
+        if droppedByRerun > 0 {
+            setOutcome(BulkOutcome(message: ResultSelectionCopy.dropped(droppedByRerun), undo: nil))
+        } else {
+            outcome = nil
+        }
+        droppedByRerun = 0
+    }
+}
+
 // MARK: - ResultSelectionCopy
 
 /// The words of selection: the bar, its two menus, the commands and their outcomes, apart from
@@ -176,6 +378,35 @@ enum ResultSelectionCopy {
     /// A row menu's item that enters selection with that row picked.
     static var selectRow: String {
         String(localized: "search.selection.enter.row", defaultValue: "Select")
+    }
+
+    /// The Mac toolbar's toggle that enters and leaves selection, beside Checklist.
+    static var selectToggle: String {
+        String(localized: "search.selection.toggle", defaultValue: "Select")
+    }
+
+    /// The toggle's help while selection is off.
+    static var selectToggleOnHelp: String {
+        String(localized: "search.selection.toggle.on.help",
+               defaultValue: "Select results, to add several to a collection or mark them reviewed at once")
+    }
+
+    /// The toggle's help while selection is on.
+    static var selectToggleOffHelp: String {
+        String(localized: "search.selection.toggle.off.help",
+               defaultValue: "Leave selection and clear the checkboxes")
+    }
+
+    /// "Add 12 Selected to Collection…": a checked row's menu item on the Mac, when more than one
+    /// row is checked. One form: it is offered for two or more.
+    ///
+    /// - Parameters:
+    ///   - count: Results checked.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    static func addSelectedToCollection(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        let form = String(localized: "search.selection.row.addSelected %@",
+                          defaultValue: "Add %@ Selected to Collection…")
+        return CountCopy.phrase(count, one: form, many: form, locale: locale)
     }
 
     /// The selection bar's button that leaves selection.
