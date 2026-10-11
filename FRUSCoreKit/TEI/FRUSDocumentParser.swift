@@ -1011,9 +1011,13 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             } else {
                 nodes = frame.children
             }
+            // #1599: the people and terms the div names on `@ana`, which 1981–88 vol. XVI uses in
+            // place of inline `persName corresp` and `gloss`.
             let doc = FRUSDocumentAST(documentId: docId, nodes: nodes,
                                       dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax,
-                                      printedNumber: printedNumber, startPage: frame.startPage)
+                                      printedNumber: printedNumber, startPage: frame.startPage,
+                                      annotatedReferences: FRUSDocumentAST.annotatedPointers(
+                                          frame.attributes["ana"]))
             documents.append(doc)
             emitted.append((frame.openIndex, false))
             documentDivDepth = -1

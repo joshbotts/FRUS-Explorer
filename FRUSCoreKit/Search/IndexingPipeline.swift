@@ -431,6 +431,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         (`settleCrossReferenceTargets`); a web or mail address is not collected
 ///         (`crossReferenceRow`); and the terms, the video figures' text and one persons-list
 ///         date form are stored without their noise (see the v66 note).
+///  4.35 — 2026-10-11 (#1599): `currentDateIndexVersion` → 67 — a document's `@ana` pointers into
+///         its volume's persons list are stored as person mentions (`annotatedPersonRefs`), which
+///         is how 1981–88 vol. XVI names the people its documents mention (see the v67 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1355,7 +1358,17 @@ public actor IndexingPipeline {
     ///   bump an installed index keeps every one of the old rows. The first of the four pull
     ///   requests of `Planning/Index-Bump-Brief-2026-10-11.md`: build 50 carries all four, so a
     ///   reader re-indexes once.
-    public static let currentDateIndexVersion: Int = 66
+    /// - v66→67 — #1599: a document's `@ana` names people. `frus1981-88v16` lists the people and
+    ///   terms each of its 88 documents mentions on the document div's `ana` attribute and marks
+    ///   none inline, so `person_mentions` held no row for the volume. A pointer whose id the
+    ///   volume's persons list holds is now a mention, beside any inline one
+    ///   (``annotatedPersonRefs(_:persons:)``): 622 rows, for 117 people. Nothing else a parse
+    ///   stores changes, and no other volume carries the attribute, so the re-index rebuilds
+    ///   every other volume as it was. Without the bump an installed index keeps vol. XVI's
+    ///   people at no mentions. The reader's two lists below such a document need no index: they
+    ///   are resolved from the parse (`ASTToRenderNodeConverter`). The second of the four pull
+    ///   requests of `Planning/Index-Bump-Brief-2026-10-11.md`.
+    public static let currentDateIndexVersion: Int = 67
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -5134,6 +5147,9 @@ public actor IndexingPipeline {
         var personMentionRows: [PersonMentionRow] = []
         // Every volume a person ref in this volume names (`personRefListVolume`), across all documents.
         var personListVolumes: Set<String> = []
+        // #1599: the ids of the volume's own persons list, which say which of a document's `@ana`
+        // pointers name a person.
+        let listedPersonIds = Set(fullResult.persons.map(\.ref))
         var externalCitationRows: [ExternalCitationRow] = []
         // Hoisted once per volume: the host's provider may decode on first use, and this scan runs
         // over every body footnote in the volume. Nil (the artifact missing from the host's
@@ -5192,6 +5208,9 @@ public actor IndexingPipeline {
                 pageRanges: &docPageRanges
             )
             crossRefs.append(contentsOf: docCrossRefs)
+            // #1599: the people the document names on its `@ana`, beside those its text marks.
+            docPersonRefs.formUnion(Self.annotatedPersonRefs(astDoc.annotatedReferences,
+                                                             persons: listedPersonIds))
             // #1503: the page the document begins on, ahead of the breaks inside it — often a
             // break between documents, which no document's nodes hold. The parser gives one to a
             // document or an editorial note only, never a promoted prose section (review round 1).
@@ -6351,6 +6370,23 @@ public actor IndexingPipeline {
         }
         // No word boundary found — hard truncate.
         return String(prefix) + "…"
+    }
+
+    /// The persons a document names on its `@ana` (#1599, index version 67): the id of each
+    /// pointer that the volume's own persons list holds, which is the form `person_mentions`
+    /// keys a mention by.
+    ///
+    /// `frus1981-88v16` names the people each document mentions this way and marks none in its
+    /// text, so until 67 the index held no mention for any of its 88 documents: 622 pointers to
+    /// 117 of the 120 people its list holds. A pointer to a term, to nothing in the list, or into
+    /// another file leaves no mention: what a pointer names is known only from the list that
+    /// holds its target, which is also how `ASTToRenderNodeConverter` sorts them for the reader.
+    ///
+    /// - Parameters:
+    ///   - pointers: `FRUSDocumentAST.annotatedReferences`.
+    ///   - persons: The `ref` of every entry of the volume's persons list.
+    nonisolated static func annotatedPersonRefs(_ pointers: [String], persons: Set<String>) -> Set<String> {
+        Set(pointers.compactMap(FRUSDocumentAST.annotatedId).filter(persons.contains))
     }
 
     /// Normalises a TEI `persName/@ref` to the bare per-volume person id used as the

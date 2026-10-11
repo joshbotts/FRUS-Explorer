@@ -27,6 +27,8 @@ import Foundation
 ///   1.4 — #1510: `carriedPages`, the breaks a container left out of the index, or narrowed to its
 ///          own text, gives the section that begins after them. Review round 1:
 ///          `applyingClassificationOverride` keeps them.
+///   1.5 — #1599: `annotatedReferences`, the pointers of the document div's `@ana`, which is how
+///          1981–88 vol. XVI names the people and terms a document mentions.
 public struct FRUSDocumentAST: Sendable {
     /// The value of the `xml:id` attribute on the `<div type="document">` element.
     /// e.g. `"d1"`, `"d42"`. Stable identifier used to locate documents within a volume.
@@ -110,6 +112,22 @@ public struct FRUSDocumentAST: Sendable {
     /// that section's `page_ranges` rows.
     public let carriedPages: [PageNumber]
 
+    /// The pointers of the document div's `@ana`, as written and in the order written
+    /// (`#p_ARVD_1`, `#t_EXDIS_1`), or none (#1599).
+    ///
+    /// One volume uses it: since the Office of the Historian's corrections of 2026-09-14,
+    /// `frus1981-88v16` names the people and terms each of its documents mentions here and marks
+    /// none of them in the text. At corpus `99d851c79` all 88 of its documents carry the
+    /// attribute, with 1,041 pointers, 622 to its persons list and 419 to its terms, every one
+    /// naming an `xml:id` in the volume; no other of the corpus's 744 files has `ana` on a `<div>`.
+    /// history.state.gov lists them beside the document, as Persons and as Abbreviations & Terms.
+    ///
+    /// A pointer says what it names only through the list that holds its target, so nothing here
+    /// sorts them: `IndexingPipeline` stores a mention for each one in the volume's persons list,
+    /// and `ASTToRenderNodeConverter` lists each one the reader's lookups resolve. Both read the
+    /// id through ``annotatedId(_:)``.
+    public let annotatedReferences: [String]
+
     public init(
         documentId: String,
         nodes: [FRUSASTNode],
@@ -118,7 +136,8 @@ public struct FRUSDocumentAST: Sendable {
         isFrontMatter: Bool = false,
         printedNumber: String? = nil,
         startPage: PageNumber? = nil,
-        carriedPages: [PageNumber] = []
+        carriedPages: [PageNumber] = [],
+        annotatedReferences: [String] = []
     ) {
         self.documentId = documentId
         self.nodes = nodes
@@ -128,6 +147,22 @@ public struct FRUSDocumentAST: Sendable {
         self.printedNumber = printedNumber
         self.startPage = startPage
         self.carriedPages = carriedPages
+        self.annotatedReferences = annotatedReferences
+    }
+
+    /// The pointers an `@ana` value holds: its whitespace-separated tokens, in order.
+    static func annotatedPointers(_ ana: String?) -> [String] {
+        (ana ?? "").split(whereSeparator: \.isWhitespace).map(String.init)
+    }
+
+    /// The `xml:id` in the document's own volume that `pointer` names (`#p_ARVD_1` → `p_ARVD_1`),
+    /// or `nil` for an empty pointer and for one into another file (`frus1981-88v11#p_X`), whose
+    /// target is not in this volume's lists. A pointer written without its `#` is read as the id.
+    public static func annotatedId(_ pointer: String) -> String? {
+        guard let hash = pointer.firstIndex(of: "#") else { return pointer.isEmpty ? nil : pointer }
+        guard hash == pointer.startIndex else { return nil }
+        let id = String(pointer[pointer.index(after: hash)...])
+        return id.isEmpty ? nil : id
     }
 
     /// This AST with `pages` added after any pages a container already carried to it (#1510).
@@ -135,7 +170,8 @@ public struct FRUSDocumentAST: Sendable {
         FRUSDocumentAST(documentId: documentId, nodes: nodes, dateTimeMin: dateTimeMin,
                         dateTimeMax: dateTimeMax, isFrontMatter: isFrontMatter,
                         printedNumber: printedNumber, startPage: startPage,
-                        carriedPages: carriedPages + pages)
+                        carriedPages: carriedPages + pages,
+                        annotatedReferences: annotatedReferences)
     }
 }
 
@@ -180,7 +216,8 @@ extension FRUSDocumentAST {
             isFrontMatter: isFrontMatter,
             printedNumber: printedNumber,
             startPage: startPage,
-            carriedPages: carriedPages)
+            carriedPages: carriedPages,
+            annotatedReferences: annotatedReferences)
     }
 }
 

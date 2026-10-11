@@ -40,6 +40,8 @@ import Crypto
 ///          the footnote wash; every text colour is measured on the wash, and a highlight's text
 ///          colour over every tint. `CollectionExportContrastTests`, Xcode's alone, measures the
 ///          collection HTML export's own layer
+///   1.4 — Session 2026-10-11: #1599 — the heads are re-pinned for the two lists below a document
+///          that names its people and terms on `@ana`
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -70,15 +72,21 @@ struct ReaderPageTests {
     ///   grew by 679 bytes and each dark one by 683: the dark palette's two new values are four
     ///   characters longer than the light one's. The tests under "#1602" below say what the two
     ///   variables must do.
+    /// - Session 2026-10-11 re-pinned them for #1599: the stylesheet gains `.named-references` and
+    ///   `.named-list`, the two lists the reader writes below a document that names its people and
+    ///   terms on `@ana`, with their comment. Each head grew by 537 bytes, all of them those rules.
+    ///   No variable and no other rule changed: the lists take the footnote list's size and
+    ///   colour and the footnotes section's rule and headings. `NamedReferencesTests`
+    ///   (`ReaderRenderingTests.swift`) says what the reader writes there.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("a00353fe5bde07dae0368a5ee9c696bb71a7a4a5492bb3be951b4a75cd0ded3b", 19205),
-        "light medium": ("c5fa4f34dcb0c8a6a48f89852fe2f10a59d1cefcadee91f54a24a150b71c5300", 19206),
-        "light large": ("bb5bba549ab26bebd6de8857ba5c21f0da8e6bc285dd1297363c1751f30663ce", 19206),
-        "light extraLarge": ("e837d46784b85a9e59d6e8b57ca3463e38f33a441577ba0f36dd1d46a6deaba4", 19206),
-        "dark small": ("6f0861ad19ece1b6c539b6612a39cce00f6cd15bc9c86fd1955505bb5d723eab", 19235),
-        "dark medium": ("4dfad17b1285d5a2b14354edc1107e920ea95237b62754fa2c0f18af4d86078c", 19236),
-        "dark large": ("57df36eb12c40adf2719b7d4f2e00f9405c481c6f2bdd55c2bde6025a9ce3724", 19236),
-        "dark extraLarge": ("be6526419650c0e1599cb909f1f7899a1861c31a82901432d020ac25b1a32e59", 19236),
+        "light small": ("eeaa8e04fd3b490410ccd2207bb603f0ccecfcfa4443ff73beb7ffb23fbe48cb", 19742),
+        "light medium": ("e9645f4516f0a05896e1fe8e98605e2a624948afe283439b4836fa81762ac07a", 19743),
+        "light large": ("852e77183c3faad5c9b8d801d9dbd62b4db5f179cbe85a9d5bfb6139ade4b557", 19743),
+        "light extraLarge": ("9d66feafd818257e14afa178ee75c229e004fcccb508b0380935ccca8395aa5a", 19743),
+        "dark small": ("78d22e21528adc779023c3e1f0bc897c6ee5ec2c0ad7c3cf1429bee29ff80781", 19772),
+        "dark medium": ("f2ae1705749b67375ac9e3096ec1b056de499b9b2a8c12df178e159dd36ef8af", 19773),
+        "dark large": ("03e3e3358cabacfe2b360de04761c9e706757070cfb8cdf7629615e5cc748d42", 19773),
+        "dark extraLarge": ("4704ded413faf66eb1b0099b38ffe94fb56026173c1effb545049aa1a72a1852", 19773),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.

@@ -22,6 +22,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — FRUSCoreKit, part 1: moved from `DocumentViewModel.load`
+///   1.1 — #1599: both of the reader's serializers list the persons and terms a document names on
+///          its `@ana`, which the converter resolves through these lookups
 public struct ReaderLookups: Sendable {
 
     /// Persons by their `xml:id` ref. A ref listed twice keeps its last entry.
@@ -86,8 +88,12 @@ extension FRUSRenderNodeHTMLSerializer {
     /// exports construct their own serializer with the default (off), so exported output is
     /// unchanged. The reader names each figure's image by a `frusexplorer://figure/` URL (#1516),
     /// which the app's `FRUSURLSchemeHandler` answers from the device's figure store.
+    ///
+    /// The reader also lists the persons and terms a document names on its `@ana` below it
+    /// (#1599), which is how 1981–88 vol. XVI names them.
     public static var reader: FRUSRenderNodeHTMLSerializer {
-        FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true, figureImages: .reader)
+        FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true, figureImages: .reader,
+                                     listsNamedReferences: true)
     }
 
     /// The reader's serializer for a host outside the app, which names each figure's image by
@@ -97,6 +103,7 @@ extension FRUSRenderNodeHTMLSerializer {
     public static func reader(
         figureURL: @escaping @Sendable (FigureImageName) -> URL?
     ) -> FRUSRenderNodeHTMLSerializer {
-        FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true, figureImages: .linked(url: figureURL))
+        FRUSRenderNodeHTMLSerializer(annotateSourceClassification: true, figureImages: .linked(url: figureURL),
+                                     listsNamedReferences: true)
     }
 }

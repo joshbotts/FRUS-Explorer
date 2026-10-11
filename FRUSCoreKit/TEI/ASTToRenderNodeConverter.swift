@@ -123,6 +123,9 @@ import Foundation
 ///          `CryptoKit` is missing (Linux), and resolves a page reference through `FRUSURLScheme`.
 ///          The reader's converter is `init(readerOf:lookups:brokenRefs:)`
 ///          (`ReaderRendering.swift`). Nothing it produces changes, so `kVersion` does not move
+///   1.15 — #1599: `convert(_:)` resolves the document's `@ana` pointers through the person and
+///          glossary lookups into `FRUSDocumentRenderModel.listedReferences`. They are outside the
+///          body and the footnotes, so no flat text changes and `kVersion` does not move
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -345,8 +348,27 @@ public struct ASTToRenderNodeConverter {
         return FRUSDocumentRenderModel(
             documentId: ast.documentId,
             bodyNodes: bodyNodes,
-            footnotes: collectedFootnotes
+            footnotes: collectedFootnotes,
+            listedReferences: listedReferences(ast.annotatedReferences)
         )
+    }
+
+    /// The persons and terms `pointers` name (#1599): each pointer once, in the order given, as a
+    /// person when the person lookup holds its id and otherwise as a term when the glossary
+    /// lookup does. A pointer neither holds, or one into another file, is left out, and so is
+    /// every pointer when the converter was built without lookups, as an export's is.
+    private func listedReferences(_ pointers: [String]) -> ListedReferences {
+        var listed = ListedReferences()
+        var seen = Set<String>()
+        for pointer in pointers {
+            guard let id = FRUSDocumentAST.annotatedId(pointer), seen.insert(id).inserted else { continue }
+            if let person = personLookup?(id) {
+                listed.persons.append(person)
+            } else if let term = glossLookup?(id) {
+                listed.terms.append(term)
+            }
+        }
+        return listed
     }
 
     // MARK: - Node Conversion

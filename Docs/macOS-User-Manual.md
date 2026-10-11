@@ -555,6 +555,7 @@ Each rendered document shows its **header** (document number, classification hea
 |---------|-----------|--------|
 | Person reference | Underlined person name in teal | Click for the person's entry from the volume's list of persons, with how many indexed documents mention them and — when any do — **Find all mentions**, which opens that search in the Search window |
 | Glossary term | Styled term | Click to open the Terms & Abbreviations entry |
+| Persons and terms listed below a document | Two lists under the footnotes, **Persons** and **Abbreviations & Terms**, in 1981–1988 vol. XVI, which names the people and terms each document mentions and marks none in its text | Click an entry for the same person or term entry a link in the text would open |
 | Cross-reference | Numbered or inline link | Click to jump to the referenced document; if its volume isn't downloaded, the app offers the download |
 | Cross-reference to a whole volume | Same as above | Opens the volume's page in the Corpus Browser window, where a volume not on this Mac can be downloaded. For a volume outside the app's catalog — a microfiche supplement, or a volume not yet published — it opens the volume's page on history.state.gov |
 | Cross-reference to a footnote | Same as above | Opens the document *and* scrolls to the specific note, tinting it briefly. Editors frequently cite a note in another document, so this lands you on the note rather than the document's first line |

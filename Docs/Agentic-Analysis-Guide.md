@@ -342,7 +342,9 @@ is page 1.
 **`persons`** — the per-volume persons list: `(volume_id, ref)` → `name`, `description`, `role`,
 `start_year`, `end_year`. The `ref` is a TEI `xml:id` and is meaningful **only inside its volume**.
 
-**`person_mentions`** — `(volume_id, document_id, person_ref)`, one row per tagged mention.
+**`person_mentions`** — `(volume_id, document_id, person_ref)`, one row per tagged mention. From
+index version 67 a row may also come from the document's own list of the people it mentions (its
+`@ana`), which is how 1981–88 vol. XVI tags them: that volume had no rows before 67.
 
 **`person_rollup`, `person_rollup_member`** — the cross-volume identity layer. `person_rollup_member`
 maps a volume-local `(volume_id, ref)` to a `rollup_id`; `person_rollup` carries the canonical name,

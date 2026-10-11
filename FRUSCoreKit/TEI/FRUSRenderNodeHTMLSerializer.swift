@@ -133,6 +133,10 @@ import SourceNoteKit
 ///          (`FRUSRenderNodeHTMLSerializer.reader(figureURL:)`). Every other case writes what it did
 ///   1.12 — Session 2026-10-09: #1602 — `highlightCSS` draws a link inside an export's highlight
 ///          in the highlight's text colour. The markup is unchanged
+///   1.13 — #1599: the reader's serializer writes the persons and terms a document names on its
+///          `@ana` as two lists after the footnotes section (`listsNamedReferences`), outside
+///          `.frus-document` and so outside the offset space. Off by default: an export's output
+///          is unchanged
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// Where a figure's image comes from (#1516).
@@ -171,6 +175,12 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// Where a figure's image comes from (#1516). Default ``FigureImages/placeholder``.
     private let figureImages: FigureImages
 
+    /// Whether the persons and terms a document names on its `@ana`
+    /// (``FRUSDocumentRenderModel/listedReferences``) are written below it (#1599). The reader
+    /// passes `true`. An export keeps the default `false`: the entries are `frusexplorer://`
+    /// links, which only a reader answers.
+    private let listsNamedReferences: Bool
+
     /// Creates a serializer.
     ///
     /// - Parameters:
@@ -179,11 +189,14 @@ public struct FRUSRenderNodeHTMLSerializer {
     ///   - idScope: A per-document prefix for footnote DOM ids, for multi-document pages.
     ///     Default `""`.
     ///   - figureImages: Where a figure's image comes from. Default `.placeholder`.
+    ///   - listsNamedReferences: Whether the persons and terms a document names on its `@ana`
+    ///     are listed below it. Default `false` (exports).
     public init(annotateSourceClassification: Bool = false, idScope: String = "",
-                figureImages: FigureImages = .placeholder) {
+                figureImages: FigureImages = .placeholder, listsNamedReferences: Bool = false) {
         self.annotateSourceClassification = annotateSourceClassification
         self.idScope = idScope
         self.figureImages = figureImages
+        self.listsNamedReferences = listsNamedReferences
     }
 
     // MARK: - Footnote affordance (#985)
@@ -336,7 +349,47 @@ public struct FRUSRenderNodeHTMLSerializer {
             html += footnoteSectionHTML(model.footnotes)
         }
 
+        // #1599: after everything the document prints. Outside `.frus-document`, as the footnotes
+        // section is, so the offset engine does not walk it and no stored highlight moves.
+        if listsNamedReferences {
+            html += namedReferencesHTML(model.listedReferences)
+        }
+
         return html
+    }
+
+    /// The heading of the list of persons a document names on its `@ana`, as history.state.gov
+    /// heads it.
+    static let namedPersonsHeading = "Persons"
+    /// The heading of the list of terms a document names on its `@ana`, as history.state.gov
+    /// heads it.
+    static let namedTermsHeading = "Abbreviations & Terms"
+
+    /// The persons and terms a document names on its `@ana` and marks nowhere in its text
+    /// (#1599), as two headed lists under one rule, or nothing when it names none.
+    ///
+    /// Each entry is the link an inline `<persName corresp>` or `<gloss target>` would have been:
+    /// the same class and the same `frusexplorer://person/` or `frusexplorer://gloss/` address, so
+    /// a host that answers those links (`FRUSURLScheme.readerLink(from:)`) opens the same person
+    /// and the same definition from here. A list the document does not name is not headed.
+    private func namedReferencesHTML(_ listed: ListedReferences) -> String {
+        guard !listed.isEmpty else { return "" }
+        func list(_ heading: String, _ entries: [(ref: String, name: String)],
+                  linkClass: String, host: String) -> String {
+            guard !entries.isEmpty else { return "" }
+            let items = entries.map { entry in
+                "<li><a class=\"\(linkClass)\" href=\"frusexplorer://\(host)/\(urlEncoded(entry.ref))\">"
+                    + "\(escaped(entry.name))</a></li>"
+            }.joined()
+            return "<h2 class=\"fn-section-heading\">\(escaped(heading))</h2>"
+                + "<ul class=\"named-list\">\(items)</ul>"
+        }
+        return "<section class=\"named-references\"><hr class=\"fn-rule\">"
+            + list(Self.namedPersonsHeading, listed.persons.map { ($0.ref, $0.name) },
+                   linkClass: "pers-name", host: "person")
+            + list(Self.namedTermsHeading, listed.terms.map { ($0.ref, $0.term) },
+                   linkClass: "gloss", host: "gloss")
+            + "</section>"
     }
 
     // MARK: - Highlight Injection
