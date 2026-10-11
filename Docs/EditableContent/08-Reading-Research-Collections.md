@@ -1501,28 +1501,28 @@ what a reader using the screen reader learns about the value's provenance. Keep 
 complete sentence.
 
 #### provenance.chip.a11y.frusOnly
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 203–204 | key: provenance.chip.a11y.frusOnly | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 204–205 | key: provenance.chip.a11y.frusOnly | shared: iOS+macOS (single edit point) -->
 
 Source: the FRUS volumes only.
 
 <!-- END SOURCE: provenance.chip.a11y.frusOnly -->
 
 #### provenance.chip.a11y.joined %@
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 206–207 | key: provenance.chip.a11y.joined %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 207–208 | key: provenance.chip.a11y.joined %@ | shared: iOS+macOS (single edit point) -->
 
 Source: FRUS joined to %@.
 
 <!-- END SOURCE: provenance.chip.a11y.joined %@ -->
 
 #### provenance.chip.a11y.computed
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 210–211 | key: provenance.chip.a11y.computed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 211–212 | key: provenance.chip.a11y.computed | shared: iOS+macOS (single edit point) -->
 
 Source: computed by this app.
 
 <!-- END SOURCE: provenance.chip.a11y.computed -->
 
 #### provenance.chip.a11y.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 213–214 | key: provenance.chip.a11y.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 214–215 | key: provenance.chip.a11y.yourReading | shared: iOS+macOS (single edit point) -->
 
 Source: your own reading.
 
@@ -1716,7 +1716,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3103–3104 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3123–3124 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 

@@ -37055,3 +37055,57 @@ Lane 2 of the implementation plan on #1577, what was left of it. **Most of the l
 **Docs**
 - `Docs/EditableContent/07-Search-and-Browse.md`: fourteen blocks added for the new sentences, twelve of them saying that no search produces their line yet; the README's table reads 272 blocks for `07`. Twenty-five ranged blocks are re-pointed for the lines the lane moved (`ResultSetScope.swift` 6, `SearchView.swift` 8, `SearchSheet.swift` 8, `MacSearchViewModel.swift` 2, `SearchViewModel.swift` 1).
 - No manual changes: nothing a reader is told how to do changes, and the manuals quote the header's count only in the plural.
+
+## Session 2026-10-11 — A UI test can reach a Meaning result: a stand-in encoder and a match-file store of the seam's own for the seeded fixture volume (#1577 lane 3)
+
+Lane 3 of the implementation plan on #1577. No index version, no CloudKit deploy, no re-index, no shared kit file, and no `@Model` or stored property added. The seam is compiled into DEBUG builds only, and it changes no Mac behaviour.
+
+**Why.** No UI test reached a Meaning result: a Meaning search needs the 229 MB query encoder, which no simulator has and no test may download, and a match file for each volume it ranks. Lane 4's tests need a Meaning list on screen.
+
+**What it is** (`UITestMeaningSeeder.swift`, new; `FRUSExplorerApp.swift`)
+- `FRUS_UI_TEST_SEED_MEANING=1`, beside `FRUS_UI_TEST_SEED_VOLUME`, replaces three inputs of the searcher and leaves its code, the backend, the bundled index and the bundled sign bits as the app's own.
+- *The question's embedding*: the ±1 vector of the bundled sign bits of one document, through the searcher's `embedOverride`, so the encoder is never loaded.
+- *The match-file store*: one of the seam's own, in a folder of the temporary directory made afresh at each launch that asks, holding one file made for the fixture volume: a row for each of its 120 bundled rows, each the ±1 vector of that row's own bits as int8 codes, written with `SemanticVectorsArtifacts.volumeShard` under the bundled provenance digest and row count. A row then scores `1 − 2h/512`. The app's own store is not read, written or cleared.
+- *The request for missing match files* always declines.
+- The launch takes the seam's searcher when there is one (`UITestMeaningSeeder.makeSearcher`, which the unit suites call too) and builds its own otherwise, and in every build that is not DEBUG.
+
+**The two questions, measured on the bundled artifacts through the kit's own readers before the design** (`frus1961-63v06`, whose fixture holds d1, d2 and d3, which have bundled rows, and n1, n2 and t1, which have none)
+- Near, the default: the fixture's d2. Its three documents with rows are the first three of 314,616 by Hamming distance (d2, d1 at 90 bits, d3 at 100), so a plain Meaning search lists all three at 100, 65 and 61 percent. They are three of 78 hits, since 78 of the real volume's 120 rows are among the 800 candidates: the strip counts 75 close matches as not listed and 722 possible matches in 179 volumes as unscored.
+- Far, for a question that holds "afield": `frus1861` d1. None of the fixture volume's 120 rows is among its 800 candidates, which lie in 134 volumes, so a plain search lists no fixture document, and a search inside a working corpus of them ranks all three (24, 24 and 16 percent). The second question is the plan's control: with the near one alone, the tree before lane 1 lists the same three rows.
+
+**The control.** `MeaningResultsSeamTests` on `477ee9b6`, the tree before lane 1, with the seeder, the launch's hook, the row's value and the suite added, on the same iPhone 17: the first two tests passed, and `testAFarQuestionInsideAWorkingCorpusRanksEveryMemberWithAVector` failed with 0 rows listed and the corpus applied. On this branch it lists the three. Run twice, with the seam's first form and again after the review's rework, with the same result.
+
+**One thing a reader gets.** On iPhone and iPad VoiceOver reads a ranked result's score after its heading ("Semantic match 65 percent"). The row is one accessibility element whose label is its heading, so the chip was silent; `SemanticScoreCopy` holds the figure and the words, and the chip draws the same figure.
+
+**Review** (one pass by one agent over the diff, ten findings, all acted on)
+- *The seam shared the app's match-file store.* A far question's 800 candidates lie in 134 volumes, so a real match file left on a simulator for any of them could list rows where the suite expects none; the planted file replaced a published one for the fixture volume; and the clean-up deleted by name. The seam has a store of its own, and the marker file, the clean-up and the launch-order constraint the first form needed are gone.
+- *The far-question test passed on an empty list alone*, which a Meaning search run before the launch has indexed the fixture also gives. It asks the near question first, reads three rows, then asks the far one and reads "800 possible matches" in the strip (the near question leaves 722).
+- *Nothing said that a near search has 78 hits.* The seeder's comment, the suite's header, the runbook and the plan note say it, and a unit test holds the figures.
+- *The unit suite built a searcher of its own that mirrored the launch's.* The launch and the suites call one function.
+- Smaller: the key's spelling is pinned, since a UI suite cannot name the app's constant; the counts that only documents quote are in tests of their own; a comment in `ProvenanceChip.swift` that said the score went unannounced; `SearchView`'s version line; the manual's sentence moved from 7.12, whose rows are the zero-result fallback's, to 7.12a; a re-pack note in `Planning/Generators-Runbook.md`; the suite launches with Download With Volumes off.
+
+**Tests**
+- `UITestMeaningSeederTests` (7), on the artifacts the app ships, read from the test host's bundle with the kit's readers: the key's spelling; the sign vector is the row's bits, most significant first, and packs back to the row; the encoder's two documents; the near question's first three candidates and the far question's none; the counts documents quote; the synthetic match file opens under the bundled pin and row count and scores a row by its Hamming distance. A regenerated bundle that moves a figure fails here and says which.
+- `UITestMeaningSeamSearchTests` (6) run the app's own searcher, built by the launch's function, through the seam: a plain search; the figures documents quote of it; a search inside a set; the seam's store holds the planted file alone, in the folder it was given, and is made afresh; a launch that does not ask makes no seam and no folder; a volume the bundle has no rows for gets no seam and leaves the folder as it was.
+- `SemanticScoreCopyTests` (3) and `UITestMeaningSeamWiringTests` (3): the percentage and the words; and, read from source, that the launch takes the seam's searcher in DEBUG alone, that the seam's searcher is made in one place of the seam's store, its encoder and a fetch request that declines, and that the seeder is compiled in DEBUG alone.
+- UI: `MeaningResultsSeamTests` (3), the first suite to reach a Meaning result and the first to save and apply a working corpus.
+- Mutations: 29, one to a build, 29 caught. 28 failed a test on the first run. One survived, a seam returned though its file could not be planted; it has a test now and fails it.
+
+**Checked**
+- Clean `build-for-testing`: succeeded, with no source warning (the two known residues only).
+- The unit target from a shut-down simulator: 6,947 tests in 815 suites passed, with the six known issues of #1606's test.
+- Clean Mac build (DirectDistribution): succeeded. A Mac Debug build too, since the seam is compiled in Debug alone.
+- UI, from the landing build, iOS 27.0, each after one test run first: iPhone 17, 3 tests, 3 passed (214 s); iPad Pro 13-inch (M5), 3 tests, 3 passed (211 s).
+- `swift test` is not owed: the lane names no package or kit input.
+
+**Not done**
+- Whether VoiceOver reads the score in the zero-result fallback's rows (manual 7.12), which are another view's, and in the Mac's rows: not checked and not changed.
+- The card a keyword search with no results shows is not reachable through the seam, which plants no model.
+- A result row's tag chips and its classification chip are still not read by VoiceOver on iPhone and iPad. Found here; not filed.
+- Two advisory `ships at:` fields in `09-Settings-and-App.md` (`menu.find.search`, `.mac`) were four lines stale on `v2` and are left: nothing reads them.
+- The rework after the review was not sent for a second review. It was mutated and the control was run again.
+
+**Docs**
+- `Docs/iOS-User-Manual.md`: half a sentence in 7.12a, that VoiceOver reads the score after a row's heading. The AI Generated notice stays.
+- `Docs/EditableContent/07-Search-and-Browse.md`: one block, for the words VoiceOver is given. 19 ranged blocks are re-pointed for the lines the lane moved (`FRUSExplorerApp.swift` 4, one of them the two-range Search Tips block, by hand; `SearchView.swift` 8; `ProvenanceChip.swift` 4; `SemanticSearchSharedViews.swift` 3), and the README's table counts the new block.
+- `CLAUDE.md` and `Planning/UI-Test-Destinations-Runbook.md`: the suite's row and its entry, with the control's result. `Planning/Generators-Runbook.md`: what a re-pack of the semantic bundle owes the seam.

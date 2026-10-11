@@ -241,6 +241,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.27 — #1577 lane 2: the facet panel's count, wording and keys, and the Examine menu's gate, are asked of
 ///          the view model, which answers from the route recorded with the rows; a reading that is open when its
 ///          gate shuts goes back to the list.
+///   1.28 — #1577 lane 3: a ranked row's score is its accessibility value (`SemanticScoreCopy`). The row's label
+///          is its heading alone, so VoiceOver, and a UI test, could not read the chip's figure.
 
 struct SearchView: View {
 
@@ -2238,6 +2240,9 @@ struct SearchView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(result.header)
+                // #1577 lane 3: the label is the heading alone, so a ranked row said nothing of its
+                // score. The chip's figure is the row's value, for VoiceOver and for a UI test.
+                .accessibilityValue(result.semanticScore.map(SemanticScoreCopy.accessibilityValue(for:)) ?? "")
                 // The trait is what tells VoiceOver a row is picked; the mark is hidden from it.
                 .accessibilityAddTraits(vm.resultSelection.contains(result.id) ? .isSelected : [])
                 .accessibilityHint(vm.resultSelection.isSelecting ? ResultSelectionCopy.rowHint : "")

@@ -114,7 +114,7 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1119–1120 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1121–1122 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
@@ -198,6 +198,14 @@ Counted over the results themselves, not the whole corpus. Narrowing to a row re
 1 closest match
 
 <!-- END SOURCE: search.count.closest.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | key: search.semantic.row.score.a11y %lld -->
+
+*What VoiceOver reads after a result's heading when a Meaning search ranked it, on iPhone and iPad: the figure the row's "Semantic match · N%" chip shows, in words. The row is one accessibility element whose label is its heading, so until #1577 lane 3 the chip was not read at all.*
+
+Semantic match %lld percent
+
+<!-- END SOURCE: search.semantic.row.score.a11y %lld -->
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.one -->
 
@@ -852,13 +860,13 @@ the container is a finding or a filing-cabinet coincidence.*
 > **Compliance note:** the offer card leads to the consent sheet (§1.4c), whose sentence is the
 > Gemma flow-down. The offer copy itself is editable; the consent sheet's is not a copy edit.
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 116–117 | key: search.semantic.offer.body -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 141–142 | key: search.semantic.offer.body -->
 
 Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
 
 <!-- END SOURCE: search.semantic.offer.body -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 119–120 | key: search.semantic.offer.body.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 144–145 | key: search.semantic.offer.body.meaning -->
 
 *The same card in Meaning mode, where no keyword search ran: shown when a Meaning search is submitted and the model is not on the device.*
 
@@ -1342,7 +1350,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1642–1642 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1644–1644 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1355,28 +1363,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2756–2756 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2761–2761 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2745–2745 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2750–2750 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2752–2752 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2757–2757 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1232–1232 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1234–1234 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1385,7 +1393,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1257–1258 | key: search.moreActions.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1259–1260 | key: search.moreActions.help.v3 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, and `.v3` adds Select Results (#1576).*
 
@@ -1604,7 +1612,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2729–2729 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2734–2734 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1613,7 +1621,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3817–3817, 4309–4309 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3837–3837, 4329–4329 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -1986,7 +1994,7 @@ Ask a question to rank the %@ you are searching within by meaning. *(%@ is the s
 <!-- END SOURCE: search.semantic.possibleMatches.many -->
 
 #### The model could not be downloaded. You can try again from…
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 190–191 | key: search.semantic.downloadFailed -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 215–216 | key: search.semantic.downloadFailed -->
 
 The model could not be downloaded. You can try again from the button above, or from Settings.
 

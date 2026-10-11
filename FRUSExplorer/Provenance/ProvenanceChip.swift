@@ -59,9 +59,10 @@ import SwiftUI
 ///
 /// **A container accessibility label silently swallows it.** `SearchView`'s result rows are the
 /// live example: a `Button` wrapping `SearchResultRow` sets `.accessibilityLabel(result.header)`,
-/// and every chip inside — `ClassificationChip`'s label, `SemanticScoreChip`'s text — goes
-/// unannounced. ``accessibilityLabel(for:)`` is deliberately callable on its own so a row in that
-/// shape can fold the sentence into its own label instead of losing it.
+/// and a chip inside goes unannounced unless the row says it for the chip. `ClassificationChip`'s
+/// label still does; `SemanticScoreChip`'s figure did until #1577 lane 3 made it the row's
+/// accessibility value. ``accessibilityLabel(for:)`` is deliberately callable on its own so a row
+/// in that shape can fold the sentence into its own label instead of losing it.
 ///
 /// **The glyph is an `HStack`, not a `Label`, on purpose.** `Label` renders icon-only in a macOS
 /// toolbar unless `.labelStyle(.titleAndIcon)` is forced, and `labelStyle` is an environment value

@@ -13,16 +13,41 @@ import SwiftUI
 /// The semantic score, as every semantic surface shows it: a rounded percentage on the axis's
 /// self-normalising scale. One view, so the fallback card, the Meaning mode's rows, and the
 /// beyond-library rows cannot drift on format.
+/// The percentage itself is ``SemanticScoreCopy``'s, which also words it for an accessibility value.
 struct SemanticScoreChip: View {
     let score: Double
 
     var body: some View {
-        let percent = Int((min(1.0, max(0.0, score)) * 100).rounded())
         Text(String(format: String(
             localized: "search.semantic.row.score %lld",
-            defaultValue: "Semantic match · %lld%%"), Int64(percent)))
+            defaultValue: "Semantic match · %lld%%"), Int64(SemanticScoreCopy.percent(for: score))))
             .font(.caption2)
             .foregroundStyle(.secondary)
+    }
+}
+
+// MARK: - SemanticScoreCopy
+
+/// The semantic score as a percentage, and as the words an accessibility value says (#1577 lane 3).
+///
+/// Outside the chip's view so that a row can say its score without drawing a chip: on iPhone and
+/// iPad a result row is one accessibility element whose label is the heading alone, so the chip
+/// inside it was silent to VoiceOver and invisible to a UI test.
+///
+/// Version history:
+///   1.0 — #1577 lane 3: initial implementation
+enum SemanticScoreCopy {
+
+    /// The score as a whole percentage on the chip's scale: clamped to 0…1, then rounded.
+    static func percent(for score: Double) -> Int {
+        Int((min(1.0, max(0.0, score)) * 100).rounded())
+    }
+
+    /// What a row's accessibility value says of its score: "Semantic match 65 percent".
+    static func accessibilityValue(for score: Double) -> String {
+        String(format: String(localized: "search.semantic.row.score.a11y %lld",
+                              defaultValue: "Semantic match %lld percent"),
+               Int64(percent(for: score)))
     }
 }
 

@@ -282,6 +282,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.28 — #1566: the launch reconcile takes its volumes from the pipeline
 ///          (`volumesAwaitingIndex(excluding:)`), which adds a volume whose last store pass did not
 ///          finish though no sentinel names it, and indexes them through `finishIndexing(of:)`.
+///   4.29 — #1577 lane 3: where the launch builds the Meaning searcher it asks `UITestMeaningSeeder`, whose
+///          searcher has a match-file store of its own holding the seeded fixture volume's planted file, and a
+///          stand-in for the encoder (DEBUG-only; inert without `FRUS_UI_TEST_SEED_MEANING`).
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -1770,7 +1773,24 @@ struct FRUSExplorerApp: App {
                         // (#ImplicitStrongCapture). That hold ends with the task; the cycle would not.
                         if let semanticCorpus = BundledSemanticVectors.corpusVectors {
                             let searcherStore = appState.semanticShardStore
-                            appState.semanticQuerySearcher = searcherStore.map { shardStore in
+                            #if DEBUG
+                            // #1577 lane 3: a Meaning search a UI test can reach. Inert unless
+                            // FRUS_UI_TEST_SEED_MEANING is set. The seam's searcher is the app's
+                            // own, over the bundled index and sign bits, with a match-file store
+                            // of its own that holds the seeded fixture volume's planted file, a
+                            // stand-in for the encoder, and a fetch request that declines. The
+                            // app's store above is not touched.
+                            var seededSearcher: SemanticQuerySearcher?
+                            if let seam = await UITestMeaningSeeder.prepare(
+                                index: semanticIndex, corpus: semanticCorpus) {
+                                seededSearcher = UITestMeaningSeeder.makeSearcher(
+                                    seam, index: semanticIndex, corpus: semanticCorpus,
+                                    modelStore: modelStore)
+                            }
+                            #else
+                            let seededSearcher: SemanticQuerySearcher? = nil
+                            #endif
+                            appState.semanticQuerySearcher = seededSearcher ?? searcherStore.map { shardStore in
                                 SemanticQuerySearcher(
                                     index: semanticIndex,
                                     corpus: semanticCorpus,
