@@ -841,7 +841,7 @@ Reclaimed %@.
 
 <!-- END SOURCE: settings.storage.compact.done %@ -->
 
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.cohort | lines: 385–386 | key: related.why.cohort %@ %@ -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.cohort | lines: 392–393 | key: related.why.cohort %@ %@ -->
 
 *The archival “why related” chip (#644). Interpolated with the container name and its size, which is
 grouped since #1586 (“1 of 1,063”).

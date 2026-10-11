@@ -50,6 +50,8 @@ struct ChartInspectorRow: Identifiable, Sendable, Hashable {
 ///
 /// Version history:
 ///   1.0 — 2026-10-09: #1587 — initial implementation
+///   1.1 — 2026-10-11: #1616 — `namesEverySeries`, for the mention-trajectory chart, whose one
+///          series is still a person
 struct ChartAudioGraph: Sendable, Hashable {
 
     /// One series: a name VoiceOver speaks, and its points in x order.
@@ -70,6 +72,11 @@ struct ChartAudioGraph: Sendable, Hashable {
     /// `false` for a scatter, whose points no line joins. `nil` leaves it to the descriptor
     /// builder's rule: a series is continuous when every point has a numeric x.
     var isContinuous: Bool? = nil
+    /// Whether a lone series is spoken under its own name. `false`, the default, gives it the
+    /// chart's title: a chart of one series is that series. `true` is for a chart whose series
+    /// are the things it compares, the people of a mention trajectory, where one person charted
+    /// is still spoken as that person (#1616).
+    var namesEverySeries: Bool = false
 }
 
 // MARK: - ChartInspectorData

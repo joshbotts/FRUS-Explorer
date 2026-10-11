@@ -48,13 +48,17 @@ struct AXChartPoint: Sendable, Hashable {
 ///   1.0 — Session 2026-08-10: #268 (I-1)
 ///   1.1 — 2026-10-09: #1587 — `descriptor(title:graph:)`, from the numbers a table's adapter
 ///          states, and `isContinuous` on the two builders, for a scatter
+///   1.2 — 2026-10-11: #1616 — a graph that names every series keeps a lone series' name
 enum AXChartDescriptorBuilder {
 
     #if canImport(Accessibility)
     /// Builds a descriptor from the numbers a chart's table carries (``ChartAudioGraph``, #1587).
     ///
     /// One series goes through the single-series builder and several through the named one, so
-    /// a chart whose table used to be read by column gets the descriptor it got then.
+    /// a chart whose table used to be read by column gets the descriptor it got then. A graph
+    /// that names every series (`ChartAudioGraph.namesEverySeries`) goes through the named
+    /// builder with one series too: the trajectory table was split by its person column, which
+    /// gave one person's series that person's name.
     ///
     /// - Parameters:
     ///   - title: The chart's localised title, which also names a single series.
@@ -62,7 +66,7 @@ enum AXChartDescriptorBuilder {
     /// - Returns: A descriptor, or `nil` when the graph has no point.
     @MainActor
     static func descriptor(title: String, graph: ChartAudioGraph) -> AXChartDescriptor? {
-        if graph.series.count == 1, let only = graph.series.first {
+        if graph.series.count == 1, !graph.namesEverySeries, let only = graph.series.first {
             return descriptor(title: title, xLabel: graph.xLabel, yLabel: graph.yLabel,
                               points: only.points, isContinuous: graph.isContinuous)
         }
@@ -293,6 +297,11 @@ enum AXChartDescriptorBuilder {
     /// Handles the three shapes the adapters emit — a plain count, a grouped count (`1,204`), and
     /// a percentage (`38%`, read as 38). Anything else is a refusal, not a zero: a zero would put
     /// a point on the graph that the chart does not plot.
+    ///
+    /// **It reads the comma as a thousands separator, so it must never be given a decimal written
+    /// for the reader's region** (#1616): `12,4`, which is 12.4 where decimals take a comma, reads
+    /// as 124. A table with such a cell states its numbers (`ChartInspectorData.audioGraph`), as
+    /// the Corpus Analytics series and the mention trajectories do, and is not read by column.
     static func numeric(_ cell: String) -> Double? {
         let trimmed = cell.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return nil }

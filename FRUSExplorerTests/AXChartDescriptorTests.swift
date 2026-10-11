@@ -518,4 +518,327 @@ struct SeriesAudioGraphTests {
         #expect(descriptor.series.map { $0.name } == ["A", "B"])
     }
 }
+
+// MARK: - AnalyticsAudioGraphTests
+
+/// The Corpus Analytics and mention-trajectory Audio Graphs where decimals take a comma (#1616).
+///
+/// Both charts' descriptors read the Plotted column of their table back to numbers. In % of
+/// documents that column holds a share written for the reader's region, and the reader takes a
+/// comma for a thousands separator: `12,4` read as 124 and `12` as 12, so the series was ten times
+/// too large wherever a share had a decimal digit. Each table now states the numbers its chart
+/// plots. These tests build the real tables for a comma-decimal locale, read them by column to
+/// show what was played, and compare the stated graph with the shares; then they hold the graph to
+/// the columns where the columns were right, so nothing else the charts played has changed.
+///
+/// Version history:
+///   1.0 — 2026-10-11: #1616 — initial implementation
+@Suite("Analytics Audio Graphs where decimals take a comma (#1616)")
+@MainActor
+struct AnalyticsAudioGraphTests {
+
+    private static let german = Locale(identifier: "de_DE")
+    private static let american = Locale(identifier: "en_US")
+
+    /// The y values the descriptor carries for `table`, by series, through the call the modifier makes.
+    private func described(_ table: ChartInspectorData) throws -> [[Double]] {
+        let descriptor = try built(table)
+        // `__number`: the header marks `number` as refined for Swift and the overlay gives no reader.
+        return descriptor.series.map { $0.dataPoints.compactMap { $0.yValue?.__number } }
+    }
+
+    /// The descriptor the modifier builds for a table that states its graph.
+    private func built(_ table: ChartInspectorData) throws -> AXChartDescriptor {
+        let graph = try #require(table.audioGraph, "\(table.id) states no graph: its cells would be read back")
+        return try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph),
+                            "\(table.id) builds no descriptor")
+    }
+
+    /// One term by year in % of documents: 12.4%, 12%, and 6.25%, which prints as 6.2.
+    private static func berlinShares(locale: Locale, withAnUncountedYear: Bool = false) -> ChartInspectorData {
+        var points = [
+            CorpusSeriesPoint(periodLabel: "1969", denominatorKey: 1969, count: 31),
+            CorpusSeriesPoint(periodLabel: "1970", denominatorKey: 1970, count: 60),
+            CorpusSeriesPoint(periodLabel: "1971", denominatorKey: 1971, count: 1),
+        ]
+        if withAnUncountedYear {
+            points.append(CorpusSeriesPoint(periodLabel: "1972", denominatorKey: 1972, count: 3))
+        }
+        return AnalyticsChartTables.corpusSeriesTable(
+            id: "corpus.byYear", title: "\u{201C}Berlin\u{201D} \u{2014} By Year", periodColumn: "Year",
+            seriesByTerm: [(term: "Berlin", points: points)],
+            totals: [1969: 250, 1970: 500, 1971: 16], isNormalized: true, locale: locale)
+    }
+
+    // MARK: Corpus Analytics
+
+    @Test("Where decimals take a comma, the corpus table prints 12,4 and the Audio Graph plays 12.4")
+    func corpusSharesAreNotReadBackFromTheirCells() throws {
+        let table = Self.berlinShares(locale: Self.german)
+
+        // The premise, printed: the Plotted and Share cells take the region's comma.
+        #expect(table.rows.map { $0.cells[5] } == ["12,4", "12", "6,2"])
+        #expect(table.rows.map { $0.cells[4] } == ["12,4", "12", "6,2"])
+
+        // What the descriptor played: the columns the ten chart sites name, read back. A share
+        // with a decimal digit is ten times too large, and one without is right.
+        let readBack = try #require(AXChartDescriptorBuilder.points(from: table, labelColumn: 1, valueColumn: 5))
+        #expect(readBack.map(\.y) == [124, 12, 62])
+
+        // What it plays now: the shares, to the decimal the table prints.
+        let graph = try #require(table.audioGraph)
+        #expect(graph.series.count == 1)
+        #expect(graph.series.first?.points.map(\.y) == [12.4, 12, 6.2])
+        #expect(graph.series.first?.points.map(\.x) == [1969, 1970, 1971])
+        #expect(graph.series.first?.points.map(\.label) == ["1969", "1970", "1971"])
+        #expect(graph.xLabel == "Year")
+        #expect(graph.yLabel == table.columns[5])
+
+        let descriptor = try built(table)
+        #expect(try described(table) == [[12.4, 12, 6.2]])
+        #expect(descriptor.yAxis?.range == 6.2...12.4, "the y axis ran to 124")
+        #expect(descriptor.series.map { $0.name } == [table.title], "one term is the chart's one series")
+        #expect(descriptor.xAxis is AXNumericDataAxisDescriptor)
+    }
+
+    @Test("A year with no denominator has a row and no point, where it used to refuse the whole graph")
+    func aYearTheChartDoesNotPlotIsNotPlayed() throws {
+        let table = Self.berlinShares(locale: Self.american, withAnUncountedYear: true)
+        #expect(table.rows.count == 4)
+        #expect(table.rows.last?.cells == ["Berlin", "1972", "3", "", "", ""])
+
+        // The chart draws three marks (`AnalyticsView.normalizedValue` returns nil for 1972).
+        let graph = try #require(table.audioGraph)
+        #expect(graph.series.first?.points.map(\.label) == ["1969", "1970", "1971"])
+        #expect(try described(table) == [[12.4, 12, 6.2]])
+        // Read by column, the empty cell refused the table, so this chart had no Audio Graph.
+        #expect(AXChartDescriptorBuilder.points(from: table, labelColumn: 1, valueColumn: 5) == nil)
+
+        // With no denominator at all there is nothing to play, by either route.
+        let none = AnalyticsChartTables.corpusSeriesTable(
+            id: "corpus.byYear", title: "T", periodColumn: "Year",
+            seriesByTerm: [(term: "Berlin", points: [
+                CorpusSeriesPoint(periodLabel: "1969", denominatorKey: 1969, count: 31)])],
+            totals: [:], isNormalized: true, locale: Self.american)
+        let empty = try #require(none.audioGraph)
+        #expect(empty.series.map(\.points) == [[]])
+        #expect(AXChartDescriptorBuilder.descriptor(title: none.title, graph: empty) == nil)
+    }
+
+    @Test("Where decimals take a point, the graph is what the chart sites' columns read")
+    func theCorpusGraphIsItsColumns() throws {
+        let years = [CorpusSeriesPoint(periodLabel: "1969", denominatorKey: 1969, count: 31),
+                     CorpusSeriesPoint(periodLabel: "1970", denominatorKey: 1970, count: 1_204)]
+        let decades = [CorpusSeriesPoint(periodLabel: "1960s", denominatorKey: 1960, count: 31),
+                       CorpusSeriesPoint(periodLabel: "1970s", denominatorKey: 1970, count: 60)]
+        let subseries = [CorpusSeriesPoint(periodLabel: "1969\u{2013}76", denominatorKey: nil, count: 9),
+                         CorpusSeriesPoint(periodLabel: "Kennedy", denominatorKey: nil, count: 4)]
+        var compared = 0
+        for (points, totals, isNormalized) in [
+            (years, [1969: 250, 1970: 9_000], false), (years, [1969: 250, 1970: 9_000], true),
+            (decades, [1960: 250, 1970: 500], false), (decades, [1960: 250, 1970: 500], true),
+            (subseries, [:], false),
+        ] as [([CorpusSeriesPoint], [Int: Int], Bool)] {
+            let table = AnalyticsChartTables.corpusSeriesTable(
+                id: "corpus", title: "T", periodColumn: "Period",
+                seriesByTerm: [(term: "Berlin", points: points)],
+                totals: totals, isNormalized: isNormalized, locale: Self.american)
+            let fromColumns = try #require(
+                AXChartDescriptorBuilder.points(from: table, labelColumn: 1, valueColumn: 5))
+            #expect(table.audioGraph?.series.map(\.points) == [fromColumns],
+                    "normalized \(isNormalized), \(points.map(\.periodLabel))")
+            #expect(table.audioGraph?.xLabel == table.columns[1])
+            #expect(table.audioGraph?.yLabel == table.columns[5])
+            compared += 1
+        }
+        #expect(compared == 5)
+
+        // A year is a numeric x; a decade's label and a subseries' name are categories, as before.
+        let byDecade = AnalyticsChartTables.corpusSeriesTable(
+            id: "corpus", title: "T", periodColumn: "Decade",
+            seriesByTerm: [(term: "Berlin", points: decades)],
+            totals: [:], isNormalized: false, locale: Self.american)
+        #expect(byDecade.audioGraph?.series.first?.points.map(\.x) == [nil, nil])
+        #expect(try built(byDecade).xAxis is AXCategoricalDataAxisDescriptor)
+
+        // A comparison: one series a term, in chip order, as the split by the Term column gave.
+        let comparison = AnalyticsChartTables.corpusSeriesTable(
+            id: "corpus", title: "T", periodColumn: "Year",
+            seriesByTerm: [(term: "Berlin", points: years), (term: "Saigon", points: [years[0]])],
+            totals: [1969: 250, 1970: 9_000], isNormalized: true, locale: Self.american)
+        let split = try #require(AXChartDescriptorBuilder.seriesSplit(
+            from: comparison, seriesColumn: 0, labelColumn: 1, valueColumn: 5))
+        #expect(split.map(\.name) == ["Berlin", "Saigon"])
+        #expect(comparison.audioGraph?.series.map(\.name) == split.map(\.name))
+        #expect(comparison.audioGraph?.series.map(\.points) == split.map(\.points))
+        #expect(try built(comparison).series.map { $0.name } == ["Berlin", "Saigon"])
+    }
+
+    @Test("The number the graph plays for a share is the number its cell prints, ties included")
+    func shareValueIsTheCellsNumber() {
+        // Every share a count of 0...n documents in n gives, n up to 400.
+        var shares = 0, withADecimal = 0, ties = 0
+        for total in 1...400 {
+            for count in 0...total {
+                let share = Double(count) / Double(total) * 100
+                let cell = AnalyticsChartTables.formatShare(share, locale: Self.american)
+                let value = AnalyticsChartTables.shareValue(share)
+                shares += 1
+                if cell.contains(".") { withADecimal += 1 }
+                // A tie is where rounding half away from zero would differ: 6.25 prints 6.2.
+                if (share * 10).rounded() / 10 != value { ties += 1 }
+                guard AXChartDescriptorBuilder.numeric(cell) == value else {
+                    Issue.record("\(count)/\(total): the cell prints \(cell) and the graph plays \(value)")
+                    return
+                }
+                // The comma region prints the same digits.
+                guard AnalyticsChartTables.formatShare(share, locale: Self.german)
+                        == cell.replacingOccurrences(of: ".", with: ",") else {
+                    Issue.record("\(count)/\(total): de_DE prints another number than \(cell)")
+                    return
+                }
+            }
+        }
+        #expect(shares == 80_600)
+        #expect(withADecimal > 60_000, "only \(withADecimal) shares had a decimal digit")
+        #expect(ties > 0, "no tie was met, so the rounding rule went untested")
+        #expect(AnalyticsChartTables.shareValue(6.25) == 6.2)
+        #expect(AnalyticsChartTables.shareValue(6.35) == 6.4)
+        #expect(AnalyticsChartTables.formatShare(6.25, locale: Self.american) == "6.2")
+    }
+
+    // MARK: Person Analytics
+
+    private typealias Person = (rollupId: Int, name: String,
+                                points: [(period: Int, mentions: Int, mentioningDocs: Int?,
+                                          datedTotal: Int?, plotted: Double)])
+
+    /// Acheson at 12.4% and 12%, Dulles at 6.25%: shares as the trajectory holds them, fractions.
+    private static let shares: [Person] = [
+        (rollupId: 1, name: "Acheson", points: [
+            (period: 1949, mentions: 40, mentioningDocs: 31, datedTotal: 250, plotted: 0.124),
+            (period: 1950, mentions: 70, mentioningDocs: 60, datedTotal: 500, plotted: 0.12)]),
+        (rollupId: 2, name: "Dulles", points: [
+            (period: 1949, mentions: 1, mentioningDocs: 1, datedTotal: 16, plotted: 0.0625)]),
+    ]
+
+    @Test("Where decimals take a comma, the trajectory table prints 12,4 and the Audio Graph plays 12.4")
+    func trajectorySharesAreNotReadBackFromTheirCells() throws {
+        let table = AnalyticsChartTables.personTrajectoryTable(
+            title: "Mention Trajectories", periodColumn: "Year", series: Self.shares,
+            isNormalized: true, locale: Self.german)
+        #expect(table.rows.map { $0.cells[6] } == ["12,4", "12", "6,2"])
+
+        // What the descriptor played: the split the chart's site names, read back.
+        let readBack = try #require(AXChartDescriptorBuilder.seriesSplit(
+            from: table, seriesColumn: 0, labelColumn: 2, valueColumn: 6))
+        #expect(readBack.map { $0.points.map(\.y) } == [[124, 12], [62]])
+
+        let graph = try #require(table.audioGraph)
+        #expect(graph.series.map(\.name) == ["Acheson", "Dulles"])
+        #expect(graph.series.map { $0.points.map(\.y) } == [[12.4, 12], [6.2]])
+        #expect(graph.series.map { $0.points.map(\.x) } == [[1949, 1950], [1949]])
+        #expect(graph.xLabel == "Year")
+        #expect(graph.yLabel == table.columns[6])
+        #expect(try described(table) == [[12.4, 12], [6.2]])
+        #expect(try built(table).series.map { $0.name } == ["Acheson", "Dulles"])
+    }
+
+    @Test("In raw mentions, and where decimals take a point, the trajectory graph is its columns")
+    func theTrajectoryGraphIsItsColumns() throws {
+        let counts: [Person] = [
+            (rollupId: 1, name: "Acheson", points: [
+                (period: 1949, mentions: 10, mentioningDocs: 8, datedTotal: 100, plotted: 10),
+                (period: 1950, mentions: 1_204, mentioningDocs: 900, datedTotal: 9_000, plotted: 1_204)]),
+            (rollupId: 2, name: "Dulles", points: [
+                (period: 1949, mentions: 5, mentioningDocs: 4, datedTotal: 100, plotted: 5)]),
+        ]
+        var compared = 0
+        for (series, isNormalized) in [(counts, false), (Self.shares, true)] {
+            let table = AnalyticsChartTables.personTrajectoryTable(
+                title: "Mention Trajectories", periodColumn: "Year", series: series,
+                isNormalized: isNormalized, locale: Self.american)
+            let split = try #require(AXChartDescriptorBuilder.seriesSplit(
+                from: table, seriesColumn: 0, labelColumn: 2, valueColumn: 6))
+            #expect(table.audioGraph?.series.map(\.name) == split.map(\.name))
+            #expect(table.audioGraph?.series.map(\.points) == split.map(\.points), "normalized \(isNormalized)")
+            compared += 1
+        }
+        #expect(compared == 2)
+    }
+
+    @Test("One person charted is spoken as that person, not as the chart")
+    func aLoneTrajectoryKeepsItsPersonsName() throws {
+        let table = AnalyticsChartTables.personTrajectoryTable(
+            title: "Mention Trajectories", periodColumn: "Year", series: [Self.shares[0]],
+            isNormalized: true, locale: Self.american)
+        let graph = try #require(table.audioGraph)
+        #expect(graph.namesEverySeries)
+        #expect(graph.series.count == 1)
+        #expect(try built(table).series.map { $0.name } == ["Acheson"],
+                "the split by the person column named a lone series for its person")
+
+        // The flag is what keeps the name: the same graph without it takes the chart's title, as
+        // a corpus chart of one term does.
+        var untitled = graph
+        untitled.namesEverySeries = false
+        let titled = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: untitled))
+        #expect(titled.series.map { $0.name } == ["Mention Trajectories"])
+        #expect(Self.berlinShares(locale: Self.american).audioGraph?.namesEverySeries == false)
+    }
+
+    @Test("Two people who share a name are two series, where the split by name made them one")
+    func twoPeopleOfOneNameAreTwoSeries() throws {
+        let namesakes: [Person] = [
+            (rollupId: 7, name: "Smith, John", points: [
+                (period: 1949, mentions: 3, mentioningDocs: 3, datedTotal: 100, plotted: 3),
+                (period: 1950, mentions: 4, mentioningDocs: 4, datedTotal: 100, plotted: 4)]),
+            (rollupId: 9, name: "Smith, John", points: [
+                (period: 1949, mentions: 8, mentioningDocs: 8, datedTotal: 100, plotted: 8)]),
+        ]
+        let table = AnalyticsChartTables.personTrajectoryTable(
+            title: "Mention Trajectories", periodColumn: "Year", series: namesakes,
+            isNormalized: false, locale: Self.american)
+        let split = try #require(AXChartDescriptorBuilder.seriesSplit(
+            from: table, seriesColumn: 0, labelColumn: 2, valueColumn: 6))
+        #expect(split.map { $0.points.map(\.y) } == [[3, 4, 8]], "one series that ran 1949, 1950, 1949")
+        #expect(try described(table) == [[3, 4], [8]])
+    }
+
+    // MARK: The views hand the modifier these tables
+
+    @Test("Corpus Analytics and Person Analytics build the tables their Audio Graphs are given through these builders")
+    func theViewsBuildTheirTablesHere() throws {
+        typealias Scan = NaturalLanguageReadinessScanTests
+        func squeezed(_ text: some StringProtocol) -> String {
+            String(text.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
+                .map(Character.init))
+        }
+        func code(_ path: String) throws -> String {
+            Scan.code(try String(contentsOf: Scan.repoRoot.appending(path: path), encoding: .utf8))
+        }
+        /// The body of `declaration` in `text`, whitespace removed, or `nil` when it is not there.
+        func body(of declaration: String, in text: String) -> String? {
+            guard let found = text.range(of: declaration),
+                  let braces = Scan.braceBody(in: text, after: found.upperBound) else { return nil }
+            return squeezed(text[braces])
+        }
+
+        // Corpus Analytics: every chart site is given `exportTable`, which is the series table.
+        let corpus = try code("FRUSExplorer/Analytics/AnalyticsView.swift")
+        let sites = squeezed(corpus).components(separatedBy: ".axChartDescriptor(").dropFirst()
+        #expect(sites.count == 10)
+        #expect(sites.allSatisfy { $0.hasPrefix("inspector:exportTable,title:exportFigureTitle,") },
+                "a Corpus Analytics chart reads another table")
+        let exportTable = try #require(body(of: "private var exportTable: ChartInspectorData?", in: corpus))
+        #expect(exportTable.contains("returnAnalyticsChartTables.corpusSeriesTable("))
+
+        // Person Analytics: the trajectory chart is given the trajectory table.
+        let person = try code("FRUSExplorer/Analytics/PersonAnalyticsView.swift")
+        let chart = try #require(body(of: "private var trajectoryChart: some View", in: person))
+        #expect(chart.contains(".axChartDescriptor(inspector:trajectoryInspectorTable("))
+        let table = try #require(body(of: "private func trajectoryInspectorTable(", in: person))
+        #expect(table.contains("AnalyticsChartTables.personTrajectoryTable("))
+    }
+}
 #endif
