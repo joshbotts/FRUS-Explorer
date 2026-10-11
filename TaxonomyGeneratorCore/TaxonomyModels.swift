@@ -35,7 +35,9 @@ public struct TagTaxonomyFileEntry: Codable, Sendable, Equatable {
     /// Slug of the parent tag in the hierarchy, if any. `nil` for top-level tags.
     public let parentSlug: String?
 
-    /// Optional descriptive text from history.state.gov/tags/all, if present on the page.
+    /// Optional descriptive text: the tag's definition in the taxonomy file, as
+    /// history.state.gov/tags/all prints it. It keeps the file's line breaks, and a pointer to
+    /// another tag is the page's link markup. The app shows it nowhere.
     public let description: String?
 
     public init(

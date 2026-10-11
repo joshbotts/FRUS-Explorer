@@ -19,7 +19,9 @@ import PackageDescription
 ///   the HistoryAtState GitHub repository and produces `manifest.json`, committed into
 ///   the app bundle. Run before each app release.
 ///
-/// - **TaxonomyGenerator**: fetches and parses `history.state.gov/tags/all` to produce
+/// - **TaxonomyGenerator**: reads the Office of the Historian's tag taxonomy, from
+///   `taxonomy/taxonomy.xml` in the public HistoryAtState/tags repository or, failing that,
+///   from the page `history.state.gov/tags/all`, to produce
 ///   `volume-tag-taxonomy.json`, which provides humanised display names and hierarchy for
 ///   volume-level subject tag slugs. Run manually when the taxonomy changes.
 ///
@@ -139,11 +141,13 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Unit tests for TaxonomyGeneratorCore logic.
+        /// Unit tests for TaxonomyGeneratorCore logic. `Fixtures/taxonomy.xml` is a copy of the
+        /// Office of the Historian's taxonomy file, read from the repository by path (#1622).
         .testTarget(
             name: "TaxonomyGeneratorTests",
             dependencies: [.target(name: "TaxonomyGeneratorCore")],
             path: "TaxonomyGeneratorTests",
+            exclude: ["Fixtures"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

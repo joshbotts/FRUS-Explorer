@@ -103,7 +103,7 @@ measured failure).
 | Tool | Writes | Reads, beyond the corpus at `VOLUMES_DIR` |
 |---|---|---|
 | `ManifestGenerator` | `manifest.json` | GitHub TEI headers, or `VOLUMES_DIR=` for the offline overlay |
-| `TaxonomyGenerator` | `volume-tag-taxonomy.json` | history.state.gov |
+| `TaxonomyGenerator` | `volume-tag-taxonomy.json` | the HistoryAtState/tags repository, then history.state.gov |
 | `CentralFilesIndexGenerator` (four keyed modes, four offline ones) | `central-files-index.json` | NARA Catalog (`CATALOG_API_KEY`) or the record-group harvest |
 | `VolumeSourcesIndexGenerator` | `volume-sources-index.json` | `central-files-index.json`; optionally the Catalog |
 | `CollectionAuthorityGenerator` | `collection-authority.json` and its report | the two indexes above |

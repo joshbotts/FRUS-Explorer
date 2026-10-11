@@ -15,29 +15,36 @@ public enum TaxonomyFetcherError: Error, Sendable {
     case decodingFailed
 }
 
-/// Fetches the HTML source of the tag taxonomy page from history.state.gov.
+/// Fetches a source of the tag taxonomy as text: the page on history.state.gov, or the file the
+/// page is drawn from (`TaxonomySource`).
 ///
-/// ## Source URL
+/// ## The page
 /// `https://history.state.gov/tags/all`
 ///
 /// This page lists all volume-level subject tags in a three-level hierarchy
 /// (People / Places / Topics → subcategory → individual tag). The page is
 /// expected to be UTF-8 encoded HTML.
 ///
+/// ## The file
+/// `taxonomy/taxonomy.xml` in the public HistoryAtState/tags repository, UTF-8 XML, read from
+/// the head of the repository's default branch.
+///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
+///   1.1 — #1622: the address comes from `TaxonomySource`; `taxonomyURL` is the page's
 public struct TaxonomyFetcher {
 
-    public static let taxonomyURL = "https://history.state.gov/tags/all"
+    /// The page's address.
+    public static let taxonomyURL = TaxonomySource.page.url
 
     private init() {}
 
-    /// Fetches the taxonomy page and returns its HTML content as a `String`.
+    /// Fetches a source and returns its content as a `String`.
     ///
     /// - Parameters:
-    ///   - urlString: The URL to fetch. Defaults to `taxonomyURL`.
+    ///   - urlString: The URL to fetch. Defaults to `taxonomyURL`, the page.
     ///   - session: URLSession to use. Defaults to `.shared`.
-    /// - Returns: UTF-8 decoded HTML string.
+    /// - Returns: The UTF-8 decoded text.
     public static func fetch(
         urlString: String = taxonomyURL,
         session: URLSession = .shared
