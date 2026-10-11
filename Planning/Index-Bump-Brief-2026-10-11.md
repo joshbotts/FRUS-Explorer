@@ -64,6 +64,8 @@
 
 ### 3.3 #1599 — 1981–88 vol. XVI names its people and terms on `@ana`
 
+**Done on 2026-10-11 as pull request B, index version 67**, as designed below, with one thing the design did not have: the app answers a tap on a person or a term from the page it registered, so the listed entries carry the volume's whole entries and `FRUSURLSchemeHandler` registers them. The first build listed the names and opened "Person Information Unavailable" for each. The session entry in `DEVELOPMENT-PLAN.md` has what was measured and seen.
+
 - **Measured in the XML:** the volume holds 88 documents, in the four chapters released so far (Ecuador, Paraguay, Uruguay, Venezuela; the manifest marks it partly published). All 88 carry `ana`: 1,041 pointers, 622 to people and 419 to terms, naming 117 people and 104 terms, and every pointer resolves to an `xml:id` in the volume. No document has an inline `persName corresp` or `gloss`. No other of the 744 files has `ana` on a `<div>`.
 - **In the index:** 120 people and 108 terms from the volume's lists, and **0 rows of `person_mentions`**, so none of its people gains a mention from it.
 - **What history.state.gov does** (seen 2026-10-11, document 368): the document's text has no person or term link, and the sidebar lists 7 Persons and 5 Abbreviations & Terms, which are that document's 12 pointers. Document 1 of the volume is a placeholder there, as its chapter is not released.
@@ -132,12 +134,12 @@ This brief first declined the item, on lane NOTE's counts of 2026-10-01. The own
 | | Pull request | Issues | Version | Session starts from |
 |---|---|---|---|---|
 | 0 | Browse opens prose-only sections; this brief | #1535 | — | Merged, #1637 |
-| A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | §3.4 to §3.6 |
-| B | Vol. XVI's people and terms | #1599 | 67 | §3.3 |
+| A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | Merged, #1638 |
+| B | Vol. XVI's people and terms | #1599 | 67 | Done; its pull request is open |
 | C | A section's own text | #1536 | 68 | §3.2 |
 | D | Subject-Numeric files stored without a designation | To be filed | 69 | §3.7 |
 
-B, C and D can change places. C is the largest and the one a corrected volume has already made worse. Build 50 waits for all four.
+C and D can change places. C is the largest and the one a corrected volume has already made worse. Build 50 waits for all four.
 
 ## 6. Not measured, and not verified
 

@@ -513,6 +513,42 @@ public struct FRUSDocumentRenderModel: Sendable {
 
     /// Footnote bodies in sequential display order (1-based numbering).
     public let footnotes: [FRUSRenderNode]
+
+    /// The persons and terms the document names on its own `@ana` (#1599), or none. They are no
+    /// part of ``bodyNodes`` or ``footnotes``, so the document's flat text, its `renderingVersion`
+    /// and every stored highlight are what they were without them.
+    public var listedReferences = ListedReferences()
+}
+
+/// The persons and terms a document names on its `@ana` and marks nowhere in its text, as the
+/// reader lists them below the document (#1599): each the entry of the volume's own list, in the
+/// order the document gives them.
+///
+/// history.state.gov shows the same two lists beside a document, headed Persons and
+/// Abbreviations & Terms. A pointer the reader's lookups do not resolve is in neither.
+///
+/// The entries are whole, as a link node in the body carries its entry
+/// (`FRUSRenderNode.persNameLink(ref:children:person:)`): a host answers a tap on one from the
+/// model it registered, and the app's `FRUSURLSchemeHandler` had nothing to answer with when
+/// these held a name alone.
+///
+/// Version history:
+///   1.0 — #1599: initial implementation
+public struct ListedReferences: Sendable {
+
+    /// The persons named, in the document's order. Each one's link carries its `ref`.
+    public var persons: [PersonEntry]
+    /// The terms named, in the document's order. Each one's link carries its `ref`.
+    public var terms: [GlossEntry]
+
+    /// Creates the lists; with no arguments, a document that names nothing this way.
+    public init(persons: [PersonEntry] = [], terms: [GlossEntry] = []) {
+        self.persons = persons
+        self.terms = terms
+    }
+
+    /// Whether the document names nothing this way, which is every document but vol. XVI's.
+    public var isEmpty: Bool { persons.isEmpty && terms.isEmpty }
 }
 
 // MARK: - Figure images (#1516)

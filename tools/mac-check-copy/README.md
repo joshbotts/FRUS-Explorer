@@ -90,6 +90,13 @@ launched from a shell. To drive the copy with computer use, grant access to its 
   take. Switch the system appearance instead.
 - **No iCloud, by construction.** Nothing a check does in the copy syncs. Check sync on a signed,
   entitled build.
+- **A `frusexplorer://` link opened from the shell goes to the INSTALLED app.** Never run
+  `open "frusexplorer://document/…"` on the Mac to reach a document in the copy. Launch Services
+  hands the scheme to `/Applications/FRUS Explorer.app`: on 2026-10-11 that launched the installed
+  build 49 against the owner's real library and opened a document in it, and the copy showed
+  nothing. Reach a document through the copy's own windows (Corpus Browser, Search, Citation
+  Lookup). `xcrun simctl openurl <udid> "frusexplorer://document/<volume>/<document>"` is the
+  simulator's own and is safe.
 
 ## Driving and reading the copy, measured on 2026-10-10
 

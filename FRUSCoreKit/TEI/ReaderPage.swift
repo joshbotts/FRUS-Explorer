@@ -61,6 +61,8 @@ public enum ReaderAppearance: String, CaseIterable, Sendable {
 ///          as low as 2.00:1; and the wash behind a footnote a cross-reference arrives at is
 ///          `--color-accent-wash`, a variable the stylesheet had always named and the palette never
 ///          defined, now light enough (and in the dark palette blue enough) for every text colour
+///   1.4 — #1599: `.named-references` and `.named-list`, the two lists the reader writes below a
+///          document that names its people and terms on `@ana`. No colour is new
 public enum ReaderPage {
 
     // MARK: - Page
@@ -709,6 +711,23 @@ public enum ReaderPage {
     }
 
     .fn-list-item p.body { margin: 0; display: inline; }
+
+    /* ─── Persons and terms a document names on its @ana (#1599) ────────────── */
+    /* Below the footnotes and, like them, outside .frus-document. The rule and the two headings
+       are the footnotes section's own; each entry is the link an inline name or term would be. */
+    .named-references {
+      padding: 0 48px 48px;
+    }
+
+    .named-list {
+      list-style: none;
+      margin: 0 0 1.5em;
+      padding: 0;
+      font-size: var(--font-size-footnote);
+      color: var(--color-footnote-text);
+    }
+
+    .named-list li { margin: 0 0 0.4em; }
 
     /* ─── CSS Custom Highlight API — document highlights (Session 144) ──────── */
     /* Color names map 1:1 to DocumentHighlight.Color raw values.                */

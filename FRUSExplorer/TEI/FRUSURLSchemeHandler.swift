@@ -61,6 +61,8 @@ import WebKit
 ///          and the callbacks stay here
 ///   1.7 — Session 2026-10-09: #1603 — `WholeVolumeLink`, where both readers send a reference to
 ///          a whole volume
+///   1.8 — #1599: `register(model:)` also takes the persons and terms a document names on its
+///          `@ana` (`FRUSDocumentRenderModel.listedReferences`), which the reader lists below it
 final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Sendable {
 
     // MARK: - Callbacks
@@ -89,7 +91,8 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
     // MARK: - Registration
 
     /// Rebuilds the person and gloss ref→entry lookup tables from the model's
-    /// body nodes **and** its footnotes.
+    /// body nodes **and** its footnotes, and from the persons and terms the document
+    /// names on its `@ana` (#1599), which the reader lists below it.
     ///
     /// Footnote bodies live in `model.footnotes`, not `model.bodyNodes` — the
     /// converter hoists them out and leaves only markers in the body. Scanning
@@ -105,6 +108,11 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         var broken:  [String: BrokenRefInfo] = [:]
         Self.scan(nodes: model.bodyNodes, persons: &persons, gloss: &gloss, broken: &broken)
         Self.scan(nodes: model.footnotes, persons: &persons, gloss: &gloss, broken: &broken)
+        // #1599: the persons and terms the document names on its `@ana`. The reader lists them
+        // below the document, outside both node lists, and each entry's link carries its `ref`.
+        // Without these a tap on one answered "Person Information Unavailable".
+        for person in model.listedReferences.persons { persons[person.ref] = person }
+        for term in model.listedReferences.terms { gloss[term.ref] = term }
         personsByRef = persons
         glossByRef   = gloss
         brokenByRef  = broken
