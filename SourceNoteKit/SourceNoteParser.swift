@@ -238,9 +238,9 @@ public enum ParsedSourceNote: Sendable, Equatable {
     /// The digit gate cannot recognise a designator that has no number, and the Subject-Numeric
     /// system has one by design — the GENERAL file of a primary subject, filed by country alone
     /// (`POL US–USSR`, `POL ARAB–ISR`). What tells it from a word is the category, so the category
-    /// is read from the handbooks' own vocabulary rather than guessed from letters. A copy, because
-    /// this package does not read bundled resources; `SubjectNumericCategoryPinTests` fails when the
-    /// artifact's categories and this list part.
+    /// is read from the handbooks' own vocabulary rather than guessed from letters. Copied from the
+    /// label table as it stood at index version 69, and its own since (#1644): it decides what
+    /// indexing stores, so `SubjectNumericGrammarListPinTests` pins it word for word.
     public static let subjectNumericCategories: Set<String> = [
         "ACC", "AE", "AGR", "AV", "BG", "BUD", "BY", "CON", "CR", "CSM", "CUL", "DEF", "E", "ECIN",
         "EDU", "EDX", "EP", "ES", "FMGT", "FN", "FSE", "FSV", "FT", "HLTH", "INCA", "INCO", "INF",
@@ -249,13 +249,13 @@ public enum ParsedSourceNote: Sendable, Equatable {
         "TP", "TR", "TRV", "TV", "V", "VEH",
     ]
 
-    /// The words the two handbooks' country and area codes are made of (`subject-numeric-labels.json`,
-    /// each schedule's `areas`: 316 codes, 155 words, none longer than six letters), united.
+    /// The words the two handbooks' country and area codes are made of: 155, none longer than six
+    /// letters (the words of the 316 `areas` codes `subject-numeric-labels.json` held at index 69).
     ///
     /// A country element printed in title case (`POL 27 S Viet`, `POL 1 Eur-US`) is the code in
-    /// another case, and these are what tell it from prose (index version 69). A copy, as
-    /// `subjectNumericCategories` is and for the same reason; `SubjectNumericCategoryPinTests`
-    /// fails when the artifact's areas and this list part.
+    /// another case, and these are what tell it from prose (index version 69). The list is its own
+    /// since #1644 and no longer follows the label table: it decides what indexing stores, so a
+    /// change to it is an index version. `SubjectNumericGrammarListPinTests` pins it word for word.
     public static let subjectNumericAreaWords: Set<String> = [
         "ADEN", "AF", "AFG", "AFR", "AFRICA", "ALB", "ALG", "AM", "AMER", "ANG", "ANT",
         "ARA", "ARAB", "ARG", "ASIA", "AUS", "BAH", "BAS", "BEL", "BOL", "BONIN", "BR",

@@ -22,6 +22,8 @@ import Testing
 ///   1.0 — 2026-10-01: #1514, #1515
 ///   1.1 — index version 69: a dash between two countries stays in the stored series, and the
 ///          area words equal the words of the shipped schedules' area codes
+///   1.2 — #1644: the category leads and the area words are pinned to themselves, word for word,
+///          and no longer to the label table (`SubjectNumericGrammarListPinTests`)
 @Suite("Department of State series are not central files (#1514)")
 struct DepartmentSeriesTests {
 
@@ -389,49 +391,71 @@ struct BridgedHeadingTests {
     }
 }
 
-// MARK: - SubjectNumericCategoryPinTests
+// MARK: - SubjectNumericGrammarListPinTests
 
-/// `ParsedSourceNote.subjectNumericCategories` is a copy of the categories the shipped
-/// `subject-numeric-labels.json` names across both schedules; this fails when the two part.
-@Suite("The Subject-Numeric category list matches the shipped schedules (#1514)")
-struct SubjectNumericCategoryPinTests {
+/// The two lists the class grammar reads a Subject-Numeric designation against, pinned word for
+/// word.
+///
+/// ## Why the lists are pinned to themselves and not to the label table (#1644)
+/// `ParsedSourceNote.subjectNumericCategories` says which leads open a designation, and
+/// `ParsedSourceNote.subjectNumericAreaWords` which words in title case are a country element.
+/// Both decide what a source note's class is, so both decide what indexing STORES: a word added
+/// or taken away changes `document_sources.decimal_class` for the notes that print it, and that
+/// is an index version.
+///
+/// Until #1644 each was held equal to `subject-numeric-labels.json` (its `categories` keys, and
+/// the words of its `areas` codes), which made the label table's content a matter for the index.
+/// The table is a reading of two scanned handbooks and is regenerated when that reading is put
+/// right; the owner's decision of 2026-10-11 is that the grammar's lists stand on their own. So
+/// these fail on any change to either list, and say what such a change owes.
+@Suite("The Subject-Numeric grammar's own lists (#1644)")
+struct SubjectNumericGrammarListPinTests {
 
-    @Test("The categories are the shipped schedules' categories")
-    func categoriesMatchTheArtifact() throws {
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer/Resources/subject-numeric-labels.json")
-        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
-        let schedules = try #require((object as? [String: Any])?["schedules"] as? [[String: Any]])
-        var shipped = Set<String>()
-        for schedule in schedules {
-            let categories = try #require(schedule["categories"] as? [String: Any])
-            shipped.formUnion(categories.keys)
-        }
-        #expect(schedules.count == 2)
-        #expect(shipped.count > 50, "read \(shipped.count) categories — the artifact did not parse")
-        #expect(ParsedSourceNote.subjectNumericCategories == shipped,
-                "only in the code: \(ParsedSourceNote.subjectNumericCategories.subtracting(shipped).sorted()); only in the artifact: \(shipped.subtracting(ParsedSourceNote.subjectNumericCategories).sorted())")
+    /// What a failure here means, said once.
+    private static let owed = """
+        This list decides which source notes store a class, so a change to it changes what \
+        indexing stores: it is made with an index version (IndexingPipeline.currentDateIndexVersion), \
+        in the same commit, and this pin is edited beside it. The label table does not follow \
+        this list and this list does not follow the label table.
+        """
+
+    @Test("The 60 category leads are these, and no others")
+    func theCategoryLeads() {
+        let pinned = Set("""
+            ACC AE AGR AV BG BUD BY CON CR CSM CUL DEF E ECIN EDU EDX EP ES FMGT FN FSE FSV FT \
+            HLTH INCA INCO INF INT INTER IT LAB LEG MP ORA ORG OS PER PET PO POL PPB PPT PPV PR \
+            PRO PS RAD REF SCI SOC SP STR SY TEL TP TR TRV TV V VEH
+            """.split(separator: " ").map(String.init))
+        #expect(pinned.count == 60, "the pin itself is short: \(pinned.count)")
+        #expect(ParsedSourceNote.subjectNumericCategories.count == 60)
+        #expect(ParsedSourceNote.subjectNumericCategories == pinned, """
+            only in the code: \(ParsedSourceNote.subjectNumericCategories.subtracting(pinned).sorted()); \
+            only in the pin: \(pinned.subtracting(ParsedSourceNote.subjectNumericCategories).sorted()). \
+            \(Self.owed)
+            """)
     }
 
-    @Test("The area words are the words of the shipped schedules' area codes (index version 69)")
-    func areaWordsMatchTheArtifact() throws {
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer/Resources/subject-numeric-labels.json")
-        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
-        let schedules = try #require((object as? [String: Any])?["schedules"] as? [[String: Any]])
-        var codes = Set<String>()
-        for schedule in schedules {
-            let areas = try #require(schedule["areas"] as? [String: Any])
-            codes.formUnion(areas.keys)
-        }
-        // 316 codes on 2026-10-11. A read that found none would pass an empty list.
-        #expect(codes.count > 250, "read \(codes.count) area codes — the artifact did not parse")
-        let shipped = Set(codes.flatMap { $0.split(whereSeparator: { $0 == " " || $0 == "-" }).map(String.init) })
-        #expect(ParsedSourceNote.subjectNumericAreaWords == shipped,
-                "only in the code: \(ParsedSourceNote.subjectNumericAreaWords.subtracting(shipped).sorted()); only in the artifact: \(shipped.subtracting(ParsedSourceNote.subjectNumericAreaWords).sorted())")
-        // The strict class shape allows a country word six letters, and no code needs more.
-        #expect(shipped.allSatisfy { (1...6).contains($0.count) })
+    @Test("The 155 country words are these, and no others")
+    func theCountryWords() {
+        let pinned = Set("""
+            ADEN AF AFG AFR AFRICA ALB ALG AM AMER ANG ANT ARA ARAB ARG ASIA AUS BAH BAS BEL BOL \
+            BONIN BR BRAZ BUL BURMA CAMB CAN CENTO CHICOM CHILE CHINAT COAS COL CONGO COSTA CUBA \
+            CYP CZ CZECH D DOM E EA EAST ECE ECOSOC EFTA ETH EUR FAA FAO FIN FR GA GATT GER GHANA \
+            GIB GR GREECE GU GUAM GUAT GUIN HAI HAITI HK HOND HUNG IA ICE IND INDIA INDON IRAN \
+            IRAQ IS ISR ISRAEL IT JAM JAPAN JCS JORDAN KOR KUW LA LAOS LAT LEB LIBYA LUX MALTA MEX \
+            MONG MOR MOZ N NATO NEA NEAR NEARE NEW NIC NR OAU OECD OMAN OPEC PAK PAL PAN PAR PERU \
+            PHIL POL PORT REP RHOD RICA RUM RWANDA RYU S SAUD SC SE SEATO SOM SOMALI SP SUDAN SW \
+            SWAZ SWE SYR THAI THE TR TUN TUR U UAR UK UN UNRWA UR US USSR VEN VIET VIETN W YEMEN \
+            YUGO
+            """.split(separator: " ").map(String.init))
+        #expect(pinned.count == 155, "the pin itself is short: \(pinned.count)")
+        #expect(ParsedSourceNote.subjectNumericAreaWords.count == 155)
+        #expect(ParsedSourceNote.subjectNumericAreaWords == pinned, """
+            only in the code: \(ParsedSourceNote.subjectNumericAreaWords.subtracting(pinned).sorted()); \
+            only in the pin: \(pinned.subtracting(ParsedSourceNote.subjectNumericAreaWords).sorted()). \
+            \(Self.owed)
+            """)
+        // The strict class shape allows a country word six letters, and no word here needs more.
+        #expect(pinned.allSatisfy { (1...6).contains($0.count) && $0.allSatisfy(\.isUppercase) })
     }
 }

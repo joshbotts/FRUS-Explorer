@@ -38,6 +38,8 @@ struct OutlineEntry: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — #1211: initial implementation
+///   1.1 — #1644: `parse` gives the height of the row that opened each entry; `rowGroups(_:)`,
+///          the rows with their lines kept, which the abbreviations appendix is read by
 enum OutlineEntryParser {
 
     /// Parses one outline page.
@@ -45,12 +47,16 @@ enum OutlineEntryParser {
     /// - Parameters:
     ///   - lines: The page's lines, already ordered and cut to the designator + label columns.
     ///   - footerFloor: Lines at or below this `y` are furniture (the transmittal footer).
-    /// - Returns: The entries found, in page order, and the rows refused as furniture.
+    /// - Returns: The entries found, in page order; the rows refused as furniture; and, beside
+    ///   each entry, the `y` of the row that opened it, which is where a reader of the scan finds
+    ///   it.
     static func parse(_ lines: [PageLine], footerFloor: Double) -> (entries: [OutlineEntry],
-                                                                   refused: [String]) {
+                                                                   refused: [String],
+                                                                   tops: [Double]) {
         var entries: [OutlineEntry] = []
+        var tops: [Double] = []
         var refused: [String] = []
-        var current: (designator: String, label: [String])?
+        var current: (designator: String, label: [String], y: Double)?
 
         func close() {
             guard let open = current else { return }
@@ -62,6 +68,7 @@ enum OutlineEntryParser {
             // shipping that as a subject would tell a reader the file has one.
             if !label.isEmpty, !isReserved(label) {
                 entries.append(OutlineEntry(designator: open.designator, label: label))
+                tops.append(open.y)
             }
             current = nil
         }
@@ -71,7 +78,7 @@ enum OutlineEntryParser {
             if isFurniture(row.text) { refused.append(row.text); continue }
             if let (designator, rest) = leadingDesignator(row.text) {
                 close()
-                current = (designator, rest.isEmpty ? [] : [rest])
+                current = (designator, rest.isEmpty ? [] : [rest], row.y)
             } else if current != nil {
                 current?.label.append(row.text)
             } else {
@@ -79,35 +86,38 @@ enum OutlineEntryParser {
             }
         }
         close()
-        return (entries, refused)
+        return (entries, refused, tops)
     }
 
     /// Groups lines into table rows, joining the pieces of one row left to right.
     ///
-    /// The designator and its label are separate `selectionsByLine()` results whenever the gap
-    /// between the columns is wide enough, and one result when it is not — so a row is defined by
-    /// its `y`, never by the line count.
+    /// The designator and its label are separate lines whenever the gap between the columns is
+    /// wide enough, and one line when it is not — so a row is defined by its `y`, never by the
+    /// line count.
     ///
     /// - Parameter lines: Geometry-ordered lines.
     /// - Returns: One entry per row, its pieces joined by a space.
     static func rows(_ lines: [PageLine]) -> [(text: String, y: Double)] {
-        var out: [(text: String, y: Double)] = []
-        var bucket: [PageLine] = []
-
-        func flush() {
-            guard !bucket.isEmpty else { return }
-            let joined = bucket.sorted { $0.x < $1.x }.map(\.text).joined(separator: " ")
-            out.append((joined, bucket[0].y))
-            bucket = []
+        rowGroups(lines).map { group in
+            (group.sorted { $0.x < $1.x }.map(\.text).joined(separator: " "), group[0].y)
         }
+    }
 
+    /// Groups lines into table rows, each row's lines kept as they are.
+    ///
+    /// - Parameter lines: Geometry-ordered lines (top to bottom).
+    /// - Returns: The rows, each in the order its lines arrived; no row is empty.
+    static func rowGroups(_ lines: [PageLine]) -> [[PageLine]] {
+        var out: [[PageLine]] = []
         for line in lines {
             // 5 points: the tightest leading in these tables is ~10.5pt, and the two halves of one
             // row differ by at most a fraction of a point.
-            if let first = bucket.first, abs(first.y - line.y) > 5 { flush() }
-            bucket.append(line)
+            if let first = out.last?.first, abs(first.y - line.y) <= 5 {
+                out[out.count - 1].append(line)
+            } else {
+                out.append([line])
+            }
         }
-        flush()
         return out
     }
 

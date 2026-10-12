@@ -129,7 +129,7 @@ measured failure).
 | `PresidentialLibraryCatalogGenerator` | `presidential-library-catalog.json` | NARA Catalog (`CATALOG_API_KEY`), or its cache with `PROJECT_ONLY=1` |
 | `RecordGroupCatalogGenerator` | `Planning/nara-record-group-catalog/` | NARA's public S3 export; start with `PROBE=1` |
 | `DecimalClassLabelGenerator` | `decimal-class-labels.json` | the Department's manuals in `SCHEDULE_DIR` |
-| `SubjectNumericLabelGenerator` | `subject-numeric-labels.json` | the handbooks in `SCHEDULE_DIR`, the usage index |
+| `SubjectNumericLabelGenerator` | `subject-numeric-labels.json` | the handbooks in `SCHEDULE_DIR`, the usage index, `decimal-class-labels.json` |
 | `PersonAuthorityIndexGenerator` | `person-authority-index.json` | the people registry, `persons-complete.xml`, the merge audit |
 | `POCOMIndexGenerator` | `pocom-index.json` | the POCOM register; run it after `PersonAuthorityIndexGenerator` |
 | `DocumentSubjectIndexGenerator` | `document-subject-index.json` | the corrected subject export only, no TEI |
@@ -154,11 +154,16 @@ Rules that span entries:
   set to the shipped family's digest.
 - **A keyed NARA harvest spends a metered quota**: confirm the invocation first. A
   `CloudVectorsGenerator` run takes 50 to 60 minutes.
-- **`SubjectNumericLabelGenerator` does not reproduce its shipped table** (measured 2026-10-11 on
-  macOS 27.0.1, from the same handbooks, with no rule changed: its entry lists the differences, and
-  `US` comes out as an abbreviation's expansion). Do not ship a regenerated
-  `subject-numeric-labels.json` until every label that changed has been read. The shipped table has
-  wrong readings of its own, listed in the same entry; #1644 is the issue for both.
+- **A regenerated `subject-numeric-labels.json` ships only when every label that changed has been
+  read against the handbook's scan** (the owner's decision of 2026-10-11). `REVIEW_OUTPUT` gives
+  each label's page and row, and the pull request lists each change old to new. The generator
+  reproduces its table since #1644: it reads the PDFs' content streams and asks PDFKit nothing
+  (one SHA-256 under macOS 27.0.1 and inside the iOS 26.5 and 27.0 runtimes), and it throws while
+  a label holds the capture's `~`. The table moves no index: the grammar's own lists
+  (`ParsedSourceNote.subjectNumericAreaWords` and `subjectNumericCategories`) are pinned to
+  themselves, and a change to either is an index version. A `collection-usage-index.json` that
+  counts differently owes a regeneration: `ShippedLabelTableTests`, a package suite, recounts the
+  table's `coverage` block over the usage index in the repository and fails when a figure differs.
 
 **Before ANY archive — TestFlight, App Store, or the notarized DMG — cache the query encoder's
 debug symbols once:**

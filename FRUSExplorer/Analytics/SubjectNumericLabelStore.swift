@@ -28,12 +28,12 @@ import Foundation
 /// guessed at.
 ///
 /// ## What this table names, and what it does not
-/// It names the GROUP — the category and its number. Measured, 90.4% of the corpus's
-/// subject-numeric keys also carry a trailing country or party string (`VIET S`, `ARAB-ISR`), and
-/// since #1254 it IS read: `Schedule.areas` resolves it — 1,132 of 1,231 tail-bearing keys and
-/// 94.6% of their documents — from the decimal schedules' country tables UNIONED with the 1963
-/// handbook's abbreviations appendix (the 1965 handbook has none). `leafGloss` then composes the
-/// reading in NARA's FILING order rather than the citation's, so `POL 27 VIET S` renders as
+/// It names the GROUP — the category and its number. Most of the corpus's subject-numeric keys
+/// also carry a trailing country or party string (`VIET S`, `ARAB-ISR`), and since #1254 it IS
+/// read: `Schedule.areas` resolves it — 1,617 of 1,781 such keys and 93.9% of their documents
+/// at index version 69 (#1644) — from the 1963 handbook's list of standard country codes, which
+/// the 1965 edition leaves out of print and refers to, so both schedules read one list. `leafGloss`
+/// then composes the reading in NARA's FILING order rather than the citation's: `POL 27 VIET S` is
 /// *Vietnam, South — MILITARY OPERATIONS*. A key with no tail reads as its subject alone, which
 /// is the general file and not an omission.
 ///
@@ -189,12 +189,12 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
 
         var parts: [String] = []
         // A file with no subject number reads as its area alone (index version 69): no subject
-        // follows it, and no organization's name goes before it. The one category that reaches
-        // the organization branch with such a file is `AID` under 1964–1973, which has no outline
-        // in that schedule and whose appendix entry is a piece of another line: 22 keys over 52
+        // follows it, and no organization's name goes before it. The one category that reached
+        // the organization branch with such a file was `AID` under 1964–1973, which had no outline
+        // in that schedule and whose appendix entry was a piece of another line: 22 keys over 52
         // documents would have read "programs in Spanish speaking countries). Aeronautics —
-        // India". The numbered `AID` keys of that schedule still read that way (33 keys over
-        // 96 documents at version 68): that is the table's to put right.
+        // India". Since #1644 the table has `AID`'s outline for that schedule and ships no
+        // abbreviation for a category that has one, so no `AID` key reaches the branch at all.
         if divided.number != nil,
            let organization = schedule.subjects[category] == nil
             ? schedule.abbreviations[category] : nil {

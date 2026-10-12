@@ -6,9 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import CoreGraphics
 import Foundation
-import PDFKit
 
 // MARK: - OutlinePageLayout
 
@@ -27,6 +25,8 @@ import PDFKit
 ///
 /// Version history:
 ///   1.0 — #1211: initial implementation
+///   1.1 — #1644: measures ``HandbookPage`` lines; `entryLines(_:in:)` is the cut the runner
+///          made inline
 enum OutlinePageLayout {
 
     /// A column of entries: where it starts, where the next one starts, and where its instruction
@@ -71,35 +71,51 @@ enum OutlinePageLayout {
     ///   - layout: Where this edition prints its instructions.
     /// - Returns: One or two columns, left to right. Empty when the page has no designators at all,
     ///   which is how a divider or an instruction page declines to be read as an outline.
-    static func columns(of page: PDFPage, layout: Layout) -> [Column] {
-        let bounds = page.bounds(for: .mediaBox)
-        guard let selection = page.selection(for: bounds) else { return [] }
+    static func columns(of page: HandbookPage, layout: Layout) -> [Column] {
         var designatorX: [Double] = []
         var allX: [Double] = []
-        for line in selection.selectionsByLine() {
-            let text = (line.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { continue }
-            let x = Double(line.bounds(for: page).minX)
-            allX.append(x)
-            if OutlineEntryParser.leadingDesignator(text) != nil { designatorX.append(x) }
+        for line in page.lines {
+            allX.append(line.x)
+            if OutlineEntryParser.leadingDesignator(line.text) != nil { designatorX.append(line.x) }
         }
         guard !designatorX.isEmpty else { return [] }
 
         let starts = columnStarts(designatorX.sorted())
         var out: [Column] = []
         for (index, start) in starts.enumerated() {
-            let end = index + 1 < starts.count ? starts[index + 1] - 5 : Double(bounds.maxX)
+            let end = index + 1 < starts.count ? starts[index + 1] - 5 : page.width
             let inColumn = allX.filter { $0 >= start - 5 && $0 < end }
             let instruction: Double?
             switch layout {
             case .rightColumn:
-                instruction = dominantFarColumn(in: inColumn, pageWidth: Double(bounds.width))
+                instruction = dominantFarColumn(in: inColumn, pageWidth: page.width)
             case .indent:
                 instruction = nearestIndent(in: inColumn, designatorX: start)
             }
             out.append(Column(minX: start - 5, maxX: end, instructionX: instruction ?? end))
         }
         return out
+    }
+
+    /// The lines of one column that an entry is read from: its designators and their labels, with
+    /// the instruction text left out.
+    ///
+    /// A line is the instructions' when it BEGINS at or past their column, in either layout. In
+    /// the 1965 layout that also refuses a label standing well apart from its designator, and it
+    /// is meant to: the label follows its designator directly there, so a gap wide enough to
+    /// divide the two is a word the capture did not read (`14-2`, a gap, `& Statistics` for
+    /// *Reports & Statistics*). The designator is then left without a label and dropped, where
+    /// keeping the row whole would ship the label short of its first word.
+    ///
+    /// - Parameters:
+    ///   - lines: The page's lines.
+    ///   - column: The column to read.
+    /// - Returns: The column's entry lines, in the order given.
+    static func entryLines(_ lines: [PageLine], in column: Column) -> [PageLine] {
+        // Two points inside the measured indent. The margin is small on purpose: the 1965
+        // edition's entry and instruction columns are sixteen points apart, so a generous one
+        // would take the instructions with the labels.
+        lines.filter { $0.x >= column.minX && $0.x < column.instructionX - 2 }
     }
 
     /// Splits sorted designator positions into one or two column starts.
