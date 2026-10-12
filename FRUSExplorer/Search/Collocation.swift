@@ -148,6 +148,7 @@ enum CollocationWindow {
 ///
 /// Version history:
 ///   1.0 — S-2: initial implementation
+///   1.1 — #1608: ``wordForm``, and the note a ranking of printed forms carries
 struct CollocationResult: Equatable {
 
     /// Neighbours over-represented beside the query, most distinctive first.
@@ -174,6 +175,13 @@ struct CollocationResult: Equatable {
     let referenceCutoffCount: Int
     /// The reference artifact's generation stamp.
     let generated: String?
+    /// The form the neighbours and the reference were both counted in (#1608). `.printed` is the
+    /// fallback of a launch whose language analysis has no lemmatiser.
+    let wordForm: WordCloudWordForm
+
+    /// What the panel says above a ranking of printed forms, or `nil` for one of dictionary forms
+    /// (#1608): ``CollocationAnalysis/printedFormsNote(for:)``.
+    var printedFormsNote: String? { CollocationAnalysis.printedFormsNote(for: wordForm) }
 
     /// Whether the budget stopped the scan short of the whole result set.
     ///
@@ -199,7 +207,37 @@ struct CollocationResult: Equatable {
 /// Version history:
 ///   1.0 — S-2: initial implementation
 ///   1.1 — #1373: `Unavailable.languageAnalysisUnavailable`
+///   1.2 — #1608: `rank` takes the form the neighbours were counted in and a ``KeynessReference``,
+///          and refuses a reference counted in the other form; the two refusals that are a result
+///          of the count carry its form, and ``printedFormsNote(for:)`` is what the panel says of
+///          a count of printed forms, ranked or not
 enum CollocationAnalysis {
+
+    /// What the panel says of neighbours counted and compared as printed, or `nil` for a count in
+    /// dictionary forms (#1608).
+    ///
+    /// The owner's condition for the fallback, in one place: that it happened, why, and that the
+    /// result can differ from a device whose language analysis reduces words to their dictionary
+    /// forms. The example is a verb on purpose: under the default settings a regular plural is
+    /// folded by rule in a printed count too, so "negotiation" and "negotiations" are one word in
+    /// both, and a plural would be a false example.
+    ///
+    /// One sentence for a ranking and for a count that ranked nothing
+    /// (``Unavailable/printedFormsNote``): "no word appears at least three times" is as much a
+    /// result of counting "negotiated" and "negotiating" apart as a ranking is.
+    ///
+    /// It says nothing of the re-check. As first written it closed "FRUS Explorer checks again each
+    /// time you come back to it, and this panel is ranked again if it recovers", and on an iPhone 17
+    /// at the default text size the note was then seven lines and left two rows of the ranking on
+    /// screen. The panel still rebuilds when a re-check adopts a lemmatiser
+    /// (`CollocationRebuildKey.language`), and the note going is what says so.
+    ///
+    /// - Parameter wordForm: The form the neighbours and the reference were counted in.
+    static func printedFormsNote(for wordForm: WordCloudWordForm) -> String? {
+        guard wordForm == .printed else { return nil }
+        return String(localized: "search.collocation.printedForms.note",
+                      defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently.")
+    }
 
     /// Why a collocation could not be produced.
     enum Unavailable: Equatable {
@@ -216,15 +254,35 @@ enum CollocationAnalysis {
         case noArtifact
         /// The live tokenisation is not comparable to the reference's.
         case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
-        /// This process's tagger cannot lemmatise, so the neighbours would be counted as printed
-        /// against a reference counted in lemmas (#1373). No setting fixes it.
+        /// The neighbours and the reference are counted in different forms, and no setting fixes
+        /// it (#1373). Since #1608 a launch with no lemmatiser counts the neighbours as printed and
+        /// ranks them against the reference counted as printed, so this is left for the launch whose
+        /// printed-form reference did not load — and for a caller that hands ``rank`` a reference of
+        /// the other form.
         case languageAnalysisUnavailable
         /// The query matched nothing whose neighbourhood could be collected.
         case noMatches
-        /// Neighbours were collected, but none occurs often enough to be ranked.
-        case noNeighboursAboveFloor(minimum: Int)
-        /// Every neighbour is *under*-represented — the query sits in ordinary prose.
-        case nothingDistinctive
+        /// Neighbours were collected, but none occurs often enough to be ranked. `wordForm` is the
+        /// form they were counted in (#1608): counted as printed, "negotiated" twice and
+        /// "negotiating" twice are two words under a floor of three, where a count in dictionary
+        /// forms ranks "negotiate" at four.
+        case noNeighboursAboveFloor(minimum: Int, wordForm: WordCloudWordForm)
+        /// Every neighbour is *under*-represented — the query sits in ordinary prose. `wordForm` is
+        /// the form the neighbours and the reference were counted in (#1608).
+        case nothingDistinctive(wordForm: WordCloudWordForm)
+
+        /// What the panel says beside this refusal when it is a result of a count of printed forms,
+        /// or `nil` (#1608). Only the two refusals reached after the neighbours were counted and
+        /// compared carry a form; every other one says nothing about the words near the matches.
+        var printedFormsNote: String? {
+            switch self {
+            case .noNeighboursAboveFloor(_, let wordForm), .nothingDistinctive(let wordForm):
+                return CollocationAnalysis.printedFormsNote(for: wordForm)
+            case .pending, .scanFailed, .noArtifact, .configurationMismatch,
+                 .languageAnalysisUnavailable, .noMatches:
+                return nil
+            }
+        }
     }
 
     /// The outcome of asking what appears near a query.
@@ -239,10 +297,12 @@ enum CollocationAnalysis {
     /// Tokenises window text and ranks it against the corpus reference.
     ///
     /// - Parameters:
-    ///   - counts: lemma → occurrences inside the merged windows, produced by the caller with
+    ///   - counts: term → occurrences inside the merged windows, produced by the caller with
     ///     ``WordCloudTokenizer/accumulate(from:into:)`` so the terms are in the same form the
-    ///     reference is keyed by. Counting them any other way — Porter stems, raw words — compares
-    ///     two different vocabularies and fails systematically.
+    ///     reference is keyed by. Counting them any other way — Porter stems, or the other
+    ///     ``WordCloudWordForm`` — compares two different vocabularies and fails systematically.
+    ///   - wordForm: the form `counts` are in: the tokenizer's own (`WordCloudTokenizer.wordForm`).
+    ///     A reference counted in the other form is refused, not ranked against (#1608).
     ///   - windowTokenCount: surviving tokens across those same windows. `accumulate` returns it;
     ///     it is the denominator, and it must come from the same merge policy as `counts`.
     ///   - anchorLemmas: the query terms in lemma form, excluded from the ranking. A term is not a
@@ -259,16 +319,23 @@ enum CollocationAnalysis {
         documentsOffered: Int,
         anchorCount: Int,
         omittedAnchorCount: Int,
-        reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int),
-        generated: String?,
+        wordForm: WordCloudWordForm,
+        reference: KeynessReference,
         minimumCount: Int = Keyness.defaultMinimumScopeCount
     ) -> Outcome {
+        // Before anything is said about the query: printed forms against dictionary-form counts
+        // would score every inflected neighbour as a word the corpus never used, and the reverse
+        // would miss them. Both hosts take the tokenizer and the reference from one verdict
+        // (`CollocationConfiguration`), so this is a guard against a caller that does not.
+        guard reference.wordForm == wordForm else {
+            return .unavailable(.languageAnalysisUnavailable)
+        }
         guard anchorCount > 0, windowTokenCount > 0, !counts.isEmpty else {
             return .unavailable(.noMatches)
         }
         let neighbours = counts.filter { !anchorLemmas.contains($0.key) }
         guard neighbours.values.contains(where: { $0 >= minimumCount }) else {
-            return .unavailable(.noNeighboursAboveFloor(minimum: minimumCount))
+            return .unavailable(.noNeighboursAboveFloor(minimum: minimumCount, wordForm: wordForm))
         }
         let scored = Keyness.score(
             scopeCounts: neighbours,
@@ -278,7 +345,9 @@ enum CollocationAnalysis {
             minimumScopeCount: minimumCount
         )
         let overRepresented = scored.filter(\.isOverused)
-        guard !overRepresented.isEmpty else { return .unavailable(.nothingDistinctive) }
+        guard !overRepresented.isEmpty else {
+            return .unavailable(.nothingDistinctive(wordForm: wordForm))
+        }
 
         return .ranked(CollocationResult(
             scores: overRepresented,
@@ -291,7 +360,8 @@ enum CollocationAnalysis {
             windowTokenCount: windowTokenCount,
             minimumCount: minimumCount,
             referenceCutoffCount: reference.cutoffCount,
-            generated: generated
+            generated: reference.generated,
+            wordForm: wordForm
         ))
     }
 }

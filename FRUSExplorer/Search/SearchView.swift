@@ -2135,14 +2135,16 @@ struct SearchView: View {
         // The neighbours are counted in THIS process, so its tagger verdict is the one that says
         // whether they are lemmas (#1373). Awaited on every rebuild: a re-check can replace it (#1539).
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
-        // ONE resolution of the live settings, shared by the tokenizer and the reference lookup —
-        // the guard validates what a caller claims, not what its tokenizer was built with.
-        let configuration = CollocationConfiguration.live()
+        // ONE resolution of the live settings and of the verdict, shared by the tokenizer and the
+        // reference lookup — the guard validates what a caller claims, not what its tokenizer was
+        // built with. With no lemmatiser the tokenizer counts printed forms and the lookup reads
+        // the reference counted as printed (#1608); both follow `configuration.languageAnalysis`.
+        let configuration = CollocationConfiguration.live(languageAnalysis: languageAnalysis)
         let availability = BundledKeynessBaseline.baseline(
             for: .allTerms, tuning: configuration.tuning,
             includeDiplomatic: configuration.includeDiplomatic,
-            languageAnalysis: languageAnalysis)
-        let reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int)
+            languageAnalysis: configuration.languageAnalysis)
+        let reference: KeynessReference
         switch availability {
         case .unavailable(.noArtifact), .unavailable(.lensNotPriced):
             collocation = .unavailable(.noArtifact); return
@@ -2150,15 +2152,14 @@ struct SearchView: View {
             collocation = .unavailable(.languageAnalysisUnavailable); return
         case .unavailable(.configurationMismatch(let mismatches)):
             collocation = .unavailable(.configurationMismatch(mismatches)); return
-        case .available(let terms, let total, let cutoff):
-            reference = (terms, total, cutoff)
+        case .available(let found):
+            reference = found
         }
-        let generated = BundledKeynessBaseline.generated
 
         do {
             collocation = try await service.collocation(
             for: results, parameters: vm.submittedSearchParameters, windowSize: collocationWindow,
-            configuration: configuration, reference: reference, generated: generated)
+            configuration: configuration, reference: reference)
         } catch is CancellationError {
             // Switching modes or re-running a search cancels a scan in flight — the common case.
             // Writing a verdict here would replace a fresh panel with a stale one's failure, and

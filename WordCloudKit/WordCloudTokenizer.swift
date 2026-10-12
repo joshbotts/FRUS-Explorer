@@ -32,11 +32,16 @@ import NaturalLanguage
 /// (#1539), so the word walk goes by `NaturalLanguageReadiness.wordWalkScheme(of:)` and, without a
 /// lemma scheme, counts each word as printed.
 ///
+/// A caller that knows the lemmatiser is missing says so (``wordForm``, #1608): a tokenizer told
+/// `.printed` asks for no lemma scheme, so its count is of printed forms throughout — the count the
+/// printed-form keyness reference was made by — whatever the lemmatiser does while it runs.
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — #1373: taggers come from `NaturalLanguageReadiness`, after the warm-up
 ///   1.2 — #1539 review round 1: the word walk follows the tagger's schemes, so a tagger built
 ///          without `.lemma` still counts every word
+///   1.3 — #1608: ``wordForm``; a `.printed` tokenizer never asks for the lemma scheme
 public struct WordCloudTokenizer: Sendable {
 
     /// Shortest token length kept. Two characters and below are almost always
@@ -62,6 +67,11 @@ public struct WordCloudTokenizer: Sendable {
     /// multi-word phrases) to reject across every lens. Empty disables the filter.
     public let markings: Set<String>
 
+    /// The form a word lens counts in (#1608). `.dictionary` reads the lemmatiser, as the tokenizer
+    /// always has. `.printed` asks for a tagger with no lemma scheme, so every word is counted as
+    /// printed. The entity lenses read no lemma and ignore it.
+    public let wordForm: WordCloudWordForm
+
     /// Creates a tokenizer.
     /// - Parameters:
     ///   - stopwords: Terms to exclude after lemmatisation/lowercasing.
@@ -70,15 +80,19 @@ public struct WordCloudTokenizer: Sendable {
     ///   - lens: Semantic filter to apply. Default `.allTerms`.
     ///   - lexicon: Membership set for lexicon-backed lenses. Default `nil`.
     ///   - markings: Classification/chrome terms to reject across all lenses.
+    ///   - wordForm: The form to count words in. Default `.dictionary`; pass the form of the verdict
+    ///     the count is made under (`NaturalLanguageHealth.wordForm`) wherever the count will be
+    ///     compared with a keyness reference.
     public init(stopwords: Set<String>, minimumLength: Int = 3, foldPlurals: Bool = true,
          lens: WordCloudLens = .allTerms, lexicon: Set<String>? = nil,
-         markings: Set<String> = []) {
+         markings: Set<String> = [], wordForm: WordCloudWordForm = .dictionary) {
         self.stopwords = stopwords
         self.minimumLength = minimumLength
         self.foldPlurals = foldPlurals
         self.lens = lens
         self.lexicon = lexicon
         self.markings = markings
+        self.wordForm = wordForm
     }
 
     /// The `NaturalLanguage` name-type tag this lens filters on, if it's an entity lens.
@@ -123,14 +137,23 @@ public struct WordCloudTokenizer: Sendable {
     /// Word path: lemmatised content words (`.allTerms`) optionally filtered to a
     /// part-of-speech (`.topics` / `.actions` / `.descriptors`).
     private func accumulateWords(from text: String, into counts: inout [String: Int]) -> Int {
-        // Only request the lexical-class scheme when a POS lens needs it — the
-        // default `.allTerms` path stays lemma-only and fast.
-        let schemes: [NLTagScheme] = lexicalTag == nil ? [.lemma] : [.lemma, .lexicalClass]
         // Through the readiness gate, never `NLTagger(tagSchemes:)` directly: a scheme whose first
         // use in a process fails stays failed for the rest of it (#1373), so the warm-up must come
         // first even when a tokenizer is the first thing to run.
         return accumulateWords(from: text, into: &counts,
-                               tagger: NaturalLanguageReadiness.tagger(tagSchemes: schemes))
+                               tagger: NaturalLanguageReadiness.tagger(tagSchemes: wordSchemes))
+    }
+
+    /// The schemes the word walk asks the gate for.
+    ///
+    /// The lexical-class scheme only when a part-of-speech lens needs it, so the default `.allTerms`
+    /// path stays lemma-only and fast. A `.printed` tokenizer asks for `.tokenType` where a
+    /// `.dictionary` one asks for `.lemma` (#1608): the tagger then has no lemma scheme, the walk
+    /// goes by `.tokenType` (`NaturalLanguageReadiness.wordWalkScheme(of:)`), and every word is
+    /// counted as printed. Internal so a test reads what each form asks for.
+    var wordSchemes: [NLTagScheme] {
+        let walk: NLTagScheme = wordForm == .printed ? .tokenType : .lemma
+        return lexicalTag == nil ? [walk] : [walk, .lexicalClass]
     }
 
     /// The word walk over `tagger`, which ``accumulateWords(from:into:)`` builds through the gate.

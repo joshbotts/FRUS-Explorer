@@ -17,6 +17,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Session 2026-10-04 (FRUSCoreKit, part 2): moved out of `SearchService.swift` verbatim
 ///         when the service moved into FRUSCoreKit
+///   1.1 — #1608: the reference is a `KeynessReference`, and the ranking is told the form the
+///         tokenizer counted in
 extension SearchService {
 
     /// Words the query's matches keep company with, ranked by how distinctive that company is.
@@ -40,13 +42,14 @@ extension SearchService {
     ///   - parameters: the executed query, for its positive terms.
     ///   - windowSize: words either side of each match.
     ///   - configuration: the resolved live tokenisation. The caller resolves it on the main actor.
+    ///   - reference: the corpus reference the caller read for `configuration.languageAnalysis`, so
+    ///     it is counted in the form the tokenizer counts in (#1608).
     func collocation(
         for results: [SearchResult],
         parameters: SearchParameters,
         windowSize: Int,
         configuration: CollocationConfiguration,
-        reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int),
-        generated: String?,
+        reference: KeynessReference,
         maxMatches: Int? = nil
     ) async throws -> CollocationAnalysis.Outcome {
         // The tagger's verdict before anything below tokenizes (#1373). Both callers await it on the
@@ -120,7 +123,8 @@ extension SearchService {
         }
 
         // The query's own terms, in the form the collocates are counted in, so the exclusion
-        // compares like with like. Stems would not match — the counts are lemmas.
+        // compares like with like. Stems would not match — the counts are lemmas, or printed forms
+        // on a launch with no lemmatiser (#1608), and the same tokenizer makes both.
         var anchorLemmas: [String: Int] = [:]
         configuration.tokenizer.accumulate(from: terms.joined(separator: "\n"), into: &anchorLemmas)
 
@@ -137,8 +141,10 @@ extension SearchService {
             documentsOffered: documentsOffered,
             anchorCount: anchorCount,
             omittedAnchorCount: omittedAnchorCount,
-            reference: reference,
-            generated: generated
+            // The form the neighbours were ACTUALLY counted in, read off the tokenizer that counted
+            // them, so the ranking cannot be told one form while holding counts of the other.
+            wordForm: configuration.tokenizer.wordForm,
+            reference: reference
         )
     }
 

@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 286 blocks · no ⚑ wording issues
+**In this file:** 299 blocks · no ⚑ wording issues
 
 ---
 
@@ -2154,11 +2154,20 @@ Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival
 <!-- END SOURCE: related.poolCut %@ %@ -->
 
 #### No indexed documents share this document’s archival…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 442–443 | key: related.empty.detail -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 470–471 | key: related.empty.detail -->
 
 No indexed documents share this document’s archival provenance or cross-references — indexing more volumes may surface some.
 
 <!-- END SOURCE: related.empty.detail -->
+
+#### Shared words compared as printed: this device’s language…
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift | SemanticSharedTerms.Evidence.printedFormsNote | lines: 98–99 | key: related.sharedTerms.printedForms.note -->
+
+*Added by #1608 (2026-10-12). A line above Related Documents' rows on a launch whose language analysis has no lemmatiser, whenever the rows' shared words were compared (one of the two experimental wording signals is raised). The* shares: *chips used to be left out on such a launch; they now compare the two documents' words as printed, and this says that they did, why, and that another device can name different words, as the owner's condition for the fallback asks. It is shown whether or not a row has a chip: with none, every row shows a percentage where a device that reduces words can name the words, and this line is what says why.*
+
+Shared words compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so two documents share a word only where both print the same form (“negotiate” in one and “negotiated” in the other is not a match). A device that does reduce them (a Mac, or another iPhone or iPad) can name different shared words.
+
+<!-- END SOURCE: related.sharedTerms.printedForms.note -->
 
 #### At least %1$@ documents in %2$@ you have not downloaded…
 <!-- SOURCE: FRUSExplorer/RelatedDocuments/SimilarityModel.swift | RelatedDocumentsCounts.offIndexCaption | lines: 434–435 | key: related.offIndex.caption.capped %@ %@ -->

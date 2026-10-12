@@ -130,9 +130,10 @@ struct CollocationWindowTests {
 @Suite("Collocation analysis")
 struct CollocationAnalysisTests {
 
-    private let reference = (terms: ["treaty": 50_000, "ratify": 400, "government": 20_000,
-                                     "commitment": 900],
-                             totalTokens: 1_000_000, cutoffCount: 12)
+    private let reference = KeynessReference(
+        terms: ["treaty": 50_000, "ratify": 400, "government": 20_000, "commitment": 900],
+        totalTokens: 1_000_000, cutoffCount: 12, wordForm: .dictionary,
+        distinctTerms: 250_000, generated: "2026-07-27")
 
     private func rank(
         _ counts: [String: Int],
@@ -149,7 +150,7 @@ struct CollocationAnalysisTests {
             windowSize: 10, documentsScanned: scanned, documentsInScope: inScope,
             documentsOffered: offered ?? inScope,
             anchorCount: anchorCount, omittedAnchorCount: omitted,
-            reference: reference, generated: "2026-07-27")
+            wordForm: .dictionary, reference: reference)
     }
 
     private func result(_ outcome: CollocationAnalysis.Outcome) -> CollocationResult? {
@@ -221,7 +222,8 @@ struct CollocationAnalysisTests {
     @Test("A neighbourhood too thin to rank says so, rather than showing an empty list")
     func floorReported() {
         #expect(rank(["ratify": 2, "commitment": 1])
-                == .unavailable(.noNeighboursAboveFloor(minimum: Keyness.defaultMinimumScopeCount)))
+                == .unavailable(.noNeighboursAboveFloor(minimum: Keyness.defaultMinimumScopeCount,
+                                                        wordForm: .dictionary)))
     }
 
     @Test("No matches is distinct from nothing distinctive")
@@ -229,7 +231,7 @@ struct CollocationAnalysisTests {
         #expect(rank([:], anchorCount: 0) == .unavailable(.noMatches))
         #expect(rank(["ratify": 90], anchorCount: 0) == .unavailable(.noMatches))
         // Everything present but nothing over-used: a real result about ordinary prose.
-        #expect(rank(["government": 5]) == .unavailable(.nothingDistinctive))
+        #expect(rank(["government": 5]) == .unavailable(.nothingDistinctive(wordForm: .dictionary)))
     }
 
     @Test("The bounds travel with the result, so a partial scan can never read as a complete one")
@@ -306,7 +308,7 @@ struct CollocationVocabularyPairingTests {
         let reference = try referenceTerms()
         // The SAME construction the word cloud counts with, which is what the reference was built by.
         let tokenizer = WordCloudTokenizer.configured(
-            tuning: .standard, lens: .allTerms, includeDiplomatic: true)
+            tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: .dictionary)
         var counts: [String: Int] = [:]
         let total = tokenizer.accumulate(from: passage, into: &counts)
 

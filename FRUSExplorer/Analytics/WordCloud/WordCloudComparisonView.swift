@@ -128,10 +128,7 @@ struct ComparativeCloudColumn: View {
             .foregroundStyle(.secondary)
             // The column is always All terms (`WordCloudLoader.load`'s default lens).
             if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: .allTerms) {
-                Text(printed)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                PrintedFormsNote(text: printed)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

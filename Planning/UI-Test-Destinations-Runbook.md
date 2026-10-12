@@ -412,7 +412,13 @@ simulator's state, not the arrangement. So on that one iPhone 17e, over the 2 to
 it booted, about one launch in four (18 of 75) lost its lemmatiser wherever the warm-up started —
 where a command-line probe on a warm iPad Pro lost it in 1 of 41 processes, so do not read the rate
 as a property of iOS 27.0. Such a launch is the canary's to report, and a passing run does not mean
-every launch lemmatised: read the printed line. Each run's `NaturalLanguageReadinessWarmUpTests`
+every launch lemmatised: read the printed line. Counted again on 2026-10-12 (#1608): the iPhone 17
+under iOS 27.0 kept its lemmatiser in 15 launches of 15, and the iPad Pro 13-inch (M5) lost it in 1 of
+3, the first after its boot, which was this pair of suites' own run (8 tests passed in it, its line
+reading `Lemma=timedOut@30.002s withheld=[Lemma]`). Since #1608 such a launch also ranks: Collocates,
+Distinctive sizing and Related Documents' shared words compare printed forms with a reference counted
+as printed. To have one on demand, launch a Debug build with `FRUS_DEBUG_NO_LEMMA_ANSWER=1`
+(`CLAUDE.md`, "To see a launch with no lemmatiser"). Each run's `NaturalLanguageReadinessWarmUpTests`
 prints the warm-up it saw (`[#1373] …` — the release log's own line since #1539: what started it,
 how far into the process, what each request answered and what was withheld), which is how those
 launches were counted. On the **iOS 26 simulators** (26.3,

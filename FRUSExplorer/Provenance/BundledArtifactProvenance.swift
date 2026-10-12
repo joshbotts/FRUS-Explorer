@@ -201,6 +201,10 @@ enum BundledArtifactProvenance {
         "keyness-baseline.json": .init(
             generator: "CloudVectors", inputs: ["VOLUMES_DIR", "MANIFEST", "LEXICONS", "STOPWORDS"],
             source: .appWordLists),
+        // The same reference counted as printed (#1608), out of the same run and the same inputs.
+        "keyness-baseline-printed.json": .init(
+            generator: "CloudVectors", inputs: ["VOLUMES_DIR", "MANIFEST", "LEXICONS", "STOPWORDS"],
+            source: .appWordLists),
         "semantic-vectors-index.json": .init(
             generator: "SemanticVectors",
             inputs: ["STORE", "MANIFEST", "LEXICONS", "STOPWORDS", "LAYOUT_DIR"], source: .appModel),

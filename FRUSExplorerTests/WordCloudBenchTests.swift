@@ -119,7 +119,8 @@ struct WordCloudBenchTests {
         let tuning = WordCloudTuning(minimumLength: 5, minimumCount: 2,
                                      foldPlurals: true, filterMarkings: true)
         let tokenizer = WordCloudTokenizer.configured(
-            tuning: tuning, lens: .allTerms, includeDiplomatic: true, extraStopwords: [])
+            tuning: tuning, lens: .allTerms, includeDiplomatic: true, extraStopwords: [],
+            wordForm: .dictionary)
         let bench = WordCloudBench.evaluate(sample: sample, tuning: tuning, lens: .allTerms,
                                             includeDiplomatic: true, extraStopwords: [],
                                             isFromUserCorpus: false)

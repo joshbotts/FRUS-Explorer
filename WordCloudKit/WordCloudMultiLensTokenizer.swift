@@ -52,11 +52,24 @@ import NaturalLanguage
 /// `.joinNames`, which merges adjacent tokens), so they cannot share this enumeration.
 /// They are excluded from the bundled vectors anyway, and ``init`` rejects them.
 ///
+/// ## Both forms from one pass (#1608)
+/// ``accumulate(from:into:printedInto:)`` also counts every word as printed, in the pass that
+/// counts it in its dictionary form. That is what lets `CloudVectorsGenerator` write the reference
+/// counted as printed without tagging the corpus a second time: the printed form of a token is its
+/// surface, lowercased and plural-folded under the tuning, which is what a walk with no lemma scheme
+/// makes of the same token. Two things have to hold for the one pass to equal such a walk, and
+/// both are a closed framework's behaviour rather than a guarantee: a walk by `.lemma` and a walk by
+/// `.tokenType` find the same words, and a word's lexical class is the same whether or not the
+/// tagger also holds the lemma scheme. `WordCloudPrintedFormParityTests` pins both on fixtures, and
+/// the generator's `VERIFY_PRINTED_WALK=1` run measures them over every document of the corpus.
+///
 /// Version history:
 ///   1.0 — O-1: initial implementation (decision O-1-2, one pass with N accumulators)
 ///   1.1 — #1373: the tagger comes from `NaturalLanguageReadiness`, after the warm-up
 ///   1.2 — #1539 review round 1: the walk follows the tagger's schemes, as `WordCloudTokenizer`'s
 ///          does, so a tagger the gate built without `.lemma` still counts every word
+///   1.3 — #1608: ``wordForm``, and ``accumulate(from:into:printedInto:)``, which counts the
+///          dictionary and the printed form of every word in one pass; ``readsLexicalClass(_:)``
 public struct WordCloudMultiLensTokenizer: Sendable {
 
     /// One lens and the filter it applies, resolved once at init.
@@ -82,6 +95,11 @@ public struct WordCloudMultiLensTokenizer: Sendable {
     /// The lenses this tokenizer counts, in the order given at init.
     public var lenses: [WordCloudLens] { channels.map(\.lens) }
 
+    /// The form ``accumulate(from:into:)`` counts in (#1608). `.printed` asks for a tagger with no
+    /// lemma scheme, as `WordCloudTokenizer` does, so the pass is the walk a launch with no
+    /// lemmatiser makes.
+    public let wordForm: WordCloudWordForm
+
     /// Creates a multi-lens tokenizer.
     ///
     /// - Parameters:
@@ -92,6 +110,7 @@ public struct WordCloudMultiLensTokenizer: Sendable {
     ///   - lexicons: Supplies the membership set for `.concepts` / `.sentiment`.
     ///   - markings: Classification/chrome terms rejected across all lenses. Pass empty
     ///     to disable, matching `WordCloudTuning.filterMarkings == false`.
+    ///   - wordForm: The form ``accumulate(from:into:)`` counts in. Default `.dictionary`.
     /// - Returns: `nil` if `lenses` is empty or contains an entity lens — a caller that
     ///   asked for entity counts here would otherwise silently receive none.
     public init?(
@@ -99,7 +118,8 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         tuning: WordCloudTuning,
         stopwords: Set<String>,
         lexicons: WordCloudLexiconSet,
-        markings: Set<String>
+        markings: Set<String>,
+        wordForm: WordCloudWordForm = .dictionary
     ) {
         guard !lenses.isEmpty, !lenses.contains(where: \.isEntity) else { return nil }
 
@@ -117,6 +137,19 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         self.foldPlurals = tuning.foldPlurals
         self.markings = markings
         self.requestsLexicalClass = self.channels.contains { $0.lexicalTag != nil }
+        self.wordForm = wordForm
+    }
+
+    /// Whether `lens` keeps words by their part of speech, so a tokenizer that counts it asks the
+    /// tagger for the lexical-class scheme (#1608).
+    ///
+    /// Public for `CloudVectorsGenerator`'s verification walk, which has to build both taggers a
+    /// device builds when it counts as printed: one that holds the lexical classes, for Topics,
+    /// Actions and Descriptors, and one that does not, for All terms, Concepts and Sentiment. The
+    /// list is not repeated there, because a lens added here would be missing from it silently.
+    /// - Parameter lens: A word lens. An entity lens reads no lexical class and answers `false`.
+    public static func readsLexicalClass(_ lens: WordCloudLens) -> Bool {
+        lexicalTag(for: lens) != nil
     }
 
     /// The `NaturalLanguage` lexical-class tag a part-of-speech lens filters on.
@@ -131,6 +164,14 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         }
     }
 
+    /// The schemes a pass asks the gate for: the walk's own — `.lemma`, or `.tokenType` for a
+    /// `.printed` tokenizer (#1608) — and `.lexicalClass` only when a part-of-speech lens is
+    /// present (the asymmetry note above). Internal so a test reads what each form asks for.
+    var schemes: [NLTagScheme] {
+        let walk: NLTagScheme = wordForm == .printed ? .tokenType : .lemma
+        return requestsLexicalClass ? [walk, .lexicalClass] : [walk]
+    }
+
     /// Accumulates counts for every configured lens from a single pass over `text`.
     ///
     /// Counts are accumulated into the caller's dictionary-of-dictionaries so a whole
@@ -142,10 +183,28 @@ public struct WordCloudMultiLensTokenizer: Sendable {
     ///   - counts: A running `lens → term → count` tally, mutated in place.
     public func accumulate(from text: String, into counts: inout [WordCloudLens: [String: Int]]) {
         guard !text.isEmpty else { return }
-
-        let schemes: [NLTagScheme] = requestsLexicalClass ? [.lemma, .lexicalClass] : [.lemma]
         // Through the readiness gate, like `WordCloudTokenizer` — see there (#1373).
         accumulate(from: text, into: &counts, tagger: NaturalLanguageReadiness.tagger(tagSchemes: schemes))
+    }
+
+    /// Accumulates counts for every configured lens in **both** forms from a single pass over
+    /// `text` (#1608): the dictionary form into `counts`, exactly as ``accumulate(from:into:)``
+    /// counts it, and the printed form into `printed`.
+    ///
+    /// The printed tally is what a `.printed` tokenizer counts over the same text — see "Both forms
+    /// from one pass" above for what that rests on. Call it on a `.dictionary` tokenizer: over a
+    /// tagger with no lemma scheme the two tallies are the same count.
+    ///
+    /// - Parameters:
+    ///   - text: The document body text to tokenise.
+    ///   - counts: A running `lens → term → count` tally in dictionary forms, mutated in place.
+    ///   - printed: A running `lens → term → count` tally in printed forms, mutated in place.
+    public func accumulate(from text: String,
+                           into counts: inout [WordCloudLens: [String: Int]],
+                           printedInto printed: inout [WordCloudLens: [String: Int]]) {
+        guard !text.isEmpty else { return }
+        accumulate(from: text, into: &counts, printedInto: &printed,
+                   tagger: NaturalLanguageReadiness.tagger(tagSchemes: schemes))
     }
 
     /// The pass over `tagger`, which ``accumulate(from:into:)`` builds through the gate.
@@ -158,6 +217,35 @@ public struct WordCloudMultiLensTokenizer: Sendable {
     ///   - counts: A running `lens → term → count` tally, mutated in place.
     ///   - tagger: The tagger to walk, from `NaturalLanguageReadiness.tagger(tagSchemes:)`.
     func accumulate(from text: String, into counts: inout [WordCloudLens: [String: Int]], tagger: NLTagger) {
+        var unused: [WordCloudLens: [String: Int]] = [:]
+        walk(text, tagger: tagger, into: &counts, printedInto: &unused, countsPrinted: false)
+    }
+
+    /// The both-forms pass over `tagger`, which ``accumulate(from:into:printedInto:)`` builds
+    /// through the gate. Internal so a test can hand it a tagger of its own.
+    /// - Parameters:
+    ///   - text: The document body text to tokenise.
+    ///   - counts: A running tally in dictionary forms, mutated in place.
+    ///   - printed: A running tally in printed forms, mutated in place.
+    ///   - tagger: The tagger to walk, from `NaturalLanguageReadiness.tagger(tagSchemes:)`.
+    func accumulate(from text: String, into counts: inout [WordCloudLens: [String: Int]],
+                    printedInto printed: inout [WordCloudLens: [String: Int]], tagger: NLTagger) {
+        walk(text, tagger: tagger, into: &counts, printedInto: &printed, countsPrinted: true)
+    }
+
+    /// One walk over `tagger`, counting each word's candidate into `counts` and, when
+    /// `countsPrinted`, its printed form into `printed`.
+    ///
+    /// The candidate is `WordCloudTokenizer.accumulateWords`' own: the lemma where the walk gives
+    /// one, and otherwise the printed form — the surface, lowercased, and plural-folded when the
+    /// tuning folds. So the printed form is the candidate of a word with no lemma, and a walk with
+    /// no lemma scheme counts nothing else. Each form passes the markings, the length and stopword
+    /// test and the lens's own filter by itself: a word whose lemma is a stopword and whose printed
+    /// form is not ("says", under "say") is counted in one tally and not the other.
+    private func walk(_ text: String, tagger: NLTagger,
+                      into counts: inout [WordCloudLens: [String: Int]],
+                      printedInto printed: inout [WordCloudLens: [String: Int]],
+                      countsPrinted: Bool) {
         let walk = NaturalLanguageReadiness.wordWalkScheme(of: tagger)
         tagger.string = text
         // The FRUS corpus is English; pinning the language improves lemma quality and
@@ -174,19 +262,32 @@ public struct WordCloudMultiLensTokenizer: Sendable {
             let surface = text[tokenRange]
             let lemma = walk == .lemma ? tag?.rawValue : nil
             let hasLemma = (lemma?.isEmpty == false)
-            var candidate = (hasLemma ? lemma! : String(surface)).lowercased()
-            if !hasLemma && foldPlurals { candidate = WordCloudTokenizer.singularize(candidate) }
+            // The printed form is worked out only where something reads it: for a word with no
+            // lemma, whose candidate it is, and for every word of a both-forms pass.
+            var printedForm = ""
+            if countsPrinted || !hasLemma {
+                printedForm = String(surface).lowercased()
+                if foldPlurals { printedForm = WordCloudTokenizer.singularize(printedForm) }
+            }
+            let candidate = hasLemma ? lemma!.lowercased() : printedForm
 
             // Rejected for every lens alike — test these before paying for the POS tag.
-            if markings.contains(candidate) { return true }
-            guard isAcceptable(candidate) else { return true }
+            let keepsCandidate = !markings.contains(candidate) && isAcceptable(candidate)
+            let keepsPrinted = countsPrinted
+                && (hasLemma ? !markings.contains(printedForm) && isAcceptable(printedForm)
+                             : keepsCandidate)
+            guard keepsCandidate || keepsPrinted else { return true }
 
             // The lexical class is read at most once per surviving token, and only when
             // some channel needs it.
             var lexicalClass: NLTag??
             for channel in channels {
+                var countsCandidate = keepsCandidate
+                var countsPrintedForm = keepsPrinted
                 if let lexicon = channel.lexicon {
-                    guard lexicon.contains(candidate) else { continue }
+                    countsCandidate = countsCandidate && lexicon.contains(candidate)
+                    countsPrintedForm = countsPrintedForm && lexicon.contains(printedForm)
+                    guard countsCandidate || countsPrintedForm else { continue }
                 } else if let needed = channel.lexicalTag {
                     if lexicalClass == nil {
                         lexicalClass = tagger.tag(at: tokenRange.lowerBound,
@@ -194,7 +295,8 @@ public struct WordCloudMultiLensTokenizer: Sendable {
                     }
                     guard lexicalClass! == needed else { continue }
                 }
-                counts[channel.lens, default: [:]][candidate, default: 0] += 1
+                if countsCandidate { counts[channel.lens, default: [:]][candidate, default: 0] += 1 }
+                if countsPrintedForm { printed[channel.lens, default: [:]][printedForm, default: 0] += 1 }
             }
             return true
         }

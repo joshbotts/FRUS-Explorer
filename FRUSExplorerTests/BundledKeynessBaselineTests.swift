@@ -79,8 +79,6 @@ struct BundledKeynessBaselineTests {
         #expect(!BundledKeynessBaseline.isAvailable)
         #expect(ask(.allTerms) == .unavailable(.noArtifact),
                 "Returning empty counts would score EVERY scope term as unique to the scope — a keyness list that is entirely wrong and entirely plausible-looking")
-        #expect(BundledKeynessBaseline.coverage(for: .allTerms) == nil)
-        #expect(BundledKeynessBaseline.generated == nil)
     }
 
     @Test("A lens the generator does not emit is unavailable, not empty")
@@ -106,22 +104,22 @@ struct BundledKeynessBaselineTests {
         inject(makeFile(lenses: [.allTerms: (1_000_000, 45_000, ["treaty": 400, "morale": 12])]))
         defer { inject(nil) }
 
-        guard case .available(let terms, let totalTokens, let cutoffCount) = ask(.allTerms) else {
+        guard case .available(let reference) = ask(.allTerms) else {
             Issue.record("expected a baseline"); return
         }
-        #expect(terms["treaty"] == 400)
-        #expect(terms["morale"] == 12)
+        #expect(reference.terms["treaty"] == 400)
+        #expect(reference.terms["morale"] == 12)
         // The denominator must be the artifact's true total, NOT the sum of the two terms present.
-        #expect(totalTokens == 1_000_000)
-        #expect(totalTokens != terms.values.reduce(0, +))
-        #expect(cutoffCount == 12)
+        #expect(reference.totalTokens == 1_000_000)
+        #expect(reference.totalTokens != reference.terms.values.reduce(0, +))
+        #expect(reference.cutoffCount == 12)
 
-        let coverage = try #require(BundledKeynessBaseline.coverage(for: .allTerms))
-        #expect(coverage.retained == 2)
-        #expect(coverage.distinct == 45_000,
+        // The coverage and the stamp travel with the counts since #1608, in the one value.
+        #expect(reference.terms.count == 2)
+        #expect(reference.distinctTerms == 45_000,
                 "Coverage has to state what fraction of the corpus vocabulary is priced, so a keyness view can disclose it")
-        #expect(coverage.cutoffCount == 12)
-        #expect(BundledKeynessBaseline.generated == "2026-07-30")
+        #expect(reference.generated == "2026-07-30")
+        #expect(reference.wordForm == .dictionary)
     }
 
     // MARK: - Configuration guard
@@ -191,8 +189,12 @@ struct BundledKeynessBaselineTests {
     }
 
     // MARK: - #1373: the tagger the scope was counted with
+    //
+    // `inject` loads the dictionary-form reference alone. Since #1608 a scope counted without the
+    // lemmatiser reads the reference counted as printed (`PrintedFormReferenceSelectionTests`);
+    // with that file not loaded it is refused as it was, which is what the first test holds.
 
-    @Test("A scope counted without the lemmatiser has no comparable reference, on every word lens")
+    @Test("With only the dictionary-form reference loaded, a scope counted without the lemmatiser has no comparable reference, on every word lens (#1373, #1608)")
     func noLemmatiserWithholdsEveryWordLens() {
         inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40]),
                                  .topics: (1000, 100, ["treaty": 40]),
@@ -241,12 +243,41 @@ struct BundledKeynessBaselineTests {
 
     @Test("The tagger check runs BEFORE the configuration check: no setting would fix it")
     func languageAnalysisPrecedesConfiguration() {
+        inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40]),
+                                 .topics: (1000, 100, ["treaty": 40])]))
+        defer { inject(nil) }
+        // A part-of-speech lens counted without lexical classes, under a setting that differs: both
+        // are wrong. A mismatch message would tell the reader to restore a setting, and restoring
+        // it would only reveal the second refusal.
+        //
+        // Until #1608 this test asked with no lemmatiser, and passed since for another reason: its
+        // fixture loads no printed-form reference (the next test). The case in which the order of
+        // the two checks decides the answer is this one.
+        let unclassified = NaturalLanguageHealth(lemmatizes: true, classifiesWords: false,
+                                                 recognizesNames: true)
+        // The controls, one for each wrong thing: priced when neither is wrong, and refused for
+        // the setting when only the setting is.
+        guard case .available = ask(.topics) else {
+            Issue.record("Topics is not priced under a working tagger and the artifact's settings")
+            return
+        }
+        #expect(ask(.topics, includeDiplomatic: false)
+                == .unavailable(.configurationMismatch([.diplomaticLayer])))
+        #expect(ask(.topics, includeDiplomatic: false, languageAnalysis: unclassified)
+                == .unavailable(.languageAnalysisUnavailable))
+    }
+
+    @Test("With only the dictionary-form reference loaded, a scope counted without the lemmatiser is refused for the tagger and not for a setting (#1608)")
+    func missingPrintedReferencePrecedesConfiguration() {
         inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40])]))
         defer { inject(nil) }
         let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
                                                  recognizesNames: true)
-        // Both are wrong. A mismatch message would tell the reader to restore a setting, and
-        // restoring it would only reveal the second refusal.
+        // With the reference counted as printed loaded, this scope reads it, and a setting that
+        // differs is a mismatch like any other
+        // (`PrintedFormReferenceSelectionTests.settingsStillApplyToThePrintedReference`). With it
+        // not loaded there is nothing the settings could be compared with: restoring the setting
+        // would rank nothing, so the refusal is the one no setting fixes.
         #expect(ask(.allTerms, includeDiplomatic: false, languageAnalysis: unlemmatised)
                 == .unavailable(.languageAnalysisUnavailable))
     }

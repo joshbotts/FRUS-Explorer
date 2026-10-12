@@ -193,6 +193,9 @@ struct RelatedDocumentsContent: View {
     /// Guards the load task against the documented Group-modifier duplicate fire (a branch swap
     /// re-fires `.task(id:)`); `nil` until the first load completes.
     @State private var lastLoadedKey: String?
+    /// What the list says above its rows when their shared words were compared as printed (#1608);
+    /// `nil` when they were compared in dictionary forms, or not compared at all.
+    @State private var sharedTermsNote: String?
 
     /// Designated initializer — seeds the live tuning + scope from the request.
     init(appState: AppState, request: RelatedDocumentsRequest,
@@ -236,6 +239,15 @@ struct RelatedDocumentsContent: View {
                             Text(emptyDetail)
                                 .font(.caption).foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
+                        }
+                        // Shared words compared as printed say so above the rows (#1608). A row of
+                        // the list, like the two notes below the rows, so it wraps to its whole
+                        // length and scrolls with them.
+                        if let sharedTermsNote {
+                            Text(sharedTermsNote)
+                                .font(.caption).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier(Self.sharedTermsNoteIdentifier)
                         }
                         ForEach(rows) { row in
                             Button { open(row) } label: { rowLabel(row) }
@@ -305,6 +317,9 @@ struct RelatedDocumentsContent: View {
             totalBeforeLimit = result.totalBeforeLimit
             poolCutFrom = result.poolCutFrom
             offIndexLeads = result.offIndexLeads
+            // The new rows' shared words have not been compared yet, so nothing is said of how
+            // until the pass below has compared them.
+            sharedTermsNote = nil
             isLoading = false
 
             // The semantic axis's "why related" evidence, computed AFTER ranking and only for the
@@ -409,22 +424,34 @@ struct RelatedDocumentsContent: View {
             vocabularyAxes.contains { row.axisScores[$0] != nil }
         }
         guard !scoredRows.isEmpty else { return }
-        let terms = await SemanticSharedTerms.sharedTerms(
+        let evidence = await SemanticSharedTerms.sharedTerms(
             anchor: request.anchor, candidates: scoredRows.map(\.key), appState: appState)
-        guard !terms.isEmpty, !Task.isCancelled, lastLoadedKey == claimedKey else { return }
+        guard !Task.isCancelled, lastLoadedKey == claimedKey else { return }
+        // How these rows' shared words were compared, whether or not a row has one to show
+        // (#1608): with none, the note is what explains a list of percentages where a device that
+        // reduces words names the words. Set with the chips, never before the pass has run.
+        sharedTermsNote = evidence.printedFormsNote
+        guard !evidence.terms.isEmpty else { return }
         for index in rows.indices {
-            guard let found = terms[rows[index].key], !found.isEmpty else { continue }
+            guard let found = evidence.terms[rows[index].key], !found.isEmpty else { continue }
             for axis in vocabularyAxes where rows[index].axisScores[axis] != nil {
                 rows[index].axisEvidenceLabel[axis] = found.joined(separator: "\u{1F}")
             }
         }
     }
 
+    /// The accessibility identifier of the row that says the chips compared printed forms (#1608).
+    static let sharedTermsNoteIdentifier = "related.sharedTerms.printedFormsNote"
+
     /// Reload identity: re-runs when the pipeline becomes ready, the scope changes, a weight
     /// slider settles (via `weightReloadToken`), or the read-only stores are recreated after an
     /// in-session reindex (`readOnlyStoresGeneration`, the #275 convention — the engine's
     /// cross-reference and person axes read those stores, so a ranking computed against the
-    /// pre-refresh connections must re-run once the stores are reopened).
+    /// pre-refresh connections must re-run once the stores are reopened). And, since #1608, when
+    /// the form the tagger counts in changes (`SemanticSharedTerms.reloadToken(for:)`): the rows'
+    /// shared words were compared as printed and the list says "right now" of it, so once a
+    /// re-check adopts a lemmatiser they are compared again, in dictionary forms, and the note
+    /// goes. Not on every re-check: one that adopts names or lexical classes changes nothing here.
     private var reloadKey: String {
         let scopeKey: String
         switch scope {
@@ -433,6 +460,7 @@ struct RelatedDocumentsContent: View {
         case .subseries(let k, _): scopeKey = "sub:\(k)"
         }
         return "\(pipelineReady)|\(scopeKey)|\(weightReloadToken)|\(appState.readOnlyStoresGeneration)"
+            + "|\(SemanticSharedTerms.reloadToken(for: LanguageAnalysisMonitor.shared.status))"
     }
 
     /// The empty-state detail, scope-aware so a scoped empty invites widening.

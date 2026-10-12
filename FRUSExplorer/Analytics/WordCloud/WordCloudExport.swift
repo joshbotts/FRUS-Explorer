@@ -158,7 +158,9 @@ enum WordCloudExporter {
         let tokenizer = WordCloudTokenizer.configured(
             tuning: tuning,
             includeDiplomatic: excludeBoilerplate,
-            extraStopwords: WordCloudSettings.extraStopwords(for: .allTerms)
+            extraStopwords: WordCloudSettings.extraStopwords(for: .allTerms),
+            // The form of the verdict the plate's method line is decided by below (#1608).
+            wordForm: languageAnalysis.wordForm
         )
         var counts: [String: Int] = [:]
         for text in texts { tokenizer.accumulate(from: text, into: &counts) }

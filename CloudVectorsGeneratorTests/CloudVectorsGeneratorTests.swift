@@ -153,7 +153,7 @@ struct CloudVectorsAggregatorTests {
         var counts: [String: Int] = [:]
         for i in 0..<200 { counts["term\(i)"] = 200 - i }
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
-                                    generated: "d", tuning: .standard)
+                                    generated: "d", tuning: .standard, printedCorpus: [:])
         let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
         #expect(lens?.terms.count == 200)
         #expect(lens?.distinctTerms == 200)
@@ -173,7 +173,7 @@ struct CloudVectorsAggregatorTests {
         for i in 0..<overflow { counts["t\(String(format: "%06d", i))"] = overflow - i }
         counts["dominant"] = 1_000_000
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
-                                    generated: "d", tuning: .standard)
+                                    generated: "d", tuning: .standard, printedCorpus: [:])
         let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
 
         #expect(lens?.terms.count == CloudVectorsAggregator.baselineTermsPerLens)
@@ -194,7 +194,7 @@ struct CloudVectorsAggregatorTests {
             volume("v1", "1969-76", [.topics: ["treaty": 10, "missile": 4]]),
             volume("v2", "1969-76", [.topics: ["treaty": 5]]),
             volume("v3", "1977-80", [.topics: ["treaty": 1]]),
-        ], generated: "d", tuning: .standard)
+        ], generated: "d", tuning: .standard, printedCorpus: [:])
         let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
         #expect(lens?.terms["treaty"] == 16)
         #expect(lens?.terms["missile"] == 4)
@@ -210,7 +210,7 @@ struct CloudVectorsAggregatorTests {
             .topics: ["treaty": 10],
             .actions: ["negotiate": 7, "ratify": 2],
             .concepts: ["security": 3],
-        ])], generated: "d", tuning: .standard)
+        ])], generated: "d", tuning: .standard, printedCorpus: [:])
         let lenses = out.keynessBaseline.lenses
         #expect(Set(lenses.keys) == ["topics", "actions", "concepts"])
         #expect(lenses["topics"]?.totalTokens == 10)
@@ -230,7 +230,7 @@ struct CloudVectorsAggregatorTests {
         // 50 terms all tied at the boundary count — far more than the 10 slots left in the budget.
         for i in 0..<50 { counts["tied\(String(format: "%02d", i))"] = 5 }
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
-                                    generated: "d", tuning: .standard)
+                                    generated: "d", tuning: .standard, printedCorpus: [:])
         let lens = out.keynessBaseline.lenses["topics"]
 
         #expect(lens?.terms.count == CloudVectorsAggregator.baselineTermsPerLens + 40,
@@ -246,7 +246,7 @@ struct CloudVectorsAggregatorTests {
     @Test("cutoffCount is the smallest RETAINED count, so absence means 'rarer than this'")
     func baselineReportsItsCutoff() {
         let out = aggregator().pack(volumes: [volume("v1", "e",
-            [.topics: ["a": 9, "b": 4, "c": 4]])], generated: "d", tuning: .standard)
+            [.topics: ["a": 9, "b": 4, "c": 4]])], generated: "d", tuning: .standard, printedCorpus: [:])
         // Nothing was truncated here, so the cutoff is simply the rarest term present.
         #expect(out.keynessBaseline.lenses["topics"]?.cutoffCount == 4)
     }
@@ -258,7 +258,7 @@ struct CloudVectorsAggregatorTests {
             lexiconsDigest: "lex", stopwordsDigest: "stop")
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: ["treaty": 1]])],
                                     generated: "d", tuning: .standard,
-                                    configuration: configuration)
+                                    configuration: configuration, printedCorpus: [:])
         // Without this the artifact ships unpinned and a later lexicon edit corrupts every ranking.
         #expect(out.keynessBaseline.configuration == configuration)
     }
@@ -269,7 +269,7 @@ struct CloudVectorsAggregatorTests {
         var counts: [String: Int] = ["kept": 100]
         for i in 0..<CloudVectorsAggregator.baselineTermsPerLens { counts["small\(i)"] = 1 }
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
-                                    generated: "d", tuning: .standard)
+                                    generated: "d", tuning: .standard, printedCorpus: [:])
         let lens = out.keynessBaseline.lenses[WordCloudLens.topics.rawValue]
         #expect(lens?.terms["kept"] == 100, "The most common term must never be the one dropped")
         // The budget is exceeded here because every "small" term ties at 1 and the band is kept
@@ -284,7 +284,7 @@ struct CloudVectorsAggregatorTests {
             volume("v1", "1969-76", [.topics: ["treaty": 10, "missile": 4]]),
             volume("v2", "1969-76", [.topics: ["treaty": 5, "summit": 3]]),
             volume("v3", "1977-80", [.topics: ["treaty": 1]]),
-        ], generated: "2026-07-27", tuning: .standard)
+        ], generated: "2026-07-27", tuning: .standard, printedCorpus: [:])
 
         #expect(terms(out.core, "1969-76", .topics) == ["treaty": 15, "missile": 4, "summit": 3])
         #expect(terms(out.core, "1977-80", .topics) == ["treaty": 1])
@@ -303,7 +303,7 @@ struct CloudVectorsAggregatorTests {
             for k in 0..<CloudVectorsAggregator.topTermsPerList { counts["loud\(v)-\(k)"] = 50 }
             volumes.append(volume("v\(v)", "era", [.topics: counts]))
         }
-        let out = aggregator().pack(volumes: volumes, generated: "d", tuning: .standard)
+        let out = aggregator().pack(volumes: volumes, generated: "d", tuning: .standard, printedCorpus: [:])
         // 60 x 5 = 300, above every one-off's 50.
         #expect(terms(out.core, "era", .topics)["steady"] == 300)
     }
@@ -312,7 +312,7 @@ struct CloudVectorsAggregatorTests {
     func ranksDeterministically() {
         let counts = ["delta": 7, "alpha": 7, "charlie": 9, "bravo": 7]
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
-                                    generated: "d", tuning: .standard)
+                                    generated: "d", tuning: .standard, printedCorpus: [:])
         let list = out.volumes.scopes["v1"]!.lists[WordCloudLens.topics.rawValue]!
         #expect(list.entries.map { out.volumes.vocabulary[$0.term] }
                 == ["charlie", "alpha", "bravo", "delta"])
@@ -330,7 +330,7 @@ struct CloudVectorsAggregatorTests {
                 volume("v1", "1969-76", [.topics: ["treaty": 10, "summit": 10, "missile": 4],
                                          .concepts: ["security": 6]]),
                 volume("v2", "1969-76", [.topics: ["treaty": 2], .concepts: ["sovereignty": 6]]),
-            ], generated: "2026-07-27", tuning: .standard)
+            ], generated: "2026-07-27", tuning: .standard, printedCorpus: [:])
             let data = try encoder.encode(out.core)
             if let baseline { #expect(data == baseline) } else { baseline = data }
         }
@@ -340,7 +340,7 @@ struct CloudVectorsAggregatorTests {
     func vocabularyRoundTrips() throws {
         let out = aggregator().pack(volumes: [
             volume("v1", "e", [.topics: ["treaty": 3], .concepts: ["security": 2]]),
-        ], generated: "d", tuning: .standard)
+        ], generated: "d", tuning: .standard, printedCorpus: [:])
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -364,7 +364,7 @@ struct CloudVectorsAggregatorTests {
         let out = aggregator().pack(volumes: [
             volume("v1", "e", [.sentiment: ["peace": 9, "crisis": 4],
                                .topics: ["treaty": 5]]),
-        ], generated: "d", tuning: .standard)
+        ], generated: "d", tuning: .standard, printedCorpus: [:])
 
         let sentiment = out.volumes.scopes["v1"]!.lists[WordCloudLens.sentiment.rawValue]!
         let byTerm = Dictionary(uniqueKeysWithValues:
@@ -385,7 +385,7 @@ struct CloudVectorsAggregatorTests {
         let out = aggregator().pack(volumes: [
             volume("v1", "e", [.concepts: ["security": 2]]),          // 1 term, threshold 4
             volume("v2", "e", [.topics: ["treaty": 9, "summit": 2]]), // topics has no threshold
-        ], generated: "d", tuning: .standard)
+        ], generated: "d", tuning: .standard, printedCorpus: [:])
 
         let thin = out.volumes.scopes["v1"]!.lists[WordCloudLens.concepts.rawValue]!
         #expect(thin.belowSignalThreshold)
@@ -402,7 +402,7 @@ struct CloudVectorsAggregatorTests {
         let expected = counts.values.reduce(0, +)
 
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: counts])],
-                                    generated: "d", tuning: .standard)
+                                    generated: "d", tuning: .standard, printedCorpus: [:])
         let list = out.volumes.scopes["v1"]!.lists[WordCloudLens.topics.rawValue]!
         #expect(list.entries.count == CloudVectorsAggregator.topTermsPerList)
         #expect(list.total == expected, "total must precede truncation, or it cannot weight a scope")
@@ -412,7 +412,7 @@ struct CloudVectorsAggregatorTests {
     @Test("Provenance records the tuning the artifact was built under")
     func provenanceRecordsTuning() {
         let out = aggregator().pack(volumes: [volume("v1", "e", [.topics: ["treaty": 1]])],
-                                    generated: "2026-07-27", tuning: .standard)
+                                    generated: "2026-07-27", tuning: .standard, printedCorpus: [:])
         #expect(out.core.provenance.tuning == WordCloudTuning.standard)
         #expect(out.core.provenance.volumeCount == 1)
         #expect(out.core.provenance.documentCount == 10)
@@ -425,7 +425,7 @@ struct CloudVectorsAggregatorTests {
         let out = aggregator().pack(volumes: [
             volume("v1", "1969-76", [.topics: ["a": 1]]),
             volume("v2", "1977-80", [.topics: ["b": 1]]),
-        ], generated: "d", tuning: .standard)
+        ], generated: "d", tuning: .standard, printedCorpus: [:])
 
         #expect(Set(out.core.scopes.keys) == ["corpus", "1969-76", "1977-80"])
         #expect(Set(out.volumes.scopes.keys) == ["v1", "v2"])
@@ -500,5 +500,410 @@ struct CloudVectorsLanguageAnalysisGuardTests {
             #expect(refusal.upperBound <= site.lowerBound,
                     "run() reaches \(later) before it refuses on the tagger canary")
         }
+    }
+}
+
+// MARK: - The reference counted as printed (#1608)
+
+/// The second keyness reference: the corpus counted as printed, for a scope counted on a launch
+/// with no lemmatiser.
+///
+/// Version history:
+///   1.0 — #1608: initial implementation
+@Suite("CloudVectors — the keyness reference counted as printed (#1608)")
+struct PrintedKeynessBaselineTests {
+
+    private let lexicons = WordCloudLexiconSet(payload: .init(
+        concepts: ["sovereignty", "security"], sentimentPositive: ["peace"], sentimentNegative: ["crisis"]))
+
+    private func volume(_ id: String, _ counts: [WordCloudLens: [String: Int]]) -> CloudVectorsAggregator.VolumeCounts {
+        .init(volumeId: id, subseries: "e", documentCount: 10, counts: counts)
+    }
+
+    private func pack(dictionary: [WordCloudLens: [String: Int]],
+                      printed: [WordCloudLens: [String: Int]],
+                      configuration: KeynessBaselineFile.Configuration? = nil) -> CloudVectorsAggregator.Output {
+        CloudVectorsAggregator(lexicons: lexicons).pack(
+            volumes: [volume("v1", dictionary)], generated: "2026-10-12", tuning: .standard,
+            configuration: configuration, printedCorpus: printed)
+    }
+
+    @Test("Each reference holds its own tally and neither holds the other's")
+    func eachReferenceHoldsItsOwnCounts() {
+        let out = pack(dictionary: [.allTerms: ["negotiate": 9, "treaty": 5]],
+                       printed: [.allTerms: ["negotiated": 6, "negotiating": 3, "treaty": 5]])
+        let dictionary = out.keynessBaseline.lenses["allTerms"]
+        let printed = out.printedKeynessBaseline.lenses["allTerms"]
+        #expect(dictionary?.terms == ["negotiate": 9, "treaty": 5])
+        #expect(printed?.terms == ["negotiated": 6, "negotiating": 3, "treaty": 5])
+        // The same words, so the same number of tokens: only how they are grouped differs.
+        #expect(dictionary?.totalTokens == 14)
+        #expect(printed?.totalTokens == 14)
+        #expect(printed?.distinctTerms == 3)
+        #expect(printed?.cutoffCount == 3)
+    }
+
+    @Test("Each says which form it is, and they share the stamp, the provenance and the rest of the pin")
+    func eachSaysItsForm() {
+        let configuration = KeynessBaselineFile.Configuration(
+            tuning: .init(minimumLength: 4), includeDiplomatic: false,
+            lexiconsDigest: "lex", stopwordsDigest: "stop")
+        let out = pack(dictionary: [.topics: ["treaty": 1]], printed: [.topics: ["treaties": 1]],
+                       configuration: configuration)
+        #expect(out.keynessBaseline.configuration.wordForm == .dictionary)
+        #expect(out.printedKeynessBaseline.configuration.wordForm == .printed)
+        // Everything but the form is the one pin: a scope must match the same settings and the
+        // same payloads to be compared with either.
+        #expect(out.printedKeynessBaseline.configuration == configuration.counted(as: .printed))
+        #expect(out.printedKeynessBaseline.configuration.counted(as: .dictionary) == configuration)
+        #expect(out.printedKeynessBaseline.generated == out.keynessBaseline.generated)
+        #expect(out.printedKeynessBaseline.provenance == out.keynessBaseline.provenance)
+        #expect(out.printedKeynessBaseline.termsPerLens == out.keynessBaseline.termsPerLens)
+        #expect(out.printedKeynessBaseline.version == out.keynessBaseline.version)
+    }
+
+    @Test("The form in a caller's stamp does not choose which file is which")
+    func aPrintedStampStillYieldsOneOfEach() {
+        // `pack` writes one of each whatever form the stamp it is handed names; a runner that
+        // passed a printed stamp must not get two printed files.
+        let stamp = KeynessBaselineFile.Configuration(
+            tuning: .standard, includeDiplomatic: true, lexiconsDigest: "l", stopwordsDigest: "s",
+            wordForm: .printed)
+        let out = pack(dictionary: [.topics: ["treaty": 1]], printed: [.topics: ["treaties": 1]],
+                       configuration: stamp)
+        #expect(out.keynessBaseline.configuration.wordForm == .dictionary)
+        #expect(out.printedKeynessBaseline.configuration.wordForm == .printed)
+    }
+
+    @Test("The printed reference is cut by the same rule: a frequency, with the tied band kept whole")
+    func printedReferenceIsCutOnACountBoundary() {
+        var printed: [String: Int] = [:]
+        for i in 0..<(CloudVectorsAggregator.baselineTermsPerLens - 10) { printed["big\(i)"] = 100 }
+        for i in 0..<50 { printed["tied\(String(format: "%02d", i))"] = 5 }
+        printed["rare"] = 1
+        let out = pack(dictionary: [.topics: ["treaty": 1]], printed: [.topics: printed])
+        let lens = out.printedKeynessBaseline.lenses["topics"]
+        #expect(lens?.terms.count == CloudVectorsAggregator.baselineTermsPerLens + 40)
+        #expect(lens?.cutoffCount == 5)
+        #expect(lens?.terms["rare"] == nil)
+        // The true total, over the term the cut dropped as well.
+        #expect(lens?.totalTokens == (CloudVectorsAggregator.baselineTermsPerLens - 10) * 100 + 50 * 5 + 1)
+        #expect(lens?.distinctTerms == CloudVectorsAggregator.baselineTermsPerLens + 41)
+    }
+
+    @Test("Every lens of the printed tally gets its own baseline, keyed by its own name")
+    func printedReferenceCarriesEveryLens() {
+        let out = pack(dictionary: [.topics: ["treaty": 1]],
+                       printed: [.topics: ["treaties": 10], .actions: ["negotiated": 7, "ratified": 2],
+                                 .concepts: ["security": 3]])
+        let lenses = out.printedKeynessBaseline.lenses
+        #expect(Set(lenses.keys) == ["topics", "actions", "concepts"])
+        #expect(lenses["topics"]?.totalTokens == 10)
+        #expect(lenses["actions"]?.totalTokens == 9)
+        #expect(lenses["concepts"]?.totalTokens == 3)
+    }
+
+    @Test("The cloud files draw dictionary forms whatever the printed tally holds")
+    func cloudFilesIgnoreThePrintedTally() {
+        let with = pack(dictionary: [.topics: ["treaty": 3]], printed: [.topics: ["treaties": 3]])
+        let without = pack(dictionary: [.topics: ["treaty": 3]], printed: [:])
+        #expect(with.core == without.core)
+        #expect(with.volumes == without.volumes)
+        #expect(with.keynessBaseline == without.keynessBaseline)
+    }
+
+    // MARK: - The runner's tally
+
+    @Test("A volume's printed tally is added to the corpus's, lens by lens and term by term")
+    func addSumsVolumes() {
+        var corpus: [WordCloudLens: [String: Int]] = [:]
+        CloudVectorsRunner.add([.allTerms: ["negotiated": 2, "treaty": 1], .topics: ["treaty": 1]], to: &corpus)
+        CloudVectorsRunner.add([.allTerms: ["negotiated": 3], .actions: ["negotiated": 3]], to: &corpus)
+        #expect(corpus == [.allTerms: ["negotiated": 5, "treaty": 1], .topics: ["treaty": 1],
+                           .actions: ["negotiated": 3]])
+    }
+
+    // MARK: - VERIFY_PRINTED_WALK
+
+    @Test("Two equal tallies do not diverge")
+    func equalTalliesAgree() {
+        let tally: [WordCloudLens: [String: Int]] = [.allTerms: ["negotiated": 2], .topics: ["treaty": 1]]
+        #expect(CloudVectorsRunner.printedWalkDivergence(onePass: tally, direct: tally) == nil)
+        #expect(CloudVectorsRunner.printedWalkDivergence(onePass: [:], direct: [:]) == nil)
+    }
+
+    @Test("A count that differs is a divergence, and the message gives both counts")
+    func aDifferentCountDiverges() throws {
+        let message = try #require(CloudVectorsRunner.printedWalkDivergence(
+            onePass: [.allTerms: ["negotiated": 2, "treaty": 1]],
+            direct: [.allTerms: ["negotiated": 3, "treaty": 1]]))
+        #expect(message.contains("allTerms: 1 term(s)"), "\(message)")
+        #expect(message.contains("negotiated 2/3"), "\(message)")
+        #expect(!message.contains("treaty"), "an agreeing term is not reported: \(message)")
+    }
+
+    @Test("A word only one walk found is a divergence")
+    func aWordOnOneSideDiverges() throws {
+        let message = try #require(CloudVectorsRunner.printedWalkDivergence(
+            onePass: [.topics: ["treaty": 1]],
+            direct: [.topics: ["treaty": 1, "o'brien": 1]]))
+        #expect(message.contains("topics: 1 term(s)"), "\(message)")
+        #expect(message.contains("o'brien 0/1"), "\(message)")
+    }
+
+    @Test("A lens only one walk counted is a divergence")
+    func aLensOnOneSideDiverges() throws {
+        let message = try #require(CloudVectorsRunner.printedWalkDivergence(
+            onePass: [.topics: ["treaty": 1], .actions: ["sign": 4]],
+            direct: [.topics: ["treaty": 1]]))
+        #expect(message.contains("actions: 1 term(s)"), "\(message)")
+        #expect(message.contains("sign 4/0"), "\(message)")
+        #expect(!message.contains("topics"), "an agreeing lens is not reported: \(message)")
+    }
+
+    @Test("The refusal names the volume and says nothing was written")
+    func divergenceRefusalNamesTheVolume() {
+        let description = CloudVectorsRunner.RunError
+            .printedWalkDiverged(volume: "frus1961-63v06", detail: "allTerms: 1 term(s)").description
+        #expect(description.contains("frus1961-63v06"))
+        #expect(description.contains("allTerms: 1 term(s)"))
+        #expect(description.contains("refusing to write"))
+    }
+
+    // MARK: - The two verification walks
+
+    /// Inflected verbs, plurals, adjectives and lexicon words, so both forms differ and every lens
+    /// of both walks counts something.
+    private static let verificationProse = """
+        The delegations negotiated a treaty in Geneva, and the ministers were negotiating its \
+        terms while the Secretary considered several dangerous proposals concerning sovereignty \
+        and security. The crisis deepened; hostility persisted, though peace and a lasting \
+        agreement remained possible. Treaties signed earlier had established the framework, and \
+        the ambassadors urged restraint before the governments accepted the settlement.
+        """
+
+    private static let verificationStopwords: Set<String> =
+        ["the", "and", "its", "while", "though", "had", "were", "before", "several"]
+
+    private static let verificationLexicons = WordCloudLexiconSet(payload: .init(
+        concepts: ["sovereignty", "security", "restraint", "framework", "settlement"],
+        sentimentPositive: ["peace", "agreement"],
+        sentimentNegative: ["crisis", "hostility", "dangerous"]))
+
+    @Test("The verification makes the two walks a device makes: every lens, and the lenses that read no lexical class")
+    func verificationWalksCoverBothTaggers() throws {
+        let walks = try CloudVectorsRunner.printedVerificationWalks(
+            tuning: .standard, stopwords: Self.verificationStopwords,
+            lexicons: Self.verificationLexicons, markings: [])
+        #expect(walks.count == 2)
+        #expect(walks.map(\.wordForm) == [.printed, .printed])
+        // The first holds a part-of-speech lens, so its tagger holds the lexical classes.
+        #expect(walks.first?.lenses == CloudVectorsRunner.baselineLenses)
+        #expect(walks.first?.lenses.contains(where: WordCloudMultiLensTokenizer.readsLexicalClass) == true)
+        // The second holds none, so its tagger holds the token type alone: the tagger a device
+        // builds for All terms, which is the lens Collocates and Related Documents count in.
+        #expect(walks.last?.lenses == [.allTerms, .concepts, .sentiment])
+        #expect(walks.last?.lenses.contains(where: WordCloudMultiLensTokenizer.readsLexicalClass) == false)
+    }
+
+    // One fixture for each way the lenses can leave a tagger unwalked.
+
+    @Test("Lenses with no part-of-speech lens are refused: the first walk's tagger would be the second's")
+    func walksRefuseLensesWithNoPartOfSpeechLens() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            _ = try CloudVectorsRunner.printedVerificationWalks(
+                lenses: [.allTerms, .concepts, .sentiment], tuning: .standard,
+                stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: [])
+        }
+    }
+
+    @Test("Lenses that are all part-of-speech lenses are refused: there is no second walk to make")
+    func walksRefuseLensesThatAllReadTheLexicalClass() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            _ = try CloudVectorsRunner.printedVerificationWalks(
+                lenses: [.topics, .actions, .descriptors], tuning: .standard,
+                stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: [])
+        }
+    }
+
+    @Test("One lens of each kind is enough for both walks")
+    func walksNeedOneLensOfEachKind() throws {
+        let walks = try CloudVectorsRunner.printedVerificationWalks(
+            lenses: [.topics, .allTerms], tuning: .standard,
+            stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: [])
+        #expect(walks.map(\.lenses) == [[.topics, .allTerms], [.allTerms]])
+    }
+
+    @Test("Each walk's tally is the lemma pass's printed tally for the lenses it counts, on real prose")
+    func verificationWalksAgreeWithTheOnePass() throws {
+        let onePass = try #require(WordCloudMultiLensTokenizer(
+            lenses: CloudVectorsRunner.baselineLenses, tuning: .standard,
+            stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: []))
+        var dictionary: [WordCloudLens: [String: Int]] = [:]
+        var printed: [WordCloudLens: [String: Int]] = [:]
+        onePass.accumulate(from: Self.verificationProse, into: &dictionary, printedInto: &printed)
+        // The two forms differ here, so "printed" is not the dictionary tally under another name.
+        #expect(printed[.allTerms]?["negotiated"] == 1)
+        #expect(dictionary[.allTerms]?["negotiated"] == nil)
+
+        let walks = try CloudVectorsRunner.printedVerificationWalks(
+            tuning: .standard, stopwords: Self.verificationStopwords,
+            lexicons: Self.verificationLexicons, markings: [])
+        var compared = 0
+        for walk in walks {
+            var direct: [WordCloudLens: [String: Int]] = [:]
+            walk.accumulate(from: Self.verificationProse, into: &direct)
+            // Not vacuous: the walk counted something in every lens it holds.
+            for lens in walk.lenses {
+                #expect(direct[lens]?.isEmpty == false, "\(lens.rawValue) counted nothing in this walk")
+            }
+            let walked = Set(walk.lenses)
+            #expect(CloudVectorsRunner.printedWalkDivergence(
+                onePass: printed.filter { walked.contains($0.key) }, direct: direct) == nil)
+            // Held to the wrong lenses the same comparison fails, so the filter is doing the work.
+            if walked.count < printed.count {
+                #expect(CloudVectorsRunner.printedWalkDivergence(onePass: printed, direct: direct) != nil)
+            }
+            compared += 1
+        }
+        #expect(compared == 2)
+    }
+
+    // MARK: - A printed reference that lacks a lens
+
+    @Test("A printed reference with every priced lens passes")
+    func completePrintedReferencePasses() throws {
+        try CloudVectorsRunner.requireCompletePrintedReference(
+            pack(dictionary: [.topics: ["treaty": 1], .actions: ["sign": 1]],
+                 printed: [.topics: ["treaties": 1], .actions: ["signed": 1]]))
+    }
+
+    @Test("A printed reference with no entry for a priced lens refuses the run")
+    func missingPrintedLensRefuses() {
+        let output = pack(dictionary: [.topics: ["treaty": 1], .actions: ["sign": 1]],
+                          printed: [.topics: ["treaties": 1]])
+        #expect {
+            try CloudVectorsRunner.requireCompletePrintedReference(output)
+        } throws: { error in
+            guard case CloudVectorsRunner.RunError.printedReferenceIncomplete(let lenses) = error else { return false }
+            return lenses == ["actions"]
+        }
+    }
+
+    @Test("A printed lens that is present and empty refuses the run too")
+    func emptyPrintedLensRefuses() {
+        let output = pack(dictionary: [.topics: ["treaty": 1]], printed: [.topics: [:]])
+        #expect {
+            try CloudVectorsRunner.requireCompletePrintedReference(output)
+        } throws: { error in
+            guard case CloudVectorsRunner.RunError.printedReferenceIncomplete(let lenses) = error else { return false }
+            return lenses == ["topics"]
+        }
+    }
+
+    @Test("A lens only the printed tally holds is no fault")
+    func aPrintedOnlyLensPasses() throws {
+        // The check is that nothing the dictionary reference prices is missing as printed, not that
+        // the two hold the same lenses.
+        try CloudVectorsRunner.requireCompletePrintedReference(
+            pack(dictionary: [.topics: ["treaty": 1]],
+                 printed: [.topics: ["treaties": 1], .actions: ["signed": 1]]))
+    }
+
+    @Test("The refusal names the lenses and says nothing was written")
+    func incompleteRefusalNamesTheLenses() {
+        let description = CloudVectorsRunner.RunError
+            .printedReferenceIncomplete(["actions", "topics"]).description
+        #expect(description.contains("actions, topics"))
+        #expect(description.contains("refusing to write"))
+    }
+
+    // MARK: - The stamp
+
+    @Test("A stamp written before #1608 has no form and reads as dictionary forms")
+    func aStampWithNoFormIsDictionary() throws {
+        let json = #"{"includeDiplomatic":true,"lexiconsDigest":"l","stopwordsDigest":"s","tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3}}"#
+        let decoded = try JSONDecoder().decode(KeynessBaselineFile.Configuration.self, from: Data(json.utf8))
+        #expect(decoded.wordForm == .dictionary)
+        #expect(decoded.includeDiplomatic && decoded.lexiconsDigest == "l" && decoded.stopwordsDigest == "s")
+        #expect(decoded.tuning == .standard)
+    }
+
+    @Test("A stamp carries its form through an encode and a decode, and writes it by name",
+          arguments: WordCloudWordForm.allCases)
+    func theFormRoundTrips(form: WordCloudWordForm) throws {
+        let stamp = KeynessBaselineFile.Configuration(
+            tuning: .standard, includeDiplomatic: true, lexiconsDigest: "l", stopwordsDigest: "s",
+            wordForm: form)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let data = try encoder.encode(stamp)
+        #expect(String(decoding: data, as: UTF8.self).contains(#""wordForm":"\#(form.rawValue)""#))
+        #expect(try JSONDecoder().decode(KeynessBaselineFile.Configuration.self, from: data) == stamp)
+    }
+
+    @Test("A form the reader does not know is refused, not read as dictionary forms")
+    func anUnknownFormDoesNotDecode() {
+        let json = #"{"includeDiplomatic":true,"lexiconsDigest":"l","stopwordsDigest":"s","tuning":{"filterMarkings":true,"foldPlurals":true,"minimumCount":1,"minimumLength":3},"wordForm":"stemmed"}"#
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(KeynessBaselineFile.Configuration.self, from: Data(json.utf8))
+        }
+    }
+
+    @Test("The two references have two names, and the dictionary one keeps the name it shipped under")
+    func resourceNames() {
+        #expect(KeynessBaselineFile.resourceName(for: .dictionary) == "keyness-baseline")
+        #expect(KeynessBaselineFile.resourceName(for: .printed) == "keyness-baseline-printed")
+    }
+
+    // MARK: - run()
+
+    /// `run()` cannot be driven from a test (see `CloudVectorsLanguageAnalysisGuardTests`), so what
+    /// it does with the printed tally is pinned where it is written.
+    @Test("run() counts both forms in one pass, hands the printed tally to the packer, and checks it before it writes")
+    func runWritesThePrintedReferenceFromTheSamePass() throws {
+        let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("CloudVectorsGeneratorCore/CloudVectorsRunner.swift")
+        let source = try String(contentsOf: path, encoding: .utf8)
+            .components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
+        let start = try #require(source.range(of: "public static func run() throws {"))
+        let end = try #require(source.range(of: "// MARK: - The printed tally",
+                                            range: start.upperBound..<source.endIndex)
+                               ?? source.range(of: "static func add(", range: start.upperBound..<source.endIndex))
+        let run = String(source[start.upperBound..<end.lowerBound])
+
+        // One pass: the corpus is tagged once for both references.
+        let bothForms = try #require(
+            run.range(of: "tokenizer.accumulate(from: document.bodyText, into: &counts, printedInto: &printed)"),
+            "run() no longer counts the printed form in the pass that counts the dictionary form")
+        #expect(!run.contains("tokenizer.accumulate(from: document.bodyText, into: &counts)"),
+                "run() counts the dictionary forms in a pass of their own")
+        // The volume's tally reaches the corpus's, and the corpus's reaches the packer.
+        let added = try #require(run.range(of: "add(printed, to: &printedCorpus)"))
+        let packed = try #require(run.range(of: "printedCorpus: printedCorpus)"))
+        #expect(bothForms.upperBound <= added.lowerBound && added.upperBound <= packed.lowerBound)
+        // The verification walks are the two a launch with no lemmatiser makes, and each is
+        // compared with the volume's tally, for the lenses it counts, before that tally is added.
+        // …over the run's own lenses: the call names none, so it takes `baselineLenses`, the list
+        // the pass above counts. A list of its own would verify lenses the run does not write.
+        let squeezed = String(run.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
+            .map(Character.init))
+        #expect(squeezed.contains("printedWalks=trySelf.printedVerificationWalks(tuning:tuning,"
+                                  + "stopwords:stopwords,lexicons:lexicons,markings:markings)"),
+                "run() no longer takes its verification walks from printedVerificationWalks, over its own lenses")
+        let walks = try #require(run.range(of: "for printedWalk in printedWalks {"))
+        let compared = try #require(run.range(of: "if let divergence = printedWalkDivergence("))
+        #expect(run.contains("onePass: printed.filter { walked.contains($0.key) }, direct: direct)"),
+                "a walk is no longer held to the lemma pass's tally for its own lenses")
+        #expect(walks.upperBound <= compared.lowerBound && compared.upperBound <= added.lowerBound)
+        // The completeness check stands before the first write, and both files are written by name.
+        let checked = try #require(run.range(of: "try requireCompletePrintedReference(output)"))
+        let firstWrite = try #require(run.range(of: "try write("))
+        #expect(packed.upperBound <= checked.lowerBound && checked.upperBound <= firstWrite.lowerBound,
+                "run() writes before it has checked the printed reference")
+        #expect(run.contains("[output.keynessBaseline, output.printedKeynessBaseline]"))
+        #expect(run.contains("KeynessBaselineFile.resourceName(for: baseline.configuration.wordForm)"))
     }
 }

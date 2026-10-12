@@ -17,16 +17,39 @@ import WordCloudKit
 import GeneratorKit
 
 /// Drives the cloud-vector generation: read the corpus, tokenise every volume once,
-/// roll up, write two artifacts.
+/// roll up, write four artifacts — the two cloud-vector files, the keyness reference in
+/// dictionary forms and, since #1608, the same reference counted as printed.
 ///
 /// Entirely offline and deterministic — a filename-sorted scan, explicit sorts at every
 /// ranking step, and `.sortedKeys` output, so two runs over the same corpus are
 /// byte-identical.
 ///
+/// ## The reference counted as printed (#1608)
+/// It is written from the pass that writes the other three: `WordCloudMultiLensTokenizer` counts
+/// each word's printed form beside its dictionary form, so the corpus is tagged once. What the app
+/// compares with it is a scope counted by a tagger with no lemma scheme, which is other code, and
+/// the two agree only while two properties of `NLTagger` hold (see that tokenizer's "Both forms
+/// from one pass"). `VERIFY_PRINTED_WALK=1` measures it instead of assuming it: every document is
+/// walked again with no lemma scheme, the way a launch with no lemmatiser walks it, and the run
+/// stops before it writes anything if a volume's tallies differ in one count. A device builds two
+/// taggers for that walk, one that also holds the lexical classes and one that holds the token type
+/// alone, so the verification makes both walks (``printedVerificationWalks(tuning:stopwords:lexicons:markings:)``).
+///
+/// ## Memory
+/// Each document is tagged inside an autorelease pool of its own (#1608). Without one the run kept
+/// every object the tagger autoreleased until it ended: the unchanged generator peaked at a
+/// 24.9 GB memory footprint over the corpus on 2026-10-12, and the verification walk, which tags
+/// every document twice, at 49.1 GB, on a Mac with 32 GB. Measured on a 40-volume subset with the
+/// walk on, the pools took the peak from 3.89 GB to 235 MB and the four files came out byte for
+/// byte the same.
+///
 /// Version history:
 ///   1.0 — O-1: initial implementation
 ///   1.1 — #1373: refuses to run when `NaturalLanguageReadiness`'s canary finds no lemmas or no
 ///          lexical classes in this process
+///   1.2 — #1608: counts printed forms in the same pass and writes `keyness-baseline-printed.json`;
+///          `VERIFY_PRINTED_WALK`, which walks with both taggers a device builds; refuses to
+///          write a printed reference that lacks a lens; an autorelease pool for each document
 public enum CloudVectorsRunner {
 
     /// Every lens the run tokenises: the four the cloud draws, plus the two extra the keyness
@@ -35,7 +58,8 @@ public enum CloudVectorsRunner {
     public static let baselineLenses: [WordCloudLens] =
         [.allTerms, .descriptors] + WordCloudLens.bundledCloudLenses
 
-    /// Runs the generator, honouring the environment overrides documented in `CLAUDE.md`.
+    /// Runs the generator, honouring the environment overrides documented in
+    /// `Planning/Generators-Runbook.md`.
     public static func run() throws {
         let env = ProcessInfo.processInfo.environment
         let volumesDir = URL(fileURLWithPath: env["VOLUMES_DIR"] ?? "/Users/jbotts/Development/frus/volumes")
@@ -103,6 +127,24 @@ public enum CloudVectorsRunner {
             markings: markings
         ) else { throw RunError.tokenizerConfiguration }
 
+        // VERIFY_PRINTED_WALK=1 (#1608): the same lenses and sets, told to count as printed, so
+        // they ask for a tagger with no lemma scheme — the walk a launch with no lemmatiser makes.
+        // Two walks, because a device builds two taggers when it counts as printed: one that also
+        // holds the lexical classes, for a part-of-speech lens, and one that holds the token type
+        // alone, for All terms (Collocates, Related Documents' shared words, the default cloud),
+        // Concepts and Sentiment. The first walk counts all six lenses with the first tagger; the
+        // second counts the three that read no lexical class with the second. It roughly doubles
+        // the tagging; the artifacts are the same bytes with it on or off.
+        let printedWalks: [WordCloudMultiLensTokenizer]
+        if env["VERIFY_PRINTED_WALK"] == "1" {
+            printedWalks = try Self.printedVerificationWalks(
+                tuning: tuning, stopwords: stopwords, lexicons: lexicons, markings: markings)
+            generatorLog("VERIFY_PRINTED_WALK: every document is also walked with no lemma scheme, "
+                         + "by a tagger that holds the lexical classes and by one that does not")
+        } else {
+            printedWalks = []
+        }
+
         let files = try VolumeCorpusEnumerator.volumeFiles(in: volumesDir)
         generatorLog("corpus: \(files.count) volume files in \(volumesDir.path)")
 
@@ -112,6 +154,10 @@ public enum CloudVectorsRunner {
         generatorLog("tokenising \(shippable.count) volumes present in the manifest")
 
         var volumeCounts: [CloudVectorsAggregator.VolumeCounts] = []
+        // Only the corpus total of the printed tally is kept: the reference is corpus-wide, and
+        // the cloud files draw dictionary forms.
+        var printedCorpus: [WordCloudLens: [String: Int]] = [:]
+        var verifiedDocuments = 0
         var emptyVolumes: [String] = []
         for (n, file) in shippable.enumerated() {
             let volumeId = VolumeCorpusEnumerator.volumeId(for: file)
@@ -120,9 +166,30 @@ public enum CloudVectorsRunner {
             let documents = TEIBodyTextExtractor.documents(in: xml)
 
             var counts: [WordCloudLens: [String: Int]] = [:]
+            var printed: [WordCloudLens: [String: Int]] = [:]
             for document in documents {
-                tokenizer.accumulate(from: document.bodyText, into: &counts)
+                // A pool for each document: the tagger hands back autoreleased objects, and a
+                // command-line tool has no run loop to drain them (#1608, "Memory" above).
+                autoreleasepool {
+                    tokenizer.accumulate(from: document.bodyText, into: &counts, printedInto: &printed)
+                }
             }
+            for printedWalk in printedWalks {
+                var direct: [WordCloudLens: [String: Int]] = [:]
+                for document in documents {
+                    autoreleasepool {
+                        printedWalk.accumulate(from: document.bodyText, into: &direct)
+                    }
+                }
+                // Each walk is held to the lemma pass's tally for the lenses it counts.
+                let walked = Set(printedWalk.lenses)
+                if let divergence = printedWalkDivergence(
+                    onePass: printed.filter { walked.contains($0.key) }, direct: direct) {
+                    throw RunError.printedWalkDiverged(volume: volumeId, detail: divergence)
+                }
+            }
+            if !printedWalks.isEmpty { verifiedDocuments += documents.count }
+            add(printed, to: &printedCorpus)
             if documents.isEmpty || counts.isEmpty { emptyVolumes.append(volumeId) }
 
             volumeCounts.append(.init(volumeId: volumeId, subseries: subseries,
@@ -138,14 +205,117 @@ public enum CloudVectorsRunner {
                          + (emptyVolumes.count > 10 ? " …" : ""))
         }
 
+        if !printedWalks.isEmpty {
+            generatorLog("VERIFY_PRINTED_WALK: in all \(volumeCounts.count) volumes "
+                         + "(\(verifiedDocuments) documents) the printed forms counted in the lemma pass "
+                         + "are what a walk with no lemma scheme counts, in every lens, with the "
+                         + "lexical-class scheme held and without it")
+        }
+
         let output = CloudVectorsAggregator(lexicons: lexicons)
             .pack(volumes: volumeCounts, generated: generated, tuning: tuning,
-                  configuration: configuration)
+                  configuration: configuration, printedCorpus: printedCorpus)
+        // Before the first write, so a run that would ship a printed reference without a lens
+        // leaves the four files as they were.
+        try requireCompletePrintedReference(output)
 
         try write(output.core, to: outputDir.appendingPathComponent("cloud-vectors-core.json"))
         try write(output.volumes, to: outputDir.appendingPathComponent("cloud-vectors-volumes.json"))
-        try writeBaseline(output.keynessBaseline,
-                          to: outputDir.appendingPathComponent("keyness-baseline.json"))
+        for baseline in [output.keynessBaseline, output.printedKeynessBaseline] {
+            let name = KeynessBaselineFile.resourceName(for: baseline.configuration.wordForm)
+            try writeBaseline(baseline, to: outputDir.appendingPathComponent(name + ".json"))
+        }
+    }
+
+    // MARK: - The printed tally (#1608)
+
+    /// The tokenizers `VERIFY_PRINTED_WALK` walks every document with (#1608): each counts as
+    /// printed, and between them they build the two taggers a device builds when it does.
+    ///
+    /// The first counts every baseline lens. A part-of-speech lens is among them, so its tagger
+    /// holds the token type and the lexical classes, which is the tagger a device builds for Topics,
+    /// Actions or Descriptors. The second counts the lenses that read no lexical class, so its
+    /// tagger holds the token type alone: the one a device builds for All terms, Concepts or
+    /// Sentiment. Until the #1608 review the run made the first walk only, and All terms — the lens
+    /// Collocates and Related Documents count in — was held to the device's own tagger on the
+    /// kit's two fixture paragraphs and nowhere else.
+    ///
+    /// - Parameter lenses: The lenses the run counts. ``baselineLenses`` in a run; a parameter so
+    ///   a test can hand in a set with no lens of one kind.
+    /// - Returns: The two tokenizers, the one over every lens first.
+    /// - Throws: ``RunError/tokenizerConfiguration`` when either cannot be built, or when `lenses`
+    ///   hold no lens of one kind: with no part-of-speech lens the first walk's tagger would hold
+    ///   no lexical class and be the second's, and with nothing else there is no second walk. Either
+    ///   way one of the two taggers would go unwalked while the run said it had verified both.
+    static func printedVerificationWalks(
+        lenses: [WordCloudLens] = baselineLenses,
+        tuning: WordCloudTuning, stopwords: Set<String>, lexicons: WordCloudLexiconSet,
+        markings: Set<String>
+    ) throws -> [WordCloudMultiLensTokenizer] {
+        let withoutLexicalClass = lenses.filter {
+            !WordCloudMultiLensTokenizer.readsLexicalClass($0)
+        }
+        guard withoutLexicalClass.count < lenses.count,
+              let everyLens = WordCloudMultiLensTokenizer(
+                lenses: lenses, tuning: tuning, stopwords: stopwords,
+                lexicons: lexicons, markings: markings, wordForm: .printed),
+              let plainLenses = WordCloudMultiLensTokenizer(
+                lenses: withoutLexicalClass, tuning: tuning, stopwords: stopwords,
+                lexicons: lexicons, markings: markings, wordForm: .printed)
+        else { throw RunError.tokenizerConfiguration }
+        return [everyLens, plainLenses]
+    }
+
+    /// Adds one volume's printed tally to the corpus's.
+    /// - Parameters:
+    ///   - volume: Lens → term → occurrences in one volume, counted as printed.
+    ///   - corpus: The running corpus tally, mutated in place.
+    static func add(_ volume: [WordCloudLens: [String: Int]],
+                    to corpus: inout [WordCloudLens: [String: Int]]) {
+        for (lens, terms) in volume {
+            for (term, count) in terms {
+                corpus[lens, default: [:]][term, default: 0] += count
+            }
+        }
+    }
+
+    /// Where one volume's printed tally from the lemma pass and its tally from a walk with no lemma
+    /// scheme differ, or `nil` when they are the same count (`VERIFY_PRINTED_WALK`).
+    ///
+    /// - Parameters:
+    ///   - onePass: The printed tally `accumulate(from:into:printedInto:)` made.
+    ///   - direct: The tally a `.printed` tokenizer made over the same documents.
+    /// - Returns: Each differing lens with how many terms differ and the first five, or `nil`.
+    static func printedWalkDivergence(onePass: [WordCloudLens: [String: Int]],
+                                      direct: [WordCloudLens: [String: Int]]) -> String? {
+        guard onePass != direct else { return nil }
+        var parts: [String] = []
+        for lens in Set(onePass.keys).union(direct.keys).sorted(by: { $0.rawValue < $1.rawValue }) {
+            let first = onePass[lens] ?? [:]
+            let second = direct[lens] ?? [:]
+            let differing = Set(first.keys).union(second.keys).filter { first[$0] != second[$0] }.sorted()
+            guard !differing.isEmpty else { continue }
+            let examples = differing.prefix(5)
+                .map { "\($0) \(first[$0] ?? 0)/\(second[$0] ?? 0)" }
+                .joined(separator: ", ")
+            parts.append("\(lens.rawValue): \(differing.count) term(s), lemma pass/direct walk — \(examples)")
+        }
+        return parts.joined(separator: "; ")
+    }
+
+    /// Refuses a run whose printed reference lacks a lens the dictionary one prices.
+    ///
+    /// The two are counted in one pass over the same words, so a lens with tokens in one and none
+    /// in the other means the printed tally never reached `pack` — and the app would tell every
+    /// scope counted as printed that the lens has no reference. Every lens the dictionary reference
+    /// holds has tokens: `pack` makes a lens only from a word it counted.
+    /// - Parameter output: The packed artifacts, before anything is written.
+    /// - Throws: ``RunError/printedReferenceIncomplete(_:)`` naming the lenses.
+    static func requireCompletePrintedReference(_ output: CloudVectorsAggregator.Output) throws {
+        let missing = output.keynessBaseline.lenses.keys
+            .filter { (output.printedKeynessBaseline.lenses[$0]?.totalTokens ?? 0) == 0 }
+            .sorted()
+        guard missing.isEmpty else { throw RunError.printedReferenceIncomplete(missing) }
     }
 
     // MARK: - IO
@@ -161,16 +331,19 @@ public enum CloudVectorsRunner {
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(file)
         try data.write(to: url)
+        // The dictionary-form lines read as they always have; the printed file's say which it is.
+        let label = file.configuration.wordForm == .printed ? "keyness baseline (printed)" : "keyness baseline"
         for (lens, values) in file.lenses.sorted(by: { $0.key < $1.key }) {
             let priced = values.totalTokens == 0 ? 0
                 : Double(values.terms.values.reduce(0, +)) / Double(values.totalTokens)
             generatorLog(String(
-                format: "keyness baseline %@: %d of %d terms (cut at count %d), %d tokens, %.2f%% of token mass priced",
-                lens, values.terms.count, values.distinctTerms, values.cutoffCount,
+                format: "%@ %@: %d of %d terms (cut at count %d), %d tokens, %.2f%% of token mass priced",
+                label, lens, values.terms.count, values.distinctTerms, values.cutoffCount,
                 values.totalTokens, priced * 100))
         }
-        generatorLog("keyness baseline pinned to lexicons \(file.configuration.lexiconsDigest.prefix(12))… "
-                     + "stopwords \(file.configuration.stopwordsDigest.prefix(12))…")
+        generatorLog("\(label) pinned to lexicons \(file.configuration.lexiconsDigest.prefix(12))… "
+                     + "stopwords \(file.configuration.stopwordsDigest.prefix(12))…; "
+                     + "\(data.count) bytes in \(url.lastPathComponent)")
     }
 
     /// Encodes deterministically and reports the size, which is the acceptance number:
@@ -217,6 +390,11 @@ public enum CloudVectorsRunner {
         case undigestiblePayloads(String, String)
         /// The tagger canary failed in this process (#1373).
         case languageAnalysisUnavailable(NaturalLanguageHealth)
+        /// `VERIFY_PRINTED_WALK` found a volume whose printed forms, counted in the lemma pass, are
+        /// not what a walk with no lemma scheme counts (#1608).
+        case printedWalkDiverged(volume: String, detail: String)
+        /// The printed reference has no tokens for a lens the dictionary reference prices (#1608).
+        case printedReferenceIncomplete([String])
 
         public var description: String {
             switch self {
@@ -238,6 +416,17 @@ public enum CloudVectorsRunner {
                      + "lexical classes: \(health.classifiesWords)). Counting the corpus now would "
                      + "write a keyness reference of printed forms, or empty part-of-speech lenses; "
                      + "refusing to write an artifact. Re-run in a new process."
+            case .printedWalkDiverged(let volume, let detail):
+                return "VERIFY_PRINTED_WALK: in \(volume) the printed forms counted in the lemma pass "
+                     + "are not what a walk with no lemma scheme counts (\(detail)). The reference "
+                     + "counted as printed is written from the first, and a launch with no lemmatiser "
+                     + "counts the second, so the two would not be comparable; refusing to write an "
+                     + "artifact."
+            case .printedReferenceIncomplete(let lenses):
+                return "The reference counted as printed has no tokens for "
+                     + "\(lenses.joined(separator: ", ")), which the dictionary-form reference "
+                     + "prices. The printed tally did not reach the packer; refusing to write an "
+                     + "artifact."
             }
         }
     }
