@@ -37694,3 +37694,33 @@ After #1645 merged the owner asked for a review of the plan of record and the op
 - **`Planning/Manual-Revisions-Pending.md` still opens with decision P2**, that no lane edits a manual, which the owner replaced on 2026-10-07. It is left where it is because the manuals' review worklist cites it; the archive's README now says what it is.
 - **Two live documents still call the provenance lens's caption owed a correction** (`Map-Figure-Export-And-Visual-Outputs.md` line 400, `Visual-Marketing-Plan.md` line 479), which lane CFPF made (#1543). Not edited.
 - **The remote branch `claude/subject-numeric-class-keys`**, merged as #1645, is not deleted.
+
+## Session 2026-10-12 — The iPhone's language-analysis record is read, and the printed-form fallback for Collocates becomes a lane before build 50 (#1608)
+
+After #1649 merged the owner asked how to get the Collocates record off the phone at once, without waiting for the Copy button of the small-fixes pull request, collected it, and decided on what it showed. Planning documents alone: no file the app, a kit, a generator or a test compiles is changed.
+
+**How it was collected**
+- Build 49 writes the record to the phone's system log at the default level (`NaturalLanguageReadiness.record`, unchanged since the `build-49` tag), so nothing had to be reproduced. The owner ran `sudo /usr/bin/log collect --device-name … --last 7d --predicate …` on the Mac with the phone attached, on 2026-10-11 at 23:47 EDT.
+- **The predicate was not applied.** The archive was the phone's whole system log for the week: 2.4 GB, 86,383,244 events, every process. Read from it: the app's own process, and three minutes of the asset services' lines that name the linguistic data. The owner deleted the archive after the reading; the app process's extracts are in the session's notes.
+- **The phone keeps the app's own lines for about nine hours.** They have no time-to-live and sit in the archive's `Persist` store, which held 51 files and 501 MB, the oldest closed at 15:03 that day. Lines the system's frameworks write with a time-to-live (`Special`) went back the whole week.
+
+**What it holds**
+- **The build.** All fourteen processes of the app in the week carry the binary UUID `790A33F4-D9A7-322C-8419-2976358CF52E`, the arm64 UUID of build 49's iOS archive on this Mac. The phone is on iOS 27.0.1.
+- **One session's record**, a launch at 23:44: `warm-up started; trigger=firstForeground app=active age=2897.136s`, and 30 seconds later `verdict … assets LexicalClass=available@0.105s NameType=available@0.005s Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false classes=true names=true`. The first of #1608's three paths: iOS never answered the lemma request. The process was 48 minutes old and had written no line until the app was opened, which is what prewarming looks like.
+- **iOS's own framework, in the app's process** (`com.apple.NaturalLanguageFramework`): the assets for lexical classes and for names "are available", inside a tenth of a second; then `Placing request with asset download service for 'Lemma', language: 'en'`, `Assets for 'Lemma' … are downloading` and `Adding 'Lemma' - 'en' to fulfillment queue`, and nothing more before the process's last line three minutes later. No line of `mobileassetd` in those minutes names a download of linguistic data.
+- **Not in it:** how often it happens (the ten earlier processes that asked for the language assets that week have no verdict line left), a launch that worked, a re-check, and whether the "downloading" state ever ends. The asset frameworks' own lines for the earlier launches survive and show the same asset sources every time; the number of asset-set lookups in a launch's first minute differs (12 in six launches, 13 in one, 14 in three, tonight's among them, 41 in one), which may tell a good launch from a bad one and was not verified.
+
+**Decided by the owner**
+- **The printed-form fallback is a lane, before build 50.** It is the plan of record's decision 8 and pull request 3 of its queue, between the small fixes and the build. The condition the owner set on 2026-09-29 stands: each surface that falls back says so, says why, and says that results can differ from a device that reduces words to their dictionary forms.
+- **The record is on the issue**, as the owner asked: #1608, comment of 2026-10-12.
+
+**Docs**
+- `Planning/Plan-Of-Record-2026-10-11.md`: decision 8 in §0; the queue renumbered in §1, with what the lane builds; §2's hold on the build and one more TestFlight line; §3 loses the record it was waiting for and gains the optional five-launch sample for a Feedback report to Apple; §4's item on the lemmatiser states the measurement.
+
+**Checked**
+- `CodingStandardsAuditTests` on iPhone 17 under iOS 27.0: 63 tests in 1 suite passed, `planOfRecordMatchesTheVisualMarketingPlan` among them. The two files it reads were as committed; the session's own entry was written after. No other test reads a file this change touches, so the full unit run, `swift test` and the Mac build were not run.
+
+**Not done**
+- No frequency: five launches in a row and a collection of the last hour would give it, and a good launch's framework lines beside a bad one's.
+- No Feedback report to Apple.
+- The Copy button stays in the small-fixes pull request, with a new reason: a tester has no other way to send lines the phone keeps for nine hours.
