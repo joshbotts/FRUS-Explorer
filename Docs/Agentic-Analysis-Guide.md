@@ -404,8 +404,30 @@ either wording, Department-led or National-Archives-led; its `repository` and `s
 stored as before. `decimal` likewise covers a decimal file number cited through the National
 Archives. So a `subject_numeric` or `decimal` row may carry `repository = 'National Archives'` and a
 block's name (`Central Files 1970–73`) in `series_name` where a Department-led row carries the file
-number: read the designation from `decimal_class`, or from `raw_text` when the class grammar
-refuses it (`AID (US) INDIA`). The form is read from the citation, never from the document's date.
+number: read the designation from `decimal_class`. The form is read from the citation, never from
+the document's date.
+
+**From index version 69, `decimal_class` holds the class of 9,381 of the 9,443 `subject_numeric`
+rows** (6,830 at version 68), on 1,929 keys. Three things changed, and each matters to a query:
+
+- **A file cited with no subject number has a class** (`POL US-USSR`, `AID (US) INDIA`; 303 keys in
+  1,498 rows). The 1963 handbook lets an office file under the primary subject alone and arrange
+  the papers by country. Such a key has no digit after its category, with its commodity
+  (`INCO-WOOL`) or agency (`AID (US)`) where it has one, and its family is that head alone: 30
+  heads, `POL` the largest at 1,242 rows. **`decimal_class LIKE 'POL %'` is every POL file, 6,352
+  rows.** For the files with no number add `AND decimal_class NOT GLOB 'POL [0-9(]*'`, which is
+  the app's own rule (`IndexingPipeline.classFamilyClause`).
+- **A key is spelled one way whatever the citation printed**: capitals, an ASCII hyphen, no space
+  beside it (`POL 32-1 INDIA-PAK` for `POL 32–1 INDIA- PAK`), no stops (`DEF 19-8 US-IRAN`), a
+  post in parentheses after a space (`DEF 18-3 USSR (MO)`). 178 keys that had lost a dash a space
+  followed have it back, so a key copied from a version-68 index may need it (`POL 27 INDIA PAK`
+  is `POL 27 INDIA-PAK`).
+- **The 62 rows with no class** print a block of years alone, or something the app does not read
+  as a designation; `raw_text` has what they print.
+
+One file, cited through the Department and through the National Archives, has one key: 271 files
+are cited both ways. `volume_sources.decimal_class` gains 172 rows by the same reading (a
+designation printed in capitals in a volume's own list of sources).
 
 **`external_citations`** — **many rows per document**, keyed
 `(volume_id, document_id, note_ordinal, citation_index)`: archival material the editors *cited in a
@@ -430,8 +452,9 @@ fragment** (mean 50.8 characters — `822.154/375`, `Lot 57D284, Box 111`), not 
 footnotes carry the name 254 times; for an institution named in footnotes, parse `<note>` in the
 TEI. And **the table is a grammar, not a transcript**: it captures lot, presidential-library and
 decimal-class anchors only. A Federal Records Center accession, a bare `RG 40`, or a subject-numeric
-key (`FT 7 GATT`, `STR 13-1`, `ORG 1 COM–STATE` — 6,753 refused corpus-wide, so every post-1963
-pointer of that form is invisible here) is not a row: `SUM(raw_text LIKE '%RG 59%')` = 781 while
+key (`FT 7 GATT`, `STR 13-1`, `ORG 1 COM–STATE` — 7,337 refused corpus-wide on the bundled index
+regenerated for version 69, 6,752 before it, so every post-1963 pointer of that form is invisible
+here) is not a row: `SUM(raw_text LIKE '%RG 59%')` = 781 while
 `'%RG 40%'` = 0 against 13 `RG 40` footnote occurrences in the TEI. A zero in this channel for a
 record group, an accession or a subject-numeric file is a grammar limit, not an absence.
 
@@ -1987,20 +2010,20 @@ The stack, and the question each artifact answers:
 
 | Artifact | Answers | Scale |
 |---|---|---|
-| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,598 notes; 1,834 collections reached; 10,455 class keys |
+| `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,598 notes; 1,834 collections reached; 11,027 class keys |
 | `external-citation-index.json` | what the editors cited and did **not** print | 19,616 lot/library refs + 30,527 class refs, 441 volumes |
 | `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,070 lot files, all carrying a NAID |
-| `collection-authority.json` | which collection is this note naming, under every spelling | 4,051 collections, 1,014 with a NAID |
+| `collection-authority.json` | which collection is this note naming, under every spelling | 3,985 collections, 1,014 with a NAID |
 | `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 174 of 698 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 698 series, 398 creator headings, 174 with a coverage pair |
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
 | `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
 | `volume-sources-index.json` | what the editors say they consulted, per volume | 2,470 rows, 252 volumes |
 | `decimal-class-labels.json` | what `812.6363` means, compositionally. **THREE schedules since #1250 — 1910–1949, 1950–1959 and 1960–1963 — and the file says which one governs, as data**: find the span of `coverage.glossableYears` that holds the DOCUMENT's date and gloss from the schedule its `scheduleId` names. `coverage.keyOutsideGlossableYears` is `no-gloss`, and `coverage.notShipped` is now empty. **It is a lookup by date, not a filter on it**: a consumer that checks the year and then reads the first schedule answers a 1958 key out of the pre-1950 table and gets a plausible WRONG gloss, not a miss, because the classification was renumbered in 1950 — `411.48` composes under 1910–49 as *Claims — United States and British Africa* where the editors gloss it as U.S. trade with **Poland**, and country `48` is *British Africa* in the first schedule and *Poland* in the other two (in the first it is also a class-8 subject, *Calamities. Disasters*). **Only the 1910–49 schedule carries subject suffixes** (693); the two later ones ship classes and countries and no subject layer, by refusal rather than omission (the later handbooks' subject index parses backwards), so a 1950–63 key glosses to its class and country here and its subject comes from `volume_sources` (§4.4). Note the gate is on GLOSSING only — whether a key is well-formed is a separate, deliberately era-blind test, so a key composing under a schedule that does not govern it is expected. **One number is often several places**: the Department filed a territory under the number of the power holding it, so each schedule also carries `countryAlternates` (#1256), the other names a code answers to — 101, 96 and 89 codes in the three schedules (`11g` is *Virgin Islands (U.S.)*, with St. Croix, St. John and St. Thomas as its alternates). The country tables were re-read from the source's own column geometry in that same PR, which is why `42` Canada and `74` Bulgaria, absent from earlier builds, are present (`74` in 1910–49 only), and why `60f` reads *Czechoslovakia* and `47h` *New Zealand* in 1910–49. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent or shared where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 3 schedules: 9 / 10 / 10 classes, 287 / 252 / 263 countries, 693 / 0 / 0 subject suffixes |
-| `subject-numeric-labels.json` | what `POL 27 VIET S` means — the filing scheme that replaced the decimal file in 1963 (#1251). **TWO schedules, 1963 and 1964–1973, and they are not interchangeable**: `POL 24` is *SUBVERSION. ESPIONAGE. SABOTAGE.* in the first and *SANCTIONS* in the second, which moved subversion to `POL 23-7`. Choose the schedule by the document's date through `coverage.glossableYears[].scheduleId`, as for the decimal table, and gloss nothing for a date outside both spans or a volume span that straddles them (`keyOutsideGlossableYears` is `no-gloss`). A designator is `subjects[<category>][<number>]` (`POL` → `27` → *MILITARY OPERATIONS*). An organization's file (`UN`, `NATO`) is not a primary subject: read it from `organizationSubjects`, and only when `abbreviations` names the prefix — and try `subjects` first, because the two lists reuse numbers for different things. The country element is in `areas`, keyed as the corpus writes it (`VIET S` → *Vietnam, South*, `ARAB-ISR` → *Arab–Israeli*); **the file's own `coverage.note` predates that table and still says the country element is not read — trust the table**. `coverage.unnamedCategories` lists the 19 prefixes neither handbook answers, three of which (`NSSD`, `FG`, `PSL`) are not central-file classes at all. Labels keep the handbooks' capitalisation and the scans' damage (`REAl PROPERTY ACCOUNTING`): quote them as this file's reading, and check a heading you intend to print. `document_sources.decimal_class` holds both filing systems in one column; a key with a letter prefix is this one. | 2 schedules: 57 / 39 categories, 1,897 / 1,648 designators, 303 / 268 area names. The corpus cites 1,370 subject-numeric keys (6,905 documents) in `collection-usage-index.json`; the file's own `coverage.measured` block was written on 2026-09-08 against the 1,362 keys of that day and reports 1,202 / 989 of them named, so read it as dated |
+| `subject-numeric-labels.json` | what `POL 27 VIET S` means — the filing scheme that replaced the decimal file in 1963 (#1251). **TWO schedules, 1963 and 1964–1973, and they are not interchangeable**: `POL 24` is *SUBVERSION. ESPIONAGE. SABOTAGE.* in the first and *SANCTIONS* in the second, which moved subversion to `POL 23-7`. Choose the schedule by the document's date through `coverage.glossableYears[].scheduleId`, as for the decimal table, and gloss nothing for a date outside both spans or a volume span that straddles them (`keyOutsideGlossableYears` is `no-gloss`). A designator is `subjects[<category>][<number>]` (`POL` → `27` → *MILITARY OPERATIONS*). An organization's file (`UN`, `NATO`) is not a primary subject: read it from `organizationSubjects`, and only when `abbreviations` names the prefix — and try `subjects` first, because the two lists reuse numbers for different things. The country element is in `areas`, keyed as the corpus writes it (`VIET S` → *Vietnam, South*, `ARAB-ISR` → *Arab–Israeli*); **the file's own `coverage.note` predates that table and still says the country element is not read — trust the table**. `coverage.unnamedCategories` lists the 19 prefixes neither handbook answers, three of which (`NSSD`, `FG`, `PSL`) are not central-file classes at all. Labels keep the handbooks' capitalisation and the scans' damage (`REAl PROPERTY ACCOUNTING`): quote them as this file's reading, and check a heading you intend to print. `document_sources.decimal_class` holds both filing systems in one column; a key with a letter prefix is this one. | 2 schedules: 57 / 39 categories, 1,897 / 1,648 designators, 303 / 268 area names. The corpus cites 1,938 letter-led keys (9,458 documents) in `collection-usage-index.json` since index version 69, 303 of them with no subject number; the file was not regenerated for that version, so its `areas` name the country element of 84.2% (1963) and 79.5% (1964–1973) of those documents, a tail it has not met is absent, and its own `coverage.measured` block, written on 2026-09-08 against the 1,362 keys of that day, reports 1,202 / 989 of them named: read it as dated. Three of its area names are wrong and are the file's, not yours to repair in a query: `CUBA` (*Council for U.S. Aid (Nationalist China)*, 1963), `FIN` (*Algerian National Liberation Front*, both) and `UK US` (*Ukraine and United States*, 1964–1973) |
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
 | `accession-series-index.json` | which NARA series a Federal Records Center accession became — the join a lot number cannot make, for front matter that says "now part of … Accession No. 71 A 6682". **Keys are `<record group>/<accession>` and the group is load-bearing**: an accession number is unique only within its group (`68A5612` = 1 series in RG 59, 18 in RG 84), so matching bare raises apparent coverage from 7% to 15% by answering State citations with Foreign Service Post records. **Know the ceiling before you lean on it**: counted anchor-first (the accession must directly follow *FRC* / *Federal Records Center* / *WNRC* / *Accession* — a proximity window sweeps in the lot numbers printed beside it and inflated this count from 995 mentions to 2,371), the corpus cites 116 accessions over 995 mentions, and **22 resolve — 150 mentions, 15%**; the most-cited of all, `53A278` at 115 mentions, is absent from the harvest entirely. Every claimant is stored, never chosen, because a key reaches **59**: state the division. One-letter row keys, `legend` in the file. NOTHING IN THE APP READS THIS — it is data for you, not a feature. | 4,750 keys, 7,346 stored claimants (7,349 occurrences before the dedupe by NAID), max 59 |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
-| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,866 edges, 4,886 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
+| `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,866 edges, 4,910 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 8,637 cross-volume edges into 5,747 documents from 185 volumes — its `volumes` array (237) is a shared vocabulary of target *and* citing volumes, not a target list (distinct targets: 208), and its own footnote share is 7,631 of 8,637 = 88.4%, not the corpus-wide 95.3% |
 | `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,288 notes, 523 volumes, 16 decades |
 
@@ -2765,6 +2788,22 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.26 — 2026-10-11: **index version 69 stores a class for nearly every Subject-Numeric citation.**
+  §4.4's paragraph on `citation_era` said to read a designation from `raw_text` "when the class
+  grammar refuses it (`AID (US) INDIA`)". That file has a class now: `decimal_class` is filled for
+  9,381 of the 9,443 `subject_numeric` rows where it was for 6,830.
+  The paragraph is replaced by three statements a query needs: a file cited with no subject
+  number has a class with no digit after its category, and `LIKE 'POL %'` is every POL file, not
+  that family; a key is spelled one way whatever the citation printed, and 178 keys have back a
+  dash they had lost; and 62 rows still have none. §14.11's rows are re-measured against the
+  four files regenerated with it: `collection-usage` 11,027 class keys (10,455), `collection-
+  authority` 3,985 collections (4,051: the 66 that went were rows of a volume's list of sources
+  that are a file designation with its description, each of which had been a collection of its
+  own), `provenance-flow` 4,910 collection pairs (4,886), and `external-citation`'s count of
+  subject-numeric pointers it refuses, 7,337 (6,752). **`subject-numeric-labels.json` was not
+  regenerated**, and its row says what that leaves: a country element it has not met is absent,
+  and three of its names are wrong. Figures are from two full indexes of the 553 volumes at
+  corpus `99d851c79`, built at versions 68 and 69 and compared table by table.
 - 1.25 — 2026-10-10: **the semantic artifacts were packed again, and the map was laid out again.**
   The Office of the Historian restored Documents 900–946 to `frus1952-54v09p1` on 2026-10-09
   (corpus `99d851c79`), 47 documents that file had lacked since 2016. Two volumes were embedded

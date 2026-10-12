@@ -20,6 +20,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — 2026-10-01: #1514, #1515
+///   1.1 — index version 69: a dash between two countries stays in the stored series, and the
+///          area words equal the words of the shipped schedules' area codes
 @Suite("Department of State series are not central files (#1514)")
 struct DepartmentSeriesTests {
 
@@ -265,8 +267,10 @@ struct SubjectNumericDesignatorTests {
          "INCO -DRUGS TUR"), // frus1969-76ve01/d170
         ("Source: Department of State, Central Files, PER- LODGE, HENRY CABOT. Secret; Limit Distribution; Eyes Only.",
          "PER LODGE"), // frus1961-63v04/d193
-        // A dash taken off by the class collapse leaves one space, not two (frus1964-68v30/d73).
-        ("Source: Department of State, Central Files, POL CHICOM - CHINAT. Secret; Limdis.", "POL CHICOM CHINAT"),
+        // A dash between two countries stays, with a space either side as printed
+        // (frus1964-68v30/d73). Until index version 69 the class collapse took it, and this
+        // stored `POL CHICOM CHINAT`.
+        ("Source: Department of State, Central Files, POL CHICOM - CHINAT. Secret; Limdis.", "POL CHICOM - CHINAT"),
     ])
     func digitlessDesignatorIsStored(_ note: String, _ designator: String) {
         #expect(centralFile(note) == designator)
@@ -408,5 +412,26 @@ struct SubjectNumericCategoryPinTests {
         #expect(shipped.count > 50, "read \(shipped.count) categories — the artifact did not parse")
         #expect(ParsedSourceNote.subjectNumericCategories == shipped,
                 "only in the code: \(ParsedSourceNote.subjectNumericCategories.subtracting(shipped).sorted()); only in the artifact: \(shipped.subtracting(ParsedSourceNote.subjectNumericCategories).sorted())")
+    }
+
+    @Test("The area words are the words of the shipped schedules' area codes (index version 69)")
+    func areaWordsMatchTheArtifact() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Resources/subject-numeric-labels.json")
+        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+        let schedules = try #require((object as? [String: Any])?["schedules"] as? [[String: Any]])
+        var codes = Set<String>()
+        for schedule in schedules {
+            let areas = try #require(schedule["areas"] as? [String: Any])
+            codes.formUnion(areas.keys)
+        }
+        // 316 codes on 2026-10-11. A read that found none would pass an empty list.
+        #expect(codes.count > 250, "read \(codes.count) area codes — the artifact did not parse")
+        let shipped = Set(codes.flatMap { $0.split(whereSeparator: { $0 == " " || $0 == "-" }).map(String.init) })
+        #expect(ParsedSourceNote.subjectNumericAreaWords == shipped,
+                "only in the code: \(ParsedSourceNote.subjectNumericAreaWords.subtracting(shipped).sorted()); only in the artifact: \(shipped.subtracting(ParsedSourceNote.subjectNumericAreaWords).sorted())")
+        // The strict class shape allows a country word six letters, and no code needs more.
+        #expect(shipped.allSatisfy { (1...6).contains($0.count) })
     }
 }

@@ -26,6 +26,7 @@ import Foundation
 ///          (generic leads and shadowed segments never bridge to the unattributed
 ///          bucket); phantom-repository pin (no Department-of-State NSF record)
 ///   1.3 — 2026-10-01: #1468 — Indexed Central Files' printed title, and the name-length bound
+///   1.4 — index version 69: the record floors follow the regenerated authority (3,985 records)
 @Suite("CollectionAuthorityStore — bundled artifact lookups")
 struct CollectionAuthorityStoreTests {
 
@@ -39,14 +40,19 @@ struct CollectionAuthorityStoreTests {
     func artifactDecodes() throws {
         let index = try index()
         #expect(index.schemaVersion == 1)
-        // The artifact carries 4,051 records since #1514's regeneration (4,083 after #1466/#1469,
-        // 4,432 before them), so this floor is about 1% under the real count. Kept there on
-        // purpose: each regeneration's lost records were read before they went (#1514's 57 are
-        // Sources rows filed under the Department of State or the National Archives that now take
-        // the library or university heading above them, 32 of them merging into that holder's
-        // record), and a regeneration that loses another fifty deserves the same reading.
-        #expect(index.collections.count > 4000,
-                "the artifact carries ~4,051 records; got \(index.collections.count)")
+        // The artifact carries 3,985 records since index version 69's regeneration (4,051 after
+        // #1514's, 4,083 after #1466/#1469, 4,432 before them), so this floor is about 1% under
+        // the real count. Kept there on purpose: each regeneration's lost records were read
+        // before they went (#1514's 57 are Sources rows filed under the Department of State or
+        // the National Archives that now take the library or university heading above them, 32
+        // of them merging into that holder's record; version 69's 66 are Sources rows that are a
+        // Subject-Numeric file designation, 62 of them with its description (`INCO–WOOL 17
+        // US–JAPAN: Wool trade between the U.S. and Japan`), which the class grammar refused
+        // until then, so each had been a collection named by its own text: 25 from
+        // frus1964-68v09 and 20 from frus1969-76ve13), and a regeneration that loses another
+        // fifty deserves the same reading.
+        #expect(index.collections.count > 3940,
+                "the artifact carries ~3,985 records; got \(index.collections.count)")
     }
 
     /// Cold-start guard: the store warm-up (read + decode + lookup-map build) happens
@@ -60,7 +66,7 @@ struct CollectionAuthorityStoreTests {
         let data = try Data(contentsOf: url)
         let decoded = try JSONDecoder().decode(CollectionAuthorityIndex.self, from: data)
         let elapsed = CFAbsoluteTimeGetCurrent() - start
-        #expect(decoded.collections.count > 4000)
+        #expect(decoded.collections.count > 3940)
         print("[CollectionAuthorityStoreTests] warm-up decode: \(String(format: "%.0f", elapsed * 1000)) ms for \(data.count) bytes")
         #expect(elapsed < 1.0, "warm-up took \(elapsed)s — cold-start budget exceeded")
     }
@@ -487,6 +493,6 @@ struct CollectionAuthorityStoreTests {
         let index = try index()
         let long = index.collections.filter { $0.name.count > 1_000 }
         #expect(long.isEmpty, "\(long.map { "\($0.id): \($0.name.count)" })")
-        #expect(index.collections.count > 4_000, "read \(index.collections.count) records")
+        #expect(index.collections.count > 3_940, "read \(index.collections.count) records")
     }
 }

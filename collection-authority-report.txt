@@ -1,28 +1,28 @@
-collection-authority.json regeneration report — 2026-10-01
+collection-authority.json regeneration report — 2026-10-11
 ============================================================
 volumes parsed:            502
-document notes parsed:     264552
-authority records:         4051 (lot-keyed: 1718, with NAID: 1014)
-sub-series children:       7594
-alias forms:               5253
+document notes parsed:     264598
+authority records:         3985 (lot-keyed: 1718, with NAID: 1014)
+sub-series children:       7525
+alias forms:               5215
 unclusterable references:  0
-artifact size:             1851991 bytes
+artifact size:             1837691 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
   lot-keyed:   4261/4261 (100.0%)
-  class-keyed: 3294/4022 (81.9%)
-  text-keyed:  10505/13698 (76.7%)
-  overall:     18060/21981 (82.2%)
+  class-keyed: 3647/4394 (83.0%)
+  text-keyed:  10178/13359 (76.2%)
+  overall:     18086/22014 (82.2%)
 
 Coverage — document source notes by era (parsed → clusterable → landed):
-  1946–1960: 73657 notes → 27759 clusterable (37.7%) → 27430 landed (37.2% of notes, 98.8% of clusterable)
-  1961–1968: 22481 notes → 19725 clusterable (87.7%) → 19050 landed (84.7% of notes, 96.6% of clusterable)
-  1969–1976: 18489 notes → 15967 clusterable (86.4%) → 15553 landed (84.1% of notes, 97.4% of clusterable)
+  1946–1960: 73702 notes → 27767 clusterable (37.7%) → 27438 landed (37.2% of notes, 98.8% of clusterable)
+  1961–1968: 22481 notes → 20805 clusterable (92.5%) → 20125 landed (89.5% of notes, 96.7% of clusterable)
+  1969–1976: 18489 notes → 15978 clusterable (86.4%) → 15564 landed (84.2% of notes, 97.4% of clusterable)
   1977–1988: 12171 notes → 9232 clusterable (75.9%) → 8539 landed (70.2% of notes, 92.5% of clusterable)
   1989–…: 239 notes → 169 clusterable (70.7%) → 88 landed (36.8% of notes, 52.1% of clusterable)
-  …–1945: 137515 notes → 4275 clusterable (3.1%) → 3979 landed (2.9% of notes, 93.1% of clusterable)
+  …–1945: 137516 notes → 4275 clusterable (3.1%) → 3979 landed (2.9% of notes, 93.1% of clusterable)
 
-Ambiguous clusters left unmerged (same leading segment, different repositories): 391
+Ambiguous clusters left unmerged (same leading segment, different repositories): 388
   advisory committee on foreign aid: frc 74 a 58  ←  national archives | washington national records center
   advisory committees on foreign aid: frc 73 a 159  ←  national archives | washington national records center
   agency file  ←  (unattributed) | carter library | national archives | nixon
@@ -83,8 +83,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   ddi files: job 79-r1012a  ←  (unattributed) | central intelligence agency
   ddi files: job 80-r01386r  ←  (unattributed) | central intelligence agency
   ddi files: job 89-t01385r  ←  (unattributed) | central intelligence agency
-  def 18-3 switz (ge): defense affair  ←  (unattributed) | department of state
-  def 18-3 ussr (mo): defense affair  ←  (unattributed) | department of state
   defense programs and operation  ←  department of state | national archives
   department of commerce  ←  (unattributed) | national archives
   dulles paper  ←  (unattributed) | eisenhower library | princeton university
@@ -134,7 +132,6 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   ica message file  ←  (unattributed) | department of state | washington national records center
   inco-cotton: cotton industry and commoditie  ←  (unattributed) | department of state
   inco-poultry us: u.s. poultry industry and commoditie  ←  (unattributed) | department of state
-  inco-wool 4: wool trade agreement  ←  (unattributed) | department of state
   inco-wool it: wool industry and commodities of italy  ←  (unattributed) | department of state
   inco-wool us: wool industry and commodities of united state  ←  (unattributed) | department of state
   indonesia  ←  department of state | national archives
@@ -224,6 +221,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   office of the under secretary for security assistance  ←  department of state | national archives
   office of the under secretary of the treasury: frc 79 a 14  ←  (unattributed) | washington national records center
   office of the under secretary of the treasury: frc 79 a 15  ←  (unattributed) | washington national records center
+  official file  ←  department of defense | truman library
   osd file  ←  (unattributed) | department of defense | national archives | washington national records center
   osd files: frc 330-76-0197  ←  (unattributed) | department of defense
   osd files: frc 330-76-067  ←  (unattributed) | washington national records center
@@ -326,4 +324,4 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   whitman file  ←  (unattributed) | eisenhower library
   william l. stearman file  ←  (unattributed) | reagan library
   yale university  ←  (unattributed) | washington national records center
-  … 88 more, none involving (unattributed)
+  … 87 more, none involving (unattributed)

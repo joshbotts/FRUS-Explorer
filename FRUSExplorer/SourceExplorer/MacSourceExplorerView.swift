@@ -90,6 +90,10 @@ import AppKit
 ///   1.15 — 2026-10-09: #1589 — a lot cited through the National Archives with its record group
 ///           gets the bundled, divided and curated lot boxes a lot-file citation gets, read through
 ///           `SourceExplorerProvenance.lotCards`. Mirrors SourceExplorerView 1.16.
+///   1.16 — index version 69: the match line under the Archival Neighbors list reads
+///           `SourceExplorerView.relatedMatchKey(for:note:)`, and the search for a note with no
+///           indexed document behind it passes the citation, so the class the kit reads from the
+///           note is the one matched and the one named. Mirrors SourceExplorerView 1.17.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -2046,7 +2050,9 @@ struct MacSourceExplorerView: View {
                 // A source note explored without an indexed-document anchor: the
                 // note-keyed query, nothing to exclude.
                 result = try await pipeline.relatedDocuments(
-                    for: note, limit: 30, documentYear: effectiveYear)
+                    for: note, limit: 30, documentYear: effectiveYear,
+                    // The class a central-files citation is matched on is read from the note.
+                    rawCitation: rawSourceNote)
             }
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
@@ -2562,7 +2568,8 @@ struct MacSourceExplorerView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    if !relatedLoading, let key = parsed?.archivalNeighborKey {
+                    if !relatedLoading,
+                       let key = SourceExplorerView.relatedMatchKey(for: parsed, note: rawSourceNote) {
                         Text(String(format: String(localized: "source.explorer.related.matchKey %@",
                                                    defaultValue: "Matching archival source: %@"), key))
                             .font(.caption2)

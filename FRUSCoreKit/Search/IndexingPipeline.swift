@@ -438,6 +438,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         prints text of its own has a row for that text, which the parser now emits (see the v68
 ///         note). `mergeReadingSequence` puts a section's own row first in the section, above the
 ///         documents and sections it holds, where it was appended after the volume's last row.
+///  4.37 — 2026-10-11 (pull request D): `currentDateIndexVersion` → 69 — `decimal_class` is what
+///         `CollectionKeying.centralFilesClass(parsed:note:)` returns, the one definition, and
+///         `relatedDocuments(for:)` matches a citation on the class it gives before anything else
+///         (`CollectionKeying.matchesOnClass`), in either wording
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1389,7 +1393,32 @@ public actor IndexingPipeline {
     ///   reading order needs no index: ``mergeReadingSequence(structure:cached:volumeId:)`` puts
     ///   the row first in its section. The third of the four pull requests of
     ///   `Planning/Index-Bump-Brief-2026-10-11.md`.
-    public static let currentDateIndexVersion: Int = 68
+    /// - v68→69 — pull request D: a Subject-Numeric file stores its class key. `decimal_class`
+    ///   comes from one definition now, `CollectionKeying.centralFilesClass(parsed:note:)`, which
+    ///   this file's own copy of the gate had parted from, and which reads what the class grammar
+    ///   used to refuse. Of the 9,443 documents that cite a Subject-Numeric file, 6,830 stored a
+    ///   class at version 68 and 9,381 store one at 69 (a full index of the 553 catalogue volumes
+    ///   at corpus `99d851c79`, every stored note read again through `SourceNoteKit`):
+    ///   - 285 whose class the form rule already read (a parsed series that is the record group's
+    ///     own name, a classification run on after the designation);
+    ///   - 768 that print a subject number in a spelling the strict shape refuses: a space beside
+    ///     a dash, a country word longer than six letters, a post in parentheses, stops, or a
+    ///     country element not in capitals;
+    ///   - 1,498 filed under the primary subject alone, which print no number (`POL US-USSR`) and
+    ///     stored no class at all.
+    ///   178 keys change spelling: a dash that a space follows is kept between two countries
+    ///   (`POL 27 INDIA PAK` is `POL 27 INDIA-PAK`), where a rule for decimal suffixes took it.
+    ///   40 decimal numbers cited through the National Archives gain a class the same way, and 2
+    ///   notes whose second sentence cites a file (`Another copy is … Central Files 1970–73, POL
+    ///   27–CYP`). No class is lost and no row changes its form. `series_name` moves for the 77
+    ///   Department-worded notes that printed such a dash. A volume's own list of sources
+    ///   (`volume_sources`) gains 172 classes in 46 volumes, each a designation printed in
+    ///   capitals that the strict shape refused. The archival-neighbour route reads the same definition
+    ///   (`CollectionKeying.matchesOnClass`), so a Subject-Numeric file has one list in either
+    ///   wording. Without the bump an installed index keeps 2,613 of these documents with no
+    ///   class, out of Browse's Archives lists and with no neighbours. The fourth of the four
+    ///   pull requests of `Planning/Index-Bump-Brief-2026-10-11.md`.
+    public static let currentDateIndexVersion: Int = 69
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -8704,29 +8733,21 @@ public actor IndexingPipeline {
         return row
     }
 
-    /// The `decimal_class` value for a document-source row: the canonical class
-    /// location (`SourceNoteParser.decimalClassLocation(inCitation:)`) when the
-    /// citation is central-files-shaped, else `nil`.
+    /// The `decimal_class` value for a document-source row: the canonical class key of a
+    /// central-files citation, else `nil`.
     ///
-    /// Gated by classification so identifiers in other repositories' citations (CIA
-    /// job numbers, council-document series, presidential-library box strings) can
-    /// never masquerade as a class: only `.centralFiles` / `.cfpfFile` rows, and
-    /// `.naraCollection` rows whose series segment names the central files
-    /// ("Central Files 1967–69", "Central Foreign Policy File"), are scanned.
+    /// `CollectionKeying.centralFilesClass(parsed:note:)` is the one definition, shared with the
+    /// archival-neighbour route and with the generators (index version 69). Until then this
+    /// function scanned the citation itself, and only for `.centralFiles` and `.cfpfFile` rows
+    /// and `.naraCollection` rows whose parsed series names the central files; the kit's copy of
+    /// that gate had parted from it, and neither read the class the form rule finds.
+    ///
+    /// Gated by classification so identifiers in other repositories' citations (CIA job numbers,
+    /// council-document series, presidential-library box strings) can never masquerade as a class.
     nonisolated private static func decimalClassColumn(
         parsed: ParsedSourceNote, rawText: String
     ) -> String? {
-        switch parsed {
-        case .centralFiles, .cfpfFile:
-            return SourceNoteParser.decimalClassLocation(inCitation: rawText)
-        case .naraCollection(_, let series, _, _):
-            // One definition with the routing switch's guard (W-17 session 1).
-            guard let series, ParsedSourceNote.seriesNamesCentralFiles(series)
-            else { return nil }
-            return SourceNoteParser.decimalClassLocation(inCitation: rawText)
-        default:
-            return nil
-        }
+        CollectionKeying.centralFilesClass(parsed: parsed, note: rawText)
     }
 
     /// The era/columns mapping for each `ParsedSourceNote` case (everything except the
@@ -9906,6 +9927,9 @@ public actor IndexingPipeline {
         // display slice) so `applyScope` can count and re-slice the in-scope rows (#217).
         let fetchLimit = scopeVolumeIds == nil ? limit : Self.scopedFetchCeiling
         let raw: (documents: [RelatedDocument], totalCount: Int)
+        // The class this note is matched on, where it is matched on one (index version 69). `nil`
+        // without the raw note: the class is read from the citation and not from the parse.
+        let classMatch = rawCitation.flatMap { CollectionKeying.matchesOnClass(parsed: parsed, note: $0) }
         switch parsed {
 
         case .lotFile(_, let lotNumber, _):
@@ -9914,10 +9938,37 @@ public actor IndexingPipeline {
         case .naraCollection(_, _, let lot?, _):
             raw = try relatedByLotFile(lot, limit: fetchLimit, excluding: exclude, ordering: ordering)
 
+        // A citation matched on its central-files CLASS (`CollectionKeying.matchesOnClass`), the
+        // first reading for these three parses (index version 69).
+        //
+        // A no-lot collection worded through the National Archives: the class is the cohort,
+        // whatever the parse took for the series. The class lives in the raw citation, not the
+        // parse — measured 2026-08-27: 4,409 of 5,892 rows whose series names the central files
+        // carry a stored `decimal_class`, and all of them routed to nothing. And the series need
+        // not name them: `RG 59, Records of the Department of State, Central Files 1964–66, POL
+        // 15-1 IRAQ` parses with the record group's own name as its series, and until version 69
+        // its neighbours were every note that words the record group that way.
+        //
+        // A Subject-Numeric file worded through the Department (`Department of State, Central
+        // Files, POL 27 ARAB-ISR`), or parsed as the Central Foreign Policy File: matched on its
+        // class as the same file is in the other wording. Until version 69 this wording matched
+        // the stored file number, which finds the documents that print the designation the same
+        // way and none that cite it through the National Archives: 271 files are cited both ways,
+        // by 2,180 documents in this wording and 2,499 in the other (a full index at version 69).
+        // One list for one file is #1543's own rule, that the
+        // form decides and the wording does not. A file under the primary subject alone has a
+        // class now, so a designation the parse stored nothing for (`AID (US) S VIET`, 184 notes)
+        // has neighbours at last.
+        case .naraCollection(_, _, nil, _) where classMatch != nil,
+             .centralFiles where classMatch != nil,
+             .cfpfFile where classMatch != nil:
+            raw = try relatedByDecimalClass(classMatch ?? "", limit: fetchLimit,
+                                            excluding: exclude, ordering: ordering)
+
         // A no-lot collection with a real series name: same (RG, series). RG 59 was
         // excluded here wholesale until W-17 session 1; the honest boundary is the
         // SERIES NAME, not the record group — "Central Files 1967–69" is a container of
-        // most of the era's corpus and the class arm below serves it at meaningful
+        // most of the era's corpus and the class arm above serves it at meaningful
         // grain, but "RG 59, Conference Files: FRC 83–0068" is as real a series cohort
         // as any RG 84 post file (measured 2026-08-27: 1,002 RG-59 rows carry a
         // non-central-files series and routed to nothing).
@@ -9927,20 +9978,10 @@ public actor IndexingPipeline {
                                           limit: fetchLimit, excluding: exclude,
                                           ordering: ordering)
 
-        // A central-files-NAMED collection row ("RG 59, Central Files 1967–69,
-        // POL 27 VIET S"): the series is not a cohort, but the citation's class is.
-        // The class location lives in the raw citation, not the parse — measured
-        // 2026-08-27: 4,409 of 5,892 such rows carry a stored `decimal_class`, and all
-        // of them routed to nothing.
-        case .naraCollection(_, let series?, nil, _)
-            where ParsedSourceNote.seriesNamesCentralFiles(series):
-            if let rawCitation,
-               let classLocation = SourceNoteParser.decimalClassLocation(inCitation: rawCitation) {
-                raw = try relatedByDecimalClass(classLocation, limit: fetchLimit,
-                                                excluding: exclude, ordering: ordering)
-            } else {
-                raw = ([], 0)
-            }
+        // A central-files-NAMED collection row with no class ("RG 59, Central Files 1967–69"
+        // and nothing the class grammar reads): the series is not a cohort.
+        case .naraCollection(_, _?, nil, _):
+            raw = ([], 0)
 
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             // The dotted decimal form ("862S.01/10-1646").
@@ -10092,14 +10133,20 @@ public actor IndexingPipeline {
             rawCitation: raw,
             ordering: .stratified
         )
+        // W-17 session 1: a no-lot collection row whose citation gives a central-files CLASS
+        // matches on that class, which only the raw note carries — so the basis is read where the
+        // raw text lives (`CollectionKeying.archivalNeighborBasis`). The class replaces a
+        // parse-level key as well as a missing one (index version 69): a note worded `RG 59,
+        // Records of the Department of State, Central Files …` has the record group's name for a
+        // series key, and is matched on its class all the same. A class that matched nothing
+        // names no basis in that wording, as before; a Department-worded note keeps its parse key.
         var basis = parsed.archivalNeighborKey
-        // W-17 session 1: a central-files-named RG-59 collection row matches on the
-        // citation's CLASS, which only the raw note carries — so the parse-level key is
-        // nil by design and the basis is supplied here, where the raw text lives.
-        if basis == nil, result.totalCount > 0,
-           case .naraCollection(_, let series?, nil, _) = parsed,
-           ParsedSourceNote.seriesNamesCentralFiles(series) {
-            basis = SourceNoteParser.decimalClassLocation(inCitation: raw)
+        if let classKey = CollectionKeying.matchesOnClass(parsed: parsed, note: raw) {
+            if result.totalCount > 0 {
+                basis = classKey
+            } else if case .naraCollection = parsed {
+                basis = nil
+            }
         }
         // #217 reconciliation — widen the document path to the same Phase-4 collection-
         // authority alias fallback the volume-source path runs, so the same collection
@@ -10562,10 +10609,8 @@ public actor IndexingPipeline {
             case .lotFile, .jobNumber:
                 continue
             case .decimalClass(let canonical):
-                guard let patterns = Self.classLeafPatterns(forCanonicalKey: canonical) else { continue }
-                let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
-                    .joined(separator: " OR ")
-                branches.append((key, "(\(likes))", patterns))
+                guard let family = Self.classFamilyClause(forCanonicalKey: canonical) else { continue }
+                branches.append((key, "(\(family.clause))", family.params))
             case .presidentialLibrary(let repo, let collection):
                 guard let m = Self.libraryMatchClause(library: repo, collection: collection) else { continue }
                 branches.append((key, m.clause, m.params))
@@ -11029,12 +11074,10 @@ public actor IndexingPipeline {
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         guard let key = SourceNoteParser.decimalClassKey(classKey)
                 ?? Self.fallbackClassKey(classKey),
-              let patterns = Self.classLeafPatterns(forCanonicalKey: key) else { return ([], 0) }
-        let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
-            .joined(separator: " OR ")
+              let family = Self.classFamilyClause(forCanonicalKey: key) else { return ([], 0) }
         let ex = exclusion(excluding)
-        let whereClause = "(\(likes))\(ex.clause)"
-        let params = patterns + ex.params
+        let whereClause = "(\(family.clause))\(ex.clause)"
+        let params = family.params + ex.params
 
         let countSQL = "SELECT COUNT(*) FROM document_sources ds WHERE \(whereClause)"
         let selectSQL = """
@@ -11063,6 +11106,9 @@ public actor IndexingPipeline {
             .replacingOccurrences(of: "—", with: "-")
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
+        // A primary-subject file's head is a key in its own right since version 69, and two of
+        // the handbooks' categories are shorter than three letters (`E`, `FT`).
+        if !s.isEmpty, CollectionKeying.subjectNumericParts(of: s)?.group == s { return s }
         return s.count >= 3 ? s : nil
     }
 
@@ -11106,14 +11152,65 @@ public actor IndexingPipeline {
     /// query finds none of its members. `CollectionKeying.subjectNumericGroup` says so at length.
     /// Internal rather than private so the family definition can be driven directly: it is the
     /// half of #841 that a source scan cannot check, since the defect was which *rows* matched.
+    ///
+    /// ## A primary-subject file (index version 69)
+    /// A Subject-Numeric key with no number is a file under the primary subject alone, arranged
+    /// by country, and its family is its head (`CollectionKeying.subjectNumericParts(of:)`, which
+    /// has the handbook's instruction). Two shapes reach here:
+    /// - **a head alone** (`POL`, `AID (US)`, `INCO-WOOL`), which is the family: the key and its
+    ///   space branch, with `classFamilyExclusion` taking out what the prefix also reaches;
+    /// - **a head and an area** (`POL US-USSR`), which is one file: the key alone. Its space
+    ///   branch could only reach another area's file, as `POL GER` reaches `POL GER W-US` (57
+    ///   documents on a full index at version 69).
     nonisolated static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
         guard !key.isEmpty else { return nil }
         let esc = likeEscaped(key)
+        if let parts = CollectionKeying.subjectNumericParts(of: key), parts.number == nil {
+            return parts.group == key ? [esc, esc + " %"] : [esc]
+        }
         var patterns = [esc, esc + " %", esc + ".%"]
         if !CollectionKeying.isSubjectNumericClass(key) {
             patterns.append(esc + "-%")
         }
         return patterns
+    }
+
+    /// The `GLOB` a bare head's family must NOT match, or `nil` for every other key (index
+    /// version 69).
+    ///
+    /// A bare head is a literal prefix of more than its family: `POL %` reaches `POL 27 VIET
+    /// S`, and `AID %` reaches `AID (US) INDIA`, whose head is `AID (US)`. Both continue with a
+    /// digit or an opening parenthesis where a primary-subject file continues with its area, and
+    /// `LIKE` cannot say so. Measured on a full index at version 69, the `POL` family is 1,242
+    /// documents and the prefix alone reaches all 6,352 that cite a POL file.
+    nonisolated static func classFamilyExclusion(forCanonicalKey key: String) -> String? {
+        guard let parts = CollectionKeying.subjectNumericParts(of: key),
+              parts.number == nil, parts.group == key else { return nil }
+        var escaped = ""
+        for character in key {
+            switch character {
+            case "[": escaped += "[[]"
+            case "*": escaped += "[*]"
+            case "?": escaped += "[?]"
+            default: escaped.append(character)
+            }
+        }
+        return escaped + " [0-9(]*"
+    }
+
+    /// The class family's `WHERE` over `document_sources ds` and the values it binds: the
+    /// patterns of `classLeafPatterns`, less what `classFamilyExclusion` names. Shared verbatim
+    /// by `relatedByDecimalClass` and the batched `archivalNeighborCounts`.
+    nonisolated static func classFamilyClause(
+        forCanonicalKey key: String
+    ) -> (clause: String, params: [String])? {
+        guard let patterns = classLeafPatterns(forCanonicalKey: key) else { return nil }
+        let likes = patterns.map { _ in "ds.decimal_class LIKE ? ESCAPE '\\'" }
+            .joined(separator: " OR ")
+        guard let excluded = classFamilyExclusion(forCanonicalKey: key) else {
+            return (likes, patterns)
+        }
+        return ("(\(likes)) AND ds.decimal_class NOT GLOB ?", patterns + [excluded])
     }
 
     /// The presidential-library `WHERE` over `document_sources ds` — library keyword

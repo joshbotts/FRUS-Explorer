@@ -8,6 +8,7 @@
 
 import Foundation
 import PDFKit
+import SourceNoteKit
 
 // MARK: - GenerationError
 
@@ -34,6 +35,8 @@ struct GenerationError: Error, CustomStringConvertible {
 ///
 /// Version history:
 ///   1.0 — #1211: initial implementation
+///   1.1 — index version 69: a key is divided by `CollectionKeying.subjectNumericParts(of:)`,
+///          so a file with no subject number gives its country to the measurement
 public enum SubjectNumericLabelRunner {
 
     // MARK: Sources
@@ -370,43 +373,36 @@ public enum SubjectNumericLabelRunner {
     }
 
     /// Splits a corpus class key into its category and designator, or `nil` when it is not
-    /// subject-numeric.
+    /// subject-numeric or has no number.
     ///
-    /// Mirrors `CollectionKeying.subjectNumericGroup`'s anchored match, then divides the group at
-    /// the space. The group is a LITERAL prefix of the key by that rule, so `DEF1-1` divides to
-    /// (`DEF`, `1-1`) and looks the same table row up as `DEF 1-1` without the fold having to
-    /// rewrite the key — which #841 forbids.
+    /// The division is `CollectionKeying.subjectNumericParts(of:)`, the one the app's fold and its
+    /// label lookup make (a copy of its pattern stood here until index version 69). The group is
+    /// a LITERAL prefix of the key by that rule, so `DEF1-1` divides to (`DEF`, `1-1`) and looks
+    /// the same table row up as `DEF 1-1` without the fold having to rewrite the key — which #841
+    /// forbids. A key with no number is a file under the primary subject alone (`POL US-USSR`):
+    /// no outline has a subject for it, so it is not counted among the keys a schedule reads.
     ///
     /// - Parameter key: A class key as a source note wrote it.
     /// - Returns: `("POL", "27")`, or `nil`.
     static func splitSubjectNumeric(_ key: String) -> (String, String)? {
-        guard let match = groupRegex.firstMatch(
-                in: key, range: NSRange(key.startIndex..., in: key)),
-              let category = Range(match.range(at: 1), in: key),
-              let number = Range(match.range(at: 2), in: key)
-        else { return nil }
-        return (String(key[category]).uppercased(),
-                String(key[number]).replacingOccurrences(
-                    of: #"\s"#, with: "", options: .regularExpression))
+        guard let parts = CollectionKeying.subjectNumericParts(of: key),
+              let number = parts.number else { return nil }
+        return (parts.category.uppercased(), number)
     }
 
-    /// Whatever follows a key's group — the country or organization the file is arranged under.
+    /// Whatever follows a key's group — the country or organization the file is arranged under —
+    /// without a post.
+    ///
+    /// A key with no number has a tail too since index version 69 (`US-USSR` of `POL US-USSR`),
+    /// and it is the whole of what the app can say about such a file. A post in parentheses is
+    /// left off (`USSR` of `DEF 18-3 USSR (MO)`): it names a city inside the country, and read
+    /// with it the tail is two parties, so `SWITZ (GE)` would resolve to Switzerland and Germany.
     ///
     /// - Parameter key: A class key as a source note wrote it.
     /// - Returns: The tail, or `nil` when the key is not subject-numeric.
     static func tail(of key: String) -> String? {
-        guard let match = groupRegex.firstMatch(
-                in: key, range: NSRange(key.startIndex..., in: key)),
-              let whole = Range(match.range, in: key)
-        else { return nil }
-        return String(key[whole.upperBound...]).trimmingCharacters(in: .whitespaces)
+        CollectionKeying.subjectNumericParts(of: key)?.area
     }
-
-    /// Category letters, an optional parenthesised agency qualifier, then the number.
-    private static let groupRegex: NSRegularExpression = {
-        // swiftlint:disable:next force_try
-        try! NSRegularExpression(pattern: #"^([A-Z]{1,6})(?:\s*\([^)]*\))?\s*(\d+(?:-\d+)*)"#)
-    }()
 
     // MARK: Category names
 

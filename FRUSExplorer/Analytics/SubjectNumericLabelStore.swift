@@ -39,6 +39,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1211: initial implementation
+///   1.1 — index version 69: a file with no subject number. A category alone reads "Files with
+///          no subject number" under either schedule, and such a file reads as its country and
+///          nothing before or after it; a key is divided by
+///          `CollectionKeying.subjectNumericParts(of:)`, where the fold cuts it
 struct SubjectNumericLabelTable: Decodable, Sendable {
 
     /// One edition's schedule.
@@ -126,6 +130,17 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
     ///   - span: The coverage years the surface's figures describe.
     /// - Returns: `"MILITARY OPERATIONS"`, or `nil`.
     func gloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
+        // A FILE UNDER THE PRIMARY SUBJECT ALONE has no subject number, so no schedule has a
+        // subject to give it, and what it is does not depend on the edition (index version 69).
+        // Only a head is said to be one: `gloss` is asked about a family, and such a file's
+        // family is its head (`CollectionKeying.subjectNumericParts(of:)`). The handbooks' own
+        // names for the categories are in the table and are not read here: the scan broke some
+        // of them (`RAOIO`, `FOREI GN TRADE`), and `AID` has none in either edition.
+        if let parts = CollectionKeying.subjectNumericParts(of: key), parts.number == nil {
+            guard parts.group == key else { return nil }
+            return String(localized: "archival.classLabel.noSubjectNumber",
+                          defaultValue: "Files with no subject number")
+        }
         guard let schedule = schedules.first(where: {
             $0.governs(span, floor: coverage.systemOpensIn)
         }) else { return nil }
@@ -169,35 +184,45 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
     func leafGloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
         guard let schedule = schedules.first(where: {
             $0.governs(span, floor: coverage.systemOpensIn)
-        }), let (category, designator) = Self.split(key) else { return nil }
+        }), let divided = CollectionKeying.subjectNumericParts(of: key) else { return nil }
+        let category = divided.category.uppercased()
 
         var parts: [String] = []
-        if let organization = schedule.subjects[category] == nil
+        // A file with no subject number reads as its area alone (index version 69): no subject
+        // follows it, and no organization's name goes before it. The one category that reaches
+        // the organization branch with such a file is `AID` under 1964–1973, which has no outline
+        // in that schedule and whose appendix entry is a piece of another line: 22 keys over 52
+        // documents would have read "programs in Spanish speaking countries). Aeronautics —
+        // India". The numbered `AID` keys of that schedule still read that way (33 keys over
+        // 96 documents at version 68): that is the table's to put right.
+        if divided.number != nil,
+           let organization = schedule.subjects[category] == nil
             ? schedule.abbreviations[category] : nil {
             parts.append(organization)
         }
-        if let tail = Self.tail(of: key), !tail.isEmpty,
-           let area = schedule.areas[Self.normalizedTail(tail)] {
+        if !divided.area.isEmpty, let area = schedule.areas[Self.normalizedTail(divided.area)] {
             parts.append(area)
         }
-        if let subject = schedule.subject(category: category, designator: designator) {
+        if let designator = divided.number,
+           let subject = schedule.subject(category: category, designator: designator) {
             parts.append(subject)
         }
         guard !parts.isEmpty else { return nil }
         return parts.joined(separator: " — ")
     }
 
-    /// Whatever follows a key's group — the country, region or organization element.
+    /// Whatever follows a key's group — the country, region or organization element — without a
+    /// post (`USSR` of `DEF 18-3 USSR (MO)`).
+    ///
+    /// The division is the kit's, `CollectionKeying.subjectNumericParts(of:)`, so the key is cut
+    /// here where the fold cuts it. The post is left off because it names a city inside the
+    /// country the file is arranged under, and the area table would read the two as two parties:
+    /// `SWITZ (GE)` is Switzerland's file at Geneva, not Switzerland and Germany.
     ///
     /// - Parameter key: A class key.
-    /// - Returns: The tail, or `nil`.
+    /// - Returns: The tail, or `nil` when the key is not subject-numeric.
     static func tail(of key: String) -> String? {
-        guard let splitRegex,
-              let match = splitRegex.firstMatch(
-                in: key, range: NSRange(key.startIndex..., in: key)),
-              let whole = Range(match.range, in: key)
-        else { return nil }
-        return String(key[whole.upperBound...]).trimmingCharacters(in: .whitespaces)
+        CollectionKeying.subjectNumericParts(of: key)?.area
     }
 
     /// A tail keyed the way the artifact stores it.
@@ -213,29 +238,19 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
 
     /// Splits a class key into its category and its designator.
     ///
-    /// The split mirrors `CollectionKeying.subjectNumericGroup`'s anchored match and then divides
-    /// the group. It deliberately tolerates the missing space that fold must preserve: `DEF1-1` is
-    /// a key the corpus really carries, and #841 forbids the fold from rewriting it to `DEF 1-1`,
-    /// so the LOOKUP is where the two spellings are allowed to meet.
+    /// The split is `CollectionKeying.subjectNumericParts(of:)`, the division the fold makes. It
+    /// tolerates the missing space that fold must preserve: `DEF1-1` is a key the corpus really
+    /// carries, and #841 forbids the fold from rewriting it to `DEF 1-1`, so the LOOKUP is where
+    /// the two spellings are allowed to meet.
     ///
     /// - Parameter key: A class key.
-    /// - Returns: `("POL", "27")`, or `nil` when the key is not subject-numeric.
+    /// - Returns: `("POL", "27")`, or `nil` when the key is not subject-numeric or is a
+    ///   primary-subject file, which has no designator.
     static func split(_ key: String) -> (category: String, designator: String)? {
-        guard CollectionKeying.isSubjectNumericClass(key),
-              let splitRegex,
-              let match = splitRegex.firstMatch(
-                in: key, range: NSRange(key.startIndex..., in: key)),
-              let category = Range(match.range(at: 1), in: key),
-              let number = Range(match.range(at: 2), in: key)
-        else { return nil }
-        return (String(key[category]).uppercased(),
-                String(key[number]).replacingOccurrences(
-                    of: #"\s"#, with: "", options: .regularExpression))
+        guard let parts = CollectionKeying.subjectNumericParts(of: key),
+              let number = parts.number else { return nil }
+        return (parts.category.uppercased(), number)
     }
-
-    /// Category letters, an optional parenthesised agency qualifier, then the number.
-    private static let splitRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^([A-Z]{1,6})(?:\s*\([^)]*\))?\s*(\d+(?:-\d+)*)"#)
 }
 
 // MARK: - SubjectNumericLabelStore

@@ -156,7 +156,9 @@ enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
     /// Folded to **category + number**, not the raw leaf: measured under #763, 691 of the 1,362
     /// subject-numeric leaf keys carry a single document, and only eight pass a hundred. Folded,
     /// it is 326 groups with thirteen past a hundred. `CollectionKeying.subjectNumericGroup` is
-    /// the fold, shared with the generator so the two cannot disagree.
+    /// the fold, shared with the generator so the two cannot disagree. A file with no subject
+    /// number (`POL US-USSR`, a class key since index version 69) folds to its category alone,
+    /// so `POL` is a node beside `POL 27`.
     case subjectNumeric
 
     var id: String { rawValue }

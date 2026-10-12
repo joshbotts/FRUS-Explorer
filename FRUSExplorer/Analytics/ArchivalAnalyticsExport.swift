@@ -54,6 +54,8 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///          and the timeline's states its buckets as the code draws them, with no era count
 ///   1.5 — PV-1 (the 2026-09-28 audit): a class ranking states the State Department's schedule
 ///          where it reads it (`rankingSources`)
+///   1.6 — index version 69: the grain caveat says a designator with no number is grouped
+///          under its category alone (`archival.export.caveat.grain.v2`)
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -71,8 +73,8 @@ enum ArchivalAnalyticsExport {
     /// network already used — but it hides the designator a reader writes on a pull slip, so the
     /// export says the fold happened and the app offers the leaves.
     static var grainCaveat: String {
-        String(localized: "archival.export.caveat.grain",
-               defaultValue: "Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), because at full length half of them carry a single document. A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.")
+        String(localized: "archival.export.caveat.grain.v2",
+               defaultValue: "Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), or to their category alone when they have no number (POL US-USSR counts under POL), because at full length half of them carry a single document. A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.")
     }
 
     /// The Collections ranking's statement.

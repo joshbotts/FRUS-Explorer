@@ -258,6 +258,8 @@ struct ArchiveVisitDerivationTests {
 ///
 /// Version history:
 ///   1.0 — #1421 review: initial implementation
+///   1.1 — index version 69: the control's v58 key is written out (`mintedOnV58`), since the
+///          builder reads its class from either record now and mints one key for both
 @Suite("Archive Visit keys across the v59 re-index (#1421 review)")
 struct ArchiveVisitKeyStabilityTests {
 
@@ -268,6 +270,16 @@ struct ArchiveVisitKeyStabilityTests {
         let v59: CollectionGeneratedBlocks.SourceRecord
         /// Whether the plan must still find the row minted under the v58 key.
         let joins: Bool
+        /// The key the v58 build minted, where today's builder no longer mints it from the v58
+        /// record: since index version 69 the class grammar reads `DEF ( MLF ) 9–5`, spaces and
+        /// all, so the builder gives the control's two records one key.
+        var mintedOnV58: String?
+    }
+
+    /// The key a row minted on v58 carries.
+    @MainActor
+    private static func storedKey(_ note: Note) -> String {
+        note.mintedOnV58 ?? key(note.v58)
     }
 
     private static func record(_ document: String, raw: String, era: String,
@@ -314,7 +326,8 @@ struct ArchiveVisitKeyStabilityTests {
              v59: record("frus1964-68v13/d4",
                          raw: "Source: Department of State, Central Files, DEF (MLF) 9–5. Confidential.",
                          era: "decimal", repository: "Department of State"),
-             joins: false),
+             joins: false,
+             mintedOnV58: "r|Source: Department of State, Central Files, DEF ( MLF ) 9–5. Confidential."),
     ]
 
     /// `frus1964-68v06` d147's footnote citation of the Johnson Library, before and after.
@@ -352,7 +365,7 @@ struct ArchiveVisitKeyStabilityTests {
             let parts = note.document.split(separator: "/").map(String.init)
             plan.addSeeds([(parts[0], parts[1])], includeSource: true, includeExternalRefs: false,
                           in: context)
-            let row = ArchiveVisitTarget(planId: plan.id, targetKey: Self.key(note.v58))
+            let row = ArchiveVisitTarget(planId: plan.id, targetKey: Self.storedKey(note))
             row.plan = plan
             row.tierId = tier.id
             row.userNote = "note for \(note.document)"
@@ -384,7 +397,7 @@ struct ArchiveVisitKeyStabilityTests {
             plan: built.plan, indexedVolumeIds: [], dataSource: built.stub)
 
         for note in Self.notes {
-            let old = Self.key(note.v58), new = Self.key(note.v59)
+            let old = Self.storedKey(note), new = Self.key(note.v59)
             #expect(old != new, "\(note.document): the fixture no longer moves its key, so it proves nothing")
             #expect(derived.model.targets.contains { $0.key == new },
                     "\(note.document): the plan does not derive «\(new)»")
@@ -427,7 +440,7 @@ struct ArchiveVisitKeyStabilityTests {
         let row = try #require(built.plan.targetState(forKey: Self.key(note.v59),
                                                       resolvedBy: derived.overlay,
                                                       mintIfMissing: true, in: context))
-        #expect(row.targetKey == Self.key(note.v58), "the write reached a row other than the one minted on v58")
+        #expect(row.targetKey == Self.storedKey(note), "the write reached a row other than the one minted on v58")
         row.tierId = later.id
         try context.save()
         #expect(built.plan.targets?.count == rowsBefore, "a second row was minted beside the v58 one")
@@ -480,6 +493,126 @@ struct ArchiveVisitKeyStabilityTests {
         // The cut, but a different series.
         #expect(!K.sameTarget(stored: old, derived: "coll||" + String(("Glenn T. Seaborg, Diary "
             + Self.seaborgV59).prefix(cut))))
+    }
+}
+
+// MARK: - ArchiveVisitKeysAcrossVersion69Tests
+
+/// A plan made before index version 69 and the target keys that version moves.
+///
+/// Version 69 changed the class grammar and no stored text, so a note has one record before it and
+/// after it, and the key a row was minted under cannot be had from today's builder. Each stored
+/// key below is written as the builds through version 68 minted it: `class|` and the class the
+/// index stored then, or `r|` and the note's text where it stored none. Measured over the 198,347
+/// stored notes the builder keys as a central file, 27 keys are a file that got its dash back and
+/// 410 are a note whose class is now read; `ArchiveVisitTargetKeys` says why the first join and
+/// the second do not.
+///
+/// Version history:
+///   1.0 — index version 69
+@Suite("Archive Visit keys across index version 69")
+struct ArchiveVisitKeysAcrossVersion69Tests {
+
+    private static func record(_ document: String, series: String?, raw: String) -> CollectionGeneratedBlocks.SourceRecord {
+        let parts = document.split(separator: "/").map(String.init)
+        return .init(volumeId: parts[0], documentId: parts[1], repository: "Department of State",
+                     recordGroup: nil, lotFile: nil, seriesName: series, rawText: raw,
+                     citationEra: "subject_numeric")
+    }
+
+    /// `frus1961-63v05` d321. Version 68 stored its class as `POL 17 US USSR`.
+    private static let respelled = record(
+        "frus1961-63v05/d321", series: "POL 17 US- USSR",
+        raw: "Source: Department of State, Central Files, POL 17 US- USSR. Limited Official Use. Drafted by Guthrie and Owen, cleared by Thompson, and approved by Davis.")
+    /// `frus1961-63v04` d198. Version 68 stored no class for it.
+    private static let newlyRead = record(
+        "frus1961-63v04/d198", series: "POL 27 S Viet",
+        raw: "Source: Department of State, Central Files, POL 27 S Viet. Secret; Priority. Repeated to CINCPAC. Received at 6:44 a.m. and passed to the White House, CIA, and Office of the Secretary of Defense.")
+
+    @MainActor
+    private static func key(_ record: CollectionGeneratedBlocks.SourceRecord) -> String {
+        TripPacketBuilder.targetKey(
+            for: record,
+            category: SourceProvenanceCategory.from(citationEra: "subject_numeric",
+                                                    repository: record.repository)).key
+    }
+
+    @MainActor
+    @Test("The builder keys each note by the class it now stores")
+    func todaysKeys() {
+        #expect(Self.key(Self.respelled) == "class|POL 17 US-USSR")
+        #expect(Self.key(Self.newlyRead) == "class|POL 27 S VIET")
+    }
+
+    @MainActor
+    @Test("A row on a file that got its dash back keeps its tier and note, and a row on a note whose class is now read stays an orphan")
+    func planFromBeforeVersion69() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let plan = ArchiveVisitPlan(name: "Made on version 68")
+        context.insert(plan)
+        let tier = ArchiveVisitTier(label: "Day one", order: 0)
+        plan.tiers = [tier]
+        let minted = "r|" + Self.newlyRead.rawText
+        for (document, key) in [("frus1961-63v05/d321", "class|POL 17 US USSR"),
+                                ("frus1961-63v04/d198", minted)] {
+            let parts = document.split(separator: "/").map(String.init)
+            plan.addSeeds([(parts[0], parts[1])], includeSource: true, includeExternalRefs: false,
+                          in: context)
+            let row = ArchiveVisitTarget(planId: plan.id, targetKey: key)
+            row.plan = plan
+            row.tierId = tier.id
+            row.userNote = "note for \(document)"
+            context.insert(row)
+        }
+        try context.save()
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: plan, indexedVolumeIds: [],
+            dataSource: DerivationStub(sources: [Self.respelled, Self.newlyRead]))
+
+        // The same file, spelled with its dash: the row answers for it under the new key, and
+        // keeps its own.
+        let joined = "class|POL 17 US-USSR"
+        #expect(derived.model.targets.contains { $0.key == joined })
+        #expect(derived.overlay.tierAssignments[joined] == tier.id)
+        #expect(derived.overlay.notes[joined] == "note for frus1961-63v05/d321")
+        #expect(derived.overlay.storedKey(for: joined) == "class|POL 17 US USSR")
+
+        // One note's own target has become a file's: its tier is not lent to the file.
+        let read = "class|POL 27 S VIET"
+        #expect(derived.model.targets.contains { $0.key == read })
+        #expect(derived.overlay.tierAssignments[read] == nil)
+        #expect(derived.overlay.notes[read] == nil)
+        #expect(derived.overlay.orphanKeys == [minted])
+        #expect(derived.overlay.storedKeyCount == 2)
+    }
+
+    /// The rule's conjuncts, one fixture each.
+    @Test("Two class keys join only where one has a hyphen for the other's space")
+    func theDashRule() {
+        typealias K = ArchiveVisitTargetKeys
+        #expect(K.sameTarget(stored: "class|POL 1 US USSR", derived: "class|POL 1 US-USSR"))
+        #expect(K.sameTarget(stored: "class|POL 1 US-USSR", derived: "class|POL 1 US USSR"),
+                "a row minted on version 69, read on 68")
+        #expect(K.sameTarget(stored: "class|POL 1 EUR E GER W", derived: "class|POL 1 EUR E-GER W"))
+        // Different lengths: two classes, however alike once their marks are gone, and a key
+        // that only begins another.
+        #expect(!K.sameTarget(stored: "class|DEF 1-1 US", derived: "class|DEF 11 US"))
+        #expect(!K.sameTarget(stored: "class|POL 1 US", derived: "class|POL 1 US-USSR"))
+        #expect(!K.sameTarget(stored: "class|POL 1 US-USSR", derived: "class|POL 1 US"))
+        // Another character differs.
+        #expect(!K.sameTarget(stored: "class|POL 1 US USSR", derived: "class|POL 7 US-USSR"))
+        #expect(!K.sameTarget(stored: "class|POL 1 US.USSR", derived: "class|POL 1 US-USSR"))
+        // The keys must be a class's: two notes whose texts differ the same way are two notes.
+        // One fixture, because the rule has one prefix test. A class key against any other kind
+        // fails character for character before the prefix is asked.
+        #expect(!K.sameTarget(stored: "r|POL 1 US USSR", derived: "r|POL 1 US-USSR"))
+        #expect(!K.sameTarget(stored: "r|POL 1 US-USSR", derived: "r|POL 1 US USSR"))
+        // And through the resolution: joined when it is the one candidate, not when there are two.
+        #expect(K.resolve(storedKeys: ["class|POL 1 US USSR"], derivedKeys: ["class|POL 1 US-USSR"])
+                == ["class|POL 1 US USSR": "class|POL 1 US-USSR"])
+        #expect(K.resolve(storedKeys: ["class|POL 1 US USSR"],
+                          derivedKeys: ["class|POL 1 US-USSR", "class|POL 1-US USSR"]).isEmpty)
     }
 }
 

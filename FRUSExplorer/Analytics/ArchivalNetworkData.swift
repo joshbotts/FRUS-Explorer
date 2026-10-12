@@ -416,7 +416,8 @@ enum ArchivalNetworkBuilder {
     ///
     /// The detail sentence named the focus in full, so with Indexed Central Files at the centre it
     /// ran to 570 pt in an iPhone's portrait dock (measured for decision D11). Eighty characters
-    /// keep a name whole in 3,635 of the shipped authority's 4,051 records.
+    /// keep a name whole in 3,576 of the shipped authority's 3,985 records (3,635 of 4,051 when the
+    /// decision was taken).
     static let sentenceNameLimit = 80
 
     /// A collection's name as the panel's sentences print it (#1468): whole up to
@@ -475,7 +476,8 @@ enum ArchivalNetworkBuilder {
             if expansion == .decimalClasses, isSubjectNumeric { continue }
             if expansion == .subjectNumeric, !isSubjectNumeric { continue }
             // Subject-numeric keys fold to category + number: at leaf grain half of them carry a
-            // single document and the lens is unrankable (#763's D-3 measurement).
+            // single document and the lens is unrankable (#763's D-3 measurement). A file with no
+            // number folds to its category alone (index version 69).
             let label = expansion == .subjectNumeric
                 ? (CollectionKeying.subjectNumericGroup(key) ?? key)
                 : key
