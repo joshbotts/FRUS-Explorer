@@ -706,6 +706,34 @@ struct PrintedKeynessBaselineTests {
         #expect(walks.last?.lenses.contains(where: WordCloudMultiLensTokenizer.readsLexicalClass) == false)
     }
 
+    // One fixture for each way the lenses can leave a tagger unwalked.
+
+    @Test("Lenses with no part-of-speech lens are refused: the first walk's tagger would be the second's")
+    func walksRefuseLensesWithNoPartOfSpeechLens() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            _ = try CloudVectorsRunner.printedVerificationWalks(
+                lenses: [.allTerms, .concepts, .sentiment], tuning: .standard,
+                stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: [])
+        }
+    }
+
+    @Test("Lenses that are all part-of-speech lenses are refused: there is no second walk to make")
+    func walksRefuseLensesThatAllReadTheLexicalClass() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            _ = try CloudVectorsRunner.printedVerificationWalks(
+                lenses: [.topics, .actions, .descriptors], tuning: .standard,
+                stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: [])
+        }
+    }
+
+    @Test("One lens of each kind is enough for both walks")
+    func walksNeedOneLensOfEachKind() throws {
+        let walks = try CloudVectorsRunner.printedVerificationWalks(
+            lenses: [.topics, .allTerms], tuning: .standard,
+            stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: [])
+        #expect(walks.map(\.lenses) == [[.topics, .allTerms], [.allTerms]])
+    }
+
     @Test("Each walk's tally is the lemma pass's printed tally for the lenses it counts, on real prose")
     func verificationWalksAgreeWithTheOnePass() throws {
         let onePass = try #require(WordCloudMultiLensTokenizer(

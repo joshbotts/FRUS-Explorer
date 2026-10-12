@@ -240,19 +240,24 @@ public enum CloudVectorsRunner {
     /// Collocates and Related Documents count in — was held to the device's own tagger on the
     /// kit's two fixture paragraphs and nowhere else.
     ///
+    /// - Parameter lenses: The lenses the run counts. ``baselineLenses`` in a run; a parameter so
+    ///   a test can hand in a set with no lens of one kind.
     /// - Returns: The two tokenizers, the one over every lens first.
-    /// - Throws: ``RunError/tokenizerConfiguration`` when either cannot be built, or when the
-    ///   baseline lenses hold no lens of one kind and one of the two taggers would go unwalked.
+    /// - Throws: ``RunError/tokenizerConfiguration`` when either cannot be built, or when `lenses`
+    ///   hold no lens of one kind: with no part-of-speech lens the first walk's tagger would hold
+    ///   no lexical class and be the second's, and with nothing else there is no second walk. Either
+    ///   way one of the two taggers would go unwalked while the run said it had verified both.
     static func printedVerificationWalks(
+        lenses: [WordCloudLens] = baselineLenses,
         tuning: WordCloudTuning, stopwords: Set<String>, lexicons: WordCloudLexiconSet,
         markings: Set<String>
     ) throws -> [WordCloudMultiLensTokenizer] {
-        let withoutLexicalClass = baselineLenses.filter {
+        let withoutLexicalClass = lenses.filter {
             !WordCloudMultiLensTokenizer.readsLexicalClass($0)
         }
-        guard withoutLexicalClass.count < baselineLenses.count,
+        guard withoutLexicalClass.count < lenses.count,
               let everyLens = WordCloudMultiLensTokenizer(
-                lenses: baselineLenses, tuning: tuning, stopwords: stopwords,
+                lenses: lenses, tuning: tuning, stopwords: stopwords,
                 lexicons: lexicons, markings: markings, wordForm: .printed),
               let plainLenses = WordCloudMultiLensTokenizer(
                 lenses: withoutLexicalClass, tuning: tuning, stopwords: stopwords,
