@@ -97,6 +97,14 @@ Five rules hold for every UI run, and the runbook gives the measurement behind e
   none (`LiveActivityPolicy`); the tests of a build older than 2026-10-11 can leave one, and so can
   the app killed while it indexes. `TabBarNavigator` names it in the failure: run again.
 
+**To see a launch with no lemmatiser** (#1608), the launch on which Collocates, Distinctive sizing and
+Related's shared-word chips compare printed forms: launch a Debug build with
+`SIMCTL_CHILD_FRUS_DEBUG_NO_LEMMA_ANSWER=1 xcrun simctl launch <udid> bottsywattsy.FRUS-Explorer`
+and wait 30 seconds. The verdict then reads as the owner's iPhone's did, and Settings ▸ Data &
+Recovery ▸ Language Analysis reads *Limited*. A simulator loses its lemmatiser only by chance (none
+of fourteen relaunches on 2026-10-12); `NaturalLanguageReadiness.unansweredLemmaRequestEnvironmentKey`
+has the detail.
+
 **Command-line tools: what exists, and where the detail is.** Every generator is a package target
 run from the repo root (`swift run -c release <Name>`); a few corpus tools are stdlib-only Python
 under `tools/`. Each one's entry in `Planning/Generators-Runbook.md` gives its inputs and
@@ -135,7 +143,7 @@ measured failure).
 | `DocumentSubjectIndexGenerator` | `document-subject-index.json` | the corrected subject export only, no TEI |
 | `VolumeSubjectProfilesGenerator` | `volume-subject-profiles-index.json` | the same export, the manifest |
 | `SemanticVectorsGenerator` | `semantic-vectors-*`, the shards and their manifest, `semantic-map*` | the chunk-vector store, `tools/semantic-map/build_layout.py`'s layout |
-| `CloudVectorsGenerator` | `cloud-vectors-core.json`, `cloud-vectors-volumes.json`, `keyness-baseline.json` | the lexicon and stopword payloads |
+| `CloudVectorsGenerator` | `cloud-vectors-core.json`, `cloud-vectors-volumes.json`, `keyness-baseline.json`, `keyness-baseline-printed.json` | the lexicon and stopword payloads |
 | `EarlyEraNERControl`, `tools/semantic-harvest/*.py` | the #234 detector stores and scores | the R-0 text layer |
 
 Rules that span entries:
@@ -149,7 +157,7 @@ Rules that span entries:
   `LotClaimantsIndexGenerator` → `SeriesFactsIndexGenerator`.
 - **A change to the country or class keys of `decimal-class-labels.json`** moves
   `external-citation-index.json`'s vocabulary digest: regenerate it in the same commit.
-- **Files that come out of one run are committed together**: `CloudVectorsGenerator`'s three, and
+- **Files that come out of one run are committed together**: `CloudVectorsGenerator`'s four, and
   `SemanticVectorsGenerator`'s index, binary and shard manifest. Run the second with `EXPECT_DIGEST`
   set to the shipped family's digest.
 - **A keyed NARA harvest spends a metered quota**: confirm the invocation first. A
@@ -313,7 +321,10 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
   supplies them from its bundle (`WordCloudStopwords`/`WordCloudLexicons`), the
   generator from file URLs. `WordCloudMultiLensTokenizer` counts N lenses from one
   `NLTagger` pass; `WordCloudKitTests` pins it against N single-lens runs, and that
-  parity suite is what makes the merge safe — do not weaken it.
+  parity suite is what makes the merge safe — do not weaken it. Since #1608 the same pass also
+  counts every word as printed (`accumulate(from:into:printedInto:)`), for the keyness reference a
+  launch with no lemmatiser compares with; `WordCloudPrintedFormParityTests` holds that tally to a
+  `.printed` tokenizer's, and the generator's `VERIFY_PRINTED_WALK=1` run holds it over the corpus.
 - Test targets: **38 of them**, one per tool plus one per shared kit — `FRUSCoreKitTests` compiled from `FRUSExplorerTests/FRUSCoreKit/` — except `TEIHeaderKit`, whose grammar is exercised from `ManifestGeneratorTests` (`TEIHeaderParserTests`, `ManifestStatusPolicyTests`) rather than a suite of its own. The shape is uniform — each tool is a `<Name>GeneratorCore` library (all logic, testable), a thin `<Name>Generator` executable (entry point only) and a `<Name>GeneratorTests` suite that imports the Core. `swift test` runs the lot; there is no curated subset to know by heart.
 
 ## Coding Standards

@@ -373,11 +373,11 @@ This device’s language analysis isn’t reducing words to their dictionary for
 
 <!-- END SOURCE: search.collocation.unavailable.languageAnalysis -->
 
-<!-- SOURCE: FRUSExplorer/Search/Collocation.swift | CollocationResult.printedFormsNote | lines: 0–0 | key: search.collocation.printedForms.note -->
+<!-- SOURCE: FRUSExplorer/Search/Collocation.swift | CollocationResult.printedFormsNote | lines: 198–199 | key: search.collocation.printedForms.note -->
 
-*Added by #1608 (2026-10-12). The first row of the collocates list on a launch whose language analysis has no lemmatiser: the panel ranks where it used to refuse, and says that it compared printed forms, why, and that the ranking can differ on another device, as the owner's condition for the fallback asks. It closes on the re-check because the panel is ranked again when one finds the lemmatiser working. The example is a verb because a printed count still folds a regular plural by rule while* Merge plural and singular forms *is on.*
+*Added by #1608 (2026-10-12). The first row of the collocates list on a launch whose language analysis has no lemmatiser: the panel ranks where it used to refuse, and says that it compared printed forms, why, and that the ranking can differ on another device, as the owner's condition for the fallback asks. The example is a verb because a printed count still folds a regular plural by rule while* Merge plural and singular forms *is on. It does not say that the app checks again: with that sentence the note was seven lines on an iPhone 17 and left two rows of the ranking on screen. The panel is still ranked again when a check finds the lemmatiser working, and the note then goes.*
 
-Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently. FRUS Explorer checks again each time you come back to it, and this panel is ranked again if it recovers.
+Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently.
 
 <!-- END SOURCE: search.collocation.printedForms.note -->
 
@@ -1373,21 +1373,21 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2761–2761 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2762–2762 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2750–2750 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2751–2751 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2757–2757 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2758–2758 | key: search.tips.section.filters -->
 
 Filters and scope
 
@@ -1622,7 +1622,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2734–2734 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2735–2735 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 

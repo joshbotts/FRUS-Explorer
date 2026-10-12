@@ -186,12 +186,17 @@ struct CollocationResult: Equatable {
     /// result can differ from a device whose language analysis reduces words to their dictionary
     /// forms. The example is a verb on purpose: under the default settings a regular plural is
     /// folded by rule in a printed count too, so "negotiation" and "negotiations" are one word in
-    /// both, and a plural would be a false example. It closes on the re-check, because the panel
-    /// rebuilds on it (`CollocationRebuildKey.language`) and the ranking then changes.
+    /// both, and a plural would be a false example.
+    ///
+    /// It says nothing of the re-check. As first written it closed "FRUS Explorer checks again each
+    /// time you come back to it, and this panel is ranked again if it recovers", and on an iPhone 17
+    /// at the default text size the note was then seven lines and left two rows of the ranking on
+    /// screen. The panel still rebuilds when a re-check adopts a lemmatiser
+    /// (`CollocationRebuildKey.language`), and the note going is what says so.
     var printedFormsNote: String? {
         guard wordForm == .printed else { return nil }
         return String(localized: "search.collocation.printedForms.note",
-                      defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently. FRUS Explorer checks again each time you come back to it, and this panel is ranked again if it recovers.")
+                      defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently.")
     }
 
     /// Whether the budget stopped the scan short of the whole result set.

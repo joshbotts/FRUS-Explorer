@@ -2154,14 +2154,14 @@ Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival
 <!-- END SOURCE: related.poolCut %@ %@ -->
 
 #### No indexed documents share this document’s archival…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 442–443 | key: related.empty.detail -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 466–467 | key: related.empty.detail -->
 
 No indexed documents share this document’s archival provenance or cross-references — indexing more volumes may surface some.
 
 <!-- END SOURCE: related.empty.detail -->
 
 #### Shared words compared as printed: this device’s language…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift | SemanticSharedTerms.Evidence.printedFormsNote | lines: 0–0 | key: related.sharedTerms.printedForms.note -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift | SemanticSharedTerms.Evidence.printedFormsNote | lines: 91–92 | key: related.sharedTerms.printedForms.note -->
 
 *Added by #1608 (2026-10-12). A line above Related Documents' rows on a launch whose language analysis has no lemmatiser, when a row carries a* shares: *chip. The chips used to be left out on such a launch; they now compare the two documents' words as printed, and this says that they did, why, and that another device can name different words, as the owner's condition for the fallback asks.*
 

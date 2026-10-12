@@ -111,7 +111,7 @@ not a discovery. See D-4.
 | `broken-refs-index.json` | `CrossRefValidationGenerator -c release`, then `cp Planning/cross-ref-validation/broken-refs-index.json FRUSExplorer/Resources/` | Same two-way effect: refs that were `unknownVolume` may now resolve. Do **not** point `OUTPUT_DIR` at `Resources` — that dumps the CSV and report into the bundle. |
 | `source-provenance-index.json` | `SourceProvenanceIndexGenerator -c release` | Schema 2; per-volume table must gain a row or `supportsVolumeScope` degrades. |
 | `administration-profiles-index.json` | `AdministrationProfilesIndexGenerator -c release` | `administrations.json` already runs through Trump-2, so no table edit is needed for any volume OH could plausibly publish. |
-| `cloud-vectors-core.json`, `cloud-vectors-volumes.json`, `keyness-baseline.json` | `CloudVectorsGenerator -c release` | **One run, three files — regenerating one alone is a mistake the artifact tests catch.** ~50–60 min measured. |
+| `cloud-vectors-core.json`, `cloud-vectors-volumes.json`, `keyness-baseline.json`, `keyness-baseline-printed.json` | `CloudVectorsGenerator -c release` | **One run, four files — regenerating one alone is a mistake the artifact tests catch.** The fourth, since #1608, is the keyness reference counted as printed. ~50–60 min measured in August 2026; 20 min on the M5 MacBook on 2026-10-10 and 2026-10-12. |
 | `semantic-vectors-index.json`, `semantic-vectors-binary.bin`, `semantic-shards-manifest.json`, `semantic-map.bin`, `semantic-map-index.json` | `SemanticVectorsGenerator -c release` | §4 and §5. The long pole. |
 
 ### Tier 2 — gated on an upstream drop we do not control (5)
@@ -537,7 +537,7 @@ Steps marked **[owner]** cannot be done from this repository.
 7. `ExternalCitationIndexGenerator`, `ProvenanceFlowIndexGenerator`, `ResolvedEdgeIndexGenerator`,
    `SourceProvenanceIndexGenerator`, `AdministrationProfilesIndexGenerator`.
 8. `CrossRefValidationGenerator`, then copy **only** `broken-refs-index.json` into `Resources/`.
-9. `CloudVectorsGenerator` (~50–60 min, writes three files).
+9. `CloudVectorsGenerator` (~50–60 min, writes four files since #1608).
 
 **Phase D — semantic** (§4; the long pole)
 10. **[owner]** Studio: LM Studio + the pinned gemma GGUF; snapshot `run-manifest.json`; run the
