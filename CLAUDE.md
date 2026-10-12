@@ -101,7 +101,7 @@ Five rules hold for every UI run, and the runbook gives the measurement behind e
 Related's shared-word chips compare printed forms: launch a Debug build with
 `SIMCTL_CHILD_FRUS_DEBUG_NO_LEMMA_ANSWER=1 xcrun simctl launch <udid> bottsywattsy.FRUS-Explorer`
 and wait 30 seconds. The verdict then reads as the owner's iPhone's did, and Settings ▸ Data &
-Recovery ▸ Language Analysis reads *Limited*. A simulator loses its lemmatiser only by chance (none
+Recovery ▸ Diagnostics ▸ Language Analysis reads *Limited*. A simulator loses its lemmatiser only by chance (none
 of fourteen relaunches on 2026-10-12); `NaturalLanguageReadiness.unansweredLemmaRequestEnvironmentKey`
 has the detail.
 
@@ -161,7 +161,8 @@ Rules that span entries:
   `SemanticVectorsGenerator`'s index, binary and shard manifest. Run the second with `EXPECT_DIGEST`
   set to the shipped family's digest.
 - **A keyed NARA harvest spends a metered quota**: confirm the invocation first. A
-  `CloudVectorsGenerator` run takes 50 to 60 minutes.
+  `CloudVectorsGenerator` run takes about 21 minutes on the M5 MacBook, and 35 with
+  `VERIFY_PRINTED_WALK=1` (measured 2026-10-12; 50 to 60 on the Mac it was first timed on).
 - **A regenerated `subject-numeric-labels.json` ships only when every label that changed has been
   read against the handbook's scan** (the owner's decision of 2026-10-11). `REVIEW_OUTPUT` gives
   each label's page and row, and the pull request lists each change old to new. The generator

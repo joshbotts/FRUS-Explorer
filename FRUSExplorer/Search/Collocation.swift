@@ -180,24 +180,8 @@ struct CollocationResult: Equatable {
     let wordForm: WordCloudWordForm
 
     /// What the panel says above a ranking of printed forms, or `nil` for one of dictionary forms
-    /// (#1608).
-    ///
-    /// The owner's condition for the fallback, in one place: that it happened, why, and that the
-    /// result can differ from a device whose language analysis reduces words to their dictionary
-    /// forms. The example is a verb on purpose: under the default settings a regular plural is
-    /// folded by rule in a printed count too, so "negotiation" and "negotiations" are one word in
-    /// both, and a plural would be a false example.
-    ///
-    /// It says nothing of the re-check. As first written it closed "FRUS Explorer checks again each
-    /// time you come back to it, and this panel is ranked again if it recovers", and on an iPhone 17
-    /// at the default text size the note was then seven lines and left two rows of the ranking on
-    /// screen. The panel still rebuilds when a re-check adopts a lemmatiser
-    /// (`CollocationRebuildKey.language`), and the note going is what says so.
-    var printedFormsNote: String? {
-        guard wordForm == .printed else { return nil }
-        return String(localized: "search.collocation.printedForms.note",
-                      defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently.")
-    }
+    /// (#1608): ``CollocationAnalysis/printedFormsNote(for:)``.
+    var printedFormsNote: String? { CollocationAnalysis.printedFormsNote(for: wordForm) }
 
     /// Whether the budget stopped the scan short of the whole result set.
     ///
@@ -224,8 +208,36 @@ struct CollocationResult: Equatable {
 ///   1.0 — S-2: initial implementation
 ///   1.1 — #1373: `Unavailable.languageAnalysisUnavailable`
 ///   1.2 — #1608: `rank` takes the form the neighbours were counted in and a ``KeynessReference``,
-///          and refuses a reference counted in the other form
+///          and refuses a reference counted in the other form; the two refusals that are a result
+///          of the count carry its form, and ``printedFormsNote(for:)`` is what the panel says of
+///          a count of printed forms, ranked or not
 enum CollocationAnalysis {
+
+    /// What the panel says of neighbours counted and compared as printed, or `nil` for a count in
+    /// dictionary forms (#1608).
+    ///
+    /// The owner's condition for the fallback, in one place: that it happened, why, and that the
+    /// result can differ from a device whose language analysis reduces words to their dictionary
+    /// forms. The example is a verb on purpose: under the default settings a regular plural is
+    /// folded by rule in a printed count too, so "negotiation" and "negotiations" are one word in
+    /// both, and a plural would be a false example.
+    ///
+    /// One sentence for a ranking and for a count that ranked nothing
+    /// (``Unavailable/printedFormsNote``): "no word appears at least three times" is as much a
+    /// result of counting "negotiated" and "negotiating" apart as a ranking is.
+    ///
+    /// It says nothing of the re-check. As first written it closed "FRUS Explorer checks again each
+    /// time you come back to it, and this panel is ranked again if it recovers", and on an iPhone 17
+    /// at the default text size the note was then seven lines and left two rows of the ranking on
+    /// screen. The panel still rebuilds when a re-check adopts a lemmatiser
+    /// (`CollocationRebuildKey.language`), and the note going is what says so.
+    ///
+    /// - Parameter wordForm: The form the neighbours and the reference were counted in.
+    static func printedFormsNote(for wordForm: WordCloudWordForm) -> String? {
+        guard wordForm == .printed else { return nil }
+        return String(localized: "search.collocation.printedForms.note",
+                      defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently.")
+    }
 
     /// Why a collocation could not be produced.
     enum Unavailable: Equatable {
@@ -250,10 +262,27 @@ enum CollocationAnalysis {
         case languageAnalysisUnavailable
         /// The query matched nothing whose neighbourhood could be collected.
         case noMatches
-        /// Neighbours were collected, but none occurs often enough to be ranked.
-        case noNeighboursAboveFloor(minimum: Int)
-        /// Every neighbour is *under*-represented — the query sits in ordinary prose.
-        case nothingDistinctive
+        /// Neighbours were collected, but none occurs often enough to be ranked. `wordForm` is the
+        /// form they were counted in (#1608): counted as printed, "negotiated" twice and
+        /// "negotiating" twice are two words under a floor of three, where a count in dictionary
+        /// forms ranks "negotiate" at four.
+        case noNeighboursAboveFloor(minimum: Int, wordForm: WordCloudWordForm)
+        /// Every neighbour is *under*-represented — the query sits in ordinary prose. `wordForm` is
+        /// the form the neighbours and the reference were counted in (#1608).
+        case nothingDistinctive(wordForm: WordCloudWordForm)
+
+        /// What the panel says beside this refusal when it is a result of a count of printed forms,
+        /// or `nil` (#1608). Only the two refusals reached after the neighbours were counted and
+        /// compared carry a form; every other one says nothing about the words near the matches.
+        var printedFormsNote: String? {
+            switch self {
+            case .noNeighboursAboveFloor(_, let wordForm), .nothingDistinctive(let wordForm):
+                return CollocationAnalysis.printedFormsNote(for: wordForm)
+            case .pending, .scanFailed, .noArtifact, .configurationMismatch,
+                 .languageAnalysisUnavailable, .noMatches:
+                return nil
+            }
+        }
     }
 
     /// The outcome of asking what appears near a query.
@@ -306,7 +335,7 @@ enum CollocationAnalysis {
         }
         let neighbours = counts.filter { !anchorLemmas.contains($0.key) }
         guard neighbours.values.contains(where: { $0 >= minimumCount }) else {
-            return .unavailable(.noNeighboursAboveFloor(minimum: minimumCount))
+            return .unavailable(.noNeighboursAboveFloor(minimum: minimumCount, wordForm: wordForm))
         }
         let scored = Keyness.score(
             scopeCounts: neighbours,
@@ -316,7 +345,9 @@ enum CollocationAnalysis {
             minimumScopeCount: minimumCount
         )
         let overRepresented = scored.filter(\.isOverused)
-        guard !overRepresented.isEmpty else { return .unavailable(.nothingDistinctive) }
+        guard !overRepresented.isEmpty else {
+            return .unavailable(.nothingDistinctive(wordForm: wordForm))
+        }
 
         return .ranked(CollocationResult(
             scores: overRepresented,

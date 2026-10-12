@@ -189,8 +189,12 @@ struct BundledKeynessBaselineTests {
     }
 
     // MARK: - #1373: the tagger the scope was counted with
+    //
+    // `inject` loads the dictionary-form reference alone. Since #1608 a scope counted without the
+    // lemmatiser reads the reference counted as printed (`PrintedFormReferenceSelectionTests`);
+    // with that file not loaded it is refused as it was, which is what the first test holds.
 
-    @Test("A scope counted without the lemmatiser has no comparable reference, on every word lens")
+    @Test("With only the dictionary-form reference loaded, a scope counted without the lemmatiser has no comparable reference, on every word lens (#1373, #1608)")
     func noLemmatiserWithholdsEveryWordLens() {
         inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40]),
                                  .topics: (1000, 100, ["treaty": 40]),
@@ -239,12 +243,41 @@ struct BundledKeynessBaselineTests {
 
     @Test("The tagger check runs BEFORE the configuration check: no setting would fix it")
     func languageAnalysisPrecedesConfiguration() {
+        inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40]),
+                                 .topics: (1000, 100, ["treaty": 40])]))
+        defer { inject(nil) }
+        // A part-of-speech lens counted without lexical classes, under a setting that differs: both
+        // are wrong. A mismatch message would tell the reader to restore a setting, and restoring
+        // it would only reveal the second refusal.
+        //
+        // Until #1608 this test asked with no lemmatiser, and passed since for another reason: its
+        // fixture loads no printed-form reference (the next test). The case in which the order of
+        // the two checks decides the answer is this one.
+        let unclassified = NaturalLanguageHealth(lemmatizes: true, classifiesWords: false,
+                                                 recognizesNames: true)
+        // The controls, one for each wrong thing: priced when neither is wrong, and refused for
+        // the setting when only the setting is.
+        guard case .available = ask(.topics) else {
+            Issue.record("Topics is not priced under a working tagger and the artifact's settings")
+            return
+        }
+        #expect(ask(.topics, includeDiplomatic: false)
+                == .unavailable(.configurationMismatch([.diplomaticLayer])))
+        #expect(ask(.topics, includeDiplomatic: false, languageAnalysis: unclassified)
+                == .unavailable(.languageAnalysisUnavailable))
+    }
+
+    @Test("With only the dictionary-form reference loaded, a scope counted without the lemmatiser is refused for the tagger and not for a setting (#1608)")
+    func missingPrintedReferencePrecedesConfiguration() {
         inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40])]))
         defer { inject(nil) }
         let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
                                                  recognizesNames: true)
-        // Both are wrong. A mismatch message would tell the reader to restore a setting, and
-        // restoring it would only reveal the second refusal.
+        // With the reference counted as printed loaded, this scope reads it, and a setting that
+        // differs is a mismatch like any other
+        // (`PrintedFormReferenceSelectionTests.settingsStillApplyToThePrintedReference`). With it
+        // not loaded there is nothing the settings could be compared with: restoring the setting
+        // would rank nothing, so the refusal is the one no setting fixes.
         #expect(ask(.allTerms, includeDiplomatic: false, languageAnalysis: unlemmatised)
                 == .unavailable(.languageAnalysisUnavailable))
     }

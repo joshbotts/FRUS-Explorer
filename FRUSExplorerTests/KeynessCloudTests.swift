@@ -71,9 +71,14 @@ struct KeynessCloudTests {
                           languageAnalysis: languageAnalysis)
     }
 
-    // MARK: - #1373: terms counted without the lemmatiser
+    // MARK: - #1373: terms counted without the lemmatiser, with no reference counted as printed
+    //
+    // Since #1608 such terms are ranked against the reference counted as printed
+    // (`PrintedFormKeynessTests`). `injectReference()` loads the dictionary-form reference alone,
+    // so this is the case that is left: the printed-form file is not there, and the terms are
+    // refused rather than scored against lemma counts.
 
-    @Test("Terms counted without the lemmatiser are not ranked, whatever they would have scored (#1373)")
+    @Test("With no printed-form reference loaded, terms counted without the lemmatiser are not ranked against the dictionary-form one (#1373, #1608)")
     func unlemmatisedTermsAreNotRanked() {
         injectReference()
         defer { BundledKeynessBaseline.injectForTesting(nil) }

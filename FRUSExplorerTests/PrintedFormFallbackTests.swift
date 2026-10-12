@@ -312,6 +312,63 @@ struct PrintedFormReferenceSelectionTests {
     }
 }
 
+// MARK: - The reference's load
+
+/// `BundledKeynessBaseline.prepare()` and the callers that arrive while it is loading (#1608).
+///
+/// These read the real bundle, since the load is what is under test. They share the loader's one
+/// static with every suite that injects a fixture. Each of those injects and reads on the main
+/// actor with no suspension between, so what the first test asserts after its `await` is true
+/// whatever ran while it waited — a `prepare()` that returns has stored the bundle's files or found
+/// a fixture already there — and the second makes no `await` at all.
+@Suite("Printed-form fallback — the reference's load (#1608)", .serialized)
+@MainActor
+struct PrintedFormReferenceLoadingTests {
+
+    @Test("A caller that arrives while the load is in flight waits for it, and finds a reference when it returns")
+    func everyCallerFindsAReference() async {
+        PrintedFormFixture.clear()
+        defer { PrintedFormFixture.clear() }
+        // Four callers at once. The first starts the load; until #1608 the other three returned at
+        // once, to a loader that still held nothing, and a read taken then was `.noArtifact`.
+        // All four are queued on the main actor before this test first suspends, so the second,
+        // third and fourth each arrive while the first is suspended on the load it started.
+        let callers = (0..<4).map { _ in
+            Task { @MainActor in
+                await BundledKeynessBaseline.prepare()
+                return BundledKeynessBaseline.isAvailable
+            }
+        }
+        var found: [Bool] = []
+        for caller in callers { found.append(await caller.value) }
+        #expect(found == [true, true, true, true])
+    }
+
+    @Test("What a load read is adopted when nothing is there, and never over a fixture that got there first")
+    func aFinishedLoadYieldsToWhatIsThere() throws {
+        defer { PrintedFormFixture.clear() }
+        let bundled = BundledKeynessBaseline.loadBundled()
+        let bundledTotal = try #require(bundled[.printed]?.lenses["allTerms"]?.totalTokens)
+        func printedTotal() -> Int? {
+            guard case .available(let reference) = BundledKeynessBaseline.baseline(
+                for: .allTerms, tuning: .standard, includeDiplomatic: true,
+                languageAnalysis: PrintedFormFixture.unlemmatised)
+            else { return nil }
+            return reference.totalTokens
+        }
+        // Nothing there: the load's files become the loader's.
+        PrintedFormFixture.clear()
+        BundledKeynessBaseline.adopt(bundled)
+        #expect(printedTotal() == bundledTotal)
+        // A fixture injected while the load ran: the load's files do not replace it. The fixture's
+        // total is its own, so reading the bundled file here shows.
+        PrintedFormFixture.inject()
+        #expect(bundledTotal != 1_000_100)
+        BundledKeynessBaseline.adopt(bundled)
+        #expect(printedTotal() == 1_000_100)
+    }
+}
+
 // MARK: - Distinctive
 
 /// The word cloud's Distinctive sizing over a cloud counted as printed.
@@ -439,6 +496,72 @@ struct PrintedFormCollocationTests {
                 == .unavailable(.languageAnalysisUnavailable))
         // The control: the same empty scan against a comparable reference is "no matches".
         #expect(rank(counted: .printed, against: .printed, anchorCount: 0) == .unavailable(.noMatches))
+    }
+
+    // MARK: A count of printed forms that ranked nothing
+    //
+    // "No word appears at least three times" and "nothing here is used more than across the corpus"
+    // are results of the count, and counted as printed they can differ from a device that reduces
+    // words: "negotiated" twice and "negotiating" twice are two words under the floor, where
+    // "negotiate" four times is ranked. So each carries the form, and says so in the panel.
+
+    private func refusal(_ outcome: CollocationAnalysis.Outcome) -> CollocationAnalysis.Unavailable? {
+        if case .unavailable(let reason) = outcome { return reason }
+        return nil
+    }
+
+    @Test("Printed neighbours under the floor are refused as a count of printed forms, and the refusal carries the note")
+    func printedFloorCarriesTheNote() throws {
+        let refused = try #require(refusal(rank(counted: .printed, against: .printed,
+                                                counts: ["negotiated": 2, "negotiating": 2])))
+        #expect(refused == .noNeighboursAboveFloor(minimum: Keyness.defaultMinimumScopeCount,
+                                                   wordForm: .printed))
+        #expect(refused.printedFormsNote != nil)
+    }
+
+    @Test("Dictionary-form neighbours under the floor are refused with no note")
+    func dictionaryFloorCarriesNoNote() throws {
+        let refused = try #require(refusal(rank(counted: .dictionary, against: .dictionary,
+                                                counts: ["delegate": 2, "envoy": 1])))
+        #expect(refused == .noNeighboursAboveFloor(minimum: Keyness.defaultMinimumScopeCount,
+                                                   wordForm: .dictionary))
+        #expect(refused.printedFormsNote == nil)
+    }
+
+    @Test("Printed neighbours none of which is over-used are refused as a count of printed forms, with the note")
+    func printedNothingDistinctiveCarriesTheNote() throws {
+        // "treaty" five times in 10,000 window tokens against 50,000 in a million: under-used.
+        let refused = try #require(refusal(rank(counted: .printed, against: .printed,
+                                                counts: ["treaty": 5])))
+        #expect(refused == .nothingDistinctive(wordForm: .printed))
+        #expect(refused.printedFormsNote != nil)
+    }
+
+    @Test("Dictionary-form neighbours none of which is over-used are refused with no note")
+    func dictionaryNothingDistinctiveCarriesNoNote() throws {
+        let refused = try #require(refusal(rank(counted: .dictionary, against: .dictionary,
+                                                counts: ["treaty": 5])))
+        #expect(refused == .nothingDistinctive(wordForm: .dictionary))
+        #expect(refused.printedFormsNote == nil)
+    }
+
+    @Test("A refusal that is not a result of the count says nothing of printed forms",
+          arguments: [CollocationAnalysis.Unavailable.pending, .scanFailed, .noArtifact,
+                      .configurationMismatch([.diplomaticLayer]), .languageAnalysisUnavailable,
+                      .noMatches])
+    func otherRefusalsCarryNoNote(reason: CollocationAnalysis.Unavailable) {
+        #expect(reason.printedFormsNote == nil)
+    }
+
+    @Test("A refusal says of printed forms what a ranking says, in the same sentence")
+    func refusalAndRankingShareTheSentence() throws {
+        let ranked = try #require(result(rank(counted: .printed, against: .printed)))
+        let note = try #require(ranked.printedFormsNote)
+        #expect(CollocationAnalysis.Unavailable
+            .noNeighboursAboveFloor(minimum: 3, wordForm: .printed).printedFormsNote == note)
+        #expect(CollocationAnalysis.Unavailable.nothingDistinctive(wordForm: .printed).printedFormsNote == note)
+        #expect(CollocationAnalysis.printedFormsNote(for: .printed) == note)
+        #expect(CollocationAnalysis.printedFormsNote(for: .dictionary) == nil)
     }
 
     @Test("The live configuration counts in the form of the verdict it is handed, and keeps the verdict")
@@ -650,24 +773,79 @@ struct PrintedFormSharedTermsTests {
         #expect(SemanticSharedTerms.displayForm(for: "envoy", in: "The envoys met.") == "envoys")
     }
 
-    // One fixture for each conjunct of the note's rule.
+    // The note's rule is the form alone.
 
-    @Test("The note is for chips compared as printed")
+    @Test("The note is for shared words compared as printed")
     func noteForPrintedChips() {
         #expect(SemanticSharedTerms.Evidence(terms: [d2: ["envoys"]], wordForm: .printed)
             .printedFormsNote != nil)
     }
 
-    @Test("Chips compared in dictionary forms carry no note")
+    @Test("Shared words compared in dictionary forms carry no note")
     func noNoteForDictionaryChips() {
         #expect(SemanticSharedTerms.Evidence(terms: [d2: ["envoys"]], wordForm: .dictionary)
             .printedFormsNote == nil)
+        #expect(SemanticSharedTerms.Evidence(terms: [:], wordForm: .dictionary).printedFormsNote == nil)
     }
 
-    @Test("A printed pass that put no chip on any row says nothing")
-    func noNoteWithoutChips() {
-        #expect(SemanticSharedTerms.Evidence(terms: [:], wordForm: .printed).printedFormsNote == nil)
+    @Test("A printed pass that found no shared word still says how it compared")
+    func noteWithoutChips() {
+        // Every row then shows a percentage where a device that reduces words can name the words,
+        // and the note is the only thing that says why.
+        #expect(SemanticSharedTerms.Evidence(terms: [:], wordForm: .printed).printedFormsNote != nil)
+    }
+
+    @Test("A pass that could not run compared nothing, and says nothing")
+    func noNoteWhenThePassDidNotRun() {
+        #expect(SemanticSharedTerms.Evidence.none.wordForm == .dictionary)
         #expect(SemanticSharedTerms.Evidence.none.printedFormsNote == nil)
+    }
+
+    @Test("A real printed pass over two documents that share no priced word returns the form with no terms")
+    func aPrintedPassWithNothingSharedKeepsItsForm() async throws {
+        try await PrintedFormFixture.withIndex { pipeline, _ in
+            // A reference that prices none of the documents' words: nothing can be named.
+            let empty = KeynessReference(terms: ["quemoy": 3], totalTokens: 1_000_000, cutoffCount: 3,
+                                         wordForm: .printed, distinctTerms: 1, generated: "2026-10-12")
+            let evidence = await SemanticSharedTerms.evidence(
+                anchor: d1, candidates: [d2, d3], pipeline: pipeline, reference: empty)
+            #expect(evidence.terms.isEmpty)
+            #expect(evidence.wordForm == .printed)
+            #expect(evidence.printedFormsNote != nil)
+        }
+    }
+
+    // MARK: The reload identity
+
+    private func settled(_ health: NaturalLanguageHealth) -> NaturalLanguageReadiness.Status {
+        .settled(.init(
+            warmUp: NaturalLanguageWarmUp(trigger: .firstForeground, applicationState: .active,
+                                          schemesListed: [], assetRequests: [], seconds: 0,
+                                          processAge: nil),
+            health: health))
+    }
+
+    @Test("The list's reload identity follows the form the verdict counts in, and nothing else of it")
+    func reloadTokenFollowsTheForm() {
+        let working = SemanticSharedTerms.reloadToken(for: settled(.fullyWorking))
+        let noLemmas = SemanticSharedTerms.reloadToken(for: settled(PrintedFormFixture.unlemmatised))
+        #expect(working == "dictionary")
+        #expect(noLemmas == "printed")
+        // A re-check that adopts names or lexical classes changes nothing the list shows, so it is
+        // not a reload: a launch whose lemmatiser works keeps its place in an open list.
+        #expect(SemanticSharedTerms.reloadToken(for: settled(PrintedFormFixture.unclassified)) == working)
+        #expect(SemanticSharedTerms.reloadToken(for: settled(
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false))) == working)
+        // And one that changes what else is missing, with the lemmatiser still missing, is not one.
+        #expect(SemanticSharedTerms.reloadToken(for: settled(PrintedFormFixture.nothingWorks)) == noLemmas)
+    }
+
+    @Test("Before there is a verdict the identity is the one a working verdict gives",
+          arguments: [NaturalLanguageReadiness.Status.notStarted, .warmingUp,
+                      .waitingForAssets(scheme: "Lemma")])
+    func reloadTokenBeforeAVerdict(status: NaturalLanguageReadiness.Status) {
+        // So a verdict with a lemmatiser, when it comes, reloads nothing.
+        #expect(SemanticSharedTerms.reloadToken(for: status) == "dictionary")
     }
 }
 
@@ -701,20 +879,33 @@ struct PrintedFormWordingTests {
     }
 
     /// Every on-screen note of the fallback, and the CSV's caveat, with the name it fails under.
+    ///
+    /// The owner's decision of 2026-09-29 is that a surface says these things **on screen**, and
+    /// the three short lines an export carries are not in this list: the image caption's segment
+    /// and the axis label (`exportsNameThePrintedReference`) and the collection plate's line. Each
+    /// is one segment of a line of segments and says that the cloud was counted, or counted and
+    /// compared, as printed, as the clouds' exports have since #1373; the CSV, which has room for
+    /// sentences, says all of it and is held to all of it here.
     private var fallbackNotes: [(name: String, text: String?)] {
         [("Collocates", collocation(.printed).printedFormsNote),
+         ("Collocates, nothing above the floor",
+          CollocationAnalysis.Unavailable.noNeighboursAboveFloor(minimum: 3, wordForm: .printed).printedFormsNote),
+         ("Collocates, nothing distinctive",
+          CollocationAnalysis.Unavailable.nothingDistinctive(wordForm: .printed).printedFormsNote),
          ("Word Cloud, Distinctive", WordCloudDisplayState.comparedAsPrintedNote(printedRanking(.printed))),
          ("Word Cloud, counted as printed",
           WordCloudDisplayState.countedAsPrintedNote(cloud(PrintedFormFixture.unlemmatised), lens: .allTerms)),
          ("Related Documents",
           SemanticSharedTerms.Evidence(terms: [DocumentKey(volumeId: "v", documentId: "d"): ["envoys"]],
                                        wordForm: .printed).printedFormsNote),
+         ("Related Documents, no shared word",
+          SemanticSharedTerms.Evidence(terms: [:], wordForm: .printed).printedFormsNote),
          ("Word Cloud CSV, keyness", WordCloudDisplayState.comparedAsPrintedCaveat(printedRanking(.printed)))]
     }
 
     @Test("Each surface says that it compared or counted as printed, why, and that another device can differ")
     func everySurfaceMeetsTheOwnersCondition() throws {
-        #expect(fallbackNotes.count == 5)
+        #expect(fallbackNotes.count == 8)
         for (name, text) in fallbackNotes {
             let note = try #require(text, "\(name) says nothing when it falls back")
             // That it did.
@@ -801,15 +992,18 @@ struct PrintedFormWiringTests {
 
     private typealias Scan = NaturalLanguageReadinessScanTests
 
-    private func code(_ path: String) throws -> String {
+    /// `path`'s source with its comments removed.
+    /// - Parameter floor: The least it can plausibly hold, so a file that moved or emptied fails
+    ///   here and not as a missing needle. A whole view file of forty lines is under the default.
+    private func code(_ path: String, atLeast floor: Int = 1_000) throws -> String {
         let text = Scan.code(try String(contentsOf: Scan.repoRoot.appending(path: path), encoding: .utf8))
-        #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
+        #expect(text.count > floor, "\(path) is implausibly small — did it move?")
         return text
     }
 
     /// The body of the declaration that begins `header`, with all whitespace removed.
-    private func body(of header: String, in path: String) throws -> String {
-        let source = try code(path)
+    private func body(of header: String, in path: String, atLeast floor: Int = 1_000) throws -> String {
+        let source = try code(path, atLeast: floor)
         let declaration = try #require(source.range(of: header), "\(header) is no longer in \(path)")
         let range = try #require(Scan.braceBody(in: source, after: declaration.upperBound))
         return squeezed(source[range])
@@ -839,11 +1033,36 @@ struct PrintedFormWiringTests {
 
     @Test("The collocates list opens with the note of a ranking of printed forms")
     func collocatesListShowsTheNote() throws {
-        let list = try body(of: "private func list(_ result: CollocationResult) -> some View",
-                            in: "FRUSExplorer/Search/CollocationView.swift")
-        let note = try #require(list.range(of: squeezed("if let note = result.printedFormsNote {")))
+        let path = "FRUSExplorer/Search/CollocationView.swift"
+        let list = try body(of: "private func list(_ result: CollocationResult) -> some View", in: path)
+        // The row itself, inside the `if`, and above the rows: the condition alone draws nothing.
+        let note = try #require(list.range(of: squeezed(
+            "if let note = result.printedFormsNote { printedFormsNoteRow(note) }")))
         let rows = try #require(list.range(of: "ForEach("))
         #expect(note.upperBound <= rows.lowerBound, "the note is not above the rows")
+        // And the row draws the sentence it is handed, under the identifier a UI test finds it by.
+        let row = try body(of: "private func printedFormsNoteRow(_ note: String) -> some View", in: path)
+        #expect(row.hasPrefix("Text(note)"), "the note row no longer draws its note: \(row.prefix(60))")
+        #expect(row.contains(squeezed(".accessibilityIdentifier(Self.printedFormsNoteIdentifier)")))
+        // Whole, at every text size: a line limit would cut the sentence about other devices.
+        #expect(row.contains(squeezed(".fixedSize(horizontal: false, vertical: true)")))
+        #expect(!row.contains("lineLimit"))
+    }
+
+    @Test("A refusal that came from a count of printed forms is drawn under the same note, and every other one as it was")
+    func collocatesRefusalShowsTheNote() throws {
+        let unavailable = try body(
+            of: "private func unavailable(_ reason: CollocationAnalysis.Unavailable) -> some View",
+            in: "FRUSExplorer/Search/CollocationView.swift")
+        // The note row first, then the refusal, in a list, which scrolls.
+        let printed = try #require(unavailable.range(of: squeezed(
+            "if let note = reason.printedFormsNote { List { printedFormsNoteRow(note) message")))
+        // With no note the refusal is the view it always was, in no list.
+        let plain = try #require(unavailable.range(of: squeezed("} else { message }")))
+        #expect(printed.upperBound <= plain.lowerBound)
+        // One refusal view for both branches, so the two cannot say different things.
+        #expect(unavailable.components(separatedBy: "ContentUnavailableView(").count == 2)
+        #expect(unavailable.contains(squeezed("description: Text(Self.detail(for: reason))")))
     }
 
     @Test("The scan tells the ranking the form its own tokenizer counted in")
@@ -879,6 +1098,11 @@ struct PrintedFormWiringTests {
     func relatedDocumentsWiring() throws {
         let path = "FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift"
         let entry = try body(of: "static func sharedTerms(", in: path)
+        // The load is awaited before the reference is read: a panel opened while the launch decode
+        // is in flight would otherwise read "no artifact" for a file a moment from being there.
+        let prepared = try #require(entry.range(of: squeezed("await BundledKeynessBaseline.prepare()")))
+        let read = try #require(entry.range(of: squeezed("BundledKeynessBaseline.baseline(")))
+        #expect(prepared.upperBound <= read.lowerBound, "the reference is read before its load is awaited")
         #expect(entry.contains(squeezed("languageAnalysis: languageAnalysis)")))
         #expect(entry.contains(squeezed("return await evidence(anchor: anchor, candidates: candidates, pipeline: pipeline, reference: reference)")))
         let pass = try body(of: "static func evidence(", in: path)
@@ -888,15 +1112,52 @@ struct PrintedFormWiringTests {
 
         let view = "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"
         let attach = try body(of: "private func attachSemanticEvidence(claimedKey: String) async", in: view)
-        #expect(attach.contains(squeezed("sharedTermsNote = evidence.printedFormsNote")))
-        // The chips are compared again when a re-check adopts a better verdict, so "right now" in
-        // the note stays true.
+        // The note is set for the pass that is still the list's own, and before the pass is asked
+        // whether it found a word: a printed pass that found none still says how it compared.
+        let current = try #require(attach.range(of: squeezed(
+            "guard !Task.isCancelled, lastLoadedKey == claimedKey else { return }")))
+        let noted = try #require(attach.range(of: squeezed("sharedTermsNote = evidence.printedFormsNote")))
+        let found = try #require(attach.range(of: squeezed("guard !evidence.terms.isEmpty else { return }")))
+        #expect(current.upperBound <= noted.lowerBound && noted.upperBound <= found.lowerBound)
+        // A reload clears it, so new rows are not described by the last rows' note.
+        let load = try body(of: ".task(id: reloadKey)", in: view)
+        let cleared = try #require(load.range(of: squeezed("sharedTermsNote = nil")))
+        let attached = try #require(load.range(of: squeezed("attachSemanticEvidence(claimedKey:")))
+        #expect(cleared.upperBound <= attached.lowerBound)
+        // The shared words are compared again when the form the tagger counts in changes, so
+        // "right now" in the note stays true — and at no other re-check, which would re-rank an
+        // open list on a launch whose lemmatiser works.
         let key = try body(of: "private var reloadKey: String", in: view)
-        #expect(key.contains("LanguageAnalysisMonitor.shared.revision"))
+        #expect(key.contains(squeezed(
+            "SemanticSharedTerms.reloadToken(for: LanguageAnalysisMonitor.shared.status)")))
+        #expect(!key.contains("revision"), "the list reloads on every adopted re-check again")
+        // The row itself, above the rows, whole, under the identifier a UI test finds it by.
         let source = squeezed(try code(view))
-        let note = try #require(source.range(of: squeezed("if let sharedTermsNote {")))
+        let note = try #require(source.range(of: squeezed("if let sharedTermsNote { Text(sharedTermsNote)")))
         let rows = try #require(source.range(of: squeezed("ForEach(rows) { row in")))
         #expect(note.upperBound <= rows.lowerBound, "the note is not above the rows")
+        let row = String(source[note.upperBound..<rows.lowerBound])
+        #expect(row.contains(squeezed(".fixedSize(horizontal: false, vertical: true)")))
+        #expect(row.contains(squeezed(".accessibilityIdentifier(Self.sharedTermsNoteIdentifier)")))
+        #expect(!row.contains("lineLimit"))
+    }
+
+    @Test("The cloud's note is shown whole where it fits, and scrolls in a short strip where it does not")
+    func printedFormsNoteNeverCutsItsText() throws {
+        let path = "FRUSExplorer/Analytics/WordCloud/PrintedFormsNote.swift"
+        let note = try body(of: "var body: some View", in: path, atLeast: 500)
+        // The plain text first, so `ViewThatFits` takes it whenever its whole height fits; then the
+        // same text in a strip of bounded height that scrolls.
+        let plain = try #require(note.range(of: squeezed(
+            "ViewThatFits(in: .vertical) { label.fixedSize(horizontal: false, vertical: true)")))
+        let strip = try #require(note.range(of: squeezed(
+            "ScrollView { label } .scrollBounceBehavior(.basedOnSize) .frame(maxHeight: Self.scrollingHeight)")))
+        #expect(plain.upperBound <= strip.lowerBound)
+        #expect(note.contains(squeezed(".accessibilityIdentifier(Self.identifier)")))
+        // Neither form limits its lines: the last sentence is the one about other devices.
+        let source = squeezed(try code(path, atLeast: 500))
+        #expect(!source.contains("lineLimit"))
+        #expect(source.contains(squeezed("Text(text)")))
     }
 
     @Test("The loader reads a file for each form, by the name the generator writes it under")

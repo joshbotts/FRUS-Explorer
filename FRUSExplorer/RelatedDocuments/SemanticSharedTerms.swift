@@ -67,7 +67,8 @@ import Foundation
 ///   1.1 — #1373: no chip when this process's tagger cannot lemmatise
 ///   1.2 — #1608: with no lemmatiser the chip compares printed forms against the reference counted
 ///          as printed, and ``sharedTerms(anchor:candidates:appState:)`` returns the form with the
-///          terms (``Evidence``)
+///          terms (``Evidence``); ``reloadToken(for:)``, the part of Related Documents' reload
+///          identity that follows the tagger
 enum SemanticSharedTerms {
 
     /// What one pass found: each candidate's shared terms, and the form the words were compared in
@@ -78,16 +79,22 @@ enum SemanticSharedTerms {
         /// The form both documents' words and the corpus reference were counted in.
         let wordForm: WordCloudWordForm
 
-        /// A pass that found nothing, or could not run.
+        /// A pass that could not run: no candidates, no index, no reference, or no text for the
+        /// anchor. It compared nothing, so it says nothing of how.
         static let none = Evidence(terms: [:], wordForm: .dictionary)
 
         /// What the panel says above its rows when their shared words were compared as printed, or
-        /// `nil` when they were compared in dictionary forms or no row has a chip (#1608).
+        /// `nil` when they were compared in dictionary forms (#1608).
         ///
         /// The owner's condition for the fallback: that it happened, why, and that the result can
         /// differ from a device whose language analysis reduces words to their dictionary forms.
+        ///
+        /// It does not ask whether any row got a chip. A pass that compared printed forms and found
+        /// no shared word leaves every row with a percentage where a device that reduces words can
+        /// name the words, and this line is then the only thing that says why. A pass that could
+        /// not run is ``none``, whose form is `.dictionary`, and says nothing.
         var printedFormsNote: String? {
-            guard wordForm == .printed, !terms.isEmpty else { return nil }
+            guard wordForm == .printed else { return nil }
             return String(localized: "related.sharedTerms.printedForms.note",
                           defaultValue: "Shared words compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so two documents share a word only where both print the same form (“negotiate” in one and “negotiated” in the other is not a match). A device that does reduce them (a Mac, or another iPhone or iPad) can name different shared words.")
         }
@@ -95,6 +102,23 @@ enum SemanticSharedTerms {
 
     /// How many terms a chip shows. Three is what fits beside the other axes' chips on an iPhone.
     static let chipTermLimit = 3
+
+    /// The part of Related Documents' reload identity that follows the tagger (#1608): the form the
+    /// settled verdict counts in, and dictionary forms until there is one.
+    ///
+    /// The list reloads when this changes, and at no other re-check. A re-check that adopts a
+    /// lemmatiser turns shared words compared as printed into ones compared in dictionary forms,
+    /// and the note above the rows says "right now", so they are compared again and the note goes.
+    /// A re-check that adopts names or lexical classes changes nothing this list shows; reloading
+    /// for it would re-rank an open list and lose the reader's place for the same rows, on a launch
+    /// whose lemmatiser works, which is why the identity does not take the monitor's revision.
+    /// Before a verdict exists the pass waits for one, so "dictionary" then is a placeholder that a
+    /// verdict with a lemmatiser leaves as it is.
+    /// - Parameter status: `LanguageAnalysisMonitor.shared.status`.
+    static func reloadToken(for status: NaturalLanguageReadiness.Status) -> String {
+        guard case .settled(let verdict) = status else { return WordCloudWordForm.dictionary.rawValue }
+        return verdict.health.wordForm.rawValue
+    }
 
     /// The lens the chip counts under.
     ///

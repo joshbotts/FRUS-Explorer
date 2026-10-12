@@ -163,7 +163,7 @@ What you’re seeing
 
 <!-- END SOURCE: wordcloud.info.shows.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1689–1690 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1690–1691 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -179,7 +179,7 @@ Lenses
 
 <!-- END SOURCE: wordcloud.info.lenses.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1702–1703 | key: wordcloud.info.lenses.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1703–1704 | key: wordcloud.info.lenses.detail -->
 
 The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
 
@@ -193,7 +193,7 @@ What’s filtered out
 
 <!-- END SOURCE: wordcloud.info.filters.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1706–1707 | key: wordcloud.info.filters.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1707–1708 | key: wordcloud.info.filters.detail -->
 
 Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.
 
@@ -207,7 +207,7 @@ Selecting a word
 
 <!-- END SOURCE: wordcloud.info.tap.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1710–1711 | key: wordcloud.info.tap.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1711–1712 | key: wordcloud.info.tap.detail -->
 
 Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.
 
@@ -978,7 +978,7 @@ Frequency vs. Distinctive
 
 <!-- END SOURCE: wordcloud.info.measure.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1693–1694 | key: wordcloud.info.measure.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1694–1695 | key: wordcloud.info.measure.detail -->
 
 Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with bundled reference data for the whole corpus. It sizes each word by how much more it is used here than across the series, measured by log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus.
 
@@ -994,7 +994,7 @@ Reading the Distinctive list
 
 <!-- END SOURCE: wordcloud.info.keyness.numbers.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1698–1699 | key: wordcloud.info.keyness.numbers.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1699–1700 | key: wordcloud.info.keyness.numbers.detail -->
 
 Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²). It measures how strong the evidence is that the difference is real, and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume scores higher than a short collection for the same effect. When you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely across the corpus to be counted in the reference, so its multiple is an upper bound.
 
@@ -1170,7 +1170,7 @@ Reference coverage: the reference counts only words occurring at least %lld time
 
 #### Nothing to draw
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1632–1633 | key: wordcloud.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1633–1634 | key: wordcloud.empty.detail -->
 
 There’s no indexed text in this scope yet. Download and index the relevant volumes, then try again.
 
@@ -1356,7 +1356,7 @@ Counted and compared as printed: this device isn’t reducing words to their dic
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2339–2340 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2340–2341 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 
@@ -1573,14 +1573,14 @@ Chapter openers, front matter and appendix material were not included when the m
 #### Axis caption when the weight is 0
 <!-- The axis shipped OFF until 2026-09-10 and is on at half weight since, so a reader sees this caption only after turning it down to 0. Until build 42 the only prose describing it lived in a feedback screen in Settings ▸ Data & Recovery, so the app's most usable semantic feature was its least discoverable. -->
 
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 580–581 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 584–585 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
 
 Off. Raise it to also match documents whose meaning an AI model measured as alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.
 
 <!-- END SOURCE: related.weights.semantic.off -->
 
 #### Axis caption when the weight is raised
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 582–583 | key: related.weights.semantic.on | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 586–587 | key: related.weights.semantic.on | shared: iOS+macOS (single edit point) -->
 
 Matches carry a “Semantic match” score. Consider providing feedback to say whether it helped. Those verdicts are how this axis gets judged.
 
@@ -1783,7 +1783,7 @@ Stored on-device and not synced to iCloud. Each verdict records the two document
 ### Word cloud
 
 #### The meaningful terms in the chosen scope — a document, vo…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1689–1690 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1690–1691 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -1792,7 +1792,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 > Same string also in §5 (Word Cloud) — edit one copy only.
 
 #### Reading every indexed document. On a full library this ta…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1587–1588 | key: wordcloud.loading.corpus.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1588–1589 | key: wordcloud.loading.corpus.v2 -->
 
 Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.
 

@@ -37836,3 +37836,79 @@ The owner merged #1651 and asked for the letter-level damage it left to be curat
 **Docs**
 - `Planning/Generators-Runbook.md`: the generator's entry (the figures, the digest, and the paragraph on letter-level damage, which now says how it was read and what was found). `Docs/Agentic-Analysis-Guide.md`: §14.11's row and change-log entry 1.28. `CLAUDE.md` needed no change.
 - The tools of the read are outside the repository, in the session's durable folder (`read_all_cited.py`, `read_rows.py`, a page-band renderer and a montage): they are of no use without the scans, which stay local.
+
+## Session 2026-10-12 — With no lemmatiser, Collocates, Distinctive sizing and Related Documents' shared words compare printed forms with a second corpus reference, and say so (#1608)
+
+Pull request 3 of the plan of record's queue, decision 8. It went ahead of pull request 2 (the small fixes, not yet opened) on the owner's word of 2026-10-12, since it depends on neither 1 nor 2; pull request 1 had merged (#1651, #1652). No index version and no CloudKit schema change.
+
+**The ground**
+- On build 49, in the foreground, under iOS 27.0.1, the owner's iPhone logged `Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false classes=true names=true`. iOS never answered the request for the English lemma data, and no change to the app's check can fix that.
+- On such a launch Collocates refused, the word cloud's Distinctive sizing and Related Documents' shared-word chips were withheld, and the clouds said "Counted as printed". The corpus reference all three compare with, `keyness-baseline.json`, is counted in dictionary forms.
+
+**What "printed" is, and one sentence of the brief that was wrong**
+- The brief and the plan said the fallback "counts "missile" and "missiles" apart". Under the default settings it does not, and it should not without a decision.
+- A printed count is the count a launch with no lemmatiser has made since #1373: the word's surface, lowercased, and then its regular plural folded by rule while *Merge plural and singular forms* is on (`WordCloudTokenizer.singularize`). The fallback keeps that count unchanged and gives it a reference counted the same way, which is what makes the comparison exact.
+- So "missiles" is counted under "missile" in both references (34,909 in each), while "negotiate", "negotiated" and "negotiating" are three words (19,472, 9,272 and 15,267, against 44,011 for the dictionary form), "men" is not "man", and a name ending in s is clipped on both sides: "Dulles" is counted as `dulle` (32,456; the dictionary form `dulles` is 32,455). A chip or a row shows the word as the page prints it where it can.
+- Every example in the new copy is therefore the verb pair. A plural would be a false example, and the shipped CSV caveat gave one (below).
+- Counting plurals apart is another rule on both sides and a regeneration. It is the owner's to ask for; the plan's §3 has it.
+
+**One value from the verdict to the count and to the reference**
+- `WordCloudWordForm` (`.dictionary`, `.printed`), new in `WordCloudKit`. `NaturalLanguageHealth.wordForm` is `.printed` exactly when the verdict has no lemmatiser.
+- A tokenizer told `.printed` asks the gate for `.tokenType` and no lemma scheme (`WordCloudTokenizer.wordSchemes`, `WordCloudMultiLensTokenizer.schemes`), so a lemmatiser that starts to answer part way through a count cannot mix the two forms in it. The default is `.dictionary`, and a tokenizer built without the argument counts as it did.
+- `WordCloudTokenizer.configured(…wordForm:)`, the app's factory, takes the form with no default. Its four callers: the cloud's count and the collection export's cloud (the verdict's form), the Collocates configuration (the verdict's form) and the settings bench (`.dictionary`: it reads no tagger).
+- `BundledKeynessBaseline` loads a file for each form and `baseline(for:tuning:includeDiplomatic:languageAnalysis:)` reads the one the verdict counts in. It returns a `KeynessReference` (terms, total, cut-off, form, distinct terms, stamp), which replaces the three-part tuple and the separate `coverage(for:)` and `generated`: a surface that says what it ranked against can no longer read those from the other file.
+- A file is kept only under the form its own stamp names (`isReference(_:for:)`), in the bundle and in the test seam alike.
+- `prepare()` now waits for a load in flight. Before, a second caller returned at once and a read taken straight after was `.noArtifact` for a file a few milliseconds from being there; Related Documents awaits it before its lookup now.
+- *Language analysis unavailable* is still returned in two cases: a part-of-speech lens counted without lexical classes, which counted nothing; and a launch with no lemmatiser whose printed-form file did not load. Both refusal sentences keep their text.
+
+**The three surfaces**
+- **Collocates.** `CollocationConfiguration` holds the verdict; its tokenizer counts in that verdict's form and both hosts (`SearchView`, the Mac's `SearchSheet`) read the reference for `configuration.languageAnalysis`, so one awaited verdict decides both. `CollocationAnalysis.rank` takes the form the neighbours were counted in and refuses a reference of the other form before it says anything about the query. `SearchService.collocation` reports the form off the tokenizer that counted. A ranking of printed forms opens with a note as the list's first row.
+- **Distinctive sizing.** `WordFrequencyService` counts a cloud in the form of the verdict it stamps the result with; `KeynessCloud.rank` already took the result's own stamp, and now ranks a result counted as printed against the printed reference and says which form in `Ranking.wordForm`. The header prints *Counted and compared as printed* under Distinctive and *Counted as printed* under Frequency, through `PrintedFormsNote`, which shows the line whole and puts it in a 96-point scrolling strip where the column has no room (seen at the largest accessibility size).
+- **Related Documents' shared words.** `SemanticSharedTerms.sharedTerms` reads the reference for the verdict and hands it to `evidence(anchor:candidates:pipeline:reference:)`, which counts both documents in the reference's form and returns the form with the terms. The panel prints a note above its rows when a row carries a chip, and reloads when a re-check adopts a better verdict (`LanguageAnalysisMonitor.revision` joins its reload key), so "right now" stays true.
+- A launch whose lemmatiser works takes none of these branches, and a Mac shows nothing new unless its own lemmatiser is missing: the fallback follows the verdict, not the platform.
+
+**What each surface says** (the owner's condition: that it fell back, why, and that another device can differ)
+- Six new strings, each with a block: `search.collocation.printedForms.note`; `wordcloud.keyness.comparedAsPrinted`; `related.sharedTerms.printedForms.note`; and for a Distinctive export `wordcloud.export.caveat.keyness.comparedAsPrinted` (the CSV), `wordcloud.export.caption.comparedAsPrinted` (the image's caption) and `wordcloud.export.axis.keyness.printed` (the axis label). Collocates and Related Documents have no export.
+- Two changed. `wordcloud.countedAsPrinted` gains "Counts can differ on a device that does: a Mac, or another iPhone or iPad." and is no longer cut at two lines. `wordcloud.export.caveat.countedAsPrinted` gave "negotiation" and "negotiations" as two words, which is false with plural folding on; it gives the verb pair.
+- The Collocates note first closed with a sentence on the re-check. On an iPhone 17 it was then seven lines and left two rows of the ranking on screen, so the sentence went; the panel still rebuilds when a re-check adopts a lemmatiser.
+
+**The reference**
+- `keyness-baseline-printed.json`, 1,238,773 bytes (about 439 KB deflated). `keyness-baseline.json` gains `"wordForm":"dictionary"`, 24 bytes. Each app's bundle grows by 1,238,797 bytes.
+- It comes out of the tagging pass that writes the first: `WordCloudMultiLensTokenizer.accumulate(from:into:printedInto:)` counts both forms of each token, each through the markings, the length and stopword test and the lens's filter by itself. `CloudVectorsAggregator.pack` takes the printed tally and stamps each baseline with its form.
+- **The control came first.** The generator at `7c9eaacd`, unchanged, reproduced the three shipped files byte for byte from corpus `99d851c79` under their stamp of 2026-10-10: 20 minutes 7 seconds.
+- **Then the changed generator.** Its `cloud-vectors-core.json` and `cloud-vectors-volumes.json` are the shipped ones apart from the date stamp, and its `keyness-baseline.json` apart from the stamp and the new key.
+- **`VERIFY_PRINTED_WALK=1`** tokenises every document again with a `.printed` tokenizer, as a device does, and throws before any write if a volume's two tallies differ in any lens. All 553 volumes, 314,616 documents: no difference. The one pass rests on two behaviours of a closed framework (a walk by `.lemma` and one by `.tokenType` find the same words; a word's lexical class does not depend on the lemma scheme being held), and this is their measurement.
+- Measured on the file: All terms prices 97.61% of token mass (20,015 of 263,934 distinct, cut at 147) and Topics 97.88% (20,124 of 224,016, cut at 67); Actions 23,957 of 37,553 and Descriptors 22,877 of 39,295, both cut at 2; Concepts 166 and Sentiment 198, whole.
+- **Memory.** The run had no autorelease pool, so nothing the tagger autoreleased was freed before the end: 24.93 GB of footprint for the unchanged generator and 49.05 GB with the verify walk, on a Mac with 32 GB. Each document is now tokenised inside a pool. The final generator's run peaked at 893 MB, and at 945 MB with the verify walk.
+- **Time, on the M5 MacBook.** 21 minutes 24 seconds for a run (1,283.80 s; the unchanged generator took 1,206.79), and 35 minutes 21 seconds with the verify walk. The plan's "50 to 60 minutes" was measured on another Mac in August.
+- **The committed files were written three times in all**: by the first changed generator, and twice by the final one, with the verify walk and without it. Byte for byte the same each time.
+- The run refuses (`printedReferenceIncomplete`) when a lens the first reference prices has no printed count.
+
+**A launch with no lemmatiser, made and not met**
+- The iPhone 17 simulator under iOS 27.0 kept its lemmatiser in fifteen launches of fifteen (fourteen relaunches and one after a fresh boot).
+- `FRUS_DEBUG_NO_LEMMA_ANSWER=1`, read in Debug builds only (`NaturalLanguageReadiness.unansweredLemmaRequestEnvironmentKey`), leaves the lemma request unanswered and withholds the scheme, as iOS did on the phone. The launch's verdict line then read `Lemma=timedOut@30.010s withheld=[Lemma]; canary lemmas=false classes=true names=true`. `UnansweredLemmaRequestTests` drives the real engine with it. `CLAUDE.md` has the command.
+
+**Seen on the iPhone 17 simulator, iOS 27.0, with 1961–1963 vol. XI in the library**
+- **With no lemmatiser** (Settings ▸ Data & Recovery ▸ Diagnostics ▸ Language Analysis: *Limited*). Collocates for "missile" (169 results, 1,043 matches) ranks under its note as the first row: cuba, site, cuban, crisis, strategic, offensive; its caveat gives the printed reference's cut-off, 147. The word cloud under Frequency carries the three-line *Counted as printed* note. Under Distinctive it ranks ("174 terms from 1 document") under the five-line *Counted and compared as printed* note, with printed forms among its words (called, taken, sent, found, used); at the largest accessibility size the note is a scrolling strip and the cloud keeps its room. Related Documents shows its note above rows that carry *shares:* chips.
+- **With a working lemmatiser** (*Working*). Collocates has no note and the dictionary reference's cut-off, 110 (cuba, site, soviet). Distinctive has no note and dictionary forms (remove, require, suggest; "184 terms"). Related Documents' rows carry chips and no note.
+- The simulator was put back: the volume, its shard and the figure record removed, the preferences the look changed reset. A few research-log entries of the look remain on it.
+
+**Tests**
+- `WordCloudKitTests` (59 tests in 6 suites): `WordCloudPrintedFormParityTests` holds a `.printed` tokenizer's count, a direct walk with no lemma scheme, and the one-pass printed tally to each other, and the dictionary tally to what it was; the parity suite that pins one pass against N is unchanged. `NaturalLanguageHealthWordFormTests`, `UnansweredLemmaRequestTests`.
+- `CloudVectorsGeneratorTests` (53 tests in 4 suites): `PrintedKeynessBaselineTests`.
+- The unit target, `PrintedFormFallbackTests.swift`: which reference a verdict reads, one fixture for each conjunct; Distinctive; Collocates through the real scan over an index built in the test; the cloud's count through `WordFrequencyService`; the chips through `evidence`; what each surface says, held to the owner's three elements; the wiring of both hosts by source; and the shipped file (`PrintedKeynessBaselineArtifactTests`), which is what fails if the resource was never enrolled.
+- **Mutation.** In the kit and the generator, 22 mutations in a second worktree: 21 failed a named test, and the one that passed was a filter that could not be false, since removed. «APPMUTATION»
+
+**Docs**
+- Both manuals: §15.2's passage on lenses and language analysis, the Collocates bullet and the Related Documents paragraph. Their AI Generated notice stays.
+- `Docs/EditableContent/`: six blocks added, two changed, 61 ranged blocks re-pointed; `Amendment-Log.md` has the bullet.
+- `Planning/Generators-Runbook.md` (the fourth file, the verify mode, the control, the memory), `CLAUDE.md` (the tools table, "four", the kit's paragraph, the launch with no lemmatiser), `Planning/New-Volume-Release-Plan.md` (two rows), and the plan of record: §1's item 3 done, §3 gains the owner's look and the plural question, §4's item on the lemmatiser says what the fallback does not change.
+
+**Checked**
+«CHECKED»
+
+**Not done, and for the owner**
+- **Not seen on the owner's iPhone**, where the fault is. The look is the plan's §3: on a launch whose Language Analysis row reads *Limited*, the three surfaces under their notes.
+- **The plural rule.** A printed count folds regular plurals, as it has since #1373. If the fallback should count them apart, that is a new rule for the count and the reference together.
+- **How often a launch has no lemmatiser** is still not measured, and no Feedback report has gone to Apple.
+- **The Copy button** for the Language Analysis record stays in pull request 2.

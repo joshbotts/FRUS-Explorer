@@ -222,7 +222,8 @@ struct CollocationAnalysisTests {
     @Test("A neighbourhood too thin to rank says so, rather than showing an empty list")
     func floorReported() {
         #expect(rank(["ratify": 2, "commitment": 1])
-                == .unavailable(.noNeighboursAboveFloor(minimum: Keyness.defaultMinimumScopeCount)))
+                == .unavailable(.noNeighboursAboveFloor(minimum: Keyness.defaultMinimumScopeCount,
+                                                        wordForm: .dictionary)))
     }
 
     @Test("No matches is distinct from nothing distinctive")
@@ -230,7 +231,7 @@ struct CollocationAnalysisTests {
         #expect(rank([:], anchorCount: 0) == .unavailable(.noMatches))
         #expect(rank(["ratify": 90], anchorCount: 0) == .unavailable(.noMatches))
         // Everything present but nothing over-used: a real result about ordinary prose.
-        #expect(rank(["government": 5]) == .unavailable(.nothingDistinctive))
+        #expect(rank(["government": 5]) == .unavailable(.nothingDistinctive(wordForm: .dictionary)))
     }
 
     @Test("The bounds travel with the result, so a partial scan can never read as a complete one")

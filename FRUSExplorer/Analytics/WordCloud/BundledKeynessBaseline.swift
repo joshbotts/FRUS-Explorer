@@ -135,8 +135,17 @@ enum BundledKeynessBaseline {
         guard !loadFinished else { return }
         let task = loading ?? Task.detached(priority: .utility) { Self.loadBundled() }
         loading = task
-        let loaded = await task.value
-        // An injected fixture, or an earlier waiter, got there while this one was suspended.
+        adopt(await task.value)
+    }
+
+    /// Stores what a load read, unless something is already there: an earlier waiter stored the
+    /// same files, or a test injected a fixture, while this caller was suspended on the load.
+    ///
+    /// ``prepare()`` is its one caller in the app. It is a function of its own so the rule can be
+    /// tested with no suspension between the fixture and the read (`PrintedFormReferenceLoadingTests`):
+    /// every suite that injects a reference shares this loader's one static.
+    /// - Parameter loaded: What ``loadBundled()`` returned.
+    static func adopt(_ loaded: [WordCloudWordForm: KeynessBaselineFile]) {
         guard !loadFinished else { return }
         files = loaded
         loadFinished = true

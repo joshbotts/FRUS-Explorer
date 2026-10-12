@@ -1301,7 +1301,8 @@ struct WordCloudView: View {
             valueMode: nil,
             extraCaveats: caveats,
             // PV-1: the volumes' words, counted through this app's lexicons and stopwords — and, for keyness, scored
-            // against its bundled reference (`keyness-baseline.json`, `.appWordLists`).
+            // against its bundled reference (`keyness-baseline.json`, or `keyness-baseline-printed.json`
+            // for a cloud counted as printed; both `.appWordLists`).
             sources: [.frusText, .appWordLists]
         )
     }
