@@ -773,7 +773,7 @@ struct LanguageAnalysisRow: View {
 ///
 /// ```
 /// FRUS Explorer — language analysis
-/// app: 2.0 (50)
+/// app: 0.2 (50)
 /// system: iOS Version 27.0.1 (Build 24A123)
 /// device: iPhone18,1
 /// copied: 2026-10-11T23:47:14.000-04:00
@@ -786,8 +786,9 @@ struct LanguageAnalysisRow: View {
 /// Each line is the one `NaturalLanguageReadiness.logLine(for:)` wrote to the release log: enums,
 /// scheme names, counts and seconds, and nothing the reader wrote or read. The four lines above
 /// them are the ones the Sync Log stamps its rows with: the app's version and build, the system's
-/// version, and the device's model class, which is a kind of hardware and no one device. The first
-/// thing read from the owner's own log was which build had written it.
+/// version, and the device's model class, which is a kind of hardware and no one device. On a Mac
+/// and in a simulator that last line is the processor's architecture, `arm64`, as it is in the
+/// Sync Log. The first thing read from the owner's own log was which build had written it.
 ///
 /// Not localised, as Copy Report's text is not: it is for whoever reads the log, and it reads the
 /// same whatever the tester's language.
@@ -798,13 +799,13 @@ enum LanguageAnalysisRecordReport {
 
     /// The build and the system a record was written under.
     struct Environment: Equatable, Sendable {
-        /// The app's marketing version, "2.0".
+        /// The app's marketing version, "0.2".
         let appVersion: String
         /// The app's build number, "50".
         let appBuild: String
         /// The system's name and version, "iOS Version 27.0.1 (Build 24A123)".
         let system: String
-        /// The device's model class, "iPhone18,1".
+        /// The device's model class, "iPhone18,1"; `arm64` on a Mac and in a simulator.
         let deviceModel: String
 
         /// This process's own, read where the Sync Log reads its rows' stamps.

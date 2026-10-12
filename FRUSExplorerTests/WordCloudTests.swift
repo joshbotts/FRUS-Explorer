@@ -2071,7 +2071,7 @@ struct LanguageAnalysisRecordCopyTests {
     private static let start = Date(timeIntervalSince1970: 1_791_776_666.875)
 
     private static let iPhone = LanguageAnalysisRecordReport.Environment(
-        appVersion: "2.0", appBuild: "50", system: "iOS Version 27.0.1 (Build 24A123)",
+        appVersion: "0.2", appBuild: "50", system: "iOS Version 27.0.1 (Build 24A123)",
         deviceModel: "iPhone18,1")
 
     /// The owner's own record of 2026-10-11, to the same millisecond pattern.
@@ -2090,7 +2090,7 @@ struct LanguageAnalysisRecordCopyTests {
             copiedAt: Self.start.addingTimeInterval(167.125), timeZone: Self.zone)
         #expect(text == """
             FRUS Explorer — language analysis
-            app: 2.0 (50)
+            app: 0.2 (50)
             system: iOS Version 27.0.1 (Build 24A123)
             device: iPhone18,1
             copied: 2026-10-11T23:47:14.000-04:00
@@ -2131,7 +2131,7 @@ struct LanguageAnalysisRecordCopyTests {
             record: .init(), environment: Self.iPhone, copiedAt: Self.start, timeZone: Self.zone)
         #expect(text.components(separatedBy: "\n") == [
             "FRUS Explorer — language analysis",
-            "app: 2.0 (50)",
+            "app: 0.2 (50)",
             "system: iOS Version 27.0.1 (Build 24A123)",
             "device: iPhone18,1",
             "copied: 2026-10-11T23:44:26.875-04:00",
