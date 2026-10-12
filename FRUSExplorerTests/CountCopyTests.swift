@@ -496,6 +496,8 @@ struct CountCopySiteTests {
 /// Version history:
 ///   1.0 — 2026-09-25: #1374 review, round 1
 ///   1.1 — 2026-10-11: #1618 — the three sites of Related Documents' Beyond your library section
+///   1.2 — 2026-10-12: #1643 — six sites: the Archival Network dock's three sentences, the
+///          Browse ▸ Archives class row, and the accessory of both drill lists
 struct CountCopyWiringTests {
 
     private typealias Scan = NaturalLanguageReadinessScanTests
@@ -546,6 +548,25 @@ struct CountCopyWiringTests {
         Site(path: "FRUSExplorer/App/SupportingViews.swift",
              declaration: "private func statusBarMetaSummary(_ meta: VolumeMetadataDiscovered) -> String",
              needle: "StatusBarCopy.metaSummary(persons: meta.uniquePersonCount,"),
+        // #1643's sites, each driven by `ArchivalOneCountTests`.
+        Site(path: "FRUSExplorer/Analytics/ArchivalNetworkView.swift",
+             declaration: "private func dockSummary(_ graph: ArchivalNetworkGraph) -> String",
+             needle: "text += \" \" + ArchivalCounts.networkPartners(graph.partnersTotal)"),
+        Site(path: "FRUSExplorer/Analytics/ArchivalNetworkView.swift",
+             declaration: "private func dockSummary(_ graph: ArchivalNetworkGraph) -> String",
+             needle: "if graph.isCapped {\n text += \" \" + ArchivalCounts.networkHeldBack(graph.withheldCount)"),
+        Site(path: "FRUSExplorer/Analytics/ArchivalNetworkView.swift",
+             declaration: "private func dockSummary(_ graph: ArchivalNetworkGraph) -> String",
+             needle: "if graph.classNodeCount > 0 {\n text += \" \" + ArchivalCounts.networkClassSquares(graph.classNodeCount)"),
+        Site(path: "FRUSExplorer/Browser/ArchivesBrowseView.swift",
+             declaration: "private func classRow(_ row: ArchivesClassAxis.ClassRow,",
+             needle: "Text(CountCopy.docs(row.documents))"),
+        Site(path: "FRUSExplorer/Browser/ArchivesBrowseView.swift",
+             declaration: "static func spec(forCategory slug: String, usage: CollectionUsageIndex) -> VolumeListSpec",
+             needle: "accessories[volumeId] = volumeAccessory(\n documents: docs, sourcedDocuments: usage.noteCount(forVolumeId: volumeId))"),
+        Site(path: "FRUSExplorer/Browser/ArchivesClassAxis.swift",
+             declaration: "static func spec(for row: ClassRow, era: FilingEra,",
+             needle: "accessories[volumeId] = ArchivesAxis.volumeAccessory(\n documents: byVolume[volumeId] ?? 0,\n sourcedDocuments: usage.noteCount(forVolumeId: volumeId))"),
         // #1618's sites, each driven by `RelatedDocumentsOffIndexCountTests`.
         Site(path: "FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift",
              declaration: "private var offIndexSection: some View",
@@ -655,6 +676,107 @@ struct RelatedDocumentsOffIndexCountTests {
         for key in ["related.offIndex.caption", "related.offIndex.volumeCount", "related.offIndex.moreVolumes"] {
             #expect(!source.contains(key), "\(key) is back in the view")
         }
+    }
+}
+
+// MARK: - ArchivalOneCountTests
+
+/// The Archival Network's legend and Browse ▸ Archives say one (#1643).
+///
+/// With one class drawn the Network's dock read "The 1 squares are central-file classes", and the
+/// two sentences before it had the same gap: "1 collections share two or more volumes with this
+/// one" and "1 more are held back". Browse ▸ Archives ▸ Classes labelled a class one document
+/// cites "1 docs", and a volume in either drill list read "1 docs · 3%".
+///
+/// Each sentence is `ArchivalCounts`' or `ArchivesAxis`' now, where it can be called, and
+/// `CountCopyWiringTests` holds the views to them. The two drills are also driven through their
+/// own specs, on a usage index in which one volume holds one such document.
+///
+/// Version history:
+///   1.0 — 2026-10-12: #1643 — initial implementation
+struct ArchivalOneCountTests {
+
+    private static let us = Locale(identifier: "en_US")
+
+    // MARK: The Network's dock
+
+    @Test("The legend says one square is a class, and several are classes")
+    func classSquares() {
+        #expect(ArchivalCounts.networkClassSquares(1, locale: Self.us)
+                == "The 1 square is a central-file class drawn from inside the Central Files record, which is hidden while it is shown.")
+        #expect(ArchivalCounts.networkClassSquares(3, locale: Self.us)
+                == "The 3 squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown.")
+        #expect(ArchivalCounts.networkClassSquares(1_204, locale: Self.us).hasPrefix("The 1,204 squares are "))
+    }
+
+    @Test("One partner is held back, and several are")
+    func heldBack() {
+        let tail = " held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it."
+        #expect(ArchivalCounts.networkHeldBack(1, locale: Self.us) == "1 more is" + tail)
+        #expect(ArchivalCounts.networkHeldBack(4, locale: Self.us) == "4 more are" + tail)
+        #expect(ArchivalCounts.networkHeldBack(1_204, locale: Self.us) == "1,204 more are" + tail)
+    }
+
+    @Test("One collection shares two or more volumes with the focus, and several share them")
+    func partners() {
+        let tail = " two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity."
+        #expect(ArchivalCounts.networkPartners(1, locale: Self.us) == "1 collection shares" + tail)
+        #expect(ArchivalCounts.networkPartners(12, locale: Self.us) == "12 collections share" + tail)
+        #expect(ArchivalCounts.networkPartners(3_665, locale: Self.us) == "3,665 collections share" + tail)
+    }
+
+    // MARK: Browse ▸ Archives
+
+    @Test("A drill list's accessory says one doc, groups many, and gives a share only where it has a denominator")
+    func volumeAccessory() {
+        #expect(ArchivesAxis.volumeAccessory(documents: 1, sourcedDocuments: 40, locale: Self.us) == "1 doc · 3%")
+        #expect(ArchivesAxis.volumeAccessory(documents: 12, sourcedDocuments: 30, locale: Self.us) == "12 docs · 40%")
+        #expect(ArchivesAxis.volumeAccessory(documents: 1_204, sourcedDocuments: 1_204, locale: Self.us)
+                == "1,204 docs · 100%")
+        // No count of the volume's sourced documents, or none: the count alone.
+        #expect(ArchivesAxis.volumeAccessory(documents: 1, sourcedDocuments: nil, locale: Self.us) == "1 doc")
+        #expect(ArchivesAxis.volumeAccessory(documents: 7, sourcedDocuments: 0, locale: Self.us) == "7 docs")
+    }
+
+    /// Three volumes: one holds a single document from the lot-file category and from class
+    /// `POL 7`, one holds twelve of each, and one, with no sourced-document count, holds one.
+    private func usage() throws -> CollectionUsageIndex {
+        let json = """
+        {
+          "schemaVersion": 1, "generated": "x",
+          "volumes": ["frus-a", "frus-b", "frus-c"],
+          "volumeNoteCounts": [40, 30, 0],
+          "collectionIds": [], "classKeys": ["POL 7"],
+          "categories": ["lotFile"],
+          "collections": [],
+          "classes": [{"k": 0, "v": [0, 1, 2], "n": [1, 12, 1]}],
+          "volumeCategories": [{"k": 0, "v": [0, 1, 2], "n": [1, 12, 1]}],
+          "coverage": {"volumesScanned": 3, "volumesWithNotes": 2, "noteCount": 70,
+                       "notesInACollection": 14, "notesWithAClassKey": 14,
+                       "authorityCollectionCount": 1, "authorityCollectionsReached": 1}
+        }
+        """
+        return try JSONDecoder().decode(CollectionUsageIndex.self, from: Data(json.utf8))
+    }
+
+    @Test("Both drill lists label a volume that holds one such document “1 doc”")
+    func bothDrillsSayOne() throws {
+        let usage = try usage()
+        // Every number as the user's own locale writes it, which is how both drills write them.
+        let one = 1.formatted(), twelve = 12.formatted()
+        let expected = ["frus-a": "\(one) doc · \(3.formatted())%",
+                        "frus-b": "\(twelve) docs · \(40.formatted())%",
+                        "frus-c": "\(one) doc"]
+
+        // The provenance-type drill.
+        #expect(ArchivesAxis.spec(forCategory: "lotFile", usage: usage).accessories == expected)
+
+        // The class drill.
+        let row = ArchivesClassAxis.ClassRow(key: "POL 7", gloss: nil, glossAlternates: [], documents: 14,
+                                             volumeIds: ["frus-b", "frus-a", "frus-c"])
+        let era = ArchivesClassAxis.FilingEra(id: "subjectNumeric:1964-1973", scheduleId: "1964",
+                                              system: .subjectNumeric, span: 1964...1973)
+        #expect(ArchivesClassAxis.spec(for: row, era: era, usage: usage).accessories == expected)
     }
 }
 

@@ -841,4 +841,295 @@ struct AnalyticsAudioGraphTests {
         #expect(table.contains("AnalyticsChartTables.personTrajectoryTable("))
     }
 }
+
+// MARK: - CategoricalAudioGraphPointTests
+
+/// A point on a categorical x axis carries its category's name, as the framework asks (#1617).
+///
+/// `AXAudiograph.h` says a data point's x value "should be a Double for a numeric x-axis or a
+/// String for a categorical x-axis", and of the value itself that "only the `category` property
+/// will be used for data points in a categorical axis". Both builders declared a categorical axis
+/// from the points' labels and then gave each point a number, its position in the list. So the
+/// one property the framework reads on that axis was empty for every bar of every ranking chart:
+/// people, archival units, regions, countries, provenance categories and administrations.
+///
+/// Nothing here was heard. A simulator plays no Audio Graph, so these tests hold each point to
+/// the header's contract, which is what can be checked without a device: on a categorical axis a
+/// point's x is a category, that category is the point's own label, and the axis lists it.
+///
+/// ## One label is one category
+/// A name for an x value means that two points of one series under one label are one category,
+/// where their positions in the list were two. The header asks the axis for "every possible
+/// category value", so the axis lists a label once. That is right for a stacked chart read as one
+/// series, and wrong for a chart whose rows are separate bars. Two charts drew separate bars
+/// under one label: both administration charts (Grover Cleveland's two terms) and Most-Referenced
+/// Documents (two documents of one title). Each now gives its graph the names its own axis tells
+/// the bars apart by, and `twoTermsOfOnePresident`, `theShippedAdministrations` and
+/// `sameTitledDocuments` hold them to it.
+///
+/// Version history:
+///   1.0 — 2026-10-12: #1617 — initial implementation
+@Suite("A categorical Audio Graph gives each point its category's name (#1617)")
+@MainActor
+struct CategoricalAudioGraphPointTests {
+
+    /// One point as the framework holds it: the category of its x value, and its label.
+    /// `__category`: the header marks it as refined for Swift and the overlay gives no reader. A
+    /// value made from a number has no category, which reads as "".
+    private struct Held: Equatable {
+        let category: String
+        let label: String?
+    }
+
+    private func held(_ descriptor: AXChartDescriptor) -> [[Held]] {
+        descriptor.series.map { series in
+            series.dataPoints.map { Held(category: $0.xValue.__category, label: $0.label) }
+        }
+    }
+
+    /// The number of each point's x value, by series, for a numeric axis.
+    private func numbers(_ descriptor: AXChartDescriptor) -> [[Double]] {
+        descriptor.series.map { $0.dataPoints.map { $0.xValue.__number } }
+    }
+
+    private func categories(_ descriptor: AXChartDescriptor) throws -> [String] {
+        try #require(descriptor.xAxis as? AXCategoricalDataAxisDescriptor,
+                     "the x axis is not categorical").categoryOrder
+    }
+
+    @Test("A single series over named categories gives each point its category")
+    func singleSeries() throws {
+        let points = [AXChartPoint(label: "Truman", x: nil, y: 120),
+                      AXChartPoint(label: "Eisenhower", x: nil, y: 340),
+                      AXChartPoint(label: "Kennedy", x: nil, y: 90)]
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "Documents", xLabel: "Administration", yLabel: "Documents", points: points))
+        #expect(try categories(descriptor) == ["Truman", "Eisenhower", "Kennedy"])
+        // The unfixed builder gave these three the numbers 0, 1 and 2 and no category.
+        #expect(held(descriptor) == [[Held(category: "Truman", label: "Truman"),
+                                      Held(category: "Eisenhower", label: "Eisenhower"),
+                                      Held(category: "Kennedy", label: "Kennedy")]])
+    }
+
+    @Test("Points of one series under one label share its category, and the axis lists it once")
+    func oneLabelIsOneCategory() throws {
+        // An era of a stacked chart read as one series, where each kind of file is a point: the
+        // table behind "Citation forms across your volumes". The unfixed builder listed the era
+        // once for every point and gave the points the numbers 0 to 3, and `firstIndex(of:)`
+        // gave two equal points one number.
+        let twin = AXChartPoint(label: "1861–1899", x: nil, y: 12)
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "T", xLabel: "Era", yLabel: "Documents",
+            points: [twin, AXChartPoint(label: "1900–1944", x: nil, y: 7), twin,
+                     AXChartPoint(label: "1861–1899", x: nil, y: 3)]))
+        #expect(try categories(descriptor) == ["1861–1899", "1900–1944"])
+        #expect(held(descriptor).first?.map(\.category)
+                == ["1861–1899", "1900–1944", "1861–1899", "1861–1899"])
+    }
+
+    // MARK: Charts whose rows are separate bars
+
+    private func administration(_ id: String, _ president: String, start: String,
+                                documents: Int) -> AdministrationProfilesData.Profile {
+        .init(id: id, number: 22, president: president, party: .democratic, start: start, end: nil,
+              pointDocCount: documents, rangeDocCount: 0, documentCount: documents, volumeCount: 4,
+              termYears: 4, volumesPerAdministrationYear: 1, coverageEarliest: nil, coverageLatest: nil)
+    }
+
+    @Test("Two administrations of one president are two bars under two names")
+    func twoTermsOfOnePresident() throws {
+        // Grover Cleveland's two terms were not consecutive, so the series has two
+        // administrations under one name. The chart's axis prints "Cleveland 1885" and
+        // "Cleveland 1893"; under the president's name alone the two bars were one category.
+        let profiles = [administration("cleveland-1", "Grover Cleveland", start: "1885-03-04", documents: 3_251),
+                        administration("harrison", "Benjamin Harrison", start: "1889-03-04", documents: 2_900),
+                        administration("cleveland-2", "Grover Cleveland", start: "1893-03-04", documents: 4_809)]
+        let names = ["Grover Cleveland 1885", "Benjamin Harrison", "Grover Cleveland 1893"]
+        #expect(ChartInspectorAdapters.administrationGraphLabels(profiles) == names)
+        // One of the two terms alone needs no year.
+        #expect(ChartInspectorAdapters.administrationGraphLabels(Array(profiles.prefix(2)))
+                == ["Grover Cleveland", "Benjamin Harrison"])
+        for table in [ChartInspectorAdapters.administrationDocumentsTable(profiles),
+                      ChartInspectorAdapters.administrationVolumesPerYearTable(profiles)] {
+            let graph = try #require(table.audioGraph, "\(table.id) states no graph")
+            let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph))
+            #expect(try categories(descriptor) == names, "\(table.id)")
+            #expect(held(descriptor).first?.map(\.category) == names, "\(table.id)")
+            // The table a reader opens still prints the name as it did.
+            #expect(table.rows.map { $0.cells[0] } == ["Grover Cleveland", "Benjamin Harrison", "Grover Cleveland"])
+        }
+    }
+
+    @Test("In the shipped index every administration's bar has a category of its own")
+    func theShippedAdministrations() throws {
+        let url = try #require(Bundle.main.url(forResource: "administration-profiles-index", withExtension: "json"),
+                               "administration-profiles-index.json is not bundled")
+        let index = try JSONDecoder().decode(AdministrationProfilesIndex.self, from: Data(contentsOf: url))
+        var tables = 0
+        for includesNotes in [false, true] {
+            let profiles = AdministrationProfilesData(index: index, includeEditorialNotes: includesNotes).profiles
+            // What makes this a test: the shipped index does hold one president twice.
+            let twice = Dictionary(grouping: profiles, by: \.president).filter { $0.value.count > 1 }.keys.sorted()
+            #expect(twice == ["Grover Cleveland"], "presidents with two populated administrations: \(twice)")
+            // The second chart leaves out an administration with no term length, as the dashboard does.
+            for table in [ChartInspectorAdapters.administrationDocumentsTable(profiles),
+                          ChartInspectorAdapters.administrationVolumesPerYearTable(profiles.filter { $0.termYears > 0 })] {
+                let graph = try #require(table.audioGraph, "\(table.id) states no graph")
+                let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph))
+                let bars = held(descriptor).joined().map(\.category)
+                #expect(bars.count == table.rows.count, "\(table.id): \(bars.count) points for \(table.rows.count) rows")
+                #expect(Set(bars).count == bars.count, "\(table.id): two bars share a category in \(bars)")
+                #expect(try categories(descriptor) == bars, "\(table.id): the axis does not list each bar once")
+                #expect(bars.filter { $0.hasPrefix("Grover Cleveland") } == ["Grover Cleveland 1885", "Grover Cleveland 1893"],
+                        "\(table.id): \(bars)")
+                tables += 1
+            }
+        }
+        #expect(tables == 4)
+    }
+
+    @Test("Two ranked documents of one title are two bars, named as the chart's axis names them")
+    func sameTitledDocuments() throws {
+        // An indexed document is named by its printed head, and heads repeat. The third and
+        // fourth rows also share a document id, which the axis settles with the row's own id.
+        let ranking = [
+            InDegreeRow(volumeId: "frus1969-76v17", documentId: "d12", inDegree: 31,
+                        label: "Memorandum of Conversation", isIndexed: true),
+            InDegreeRow(volumeId: "frus1969-76v17", documentId: "d40", inDegree: 22,
+                        label: "Memorandum of Conversation", isIndexed: true),
+            InDegreeRow(volumeId: "frus1961-63v05", documentId: "d7", inDegree: 19,
+                        label: "Editorial Note", isIndexed: true),
+            InDegreeRow(volumeId: "frus1961-63v06", documentId: "d7", inDegree: 14,
+                        label: "Editorial Note", isIndexed: true),
+            InDegreeRow(volumeId: "frus1964-68v14", documentId: "d3", inDegree: 9,
+                        label: "Paper Prepared in the Department of State", isIndexed: true),
+        ]
+        // The table as the view builds it, and the names as the chart's body makes them.
+        let table = AnalyticsChartTables.crossRefRankingTable(
+            title: "Most-Referenced Documents",
+            rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId, label: $0.label, inDegree: $0.inDegree) })
+        let axis = disambiguatedRankingLabels(ranking.map { (id: $0.id, name: $0.label, shortSuffix: $0.documentId) })
+        let names = ranking.map { axis[$0.id] ?? "" }
+        #expect(names == ["Memorandum of Conversation · d12", "Memorandum of Conversation · d40",
+                          "Editorial Note · frus1961-63v05/d7", "Editorial Note · frus1961-63v06/d7",
+                          "Paper Prepared in the Department of State"])
+
+        let graph = try #require(table.audioGraph, "the ranking table states no graph: its Document column would be read")
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph))
+        #expect(try categories(descriptor) == names)
+        #expect(held(descriptor).first?.map(\.category) == names)
+        #expect(graph.series.first?.points.map(\.y) == [31, 22, 19, 14, 9])
+        #expect(graph.xLabel == table.columns[1] && graph.yLabel == table.columns[4])
+        // Read by the columns the chart names, the five bars were three categories.
+        let byColumn = try #require(AXChartDescriptorBuilder.points(from: table, labelColumn: 1, valueColumn: 4))
+        #expect(Set(byColumn.map(\.label)).count == 3)
+        #expect(byColumn.map(\.y) == graph.series.first?.points.map(\.y))
+    }
+
+    @Test("A ranking with no row states a graph that builds no descriptor")
+    func anEmptyRanking() throws {
+        let table = AnalyticsChartTables.crossRefRankingTable(title: "Most-Referenced Documents", rows: [])
+        let graph = try #require(table.audioGraph)
+        #expect(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph) == nil)
+    }
+
+    @Test("Several series over shared categories give each point its category, and the axis lists each once")
+    func namedSeries() throws {
+        let inbound = [AXChartPoint(label: "1969–76", x: nil, y: 40), AXChartPoint(label: "1977–80", x: nil, y: 12)]
+        let outbound = [AXChartPoint(label: "1977–80", x: nil, y: 3), AXChartPoint(label: "1981–88", x: nil, y: 9)]
+        let descriptor = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "References", xLabel: "Subseries", yLabel: "References",
+            namedSeries: [("Inbound", inbound), ("Outbound", outbound)]))
+        #expect(try categories(descriptor) == ["1969–76", "1977–80", "1981–88"])
+        #expect(held(descriptor).map { $0.map(\.category) } == [["1969–76", "1977–80"], ["1977–80", "1981–88"]])
+        // The unfixed builder numbered each series from zero, so "1977–80" was 1 in one series
+        // and 0 in the other.
+        #expect(held(descriptor).joined().allSatisfy { $0.category == $0.label })
+    }
+
+    @Test("When one label is not a number the axis is categorical, and a point whose label is a number is a category too")
+    func mixedLabels() throws {
+        // "1950" reads as a number and "Undated" does not: the axis is categorical, and the
+        // unfixed builder still gave the first two points the numbers 1940 and 1950.
+        let points = [AXChartPoint(label: "1940", x: 1940, y: 5),
+                      AXChartPoint(label: "1950", x: 1950, y: 9),
+                      AXChartPoint(label: "Undated", x: nil, y: 2)]
+        let single = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "T", xLabel: "Decade", yLabel: "Documents", points: points))
+        #expect(try categories(single) == ["1940", "1950", "Undated"])
+        #expect(held(single).first?.map(\.category) == ["1940", "1950", "Undated"])
+
+        let named = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "T", xLabel: "Decade", yLabel: "Documents",
+            namedSeries: [("A", Array(points.prefix(2))), ("B", Array(points.suffix(1)))]))
+        #expect(try categories(named) == ["1940", "1950", "Undated"])
+        #expect(held(named).map { $0.map(\.category) } == [["1940", "1950"], ["Undated"]])
+    }
+
+    @Test("A numeric axis still gives each point its number (control)")
+    func numericAxisIsUnchanged() throws {
+        // A CONTROL: it passes on the unfixed builder. It holds the fix to the categorical axis.
+        let points = [AXChartPoint(label: "1969", x: 1969, y: 5), AXChartPoint(label: "1970", x: 1970, y: 9)]
+        let single = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "T", xLabel: "Year", yLabel: "Documents", points: points))
+        #expect(single.xAxis is AXNumericDataAxisDescriptor)
+        #expect(numbers(single) == [[1969, 1970]])
+        let named = try #require(AXChartDescriptorBuilder.descriptor(
+            title: "T", xLabel: "Year", yLabel: "Documents", namedSeries: [("A", points), ("B", points)]))
+        #expect(named.xAxis is AXNumericDataAxisDescriptor)
+        #expect(numbers(named) == [[1969, 1970], [1969, 1970]])
+    }
+
+    /// The real tables behind the charts #1617 names, each through the call its chart makes.
+    @Test("Every ranking chart's table gives each bar a category the axis lists")
+    func theRankingChartsTables() throws {
+        let profiles: [AdministrationProfilesData.Profile] = [
+            .init(id: "kennedy", number: 35, president: "John F. Kennedy", party: .democratic,
+                  start: "1961-01-20", end: nil, pointDocCount: 12_345, rangeDocCount: 0,
+                  documentCount: 12_345, volumeCount: 3, termYears: 4, volumesPerAdministrationYear: 8.66,
+                  coverageEarliest: nil, coverageLatest: nil),
+            .init(id: "nixon", number: 37, president: "Richard M. Nixon", party: .republican,
+                  start: "1969-01-20", end: nil, pointDocCount: 20_001, rangeDocCount: 0,
+                  documentCount: 20_001, volumeCount: 5, termYears: 6, volumesPerAdministrationYear: 10.04,
+                  coverageEarliest: nil, coverageLatest: nil),
+        ]
+        // The five About the Series charts, whose tables state their graph.
+        let stated: [ChartInspectorData] = [
+            ChartInspectorAdapters.regionTotalsTable([
+                .init(region: .europe, volumeCount: 212), .init(region: .eastAsiaPacific, volumeCount: 97)]),
+            ChartInspectorAdapters.topCountriesTable(
+                [.init(slug: "soviet-union", volumeCount: 68), .init(slug: "china", volumeCount: 41)],
+                displayName: { $0 == "china" ? "China" : "Soviet Union" }),
+            ChartInspectorAdapters.compositionTable([
+                .init(category: .centralDecimalFile, noteCount: 135_668, share: 0.52),
+                .init(category: .lotFile, noteCount: 40_112, share: 0.154)]),
+            ChartInspectorAdapters.administrationDocumentsTable(profiles),
+            ChartInspectorAdapters.administrationVolumesPerYearTable(profiles),
+        ]
+        var checked = 0
+        for table in stated {
+            let graph = try #require(table.audioGraph, "\(table.id) states no graph")
+            let descriptor = try #require(AXChartDescriptorBuilder.descriptor(title: table.title, graph: graph),
+                                          "\(table.id) builds no descriptor")
+            let listed = try categories(descriptor)
+            for point in held(descriptor).joined() {
+                #expect(point.category == point.label, "\(table.id): \(point)")
+                #expect(listed.contains(point.category), "\(table.id): the axis does not list \(point.category)")
+                checked += 1
+            }
+        }
+        #expect(checked == 10, "ten bars in five tables, checked \(checked)")
+
+        // Person Analytics' ranking, read by the columns its chart states.
+        let people = AnalyticsChartTables.personRankingTable(
+            title: "Most-Mentioned People",
+            rows: [(rollupId: 7, name: "Kissinger, Henry", axisLabel: "Kissinger, Henry", mentions: 3_200),
+                   (rollupId: 9, name: "Rusk, Dean", axisLabel: "Rusk, Dean", mentions: 2_100)])
+        let ranked = try #require(AXChartDescriptorBuilder.points(from: people, labelColumn: 2, valueColumn: 4))
+        let ranking = try #require(AXChartDescriptorBuilder.descriptor(
+            title: people.title, xLabel: "Person", yLabel: "Mentions", points: ranked))
+        #expect(try categories(ranking) == ["Kissinger, Henry", "Rusk, Dean"])
+        #expect(held(ranking).first?.map(\.category) == ["Kissinger, Henry", "Rusk, Dean"])
+    }
+}
 #endif

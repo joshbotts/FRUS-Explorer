@@ -9905,7 +9905,9 @@ public actor IndexingPipeline {
     /// | All other cases | Returns empty result | — |
     ///
     /// Only documents from already-indexed volumes appear. The result is ordered
-    /// by volume identifier then document identifier.
+    /// by volume identifier, then by document number (``relatedDocumentOrderSQL``, #1643). Under
+    /// `.stratified`, a result that is cut at its limit is instead one document from each volume
+    /// in turn, each volume's lowest-numbered first (``stratifyByVolume(_:limit:)``).
     ///
     /// - Parameters:
     ///   - parsed: The parsed source note driving the query.
@@ -10776,7 +10778,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -10804,7 +10806,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -10838,7 +10840,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -10892,7 +10894,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -10974,7 +10976,7 @@ public actor IndexingPipeline {
                 ON dd.volume_id = ds.volume_id AND dd.document_id = ds.document_id
             WHERE ds.citation_era IN ('decimal', 'subject_numeric')
                 AND (ds.series_name = ? OR ds.series_name LIKE ? OR ds.series_name LIKE ?)\(ex.clause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         let stmt = try auxPrepare(sql)
@@ -11087,7 +11089,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -11285,7 +11287,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -11324,7 +11326,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(whereClause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         return try runRelatedQuery(
@@ -11660,7 +11662,7 @@ public actor IndexingPipeline {
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
             WHERE \(match.clause)
-            ORDER BY ds.volume_id, ds.document_id
+            ORDER BY \(Self.relatedDocumentOrderSQL)
             LIMIT ?
             """
         let r = try runRelatedQuery(
@@ -11676,18 +11678,93 @@ public actor IndexingPipeline {
         return (scoped.documents, scoped.totalCount, basis)
     }
 
-    /// Shared executor for COUNT + SELECT related-document queries.
+    /// The order every archival neighbour query returns its rows in: by volume, and inside a
+    /// volume by document NUMBER, `d73` before `d292` (#1643).
+    ///
+    /// ## Why it is not `ds.document_id`
+    /// A document id is text, and text order puts `d292` before `d73`: "Archival Neighbors –
+    /// Central files POL" listed 1961–1963, vol. III as 126, 196, 198, 199, 218, 219, 233, 235,
+    /// 292, 73, 86. Each of these queries also cuts its rows with a `LIMIT`, so the text order
+    /// chose which documents a long list showed as well: a volume's `d1`, `d10`, `d100`, `d101`.
+    /// Sorting the list where it is drawn would have put that selection in order and left it the
+    /// same selection. So the order is here, where the cut is made, and every surface that lists
+    /// these rows has it.
+    ///
+    /// ## What it reads
+    /// An id is letters, a number, and sometimes more letters and a second number: `d73`,
+    /// `d522a`, `d710a-103`, `bl_d19`, `appendix-11`. The terms, in order: the letters before the
+    /// first number, as text; that number, as a number; the letters after it, as text; the
+    /// second number; and the id itself, which settles whatever the first four leave equal.
+    /// Measured over a full index built 2026-10-08 (553 volumes, 316,768 ids in
+    /// `document_cache`): every id is made of ASCII letters, digits, `_` and `-`, none starts with
+    /// a digit, and none has a third number.
+    ///
+    /// It is number order, and not the order the volume prints its documents in, which no column
+    /// holds (`readingSequence(forVolume:)` walks the volume's stored structure, and a row's
+    /// `rowid` is its place among the rows this device happened to write). Over that index's
+    /// 264,575 source-note rows the two agree for every `d`-numbered document: 263,999 rows in
+    /// 501 volumes, none out of place, where text order had 262,210 of them out of place in 483
+    /// volumes. The other 576 rows, in twelve volumes, stand where text order put them beside
+    /// the documents. An appendix (`appendix-1`, `appA`; 39 rows in ten volumes) sorts before the
+    /// documents and one front-matter message after them, each by its letters; and a microfiche
+    /// supplement whose ids all carry a country prefix (`bl_d1`, `eta_d1`; 536 rows) lists its
+    /// sections in the order of the prefixes, each section now by number.
+    ///
+    /// ## What #645's stratified cut draws
+    /// ``RelatedPoolOrdering/stratified`` reads its whole container whatever the order, and takes
+    /// one document from each volume in turn, so it reaches the volumes it reached and takes as
+    /// many from each. Which of a volume's documents it takes follows this order: the
+    /// lowest-numbered first, where it took the first in text order.
+    ///
+    /// ## What it costs
+    /// A query whose rows came off the table's key in this order could stop at its limit; it now
+    /// reads every match and sorts. Timed with the `sqlite3` shell on the same index, on the M5
+    /// MacBook, after the `COUNT(*)` each query runs first: the capped list for Nixon's NSC Files
+    /// (7,069 rows, the largest container) takes 49 ms where it took 3; the Johnson National
+    /// Security File (3,911) 40 where it took 31; the `POL` class family (4,556) 41 where it took
+    /// 32; decimal file 893.00 (4,470, always read whole) 27 where it took 16; and lot 54 D 270
+    /// (1,063), which sorted before, 3 where it took under 1.
+    ///
+    /// `nonisolated static`, so `ArchivalNeighbourOrderTests` can sort ids by the text the
+    /// queries run.
+    nonisolated static let relatedDocumentOrderSQL: String = {
+        let id = "ds.document_id"
+        let letters = "'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-'"
+        // What is left of the id after its leading letters, after its first number, and after
+        // the letters that follow that number: "73", "", "" for `d73`; "710a-103", "a-103" and
+        // "103" for `d710a-103`.
+        let fromFirstNumber = "LTRIM(\(id), \(letters))"
+        let afterFirstNumber = "LTRIM(\(fromFirstNumber), '0123456789')"
+        let fromSecondNumber = "LTRIM(\(afterFirstNumber), \(letters))"
+        /// The part of `whole` that comes before `rest`, its tail.
+        func head(of whole: String, before rest: String) -> String {
+            "SUBSTR(\(whole), 1, LENGTH(\(whole)) - LENGTH(\(rest)))"
+        }
+        return [
+            "ds.volume_id",
+            head(of: id, before: fromFirstNumber),
+            "CAST(\(fromFirstNumber) AS INTEGER)",
+            head(of: afterFirstNumber, before: fromSecondNumber),
+            "CAST(\(fromSecondNumber) AS INTEGER)",
+            id,
+        ].joined(separator: ", ")
+    }()
+
     /// Re-cuts a fetched pool to `limit` by taking one document from each volume in turn.
     ///
     /// Order within a volume is preserved, so the result is deterministic — the queries already
-    /// sort by `(volume_id, document_id)` and this only interleaves them. A container that spans
-    /// one volume comes back unchanged.
+    /// sort by volume and document number (``relatedDocumentOrderSQL``) and this only interleaves
+    /// them, so each volume gives its lowest-numbered documents first. A container that spans one
+    /// volume comes back unchanged.
     ///
     /// Done in Swift rather than as a SQL window function on purpose. Measured on the owner's
-    /// index, full-fetch-plus-Swift versus `ROW_NUMBER()`: decimal 893.00 **25.4 ms vs 258.3 ms**
-    /// cold, lot 54D270 1.9 vs 3.3, NSC Files 52.6 vs 52.5 — equal or better everywhere. It also
-    /// forces no new sort: `relatedByPresidentialLibrary` today plans as a bare index scan with no
-    /// sort step, and a window function would add a co-routine and a temp b-tree.
+    /// index for #645, full-fetch-plus-Swift versus `ROW_NUMBER()`: decimal 893.00 **25.4 ms vs
+    /// 258.3 ms** cold, lot 54D270 1.9 vs 3.3, NSC Files 52.6 vs 52.5 — equal or better
+    /// everywhere. A second reason held then and does not now: `relatedByPresidentialLibrary`
+    /// planned as a bare index scan with no sort step, and a window function would have added a
+    /// co-routine and a temp b-tree. Since #1643 every one of these queries sorts its rows by
+    /// document number (``relatedDocumentOrderSQL`` has what that costs), and the comparison with
+    /// a window function was not measured again.
     static func stratifyByVolume(_ documents: [RelatedDocument], limit: Int) -> [RelatedDocument] {
         guard limit > 0, documents.count > limit else { return Array(documents.prefix(max(0, limit))) }
         var byVolume: [String: [RelatedDocument]] = [:]
@@ -11712,6 +11789,7 @@ public actor IndexingPipeline {
         return result
     }
 
+    /// Shared executor for COUNT + SELECT related-document queries.
     private func runRelatedQuery(
         countSQL: String,
         selectSQL: String,
@@ -12250,12 +12328,20 @@ public struct IndexedSearchRow: Sendable {
 /// are distributed 1 / 24 / 95 / 0 / 0 — the 434 documents in `frus1946v10` are unreachable by any
 /// scorer, for any anchor, ever.
 ///
+/// ## Inside a volume (#1643)
+/// Both orderings are about VOLUMES: which of them a cut reaches. Inside a volume the queries
+/// put documents in number order since #1643 (`IndexingPipeline.relatedDocumentOrderSQL`), where
+/// they had them in the text order of their ids, `d292` before `d73`. That changes neither
+/// ordering's reach. It changes which of a volume's documents a cut keeps: the lowest-numbered,
+/// where it kept the first in text order (`d1`, `d10`, `d100`).
+///
 /// Version history:
 ///   1.0 — #645: initial implementation
+///   1.1 — 2026-10-12: #1643 — "Inside a volume"; no case and no caller changes
 public enum RelatedPoolOrdering: Sendable {
 
-    /// Keep the query's own `(volume_id, document_id)` order. The default, and the right answer
-    /// for every anchorless finding-aid caller.
+    /// Keep the query's own order: volumes by id, and each volume's documents by number. The
+    /// default, and the right answer for every anchorless finding-aid caller.
     case alphabetical
 
     /// Round-robin across volumes, so the pool is a *representative* slice of the container rather

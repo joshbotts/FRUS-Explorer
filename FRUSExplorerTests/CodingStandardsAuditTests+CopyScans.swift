@@ -108,6 +108,8 @@ import Foundation
 ///         `referenceListOpenItemSharesTheNodeMenuName` (#1481)
 ///   1.12 — FRUSCoreKit, part 1: the scans read `FRUSCoreKit/` too, whose files both app targets
 ///         compile and whose strings the app shows; `lexedAppSources` names them `../FRUSCoreKit/…`
+///   1.13 — 2026-10-12: #1643 — six baseline entries gone: the Archival network dock's partner
+///         sentence and Browse ▸ Archives' five "docs" counts
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -837,7 +839,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 286
+    static let countCopyBaselineCeiling = 280
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -878,7 +880,10 @@ extension CodingStandardsAuditTests {
     /// views nothing constructed, each with one listed string: `GlobalContextView`'s documents-accessed
     /// label and `PromptsListView`'s summary count (#1484). Related Documents took it to 290 and then
     /// 286: its pool-cut footer (#1586), and the four counts of its Beyond your library section, which
-    /// go through `CountCopy` in `RelatedDocumentsCounts` (#1618).
+    /// go through `CountCopy` in `RelatedDocumentsCounts` (#1618). #1643 took it to 280: the Archival
+    /// network dock's partner sentence, which sits beside the two that issue names and has their gap
+    /// ("1 collections share"), and Browse ▸ Archives' five: the count beside a class row and the two
+    /// accessories of each drill list, which `ArchivesAxis.volumeAccessory` writes now.
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
@@ -915,7 +920,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalFlowsView.swift | archival.flows.none.detail %@ %lld %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.picker.caption %@ %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.top.a11y %@ %@ %lld"#,
-        #"Analytics/ArchivalNetworkView.swift | archival.network.dock.grain %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
@@ -967,13 +971,8 @@ extension CodingStandardsAuditTests {
         #"Browser/AdministrationIndexView.swift | browser.administrations.row.a11y"#,
         #"Browser/AdministrationIndexView.swift | browser.administrations.row.docs"#,
         #"Browser/AdministrationIndexView.swift | browser.administrations.row.volumes"#,
-        #"Browser/ArchivesBrowseView.swift | browser.archives.accessory"#,
-        #"Browser/ArchivesBrowseView.swift | browser.archives.accessory.plain"#,
-        #"Browser/ArchivesBrowseView.swift | browser.archives.classes.count"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.coverage"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.drill.caption"#,
-        #"Browser/ArchivesClassAxis.swift | browser.archives.accessory"#,
-        #"Browser/ArchivesClassAxis.swift | browser.archives.accessory.plain"#,
         #"Browser/ClustersBrowseView.swift | browser.clusters.caption"#,
         #"Browser/ClustersBrowseView.swift | browser.clusters.paging"#,
         #"Browser/ClustersBrowseView.swift | browser.clusters.row.a11y"#,

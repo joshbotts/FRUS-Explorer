@@ -2044,3 +2044,152 @@ struct WordCloudPlateAppearanceTests {
                 "the plate drew differently in dark appearance: its credit or its words follow the device")
     }
 }
+
+
+// MARK: - LanguageAnalysisRecordCopyTests (#1608)
+
+/// What **Copy Language Analysis Record** puts on the clipboard, and that the row's button copies
+/// it (#1608).
+///
+/// The release log holds the language check's lines and a phone does not keep them: read from a
+/// collection of 2026-10-11, the owner's iPhone held the app's own lines for about nine hours. The
+/// button copies the same lines from the process itself, under the build and the system that
+/// wrote them, so a tester can paste them into a report.
+///
+/// The text is built by ``LanguageAnalysisRecordReport`` from values, so it is tested whole here.
+/// What the button does when pressed is a SwiftUI action no unit test can press: the scan below
+/// holds it to the report and to both platforms' clipboards, and the press itself was made on a
+/// simulator, where `simctl pbpaste` read the text back (the pull request says what it held).
+///
+/// Version history:
+///   1.0 — 2026-10-12: #1608 — initial implementation
+struct LanguageAnalysisRecordCopyTests {
+
+    /// Four hours behind UTC, whatever the host's zone.
+    private static let zone = TimeZone(secondsFromGMT: -4 * 3600)!
+    /// 2026-10-12T03:44:26.875Z, a fraction a `Double` holds exactly.
+    private static let start = Date(timeIntervalSince1970: 1_791_776_666.875)
+
+    private static let iPhone = LanguageAnalysisRecordReport.Environment(
+        appVersion: "0.2", appBuild: "50", system: "iOS Version 27.0.1 (Build 24A123)",
+        deviceModel: "iPhone18,1")
+
+    /// The owner's own record of 2026-10-11, to the same millisecond pattern.
+    private static let started = "warm-up started; trigger=firstForeground app=active age=2897.136s"
+    private static let verdict = "verdict trigger=firstForeground app=active age=2897.136s took=30.141s "
+        + "listed=[Language,Script,TokenType] assets LexicalClass=available@0.105s NameType=available@0.005s "
+        + "Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false classes=true names=true"
+
+    @Test("The report names the build and the system, the time it was copied, and each line with its time")
+    func reportText() {
+        var record = NaturalLanguageReadiness.SessionRecord()
+        record.append(.init(date: Self.start, text: Self.started))
+        record.append(.init(date: Self.start.addingTimeInterval(30.25), text: Self.verdict))
+        let text = LanguageAnalysisRecordReport.text(
+            record: record, environment: Self.iPhone,
+            copiedAt: Self.start.addingTimeInterval(167.125), timeZone: Self.zone)
+        #expect(text == """
+            FRUS Explorer — language analysis
+            app: 0.2 (50)
+            system: iOS Version 27.0.1 (Build 24A123)
+            device: iPhone18,1
+            copied: 2026-10-11T23:47:14.000-04:00
+            record:
+              2026-10-11T23:44:26.875-04:00 \(Self.started)
+              2026-10-11T23:44:57.125-04:00 \(Self.verdict)
+            """)
+    }
+
+    @Test("Each line of the record is the line the release log wrote, unchanged")
+    func linesAreTheLogsOwn() {
+        // Built from the real events through the real `logLine(for:)`, as `record(_:)` keeps them.
+        let warmUp = NaturalLanguageWarmUp(
+            trigger: .recheck, applicationState: .active, schemesListed: ["Language", "Script", "TokenType"],
+            assetRequests: [.init(scheme: "Lemma", answer: .timedOut, seconds: 30.004)],
+            seconds: 30.01, processAge: 3353.5, withheld: ["Lemma"])
+        let events: [NaturalLanguageReadiness.Event] = [
+            .started(.firstForeground, .active, processAge: 2897.136),
+            .rechecked(warmUp, found: nil, adopted: false),
+        ]
+        var record = NaturalLanguageReadiness.SessionRecord()
+        for (offset, event) in events.enumerated() {
+            record.append(.init(date: Self.start.addingTimeInterval(Double(offset)),
+                                text: NaturalLanguageReadiness.logLine(for: event)))
+        }
+        let lines = LanguageAnalysisRecordReport.text(
+            record: record, environment: Self.iPhone, copiedAt: Self.start, timeZone: Self.zone)
+            .components(separatedBy: "\n")
+        #expect(lines.count == 8)
+        #expect(lines[6] == "  2026-10-11T23:44:26.875-04:00 " + NaturalLanguageReadiness.logLine(for: events[0]))
+        #expect(lines[7] == "  2026-10-11T23:44:27.875-04:00 " + NaturalLanguageReadiness.logLine(for: events[1]))
+        #expect(lines[7].hasSuffix("canary not run, every missing scheme's request is unanswered; kept the earlier verdict"))
+    }
+
+    @Test("A session with no line yet copies a report that says so")
+    func anEmptyRecordSaysSo() {
+        let text = LanguageAnalysisRecordReport.text(
+            record: .init(), environment: Self.iPhone, copiedAt: Self.start, timeZone: Self.zone)
+        #expect(text.components(separatedBy: "\n") == [
+            "FRUS Explorer — language analysis",
+            "app: 0.2 (50)",
+            "system: iOS Version 27.0.1 (Build 24A123)",
+            "device: iPhone18,1",
+            "copied: 2026-10-11T23:44:26.875-04:00",
+            "record: no line written yet in this session",
+        ])
+    }
+
+    @Test("A record that dropped lines says how many, where they were")
+    func droppedLinesAreCounted() {
+        typealias Record = NaturalLanguageReadiness.SessionRecord
+        var record = Record()
+        for index in 0..<(Record.capacity + 3) {
+            record.append(.init(date: Self.start.addingTimeInterval(Double(index)), text: "line \(index)"))
+        }
+        let lines = LanguageAnalysisRecordReport.text(
+            record: record, environment: Self.iPhone, copiedAt: Self.start, timeZone: Self.zone)
+            .components(separatedBy: "\n")
+        // Five lines above the record, its heading, the kept lines and the one that counts.
+        #expect(lines.count == 6 + Record.capacity + 1)
+        #expect(lines[6 + Record.leadingLinesKept] == "  (3 lines written between these were not kept)")
+        #expect(lines.last?.hasSuffix(" line \(Record.capacity + 2)") == true)
+    }
+
+    @Test("This process's own environment names the app's build and the system it runs on")
+    @MainActor
+    func theCurrentEnvironment() throws {
+        let environment = LanguageAnalysisRecordReport.Environment.current
+        let build = try #require(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String)
+        let version = try #require(
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String)
+        #expect(environment.appBuild == build)
+        #expect(environment.appVersion == version)
+        #expect(environment.system.hasSuffix(ProcessInfo.processInfo.operatingSystemVersionString))
+        #expect(environment.system.count > ProcessInfo.processInfo.operatingSystemVersionString.count + 1,
+                "the system has a version and no name: \(environment.system)")
+        #expect(!environment.deviceModel.isEmpty)
+    }
+
+    @Test("The row's button copies the session's record, on the clipboard of each platform")
+    func theButtonCopiesTheRecord() throws {
+        typealias Scan = NaturalLanguageReadinessScanTests
+        func squeezed(_ text: some StringProtocol) -> String {
+            String(text.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
+                .map(Character.init))
+        }
+        let source = Scan.code(try String(contentsOf:
+            Scan.repoRoot.appending(path: "FRUSExplorer/Settings/DataRecoveryView.swift"), encoding: .utf8))
+        let row = try #require(source.range(of: "struct LanguageAnalysisRow: View {"))
+        // The row's body holds the button, and the button's action is the copy.
+        let body = try #require(Scan.braceBody(in: source, after: row.upperBound))
+        #expect(squeezed(source[body]).contains("Button{copyRecord()}label:{Label(didCopy?Self.copiedLabel:Self.copyLabel,"),
+                "LanguageAnalysisRow's body no longer holds the Copy button")
+        // The copy reads the kit's record of this process and writes it where each platform pastes from.
+        let declared = try #require(source.range(of: "private func copyRecord()", range: row.upperBound..<source.endIndex))
+        let copy = squeezed(source[try #require(Scan.braceBody(in: source, after: declared.upperBound))])
+        #expect(copy.contains("LanguageAnalysisRecordReport.text(record:NaturalLanguageReadiness.sessionRecord,environment:.current)"))
+        #expect(copy.contains("UIPasteboard.general.string=text"))
+        #expect(copy.contains("NSPasteboard.general.setString(text,forType:.string)"))
+        #expect(copy.contains("AccessibilityNotification.Announcement(Self.copiedLabel).post()"))
+    }
+}

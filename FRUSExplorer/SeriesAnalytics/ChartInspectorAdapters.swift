@@ -36,6 +36,8 @@ import Foundation
 ///          (`ChartInspectorData.audioGraph`), which VoiceOver's Audio Graph plays. The card
 ///          read columns 0 and 1 of each table: right for five, the publication years for the
 ///          lag chart, and nothing at all for the five whose column 1 is a name
+///   1.5 — 2026-10-12: #1617 — the two administration graphs name each bar by
+///          `administrationGraphLabels(_:)`, which tells Grover Cleveland's two terms apart
 enum ChartInspectorAdapters {
 
     // MARK: Audio Graph
@@ -308,6 +310,29 @@ enum ChartInspectorAdapters {
 
     // MARK: - SA-2b: Administration Profiles
 
+    /// The name each administration's bar has in its Audio Graph (#1617): the president's name,
+    /// and the year the term began where another administration in the table has the same name.
+    ///
+    /// Grover Cleveland's two terms were not consecutive, so the series has two administrations
+    /// under one name, and the shipped index populates both. A categorical Audio Graph names
+    /// each point by its category, so under the name alone the two bars were one category. The
+    /// chart's own axis tells them apart the same way, by the year
+    /// (`AdministrationProfilesDashboard.axisLabels(for:)`: "Cleveland 1885", "Cleveland 1893").
+    ///
+    /// The table's own President column is not changed: it prints the name, as it did.
+    ///
+    /// - Parameter profiles: The administrations the chart draws, in its order.
+    /// - Returns: One name for each, in the same order.
+    static func administrationGraphLabels(_ profiles: [AdministrationProfilesData.Profile]) -> [String] {
+        var count: [String: Int] = [:]
+        for profile in profiles { count[profile.president, default: 0] += 1 }
+        return profiles.map { profile in
+            count[profile.president, default: 0] > 1
+                ? "\(profile.president) \(profile.start.prefix(4))"
+                : profile.president
+        }
+    }
+
     /// The documents-per-administration bars' table: one row per populated
     /// administration.
     ///
@@ -330,7 +355,9 @@ enum ChartInspectorAdapters {
             audioGraph: categoricalGraph(
                 title: title,
                 xLabel: columns[0], yLabel: columns[2],
-                points: profiles.map { (label: $0.president, y: Double($0.documentCount)) })
+                points: zip(administrationGraphLabels(profiles), profiles).map {
+                    (label: $0, y: Double($1.documentCount))
+                })
         )
     }
 
@@ -357,8 +384,8 @@ enum ChartInspectorAdapters {
             audioGraph: categoricalGraph(
                 title: title,
                 xLabel: columns[0], yLabel: columns[2],
-                points: profiles.map {
-                    (label: $0.president, y: ($0.volumesPerAdministrationYear * 10).rounded() / 10)
+                points: zip(administrationGraphLabels(profiles), profiles).map {
+                    (label: $0, y: ($1.volumesPerAdministrationYear * 10).rounded() / 10)
                 })
         )
     }
