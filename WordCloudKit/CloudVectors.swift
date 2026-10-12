@@ -218,8 +218,17 @@ public struct CloudVectorsFile: Codable, Sendable, Equatable {
 /// artifact was built under and ``Configuration/mismatches(against:includeDiplomatic:lexiconsDigest:stopwordsDigest:)``
 /// is how a caller refuses rather than reports that.
 ///
+/// ## Two files, one for each form a word is counted in (#1608)
+/// `keyness-baseline.json` holds dictionary forms, and `keyness-baseline-printed.json` the same
+/// corpus counted as printed (``WordCloudWordForm``), for a launch whose language analysis has no
+/// lemmatiser: its scope is counted as printed, and a printed form scored against dictionary-form
+/// counts is the cross-vocabulary error described above, one step nearer home. Both files come out
+/// of one generator pass, with the same stamp and provenance, and each says which it is in
+/// ``Configuration/wordForm``. ``resourceName(for:)`` is the one place the two names are written.
+///
 /// Version history:
 ///   1.0 — S-1: initial implementation
+///   1.1 — #1608: ``Configuration/wordForm`` and ``resourceName(for:)``; the printed-form file
 public struct KeynessBaselineFile: Codable, Sendable, Equatable {
 
     /// Schema version.
@@ -254,14 +263,48 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         public let lexiconsDigest: String
         /// SHA-256 of the stopword payload every lens was filtered by.
         public let stopwordsDigest: String
+        /// The form the counts are in (#1608). A scope counted in the other form is a different
+        /// vocabulary, whatever its settings: the app picks the file by this, and never offers a
+        /// file to a scope counted the other way.
+        public let wordForm: WordCloudWordForm
 
         /// Creates a configuration stamp.
+        /// - Parameters:
+        ///   - tuning: The tuning the generator ran at.
+        ///   - includeDiplomatic: Whether the diplomatic stopword layer was active.
+        ///   - lexiconsDigest: SHA-256 of the lexicon payload.
+        ///   - stopwordsDigest: SHA-256 of the stopword payload.
+        ///   - wordForm: The form the counts are in. Default `.dictionary`, the form every
+        ///     reference had before #1608.
         public init(tuning: WordCloudTuning, includeDiplomatic: Bool,
-                    lexiconsDigest: String, stopwordsDigest: String) {
+                    lexiconsDigest: String, stopwordsDigest: String,
+                    wordForm: WordCloudWordForm = .dictionary) {
             self.tuning = tuning
             self.includeDiplomatic = includeDiplomatic
             self.lexiconsDigest = lexiconsDigest
             self.stopwordsDigest = stopwordsDigest
+            self.wordForm = wordForm
+        }
+
+        /// Decodes a stamp. One written before #1608 has no `wordForm` and was counted in
+        /// dictionary forms, the only form there was; every file written since says its own.
+        public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            tuning = try container.decode(WordCloudTuning.self, forKey: .tuning)
+            includeDiplomatic = try container.decode(Bool.self, forKey: .includeDiplomatic)
+            lexiconsDigest = try container.decode(String.self, forKey: .lexiconsDigest)
+            stopwordsDigest = try container.decode(String.self, forKey: .stopwordsDigest)
+            wordForm = try container.decodeIfPresent(WordCloudWordForm.self, forKey: .wordForm)
+                ?? .dictionary
+        }
+
+        /// The same stamp for the counts of another form. The two references of one run differ in
+        /// nothing else.
+        /// - Parameter wordForm: The form the other counts are in.
+        public func counted(as wordForm: WordCloudWordForm) -> Configuration {
+            Configuration(tuning: tuning, includeDiplomatic: includeDiplomatic,
+                          lexiconsDigest: lexiconsDigest, stopwordsDigest: stopwordsDigest,
+                          wordForm: wordForm)
         }
 
         /// A way in which a scope's tokenisation makes it incomparable to this reference.
@@ -284,6 +327,12 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
 
         /// Every way the given scope tokenisation is incomparable to this reference. Empty means
         /// the division is legitimate.
+        ///
+        /// It does not ask what form the scope was counted in: that is not a setting a reader can
+        /// restore, and the app never brings a scope to a reference of the other form
+        /// (``wordForm``). The plural fold is compared for both forms. In a printed count it is the
+        /// only thing that joins `treaties` to `treaty`, so a scope that folds differently from a
+        /// printed reference is incomparable in every plural, not only in the lemmatiser's gaps.
         ///
         /// The test is deliberately **asymmetric**, because the two directions are not equally
         /// harmful. A scope setting that only *removes* terms — a higher `minimumLength`, a higher
@@ -351,5 +400,17 @@ public struct KeynessBaselineFile: Codable, Sendable, Equatable {
         self.termsPerLens = termsPerLens
         self.configuration = configuration
         self.lenses = lenses
+    }
+
+    /// The bundled resource that holds the reference counted in `wordForm`, without its `.json`
+    /// (#1608). The generator writes these names and the app reads them, through this one
+    /// declaration.
+    /// - Parameter wordForm: The form the reference is counted in.
+    /// - Returns: `keyness-baseline`, or `keyness-baseline-printed`.
+    public static func resourceName(for wordForm: WordCloudWordForm) -> String {
+        switch wordForm {
+        case .dictionary: return "keyness-baseline"
+        case .printed: return "keyness-baseline-printed"
+        }
     }
 }

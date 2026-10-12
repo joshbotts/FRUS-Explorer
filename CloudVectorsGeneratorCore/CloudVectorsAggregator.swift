@@ -43,6 +43,7 @@ import WordCloudKit
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation
+///   1.1 — #1608: `pack` also writes the keyness reference counted as printed
 public struct CloudVectorsAggregator: Sendable {
 
     /// The scope key used for the whole-corpus vectors.
@@ -99,6 +100,9 @@ public struct CloudVectorsAggregator: Sendable {
         public let volumes: CloudVectorsFile
         /// The corpus keyness baseline (S-1) — the reference side of a keyness comparison.
         public let keynessBaseline: KeynessBaselineFile
+        /// The same reference counted as printed (#1608), for a scope counted on a launch with no
+        /// lemmatiser. Cut by the same rule, and carrying the same stamp and provenance.
+        public let printedKeynessBaseline: KeynessBaselineFile
     }
 
     /// The lenses carried, in cycle order.
@@ -123,9 +127,15 @@ public struct CloudVectorsAggregator: Sendable {
     ///   - configuration: The full tokenisation stamp the keyness baseline pins itself to. Defaults
     ///     to `tuning` with the diplomatic layer on and no payload digests, which is the right shape
     ///     for a unit test but **not** for a shipped artifact — the runner passes real digests.
+    ///     Each baseline takes it with its own word form, whatever form it names.
+    ///   - printedCorpus: Lens → term → occurrences across the whole corpus, counted as printed
+    ///     (#1608) — the printed tally of the pass that produced `volumes`. Required, with no
+    ///     default: an omitted tally would write a reference that prices nothing, and every scope
+    ///     counted as printed would be told its lens has no reference.
     public func pack(volumes: [VolumeCounts], generated: String,
                      tuning: WordCloudTuning,
-                     configuration: KeynessBaselineFile.Configuration? = nil) -> Output {
+                     configuration: KeynessBaselineFile.Configuration? = nil,
+                     printedCorpus: [WordCloudLens: [String: Int]]) -> Output {
         // ── Roll up. Sum raw counts; never sum truncated lists. ──
         var bySubseries: [String: [WordCloudLens: [String: Int]]] = [:]
         var corpus: [WordCloudLens: [String: Int]] = [:]
@@ -152,17 +162,22 @@ public struct CloudVectorsAggregator: Sendable {
         var volumeScopes: [String: [WordCloudLens: [String: Int]]] = [:]
         for volume in volumes { volumeScopes[volume.volumeId] = volume.counts }
 
+        let stamp = configuration ?? .init(tuning: tuning, includeDiplomatic: true,
+                                           lexiconsDigest: "", stopwordsDigest: "")
         return Output(
             core: file(scopes: coreScopes, generated: generated, provenance: provenance),
             volumes: file(scopes: volumeScopes, generated: generated, provenance: provenance),
             keynessBaseline: baseline(
                 corpus: corpus, generated: generated, provenance: provenance,
-                configuration: configuration ?? .init(tuning: tuning, includeDiplomatic: true,
-                                                      lexiconsDigest: "", stopwordsDigest: ""))
+                configuration: stamp.counted(as: .dictionary)),
+            printedKeynessBaseline: baseline(
+                corpus: printedCorpus, generated: generated, provenance: provenance,
+                configuration: stamp.counted(as: .printed))
         )
     }
 
-    /// Builds the keyness baseline from the **untruncated** corpus roll-up.
+    /// Builds a keyness baseline from an **untruncated** corpus roll-up — the dictionary-form one,
+    /// or the tally counted as printed (#1608). The form is `configuration`'s.
     ///
     /// Deliberately fed `corpus` before the top-50 truncation the cloud files apply — the whole
     /// point of this artifact is the terms a fifty-word cloud leaves out.

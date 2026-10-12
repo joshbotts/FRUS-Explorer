@@ -47,11 +47,13 @@ import os
 ///   1.0 — #1373: initial implementation
 ///   1.1 — #1539: ``improves(on:)``, the rule a re-check's verdict must pass to replace this one
 ///   1.2 — #1539 review round 1: ``works(_:)``, the capability a tag scheme provides
+///   1.3 — #1608: ``wordForm``, the form a word lens counts in under this verdict
 public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
 
     /// The lemmatiser reduced at least one word of the canary sentence to a different dictionary
     /// form ("informed" → "inform"). Without it every lens counts words as printed, and those
-    /// counts are not comparable with the bundled keyness reference, which was counted in lemmas.
+    /// counts are comparable only with the reference counted as printed (``wordForm``, #1608), not
+    /// with the one counted in lemmas.
     public let lemmatizes: Bool
 
     /// The lexical-class tagger found a noun in the canary sentence. The Topics, Actions and
@@ -130,12 +132,22 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
     /// Stricter than ``supports(_:)`` for the word lenses, which also read the lemmatiser. A word
     /// cloud counted without lemmas is a true count of printed forms, but it is not what the same
     /// scope yields on a device whose lemmatiser works, so it must not be cached for another
-    /// process to reuse, and it is not comparable with the bundled keyness reference, which was
-    /// counted in lemmas — `negotiations` would score as a word the corpus never used. The entity
-    /// lenses do not lemmatise, so for them this is ``supports(_:)``.
+    /// process to reuse, and it is not comparable with the keyness reference counted in lemmas —
+    /// `negotiated` would score as a word the corpus never used. It is comparable with the
+    /// reference counted as printed (``wordForm``, #1608). The entity lenses do not lemmatise, so
+    /// for them this is ``supports(_:)``.
     public func countsAsDesigned(for lens: WordCloudLens) -> Bool {
         supports(lens) && (lens.isEntity || lemmatizes)
     }
+
+    /// The form a word lens counts in under this verdict (#1608): dictionary forms when the
+    /// lemmatiser works, and printed forms when it does not.
+    ///
+    /// A surface reads the verdict once, takes the form from it, and gives that one value to its
+    /// tokenizer and to its reference lookup, so the two sides of a comparison are counted the same
+    /// way whatever the lemmatiser does while the count runs. The entity lenses read no lemma and
+    /// are the same under either.
+    public var wordForm: WordCloudWordForm { lemmatizes ? .dictionary : .printed }
 }
 
 // MARK: - NaturalLanguageWarmUp
