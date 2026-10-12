@@ -136,19 +136,47 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     documents that give a `Planning/` root path (`Plan-Of-Record-2026-08-23.md` twice,
     `Plan-Of-Record-2026-09-06.md`, and the Archive Visit hand-off's `README.md` and
     `PROVENANCE.md`).
+- **The 2026-10-11 move (2 documents)** — moved with the plan of record that replaced the
+  2026-09-28 one, on the owner's word. **Residue is carried by the live plan**, in its §3 and §5.
+  - **The superseded plan of record**: `Plan-Of-Record-2026-09-28.md` (superseded 2026-10-11).
+    It is the record of the build-49 wave (its fifty issues, in fifteen lanes, with lanes PLAN,
+    OH and CFPF after them), the week's queue of 2026-10-09, #1576, the first three lanes of
+    #1577 and the index bump to version 69. The live
+    plan points into its §0a, §4 and §4a for the full text of what it carries from that wave.
+  - **A built feature's assessment**: `Issue-1576-Bulk-Actions-Assessment.md` (#1576, closed
+    2026-10-11; six lanes, #1627 to #1632). Its head says where the lanes departed from it.
+  - **Not moved, and why.** `Index-Bump-Brief-2026-10-11.md` is complete and stays at the
+    `Planning/` root, because `FRUSCoreKit/Search/IndexingPipeline.swift` cites it by that path
+    in four places; its head says so. `Issue-1577-Search-Within-Results-Assessment.md` stays
+    because #1577's lanes 4 to 7 are not built.
+  - **Pointers to these files.** The cross-platform review package's `STATUS.md` named the
+    2026-09-28 plan for the parked list and now names the live plan, with the archived path
+    beside it. Dated records were left as written: `DEVELOPMENT-PLAN.md`'s entries (thirteen
+    name the plan and three the assessment at the `Planning/` root), and the two archived
+    documents that name the 2026-09-28 plan as the live one (`Plan-Of-Record-2026-09-06.md`'s
+    status line and `Open-Issues-Resolution-Plan-2026-09-23.md`).
 
-**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-01, by listing the
+**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-11, by listing the
 directory):
-- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-09-28`; every
-  superseded one is in this directory), the log (`DEVELOPMENT-PLAN`), the spec, and
-  `Manual-Revisions-Pending` (the lanes' proposed manual changes, awaiting the owner);
+- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-11`; every
+  superseded one is in this directory), the log (`DEVELOPMENT-PLAN`) and the spec;
+- **the manuals' review** — `Manual-Update-Build-49-Owner-Review` (the worklist for the owner's
+  review, which is not before 2026-10-21) and `Manual-Revisions-Pending` (the lanes' 137
+  proposals of the build-49 wave, which the manual update of 2026-10-07 read and the worklist
+  cites; lanes have edited the manuals themselves since that day);
 - **live plans and runbooks** — `Visual-Marketing-Plan`, `Store-Listing-Draft`, `Capture-Runbook`,
-  `New-Volume-Release-Plan`, `nara-record-group-catalog-runbook`, `Agentic-Harness-Runbook`;
+  `New-Volume-Release-Plan`, `nara-record-group-catalog-runbook`, `Agentic-Harness-Runbook`,
+  `Generators-Runbook` and `UI-Test-Destinations-Runbook` (the two `CLAUDE.md` indexes);
+- **an open feature's assessment** — `Issue-1577-Search-Within-Results-Assessment` (lanes 4 to 7
+  are not built);
+- **the report filed with the Office of the Historian** — `OH-Report-2026-10-01` and its folder
+  of CSVs (HistoryAtState/frus#469, still open; `tools/oh-report/` re-checks it at a commit);
 - **design records that source cites by path or that a live plan reconciles against** —
   `Vector-Embeddings-Semantic-Design` (every phase shipped; four source files cite it),
   `Map-Figure-Export-And-Visual-Outputs` (§1–§6 shipped; the marketing plan carries §7's residue),
   `OS27-Semantic-Retrieval-Design` (workstream A is open), `Lexical-Axis-Addressable-Market`
-  (cited by `SimilarityModel.swift`);
+  (cited by `SimilarityModel.swift`), `Index-Bump-Brief-2026-10-11` (complete; `IndexingPipeline.swift`
+  cites it in four places);
 - **the W-19 agentic-loop program** — `Agentic-Loop-Development-Plan`, `Agentic-Guide-Revisions`,
   the C-0…C-0d and C-2 falsifier records and their run folders (the guide cites them);
 - **deferred programs** — #234's `People-Early-Era-Program`, `M2-Semantic-Pipeline-Ride-Along` and

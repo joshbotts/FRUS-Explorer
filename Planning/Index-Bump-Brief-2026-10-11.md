@@ -1,5 +1,7 @@
 # The index bump after build 49 — brief
 
+**Status: COMPLETE, 2026-10-11.** Its four pull requests merged that day as #1638 (version 66), #1639 (67), #1640 (68) and #1645 (69), after #1637 took #1535 with no bump. Build 50 carries all four. This file stays at the Planning root, where a finished brief would otherwise move to `Completed/`, because `FRUSCoreKit/Search/IndexingPipeline.swift` cites it by this path in four places. "The plan of record" below is `Completed/Plan-Of-Record-2026-09-28.md`, and §0a, §0b and §0c are that plan's sections. What the four pull requests measured and did not build is in `Plan-Of-Record-2026-10-11.md` §5a and §5b.
+
 **Written 2026-10-11**, five days before the date the plan of record gave it (§0c, *Not this week*), because the owner asked for the sessions to begin. It is the brief for the work the plan calls "one index bump": #1535, #1536, #1599 and #1613, with what pull request 4 of §0c handed it and the leftovers §0c listed "for the brief to take or decline".
 
 **Read against** `v2` @ `54506caa`, corpus `99d851c79`, `IndexingPipeline.currentDateIndexVersion` 65. **Measured on** the 553 catalogue volumes' XML at that corpus, and on a full index of them built 2026-10-08 at version 65 (the `iPhone 17e` simulator's `frus.db`, opened read-only; 316,768 rows of `document_cache`). The scripts were scratch files and are not committed; each figure below says which of the two it was read from.

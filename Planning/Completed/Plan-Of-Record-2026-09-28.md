@@ -1,10 +1,12 @@
 # Plan of record — from 2026-09-28
 
+**Status: SUPERSEDED 2026-10-11 by `../Plan-Of-Record-2026-10-11.md`.** Kept as the record of the build-49 wave and of the work between build 49 and 2026-10-11: the week's queue, #1576, the first three lanes of #1577 and the index bump. Do not read its queue, its counts or §0c's *Where the queue stands* as current: three issues were filed after that paragraph was last read (#1646, #1647, #1648), and the new plan's §3 and §5 carry what this one left open. Its paths are as they were at the Planning root; this file and `Issue-1576-Bulk-Actions-Assessment.md` are now in `Completed/`.
+
 **Base:** `v2` @ `07b9b65c` · build 48 shipped 2026-09-27 (tag `build-48` = `d61b53f9`) · index **v62** · rollup **v10**. One PR is open: **#1533**, the docs-only prep for the owner's review.
 
 **Scope.** 49 issues are open. #234 is deferred indefinitely, and #1309 is used only to hold the report to the Office of the Historian. This plan covers the other **47**.
 
-**Status: LIVE — the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG, READ and PLAN of Tier 3 on 2026-10-02; OH's report landed after them and was filed with the Office of the Historian on 2026-10-02; lane CFPF (#1543) was added after Tier 3 on the owner's word; §0a says where the wave stands and what remains.** **§0b and §0c carry it on from build 49, and §0c's *Where the queue stands* is the present state.**
+**While live: the plan of record from 2026-09-28** (owner decision P5). It supersedes `Plan-Of-Record-2026-09-06.md` (in `Completed/` since 2026-10-01). The owner answered every decision in §3 and §3a on 2026-09-28, and §0 gives the result. **WB, Tier 1 and Tier 2 landed on 2026-10-01, and HYG, READ and PLAN of Tier 3 on 2026-10-02; OH's report landed after them and was filed with the Office of the Historian on 2026-10-02; lane CFPF (#1543) was added after Tier 3 on the owner's word; §0a says where the wave stands and what remains.** **§0b and §0c carry it on from build 49, and §0c's *Where the queue stands* is the present state.**
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14. (This is the Visual-Marketing-Plan §7 steps that are done, carried unchanged from the 2026-09-06 plan and checked by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`.)
 
