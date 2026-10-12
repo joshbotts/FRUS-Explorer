@@ -496,6 +496,8 @@ struct CountCopySiteTests {
 /// Version history:
 ///   1.0 — 2026-09-25: #1374 review, round 1
 ///   1.1 — 2026-10-11: #1618 — the three sites of Related Documents' Beyond your library section
+///   1.2 — 2026-10-12: #1643 — six sites: the Archival Network dock's three sentences, the
+///          Browse ▸ Archives class row, and the accessory of both drill lists
 struct CountCopyWiringTests {
 
     private typealias Scan = NaturalLanguageReadinessScanTests
@@ -760,8 +762,11 @@ struct ArchivalOneCountTests {
     @Test("Both drill lists label a volume that holds one such document “1 doc”")
     func bothDrillsSayOne() throws {
         let usage = try usage()
+        // Every number as the user's own locale writes it, which is how both drills write them.
         let one = 1.formatted(), twelve = 12.formatted()
-        let expected = ["frus-a": "\(one) doc · 3%", "frus-b": "\(twelve) docs · 40%", "frus-c": "\(one) doc"]
+        let expected = ["frus-a": "\(one) doc · \(3.formatted())%",
+                        "frus-b": "\(twelve) docs · \(40.formatted())%",
+                        "frus-c": "\(one) doc"]
 
         // The provenance-type drill.
         #expect(ArchivesAxis.spec(forCategory: "lotFile", usage: usage).accessories == expected)

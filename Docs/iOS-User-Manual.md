@@ -1159,7 +1159,7 @@ Below the resolution, Source Explorer lists the other indexed documents citing t
 
 The same list is reachable without opening Source Explorer — long-press a cross-reference-graph node, a search result, or a document in a volume's list and choose **Archival Neighbors…**. Under Stage Manager it opens as its own window that stays put while you read through the neighbors (Section 4.5). A **scope control** — **This volume** / **This subseries** / **All volumes** — narrows or widens the list; a document opens at **All volumes** (cross-corpus reach is the point) and a volume's own Sources entry opens at **This volume**, and whichever surface you arrive from, the same source at the same scope returns the same set.
 
-The list runs volume by volume, and inside a volume by document number, so document 73 comes before document 292. It shows up to thirty documents, and a line under them counts the rest. When there are more than thirty, a list opened from a source, a collection or a class shows the lowest-numbered documents of the first volumes, and a list opened from a document takes one from each volume in turn, each volume's lowest-numbered first.
+The list shows up to thirty documents, and a line under them counts the rest. With thirty or fewer it runs volume by volume, and inside a volume by document number, so document 73 comes before document 292. When there are more, a list opened from a source, a collection or a class keeps that order and shows the lowest-numbered documents of the first volumes. A list opened from a document takes one document from each volume in turn, each volume's lowest-numbered first, so its rows pass from one volume to the next.
 
 ### 14.4a Unprinted Material
 

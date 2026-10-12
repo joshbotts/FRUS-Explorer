@@ -50,7 +50,8 @@ struct AXChartPoint: Sendable, Hashable {
 ///          states, and `isContinuous` on the two builders, for a scatter
 ///   1.2 — 2026-10-11: #1616 — a graph that names every series keeps a lone series' name
 ///   1.3 — 2026-10-12: #1617 — a point on a categorical axis is given its category's name, where
-///          both builders gave it its position in the list (``dataPoint(_:onNumericAxis:)``)
+///          both builders gave it its position in the list (``dataPoint(_:onNumericAxis:)``), and
+///          a categorical axis lists each label once (``categories(of:)``)
 enum AXChartDescriptorBuilder {
 
     #if canImport(Accessibility)
@@ -133,11 +134,9 @@ enum AXChartDescriptorBuilder {
         } else {
             // A categorical axis keeps the labels the chart shows — subseries and volume axes
             // have no numeric x, and forcing an index onto them would read as a meaningless
-            // coordinate. Each point is then given its own label for its x (#1617).
-            xAxis = AXCategoricalDataAxisDescriptor(
-                title: xLabel,
-                categoryOrder: points.map(\.label)
-            )
+            // coordinate. Each point is then given its own label for its x, and the axis lists
+            // each label once (#1617).
+            xAxis = AXCategoricalDataAxisDescriptor(title: xLabel, categoryOrder: categories(of: points))
         }
 
         let series = AXDataSeriesDescriptor(
@@ -199,9 +198,7 @@ enum AXChartDescriptorBuilder {
         } else {
             // Union of labels in first appearance order, deduplicated — several series share
             // an axis, and repeating a category per series would misorder the rotor.
-            var seen = Set<String>()
-            let order = all.map(\.label).filter { seen.insert($0).inserted }
-            xAxis = AXCategoricalDataAxisDescriptor(title: xLabel, categoryOrder: order)
+            xAxis = AXCategoricalDataAxisDescriptor(title: xLabel, categoryOrder: categories(of: all))
         }
 
         let series = nonEmpty.map { entry in
@@ -227,8 +224,27 @@ enum AXChartDescriptorBuilder {
     /// the framework reads there was empty for every bar of every ranking chart: people, archival
     /// units, regions, countries, kinds of collection and administrations.
     ///
-    /// Two bars that print one label share one category, as they share one name on the chart's
-    /// axis. No table is known to produce two.
+    /// ## One label is one category
+    /// A name for an x value means that two points of one series under one label are one
+    /// category, where their positions in the list were two. So a chart whose rows are separate
+    /// bars has to hand this builder a label for each bar. The charts #1617 names were read for
+    /// that on 2026-10-12. Person Analytics reads its table's Chart label column and Archival
+    /// Analytics its ranking's `label`, both already made unique for the chart's axis. Regions,
+    /// countries, kinds of collection and degree buckets are distinct by what they are. Two
+    /// charts drew separate bars under one label, and now state the names their own axes tell the
+    /// bars apart by: the administration charts
+    /// (`ChartInspectorAdapters.administrationGraphLabels(_:)`, for Grover Cleveland's two
+    /// terms) and Most-Referenced Documents (`AnalyticsChartTables.crossRefRankingTable`, for
+    /// documents of one title).
+    ///
+    /// Two repeats are left as they are. *Citation forms across your volumes* is one bar for each
+    /// era, stacked by kind of file, and its table has a row for each era and kind. The card
+    /// reads it as a single series, so each era holds one point for each kind and no point says
+    /// which kind it is. That was so before #1617, when the axis listed the era once for every
+    /// row; what the chart needs is a series for each kind
+    /// (`AXChartDescriptorModifier.splitBySeriesColumn`, which the card does not pass). And
+    /// Corpus Analytics ▸ By Volume labels a volume by its manifest title, which two of the 553
+    /// volumes share (`frus1877`, `frus1877app`).
     ///
     /// **Not heard.** A simulator plays no Audio Graph, so what VoiceOver did with a number on a
     /// categorical axis, and what it does with the name, were never listened to. This follows the
@@ -244,6 +260,20 @@ enum AXChartDescriptorBuilder {
             return AXDataPoint(x: x, y: point.y, additionalValues: [], label: point.label)
         }
         return AXDataPoint(x: point.label, y: point.y, additionalValues: [], label: point.label)
+    }
+
+    /// The categories of a categorical axis: the points' labels in the order they first appear,
+    /// each once (#1617).
+    ///
+    /// `AXAudiograph.h` asks the axis for "every possible category value for this axis, in the
+    /// order they are displayed visually". The single-series builder listed a label once for
+    /// every point that carried it, which went unnoticed while a point's x was its position.
+    ///
+    /// - Parameter points: Every point the axis spans, series by series.
+    /// - Returns: The distinct labels, in first-appearance order.
+    private static func categories(of points: [AXChartPoint]) -> [String] {
+        var seen = Set<String>()
+        return points.map(\.label).filter { seen.insert($0).inserted }
     }
     #endif
 

@@ -521,37 +521,37 @@ This usually happens when your stored data does not match the build you are runn
 
 *Added by #1539. A read-only row in Data & Recovery's Diagnostics section, on iPhone, iPad and Mac (one shared view), saying what this device's language analysis can do in this session. The row's title, then its trailing value and detail line for each state: while the app is still checking, when all three parts work, and when one or more does not.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 721–722 | key: settings.dataRecovery.languageAnalysis | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 722–723 | key: settings.dataRecovery.languageAnalysis | shared: iOS+macOS (single edit point) -->
 
 Language Analysis
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 877–878 | key: settings.dataRecovery.languageAnalysis.value.checking | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 879–880 | key: settings.dataRecovery.languageAnalysis.value.checking | shared: iOS+macOS (single edit point) -->
 
 Checking
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.checking -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 879–880 | key: settings.dataRecovery.languageAnalysis.detail.checking | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 881–882 | key: settings.dataRecovery.languageAnalysis.detail.checking | shared: iOS+macOS (single edit point) -->
 
 Finding out what this device’s language analysis can do.
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.checking -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 884–885 | key: settings.dataRecovery.languageAnalysis.value.working | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 886–887 | key: settings.dataRecovery.languageAnalysis.value.working | shared: iOS+macOS (single edit point) -->
 
 Working
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.working -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 886–887 | key: settings.dataRecovery.languageAnalysis.detail.working | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 888–889 | key: settings.dataRecovery.languageAnalysis.detail.working | shared: iOS+macOS (single edit point) -->
 
 Dictionary forms, parts of speech and names all work on this device.
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.working -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 889–890 | key: settings.dataRecovery.languageAnalysis.value.limited | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 891–892 | key: settings.dataRecovery.languageAnalysis.value.limited | shared: iOS+macOS (single edit point) -->
 
 Limited
 
@@ -559,25 +559,25 @@ Limited
 
 *Interpolated with the parts that are not working, joined as a list from the three names below — for example “dictionary forms” or “dictionary forms and names”.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 892–893 | key: settings.dataRecovery.languageAnalysis.detail.limited %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 894–895 | key: settings.dataRecovery.languageAnalysis.detail.limited %@ | shared: iOS+macOS (single edit point) -->
 
 Not working right now: %@. FRUS Explorer checks again each time you come back to it.
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.limited %@ -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 905–906 | key: settings.dataRecovery.languageAnalysis.capability.lemmas | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 907–908 | key: settings.dataRecovery.languageAnalysis.capability.lemmas | shared: iOS+macOS (single edit point) -->
 
 dictionary forms
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.lemmas -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 909–910 | key: settings.dataRecovery.languageAnalysis.capability.classes | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 911–912 | key: settings.dataRecovery.languageAnalysis.capability.classes | shared: iOS+macOS (single edit point) -->
 
 parts of speech
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.classes -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 913–914 | key: settings.dataRecovery.languageAnalysis.capability.names | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 915–916 | key: settings.dataRecovery.languageAnalysis.capability.names | shared: iOS+macOS (single edit point) -->
 
 names
 
@@ -587,19 +587,19 @@ names
 
 *Added by #1608. The row under Language Analysis, on iPhone, iPad and Mac (one shared view). It copies what the language check has logged since the app opened, so a tester can paste it into a report: an iPhone’s own log held those lines for about nine hours when it was read on 2026-10-11, and reading that log takes a Mac. Three strings: the button’s title; its title for two seconds after it is pressed, which is also what VoiceOver is told; and its explanation, which is the pointer’s tooltip on the Mac and VoiceOver’s hint on iPhone and iPad. The copied text is not in these files. It is the log’s own lines, each with its time, under the app’s version and build, the system’s version and the device’s model, and it is not translated.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copyLabel | lines: 740–741 | key: settings.dataRecovery.languageAnalysis.copy | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copyLabel | lines: 741–742 | key: settings.dataRecovery.languageAnalysis.copy | shared: iOS+macOS (single edit point) -->
 
 Copy Language Analysis Record
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.copy -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copiedLabel | lines: 746–746 | key: settings.dataRecovery.languageAnalysis.copied | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.copiedLabel | lines: 747–747 | key: settings.dataRecovery.languageAnalysis.copied | shared: iOS+macOS (single edit point) -->
 
 Copied
 
 <!-- END SOURCE: settings.dataRecovery.languageAnalysis.copied -->
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 733–734 | key: settings.dataRecovery.languageAnalysis.copy.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 734–735 | key: settings.dataRecovery.languageAnalysis.copy.help | shared: iOS+macOS (single edit point) -->
 
 Copies what the language check has found since the app opened, with the app’s and the system’s versions. Paste it into a bug report.
 

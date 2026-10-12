@@ -2060,14 +2060,14 @@ Record groups are the National Archives’ own divisions. Collections whose cita
 <!-- END SOURCE: browser.archives.accessory.share %@ %@ -->
 
 #### Central-file classes, grouped by the filing schedule in…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.classesLens | lines: 406–416 | key: browser.archives.classes.caption -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.classesLens | lines: 407–417 | key: browser.archives.classes.caption -->
 
 Central-file classes, grouped by the filing schedule in force. A volume is counted in the era its coverage falls inside; one spanning two schedules is counted in neither, because the same number means different things on either side. Readings come from the Department’s own filing manuals. Each era lists every class its volumes’ source notes cite; by class number, it follows its own file — decimal numbers digit by digit, so 711.11 comes before 711.2, and subject-numeric designators by their numbers.
 
 <!-- END SOURCE: browser.archives.classes.caption -->
 
 #### About \(…)% of sourced documents name an archival…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.collectionsLens | lines: 558–559 | key: browser.archives.collections.ceiling -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.collectionsLens | lines: 559–560 | key: browser.archives.collections.ceiling -->
 
 About \(ArchivesAxis.collectionSharePercent(coverage: usage.coverage))% of sourced documents name an archival collection; the rest — mostly central-file citations — are under Provenance Types.
 

@@ -172,6 +172,7 @@ enum ArchivesAxis {
 ///   1.1 — #1363: the lens, closed eras and groups, and the collection search are one
 ///          ``ReaderState``, which a host may keep (Browse keeps it in its per-level memory, so the
 ///          iPad two-pane's Back returns to it); a lens switch still empties the collection search
+///   1.2 — 2026-10-12: #1643 — a class row's count is `CountCopy.docs`, singular at one
 struct ArchivesIndexView: View {
 
     /// The volume universe, for the class lens's era buckets.

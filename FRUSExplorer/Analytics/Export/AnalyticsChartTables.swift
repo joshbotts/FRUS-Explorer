@@ -42,6 +42,9 @@ struct CorpusSeriesPoint: Sendable, Equatable {
 ///         state the numbers their charts plot (`ChartInspectorData.audioGraph`), a share as
 ///         `shareValue(_:)`. VoiceOver's Audio Graph read each Plotted cell back, and read `12,4`
 ///         as 124 on a device whose region writes decimals with a comma
+///   1.3 — 2026-10-12: #1617 — the Most-Referenced Documents table states its graph too, each
+///         bar under the name the chart's axis gives it, so two documents of one title are two
+///         categories
 enum AnalyticsChartTables {
 
     /// The Corpus Analytics series table: one row per (term, period).
@@ -280,6 +283,15 @@ enum AnalyticsChartTables {
 
     /// The most-referenced-documents ranking table (in-degree).
     ///
+    /// ## Its Audio Graph (#1617)
+    /// The table states its graph: each bar's inbound count, under the name the chart's axis
+    /// prints for it. An indexed document is named by its printed head, and heads repeat
+    /// ("Memorandum of Conversation", "Editorial Note"), so the axis tells two such rows apart
+    /// (`disambiguatedRankingLabels`, as `CrossReferenceRankingChart` calls it, with the same
+    /// three values for each row). A categorical Audio Graph names each point by its category,
+    /// and read from the Document column two documents of one title were one category. The
+    /// Document column itself is not changed, in the table or in its CSV.
+    ///
     /// - Parameters:
     ///   - title: The chart's title.
     ///   - rows: Each ranked document's volume, document id, display label, and inbound count.
@@ -298,7 +310,17 @@ enum AnalyticsChartTables {
         let cells = rows.enumerated().map { index, row in
             ["\(index + 1)", row.label, row.volumeId, row.documentId, "\(row.inDegree)"]
         }
-        return ChartInspectorData(id: "crossref.ranking", title: title, columns: columns, rowCells: cells)
+        // A row's id as `InDegreeRow.id` spells it, which is the key the chart looks its label up by.
+        let ids = rows.map { "\($0.volumeId)/\($0.documentId)" }
+        let axisLabels = disambiguatedRankingLabels(
+            zip(ids, rows).map { (id: $0, name: $1.label, shortSuffix: $1.documentId) })
+        let graph = ChartAudioGraph(xLabel: columns[1], yLabel: columns[4], series: [
+            .init(name: title, points: zip(ids, rows).map {
+                AXChartPoint(label: axisLabels[$0] ?? $1.label, x: nil, y: Double($1.inDegree))
+            }),
+        ])
+        return ChartInspectorData(id: "crossref.ranking", title: title, columns: columns, rowCells: cells,
+                                  audioGraph: graph)
     }
 
     /// The citation-degree distribution table.

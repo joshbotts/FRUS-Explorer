@@ -700,9 +700,10 @@ struct BrokenReferencesReportView: View {
 /// iPad and Mac Settings show the same row.
 ///
 /// ## The Copy button (#1608)
-/// The row under it copies the session's record: every line the language check has logged since
+/// The row under it copies the session's record: the lines the language check has logged since
 /// the app opened, each with its time, under the app's and the system's versions
-/// (``LanguageAnalysisRecordReport``). The release log has the same lines and does not keep them:
+/// (``LanguageAnalysisRecordReport``). The record holds 200 lines at most, the launch's first
+/// eight and the most recent, and says how many it left out between them. The release log has the same lines and does not keep them:
 /// read from a collection made on 2026-10-11, the owner's iPhone held the app's own log lines for
 /// about nine hours, and reading that log takes a Mac. So this is how a tester sends the record.
 /// The button is always enabled. A record with no line yet says so in the text it copies.
@@ -784,11 +785,12 @@ struct LanguageAnalysisRow: View {
 ///
 /// ## What is in it
 /// Each line is the one `NaturalLanguageReadiness.logLine(for:)` wrote to the release log: enums,
-/// scheme names, counts and seconds, and nothing the reader wrote or read. The four lines above
-/// them are the ones the Sync Log stamps its rows with: the app's version and build, the system's
-/// version, and the device's model class, which is a kind of hardware and no one device. On a Mac
-/// and in a simulator that last line is the processor's architecture, `arm64`, as it is in the
-/// Sync Log. The first thing read from the owner's own log was which build had written it.
+/// scheme names, counts and seconds, and nothing the reader wrote or read. Above them, under the
+/// title, three lines carry the four values the Sync Log stamps its rows with: the app's version
+/// and build, the system's version, and the device's model class, which is a kind of hardware and
+/// no one device. On a Mac and in a simulator that last line is the processor's architecture,
+/// `arm64`, as it is in the Sync Log. A fourth line is the time of the copy. The first thing read
+/// from the owner's own log was which build had written it.
 ///
 /// Not localised, as Copy Report's text is not: it is for whoever reads the log, and it reads the
 /// same whatever the tester's language.

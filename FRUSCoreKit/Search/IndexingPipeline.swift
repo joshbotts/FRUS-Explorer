@@ -9905,7 +9905,9 @@ public actor IndexingPipeline {
     /// | All other cases | Returns empty result | — |
     ///
     /// Only documents from already-indexed volumes appear. The result is ordered
-    /// by volume identifier, then by document number (``relatedDocumentOrderSQL``, #1643).
+    /// by volume identifier, then by document number (``relatedDocumentOrderSQL``, #1643). Under
+    /// `.stratified`, a result that is cut at its limit is instead one document from each volume
+    /// in turn, each volume's lowest-numbered first (``stratifyByVolume(_:limit:)``).
     ///
     /// - Parameters:
     ///   - parsed: The parsed source note driving the query.
@@ -11756,10 +11758,13 @@ public actor IndexingPipeline {
     /// volume comes back unchanged.
     ///
     /// Done in Swift rather than as a SQL window function on purpose. Measured on the owner's
-    /// index, full-fetch-plus-Swift versus `ROW_NUMBER()`: decimal 893.00 **25.4 ms vs 258.3 ms**
-    /// cold, lot 54D270 1.9 vs 3.3, NSC Files 52.6 vs 52.5 — equal or better everywhere. It also
-    /// forces no new sort: `relatedByPresidentialLibrary` today plans as a bare index scan with no
-    /// sort step, and a window function would add a co-routine and a temp b-tree.
+    /// index for #645, full-fetch-plus-Swift versus `ROW_NUMBER()`: decimal 893.00 **25.4 ms vs
+    /// 258.3 ms** cold, lot 54D270 1.9 vs 3.3, NSC Files 52.6 vs 52.5 — equal or better
+    /// everywhere. A second reason held then and does not now: `relatedByPresidentialLibrary`
+    /// planned as a bare index scan with no sort step, and a window function would have added a
+    /// co-routine and a temp b-tree. Since #1643 every one of these queries sorts its rows by
+    /// document number (``relatedDocumentOrderSQL`` has what that costs), and the comparison with
+    /// a window function was not measured again.
     static func stratifyByVolume(_ documents: [RelatedDocument], limit: Int) -> [RelatedDocument] {
         guard limit > 0, documents.count > limit else { return Array(documents.prefix(max(0, limit))) }
         var byVolume: [String: [RelatedDocument]] = [:]

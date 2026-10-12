@@ -1522,6 +1522,9 @@ struct CrossReferenceAnalyticsView: View {
 ///          most `RankingChartAxis.labelWidth` and wrap to two lines
 ///   1.1 — #1473 review round 1: its height is `RankingChartAxis.chartHeight(rows:)`, which the
 ///          exported figure now gives it too
+///   1.2 — 2026-10-12: #1617 — its Audio Graph names each bar as the axis does: the table states
+///          its graph (`AnalyticsChartTables.crossRefRankingTable`), where its Document column
+///          was read and two documents of one title were one category
 struct CrossReferenceRankingChart: View {
 
     /// The ranked rows, highest in-degree first.
@@ -1576,6 +1579,9 @@ struct CrossReferenceRankingChart: View {
         .chartYScale(domain: ranking.map(\.id))
         // #268: label = "Document", value = "Inbound references". The default (0, 1) reads
         // (Rank, Document) — Rank parses, sonifying rank positions as values silently.
+        // #1617: the table states its graph now, each bar under `axisLabels`' name for it, so
+        // no cell is read. The two columns are the ones that graph is held to
+        // (`CategoricalAudioGraphPointTests.sameTitledDocuments`).
         .axChartDescriptor(inspector: inspector,
                            title: String(localized: "crossRefAnalytics.ranking.heading",
                                          defaultValue: "Most-Referenced Documents"),

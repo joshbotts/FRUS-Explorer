@@ -815,9 +815,11 @@ struct NaturalLanguageSessionRecordTests {
             .rechecked(warmUp, found: health, adopted: false),
         ]
         for event in events { NaturalLanguageReadiness.record(event) }
-        // The last six that carry this test's marker: a second run in one process adds six more.
+        // The last six that carry this test's markers: a second run in one process adds six more.
+        // The age and the scheme whole, and not a bare "71003", which is also inside some of the
+        // ages `theLiveReportIsKept` draws (`age=171003.125s`).
         let mine = NaturalLanguageReadiness.sessionRecord.lines.map(\.text)
-            .filter { $0.contains("71003") }
+            .filter { $0.contains("age=71003.500s") || $0.contains("Lemma71003") }
         #expect(Array(mine.suffix(events.count)) == events.map(NaturalLanguageReadiness.logLine(for:)))
     }
 
