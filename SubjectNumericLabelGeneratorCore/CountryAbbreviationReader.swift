@@ -6,39 +6,37 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import CoreGraphics
 import Foundation
-import PDFKit
 
 // MARK: - CountryAbbreviationReader
 
 /// Reads the handbooks' COUNTRY ABBREVIATIONS appendix — the vocabulary of the tail that 90% of
 /// the corpus's subject-numeric keys carry (#1254).
 ///
-/// ## The table runs the wrong way for the question
-/// It is a finding aid, so it maps NAME to CODE and does so many-to-one: every island of the
-/// British West Indies is its own row against `BWI`. What a reader needs is the other direction —
-/// given `VIET S`, what is it — and inverting the table leaves a code holding a list of names,
-/// most of which are not what the code is called.
+/// ## The first table runs the wrong way for the question, and the second the right way
+/// It is a finding aid, so its first table maps NAME to CODE and does so many-to-one: every
+/// island of the British West Indies is its own row against `BWI`. What a reader needs is the
+/// other direction — given `VIET S`, what is it — and inverting that table leaves a code holding
+/// a list of names, most of which are not what the code is called.
 ///
-/// So a code's name is CHOSEN from its candidates rather than taken: the head entry is the one
-/// whose own words the code was abbreviated from. `VIET S` takes *Vietnam, South* over *Vinh Long
-/// (Vietnam, South)* because its two tokens open the candidate's two words; `BWI` takes *British
-/// West Indies* on the initials of its three. A code whose candidates fit neither test is left
-/// unnamed rather than given the first row that mentioned it.
+/// The appendix is printed a second time from CODE to NAME, and since #1644 that is where a
+/// code's name is taken from (``codeNames(from:verified:)``): the row states it, where the first
+/// table only lets one be chosen. The first table checks the second's spelling, and every row of
+/// both is a name the resolver may match a tail to when no printed code answers. A code that no
+/// row names cleanly is left unnamed rather than given the first row that mentioned it.
 ///
 /// Version history:
 ///   1.0 — #1254: initial implementation
+///   1.1 — #1644: reads ``Handbook`` pages; each row says which of the appendix's two tables it
+///          is from, and `codeNames(from:verified:)` gives each printed code its own name
 enum CountryAbbreviationReader {
 
     /// Whether a page belongs to the country appendix, by its own corner mark.
     ///
     /// - Parameter page: The page to test.
     /// - Returns: `true` when the page is part of the appendix.
-    static func isCountryPage(_ page: PDFPage) -> Bool {
-        let bounds = page.bounds(for: .mediaBox)
-        let strip = CGRect(x: bounds.minX, y: bounds.maxY - 60, width: bounds.width, height: 60)
-        let text = (page.selection(for: strip)?.string ?? "")
+    static func isCountryPage(_ page: HandbookPage) -> Bool {
+        let text = page.text(inTop: 60)
             .replacingOccurrences(of: " ", with: "")
             .replacingOccurrences(of: "\n", with: "")
         return text.contains("Ctry.Abbrev")
@@ -51,19 +49,20 @@ enum CountryAbbreviationReader {
     /// left half with a code from the right.
     ///
     /// - Parameter document: An open handbook.
-    /// - Returns: The pairs, in page order.
-    static func pairs(in document: PDFDocument) -> [(name: String, code: String)] {
-        let marked = (0..<document.pageCount).filter {
-            document.page(at: $0).map(isCountryPage) == true
-        }
+    /// - Returns: The pairs, in page order, each marked with the table it was read from:
+    ///   `reverse` is `true` for a row of the code-first table, which states a code's own name.
+    static func pairs(in document: Handbook) -> [(name: String, code: String, reverse: Bool)] {
+        let marked = document.pages.indices.filter { isCountryPage(document.pages[$0]) }
         guard let first = marked.first, let last = marked.last else { return [] }
-        var out: [(name: String, code: String)] = []
-        for index in first...last {
-            guard let page = document.page(at: index) else { continue }
-            let bounds = page.bounds(for: .mediaBox)
-            let lines = OutlinePageReader.lines(of: page, maxX: .greatestFiniteMagnitude)
-                .filter { $0.y > 100 && !OutlineEntryParser.isFurniture($0.text) }
-            let middle = Double(bounds.midX)
+        var out: [(name: String, code: String, reverse: Bool)] = []
+        for page in document.pages[first...last] {
+            // A section letter stands at the head of each letter of the alphabet, set large.
+            // Left in, it is read as the last word of the name above it (`Turkey u`).
+            let lines = page.lines.filter {
+                $0.y > 100 && !OutlineEntryParser.isFurniture($0.text)
+                    && !($0.text.count == 1 && $0.height >= sectionLetterHeight)
+            }
+            let middle = page.width / 2
             let halves = [lines.filter { $0.x < middle }, lines.filter { $0.x >= middle }]
             // DIRECTION IS A PROPERTY OF THE PAGE, not of a half. Deciding per half lets a few
             // OCR-damaged leading tokens flip one side of a reverse page into the forward reading,
@@ -72,11 +71,15 @@ enum CountryAbbreviationReader {
             let reverse = isReverseHalf(halves[0]) || isReverseHalf(halves[1])
             for half in halves {
                 let found = reverse ? reversePairs(inHalf: half) : pairs(inHalf: half)
-                out.append(contentsOf: found)
+                out.append(contentsOf: found.map { ($0.name, $0.code, reverse) })
             }
         }
         return out
     }
+
+    /// The least type size of a section letter: the appendix's text is set at nine points and
+    /// its section letters at fifteen and over.
+    static let sectionLetterHeight = 13.0
 
     /// One half-page's pairs.
     ///
@@ -281,145 +284,156 @@ enum CountryAbbreviationReader {
     }
 }
 
-// MARK: - Choosing a code's own name
+// MARK: - The printed code table
 
 extension CountryAbbreviationReader {
 
-    /// Resolves a tail as the corpus WRITES it, against the names the handbook prints.
+    /// The name the appendix gives each code it prints (#1644).
     ///
-    /// ## NARA's rule is generative, not a vocabulary
-    /// The archivists' own description: country, region and organization names "may be spelled out
-    /// in full or they may be abbreviated using a common abbreviation (USSR … UN …) or the first
-    /// few letters of the name (POL for Poland and KOR N for North Korea)". There is no code table
-    /// to look a tail up in — there is a NAME, and a filer's abbreviation of it.
+    /// ## The code-first table says it outright, and the name-first table checks its spelling
+    /// The appendix is printed twice. Its second table runs from code to name and gives each
+    /// code ITS OWN name, followed in parentheses by the places filed under it: `UK United
+    /// Kingdom (England, Great Britain, Wales)`. The first runs from name to code and files many
+    /// places under one: `England (United Kingdom) UK`. So a code's name is the second table's
+    /// row with its parenthesis dropped, or a row of the first table that has no parenthesis.
     ///
-    /// That is why matching the printed codes failed on the heaviest tails. The 1963 appendix
-    /// prints `S VIET` against *South Vietnam*, and the corpus writes `VIET S`; both are the same
-    /// rule applied to the same name, and NARA's own `KOR N` example shows which way round the
-    /// filer worked — the name is inverted to its index form and then truncated. Matching against
-    /// the NAME rather than against the printed code makes the two spellings one question, and the
-    /// order-free cover below answers it without having to know which form a filer chose.
+    /// Both are a rough scan (`Belgimn`, `Sam.a.li Republic`, `Yugoslovia`), and seldom in the
+    /// same place. A candidate is therefore taken in this order: one the decimal schedules'
+    /// country tables also carry, which are verified; one both tables print alike; the
+    /// code-first table's, if it is clean text; the name-first table's only plain name, if it
+    /// is. A code none of these names is left out, and its tail is read from the names instead.
     ///
     /// - Parameters:
-    ///   - tail: The tail as a source note wrote it.
-    ///   - names: Every name the handbook prints.
-    ///   - abbreviations: The common-abbreviation table, for the `USSR` and `UN` route.
-    /// - Returns: The name, or `nil` when nothing covers the tail exactly once.
-    static func resolveTail(_ tail: String, names: [String],
-                           abbreviations: [String: String]) -> String? {
-        let code = normalizedCode(tail)
-        guard !code.isEmpty else { return nil }
-        // The common-abbreviation route first: it is the handbook's own assertion, where the
-        // truncation route is an inference about what a filer did.
-        if let common = abbreviations[code] { return common }
-
-        var best: String?
-        var bestLength = Int.max
-        var ambiguous = false
-        for name in names where headEntryScore(name: name, code: code) >= minimumHeadEntryScore {
-            let length = name.count
-            if length < bestLength {
-                best = name
-                bestLength = length
-                ambiguous = false
-            } else if length == bestLength, let current = best, current != name {
-                ambiguous = true
-            }
-        }
-        // Two different names of equal length both covering the tail is a coin toss, and a wrong
-        // country is worse than a bare code — the same verdict this file reaches about a partial
-        // cover, for the same reason.
-        return ambiguous ? nil : best
-    }
-
-    /// The weakest reading of a code accepted as its name.
-    ///
-    /// **3, a FULL cover: every token of the code accounts for a word of the name, and every word
-    /// is accounted for.** A partial cover was tried and ships wrong answers, not thin ones:
-    /// `GER W` matched *Saar (West Germany)* — GER on GERMANY, W on WEST, with SAAR left over —
-    /// so a caption reading "Saar" would have stood over every West German document in the
-    /// corpus. A place filed UNDER a code is not what the code means, and nothing short of a full
-    /// cover distinguishes the two.
-    static let minimumHeadEntryScore = 3
-
-    /// Inverts the appendix: for each code, the name it was abbreviated FROM.
-    ///
-    /// - Parameter pairs: Every (name, code) row the appendix prints.
-    /// - Returns: `code -> name`, holding only the codes whose head entry could be identified.
-    static func canonicalNames(from pairs: [(name: String, code: String)]) -> [String: String] {
-        var best: [String: (name: String, score: Int)] = [:]
+    ///   - pairs: Every row the appendix prints.
+    ///   - verified: Names whose spelling is known good.
+    /// - Returns: `code key -> name`, keyed by ``AreaResolver/codeKey(_:)``.
+    static func codeNames(from pairs: [(name: String, code: String, reverse: Bool)],
+                          verified: Set<String>) -> [String: String] {
+        var rows: [String: [(name: String, reverse: Bool)]] = [:]
+        var order: [String] = []
         for pair in pairs {
-            let code = normalizedCode(pair.code)
-            guard !code.isEmpty else { continue }
-            let score = headEntryScore(name: pair.name, code: code)
-            guard score >= minimumHeadEntryScore else { continue }
-            // Ties go to the SHORTER name, which is the plain country rather than a place inside
-            // it: `VIET S` scores on both `Vietnam, South` and `Vietnam, South (Saigon)`.
-            let existing = best[code]
-            if existing == nil || score > existing!.score
-                || (score == existing!.score && pair.name.count < existing!.name.count) {
-                best[code] = (pair.name, score)
+            let key = AreaResolver.codeKey(AreaResolver.normalized(pair.code))
+            guard !key.isEmpty else { continue }
+            if rows[key] == nil { order.append(key) }
+            rows[key, default: []].append((pair.name, pair.reverse))
+        }
+        var out: [String: String] = [:]
+        for key in order {
+            let found = rows[key] ?? []
+            // A NAME IS A CODE'S ONLY IF THE CODE ABBREVIATES IT. The scan misreads codes as
+            // well as names, and a row whose code is misread pairs a real code with another
+            // place's name: `PORT INDIA`, its first word lost, gave `INDIA` the name
+            // *Portuguese India*, and a row split after its first letter gave `S` the whole of
+            // South Viet-Nam's.
+            let own = found.filter(\.reverse).map { ownName($0.name) }
+                .filter { abbreviates(key, $0) }
+            let plain = found.filter { !$0.reverse && !$0.name.contains("(") }
+                .map { trimmedName($0.name) }.filter { abbreviates(key, $0) }
+            if let name = (own + plain).first(where: verified.contains) {
+                out[key] = name
+            } else if let name = (own + plain).lazy
+                        .compactMap({ shortForm(of: $0, among: verified) }).first {
+                out[key] = name
+            } else if let name = own.first(where: plain.contains) {
+                out[key] = name
+            } else if own.count == 1, isCleanName(own[0]) {
+                out[key] = own[0]
+            } else if own.isEmpty || !own.contains(where: isCleanName),
+                      Set(plain).count == 1, isCleanName(plain[0]) {
+                out[key] = plain[0]
             }
         }
-        return best.mapValues(\.name)
+        return out
     }
 
-    /// How well a name reads as the source of a code.
+    /// The verified name a printed name only adds a formal ending to, if there is one.
     ///
-    /// ## The code's tokens do not follow the name's word order
-    /// The appendix inverts names for alphabetising and the codes do not follow: `VIET S` is
-    /// printed against *South Vietnam*, and `THE CONGO` against *Congo, Republic of the*. A test
-    /// that walked the two in step scored both at zero — measured, it left the two heaviest tails
-    /// in the corpus unnamed while resolving their neighbours, which reads as a thin table rather
-    /// than as a wrong rule. So each code token is matched to SOME distinct word of the name.
-    ///
-    /// Covering every word scores higher than covering some, which is what keeps `VIET S` on
-    /// *South Vietnam* rather than on a district inside it.
-    ///
-    /// The initials reading is separate and weaker: `BWI` is *British West Indies* and `US` is
-    /// *United States of America*, where the code stops short of the name's own initials — so the
-    /// test is a PREFIX of them, and it skips the words English does not initialise.
+    /// The appendix names a state in full, inverted for the index: *United States of America*,
+    /// *Kuwait, State of*, *Guinea, Republic of*. The decimal schedules' tables carry the same
+    /// countries as *United States*, *Kuwait* and *Guinea*, verified and already what the app
+    /// calls them, and `US` stands in some five hundred paired tails. So where a verified name
+    /// is the printed one less such an ending, the verified name is the code's.
     ///
     /// - Parameters:
-    ///   - name: A candidate name.
-    ///   - code: The normalized code.
-    /// - Returns: 3 for a full cover, 2 for a partial one, 1 for the initials reading, 0 for none.
-    static func headEntryScore(name: String, code: String) -> Int {
-        let words = name.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .map { $0.uppercased() }
-        guard !words.isEmpty else { return 0 }
-        let codeTokens = code.split(separator: " ").map(String.init)
-
-        var unused = words
-        var matchedAll = true
-        for token in codeTokens {
-            if let index = unused.firstIndex(where: { $0.hasPrefix(token) }) {
-                unused.remove(at: index)
-            } else {
-                matchedAll = false
-                break
-            }
+    ///   - name: A code-first row's name.
+    ///   - verified: Names whose spelling is known good.
+    /// - Returns: The verified name, or `nil` when the printed name is not one with an ending.
+    static func shortForm(of name: String, among verified: Set<String>) -> String? {
+        for ending in formalEndings {
+            guard let range = name.range(of: ending, options: [.regularExpression,
+                                                               .caseInsensitive]) else { continue }
+            let head = String(name[..<range.lowerBound])
+            if verified.contains(head) { return head }
         }
-        if matchedAll { return unused.isEmpty ? 3 : 2 }
-
-        let significant = words.filter { !Self.unInitialised.contains($0) }
-        let initials = significant.compactMap(\.first).map(String.init).joined()
-        let flat = code.replacingOccurrences(of: " ", with: "")
-        if !flat.isEmpty, initials.hasPrefix(flat) { return 1 }
-        return 0
+        return nil
     }
 
-    /// The words an English abbreviation passes over.
-    static let unInitialised: Set<String> = ["OF", "THE", "AND", "DE", "DU", "LA", "EL"]
+    /// The endings the appendix adds to a country's plain name.
+    private static let formalEndings = [
+        #" of America$"#,
+        #", (?:State|Republic|Federation|Kingdom|Federal Republic|Islamic Republic) of(?: the)?$"#,
+    ]
 
-    /// A code as the corpus writes it: upper-cased, punctuation dropped, spacing collapsed.
+    /// A code-first row's name, without the places filed under the code.
     ///
-    /// - Parameter raw: A code as the appendix prints it.
-    /// - Returns: The normalized form.
-    static func normalizedCode(_ raw: String) -> String {
-        raw.uppercased()
-            .replacingOccurrences(of: #"[^A-Z0-9 -]"#, with: "", options: .regularExpression)
-            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
-            .trimmingCharacters(in: .whitespaces)
+    /// - Parameter name: `Canada (Alberta, British Columbia, …)`.
+    /// - Returns: `Canada`.
+    static func ownName(_ name: String) -> String {
+        guard let open = name.range(of: " (") else { return trimmedName(name) }
+        return trimmedName(String(name[..<open.lowerBound]))
+    }
+
+    /// A name without the marks the scan leaves at its ends (`Canada.`, `Mexico'`).
+    ///
+    /// The full stop of an initial is the name's own and is kept (`Canal Zone, U. S.`).
+    ///
+    /// - Parameter name: A name as read.
+    /// - Returns: The name, trimmed.
+    static func trimmedName(_ name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: CharacterSet(charactersIn: " .,;:'\"~"))
+        let initial = #"(?:^| )[A-Z]$"#
+        guard name.contains(trimmed + "."),
+              trimmed.range(of: initial, options: .regularExpression) != nil
+        else { return trimmed }
+        return trimmed + "."
+    }
+
+    /// Whether a code can be an abbreviation of a name: they begin with the same letter, and
+    /// the code's letters all occur in the name, in order.
+    ///
+    /// Loose on purpose. The printed codes are contractions as often as they are first letters
+    /// (`NR EAST` for *Near East*, `AUSTL` for *Australia*, `CZ` for *Canal Zone*), and all this
+    /// has to refuse is a name that belongs to another code.
+    ///
+    /// - Parameters:
+    ///   - key: A code's key (its tokens, spaced).
+    ///   - name: A candidate name.
+    /// - Returns: `true` when the code's letters run through the name's.
+    static func abbreviates(_ key: String, _ name: String) -> Bool {
+        let letters = name.uppercased().filter(\.isLetter)
+        guard let first = letters.first else { return false }
+        // The key's tokens are sorted, so the code's own first letter is not known from it:
+        // any token may open the code, and one of them must open the name.
+        let tokens = key.split(separator: " ").map { $0.filter(\.isLetter) }
+        guard tokens.contains(where: { $0.first == first }) else { return false }
+        return tokens.allSatisfy { token in
+            var rest = Substring(letters)
+            for letter in token {
+                guard let found = rest.firstIndex(of: letter) else { return false }
+                rest = rest[rest.index(after: found)...]
+            }
+            return true
+        }
+    }
+
+    /// Whether a name is made of words alone: letters, with a space, a hyphen, a comma and a
+    /// space, a full stop and a space, or an apostrophe between them.
+    ///
+    /// - Parameter name: A candidate name.
+    /// - Returns: `false` for a name the scan has visibly damaged (`Det:lIl:l.S.!'k`).
+    static func isCleanName(_ name: String) -> Bool {
+        // The last full stop is an initial's (`Canal Zone, U. S.`), and only that.
+        name.range(of: #"^[A-Z][A-Za-z]*(?:(?:[ -]|, |\. |')[A-Za-z]+)*(?:(?<= [A-Z])\.)?$"#,
+                   options: .regularExpression) != nil
     }
 }

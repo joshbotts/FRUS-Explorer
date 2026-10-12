@@ -1027,7 +1027,7 @@ struct PrimarySubjectFileLabelTests {
                     == "United States and Union of Soviet Socialist Republics")
         #expect(table.leafGloss(for: "POL INDIA-PAK", coveringYears: 1965...1968) == "India and Pakistan")
         #expect(table.leafGloss(for: "POL GER W-US", coveringYears: 1965...1968)
-                    == "Germany, West and United States")
+                    == "West Germany and United States")
         // The country and nothing after it: there is no subject to add.
         #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1963)?.contains(" — ") == false)
         // A head cited alone has neither country nor subject.
@@ -1043,10 +1043,11 @@ struct PrimarySubjectFileLabelTests {
 
     /// A numbered key of a category with no outline is read through the organization branch,
     /// under the name the handbook's abbreviations appendix gives the prefix. A file with no
-    /// number takes no such name. It was found on an iPhone: `AID` has no outline under
-    /// 1964–1973 and its appendix entry is a piece of another line, so the row for
+    /// number takes no such name. It was found on an iPhone: `AID` had no outline under
+    /// 1964–1973 and its appendix entry was a piece of another line, so the row for
     /// frus1969-76ve07/d110's file read "programs in Spanish speaking countries). Aeronautics —
-    /// India".
+    /// India". The table has had `AID`'s outline for that schedule since #1644; the rule stands,
+    /// and is held here on `NATO`.
     @Test("A file with no number takes no organization's name before its country")
     func aFileWithNoNumberTakesNoOrganizationsName() throws {
         let table = try #require(SubjectNumericLabelStore.shared)

@@ -29,7 +29,7 @@ struct Schedule: Encodable, Sendable {
     let organizationSubjects: [String: String]
     /// `NATO` -> `North Atlantic Treaty Organization` — the handbook's own abbreviations
     /// appendix, which is what identifies a prefix as an ORGANIZATION file rather than a
-    /// primary subject.
+    /// primary subject. Holds the prefixes the corpus cites, and no others (#1644).
     let abbreviations: [String: String]
     /// `VIET S` -> `Vietnam, South` — the country/organization tail 90% of keys carry.
     let areas: [String: String]
@@ -93,6 +93,9 @@ struct SubjectNumericLabels: Encodable, Sendable {
         let unnamedCategories: [String]
         /// The measured reach of each schedule over the shipped corpus.
         let measured: [Measurement]
+        /// The usage index `measured` was counted against, by its own build stamp, so that the
+        /// block says which index it describes (#1644: it described an older one for a month).
+        let measuredAgainst: String
         /// The caveats every surface owes.
         let note: String
 
@@ -114,6 +117,14 @@ struct SubjectNumericLabels: Encodable, Sendable {
             let corpusDocuments: Int
             /// Documents this schedule gives a reading.
             let namedDocuments: Int
+            /// Keys that carry a country, region or organization element.
+            let areaKeys: Int
+            /// How many of them `areas` names.
+            let namedAreaKeys: Int
+            /// Documents behind the keys that carry such an element.
+            let areaDocuments: Int
+            /// Documents whose element `areas` names.
+            let namedAreaDocuments: Int
         }
     }
 }

@@ -12,17 +12,20 @@ import Foundation
 
 /// Reads the country, region or organization element of a subject-numeric key (#1254).
 ///
-/// ## NARA's rule is generative, and that is why a code table cannot answer it
+/// ## NARA's rule is generative, and that is why a code table cannot answer it alone
 /// The archivists describe the element this way: names "may be spelled out in full or they may be
 /// abbreviated using a common abbreviation (USSR for the Union of Soviet Socialist Republics and
 /// UN for the United Nations) or the first few letters of the name (POL for Poland and KOR N for
-/// North Korea)". There is no controlled vocabulary to look a tail up in — there is a NAME, and a
-/// filer's abbreviation of it, made three different ways.
+/// North Korea)". The Department printed a list of standard codes, and since #1644 a tail that is
+/// one of them takes the name printed beside it; the resolver's own comment says why that comes
+/// first. But a filer was not held to the list, so behind it there is a NAME, and a filer's
+/// abbreviation of it, made three different ways.
 ///
-/// Trying to match the printed codes instead failed exactly where it mattered: the 1963 handbook
-/// prints `S VIET` and the corpus writes `VIET S`, so the heaviest tail in the whole channel —
-/// 674 documents — resolved to nothing while its neighbours resolved. Both spellings are the same
-/// rule applied to the same name, and matching the NAME makes them one question.
+/// Matching the printed codes letter for letter failed exactly where it mattered: the 1963
+/// handbook prints `S VIET` and the corpus writes `VIET S`, so the heaviest tail in the whole
+/// channel — 674 documents — resolved to nothing while its neighbours resolved. Both spellings
+/// are the same rule applied to the same name. A printed code is therefore looked up by its
+/// tokens in any order (``codeKey(_:)``), and a tail the list does not print is matched to a NAME.
 ///
 /// ## The order-free cover is what unifies the two spellings
 /// `KOR N` is NARA's own example, and it shows the filer working from the index form of the name
@@ -37,6 +40,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1254: initial implementation
+///   1.1 — #1644: the handbook's printed country codes are read first, the common abbreviations
+///          after them; a half of a paired tail is read as a whole tail is, curated readings
+///          included; the first-few-letters form is one token's alone
 public enum AreaResolver {
 
     /// The compass qualifiers a filer appends to a divided country.
@@ -96,33 +102,78 @@ public enum AreaResolver {
             .compactMap(\.first).map(String.init).joined()
     }
 
-    /// Resolves one tail against a name list, or `nil`.
+    /// A code's key in the printed code table: its tokens, in a fixed order.
+    ///
+    /// The 1963 handbook prints `S VIET` and `W GER` where the corpus writes `VIET S` and
+    /// `GER W`. Both are the same code with its qualifier on the other side, so a code is looked
+    /// up by its tokens and not by their order.
+    ///
+    /// - Parameter code: A normalised tail, half or printed code.
+    /// - Returns: The key.
+    static func codeKey(_ code: String) -> String {
+        code.split(separator: " ").sorted().joined(separator: " ")
+    }
+
+    /// Resolves one tail, or `nil`.
+    ///
+    /// ## The order of the sources, and why the printed codes come first
+    /// The 1963 handbook says of its own country appendix that it is "a list of standard country
+    /// abbreviations … for use in coding papers relating to specific countries", and the 1965
+    /// edition that the list was "eliminated but can be obtained from the Division of Records
+    /// Management, upon request". So a tail that IS one of the printed codes has a name the
+    /// Department gave it, for both schedules, and nothing is inferred: `UK` is *United Kingdom*
+    /// because the appendix prints it so. Read without that table, `UK` is the first two letters
+    /// of *Ukraine*, the shorter name, and that is what the 1964–1973 schedule shipped over 54
+    /// documents (#1644).
+    ///
+    /// The common abbreviations come second: an agency or an international body named by the
+    /// handbook's other appendix (`UN`, `NATO`, `ORG 7 JCS` for the Joint Chiefs). They used to
+    /// come first, which let that appendix's misread codes outrank a country: `FLN`, read `FIN`,
+    /// made Finland the *Algerian National Liberation Front*, and `CUSA`, read `CUBA`, made
+    /// Cuba the *Council for U.S. Aid (Nationalist China)*.
+    ///
+    /// Last, NARA's generative forms over the names, for a tail the list does not print as the
+    /// corpus writes it (`CAMB`, `SAUD`).
     ///
     /// - Parameters:
     ///   - tail: The tail as a source note wrote it.
     ///   - names: Country, region and organization names.
     ///   - organizations: Common abbreviations the handbook states outright.
-    ///   - curated: Readings no rule can reach, keyed by normalised tail.
+    ///   - curated: Readings no rule can reach, keyed by normalised tail or half.
+    ///   - codes: The handbook's printed country codes, keyed by ``codeKey(_:)``.
+    ///   - refused: Tails and halves left unread, because every reading the sources offer for
+    ///     them is another thing's.
     /// - Returns: The name, or `nil` when nothing resolves it unambiguously.
     public static func resolve(_ tail: String, names: [String],
                                organizations: [String: String],
-                               curated: [String: String]) -> String? {
+                               curated: [String: String],
+                               codes: [String: String] = [:],
+                               refused: Set<String> = []) -> String? {
         let code = normalized(tail)
-        guard !code.isEmpty else { return nil }
-        if let hand = curated[code] { return hand }
-        if let common = organizations[code] { return common }
-        if let direct = match(code, names: names) { return direct }
+        // ONE LETTER IS NOT A PLACE, as a whole tail any more than as half of one. The corpus's
+        // one-letter tails are office symbols under `ORG 7` (`S` for the Secretary, `U` for the
+        // Under Secretary), and the first few letters of a name, given one letter, is whichever
+        // name is shortest: the shipped table read `ORG 7 U` as *Uganda*.
+        guard code.count >= 2 else { return nil }
+        func one(_ text: String) -> String? {
+            refused.contains(text) ? nil
+                : resolveOne(text, names: names, organizations: organizations,
+                             curated: curated, codes: codes)
+        }
+        if let whole = one(code) { return whole }
 
         let tokens = code.replacingOccurrences(of: "-", with: " ")
             .split(separator: " ").map(String.init)
-
-        // A COMPASS QUALIFIER beside a name: `VIET S` and `S VIET` are the same country.
-        let qualifiers = tokens.filter { directions[$0] != nil }
-        let rest = tokens.filter { directions[$0] == nil }
-        if let qualifier = qualifiers.first, !rest.isEmpty,
-           let base = match(rest.joined(separator: " "), names: names),
-           let word = directions[qualifier] {
-            return "\(base), \(word)"
+        // A COMPASS QUALIFIER WRITTEN WITH A HYPHEN is still a qualifier: `VIET-S` is South
+        // Vietnam, not Vietnam and a second party called S.
+        let sides = code.split(separator: "-").map { $0.trimmingCharacters(in: .whitespaces) }
+        if sides.count == 2, sides.contains(where: { directions[$0] != nil }),
+           let whole = one(sides.joined(separator: " ")) {
+            return whole
+        }
+        func half(_ text: String) -> String? {
+            // ONE LETTER IS NOT A PARTY, whichever way the tail is divided.
+            text.count >= 2 ? one(text) : nil
         }
 
         // TWO PARTIES in one tail — `KOR N-US`, `INDIA PAK`.
@@ -135,10 +186,7 @@ public enum AreaResolver {
             let halves = code.split(separator: "-", maxSplits: 1).map {
                 $0.trimmingCharacters(in: .whitespaces)
             }
-            if halves.count == 2,
-               let a = resolveHalf(halves[0], names: names, organizations: organizations),
-               let b = resolveHalf(halves[1], names: names, organizations: organizations),
-               a != b {
+            if halves.count == 2, let a = half(halves[0]), let b = half(halves[1]), a != b {
                 return paired(a, b)
             }
         }
@@ -149,10 +197,7 @@ public enum AreaResolver {
                 // A HALF MUST BE AT LEAST TWO CHARACTERS. One letter truncates far too many names
                 // to mean anything: `GER B` resolved to *Germany and Bali* on a `B` that fully
                 // covers a four-letter island, where the record almost certainly means Berlin.
-                guard left.count >= 2, right.count >= 2 else { continue }
-                if let a = resolveHalf(left, names: names, organizations: organizations),
-                   let b = resolveHalf(right, names: names, organizations: organizations),
-                   a != b {
+                if let a = half(left), let b = half(right), a != b {
                     return paired(a, b)
                 }
             }
@@ -171,22 +216,34 @@ public enum AreaResolver {
                               defaultValue: "%1$@ and %2$@"), first, second)
     }
 
-    /// One half of a paired tail, which may itself carry a compass qualifier.
+    /// One party: a whole tail, or one half of a paired one.
+    ///
+    /// A half is read exactly as a whole tail is, the curated readings included. They were not
+    /// consulted for a half until #1644, so `CHICOM` alone read *China (Communist)* by the
+    /// curated map while `CHICOM-US` took the abbreviations appendix's damaged line for the
+    /// same code, *Connnunist China and United States*.
     ///
     /// - Parameters:
-    ///   - half: The half's tokens, space-joined.
+    ///   - code: A normalised tail or half.
     ///   - names: The name list.
     ///   - organizations: Common abbreviations.
+    ///   - curated: Readings no rule can reach.
+    ///   - codes: The handbook's printed country codes.
     /// - Returns: The name, or `nil`.
-    static func resolveHalf(_ half: String, names: [String],
-                            organizations: [String: String]) -> String? {
-        if let common = organizations[half] { return common }
-        if let direct = match(half, names: names) { return direct }
-        let tokens = half.split(separator: " ").map(String.init)
+    static func resolveOne(_ code: String, names: [String], organizations: [String: String],
+                           curated: [String: String], codes: [String: String]) -> String? {
+        if let hand = curated[code] ?? curated[codeKey(code)] { return hand }
+        if let printed = codes[codeKey(code)] { return printed }
+        if let common = organizations[code] { return common }
+        if let direct = match(code, names: names) { return direct }
+
+        // A COMPASS QUALIFIER beside a name: `VIET S` and `S VIET` are the same country.
+        let tokens = code.split(separator: " ").map(String.init)
         let qualifiers = tokens.filter { directions[$0] != nil }
         let rest = tokens.filter { directions[$0] == nil }
         guard let qualifier = qualifiers.first, !rest.isEmpty,
-              let base = match(rest.joined(separator: " "), names: names),
+              let base = codes[codeKey(rest.joined(separator: " "))]
+                ?? match(rest.joined(separator: " "), names: names),
               let word = directions[qualifier]
         else { return nil }
         return "\(base), \(word)"
@@ -206,13 +263,19 @@ public enum AreaResolver {
         let tokens = code.split(separator: " ").map(String.init)
         let flat = code.replacingOccurrences(of: " ", with: "")
         var candidates: Set<String> = []
+        // LETTERS SET APART ARE INITIALS, NOT TRUNCATIONS. `U S` is the United States written
+        // with a space; taken as two first letters it covers *Soviet Union* in full, which is
+        // the shorter name and so the one that was chosen.
+        let truncates = tokens.contains { $0.count > 1 }
         for name in names {
-            if fullyCovers(name, tokens) || initials(of: name) == flat {
+            if (truncates && fullyCovers(name, tokens)) || initials(of: name) == flat {
                 candidates.insert(name)
-            } else if flat.count >= 3,
+            } else if tokens.count == 1, flat.count >= 3,
                       words(of: name).joined().hasPrefix(flat) {
                 // "the first few letters of the name" taken across the whole name, which is how
-                // `SAUD` reaches *Saudi Arabia* and `CAMB` reaches *Cambodia*.
+                // `SAUD` reaches *Saudi Arabia* and `CAMB` reaches *Cambodia*. ONE token only: a
+                // tail of two is two things, and run together `VIET N` is the first five letters
+                // of *Vietnam* — which is what North Vietnam's files read until #1644.
                 candidates.insert(name)
             }
         }
