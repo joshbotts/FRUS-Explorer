@@ -95,7 +95,9 @@ Five rules hold for every UI run, and the runbook gives the measurement behind e
   dismissed while the app is not running makes the system open the app in the background, and a
   launch that arrives then gets that process, without the suite's arguments. A test's process starts
   none (`LiveActivityPolicy`); the tests of a build older than 2026-10-11 can leave one, and so can
-  the app killed while it indexes. `TabBarNavigator` names it in the failure: run again.
+  the app killed while it indexes, until the app is next launched, which ends it (#1642). Tapping
+  Allow on the Lock Screen's Live Activities prompt opens the app in the background too.
+  `TabBarNavigator` names it in the failure: run again.
 
 **To see a launch with no lemmatiser** (#1608), the launch on which Collocates, Distinctive sizing and
 Related's shared-word chips compare printed forms: launch a Debug build with

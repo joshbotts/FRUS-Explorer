@@ -700,7 +700,14 @@ test's host and a UI test's app), so the suites no longer do this to each other.
 test that left an activity behind leaves none, and the test run first after it passed, in front.
 What still can: **the tests of a build older than the rule** (a control build of a commit before
 2026-10-11) and **the app killed by hand while it indexes**. The next run's first test then fails
-once, and `TabBarNavigator` says why when it meets the wizard. Run again. To see it in the log:
+once, and `TabBarNavigator` says why when it meets the wizard. Run again. Since #1642 (2026-10-12)
+an activity the app left is ended at the app's next launch, a test's launch included, so what the
+killed app leaves lasts only until then; an `xcodebuild` install that comes first still stops it and
+opens the app. **A second way the system opens the app in the background**, measured the same day
+on an iPhone 17 simulator (iOS 27.0), twice of two: tapping **Allow** (and later **Always Allow**)
+on the Lock Screen's "Allow Live Activities from FRUS Explorer?" prompt. `liveactivitiesd` logs
+"Launching process to deliver push token", and the launch asked for 11 seconds later was handed
+that process and showed the wizard. To see it in the log:
 ```bash
 xcrun simctl spawn <UDID> log show --last 10m --style compact --predicate \
   '(process == "liveactivitiesd" AND eventMessage BEGINSWITH "Stopping uninstalled activity") OR (process == "SpringBoard" AND (eventMessage CONTAINS "Received request to open \"bottsywattsy.FRUS-Explorer\"" OR eventMessage CONTAINS "Initial launch state"))'

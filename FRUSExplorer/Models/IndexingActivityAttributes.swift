@@ -37,11 +37,20 @@ public enum LiveActivityJobKind: String, Codable, Hashable, Sendable {
 /// The struct is compiled independently into each target — no shared framework is needed.
 ///
 /// ## Lifecycle
-/// - Started by `AppState.startIndexingLiveActivity(update:title:queuePosition:)` when
-///   the first non-complete `IndexingProgressUpdate` arrives for a new volume.
-/// - Updated by `AppState.updateIndexingLiveActivity(_:title:queuePosition:)` on each
-///   throttled progress event (≤10 Hz via the clock-based filter in `connectIndexingProgress`).
-/// - Ended by `AppState.endIndexingLiveActivity()` when stage == `.complete`.
+/// - Started by `AppState.syncIndexingLiveActivity(update:)` when the first non-complete
+///   `IndexingProgressUpdate` arrives and this process holds no indexing activity. An indexing
+///   activity an earlier process left is taken over in place of a new one.
+/// - Updated by the same function on each throttled progress event (≤10 Hz via the clock-based
+///   filter in `connectIndexingProgress`). Every update carries a stale date, and the app sends
+///   the last one again while it runs (`LiveActivityLifecycle`), so the system marks the
+///   activity stale only when the app has stopped running; the widget then draws
+///   `ContentState.Detail.stopped`.
+/// - Ended by `AppState.endIndexingLiveActivity()` when stage == `.complete`, and, for an
+///   activity nothing is driving any more, by `AppState.endLeftoverLiveActivities()` at the
+///   next launch (#1642).
+///
+/// A summarization run's activity has the same attributes and the same lifecycle, through
+/// `AppState.syncSummarizationLiveActivity()`.
 public struct IndexingActivityAttributes: ActivityAttributes {
 
     /// Dynamic content that changes with each progress update.
@@ -72,6 +81,30 @@ public struct IndexingActivityAttributes: ActivityAttributes {
 
         /// The job kind, defaulting to `.indexing` for content encoded before `kind` existed.
         public var resolvedKind: LiveActivityJobKind { kind ?? .indexing }
+
+        /// What an activity shows under its title.
+        public enum Detail: Equatable, Sendable {
+            /// The app has stopped updating the activity: the last update's stale date has passed.
+            case stopped
+            /// The indeterminate finishing phase (`isOptimizing`).
+            case finishing
+            /// Progress as a fraction, 0 to 1.
+            case progress(Double)
+            /// Under way, with no fraction to show yet.
+            case indeterminate
+        }
+
+        /// What to show under the title, given whether the system has marked the activity stale.
+        ///
+        /// Stale comes first. Whatever the last update said, the app is no longer doing it, and a
+        /// moving bar or a count of seconds left would say that it is (#1642). Both of the
+        /// widget's presentations read this, so the Dynamic Island and the Lock Screen agree.
+        public func detail(isStale: Bool) -> Detail {
+            if isStale { return .stopped }
+            if isOptimizing { return .finishing }
+            if let progressFraction { return .progress(progressFraction) }
+            return .indeterminate
+        }
     }
 }
 #endif

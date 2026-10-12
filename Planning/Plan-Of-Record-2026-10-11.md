@@ -43,7 +43,7 @@
 | 2 | Small fixes (done 2026-10-12, pull request #1654) | #1643, #1617, #1608's Copy button | no |
 | 3 | The printed-form fallback for Collocates (decision 8) (done 2026-10-12, pull request #1653, ahead of 2 on the owner's word) | #1608 | no |
 | 4 | Build 50 | — | carries v66 to v69 |
-| 5 | A Live Activity that nothing ends | #1642 | no |
+| 5 | A Live Activity that nothing ends (done 2026-10-12, pull request #1655, ahead of 4 on the owner's word) | #1642 | no |
 | 6 | Smart collections in the editors and the lists | #1619 | no |
 | 7 | Search: the document gate, Filters after a launch, and a superseded run | #1646, #1647, #1648 | no |
 | 8 | Search inside a set, lanes 4 to 7 | #1577 | no |
@@ -58,6 +58,12 @@
   - **The look was on a simulator, with the fault made.** The iPhone 17 simulator under iOS 27.0 kept its lemmatiser in fifteen launches of fifteen (fourteen relaunches and one after a fresh boot); the iPad Pro 13-inch (M5) lost it by itself once in three, in a test run and not where it could be looked at. So a debug-only launch argument, `FRUS_DEBUG_NO_LEMMA_ANSWER=1`, leaves the lemma request unanswered as iOS left it on the phone, and the verdict line then reads as the phone's did. All three surfaces were seen falling back with their notes, and seen without them on a launch that lemmatises. On the Mac, in the isolated check copy, Collocates, the word cloud and Related Documents were walked and show nothing new, and Language Analysis reads *Working*; the fallback itself cannot be made there, since the copy is a release build. Not seen on the owner's iPhone, where the fault is (§3).
   - **One review pass** found eight things, the first a test the full run would have failed (the new file had no provenance row). The session entry lists them and what each changed.
 - **4 — build 50.** §2.
+- **5 — #1642 (decision 3). Done 2026-10-12, pull request #1655, ahead of 4 on the owner's word that day; it depends on nothing in the bump.** A Live Activity the last process left is ended at the next launch, a background launch included, unless a pass that launch resumes takes it over, as such a pass did before. Every update carries a stale date, and the widget draws a stale activity as stopped: a grey pause mark, the bar held grey where it was, and *Indexing has stopped. Open FRUS Explorer to continue.* (or *Summarizing has stopped. …*).
+  - **The date is two minutes, because the system gives no less.** Measured on an iPhone 17 simulator under iOS 27.0: a stale date 30 or 60 seconds after an update was scheduled at 120 seconds, and 180 and 600 as asked.
+  - **A keep-alive was added, which the decision did not name.** The app sends an activity it holds its last state again every 30 seconds, so the date passes only when the app has stopped running. Without it a pass that reports nothing for two minutes, as a whole-library pass's last merge and a summarization run's listing of a large scope can, would read as stopped while it worked: a pass made to report once was marked stale at 120 seconds while still indexing, and with the keep-alive the same pass ran 3 minutes 51 seconds unmarked.
+  - **Seen on the simulator**, before and after, killed and suspended, with the Lock Screen and the Dynamic Island looked at in each state; the session entry has the times. Not seen: a device, an iPad's Lock Screen, a real summarization run's activity (the second sentence was seen drawn on a build that labelled an index run as one), the minimal presentation, and VoiceOver.
+  - **If it merges before the bump, build 50 carries it** and the notes owe it a line: a Live Activity now says when indexing has stopped, and goes away when the app is next opened.
+  - **No index bump and no CloudKit change.** What it found and left is in §5b.
 - **7 — the three Search issues** go before #1577's lane 4 because #1646's fix is in `MacSearchViewModel`, which lane 5 edits. #1648 changes `SearchService` or `FTS5Store`, which are kit code: it owes `swift test` and a line for the web edition. If its design carries risk, it is a pull request of its own.
 - **8 — #1577.** Lanes 4 to 7 are as the implementation plan on the issue gives them; `Planning/Issue-1577-Search-Within-Results-Assessment.md` is the assessment. Lane 4 waits on the owner's three timings (§3). Lanes 4 and 5 adopt the two layered routes, whose header and capture sentences lane 2 wrote and no search produces yet. Lane 4's UI tests reach a Meaning list through lane 3's seam (`FRUS_UI_TEST_SEED_MEANING`); `Planning/UI-Test-Destinations-Runbook.md`'s entry for `MeaningResultsSeamTests` says what it lists.
 - **The order after build 50 is this plan's.** The owner can reorder 5 to 8.
@@ -159,6 +165,14 @@ Each changes what indexing stores. They go together, in the build after 50, if t
 - **Archives Visit:** the packet's line for a divided lot cited through the National Archives is unchanged (#1589's optional fourth step).
 - **Cross-references:** `CrossRefKit`'s mirror grammar has no whole-volume case. The bundled resolved-edge index leaves out the 273 references to a footnote in another volume and the 383 that sections' own text makes to other volumes' documents. The volume graph holds 1,256 references to volumes outside the catalogue where it held 12, and how it draws such a volume was not looked at.
 - **Tests:** four UI suites still open the first row labelled "Subseries", which a simulator holding real volumes breaks (#1641). #1633's body says its Mac half was run where its session entry says it was not.
+- **Live Activities (#1642), each measured or read on 2026-10-12:**
+  - In a queue indexed volume by volume, a volume that starts within the three seconds the last volume's activity lingers takes that ended activity over and shows nothing: of three volumes in one launch pass, the first and third had an activity and the second none. Ending the activity with the queue, and not with each volume, would fix it and would let a queue that goes on in the background keep its activity; it changes what the Lock Screen shows through a queue.
+  - A volume the background task re-indexes after the app was killed has no activity: the launch ended the leftover, and none can be started from the background.
+  - A volume whose pass throws keeps its banner and its activity for as long as the app runs, or until a later volume finishes: nothing reports its end, and the keep-alive goes on calling the activity current.
+  - Between two background runs of a batch with **Continue in the background** on, the activity reads *Summarizing has stopped*, though the app will summarize again at its next wake.
+  - The app asks for an activity at every progress update while it is in the background, up to ten times a second, and is refused each time.
+  - The activity's title is empty through a whole-library pass's finishing merge, and its seconds left read "~0s" for most of a volume.
+  - The widget's four older strings have no EditableContent block.
 - **Upstream:** the 47 restored documents have no subject tags, since the Office's subject export of 2026-08-20 stops at Document 899, and nothing was posted to HistoryAtState/frus#469 about the restoration.
 
 ### 5c. Carried from the build-49 wave

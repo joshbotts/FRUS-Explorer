@@ -27,10 +27,18 @@ private extension IndexingActivityAttributes.ContentState {
         }
     }
 
-    /// SF Symbol for the expanded / lock-screen leading icon (optimise overrides).
-    var leadingSymbol: String {
+    /// SF Symbol for the expanded / lock-screen leading icon (stale overrides optimise, which
+    /// overrides the job kind).
+    func leadingSymbol(isStale: Bool) -> String {
+        if isStale { return "pause.circle" }
         if isOptimizing { return "wand.and.stars" }
         return compactSymbol
+    }
+
+    /// The colour of the activity's icons: blue while the app is updating it, grey once it has
+    /// stopped.
+    func iconColor(isStale: Bool) -> Color {
+        isStale ? .secondary : .blue
     }
 
     /// Localised text shown while progress is indeterminate (no fraction).
@@ -45,6 +53,24 @@ private extension IndexingActivityAttributes.ContentState {
                           defaultValue: "Preparing to summarize…")
         }
     }
+
+    /// Localised text shown once the app has stopped updating the activity (#1642).
+    ///
+    /// The system marks an activity stale two minutes after its last update, and the app sends
+    /// one every thirty seconds while it runs, so this shows when the app has been suspended in
+    /// the background or has gone. The widget cannot tell which. Opening the app is the next step
+    /// in both: a suspended run goes on, and after the app was closed the launch ends this
+    /// activity and shows what is left to do.
+    var stoppedLabel: String {
+        switch resolvedKind {
+        case .indexing:
+            return String(localized: "liveactivity.stopped.indexing",
+                          defaultValue: "Indexing has stopped. Open FRUS Explorer to continue.")
+        case .summarizing:
+            return String(localized: "liveactivity.stopped.summarizing",
+                          defaultValue: "Summarizing has stopped. Open FRUS Explorer to continue.")
+        }
+    }
 }
 
 /// Live Activity widget for FRUS Explorer indexing progress.
@@ -53,16 +79,20 @@ private extension IndexingActivityAttributes.ContentState {
 /// - **Dynamic Island compact**: small download icon (leading) + percentage or "…" (trailing)
 /// - **Dynamic Island expanded**: volume title, linear progress bar, ETA
 /// - **Lock screen / banner**: full progress card matching the expanded Dynamic Island layout
+///
+/// Each draws a stale activity as stopped (#1642): grey icons, a pause mark where the percentage
+/// was, the bar held grey at its last fraction, and `stoppedLabel` in place of the count and the
+/// seconds left. `ContentState.detail(isStale:)` decides it for all three.
 struct IndexingLiveActivity: Widget {
 
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: IndexingActivityAttributes.self) { context in
-            IndexingLockScreenView(state: context.state)
+            IndexingLockScreenView(state: context.state, isStale: context.isStale)
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: context.state.leadingSymbol)
-                        .foregroundStyle(.blue)
+                    Image(systemName: context.state.leadingSymbol(isStale: context.isStale))
+                        .foregroundStyle(context.state.iconColor(isStale: context.isStale))
                         .font(.title3)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
@@ -73,26 +103,37 @@ struct IndexingLiveActivity: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    IndexingExpandedView(state: context.state)
+                    IndexingExpandedView(state: context.state, isStale: context.isStale)
                 }
             } compactLeading: {
                 Image(systemName: context.state.compactSymbol)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(context.state.iconColor(isStale: context.isStale))
             } compactTrailing: {
-                if context.state.isOptimizing {
+                switch context.state.detail(isStale: context.isStale) {
+                case .stopped:
+                    Image(systemName: "pause.fill")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(context.state.stoppedLabel)
+                case .finishing:
                     Image(systemName: "wand.and.stars")
                         .foregroundStyle(.blue)
-                } else if let fraction = context.state.progressFraction {
+                case .progress(let fraction):
                     Text("\(Int(fraction * 100))%")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.primary)
-                } else {
+                case .indeterminate:
                     Image(systemName: "ellipsis")
                         .foregroundStyle(.secondary)
                 }
             } minimal: {
-                Image(systemName: context.state.compactSymbol)
-                    .foregroundStyle(.blue)
+                if context.isStale {
+                    Image(systemName: "pause.fill")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel(context.state.stoppedLabel)
+                } else {
+                    Image(systemName: context.state.compactSymbol)
+                        .foregroundStyle(.blue)
+                }
             }
         }
     }
@@ -102,20 +143,36 @@ struct IndexingLiveActivity: Widget {
 
 private struct IndexingExpandedView: View {
     let state: IndexingActivityAttributes.ContentState
+    /// Whether the system has marked the activity stale: the app has stopped updating it.
+    let isStale: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(state.volumeTitle)
                 .font(.caption.weight(.semibold))
                 .lineLimit(2)
-            if state.isOptimizing {
+            switch state.detail(isStale: isStale) {
+            case .stopped:
+                // The bar is held, grey, at the last fraction the app reported: where the work
+                // stopped. A state that had no fraction has no bar, since a moving one would say
+                // that something is still happening.
+                if let fraction = state.progressFraction {
+                    ProgressView(value: fraction)
+                        .progressViewStyle(.linear)
+                        .tint(Color.secondary)
+                }
+                Text(state.stoppedLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            case .finishing:
                 ProgressView()
                     .progressViewStyle(.linear)
                     .tint(.blue)
                 Text(String(localized: "liveactivity.optimizing", defaultValue: "Finalizing index…"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-            } else if let fraction = state.progressFraction {
+            case .progress(let fraction):
                 ProgressView(value: fraction)
                     .progressViewStyle(.linear)
                     .tint(.blue)
@@ -132,7 +189,7 @@ private struct IndexingExpandedView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-            } else {
+            case .indeterminate:
                 ProgressView()
                     .progressViewStyle(.linear)
                     .tint(.blue)
@@ -147,14 +204,16 @@ private struct IndexingExpandedView: View {
 
 private struct IndexingLockScreenView: View {
     let state: IndexingActivityAttributes.ContentState
+    /// Whether the system has marked the activity stale: the app has stopped updating it.
+    let isStale: Bool
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: state.leadingSymbol)
+            Image(systemName: state.leadingSymbol(isStale: isStale))
                 .font(.title2)
-                .foregroundStyle(.blue)
+                .foregroundStyle(state.iconColor(isStale: isStale))
                 .frame(width: 32)
-            IndexingExpandedView(state: state)
+            IndexingExpandedView(state: state, isStale: isStale)
         }
         .padding()
     }

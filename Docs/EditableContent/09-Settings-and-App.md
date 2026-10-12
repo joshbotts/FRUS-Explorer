@@ -1534,6 +1534,22 @@ Indexed %@
 
 <!-- END SOURCE: statusBar.dated %@ %@ -->
 
+#### The Live Activity, once the app has stopped updating it (#1642)
+
+*Added 2026-10-12 (#1642). What the Lock Screen and the Dynamic Island say under the activity’s title when the app has stopped updating it: iOS suspended the app after you left it, or the app was closed. The system marks the activity two minutes after the app’s last update, and until then it shows the progress as it stood. One sentence for an index run and one for a summarization run. The widget cannot tell a suspended app from a closed one, so each sentence has to be true of both: opening the app carries a suspended run on, and after the app was closed the launch removes the activity. Between two background runs of a batch with Continue in the background switched on, the summarization sentence shows too, although the app will summarize again by itself. The indexing sentence fits one line on an iPhone 17’s Lock Screen and the summarization sentence wraps to two; the second was seen only on a build that labelled an index run as a summarization run, since no summarization runs on a simulator.*
+
+<!-- SOURCE: FRUSExplorerWidgets/IndexingLiveActivity.swift | ContentState.stoppedLabel | lines: 67–68 | key: liveactivity.stopped.indexing -->
+
+Indexing has stopped. Open FRUS Explorer to continue.
+
+<!-- END SOURCE: liveactivity.stopped.indexing -->
+
+<!-- SOURCE: FRUSExplorerWidgets/IndexingLiveActivity.swift | ContentState.stoppedLabel | lines: 70–71 | key: liveactivity.stopped.summarizing -->
+
+Summarizing has stopped. Open FRUS Explorer to continue.
+
+<!-- END SOURCE: liveactivity.stopped.summarizing -->
+
 ### 18.15 One key, one text (#1483)
 
 *Added 2026-09-27 for this review and closed on 2026-09-30 with your choice, “all A”. Each key below was declared with two different texts. Each now carries one text, or its second text has a key of its own. Each block shows the text with every place it ships, by file and line after the close-out. The Source Explorer key of the same kind, `source.explorer.unrecognized.explanation`, is in §11.1. A test now fails when any key in the app is declared with two texts. It found five more, each an iPhone/iPad text beside a Mac one, and you settled those on 2026-10-01 with “all recommended” (the last part of this section). The test now lets no key through.*
@@ -1686,13 +1702,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4320–4320 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4349–4349 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3823–3823 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3852–3852 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
 
 Search…
 
