@@ -37797,3 +37797,42 @@ Pull request 1 of the queue in `Planning/Plan-Of-Record-2026-10-11.md` (§1), be
 
 **Docs**
 - `Planning/Generators-Runbook.md`: the generator's entry, rewritten. `CLAUDE.md`: the rule that the generator does not reproduce its table is replaced by the rule that a regenerated table ships only when every changed label has been read, with when a regeneration is owed; the tools table lists `decimal-class-labels.json` among what the generator reads. `Docs/Agentic-Analysis-Guide.md`: §14.11's row and change-log entry 1.27.
+
+## Session 2026-10-12 — Every Subject-Numeric label a document cites is read on the scan, and the 49 the capture had damaged are put right (the follow-up to #1644)
+
+The owner merged #1651 and asked for the letter-level damage it left to be curated in a follow-up. One bundled file is regenerated, `subject-numeric-labels.json`. No index version, no re-index, no CloudKit deploy, no new or renamed resource; the grammar's lists are untouched. No issue was filed: the pull request says what it is.
+
+**The defect.** #1651 corrected the cited labels that said another entry's words and left those that said their own, misspelt: under 1964–1973 `DEF 12-5` read *Procurement. Sole.* over 226 documents, `POL 14` *El ECTIOMS* over 85 and `POL 3` *ORGANIZATIONS & AliGNMENTS* over 50; under 1963 `POL 17` read *DIPLOMATIC & CONSULAR REPRESENTA TION* over 98. It estimated about fifty.
+
+**How they were found.** Not from a list of labels that look damaged. The first rows rendered showed why: `POL 8` of 1963 read *NEUTRALISM.*, which is whole English, and the page prints *NEUTRALISM. NON-ALIGNMENT.* on two lines. So every label a document cites was read on the scan: its row rendered from the page and height `REVIEW_OUTPUT` gives, cropped to its own column, and read beside the table's text. 279 rows of the 1963 handbook and 252 of the 1965 one (seven of the second were read on whole-page crops for #1651, having no row the parse opened), and the 27 rows of the organizations' lists a document cites.
+
+**What was found**
+- **49 subject labels differed, 22 under 1963 and 27 under 1964–1973.** A word the capture broke in two, three or four (`REPRESENTA TION`, `Deve lopme nt`, `Most-F ovored-Nation T reotment`); a wrong letter, most of them in the face the 1965 edition sets its headings in, which gives `l` for `L`, `i` for `I`, `H` and `M` for `N` and `o` for `a` (`POliTICAL PARTIES`, `NOH-PARTY BLOCS`, `GEMERAL REPORTS & STATISTICS`, `Policy. Pions. ideology.`, *Sole*); a mark that is not on the page (`&:`, a comma for a full stop, a full stop inside `CONFE.RENCES`); and the one label cut short. The other 482 read as the page prints them.
+- **The organizations' list of 1964–1973 had no first entry and no last page.** Its `1`, *ADMINISTRATION (GENERAL)*, has a number the capture did not read, as `DEF 1` had. Its last page's corner mark reads `10` with its `(p. 5)` gone, so the list was taken to end a page early and holds nothing from `16-3` on. The four entries a document cites are curated (`1`, `17-1`, `22-1`, `22-2`, eleven documents); the rest of that page, 17 to 31, is still unread.
+
+**What was built**
+- `SubjectNumericLabelRunner.curatedSubjects` gains the 49 (149 keys now, 7 of them refusals), and `curatedOrganizationSubjects` a 1964–1973 block of four.
+- **The table.** 49 subject labels changed and none added or removed; organization subjects 50 → 54 under 1964–1973; areas, abbreviations and category names as they were. 1964–1973 now reads a subject for 1,291 of 1,635 numbered keys and 7,139 of 7,960 documents (89.7%; 1,286 and 7,128 before). SHA-256 `add2e751a3691c9f27814e01dac7dfcf6c50ca1def8d4f2ba0bbd1a090b6be47`, natively twice and inside the iOS 26.5 and 27.0 runtimes.
+
+**Tests** (`ShippedLabelTableTests`, 11 tests where there were 9; the generator's target 89 in 15 suites)
+- `theCitedLabelsAreClean` holds every cited label, under both schedules, to the five shapes of damage text can show: a lower-case letter running into a capital, a piece of a broken word, a capital consonant standing alone, a mark the page does not print (`&:`, a full stop run into a word), and a lower-case letter in a heading. It counts what it checked (over 500) and carries its own controls. Run over the table as it was, it records 19 issues: the shapes see 19 of the 49.
+- `theCitedLabelsAreSpeltAsPrinted` pins by name what no shape gives away (18 of its 19 expectations fail on the table as it was): the wrong letters (*Sale*, *ELECTIONS*, *NON-PARTY*, *CENTERS*, *GENERAL*), the label cut short, and the four organization entries.
+- **Mutations, on a committed tree, each restored.** `POL 3` back to *AliGNMENTS*: both tests failed. `DEF 12-5` back to *Sole*: the pin alone failed, which is what the pins are for. `DEF 15-4` of 1963 back to *Bas e Agreements*, and `POL 7` given an `l` for its `I` (a label never damaged): the class test failed.
+- `theOrganizationSubjectsAreCurated` had held that the 1964–1973 list was left as read; it now holds that it keeps what it read and gains the four.
+
+**Checked**, on the tree as committed but for this section
+- `swift build --target FRUSCoreKit`: "Build complete!". `swift test`: exit 0, 38 `Test run with` lines, each passed, 2,719 tests in 326 suites, no issue recorded (2,717 at #1651: the two new tests).
+- **The iOS unit target** on iPhone 17 (iOS 27.0): "Test run with 7029 tests in 828 suites passed after 420.180 seconds with 6 known issues", `** TEST SUCCEEDED **`, exit 0, no failed line. The six are #1606's, all in `SyncDiagnosticsEntryTests`.
+- **The Mac.** `FRUSExplorerMac`, a clean build in its own derived data (`CODE_SIGNING_ALLOWED=NO`): `** BUILD SUCCEEDED **`, the regenerated table copied into the bundle, and no warning but the two known residues. Built, not run.
+- **The generator**, rebuilt from the tree as committed: the committed table byte for byte, natively twice and inside both simulator runtimes.
+- **No file quotes a label that moved**: the 49 old labels were searched for in `Docs/`, the README, both test targets and the app's source, and found in none.
+
+**Not done, and left as found**
+- **Labels no document cites** are as the capture left them (`ACC 10` reads *REAl PROPERTY ACCOUNTING*), and so are the category names, which no screen reads.
+- **The rest of the organizations' last page under 1964–1973** (17 to 31, but for the three cited entries).
+- **Designators with no subject** (793 documents under 1964–1973, `POL 1` 272 of them), tails the volumes gloss that stay bare, and the questions #1651 left with the owner (`ARAB`, `ORG 7 NEA`) are where that pull request left them.
+- **No screen was looked at.** The manuals are unchanged: neither quotes a label that moved, and no test or source file does.
+
+**Docs**
+- `Planning/Generators-Runbook.md`: the generator's entry (the figures, the digest, and the paragraph on letter-level damage, which now says how it was read and what was found). `Docs/Agentic-Analysis-Guide.md`: §14.11's row and change-log entry 1.28. `CLAUDE.md` needed no change.
+- The tools of the read are outside the repository, in the session's durable folder (`read_all_cited.py`, `read_rows.py`, a page-band renderer and a montage): they are of no use without the scans, which stay local.

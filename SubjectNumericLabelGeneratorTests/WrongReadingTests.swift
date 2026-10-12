@@ -436,10 +436,18 @@ struct SubjectCurationTests {
         #expect(list["16-5"]?.label == "Public Inquiries & Opinion")
         #expect(list["16-6"]?.label == "Nongovernmental Liaison")
         #expect(list["8-3"]?.page == 25, "a corrected entry keeps its place on the scan")
-        // The other schedule's list is left as read.
+        // The other schedule's list keeps what it read, and gains the entries the capture did not
+        // open: its first, and three of a last page whose corner mark is short of its page number.
         var later = ["8-3": source("Secretariat")]
         try SubjectNumericLabelRunner.curate(organizationSubjects: &later, schedule: "1964-1973")
-        #expect(later == ["8-3": source("Secretariat")])
+        #expect(later["8-3"] == source("Secretariat"))
+        #expect(later["1"]?.label == "ADMINISTRATION (GENERAL)")
+        #expect(later["22-2"]?.label == "Foreign Country Delegations. Representatives.")
+        #expect(later.count == 5)
+        // A schedule the curation does not name is left exactly as read.
+        var other = ["8-3": source("Secretariat")]
+        try SubjectNumericLabelRunner.curate(organizationSubjects: &other, schedule: "no-such-schedule")
+        #expect(other == ["8-3": source("Secretariat")])
         var marked = ["3": source("MEETI~GS")]
         #expect(throws: GenerationError.self) {
             try SubjectNumericLabelRunner.curate(organizationSubjects: &marked,
@@ -591,6 +599,104 @@ struct ShippedLabelTableTests {
         #expect(earlier.organizationSubjects["8-3"] == "Secretariat")
         #expect(earlier.organizationSubjects["8-4"] == "Committees. Working Groups.")
         #expect(later.organizationSubjects["8-3"] == "Secretariat")
+    }
+
+    /// The category and designator of every numbered key the corpus cites, by the generator's own
+    /// division.
+    private func citedDesignators() throws -> Set<[String]> {
+        let usage = try JSONSerialization.jsonObject(
+            with: Data(contentsOf: resource("collection-usage-index.json"))) as? [String: Any]
+        let keys = try #require(usage?["classKeys"] as? [String])
+        return Set(keys.compactMap { key in
+            SubjectNumericLabelRunner.splitSubjectNumeric(key).map { [$0.0, $0.1] }
+        })
+    }
+
+    /// The letter-level damage the capture leaves in a label, by the five shapes that can be
+    /// told from the text alone. A wrong letter inside a word (*ECTIOMS*, *Sole*) cannot, which
+    /// is why every cited label was read on the scan and the worst are pinned by name below.
+    ///
+    /// - Parameters:
+    ///   - label: A subject label.
+    ///   - isHeading: Whether its designator is a whole number, whose label both handbooks set
+    ///     in capitals.
+    /// - Returns: What is wrong with it, or nothing.
+    private func damage(in label: String, isHeading: Bool) -> [String] {
+        var found: [String] = []
+        func has(_ pattern: String) -> Bool {
+            label.range(of: pattern, options: .regularExpression) != nil
+        }
+        if has(#"[a-z][A-Z]"#) { found.append("a lower-case letter runs into a capital") }
+        let words: Set<String> = ["a", "of", "in", "to", "at", "by", "or", "on", "re", "as", "an"]
+        let pieces = label.split(whereSeparator: { !$0.isLetter }).map(String.init)
+        if pieces.contains(where: { $0.count <= 2 && $0 == $0.lowercased() && !words.contains($0) }) {
+            found.append("a piece of a broken word")
+        }
+        // `F inancia I`, `Country T earn`: the first letter of a word, set apart from it. A, E,
+        // I and U stand alone in labels as words, numerals and initials (`E & E`, `Title I`).
+        if has(#"(^| )[B-DF-HJ-TV-Z]( |$)"#) { found.append("a capital consonant standing alone") }
+        // `&:`, and a full stop run into the word after it (`CONFE.RENCES`, `MONEY.CURRENCY.`).
+        if has(#"&:|[A-Za-z]\.[A-Za-z]{2}"#) { found.append("a mark the page does not print") }
+        if isHeading, label.contains(where: \.isLowercase) {
+            found.append("a lower-case letter in a heading")
+        }
+        return found
+    }
+
+    @Test("No label a document cites carries the capture's letter damage")
+    func theCitedLabelsAreClean() throws {
+        let cited = try citedDesignators()
+        var checked = 0
+        for schedule in try table().schedules {
+            for pair in cited {
+                guard let label = schedule.subjects[pair[0]]?[pair[1]] else { continue }
+                checked += 1
+                // INCO 17 and 18 are the commodity breakdown's own entries, which that list
+                // sets in lower case (`17 Trade`).
+                let isHeading = !pair[1].contains("-") && !(pair[0] == "INCO" && ["17", "18"].contains(pair[1]))
+                #expect(damage(in: label, isHeading: isHeading) == [],
+                        "\(schedule.id) \(pair[0]) \(pair[1]): \(label)")
+            }
+        }
+        // 279 under 1963 and 252 under 1964–1973 when the follow-up to #1644 read them.
+        #expect(checked > 500, "checked \(checked) cited labels")
+        // The control: the check does see the damage it is for.
+        #expect(damage(in: "ORGANIZATIONS & AliGNMENTS", isHeading: true).count == 2)
+        #expect(damage(in: "Sale. Purc ha se. Transfer.", isHeading: false) == ["a piece of a broken word"])
+        #expect(damage(in: "El ECTIOMS", isHeading: true) == ["a lower-case letter in a heading"])
+        #expect(damage(in: "Country T earn", isHeading: false) == ["a capital consonant standing alone"])
+        #expect(damage(in: "MONEY.CURRENCY.", isHeading: true) == ["a mark the page does not print"])
+        #expect(damage(in: "Use of Foreign Country Forces", isHeading: false) == [])
+        #expect(damage(in: "Shipments of Non-U.S. Origin Goods", isHeading: false) == [])
+        #expect(damage(in: "E & E Policy. Plans.", isHeading: false) == [])
+    }
+
+    /// Wrong letters inside a word, which no shape gives away, and a label cut short that read
+    /// as whole English. Each was read on the scan.
+    @Test("The most cited labels spell their words as the page does")
+    func theCitedLabelsAreSpeltAsPrinted() throws {
+        let schedules = try table().schedules
+        let earlier = schedules[0], later = schedules[1]
+        #expect(later.subjects["DEF"]?["12-5"] == "Procurement. Sale.", "226 documents, read Sole")
+        #expect(later.subjects["POL"]?["14"] == "ELECTIONS", "85 documents, read El ECTIOMS")
+        #expect(later.subjects["POL"]?["3"] == "ORGANIZATIONS & ALIGNMENTS")
+        #expect(later.subjects["POL"]?["23"] == "INTERNAL SECURITY. COUNTER-INSURGENCY.")
+        #expect(later.subjects["POL"]?["13"] == "NON-PARTY BLOCS", "read NOH-PARTY")
+        #expect(later.subjects["POL"]?["12-1"] == "Policy. Plans. Ideology.", "read Pions")
+        #expect(later.subjects["SP"]?["10"] == "SPACE FLIGHT & EXPLORATION")
+        #expect(later.subjects["CUL"]?["11"] == "LIBRARIES & CENTERS", "read CEHTERS")
+        #expect(later.subjects["FN"]?["2"] == "GENERAL REPORTS & STATISTICS", "read GEMERAL")
+        #expect(later.subjects["STR"]?["5"] == "EXPORT CONTROL REGULATIONS & PROCEDURES")
+        #expect(later.subjects["AV"]?["12-1"] == "Production. Repair.", "a comma for a full stop")
+        #expect(earlier.subjects["POL"]?["17"] == "DIPLOMATIC & CONSULAR REPRESENTATION")
+        #expect(earlier.subjects["POL"]?["8"] == "NEUTRALISM. NON-ALIGNMENT.", "cut short of its second line")
+        #expect(earlier.subjects["DEF"]?["19-3"] == "Equipment & Supplies (Mil. Assistance)")
+        #expect(earlier.subjects["INT"]?["8"] == "DISSEMINATION OF INTELLIGENCE")
+        // The organizations' list under 1964–1973: its first entry and its last page.
+        #expect(later.organizationSubjects["1"] == "ADMINISTRATION (GENERAL)")
+        #expect(later.organizationSubjects["17-1"] == "Headquarters Site. Building.")
+        #expect(later.organizationSubjects["22-2"] == "Foreign Country Delegations. Representatives.")
+        #expect(earlier.organizationSubjects["22-2"] == "Foreign Country Delegations")
     }
 
     @Test("AID has an outline under 1964–1973, and is no organization's file")
