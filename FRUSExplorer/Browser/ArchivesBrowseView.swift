@@ -32,6 +32,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — #1051 B-5: initial implementation
+///   1.1 — 2026-10-12: #1643 — `volumeAccessory(documents:sourcedDocuments:locale:)`, the one
+///         "N docs · P%" both drills show, singular at one
 enum ArchivesAxis {
 
     /// One provenance-type door: a category and its series-wide reach.
@@ -98,6 +100,31 @@ enum ArchivesAxis {
             .rounded())
     }
 
+    /// A volume's accessory in a drill list: "12 docs · 40%", its documents from the door or
+    /// class and their share of the volume's own sourced documents, or "12 docs" alone where the
+    /// volume has no sourced-document count to divide by (#1643).
+    ///
+    /// The provenance-type drill and the class drill (`ArchivesClassAxis.spec(for:era:usage:)`)
+    /// each wrote both strings by interpolation, which has no form for one: a volume with one
+    /// such document read "1 docs · 3%". The count now comes from `CountCopy.docs`, and both
+    /// drills ask here.
+    ///
+    /// - Parameters:
+    ///   - documents: The volume's documents drawn from the door or citing the class.
+    ///   - sourcedDocuments: The volume's sourced-document count, or `nil` when the usage index
+    ///     has none for it.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The accessory.
+    static func volumeAccessory(documents: Int, sourcedDocuments: Int?,
+                                locale: Locale = .autoupdatingCurrent) -> String {
+        let count = CountCopy.docs(documents, locale: locale)
+        guard let sourcedDocuments, sourcedDocuments > 0 else { return count }
+        let share = Int((Double(documents) / Double(sourcedDocuments) * 100).rounded())
+        return String(format: String(localized: "browser.archives.accessory.share %@ %@",
+                                     defaultValue: "%1$@ · %2$@%%"),
+                      count, share.formatted(.number.locale(locale)))
+    }
+
     /// The R-1 drill spec for one provenance-type door: volumes largest-count first, a
     /// "N docs · P%" accessory whose denominator is the volume's own sourced-document
     /// count, and the caption that names both universes.
@@ -114,16 +141,8 @@ enum ArchivesAxis {
         }
         var accessories: [String: String] = [:]
         for (volumeId, docs) in byVolume {
-            if let notes = usage.noteCount(forVolumeId: volumeId), notes > 0 {
-                let share = Int((Double(docs) / Double(notes) * 100).rounded())
-                accessories[volumeId] = String(
-                    localized: "browser.archives.accessory",
-                    defaultValue: "\(docs) docs · \(share)%")
-            } else {
-                accessories[volumeId] = String(
-                    localized: "browser.archives.accessory.plain",
-                    defaultValue: "\(docs) docs")
-            }
+            accessories[volumeId] = volumeAccessory(
+                documents: docs, sourcedDocuments: usage.noteCount(forVolumeId: volumeId))
         }
         let name = displayName(forCategory: slug)
         return VolumeListSpec(
@@ -449,8 +468,8 @@ struct ArchivesIndexView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Text(String(localized: "browser.archives.classes.count",
-                            defaultValue: "\(row.documents) docs"))
+                // #1643: a class one document cites read "1 docs".
+                Text(CountCopy.docs(row.documents))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
             }

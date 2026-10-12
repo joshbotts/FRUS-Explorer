@@ -49,6 +49,8 @@ struct AXChartPoint: Sendable, Hashable {
 ///   1.1 — 2026-10-09: #1587 — `descriptor(title:graph:)`, from the numbers a table's adapter
 ///          states, and `isContinuous` on the two builders, for a scatter
 ///   1.2 — 2026-10-11: #1616 — a graph that names every series keeps a lone series' name
+///   1.3 — 2026-10-12: #1617 — a point on a categorical axis is given its category's name, where
+///          both builders gave it its position in the list (``dataPoint(_:onNumericAxis:)``)
 enum AXChartDescriptorBuilder {
 
     #if canImport(Accessibility)
@@ -117,8 +119,9 @@ enum AXChartDescriptorBuilder {
                 : String(format: "%.1f", value)
         }
 
+        let isNumeric = points.allSatisfy { $0.x != nil }
         let xAxis: AXDataAxisDescriptor
-        if points.allSatisfy({ $0.x != nil }) {
+        if isNumeric {
             let xValues = points.compactMap(\.x)
             let minX = xValues.min() ?? 0
             let maxX = xValues.max() ?? 0
@@ -130,7 +133,7 @@ enum AXChartDescriptorBuilder {
         } else {
             // A categorical axis keeps the labels the chart shows — subseries and volume axes
             // have no numeric x, and forcing an index onto them would read as a meaningless
-            // coordinate.
+            // coordinate. Each point is then given its own label for its x (#1617).
             xAxis = AXCategoricalDataAxisDescriptor(
                 title: xLabel,
                 categoryOrder: points.map(\.label)
@@ -139,13 +142,8 @@ enum AXChartDescriptorBuilder {
 
         let series = AXDataSeriesDescriptor(
             name: title,
-            isContinuous: isContinuous ?? points.allSatisfy { $0.x != nil },
-            dataPoints: points.map { point in
-                AXDataPoint(x: point.x ?? Double(points.firstIndex(of: point) ?? 0),
-                            y: point.y,
-                            additionalValues: [],
-                            label: point.label)
-            }
+            isContinuous: isContinuous ?? isNumeric,
+            dataPoints: points.map { dataPoint($0, onNumericAxis: isNumeric) }
         )
 
         return AXChartDescriptor(
@@ -187,8 +185,9 @@ enum AXChartDescriptorBuilder {
             value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
         }
 
+        let isNumeric = all.allSatisfy { $0.x != nil }
         let xAxis: AXDataAxisDescriptor
-        if all.allSatisfy({ $0.x != nil }) {
+        if isNumeric {
             let xValues = all.compactMap(\.x)
             let minX = xValues.min() ?? 0
             let maxX = xValues.max() ?? 0
@@ -209,16 +208,42 @@ enum AXChartDescriptorBuilder {
             AXDataSeriesDescriptor(
                 name: entry.name,
                 isContinuous: isContinuous ?? entry.points.allSatisfy { $0.x != nil },
-                dataPoints: entry.points.map { point in
-                    AXDataPoint(x: point.x ?? Double(entry.points.firstIndex(of: point) ?? 0),
-                                y: point.y,
-                                additionalValues: [],
-                                label: point.label)
-                }
+                dataPoints: entry.points.map { dataPoint($0, onNumericAxis: isNumeric) }
             )
         }
         return AXChartDescriptor(title: title, summary: nil, xAxis: xAxis, yAxis: yAxis,
                                  additionalAxes: [], series: series)
+    }
+
+    /// One plotted point as the framework's data point (#1617): on a numeric axis its x is the
+    /// point's number, and on a categorical axis it is the category's name, which is the label
+    /// the axis lists.
+    ///
+    /// `AXAudiograph.h` asks for exactly that. A data point's x value "should be a Double for a
+    /// numeric x-axis or a String for a categorical x-axis", and of the value itself "only the
+    /// `category` property will be used for data points in a categorical axis". Both builders
+    /// declared a categorical axis and then gave each point a number, its position in the list
+    /// (`firstIndex(of:)`, which is also the same number for two equal points). So the property
+    /// the framework reads there was empty for every bar of every ranking chart: people, archival
+    /// units, regions, countries, kinds of collection and administrations.
+    ///
+    /// Two bars that print one label share one category, as they share one name on the chart's
+    /// axis. No table is known to produce two.
+    ///
+    /// **Not heard.** A simulator plays no Audio Graph, so what VoiceOver did with a number on a
+    /// categorical axis, and what it does with the name, were never listened to. This follows the
+    /// header; `CategoricalAudioGraphPointTests` holds each point to it.
+    ///
+    /// - Parameters:
+    ///   - point: The plotted point.
+    ///   - isNumeric: Whether the x axis is numeric, which it is when every point has a numeric x.
+    /// - Returns: The data point.
+    @MainActor
+    private static func dataPoint(_ point: AXChartPoint, onNumericAxis isNumeric: Bool) -> AXDataPoint {
+        if isNumeric, let x = point.x {
+            return AXDataPoint(x: x, y: point.y, additionalValues: [], label: point.label)
+        }
+        return AXDataPoint(x: point.label, y: point.y, additionalValues: [], label: point.label)
     }
     #endif
 

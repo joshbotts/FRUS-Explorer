@@ -32,6 +32,7 @@ import Foundation
 /// Version history:
 ///   1.0 — #1255: initial implementation
 ///   1.1 — 2026-09-10: `rows(inEra:)` uncapped, so the lens's sort controls order the whole era
+///   1.2 — 2026-10-12: #1643 — the drill's accessory is `ArchivesAxis.volumeAccessory`
 enum ArchivesClassAxis {
 
     // MARK: Types
@@ -258,15 +259,10 @@ enum ArchivesClassAxis {
         let byVolume = usage.documentsByVolume(forClassKey: row.key)
         var accessories: [String: String] = [:]
         for volumeId in row.volumeIds {
-            let documents = byVolume[volumeId] ?? 0
-            if let notes = usage.noteCount(forVolumeId: volumeId), notes > 0 {
-                let share = Int((Double(documents) / Double(notes) * 100).rounded())
-                accessories[volumeId] = String(localized: "browser.archives.accessory",
-                                               defaultValue: "\(documents) docs · \(share)%")
-            } else {
-                accessories[volumeId] = String(localized: "browser.archives.accessory.plain",
-                                               defaultValue: "\(documents) docs")
-            }
+            // #1643: one accessory for both drills, singular at one (`ArchivesAxis`).
+            accessories[volumeId] = ArchivesAxis.volumeAccessory(
+                documents: byVolume[volumeId] ?? 0,
+                sourcedDocuments: usage.noteCount(forVolumeId: volumeId))
         }
         let title = row.gloss.map { "\(row.key) — \($0)" } ?? row.key
         return VolumeListSpec(

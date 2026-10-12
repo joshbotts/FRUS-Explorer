@@ -9190,3 +9190,239 @@ struct SectionOwnTextTests {
         #expect(IndexingPipeline.currentDateIndexVersion >= 68)
     }
 }
+
+
+// MARK: - ArchivalNeighbourOrderTests (#1643)
+
+/// A volume's documents come back from every archival neighbour query in number order (#1643).
+///
+/// Each query ended `ORDER BY ds.volume_id, ds.document_id`, and a document id is text: "Archival
+/// Neighbors – Central files POL" listed 1961–1963, vol. III as 126, 196, 198, 199, 218, 219, 233,
+/// 235, 292, 73, 86. Each query's `LIMIT` cut by the same order, so it also chose which documents
+/// a long list showed.
+///
+/// ## The fixture
+/// Four ids whose three orders all differ. Each volume writes them d100, d9, d10, d2, which is
+/// the order the index stores them in; text order is d10, d100, d2, d9; number order is d2, d9,
+/// d10, d100. So a query that kept the text order fails here, and so does one that fell back to
+/// the order the rows were written in. Two volumes, the later-named indexed first, hold the order
+/// of volumes to their ids.
+///
+/// ## What each test fails on
+/// `everyRouteListsByNumber` has one case for each of the nine queries, and reaches each through
+/// a public entry point, so a query put back to text order fails its own case and no other.
+/// The limit, the scope and the anchored cut each have a test, since each cuts the list after
+/// the order is made. `idShapes` sorts ids by the text the queries run, in a table of its own.
+///
+/// Version history:
+///   1.0 — 2026-10-12: #1643 — initial implementation
+@Suite("IndexingPipeline — archival neighbours come in document-number order (#1643)")
+struct ArchivalNeighbourOrderTests {
+
+    /// The ids as each fixture volume writes them, which is the order the index stores them in.
+    private static let written = ["d100", "d9", "d10", "d2"]
+    /// The same ids by number.
+    private static let byNumber = ["d2", "d9", "d10", "d100"]
+    /// The two fixture volumes, in id order. The fixture indexes the second first.
+    private static let volumes = ["frus1969-76v01", "frus1969-76v02"]
+    /// Every fixture document, in the order every route must list them.
+    private static let expected = volumes.flatMap { volume in byNumber.map { "\(volume)/\($0)" } }
+
+    /// One of the nine queries, with a source note that routes to it.
+    enum Route: String, CaseIterable, CustomTestStringConvertible, Sendable {
+        case lotFile, decimalClass, collection, presidentialLibrary, jobNumber, seriesName,
+             authorityRecord, decimalLocation, cfpfFilm
+
+        var testDescription: String { rawValue }
+
+        /// The text of a source note every fixture document carries.
+        var note: String {
+            switch self {
+            case .lotFile, .authorityRecord:
+                return "SPA Files: Lot 61-D 146, Box 4581"
+            case .decimalClass:
+                return "Source: National Archives, RG 59, Central Files, 511.00/9–2861. Confidential."
+            case .collection:
+                return "Source: National Archives and Records Administration, RG 59, Conference Files, CF 2449. Confidential."
+            case .presidentialLibrary:
+                return "Source: Johnson Library, National Security File, Country File, Vietnam, Box 3. Secret."
+            case .jobNumber:
+                return "Source: Central Intelligence Agency, Job 79R01012A, Box 2. Secret."
+            case .seriesName:
+                return "Source: SWNCC Files, Series 360. Top Secret."
+            case .decimalLocation:
+                return "Source: Department of State, Central Files, 711.11/3–1545. Secret."
+            case .cfpfFilm:
+                return "Source: National Archives, RG 59, Central Foreign Policy File, P820123–0667. Confidential; Nodis."
+            }
+        }
+    }
+
+    /// Indexes the two fixture volumes, the later-named one first, every document under `note`.
+    private func index(note: String, dir: URL) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        for volume in Self.volumes.reversed() {
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("\(volume).xml"), volumeId: volume,
+                documents: Self.written.map { id in
+                    (id, "<head>\(id.dropFirst()). Memo</head><note type=\"source\">\(note)</note><p>Text of \(id).</p>")
+                })
+            try await pipeline.indexVolume(volume)
+        }
+        return pipeline
+    }
+
+    /// The documents `route`'s own query lists, through a public entry point that reaches it.
+    private func list(_ route: Route, from pipeline: IndexingPipeline, limit: Int = 30,
+                      scope: Set<String>? = nil) async throws -> (documents: [String], total: Int) {
+        let found: (documents: [IndexingPipeline.RelatedDocument], totalCount: Int)
+        switch route {
+        case .lotFile:
+            let r = try await pipeline.archivalNeighbors(
+                forLotFile: "61-D 146", recordGroup: nil, series: nil, limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .decimalClass:
+            let r = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, decimalClass: "511.00",
+                limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .collection:
+            let r = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: "59", series: "Conference Files",
+                limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .presidentialLibrary:
+            let r = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: "National Security File",
+                repository: "Johnson Library", limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .jobNumber:
+            let r = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil, jobNumber: "79R01012A",
+                limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .seriesName:
+            // No direct key, so the alias fallback's bare-series query is the only route.
+            let r = try await pipeline.archivalNeighbors(
+                forLotFile: nil, recordGroup: nil, series: nil,
+                aliasFallback: .init(lotFileNorm: nil, names: ["SWNCC Files"]),
+                limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .authorityRecord:
+            let r = try await pipeline.collectionNeighbors(
+                lotFileNorm: "61D146", repository: nil, recordGroup: nil, names: ["SPA Files"],
+                limit: limit, scopeVolumeIds: scope)
+            found = (r.documents, r.totalCount)
+        case .decimalLocation, .cfpfFilm:
+            found = try await pipeline.relatedDocuments(
+                for: SourceNoteParser().parse(route.note), limit: limit, scopeVolumeIds: scope)
+        }
+        return (found.documents.map(\.compositeKey), found.totalCount)
+    }
+
+    @Test("Each of the nine queries lists a volume's documents by number, and the volumes by id",
+          arguments: Route.allCases)
+    func everyRouteListsByNumber(route: Route) async throws {
+        try await withTempDir { dir in
+            let pipeline = try await self.index(note: route.note, dir: dir)
+            let listed = try await self.list(route, from: pipeline)
+            #expect(listed.total == 8, "\(route) did not reach its eight documents: \(listed.documents)")
+            #expect(listed.documents == Self.expected, """
+                \(route) lists \(listed.documents). Text order gives d10, d100, d2, d9 in each \
+                volume, and the order the rows were written in gives d100, d9, d10, d2 with the \
+                second volume first.
+                """)
+        }
+    }
+
+    @Test("A list cut at its limit keeps the lowest-numbered documents, where it kept the first in text order")
+    func theLimitKeepsTheLowestNumbers() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await self.index(note: Route.lotFile.note, dir: dir)
+            let listed = try await self.list(.lotFile, from: pipeline, limit: 3)
+            #expect(listed.total == 8, "the total counts what the cut left out")
+            // Text order kept d10, d100 and d2: the list was a different three documents.
+            #expect(listed.documents == ["frus1969-76v01/d2", "frus1969-76v01/d9", "frus1969-76v01/d10"])
+        }
+    }
+
+    @Test("A list cut under a volume scope keeps that volume's lowest-numbered documents")
+    func theScopedCutKeepsTheLowestNumbers() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await self.index(note: Route.lotFile.note, dir: dir)
+            // Under a scope the query reads every match and `applyScope` makes the cut.
+            let listed = try await self.list(.lotFile, from: pipeline, limit: 2, scope: ["frus1969-76v02"])
+            #expect(listed.total == 4)
+            #expect(listed.documents == ["frus1969-76v02/d2", "frus1969-76v02/d9"])
+        }
+    }
+
+    @Test("A document's own neighbours come by number, and its stratified cut takes each volume's lowest numbers in turn")
+    func theAnchoredListAndItsCut() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await self.index(note: Route.lotFile.note, dir: dir)
+
+            // Fewer than the limit: nothing is cut, and the list is the query's own order.
+            let whole = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d2")
+            #expect(whole.totalCount == 7, "the anchor is left out of its own neighbours")
+            #expect(whole.documents.map(\.compositeKey) == Self.expected.filter { $0 != "frus1969-76v01/d2" })
+
+            // More than the limit: #645's cut takes one document from each volume in turn. It
+            // reaches both volumes and takes two from each, as it did. Under text order the four
+            // were each volume's d10 and d100.
+            let cut = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d2", limit: 4)
+            #expect(cut.totalCount == 7)
+            #expect(cut.documents.map(\.compositeKey) == [
+                "frus1969-76v01/d9", "frus1969-76v02/d2", "frus1969-76v01/d10", "frus1969-76v02/d9",
+            ])
+        }
+    }
+
+    /// Sorts `ids` by the text the queries run, in a `document_sources` of their own.
+    private func sorted(_ ids: [String]) throws -> [String] {
+        var handle: OpaquePointer?
+        guard sqlite3_open(":memory:", &handle) == SQLITE_OK, let db = handle else {
+            Issue.record("no in-memory database")
+            return []
+        }
+        defer { sqlite3_close(db) }
+        let rows = ids.map { "('v', '\($0)')" }.joined(separator: ", ")
+        let setUp = "CREATE TABLE document_sources (volume_id TEXT, document_id TEXT);"
+            + "INSERT INTO document_sources VALUES \(rows);"
+        try #require(sqlite3_exec(db, setUp, nil, nil, nil) == SQLITE_OK,
+                     "the fixture table was not made: \(String(cString: sqlite3_errmsg(db)))")
+        var statement: OpaquePointer?
+        let select = "SELECT ds.document_id FROM document_sources ds ORDER BY \(IndexingPipeline.relatedDocumentOrderSQL)"
+        try #require(sqlite3_prepare_v2(db, select, -1, &statement, nil) == SQLITE_OK,
+                     "the order does not prepare: \(String(cString: sqlite3_errmsg(db)))")
+        defer { sqlite3_finalize(statement) }
+        var out: [String] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let text = sqlite3_column_text(statement, 0) { out.append(String(cString: text)) }
+        }
+        return out
+    }
+
+    @Test("Every shape of id the corpus holds sorts by its numbers")
+    func idShapes() throws {
+        // Each shape is one a full index holds: a plain number, a lettered insertion (`d522a`), a
+        // numbered sub-document (`d710a-10`, 1945 Berlin vol. II), an appendix, a front-matter
+        // message, and a microfiche supplement's country prefix (`bl_d19`).
+        let inOrder = [
+            "appendix-2", "appendix-11",
+            "bl_d2", "bl_d19", "ch_d1",
+            "d1", "d2", "d9", "d10", "d73", "d100", "d292",
+            "d522", "d522a", "d523",
+            "d710", "d710a-2", "d710a-10", "d710a-103", "d711",
+            "message-of-the-president-2",
+        ]
+        // Handed over in text order and in reverse, so the answer is not the order given.
+        #expect(try sorted(inOrder.sorted()) == inOrder)
+        #expect(try sorted(inOrder.reversed()) == inOrder)
+        #expect(inOrder.sorted() != inOrder, "the fixture's text order is its number order: it tests nothing")
+
+        // Ids that differ only in their zeros, or not at all in their numbers, still have one order.
+        #expect(try sorted(["d7", "d007", "D7"]) == ["D7", "d007", "d7"])
+    }
+}

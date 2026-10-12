@@ -736,3 +736,155 @@ struct NaturalLanguageReadinessEngineTests {
         #expect(deliveredOn.withLock { $0 }.contains(here), "nothing was posted on .default from this call")
     }
 }
+
+
+// MARK: - #1608: the session's record
+
+/// The lines the release log is sent are kept, each with its time, for a tester to copy (#1608).
+///
+/// The log itself does not keep them long: read from a collection made on 2026-10-11, the owner's
+/// iPhone held the app's own lines for about nine hours. Settings ▸ Data & Recovery ▸ Language
+/// Analysis copies what is kept here.
+///
+/// ## What each test fails on
+/// - `theLiveReportIsKept`: a `record(_:)` that logs and keeps nothing, which is the code before
+///   #1608, or a `.live` whose `report` no longer goes through it.
+/// - `everyEventIsKeptAsItsLogLine`: a record that kept some kinds of event and not others, or
+///   kept a text other than the log's.
+/// - `aFullRecordKeepsTheLaunchAndTheLatest`: a record that grew without bound, or dropped the
+///   launch's own lines first.
+/// - `stampedLines*`: the text a tester pastes.
+///
+/// `NaturalLanguageReadiness.sessionRecord` is the process's own, and this process's real engine
+/// may write to it while these run, so the tests that read it look for a line no engine writes
+/// and never count or index what they find.
+///
+/// Version history:
+///   1.0 — 2026-10-12: #1608 — initial implementation
+@Suite("WordCloudKit — the session's language-analysis record (#1608)")
+struct NaturalLanguageSessionRecordTests {
+
+    /// Four hours behind UTC, whatever the host's zone.
+    private static let zone = TimeZone(secondsFromGMT: -4 * 3600)!
+
+    /// 2026-10-12T03:44:26.875Z, which is 23:44:26.875 on the 11th in ``zone``. The fraction is
+    /// one a `Double` holds exactly, so no rounding decides the millisecond.
+    private static let start = Date(timeIntervalSince1970: 1_791_776_666.875)
+
+    private static func line(_ index: Int) -> NaturalLanguageReadiness.RecordedLine {
+        .init(date: start.addingTimeInterval(Double(index)), text: "line \(index)")
+    }
+
+    /// The lines of the process's record that hold `marker`.
+    private func kept(holding marker: String) -> [NaturalLanguageReadiness.RecordedLine] {
+        NaturalLanguageReadiness.sessionRecord.lines.filter { $0.text.contains(marker) }
+    }
+
+    @Test("What the live engine reports is kept, as the log's own line and with the time it was written")
+    func theLiveReportIsKept() throws {
+        // An age no process reports, and a new one each run, so the line is this call's alone.
+        let age = Double(Int.random(in: 100_000...999_999)) + 0.125
+        let marker = String(format: "age=%.3fs", age)
+        let event = NaturalLanguageReadiness.Event.deferred(processAge: age)
+        #expect(kept(holding: marker).isEmpty)
+        let before = Date()
+        // The call the engine makes: the live dependencies' report.
+        NaturalLanguageReadinessEngine.Dependencies.live.report(event)
+        let after = Date()
+
+        let lines = kept(holding: marker)
+        #expect(lines.count == 1, "the report was kept \(lines.count) times")
+        let line = try #require(lines.first)
+        #expect(line.text == NaturalLanguageReadiness.logLine(for: event))
+        #expect(line.date >= before && line.date <= after, "the line is not stamped with its own time")
+    }
+
+    @Test("Every kind of event is kept as its log line, in the order written")
+    func everyEventIsKeptAsItsLogLine() {
+        let warmUp = NaturalLanguageWarmUp(
+            trigger: .firstForeground, applicationState: .active, schemesListed: ["Lemma"],
+            assetRequests: [.init(scheme: "Lemma", answer: .timedOut, seconds: 30.005)],
+            seconds: 30.141, processAge: 71_003.5, withheld: ["Lemma"])
+        let health = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
+        let events: [NaturalLanguageReadiness.Event] = [
+            .started(.firstForeground, .active, processAge: 71_003.5),
+            .deferred(processAge: 71_003.5),
+            .pending(scheme: "Lemma71003", seconds: 30.5),
+            .settled(.init(warmUp: warmUp, health: health)),
+            .rechecked(warmUp, found: nil, adopted: false),
+            .rechecked(warmUp, found: health, adopted: false),
+        ]
+        for event in events { NaturalLanguageReadiness.record(event) }
+        // The last six that carry this test's marker: a second run in one process adds six more.
+        let mine = NaturalLanguageReadiness.sessionRecord.lines.map(\.text)
+            .filter { $0.contains("71003") }
+        #expect(Array(mine.suffix(events.count)) == events.map(NaturalLanguageReadiness.logLine(for:)))
+    }
+
+    @Test("An engine built from fakes writes nothing to the process's record")
+    func aFakeEngineLeavesTheRecordAlone() async {
+        // A CONTROL on the suite above, whose engines run to dozens of verdicts in this process:
+        // their reports go to the fake. This engine reports under an age no process has.
+        let fake = FakeLanguageFramework()
+        var dependencies = fake.dependencies(budget: 5)
+        dependencies.processAge = { 424_242.25 }
+        let engine = NaturalLanguageReadinessEngine(dependencies: dependencies)
+        _ = await engine.verdictWhenReady()
+        #expect(fake.events.first == .started(.firstUse, .unreported, processAge: 424_242.25))
+        #expect(kept(holding: "age=424242.250s").isEmpty)
+    }
+
+    @Test("A full record keeps the launch's first lines and the latest, and counts what it dropped")
+    func aFullRecordKeepsTheLaunchAndTheLatest() {
+        typealias Record = NaturalLanguageReadiness.SessionRecord
+        var record = Record()
+        for index in 0..<Record.capacity { record.append(Self.line(index)) }
+        #expect(record.lines.count == Record.capacity)
+        #expect(record.droppedCount == 0, "a record that is exactly full has dropped nothing")
+
+        for index in Record.capacity..<(Record.capacity + 5) { record.append(Self.line(index)) }
+        #expect(record.lines.count == Record.capacity, "the record grew past its capacity")
+        #expect(record.droppedCount == 5)
+        // The launch's lines stay, the five after them went, and the newest is last.
+        #expect(record.lines.prefix(Record.leadingLinesKept).map(\.text)
+                == (0..<Record.leadingLinesKept).map { "line \($0)" })
+        #expect(record.lines[Record.leadingLinesKept].text == "line \(Record.leadingLinesKept + 5)")
+        #expect(record.lines.last?.text == "line \(Record.capacity + 4)")
+        // In order throughout.
+        #expect(record.lines.map(\.date) == record.lines.map(\.date).sorted())
+        #expect(Record.leadingLinesKept < Record.capacity)
+    }
+
+    @Test("Each line is written with its time to the millisecond and its offset, then the log's line")
+    func stampedLinesCarryTheTime() {
+        var record = NaturalLanguageReadiness.SessionRecord()
+        #expect(record.stampedLines(in: Self.zone).isEmpty)
+        record.append(.init(date: Self.start,
+                            text: "warm-up started; trigger=firstForeground app=active age=2897.136s"))
+        record.append(.init(date: Self.start.addingTimeInterval(30.25), text: "verdict …"))
+        #expect(record.stampedLines(in: Self.zone) == [
+            "2026-10-11T23:44:26.875-04:00 warm-up started; trigger=firstForeground app=active age=2897.136s",
+            "2026-10-11T23:44:57.125-04:00 verdict …",
+        ])
+        // The zone is the caller's: the same two instants, read in UTC.
+        #expect(record.stampedLines(in: TimeZone(secondsFromGMT: 0)!).first?
+            .hasPrefix("2026-10-12T03:44:26.875Z ") == true)
+    }
+
+    @Test("Where lines were dropped, one line in their place says how many")
+    func stampedLinesSayWhatWasDropped() {
+        typealias Record = NaturalLanguageReadiness.SessionRecord
+        var record = Record()
+        for index in 0...Record.capacity { record.append(Self.line(index)) }
+        var stamped = record.stampedLines(in: Self.zone)
+        #expect(stamped.count == Record.capacity + 1)
+        #expect(stamped[Record.leadingLinesKept] == "(1 line written between these was not kept)")
+        #expect(stamped[Record.leadingLinesKept - 1].hasSuffix(" line \(Record.leadingLinesKept - 1)"))
+        #expect(stamped[Record.leadingLinesKept + 1].hasSuffix(" line \(Record.leadingLinesKept + 1)"))
+
+        record.append(Self.line(Record.capacity + 1))
+        stamped = record.stampedLines(in: Self.zone)
+        #expect(stamped[Record.leadingLinesKept] == "(2 lines written between these were not kept)")
+        #expect(stamped.filter { $0.hasPrefix("(") }.count == 1)
+    }
+}

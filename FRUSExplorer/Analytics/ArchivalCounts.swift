@@ -21,6 +21,7 @@ import Foundation
 ///   1.0 — 2026-09-25: #1374
 ///   1.1 — 2026-09-25: #1374 review, round 1 — the ranking caption, its VoiceOver value, the
 ///         umbrella caveat on screen and the gloss's "and N others", moved here from the views
+///   1.2 — 2026-10-12: #1643 — the Network dock's three count sentences, each with a form for one
 enum ArchivalCounts {
 
     /// "1 source note" / "59,973 source notes" — an era's denominator.
@@ -128,6 +129,69 @@ enum ArchivalCounts {
             localized: "archival.caveats.umbrella %@ %@",
             defaultValue: "The Central Files umbrella record is hidden here. On its own it accounts for %1$@ in the %2$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown."),
             weight.countPhrase(hidden), bandTitle)
+    }
+
+    // MARK: The Network's dock (#1643)
+
+    /// The dock's sentence on what a link is: "12 collections share two or more volumes with this
+    /// one. …", and "1 collection shares …" at one.
+    ///
+    /// It set the count in a `%lld` before "collections share", so a focus with one partner read
+    /// "1 collections share", and a count past 999 was not grouped.
+    ///
+    /// - Parameters:
+    ///   - count: Collections that share two or more volumes with the focus.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func networkPartners(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(
+            count,
+            one: String(localized: "archival.network.dock.grain.one",
+                        defaultValue: "%@ collection shares two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity."),
+            many: String(localized: "archival.network.dock.grain.many",
+                         defaultValue: "%@ collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity."),
+            locale: locale)
+    }
+
+    /// The dock's sentence on the six-per-custodian cap: "4 more are held back so each custodian’s
+    /// quadrant stays readable; …", and "1 more is held back …" at one.
+    ///
+    /// "More" is no noun the count scan reads, so the sentence was never listed; its verb did not
+    /// agree at one all the same ("1 more are held back").
+    ///
+    /// - Parameters:
+    ///   - count: Partners above the threshold that the cap left undrawn.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func networkHeldBack(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(
+            count,
+            one: String(localized: "archival.network.dock.capped.one",
+                        defaultValue: "%@ more is held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it."),
+            many: String(localized: "archival.network.dock.capped.many",
+                         defaultValue: "%@ more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it."),
+            locale: locale)
+    }
+
+    /// The dock's sentence on the class squares: "The 3 squares are central-file classes drawn
+    /// from inside the Central Files record, which is hidden while they are shown.", and "The 1
+    /// square is a central-file class …, which is hidden while it is shown." at one.
+    ///
+    /// The sentence #1643 was filed for: with one class drawn the legend read "The 1 squares are
+    /// central-file classes".
+    ///
+    /// - Parameters:
+    ///   - count: Class nodes drawn.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func networkClassSquares(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(
+            count,
+            one: String(localized: "archival.network.dock.classes.one",
+                        defaultValue: "The %@ square is a central-file class drawn from inside the Central Files record, which is hidden while it is shown."),
+            many: String(localized: "archival.network.dock.classes.many",
+                         defaultValue: "The %@ squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown."),
+            locale: locale)
     }
 
     // MARK: Shared class codes (#1257)

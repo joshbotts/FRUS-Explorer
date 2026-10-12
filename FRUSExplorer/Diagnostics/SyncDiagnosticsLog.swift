@@ -177,17 +177,20 @@ actor SyncDiagnosticsLog {
     }()
 
     // MARK: Coarse environment (constant per run; captured once)
+    //
+    // Internal, not private, since #1608: the language-analysis record a tester copies is stamped
+    // with the same four (`LanguageAnalysisRecordReport.Environment.current`).
 
     /// App marketing version.
-    private static let appVersion =
+    static let appVersion =
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
     /// App build number.
-    private static let appBuild =
+    static let appBuild =
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
     /// Coarse OS version.
-    private static let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
+    static let osVersion = ProcessInfo.processInfo.operatingSystemVersionString
     /// Device model class (e.g. `iPhone16,2` / `Mac15,3`) — a hardware class, not a serial.
-    private static let deviceModel: String = {
+    static let deviceModel: String = {
         var info = utsname()
         uname(&info)
         return withUnsafeBytes(of: &info.machine) { raw in

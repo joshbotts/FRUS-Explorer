@@ -41,6 +41,8 @@ import SwiftData
 ///   1.4 — #1531: while an upload has failed with none succeeding since, Fix iCloud Sync's row,
 ///          the ladder's footer and the confirmation warn that it would discard those changes.
 ///   1.5 — #1539: a read-only **Language Analysis** row in Diagnostics (``LanguageAnalysisRow``).
+///   1.6 — #1608: under it, **Copy Language Analysis Record**, which copies what this session's
+///          language check logged (``LanguageAnalysisRecordReport``).
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -697,9 +699,21 @@ struct BrokenReferencesReportView: View {
 /// fact: what the app found, stated in both states, never an alarm. One shared view, so the iPhone,
 /// iPad and Mac Settings show the same row.
 ///
+/// ## The Copy button (#1608)
+/// The row under it copies the session's record: every line the language check has logged since
+/// the app opened, each with its time, under the app's and the system's versions
+/// (``LanguageAnalysisRecordReport``). The release log has the same lines and does not keep them:
+/// read from a collection made on 2026-10-11, the owner's iPhone held the app's own log lines for
+/// about nine hours, and reading that log takes a Mac. So this is how a tester sends the record.
+/// The button is always enabled. A record with no line yet says so in the text it copies.
+///
 /// Version history:
 ///   1.0 — #1539: initial implementation
+///   1.1 — #1608: the Copy Language Analysis Record row
 struct LanguageAnalysisRow: View {
+
+    /// Set for a moment after a copy, so the button can say it happened.
+    @State private var didCopy = false
 
     var body: some View {
         let summary = LanguageAnalysisSummary(status: LanguageAnalysisMonitor.shared.status)
@@ -708,6 +722,131 @@ struct LanguageAnalysisRow: View {
                           defaultValue: "Language Analysis"),
             detail: summary.detail,
             value: summary.value)
+        Button {
+            copyRecord()
+        } label: {
+            Label(didCopy ? Self.copiedLabel : Self.copyLabel,
+                  systemImage: didCopy ? "checkmark" : "doc.on.doc")
+        }
+        .controlHelp(
+            Self.copyLabel,
+            detail: String(localized: "settings.dataRecovery.languageAnalysis.copy.help",
+                           defaultValue: "Copies what the language check has found since the app opened, with the app’s and the system’s versions. Paste it into a bug report."),
+            systemImage: "doc.on.doc")
+    }
+
+    /// The button's title.
+    private static var copyLabel: String {
+        String(localized: "settings.dataRecovery.languageAnalysis.copy",
+               defaultValue: "Copy Language Analysis Record")
+    }
+
+    /// The button's title for a moment after a copy, and what VoiceOver is told then.
+    private static var copiedLabel: String {
+        String(localized: "settings.dataRecovery.languageAnalysis.copied", defaultValue: "Copied")
+    }
+
+    /// Puts the session's record on the clipboard, flips the button's title for two seconds, as
+    /// Copy Report does, and tells VoiceOver, whose name for the button does not change.
+    private func copyRecord() {
+        let text = LanguageAnalysisRecordReport.text(
+            record: NaturalLanguageReadiness.sessionRecord, environment: .current)
+        #if os(iOS)
+        UIPasteboard.general.string = text
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
+        AccessibilityNotification.Announcement(Self.copiedLabel).post()
+        didCopy = true
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            didCopy = false
+        }
+    }
+}
+
+// MARK: - LanguageAnalysisRecordReport (#1608)
+
+/// The text **Copy Language Analysis Record** puts on the clipboard (#1608): what build and system
+/// wrote the record, when it was copied, and then the session's lines.
+///
+/// ```
+/// FRUS Explorer — language analysis
+/// app: 2.0 (50)
+/// system: iOS Version 27.0.1 (Build 24A123)
+/// device: iPhone18,1
+/// copied: 2026-10-11T23:47:14.000-04:00
+/// record:
+///   2026-10-11T23:44:26.980-04:00 warm-up started; trigger=firstForeground app=active age=2897.136s
+///   2026-10-11T23:44:57.121-04:00 verdict trigger=firstForeground … canary lemmas=false classes=true names=true
+/// ```
+///
+/// ## What is in it
+/// Each line is the one `NaturalLanguageReadiness.logLine(for:)` wrote to the release log: enums,
+/// scheme names, counts and seconds, and nothing the reader wrote or read. The four lines above
+/// them are the ones the Sync Log stamps its rows with: the app's version and build, the system's
+/// version, and the device's model class, which is a kind of hardware and no one device. The first
+/// thing read from the owner's own log was which build had written it.
+///
+/// Not localised, as Copy Report's text is not: it is for whoever reads the log, and it reads the
+/// same whatever the tester's language.
+///
+/// Version history:
+///   1.0 — 2026-10-12: #1608 — initial implementation
+enum LanguageAnalysisRecordReport {
+
+    /// The build and the system a record was written under.
+    struct Environment: Equatable, Sendable {
+        /// The app's marketing version, "2.0".
+        let appVersion: String
+        /// The app's build number, "50".
+        let appBuild: String
+        /// The system's name and version, "iOS Version 27.0.1 (Build 24A123)".
+        let system: String
+        /// The device's model class, "iPhone18,1".
+        let deviceModel: String
+
+        /// This process's own, read where the Sync Log reads its rows' stamps.
+        @MainActor
+        static var current: Environment {
+            #if os(macOS)
+            let name = "macOS"
+            #else
+            let name = UIDevice.current.systemName
+            #endif
+            return Environment(appVersion: SyncDiagnosticsLog.appVersion,
+                               appBuild: SyncDiagnosticsLog.appBuild,
+                               system: "\(name) \(SyncDiagnosticsLog.osVersion)",
+                               deviceModel: SyncDiagnosticsLog.deviceModel)
+        }
+    }
+
+    /// The report.
+    /// - Parameters:
+    ///   - record: The session's lines.
+    ///   - environment: The build and the system that wrote them.
+    ///   - copiedAt: When the report is made; now, unless a test passes a time.
+    ///   - timeZone: The zone every time is written in; the device's own unless a test passes one.
+    /// - Returns: The text, with no line break at its end.
+    static func text(record: NaturalLanguageReadiness.SessionRecord, environment: Environment,
+                     copiedAt: Date = Date(), timeZone: TimeZone = .current) -> String {
+        var lines = [
+            "FRUS Explorer — language analysis",
+            "app: \(environment.appVersion) (\(environment.appBuild))",
+            "system: \(environment.system)",
+            "device: \(environment.deviceModel)",
+            "copied: \(NaturalLanguageReadiness.SessionRecord.timestamp(copiedAt, in: timeZone))",
+        ]
+        let recorded = record.stampedLines(in: timeZone)
+        if recorded.isEmpty {
+            // Before the app's first time in the foreground nothing has started the check.
+            lines.append("record: no line written yet in this session")
+        } else {
+            lines.append("record:")
+            lines.append(contentsOf: recorded.map { "  \($0)" })
+        }
+        return lines.joined(separator: "\n")
     }
 }
 

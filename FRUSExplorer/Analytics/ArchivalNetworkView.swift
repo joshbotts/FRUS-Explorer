@@ -50,6 +50,8 @@ import SwiftUI
 ///          #1468 — the selected node's card is `ArchivalNetworkNodeCard`, its actions wrapping
 ///          in `ArchivalNetworkInfoDock`, the panel's sentences cut a long name, and the focus
 ///          picker holds a name to three lines; #1437 — the export names the focus by its label
+///   1.7 — 2026-10-12: #1643 — the dock's partner, held-back and class-square sentences are
+///          `ArchivalCounts`', each with a form for one ("The 1 squares are central-file classes")
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -907,21 +909,14 @@ struct ArchivalNetworkView: View {
         var text = Self.dockSummarySentence(drawn: graph.nodes.count,
                                             aboveThreshold: graph.nodesAboveThreshold,
                                             strongest: strongest)
-        text += " " + String(format: String(
-            localized: "archival.network.dock.grain %lld",
-            defaultValue: "%lld collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity."),
-            Int64(graph.partnersTotal))
+        // #1643: each of the three has a form for one, in `ArchivalCounts`, where a test can call
+        // it. With one class drawn the last read "The 1 squares are central-file classes".
+        text += " " + ArchivalCounts.networkPartners(graph.partnersTotal)
         if graph.isCapped {
-            text += " " + String(format: String(
-                localized: "archival.network.dock.capped.v2 %lld",
-                defaultValue: "%lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it."),
-                Int64(graph.withheldCount))
+            text += " " + ArchivalCounts.networkHeldBack(graph.withheldCount)
         }
         if graph.classNodeCount > 0 {
-            text += " " + String(format: String(
-                localized: "archival.network.dock.classes %lld",
-                defaultValue: "The %lld squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown."),
-                Int64(graph.classNodeCount))
+            text += " " + ArchivalCounts.networkClassSquares(graph.classNodeCount)
         }
         return text
     }

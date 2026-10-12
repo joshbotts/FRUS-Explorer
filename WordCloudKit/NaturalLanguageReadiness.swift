@@ -444,6 +444,11 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// level, so it is kept in a release build and appears in Console and a sysdiagnose. ``logLine(for:)`` builds each line from enums, scheme names, counts and seconds —
 /// nothing a reader wrote or read — so the whole line is public.
 ///
+/// The process keeps the same lines, each with the time it was written (``sessionRecord``, #1608),
+/// because the log does not keep them long: the owner's iPhone held the app's own lines for about
+/// nine hours, read from a collection of 2026-10-11. Settings ▸ Data & Recovery ▸ Language Analysis
+/// copies that record, which is how a tester with no Mac sends one.
+///
 /// Not measured: a physical device. The macOS host tags normally with or without either call.
 ///
 /// Version history:
@@ -463,6 +468,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///          tagger, and names the two cases outside it
 ///   1.5 — #1608: a debug build launched with ``unansweredLemmaRequestEnvironmentKey`` set leaves the
 ///          lemma request unanswered, so the launch the owner's iPhone logged can be had on demand
+///   1.6 — #1608: ``sessionRecord``, the lines ``record(_:)`` has written in this process, each
+///          with its time
 public enum NaturalLanguageReadiness {
 
     /// The schemes the warm-up asks for, in the order asked. Lemma last: after a fresh boot it is
@@ -783,14 +790,115 @@ public enum NaturalLanguageReadiness {
         String(format: "%.3fs", value)
     }
 
-    /// Writes `event` to the release log, and to the console in a debug build.
+    /// Writes `event` to the release log and to this process's record of it (``sessionRecord``),
+    /// and to the console in a debug build.
     static func record(_ event: Event) {
         let line = logLine(for: event)
+        sessionLines.withLock { $0.append(RecordedLine(date: Date(), text: line)) }
         log.notice("\(line, privacy: .public)")
         #if DEBUG
         print("[NaturalLanguageReadiness] \(line)")
         #endif
     }
+
+    // MARK: - The session's record (#1608)
+
+    /// One line of this process's language-analysis record: the line ``logLine(for:)`` wrote, and
+    /// when.
+    public struct RecordedLine: Sendable, Equatable {
+        /// When the line was written.
+        public let date: Date
+        /// The line, as the release log has it.
+        public let text: String
+
+        /// Creates a recorded line.
+        /// - Parameters:
+        ///   - date: When it was written.
+        ///   - text: The line.
+        public init(date: Date, text: String) {
+            self.date = date
+            self.text = text
+        }
+    }
+
+    /// The lines the release log was sent in one process, oldest first (#1608).
+    ///
+    /// ## Why it is bounded, and what it keeps
+    /// A launch writes two lines, its start and its verdict. A launch that lost its lemmatiser
+    /// then writes one more each time the app comes back to the foreground, for as long as the
+    /// process lives, which on a phone can be days. So the record holds at most ``capacity``
+    /// lines: the first ``leadingLinesKept``, which are the launch's own and say what was lost,
+    /// and the most recent of the rest, which say whether anything has changed. Lines between the
+    /// two are dropped and counted (``droppedCount``), and ``stampedLines(in:)`` says so in their
+    /// place.
+    public struct SessionRecord: Sendable, Equatable {
+
+        /// How many lines a record holds.
+        public static let capacity = 200
+        /// How many of a record's first lines are never dropped.
+        public static let leadingLinesKept = 8
+
+        /// The lines kept, oldest first.
+        public private(set) var lines: [RecordedLine] = []
+        /// How many lines were dropped, all from after the first ``leadingLinesKept``.
+        public private(set) var droppedCount = 0
+
+        /// Creates an empty record.
+        public init() {}
+
+        /// Adds `line`, dropping the oldest line after the first ``leadingLinesKept`` when the
+        /// record is full.
+        /// - Parameter line: The line just written.
+        public mutating func append(_ line: RecordedLine) {
+            if lines.count >= Self.capacity {
+                lines.remove(at: Self.leadingLinesKept)
+                droppedCount += 1
+            }
+            lines.append(line)
+        }
+
+        /// A time as the record writes it: `2026-10-11T23:44:26.980-04:00`, to the millisecond
+        /// and with its offset from UTC, so two records from two zones can be read side by side.
+        /// The report a tester copies stamps the moment of the copy the same way.
+        /// - Parameters:
+        ///   - date: The time.
+        ///   - timeZone: The zone it is written in.
+        /// - Returns: The time, the same for every locale.
+        public static func timestamp(_ date: Date, in timeZone: TimeZone) -> String {
+            date.formatted(Date.ISO8601FormatStyle(
+                dateSeparator: .dash, dateTimeSeparator: .standard, timeSeparator: .colon,
+                timeZoneSeparator: .colon, includingFractionalSeconds: true, timeZone: timeZone))
+        }
+
+        /// The record as text, one string for each line: its time, to the millisecond and with
+        /// its offset from UTC, then the line as the log has it. Where lines were dropped, one
+        /// string in their place says how many.
+        ///
+        /// Not localised: these are the log's own lines, for whoever reads the log, and they read
+        /// the same whatever the reader's language.
+        /// - Parameter timeZone: The zone the times are written in; the device's own unless a
+        ///   test passes one.
+        /// - Returns: The lines, oldest first; empty for an empty record.
+        public func stampedLines(in timeZone: TimeZone = .current) -> [String] {
+            var out = lines.map { "\(Self.timestamp($0.date, in: timeZone)) \($0.text)" }
+            if droppedCount > 0 {
+                out.insert(droppedCount == 1 ? "(1 line written between these was not kept)"
+                                             : "(\(droppedCount) lines written between these were not kept)",
+                           at: min(Self.leadingLinesKept, out.count))
+            }
+            return out
+        }
+    }
+
+    /// The live record, behind a lock: ``record(_:)`` is called from the engine's queues.
+    private static let sessionLines = OSAllocatedUnfairLock(initialState: SessionRecord())
+
+    /// What the release log has been sent in this process so far (#1608): every start, deferral,
+    /// pending request, verdict and re-check, each as ``logLine(for:)`` wrote it and with its time.
+    ///
+    /// The engine built from the live framework calls writes here and no other does, so an engine
+    /// a test builds from fakes leaves it alone.
+    public static var sessionRecord: SessionRecord { sessionLines.withLock { $0 } }
 
     // MARK: - Canary
 
