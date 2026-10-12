@@ -642,6 +642,14 @@ struct PrintedFormSharedTermsTests {
         }
     }
 
+    @Test("A printed form the plural fold clipped is shown as the anchor prints it")
+    func clippedFormsWearTheAnchorsSpelling() {
+        // The fold knows no names, so "Dulles" is counted as "dulle". The chip is the page's word.
+        #expect(WordCloudTokenizer.singularize("dulles") == "dulle")
+        #expect(SemanticSharedTerms.displayForm(for: "dulle", in: "Secretary Dulles replied at once.") == "Dulles")
+        #expect(SemanticSharedTerms.displayForm(for: "envoy", in: "The envoys met.") == "envoys")
+    }
+
     // One fixture for each conjunct of the note's rule.
 
     @Test("The note is for chips compared as printed")
