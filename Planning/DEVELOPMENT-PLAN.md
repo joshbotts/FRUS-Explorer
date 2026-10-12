@@ -37653,3 +37653,44 @@ Pull request D of the index bump (`Planning/Index-Bump-Brief-2026-10-11.md`, §3
 - `Docs/EditableContent/`: three blocks under new keys and one new block (`06-Archives.md` 267 → 268), 63 ranged blocks re-pointed, and the amendment log's bullet.
 - `Planning/Generators-Runbook.md`: five entries, the label generator's with what it now writes on this Mac. `CLAUDE.md`: not to ship a regenerated label table unread.
 - `Planning/Index-Bump-Brief-2026-10-11.md`: §3.7 as done and §5's row. `Planning/Plan-Of-Record-2026-09-28.md`: §0c's paragraph for this pull request and *Where the queue stands*.
+
+## Session 2026-10-11 — The plan of record is replaced: the owner's seven answers, the queue to build 50 and past it, and what is left of OS 27 preparation
+
+After #1645 merged the owner asked for a review of the plan of record and the open issues, took every recommendation, and asked what was left of OS 27 preparation. Planning documents alone: no file the app, a kit, a generator or a test compiles is changed, and there is no index version, CloudKit deploy or re-index.
+
+**The review**
+- `Planning/Plan-Of-Record-2026-09-28.md` was read whole against `v2` @ `845d57ea`, the tracker and upstream: ten issues open, no pull request, and HistoryAtState/frus at `99d851c79`, the corpus the bundle is at. Forty pull requests have merged since the `build-49` tag, and `CloudKitSchemaInventory.swift` has not changed since the commit the build was cut from.
+- The plan was 851 lines. What was open in it sat in five places (§0a's *Not placed*, §0c's *Where the queue stands* and *Found since 2026-10-09 and not filed*, §4 and §4a), under the record of work that is done.
+- Seven recommendations were put to the owner, who took all seven. They are the new plan's §0: what goes in before build 50; the grammar's country words frozen at 155 and parted from the label table, so that #1644 needs no re-index; how #1642 and #1619 are settled; #1545 left to the owner to name a destination; three findings filed; and a new plan.
+
+**Three issues filed at the owner's word**, each read again in the code at `845d57ea` before it was filed
+- **#1646.** On the Mac, `MacSearchViewModel.applyParameters` clears the document gate from the parameters a hand-off or a recalled saved search runs with, and leaves the applied working corpus in the filter view model, which the "Inside …" banner reads. Read, not run.
+- **#1647.** On iPhone and iPad, `SearchView` loads the filter panel's volumes once, in its first `.task`, from `appState.indexedVolumeIds`. A launch that opens on Search before that set is filled leaves Filters without My Working Corpora, the volume scopes and the subject section. Seen once, on 2026-10-10.
+- **#1648.** On iPhone and iPad ten call sites start a search in a task of their own, and `SearchViewModel.search()` assigns its rows with no check that it is still the latest. The Mac's `.task(id:)` cancels the task before, but `SearchService` and `FTS5Store` never check for cancellation, so the cancelled run still returns its rows. Read, not reproduced.
+
+**The new plan** (`Planning/Plan-Of-Record-2026-10-11.md`, 162 lines)
+- §0, the seven answers and the eight rules carried over. §1, the queue: #1644; a pull request of small fixes (#1643, #1617, a Copy button for #1608's record); build 50; #1642; #1619; the three Search issues; #1577's lanes 4 to 7. §2, build 50: its steps, what its TestFlight notes owe, and the one thing owed by the owner before it. §3, what waits on the owner. §4, OS 27. §5, what is open and not in the queue: for the next index bump, found since 2026-10-09 and not filed, and carried from the build-49 wave.
+- **Every line of the old plan's five lists was placed**: in the queue, in an issue, in §3 or §5, or marked done. Done by the index bump, and so struck from the build-49 wave's list: the film sections' player text, the persons list's "until January, 1953", and the Subject-Numeric designations. Added from elsewhere in the old plan, because no list held them: the release checks build 49 ran (the re-index census, the window-fronting audit, the repository link check, the Gemma policy re-check), the Mac checks #1576's lane 4 left for the owner, and the four build-48 pull requests' by-eye checks.
+- **Not carried as text:** the build-49 wave's by-eye checks and lane READ's four questions. The new plan's §3 points to the old plan's §0a for them; none was read again.
+
+**Archived**
+- `Planning/Plan-Of-Record-2026-09-28.md` → `Planning/Completed/`, with a status line at its head and its own status line put in the past tense. Its last edits, which recorded #1645's merge and what pull request D measured and did not build, went in with it.
+- `Planning/Issue-1576-Bulk-Actions-Assessment.md` → `Planning/Completed/`, with a dated note at its head: #1576 closed on 2026-10-11, its six lanes merged as #1627 to #1632.
+- **`Planning/Index-Bump-Brief-2026-10-11.md` stays at the Planning root**, marked complete at its head. The recommendation was to archive it; `FRUSCoreKit/Search/IndexingPipeline.swift` cites it by that path in four places, and the archive's own README keeps such a record where source says it is.
+- `Planning/Completed/README.md` has the move as a cluster, and its list of what is live at the Planning root was checked against the directory and brought up to date (the two runbooks, the manuals' worklist, #1577's assessment, the filed report and the brief were not on it). `Planning/Cross-Platform-UI-Adversarial-Review/STATUS.md` names the live plan for the parked list.
+
+**OS 27: measured for the owner's question** (the plan's §4 has the answer whole)
+- **Read:** the deployment target is 26.0 on every target and no code is gated on 27; the app has no App Intents code; `UIScreen.main`, the one hit in the exposure table of `OS27-Semantic-Retrieval-Design.md` §2, is gone.
+- **`RichTextRestingCapTests` on an iPad host**, at `845d57ea`. The host crash recorded on 2026-10-02 was not met. iPad Pro 11-inch (M5), iOS 27.0: 21 tests, 2 failed. iPad Air 13-inch (M4), iOS 27.0: 21 tests, the same 2 failed. iPad Pro 11-inch (M5), iOS 26.5: 1 failed. "The link alert takes focus…" (`CollectionTests.swift:11202`) fails under both versions. "While the colour picker is up…" (`CollectionTests.swift:11149`) fails only under 27.0, where the host is never handed a `UIColorPickerViewController`. On iPhone 17 under iOS 27.0 the suite's 21 tests passed, both of those among them. The iPad Pro 13-inch (M5) under 27.0, where the crash was recorded, was not used: it holds another session's volumes.
+- **A plain launch ends the simulator's render server.** On the iPad Pro 11-inch (M5) under iOS 27.0 (`27A97343`), `simctl launch` of the `845d57ea` build with onboarding skipped ended `backboardd` about five seconds in, three times of three (`backboardd-2026-10-11-231735.ips`, `-231827.ips`, `-231912.ips`), in the frames #1620 records: `-[MTLTextureDescriptorInternal validateWithDevice:]` under `-[MTLSimDevice newTextureWithDescriptor:]` and `CA::OGL::MetalContext::create_surface_with_properties`. No test was involved, so a UI test is not needed to cause it, which is what #1620's third suggested step set out to learn. That simulator had last run the analytics suites on 2026-10-09; with the app's saved state set aside the launch ended the same way, and the saved state was put back.
+
+**Checked**
+- `CodingStandardsAuditTests` on iPhone 17 under iOS 27.0: 63 tests in 1 suite passed, `planOfRecordMatchesTheVisualMarketingPlan` among them, which finds the one live plan and holds its struck-step line to the Visual-Marketing-Plan's §7. Run three times as the plan was edited, the last on the tree as committed.
+- No other test reads a file this change touches: the tests that read a `Planning/` document are that one and the workflow-script scan, and no source or test names either archived file by path. So the full unit run, `swift test` and the Mac build were not run.
+
+**Not done**
+- **Nothing was added to #1620.** The launch measurement above is in the plan and here, and is the owner's to post or not.
+- **Text Color in a collection's note was not seen in the app on an iPad under iOS 27**, because the simulator's render server ended at each launch. Not tried on a newly created iPad simulator.
+- **`Planning/Manual-Revisions-Pending.md` still opens with decision P2**, that no lane edits a manual, which the owner replaced on 2026-10-07. It is left where it is because the manuals' review worklist cites it; the archive's README now says what it is.
+- **Two live documents still call the provenance lens's caption owed a correction** (`Map-Figure-Export-And-Visual-Outputs.md` line 400, `Visual-Marketing-Plan.md` line 479), which lane CFPF made (#1543). Not edited.
+- **The remote branch `claude/subject-numeric-class-keys`**, merged as #1645, is not deleted.

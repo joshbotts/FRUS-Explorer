@@ -1,5 +1,7 @@
 # The index bump after build 49 — brief
 
+**Status: COMPLETE, 2026-10-11.** Its four pull requests merged that day as #1638 (version 66), #1639 (67), #1640 (68) and #1645 (69), after #1637 took #1535 with no bump. Build 50 carries all four. This file stays at the Planning root, where a finished brief would otherwise move to `Completed/`, because `FRUSCoreKit/Search/IndexingPipeline.swift` cites it by this path in four places. "The plan of record" below is `Completed/Plan-Of-Record-2026-09-28.md`, and §0a, §0b and §0c are that plan's sections. What the four pull requests measured and did not build is in `Plan-Of-Record-2026-10-11.md` §5a and §5b.
+
 **Written 2026-10-11**, five days before the date the plan of record gave it (§0c, *Not this week*), because the owner asked for the sessions to begin. It is the brief for the work the plan calls "one index bump": #1535, #1536, #1599 and #1613, with what pull request 4 of §0c handed it and the leftovers §0c listed "for the brief to take or decline".
 
 **Read against** `v2` @ `54506caa`, corpus `99d851c79`, `IndexingPipeline.currentDateIndexVersion` 65. **Measured on** the 553 catalogue volumes' XML at that corpus, and on a full index of them built 2026-10-08 at version 65 (the `iPhone 17e` simulator's `frus.db`, opened read-only; 316,768 rows of `document_cache`). The scripts were scratch files and are not committed; each figure below says which of the two it was read from.
@@ -176,9 +178,9 @@ This brief first declined the item, on lane NOTE's counts of 2026-10-01. The own
 | A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | Merged, #1638 |
 | B | Vol. XVI's people and terms | #1599 | 67 | Merged, #1639 |
 | C | A section's own text | #1536 | 68 | Merged, #1640 |
-| D | Subject-Numeric files stored without a designation | none filed | 69 | Done; its pull request is open |
+| D | Subject-Numeric files stored without a designation | none filed | 69 | Merged, #1645 |
 
-C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. Build 50 waits for all four.
+C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. All four merged on 2026-10-11, and build 50 carries them.
 
 ## 6. Not measured, and not verified
 

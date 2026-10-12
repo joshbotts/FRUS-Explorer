@@ -1,5 +1,7 @@
 # Issue #1576, "Bulk actions on search results": assessment
 
+**Archived 2026-10-11: built and closed.** #1576 closed on 2026-10-11 with its six lanes merged as #1627 to #1632 (Mark Page Reviewed with Undo; Add to Collection from a result's menu; selecting results on iPhone and iPad, and on the Mac; Add Tags; the manuals). Read this as the assessment it was, and the three dated paragraphs below for where the lanes departed from it. What the lanes found and left is in `../Plan-Of-Record-2026-10-11.md` §5b, and the TestFlight lines for it are owed at build 50 (that plan's §2).
+
 Assessed 2026-10-07 at v2 f384d2d5 (build 49, index version 65). Read from the code; nothing was built or run.
 
 **Decided 2026-10-08.** The owner took every recommended default in section 8. So "clear" is Mark Reviewed with Undo, the Mac picks with a Select toggle and checkboxes, #1565 is fixed before lane 3, and this issue's selection lanes land before #1577's interface lanes. The implementation plan to work from is on the issue: https://github.com/joshbotts/FRUS-Explorer/issues/1576#issuecomment-6058253884. Two things this document says in the future tense have since happened: the manual update has merged (#1580), and lanes edit the manuals themselves, leaving the AI Generated notice in place (owner, 2026-10-07; `Planning/Manual-Revisions-Pending.md` says so).
