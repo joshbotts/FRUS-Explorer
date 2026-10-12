@@ -38110,3 +38110,33 @@ Pull request #1655, the fifth of the plan of record's queue, worked ahead of pul
 - **The queue's activity** (above, and §5b): the largest thing found, and not this issue's.
 - **If this merges before the build-50 bump**, the build carries it and its notes owe it a line.
 - **The session's simulator** is deleted. The shared iPhone 17 (`80CF0F18`) was used only for the test runs.
+
+## Session 2026-10-12 — Build 50: the build number and the TestFlight notes
+
+On the owner's word ("bump build to 50 and update testflight docs"). The branch was brought up to `v2` at `09cd4bf6` first, so the build carries #1655.
+
+**Changed**
+- **Build 50.** `CURRENT_PROJECT_VERSION` is 50 in `project.yml` (three targets) and `project.pbxproj` (nine occurrences), edited directly with no `xcodegen` run. The README's "Current build" line and its mirror in `Docs/EditableContent/03-Repository-README.md` say 50. The version is still 0.2.
+- **TestFlight notes,** both rewritten for build 50 from the plan of record's §2 list, each item checked against its pull request and the manuals, and each named control against the string in source: selecting, tagging and collecting search results, Mark Page Reviewed, a Meaning search inside a set, the **Read** button and row in Browse, 1981–88 vol. XVI's lists, whole-volume and footnote references, the reader's contrast and underlines, the 47 documents of 1952–1954 vol. IX, Part 1, Subject-Numeric neighbours and the lot cards, the About the Series Audio Graphs, the one-time re-index (version 65 to 69), every fix on one line, and what to test. iOS 3,975 characters, Mac 3,986 (Python `len()`).
+  - **iOS only:** the printed-form fallback for Collocates, Distinctive sizing and Related Documents, and the Live Activity that says it has stopped.
+  - **Mac only:** the Select button and its strip, Space on the highlighted row, the selection's own right-click commands, and File ▸ Print without underlines. The Mac's note names **Copy Language Analysis Record** and leaves the fallback out: no measured Mac launch has lacked its lemmatiser.
+  - **The example for Subject-Numeric neighbours is 1961–1963 vol. V doc. 323** (`POL US-USSR`), a file with no subject number, which had no list in build 49. Build 49's own example, 1964–68 vol. I doc. 5 (`POL 27 VIET S`), already had one.
+  - **The sync banner over a list's last row** was a "Not bugs" line in build 49's notes. It is fixed (#1565), so the iOS note asks testers to confirm it beside their own build-49 reports.
+- **The plan of record** (§1 row 4 and §2) records that the number and the notes are done and the checklist is not.
+
+**Checked**
+- `CodingStandardsAuditTests` (with `readmeStatesCurrentBuild`), `EditableContentKeyTests` and `CloudKitSchemaInventoryTests` on iPhone 17 under iOS 27.0 (`80CF0F18`), on the final tree: "✔ Test run with 100 tests in 3 suites passed after 45.894 seconds", "** TEST SUCCEEDED **", with "README states the current build and version" among them.
+- The iOS app that run built reports `CFBundleVersion` 50 and `CFBundleShortVersionString` 0.2 (read from its `Info.plist`). The Mac app was not built: its number is the same nine lines of `project.pbxproj`.
+- `CloudKitSchemaInventory.swift` is byte for byte what it was at the `build-49` tag.
+
+**The semantic map's 172 region labels, settled the same day**
+- The owner asked to see them and was shown all 172 from `semantic-map-index.json`, grouped by era with each region's size. 22 of the 172 map labels (a label's first three terms) are also labels of build 49's 171 regions.
+- **The owner's answer:** the app explains the labels' provenance well enough that they do not read as the owner's editorial choices, and they are fine if they are what the generation of the map yields.
+- **They are.** `SemanticVectorsGenerator` was run into a scratch folder with `STORE=~/frus-semantic-raw`, the root checkout's `layout.bin` of 2026-10-10, `GENERATED_DATE=2026-10-10` and `EXPECT_DIGEST` set to the shipped digest. All five files it wrote equal the bundled ones byte for byte (`cmp -s`): `semantic-map-index.json`, `semantic-map.bin`, `semantic-vectors-index.json`, `semantic-vectors-binary.bin` and `semantic-shards-manifest.json`. Nothing in the tree was written. The layout stage itself (`build_layout.py`: UMAP and HDBSCAN) was not run again, so what is shown is that the labels are the labeller's output for the shipped layout, not that the layout comes out the same twice.
+- **The cost of a relayout is not an issue**, the owner's answer later the same day to the other half of the plan's §3 item (adding 47 documents moved 79,067 between a region and none). Nothing is filed for it.
+- Both TestFlight notes keep "new region labels on the semantic map" under Not bugs.
+
+**Not done**
+- **The release checklist of the plan's §2**: the full unit run, `swift test`, the clean `build-for-testing` read for warnings, the Mac build and the walk of the check copy, the re-index census, the window-fronting audit, the link check and the Gemma re-check. None was asked for and none was run.
+- **Before the archive, the owner's two scripts:** `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`.
+- **No `build-50` tag** is made here.

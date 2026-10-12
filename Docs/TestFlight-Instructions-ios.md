@@ -1,46 +1,46 @@
-# What's New Since Build 48 (iOS)
+# What's New Since Build 49 (iOS)
 
-**Documents show their figures. The Subject-Numeric File is its own filing era. The reader's actions now lead the system edit menu.**
+**Search results can be selected, tagged and collected. Browse opens text a chapter prints outside its documents. Collocates works where the device has no dictionary forms.**
 
-**First launch re-indexes every downloaded volume, once**, in the background. Nothing is re-downloaded, but the app then fetches the figure images of the volumes you already have (up to 141 MB for the whole series). It follows **Allow Cellular Downloads**.
+**First launch re-indexes every downloaded volume, once**, in the background. Nothing is re-downloaded.
 
-## Figures
+## Search
 
-- A map, chart, photograph or facsimile is drawn in the reader, with its head above and its captions beneath, and is embedded in PDF, Word and HTML exports.
-- Images download with a volume and are removed with it. **Volumes & Storage** counts them in a **Figures** segment.
-- **[Figure]** shows only where history.state.gov serves no image, or until one arrives.
-- The Public Diplomacy film sections print their heading and **Watch on history.state.gov ↗**.
+- **Select Results** (the **•••** menu, or touch and hold a result ▸ **Select**): pick results, then **Add to Collection…**, **Add Tags…** or, in Checklist Mode, **Mark Reviewed**. Each has **Undo**.
+- One result's menu has the first two. Add Tags takes no tag off.
+- **Checklist Mode** has **Mark Page Reviewed** and **Undo**. Its marks last as long as the search.
+- A **Meaning** search inside a working corpus or a project's **History** scope ranks that set alone.
 
-## The Subject-Numeric File (1963–1973)
+## Browse and the reader
 
-- It is an eleventh provenance category, between the Central Decimal File and the Central Foreign Policy File: in the **Archival Sourcing** charts (brown), Browse ▸ Archives ▸ **Provenance Types**, Archival Analytics ▸ **Your Library**, and the map's provenance colours.
-- A citation is placed by what it gives (a designation such as POL 27 VIET S), however the note is worded. **Other NARA Collections** is under half its old size.
-- **Source Explorer** has one panel for these notes: **File Designation**, **File Years**, the handbook for those years, and what to hand an archivist. It runs no catalog search for them.
-
-## Selecting text
-
-Select text in a document: the highlight colours, **Excerpt**, **Look Up in NARA** and **Note** are in the edit menu, ahead of Copy. The floating bar is gone. **Note** may be behind **›**.
+- A chapter of text alone (a treaty, say) opens with **Read**, where it said "No documents in this section."
+- Text a section prints above its documents (those present at a meeting, say) is a **Read** row heading the section, and Search finds it.
+- 1981–1988 vol. XVI's documents end with **Persons** and **Abbreviations & Terms** lists, and its people have mentions.
+- "See volume V" opens that volume's page, and a reference to a footnote counts for its document.
+- Person names and cross-references are underlined, in darker colours, for WCAG 2.2 AA contrast.
+- 1952–1954 vol. IX, Part 1 gains documents 900–946: Settings ▸ Volumes & Storage ▸ **Check for Corrections** brings them.
 
 ## Also
 
-- **Graphs:** a drag on empty canvas pans; a long press on a node or word opens its menu beside it.
-- **iCloud:** a sync that stops says so and names its cause. **Fix iCloud Sync** warns before it discards changes not yet uploaded.
-- **Language analysis** is checked again each time you return to the app. Settings ▸ **Data & Recovery** ▸ **Language Analysis** shows what works.
-- **Citation Lookup:** Batch hides the Parsed Fields and counts best guesses apart. A document its volume did not number reads "Unnumbered (d710a-1)".
+- **Language analysis:** where Settings ▸ Data & Recovery ▸ **Language Analysis** reads *Limited*, **Collocates**, a word cloud's **Distinctive** sizing and Related Documents' **shares:** chips compare words as printed and say so, where they refused or were withheld. **Copy Language Analysis Record** is for a report.
+- **Archives:** a Subject-Numeric file with no subject number (POL US-USSR) has **Archival Neighbors** and is ranked under its category; a file is one list however it is cited. A lot cited through the National Archives gets its lot cards with no API key.
+- **Live Activity:** two minutes after the app stops, it turns grey and reads *Indexing has stopped.* One left behind goes when the app is opened.
+- **Accessibility:** all eleven About the Series charts have an Audio Graph.
 
 **Fixes:** many, on every tab and in accessibility.
 
 ## What to test
 
-1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 48?
-2. **Your own library's figures.** Launch online and open **Volumes & Storage**: does **Figures** grow without your opening a document? With **Allow Cellular Downloads** off, on cellular: is nothing fetched?
-3. **Figures.** 1951 vol. III Part 1 doc. 289 (photographs over their captions); 1946 vol. I doc. 587 (a facsimile under its title; one figure there reads [Figure]). Export both as PDF, Word and HTML. Remove a volume: does **Figures** shrink?
-4. **Subject-Numeric notes.** 1964–68 vol. I doc. 5 ▸ Sources: is the type "State Dept. Subject-Numeric File (February 1963–1973)", the designation POL 27 VIET S, the years 1964–66? Try 1969–76 vol. XXX doc. 6. In Browse ▸ Archives ▸ **Provenance Types**: eleven rows, Subject-Numeric File second?
-5. **The edit menu.** Highlight, excerpt, look up and note from a selection, with VoiceOver if you use it. Does anything cover the menu?
-6. **Graphs.** Pan, pinch, long-press a node.
-7. **Word Cloud and Collocates** after leaving the app and coming back: do the lenses still work? What does **Language Analysis** say?
-8. **Your build-48 reports**: fixed?
+1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 49?
+2. **Selecting results.** Add a selection to a collection, tag it, and **Undo** each. In Checklist Mode: **Mark Page Reviewed**, **Undo**. At a large text size, is anything covered?
+3. **Meaning inside a set.** Apply a working corpus in Filters, switch to Meaning, ask a question: every row in the corpus?
+4. **Read rows.** 1945 Potsdam vol. II ▸ VI. Minutes… ▸ Monday, July 16 ▸ Meeting of the Joint Chiefs of Staff, 10 a.m.: a **Read** row above Documents (1)? Does Search find Esposito there?
+5. **Links.** 1981–88 vol. XVI doc. 368: tap Haig and OAS in the lists at its end. 1961–63 vol. VI doc. 16, footnote 1: tap "volume V". Underlines readable, light and dark?
+6. **Collocates**, if Language Analysis reads *Limited*: does it rank, under a note? (*Working*: no change.)
+7. **Sources.** 1961–63 vol. V doc. 323: a list under "Same Subject-Numeric file — POL US-USSR"? 1969–76 vol. XLI doc. 34: "NARA divided this lot file across 4 series"?
+8. **Live Activity.** Index a large volume and lock the phone: grey and stopped after two minutes? Force-quit mid-index and reopen: gone?
+9. **Your build-49 reports**, and the sync banner over a list's last row: fixed?
 
-Not bugs: [Figure] where the State Department's site has no image; category counts that differ from build 48's; 1964–68 volumes in a new colour on the map; the last row of a list resting under the sync banner (known).
+Not bugs: counts that differ from build 49's (search totals, mentions, cross-reference figures); new region labels on the semantic map; Collocates that differ between a *Limited* device and a *Working* one.
 
 Include device + iOS version, taps, expected, actual — and for anything archival, the document id. Thanks!

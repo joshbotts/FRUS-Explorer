@@ -42,7 +42,7 @@
 | 1 | The Subject-Numeric label table and its generator (done 2026-10-12, pull requests #1651 and #1652) | #1644 | no (decision 2) |
 | 2 | Small fixes (done 2026-10-12, pull request #1654) | #1643, #1617, #1608's Copy button | no |
 | 3 | The printed-form fallback for Collocates (decision 8) (done 2026-10-12, pull request #1653, ahead of 2 on the owner's word) | #1608 | no |
-| 4 | Build 50 | — | carries v66 to v69 |
+| 4 | Build 50 (the number and both TestFlight notes done 2026-10-12; §2's checklist not yet run) | — | carries v66 to v69 |
 | 5 | A Live Activity that nothing ends (done 2026-10-12, pull request #1655, ahead of 4 on the owner's word) | #1642 | no |
 | 6 | Smart collections in the editors and the lists | #1619 | no |
 | 7 | Search: the document gate, Filters after a launch, and a superseded run | #1646, #1647, #1648 | no |
@@ -57,7 +57,7 @@
   - **No index bump and no CloudKit change.**
   - **The look was on a simulator, with the fault made.** The iPhone 17 simulator under iOS 27.0 kept its lemmatiser in fifteen launches of fifteen (fourteen relaunches and one after a fresh boot); the iPad Pro 13-inch (M5) lost it by itself once in three, in a test run and not where it could be looked at. So a debug-only launch argument, `FRUS_DEBUG_NO_LEMMA_ANSWER=1`, leaves the lemma request unanswered as iOS left it on the phone, and the verdict line then reads as the phone's did. All three surfaces were seen falling back with their notes, and seen without them on a launch that lemmatises. On the Mac, in the isolated check copy, Collocates, the word cloud and Related Documents were walked and show nothing new, and Language Analysis reads *Working*; the fallback itself cannot be made there, since the copy is a release build. Not seen on the owner's iPhone, where the fault is (§3).
   - **One review pass** found eight things, the first a test the full run would have failed (the new file had no provenance row). The session entry lists them and what each changed.
-- **4 — build 50.** §2.
+- **4 — build 50.** §2. The number is 50 and both TestFlight notes are written (2026-10-12, on the owner's word: "bump build to 50 and update testflight docs"). The checklist of §2 was not asked for and is not run.
 - **5 — #1642 (decision 3). Done 2026-10-12, pull request #1655, ahead of 4 on the owner's word that day; it depends on nothing in the bump.** A Live Activity the last process left is ended at the next launch, a background launch included, unless a pass that launch resumes takes it over, as such a pass did before. Every update carries a stale date, and the widget draws a stale activity as stopped: a grey pause mark, the bar held grey where it was, and *Indexing has stopped. Open FRUS Explorer to continue.* (or *Summarizing has stopped. …*).
   - **The date is two minutes, because the system gives no less.** Measured on an iPhone 17 simulator under iOS 27.0: a stale date 30 or 60 seconds after an update was scheduled at 120 seconds, and 180 and 600 as asked.
   - **A keep-alive was added, which the decision did not name.** The app sends an activity it holds its last state again every 30 seconds, so the date passes only when the app has stopped running. Without it a pass that reports nothing for two minutes, as a whole-library pass's last merge and a summarization run's listing of a large scope can, would read as stopped while it worked: a pass made to report once was marked stale at 120 seconds while still indexing, and with the keep-alive the same pass ran 3 minutes 51 seconds unmarked.
@@ -78,7 +78,7 @@ Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 6
 
 **CloudKit.** `CloudKitSchemaInventory.swift` has not changed since the commit build 49 was cut from, and no `@Model` or stored property has been added, so nothing awaits a deploy. `Scripts/check_cloudkit_schema.py` still has to be run before the archive.
 
-**What the TestFlight notes owe.** They are written when the number is bumped, 4,000 characters each at most, with fixes in one line.
+**What the TestFlight notes owe.** They are written when the number is bumped, 4,000 characters each at most, with fixes in one line. **Written 2026-10-12**, iOS 3,975 characters and Mac 3,986 (Python `len()`). Each item below has its line, the Live Activity's too (pull request 5 merged before the bump; iOS only, since the Mac has none). The Mac's note leaves the printed-form fallback out, because no measured Mac launch has lacked its lemmatiser, and names **Copy Language Analysis Record**.
 - The library re-indexes once at first launch.
 - **Search results:** Mark Page Reviewed with Undo; Add to Collection and Add Tags from a result's menu; selecting results on iPhone, iPad and Mac (#1576). A Meaning search ranks inside a working corpus or a project's History scope (#1577 lane 1).
 - **Browse and the reader:** a chapter of prose alone opens in Browse (#1535); the text a section prints at its own level is a **Read** row, and Search finds it (#1536); 1981–88 vol. XVI's documents list their persons and terms (#1599); a cross-reference to a whole volume opens the volume (#1603), and one to a footnote counts for the document that holds the note (#1638).
@@ -91,14 +91,14 @@ Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 6
 
 **Fixed by the build's going out:** builds through 49 refuse a fresh download of the two semantic shards re-packed on 2026-10-10 (`frus1952-54v09p1`, `frus1902app1`) and score those two volumes from the bundled tier. The web edition's pinned manifest disagrees the same way until its pin moves.
 
-**Owed by the owner before it:** the reading of the semantic map's 172 region labels (§3).
+**The semantic map's 172 region labels: settled 2026-10-12.** The owner was shown all 172 and answered that the app explains where the labels come from well enough that they do not read as the owner's editorial choices, and that they are fine if they are what the generation of the map yields. They are. `SemanticVectorsGenerator`, run that day into a scratch folder from the shipped store and the layout of 2026-10-10 with the shipped stamp and digest, wrote `semantic-map-index.json`, `semantic-map.bin` and the three vector files byte for byte as bundled. The layout stage (`build_layout.py`) was not run again. No label is edited by hand, and an odd one (a clipped name, a telegram's abbreviation) is the generator's output and not a defect to file.
 
 ---
 
 ## 3. Waiting on the owner
 
 **For the queue.**
-- **The map's 172 labels**, read before build 50. With it, a yes or no on whether the cost of a relayout is an issue: adding 47 documents moved 79,067 between a region and none.
+- **The map's 172 labels, and the cost of a relayout: both answered 2026-10-12.** The labels are settled (§2). The cost of a relayout is not an issue, in the owner's words: adding 47 documents moved 79,067 between a region and none, and that is accepted. Nothing is filed for it.
 - **A destination for #1545** (decision 5).
 - **The fallback on the iPhone**, once a build carries it (pull request 3): on a launch where Settings ▸ Data & Recovery ▸ Diagnostics ▸ Language Analysis reads *Limited*, Collocates ranks under its note, a cloud sized by Distinctive reads *Counted and compared as printed*, and Related Documents' rows carry *shares:* chips under theirs. And two questions it leaves. Whether a printed count should fold plurals at all: it does, as it has since #1373, so "missile" and "missiles" are one word on such a launch and "negotiate" and "negotiated" are two. And whether an exported image and a collection's cloud plate should say more than that the cloud was counted, or counted and compared, as printed: the screen and the CSV say that results can differ on another device, and those two short lines do not.
 - **Three timings for #1577's lane 4**, on an iPhone with the search model downloaded, read in Console from `subsystem:bottsywattsy.FRUS-Explorer category:SearchTiming`: a Meaning search inside a working corpus of about 1,000 documents; the same inside a 7,500-row browse saved as a corpus; and a common word in Keywords mode inside a 100-document corpus.
