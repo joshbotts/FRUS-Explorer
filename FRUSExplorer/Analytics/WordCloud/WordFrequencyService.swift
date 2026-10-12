@@ -48,6 +48,8 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///          key fingerprints
 ///   1.4 — #1539: the in-memory cache reuses a count not made as designed only under the verdict it
 ///          was counted under (`isReusableInMemory`), since a re-check can now replace the verdict
+///   1.5 — #1608: the tokenizer counts in the form of the verdict the result is stamped with, so a
+///          result stamped "no lemmatiser" is a count of printed forms throughout
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -116,6 +118,38 @@ actor WordFrequencyService {
         // opened while the launch warm-up is still waiting on its assets waits here, suspended,
         // instead of blocking this actor's thread inside the tokenizer.
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
+        return try await topTerms(
+            signature: signature, keys: keys, limit: limit,
+            includeDiplomaticStopwords: includeDiplomaticStopwords, extraStopwords: extraStopwords,
+            lens: lens, tuning: tuning, persistent: persistent,
+            countedUnder: languageAnalysis, progress: progress)
+    }
+
+    /// The count itself, under a verdict the caller read.
+    ///
+    /// ``topTerms(signature:keys:limit:includeDiplomaticStopwords:extraStopwords:lens:tuning:persistent:progress:)``
+    /// awaits this process's verdict and calls it; nothing else in the app does. It is a method of
+    /// its own so a test can count under a verdict its host does not have (#1608): the words are
+    /// counted in that verdict's form and the result is stamped with it, and Distinctive ranks the
+    /// result against the reference counted in that form, so the three have to be one value.
+    ///
+    /// - Parameter languageAnalysis: The verdict the count is made under and stamped with.
+    func topTerms(
+        signature: String,
+        keys: [WordCloudDocumentKey],
+        limit: Int,
+        includeDiplomaticStopwords: Bool,
+        extraStopwords: Set<String> = [],
+        lens: WordCloudLens = .allTerms,
+        tuning: WordCloudTuning = .standard,
+        persistent: Bool = false,
+        countedUnder languageAnalysis: NaturalLanguageHealth,
+        progress: WordCloudProgress? = nil
+    ) async throws -> WordCloudResult {
+        // The warm-up before anything below tags (#1373). The app's one caller has awaited it;
+        // awaited here too, so a caller that hands in a verdict cannot make the process's first
+        // tagging block this actor's thread inside the tokenizer.
+        _ = await NaturalLanguageReadiness.verdictWhenReady()
         // The text generation this count reads (#1421 review). Taken before the count, so a
         // re-index that finishes while it runs leaves the result stamped with the version it
         // began on, and the next open counts again.
@@ -161,7 +195,12 @@ actor WordFrequencyService {
             tuning: tuning,
             lens: lens,
             includeDiplomatic: includeDiplomaticStopwords,
-            extraStopwords: extraStopwords
+            extraStopwords: extraStopwords,
+            // The form of the verdict this result is stamped with below (#1608). Distinctive
+            // re-ranks these counts against the reference counted in the stamp's form, so the
+            // counts have to be in it from the first word to the last, whatever the lemmatiser does
+            // while they are made.
+            wordForm: languageAnalysis.wordForm
         )
         let total = keys.count
         var counts: [String: Int] = [:]

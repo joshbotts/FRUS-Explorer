@@ -36,6 +36,8 @@ import SwiftUI
 ///   1.1 — #1373: says when this device's tagger cannot lemmatise, rather than ranking printed forms
 ///   1.2 — #1539: that refusal says the app checks again on each return, and the panel rebuilds when
 ///          a re-check adopts a better verdict (`CollocationRebuildKey.language`)
+///   1.3 — #1608: a launch with no lemmatiser ranks printed forms against the reference counted as
+///          printed, and the list opens with a row that says so (`CollocationResult.printedFormsNote`)
 struct CollocationView: View {
 
     /// Which set the search is showing, so the panel can say what it measured over.
@@ -142,43 +144,57 @@ struct CollocationView: View {
     }
 
     private func list(_ result: CollocationResult) -> some View {
-        List(Array(order.apply(to: result.scores, cutoffCount: result.referenceCutoffCount)
-                        .enumerated()), id: \.element.id) { index, score in
-            HStack(spacing: 10) {
-                Text("\(index + 1)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.tertiary)
-                    .frame(minWidth: 28, alignment: .trailing)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(score.term).font(.body)
-                    Text(counts(score, result))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .monospacedDigit()
-                }
-                Spacer()
-                // The number the list is SORTED on. Always showing G² while ranking on effect made
-                // the list look unsorted — the trailing column descended, then did not.
-                Text(rankedValue(score))
-                    .font(.callout.monospacedDigit())
+        List {
+            // A ranking of printed forms says so before its first row (#1608). A row, not a line of
+            // the header: a row wraps to its whole length at every text size and scrolls with the
+            // list, where the header's caveat is cut at four lines and anything taller would push
+            // the rows out of a column that does not scroll.
+            if let note = result.printedFormsNote {
+                Text(note)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                    .frame(minWidth: 56, alignment: .trailing)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier(Self.printedFormsNoteIdentifier)
             }
-            .padding(.vertical, 2)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text(verbatim: score.term))
-            .accessibilityValue(Text(counts(score, result)))
-            .contextMenu {
-                Button {
-                    #if os(iOS)
-                    UIPasteboard.general.string = score.term
-                    #else
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(score.term, forType: .string)
-                    #endif
-                } label: {
-                    Label(String(localized: "common.copy", defaultValue: "Copy"),
-                          systemImage: "doc.on.doc")
+            ForEach(Array(order.apply(to: result.scores, cutoffCount: result.referenceCutoffCount)
+                            .enumerated()), id: \.element.id) { index, score in
+                HStack(spacing: 10) {
+                    Text("\(index + 1)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                        .frame(minWidth: 28, alignment: .trailing)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(score.term).font(.body)
+                        Text(counts(score, result))
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .monospacedDigit()
+                    }
+                    Spacer()
+                    // The number the list is SORTED on. Always showing G² while ranking on effect made
+                    // the list look unsorted — the trailing column descended, then did not.
+                    Text(rankedValue(score))
+                        .font(.callout.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 56, alignment: .trailing)
+                }
+                .padding(.vertical, 2)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: score.term))
+                .accessibilityValue(Text(counts(score, result)))
+                .contextMenu {
+                    Button {
+                        #if os(iOS)
+                        UIPasteboard.general.string = score.term
+                        #else
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(score.term, forType: .string)
+                        #endif
+                    } label: {
+                        Label(String(localized: "common.copy", defaultValue: "Copy"),
+                              systemImage: "doc.on.doc")
+                    }
                 }
             }
         }
@@ -188,6 +204,9 @@ struct CollocationView: View {
         .listStyle(.inset)
         #endif
     }
+
+    /// The accessibility identifier of the row that says a ranking compared printed forms (#1608).
+    static let printedFormsNoteIdentifier = "search.collocation.printedFormsNote"
 
     /// The trailing number, which is always whatever the list is ordered by.
     private func rankedValue(_ score: KeynessScore) -> String {
@@ -248,6 +267,8 @@ struct CollocationView: View {
                 defaultValue: "Your Word Cloud settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to rank these neighbors."),
                 Self.describe(mismatches))
         case .languageAnalysisUnavailable:
+            // Since #1608 a launch with no lemmatiser ranks printed forms and says so in the list's
+            // first row; this is what is left for one whose printed-form reference did not load.
             detail = String(localized: "search.collocation.unavailable.languageAnalysis",
                             defaultValue: "This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.")
         case .noMatches:

@@ -79,8 +79,6 @@ struct BundledKeynessBaselineTests {
         #expect(!BundledKeynessBaseline.isAvailable)
         #expect(ask(.allTerms) == .unavailable(.noArtifact),
                 "Returning empty counts would score EVERY scope term as unique to the scope — a keyness list that is entirely wrong and entirely plausible-looking")
-        #expect(BundledKeynessBaseline.coverage(for: .allTerms) == nil)
-        #expect(BundledKeynessBaseline.generated == nil)
     }
 
     @Test("A lens the generator does not emit is unavailable, not empty")
@@ -106,22 +104,22 @@ struct BundledKeynessBaselineTests {
         inject(makeFile(lenses: [.allTerms: (1_000_000, 45_000, ["treaty": 400, "morale": 12])]))
         defer { inject(nil) }
 
-        guard case .available(let terms, let totalTokens, let cutoffCount) = ask(.allTerms) else {
+        guard case .available(let reference) = ask(.allTerms) else {
             Issue.record("expected a baseline"); return
         }
-        #expect(terms["treaty"] == 400)
-        #expect(terms["morale"] == 12)
+        #expect(reference.terms["treaty"] == 400)
+        #expect(reference.terms["morale"] == 12)
         // The denominator must be the artifact's true total, NOT the sum of the two terms present.
-        #expect(totalTokens == 1_000_000)
-        #expect(totalTokens != terms.values.reduce(0, +))
-        #expect(cutoffCount == 12)
+        #expect(reference.totalTokens == 1_000_000)
+        #expect(reference.totalTokens != reference.terms.values.reduce(0, +))
+        #expect(reference.cutoffCount == 12)
 
-        let coverage = try #require(BundledKeynessBaseline.coverage(for: .allTerms))
-        #expect(coverage.retained == 2)
-        #expect(coverage.distinct == 45_000,
+        // The coverage and the stamp travel with the counts since #1608, in the one value.
+        #expect(reference.terms.count == 2)
+        #expect(reference.distinctTerms == 45_000,
                 "Coverage has to state what fraction of the corpus vocabulary is priced, so a keyness view can disclose it")
-        #expect(coverage.cutoffCount == 12)
-        #expect(BundledKeynessBaseline.generated == "2026-07-30")
+        #expect(reference.generated == "2026-07-30")
+        #expect(reference.wordForm == .dictionary)
     }
 
     // MARK: - Configuration guard

@@ -85,9 +85,9 @@ struct CollocationWiringAuditTests {
     func configurationIsResolvedOnce() throws {
         for host in try bothHosts() {
             // The guard validates what a caller CLAIMS, not what its tokenizer was built with.
-            // `CollocationConfiguration.live()` is the single resolution; reading the settings again
-            // for the baseline call is how the two silently diverge.
-            #expect(host.text.contains("CollocationConfiguration.live()"),
+            // `CollocationConfiguration.live(languageAnalysis:)` is the single resolution; reading
+            // the settings again for the baseline call is how the two silently diverge.
+            #expect(host.text.contains("CollocationConfiguration.live(languageAnalysis: languageAnalysis)"),
                     "\(host.name) must resolve the live tokenisation through the shared type")
             #expect(host.text.contains("tuning: configuration.tuning"),
                     "\(host.name) must give the guard the SAME tuning the tokenizer was built with")

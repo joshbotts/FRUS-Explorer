@@ -65,6 +65,8 @@ enum KeynessCloudMeasure: String, CaseIterable, Sendable {
 ///   1.0 — S-1: initial implementation
 ///   1.1 — #1373: `rank` takes the tagger verdict the terms were counted under, and a scope counted
 ///          without the lemmatiser is `languageAnalysisUnavailable` rather than ranked
+///   1.2 — #1608: a scope counted as printed is ranked against the reference counted as printed,
+///          and the ranking says so (``Ranking/wordForm``)
 ///
 /// `@MainActor` because ``BundledKeynessBaseline`` is: the reference is loaded once and read from
 /// views, so it takes the same isolation rather than paying for a second copy of a 20,000-entry
@@ -98,6 +100,10 @@ enum KeynessCloud {
         let referenceCutoffCount: Int
         /// The reference artifact's generation stamp.
         let generated: String?
+        /// The form the scope and the reference were both counted in (#1608). `.printed` is the
+        /// fallback of a launch with no lemmatiser, and every surface that shows or exports such a
+        /// ranking says so: `WordCloudDisplayState.comparedAsPrintedNote(_:)` and its export forms.
+        let wordForm: WordCloudWordForm
 
         /// Whether this term's reference count of zero means *unpriced* rather than *unused*.
         ///
@@ -122,9 +128,11 @@ enum KeynessCloud {
         case lensNotPriced(WordCloudLens)
         /// The live tokenisation is not comparable to the reference's.
         case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
-        /// The scope was counted without a tagger the reference was counted with — the lemmatiser,
-        /// or the lexical classes of a part-of-speech lens (#1373). No setting fixes this, so it
-        /// has its own message rather than joining ``configurationMismatch``.
+        /// The scope has no reference it can be compared with, and no setting fixes it, so it has
+        /// its own message rather than joining ``configurationMismatch`` (#1373). Since #1608 a
+        /// scope counted without the lemmatiser is ranked against the reference counted as printed;
+        /// this remains for a part-of-speech lens counted without lexical classes, and for a scope
+        /// counted as printed on a launch whose printed-form reference did not load.
         case languageAnalysisUnavailable
         /// Nothing in the scope occurs often enough to be scored.
         case noTermsAboveFloor(minimum: Int)
@@ -168,7 +176,9 @@ enum KeynessCloud {
     ///     `WordCloudLoader.load`.
     ///   - languageAnalysis: What the tagger could do when `terms` were counted — the result's own
     ///     `WordCloudResult.languageAnalysis`, not this process's verdict, since a cloud read from
-    ///     the disk cache was counted by another process (#1373).
+    ///     the disk cache was counted by another process (#1373). It also chooses the reference
+    ///     (#1608): `WordFrequencyService` counts a scope in the verdict's own form, and the
+    ///     reference counted in that form is the one read.
     static func rank(
         terms: [TermCount],
         scopeTotal: Int,
@@ -184,7 +194,7 @@ enum KeynessCloud {
             for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
             languageAnalysis: languageAnalysis)
 
-        let reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int)
+        let reference: KeynessReference
         switch availability {
         case .unavailable(.noArtifact):
             return .unavailable(.noArtifact)
@@ -194,8 +204,8 @@ enum KeynessCloud {
             return .unavailable(.languageAnalysisUnavailable)
         case .unavailable(.configurationMismatch(let mismatches)):
             return .unavailable(.configurationMismatch(mismatches))
-        case .available(let terms, let totalTokens, let cutoffCount):
-            reference = (terms, totalTokens, cutoffCount)
+        case .available(let found):
+            reference = found
         }
 
         let eligible = terms.filter { $0.count >= minimumScopeCount }
@@ -215,7 +225,6 @@ enum KeynessCloud {
         let overRepresented = scored.filter(\.isOverused)
         guard !overRepresented.isEmpty else { return .unavailable(.nothingOverRepresented) }
 
-        let coverage = BundledKeynessBaseline.coverage(for: lens)
         return .ranked(Ranking(
             scores: overRepresented,
             candidateCount: eligible.count,
@@ -227,10 +236,13 @@ enum KeynessCloud {
             // completeness.
             rankedAmongTopFrequent: fetchedTermCount >= termLimit,
             minimumScopeCount: minimumScopeCount,
-            referenceRetained: coverage?.retained ?? 0,
-            referenceDistinct: coverage?.distinct ?? 0,
-            referenceCutoffCount: coverage?.cutoffCount ?? reference.cutoffCount,
-            generated: BundledKeynessBaseline.generated
+            // All four from the reference that was ranked against, never from a second lookup,
+            // which could name the file of the other form (#1608).
+            referenceRetained: reference.terms.count,
+            referenceDistinct: reference.distinctTerms,
+            referenceCutoffCount: reference.cutoffCount,
+            generated: reference.generated,
+            wordForm: reference.wordForm
         ))
     }
 

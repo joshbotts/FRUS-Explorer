@@ -148,6 +148,7 @@ enum CollocationWindow {
 ///
 /// Version history:
 ///   1.0 — S-2: initial implementation
+///   1.1 — #1608: ``wordForm``, and the note a ranking of printed forms carries
 struct CollocationResult: Equatable {
 
     /// Neighbours over-represented beside the query, most distinctive first.
@@ -174,6 +175,24 @@ struct CollocationResult: Equatable {
     let referenceCutoffCount: Int
     /// The reference artifact's generation stamp.
     let generated: String?
+    /// The form the neighbours and the reference were both counted in (#1608). `.printed` is the
+    /// fallback of a launch whose language analysis has no lemmatiser.
+    let wordForm: WordCloudWordForm
+
+    /// What the panel says above a ranking of printed forms, or `nil` for one of dictionary forms
+    /// (#1608).
+    ///
+    /// The owner's condition for the fallback, in one place: that it happened, why, and that the
+    /// result can differ from a device whose language analysis reduces words to their dictionary
+    /// forms. The example is a verb on purpose: under the default settings a regular plural is
+    /// folded by rule in a printed count too, so "negotiation" and "negotiations" are one word in
+    /// both, and a plural would be a false example. It closes on the re-check, because the panel
+    /// rebuilds on it (`CollocationRebuildKey.language`) and the ranking then changes.
+    var printedFormsNote: String? {
+        guard wordForm == .printed else { return nil }
+        return String(localized: "search.collocation.printedForms.note",
+                      defaultValue: "Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently. FRUS Explorer checks again each time you come back to it, and this panel is ranked again if it recovers.")
+    }
 
     /// Whether the budget stopped the scan short of the whole result set.
     ///
@@ -199,6 +218,8 @@ struct CollocationResult: Equatable {
 /// Version history:
 ///   1.0 — S-2: initial implementation
 ///   1.1 — #1373: `Unavailable.languageAnalysisUnavailable`
+///   1.2 — #1608: `rank` takes the form the neighbours were counted in and a ``KeynessReference``,
+///          and refuses a reference counted in the other form
 enum CollocationAnalysis {
 
     /// Why a collocation could not be produced.
@@ -216,8 +237,11 @@ enum CollocationAnalysis {
         case noArtifact
         /// The live tokenisation is not comparable to the reference's.
         case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
-        /// This process's tagger cannot lemmatise, so the neighbours would be counted as printed
-        /// against a reference counted in lemmas (#1373). No setting fixes it.
+        /// The neighbours and the reference are counted in different forms, and no setting fixes
+        /// it (#1373). Since #1608 a launch with no lemmatiser counts the neighbours as printed and
+        /// ranks them against the reference counted as printed, so this is left for the launch whose
+        /// printed-form reference did not load — and for a caller that hands ``rank`` a reference of
+        /// the other form.
         case languageAnalysisUnavailable
         /// The query matched nothing whose neighbourhood could be collected.
         case noMatches
@@ -239,10 +263,12 @@ enum CollocationAnalysis {
     /// Tokenises window text and ranks it against the corpus reference.
     ///
     /// - Parameters:
-    ///   - counts: lemma → occurrences inside the merged windows, produced by the caller with
+    ///   - counts: term → occurrences inside the merged windows, produced by the caller with
     ///     ``WordCloudTokenizer/accumulate(from:into:)`` so the terms are in the same form the
-    ///     reference is keyed by. Counting them any other way — Porter stems, raw words — compares
-    ///     two different vocabularies and fails systematically.
+    ///     reference is keyed by. Counting them any other way — Porter stems, or the other
+    ///     ``WordCloudWordForm`` — compares two different vocabularies and fails systematically.
+    ///   - wordForm: the form `counts` are in: the tokenizer's own (`WordCloudTokenizer.wordForm`).
+    ///     A reference counted in the other form is refused, not ranked against (#1608).
     ///   - windowTokenCount: surviving tokens across those same windows. `accumulate` returns it;
     ///     it is the denominator, and it must come from the same merge policy as `counts`.
     ///   - anchorLemmas: the query terms in lemma form, excluded from the ranking. A term is not a
@@ -259,10 +285,17 @@ enum CollocationAnalysis {
         documentsOffered: Int,
         anchorCount: Int,
         omittedAnchorCount: Int,
-        reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int),
-        generated: String?,
+        wordForm: WordCloudWordForm,
+        reference: KeynessReference,
         minimumCount: Int = Keyness.defaultMinimumScopeCount
     ) -> Outcome {
+        // Before anything is said about the query: printed forms against dictionary-form counts
+        // would score every inflected neighbour as a word the corpus never used, and the reverse
+        // would miss them. Both hosts take the tokenizer and the reference from one verdict
+        // (`CollocationConfiguration`), so this is a guard against a caller that does not.
+        guard reference.wordForm == wordForm else {
+            return .unavailable(.languageAnalysisUnavailable)
+        }
         guard anchorCount > 0, windowTokenCount > 0, !counts.isEmpty else {
             return .unavailable(.noMatches)
         }
@@ -291,7 +324,8 @@ enum CollocationAnalysis {
             windowTokenCount: windowTokenCount,
             minimumCount: minimumCount,
             referenceCutoffCount: reference.cutoffCount,
-            generated: generated
+            generated: reference.generated,
+            wordForm: wordForm
         ))
     }
 }

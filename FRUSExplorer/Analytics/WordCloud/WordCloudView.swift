@@ -67,6 +67,9 @@ enum WordCloudViewMode: String, CaseIterable {
 ///          Population caveat, moved off `WordCloudView` so a test can call them
 ///   1.4 — 2026-09-30: #1478 — the personal stop-lists caveat, in the owner's wording, naming only
 ///          the lists that removed something
+///   1.5 — 2026-10-12: #1608 — the wording for a Distinctive ranking that compared printed forms,
+///          on screen and in each export; the counted-as-printed note says counts can differ on
+///          another device; the CSV caveat's example is one the plural fold leaves apart
 enum WordCloudDisplayState: Equatable {
     /// The index could not be opened, so there is no word-frequency service.
     case serviceUnavailable
@@ -155,13 +158,20 @@ enum WordCloudDisplayState: Equatable {
     // Each is `nil` exactly when `countedAsPrinted` is false, so the rule is decided once. They are
     // separate strings because they are read at different times: the screen is read now, and an
     // exported file after the device that made it has moved on.
+    //
+    // The examples are verbs on purpose (#1608). Under the default settings a printed count still
+    // folds a regular plural by rule, so "negotiation" and "negotiations" are one word in it, as in
+    // a dictionary-form count; the caveat gave that pair as its example until #1608, and it was
+    // false with plural folding on.
 
     /// The line the Word Cloud's header and a comparison column print under a cloud counted as
-    /// printed, or `nil` when ``countedAsPrinted(_:lens:)`` is false.
+    /// printed, or `nil` when ``countedAsPrinted(_:lens:)`` is false. Since #1608 it also says the
+    /// counts can differ on another device, which the owner's condition for the fallback asks of the
+    /// clouds' counts as of the three surfaces that compare.
     static func countedAsPrintedNote(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
         guard countedAsPrinted(result, lens: lens) else { return nil }
         return String(localized: "wordcloud.countedAsPrinted",
-                      defaultValue: "Counted as printed: this device isn’t reducing words to their dictionary forms right now.")
+                      defaultValue: "Counted as printed: this device isn’t reducing words to their dictionary forms right now. Counts can differ on a device that does: a Mac, or another iPhone or iPad.")
     }
 
     /// The methods caveat a CSV export carries for a cloud counted as printed, or `nil` when
@@ -171,7 +181,72 @@ enum WordCloudDisplayState: Equatable {
     static func countedAsPrintedCaveat(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
         guard countedAsPrinted(result, lens: lens) else { return nil }
         return String(localized: "wordcloud.export.caveat.countedAsPrinted",
-                      defaultValue: "Counting: these words were counted as printed. When this cloud was made, the device’s language analysis was not reducing words to their dictionary forms, so “negotiation” and “negotiations” are two words here where a device whose language analysis works counts one. These counts and shares cannot be compared with a cloud counted in dictionary forms.")
+                      defaultValue: "Counting: these words were counted as printed. When this cloud was made, the device’s language analysis was not reducing words to their dictionary forms, so “negotiate” and “negotiated” are two words here where a device whose language analysis works counts one. These counts and shares cannot be compared with a cloud counted in dictionary forms.")
+    }
+
+    // MARK: Saying that Distinctive compared printed forms (#1608)
+    //
+    // A cloud counted as printed used to have no Distinctive ranking. It has one now, against the
+    // corpus reference counted as printed, and the owner's condition is that every surface showing
+    // or exporting it says that it fell back, why, and that the result can differ from a device
+    // whose language analysis reduces words to their dictionary forms. Each is `nil` exactly when
+    // the ranking's `wordForm` is not `.printed`, so a ranking of dictionary forms says what it
+    // always said.
+
+    /// Whether `ranking` compared printed forms with the reference counted as printed.
+    static func comparedAsPrinted(_ ranking: KeynessCloud.Ranking?) -> Bool {
+        ranking?.wordForm == .printed
+    }
+
+    /// The line the Word Cloud's header prints under a Distinctive ranking that compared printed
+    /// forms, or `nil` for any other ranking and for none.
+    static func comparedAsPrintedNote(_ ranking: KeynessCloud.Ranking?) -> String? {
+        guard comparedAsPrinted(ranking) else { return nil }
+        return String(localized: "wordcloud.keyness.comparedAsPrinted",
+                      defaultValue: "Counted and compared as printed: this device isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” are two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these words differently.")
+    }
+
+    /// The one line the header prints about printed forms: the ranking's when Distinctive compared
+    /// them, and otherwise the count's. `nil` for a cloud counted in dictionary forms.
+    ///
+    /// - Parameters:
+    ///   - result: The loaded result.
+    ///   - lens: The lens in force.
+    ///   - ranking: The Distinctive ranking on screen, or `nil` under Frequency or with none.
+    static func printedFormsNote(_ result: WordCloudResult, lens: WordCloudLens,
+                                 ranking: KeynessCloud.Ranking?) -> String? {
+        comparedAsPrintedNote(ranking) ?? countedAsPrintedNote(result, lens: lens)
+    }
+
+    /// The methods caveat a CSV export carries for a Distinctive ranking that compared printed
+    /// forms, or `nil` for any other. It follows ``countedAsPrintedCaveat(_:lens:)`` in the list,
+    /// which says how the words were counted; this says what they were scored against.
+    static func comparedAsPrintedCaveat(_ ranking: KeynessCloud.Ranking?) -> String? {
+        guard comparedAsPrinted(ranking) else { return nil }
+        return String(localized: "wordcloud.export.caveat.keyness.comparedAsPrinted",
+                      defaultValue: "Keyness reference: because these words were counted as printed, each was scored against a reference for the whole FRUS corpus that was counted as printed too. A device whose language analysis reduces words to their dictionary forms (a Mac, or another iPhone or iPad) scores dictionary forms against a reference counted in dictionary forms, so its keyness table for this scope can differ from this one.")
+    }
+
+    /// The axis label of a Distinctive export: the reference it was ranked against, and that both
+    /// were counted as printed when they were.
+    static func keynessAxisLabel(for ranking: KeynessCloud.Ranking?) -> String {
+        comparedAsPrinted(ranking)
+            ? String(localized: "wordcloud.export.axis.keyness.printed",
+                     defaultValue: "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference, both counted as printed")
+            : String(localized: "wordcloud.export.axis.keyness",
+                     defaultValue: "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference")
+    }
+
+    /// The segment an exported image's caption carries about printed forms: that they were counted
+    /// and compared as printed under such a Distinctive ranking, that they were counted as printed
+    /// under Frequency, and `nil` for a cloud counted in dictionary forms.
+    static func printedFormsCaptionSegment(_ result: WordCloudResult, lens: WordCloudLens,
+                                           ranking: KeynessCloud.Ranking?) -> String? {
+        guard comparedAsPrinted(ranking) else {
+            return countedAsPrintedCaptionSegment(result, lens: lens)
+        }
+        return String(localized: "wordcloud.export.caption.comparedAsPrinted",
+                      defaultValue: "counted and compared as printed, not in dictionary forms")
     }
 
     /// The segment an exported image's caption carries for a cloud counted as printed, or `nil`
@@ -1193,6 +1268,10 @@ struct WordCloudView: View {
         if let printed = WordCloudDisplayState.countedAsPrintedCaveat(result, lens: lens) {
             caveats.append(printed)
         }
+        // And what they were scored against, when that was the reference counted as printed (#1608).
+        if let compared = WordCloudDisplayState.comparedAsPrintedCaveat(ranking) {
+            caveats.append(compared)
+        }
         if lens != .allTerms {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.lens %@",
                                                  defaultValue: "Lens: the cloud is filtered to the “%@” word list, so this is a subset of the scope’s vocabulary, not its whole frequency ranking."),
@@ -1207,8 +1286,7 @@ struct WordCloudView: View {
             // that says it is would be a positive assertion of the wrong method — the one thing an
             // exported research artefact must never do.
             axisLabel: ranking != nil
-                ? String(localized: "wordcloud.export.axis.keyness",
-                         defaultValue: "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference")
+                ? WordCloudDisplayState.keynessAxisLabel(for: ranking)
                 : String(localized: "wordcloud.export.axis",
                          defaultValue: "Ranked by frequency across the scope’s documents"),
             scopeLabel: title,
@@ -1272,8 +1350,9 @@ struct WordCloudView: View {
                 : String(localized: "wordcloud.export.caption.frequency",
                          defaultValue: "sized by frequency"),
             // The same holds for a plate counted as printed beside one counted in dictionary
-            // forms (#1373). `nil`, and so absent, for every other cloud.
-            WordCloudDisplayState.countedAsPrintedCaptionSegment(result, lens: lens),
+            // forms (#1373), and for one whose Distinctive sizing compared printed forms (#1608).
+            // `nil`, and so absent, for every other cloud.
+            WordCloudDisplayState.printedFormsCaptionSegment(result, lens: lens, ranking: ranking),
             AnalyticsProvenance.appCredit,
             cloudProvenance.formattedDate,
         ].compactMap { $0 }.joined(separator: " · ")
@@ -1352,13 +1431,12 @@ struct WordCloudView: View {
                         .foregroundStyle(.secondary)
                 }
                 // A word lens counted without the lemmatiser counts printed forms, so
-                // "negotiation" and "negotiations" are two words here and one on a device whose
+                // "negotiate" and "negotiated" are two words here and one on a device whose
                 // lemmatiser works. True, but different, and the reader cannot see why (#1373).
-                if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: lens) {
-                    Text(printed)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                // Under Distinctive the line is the ranking's: it compared printed forms (#1608).
+                if let printed = WordCloudDisplayState.printedFormsNote(result, lens: lens,
+                                                                        ranking: ranking) {
+                    PrintedFormsNote(text: printed)
                 }
             }
             Spacer()

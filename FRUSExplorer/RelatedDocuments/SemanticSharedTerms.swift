@@ -34,6 +34,16 @@ import Foundation
 /// returns nothing rather than a list ranked by an unpriced guess, and the caller falls back to
 /// stating the percentage.
 ///
+/// ## A launch with no lemmatiser compares printed forms (#1608)
+///
+/// From #1373 such a launch had no chip at all: printed forms ranked against lemma counts would
+/// skip every inflected word as unpriced and name only the uninflected ones. Now both documents
+/// are counted as printed and ranked by the reference counted as printed, so two documents share a
+/// word where both print the same form — `negotiate` in one and `negotiated` in the other is no
+/// longer a shared word — and ``Evidence/printedFormsNote`` is what the panel says about it. The
+/// chip still wears the anchor's own spelling, so a form the plural fold clipped (`dulle`) is shown
+/// as the page prints it (`Dulles`).
+///
 /// ## The display form is the anchor's own spelling
 ///
 /// `WordCloudTokenizer` emits **lowercased lemmas**, which is right for counting and wrong for a
@@ -55,7 +65,33 @@ import Foundation
 /// Version history:
 ///   1.0 — V-3 follow-up: initial implementation
 ///   1.1 — #1373: no chip when this process's tagger cannot lemmatise
+///   1.2 — #1608: with no lemmatiser the chip compares printed forms against the reference counted
+///          as printed, and ``sharedTerms(anchor:candidates:appState:)`` returns the form with the
+///          terms (``Evidence``)
 enum SemanticSharedTerms {
+
+    /// What one pass found: each candidate's shared terms, and the form the words were compared in
+    /// (#1608).
+    struct Evidence: Equatable {
+        /// Display-form terms per candidate; a candidate with no distinctive overlap is absent.
+        let terms: [DocumentKey: [String]]
+        /// The form both documents' words and the corpus reference were counted in.
+        let wordForm: WordCloudWordForm
+
+        /// A pass that found nothing, or could not run.
+        static let none = Evidence(terms: [:], wordForm: .dictionary)
+
+        /// What the panel says above its rows when their shared words were compared as printed, or
+        /// `nil` when they were compared in dictionary forms or no row has a chip (#1608).
+        ///
+        /// The owner's condition for the fallback: that it happened, why, and that the result can
+        /// differ from a device whose language analysis reduces words to their dictionary forms.
+        var printedFormsNote: String? {
+            guard wordForm == .printed, !terms.isEmpty else { return nil }
+            return String(localized: "related.sharedTerms.printedForms.note",
+                          defaultValue: "Shared words compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so two documents share a word only where both print the same form (“negotiate” in one and “negotiated” in the other is not a match). A device that does reduce them (a Mac, or another iPhone or iPad) can name different shared words.")
+        }
+    }
 
     /// How many terms a chip shows. Three is what fits beside the other axes' chips on an iPhone.
     static let chipTermLimit = 3
@@ -78,37 +114,70 @@ enum SemanticSharedTerms {
     ///   - anchor: The document the rows are related to.
     ///   - candidates: The displayed candidates to explain.
     ///   - appState: Supplies the index and the tokenisation payloads.
-    /// - Returns: Display-form terms per candidate; a candidate with no distinctive overlap is
-    ///   absent from the result rather than present with an empty list.
+    /// - Returns: Display-form terms per candidate — a candidate with no distinctive overlap is
+    ///   absent rather than present with an empty list — and the form they were compared in.
     @MainActor
     static func sharedTerms(
         anchor: DocumentKey,
         candidates: [DocumentKey],
         appState: AppState
-    ) async -> [DocumentKey: [String]] {
-        guard !candidates.isEmpty, let pipeline = appState.indexingPipeline else { return [:] }
+    ) async -> Evidence {
+        guard !candidates.isEmpty, let pipeline = appState.indexingPipeline else { return .none }
 
         // The corpus reference. Unavailable means unpriced, not "every term is rare" — ranking
-        // without it would put the anchor's most ordinary words first.
+        // without it would put the anchor's most ordinary words first. Awaited, so a panel opened
+        // while the launch decode is still in flight reads the reference rather than its absence.
+        await BundledKeynessBaseline.prepare()
         let tuning = WordCloudTuning.standard
-        // The terms below are counted in this process, so its tagger verdict decides whether they
-        // are the lemmas the reference prices (#1373). Printed forms ranked against lemma counts
-        // would skip every inflected word as unpriced and name only the uninflected ones — so no
-        // chip rather than a skewed one. Awaited on every call, so the main actor is not blocked while the
-        // warm-up waits on its assets, and a re-check that replaced the verdict is read (#1539).
+        // The terms below are counted in this process, so its tagger verdict decides the form they
+        // are counted in and the reference that prices them (#1373, #1608): lemmas against the
+        // reference counted in lemmas, or, with no lemmatiser, printed forms against the one
+        // counted as printed. Never one against the other, which would skip every inflected word
+        // as unpriced and name only the uninflected ones. Awaited on every call, so the main actor
+        // is not blocked while the warm-up waits on its assets, and a re-check that replaced the
+        // verdict is read (#1539).
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
-        guard case .available(let corpusCounts, _, _) = BundledKeynessBaseline.baseline(
+        guard case .available(let reference) = BundledKeynessBaseline.baseline(
             for: lens, tuning: tuning, includeDiplomatic: true,
             languageAnalysis: languageAnalysis)
-        else { return [:] }
+        else { return .none }
+        return await evidence(anchor: anchor, candidates: candidates, pipeline: pipeline,
+                              reference: reference)
+    }
 
+    /// The pass itself, against a reference the caller read: fetch the texts, count each in the
+    /// reference's form, and name the rarest words the anchor shares with each candidate.
+    ///
+    /// ``sharedTerms(anchor:candidates:appState:)`` reads the reference for this process's verdict
+    /// and calls it; nothing else in the app does. It is a function of its own so a test can run the
+    /// pass in a form its host's verdict would not choose (#1608).
+    ///
+    /// - Parameters:
+    ///   - anchor: The document the rows are related to.
+    ///   - candidates: The displayed candidates to explain.
+    ///   - pipeline: The index the texts are read from.
+    ///   - reference: The corpus reference, which also fixes the form the texts are counted in.
+    /// - Returns: Display-form terms per candidate, and the reference's form.
+    @MainActor
+    static func evidence(
+        anchor: DocumentKey,
+        candidates: [DocumentKey],
+        pipeline: IndexingPipeline,
+        reference: KeynessReference
+    ) async -> Evidence {
+        // The warm-up before anything below tags (#1373). The app's caller has awaited it already,
+        // to read the reference; awaited here too, so a caller that was handed a reference cannot
+        // make this the process's first tagging and hold the main thread for as long as the
+        // warm-up waits on its assets.
+        _ = await NaturalLanguageReadiness.verdictWhenReady()
+        let tuning = WordCloudTuning.standard
         let keys = ([anchor] + candidates).map {
             WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
         }
         guard let texts = try? await pipeline.documentBodyTextsByKey(forKeys: keys),
               let anchorText = texts["\(anchor.volumeId)/\(anchor.documentId)"],
               !anchorText.isEmpty
-        else { return [:] }
+        else { return .none }
 
         let tokenizer = WordCloudTokenizer(
             stopwords: WordCloudStopwords.active(includeDiplomatic: true),
@@ -117,11 +186,13 @@ enum SemanticSharedTerms {
             lens: lens,
             // .allTerms is not a lexicon-backed lens, so no membership set applies.
             lexicon: nil,
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : [])
+            markings: tuning.filterMarkings ? WordCloudStopwords.markings : [],
+            // The reference's own form, so the two documents are counted the way it was (#1608).
+            wordForm: reference.wordForm)
 
         var anchorCounts: [String: Int] = [:]
         tokenizer.accumulate(from: anchorText, into: &anchorCounts)
-        guard !anchorCounts.isEmpty else { return [:] }
+        guard !anchorCounts.isEmpty else { return .none }
 
         var result: [DocumentKey: [String]] = [:]
         for candidate in candidates {
@@ -132,11 +203,11 @@ enum SemanticSharedTerms {
 
             let terms = rank(
                 shared: Set(anchorCounts.keys).intersection(candidateCounts.keys),
-                corpusCounts: corpusCounts, limit: chipTermLimit)
+                corpusCounts: reference.terms, limit: chipTermLimit)
             guard !terms.isEmpty else { continue }
             result[candidate] = terms.map { displayForm(for: $0, in: anchorText) }
         }
-        return result
+        return Evidence(terms: result, wordForm: reference.wordForm)
     }
 
     /// Ranks shared terms by corpus rarity and returns the most distinctive.
@@ -168,9 +239,11 @@ enum SemanticSharedTerms {
     /// word-boundary occurrence and returns that substring. A lemma with no surface match — "be" for
     /// "was" — falls back to the lemma, which is why the ranking above prefers rare terms: a lemma
     /// that far from its surface form is almost always a common word that never reaches the chip.
+    /// A term counted as printed (#1608) is the surface form already, or that form with its plural
+    /// folded, and the same search finds it: `dulle` is shown as `Dulles`.
     ///
     /// - Parameters:
-    ///   - term: A lowercased lemma.
+    ///   - term: A lowercased lemma, or a lowercased printed form.
     ///   - text: The anchor's body text.
     /// - Returns: The display form.
     static func displayForm(for term: String, in text: String) -> String {

@@ -22,6 +22,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — O-1: split out of `WordCloudTokenizer` when it moved to `WordCloudKit`
+///   1.1 — #1608: `configured` takes the form to count words in, with no default
 extension WordCloudTokenizer {
 
     /// Builds the tokenizer the app actually uses, from a tuning and a lens.
@@ -38,10 +39,15 @@ extension WordCloudTokenizer {
     ///     (the `excludeBoilerplate` setting — deliberately not a `WordCloudTuning` field,
     ///     since it selects a stopword layer rather than tuning a threshold).
     ///   - extraStopwords: The user's global + per-lens hidden words, plus any per-scope ones.
+    ///   - wordForm: The form to count words in (#1608): the form of the verdict the count is made
+    ///     under, `NaturalLanguageHealth.wordForm`. Required, with no default, because a count
+    ///     that will be compared with a keyness reference has to be in that reference's form, and a
+    ///     default of dictionary forms is the assumption a launch with no lemmatiser breaks.
     static func configured(tuning: WordCloudTuning,
                            lens: WordCloudLens = .allTerms,
                            includeDiplomatic: Bool,
-                           extraStopwords: Set<String> = []) -> WordCloudTokenizer {
+                           extraStopwords: Set<String> = [],
+                           wordForm: WordCloudWordForm) -> WordCloudTokenizer {
         WordCloudTokenizer(
             stopwords: WordCloudStopwords.active(includeDiplomatic: includeDiplomatic)
                 .union(extraStopwords),
@@ -49,7 +55,8 @@ extension WordCloudTokenizer {
             foldPlurals: tuning.foldPlurals,
             lens: lens,
             lexicon: WordCloudLexicons.filter(for: lens),
-            markings: tuning.filterMarkings ? WordCloudStopwords.markings : []
+            markings: tuning.filterMarkings ? WordCloudStopwords.markings : [],
+            wordForm: wordForm
         )
     }
 }

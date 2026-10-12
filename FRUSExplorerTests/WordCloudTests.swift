@@ -1367,7 +1367,9 @@ struct NaturalLanguageReadinessScanTests {
     /// The app's two main-actor functions that tokenize, each named by its file and declaration.
     private static let mainActorTaggers: [(path: String, declaration: String)] = [
         ("FRUSExplorer/Analytics/WordCloud/WordCloudExport.swift", "static func collectionCloudImage("),
-        ("FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift", "static func sharedTerms("),
+        // #1608: the pass that tokenizes is `evidence`, which `sharedTerms` calls with the
+        // reference it read. Both await the verdict; this pins the one that builds the tokenizer.
+        ("FRUSExplorer/RelatedDocuments/SemanticSharedTerms.swift", "static func evidence("),
     ]
 
     @Test("A main-actor function that tokenizes awaits the warm-up before it builds a tokenizer (#1373)",
@@ -1484,21 +1486,24 @@ struct WordCloudRuleWiringTests {
     static let sites: [Site] = [
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
              declaration: "private var cloudProvenance: AnalyticsProvenance",
-             needles: ["if let printed = WordCloudDisplayState.countedAsPrintedCaveat(result, lens: lens) {\n caveats.append(printed)\n }"]),
+             needles: ["if let printed = WordCloudDisplayState.countedAsPrintedCaveat(result, lens: lens) {\n caveats.append(printed)\n }",
+                       // #1608: what a ranking of printed forms was scored against, and the axis label.
+                       "if let compared = WordCloudDisplayState.comparedAsPrintedCaveat(ranking) {\n caveats.append(compared)\n }",
+                       "axisLabel: ranking != nil\n ? WordCloudDisplayState.keynessAxisLabel(for: ranking)"]),
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
              declaration: "private func cloudFigureCaption(drawnTerms: Int) -> String",
-             needles: ["WordCloudDisplayState.countedAsPrintedCaptionSegment(result, lens: lens),",
+             needles: ["WordCloudDisplayState.printedFormsCaptionSegment(result, lens: lens, ranking: ranking),",
                        ".compactMap { $0 }.joined(separator: \" · \")"]),
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
              declaration: "private var scopeHeader: some View",
              needles: ["if let count = WordCloudDisplayState.headerCountLine(\n for: displayState,",
-                       "if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: lens) {\n Text(printed)"]),
+                       "if let printed = WordCloudDisplayState.printedFormsNote(result, lens: lens,\n ranking: ranking) {\n PrintedFormsNote(text: printed)"]),
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
              declaration: "private var content: some View",
              needles: ["WordCloudMainArea(state: displayState) {"]),
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudComparisonView.swift",
              declaration: "private var header: some View",
-             needles: ["if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: .allTerms) {\n Text(printed)"]),
+             needles: ["if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: .allTerms) {\n PrintedFormsNote(text: printed)"]),
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudExport.swift",
              declaration: "static func collectionCloudImage(",
              needles: ["let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health",

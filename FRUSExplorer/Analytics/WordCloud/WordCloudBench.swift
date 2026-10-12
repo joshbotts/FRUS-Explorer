@@ -96,7 +96,9 @@ struct WordCloudBench: Equatable, Sendable {
             tuning: tuning,
             lens: lens,
             includeDiplomatic: includeDiplomatic,
-            extraStopwords: extraStopwords
+            extraStopwords: extraStopwords,
+            // `accepts` reads no tagger, so the form plays no part in what the bench keeps.
+            wordForm: .dictionary
         )
         let kept = sample.filter {
             $0.count >= tuning.minimumCount && tokenizer.accepts($0.term.lowercased())

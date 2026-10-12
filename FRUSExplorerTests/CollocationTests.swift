@@ -130,9 +130,10 @@ struct CollocationWindowTests {
 @Suite("Collocation analysis")
 struct CollocationAnalysisTests {
 
-    private let reference = (terms: ["treaty": 50_000, "ratify": 400, "government": 20_000,
-                                     "commitment": 900],
-                             totalTokens: 1_000_000, cutoffCount: 12)
+    private let reference = KeynessReference(
+        terms: ["treaty": 50_000, "ratify": 400, "government": 20_000, "commitment": 900],
+        totalTokens: 1_000_000, cutoffCount: 12, wordForm: .dictionary,
+        distinctTerms: 250_000, generated: "2026-07-27")
 
     private func rank(
         _ counts: [String: Int],
@@ -149,7 +150,7 @@ struct CollocationAnalysisTests {
             windowSize: 10, documentsScanned: scanned, documentsInScope: inScope,
             documentsOffered: offered ?? inScope,
             anchorCount: anchorCount, omittedAnchorCount: omitted,
-            reference: reference, generated: "2026-07-27")
+            wordForm: .dictionary, reference: reference)
     }
 
     private func result(_ outcome: CollocationAnalysis.Outcome) -> CollocationResult? {
@@ -306,7 +307,7 @@ struct CollocationVocabularyPairingTests {
         let reference = try referenceTerms()
         // The SAME construction the word cloud counts with, which is what the reference was built by.
         let tokenizer = WordCloudTokenizer.configured(
-            tuning: .standard, lens: .allTerms, includeDiplomatic: true)
+            tuning: .standard, lens: .allTerms, includeDiplomatic: true, wordForm: .dictionary)
         var counts: [String: Int] = [:]
         let total = tokenizer.accumulate(from: passage, into: &counts)
 
