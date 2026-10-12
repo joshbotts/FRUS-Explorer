@@ -2,7 +2,7 @@
 
 **Base:** `v2` @ `845d57ea` · build 49 is out (tag `build-49` = `34a51205`) · index **v69** on `v2`, **v65** in build 49 · the bundle is at corpus `99d851c79`, where HistoryAtState/frus still stood when read on 2026-10-11. Thirteen issues are open, and no pull request.
 
-**Status: LIVE — the plan of record from 2026-10-11.** It replaces `Completed/Plan-Of-Record-2026-09-28.md`. That plan's fifty issues, its week's queue, #1576, the first three lanes of #1577 and the index bump are done, and forty pull requests have merged since build 49. The owner reviewed it and the open issues on 2026-10-11 and took the seven recommendations of §0. What that plan left open is carried here, in §3 and §5; its own text is the record of how each item was found.
+**Status: LIVE — the plan of record from 2026-10-11.** It replaces `Completed/Plan-Of-Record-2026-09-28.md`. That plan's fifty issues, its week's queue, #1576, the first three lanes of #1577 and the index bump are done, and forty pull requests have merged since build 49. The owner reviewed it and the open issues on 2026-10-11 and took the seven recommendations of §0. What that plan left open is carried here, in §3 and §5; its own text is the record of how each item was found. **Amended 2026-10-12:** decision 8 of §0 puts the printed-form fallback for Collocates in the queue, before build 50.
 
 §7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14. (This is the Visual-Marketing-Plan §7 steps that are done, carried unchanged from the 2026-09-28 plan and checked by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`. It names that plan's §7; this file has no §7 of its own.)
 
@@ -18,6 +18,9 @@
 5. **#1545:** the destination is the owner's to name. An email address needs no GitHub account from a tester. Nothing is built until it is named.
 6. **Three findings a reader can meet were filed** on 2026-10-11: #1646, #1647 and #1648. The other unfiled findings stay in this plan (§5b). A finding is filed as an issue on the owner's word.
 7. **This plan.** The 2026-09-28 plan and the #1576 assessment are in `Completed/`. The index bump's brief stays at the Planning root, marked complete, because `FRUSCoreKit/Search/IndexingPipeline.swift` cites it by path in four places.
+
+**Added by the owner on 2026-10-12.**
+8. **The printed-form fallback for Collocates is a lane, before build 50** (#1608). The iPhone's record was collected on 2026-10-11 and read the next day: on build 49, in the foreground, under iOS 27.0.1, iOS never answered the request for the English lemma data. That is the case no change to the app's check can fix, and the one the 2026-09-28 plan made the fallback wait on. The owner approved the fallback on 2026-09-29 on one condition, which stands: every surface that falls back says that it did, says why, and says that results can differ from a device whose language analysis reduces words to their dictionary forms.
 
 **Rules carried from the 2026-09-28 plan.** Each is the owner's, and none is changed here.
 - **The queue is serial.** The next pull request is pushed when the owner has merged the one before. Auto-merge is never enabled.
@@ -35,27 +38,33 @@
 
 | | Pull request | Issues | Index bump |
 |---|---|---|---|
-| 0 | This plan, and the two documents archived with it | — | no |
+| 0 | This plan, and the two documents archived with it (merged, #1649) | — | no |
 | 1 | The Subject-Numeric label table and its generator | #1644 | no (decision 2) |
 | 2 | Small fixes | #1643, #1617, #1608's Copy button | no |
-| 3 | Build 50 | — | carries v66 to v69 |
-| 4 | A Live Activity that nothing ends | #1642 | no |
-| 5 | Smart collections in the editors and the lists | #1619 | no |
-| 6 | Search: the document gate, Filters after a launch, and a superseded run | #1646, #1647, #1648 | no |
-| 7 | Search inside a set, lanes 4 to 7 | #1577 | no |
+| 3 | The printed-form fallback for Collocates (decision 8) | #1608 | no |
+| 4 | Build 50 | — | carries v66 to v69 |
+| 5 | A Live Activity that nothing ends | #1642 | no |
+| 6 | Smart collections in the editors and the lists | #1619 | no |
+| 7 | Search: the document gate, Filters after a launch, and a superseded run | #1646, #1647, #1648 | no |
+| 8 | Search inside a set, lanes 4 to 7 | #1577 | no |
 
 - **1 — #1644.** The shipped table reads some files wrongly, and the build that is out shows it: under the 1964–1973 schedule `UK` reads *Ukraine*, `UAR` *United Arab Republic USCG US Coast Guard*, `USSR` is cut short, and every numbered `AID` file reads a piece of another line; under the 1963 schedule `CUBA`, `IA` and `NR EAST` are wrong; `FIN` is wrong under both. The table is also behind version 69's keys (a new key's country is named for about four documents in five, where it was nine in ten), and its `coverage` block describes an older index. The generator no longer reproduces the table on macOS 27.0.1 from the same handbooks. `Planning/Generators-Runbook.md`'s entry lists every wrong entry and what the generator writes today. The session needs the owner's handbooks in `SCHEDULE_DIR`. **It reads every label that changes** and lists them in the pull request, as `CLAUDE.md` requires before a regenerated table ships. Two shortcuts were measured in #1645 and rejected: a lookup that ignores dashes, and pairing countries at run time, each of which puts "Ukraine and United States" on `POL UK-US`.
-- **2 — small fixes.** #1643: the Archival Network's legend reads "The 1 squares are central-file classes", Browse ▸ Archives reads "1 docs", and Archival Neighbors lists a volume's documents in the text order of their ids (292 before 73). #1617: a categorical Audio Graph gives each point the category's name for its x value, as the framework asks; the owner's listen follows the fix. #1608: Settings ▸ Data & Recovery ▸ Diagnostics ▸ Language Analysis gains a Copy button for the session's verdict and re-check lines, so the owner can send the record from the phone without a cable.
-- **3 — build 50.** §2.
-- **6 — the three Search issues** go before #1577's lane 4 because #1646's fix is in `MacSearchViewModel`, which lane 5 edits. #1648 changes `SearchService` or `FTS5Store`, which are kit code: it owes `swift test` and a line for the web edition. If its design carries risk, it is a pull request of its own.
-- **7 — #1577.** Lanes 4 to 7 are as the implementation plan on the issue gives them; `Planning/Issue-1577-Search-Within-Results-Assessment.md` is the assessment. Lane 4 waits on the owner's three timings (§3). Lanes 4 and 5 adopt the two layered routes, whose header and capture sentences lane 2 wrote and no search produces yet. Lane 4's UI tests reach a Meaning list through lane 3's seam (`FRUS_UI_TEST_SEED_MEANING`); `Planning/UI-Test-Destinations-Runbook.md`'s entry for `MeaningResultsSeamTests` says what it lists.
-- **The order after build 50 is this plan's.** The owner can reorder 4 to 7.
+- **2 — small fixes.** #1643: the Archival Network's legend reads "The 1 squares are central-file classes", Browse ▸ Archives reads "1 docs", and Archival Neighbors lists a volume's documents in the text order of their ids (292 before 73). #1617: a categorical Audio Graph gives each point the category's name for its x value, as the framework asks; the owner's listen follows the fix. #1608: Settings ▸ Data & Recovery ▸ Diagnostics ▸ Language Analysis gains a Copy button for the session's verdict and re-check lines. The owner's own record came from a Mac on 2026-10-11, so the button is no longer what #1608 waits on. It is kept because the phone holds those lines for about nine hours and a tester has no other way to send them.
+- **3 — the printed-form fallback (#1608, decision 8).** On a device whose language check finds no lemmatiser, Collocates refuses, the word cloud's Distinctive sizing and Related Documents' shared-word chips are withheld, and the clouds read "Counted as printed". The lane ships a second corpus reference counted as printed, out of `CloudVectorsGenerator`'s own tagging pass, so that those surfaces compare printed forms with printed forms. It is exact, and it counts "missile" and "missiles" apart.
+  - **Each surface that falls back says so**, says why, and says that results can differ from a device that reduces words to their dictionary forms: a Mac, or another iPhone or iPad. That is new copy, with its EditableContent blocks, and both manuals change.
+  - **The generator run takes 50 to 60 minutes**, and its files are committed together, the new reference with them. `keyness-baseline.json` is 1.2 MB today; the second reference's size is to be measured.
+  - **No index bump and no CloudKit change.** It owes `swift test`, the unit target and the Mac build, and a look on an iPhone simulator, where the lemmatiser is missing in the same way on some launches.
+  - **It is a lane with design risk** (a new bundled file and four surfaces), so its session may use one `lane-dev` run. It closes #1608.
+- **4 — build 50.** §2.
+- **7 — the three Search issues** go before #1577's lane 4 because #1646's fix is in `MacSearchViewModel`, which lane 5 edits. #1648 changes `SearchService` or `FTS5Store`, which are kit code: it owes `swift test` and a line for the web edition. If its design carries risk, it is a pull request of its own.
+- **8 — #1577.** Lanes 4 to 7 are as the implementation plan on the issue gives them; `Planning/Issue-1577-Search-Within-Results-Assessment.md` is the assessment. Lane 4 waits on the owner's three timings (§3). Lanes 4 and 5 adopt the two layered routes, whose header and capture sentences lane 2 wrote and no search produces yet. Lane 4's UI tests reach a Meaning list through lane 3's seam (`FRUS_UI_TEST_SEED_MEANING`); `Planning/UI-Test-Destinations-Runbook.md`'s entry for `MeaningResultsSeamTests` says what it lists.
+- **The order after build 50 is this plan's.** The owner can reorder 5 to 8.
 
 ---
 
 ## 2. Build 50
 
-Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 66 to 69, merged as #1638, #1639, #1640 and #1645, so a library re-indexes once, at its first launch. Nothing in the queue holds the build but pull requests 1 and 2.
+Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 66 to 69, merged as #1638, #1639, #1640 and #1645, so a library re-indexes once, at its first launch. Nothing in the queue holds the build but pull requests 1, 2 and 3.
 
 **Steps.** `CLAUDE.md`'s list under "Bumping the build number or version" is the procedure. With it, as for build 49: one full unit run on iPhone 17 under iOS 27.0, `swift test`, a clean `build-for-testing` read for warnings, the Mac build and a walk of the Mac check copy; one full re-index census on a pinned device, since this build re-indexes every library from version 65 to 69; the window-fronting audit; `Scripts/check_repository_links.py --stamp`; and the Gemma policy re-check.
 
@@ -65,6 +74,7 @@ Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 6
 - The library re-indexes once at first launch.
 - **Search results:** Mark Page Reviewed with Undo; Add to Collection and Add Tags from a result's menu; selecting results on iPhone, iPad and Mac (#1576). A Meaning search ranks inside a working corpus or a project's History scope (#1577 lane 1).
 - **Browse and the reader:** a chapter of prose alone opens in Browse (#1535); the text a section prints at its own level is a **Read** row, and Search finds it (#1536); 1981–88 vol. XVI's documents list their persons and terms (#1599); a cross-reference to a whole volume opens the volume (#1603), and one to a footnote counts for the document that holds the note (#1638).
+- **Collocates on iPhone and iPad:** where the device's language analysis has no dictionary forms, Collocates, Distinctive sizing and Related Documents' shared words compare printed forms and say so, where they refused or were withheld (#1608).
 - **Archives:** a Subject-Numeric file has Archival Neighbors, one list for one file, and the files with no subject number are grouped under their category (#1645). A lot cited through the National Archives has its lot cards (#1589).
 - **The reader's page:** it meets WCAG 2.2 AA contrast (#1578), and person names and cross-references print without their underline.
 - **Accessibility:** all eleven About the Series charts have an Audio Graph (#1587).
@@ -83,13 +93,13 @@ Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 6
 - **The map's 172 labels**, read before build 50. With it, a yes or no on whether the cost of a relayout is an issue: adding 47 documents moved 79,067 between a region and none.
 - **A destination for #1545** (decision 5).
 - **Three timings for #1577's lane 4**, on an iPhone with the search model downloaded, read in Console from `subsystem:bottsywattsy.FRUS-Explorer category:SearchTiming`: a Meaning search inside a working corpus of about 1,000 documents; the same inside a 7,500-row browse saved as a corpus; and a common word in Keywords mode inside a 100-document corpus.
-- **The iPhone's language-analysis record for #1608**, which pull request 2's Copy button makes possible without Console. It decides whether the printed-form reference (LANG-D of the 2026-09-28 plan, approved by the owner on 2026-09-29 provided each surface says it fell back) becomes a lane. If the phone takes the path the simulators take, where the first request never answers and a relaunch works, no change to the check can fix it.
 - **One Audio Graph heard on a device** after #1617's fix. Not heard on a device either: #1587's eleven charts, #1616's two tables and #1594's toast.
 - **`lgbtq-rights`.** Four volumes of the manifest carry the tag and the bundled taxonomy has no name for it, because the Office's file holds it inside a comment (#1622). Whether it joins is the owner's to decide.
 
 **Not for the queue.**
 - **The manuals' review**, not before 2026-10-21.
 - **Looks on an iOS 27 device** (§4): the Topics lens, Corpus Analytics on an iPad, and Text Color in a collection's note on an iPad.
+- **For a Feedback report to Apple on #1608**, if the owner wants one: five launches in a row (force-quit, reopen, wait 60 seconds, try Collocates) and a collection of the phone's last hour of log straight after, which would hold a good launch and a bad one side by side. The record that decided the lane is on the issue.
 - **The Mac's Sync Log after any sync event** (#1606's check): whether the shipped app is refused its own log store, as a simulator's process is.
 - **The Mac's Search window with a selection** (#1576's lane 4): VoiceOver heard aloud, dark appearance, Full Keyboard Access, and a search that fails.
 - **From the build-49 wave, not read again for this plan:** the by-eye checks of each lane, lane READ's four questions (D3's sub-choices, whether the figure-image pass stays automatic, the privacy label, onboarding's "≈ 3.5 GB"), SYNC's device check and the five steps of the Mac check of 2026-09-25. `Completed/Plan-Of-Record-2026-09-28.md` §0a, *The release*, lists them.
@@ -108,7 +118,7 @@ Build 50 carries the index bump (the owner's decision of 2026-10-11): versions 6
 
 **Left.**
 - **Siri, App Intents and `IndexedEntity`** (workstream A of `OS27-Semantic-Retrieval-Design.md`). Never built, and the app has no App Intents code. It was held for want of the SDK and has been unblocked since Xcode 27.0. It is the one OS 27 feature the plans name. It is parked, with no issue; its first session would be an assessment against the SDK, since whether Siri surfaces an indexed document is behaviour no declaration settles.
-- **The lemmatiser on iOS 27 devices** (#1608). About half the owner's attempts at Collocates on iOS are refused for want of one. §3 has what decides it.
+- **The lemmatiser on iOS 27 devices** (#1608). Measured on the owner's iPhone under iOS 27.0.1 on 2026-10-11, on build 49 and in the foreground: iOS answered the requests for lexical classes and names at once and never answered the one for English lemmas. Its own framework logged that the lemma data "are downloading" and queued the request, and no download was seen in the three minutes that followed. No change to the app's check can fix that, so the fallback is pull request 3 (decision 8). How often it happens is not measured: the phone keeps the app's log lines for about nine hours, and one session's record was left.
 - **iPad simulators under iOS 27.0** (#1620). A UI test that opens Corpus Analytics is killed with the simulator, so those suites are read on `OS=26.5`. Measured on 2026-10-11 as well: a plain launch of the `845d57ea` build on the iPad Pro 11-inch (M5) under iOS 27.0, with no test involved, ended the simulator's `backboardd` about five seconds in, three times of three, in the Metal frames #1620 records; that simulator had last run the analytics suites, and setting the app's saved state aside did not prevent it. Not tried on a newly created iPad simulator, and not added to the issue. The owner's iPad runs these builds under iOS 27, so this reads as the simulator's. No one has recorded Corpus Analytics opened, closed and the app quit on that iPad.
 - **`RichTextRestingCapTests` on an iPad host.** The host crash recorded on 2026-10-02 (iPad Pro 13-inch (M5), iOS 27.0) was not met on 2026-10-11, on other simulators: the suite ran its 21 tests on an iPad Pro 11-inch (M5) and an iPad Air 13-inch (M4) under iOS 27.0, and the same two failed on each. "The link alert takes focus…" fails under iOS 26.5 too, so it is the iPad host's. "While the colour picker is up…" fails only under 27.0: the host is never handed a `UIColorPickerViewController`. Both pass on iPhone 17 under 27.0, where the suite's 21 tests ran again on 2026-10-11. Whether Text Color presents its picker for a reader on an iPad under iOS 27 was not seen in the app, because of the item above.
 - **Never looked at on an iOS 27 device:** the Topics lens, owed since build 48.
