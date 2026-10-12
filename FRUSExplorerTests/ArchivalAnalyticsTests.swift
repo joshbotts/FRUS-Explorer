@@ -764,7 +764,7 @@ struct ArchivalCollectionsDataTests {
     @Test("The Archival Analytics copy names three central filing systems, not one")
     func centralFilesCopyNamesThreeSystems() throws {
         let sites: [(file: String, key: String, has: [String], lacks: [String])] = [
-            ("Theme/FRUSTheme.swift", "archival.info.units.detail.v2",
+            ("Theme/FRUSTheme.swift", "archival.info.units.detail.v3",
              ["inside one of the State Department’s central filing systems",
               "763.72 in the decimal file for the European War",
               "POL 27 VIET S in the Subject-Numeric File for the war in South Vietnam"],
@@ -778,7 +778,7 @@ struct ArchivalCollectionsDataTests {
             ("Theme/FRUSTheme.swift", "archival.info.library.detail.v2",
              ["notes citing the central files — the decimal file, the Subject-Numeric File and the Central Foreign Policy File — cite a filing system rather than a collection"],
              ["notes citing the central files are a filing system"]),
-            ("Theme/FRUSTheme.swift", "archival.info.umbrella.detail.v2",
+            ("Theme/FRUSTheme.swift", "archival.info.umbrella.detail.v3",
              ["The era-specific Central Files records are never hidden.",
               "Central Files 1964–66, 1967–69 and 1970–73 — are the Subject-Numeric File’s blocks of years",
               "Your Library counts the same citations under the Subject-Numeric File instead of listing them as collections."],
@@ -802,9 +802,16 @@ struct ArchivalCollectionsDataTests {
             for phrase in site.lacks where payload.contains(phrase) {
                 Issue.record("\(site.key) still says “\(phrase)”")
             }
-            // The key it replaced is gone, so no call site can still draw the old sentence.
-            let old = site.key.replacingOccurrences(of: ".v2", with: "")
-            #expect(!source.contains("\"\(old)\""), "\(site.file) still declares \(old)")
+            // The keys it replaced are gone, so no call site can still draw an old sentence: the
+            // key with no version, and every version below this one (two of the five are at
+            // `.v3` since index version 69).
+            let version = site.key.firstMatch(of: /\.v(\d+)/).flatMap { Int($0.1) } ?? 1
+            #expect(version >= 2, "\(site.key) names no version")
+            let unversioned = site.key.replacing(/\.v\d+/, with: "")
+            let replaced = [unversioned] + (2..<max(version, 2)).map { site.key.replacing(/\.v\d+/, with: ".v\($0)") }
+            for old in replaced {
+                #expect(!source.contains("\"\(old)\""), "\(site.file) still declares \(old)")
+            }
         }
         #expect(seen == sites.count, "only \(seen) of \(sites.count) strings were found")
     }

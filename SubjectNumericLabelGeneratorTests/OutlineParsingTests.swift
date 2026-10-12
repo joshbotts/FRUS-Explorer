@@ -346,3 +346,51 @@ struct OrganizationLookupTests {
             """)
     }
 }
+
+// MARK: - SubjectNumericKeyTailTests
+
+/// The part of a corpus key the area table is asked about (index version 69).
+///
+/// Until version 69 every Subject-Numeric key in the usage index had a subject number and no key
+/// had a post. A file under the primary subject alone has a class now, and so has a key that
+/// ends in a post, and what the resolver is handed for each decides whether its row is named
+/// rightly, wrongly or not at all.
+///
+/// Version history:
+///   1.0 — index version 69
+@Suite("Subject-numeric keys — the tail the area table reads (index version 69)")
+struct SubjectNumericKeyTailTests {
+
+    @Test("The tail follows the number, and a key with no number has one too")
+    func tails() {
+        #expect(SubjectNumericLabelRunner.tail(of: "POL 27 VIET S") == "VIET S")
+        #expect(SubjectNumericLabelRunner.tail(of: "POL 27") == "")
+        #expect(SubjectNumericLabelRunner.tail(of: "AID (US) 15-4 UAR") == "UAR")
+        // No number: the tail is what follows the head, and it is the whole of what the app can
+        // say about the file.
+        #expect(SubjectNumericLabelRunner.tail(of: "POL US-USSR") == "US-USSR")
+        #expect(SubjectNumericLabelRunner.tail(of: "AID (US) S VIET") == "S VIET")
+        #expect(SubjectNumericLabelRunner.tail(of: "INCO-GRAINS GATT") == "GATT")
+        #expect(SubjectNumericLabelRunner.tail(of: "AID (US)") == "")
+        #expect(SubjectNumericLabelRunner.tail(of: "763.72") == nil)
+    }
+
+    @Test("A post is not part of the tail, so it is never read as a second party")
+    func aPostIsLeftOff() {
+        // `(GE)` is Geneva. With it the tail is two tokens, and two tokens are two parties to the
+        // resolver: Switzerland and Germany.
+        #expect(SubjectNumericLabelRunner.tail(of: "DEF 18-3 SWITZ (GE)") == "SWITZ")
+        #expect(SubjectNumericLabelRunner.tail(of: "DEF 18-3 USSR (MO)") == "USSR")
+        #expect(SubjectNumericLabelRunner.tail(of: "NATO 3 FR (PA)") == "FR")
+        #expect(AreaResolver.normalized("SWITZ (GE)") == "SWITZ GE", "what the resolver would have been handed")
+    }
+
+    @Test("A key with no number has no designator, so no schedule is counted as reading it")
+    func aKeyWithNoNumberIsNotSplit() {
+        #expect(SubjectNumericLabelRunner.splitSubjectNumeric("POL US-USSR") == nil)
+        #expect(SubjectNumericLabelRunner.splitSubjectNumeric("AID (US)") == nil)
+        // A commodity is part of the head, and its number is the designator.
+        #expect(SubjectNumericLabelRunner.splitSubjectNumeric("INCO-WOOL 17 US-JAPAN")?.0 == "INCO")
+        #expect(SubjectNumericLabelRunner.splitSubjectNumeric("INCO-WOOL 17 US-JAPAN")?.1 == "17")
+    }
+}

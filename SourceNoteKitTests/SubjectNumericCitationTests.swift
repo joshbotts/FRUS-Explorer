@@ -85,6 +85,21 @@ struct SubjectNumericCitationTests {
         // frus1964-68v34/d254 — the singular `Central File`.
         ("Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central File, 1967–69, PET 3 OECD. Limited Official Use; Immediate.",
          "naraCollection", "PET 3 OECD"),
+        // The four below were read by their lead until index version 69, the class grammar
+        // refusing each: a post in parentheses (twice), a country word of nine letters, and a
+        // country element not in capitals.
+        // frus1964-68v13/d279 — an organization file.
+        ("Source: Department of State, Central Files, NATO 3 BEL(BR). Secret. Drafted by Glenn and Knight on December 12.",
+         "centralFiles", "NATO 3 BEL(BR)"),
+        // frus1964-68v01/d115
+        ("Source: Department of State, Central Files, SEATO 3 PHIL (MA). Secret; Immediate; Exdis.",
+         "centralFiles", "SEATO 3 PHIL (MA)"),
+        // frus1964-68v12/d19 — a doubled `Source:` label.
+        ("Source: Source: National Archives and Records Administration, RG 59, Central Files 1967-69, DEF 15-4 GREENLAND-US. Secret; Exdis.",
+         "naraCollection", "DEF 15-4 GREENLAND-US"),
+        // frus1969-76ve09p2/d78 — the block cited under the Central Foreign Policy File's name.
+        ("Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential. Repeated to Amman, Beirut, Kuwait City, Tripoli, and Tel Aviv.",
+         "cfpfFile", "POL 27-14 ARAB-ISRAELI"),
         // frus1969-76ve11p1/d429 — read as `.cfpfFile` for its remark, led by a Subject-Numeric citation.
         ("Source: National Archives, RG 59, Central Files, 1970–1973, POL 15–1 JAM. Confidential. Repeated to Bridgetown, Georgetown, and Port of Spain. (Ibid., Central Foreign Policy File, [no film number])",
          "cfpfFile", "POL 15-1 JAM"),
@@ -117,12 +132,6 @@ struct SubjectNumericCitationTests {
         // frus1961-63v13/d351 — a title-case category of three letters.
         ("Source: Department of State, Central Files, Pol Port-US. Secret. Repeated to Madrid and Paris.",
          "centralFiles", "Pol Port-US", "POL"),
-        // frus1964-68v13/d279 — an organization file.
-        ("Source: Department of State, Central Files, NATO 3 BEL(BR). Secret. Drafted by Glenn and Knight on December 12.",
-         "centralFiles", "NATO 3 BEL(BR)", "NATO"),
-        // frus1964-68v01/d115
-        ("Source: Department of State, Central Files, SEATO 3 PHIL (MA). Secret; Immediate; Exdis.",
-         "centralFiles", "SEATO 3 PHIL (MA)", "SEATO"),
         // frus1961-63v25/d285 — NARA's own example of a designator, under a printed "1960–63".
         ("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, UN. Limited Official Use. Drafted by Armstrong and approved in S on December 13.",
          "naraCollection", "UN", "UN"),
@@ -132,15 +141,9 @@ struct SubjectNumericCitationTests {
         // frus1969-76ve09p2/d33 — a box before the designation, a country in title case.
         ("Source: National Archives, RG 59, Central Files, 1970–73, Box 2432, POL Kuwait, 1/1/1970. Secret. Drafted by James H. Timberlake (OASD/ISA/NESA).",
          "naraCollection", "POL Kuwait", "POL"),
-        // frus1964-68v12/d19 — a doubled `Source:` label; a country the class grammar refuses.
-        ("Source: Source: National Archives and Records Administration, RG 59, Central Files 1967-69, DEF 15-4 GREENLAND-US. Secret; Exdis.",
-         "naraCollection", "DEF 15-4 GREENLAND-US", "DEF"),
         // frus1964-68v19/d8 — no comma between the holder and the record group.
         ("Source: National Archives and Records Administration RG 59, Central Files 1967–69, POL ARAB–ISR. Secret; Immediate.",
          "naraCollection", "POL ARAB–ISR", "POL"),
-        // frus1969-76ve09p2/d78 — the block cited under the Central Foreign Policy File's name.
-        ("Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential. Repeated to Amman, Beirut, Kuwait City, Tripoli, and Tel Aviv.",
-         "cfpfFile", "POL 27–14 Arab-Israeli", "POL"),
     ])
     func designationIsSubjectNumeric(note: String, parseCase expectedCase: String,
                                      designation: String, lead: String) {
@@ -325,8 +328,10 @@ struct SubjectNumericCitationTests {
         // The control differs from the fixture in the film form alone, and is read.
         let sentence = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli"
         let control = "\(sentence). Confidential."
+        // By its class key since index version 69, the grammar reading a country element in title
+        // case; by its lead until then. Either way the film form is all the gate can refuse it for.
         #expect(reading(control) == CentralFilesReading(
-            form: .subjectNumeric, evidence: .designation, designation: "POL 27–14 Arab-Israeli", lead: "POL"))
+            form: .subjectNumeric, evidence: .classKey, designation: "POL 27-14 ARAB-ISRAELI", lead: nil))
 
         let note = "\(sentence), \(form). Confidential."
         #expect(parseCase(note) == "cfpfFile")
@@ -567,5 +572,293 @@ struct SubjectNumericCitationTests {
         let cf = ["DOS", "CF", "POL 32–1 MEX–US."]
         #expect(CollectionKeying.centralFilesAnchor(in: cf)
             .map { CollectionKeying.centralFilesCandidates(cf, anchor: $0) } == ["POL 32–1 MEX–US."])
+    }
+}
+
+// MARK: - SubjectNumericClassKeyTests
+
+/// A Subject-Numeric file stores its class key (index version 69).
+/// `CollectionKeying.centralFilesClass(parsed:note:)` is the one definition of what a document
+/// source note stores as its class, and the archival-neighbour route reads it through
+/// `CollectionKeying.matchesOnClass(parsed:note:)`.
+///
+/// Every note is a citation sentence of the corpus at `99d851c79`, verbatim, with its document
+/// beside it; the notes continue after it, and no rule here reads past it. Measured over a full
+/// index at version 68, 6,830 of the 9,443 documents that cite a Subject-Numeric file stored a
+/// class; with these rules 9,381 do.
+///
+/// Version history:
+///   1.0 — 2026-10-11: index version 69
+@Suite("A Subject-Numeric file stores its class key (index version 69)")
+struct SubjectNumericClassKeyTests {
+
+    private let parser = SourceNoteParser()
+
+    /// The class a note stores.
+    private func storedClass(_ note: String) -> String? {
+        CollectionKeying.centralFilesClass(parsed: parser.parse(note), note: note)
+    }
+
+    // MARK: The form rule's own class
+
+    @Test("A class the form rule reads is stored where the comma scan was not offered the note", arguments: [
+        // frus1964-68v34/d230 — the parsed series is the record group's own name.
+        ("Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1967–69, PET 3 OECD.",
+         "PET 3 OECD"),
+        // frus1945-50Intel/d1 — a decimal number worded the same way.
+        ("Source: National Archives and Records Administration, RG 59, Records of the Department of State, Decimal File 1945–49, 101.5/8–2145.",
+         "101.5"),
+        // frus1917-72PubDip/d14 — `Central Decimal File`, which the kit's copy of the gate did not read.
+        ("Source: National Archives, RG 59, Central Decimal File 1910–1929, Box 731, 103.93/48.", "103.93"),
+    ])
+    func theFormRulesClassIsStored(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("A designation with its classification run on is a class", arguments: [
+        // frus1961-63v03/d100, d110 — no full stop before the marking, so the segment was never a class.
+        ("Source: Department of State, Central Files, POL 26-1 S VIET Top Secret.", "POL 26-1 S VIET"),
+        ("Source: Department of State, Central Files, POL 27-10 S VIET Secret; Priority; Limit Distribution.", "POL 27-10 S VIET"),
+    ])
+    func aRunOnClassificationIsNotTheClass(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+        // The scan alone still reads nothing: the class comes from the designation.
+        #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == nil)
+    }
+
+    // MARK: A subject number in a spelling the strict shape refuses
+
+    @Test("A designation refused for its spelling alone is respelled", arguments: [
+        // A space beside a dash: frus1961-63v19/d250, frus1961-63v05/d293.
+        ("Source: Department of State, Central Files, POL 32-1 INDIA- PAK.", "POL 32-1 INDIA-PAK"),
+        ("Source: Department of State, Central Files, POL 17 USSR -US.", "POL 17 USSR-US"),
+        // A country word longer than six letters: frus1961-63v23/d329.
+        ("Source: Department of State, Central Files, POL 3 MALAYSIA.", "POL 3 MALAYSIA"),
+        // A post in parentheses: frus1961-63v07/d321.
+        ("Source: Department of State, Central Files, DEF 18-3 USSR (MO).", "DEF 18-3 USSR (MO)"),
+        // Stops inside initials: frus1964-68v22/d111.
+        ("Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN.", "DEF 19-8 US-IRAN"),
+        // A dash joining the lead to its number, and the number to its element:
+        // frus1964-68v26/d256, frus1969-76ve02/d316, frus1969-76ve05p1/d37.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, E–8 INDON.", "E 8 INDON"),
+        ("Source: National Archives, RG 59, Central Files 1970–1973, DEF–18.", "DEF 18"),
+        ("Source: National Archives, RG 59, Central Files 1967–69, POL 7-Nigeria.", "POL 7 NIGERIA"),
+        // A commodity joined to its category, with a number: frus1964-68v09/d252.
+        ("Source: Department of State, Central Files, INCO–GRAINS 4 UK -US.", "INCO-GRAINS 4 UK-US"),
+    ])
+    func aRefusedSpellingIsRespelled(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+        // Read by the class grammar itself, so the form rule's evidence is the class key.
+        #expect(CollectionKeying.centralFilesReading(parsed: parser.parse(note), note: note)?.evidence == .classKey)
+    }
+
+    @Test("A dash between two countries is kept when a space follows it", arguments: [
+        // frus1964-68v25/d192 stored `POL 27 INDIA PAK` until index version 69, frus1961-63v03/d156
+        // `DEF 19 US S VIET`, frus1964-68v27/d68 `POL 1 ASIA SE USSR`.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 INDIA– PAK.", "POL 27 INDIA-PAK"),
+        ("Source: Department of State, Central Files, DEF 19 US- S VIET.", "DEF 19 US-S VIET"),
+        ("Source: Department of State, Central Files, POL 1 ASIA SE - USSR.", "POL 1 ASIA SE-USSR"),
+    ])
+    func aSpacedDashIsKept(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("A decimal class still loses the dash its suffix is joined by")
+    func aDecimalSuffixDashStillGoes() {
+        // The rule the dash was taken for (#353), unchanged: three spellings, one class.
+        for spelling in ["751G.5– MSP /1–1055", "751G.5–MSP/1–1055", "751G.5 MSP /1–1055"] {
+            #expect(SourceNoteParser.decimalClassLocation(inCitation: "Source: Department of State, Central Files, \(spelling).")
+                        == "751G.5-MSP", "\(spelling)")
+        }
+        // A personnel file's number, by the word before the dash and not by a dot.
+        #expect(SourceNoteParser.collapsingClassPunctuation("123– Cumming, Hugh S., Jr.") == "123 Cumming, Hugh S., Jr.")
+        // The word before the dash is letters: nothing is removed.
+        #expect(SourceNoteParser.collapsingClassPunctuation("POL US- USSR") == "POL US- USSR")
+        #expect(SourceNoteParser.collapsingClassPunctuation("POL 27 INDIA – PAK") == "POL 27 INDIA – PAK")
+    }
+
+    // MARK: A country element not in capitals
+
+    @Test("A title-case element is read in capitals when its words are the handbook's area codes", arguments: [
+        // frus1961-63v04/d198, frus1961-63v13/d218 (a title-case category too), frus1961-63v16/d181.
+        ("Source: Department of State, Central Files, POL 27 S Viet.", "POL 27 S VIET"),
+        ("Source: Department of State, Central Files, Pol 1 Eur-US.", "POL 1 EUR-US"),
+        ("Source: Department of State, Central Files, POL Aus–E.Eur.", "POL AUS-E EUR"),
+        // A primary-subject file: frus1961-63v24/d445, frus1961-63v13/d351.
+        ("Source: Department of State, Central Files, POL Laos.", "POL LAOS"),
+        ("Source: Department of State, Central Files, Pol Port-US.", "POL PORT-US"),
+        // With a post: frus1961-63v13/d199.
+        ("Source: Department of State, Central Files, NATO 3 Can(OT).", "NATO 3 CAN (OT)"),
+    ])
+    func titleCaseAreaWordsAreRead(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("A subject number lets one or two capitalised words be read, whatever they are", arguments: [
+        // frus1961-63v15/d173, frus1969-76ve05p1/d127, frus1961-63v13/d76, frus1961-63v05/d296.
+        ("Source: Department of State, Central Files, POL 28 Berlin.", "POL 28 BERLIN"),
+        ("Source: National Archives, RG 59, Central Files 1967–69, POL 27 Biafra-Nigeria.", "POL 27 BIAFRA-NIGERIA"),
+        ("Source: Department of State, Central Files, Pol 7 US Kennedy.", "POL 7 US KENNEDY"),
+        ("Source: Department of State, Central Files, DEF 18-3 Switz (GE).", "DEF 18-3 SWITZ (GE)"),
+    ])
+    func aNumberAdmitsTwoCapitalisedWords(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("Prose, and a word no list holds, are not a class", arguments: [
+        // Three words after the number, which are not all area words: frus1969-76v10/d96,
+        // frus1964-68v32/d221.
+        "Source: National Archives, RG 59, Central Files 1970–73, POL 21–Laos Internal Talks.",
+        "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 15 DOM John J.",
+        // Lower-case words: frus1964-68v32/d220.
+        "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM Crimmins and officers of the Political and Economic sections of the Embassy.",
+        // Neither capitals nor title case: frus1964-68v30/d170.
+        "Source: Department of State, Central Files, UN 6 ChiCom.",
+        // No number, and a word that is no area code: a handling caption (frus1969-76v20/d284), a
+        // country the handbooks have no code for (frus1969-76ve05p1/d206), a person
+        // (frus1969-76v28/d12).
+        "Source: National Archives, RG 59, Central Files 1970–73, POL Nodis.",
+        "Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria-US, XR POL 30 Nigeria.",
+        "Source: National Archives, RG 59, Central Files 1967–69, PPT Ashe, Arthur.",
+        // A stray bracket: frus1961-63v10-12mSupp/d43.
+        "DOS, CF, POL 12 CHILE.]",
+    ])
+    func proseIsNotAClass(note: String) {
+        #expect(storedClass(note) == nil, "stored \(storedClass(note) ?? "")")
+    }
+
+    // MARK: A primary-subject file
+
+    @Test("A primary-subject file, which prints no subject number, has a class", arguments: [
+        // frus1961-63v05/d323 — a spaced dash, which the stored designator used to lose.
+        ("Source: Department of State, Central Files, POL US- USSR.", "POL US-USSR"),
+        // frus1961-63v03/d101 — an agency, and the classification run on.
+        ("Source: Department of State, Central Files, AID (US) S VIET Secret; Priority; Limit Distribution.", "AID (US) S VIET"),
+        // frus1961-63v13/d208 — an agency and no country, the category in title case.
+        ("Source: Department of State, Central Files, Def (MLF).", "DEF (MLF)"),
+        // frus1964-68v09/d204 — a commodity joined to its category by a dash.
+        ("Source: Department of State, Central Files, INCO–GRAINS GATT.", "INCO-GRAINS GATT"),
+        // frus1964-68v30/d126 — spaces either side of the dash.
+        ("Source: Department of State, Central Files, POL CHICOM - CHINAT.", "POL CHICOM-CHINAT"),
+        // frus1961-63v04/d193 — a dash joining the category to a name.
+        ("Source: Department of State, Central Files, PER- LODGE, HENRY CABOT.", "PER LODGE"),
+        // frus1961-63v21/d337 — an ampersand inside the area's own code.
+        ("Source: Department of State, Central Files, POL RHOD & NYAS.", "POL RHOD & NYAS"),
+        // frus1969-76ve07/d110 — worded through the National Archives, where the stored series is
+        // the block of years and the designation was stored nowhere.
+        ("Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA.", "AID (US) INDIA"),
+    ])
+    func aPrimarySubjectFileHasAClass(note: String, classKey: String) {
+        let stored = storedClass(note)
+        #expect(stored == classKey)
+        // Letter-led, so every reader of the column takes it for the Subject-Numeric File; and it
+        // has no number, so it folds to its head, which is a prefix of it.
+        #expect(stored.map(CollectionKeying.isSubjectNumericClass) == true)
+        let parts = stored.flatMap(CollectionKeying.subjectNumericParts(of:))
+        #expect(parts != nil)
+        #expect(parts?.number == nil)
+        #expect(parts.map { classKey.hasPrefix($0.group) && $0.group == $0.head } == true)
+    }
+
+    @Test("A subject title after a number is read as a name only in a document's own citation")
+    func aFrontMatterItemKeepsItsSubjectTitleOutOfTheKey() {
+        // frus1969-76ve08 lists two embassies' files by subject title, and a title in title case
+        // has the shape of a country. `decimalClassKey(_:)` is what a front-matter item is
+        // offered to.
+        #expect(SourceNoteParser.decimalClassKey("DEF 18–4 Defense Affairs") == nil)
+        #expect(SourceNoteParser.decimalClassKey("SOC 14 Human Rights") == nil)
+        // So a place printed the same way is not read there either, as it was not before
+        // version 69.
+        #expect(SourceNoteParser.decimalClassKey("POL 28 Berlin") == nil)
+        #expect(SourceNoteParser.decimalClassKey("POL 23–9 Burundi") == nil)
+        // A document's citation is: frus1961-63v15/d174, and frus1969-76ve06/d60 cut after its
+        // classification.
+        #expect(storedClass("Source: Department of State, Central Files, POL 28 Berlin. Secret; Priority.")
+                    == "POL 28 BERLIN")
+        #expect(storedClass("Source: National Archives, RG 59, Central Files 1970–73, POL 23—9 Burundi. Confidential.")
+                    == "POL 23-9 BURUNDI")
+        // The handbooks' own area codes are read in either place, whatever their case, and so
+        // is every spelling in capitals.
+        #expect(SourceNoteParser.decimalClassKey("POL 27 S Viet") == "POL 27 S VIET")
+        #expect(SourceNoteParser.decimalClassKey("POL 16 MALAYSIA") == "POL 16 MALAYSIA")
+        #expect(SourceNoteParser.decimalClassKey("DEF 18–3 SWITZ (GE)") == "DEF 18-3 SWITZ (GE)")
+    }
+
+    @Test("A lead alone is no file, and the class grammar itself reads no primary-subject file")
+    func aPrimarySubjectFileIsReadOnlyBehindTheFormRule() {
+        // frus1961-63v25/d285 and two more: a lead with nothing after it.
+        #expect(storedClass("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, UN.") == nil)
+        #expect(SourceNoteParser.primarySubjectClassKey(ofDesignation: "AID") == nil)
+        #expect(SourceNoteParser.primarySubjectClassKey(ofDesignation: "POL") == nil)
+        // The shape is a category and some capitals. Only a designation the form rule read behind
+        // a central-files anchor is offered to it; a front-matter item and a footnote go through
+        // `decimalClassKey`, which must refuse it.
+        #expect(SourceNoteParser.decimalClassKey("POL US-USSR") == nil)
+        #expect(SourceNoteParser.decimalClassKey("AID (US) S VIET") == nil)
+        #expect(SourceNoteParser.primarySubjectClassKey(ofDesignation: "POL US–USSR") == "POL US-USSR")
+        // A designation with a number is not a primary-subject file.
+        #expect(SourceNoteParser.primarySubjectClassKey(ofDesignation: "POL 27 VIET S") == nil)
+    }
+
+    // MARK: What the respelling leaves alone
+
+    @Test("A key the strict shape accepts is returned as it always was")
+    func anAcceptedKeyIsUnchanged() {
+        for key in ["POL 27 VIET S", "POL 27-14 ARAB-ISR", "AID (US) 15-4 UAR", "DEF(MLF)3", "E 12 IRAN", "FT7"] {
+            #expect(SourceNoteParser.decimalClassKey(key) == key)
+        }
+    }
+
+    @Test("Only a handbook category or an organization lead is respelled")
+    func anUnknownLeadIsNotRespelled() {
+        // The strict shape takes any capitals for a lead, and still does.
+        #expect(SourceNoteParser.decimalClassKey("EUR 3 CONF") == "EUR 3 CONF")
+        // The loose reading does not: the same lead with a word of nine letters, or a post.
+        #expect(SourceNoteParser.decimalClassKey("EUR 3 GREENLAND") == nil)
+        #expect(SourceNoteParser.decimalClassKey("EUR 3 USSR (MO)") == nil)
+        // Its control: a handbook category in the same spelling.
+        #expect(SourceNoteParser.decimalClassKey("POL 3 GREENLAND") == "POL 3 GREENLAND")
+        // The strict shape's own exclusions hold for the loose one.
+        #expect(SourceNoteParser.decimalClassKey("NSC 5412 GREENLAND") == nil)
+        #expect(SourceNoteParser.decimalClassKey("RG 59 GREENLAND") == nil)
+        // A title-case lead is three or four letters: `Inter-American Affairs` is not `INTER`.
+        #expect(SourceNoteParser.decimalClassKey("Inter 3 Can") == nil)
+    }
+
+    // MARK: The neighbour route's predicate
+
+    @Test("A citation is matched on its class in the cases the route takes first")
+    func theRouteMatchesOnTheClass() {
+        func match(_ note: String) -> String? {
+            CollectionKeying.matchesOnClass(parsed: parser.parse(note), note: note)
+        }
+        func basis(_ note: String) -> String? {
+            CollectionKeying.archivalNeighborBasis(parsed: parser.parse(note), note: note)
+        }
+        // A Subject-Numeric file in either wording, and the two are one class.
+        let department = "Source: Department of State, Central Files, POL 27 VIET S. Secret."
+        let archives = "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret; Immediate; Exdis."
+        #expect(match(department) == "POL 27 VIET S")
+        #expect(match(archives) == "POL 27 VIET S")
+        // A primary-subject file, and a note the parse stores no designator for.
+        #expect(match("Source: Department of State, Central Files, AID (US) S VIET Secret; Priority; Limit Distribution.") == "AID (US) S VIET")
+        // The record group's name for a series: the class, not `RG 59: Records of the Department
+        // of State`, which is the parse's key.
+        let recordGroup = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1967–69, PET 3 OECD."
+        #expect(parser.parse(recordGroup).archivalNeighborKey == "RG 59: Records of the Department of State")
+        #expect(match(recordGroup) == "PET 3 OECD")
+        #expect(basis(recordGroup) == "PET 3 OECD")
+        // A decimal number through the National Archives is matched on its class,
+        #expect(match("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.") == "399.731")
+        // and through the Department on its stored number and filing period, which is not here.
+        let decimal = "Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate."
+        #expect(match(decimal) == nil)
+        #expect(basis(decimal) == parser.parse(decimal).archivalNeighborKey)
+        #expect(basis(decimal) == "611.61")
+        // A lot (frus1955-57v07/d330), a library (frus1961-63v05/d189) and a note with no class
+        // (frus1969-76v20/d284) are not matched on one.
+        #expect(match("Source: Department of State, ARA Files: Lot 58 D 749. Secret.") == nil)
+        #expect(match("Source: Kennedy Library, National Security Files, Countries Series, USSR. Confidential.") == nil)
+        #expect(match("Source: National Archives, RG 59, Central Files 1970–73, POL Nodis.") == nil)
     }
 }

@@ -115,6 +115,13 @@ import SwiftUI
 ///           ahead of the NARA Catalog section, where the panel showed only the API key prompt.
 ///           Both panels draw them through `lotCardSections(for:)`, which reads
 ///           `SourceExplorerProvenance.lotCards`. Mirrors MacSourceExplorerView 1.15.
+///   1.17 — index version 69: the empty Archival Neighbors state, the match line and the line
+///           above the list ask `CollectionKeying.matchesOnClass(parsed:note:)`, the test
+///           `relatedDocuments(for:)` routes by, so a file cited through the Department and the
+///           same file cited through the National Archives are described alike. The line above
+///           the list calls a decimal number worded through the National Archives a decimal
+///           file, where #1543 had left it the collection's name over a list drawn by class.
+///           Mirrors MacSourceExplorerView 1.16.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -2825,7 +2832,9 @@ struct SourceExplorerView: View {
                 // A source note explored without an indexed-document anchor: the
                 // note-keyed query, nothing to exclude.
                 result = try await pipeline.relatedDocuments(
-                    for: note, limit: 30, documentYear: effectiveYear)
+                    for: note, limit: 30, documentYear: effectiveYear,
+                    // The class a central-files citation is matched on is read from the note.
+                    rawCitation: rawSourceNote)
             }
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
@@ -2868,28 +2877,37 @@ struct SourceExplorerView: View {
     /// 1940–1944). Before #1407 an en-dash item carried no year at all, so every one of them was
     /// labelled by its document's year.
     ///
-    /// A Subject-Numeric citation worded through the National Archives names its FILE (#1543). Its
-    /// neighbours come from `relatedByDecimalClass`, which matches the stored class key and finds
-    /// both wordings, so "Same Subject-Numeric file — POL 27 VIET S" is what the list is; the line
-    /// used to name the block every file of three years sits in ("Same collection — RG 59, Central
-    /// Files 1964–66"). The arm is the route's own: the stored series names the central files
-    /// (`ParsedSourceNote.seriesNamesCentralFiles`), and with no class key that route finds
-    /// nothing, so there is no line. A Department-led designator has no line: its route,
-    /// `relatedByDecimal`, matches the stored file number and finds Department-led siblings only,
-    /// so it must not carry a sentence that promises the whole file. That holds for a designation
-    /// with a stop in it too (`DEF 19–8 U.S.-IRAN`, frus1964-68v22/d111): the decimal arm below
-    /// tests for a `.`, and until review round 1 of #1543 it captioned 34 such documents "Same
-    /// decimal file — DEF 19–8 U.S.-IRAN" under the Subject-Numeric panel.
+    /// A note matched on its CLASS names that class (index version 69). The route asks
+    /// `CollectionKeying.matchesOnClass(parsed:note:)` before anything else, and so does this
+    /// line, so the sentence is about the list under it:
+    /// - a Subject-Numeric file, in either wording, reads "Same Subject-Numeric file — POL 27 VIET
+    ///   S", and one with no subject number "… — POL US-USSR". Until version 69 only a citation
+    ///   worded through the National Archives whose stored series named the central files had
+    ///   the line (#1543): a Department-led designator was matched on its stored file number and
+    ///   found Department-led siblings only, so it had none, and `RG 59, Records of the
+    ///   Department of State, Central Files, 1964–66, AV 12–7 US` was matched on that series and
+    ///   read "Same collection — RG 59, Records of the Department of State" (181 notes, and 36
+    ///   that cite a decimal number under the same words);
+    /// - a decimal number worded through the National Archives reads "Same decimal file —
+    ///   399.731". Its list was the class's documents before version 69 too, under "Same
+    ///   collection — RG 59, Central Files 1960–63", which #1543 recorded and left (356 notes).
+    ///   No filing period is named: the class route does not divide by period.
+    ///
+    /// A Department-led Subject-Numeric designator the class grammar does not read has no line.
+    /// Its route matches the stored file number, which finds the documents that print the
+    /// designation the same way, and the decimal arm below would caption it "Same decimal file"
+    /// when it holds a stop (`U.S.`).
     ///
     /// This is the iOS view's line. `MacSourceExplorerView` draws no basis line.
     static func archivalNeighborBasis(for parsed: ParsedSourceNote?, note: String, documentYear: Int?,
                                       documentDay: DecimalFileSegment.DocumentDay?) -> String? {
-        if let parsed, case .naraCollection(_, let series?, nil, _) = parsed,
-           ParsedSourceNote.seriesNamesCentralFiles(series),
-           CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) {
-            guard let classKey = SourceNoteParser.decimalClassLocation(inCitation: note) else { return nil }
-            return String(localized: "source.explorer.related.basis.subjectNumeric",
-                          defaultValue: "Same Subject-Numeric file — \(classKey)")
+        if let parsed, let classKey = CollectionKeying.matchesOnClass(parsed: parsed, note: note) {
+            if CollectionKeying.isSubjectNumericClass(classKey) {
+                return String(localized: "source.explorer.related.basis.subjectNumeric",
+                              defaultValue: "Same Subject-Numeric file — \(classKey)")
+            }
+            return String(localized: "source.explorer.related.basis.decimal",
+                          defaultValue: "Same decimal file — \(classKey)")
         }
         if let parsed, case .centralFiles = parsed,
            CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note) {
@@ -2989,13 +3007,26 @@ struct SourceExplorerView: View {
                     }
                 }
             } footer: {
-                if !relatedLoading, let key = parsed?.archivalNeighborKey {
+                if !relatedLoading,
+                   let key = SourceExplorerView.relatedMatchKey(for: parsed, note: rawSourceNote) {
                     Text(String(format: String(localized: "source.explorer.related.matchKey %@",
                                                defaultValue: "Matching archival source: %@"), key))
                         .font(.caption2)
                 }
             }
         }
+    }
+
+    /// What the "Matching archival source" line under Archival Neighbors names, or `nil` when the
+    /// neighbour query has no key for the note. Static so `MacSourceExplorerView` prints the same.
+    ///
+    /// `CollectionKeying.archivalNeighborBasis(parsed:note:)`: the class a citation worded through
+    /// the National Archives gives, which is what its list is matched on, and else the parse's
+    /// own key. Until index version 69 both views read the parse's key alone, which has none for
+    /// such a citation, and names the record group for one worded `RG 59, Records of the
+    /// Department of State, Central Files …`.
+    static func relatedMatchKey(for parsed: ParsedSourceNote?, note: String) -> String? {
+        parsed.flatMap { CollectionKeying.archivalNeighborBasis(parsed: $0, note: note) }
     }
 
     /// Why an Archival Neighbors list is empty — which of its sentences both Source Explorer views
@@ -3018,41 +3049,40 @@ struct SourceExplorerView: View {
     /// A Subject-Numeric citation used to fall to `.unmatched` whenever its parse has no neighbour
     /// key, and so read "This source note doesn’t cite a recognized lot file, central file, or
     /// presidential library" under the panel that names its central file (#1543). It has two states
-    /// of its own, because the list is empty for two reasons (documents, of the 9,443 that cite the
-    /// file, counted by this rule over the corpus's 264,552 document notes):
+    /// of its own, because the list is empty for two reasons. Counted by this rule over the 9,443
+    /// documents that cite the file, on a full index at version 68 read with the version 69 rules
+    /// (the 553 catalogue volumes at corpus `99d851c79`):
     ///
-    /// - **Matched on its file, and nothing found** (`.subjectNumericNoNeighbors`), in both
-    ///   wordings, 7,740 documents:
-    ///   - worded through the Department, with a designation the parse stored (3,657):
-    ///     `relatedByDecimal` matches the stored file number. A designation with no subject number
-    ///     is among them when the parse stored it (`POL US–USSR`), since that route matches the
-    ///     stored file number whole. Until the landing's third round these read `.noNeighbors`,
-    ///     the sentence of every keyed note, so `frus1964-68v01/d359` and `frus1969-76v30/d6`,
-    ///     each alone in its file, had two different sentences. The sentence says "was matched",
-    ///     which holds here too: this route finds the Department-led documents of the file and
-    ///     not the ones worded through the National Archives (237 designations are cited both
-    ///     ways; one neighbour set per file is in the lane's out-of-scope list).
-    ///   - worded through the National Archives, with a stored series that names the central files
-    ///     and a class key `SourceNoteParser.decimalClassLocation(inCitation:)` reads (4,083).
-    ///     That is the one arm of `IndexingPipeline.relatedDocuments` that matches with no
-    ///     parse-level key (`relatedByDecimalClass`, on the stored `decimal_class`), so
-    ///     `supportsArchivalNeighbors` is false although a query ran. 399 of these cite a class no
-    ///     other document in the corpus stores, and the rest reach the state only while the
-    ///     volumes that share the class are not indexed.
-    /// - **Nothing to match on** (`.subjectNumericUnkeyed`): 1,518 documents. The second wording
-    ///   with no class key (1,302: a designation the class grammar refuses, with no subject number
-    ///   — `POL FR-US`, 902 — or with one — `ORG 4–COMM`, 393 — and 7 that give only their block of
-    ///   years), a Department-led note with no stored identifier (`AID (US) S VIET`, 184) or one the
-    ///   file-number route cannot read (3), a note parsed as the Central Foreign Policy File (19),
-    ///   and a National-Archives-led note whose parse kept no series (10). `relatedDocuments` has
-    ///   no arm for any of them.
+    /// - **Matched on its file, and nothing found** (`.subjectNumericNoNeighbors`), 9,390 documents:
+    ///   - matched on its class key, in either wording (9,381: 5,536 worded through the National
+    ///     Archives, 3,824 through the Department, 21 parsed as the Central Foreign Policy File).
+    ///     `IndexingPipeline.relatedDocuments` takes this route before any other for a citation
+    ///     `CollectionKeying.matchesOnClass` reads a class from, so one file has one list. 948 of
+    ///     them cite a class no other document stores, and the rest reach the state only while
+    ///     the volumes that share the class are not indexed. Until index version 69 the
+    ///     Department's wording was matched on its stored file number, which found the documents
+    ///     that print the designation the same way and none worded through the National Archives
+    ///     (264 files are cited both ways); 2,613 documents stored no class at all, and 1,518 had
+    ///     nothing to match on;
+    ///   - worded through the Department with no class and a designation the parse stored (9:
+    ///     `PS 7-1 US- USSR Barghoorn`, `UN 6 ChiCom`, a stray bracket). `relatedByDecimal`
+    ///     matches the stored file number whole.
+    /// - **Nothing to match on** (`.subjectNumericUnkeyed`): 52 documents. A designation the class
+    ///   grammar still refuses, in either wording (45: a word no handbook area code is, with no
+    ///   subject number before it — `POL Nigeria-US`, `PPT Ashe`, `POL Nodis` — or prose after the
+    ///   number), and 7 that give only their block of years. `relatedDocuments` has no arm for any
+    ///   of them.
     ///
-    /// The other 185 have a key that is **not their file**, and are `.noNeighbors`, the sentence
-    /// every keyed note has: a National-Archives-led note whose series does not name the central
-    /// files (182; `RG 59, Records of the Department of State, Central Files, 1964–66, …`, matched
-    /// by `relatedByCollection` on that series), and 3 parsed as the Central Foreign Policy File
-    /// whose remark carries a film number (`relatedByCFPFFilm`). "No other indexed document was
-    /// matched to the same file" would be untrue of them: the query did not ask about the file.
+    /// One has a key that is **not its file**, and is `.noNeighbors`, the sentence every keyed
+    /// note has: a note parsed as the Central Foreign Policy File whose remark carries a film
+    /// number (`relatedByCFPFFilm`) and whose designation is not a class. "No other indexed
+    /// document was matched to the same file" would be untrue of it: the query did not ask about
+    /// the file. Until version 69 this was also the state of 182 notes worded `RG 59, Records of
+    /// the Department of State, Central Files, …`, which were matched on that series; they are
+    /// matched on their class now.
+    ///
+    /// A decimal number cited through the National Archives is matched on its class too, and its
+    /// empty list reads `.noNeighbors`; until version 69 it read `.unmatched`, though a query ran.
     ///
     /// A central-files citation's list is empty exactly when its direct route finds nothing: the
     /// collection authority's alias fallback does not serve one
@@ -3061,20 +3091,18 @@ struct SourceExplorerView: View {
     static func relatedEmptyState(for parsed: ParsedSourceNote?, note: String) -> RelatedEmptyState {
         guard let parsed else { return .unmatched }
         let citesTheFile = CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note)
+        // `relatedDocuments`' class arm, which it takes before the parse's own key: a citation
+        // matched on the class it gives (`CollectionKeying.matchesOnClass`, index version 69).
+        if CollectionKeying.matchesOnClass(parsed: parsed, note: note) != nil {
+            return citesTheFile ? .subjectNumericNoNeighbors : .noNeighbors
+        }
         if parsed.supportsArchivalNeighbors {
             // A Department-led designation: its key is the stored file number, which is the file.
             // The other two keyed shapes are keyed by a series and by a film number.
             if citesTheFile, case .centralFiles = parsed { return .subjectNumericNoNeighbors }
             return .noNeighbors
         }
-        guard citesTheFile else { return .unmatched }
-        // `relatedDocuments`' arm for a series that names the central files. The series is not
-        // tested again: a parse with any other series has a key of its own, and left above.
-        if case .naraCollection(_, _?, nil, _) = parsed,
-           SourceNoteParser.decimalClassLocation(inCitation: note) != nil {
-            return .subjectNumericNoNeighbors
-        }
-        return .subjectNumericUnkeyed
+        return citesTheFile ? .subjectNumericUnkeyed : .unmatched
     }
 
     /// Explains an empty related-documents result: a matched key with no neighbors in the indexed

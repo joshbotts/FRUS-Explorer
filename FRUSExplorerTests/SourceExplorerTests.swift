@@ -1142,6 +1142,9 @@ struct VolumeSourcesResolutionTests {
 ///   1.3 — 2026-10-02 (#1543, landing round 3): a Department-led designation alone in its file has
 ///          the Subject-Numeric sentence, as the same file cited through the National Archives
 ///          has; the two keyed shapes whose key is not the file keep the generic one, a fixture each
+///   1.4 — index version 69: a note matched on its class has the file's own sentences whatever
+///          series the parse stored; both twins name the match by the shared rule and hand the
+///          neighbour query the note, scanned
 @Suite("Source Explorer — the Subject-Numeric File (#1543)")
 @MainActor
 struct SubjectNumericExplorerTests {
@@ -1194,7 +1197,10 @@ struct SubjectNumericExplorerTests {
         let early = try #require(citation(
             "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.",
             day: day(1963, 2, 5)))
-        #expect(early.designation == "ORG 4–COMM")
+        // The class key, respelled: a dash that only joins the number to its element is a space
+        // (index version 69). Until then the class grammar refused it and this was the text as
+        // printed, `ORG 4–COMM`.
+        #expect(early.designation == "ORG 4 COMM")
         #expect(early.block == "1963", "not the printed 1960–63")
         #expect(early.handbooks.map(\.label) == [Self.handbook1963])
 
@@ -1529,71 +1535,94 @@ struct SubjectNumericExplorerTests {
             #expect(emptyState(keyed) == .subjectNumericNoNeighbors, "\(keyed)")
         }
 
-        // Matched on the designation the parse stored, which `relatedByDecimal` matches whole: with
-        // a subject number (frus1964-68v01/d359, the document the pass looked at, and d5), without
-        // one (frus1961-63v15/d177), and with a stop in it, which the dotted arm takes
-        // (frus1964-68v22/d111). Each has a key, and the key is the file.
-        let stored: [(note: String, key: String)] = [
-            ("Source: Department of State, Central Files, POL 13 VIET S. Secret; Priority; Limdis. Repeated to CINCPAC.", "POL 13 VIET S"),
-            ("Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy.", "POL 27 VIET S"),
-            ("Source: Department of State, Central Files, POL US–USSR. Secret; Priority.", "POL US–USSR"),
-            ("Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN. Confidential. Repeated to Karachi.", "DEF 19–8 U.S.-IRAN"),
+        // Worded through the Department, and matched on the class key as the other wording is
+        // (index version 69; until then on the designation the parse stored): with a subject
+        // number (frus1964-68v01/d359, the document the pass looked at, and d5), without one
+        // (frus1961-63v15/d177), and with stops in it (frus1964-68v22/d111). The parse's own key
+        // is still the stored file number.
+        let stored: [(note: String, key: String, classKey: String)] = [
+            ("Source: Department of State, Central Files, POL 13 VIET S. Secret; Priority; Limdis. Repeated to CINCPAC.", "POL 13 VIET S", "POL 13 VIET S"),
+            ("Source: Department of State, Central Files, POL 27 VIET S. Secret. A copy was sent to McGeorge Bundy.", "POL 27 VIET S", "POL 27 VIET S"),
+            ("Source: Department of State, Central Files, POL US–USSR. Secret; Priority.", "POL US–USSR", "POL US-USSR"),
+            ("Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN. Confidential. Repeated to Karachi.", "DEF 19–8 U.S.-IRAN", "DEF 19-8 US-IRAN"),
         ]
-        for (note, key) in stored {
+        for (note, key, classKey) in stored {
             let parsed = SourceNoteParser().parse(note)
             if case .centralFiles = parsed {} else { Issue.record("\(note) is no longer a central-files parse") }
             #expect(parsed.archivalNeighborKey == key, "\(note)")
+            #expect(CollectionKeying.matchesOnClass(parsed: parsed, note: note) == classKey, "\(note)")
             #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note), "\(note)")
             #expect(emptyState(note) == .subjectNumericNoNeighbors, "\(note)")
         }
 
-        // Nothing to match on. The same wording with a designation the class grammar refuses:
-        // no subject number (frus1964-68v12/d34), a number and a commodity (frus1961-63v25/d59),
-        // and the block alone (frus1964-68v29p1/d368).
-        for note in [
-            "Source: National Archives and Records Administration, RG 59, Central Files 1964-66, POL FR-US. Confidential. Drafted by Schaetzel.",
-            "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.",
-            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
-        ] {
-            #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == nil, "\(note) has a class key")
-            #expect(emptyState(note) == .subjectNumericUnkeyed, "\(note)")
+        // Matched on a class the grammar refused until index version 69, when each of these had
+        // nothing to match on: a primary-subject file through the National Archives (frus1964-68v12/d34),
+        // a dash joining the number to its element (frus1961-63v25/d59), a parse that kept no
+        // series (frus1964-68v19/d505, which prints no comma after the record group), a note
+        // parsed as the Central Foreign Policy File (frus1969-76ve08/d126, whose remark names the
+        // "Central Foreign Policy Files"), and a Department-led designation the parse does not
+        // store (frus1961-63v03/d53).
+        let nowKeyed: [(note: String, classKey: String)] = [
+            ("Source: National Archives and Records Administration, RG 59, Central Files 1964-66, POL FR-US. Confidential. Drafted by Schaetzel.", "POL FR-US"),
+            ("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4–COMM. No classification marking.", "ORG 4 COMM"),
+            ("Source: National Archives and Records Administration, RG 59 Central Files 1967–69, POL 27–14 ARAB–ISR. Secret; Priority; Nodis.", "POL 27-14 ARAB-ISR"),
+            ("Source: National Archives, RG 59, Central Files 1970–73, POL 15–1 PAK. Confidential. It was repeated to Kabul, Karachi, Lahore, New Delhi, and Tehran. The Embassy had reported on the ratification process in telegrams 2903, April 10 (Ibid.), 2993, April 12, (Ibid., Central Foreign Policy Files), and 3017, April 13, (Ibid., Central Files 1970–73, POL 15–5 PAK) all from Islamabad.", "POL 15-1 PAK"),
+            ("Source: Department of State, Central Files, AID (US) S VIET. Confidential. Repeated to CINCPAC.", "AID (US) S VIET"),
+        ]
+        for (note, classKey) in nowKeyed {
+            let parsed = SourceNoteParser().parse(note)
+            #expect(CollectionKeying.matchesOnClass(parsed: parsed, note: note) == classKey, "\(note)")
+            #expect(emptyState(note) == .subjectNumericNoNeighbors, "\(note)")
         }
-        // A parse that kept no series, though the note has a class key (frus1964-68v19/d505, which
-        // prints no comma after the record group): the class route is the series arm's.
-        let noSeries = "Source: National Archives and Records Administration, RG 59 Central Files 1967–69, POL 27–14 ARAB–ISR. Secret; Priority; Nodis."
-        if case .naraCollection(_, let series, _, _) = SourceNoteParser().parse(noSeries) {
+        // The parses those three odd shapes still have, so each fixture stays the shape it names.
+        if case .naraCollection(_, let series, _, _) = SourceNoteParser().parse(nowKeyed[2].note) {
             #expect(series == nil)
         } else {
             Issue.record("frus1964-68v19/d505 no longer parses as a collection")
         }
-        #expect(SourceNoteParser.decimalClassLocation(inCitation: noSeries) == "POL 27-14 ARAB-ISR")
-        #expect(emptyState(noSeries) == .subjectNumericUnkeyed)
-        // A note parsed as the Central Foreign Policy File, though it has a class key
-        // (frus1969-76ve08/d126, whose remark names the "Central Foreign Policy Files").
-        let foreignPolicy = "Source: National Archives, RG 59, Central Files 1970–73, POL 15–1 PAK. Confidential. It was repeated to Kabul, Karachi, Lahore, New Delhi, and Tehran. The Embassy had reported on the ratification process in telegrams 2903, April 10 (Ibid.), 2993, April 12, (Ibid., Central Foreign Policy Files), and 3017, April 13, (Ibid., Central Files 1970–73, POL 15–5 PAK) all from Islamabad."
-        if case .cfpfFile = SourceNoteParser().parse(foreignPolicy) {} else {
+        if case .cfpfFile = SourceNoteParser().parse(nowKeyed[3].note) {} else {
             Issue.record("frus1969-76ve08/d126 no longer parses as the Central Foreign Policy File")
         }
-        #expect(SourceNoteParser.decimalClassLocation(inCitation: foreignPolicy) == "POL 15-1 PAK")
-        #expect(emptyState(foreignPolicy) == .subjectNumericUnkeyed)
-        // A Department-led note whose designation the parse did not store (frus1961-63v03/d53).
-        let unstored = "Source: Department of State, Central Files, AID (US) S VIET. Confidential. Repeated to CINCPAC."
-        if case .centralFiles(_, let identifier) = SourceNoteParser().parse(unstored) {
+        if case .centralFiles(_, let identifier) = SourceNoteParser().parse(nowKeyed[4].note) {
             #expect(identifier == nil)
         } else {
             Issue.record("frus1961-63v03/d53 no longer parses as a central-files note")
         }
-        #expect(emptyState(unstored) == .subjectNumericUnkeyed)
+
+        // Matched on the designation the parse stored, with no class: the one route left that
+        // matches a stored file number whole (frus1964-68v30/d170, neither capitals nor title case).
+        let storedOnly = "Source: Department of State, Central Files, UN 6 ChiCom. Secret; Priority; Exdis."
+        #expect(CollectionKeying.matchesOnClass(parsed: SourceNoteParser().parse(storedOnly), note: storedOnly) == nil)
+        #expect(SourceNoteParser().parse(storedOnly).archivalNeighborKey == "UN 6 ChiCom")
+        #expect(emptyState(storedOnly) == .subjectNumericNoNeighbors)
+
+        // Nothing to match on: the block alone (frus1964-68v29p1/d368), a word that is no area
+        // code with no number before it (frus1969-76v20/d284, a handling caption;
+        // frus1969-76ve05p1/d206, a country the handbooks have no code for), and prose after the
+        // number (frus1964-68v32/d220).
+        for note in [
+            "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
+            "Source: National Archives, RG 59, Central Files 1970–73, POL Nodis. Drafted by Green and Masters on March 30, cleared by Haig in the White House and Wingate Lloyd (S/S), and approved by Green.",
+            "Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria-US, XR POL 30 Nigeria. Confidential. Repeated to Lisbon.",
+            "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM Crimmins and officers of the Political and Economic sections of the Embassy. Copies were sent to Madrid, Port-Au-Prince, Santiago de los Caballeros, USCINCSO for POLAD, USCINCLANT for POLAD, COMCARIBSEAFRON, and COMSECONDFLT.",
+        ] {
+            let parsed = SourceNoteParser().parse(note)
+            #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note), "\(note)")
+            #expect(CollectionKeying.centralFilesClass(parsed: parsed, note: note) == nil, "\(note) has a class key")
+            #expect(emptyState(note) == .subjectNumericUnkeyed, "\(note)")
+        }
     }
 
     /// The states that are not the file's. A Subject-Numeric citation whose key is NOT its file
     /// keeps the sentence every keyed note has, because the query asked about something else and
-    /// "no other indexed document was matched to the same file" would be untrue of it. There are
-    /// two such shapes, a fixture each: a National-Archives-led note whose series does not name
-    /// the central files, matched by collection on that series (frus1964-68v34/d1), and a note
-    /// parsed as the Central Foreign Policy File whose remark carries a film number, matched on
-    /// the film (frus1969-76ve09p2/d84, without the `Summary:` sentence the volume prints first).
-    /// A note that is no Subject-Numeric citation keeps its own two.
+    /// "no other indexed document was matched to the same file" would be untrue of it. One shape
+    /// is left: a note parsed as the Central Foreign Policy File whose remark carries a film
+    /// number, matched on the film, and whose designation is not a class
+    /// (frus1969-76ve09p2/d84, without the `Summary:` sentence the volume prints first). Until
+    /// index version 69 a National-Archives-led note whose series does not name the central files
+    /// was a second, matched by collection on that series (frus1964-68v34/d1): it is matched on
+    /// its class now, and has the file's own sentence. A note that is no Subject-Numeric citation
+    /// keeps its own two.
     @Test("A Subject-Numeric citation keyed by something other than its file, and every other note, keep the generic sentence")
     func otherEmptyStatesAreUnmoved() {
         let bySeries = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, SCI 3 OECD. Limited Official Use; Priority. Passed to the White House."
@@ -1605,7 +1634,10 @@ struct SubjectNumericExplorerTests {
         }
         #expect(seriesParse.archivalNeighborKey == "RG 59: Records of the Department of State")
         #expect(CollectionKeying.isSubjectNumericCitation(parsed: seriesParse, note: bySeries))
-        #expect(emptyState(bySeries) == .noNeighbors)
+        // The class outranks the parse's series key, in the route and so here.
+        #expect(CollectionKeying.matchesOnClass(parsed: seriesParse, note: bySeries) == "SCI 3 OECD")
+        #expect(emptyState(bySeries) == .subjectNumericNoNeighbors)
+        #expect(SourceExplorerView.relatedMatchKey(for: seriesParse, note: bySeries) == "SCI 3 OECD")
 
         let byFilm = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL Iran-Saudi Arabia. Secret. Drafted by Brooks Wrampelmeier (NEA/ARP); cleared in NEA/IRN, NEA/ARP, and NEA; approved by Atherton. Repeated to Tehran, Kuwait City, London, and Sana’a. Brackets are in the original. Telegrams 1450 from Jidda, April 9, and 2372 from Tehran, April 12, are in the National Archives, RG 59, Central Foreign Policy File, [no film number]. The difficulties of Iranian-Saudi cooperation were discussed in INR study RNAS–6, April 12, “Iran and Saudi Arabia—The Odd Couple.” (Ibid.) Both Ambassadors attempted to facilitate discussions during the spring of 1973 while emphasizing the difficulty of encouraging trust between King Faisal and the Shah, reported in telegram 2450 from Tehran, April 16, and telegram 1618 from Jidda, April 20. (Ibid., [no film number] and D760430–0677)"
         let filmParse = SourceNoteParser().parse(byFilm)
@@ -1614,7 +1646,17 @@ struct SubjectNumericExplorerTests {
         }
         #expect(filmParse.archivalNeighborKey == "CFPF film D760430")
         #expect(CollectionKeying.isSubjectNumericCitation(parsed: filmParse, note: byFilm))
+        #expect(CollectionKeying.matchesOnClass(parsed: filmParse, note: byFilm) == nil)
         #expect(emptyState(byFilm) == .noNeighbors)
+        #expect(SourceExplorerView.relatedMatchKey(for: filmParse, note: byFilm) == "CFPF film D760430")
+
+        // A decimal number through the National Archives is matched on its class and has the
+        // generic sentence (frus1961-63v25/d494). Until index version 69 it read `.unmatched`,
+        // the parse having no key, though the class query ran.
+        let decimalThroughArchives = "Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential."
+        #expect(emptyState(decimalThroughArchives) == .noNeighbors)
+        #expect(SourceExplorerView.relatedMatchKey(
+            for: SourceNoteParser().parse(decimalThroughArchives), note: decimalThroughArchives) == "399.731")
 
         // A decimal number and a lot have a key (frus1961-63v11/d301; a lot of the Conference Files).
         #expect(emptyState("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.") == .noNeighbors)
@@ -1625,6 +1667,31 @@ struct SubjectNumericExplorerTests {
         #expect(SourceExplorerView.relatedEmptyState(
             for: .previouslyPublished(citation: "FRUS 1958-60, vol. X"), note: "") == .unmatched)
         #expect(SourceExplorerView.relatedEmptyState(for: nil, note: "") == .unmatched)
+    }
+
+    /// Both views name what the list was matched on by the shared rule, and hand the neighbour
+    /// query the note it reads a class from (index version 69). A source scan of each view, since
+    /// neither body can be run here; the rule and the query have their runtime tests
+    /// (`SubjectNumericClassKeyTests`, `VolumeSourceMatcherTests`).
+    @Test("Both twins name the match by the shared rule and hand the neighbour query the note")
+    func bothTwinsReadTheSharedMatchRule() throws {
+        var read = 0
+        for path in Self.twins {
+            let code = try Self.code(path)
+            read += 1
+            // The line under the list: one call of the shared rule, with the parse and the note.
+            #expect(Self.callSites(of: "SourceExplorerView.relatedMatchKey", in: code).map(String.init)
+                        == ["for: parsed, note: rawSourceNote"], "\(path)")
+            // No view reads the parse's own key any more: it names the record group for a note
+            // matched on its class, and nothing for most notes worded through the National Archives.
+            #expect(!code.contains("archivalNeighborKey"), "\(path) reads the parse's key itself")
+            // The query made without a document anchor is handed the note, which is where a
+            // central-files class is read from.
+            let queries = Self.callSites(of: "pipeline.relatedDocuments", in: code)
+            #expect(queries.count == 1, "\(path) calls relatedDocuments \(queries.count) times")
+            #expect(queries.allSatisfy { $0.contains("rawCitation: rawSourceNote") }, "\(path): \(queries)")
+        }
+        #expect(read == 2)
     }
 
     /// Each state with the key of the sentence a view prints for it.

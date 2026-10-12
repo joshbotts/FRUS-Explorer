@@ -987,3 +987,124 @@ struct DecimalClassLabelTests {
         }
     }
 }
+
+// MARK: - PrimarySubjectFileLabelTests
+
+/// What a file under the primary subject alone reads as (index version 69).
+///
+/// Until version 69 every Subject-Numeric key had a subject number, and the label table read a key
+/// as its subject and its country. A citation that prints no number stores a class now (`POL
+/// US-USSR`), its family is its head (`POL`), and the table has no subject to give either.
+///
+/// Version history:
+///   1.0 — index version 69
+@Suite("Archival analytics — files with no subject number (index version 69)")
+struct PrimarySubjectFileLabelTests {
+
+    @Test("A head with no number reads as what it is, in any years")
+    func aHeadReadsAsFilesWithNoSubjectNumber() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+        let phrase = "Files with no subject number"
+        for head in ["POL", "AID (US)", "INCO-WOOL", "DEF (MLF)", "E", "FT"] {
+            #expect(table.gloss(for: head, coveringYears: 1963...1963) == phrase, "\(head)")
+        }
+        // The phrase states the key's form, which no edition changes: a span that straddles the
+        // two schedules, where a numbered key says nothing, still has it.
+        #expect(table.gloss(for: "POL", coveringYears: 1963...1966) == phrase)
+        #expect(table.gloss(for: "POL 24", coveringYears: 1963...1966) == nil)
+        // A file is not a family: `gloss` names groups, and `POL US-USSR` is a leaf of `POL`.
+        #expect(table.gloss(for: "POL US-USSR", coveringYears: 1963...1963) == nil)
+        // A numbered family reads as it did.
+        #expect(table.gloss(for: "POL 27", coveringYears: 1963...1963) == "MILITARY OPERATIONS")
+        #expect(table.gloss(for: "AID (US) 15-4 UAR", coveringYears: 1963...1963)
+                    == table.gloss(for: "AID (US) 15-4", coveringYears: 1963...1963))
+    }
+
+    @Test("A file with no number reads as its country alone, and a head as nothing")
+    func aFileReadsAsItsArea() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1963)
+                    == "United States and Union of Soviet Socialist Republics")
+        #expect(table.leafGloss(for: "POL INDIA-PAK", coveringYears: 1965...1968) == "India and Pakistan")
+        #expect(table.leafGloss(for: "POL GER W-US", coveringYears: 1965...1968)
+                    == "Germany, West and United States")
+        // The country and nothing after it: there is no subject to add.
+        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1963)?.contains(" — ") == false)
+        // A head cited alone has neither country nor subject.
+        #expect(table.leafGloss(for: "DEF (MLF)", coveringYears: 1965...1968) == nil)
+        // A span no schedule governs says nothing, as for every key.
+        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1966) == nil)
+        // The division is the kit's, so the lookup is cut where the fold is.
+        #expect(SubjectNumericLabelTable.tail(of: "POL US-USSR") == "US-USSR")
+        #expect(SubjectNumericLabelTable.tail(of: "INCO-WOOL 17 US-JAPAN") == "US-JAPAN")
+        #expect(SubjectNumericLabelTable.split("POL US-USSR") == nil)
+        #expect(SubjectNumericLabelTable.split("INCO-WOOL 17 US-JAPAN")?.designator == "17")
+    }
+
+    /// A numbered key of a category with no outline is read through the organization branch,
+    /// under the name the handbook's abbreviations appendix gives the prefix. A file with no
+    /// number takes no such name. It was found on an iPhone: `AID` has no outline under
+    /// 1964–1973 and its appendix entry is a piece of another line, so the row for
+    /// frus1969-76ve07/d110's file read "programs in Spanish speaking countries). Aeronautics —
+    /// India".
+    @Test("A file with no number takes no organization's name before its country")
+    func aFileWithNoNumberTakesNoOrganizationsName() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+        #expect(table.leafGloss(for: "AID (US) INDIA", coveringYears: 1965...1968) == "India")
+        // The rule on a real organization, whose name the table has right. No file of the corpus
+        // cites NATO without a number: the first key is constructed.
+        #expect(table.leafGloss(for: "NATO US", coveringYears: 1965...1968) == "United States")
+        // The control: with a number, the organization is named first, as it was.
+        let numbered = try #require(table.leafGloss(for: "NATO 3 US", coveringYears: 1965...1968))
+        #expect(numbered.hasPrefix("North Atlantic Treaty Organization — United States"), "got \(numbered)")
+    }
+
+    @Test("A post in parentheses is not read as a second country")
+    func aPostIsNotASecondParty() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+        #expect(SubjectNumericLabelTable.tail(of: "DEF 18-3 USSR (MO)") == "USSR")
+        #expect(SubjectNumericLabelTable.tail(of: "DEF 18-3 SWITZ (GE)") == "SWITZ")
+        // Moscow is in the USSR: the file reads as the USSR's.
+        let moscow = try #require(table.leafGloss(for: "DEF 18-3 USSR (MO)", coveringYears: 1963...1963))
+        #expect(moscow == table.leafGloss(for: "DEF 18-3 USSR", coveringYears: 1963...1963))
+        #expect(moscow == "Union of Soviet Socialist Republics — Organizations & Conferences")
+        // `(GE)` is Geneva. Read as part of the country element it is two tokens, and the table
+        // holds `GER`: the file must not read as Switzerland and Germany.
+        let geneva = table.leafGloss(for: "DEF 18-3 SWITZ (GE)", coveringYears: 1963...1963)
+        #expect(geneva == table.leafGloss(for: "DEF 18-3 SWITZ", coveringYears: 1963...1963))
+        #expect(geneva?.contains("Germany") != true, "got \(geneva ?? "nil")")
+    }
+
+    @Test("Over the shipped corpus, the files with no number are one family under their category")
+    func theShippedRankingHoldsTheFamily() throws {
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: usage, coverage: ArchivalVolumeCoverage.map(from: entries))
+        // 1961–1968 is where the Subject-Numeric File's first years are.
+        let rows = data.ranking(band: ArchivalEraBand.all[2], lens: .centralFileClasses, weight: .documents,
+                                hidingUmbrella: false, limit: .max).rows
+        let family = try #require(rows.first { $0.id == "POL" }, "no POL family in the 1961–1968 band")
+        #expect(family.gloss == "Files with no subject number")
+        #expect(family.isFamily)
+        // 1,242 documents over the whole series on the index regenerated for version 69; most of
+        // them in this band.
+        #expect(family.value > 500, "the POL family counts \(family.value) documents")
+        // Its leaves are files, each with a country and no number, and they add up to the row.
+        #expect(family.leaves.count > 50, "\(family.leaves.count) leaves")
+        #expect(family.leaves.allSatisfy { CollectionKeying.subjectNumericParts(of: $0.key)?.number == nil })
+        #expect(family.leaves.allSatisfy { CollectionKeying.subjectNumericGroup($0.key) == "POL" })
+        #expect(family.leaves.reduce(0) { $0 + $1.documents } == family.value)
+        #expect(family.leaves.contains { $0.key == "POL US-USSR" })
+        // And no numbered POL file is in it: `POL 27` is its own row, as it was.
+        #expect(rows.contains { $0.id == "POL 27" })
+        #expect(!family.leaves.contains { $0.key.hasPrefix("POL 27") })
+        // No row of the ranking is a file with no number: each is in its family.
+        let strays = rows.filter {
+            guard let parts = CollectionKeying.subjectNumericParts(of: $0.id) else { return false }
+            return parts.number == nil && parts.group != $0.id
+        }
+        #expect(strays.isEmpty, "ranked as rows of their own: \(strays.map(\.id))")
+    }
+}

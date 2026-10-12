@@ -464,7 +464,8 @@ struct DecimalFileYearNeighbourTests {
 
 /// The Archival Neighbors basis line names the FILE's filing band (#1407), through the static the
 /// section draws (`SourceExplorerView.archivalNeighborBasis(for:note:documentYear:documentDay:)`) —
-/// unless the file's year misprints the document's own day (#1407 review).
+/// unless the file's year misprints the document's own day (#1407 review). A note matched on
+/// its class names that class, in either wording of the citation (index version 69).
 @Suite("Source Explorer basis line (#1407)")
 @MainActor
 struct SourceExplorerBasisLineTests {
@@ -524,51 +525,60 @@ struct SourceExplorerBasisLineTests {
         #expect(line == "Same Subject-Numeric file — POL 27 VIET S", "got \(line ?? "nil")")
     }
 
-    /// Without a class key that route finds nothing, so there is no list to head
-    /// (frus1969-76ve07/d110).
-    @Test("A National-Archives-led Subject-Numeric file with no class key gets no line")
-    func classlessSubjectNumericGetsNoLine() {
+    /// A file with no subject number has a class since index version 69, so the route finds its
+    /// documents and the line names it (frus1969-76ve07/d110). Until then the note stored no
+    /// class, its route found nothing, and there was no list to head.
+    @Test("A National-Archives-led Subject-Numeric file with no subject number names its file (index version 69)")
+    func aFileWithNoSubjectNumberNamesItsFile() {
         let line = basis("Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Secret.", year: 1971)
-        #expect(line == nil, "got \(line ?? "nil")")
-        // The control: the same wording with a class key gets the line, so the nil is the key's.
-        #expect(basis("Source: National Archives, RG 59, Central Files 1970–73, POL 27 VIET S. Secret.", year: 1971)
-                == "Same Subject-Numeric file — POL 27 VIET S")
+        #expect(line == "Same Subject-Numeric file — AID (US) INDIA", "got \(line ?? "nil")")
+        // A file through the Department reads the same way (frus1961-63v05/d385, whose dash has
+        // a space after it).
+        #expect(basis("Source: Department of State, Central Files, POL US- USSR. Top Secret; Eyes Only.", year: 1963)
+                == "Same Subject-Numeric file — POL US-USSR")
     }
 
-    /// The line follows the ROUTE, and the route is the class route only when the stored series
-    /// names the central files. frus1964-68v34 prints "RG 59, Records of the Department of State,
-    /// Central Files, 1964–66, AV 12–7 US", and the parser stores "Records of the Department of
-    /// State" as its series (179 of the volume's notes; 192 corpus-wide). Its neighbours come from
-    /// the collection route on that series, so it keeps the collection line, though it is a
-    /// Subject-Numeric citation with a class key.
-    @Test("A Subject-Numeric file whose stored series is not the central files keeps the collection line (frus1964-68v34/d121)")
-    func subjectNumericUnderAnotherSeriesKeepsTheCollectionLine() {
+    /// The line follows the ROUTE, and since index version 69 the route asks for the class first,
+    /// whatever the parse stored as the series. frus1964-68v34 prints "RG 59, Records of the
+    /// Department of State, Central Files, 1964–66, AV 12–7 US", and the parser stores "Records
+    /// of the Department of State" as its series. Until version 69 its neighbours came from the
+    /// collection route on that series, every note that words the record group that way, and
+    /// the line said so.
+    @Test("A Subject-Numeric file whose stored series is the record group's name names its file (frus1964-68v34/d121)")
+    func subjectNumericUnderTheRecordGroupsNameNamesItsFile() {
         let note = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, AV 12–7 US. Confidential. Repeated to Paris for USRO."
-        // The premises: a Subject-Numeric citation, with a class key.
-        #expect(CollectionKeying.isSubjectNumericCitation(parsed: SourceNoteParser().parse(note), note: note))
-        #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == "AV 12-7 US")
-        #expect(basis(note) == "Same collection — RG 59, Records of the Department of State")
+        // The premises: a Subject-Numeric citation, with a class key, stored under another series.
+        let parsed = SourceNoteParser().parse(note)
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note))
+        #expect(CollectionKeying.matchesOnClass(parsed: parsed, note: note) == "AV 12-7 US")
+        guard case .naraCollection(_, let series, nil, _) = parsed else {
+            Issue.record("expected a collection with no lot, got \(parsed)")
+            return
+        }
+        #expect(series == "Records of the Department of State")
+        #expect(basis(note) == "Same Subject-Numeric file — AV 12-7 US")
     }
 
-    /// A Department-led designator finds Department-led siblings only (`relatedByDecimal` matches
-    /// the stored file number), so it must not carry the sentence that promises the whole file.
-    /// It keeps v2's behaviour: no line (frus1964-68v01/d5).
-    @Test("A Department-led Subject-Numeric file keeps no basis line")
-    func departmentLedSubjectNumericKeepsNoLine() {
+    /// A Department-led designator is matched on its class since index version 69, and finds the
+    /// documents that cite the file through the National Archives too, so it carries the
+    /// sentence that names the whole file (frus1964-68v01/d5). Until then it was matched on its
+    /// stored file number, found Department-led siblings only, and had no line.
+    @Test("A Department-led Subject-Numeric file names its file (index version 69)")
+    func departmentLedSubjectNumericNamesItsFile() {
         let line = basis("Source: Department of State, Central Files, POL 27 VIET S. Secret.", year: 1964)
-        #expect(line == nil, "got \(line ?? "nil")")
-        // The control: the same file worded through the National Archives does get the line, so
-        // the nil above is the wording's and not a rule that names no Subject-Numeric file.
+        #expect(line == "Same Subject-Numeric file — POL 27 VIET S", "got \(line ?? "nil")")
+        // One file, one line: the other wording reads the same.
         #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 27 VIET S. Secret.")
-                == "Same Subject-Numeric file — POL 27 VIET S")
+                == line)
     }
 
     /// A designation with a stop in it (`U.S.`) reached the decimal arm, which tests the stored
     /// identifier for a `.`: 34 documents (27 of them in frus1964-68v22) read "Same decimal file —
-    /// DEF 19–8 U.S.-IRAN" under the Subject-Numeric panel. It has no line, like every other
-    /// Department-led designator (frus1964-68v22/d111).
-    @Test("A Department-led Subject-Numeric file with a stop in its designation gets no decimal line")
-    func dottedDepartmentLedDesignationGetsNoLine() throws {
+    /// DEF 19–8 U.S.-IRAN" under the Subject-Numeric panel, and #1543 gave it no line. Its class
+    /// is read since index version 69, without the stops, and it is named as the file it is
+    /// (frus1964-68v22/d111).
+    @Test("A Department-led Subject-Numeric file with a stop in its designation is named by its class, never as a decimal file")
+    func dottedDepartmentLedDesignationIsNamedByItsClass() throws {
         let note = "Source: Department of State, Central Files, DEF 19–8 U.S.-IRAN. Confidential. Repeated to Karachi."
         let parsed = SourceNoteParser().parse(note)
         // The premises: the parse keeps an identifier with a stop in it — what the decimal arm
@@ -580,34 +590,38 @@ struct SourceExplorerBasisLineTests {
         #expect(try #require(identifier).contains("."))
         #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note))
         let line = basis(note, year: 1966)
-        #expect(line == nil, "got \(line ?? "nil")")
-        // The control: a decimal number, which also has a stop in it, keeps its line — so the nil
-        // above is the form's and not the arm's removal (frus1961-63v11/d301's number).
+        #expect(line == "Same Subject-Numeric file — DEF 19-8 US-IRAN", "got \(line ?? "nil")")
+        // The control: a decimal number, which also has a stop in it, keeps its own line and its
+        // filing period (frus1961-63v11/d301's number).
         #expect(basis("Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate.", year: 1963)
                 == "Same decimal file — 611.61, 1960–January 1963")
     }
 
-    /// What this lane leaves alone: a decimal number worded through the National Archives and an
-    /// office file under the heading keep the lines v2 gave them.
-    ///
-    /// The first of them is a PIN of a line that misdescribes its list, not an endorsement of it.
-    /// A decimal number worded through the National Archives stores a series that names the
-    /// central files, so its neighbours come from the class route
-    /// (`IndexingPipeline.relatedByDecimalClass`): the list is class `399.731`'s documents, and the
-    /// line says "Same collection — RG 59, Central Files 1960–63". That is the mismatch
-    /// `archivalNeighborBasis` corrects for a Subject-Numeric citation; for the 356 decimal
-    /// numbers cited this way it is left as v2 had it, and the session entry lists it as out of
-    /// scope.
-    @Test("Other record-group citations keep their lines")
-    func otherRecordGroupCitationsKeepTheirLines() {
-        // The control: under the same heading, a Subject-Numeric file is named as one, so the
-        // collection lines below are kept for what is not one.
+    /// A Department-led designator the class grammar does not read is matched on its stored file
+    /// number, which finds the documents that print it the same way: no sentence promises more
+    /// (frus1964-68v30/d170, `UN 6 ChiCom`, neither capitals nor title case).
+    @Test("A Department-led designator with no class key has no line")
+    func aDesignatorWithNoClassKeyHasNoLine() {
+        let note = "Source: Department of State, Central Files, UN 6 ChiCom. Secret; Priority; Exdis."
+        let parsed = SourceNoteParser().parse(note)
+        #expect(CollectionKeying.isSubjectNumericCitation(parsed: parsed, note: note))
+        #expect(CollectionKeying.matchesOnClass(parsed: parsed, note: note) == nil)
+        #expect(basis(note, year: 1964) == nil)
+    }
+
+    /// A decimal number worded through the National Archives is matched on its class, as it was
+    /// before index version 69, and the line says so now. #1543 pinned the line it had, "Same
+    /// collection — RG 59, Central Files 1960–63", as one that misdescribed its list. No filing
+    /// period is named, because the class route does not divide by one.
+    @Test("A decimal number worded through the National Archives names its class, and an office's records keep their collection line")
+    func otherRecordGroupCitations() {
+        // The control: under the same heading, a Subject-Numeric file is named as one.
         #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, ORG 4 US. Confidential.", year: 1963)
                 == "Same Subject-Numeric file — ORG 4 US")
-        // frus1961-63v25/d494 — the line v2 gave it, over a list drawn by class (see above).
+        // frus1961-63v25/d494
         #expect(basis("Source: National Archives and Records Administration, RG 59, Central Files 1960–63, 399.731/7–2561. Confidential.", year: 1961)
-                == "Same collection — RG 59, Central Files 1960–63")
-        // frus1969-76ve08/d15
+                == "Same decimal file — 399.731")
+        // frus1969-76ve08/d15 — an office's records under the heading: no class, the line v2 gave it.
         #expect(basis("Source: National Archives, RG 59, Central Files 1970–73, Entry 5463, Records of Henry Kissinger, Box 5, Nodis Memoranda of Conversations, November 1974 (2). Secret; Nodis.", year: 1974)
                 == "Same collection — RG 59, Central Files 1970–73")
     }

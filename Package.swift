@@ -232,6 +232,9 @@ let package = Package(
         ),
         .target(
             name: "SubjectNumericLabelGeneratorCore",
+            // SourceNoteKit for `CollectionKeying.subjectNumericParts(of:)`: a corpus key is divided
+            // here where the app's fold and its label lookup divide it (index version 69).
+            dependencies: [.target(name: "SourceNoteKit")],
             path: "SubjectNumericLabelGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

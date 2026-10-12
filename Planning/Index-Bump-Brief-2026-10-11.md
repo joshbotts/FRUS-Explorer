@@ -128,6 +128,23 @@
 
 This brief first declined the item, on lane NOTE's counts of 2026-10-01. The owner asked for the reasons, was given them with the figures below, and on 2026-10-11 asked for it to be pull request D.
 
+**Done on 2026-10-11, at index version 69.** The session entry in `DEVELOPMENT-PLAN.md` has the method. What this section said before the measurement is kept under it, because two of its three changes turned out differently.
+
+- **Measured first**, on a full index at version 68 of the 553 catalogue volumes (corpus `99d851c79`), every stored source note read again through `SourceNoteKit`: 9,443 documents cite a Subject-Numeric file, 6,830 stored a class key and 2,613 did not.
+  - 285 needed no new grammar. The rule that places a citation by its form already read their class, and the index stored none: the parsed series was the record group's own name (`RG 59, Records of the Department of State, Central Files …`), or a classification ran on after the designation with no full stop.
+  - 768 print a subject number in a spelling the class grammar refused: a space beside a dash, a country word longer than six letters, a post in parentheses (`DEF 18–3 USSR (MO)`), stops (`U.S.`), an ampersand, a dash joining the number to what is around it, or a country not in capitals.
+  - 1,498 print no subject number (`POL US–USSR`). The 1963 handbook lets an office file papers under the primary subject alone and arrange them by country, so these are files, not designations cut short.
+  - 62 are still without a key: 7 give a block of years and nothing else, and 55 print something the app does not read as a designation (a handling caption, prose run on after the number, a country that is no area code with no number before it).
+- **What version 69 stores.** 9,381 of the 9,443 have a class key, on 1,929 distinct keys (1,361 before). 2,593 rows gain one: the 2,551 above, 40 decimal numbers worded through the National Archives, and 2 whose second sentence cites a file. 178 keys change spelling, each to restore a dash a space followed (`POL 27 INDIA PAK` is `POL 27 INDIA-PAK`). None is lost and no row changes its form. 62 still have none. By two full indexes compared table by table, nothing else in the index moves but 172 front-matter rows that gain a class.
+- **A file with no subject number has a class** (`POL US-USSR`, `AID (US) INDIA`), 303 keys over 1,498 documents. In the rankings it is grouped under its category, as a numbered file is under its category and number: 30 such groups, of which `POL` holds 1,242 documents and is now the second-largest row of the Subject-Numeric file after `POL 27`.
+- **One list of neighbours for one file.** A file was matched by its class when cited through the National Archives and by its printed designation when cited through the Department, so each wording missed the other. Both are matched by class now: 271 files are cited both ways, by 2,180 documents in one wording and 2,499 in the other.
+- **The country word list** is the bundled label table's own area codes (155 words). A country printed in title case is read when its words are among them (`POL 27 S Viet`), or, in a document's own citation, when one or two words follow a subject number (`POL 28 Berlin`): 23 such words in 142 notes, all names. In a volume's list of sources the second rule is off, because an embassy's files are listed there by subject title (`DEF 18–4 Defense Affairs`).
+- **The Archives Visit packet was already done**, by #1543.
+- **Bundled files.** `collection-authority.json`, `collection-usage-index.json`, `provenance-flow-index.json` and `external-citation-index.json` are regenerated; each was first reproduced byte for byte from the unchanged generator. Four that could have moved did not (`volume-sources-index.json`, `source-provenance-index.json`, `series-facts-index.json`, `lot-claimants-index.json`).
+- **`subject-numeric-labels.json` is not regenerated.** On this Mac under macOS 27.0.1 the unchanged generator no longer reproduces the shipped table from the same handbooks, and what it writes instead has wrong country names. So a new key's country is named only where the shipped table already has its code: for 84.2% of documents under the 1963 schedule and 79.5% under 1964–1973 (94.6% and 89.3% at version 68, whose keys the table was generated from). A key that got its dash back is new to the table too: of the 178 respelled documents, 44 and 30 lose the reading the table holds under the old spelling. The runbook's entry has the differences, and the wrong entries the shipped table already carries (under 1964–1973, `UK` reads *Ukraine* and every numbered `AID` file a piece of another line). #1644 is the issue for the table and its generator.
+
+*As written on 2026-10-11, before the measurement:*
+
 - **In the index at version 65** (lane CFPF's `subject_numeric` form): 9,443 documents cite a Subject-Numeric file.
   - 6,830 store a designation and a class key, so the file is matched.
   - 2,419 store a series and no class key: 1,496 worded through the National Archives, where the stored series is the block of years (`Central Files 1970–73`, for `RG 59, Central Files 1970–73, AID 3 India`); 911 worded through the Department, where it is the designation (`POL GER W–US`); 12 worded as neither.
@@ -159,7 +176,7 @@ This brief first declined the item, on lane NOTE's counts of 2026-10-01. The own
 | A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | Merged, #1638 |
 | B | Vol. XVI's people and terms | #1599 | 67 | Merged, #1639 |
 | C | A section's own text | #1536 | 68 | Merged, #1640 |
-| D | Subject-Numeric files stored without a designation | To be filed | 69 | §3.7 |
+| D | Subject-Numeric files stored without a designation | none filed | 69 | Done; its pull request is open |
 
 C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. Build 50 waits for all four.
 

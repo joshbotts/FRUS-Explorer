@@ -342,3 +342,80 @@ struct SubjectNumericGroupingTests {
                 "a prose segment is not a subject-numeric designator")
     }
 }
+
+// MARK: - SubjectNumericPartsTests
+
+/// How a Subject-Numeric class key is divided, and where a file under the primary subject alone
+/// folds (index version 69).
+///
+/// Until version 69 every Subject-Numeric key in the index had a subject number, so the fold was
+/// "category and number" and nothing else. Citations that print no number store a class now
+/// (`POL US-USSR`), and the fold has to place them. The keys below are ones a full index at
+/// version 69 holds.
+///
+/// Version history:
+///   1.0 — index version 69
+@Suite("Subject-numeric class parts (index version 69)")
+struct SubjectNumericPartsTests {
+
+    private typealias Parts = CollectionKeying.SubjectNumericClassParts
+
+    @Test("A key divides into its head, its number, and its area", arguments: [
+        ("POL 27 VIET S",
+         Parts(category: "POL", head: "POL", number: "27", group: "POL 27", area: "VIET S", post: nil)),
+        ("AID (US) 15-4 UAR",
+         Parts(category: "AID", head: "AID (US)", number: "15-4", group: "AID (US) 15-4", area: "UAR", post: nil)),
+        // No space before the number: the group is still the key's own prefix (#841).
+        ("DEF1-1", Parts(category: "DEF", head: "DEF", number: "1-1", group: "DEF1-1", area: "", post: nil)),
+        // No number: the head is the group, and what follows it is the area.
+        ("POL US-USSR", Parts(category: "POL", head: "POL", number: nil, group: "POL", area: "US-USSR", post: nil)),
+        ("AID (US) S VIET",
+         Parts(category: "AID", head: "AID (US)", number: nil, group: "AID (US)", area: "S VIET", post: nil)),
+        ("POL RHOD & NYAS",
+         Parts(category: "POL", head: "POL", number: nil, group: "POL", area: "RHOD & NYAS", post: nil)),
+        // A head alone, which six notes of frus1969-76v04 cite.
+        ("AID (US)", Parts(category: "AID", head: "AID (US)", number: nil, group: "AID (US)", area: "", post: nil)),
+        ("DEF (MLF)", Parts(category: "DEF", head: "DEF (MLF)", number: nil, group: "DEF (MLF)", area: "", post: nil)),
+        // A commodity is part of the head, with a number or without one.
+        ("INCO-WOOL 17 US-JAPAN",
+         Parts(category: "INCO", head: "INCO-WOOL", number: "17", group: "INCO-WOOL 17", area: "US-JAPAN", post: nil)),
+        ("INCO-WOOL US",
+         Parts(category: "INCO", head: "INCO-WOOL", number: nil, group: "INCO-WOOL", area: "US", post: nil)),
+        ("INCO-GRAINS GATT",
+         Parts(category: "INCO", head: "INCO-GRAINS", number: nil, group: "INCO-GRAINS", area: "GATT", post: nil)),
+        // A post in parentheses is not part of the area: `(MO)` is Moscow, inside the USSR.
+        ("DEF 18-3 USSR (MO)",
+         Parts(category: "DEF", head: "DEF", number: "18-3", group: "DEF 18-3", area: "USSR", post: "MO")),
+        // One letter and two: `E` and `FT` are whole categories.
+        ("E EUR E", Parts(category: "E", head: "E", number: nil, group: "E", area: "EUR E", post: nil)),
+        ("FT US-USSR", Parts(category: "FT", head: "FT", number: nil, group: "FT", area: "US-USSR", post: nil)),
+    ])
+    func keysDivide(key: String, expected: CollectionKeying.SubjectNumericClassParts) {
+        let parts = CollectionKeying.subjectNumericParts(of: key)
+        #expect(parts == expected)
+        // The fold is the group, and the group is a prefix of the key as stored: the family's
+        // query is a set of `LIKE` prefixes, so any other spelling would find none of its leaves.
+        #expect(CollectionKeying.subjectNumericGroup(key) == expected.group)
+        #expect(key.hasPrefix(expected.group))
+    }
+
+    @Test("Files under the primary subject alone fold together, apart from the numbered files of the same subject")
+    func primarySubjectFilesFoldToTheirHead() {
+        let general = ["POL US-USSR", "POL ARAB-ISR", "POL GER", "POL GER W-US"]
+        #expect(Set(general.compactMap(CollectionKeying.subjectNumericGroup)) == ["POL"])
+        // The numbered files keep their own groups, and an agency or a commodity makes its own head.
+        let groups = ["POL 27 VIET S", "POL 1 US-USSR", "AID (US) INDIA", "AID (US) 15 INDIA", "INCO-WOOL US"]
+            .map { CollectionKeying.subjectNumericGroup($0) }
+        #expect(groups == ["POL 27", "POL 1", "AID (US)", "AID (US) 15", "INCO-WOOL"])
+    }
+
+    @Test("A decimal number and a word longer than a category have no parts")
+    func whatIsNotSubjectNumeric() {
+        #expect(CollectionKeying.subjectNumericParts(of: "611.61") == nil)
+        #expect(CollectionKeying.subjectNumericParts(of: "") == nil)
+        // `[A-Z]{1,6}` matches the first six letters of any longer word, and those are no head.
+        #expect(CollectionKeying.subjectNumericParts(of: "MALAYSIA") == nil)
+        #expect(CollectionKeying.subjectNumericParts(of: "MALAYSIA US") == nil)
+        #expect(CollectionKeying.subjectNumericParts(of: "Conference Files") == nil)
+    }
+}

@@ -342,8 +342,19 @@ enum ArchiveVisitDerivation {
 /// it to the target it names. That is what lets a device still on the older index, or one the row
 /// syncs back to, keep finding it, and what keeps the row's derived id stable.
 ///
+/// **Index version 69 moved 437 more keys**, by a change of grammar and not of text (measured over
+/// the 198,347 stored notes this builder keys as a central file, each read by the kit before the
+/// change and after it; no key went from `class|` to `r|`):
+/// - **27 are the same file with its dash back** (`class|POL 1 US USSR` is `class|POL 1 US-USSR`;
+///   13 files). The class grammar had dropped a dash that a space followed. They join, by
+///   ``sameTarget(stored:derived:)``'s third rule.
+/// - **410 gain a class** (`r|Source: Department of State, Central Files, PR 11 Saigon. …` becomes
+///   `class|PR 11 SAIGON`; 151 files in 33 volumes). The old key named one note and the new one
+///   names a file, so they stay orphans, as the 7 above do and for the same reason.
+///
 /// Version history:
 ///   1.0 — #1421 review: initial implementation
+///   1.1 — index version 69: a class key that got its dash back joins the key that had lost it
 enum ArchiveVisitTargetKeys {
 
     /// `key` with every space removed — the form the #1421 re-join cannot change, since it
@@ -355,14 +366,28 @@ enum ArchiveVisitTargetKeys {
     /// Whether the stored key `stored` names the target derived as `derived`, across a re-index
     /// that only removed spaces from the note both were built from.
     ///
-    /// Equal keys, keys equal once spaces are removed, or two `coll|` keys whose series were cut
+    /// Equal keys, keys equal once spaces are removed, two `class|` keys that differ only where
+    /// one has a hyphen and the other a space, or two `coll|` keys whose series were cut
     /// at ``IndexingPipeline/foreignArchiveSeriesLength`` characters where the shorter, once spaces
     /// are removed, begins the longer: the cut takes more of the printed text once its spaces are
     /// gone, so the two agree only as far as the shorter reaches.
+    ///
+    /// The `class|` rule is index version 69's: `POL 1 US - USSR` was stored as `POL 1 US USSR`
+    /// and is `POL 1 US-USSR`. It is read character for character, so two keys of different
+    /// lengths never join by it (`DEF 1-1 US` is not `DEF 11 US`), and either way round, for a row
+    /// minted on version 69 and read by a device still on 68.
     static func sameTarget(stored: String, derived: String) -> Bool {
         if stored == derived { return true }
         let a = spacingInsensitive(stored), b = spacingInsensitive(derived)
         if a == b { return true }
+        // One prefix test covers both keys: the rule reads character for character and `class|`
+        // holds neither mark, so a key that passes against a class key begins as it does.
+        if stored.hasPrefix("class|"), stored.count == derived.count,
+           zip(stored, derived).allSatisfy({ one, other in
+               one == other || (one == " " && other == "-") || (one == "-" && other == " ")
+           }) {
+            return true
+        }
         let (short, long) = a.count <= b.count ? (stored, b) : (derived, a)
         guard short.hasPrefix("coll|"), long.hasPrefix("coll|"),
               let series = short.split(separator: "|", maxSplits: 2,

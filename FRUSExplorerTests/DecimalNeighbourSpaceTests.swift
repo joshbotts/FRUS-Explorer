@@ -89,8 +89,15 @@ struct DecimalNeighbourSpaceTests {
 ///
 /// The owner's decision (option (a)) is that the fold is the definition and the query follows it.
 ///
+/// ## A head with no number (index version 69)
+/// A file under the primary subject alone (`POL US-USSR`) folds to its head, `POL`, and a head is
+/// a prefix of every numbered file of the subject too. So that family's query is its patterns
+/// less `IndexingPipeline.classFamilyExclusion`, and the stand-in below reads both. The real SQL
+/// is driven by `VolumeSourceMatcherTests.aPrimarySubjectFamilyLeavesOutTheNumberedFiles`.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-11: #841
+///   1.1 — index version 69: the stand-in reads the exclusion, and the sweep counts the heads
 @Suite("Class family definition (#841)")
 struct ClassFamilyDefinitionTests {
 
@@ -100,6 +107,19 @@ struct ClassFamilyDefinitionTests {
             if pattern.hasSuffix("%") { return stored.hasPrefix(String(pattern.dropLast())) }
             return stored == pattern
         }
+    }
+
+    /// A stand-in for the family's whole `WHERE`: the patterns, less the one `GLOB` the
+    /// exclusion writes, which is a literal prefix and then `[0-9(]*`.
+    private func inFamily(_ stored: String, of key: String) throws -> Bool {
+        let patterns = try #require(IndexingPipeline.classLeafPatterns(forCanonicalKey: key))
+        guard matches(stored, patterns: patterns) else { return false }
+        guard let glob = IndexingPipeline.classFamilyExclusion(forCanonicalKey: key) else { return true }
+        let classAndStar = " [0-9(]*"
+        try #require(glob.hasSuffix(classAndStar), "the stand-in reads one shape of GLOB, and this is \(glob)")
+        let prefix = String(glob.dropLast(classAndStar.count)) + " "
+        guard stored.hasPrefix(prefix), let next = stored.dropFirst(prefix.count).first else { return true }
+        return !("0"..."9").contains(next) && next != "("
     }
 
     @Test("A subject-numeric family does not swallow its hyphenated sub-numbers")
@@ -122,6 +142,8 @@ struct ClassFamilyDefinitionTests {
         // its fold must contain it, and must not contain a key that folds somewhere else.
         let usage = try #require(CollectionUsageIndexStore.shared)
         var checked = 0
+        var heads = 0
+        var headLeaves = 0
         var leaks: Set<String> = []
         var families: [String: [String]] = [:]
         for key in usage.classKeys where CollectionKeying.isSubjectNumericClass(key) {
@@ -129,22 +151,28 @@ struct ClassFamilyDefinitionTests {
             families[group, default: []].append(key)
         }
         for (group, leaves) in families {
-            let patterns = try #require(
-                IndexingPipeline.classLeafPatterns(forCanonicalKey: group))
+            let isHead = IndexingPipeline.classFamilyExclusion(forCanonicalKey: group) != nil
+            if isHead { heads += 1 }
             for leaf in leaves {
-                #expect(matches(leaf, patterns: patterns), """
+                #expect(try inFamily(leaf, of: group), """
                     \(leaf) folds to \(group) but the query for \(group) would not find it.
                     """)
                 checked += 1
+                if isHead { headLeaves += 1 }
             }
             // And nothing from a different family leaks in — except the residue below.
             for (otherGroup, otherLeaves) in families where otherGroup != group {
-                for leaf in otherLeaves where matches(leaf, patterns: patterns) {
+                for leaf in otherLeaves where try inFamily(leaf, of: group) {
                     leaks.insert("\(group) → \(leaf)")
                 }
             }
         }
         #expect(checked > 1_000, "the sweep covered \(checked) keys, which is too few")
+        // The heads with no number are in the sweep, so the exclusion is: 30 heads over 300-odd
+        // keys on the index regenerated for version 69. Without the exclusion `POL` alone leaks
+        // every numbered POL key.
+        #expect(heads >= 20, "the sweep met \(heads) heads with no number")
+        #expect(headLeaves >= 250, "and \(headLeaves) keys under them")
 
         // THE RESIDUE IS GONE, and the way it went is the point. It was never a limit of prefix
         // matching: the fold's regex required two-to-six category letters, so the corpus's
@@ -158,6 +186,44 @@ struct ClassFamilyDefinitionTests {
             class rows the ranking draws, with POL 15 sweeping 73 keys; the last two closed when \
             the fold learned to parse a one-letter category.
             """)
+    }
+
+    @Test("A head with no number takes the files under it and leaves the numbered ones (index version 69)")
+    func aHeadLeavesOutItsNumberedFiles() throws {
+        #expect(try inFamily("POL US-USSR", of: "POL"))
+        #expect(try inFamily("POL GER W-US", of: "POL"))
+        #expect(try !inFamily("POL 27 VIET S", of: "POL"), "`POL %` reaches it, and the exclusion takes it out")
+        #expect(try !inFamily("POL1 US", of: "POL"))
+        // An agency or a commodity is a head of its own.
+        #expect(try inFamily("AID (US) INDIA", of: "AID (US)"))
+        #expect(try inFamily("AID (US)", of: "AID (US)"), "six notes cite the head alone")
+        #expect(try !inFamily("AID (US) 15 INDIA", of: "AID (US)"))
+        #expect(try !inFamily("AID (US) INDIA", of: "AID"))
+        #expect(try !inFamily("INCO-WOOL US", of: "INCO"))
+        #expect(IndexingPipeline.classFamilyExclusion(forCanonicalKey: "POL") == "POL [0-9(]*")
+        #expect(IndexingPipeline.classFamilyExclusion(forCanonicalKey: "AID (US)") == "AID (US) [0-9(]*")
+        // A numbered family, a decimal number and a file with an area have nothing to leave out.
+        for key in ["POL 27", "611.61", "POL US-USSR", "POL 27 VIET S"] {
+            #expect(IndexingPipeline.classFamilyExclusion(forCanonicalKey: key) == nil, "\(key)")
+        }
+    }
+
+    @Test("A file with no number and an area is matched as itself (index version 69)")
+    func aPrimarySubjectFileIsMatchedExactly() throws {
+        // Its space branch could only reach another area's file: `POL GER` is Germany's, and
+        // `POL GER W-US` is West Germany's with the United States (57 documents).
+        #expect(IndexingPipeline.classLeafPatterns(forCanonicalKey: "POL GER") == ["POL GER"])
+        #expect(try !inFamily("POL GER W-US", of: "POL GER"))
+        // A numbered key keeps its space branch, which is how `POL 27` finds its countries.
+        #expect(IndexingPipeline.classLeafPatterns(forCanonicalKey: "POL 27")
+                    == ["POL 27", "POL 27 %", "POL 27.%"])
+        // The clause binds its patterns and then the exclusion, in that order.
+        let head = try #require(IndexingPipeline.classFamilyClause(forCanonicalKey: "POL"))
+        #expect(head.params == ["POL", "POL %", "POL [0-9(]*"])
+        #expect(head.clause.contains("NOT GLOB ?"))
+        let numbered = try #require(IndexingPipeline.classFamilyClause(forCanonicalKey: "POL 27"))
+        #expect(numbered.params == ["POL 27", "POL 27 %", "POL 27.%"])
+        #expect(!numbered.clause.contains("GLOB"))
     }
 
     @Test("A decimal file number keeps its hyphen branch")

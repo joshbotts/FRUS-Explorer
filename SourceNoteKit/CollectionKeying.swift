@@ -143,6 +143,12 @@ public struct CentralFilesReading: Sendable, Equatable {
 ///          Subject-Numeric file designation — in either wording; `subjectNumericLead(ofCandidate:)`,
 ///          `subjectNumericOrganizationLeads` and `printedSubjectNumericBlock(inCitation:)`. No
 ///          collection identity changes
+///   1.7 — index version 69: `centralFilesClass(parsed:note:)` is the one definition of the class
+///          a note stores, and also reads the class the form rule finds; `matchesOnClass` and
+///          `archivalNeighborBasis`, the archival-neighbour route's rule; `subjectNumericParts(of:)`
+///          divides a class key, and a file under the primary subject alone folds to its head. A
+///          Department-worded note that prints no subject number has a collection identity now,
+///          the central files with its class
 public enum CollectionKeying {
 
     // MARK: - Normal form
@@ -572,7 +578,9 @@ public enum CollectionKeying {
     }
 
     /// A subject-numeric class key folded to its **category and number** (`POL 27 VIET S` →
-    /// `POL 27`; `AID (US) 15-4 UAR` → `AID (US) 15-4`), or `nil` for a decimal class.
+    /// `POL 27`; `AID (US) 15-4 UAR` → `AID (US) 15-4`), or `nil` for a decimal class. A file
+    /// under the primary subject alone, which has no number, folds to its head (`POL US-USSR` →
+    /// `POL`, index version 69): `subjectNumericParts(of:)` holds the rule and its measurement.
     ///
     /// The leaf grain is too thin to rank: measured on the 2026-08-08 usage index, the corpus's
     /// 1,362 subject-numeric leaves carry 6,876 documents, of which 691 leaves — half of them —
@@ -602,35 +610,192 @@ public enum CollectionKeying {
     /// follow a normalising fold; the fold stays literal instead. The anchored match starts at
     /// index 0 and ends on a digit, so the returned substring is a prefix by construction.
     public static func subjectNumericGroup(_ classKey: String) -> String? {
-        guard isSubjectNumericClass(classKey) else { return nil }
-        guard let match = subjectNumericGroupRegex?.firstMatch(
-            in: classKey, range: NSRange(classKey.startIndex..., in: classKey)),
-              let range = Range(match.range(at: 0), in: classKey) else { return nil }
-        return String(classKey[range]).trimmingCharacters(in: .whitespaces)
+        subjectNumericParts(of: classKey)?.group
     }
 
-    /// Category letters, an optional parenthesised agency qualifier, then the number — which may
-    /// itself be hyphenated (`POL 23-9`, `DEF 12-5`).
+    /// A Subject-Numeric class key divided where the handbooks divide a file designation: the
+    /// primary subject with its commodity and agency, the subject number, and the country or
+    /// area the file is arranged under (index version 69).
+    public struct SubjectNumericClassParts: Equatable, Sendable {
+        /// The primary subject or organization (`POL`, `AID`, `INCO`).
+        public let category: String
+        /// The category with its commodity and agency, as the key spells them (`POL`,
+        /// `INCO-WOOL`, `AID (US)`).
+        public let head: String
+        /// The subject number (`27`, `15-4`), or `nil` for a primary-subject file.
+        public let number: String?
+        /// The family the key belongs to: the head and its number as the key spells them, or the
+        /// head alone for a primary-subject file. Always a literal prefix of the key.
+        public let group: String
+        /// The country, area or organization element without a post (`VIET S` of `POL 27 VIET
+        /// S`, `USSR` of `DEF 18-3 USSR (MO)`), or `""`.
+        public let area: String
+        /// A post in parentheses at the end of the key (`MO`), or `nil`.
+        public let post: String?
+    }
+
+    /// Divides a Subject-Numeric class key, or returns `nil` for a decimal file number and for a
+    /// shape that opens with no category.
+    ///
+    /// ## A primary-subject file folds to its head (index version 69)
+    /// An office may file under the primary subject alone and arrange the papers by country: the
+    /// 1963 handbook's Instruction B for `POL` gives `POLITICAL AFFAIRS & REL, France` and, for
+    /// relations between countries, `India-Pakistan`. FRUS cites such a file with no subject
+    /// number (`POL US-USSR`, `AID (US) INDIA`), and since version 69 those citations store a
+    /// class key. "Primary-subject file" is this code's name for one, after the handbooks' "the
+    /// primary subject alone".
+    ///
+    /// Such a key has no number, so its family is its head: `POL US-USSR` and `POL ARAB-ISR` are
+    /// two files under `POL`, as `POL 27 VIET S` and `POL 27 CYP` are under `POL 27`. Left to
+    /// fold to themselves they would be leaves ranked as groups, the grain owner decision D-3
+    /// refused: measured on the usage index regenerated for version 69, 303 keys over 1,498
+    /// documents, 127 of them holding one. Folded they are 30 heads, and `POL` holds 1,242 of
+    /// the documents.
+    ///
+    /// The head keeps a commodity (`INCO-WOOL`) and an agency (`AID (US)`), which the handbooks
+    /// file apart from the bare category, and a numbered key keeps them too (`INCO-WOOL 17 US`
+    /// folds to `INCO-WOOL 17`). The numbered pattern is the one this function has always used
+    /// with the commodity added, and no key of the version-68 vocabulary has one, so no existing
+    /// group moves.
+    ///
+    /// The group stays a literal prefix of the key in both forms, which
+    /// `IndexingPipeline.classLeafPatterns` depends on (#841); a bare head's query also has
+    /// to leave out the numbered keys that share the prefix, and
+    /// `IndexingPipeline.classFamilyExclusion` is where it does.
+    ///
+    /// - Parameter classKey: A class key as `document_sources.decimal_class` stores it.
+    public static func subjectNumericParts(of classKey: String) -> SubjectNumericClassParts? {
+        guard isSubjectNumericClass(classKey), let regex = subjectNumericPartsRegex,
+              let match = regex.firstMatch(
+                in: classKey, range: NSRange(classKey.startIndex..., in: classKey)),
+              let whole = Range(match.range, in: classKey),
+              let headRange = Range(match.range(at: 1), in: classKey),
+              let categoryRange = Range(match.range(at: 2), in: classKey) else { return nil }
+        let number = Range(match.range(at: 3), in: classKey).map { String(classKey[$0]) }
+        let groupEnd: String.Index
+        if number != nil {
+            groupEnd = whole.upperBound
+        } else {
+            // A primary-subject file. The head must end the key or stand before a space: `[A-Z]{1,6}`
+            // matches the first six letters of any longer word.
+            groupEnd = headRange.upperBound
+            guard groupEnd == classKey.endIndex || classKey[groupEnd].isWhitespace else { return nil }
+        }
+        var rest = classKey[groupEnd...].trimmingCharacters(in: .whitespaces)
+        var post: String?
+        if let postRegex = subjectNumericPostRegex,
+           let postMatch = postRegex.firstMatch(in: rest, range: NSRange(rest.startIndex..., in: rest)),
+           let postWhole = Range(postMatch.range, in: rest),
+           let postName = Range(postMatch.range(at: 1), in: rest) {
+            post = String(rest[postName])
+            rest = String(rest[..<postWhole.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
+        return SubjectNumericClassParts(
+            category: String(classKey[categoryRange]),
+            head: String(classKey[headRange]),
+            number: number,
+            group: String(classKey[..<groupEnd]).trimmingCharacters(in: .whitespaces),
+            area: rest,
+            post: post)
+    }
+
+    /// Category letters, an optional commodity joined by a dash, an optional parenthesised agency
+    /// qualifier, then the number, which may itself be hyphenated (`POL 23-9`, `DEF 12-5`) and
+    /// which a primary-subject file does not have.
     ///
     /// The space before the number is OPTIONAL, which costs nothing and says something: a key
-    /// written `FT7` then folds to `FT7` rather than to `nil`, so every subject-numeric key has a
-    /// group. It is deliberately NOT a normalisation — see the caller on why the group must stay a
-    /// literal prefix.
-    private static let subjectNumericGroupRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^[A-Z]{1,6}(\s*\([^)]*\))?\s*\d+(-\d+)*"#)
+    /// written `FT7` then folds to `FT7` rather than to `nil`, so every numbered key has a group.
+    /// It is deliberately NOT a normalisation: the group must stay a literal prefix (see
+    /// `subjectNumericGroup`).
+    private static let subjectNumericPartsRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(([A-Z]{1,6})(?:-[A-Z]{2,8}(?=\s|$))?(?:\s*\([^)]*\))?)(?:\s*(\d+(?:-\d+)*))?"#)
 
-    /// The `decimal_class` derivation for a parsed note — the pipeline's
-    /// `decimalClassColumn` gating verbatim.
+    /// A post in parentheses closing a key's area element (`USSR (MO)`).
+    private static let subjectNumericPostRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"\s*\(([A-Z]{2,3})\)$"#)
+
+    /// The class key a document source note stores in `document_sources.decimal_class`, or `nil`.
+    ///
+    /// The ONE definition: `IndexingPipeline` stores what this returns, the archival-neighbour
+    /// route reads it again from the note, and `identity(of:note:)` keys the usage index's class
+    /// children by it. Until index version 69 the pipeline kept a copy of its own, and the two
+    /// had parted: the pipeline read a series named `Central Decimal File 1910–1929` and this
+    /// function did not, so ten notes of `frus1917-72PubDip` stored a class the usage index
+    /// never counted.
+    ///
+    /// ## Two readings, the first that answers
+    /// 1. **The comma scan**, `SourceNoteParser.decimalClassLocation(inCitation:)`, where the
+    ///    parse is central-files-shaped: `.centralFiles`, `.cfpfFile`, and a `.naraCollection`
+    ///    whose parsed series names the central files (`ParsedSourceNote.seriesNamesCentralFiles`).
+    /// 2. **The form rule**, `centralFilesReading(parsed:note:)`, where the scan was not offered
+    ///    the note or found no class in it (index version 69):
+    ///    - a reading by class key is that key. The scan never ran for it because the parsed
+    ///      series is not the central files' name: `RG 59, Records of the Department of State,
+    ///      Central Files 1964–66, POL 15-1 IRAQ` parses with the record group's own name as its
+    ///      series. 173 Subject-Numeric notes, measured on a full index at version 68;
+    ///    - a Subject-Numeric reading by designation gives its designation to the class grammar,
+    ///      cut at the item slash as the scan cuts a segment. The scan reads comma segments, and
+    ///      a classification can follow the designation with no full stop (`Central Files, POL
+    ///      26-1 S VIET Top Secret.`), so the segment was never a class. 112 notes.
+    ///
+    /// The second reading keeps the form rule's own gates: record group 59, no lot, and for a
+    /// citation worded through the National Archives an anchor behind a clean lead.
     public static func centralFilesClass(parsed: ParsedSourceNote, note: String) -> String? {
         switch parsed {
         case .centralFiles, .cfpfFile:
-            return SourceNoteParser.decimalClassLocation(inCitation: note)
+            if let scanned = SourceNoteParser.decimalClassLocation(inCitation: note) { return scanned }
         case .naraCollection(_, let series, _, _):
-            guard let series,
-                  series.range(of: "Central Files", options: .caseInsensitive) != nil
-                    || series.range(of: "Central Foreign Policy", options: .caseInsensitive) != nil
-            else { return nil }
+            if let series, ParsedSourceNote.seriesNamesCentralFiles(series),
+               let scanned = SourceNoteParser.decimalClassLocation(inCitation: note) {
+                return scanned
+            }
+        default:
+            return nil
+        }
+        guard let reading = centralFilesReading(parsed: parsed, note: note) else { return nil }
+        switch reading.evidence {
+        case .classKey:
             return SourceNoteParser.decimalClassLocation(inCitation: note)
+        case .designation:
+            guard reading.form == .subjectNumeric, let designation = reading.designation else { return nil }
+            return SourceNoteParser.classKey(ofDesignation: designation)
+                ?? SourceNoteParser.primarySubjectClassKey(ofDesignation: designation)
+        case .block:
+            return nil
+        }
+    }
+
+    /// What an Archival Neighbors list for a document source note is matched on, in a short
+    /// readable form, or `nil` when the neighbour query has no key for the note.
+    ///
+    /// The class the citation gives where `IndexingPipeline.relatedDocuments(for:)` matches on it
+    /// (`matchesOnClass(parsed:note:)`); else the parse's own key
+    /// (`ParsedSourceNote.archivalNeighborKey`). The pipeline's basis and both Source Explorer
+    /// views' "Matching archival source" line read this, so a note worded `RG 59, Records of the
+    /// Department of State, Central Files 1964–66, POL 15-1 IRAQ` is never described by the
+    /// record group's name while it is matched on its file (index version 69).
+    public static func archivalNeighborBasis(parsed: ParsedSourceNote, note: String) -> String? {
+        matchesOnClass(parsed: parsed, note: note) ?? parsed.archivalNeighborKey
+    }
+
+    /// The class key an Archival Neighbors list for this note is matched on, or `nil` when the
+    /// neighbour query matches the note some other way or not at all (index version 69).
+    ///
+    /// Two cases, the ones `IndexingPipeline.relatedDocuments(for:)` takes before any other for
+    /// their parse:
+    /// - a no-lot collection worded through the National Archives whose citation gives a class,
+    ///   decimal or Subject-Numeric;
+    /// - a citation worded through the Department, or parsed as the Central Foreign Policy File,
+    ///   that gives a Subject-Numeric class. A decimal number in that wording is matched on its
+    ///   stored file number and its filing period (`relatedByDecimal`), not here.
+    public static func matchesOnClass(parsed: ParsedSourceNote, note: String) -> String? {
+        switch parsed {
+        case .naraCollection(_, _, nil, _):
+            return centralFilesClass(parsed: parsed, note: note)
+        case .centralFiles, .cfpfFile:
+            guard let classKey = centralFilesClass(parsed: parsed, note: note),
+                  isSubjectNumericClass(classKey) else { return nil }
+            return classKey
         default:
             return nil
         }

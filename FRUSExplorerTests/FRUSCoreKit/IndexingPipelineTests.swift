@@ -3350,7 +3350,10 @@ struct VolumeSourceMatcherTests {
             #expect(neighbours.documents.map(\.documentId) == ["d2"], """
                 d1 found \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
                 """)
-            #expect(neighbours.basis == "POL 27 ARAB–ISR")
+            // The class the list was matched on, in the class key's own spelling, since index
+            // version 69. Until then a Department-led note was matched on its stored file number,
+            // and the basis was that number as printed, `POL 27 ARAB–ISR`.
+            #expect(neighbours.basis == "POL 27 ARAB-ISR")
         }
     }
 
@@ -3450,14 +3453,171 @@ struct VolumeSourceMatcherTests {
             #expect(rows["d9"]?.era == "structured")
             #expect(rows["d9"]?.repository == "National Archives")
 
-            // `decimal_class` is filled as before: the class key where the grammar reads one.
+            // `decimal_class`: the class key where the grammar reads one, and since index version
+            // 69 a primary-subject file's (d3) and a country element's in title case (d5). d4 names no
+            // category: its block alone says what it is.
             #expect(classes["d1"] == .some("POL 27 VIET S"))
             #expect(classes["d2"] == .some("POL 27 VIET S"))
-            #expect(classes["d3"] == .some(nil))
+            #expect(classes["d3"] == .some("AID (US) INDIA"))
             #expect(classes["d4"] == .some(nil))
+            #expect(classes["d5"] == .some("POL 27-14 ARAB-ISRAELI"))
             #expect(classes["d6"] == .some("399.731"))
             #expect(classes["d7"] == .some("611.61"))
         }
+    }
+
+    /// Index version 69 through the pipeline, every note a citation sentence of the corpus: what
+    /// a Subject-Numeric file stores as its class, and that one file has one list of neighbours
+    /// in either wording. d1 and d2 are one file with a subject number, d1 (frus1961-63v19/d250)
+    /// through the Department with a space after its dash and d2 through the National Archives;
+    /// d3 (frus1961-63v05/d323) and d4 are one primary-subject file; d5 (frus1964-68v34/d259) has the
+    /// record group's own name for a parsed series, and d6 cites its file the usual way; d7
+    /// (frus1961-63v03/d101) is a primary-subject file the parse stores no designator for, and d8 cites
+    /// it through the National Archives; d9 (frus1961-63v11/d301) is a decimal number through
+    /// the Department, which this change leaves alone, with d10 and d11 (frus1958-60v10p1/d163
+    /// and d49) the same number filed in its period and in another. d2, d4, d6 and d8 are
+    /// constructed, each from its pair's designation in the other wording.
+    @Test("A Subject-Numeric file stores its class and has one list of neighbours in either wording (index version 69)")
+    func subjectNumericFilesStoreTheirClass() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Central Files, POL 32-1 INDIA- PAK. Secret."),
+                ("d2", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 32–1 INDIA–PAK. Secret."),
+                ("d3", "Source: Department of State, Central Files, POL US- USSR. Top Secret; Eyes Only."),
+                ("d4", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL US–USSR. Secret."),
+                ("d5", "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1967–69, PET 3 OECD. Limited Official Use."),
+                ("d6", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, PET 3 OECD. Confidential."),
+                ("d7", "Source: Department of State, Central Files, AID (US) S VIET Secret; Priority; Limit Distribution."),
+                ("d8", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, AID (US) S VIET. Secret."),
+                ("d9", "Source: Department of State, Central Files, 611.61/3-2763. Secret; Operational Immediate."),
+                ("d10", "Source: Department of State, Central Files, 611.61/9–860. Secret; Priority."),
+                ("d11", "Source: Department of State, Central Files, 611.61/7–2358. Secret; Priority; Limit Distribution."),
+            ])
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let classes = try Self.decimalClasses(dbURL)
+            let stored = try Self.seriesNames(dbURL)
+            #expect(classes.count == 11, "read \(classes.count) document_sources rows")
+
+            // One class for one file, whatever the wording and the spacing.
+            #expect(classes["d1"] == .some("POL 32-1 INDIA-PAK"))
+            #expect(classes["d2"] == .some("POL 32-1 INDIA-PAK"))
+            #expect(classes["d3"] == .some("POL US-USSR"))
+            #expect(classes["d4"] == .some("POL US-USSR"))
+            #expect(classes["d5"] == .some("PET 3 OECD"))
+            #expect(classes["d6"] == .some("PET 3 OECD"))
+            #expect(classes["d7"] == .some("AID (US) S VIET"))
+            #expect(classes["d8"] == .some("AID (US) S VIET"))
+            #expect(classes["d9"] == .some("611.61"))
+
+            // The stored file of a Department-led note is the designator as printed, its dash
+            // kept; a designator the identifier rule refuses is still stored nowhere but the class.
+            #expect(stored["d1"] == .some("POL 32-1 INDIA- PAK"))
+            #expect(stored["d3"] == .some("POL US- USSR"))
+            #expect(stored["d7"] == .some(nil))
+
+            // One list for one file: each of a pair finds the other, and nothing else.
+            for (one, other, classKey) in [("d1", "d2", "POL 32-1 INDIA-PAK"), ("d3", "d4", "POL US-USSR"),
+                                           ("d5", "d6", "PET 3 OECD"), ("d7", "d8", "AID (US) S VIET")] {
+                for (anchor, expected) in [(one, other), (other, one)] {
+                    let neighbours = try await pipeline.archivalNeighbors(
+                        forVolumeId: "frus1969-76v01", documentId: anchor)
+                    #expect(neighbours.documents.map(\.documentId) == [expected],
+                            "\(anchor) found \(neighbours.documents.map(\.documentId)) on \(neighbours.basis ?? "nothing")")
+                    #expect(neighbours.basis == classKey, "\(anchor) was matched on \(neighbours.basis ?? "nothing")")
+                }
+            }
+            // A decimal number through the Department is matched as it was, on its stored number
+            // and its filing period: d10 is filed in 1960, as d9 is in 1963, and d11 in 1958. All
+            // three store one class, so a match on the class would list both.
+            #expect(classes["d10"] == .some("611.61"))
+            #expect(classes["d11"] == .some("611.61"))
+            let decimal = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d9")
+            #expect(decimal.documents.map(\.documentId) == ["d10"],
+                    "d9 found \(decimal.documents.map(\.documentId))")
+            #expect(decimal.basis == "611.61")
+        }
+    }
+
+    /// A file under the primary subject alone has no subject number, so its family is its head,
+    /// and the head is a prefix of every numbered file of the same subject as well (index version
+    /// 69). The notes are the corpus's own: frus1969-76v04/d81, frus1969-76ve07/d260,
+    /// frus1964-68v25/d239, frus1961-63v15/d208 (cut after its classification),
+    /// frus1964-68v15/d218, frus1964-68v09/d340 (cut the same way), d251 and frus1961-63v09/d265,
+    /// frus1964-68v13/d49 and frus1961-63v13/d180; d7 and d12 are constructed.
+    @Test("A head finds the files with no subject number under it and none with a number, and one such file finds itself (index version 69)")
+    func aPrimarySubjectFamilyLeavesOutTheNumberedFiles() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: National Archives, RG 59, Central Files 1970-73, AID (US). No classification marking."),
+                ("d2", "Source: National Archives, RG 59, Central Files 1970–73, AID (US) INDIA. Confidential; Nodis. Eyes only for Sisco and Hannah."),
+                ("d3", "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, AID (US) 15 INDIA. Confidential; Nodis. Prepared by Rusk."),
+                ("d4", "Source: Department of State, Central Files, POL GER. Secret; Eyes Only."),
+                ("d5", "Source: Department of State, Central Files, POL GER W–US. Confidential."),
+                ("d6", "Source: Department of State, Central Files, INCO–WOOL. Unclassified."),
+                ("d7", "Source: Department of State, Central Files, POL 27 VIET S. Secret."),
+                ("d8", "Source: Department of State, Central Files, INCO–WOOL 17 US–JAPAN. Confidential."),
+                ("d9", "Source: Department of State, Central Files, INCO-WOOL US. Confidential. Drafted by Ball."),
+                ("d10", "Source: Department of State, Central Files, DEF(MLF). Secret."),
+                ("d11", "Source: Department of State, Central Files, Def(MLF) 3. Top Secret."),
+                ("d12", "Source: Department of State, Central Files, FT US–USSR. Confidential."),
+            ])
+            let classes = try Self.decimalClasses(dir.appendingPathComponent("test.sqlite"))
+            #expect(classes.count == 12, "read \(classes.count) document_sources rows")
+            let expected: [String: String] = [
+                "d1": "AID (US)", "d2": "AID (US) INDIA", "d3": "AID (US) 15 INDIA", "d4": "POL GER",
+                "d5": "POL GER W-US", "d6": "INCO-WOOL", "d7": "POL 27 VIET S",
+                "d8": "INCO-WOOL 17 US-JAPAN", "d9": "INCO-WOOL US", "d10": "DEF (MLF)",
+                "d11": "DEF (MLF) 3", "d12": "FT US-USSR",
+            ]
+            for (id, classKey) in expected {
+                #expect(classes[id] == .some(classKey), "\(id) stored \(String(describing: classes[id]))")
+            }
+
+            // What each key's family holds. A head: its files with no number. A file: itself.
+            let families: [(key: String, members: Set<String>)] = [
+                ("POL", ["d4", "d5"]),                  // not d7, `POL 27 VIET S`
+                ("AID (US)", ["d1", "d2"]),             // not d3, `AID (US) 15 INDIA`
+                ("AID", []),                            // `AID (US)` is another head
+                ("INCO-WOOL", ["d6", "d9"]),            // not d8, `INCO-WOOL 17 US-JAPAN`
+                ("INCO", []),                           // a commodity is another head
+                ("DEF (MLF)", ["d10"]),                 // not d11, `DEF (MLF) 3`
+                ("FT", ["d12"]),                        // two letters are a whole category
+                ("POL GER", ["d4"]),                    // not d5: West Germany and the US is another file
+                ("AID (US) INDIA", ["d2"]),
+                ("POL 27", ["d7"]),                     // a numbered family, as it was
+                ("INCO-WOOL 17", ["d8"]),
+                ("DEF (MLF) 3", ["d11"]),
+            ]
+            var keys: [IndexingPipeline.ArchivalNeighborCountKey] = []
+            for family in families {
+                let found = try await pipeline.archivalNeighbors(
+                    forLotFile: nil, recordGroup: nil, series: nil, decimalClass: family.key)
+                #expect(Set(found.documents.map(\.documentId)) == family.members,
+                        "\(family.key) found \(found.documents.map(\.documentId).sorted())")
+                #expect(found.totalCount == family.members.count, "\(family.key) counted \(found.totalCount)")
+                keys.append(try #require(IndexingPipeline.neighborCountKey(
+                    forLotFile: nil, recordGroup: nil, series: nil, decimalClass: family.key)))
+            }
+            // The badge counts what the list holds: one clause builds both.
+            let counts = try await pipeline.archivalNeighborCounts(forKeys: keys)
+            for (family, key) in zip(families, keys) {
+                #expect(counts[key] == family.members.count, "\(family.key) badge \(String(describing: counts[key]))")
+            }
+
+            // From a document: a head alone reaches the files under it, and a file with an area
+            // reaches no other area's.
+            let fromHead = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(fromHead.documents.map(\.documentId) == ["d2"])
+            #expect(fromHead.basis == "AID (US)")
+            let fromFile = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d4")
+            #expect(fromFile.documents.isEmpty, "POL GER found \(fromFile.documents.map(\.documentId))")
+        }
+    }
+
+    /// Pull request D's re-parse: v69. 2,593 rows gain a class and 178 change its spelling.
+    @Test("The index version is at least 69, the Subject-Numeric class keys")
+    func indexVersionCoversSubjectNumericClassKeys() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 69)
     }
 
     /// #1543's re-parse: v65. About 9,800 rows change their stored form — the 9,443

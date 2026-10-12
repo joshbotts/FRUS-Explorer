@@ -25,6 +25,8 @@ import UIKit
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — index version 69: a file with no subject number folds to its category, a node apart
+///          from the category's numbered files
 @Suite("Archival analytics — network derivation")
 struct ArchivalNetworkBuilderTests {
 
@@ -642,6 +644,32 @@ struct ArchivalNetworkBuilderTests {
             The fold reported \(classes.first?.sharedDocumentCount ?? -1). It must clip once per \
             volume, after summing the leaves, or the number exceeds what either side supplied.
             """)
+    }
+
+    /// A file under the primary subject alone has no number, and since index version 69 it has a
+    /// class key (`POL US-USSR`). The lens folds such files to their category, a node of its own
+    /// beside the category's numbered files, so the two never share a node and a file with a
+    /// number is never counted under the bare category.
+    @Test("The subject-numeric lens folds a file with no number to its category, apart from the numbered files")
+    func aFileWithNoNumberFoldsToItsCategory() throws {
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", volumes: ["v1", "v2"])
+        let index = try usage(volumes: ["v1", "v2"], collections: [
+            ("f", [0, 1], [10, 10]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1], [900, 900]),
+        ], classes: [("POL US-USSR", [0, 1], [3, 3]), ("POL INDIA-PAK", [0], [2]),
+                     ("POL 27 VIET S", [0, 1], [8, 8]), ("AID (US) INDIA", [0, 1], [4, 1])])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, umbrella], usage: index, measure: .sharedDocuments,
+            minimumRelativeStrength: 0, expansion: .subjectNumeric)
+        let classes = graph.nodes.filter { $0.kind == .centralFileClass }
+        #expect(Set(classes.map(\.name)) == ["POL", "POL 27", "AID (US)"], "drew \(classes.map(\.name))")
+        // v1: 3 + 2 = 5 against the focus's 10; v2: 3 against 10. The numbered file's 8 a volume
+        // are not in it: with them the node would read 10 + 10.
+        #expect(classes.first { $0.name == "POL" }?.sharedDocumentCount == 8)
+        #expect(classes.first { $0.name == "POL 27" }?.sharedDocumentCount == 16)
+        #expect(classes.first { $0.name == "AID (US)" }?.sharedDocumentCount == 5)
     }
 
     @Test("An expansion that yields no class leaves the umbrella circle in place")

@@ -154,6 +154,11 @@ Rules that span entries:
   set to the shipped family's digest.
 - **A keyed NARA harvest spends a metered quota**: confirm the invocation first. A
   `CloudVectorsGenerator` run takes 50 to 60 minutes.
+- **`SubjectNumericLabelGenerator` does not reproduce its shipped table** (measured 2026-10-11 on
+  macOS 27.0.1, from the same handbooks, with no rule changed: its entry lists the differences, and
+  `US` comes out as an abbreviation's expansion). Do not ship a regenerated
+  `subject-numeric-labels.json` until every label that changed has been read. The shipped table has
+  wrong readings of its own, listed in the same entry; #1644 is the issue for both.
 
 **Before ANY archive — TestFlight, App Store, or the notarized DMG — cache the query encoder's
 debug symbols once:**

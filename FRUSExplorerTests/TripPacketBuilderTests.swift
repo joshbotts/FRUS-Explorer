@@ -41,6 +41,9 @@ import Foundation
 ///   2.5 — #1514, #1515: an INR/IL note's line names its folder with the volume, and a
 ///          designation ending in `U.S.` keeps the abbreviation's stop; review round 1: a Department
 ///          series' group is placed nowhere, and one naming no holder still at College Park
+///   2.6 — index version 69: a Subject-Numeric note whose class is now read keys on it and
+///          prints the class key, and the note that still keys on its text is one whose
+///          designation the grammar does not read
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -288,13 +291,19 @@ struct TripPacketBuilderTests {
                                              provenance: "Department of State"))
     }
 
-    /// The other two origins of a Subject-Numeric row key as v2 keyed them: a Department-led
-    /// note on its class, and a note the parser read as `.cfpfFile` on its class or, without one,
-    /// on its raw text.
+    /// The other two origins of a Subject-Numeric row: a Department-led note keys on its class,
+    /// and a note the parser read as `.cfpfFile` on its class or, without one, on its raw text.
+    ///
+    /// **Index version 69 reads more classes, so some of these keys moved.** d3's designation is
+    /// printed in title case, which the class grammar refused, and its key was its raw text; it
+    /// is its class now. That is one of 410 notes whose key went from `r|` to `class|`
+    /// (`ArchiveVisitTargetKeys` has the count, and what a stored row on the old key does). d4
+    /// is what still keys on its text: a designation the grammar does not read.
     @MainActor
-    @Test("Department-led and CFPF-origin Subject-Numeric rows key as before")
-    func otherSubjectNumericOriginsKeyAsBefore() async throws {
+    @Test("Department-led and CFPF-origin Subject-Numeric rows key on the class they give, and on their text when they give none")
+    func otherSubjectNumericOriginsKeyOnTheirClass() async throws {
         let cfpfRaw = "Source: National Archives, RG 59, Central Foreign Policy File, 1970–73, POL 27–14 Arab-Israeli. Confidential."
+        let unreadRaw = "Source: Department of State, Central Files, UN 6 ChiCom. Secret; Priority; Exdis."
         let stub = Stub(sources: [
             // frus1964-68v01/d5 — Department-led.
             record("v1", "d1", era: "subject_numeric", repository: "Department of State",
@@ -303,24 +312,36 @@ struct TripPacketBuilderTests {
             // frus1969-76ve11p1/d429 — `.cfpfFile` for its remark, with a class key.
             record("v1", "d2", era: "subject_numeric", repository: "Department of State", series: "CFPF",
                    rawText: "Source: National Archives, RG 59, Central Files, 1970–1973, POL 15–1 JAM. Confidential. (Ibid., Central Foreign Policy File, [no film number])"),
-            // frus1969-76ve09p2/d78 — `.cfpfFile`, a designation the class grammar refuses.
+            // frus1969-76ve09p2/d78 — `.cfpfFile`, a designation in title case.
             record("v1", "d3", era: "subject_numeric", repository: "Department of State", series: "CFPF",
                    rawText: cfpfRaw),
+            // frus1964-68v30/d170 — Department-led, neither capitals nor title case.
+            record("v1", "d4", era: "subject_numeric", repository: "Department of State",
+                   series: "UN 6 ChiCom", rg: "RG-59", rawText: unreadRaw),
         ])
         let model = await TripPacketBuilder.build(
-            documents: [("v1", "d1"), ("v1", "d2"), ("v1", "d3")], researchQuestion: nil, dataSource: stub)
+            documents: [("v1", "d1"), ("v1", "d2"), ("v1", "d3"), ("v1", "d4")], researchQuestion: nil,
+            dataSource: stub)
         let byKey = Dictionary(uniqueKeysWithValues: model.targets.map { ($0.key, $0) })
-        #expect(Set(byKey.keys) == ["class|POL 27 VIET S", "class|POL 15-1 JAM", "r|\(cfpfRaw)"],
+        #expect(Set(byKey.keys) == ["class|POL 27 VIET S", "class|POL 15-1 JAM",
+                                    "class|POL 27-14 ARAB-ISRAELI", "r|\(unreadRaw)"],
                 "got \(byKey.keys.sorted())")
         #expect(byKey["class|POL 27 VIET S"]?.form == .decimalClass)
         #expect(byKey["class|POL 27 VIET S"]?.label == "Subject-Numeric File POL 27 VIET S")
         #expect(byKey["class|POL 15-1 JAM"]?.form == .decimalClass)
-        #expect(byKey["r|\(cfpfRaw)"]?.form == .raw)
+        #expect(byKey["class|POL 27-14 ARAB-ISRAELI"]?.form == .decimalClass)
+        #expect(byKey["class|POL 27-14 ARAB-ISRAELI"]?.label == "Subject-Numeric File POL 27-14 ARAB-ISRAELI")
+        #expect(byKey["r|\(unreadRaw)"]?.form == .raw)
         #expect(model.targets.allSatisfy { $0.category == .subjectNumericFile })
         // Each row names its file: the stored identifier, the class key, the read designation.
         #expect(byKey["class|POL 27 VIET S"]?.drawnFrom.first?.fileDesignation == "POL 27 VIET S")
         #expect(byKey["class|POL 15-1 JAM"]?.drawnFrom.first?.fileDesignation == "POL 15-1 JAM")
-        #expect(byKey["r|\(cfpfRaw)"]?.drawnFrom.first?.fileDesignation == "POL 27–14 Arab-Israeli")
+        #expect(byKey["class|POL 27-14 ARAB-ISRAELI"]?.drawnFrom.first?.fileDesignation == "POL 27-14 ARAB-ISRAELI",
+                "a row keyed on its class prints the class key; through version 68 this one printed “POL 27–14 Arab-Israeli”")
+        #expect(byKey["r|\(unreadRaw)"]?.drawnFrom.first?.fileDesignation == "UN 6 ChiCom")
+        // The key the builds through version 68 minted for d3, which a stored row may still
+        // carry, is not one the builder mints any more.
+        #expect(byKey["r|\(cfpfRaw)"] == nil)
     }
 
     /// A decimal number cited through the National Archives is stored `decimal` since #1543. It

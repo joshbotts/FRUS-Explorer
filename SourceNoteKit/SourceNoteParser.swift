@@ -249,6 +249,31 @@ public enum ParsedSourceNote: Sendable, Equatable {
         "TP", "TR", "TRV", "TV", "V", "VEH",
     ]
 
+    /// The words the two handbooks' country and area codes are made of (`subject-numeric-labels.json`,
+    /// each schedule's `areas`: 316 codes, 155 words, none longer than six letters), united.
+    ///
+    /// A country element printed in title case (`POL 27 S Viet`, `POL 1 Eur-US`) is the code in
+    /// another case, and these are what tell it from prose (index version 69). A copy, as
+    /// `subjectNumericCategories` is and for the same reason; `SubjectNumericCategoryPinTests`
+    /// fails when the artifact's areas and this list part.
+    public static let subjectNumericAreaWords: Set<String> = [
+        "ADEN", "AF", "AFG", "AFR", "AFRICA", "ALB", "ALG", "AM", "AMER", "ANG", "ANT",
+        "ARA", "ARAB", "ARG", "ASIA", "AUS", "BAH", "BAS", "BEL", "BOL", "BONIN", "BR",
+        "BRAZ", "BUL", "BURMA", "CAMB", "CAN", "CENTO", "CHICOM", "CHILE", "CHINAT", "COAS",
+        "COL", "CONGO", "COSTA", "CUBA", "CYP", "CZ", "CZECH", "D", "DOM", "E", "EA",
+        "EAST", "ECE", "ECOSOC", "EFTA", "ETH", "EUR", "FAA", "FAO", "FIN", "FR", "GA",
+        "GATT", "GER", "GHANA", "GIB", "GR", "GREECE", "GU", "GUAM", "GUAT", "GUIN", "HAI",
+        "HAITI", "HK", "HOND", "HUNG", "IA", "ICE", "IND", "INDIA", "INDON", "IRAN", "IRAQ",
+        "IS", "ISR", "ISRAEL", "IT", "JAM", "JAPAN", "JCS", "JORDAN", "KOR", "KUW", "LA",
+        "LAOS", "LAT", "LEB", "LIBYA", "LUX", "MALTA", "MEX", "MONG", "MOR", "MOZ", "N",
+        "NATO", "NEA", "NEAR", "NEARE", "NEW", "NIC", "NR", "OAU", "OECD", "OMAN", "OPEC",
+        "PAK", "PAL", "PAN", "PAR", "PERU", "PHIL", "POL", "PORT", "REP", "RHOD", "RICA",
+        "RUM", "RWANDA", "RYU", "S", "SAUD", "SC", "SE", "SEATO", "SOM", "SOMALI", "SP",
+        "SUDAN", "SW", "SWAZ", "SWE", "SYR", "THAI", "THE", "TR", "TUN", "TUR", "U", "UAR",
+        "UK", "UN", "UNRWA", "UR", "US", "USSR", "VEN", "VIET", "VIETN", "W", "YEMEN",
+        "YUGO",
+    ]
+
     /// A Subject-Numeric designator with no number: a handbook category, an optional parenthesised
     /// agency, then a country or area element in capitals (`POL US–USSR`, `POL CHICOM -US`,
     /// `INCO -DRUGS TUR`, `POL IRAN-U.S.`). Nothing lower-case may follow, which is what keeps a
@@ -260,7 +285,7 @@ public enum ParsedSourceNote: Sendable, Equatable {
     /// and a title-case category (`Pol Port-US`) — 126 central-file notes in 11 volumes, measured
     /// in #1514's review round 2.
     private static let digitlessSubjectNumericRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^([A-Z]{1,5})(?:\s?\([A-Z0-9]{1,4}\))?\s+[-–—]?\s?[A-Z][A-Z .–—\-/&]*$"#,
+        pattern: #"^([A-Z]{1,5})(?:\s?\([A-Z0-9]{1,4}\))?(?:\s+[-–—]?\s?|[-–—]\s+)[A-Z][A-Z .–—\-/&]*$"#,
         options: [])
 
     /// Whether `candidate` is a Subject-Numeric designator that opens with a handbook category
@@ -534,6 +559,14 @@ public struct ArchiveCitation: Sendable {
 ///          narrative identifier stores a Subject-Numeric designator with no number, respells a
 ///          title-case or hyphenated lead, cuts a classification run on without a stop, keeps an
 ///          initials stop, and reads past a citation that ends on a bare Central Files label
+///   1.17 — index version 69: `decimalClassKey(_:)` also reads a Subject-Numeric designation the
+///          strict shape refuses for its spelling alone (`SubjectNumericDesignation`: a space
+///          beside a dash, a long country word, a post in parentheses, stops, an ampersand, a
+///          country element in title case), and reads a name after a subject number only in a
+///          document's own citation; `classKey(ofDesignation:)` and
+///          `primarySubjectClassKey(ofDesignation:)`, the class of a file under the primary
+///          subject alone; the suffix dash goes only after a number, so the dash between two
+///          countries stays; the digitless identifier takes a dash after its category
 public struct SourceNoteParser {
 
     public init() {}
@@ -750,6 +783,18 @@ public struct SourceNoteParser {
     /// - Returns: The canonical class key, or `nil` when the candidate is not a
     ///   class-leaf shape.
     public static func decimalClassKey(_ candidate: String) -> String? {
+        decimalClassKey(candidate, readingNamedElements: false)
+    }
+
+    /// `decimalClassKey(_:)`, with the one reading only a document's own citation may take.
+    ///
+    /// - Parameters:
+    ///   - candidate: One candidate string.
+    ///   - readingNamedElements: Whether a subject number may be followed by one or two words in
+    ///     title case that the handbooks' area codes do not hold (`POL 28 Berlin`, `POL 7 US
+    ///     Kennedy`). The scan of a citation sentence passes `true`; a front-matter item passes
+    ///     `false`, and `SubjectNumericDesignation` says what was measured there.
+    static func decimalClassKey(_ candidate: String, readingNamedElements: Bool) -> String? {
         var s = candidate
             .replacingOccurrences(of: "–", with: "-")
             .replacingOccurrences(of: "—", with: "-")
@@ -758,12 +803,186 @@ public struct SourceNoteParser {
         while s.hasSuffix(".") { s = String(s.dropLast()) }
         s = s.trimmingCharacters(in: .whitespaces)
         guard s.count >= 3, s.count <= 60 else { return nil }
+        let asPrinted = s
         s = unifyingSpacedClassSuffix(s)
         let ns = NSRange(s.startIndex..., in: s)
         let isSubjectNumeric = subjectNumericClassRegex?.firstMatch(in: s, range: ns) != nil
         let isDottedDecimal = dottedDecimalClassRegex?.firstMatch(in: s, range: ns) != nil
-        guard isSubjectNumeric || isDottedDecimal else { return nil }
-        return s
+        if isSubjectNumeric || isDottedDecimal { return s }
+        // A Subject-Numeric designation the strict shape refuses for its spelling alone (index
+        // version 69). Read from the candidate as printed: `unifyingSpacedClassSuffix` has by
+        // now removed a dash that a space follows, and `POL 1 US - USSR` needs it.
+        return SubjectNumericDesignation(asPrinted, readingNamedElements: readingNamedElements)?
+            .numberedClassKey
+    }
+
+    /// The class key of a designation with no subject number (`POL US-USSR`, `AID (US) S VIET`,
+    /// `INCO-GRAINS GATT`), or `nil` (index version 69).
+    ///
+    /// An office may file under the primary subject alone and arrange the papers by country: the
+    /// 1963 handbook's Instruction B for `POL` gives `POLITICAL AFFAIRS & REL, France` and, for
+    /// relations between countries, `India-Pakistan`. This code calls such a file a
+    /// primary-subject file. 1,613 of the corpus's 9,443 Subject-Numeric citations print one, and
+    /// until version 69 none of them stored a class. Only `CollectionKeying.centralFilesClass`
+    /// calls this, with a designation the form rule read behind a central-files anchor: the
+    /// shape alone is a category and some capitals, which `decimalClassKey(_:)` must not accept
+    /// from a front-matter item or a footnote.
+    ///
+    /// - Parameter designation: `CentralFilesReading.designation`.
+    /// - Returns: The canonical key, which has no subject number after its head.
+    public static func primarySubjectClassKey(ofDesignation designation: String) -> String? {
+        var candidate = designation
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+        if let slash = candidate.firstIndex(of: "/") { candidate = String(candidate[..<slash]) }
+        candidate = candidate.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        while candidate.hasSuffix(".") { candidate = String(candidate.dropLast()) }
+        guard candidate.count >= 3, candidate.count <= 60 else { return nil }
+        return SubjectNumericDesignation(candidate, readingNamedElements: true)?.primarySubjectClassKey
+    }
+
+    /// A Subject-Numeric file designation read loosely, part by part, so that one the strict class
+    /// shape refuses for its spelling can be respelled as the shape wants it (index version 69).
+    ///
+    /// Measured over a full index at version 68 (the 553 catalogue volumes at corpus `99d851c79`),
+    /// 708 document notes print a designation with a subject number that
+    /// `subjectNumericClassRegex` refuses, each for one or more of: a space beside a dash
+    /// (`DEF 19-3 US- S VIET`, 218 notes), a country token longer than six letters (`POL 3
+    /// MALAYSIA`, 227), a post in parentheses (`DEF 18-3 USSR (MO)`, 72), a stop inside the
+    /// element (`POL 17 COL-U.S.`, 21), an ampersand (`POL 19 RHOD & NYAS`, 6), a dash joining the
+    /// lead to its number (`E-8 INDON`, 3), or a country element not in capitals (237), which this
+    /// type leaves refused.
+    ///
+    /// ## What keeps prose out
+    /// The strict shape admits any one to five capitals as a lead and holds the rest to short
+    /// capital tokens. This reading is looser about the rest, so it is stricter about the lead:
+    /// a handbook category (`ParsedSourceNote.subjectNumericCategories`) or an organization lead
+    /// (`CollectionKeying.subjectNumericOrganizationLeads`), in capitals or, for three or four
+    /// letters, in title case. Every element token must be capitals or digits.
+    struct SubjectNumericDesignation {
+        /// The category or organization lead, in capitals.
+        let lead: String
+        /// A commodity joined to its category by a dash (`GRAINS` of `INCO-GRAINS`), or `nil`.
+        let commodity: String?
+        /// The agency in parentheses after the lead (`US` of `AID (US)`), without stops, or `nil`.
+        let agency: String?
+        /// The subject number (`27-14`), or `nil` for a primary-subject file.
+        let number: String?
+        /// The country or area element, dashes tight and stops removed (`US-S VIET`), or `""`.
+        let element: String
+        /// A post in parentheses at the end (`MO` of `USSR (MO)`), or `nil`.
+        let post: String?
+
+        private static let headRegex: NSRegularExpression? = try? NSRegularExpression(
+            pattern: #"^(?!(?:RG|FRC|NYFRC)[\s\d-]|(?:NSDM|NSSM|NSAM|NSC|NIE|SNIE|PL)\b|PRC\s?\d{1,3}\s?A\s?\d)([A-Za-z]{1,5})(?:-([A-Z]{2,8})(?=\s|$))?\s?(?:\(([A-Za-z0-9. ]{1,7})\))?(?:\s?-?\s?(\d{1,3}(?:-\d{1,3})*)(?![\d.]))?"#)
+
+        private static let postRegex: NSRegularExpression? = try? NSRegularExpression(
+            pattern: #"\s?\(([A-Z]{2,3})\)$"#)
+
+        /// Reads `candidate`, already spelled with ASCII hyphens and single spaces, or returns
+        /// `nil` when it does not open with a known lead or its element is not capitals.
+        ///
+        /// - Parameters:
+        ///   - candidate: The designation as printed.
+        ///   - readingNamedElements: Whether one or two words in title case may follow a subject
+        ///     number when the handbooks' area codes do not hold them. Only a document's own
+        ///     citation is read so: its 23 such words over 142 notes are all names (`Berlin`,
+        ///     `Biafra-Nigeria`, `Saudi Arabia`, `Kennedy`, `Warsaw Pact`). A front-matter item
+        ///     is not, because a post's files are listed there by subject title, and the rule
+        ///     took the title for the country: frus1969-76ve08 prints `DEF 18–4 Defense Affairs,
+        ///     Arms Control and Disarmament` and `SOC 14 Human Rights` under two embassies' lots.
+        init?(_ candidate: String, readingNamedElements: Bool) {
+            guard let regex = Self.headRegex,
+                  let match = regex.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)),
+                  let leadRange = Range(match.range(at: 1), in: candidate),
+                  let whole = Range(match.range, in: candidate) else { return nil }
+            let printedLead = String(candidate[leadRange])
+            let upperLead = printedLead.uppercased()
+            let isTitleCase = (3...4).contains(printedLead.count) && printedLead.first?.isUppercase == true
+                && printedLead.dropFirst().allSatisfy(\.isLowercase)
+            guard printedLead == upperLead || isTitleCase,
+                  ParsedSourceNote.subjectNumericCategories.contains(upperLead)
+                    || CollectionKeying.subjectNumericOrganizationLeads.contains(upperLead)
+            else { return nil }
+            lead = upperLead
+            commodity = Range(match.range(at: 2), in: candidate).map { String(candidate[$0]) }
+            if let agencyRange = Range(match.range(at: 3), in: candidate) {
+                let cleaned = candidate[agencyRange].uppercased().filter { $0 != "." && $0 != " " }
+                guard (1...4).contains(cleaned.count) else { return nil }
+                agency = cleaned
+            } else {
+                agency = nil
+            }
+            number = Range(match.range(at: 4), in: candidate).map { String(candidate[$0]) }
+
+            var rest = candidate[whole.upperBound...].trimmingCharacters(in: .whitespaces)
+            // A dash that only joins the number to its element (`POL 27-VIET`).
+            if rest.hasPrefix("-") { rest = String(rest.dropFirst()).trimmingCharacters(in: .whitespaces) }
+            var trailingPost: String?
+            if let postRegex = Self.postRegex,
+               let postMatch = postRegex.firstMatch(in: rest, range: NSRange(rest.startIndex..., in: rest)),
+               let postWhole = Range(postMatch.range, in: rest),
+               let postName = Range(postMatch.range(at: 1), in: rest) {
+                trailingPost = String(rest[postName])
+                rest = String(rest[..<postWhole.lowerBound])
+            }
+            post = trailingPost
+            // A stop before a new word is a space (`E.Eur`) and one inside initials goes (`U.S.`
+            // is `US`); then dashes tight and spaces single.
+            rest = rest.replacingOccurrences(of: #"(?<=[A-Z])\.(?=[A-Z][a-z])"#, with: " ", options: .regularExpression)
+                .replacingOccurrences(of: #"(?<=[A-Za-z])\."#, with: "", options: .regularExpression)
+                .replacingOccurrences(of: #"\s*-\s*"#, with: "-", options: .regularExpression)
+                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            let tokens = rest.split(whereSeparator: { $0 == " " || $0 == "-" })
+            guard tokens.count <= 6, !rest.hasPrefix("-"), !rest.hasSuffix("-") else { return nil }
+            func inCapitals(_ token: Substring) -> Bool {
+                token == "&" || ((1...12).contains(token.count)
+                    && token.allSatisfy { ($0.isASCII && $0.isUppercase) || $0.isNumber })
+            }
+            func inTitleCase(_ token: Substring) -> Bool {
+                (2...12).contains(token.count) && token.allSatisfy { $0.isASCII && $0.isLetter }
+                    && token.first?.isUppercase == true && token.dropFirst().allSatisfy(\.isLowercase)
+            }
+            if tokens.allSatisfy(inCapitals) {
+                element = rest
+            } else {
+                // A country element not in capitals. Each word is capitals or title case, and
+                // either every title-case word is one of the handbook's own area codes (`POL 27 S
+                // Viet`, `POL Laos`), or, in a document's own citation, a subject number stands
+                // before one or two words (`POL 28 Berlin`, `POL 27 Biafra-Nigeria`). Anything
+                // longer or lower is prose.
+                guard tokens.allSatisfy({ inCapitals($0) || inTitleCase($0) }) else { return nil }
+                let wordsAreAreaCodes = tokens.allSatisfy {
+                    inCapitals($0) || ParsedSourceNote.subjectNumericAreaWords.contains($0.uppercased())
+                }
+                guard wordsAreAreaCodes
+                        || (readingNamedElements && number != nil && tokens.count <= 2) else { return nil }
+                element = rest.uppercased()
+            }
+        }
+
+        /// The lead with its commodity and agency: `POL`, `INCO-GRAINS`, `AID (US)`.
+        private var head: String {
+            lead + (commodity.map { "-" + $0 } ?? "") + (agency.map { " (" + $0 + ")" } ?? "")
+        }
+
+        private var tail: String {
+            (element.isEmpty ? "" : " " + element) + (post.map { " (" + $0 + ")" } ?? "")
+        }
+
+        /// The class key of a designation with a subject number, spelled as the strict shape
+        /// spells one (`DEF 19-3 US-S VIET`, `DEF 18-3 USSR (MO)`), or `nil` for a primary-subject file.
+        var numberedClassKey: String? {
+            guard let number else { return nil }
+            return head + " " + number + tail
+        }
+
+        /// The class key of a primary-subject file (`POL US-USSR`, `AID (US) S VIET`, `DEF (MLF)`), or `nil`
+        /// for a designation with a number or one that names nothing after its lead.
+        var primarySubjectClassKey: String? {
+            guard number == nil, !element.isEmpty || agency != nil || commodity != nil else { return nil }
+            return head + tail
+        }
     }
 
     /// Removes the two spacings FRUS uses inside a class that mean nothing (#353 / N-1b).
@@ -801,8 +1020,16 @@ public struct SourceNoteParser {
             out += ns.substring(from: cursor)
             s = out
         }
+        // The suffix dash is a NUMBER's own (index version 69): the first dash of the candidate,
+        // when a space follows it and the word it ends begins with a digit (`751G.5– MSP`, `123–
+        // Cumming`). Until then the first dash went whatever stood before it, and a
+        // Subject-Numeric designation printed `POL 27 INDIA – PAK` lost the dash between its two
+        // countries: 178 notes stored such a class (`POL 27 INDIA PAK`) and 77 such a file number,
+        // 228 notes in all, beside the thousands that store the file with its dash.
         if let dash = s.firstIndex(where: { $0 == "-" || $0 == "–" || $0 == "—" }),
-           s.index(after: dash) < s.endIndex, s[s.index(after: dash)] == " " {
+           s.index(after: dash) < s.endIndex, s[s.index(after: dash)] == " ",
+           let word = s[..<dash].split(whereSeparator: { $0 == " " || $0 == "," }).last,
+           word.first?.isNumber == true {
             s.remove(at: dash)
         }
         return s
@@ -915,9 +1142,10 @@ public struct SourceNoteParser {
             // own; now that dotless classes are admitted, the label has to.
             let wasLabelled = stripped != candidate
             candidate = collapsingClassPunctuation(stripped)
-            if let key = decimalClassKey(candidate) { return key }
+            if let key = decimalClassKey(candidate, readingNamedElements: true) { return key }
             if let tail = candidate.range(of: ". "),
-               let key = decimalClassKey(String(candidate[..<tail.lowerBound])) {
+               let key = decimalClassKey(String(candidate[..<tail.lowerBound]),
+                                         readingNamedElements: true) {
                 return key
             }
             // A class followed by prose inside one segment: "740.0011 European War 1939/12345"
@@ -927,6 +1155,20 @@ public struct SourceNoteParser {
             if !wasLabelled, let key = bareClassCandidate(candidate) { return key }
         }
         return nil
+    }
+
+    /// The class key of a file designation the form rule found (`POL 26-1 S VIET`, `POL 7 US/
+    /// Kennedy`), or `nil` when the class grammar refuses it.
+    ///
+    /// The designation is cut at its item slash and spelled as the scan spells a segment, then
+    /// offered to `decimalClassKey(_:)` whole.
+    ///
+    /// - Parameter designation: `CentralFilesReading.designation`.
+    /// - Returns: The canonical class key.
+    public static func classKey(ofDesignation designation: String) -> String? {
+        var candidate = designation
+        if let slash = candidate.firstIndex(of: "/") { candidate = String(candidate[..<slash]) }
+        return decimalClassKey(collapsingClassPunctuation(candidate), readingNamedElements: true)
     }
 
     /// A dotless three-digit class, accepted only where a class belongs.
@@ -3183,11 +3425,15 @@ public struct SourceNoteParser {
                 || Self.matches(Self.volumeNumberRegex, trimmed)
                 || trimmed.first?.isLowercase == true { return nil }
             trimmed = Self.withoutClosingStop(trimmed)
-            // A designator with no number keeps one space between its elements: the class
-            // collapse above takes a dash off when a space follows it (`POL CHICOM - CHINAT` →
-            // `POL CHICOM  CHINAT`), which a packet would print with the gap.
+            // A designator with no number is stored as printed, with one space between its
+            // elements (`POL CHICOM - CHINAT`). A dash that only joins the category to what
+            // follows comes off, as `normalizingSubjectNumericLead` takes one off before a number
+            // (`PER- LODGE` is `PER LODGE`). Until index version 69 the class collapse above took
+            // the first spaced dash off any designator, the one between two countries too.
             if ParsedSourceNote.isDigitlessSubjectNumeric(trimmed) {
-                return trimmed.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+                return trimmed
+                    .replacingOccurrences(of: #"^([A-Z]{1,5})[-–—]\s+"#, with: "$1 ", options: .regularExpression)
+                    .split(whereSeparator: \.isWhitespace).joined(separator: " ")
             }
             return ParsedSourceNote.normalizingSubjectNumericLead(
                 Self.joiningTitleYears(trimmed, following: segments[(index + 1)...]))
