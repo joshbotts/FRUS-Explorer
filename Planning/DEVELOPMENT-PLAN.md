@@ -37839,7 +37839,7 @@ The owner merged #1651 and asked for the letter-level damage it left to be curat
 
 ## Session 2026-10-12 — With no lemmatiser, Collocates, Distinctive sizing and Related Documents' shared words compare printed forms with a second corpus reference, and say so (#1608)
 
-Pull request 3 of the plan of record's queue, decision 8. It went ahead of pull request 2 (the small fixes, not yet opened) on the owner's word of 2026-10-12, since it depends on neither 1 nor 2; pull request 1 had merged (#1651, #1652). No index version and no CloudKit schema change.
+Pull request #1653, the third of the plan of record's queue, decision 8. It went ahead of pull request 2 (the small fixes, not yet opened) on the owner's word of 2026-10-12, since it depends on neither 1 nor 2; pull request 1 had merged (#1651, #1652). No index version and no CloudKit schema change.
 
 **The ground**
 - On build 49, in the foreground, under iOS 27.0.1, the owner's iPhone logged `Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false classes=true names=true`. iOS never answered the request for the English lemma data, and no change to the app's check can fix that.
