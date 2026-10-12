@@ -42,6 +42,9 @@ struct GenerationError: Error, CustomStringConvertible {
 ///          are curated, and a label holding its unread mark stops the run; the artifact
 ///          carries the abbreviations the corpus cites, counts its areas, and names the usage
 ///          index it was measured against; `REVIEW_OUTPUT` writes each label's place on the scan
+///   1.3 — the follow-up to #1644: the letter-level damage in the labels the corpus cites is
+///          curated, each label read on the scan; the 1964–1973 list of administrative
+///          subjects gains its first entry and three of its unread last page
 public enum SubjectNumericLabelRunner {
 
     // MARK: Sources
@@ -364,6 +367,17 @@ public enum SubjectNumericLabelRunner {
             "16-5": "Public Inquiries & Opinion",
             "16-6": "Nongovernmental Liaison",
         ],
+        "1964-1973": [
+            // The list's own first entry, whose `1` the capture did not read (as it did not
+            // read the `1` of `DEF 1`), and three entries of its last page. That page's corner
+            // mark reads `10` with its `(p. 5)` gone, so the list was taken to end a page
+            // early and has nothing from `16-3` on. These are the four a document cites; the
+            // rest of the page (17 to 31) is still unread.
+            "1": "ADMINISTRATION (GENERAL)",
+            "17-1": "Headquarters Site. Building.",
+            "22-1": "U.S. Delegation. Representatives.",
+            "22-2": "Foreign Country Delegations. Representatives.",
+        ],
     ]
 
     /// The capture's mark for a character it could not read.
@@ -406,6 +420,36 @@ public enum SubjectNumericLabelRunner {
             // *ELECTIONS government and foreign interference. Sub*, over the 85 documents that
             // cite it.
             "POL 14": "ELECTIONS",
+
+            // LETTER-LEVEL DAMAGE IN LABELS THE CORPUS CITES (the follow-up to #1644). Every
+            // label a document cites was read on the scan, row by row, under both schedules:
+            // 279 rows of this handbook and 252 of the other. These are the ones that differed.
+            // A word the capture broke in two, three or four.
+            "AGR 3": "ORGANIZATIONS & CONFERENCES",
+            "AV 13": "NAVIGATION & SAFETY",
+            "DEF 7": "VISITS. MISSIONS.",
+            "DEF 12-1": "Research & Development. Testing.",
+            "DEF 15-4": "Base Agreements",
+            "DEF 19-3": "Equipment & Supplies (Mil. Assistance)",
+            "DEF 19-4": "Agreements (Mil. Assistance)",
+            "FT 13-2": "Tariffs",
+            "ORG 1": "GENERAL POLICY. PLANS. COORDINATION.",
+            "POL 13-3": "Ethnic & National Minorities",
+            "POL 17": "DIPLOMATIC & CONSULAR REPRESENTATION",
+            "POL 33-3": "International Canals",
+            "SOC 14-1": "Discrimination. Protection of Minorities.",
+            "SP 12": "SATELLITES",
+            // A wrong letter, a speck read as a mark, or a space the page does not have.
+            "AID 3": "ORGANIZATIONS & CONFERENCES",
+            "INT 8": "DISSEMINATION OF INTELLIGENCE",
+            "PET 15": "INDUSTRIAL ORGANIZATION & CONTROL",
+            "PET 18-1": "Pipelines & Facilities",
+            "POL 2-4": "Politico-Military Reports",
+            "SP 1-1": "International Cooperation",
+            "STR 12-3": "Shipments of Non-U.S. Origin Goods",
+            // A label that wraps, short of its second line. It read as whole English, so only
+            // the page showed it: *NEUTRALISM.*
+            "POL 8": "NEUTRALISM. NON-ALIGNMENT.",
         ],
         "1964-1973": [
             // Words the capture set in its hidden font, a character short.
@@ -467,6 +511,40 @@ public enum SubjectNumericLabelRunner {
             "SCI 11-1": "Area Research Programs",
             // A word the capture broke in three.
             "DEF 17": "MILITARY TRANSPORTATION",
+
+            // LETTER-LEVEL DAMAGE IN LABELS THE CORPUS CITES (the follow-up to #1644), each read
+            // on the scan with every other label a document cites under this schedule.
+            // The face this edition sets its headings in gives the capture `l` for `L`, `i` for
+            // `I`, `H` and `M` for `N`, and `o` for `a`: *Procurement. Sole.* stood over 226
+            // documents, the most cited defense file, and *El ECTIOMS* over 85.
+            "AV 12-1": "Production. Repair.",
+            "CUL 8-1": "Policy. Plans. Guidelines.",
+            "CUL 11": "LIBRARIES & CENTERS",
+            "DEF 12-5": "Procurement. Sale.",
+            "FN 2": "GENERAL REPORTS & STATISTICS",
+            "FN 17": "MONEY. CURRENCY.",
+            "POL 3": "ORGANIZATIONS & ALIGNMENTS",
+            "POL 12": "POLITICAL PARTIES",
+            "POL 12-1": "Policy. Plans. Ideology.",
+            "POL 12-6": "Membership. Leaders.",
+            "POL 13": "NON-PARTY BLOCS",
+            "POL 13-1": "Labor Organizations",
+            "POL 14": "ELECTIONS",
+            "POL 15-2": "Legislature",
+            "POL 23": "INTERNAL SECURITY. COUNTER-INSURGENCY.",
+            "POL 23-5": "Laws & Regulations",
+            "POL 30": "DEFECTORS & EXPELLEES",
+            "TEL 9": "TELEVISION",
+            // A word the capture broke in two or more, some with a wrong letter besides.
+            "AV 12-2": "Sale. Purchase. Transfer.",
+            "AV 12-7": "Research & Development",
+            "FN 1-1": "Financial Stabilization",
+            "FT 4-4": "Most-Favored-Nation Treatment",
+            "ORG 1-1": "Country Team",
+            "POL 15-3": "Judiciary",
+            "SCI 3": "ORGANIZATIONS & CONFERENCES",
+            "SP 10": "SPACE FLIGHT & EXPLORATION",
+            "STR 5": "EXPORT CONTROL REGULATIONS & PROCEDURES",
 
             // THE OUTLINES THIS SCHEDULE DID NOT HAVE BEFORE #1644, read whole against the page.
             // `AID` (pp. 2–3 of its outline; the scan holds no first page, so 1 to 6 are unread).
