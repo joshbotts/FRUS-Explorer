@@ -69,7 +69,7 @@ import NaturalLanguage
 ///   1.2 — #1539 review round 1: the walk follows the tagger's schemes, as `WordCloudTokenizer`'s
 ///          does, so a tagger the gate built without `.lemma` still counts every word
 ///   1.3 — #1608: ``wordForm``, and ``accumulate(from:into:printedInto:)``, which counts the
-///          dictionary and the printed form of every word in one pass
+///          dictionary and the printed form of every word in one pass; ``readsLexicalClass(_:)``
 public struct WordCloudMultiLensTokenizer: Sendable {
 
     /// One lens and the filter it applies, resolved once at init.
@@ -138,6 +138,18 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         self.markings = markings
         self.requestsLexicalClass = self.channels.contains { $0.lexicalTag != nil }
         self.wordForm = wordForm
+    }
+
+    /// Whether `lens` keeps words by their part of speech, so a tokenizer that counts it asks the
+    /// tagger for the lexical-class scheme (#1608).
+    ///
+    /// Public for `CloudVectorsGenerator`'s verification walk, which has to build both taggers a
+    /// device builds when it counts as printed: one that holds the lexical classes, for Topics,
+    /// Actions and Descriptors, and one that does not, for All terms, Concepts and Sentiment. The
+    /// list is not repeated there, because a lens added here would be missing from it silently.
+    /// - Parameter lens: A word lens. An entity lens reads no lexical class and answers `false`.
+    public static func readsLexicalClass(_ lens: WordCloudLens) -> Bool {
+        lexicalTag(for: lens) != nil
     }
 
     /// The `NaturalLanguage` lexical-class tag a part-of-speech lens filters on.

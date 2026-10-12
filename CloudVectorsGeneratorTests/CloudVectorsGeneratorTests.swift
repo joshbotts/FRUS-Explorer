@@ -670,6 +670,77 @@ struct PrintedKeynessBaselineTests {
         #expect(description.contains("refusing to write"))
     }
 
+    // MARK: - The two verification walks
+
+    /// Inflected verbs, plurals, adjectives and lexicon words, so both forms differ and every lens
+    /// of both walks counts something.
+    private static let verificationProse = """
+        The delegations negotiated a treaty in Geneva, and the ministers were negotiating its \
+        terms while the Secretary considered several dangerous proposals concerning sovereignty \
+        and security. The crisis deepened; hostility persisted, though peace and a lasting \
+        agreement remained possible. Treaties signed earlier had established the framework, and \
+        the ambassadors urged restraint before the governments accepted the settlement.
+        """
+
+    private static let verificationStopwords: Set<String> =
+        ["the", "and", "its", "while", "though", "had", "were", "before", "several"]
+
+    private static let verificationLexicons = WordCloudLexiconSet(payload: .init(
+        concepts: ["sovereignty", "security", "restraint", "framework", "settlement"],
+        sentimentPositive: ["peace", "agreement"],
+        sentimentNegative: ["crisis", "hostility", "dangerous"]))
+
+    @Test("The verification makes the two walks a device makes: every lens, and the lenses that read no lexical class")
+    func verificationWalksCoverBothTaggers() throws {
+        let walks = try CloudVectorsRunner.printedVerificationWalks(
+            tuning: .standard, stopwords: Self.verificationStopwords,
+            lexicons: Self.verificationLexicons, markings: [])
+        #expect(walks.count == 2)
+        #expect(walks.map(\.wordForm) == [.printed, .printed])
+        // The first holds a part-of-speech lens, so its tagger holds the lexical classes.
+        #expect(walks.first?.lenses == CloudVectorsRunner.baselineLenses)
+        #expect(walks.first?.lenses.contains(where: WordCloudMultiLensTokenizer.readsLexicalClass) == true)
+        // The second holds none, so its tagger holds the token type alone: the tagger a device
+        // builds for All terms, which is the lens Collocates and Related Documents count in.
+        #expect(walks.last?.lenses == [.allTerms, .concepts, .sentiment])
+        #expect(walks.last?.lenses.contains(where: WordCloudMultiLensTokenizer.readsLexicalClass) == false)
+    }
+
+    @Test("Each walk's tally is the lemma pass's printed tally for the lenses it counts, on real prose")
+    func verificationWalksAgreeWithTheOnePass() throws {
+        let onePass = try #require(WordCloudMultiLensTokenizer(
+            lenses: CloudVectorsRunner.baselineLenses, tuning: .standard,
+            stopwords: Self.verificationStopwords, lexicons: Self.verificationLexicons, markings: []))
+        var dictionary: [WordCloudLens: [String: Int]] = [:]
+        var printed: [WordCloudLens: [String: Int]] = [:]
+        onePass.accumulate(from: Self.verificationProse, into: &dictionary, printedInto: &printed)
+        // The two forms differ here, so "printed" is not the dictionary tally under another name.
+        #expect(printed[.allTerms]?["negotiated"] == 1)
+        #expect(dictionary[.allTerms]?["negotiated"] == nil)
+
+        let walks = try CloudVectorsRunner.printedVerificationWalks(
+            tuning: .standard, stopwords: Self.verificationStopwords,
+            lexicons: Self.verificationLexicons, markings: [])
+        var compared = 0
+        for walk in walks {
+            var direct: [WordCloudLens: [String: Int]] = [:]
+            walk.accumulate(from: Self.verificationProse, into: &direct)
+            // Not vacuous: the walk counted something in every lens it holds.
+            for lens in walk.lenses {
+                #expect(direct[lens]?.isEmpty == false, "\(lens.rawValue) counted nothing in this walk")
+            }
+            let walked = Set(walk.lenses)
+            #expect(CloudVectorsRunner.printedWalkDivergence(
+                onePass: printed.filter { walked.contains($0.key) }, direct: direct) == nil)
+            // Held to the wrong lenses the same comparison fails, so the filter is doing the work.
+            if walked.count < printed.count {
+                #expect(CloudVectorsRunner.printedWalkDivergence(onePass: printed, direct: direct) != nil)
+            }
+            compared += 1
+        }
+        #expect(compared == 2)
+    }
+
     // MARK: - A printed reference that lacks a lens
 
     @Test("A printed reference with every priced lens passes")
@@ -785,11 +856,15 @@ struct PrintedKeynessBaselineTests {
         let added = try #require(run.range(of: "add(printed, to: &printedCorpus)"))
         let packed = try #require(run.range(of: "printedCorpus: printedCorpus)"))
         #expect(bothForms.upperBound <= added.lowerBound && added.upperBound <= packed.lowerBound)
-        // The verification walk is the one a launch with no lemmatiser makes, and it is compared
-        // with the volume's tally before that tally is added.
-        #expect(run.contains("wordForm: .printed"), "the verification walk is not told to count as printed")
-        let compared = try #require(run.range(of: "printedWalkDivergence(onePass: printed, direct: direct)"))
-        #expect(compared.upperBound <= added.lowerBound)
+        // The verification walks are the two a launch with no lemmatiser makes, and each is
+        // compared with the volume's tally, for the lenses it counts, before that tally is added.
+        #expect(run.contains("printedWalks = try Self.printedVerificationWalks("),
+                "run() no longer takes its verification walks from printedVerificationWalks")
+        let walks = try #require(run.range(of: "for printedWalk in printedWalks {"))
+        let compared = try #require(run.range(of: "if let divergence = printedWalkDivergence("))
+        #expect(run.contains("onePass: printed.filter { walked.contains($0.key) }, direct: direct)"),
+                "a walk is no longer held to the lemma pass's tally for its own lenses")
+        #expect(walks.upperBound <= compared.lowerBound && compared.upperBound <= added.lowerBound)
         // The completeness check stands before the first write, and both files are written by name.
         let checked = try #require(run.range(of: "try requireCompletePrintedReference(output)"))
         let firstWrite = try #require(run.range(of: "try write("))

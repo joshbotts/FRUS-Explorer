@@ -276,6 +276,38 @@ struct WordCloudPrintedFormParityTests {
         #expect(lexiconOnly.schemes == [.tokenType])
     }
 
+    @Test("The lenses that read the lexical class are the three part-of-speech lenses, and no other")
+    func readsLexicalClassNamesThePartOfSpeechLenses() {
+        let reading = WordCloudLens.allCases.filter(WordCloudMultiLensTokenizer.readsLexicalClass)
+        #expect(reading == [.topics, .actions, .descriptors])
+    }
+
+    @Test("A printed tokenizer over the lenses that read no lexical class asks for the token type alone",
+          arguments: [[WordCloudLens.allTerms], [.concepts], [.sentiment], [.allTerms, .concepts, .sentiment]])
+    func plainLensesAskForTheTokenTypeAlone(lenses: [WordCloudLens]) throws {
+        // What `CloudVectorsGenerator`'s second verification walk rests on: these are the lenses a
+        // device counts with a tagger that holds no lexical class, and a multi-lens tokenizer over
+        // them builds that same tagger — the one a single-lens tokenizer builds for each.
+        #expect(!lenses.contains(where: WordCloudMultiLensTokenizer.readsLexicalClass))
+        let multi = try #require(WordCloudMultiLensTokenizer(
+            lenses: lenses, tuning: .standard, stopwords: [], lexicons: Self.lexicons,
+            markings: [], wordForm: .printed))
+        #expect(multi.schemes == [.tokenType])
+        for lens in lenses {
+            #expect(WordCloudTokenizer(stopwords: [], lens: lens, wordForm: .printed).wordSchemes
+                    == [.tokenType], "\(lens.rawValue)")
+        }
+    }
+
+    @Test("One part-of-speech lens among them is enough to add the lexical-class scheme",
+          arguments: [WordCloudLens.topics, .actions, .descriptors])
+    func aPartOfSpeechLensAddsTheLexicalClass(lens: WordCloudLens) throws {
+        let multi = try #require(WordCloudMultiLensTokenizer(
+            lenses: [.allTerms, lens], tuning: .standard, stopwords: [], lexicons: Self.lexicons,
+            markings: [], wordForm: .printed))
+        #expect(multi.schemes == [.tokenType, .lexicalClass])
+    }
+
     @Test("The default form is the dictionary one, so no existing caller changed what it counts")
     func defaultFormIsDictionary() throws {
         #expect(WordCloudTokenizer(stopwords: []).wordForm == .dictionary)
@@ -395,12 +427,19 @@ struct NaturalLanguageHealthWordFormTests {
 @Suite("WordCloudKit — a launch whose lemma request is never answered (#1608)")
 struct UnansweredLemmaRequestTests {
 
-    /// An engine over the live calls with a one-second budget, reporting nothing.
+    /// An engine over the live calls with a five-second budget, reporting nothing.
+    ///
+    /// The budget is how long the unanswered request is waited for, so it is what the first test
+    /// costs; it is also how long the two requests that DO answer are given, and those are this
+    /// host's own framework calls. They answer in milliseconds on an idle Mac. One second was the
+    /// first budget, and the #1608 review asked what a loaded Mac, or the first request after a
+    /// restart, does with it: a slow answer would have been recorded as a second scheme withheld,
+    /// failing a test of the switch for a reason that is not the switch.
     private func engine(leavingLemmaRequestUnanswered: Bool) -> NaturalLanguageReadinessEngine {
         var dependencies = NaturalLanguageReadinessEngine.Dependencies
             .live(leavingLemmaRequestUnanswered: leavingLemmaRequestUnanswered)
         dependencies.asksForAssets = true
-        dependencies.budget = 1
+        dependencies.budget = 5
         dependencies.report = { _ in }
         dependencies.statusDidChange = {}
         return NaturalLanguageReadinessEngine(dependencies: dependencies)
