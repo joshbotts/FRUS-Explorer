@@ -886,8 +886,13 @@ struct PrintedKeynessBaselineTests {
         #expect(bothForms.upperBound <= added.lowerBound && added.upperBound <= packed.lowerBound)
         // The verification walks are the two a launch with no lemmatiser makes, and each is
         // compared with the volume's tally, for the lenses it counts, before that tally is added.
-        #expect(run.contains("printedWalks = try Self.printedVerificationWalks("),
-                "run() no longer takes its verification walks from printedVerificationWalks")
+        // …over the run's own lenses: the call names none, so it takes `baselineLenses`, the list
+        // the pass above counts. A list of its own would verify lenses the run does not write.
+        let squeezed = String(run.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
+            .map(Character.init))
+        #expect(squeezed.contains("printedWalks=trySelf.printedVerificationWalks(tuning:tuning,"
+                                  + "stopwords:stopwords,lexicons:lexicons,markings:markings)"),
+                "run() no longer takes its verification walks from printedVerificationWalks, over its own lenses")
         let walks = try #require(run.range(of: "for printedWalk in printedWalks {"))
         let compared = try #require(run.range(of: "if let divergence = printedWalkDivergence("))
         #expect(run.contains("onePass: printed.filter { walked.contains($0.key) }, direct: direct)"),
