@@ -33,12 +33,21 @@ import GeneratorKit
 /// walked a second time with no lemma scheme, the way a launch with no lemmatiser walks it, and the
 /// run stops before it writes anything if a volume's two tallies differ in one count.
 ///
+/// ## Memory
+/// Each document is tagged inside an autorelease pool of its own (#1608). Without one the run kept
+/// every object the tagger autoreleased until it ended: the unchanged generator peaked at a
+/// 24.9 GB memory footprint over the corpus on 2026-10-12, and the verification walk, which tags
+/// every document twice, at 49.1 GB, on a Mac with 32 GB. Measured on a 40-volume subset with the
+/// walk on, the pools took the peak from 3.89 GB to 235 MB and the four files came out byte for
+/// byte the same.
+///
 /// Version history:
 ///   1.0 — O-1: initial implementation
 ///   1.1 — #1373: refuses to run when `NaturalLanguageReadiness`'s canary finds no lemmas or no
 ///          lexical classes in this process
 ///   1.2 — #1608: counts printed forms in the same pass and writes `keyness-baseline-printed.json`;
-///          `VERIFY_PRINTED_WALK`; refuses to write a printed reference that lacks a lens
+///          `VERIFY_PRINTED_WALK`; refuses to write a printed reference that lacks a lens; an
+///          autorelease pool for each document
 public enum CloudVectorsRunner {
 
     /// Every lens the run tokenises: the four the cloud draws, plus the two extra the keyness
@@ -154,12 +163,18 @@ public enum CloudVectorsRunner {
             var counts: [WordCloudLens: [String: Int]] = [:]
             var printed: [WordCloudLens: [String: Int]] = [:]
             for document in documents {
-                tokenizer.accumulate(from: document.bodyText, into: &counts, printedInto: &printed)
+                // A pool for each document: the tagger hands back autoreleased objects, and a
+                // command-line tool has no run loop to drain them (#1608, "Memory" above).
+                autoreleasepool {
+                    tokenizer.accumulate(from: document.bodyText, into: &counts, printedInto: &printed)
+                }
             }
             if let printedWalk {
                 var direct: [WordCloudLens: [String: Int]] = [:]
                 for document in documents {
-                    printedWalk.accumulate(from: document.bodyText, into: &direct)
+                    autoreleasepool {
+                        printedWalk.accumulate(from: document.bodyText, into: &direct)
+                    }
                 }
                 if let divergence = printedWalkDivergence(onePass: printed, direct: direct) {
                     throw RunError.printedWalkDiverged(volume: volumeId, detail: divergence)
@@ -246,13 +261,12 @@ public enum CloudVectorsRunner {
     ///
     /// The two are counted in one pass over the same words, so a lens with tokens in one and none
     /// in the other means the printed tally never reached `pack` — and the app would tell every
-    /// scope counted as printed that the lens has no reference.
+    /// scope counted as printed that the lens has no reference. Every lens the dictionary reference
+    /// holds has tokens: `pack` makes a lens only from a word it counted.
     /// - Parameter output: The packed artifacts, before anything is written.
     /// - Throws: ``RunError/printedReferenceIncomplete(_:)`` naming the lenses.
     static func requireCompletePrintedReference(_ output: CloudVectorsAggregator.Output) throws {
-        let missing = output.keynessBaseline.lenses
-            .filter { $0.value.totalTokens > 0 }
-            .keys
+        let missing = output.keynessBaseline.lenses.keys
             .filter { (output.printedKeynessBaseline.lenses[$0]?.totalTokens ?? 0) == 0 }
             .sorted()
         guard missing.isEmpty else { throw RunError.printedReferenceIncomplete(missing) }

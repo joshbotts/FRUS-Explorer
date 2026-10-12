@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 221 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 225 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -926,11 +926,13 @@ Lens: the cloud is filtered to the “%@” word list, so this is a subset of th
 
 #### Counted as printed
 
-*Added by #1373 review round 1. Carried only by a cloud whose words were counted without the device's lemmatiser — All terms, Concepts or Sentiment, which still draw then. The three blocks below say the same thing on three surfaces a reader meets after the device that made the cloud has moved on: the CSV's caveats, the exported image's caption line, and the cloud embedded in a collection export (that plate otherwise carries only its title). The on-screen line is §12.4's* Counted as printed.
+*Added by #1373 review round 1. Carried only by a cloud whose words were counted without the device's lemmatiser — All terms, Concepts or Sentiment, which still draw then, and Topics, Actions or Descriptors while the device can still tell parts of speech apart. The first three blocks below say the same thing on three surfaces a reader meets after the device that made the cloud has moved on: the CSV's caveats, the exported image's caption line, and the cloud embedded in a collection export (that plate otherwise carries only its title). The on-screen line is §12.4's* Counted as printed.
+
+*Changed by #1608 (2026-10-12). The caveat's example was “negotiation” and “negotiations”, which is false while* Merge plural and singular forms *is on (the default): a printed count still folds a regular plural by rule, and counts those two as one word. It is now a verb, which no rule folds. The last two blocks are new: since #1608 such a cloud has a Distinctive ranking, against a corpus reference counted as printed, and its CSV and its image say so.*
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedCaveat | lines: 173–174 | key: wordcloud.export.caveat.countedAsPrinted | shared: iOS+macOS (single edit point) -->
 
-Counting: these words were counted as printed. When this cloud was made, the device’s language analysis was not reducing words to their dictionary forms, so “negotiation” and “negotiations” are two words here where a device whose language analysis works counts one. These counts and shares cannot be compared with a cloud counted in dictionary forms.
+Counting: these words were counted as printed. When this cloud was made, the device’s language analysis was not reducing words to their dictionary forms, so “negotiate” and “negotiated” are two words here where a device whose language analysis works counts one. These counts and shares cannot be compared with a cloud counted in dictionary forms.
 
 <!-- END SOURCE: wordcloud.export.caveat.countedAsPrinted -->
 
@@ -945,6 +947,18 @@ counted as printed, not in dictionary forms
 Counted as printed: the device that made this cloud was not reducing words to their dictionary forms.
 
 <!-- END SOURCE: wordcloud.export.collection.countedAsPrinted -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.comparedAsPrintedCaveat | lines: 0–0 | key: wordcloud.export.caveat.keyness.comparedAsPrinted | shared: iOS+macOS (single edit point) -->
+
+Keyness reference: because these words were counted as printed, each was scored against a reference for the whole FRUS corpus that was counted as printed too. A device whose language analysis reduces words to their dictionary forms (a Mac, or another iPhone or iPad) scores dictionary forms against a reference counted in dictionary forms, so its keyness table for this scope can differ from this one.
+
+<!-- END SOURCE: wordcloud.export.caveat.keyness.comparedAsPrinted -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.printedFormsCaptionSegment | lines: 0–0 | key: wordcloud.export.caption.comparedAsPrinted | shared: iOS+macOS (single edit point) -->
+
+counted and compared as printed, not in dictionary forms
+
+<!-- END SOURCE: wordcloud.export.caption.comparedAsPrinted -->
 
 ---
 
@@ -1062,6 +1076,8 @@ Nothing here is used more than it is across the corpus. This scope’s vocabular
 
 *Added by #1373. Shown under Distinctive when the scope's words were counted without the device's lemmatiser. Reworded by #1539: the app checks again each time it becomes active, and the cloud is counted again when a check finds the lemmatiser working.*
 
+*Since #1608 (2026-10-12) a reader should not meet it. A cloud counted as printed is now ranked against a second corpus reference that was counted as printed, and says so (§12.4,* Counted and compared as printed*). This sentence is left for a launch on which that second reference could not be loaded. Its text is unchanged.*
+
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1023–1024 | key: wordcloud.keyness.unavailable.languageAnalysis -->
 
 These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead. FRUS Explorer checks again each time you come back to it, and the cloud is counted again if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
@@ -1091,6 +1107,14 @@ There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a
 Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
 <!-- END SOURCE: wordcloud.export.axis.keyness -->
+
+*Added by #1608. The axis label of a Distinctive export whose words were counted as printed and scored against the reference counted as printed.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.keynessAxisLabel | lines: 0–0 | key: wordcloud.export.axis.keyness.printed -->
+
+Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference, both counted as printed
+
+<!-- END SOURCE: wordcloud.export.axis.keyness.printed -->
 
 ---
 
@@ -1310,11 +1334,23 @@ This scope’s documents were read, but none of them uses a word from the Sentim
 
 *Added by #1373. A caption under the cloud's title when its words were counted without the device's lemmatiser — and, since review round 1, under a comparison column's count too. The exported forms of the same fact are §5's* Counted as printed *blocks.*
 
+*Changed by #1608 (2026-10-12): the second sentence is new. The owner's condition for the printed-form fallback (2026-09-29, restated 2026-10-12) is that every surface that falls back says that it did, says why, and says that results can differ from a device whose language analysis reduces words to their dictionary forms; the decision of 2026-09-29 names the clouds' counts among those surfaces, and this line said only the first two. It is no longer held to two lines: it is shown whole, and scrolls in a short strip where the screen has no room for it.*
+
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 163–164 | key: wordcloud.countedAsPrinted -->
 
-Counted as printed: this device isn’t reducing words to their dictionary forms right now.
+Counted as printed: this device isn’t reducing words to their dictionary forms right now. Counts can differ on a device that does: a Mac, or another iPhone or iPad.
 
 <!-- END SOURCE: wordcloud.countedAsPrinted -->
+
+#### Counted and compared as printed
+
+*Added by #1608 (2026-10-12). The same caption's place under the cloud's title, when the cloud is sized by Distinctive and its words were counted without the device's lemmatiser: they are then compared with a corpus reference counted as printed, where Distinctive used to be withheld. It says the three things the owner's condition asks: that the cloud fell back, why, and that the ranking can differ on another device. The example is a verb because a printed count still folds a regular plural by rule while* Merge plural and singular forms *is on.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.comparedAsPrintedNote | lines: 0–0 | key: wordcloud.keyness.comparedAsPrinted -->
+
+Counted and compared as printed: this device isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” are two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these words differently.
+
+<!-- END SOURCE: wordcloud.keyness.comparedAsPrinted -->
 
 ---
 

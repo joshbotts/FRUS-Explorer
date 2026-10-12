@@ -461,6 +461,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///          (``deferWarmUpToFirstForeground()``)
 ///   1.4 — #1539 review round 2: "A request still in flight" states the rule as one about building a
 ///          tagger, and names the two cases outside it
+///   1.5 — #1608: a debug build launched with ``unansweredLemmaRequestEnvironmentKey`` set leaves the
+///          lemma request unanswered, so the launch the owner's iPhone logged can be had on demand
 public enum NaturalLanguageReadiness {
 
     /// The schemes the warm-up asks for, in the order asked. Lemma last: after a fresh boot it is
@@ -580,6 +582,42 @@ public enum NaturalLanguageReadiness {
 
     /// The engine behind this facade, built from the live framework calls.
     static let engine = NaturalLanguageReadinessEngine(dependencies: .live)
+
+    /// The environment variable that, set to `1` for a **debug** build, leaves this process's
+    /// request for the English lemma data unanswered (#1608). A release build never reads it.
+    ///
+    /// ## Why it exists
+    /// The launch the printed-form fallback is for is one in which iOS never answers that request:
+    /// the owner's iPhone logged `Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false
+    /// classes=true names=true` on build 49 under iOS 27.0.1. A simulator loses the request only by
+    /// chance. It was 18 of 75 launches on one iPhone 17e simulator in September 2026, and on
+    /// 2026-10-12 it was none of fourteen relaunches and one fresh boot of an iPhone 17 simulator
+    /// under iOS 27.0, so the fallback could not be looked at on that day by waiting for one.
+    ///
+    /// With the variable set, the engine makes every other call it makes on a device and simply
+    /// never places the lemma request, which is what an unanswered one looks like from inside: the
+    /// scheme stays in flight, its budget runs out, it is withheld from the canary and from every
+    /// tagger, and the verdict and the release log read as the iPhone's did. A re-check asks again
+    /// and is left unanswered again. It does nothing on a runtime that asks for no assets at all
+    /// (``asksForAssets(onMajorVersion:)``).
+    ///
+    /// Launch a debug build on a simulator with
+    /// `SIMCTL_CHILD_FRUS_DEBUG_NO_LEMMA_ANSWER=1 xcrun simctl launch <udid> bottsywattsy.FRUS-Explorer`.
+    public static let unansweredLemmaRequestEnvironmentKey = "FRUS_DEBUG_NO_LEMMA_ANSWER"
+
+    /// Whether this process was asked to leave the lemma request unanswered: a debug build with
+    /// ``unansweredLemmaRequestEnvironmentKey`` set to `1` in `environment`. Always `false` in a
+    /// release build.
+    /// - Parameter environment: The process's environment; a test passes its own.
+    static func leavesLemmaRequestUnanswered(
+        in environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> Bool {
+        #if DEBUG
+        return environment[unansweredLemmaRequestEnvironmentKey] == "1"
+        #else
+        return false
+        #endif
+    }
 
     /// The release log (#1539). See the type's "The release log" section.
     private static let log = Logger(subsystem: "bottsywattsy.FRUS-Explorer",
@@ -853,6 +891,7 @@ public enum NaturalLanguageReadiness {
 ///          while the app is in the background
 ///   1.2 — #1539 review round 2: an answer reaches its waiter under the lock that takes its scheme
 ///          out of flight, so a deadline that falls as it arrives no longer records it as timed out
+///   1.3 — #1608: ``Dependencies/live(leavingLemmaRequestUnanswered:)``
 final class NaturalLanguageReadinessEngine: Sendable {
 
     /// What the engine calls out to: the framework on a device, fakes in a test.
@@ -875,13 +914,24 @@ final class NaturalLanguageReadinessEngine: Sendable {
         var statusDidChange: @Sendable () -> Void
 
         /// The framework's calls, the release log, and the notification on the default center that
-        /// the app's `LanguageAnalysisLifecycle` observes.
+        /// the app's `LanguageAnalysisLifecycle` observes — with the lemma request left unanswered
+        /// when a debug build was launched to show that (#1608, see
+        /// ``NaturalLanguageReadiness/unansweredLemmaRequestEnvironmentKey``).
         static var live: Dependencies {
+            live(leavingLemmaRequestUnanswered: NaturalLanguageReadiness.leavesLemmaRequestUnanswered())
+        }
+
+        /// The framework's calls, the release log and the notification.
+        /// - Parameter leavingLemmaRequestUnanswered: When `true`, the request for the lemma
+        ///   scheme's assets is never placed, so it is never answered: from the engine's side, the
+        ///   launch in which iOS does not answer it. Every other call is the framework's own.
+        static func live(leavingLemmaRequestUnanswered: Bool) -> Dependencies {
             Dependencies(
                 listSchemes: {
                     NLTagger.availableTagSchemes(for: .word, language: .english).map(\.rawValue)
                 },
                 requestAssets: { scheme, answer in
+                    if leavingLemmaRequestUnanswered, scheme == .lemma { return }
                     NLTagger.requestAssets(for: .english, tagScheme: scheme) { result, _ in
                         switch result {
                         case .available: answer(.available)

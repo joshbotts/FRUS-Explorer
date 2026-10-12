@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 216 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 274 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -367,9 +367,19 @@ Your Word Cloud settings count words differently from the bundled corpus referen
 
 *Added by #1373. Shown when this device's lemmatiser failed its check. Reworded by #1539: the app now checks again each time it becomes active, and the panel rebuilds when a check finds the lemmatiser working.*
 
+*Since #1608 (2026-10-12) a reader should not meet it. With no lemmatiser the panel now counts the neighbors as printed and ranks them against a second corpus reference that was counted as printed, under the note in the next block. This sentence is left for a launch on which that second reference could not be loaded. Its text is unchanged.*
+
 This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
 
 <!-- END SOURCE: search.collocation.unavailable.languageAnalysis -->
+
+<!-- SOURCE: FRUSExplorer/Search/Collocation.swift | CollocationResult.printedFormsNote | lines: 0–0 | key: search.collocation.printedForms.note -->
+
+*Added by #1608 (2026-10-12). The first row of the collocates list on a launch whose language analysis has no lemmatiser: the panel ranks where it used to refuse, and says that it compared printed forms, why, and that the ranking can differ on another device, as the owner's condition for the fallback asks. It closes on the re-check because the panel is ranked again when one finds the lemmatiser working. The example is a verb because a printed count still folds a regular plural by rule while* Merge plural and singular forms *is on.*
+
+Compared as printed: this device’s language analysis isn’t reducing words to their dictionary forms right now, so “negotiate” and “negotiated” count as two words, here and in the corpus reference. A device that does reduce them (a Mac, or another iPhone or iPad) can rank these neighbors differently. FRUS Explorer checks again each time you come back to it, and this panel is ranked again if it recovers.
+
+<!-- END SOURCE: search.collocation.printedForms.note -->
 
 <!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.noMatches -->
 

@@ -908,3 +908,143 @@ struct PrintedFormWiringTests {
         #expect(load.contains(squeezed("guard Self.isReference(file, for: wordForm) else {")))
     }
 }
+
+// MARK: - The shipped references
+
+/// The shipped `keyness-baseline-printed.json`, and what it has to share with
+/// `keyness-baseline.json`, which `KeynessBaselineArtifactTests` reads.
+///
+/// Like that suite it decodes the files straight from the bundle, so it shares no state with the
+/// suites that inject fixtures, and it is what fails when the new resource was never enrolled: a
+/// resource missing from the bundle is no build error, only a fallback that silently refuses on
+/// every launch it was built for.
+@Suite("Printed-form fallback — the shipped reference counted as printed (#1608)")
+struct PrintedKeynessBaselineArtifactTests {
+
+    private func bundledData(_ resource: String) throws -> Data {
+        let url = try #require(
+            Bundle.main.url(forResource: resource, withExtension: "json"),
+            "\(resource).json is not in the app bundle. If it was just generated, it needs `xcodegen generate` to be enrolled — followed by `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.")
+        return try Data(contentsOf: url)
+    }
+
+    private func load(_ form: WordCloudWordForm) throws -> KeynessBaselineFile {
+        try JSONDecoder().decode(KeynessBaselineFile.self,
+                                 from: bundledData(KeynessBaselineFile.resourceName(for: form)))
+    }
+
+    @Test("Each bundled reference says in its own bytes which form it is counted in",
+          arguments: WordCloudWordForm.allCases)
+    func eachFileStatesItsForm(form: WordCloudWordForm) throws {
+        let data = try bundledData(KeynessBaselineFile.resourceName(for: form))
+        // In the bytes, not only in the decoded value: a file with no key decodes as dictionary
+        // forms, and the dictionary-form file has to say so of itself too.
+        #expect(String(decoding: data, as: UTF8.self).contains(#""wordForm":"\#(form.rawValue)""#))
+        #expect(try load(form).configuration.wordForm == form)
+    }
+
+    @Test("The two references are companions: one run's stamp, provenance, budget and pin")
+    func theTwoAreCompanions() throws {
+        let dictionary = try load(.dictionary)
+        let printed = try load(.printed)
+        #expect(printed.version == dictionary.version)
+        #expect(printed.generated == dictionary.generated)
+        #expect(printed.provenance == dictionary.provenance)
+        #expect(printed.termsPerLens == dictionary.termsPerLens)
+        // Everything a scope must match is the same for both; only the form differs.
+        #expect(printed.configuration == dictionary.configuration.counted(as: .printed))
+        #expect(printed.configuration != dictionary.configuration)
+        // And both are the cloud vectors' companions, as `matchesTheCloudVectors` holds the first.
+        let core = try JSONDecoder().decode(CloudVectorsFile.self, from: bundledData("cloud-vectors-core"))
+        #expect(printed.generated == core.generated)
+        #expect(printed.provenance == core.provenance)
+    }
+
+    @Test("It prices every lens the dictionary-form reference prices")
+    func pricesTheSameLenses() throws {
+        let printed = try load(.printed)
+        #expect(Set(printed.lenses.keys) == Set(try load(.dictionary).lenses.keys))
+        #expect(Set(printed.lenses.keys)
+                == ["allTerms", "descriptors", "concepts", "topics", "actions", "sentiment"])
+    }
+
+    @Test("Its configuration is pinned to the payloads in the bundle")
+    func configurationPinsTheBundledPayloads() throws {
+        let printed = try load(.printed)
+        #expect(printed.configuration.lexiconsDigest
+                == WordCloudPayloadDigest.digest(of: try bundledData("word-cloud-lexicons")))
+        #expect(printed.configuration.stopwordsDigest
+                == WordCloudPayloadDigest.digest(of: try bundledData("word-cloud-stopwords")))
+        #expect(printed.configuration.tuning == .standard)
+        #expect(printed.configuration.includeDiplomatic)
+    }
+
+    @Test("Every lens has a real corpus behind it, cut on a count boundary")
+    func lensesAreWellFormed() throws {
+        let printed = try load(.printed)
+        #expect(printed.termsPerLens == 20_000)
+        for (name, lens) in printed.lenses {
+            #expect(!lens.terms.isEmpty, "\(name) retained no terms")
+            #expect(lens.totalTokens > 0)
+            #expect(lens.distinctTerms >= lens.terms.count)
+            #expect(lens.totalTokens >= lens.terms.values.reduce(0, +))
+            #expect(lens.terms.count >= min(printed.termsPerLens, lens.distinctTerms))
+            #expect(lens.terms.count <= printed.termsPerLens * 2)
+            #expect(lens.terms.values.min() == lens.cutoffCount, "\(name): the cut did not land on a count boundary")
+        }
+    }
+
+    @Test("The head of the distribution is priced")
+    func retainsTheHead() throws {
+        let allTerms = try #require(try load(.printed).lenses["allTerms"])
+        // Printed forms spread the same tokens over more distinct words than dictionary forms do,
+        // so the same 20,000-term budget prices a little less of them: 0.9761 measured on the
+        // artifact of 2026-10-12, against 0.9815 for the dictionary-form reference.
+        let priced = Double(allTerms.terms.values.reduce(0, +)) / Double(allTerms.totalTokens)
+        #expect(priced > 0.96, "the retained terms price only \(priced) of the corpus")
+    }
+
+    @Test("It is a count of printed forms, by the rule a launch with no lemmatiser counts by")
+    func itIsCountedAsPrinted() throws {
+        let dictionary = try #require(try load(.dictionary).lenses["allTerms"])
+        let printed = try #require(try load(.printed).lenses["allTerms"])
+        // An inflected verb is a word of its own as printed, and no word at all in dictionary forms.
+        #expect(try #require(printed.terms["negotiated"]) > 1_000)
+        #expect(try #require(printed.terms["negotiating"]) > 1_000)
+        #expect(dictionary.terms["negotiated"] == nil)
+        #expect(dictionary.terms["negotiating"] == nil)
+        // The dictionary form holds them all; the printed "negotiate" is the bare form alone.
+        #expect(try #require(dictionary.terms["negotiate"]) > (try #require(printed.terms["negotiate"])))
+        // A regular plural is folded by rule in a printed count too, under the standard tuning.
+        #expect(printed.terms["missile"] != nil)
+        #expect(printed.terms["missiles"] == nil)
+        #expect(printed.terms["treaties"] == nil)
+        // The rule knows no names. The reference is clipped where the device's count is clipped,
+        // which is what makes the two comparable; a change to the rule has to regenerate this file.
+        #expect(printed.terms["dulle"] != nil)
+        #expect(printed.terms["dulles"] == nil)
+        #expect(dictionary.terms["dulles"] != nil)
+        // The same corpus, so nearly the same number of tokens, spread over more distinct words.
+        #expect(printed.distinctTerms > dictionary.distinctTerms)
+        let ratio = Double(printed.totalTokens) / Double(dictionary.totalTokens)
+        #expect(ratio > 0.95 && ratio < 1.05, "printed / dictionary token total is \(ratio)")
+    }
+
+    @Test("The generator's bytes are exactly what the app reads back")
+    func writerReaderByteParity() throws {
+        let onDisk = try bundledData(KeynessBaselineFile.resourceName(for: .printed))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]        // what CloudVectorsRunner.writeBaseline uses
+        #expect(try encoder.encode(try load(.printed)) == onDisk)
+    }
+
+    @Test("The app's loader reads both files from the bundle, each under the form it states")
+    func theLoaderReadsBoth() {
+        let loaded = BundledKeynessBaseline.loadBundled()
+        #expect(Set(loaded.keys) == Set(WordCloudWordForm.allCases))
+        for (form, file) in loaded {
+            #expect(file.configuration.wordForm == form)
+            #expect(file.lenses["allTerms"]?.totalTokens ?? 0 > 0)
+        }
+    }
+}

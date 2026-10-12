@@ -384,3 +384,71 @@ struct NaturalLanguageHealthWordFormTests {
         #expect(WordCloudWordForm.allCases == [.dictionary, .printed])
     }
 }
+
+/// The debug launch that leaves the lemma request unanswered (#1608), which is how the launch the
+/// fallback is for is had on demand: the owner's iPhone logged
+/// `Lemma=timedOut@30.005s withheld=[Lemma]; canary lemmas=false classes=true names=true`.
+///
+/// The engine is the real one and so are its framework calls, on this host, but for the one request
+/// the switch leaves out, so what is pinned here is the verdict a device in that state reaches, by
+/// the code a device runs.
+@Suite("WordCloudKit — a launch whose lemma request is never answered (#1608)")
+struct UnansweredLemmaRequestTests {
+
+    /// An engine over the live calls with a one-second budget, reporting nothing.
+    private func engine(leavingLemmaRequestUnanswered: Bool) -> NaturalLanguageReadinessEngine {
+        var dependencies = NaturalLanguageReadinessEngine.Dependencies
+            .live(leavingLemmaRequestUnanswered: leavingLemmaRequestUnanswered)
+        dependencies.asksForAssets = true
+        dependencies.budget = 1
+        dependencies.report = { _ in }
+        dependencies.statusDidChange = {}
+        return NaturalLanguageReadinessEngine(dependencies: dependencies)
+    }
+
+    @Test("With the lemma request unanswered, the verdict has no lemmatiser and keeps its classes and names")
+    func theVerdictOfAnUnansweredLemmaRequest() {
+        let engine = engine(leavingLemmaRequestUnanswered: true)
+        let verdict = engine.waitForVerdict()
+        // The iPhone's line: the other two answer, the lemma request times out and is withheld.
+        #expect(verdict.warmUp.assetRequests.map(\.scheme) == ["LexicalClass", "NameType", "Lemma"])
+        #expect(verdict.warmUp.assetRequests.last?.answer == .timedOut)
+        #expect(verdict.warmUp.assetRequests.first?.answer == .available)
+        #expect(verdict.warmUp.withheld == ["Lemma"])
+        #expect(!verdict.health.lemmatizes)
+        #expect(verdict.health.classifiesWords)
+        #expect(verdict.health.recognizesNames)
+        #expect(verdict.health.wordForm == .printed)
+        // Every tagger is then built without the lemma scheme, so every word is counted as printed.
+        #expect(engine.taggingSchemes(for: [.lemma, .lexicalClass]) == [.lexicalClass, .tokenType])
+        #expect(engine.taggingSchemes(for: [.lemma]) == [.tokenType])
+        // A tokenizer told to count as printed asks for no lemma scheme, and loses nothing to it.
+        #expect(engine.taggingSchemes(for: [.tokenType, .lexicalClass]) == [.tokenType, .lexicalClass])
+    }
+
+    @Test("Without the switch the same engine on this host has its lemmatiser")
+    func theControl() {
+        let verdict = engine(leavingLemmaRequestUnanswered: false).waitForVerdict()
+        #expect(verdict.warmUp.withheld.isEmpty)
+        #expect(verdict.warmUp.assetRequests.allSatisfy { $0.answer == .available },
+                "\(verdict.warmUp.assetRequests)")
+        #expect(verdict.health.lemmatizes)
+        #expect(verdict.health.wordForm == .dictionary)
+    }
+
+    @Test("Only a debug build reads the switch, and only the value 1 turns it on")
+    func theSwitchIsRead() {
+        let key = NaturalLanguageReadiness.unansweredLemmaRequestEnvironmentKey
+        #expect(key == "FRUS_DEBUG_NO_LEMMA_ANSWER")
+        #expect(!NaturalLanguageReadiness.leavesLemmaRequestUnanswered(in: [:]))
+        #expect(!NaturalLanguageReadiness.leavesLemmaRequestUnanswered(in: [key: "0"]))
+        #expect(!NaturalLanguageReadiness.leavesLemmaRequestUnanswered(in: [key: ""]))
+        #if DEBUG
+        #expect(NaturalLanguageReadiness.leavesLemmaRequestUnanswered(in: [key: "1"]))
+        #else
+        #expect(!NaturalLanguageReadiness.leavesLemmaRequestUnanswered(in: [key: "1"]))
+        #endif
+        // This test process was not launched with it, so the engine every other suite reads is live.
+        #expect(!NaturalLanguageReadiness.leavesLemmaRequestUnanswered())
+    }
+}

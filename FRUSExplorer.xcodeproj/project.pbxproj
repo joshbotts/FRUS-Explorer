@@ -1130,6 +1130,7 @@
 		B2B8FC9414552CF58F5145A9 /* resolved-edge-index.json in Resources */ = {isa = PBXBuildFile; fileRef = ECF2ABC0D8250520BF7BFAF4 /* resolved-edge-index.json */; };
 		B2FA8FF67010DD4E67A1EE2E /* SummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65AFB8371F24254AC6D7E541 /* SummarizationService.swift */; };
 		B35FFFC8483B912A57CD50FB /* WordCloudBackdropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852F2B32F82C02E9DCC42E16 /* WordCloudBackdropView.swift */; };
+		B3745F49704F46F3B92FCC2C /* keyness-baseline-printed.json in Resources */ = {isa = PBXBuildFile; fileRef = 367369BC0084422206E4C87F /* keyness-baseline-printed.json */; };
 		B3A294BE531652392CEEECD4 /* SeriesScopeBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50B284089B05AB64EEAB04B /* SeriesScopeBar.swift */; };
 		B3D21D144C70D535D6F72FB8 /* DocumentSubjectIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06481C212C362BF5EB1B5A43 /* DocumentSubjectIndex.swift */; };
 		B3D3A583798A5FBB1DF8112D /* SemanticSimilarityGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21137C577CC79AE3463D8B0E /* SemanticSimilarityGenerator.swift */; };
@@ -1350,6 +1351,7 @@
 		D6B2A0BA57849E3689983F3C /* VolumeUpdateReviewSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82DA8BD7A901EAE8F2704DB /* VolumeUpdateReviewSection.swift */; };
 		D6B40185DBEBB3EDB5FC0356 /* CitationLookupFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8421673BB04E913A20894BBC /* CitationLookupFields.swift */; };
 		D6C30FC0477BC9FBD7834627 /* SemanticSharedTerms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 168B2077FA00CC1CA0AFE9C6 /* SemanticSharedTerms.swift */; };
+		D6DFC821F6BCCE3A022DA7B6 /* keyness-baseline-printed.json in Resources */ = {isa = PBXBuildFile; fileRef = 367369BC0084422206E4C87F /* keyness-baseline-printed.json */; };
 		D743447280928BB78F3A3F51 /* IndexingStageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF52ACF763DD7A46AB72090 /* IndexingStageTests.swift */; };
 		D76920C559576687EDFB547D /* ResearchSessionsSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962ABB0A381BEFD120413449 /* ResearchSessionsSummary.swift */; };
 		D7857D728A18ECB56ED8E99D /* TopicIndexArrivalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10ADB02A899867B743047F2 /* TopicIndexArrivalTests.swift */; };
@@ -1886,6 +1888,7 @@
 		360F5140E1A7DECE2FDD8A13 /* FacetSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FacetSelectionTests.swift; sourceTree = "<group>"; };
 		3642751811CAFDED182AB5C4 /* DespatchSerialExtractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DespatchSerialExtractionTests.swift; sourceTree = "<group>"; };
 		3664F45ADD0687ABDBD5FA0D /* SupportingTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportingTypes.swift; sourceTree = "<group>"; };
+		367369BC0084422206E4C87F /* keyness-baseline-printed.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "keyness-baseline-printed.json"; sourceTree = "<group>"; };
 		36CF49F832C51F6AEAF3B381 /* FacetSortingAndPagingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FacetSortingAndPagingTests.swift; sourceTree = "<group>"; };
 		3717E8E191A83AD8D95C513A /* SemanticMapOffscreenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticMapOffscreenTests.swift; sourceTree = "<group>"; };
 		372BB4C61D106424E71DD51B /* AdministrationProfilesData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationProfilesData.swift; sourceTree = "<group>"; };
@@ -3815,6 +3818,7 @@
 				39BF8068D53FC3128464360F /* frus-print.css */,
 				536A71597B7315E933F81136 /* frus-selection.js */,
 				D7846C3022F8A05F8288C639 /* gemma-terms-of-use.txt */,
+				367369BC0084422206E4C87F /* keyness-baseline-printed.json */,
 				CD0BCCE9ACC924CAC60C8286 /* keyness-baseline.json */,
 				E4F0A106DA9F8FD94920CAAA /* LaunchScreen.storyboard */,
 				4AAFFAA093C147F6F0CE19D6 /* lot-claimants-index.json */,
@@ -4447,6 +4451,7 @@
 				209063A7FB3FD9DAC85D85DD /* frus-print.css in Resources */,
 				CD059A377FC164AB840C4FCD /* frus-selection.js in Resources */,
 				FF8D1C3B61E8E9B132F85C47 /* gemma-terms-of-use.txt in Resources */,
+				D6DFC821F6BCCE3A022DA7B6 /* keyness-baseline-printed.json in Resources */,
 				10FEA71DF161917DCE4728C1 /* keyness-baseline.json in Resources */,
 				40A968145349C62D71FA62F0 /* lot-claimants-index.json in Resources */,
 				E336CB3BC326A02994D0B575 /* manifest.json in Resources */,
@@ -4500,6 +4505,7 @@
 				8D7866F2C8D6154A6D91AD5C /* frus-print.css in Resources */,
 				52216BC98666B29A0A741B38 /* frus-selection.js in Resources */,
 				40049EC67EBF8482F619989E /* gemma-terms-of-use.txt in Resources */,
+				B3745F49704F46F3B92FCC2C /* keyness-baseline-printed.json in Resources */,
 				0B30E744796DF2DF4BAB6EC6 /* keyness-baseline.json in Resources */,
 				4A83439D18BBA1F7260E0069 /* lot-claimants-index.json in Resources */,
 				29F10C943388E055406A717D /* manifest.json in Resources */,

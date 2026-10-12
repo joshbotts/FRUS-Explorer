@@ -702,10 +702,13 @@ struct PrintedKeynessBaselineTests {
         }
     }
 
-    @Test("A lens the dictionary reference does not price is not asked of the printed one")
-    func unpricedDictionaryLensIsNotRequired() throws {
+    @Test("A lens only the printed tally holds is no fault")
+    func aPrintedOnlyLensPasses() throws {
+        // The check is that nothing the dictionary reference prices is missing as printed, not that
+        // the two hold the same lenses.
         try CloudVectorsRunner.requireCompletePrintedReference(
-            pack(dictionary: [.topics: ["treaty": 1], .actions: [:]], printed: [.topics: ["treaties": 1]]))
+            pack(dictionary: [.topics: ["treaty": 1]],
+                 printed: [.topics: ["treaties": 1], .actions: ["signed": 1]]))
     }
 
     @Test("The refusal names the lenses and says nothing was written")
