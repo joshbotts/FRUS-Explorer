@@ -384,3 +384,323 @@ struct LiveActivityPolicyTests {
         }
     }
 }
+
+// MARK: - LiveActivityLifecycleTests
+
+/// A Live Activity nothing is driving is ended at launch, and every update carries a stale date
+/// (#1642, `LiveActivityLifecycle`).
+///
+/// The leftover rule is driven here with values, one fixture for each of its conditions alone, and
+/// so are the stale date and what the widget shows for a stale activity. What a test's process
+/// cannot do is hold an activity: `LiveActivityPolicy` refuses it one. So the bookkeeping that
+/// tells the rule a launch's pass is about to resume is driven on an `AppState`, and the calls
+/// that need a real activity (each update's stale date, the sweep's dismissal, the boot's order)
+/// are found in the source. What the Lock Screen then shows was looked at on a simulator; the
+/// session entry of 2026-10-12 in `Planning/DEVELOPMENT-PLAN.md` says what was seen.
+///
+/// Version history:
+///   1.0 — 2026-10-12 (#1642): initial implementation
+@Suite("A Live Activity nothing is driving is ended, and an update goes stale (#1642)")
+@MainActor
+struct LiveActivityLifecycleTests {
+
+    private typealias Rule = LiveActivityLifecycle
+
+    /// An activity as the system lists it. With no argument: a live indexing activity, "a".
+    private static func listed(_ id: String = "a", _ kind: LiveActivityJobKind = .indexing,
+                               _ phase: LiveActivityLifecycle.Phase = .live) -> LiveActivityLifecycle.Listed {
+        LiveActivityLifecycle.Listed(id: id, kind: kind, phase: phase)
+    }
+
+    // MARK: The leftover rule
+
+    @Test("An activity an earlier process left, with nothing here to take it over, is a leftover")
+    func whatALeftoverIs() {
+        // The issue's case: the app was killed while it indexed, and this launch indexes nothing.
+        #expect(Rule.isLeftover(Self.listed(), driver: Rule.Driver()))
+        #expect(Rule.isLeftover(Self.listed("s", .summarizing), driver: Rule.Driver()))
+        // One the system ended and still shows: after eight hours it ends an activity itself and
+        // leaves it on the Lock Screen for up to four more.
+        #expect(Rule.isLeftover(Self.listed("a", .indexing, .ended), driver: Rule.Driver()))
+    }
+
+    @Test("One already dismissed is no leftover: nothing of it is on the screen")
+    func dismissedIsNotALeftover() {
+        // Dismissed alone: not driven here, and nothing running, as in the first fixture above.
+        #expect(!Rule.isLeftover(Self.listed("a", .indexing, .dismissed), driver: Rule.Driver()))
+    }
+
+    @Test("One this process drove is its own, live or ended")
+    func drivenIsNotALeftover() {
+        // Driven alone: live, nothing running.
+        #expect(!Rule.isLeftover(Self.listed("a"), driver: Rule.Driver(driven: ["a"])))
+        // Ended and lingering its three seconds: a sweep must not cut that short.
+        #expect(!Rule.isLeftover(Self.listed("a", .indexing, .ended), driver: Rule.Driver(driven: ["a"])))
+        // It is the id that makes it this process's: with another id driven, "a" is a leftover.
+        #expect(Rule.isLeftover(Self.listed("a"), driver: Rule.Driver(driven: ["b"])))
+    }
+
+    @Test("A live one of a kind whose run is under way or due here is spared, for that run to take over")
+    func aRunAboutToResumeKeepsItsActivity() {
+        // The pass a launch is about to resume: live, not yet taken over, and its kind running.
+        let resuming = Rule.Driver(running: [.indexing])
+        #expect(!Rule.isLeftover(Self.listed(), driver: resuming))
+        let summarizing = Rule.Driver(running: [.summarizing])
+        #expect(!Rule.isLeftover(Self.listed("s", .summarizing), driver: summarizing))
+    }
+
+    @Test("It is spared only while live, only for its own kind's run, and only where a run may show one")
+    func eachConditionOfBeingSpared() {
+        let resuming = Rule.Driver(running: [.indexing])
+        // The premise: this fixture is spared, so each line below changes one thing in it.
+        #expect(!Rule.isLeftover(Self.listed(), driver: resuming))
+
+        // Ended, alone: no update reaches it, so the run takes nothing over.
+        #expect(Rule.isLeftover(Self.listed("a", .indexing, .ended), driver: resuming))
+        // Another kind's run, alone: an indexing pass takes no summarization activity over,
+        #expect(Rule.isLeftover(Self.listed("s", .summarizing), driver: resuming))
+        // and a summarization run no indexing one.
+        #expect(Rule.isLeftover(Self.listed(), driver: Rule.Driver(running: [.summarizing])))
+        // A process that may show none, alone: the reader's switch is off, or it is a test's
+        // process. Its run takes none over, so the activity would sit through the whole pass.
+        #expect(Rule.isLeftover(Self.listed(), driver: Rule.Driver(running: [.indexing], mayShow: false)))
+    }
+
+    @Test("The system's states: stale and pending are live, ended is ended, dismissed is dismissed")
+    func phases() {
+        #expect(Rule.Phase(ActivityState.active) == .live)
+        // Stale is the state this change makes: an update makes a stale activity current again,
+        // so a resumed pass takes one over like any other.
+        #expect(Rule.Phase(ActivityState.stale) == .live)
+        #expect(Rule.Phase(ActivityState.pending) == .live)
+        #expect(Rule.Phase(ActivityState.ended) == .ended)
+        #expect(Rule.Phase(ActivityState.dismissed) == .dismissed)
+    }
+
+    // MARK: The stale date
+
+    @Test("An update goes stale two minutes after it is sent, four turns of the keep-alive")
+    func staleDate() {
+        let sent = Date(timeIntervalSinceReferenceDate: 813_531_099)
+        #expect(Rule.staleDate(after: sent) == sent.addingTimeInterval(120))
+        // Two minutes is the soonest the system marks an activity stale: asked for less, it
+        // schedules two (measured, on `LiveActivityLifecycle.staleAfter`). A shorter value here
+        // would say something the system does not do.
+        #expect(Rule.staleAfter == 120)
+        #expect(Rule.keepAliveEvery == 30)
+        // Three turns of the keep-alive may be late or lost before a running app reads as stopped.
+        #expect(Rule.staleAfter >= 4 * Rule.keepAliveEvery)
+    }
+
+    // MARK: What a stale activity shows
+
+    /// A state with the given progress, as the app sends it.
+    private static func state(fraction: Double? = nil, isOptimizing: Bool = false,
+                              kind: LiveActivityJobKind? = .indexing) -> IndexingActivityAttributes.ContentState {
+        IndexingActivityAttributes.ContentState(
+            kind: kind, volumeTitle: "Volume", progressFraction: fraction, etaSeconds: fraction == nil ? nil : 12,
+            completedDocuments: 310, totalDocuments: 740, isOptimizing: isOptimizing,
+            queueCurrent: nil, queueTotal: nil)
+    }
+
+    @Test("A stale activity shows that the work stopped, whatever its last update said")
+    func staleComesFirst() {
+        // Over a fraction, with its count and its seconds left,
+        #expect(Self.state(fraction: 0.42).detail(isStale: true) == .stopped)
+        // over the finishing phase's moving bar,
+        #expect(Self.state(fraction: 1, isOptimizing: true).detail(isStale: true) == .stopped)
+        // and over the parse phase's.
+        #expect(Self.state().detail(isStale: true) == .stopped)
+        #expect(Self.state(kind: .summarizing).detail(isStale: true) == .stopped)
+    }
+
+    @Test("An activity the app is updating shows what it showed before")
+    func currentIsUnchanged() {
+        #expect(Self.state(fraction: 0.42).detail(isStale: false) == .progress(0.42))
+        // The finishing phase comes before a fraction: the pass's last update carries both.
+        #expect(Self.state(fraction: 1, isOptimizing: true).detail(isStale: false) == .finishing)
+        #expect(Self.state(isOptimizing: true).detail(isStale: false) == .finishing)
+        #expect(Self.state().detail(isStale: false) == .indeterminate)
+        // Content encoded before `kind` existed.
+        #expect(Self.state(fraction: 0, kind: nil).detail(isStale: false) == .progress(0))
+    }
+
+    // MARK: What a launch tells the rule
+
+    @Test("A launch's index pass is a run from the moment it is decided on until it ends")
+    func aLaunchPassIsARunUntilItEnds() {
+        let appState = AppState()
+        #expect(appState.liveActivityDriver.running.isEmpty)
+
+        // Decided on, and not yet begun: the window in which a sweep must keep the activity.
+        appState.launchIndexPassWillBegin()
+        #expect(appState.liveActivityDriver.running == [.indexing])
+
+        // Two passes can be due at one launch (the rebuild from the cache, and the pass over
+        // volumes left unindexed): the first to end does not end the second.
+        appState.launchIndexPassWillBegin()
+        appState.launchIndexPassDidEnd()
+        #expect(appState.liveActivityDriver.running == [.indexing])
+        appState.launchIndexPassDidEnd()
+        #expect(appState.liveActivityDriver.running.isEmpty)
+
+        // An end with no beginning leaves it at none, and a later pass still counts.
+        appState.launchIndexPassDidEnd()
+        #expect(appState.liveActivityDriver.running.isEmpty)
+        appState.launchIndexPassWillBegin()
+        #expect(appState.liveActivityDriver.running == [.indexing])
+    }
+
+    @Test("A summarization run under way is a run, and a finished one is not")
+    func aSummarizationRunIsARunWhileItRuns() {
+        let appState = AppState()
+        appState.backgroundSummarizationProgress.state = .running(tally: .zero, currentDocumentId: nil, step: nil)
+        #expect(appState.liveActivityDriver.running == [.summarizing])
+        appState.launchIndexPassWillBegin()
+        #expect(appState.liveActivityDriver.running == [.indexing, .summarizing])
+        appState.backgroundSummarizationProgress.state = .completed(tally: .zero)
+        #expect(appState.liveActivityDriver.running == [.indexing])
+    }
+
+    @Test("A test's process drives no activity and may show none, so it spares none")
+    func aTestsProcessSparesNone() {
+        let appState = AppState()
+        appState.launchIndexPassWillBegin()
+        let driver = appState.liveActivityDriver
+        #expect(driver.driven.isEmpty)
+        #expect(!driver.mayShow)
+        // So a leftover met by a test's app is ended at its launch, pass or no pass, and is not
+        // there for the next run's install to stop (`LiveActivityPolicy`).
+        #expect(Rule.isLeftover(Self.listed(), driver: driver))
+    }
+
+    // MARK: The calls a test's process cannot make
+
+    private static let repoRoot = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent()
+
+    /// `relativePath`'s text, without the lines that are only a comment.
+    private static func code(_ relativePath: String) throws -> String {
+        try String(contentsOf: repoRoot.appendingPathComponent(relativePath), encoding: .utf8)
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.drop(while: \.isWhitespace).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
+    /// The body of the function declared by `signature` in `source`, braces matched.
+    private static func body(of signature: String, in source: String) throws -> Substring {
+        let start = try #require(source.range(of: signature), "\(signature) is gone")
+        let open = try #require(source[start.upperBound...].firstIndex(of: "{"))
+        var depth = 0
+        var index = open
+        while index < source.endIndex {
+            if source[index] == "{" { depth += 1 }
+            if source[index] == "}" {
+                depth -= 1
+                if depth == 0 { return source[source.index(after: open)..<index] }
+            }
+            index = source.index(after: index)
+        }
+        Issue.record("\(signature) has no closing brace")
+        return ""
+    }
+
+    @Test("Every content the app gives an activity carries the rule's stale date")
+    func everyContentCarriesAStaleDate() throws {
+        // `ActivityContent(` as a call: the helper's own name ends in the same letters.
+        let construction = try Regex(#"(^|[^A-Za-z])ActivityContent\("#)
+        let files = AppSourceTree.swiftFiles(in: Self.repoRoot, directories: AppSourceTree.compiledDirectories)
+        try #require(files.count > 400, "read only \(files.count) source files")
+        var filesThatBuildContent: [String: Int] = [:]
+        for file in files {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            let count = source.matches(of: construction).count
+            if count > 0 { filesThatBuildContent[file.lastPathComponent] = count }
+            #expect(!source.contains("staleDate: nil"), "\(file.lastPathComponent) gives an activity no stale date")
+        }
+        // One place builds content, and both updates and both requests go through it.
+        #expect(filesThatBuildContent == ["AppState.swift": 1])
+        let source = try Self.code("FRUSExplorer/App/AppState.swift")
+        let helper = try Self.body(of: "private static func liveActivityContent(", in: source)
+        #expect(helper.contains("ActivityContent(state: state, staleDate: LiveActivityLifecycle.staleDate(after: Date()))"))
+        #expect(source.components(separatedBy: "Self.liveActivityContent(").count - 1 == 4,
+                "the two requests, the update and the keep-alive no longer all build their content in one place")
+        for signature in ["private func syncIndexingLiveActivity(update: IndexingProgressUpdate)",
+                          "private func syncSummarizationLiveActivity()"] {
+            let body = try Self.body(of: signature, in: source)
+            #expect(body.contains("content: Self.liveActivityContent("), "\(signature) requests with other content")
+        }
+    }
+
+    @Test("A leftover is dismissed at once, and a finished run's activity is not swept")
+    func theSweepDismissesAtOnce() throws {
+        let source = try Self.code("FRUSExplorer/App/AppState.swift")
+        let sweep = try Self.body(of: "func endLeftoverLiveActivities()", in: source)
+        #expect(sweep.contains("LiveActivityLifecycle.isLeftover(LiveActivityLifecycle.Listed(activity), driver: driver)"))
+        // At once: a dismissal that comes due after the app has gone makes the system open the app
+        // again in the background.
+        #expect(sweep.contains("await activity.end(nil, dismissalPolicy: .immediate)"))
+        // The end takes a moment to land. A run that starts in that moment takes over no
+        // activity the sweep has just ended: the sweep records it, and both take-overs ask.
+        #expect(sweep.contains("endedLeftoverLiveActivityIDs.insert(activity.id)"))
+        #expect(source.components(separatedBy: "&& !endedLeftoverLiveActivityIDs.contains($0.id) }) {").count - 1 == 2)
+        // The ids the rule reads are recorded where an activity becomes this process's: at each
+        // request that succeeded, and at each taking over.
+        #expect(source.components(separatedBy: "drivenLiveActivityIDs.insert(").count - 1 == 3)
+        let requested = try Self.body(of: "private func noteLiveActivityRequested(", in: source)
+        #expect(requested.contains("drivenLiveActivityIDs.insert(activity.id)"))
+        for signature in ["private func syncIndexingLiveActivity(update: IndexingProgressUpdate)",
+                          "private func syncSummarizationLiveActivity()"] {
+            let body = try Self.body(of: signature, in: source)
+            #expect(body.contains("drivenLiveActivityIDs.insert(existing.id)"), "\(signature) takes one over unrecorded")
+            #expect(body.contains("noteLiveActivityRequested("), "\(signature) requests one unrecorded")
+        }
+    }
+
+    @Test("The launch sweeps once, after each of its passes has said it will run, and each pass says when it ends")
+    func theBootSweepsAfterItsPassesAreDecided() throws {
+        let source = try Self.code("FRUSExplorer/App/FRUSExplorerApp.swift")
+        let begins = source.ranges(of: "appState.launchIndexPassWillBegin()")
+        let ends = source.ranges(of: "appState.launchIndexPassDidEnd()")
+        let sweeps = source.ranges(of: "appState.endLeftoverLiveActivities()")
+        // The whole-library pass, the rebuild from the cache, and the pass over volumes left unindexed.
+        #expect(begins.count == 3)
+        #expect(ends.count == 3)
+        #expect(sweeps.count == 1)
+        let sweep = try #require(sweeps.first)
+        // Decided before the sweep reads it: a pass announced after would find its activity ended.
+        #expect(begins.allSatisfy { $0.upperBound < sweep.lowerBound })
+        // Each is said on the boot's own path, before the pass's task is made, and each pass's end
+        // follows the call that runs it.
+        let saidBeforeItsTask = try Regex(#"appState\.launchIndexPassWillBegin\(\)\n\s*#endif\n\s*Task \{"#)
+        #expect(source.matches(of: saidBeforeItsTask).count == 3)
+        // The rebuild's call sits in an `if`, so its end follows that `if`'s closing brace.
+        for pass in [#"await appState\.indexAllVolumes\(with: pipeline\)"#,
+                     #"await pipeline\.markFTSRebuildReindexComplete\(\)\n\s*\}"#,
+                     #"await pipeline\.finishIndexing\(of: waiting\)"#] {
+            let endAfterIt = try Regex(pass + #"\n\s*#if os\(iOS\)\n\s*appState\.launchIndexPassDidEnd\(\)"#)
+            #expect(source.matches(of: endAfterIt).count == 1, "no end follows \(pass)")
+        }
+    }
+
+    @Test("The widget draws a stale activity as stopped in each of its presentations")
+    func theWidgetDrawsStale() throws {
+        let source = try Self.code("FRUSExplorerWidgets/IndexingLiveActivity.swift")
+        // The Lock Screen and the expanded island share one view, which reads the rule.
+        #expect(source.contains("IndexingLockScreenView(state: context.state, isStale: context.isStale)"))
+        #expect(source.contains("IndexingExpandedView(state: context.state, isStale: context.isStale)"))
+        #expect(source.contains("IndexingExpandedView(state: state, isStale: isStale)"))
+        // That view and the compact island each switch on it, so neither can draw a stale activity
+        // as progress.
+        #expect(source.components(separatedBy: "detail(isStale:").count - 1 == 2)
+        #expect(source.contains("switch state.detail(isStale: isStale) {"))
+        #expect(source.contains("switch context.state.detail(isStale: context.isStale) {"))
+        #expect(source.contains("Text(state.stoppedLabel)"))
+        // The small island has room for a mark and no words, so the mark carries the sentence
+        // for VoiceOver, in the compact presentation and in the minimal one.
+        #expect(source.components(separatedBy: ".accessibilityLabel(context.state.stoppedLabel)").count - 1 == 2)
+        // The two sentences, one for each kind of job.
+        #expect(source.contains(#"defaultValue: "Indexing has stopped. Open FRUS Explorer to continue.""#))
+        #expect(source.contains(#"defaultValue: "Summarizing has stopped. Open FRUS Explorer to continue.""#))
+    }
+}

@@ -2460,6 +2460,11 @@ struct FRUSExplorerApp: App {
             // the user's change until the next launch. (These Tasks inherit the MainActor,
             // so the SwiftData snapshot reads are plain calls.)
             if dateReindexNeeded {
+                #if os(iOS)
+                // #1642: said before the pass starts, so a Live Activity the last process left is
+                // kept for it to take over. The same for the two passes below.
+                appState.launchIndexPassWillBegin()
+                #endif
                 Task {
                     #if DEBUG
                     print("[FRUSExplorer] Background re-index triggered (dateReindex=true, ftsRebuild=\(ftsRebuildNeeded)).")
@@ -2467,6 +2472,9 @@ struct FRUSExplorerApp: App {
                     // The pass, then a re-read of which volumes the index holds (#1526): the pass
                     // reports no volume as it finishes it, and ended by storing an empty id.
                     await appState.indexAllVolumes(with: pipeline)
+                    #if os(iOS)
+                    appState.launchIndexPassDidEnd()
+                    #endif
                     await pipeline.markDateReindexComplete()
                     if ftsRebuildNeeded { await pipeline.markFTSRebuildReindexComplete() }
                     // Rebuild the materialised person rollup after the persons table changes, then
@@ -2491,6 +2499,9 @@ struct FRUSExplorerApp: App {
                     #endif
                 }
             } else if ftsRebuildNeeded {
+                #if os(iOS)
+                appState.launchIndexPassWillBegin()
+                #endif
                 Task {
                     #if DEBUG
                     print("[FRUSExplorer] FTS rebuild from document_cache triggered.")
@@ -2498,6 +2509,9 @@ struct FRUSExplorerApp: App {
                     if (try? await pipeline.rebuildSearchIndexFromCache()) != nil {
                         await pipeline.markFTSRebuildReindexComplete()
                     }
+                    #if os(iOS)
+                    appState.launchIndexPassDidEnd()
+                    #endif
                     // The person rollup, the broken-reference flags and (#308) the subject facet
                     // table: the kit's post-index passes, in this order.
                     let overrides = PersonClusterOverrideStore.snapshot(context: modelContainer.mainContext)
@@ -2563,6 +2577,9 @@ struct FRUSExplorerApp: App {
                 let interrupted = appState.interruptedVolumeIds
                 let waiting = (try? pipeline.volumesAwaitingIndex(excluding: interrupted)) ?? []
                 if !waiting.isEmpty {
+                    #if os(iOS)
+                    appState.launchIndexPassWillBegin()
+                    #endif
                     Task {
                         #if DEBUG
                         print("[FRUSExplorer] Reconciling \(waiting.count) downloaded volumes not fully indexed.")
@@ -2570,6 +2587,9 @@ struct FRUSExplorerApp: App {
                         // Read above, before this launch starts any pass: a volume being stored
                         // has no record yet either. In id order; a failure is passed over.
                         await pipeline.finishIndexing(of: waiting)
+                        #if os(iOS)
+                        appState.launchIndexPassDidEnd()
+                        #endif
                     }
                 }
             }
@@ -2645,6 +2665,15 @@ struct FRUSExplorerApp: App {
                 #endif
             }
         }
+
+        #if os(iOS)
+        // #1642: end a Live Activity the last process left, which nothing here is driving: the
+        // app was killed while it indexed or summarized, and its activity went on showing the
+        // progress as it stood. Here, after this launch has decided on its own index passes (each
+        // has said so above), so the activity a resumed pass is about to take over is kept; and
+        // outside the block above, so it runs when the index could not be opened too.
+        appState.endLeftoverLiveActivities()
+        #endif
 
         let summarizationService = SummarizationService(
             modelContainer: modelContainer,

@@ -26,7 +26,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 132 KB | 271 | 0 | — |
 | [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 133 KB | 275 | 0 | — |
 | [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 153 KB | 299 | 0 | — |
-| [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 97 KB | 210 | 0 | — |
+| [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 99 KB | 212 | 0 | — |
 
 ## How to read this file
 
