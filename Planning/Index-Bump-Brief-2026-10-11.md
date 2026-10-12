@@ -176,9 +176,9 @@ This brief first declined the item, on lane NOTE's counts of 2026-10-01. The own
 | A | Stored values that name nothing or carry noise | #1613, items c to f, and i | 66 | Merged, #1638 |
 | B | Vol. XVI's people and terms | #1599 | 67 | Merged, #1639 |
 | C | A section's own text | #1536 | 68 | Merged, #1640 |
-| D | Subject-Numeric files stored without a designation | none filed | 69 | Done; its pull request is open |
+| D | Subject-Numeric files stored without a designation | none filed | 69 | Merged, #1645 |
 
-C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. Build 50 waits for all four.
+C and D could change places; C went first, as the largest and the one a corrected volume had already made worse. All four merged on 2026-10-11, and build 50 carries them.
 
 ## 6. Not measured, and not verified
 
