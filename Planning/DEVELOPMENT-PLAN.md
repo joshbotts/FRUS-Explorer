@@ -37931,7 +37931,9 @@ Pull request 3 of the plan of record's queue, decision 8. It went ahead of pull 
 - The Mac: `FRUSExplorerMac` built clean in `DirectDistribution` and again in `Debug`, which compiles the `#if DEBUG` code for the Mac and was not launched: `** BUILD SUCCEEDED **` each, the same two residues. The iOS scheme's log names no `FRUSExplorerMac` target, so these two builds are the Mac's compile check.
 - `WordCloudLensTests` and `NaturalLanguageReadinessWarmUpTests` on the iPad Pro 13-inch (M5) under iOS 27.0: 8 tests in 2 suites passed, in the process that had lost its lemmatiser by itself (above). The fallback's own suites then ran on that iPad twice, 126 tests in 15 suites each, both in processes that lemmatised.
 - `EditableContentKeyTests` after the last Swift edit that moved lines: 21 tests passed.
-«RERUN»
+- After the last edit to a document a test reads, `CodingStandardsAuditTests`, `EditableContentKeyTests`, `ResearchGuideCoverageTests` and `BundledArtifactProvenanceTests` again, at `9c2ece75`: 92 tests in 4 suites passed. The commit after it changes this file, the generators' runbook and the UI runbook, which no test reads.
+- The generator built at `904d8cba`, the last commit to change code, wrote the four files once more: byte for byte the committed ones (867 MB peak).
+- `v2` had not moved from `7c9eaacd` when the branch was pushed, and no pull request was open.
 **Not done, and for the owner**
 - **Not seen on the owner's iPhone**, where the fault is. The look is the plan's §3: on a launch whose Language Analysis row reads *Limited*, the three surfaces under their notes.
 - **The plural rule.** A printed count folds regular plurals, as it has since #1373. If the fallback should count them apart, that is a new rule for the count and the reference together.
