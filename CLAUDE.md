@@ -101,9 +101,9 @@ Five rules hold for every UI run, and the runbook gives the measurement behind e
 Related's shared-word chips compare printed forms: launch a Debug build with
 `SIMCTL_CHILD_FRUS_DEBUG_NO_LEMMA_ANSWER=1 xcrun simctl launch <udid> bottsywattsy.FRUS-Explorer`
 and wait 30 seconds. The verdict then reads as the owner's iPhone's did, and Settings ▸ Data &
-Recovery ▸ Diagnostics ▸ Language Analysis reads *Limited*. A simulator loses its lemmatiser only by chance (none
-of fourteen relaunches on 2026-10-12); `NaturalLanguageReadiness.unansweredLemmaRequestEnvironmentKey`
-has the detail.
+Recovery ▸ Diagnostics ▸ Language Analysis reads *Limited*. A simulator loses its lemmatiser only
+by chance (none of fifteen launches of the iPhone 17 on 2026-10-12, one of three of the iPad Pro
+13-inch (M5)); `NaturalLanguageReadiness.unansweredLemmaRequestEnvironmentKey` has the detail.
 
 **Command-line tools: what exists, and where the detail is.** Every generator is a package target
 run from the repo root (`swift run -c release <Name>`); a few corpus tools are stdlib-only Python
@@ -150,7 +150,10 @@ Rules that span entries:
 
 - **A refreshed JSON under `FRUSExplorer/Resources/` owes `swift test` and the unit target**, since
   package suites read it from the repository. A new or renamed bundled resource also needs
-  `xcodegen generate` and the scheme restore; a same-name refresh does not.
+  `xcodegen generate` and the scheme restore; a same-name refresh does not. A new bundled JSON
+  also needs a row in `BundledArtifactProvenance.table`:
+  `BundledArtifactProvenanceTests.everyArtifactIsTiered` fails without one, and a scoped run of a
+  lane's own suites does not include it (#1608's missing row was found by review, not by a run).
 - **Rebuilding `collection-authority.json` changes record ids**, so regenerate usage, flow and
   external citations after it. The central-files chain is `SUPPLEMENT_FROM_HARVEST` →
   `PRUNE_FLAGGED_LOTS` → `CollectionAuthorityGenerator` → `CollectionUsageIndexGenerator` →
@@ -161,8 +164,9 @@ Rules that span entries:
   `SemanticVectorsGenerator`'s index, binary and shard manifest. Run the second with `EXPECT_DIGEST`
   set to the shipped family's digest.
 - **A keyed NARA harvest spends a metered quota**: confirm the invocation first. A
-  `CloudVectorsGenerator` run takes about 21 minutes on the M5 MacBook, and 35 with
-  `VERIFY_PRINTED_WALK=1` (measured 2026-10-12; 50 to 60 on the Mac it was first timed on).
+  `CloudVectorsGenerator` run takes about 21 minutes on the M5 MacBook, and about 52 of processor
+  time with `VERIFY_PRINTED_WALK=1` (measured 2026-10-12; a run was 50 to 60 on the Mac it was
+  first timed on).
 - **A regenerated `subject-numeric-labels.json` ships only when every label that changed has been
   read against the handbook's scan** (the owner's decision of 2026-10-11). `REVIEW_OUTPUT` gives
   each label's page and row, and the pull request lists each change old to new. The generator
