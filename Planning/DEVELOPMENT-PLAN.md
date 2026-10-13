@@ -38170,4 +38170,4 @@ On the owner's word ("bump build to 50 and update testflight docs"). The branch 
 - **On the Mac, by a person:** dark appearance and the Extra Large text size on the reader's page, a Meaning search inside a set, and the re-index of a real library from build 49.
 - **Before the archive, the owner's two scripts,** in the checkout the archive is cut from: `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`. Neither was run here: the dSYM cache and the schema stamp they write belong to that checkout, and the second reads Production with the owner's token.
 - **`python3 Scripts/check_repository_links.py --stamp`**, the owner's.
-- **No `build-50` tag** is made here.
+- **No `build-50` tag** is made here. The owner made it on 2026-10-13, on `c6f7b2cb` (the merge of #1661, which carried this entry's last two commits after #1656 was merged at `2bae0459`).
