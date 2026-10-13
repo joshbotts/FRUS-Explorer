@@ -1,42 +1,45 @@
-# What's New Since Build 48 (Mac)
+# What's New Since Build 49 (Mac)
 
-**Documents show their figures. The Subject-Numeric File is its own filing era.**
+**Search results can be selected, tagged and added to a collection. The Corpus Browser opens text a chapter prints outside its documents.**
 
-**First launch re-indexes every downloaded volume, once**; the app may be slower until it finishes. Nothing is re-downloaded, but the app then fetches the figure images of the volumes you already have (up to 141 MB for the whole series).
+**First launch re-indexes every downloaded volume, once**; the app may be slower until it finishes. Nothing is re-downloaded.
 
-## Figures
+## Search
 
-- A map, chart, photograph or facsimile is drawn in the reader, with its head above and its captions beneath, and is embedded in PDF, Word and HTML exports.
-- Images download with a volume and are removed with it. **Volumes & Storage** counts them in a **Figures** segment.
-- **[Figure]** shows only where history.state.gov serves no image, or until one arrives.
-- The Public Diplomacy film sections print their heading and **Watch on history.state.gov ↗**.
+- **Select**, in the Search window's titlebar (its **»** menu when the window is narrow), gives every result a checkbox and puts a strip above the list: **Add to Collection…**, **Add Tags…** and, in Checklist Mode, **Mark Reviewed**, each with **Undo**. **Space** checks the highlighted row.
+- Right-click one result for **Add to Collection…** and **Add Tags…**. Add Tags takes no tag off.
+- **Checklist Mode** has **Mark Page Reviewed** and **Undo**. Its marks last as long as the search.
+- A **Meaning** search inside a working corpus or a project's **History** scope ranks that set alone.
 
-## The Subject-Numeric File (1963–1973)
+## The Corpus Browser and the reader
 
-- It is an eleventh provenance category, between the Central Decimal File and the Central Foreign Policy File: in the **Archival Sourcing** charts (brown), the Corpus Browser's Archives ▸ **Provenance Types**, Archival Analytics ▸ **Your Library**, and the map's provenance colours.
-- A citation is placed by what it gives (a file designation such as POL 27 VIET S), however the note is worded. **Other NARA Collections** is less than half its old size.
-- **Source Explorer** has one box for these notes: **File Designation**, **File Years**, the handbook for those years, and what to hand an archivist. It runs no catalog search for them and offers no manual search field.
+- A chapter of text alone (a treaty, say) opens with **Read**, where it said "No documents in this section."
+- Text a section prints above its documents, such as those present at a meeting, is a **Read** row heading the section, and Search finds it.
+- 1981–1988 vol. XVI's documents end with **Persons** and **Abbreviations & Terms** lists, and its people have mentions.
+- "See volume V" opens that volume's page in the Corpus Browser, and a reference to a footnote counts for its document.
+- Person names and cross-references are underlined, in darker colours, for WCAG 2.2 AA contrast. **File ▸ Print** prints them in colour with no underline.
+- 1952–1954 vol. IX, Part 1 has 47 more documents (900–946): Settings ▸ Volumes & Storage ▸ **Check for Corrections** brings them.
 
 ## Also
 
-- **Graphs:** a drag on empty canvas pans, and labels hold still while the layout settles.
-- **iCloud:** a sync that stops says so and names its cause. **Fix iCloud Sync** warns before it discards changes not yet uploaded.
-- **Language analysis:** Settings ▸ **Data & Recovery** ▸ **Language Analysis** shows what works.
-- **Citation Lookup:** Batch hides the Parsed Fields and counts best guesses apart. A document its volume did not number reads "Unnumbered (d710a-1)".
+- **Archives:** a Subject-Numeric file with no subject number (POL US-USSR) has **Archival Neighbors**, and a file is one list however it is cited. Archival Analytics groups such files under their category (**Files with no subject number**). A lot cited through the National Archives gets its lot cards with no API key.
+- **Language analysis:** Settings ▸ Data & Recovery ▸ **Language Analysis** has **Copy Language Analysis Record**, for a report.
+- **Accessibility:** all eleven About the Series charts have an Audio Graph.
 
 **Fixes:** many, in every window and in accessibility.
 
 ## What to test
 
-1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 48?
-2. **Your own library's figures.** Launch online and open **Volumes & Storage**: does **Figures** grow without your opening a document?
-3. **Figures.** 1951 vol. III Part 1 doc. 289 (photographs over their captions; a name in a caption is still a link); 1946 vol. I doc. 587 (a facsimile under its title; one figure there reads [Figure]). Export both as PDF, Word and HTML, and open the Word file in Word. Remove a volume: does **Figures** shrink?
-4. **Subject-Numeric notes.** 1964–68 vol. I doc. 5 ▸ Source Explorer: is the type "State Dept. Subject-Numeric File (February 1963–1973)", the designation POL 27 VIET S, the years 1964–66? Try 1969–76 vol. XXX doc. 6. In Archives ▸ **Provenance Types**: eleven rows, Subject-Numeric File second?
-5. **The charts.** Archival Sourcing and Your Library: is the brown band easy to tell from its neighbours? On the map, coloured by provenance: can you tell the three blues apart?
-6. **Collections.** A long collection name in the window's picker; a Note in a document's popover; export a collection with an untitled Section heading.
-7. **Research database export** (Settings ▸ **Data & Recovery** ▸ **Export Research Database…**): does the saved file open in a SQLite browser?
-8. **Your build-48 reports**: fixed?
+1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 49?
+2. **Selecting results.** Check several, add them to a collection, tag them, and **Undo** each. Right-click a checked result: "Add 3 Selected to Collection…"? In Checklist Mode: **Mark Page Reviewed**, **Undo**.
+3. **Meaning inside a set.** Apply a working corpus (**Advanced…**), switch to Meaning, ask a question: every row in the corpus?
+4. **Read rows.** 1945 Potsdam vol. II ▸ VI. Minutes… ▸ Monday, July 16 ▸ Meeting of the Joint Chiefs of Staff, 10 a.m.: a **Read** row above Documents (1)? Does Search find Esposito there?
+5. **Links.** 1981–88 vol. XVI doc. 368: click Haig and OAS in the lists at its end. 1961–63 vol. VI doc. 16, footnote 1: click "volume V". Does the Corpus Browser come forward on that volume?
+6. **The page.** Underlines readable, light and dark, at Extra Large? Print a document (⌘P): names and cross-references in colour, not underlined?
+7. **Source Explorer.** 1961–63 vol. V doc. 323: do Archival Neighbors end "Matching archival source: POL US-USSR"? 1969–76 vol. XLI doc. 34: a Candidate NARA Series box above the NARA Catalog box?
+8. **Archival Analytics** ▸ Collections ▸ **Central-file classes**: does **Inside these families** open POL to its files?
+9. **Your build-49 reports**: fixed?
 
-Not bugs: [Figure] where the State Department's site has no image; category counts that differ from build 48's; 1964–68 volumes in a new colour on the map; an empty Archival Neighbors list that says the note "cites the Subject-Numeric File".
+Not bugs: counts that differ from build 49's (search totals, mentions, cross-reference figures); new region labels on the semantic map; files inside a family in Archival Analytics that carry no country name.
 
 Include macOS version, window, clicks, expected, actual — and for anything archival, the document id. Thanks!
