@@ -222,8 +222,9 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
 
     /// The page's global holding the `id` of the footnote entry the reader was last brought to
     /// (`_FRUSWebViewCoordinator.revealFootnote`), or `null` once the reader has scrolled, tapped
-    /// or typed for themselves. ``figureRetryScript(for:)`` reads it.
-    nonisolated static let revealedFootnoteGlobal = "FRUSRevealedFootnote"
+    /// or typed for themselves. ``figureRetryScript(for:)`` reads it. The kit's
+    /// `FootnoteLanding.revealedGlobal`, which its script sets.
+    nonisolated static let revealedFootnoteGlobal = FootnoteLanding.revealedGlobal
 
     /// The script that makes the page ask again for the image at `url`, once it has been fetched:
     /// every `<img>` naming it drops its figure's `missing` mark and reloads.

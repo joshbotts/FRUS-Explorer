@@ -41,6 +41,8 @@ import SQLite3
 ///          `outboundEdges`, `edgeCount` and `documentTargetPredicate` now refuse
 ///          (`namesADocumentPredicate`); a reference to a footnote is stored as its document, so
 ///          `inboundEdges` and the rankings take it with no change here
+///   1.8 — FRUS Explorer Light: `DocumentTitleFacts` is a typealias of the kit's
+///          `DocumentDisplayTitle.Facts`, which moved there with the display title
 public actor CrossReferenceStore {
 
     // MARK: - SQLite handle
@@ -444,19 +446,10 @@ public actor CrossReferenceStore {
         return result
     }
 
-    /// What a display title needs about one document, when the header alone is not enough.
-    ///
-    /// `header` is nil when the document has none — the same omission ``documentHeaders(for:)``
-    /// makes, for the same reason. The other two fields exist so a caller can say something better
-    /// than a raw document id in that case.
-    public struct DocumentTitleFacts: Sendable, Equatable {
-        /// The printed `<head>`, or nil when the document has none.
-        public let header: String?
-        /// The FRUS document number (`"304"`), or nil when the document carries none.
-        public let documentNumber: String?
-        /// Whether the document is an editorial note rather than a printed document.
-        public let isEditorialNote: Bool
-    }
+    /// What a display title needs about one document, when the header alone is not enough: the
+    /// kit's `DocumentDisplayTitle.Facts`, beside the rule that reads it, since FRUS Explorer Light's
+    /// lists name documents by that rule too.
+    public typealias DocumentTitleFacts = DocumentDisplayTitle.Facts
 
     /// Returns everything a display title needs for a batch of keys, in one query per volume.
     ///

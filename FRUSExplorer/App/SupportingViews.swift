@@ -1067,6 +1067,8 @@ private struct MacIndexingQueuePanel: View {
 ///
 /// Version history:
 ///   1.0 — Document Share/Export control split out from the citation popover
+///   1.1 — FRUS Explorer Light: `extractPublicationYear(volumeURL:)` reads the header with the kit's
+///          `TEIPublicationYear`, the scan this type and iOS's `DocumentViewModel` each kept a copy of
 @MainActor
 enum DocumentExportSupport {
 
@@ -1094,33 +1096,10 @@ enum DocumentExportSupport {
         return "n.d."
     }
 
-    /// Reads the volume XML header and extracts the publication year.
+    /// Reads the volume XML header and extracts the publication year, off the main actor, with the
+    /// kit's `TEIPublicationYear.read(from:)`.
     static func extractPublicationYear(volumeURL url: URL) async -> String? {
-        await Task.detached(priority: .utility) {
-            guard let stream = InputStream(url: url) else { return nil }
-            stream.open()
-            defer { stream.close() }
-            var buffer = [UInt8](repeating: 0, count: 8_192)
-            let n = stream.read(&buffer, maxLength: buffer.count)
-            guard n > 0, let text = String(bytes: Array(buffer[0..<n]), encoding: .utf8) else { return nil }
-            guard let blockStart = text.range(of: "<publicationStmt"),
-                  let blockEnd = text.range(of: "</publicationStmt>"),
-                  blockStart.lowerBound < blockEnd.lowerBound else { return nil }
-            let block = String(text[blockStart.lowerBound..<blockEnd.upperBound])
-            if let yr = regexFirstCapture(#"when="(\d{4})""#, in: block),
-               let y = Int(yr), y > 1750, y < 2100 { return yr }
-            if let yr = regexFirstCapture(#">(\d{4})\s*<"#, in: block),
-               let y = Int(yr), y > 1750, y < 2100 { return yr }
-            return nil
-        }.value
-    }
-
-    private nonisolated static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
-              match.numberOfRanges >= 2,
-              let range = Range(match.range(at: 1), in: text) else { return nil }
-        return String(text[range])
+        await Task.detached(priority: .utility) { TEIPublicationYear.read(from: url) }.value
     }
 
     /// BibTeX record for the document.

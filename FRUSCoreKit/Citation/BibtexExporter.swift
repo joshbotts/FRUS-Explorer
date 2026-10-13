@@ -6,6 +6,8 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
+
 // MARK: - BibtexExporter
 
 /// Formats FRUS citation metadata as a BibTeX `@incollection` record.
@@ -34,6 +36,8 @@
 ///          a pre-built-`Item` overload used by `BibTeXCollectionExporter` for whole-collection
 ///          `.bib` files (mirrors `RISExporter.export(zoteroItem:)`). Tags → `keywords`,
 ///          research notes → `annote`, `extra` lines → `note`.
+///   1.2 — FRUS Explorer Light: moved into the kit, for the web edition's Cite, and imports Foundation
+///          itself
 public struct BibtexExporter: Sendable {
 
     public init() {}

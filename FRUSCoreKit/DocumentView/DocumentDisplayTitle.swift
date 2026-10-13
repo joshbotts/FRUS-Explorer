@@ -44,7 +44,29 @@ import Foundation
 ///   1.0 — initial implementation, after the headerless-fallback fix
 ///   1.1 — #1372: the population corrected — the 8,467 notes were headerless only in the index
 ///   1.2 — #1372: a note's generic printed head (*Editorial Note*) names it with its number
-enum DocumentDisplayTitle {
+///   1.3 — FRUS Explorer Light: moved into the kit and public, for the web edition's lists, with
+///          ``Facts``, which was `CrossReferenceStore.DocumentTitleFacts` and is its typealias now
+public enum DocumentDisplayTitle {
+
+    /// What a display title needs about one document, when the header alone is not enough.
+    ///
+    /// `header` is nil when the document has none — the same omission
+    /// `CrossReferenceStore.documentHeaders(for:)` makes, for the same reason. The other two fields
+    /// exist so a caller can say something better than a raw document id in that case.
+    public struct Facts: Sendable, Equatable {
+        /// The printed `<head>`, or nil when the document has none.
+        public let header: String?
+        /// The FRUS document number (`"304"`), or nil when the document carries none.
+        public let documentNumber: String?
+        /// Whether the document is an editorial note rather than a printed document.
+        public let isEditorialNote: Bool
+
+        public init(header: String?, documentNumber: String?, isEditorialNote: Bool) {
+            self.header = header
+            self.documentNumber = documentNumber
+            self.isEditorialNote = isEditorialNote
+        }
+    }
 
     /// The title to show for a document, given what the index knows about it.
     ///
@@ -52,8 +74,7 @@ enum DocumentDisplayTitle {
     ///   - facts: What the store returned for this key, or `nil` when the document is not indexed.
     ///   - documentId: The last resort, and the reason this never returns an empty string.
     /// - Returns: A non-empty string, always.
-    static func text(_ facts: CrossReferenceStore.DocumentTitleFacts?,
-                     documentId: String) -> String {
+    public static func text(_ facts: Facts?, documentId: String) -> String {
         let isNote = facts?.isEditorialNote == true
 
         // A printed head wins outright: it is what the volume calls this document — unless it is
@@ -89,7 +110,7 @@ enum DocumentDisplayTitle {
     /// exact rather than a pattern, so *The World War: Editorial note* and *Editorial Note on a
     /// Meeting at the White House, December 18, 1941* — real titles that contain the words — stay
     /// names.
-    static func isGenericNoteHead(_ head: String) -> Bool {
+    public static func isGenericNoteHead(_ head: String) -> Bool {
         var text = head.trimmingCharacters(in: .whitespacesAndNewlines)
         while let last = text.last, last == "." || last == ":" { text.removeLast() }
         if text.hasPrefix("["), text.hasSuffix("]") { text = String(text.dropFirst().dropLast()) }

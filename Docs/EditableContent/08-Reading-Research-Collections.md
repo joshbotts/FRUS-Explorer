@@ -1339,14 +1339,14 @@ document reproduced from the archives. These two strings are what such a row say
 they existed the row showed the raw record id, and before that it showed nothing at all.
 
 #### An editorial note, with its document number
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentDisplayTitle.swift | lines: 72–73 | key: document.title.editorialNote %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/DocumentDisplayTitle.swift | lines: 93–94 | key: document.title.editorialNote %@ | shared: iOS+macOS (single edit point) -->
 
 Editorial Note %@
 
 <!-- END SOURCE: document.title.editorialNote %@ -->
 
 #### An editorial note carrying no number
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentDisplayTitle.swift | lines: 75–76 | key: document.title.editorialNote.unnumbered | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSCoreKit/DocumentView/DocumentDisplayTitle.swift | lines: 96–97 | key: document.title.editorialNote.unnumbered | shared: iOS+macOS (single edit point) -->
 
 Editorial Note
 
@@ -1739,14 +1739,14 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 <!-- END SOURCE: summary.unavailable.explanation -->
 
 #### Tooltip — Choose citation style (history.state.gov, Chicago…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1274–1275 | key: citation.popover.stylePicker.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1253–1254 | key: citation.popover.stylePicker.help | shared: macOS only -->
 
 Choose citation style (history.state.gov, Chicago, Turabian) for this view — change the default in Settings → Display
 
 <!-- END SOURCE: citation.popover.stylePicker.help -->
 
 #### Tooltip — Copy this citation as BibTeX or RIS, or save a .bib file.…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1390–1391 | key: citation.popover.copyAs.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1369–1370 | key: citation.popover.copyAs.help | shared: macOS only -->
 
 Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are on the document’s Share button.
 
@@ -2126,7 +2126,7 @@ Read mode also enables edge-tap navigation to the previous and next document in 
 <!-- END SOURCE: document.toolbar.panelMode.hint -->
 
 #### This volume was side-loaded, not downloaded from the…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 258–259 | key: citation.sideloaded.note -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 261–262 | key: citation.sideloaded.note -->
 
 This volume was side-loaded, not downloaded from the published catalogue. The app cannot confirm it is published, so no history.state.gov link is included — check the citation before using it.
 

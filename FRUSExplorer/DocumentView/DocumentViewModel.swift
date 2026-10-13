@@ -67,6 +67,9 @@ import SwiftData
 ///   1.10 — FRUSCoreKit, part 1: `load` builds its lookups and its converter through FRUSCoreKit's
 ///          `ReaderLookups` and `ASTToRenderNodeConverter.init(readerOf:lookups:brokenRefs:)`,
 ///          which FRUS Explorer Light renders through too
+///   1.11 — FRUS Explorer Light: `loadPublicationYear(from:)` reads the header with the kit's
+///          `TEIPublicationYear`, the scan this type and the Mac's `DocumentExportSupport` each kept a
+///          copy of
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -347,43 +350,12 @@ public final class DocumentViewModel {
         parsedPublicationYear = await Self.extractPublicationYear(from: volumeURL)
     }
 
-    /// Reads the first 8 KB of `url` (always covers the `teiHeader`) and
-    /// extracts the publication year from `<publicationStmt><date @when>` —
-    /// the authoritative ISO publication date — falling back to the element's
-    /// bare text content (e.g. `<date>2010</date>`).
+    /// The publication year the TEI header at `url` states, read off the main actor by the kit's
+    /// `TEIPublicationYear.read(from:)`: `<publicationStmt><date @when>`'s year — the authoritative
+    /// ISO publication date — falling back to the element's bare text content (e.g.
+    /// `<date>2010</date>`).
     private static func extractPublicationYear(from url: URL) async -> String? {
-        await Task.detached(priority: .utility) {
-            guard let stream = InputStream(url: url) else { return nil }
-            stream.open()
-            defer { stream.close() }
-            var buffer = [UInt8](repeating: 0, count: 8_192)
-            let n = stream.read(&buffer, maxLength: buffer.count)
-            guard n > 0,
-                  let text = String(bytes: Array(buffer[0..<n]), encoding: .utf8) else { return nil }
-
-            guard let blockStart = text.range(of: "<publicationStmt"),
-                  let blockEnd   = text.range(of: "</publicationStmt>"),
-                  blockStart.lowerBound < blockEnd.lowerBound else { return nil }
-            let block = String(text[blockStart.lowerBound..<blockEnd.upperBound])
-
-            // Prefer @when="YYYY" — most authoritative, always the actual publication year.
-            if let yr = regexFirstCapture(#"when="(\d{4})""#, in: block),
-               let y = Int(yr), y > 1750, y < 2100 { return yr }
-            // Fall back to bare year as text content, e.g. <date>2010</date>.
-            if let yr = regexFirstCapture(#">(\d{4})\s*<"#, in: block),
-               let y = Int(yr), y > 1750, y < 2100 { return yr }
-            return nil
-        }.value
-    }
-
-    /// Returns the first capture group of `pattern`'s first match in `text`, or `nil`.
-    private nonisolated static func regexFirstCapture(_ pattern: String, in text: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: text,
-                                           range: NSRange(text.startIndex..., in: text)),
-              match.numberOfRanges >= 2,
-              let range = Range(match.range(at: 1), in: text) else { return nil }
-        return String(text[range])
+        await Task.detached(priority: .utility) { TEIPublicationYear.read(from: url) }.value
     }
 
     // MARK: - Dependencies

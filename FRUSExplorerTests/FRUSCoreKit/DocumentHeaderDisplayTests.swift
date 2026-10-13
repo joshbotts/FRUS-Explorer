@@ -14,7 +14,13 @@
 
 import Foundation
 import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 /// The display-time repair for double-numbered rows and leaked source notes (UI review X-2).
 ///
@@ -32,6 +38,8 @@ import Testing
 ///   1.1 — #1391: the numbered-row split, and the four rows that draw it
 ///   1.2 — #1391 review: a capital letter suffix is the head's own number, the no-space fixtures are
 ///          the two heads that print none, and the scan proves each row draws the rule's output
+///   1.3 — FRUS Explorer Light: a kit suite, beside the rule; the scan of the four rows, which are
+///          the app's views, runs in Xcode only
 @Suite("Document header display")
 struct DocumentHeaderDisplayTests {
 
@@ -164,6 +172,7 @@ struct DocumentHeaderDisplayTests {
             == .init(number: "256", title: "Memorandum"))
     }
 
+    #if !SWIFT_PACKAGE // the four rows are the app's views, read from their source
     // MARK: - #1391: the four rows draw the split
 
     /// One row that prints the number beside the stored header: its file, the declaration that
@@ -418,7 +427,7 @@ struct DocumentHeaderDisplayTests {
     /// The contents of a repository file, by its path from the repository root.
     private static func source(_ relativePath: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         return try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
     }
 
@@ -477,4 +486,5 @@ struct DocumentHeaderDisplayTests {
         }
         return nil
     }
+    #endif
 }

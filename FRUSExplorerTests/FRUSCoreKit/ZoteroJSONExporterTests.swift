@@ -6,10 +6,18 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
-import SwiftData
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+#if !SWIFT_PACKAGE // the research library the tests below read is SwiftData's, the app's
+import SwiftData
+#endif
 
 // MARK: - ZoteroJSONExporterTests
 
@@ -140,6 +148,7 @@ struct ZoteroJSONExporterTests {
         #expect(json["version"] as? Int == 5)
     }
 
+    #if !SWIFT_PACKAGE // `fetchTagsAndNotes` reads SwiftData, and stays in the app
     // MARK: - fetchTagsAndNotes
 
     @MainActor
@@ -192,4 +201,5 @@ struct ZoteroJSONExporterTests {
         #expect(result.tags.isEmpty)
         #expect(result.notes.isEmpty)
     }
+    #endif
 }

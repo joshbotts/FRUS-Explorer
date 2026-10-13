@@ -490,14 +490,9 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         #endif
     }
 
-    /// Scrolls the pending footnote's endnote entry into view and flashes it (#988).
-    ///
-    /// **The endnote `<li>` is the target, not the popover `<aside>`.** The aside carries a bare
-    /// `popover` attribute, so the UA stylesheet gives it `display: none` until it is shown; an
-    /// element generating no boxes cannot be scrolled to, and once shown a popover is in the top
-    /// layer and already on screen. The `<li>` is ordinary in-flow content carrying the same note
-    /// text, and it lives in the footnotes section, which is emitted outside `.frus-document` —
-    /// the offset engine's DFS root — so nothing here can perturb a highlight coordinate.
+    /// Scrolls the pending footnote's endnote entry into view and flashes it (#988), with the kit's
+    /// `FootnoteLanding` script, which says why the target is the endnote `<li>` and not the
+    /// popover `<aside>`.
     ///
     /// The reveal is a scroll and a class toggle: no DOM node is created, split, or removed, so the
     /// live `Text` references in `window.FRUSOffsets.charToNode` stay valid.
@@ -509,65 +504,9 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
         guard let anchor = pendingFootnoteAnchor, anchor != lastRevealedFootnoteAnchor else {
             return false
         }
-        // The DOM key is the `x-` branch of `FRUSRenderNode.footnoteDOMKey`; the reading view
-        // builds its serializer with no `idScope`, so there is no prefix to compose here.
-        // JSON-encode rather than interpolate — the same discipline `renderHighlights` uses, and
-        // the corpus contains at least one non-ASCII note id (`d89fnǁ`).
-        guard let keyData = try? JSONEncoder().encode("x-" + anchor),
-              let keyLiteral = String(data: keyData, encoding: .utf8) else { return false }
-
-        // TWO THINGS HERE ARE LOAD-BEARING, and both were found by running this script against the
-        // emitted markup in a hidden page rather than by reasoning about it.
-        //
-        // The scroll is SYNCHRONOUS. Deferring it inside a double `requestAnimationFrame` — the
-        // obvious way to wait for layout to settle — does nothing at all while `document.hidden`
-        // is true, because rAF callbacks do not fire then: a background macOS window, an unfronted
-        // iPad scene, a reveal arriving before the view is on screen. Measured, the rAF form left
-        // `scrollY` at 0.
-        //
-        // And the scroll falls back to `auto` when the document is hidden, because a `smooth`
-        // scroll is ANIMATED and its animation does not progress either — measured, the sync-but-
-        // smooth form also left `scrollY` at 0, which is the same failure wearing a different hat.
-        //
-        // Both would have been invisible and permanent: `lastRevealedFootnoteAnchor` is recorded
-        // whatever happens, so the reveal is never retried.
-        //
-        // Nothing here needs to wait for layout: the page is a `loadHTMLString` document with no
-        // `@font-face`, and `didFinish` runs after it is parsed and laid out. A figure's image
-        // (#1516) that is on the device is answered by the scheme handler before `didFinish`, so
-        // it is laid out too, and the `scroll-margin-block` on `.fn-list-item` absorbs a small
-        // late reflow.
-        //
-        // An image that is NOT on the device is the exception. The handler fails its request at
-        // once, fetches it, and has the page ask again (`FRUSURLSchemeHandler.figureRetryScript`):
-        // that image is laid out after this scroll, and a map pushes the footnotes down by far
-        // more than the margin. So the entry revealed is remembered in a global the retry script
-        // reads, and the retry brings it back into view once its image has loaded — unless the
-        // reader has since scrolled, tapped or typed, which clears the global, because by then
-        // where they are is their own choice.
-        let revealed = FRUSURLSchemeHandler.revealedFootnoteGlobal
-        let script = """
-        (() => {
-          const li = document.getElementById("fnote-" + \(keyLiteral));
-          if (!li) { return false; }
-          const instant = document.hidden
-            || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          li.scrollIntoView({ block: "center", behavior: instant ? "auto" : "smooth" });
-          window.\(revealed) = li.id;
-          if (!window.\(revealed)Watched) {
-            window.\(revealed)Watched = true;
-            const forget = () => { window.\(revealed) = null; };
-            for (const type of ["wheel", "touchstart", "mousedown", "keydown"]) {
-              window.addEventListener(type, forget, { capture: true, passive: true });
-            }
-          }
-          li.classList.remove("fn-arrived");
-          void li.offsetWidth;
-          li.classList.add("fn-arrived");
-          setTimeout(() => li.classList.remove("fn-arrived"), 2400);
-          return true;
-        })()
-        """
+        guard let script = FootnoteLanding.script(anchor: anchor) else { return false }
+        // The script is the kit's (`FootnoteLanding`), which says why its scroll is synchronous and
+        // falls back to `auto` when the page is hidden: FRUS Explorer Light's reader runs it too.
         let found = (try? await webView.evaluateJavaScript(script)) as? Bool ?? false
         // Recorded even when the anchor was absent, so a failed reveal is not retried on every
         // subsequent update for as long as the reader stays on the document.

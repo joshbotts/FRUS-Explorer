@@ -42,7 +42,8 @@ import Foundation
 ///   1.2 — #1391: `numberedRow(header:number:)`, the number column's split
 ///   1.3 — #1391 review: both functions compare the number without regard to case, so a head that
 ///          prints `@n`'s letter suffix in capitals ("278A." for `278a`) is its own number
-enum DocumentHeaderDisplay {
+///   1.4 — FRUS Explorer Light: moved into the kit and public, for the web edition's result rows
+public enum DocumentHeaderDisplay {
 
     /// Whether the header already begins with this document number, making a separate chip a
     /// duplicate.
@@ -56,7 +57,7 @@ enum DocumentHeaderDisplay {
     ///   - header: The indexed header.
     ///   - number: The row's document number, when it has one.
     /// - Returns: `true` when rendering both would double-number the row.
-    static func headerRepeatsNumber(_ header: String, number: String?) -> Bool {
+    public static func headerRepeatsNumber(_ header: String, number: String?) -> Bool {
         guard let number, !number.isEmpty else { return false }
         let trimmed = header.trimmingCharacters(in: .whitespaces)
         guard let tail = remainder(of: trimmed[...], afterOpening: number) else { return false }
@@ -65,11 +66,11 @@ enum DocumentHeaderDisplay {
     }
 
     /// The two parts of a row that prints the document number beside its title (#1391).
-    struct NumberedRow: Equatable, Sendable {
+    public struct NumberedRow: Equatable, Sendable {
         /// The row's number: the document number exactly as the caller passed it.
-        let number: String?
+        public let number: String?
         /// What to draw beside the number: the stored header, less the number it already prints.
-        let title: String
+        public let title: String
     }
 
     /// What a row that draws the number beside its title draws: the number, and the header without
@@ -112,7 +113,7 @@ enum DocumentHeaderDisplay {
     ///   - number: The document number (`@n`), when the row has one.
     /// - Returns: The number unchanged, and the header without its leading "number." when it opens
     ///   with one; otherwise the number and the header both unchanged.
-    static func numberedRow(header: String, number: String?) -> NumberedRow {
+    public static func numberedRow(header: String, number: String?) -> NumberedRow {
         guard let number, !number.isEmpty else { return NumberedRow(number: number, title: header) }
         guard let rest = remainder(of: header.drop(while: \.isWhitespace), afterOpening: number),
               rest.first == "." else { return NumberedRow(number: number, title: header) }
@@ -141,7 +142,7 @@ enum DocumentHeaderDisplay {
     ///
     /// - Parameter header: The indexed header.
     /// - Returns: The header up to the leaked note, whitespace-trimmed.
-    static func trimmedHeader(_ header: String) -> String {
+    public static func trimmedHeader(_ header: String) -> String {
         guard let range = header.range(of: " Source: ") ?? header.range(of: "\u{00A0}Source: "),
               range.lowerBound != header.startIndex else {
             return header
