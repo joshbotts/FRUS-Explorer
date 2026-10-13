@@ -17,6 +17,25 @@ The Gemma Terms path therefore stands. **Re-run this check at every §5 recurren
 if an Apache-2.0 embedder of comparable quality appears, every obligation in this document
 dissolves for the cost recorded in §6.
 
+**Re-run 2026-10-12, for build 50: the first half is still no, and the second is now yes.**
+`google/embeddinggemma-300m`, the model the app ships vectors from, still declares
+`license: gemma` (HF API, lastModified 2025-09-25, unchanged). But Google's Hugging Face
+organization now holds **`google/embeddinggemma-2`**, created 2026-09-14 and last modified
+2026-10-06, whose card and API record both declare **`license: apache-2.0`**. Its card
+describes a multimodal embedder with a 270M-parameter text part, 768 dimensions and the same
+Matryoshka widths (128, 256, 512, 768), a `feature-extraction` model that is not gated. So an
+Apache-2.0 Gemma-family embedder has appeared, which is the event this section watches for.
+**Nothing here was measured:** not its quality on this corpus, not whether a GGUF of it runs
+under the bundled llama.cpp, not its size on a phone. "Of comparable quality" is therefore
+open, and so is whether to move. Build 49's re-check (2026-10-02) records the two policy pages
+and not this half; the model was eighteen days old then. The Gemma Terms
+path stands for build 50, whose encoder and vectors are EmbeddingGemma 300m's; the decision
+is the owner's, and the plan of record's §3 carries it.
+
+The two policy pages, read the same day: the Terms page says "Last modified: April 1, 2026",
+the date recorded in §5, and the Prohibited Use Policy "Last modified: February 21, 2024", as
+it read on 2026-10-02.
+
 ## 1. The four §3.1 conditions, mapped to surfaces
 
 | # | Condition (clause map §2) | Surface | Status |
