@@ -30,7 +30,7 @@ under the bundled llama.cpp, not its size on a phone. "Of comparable quality" is
 open, and so is whether to move. Build 49's re-check (2026-10-02) records the two policy pages
 and not this half; the model was eighteen days old then. The Gemma Terms
 path stands for build 50, whose encoder and vectors are EmbeddingGemma 300m's; the decision
-is the owner's, and the plan of record's §3 carries it.
+is the owner's, and the plan of record's §3 carries it. Filed as #1659.
 
 The two policy pages, read the same day: the Terms page says "Last modified: April 1, 2026",
 the date recorded in §5, and the Prohibited Use Policy "Last modified: February 21, 2024", as
