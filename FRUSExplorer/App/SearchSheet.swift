@@ -524,7 +524,6 @@ struct MacSearchWindowView: View {
                             section,
                             parameters: searchVM.submittedSearchParameters,
                             service: appState.searchService,
-                            pipeline: appState.indexingPipeline,
                             // Every route but a keyword match describes the keys of the list it holds.
                             documentKeys: searchVM.facetDocumentKeys)
                     }

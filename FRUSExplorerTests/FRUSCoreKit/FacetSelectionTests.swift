@@ -6,9 +6,19 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - FacetSelectionTests
 
@@ -27,6 +37,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #775
+///   1.1 — FRUS Explorer Light: a kit suite, beside the selection it tests, with the staged
+///          sections held to the applier
 @Suite("Facet selection (#775)")
 struct FacetSelectionTests {
 
@@ -172,6 +184,20 @@ struct FacetSelectionTests {
             multi-person filter the model cannot express — `personRollupId` is one rollup and \
             `PersonRollupAnchor` is singular.
             """)
+    }
+
+    /// The panel stages exactly the sections the applier can write, so a staged section always
+    /// has an applier and an Apply never does nothing.
+    @Test("The applier writes every staged section, and no other")
+    func stagedSectionsAreTheOnesTheApplierWrites() {
+        #expect(FacetSelectionApplier.stagedSections == [.years, .volumes])
+        for section in FacetSection.allCases {
+            var parameters = SearchParameters(keywords: "berlin")
+            FacetSelectionApplier.apply(section, keys: ["1951"], to: &parameters)
+            let wrote = parameters != SearchParameters(keywords: "berlin")
+            #expect(wrote == FacetSelectionApplier.stagedSections.contains(section),
+                    "\(section.rawValue): staged \(FacetSelectionApplier.stagedSections.contains(section)), written \(wrote)")
+        }
     }
 }
 
@@ -375,6 +401,7 @@ struct YearKeysPersistenceTests {
             """)
     }
 
+    #if !SWIFT_PACKAGE // SearchScopeSignature is the app's
     @Test("Two searches differing only in their years sign differently")
     func signatureSeesTheYearSet() {
         var a = SearchParameters(keywords: "berlin")
@@ -407,8 +434,10 @@ struct YearKeysPersistenceTests {
             unable to reproduce the search. Got: \(phrases)
             """)
     }
+    #endif
 }
 
+#if !SWIFT_PACKAGE // the facet panel's controller and the search view model are the app's
 // MARK: - StagedSelectionLifetimeTests
 
 /// That a staged selection belongs to the result set it was made in (#775).
@@ -490,3 +519,4 @@ struct StagedSelectionLifetimeTests {
         #expect(vm.advancedFilterSignature == before, "clearing it returns to the original scope")
     }
 }
+#endif

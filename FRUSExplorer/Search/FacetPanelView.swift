@@ -9,111 +9,14 @@
 import SwiftUI
 import TipKit
 
-// MARK: - FacetNarrowing
+// MARK: - FacetNarrowing + the app's subjects
 
-/// How a facet row narrows the search — and, for one section, that it cannot.
-///
-/// ## Four of six narrow through fields that already exist
-/// The design's requirement is that a facet click applies through the **existing**
-/// `SearchSQLFilters` fields, so facets and the filter sheet can never disagree. That holds
-/// for years (`dateRange`), volumes (`volumeIds`), people (`personRollupId`) and document
-/// type (`documentTypeFilter`) — and two of those already read back in the macOS filter row
-/// for free, because that row is driven from the same parameters.
+extension FacetNarrowing {
 
-/// ## Subjects adds a field, deliberately, and the reason is a hard limit
-/// #308's section is the one exception, and it is not a relaxation of the rule so much as a case
-/// the rule did not anticipate. The obvious existing-field route is `documentIds`: resolve the
-/// bucket to its documents and pass them in. That works up to a point and then stops working —
-/// `documentIds` binds one SQL parameter per id, SQLite's `SQLITE_MAX_VARIABLE_NUMBER` is 32,766,
-/// and the largest bucket (*Warfare · General*) holds 65,958 documents. The break would show up
-/// only on broad searches over big buckets, which is precisely what a facet is for. So
-/// `subjectBucket` is a real predicate: one integer, constant cost at any bucket size. The
-/// no-disagreement property the rule protects is preserved the same way the others get it — the
-/// field lives on `SearchParameters`, so any surface that reads scope reads this too.
-///
-/// ## Provenance cannot, and pretending otherwise would be the wrong fix
-/// `SearchSQLFilters` has no repository, record-group or citation-era field, and the design
-/// is explicit that no new filter plumbing should be added here. So the provenance section
-/// is **descriptive only**: it tells the researcher how the match is sourced without
-/// offering a click that would have to invent a filter dimension. A disabled-looking row
-/// that silently does nothing would be worse; the section says why instead.
-///
-/// Version history:
-///   1.0 — R-1b: initial implementation
-enum FacetNarrowing: Sendable, Equatable {
-
-    /// Restrict to a single year.
-    case year(String)
-    /// Restrict to a single volume.
-    case volume(String)
-    /// Restrict to one person rollup. The label rides along (#1092): `rollup_id` is a slot
-    /// number renumbered on every rebuild, so a chip showing the integer names nothing — and
-    /// the bucket that was tapped already knows the person's display name.
-    case person(Int, label: String?)
-    /// Restrict to primary documents or editorial notes.
-    case documentType(DocumentTypeFilter)
-    /// Restrict to documents carrying one `(category, subcategory)` subject bucket (#308).
-    case subject(Int)
-
-    /// The narrowing a bucket in `section` represents, or `nil` when that section is
-    /// descriptive only.
-    static func forBucket(_ bucket: FacetBucket, in section: FacetSection) -> FacetNarrowing? {
-        switch section {
-        case .years:
-            return .year(bucket.key)
-        case .volumes:
-            return .volume(bucket.key)
-        case .people:
-            return Int(bucket.key).map { .person($0, label: bucket.label) }
-        case .documentType:
-            // The aggregate keys on `is_editorial_note`, so "1" is the notes bucket.
-            return .documentType(bucket.key == "1" ? .editorialNotesOnly : .documentsOnly)
-        case .subjects:
-            return Int(bucket.key).map { .subject($0) }
-        case .provenance:
-            return nil
-        }
-    }
-
-    /// Whether a section offers click-to-narrow at all.
-    static func isNarrowable(_ section: FacetSection) -> Bool { section != .provenance }
-
-    /// Applies this narrowing to `parameters`, in place.
-    ///
-    /// Every case writes a field the filter sheet also owns, which is what makes the two
-    /// surfaces incapable of disagreeing.
+    /// Applies this narrowing to `parameters`, in place, with the app's bundled data files, whose
+    /// subject index names a subject bucket's durable key (`apply(to:resources:)`).
     func apply(to parameters: inout SearchParameters) {
-        switch self {
-        case .year(let year):
-            parameters.dateRange = DateRange(earliest: "\(year)-01-01", latest: "\(year)-12-31")
-        case .volume(let volumeId):
-            parameters.volumeIds = [volumeId]
-        case .person(let rollupId, let label):
-            parameters.personRollupId = rollupId
-            // #1092: the tapped bucket's display name IS the chip's label; without it every
-            // person-filter surface falls back to "person #N", a slot number that means
-            // nothing and stops being the same person on the next rollup rebuild.
-            parameters.personLabel = label
-            // A rollup and a single ref are alternative expressions of the same filter;
-            // leaving a stale ref set would AND them and silently return fewer documents
-            // than the facet promised.
-            parameters.personRef = nil
-            // Drop any anchor from a previous person: it names someone else, and leaving it would
-            // make the next rebind silently re-point this filter back at them. The iOS twin
-            // (`SearchViewModel.applyFacetNarrowing`) has always cleared it, with that reason
-            // written down; this shared path — the one macOS takes — did not, so
-            // `refreshPersonRollupBinding` could re-resolve a facet-chosen person B back to the
-            // popover-chosen person A and overwrite both the id and the label. Found while giving
-            // the person filter a token, which promotes its label to primary window chrome.
-            parameters.personAnchor = nil
-        case .documentType(let filter):
-            parameters.documentTypeFilter = filter
-        case .subject(let bucket):
-            parameters.subjectBucket = bucket
-            // The durable half. Without it the narrowing is a bare position and cannot survive a
-            // data drop — see `SearchParameters.subjectBucketKey`.
-            parameters.subjectBucketKey = DocumentSubjectStore.shared?.bucketVocabulary.key(at: bucket)
-        }
+        apply(to: &parameters, resources: .bundled)
     }
 }
 
@@ -149,6 +52,10 @@ struct ActiveNarrowing: Sendable, Equatable, Identifiable {
 /// Version history:
 ///   1.0 — R-1b: initial implementation
 ///   1.1 — Session 2026-08-07: per-section sort / page / filter state (#586)
+///   1.2 — FRUS Explorer Light: `load` asks the search service for a section, which builds the
+///          match or reads the keys as `load` did, so the web edition computes facets by the same
+///          route; it no longer takes the pipeline. `stagedSections` forwards to the kit's
+///          `FacetSelectionApplier.stagedSections`
 @Observable
 @MainActor
 final class FacetPanelController {
@@ -205,15 +112,10 @@ final class FacetPanelController {
     /// that no longer contains those rows.
     private(set) var selection: [FacetSection: FacetSelection] = [:]
 
-    /// The sections that stage a selection instead of narrowing on the first tap.
-    ///
-    /// Years is here because its filter has no other representation — `dateRange` is one
-    /// contiguous interval and `{1951, 1953}` cannot be written in it, which is #775 exactly.
-    /// Volumes is here because `volumeIds` is already a set end to end and the panel was the only
-    /// thing collapsing it to one. Document type is not: it is a three-valued enum whose `.all`
-    /// case already means "neither excluded", so a second control would be two ways to say one
-    /// thing. People is not, this wave — see the section footer.
-    static let stagedSections: Set<FacetSection> = [.years, .volumes]
+    /// The sections that stage a selection instead of narrowing on the first tap: the kit's
+    /// `FacetSelectionApplier.stagedSections`, beside the applier that writes them, which says why
+    /// each is there.
+    static let stagedSections = FacetSelectionApplier.stagedSections
 
     /// The staged selection for `section`.
     func selection(for section: FacetSection) -> FacetSelection {
@@ -366,27 +268,20 @@ final class FacetPanelController {
         _ section: FacetSection,
         parameters: SearchParameters,
         service: SearchService?,
-        pipeline: IndexingPipeline?,
         documentKeys: [(volumeId: String, documentId: String)]? = nil
     ) async {
-        guard let service, let pipeline else { return }
+        guard let service else { return }
         guard !loadedSections.contains(section), !loadingSections.contains(section) else { return }
         loadingSections.insert(section)
         defer { loadingSections.remove(section) }
 
         do {
-            // A meaning search has no MATCH to build, so the expression pass is skipped entirely
-            // rather than computed and discarded — asking `matchExpressions` for the query text is
-            // exactly how the keyword interpretation leaked into these counts in the first place.
-            let expressions = documentKeys == nil
-                ? try await service.matchExpressions(for: parameters)
-                : (corpus: nil, userContent: nil)
-            let filters = documentKeys == nil
-                ? await service.filtersForTesting(parameters)
-                : SearchSQLFilters()
-            let computed = try await pipeline.resultSetFacets(
-                corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
-                filters: filters, request: .one(section), documentKeys: documentKeys)
+            // A meaning search has no MATCH to build, so the service skips the expression pass for
+            // its keys rather than computing one and discarding it — asking `matchExpressions` for
+            // the query text is exactly how the keyword interpretation leaked into these counts in
+            // the first place.
+            let computed = try await service.resultSetFacets(
+                parameters: parameters, request: .one(section), documentKeys: documentKeys)
             guard !Task.isCancelled else { return }
             facets = Self.merge(computed, into: facets, section: section)
             loadedSections.insert(section)
@@ -470,7 +365,7 @@ struct FacetPanelView: View {
     /// Whether the search that produced these results ran by MEANING rather than by keyword.
     ///
     /// **Facets are computed from an FTS5 MATCH, and a meaning search does not have one** (#1193).
-    /// `load(_:parameters:service:pipeline:)` asks `SearchService.matchExpressions(for:)` for a
+    /// `load(_:parameters:service:documentKeys:)` asks `SearchService.matchExpressions(for:)` for a
     /// keyword expression and aggregates the whole index against it — so in meaning mode every
     /// count here described a *different set of documents* from the results on screen: the
     /// keyword interpretation of the query text, not the ranked neighbours the reader is looking

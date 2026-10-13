@@ -16,7 +16,8 @@ import Foundation
 /// Version history:
 ///   1.0 — R-1a: initial implementation
 ///   1.1 — Session 2026-08-07: `hasBoundedDomain` (#586)
-enum FacetSection: String, Sendable, Equatable, CaseIterable {
+///   1.2 — FRUS Explorer Light: public, for the web edition's facets
+public enum FacetSection: String, Sendable, Equatable, CaseIterable {
     /// Year of the document's start date, from `document_dates`.
     case years
     /// Volume, from `document_cache.volume_id`.
@@ -43,7 +44,7 @@ enum FacetSection: String, Sendable, Equatable, CaseIterable {
     ///
     /// Volumes (553) and people (**16,385** distinct rollups on a whole-corpus match) are the
     /// two that genuinely need it.
-    var hasBoundedDomain: Bool {
+    public var hasBoundedDomain: Bool {
         switch self {
         case .years, .documentType, .provenance, .subjects: return true
         case .volumes, .people: return false
@@ -73,7 +74,8 @@ enum FacetSection: String, Sendable, Equatable, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #586
-enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
 
     /// Largest bucket first — the familiar facet ordering.
     case count
@@ -95,7 +97,7 @@ enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
     /// Years keeps reverse-chronological, which is what it has always done — the issue's
     /// premise that facets are "displayed by count" was never true of this one. Everything
     /// else keeps count-first.
-    static func standard(for section: FacetSection) -> FacetSort {
+    public static func standard(for section: FacetSection) -> FacetSort {
         section == .years ? .labelDescending : .count
     }
 
@@ -105,7 +107,7 @@ enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
     /// chronological sense that alphabetising would scramble; neither gets a picker. Subjects does get one:
     /// 106 rows is more than a reader scans by eye, and unlike provenance its labels are names
     /// with no inherent order, so A–Z is a real way to find one.
-    static func choices(for section: FacetSection) -> [FacetSort] {
+    public static func choices(for section: FacetSection) -> [FacetSort] {
         switch section {
         case .years, .volumes, .people, .subjects:
             return [.count, .labelAscending, .labelDescending]
@@ -115,7 +117,7 @@ enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
 
     /// The control's label, which differs by section because "A→Z" means "oldest first" on a
     /// column of years and nothing useful on a column of names.
-    func title(for section: FacetSection) -> String {
+    public func title(for section: FacetSection) -> String {
         switch (self, section) {
         case (.count, _):
             return String(localized: "facets.sort.count", defaultValue: "Most documents")
@@ -140,11 +142,12 @@ enum FacetSort: String, Sendable, Equatable, CaseIterable, Codable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #586
-enum FacetPageSize: String, Sendable, Equatable, CaseIterable, Codable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public enum FacetPageSize: String, Sendable, Equatable, CaseIterable, Codable {
     case top5, top10, top25, all
 
     /// Rows per page, or `nil` for no limit.
-    var rowCount: Int? {
+    public var rowCount: Int? {
         switch self {
         case .top5: return 5
         case .top10: return 10
@@ -161,12 +164,12 @@ enum FacetPageSize: String, Sendable, Equatable, CaseIterable, Codable {
     /// remaining 72%, including both World Wars and the entire nineteenth century, was hidden
     /// behind a caption reading "Showing the top 50 of 203". The count in that caption was
     /// honest; "top" was the wrong word for a cut that kept the *latest*, not the largest.
-    static func standard(for section: FacetSection) -> FacetPageSize {
+    public static func standard(for section: FacetSection) -> FacetPageSize {
         section.hasBoundedDomain ? .all : .top25
     }
 
     /// The control's label.
-    var title: String {
+    public var title: String {
         switch self {
         case .top5:  return String(localized: "facets.page.top5", defaultValue: "Top 5")
         case .top10: return String(localized: "facets.page.top10", defaultValue: "Top 10")
@@ -182,24 +185,32 @@ enum FacetPageSize: String, Sendable, Equatable, CaseIterable, Codable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #586
-struct FacetDisplayState: Sendable, Equatable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets, with an initialiser
+public struct FacetDisplayState: Sendable, Equatable {
 
     /// How the rows are ordered.
-    var sort: FacetSort
+    public var sort: FacetSort
 
     /// How many rows a page holds.
-    var pageSize: FacetPageSize
+    public var pageSize: FacetPageSize
 
     /// The zero-based page currently shown.
-    var pageIndex: Int = 0
+    public var pageIndex: Int = 0
 
     /// A substring the labels must contain, or empty for no filtering.
-    var filterText: String = ""
+    public var filterText: String = ""
 
     /// The state a section opens in.
-    static func standard(for section: FacetSection) -> FacetDisplayState {
+    public static func standard(for section: FacetSection) -> FacetDisplayState {
         FacetDisplayState(sort: .standard(for: section),
                           pageSize: .standard(for: section))
+    }
+
+    public init(sort: FacetSort, pageSize: FacetPageSize, pageIndex: Int = 0, filterText: String = "") {
+        self.sort = sort
+        self.pageSize = pageSize
+        self.pageIndex = pageIndex
+        self.filterText = filterText
     }
 }
 
@@ -209,36 +220,37 @@ struct FacetDisplayState: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #586
-struct FacetPage: Sendable, Equatable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public struct FacetPage: Sendable, Equatable {
 
     /// The rows to render.
-    let rows: [FacetBucket]
+    public let rows: [FacetBucket]
 
     /// How many rows survived the filter — the denominator for the page indicator.
-    let matchingCount: Int
+    public let matchingCount: Int
 
     /// How many rows the section holds before any filtering, so a filtered view can say what
     /// it narrowed from.
-    let totalCount: Int
+    public let totalCount: Int
 
     /// The zero-based page shown, already clamped into range.
-    let pageIndex: Int
+    public let pageIndex: Int
 
     /// How many pages the filtered rows make. Always at least 1.
-    let pageCount: Int
+    public let pageCount: Int
 
     /// The 1-based number of the first row on this page, for "Showing 26–50 of 203".
     ///
     /// Stored rather than derived from `pageIndex * rows.count`: the last page is usually
     /// short, so that arithmetic understates the offset on exactly the page a reader is most
     /// likely to be checking.
-    let firstRowNumber: Int
+    public let firstRowNumber: Int
 
     /// Whether a page control is worth rendering at all.
-    var hasMultiplePages: Bool { pageCount > 1 }
+    public var hasMultiplePages: Bool { pageCount > 1 }
 
     /// Whether the filter is hiding anything.
-    var isFiltered: Bool { matchingCount != totalCount }
+    public var isFiltered: Bool { matchingCount != totalCount }
 }
 
 // MARK: - FacetPaging
@@ -250,14 +262,15 @@ struct FacetPage: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #586
-enum FacetPaging {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public enum FacetPaging {
 
     /// Applies `state` to `buckets`.
     ///
     /// `state.pageIndex` is **clamped**, not trusted: shrinking the filter or the page size can
     /// leave a stored index past the end, and an out-of-range page should show the last page
     /// rather than an empty one that reads as "no results".
-    static func page(_ buckets: [FacetBucket], with state: FacetDisplayState) -> FacetPage {
+    public static func page(_ buckets: [FacetBucket], with state: FacetDisplayState) -> FacetPage {
         let filtered = filter(buckets, matching: state.filterText)
         let ordered = sorted(filtered, by: state.sort)
 
@@ -282,7 +295,7 @@ enum FacetPaging {
     /// Diacritic-insensitive on purpose: a researcher typing `Agustsson` should find
     /// `Ágústsson, Einar`, and requiring the accent would make the filter useless on exactly
     /// the names that are hardest to type.
-    static func filter(_ buckets: [FacetBucket], matching text: String) -> [FacetBucket] {
+    public static func filter(_ buckets: [FacetBucket], matching text: String) -> [FacetBucket] {
         let needle = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return buckets }
         return buckets.filter {
@@ -296,7 +309,7 @@ enum FacetPaging {
     /// not arrive in the same one — years comes back year-descending and the rest
     /// count-descending — so a `count` case that returned the input unchanged would be right
     /// for four sections and wrong for the fifth.
-    static func sorted(_ buckets: [FacetBucket], by sort: FacetSort) -> [FacetBucket] {
+    public static func sorted(_ buckets: [FacetBucket], by sort: FacetSort) -> [FacetBucket] {
         switch sort {
         case .count:
             return buckets.sorted {
@@ -327,19 +340,20 @@ enum FacetPaging {
 ///
 /// Version history:
 ///   1.0 — R-1a: initial implementation
-struct FacetBucket: Sendable, Equatable, Identifiable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public struct FacetBucket: Sendable, Equatable, Identifiable {
 
     /// The value a facet click filters on — a volume id, a year, a rollup id as a string.
-    let key: String
+    public let key: String
 
     /// What to show. Often the same as `key`; different for people (a canonical name) and
     /// document type (localised copy).
-    let label: String
+    public let label: String
 
     /// How many documents in the match carry this value.
-    let count: Int
+    public let count: Int
 
-    var id: String { key }
+    public var id: String { key }
 }
 
 // MARK: - FacetBound
@@ -355,7 +369,8 @@ struct FacetBucket: Sendable, Equatable, Identifiable {
 /// Version history:
 ///   1.0 — R-1a: initial implementation
 ///   1.1 — Session 2026-08-07: `shown` now describes the fetch, not the screen (#586)
-struct FacetBound: Sendable, Equatable {
+///   1.2 — FRUS Explorer Light: public, for the web edition's facets
+public struct FacetBound: Sendable, Equatable {
 
     /// How many rows the **fetch** returned.
     ///
@@ -363,13 +378,13 @@ struct FacetBound: Sendable, Equatable {
     /// whole up to ``FacetRequest/fetchCeiling`` and ``FacetPaging`` decides what is displayed.
     /// So `isTruncated` now means "the ceiling bit", which on real data it never should — and
     /// the far more common "you are on page 2 of 9" is ``FacetPage``'s job to say.
-    let shown: Int
+    public let shown: Int
 
     /// How many distinct values the match actually contains.
-    let total: Int
+    public let total: Int
 
     /// Whether anything is hidden — the condition a surface must announce.
-    var isTruncated: Bool { total > shown }
+    public var isTruncated: Bool { total > shown }
 }
 
 // MARK: - ProvenanceCoverage
@@ -390,16 +405,17 @@ struct FacetBound: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — R-1a: initial implementation
-struct ProvenanceCoverage: Sendable, Equatable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public struct ProvenanceCoverage: Sendable, Equatable {
 
     /// Documents in the match with a parsed source note of any kind.
-    let parsed: Int
+    public let parsed: Int
 
     /// Documents in the match whose source note named a record group.
-    let withRecordGroup: Int
+    public let withRecordGroup: Int
 
     /// The match size, so a surface never has to reach elsewhere for the denominator.
-    let matchCount: Int
+    public let matchCount: Int
 }
 
 // MARK: - ResultSetFacets
@@ -414,34 +430,35 @@ struct ProvenanceCoverage: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — R-1a: initial implementation
-struct ResultSetFacets: Sendable, Equatable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's facets
+public struct ResultSetFacets: Sendable, Equatable {
 
     /// How many documents the match contains — the denominator for every count here.
-    let matchCount: Int
+    public let matchCount: Int
 
     /// Year buckets, descending by year.
-    let years: [FacetBucket]
+    public let years: [FacetBucket]
 
     /// How many matched documents carry no date at all, and so appear in no year bucket.
     ///
     /// Reported rather than dropped: a year histogram whose bars sum to less than the match
     /// is otherwise unexplained.
-    let undatedCount: Int
+    public let undatedCount: Int
 
     /// Volume buckets, descending by count.
-    let volumes: [FacetBucket]
+    public let volumes: [FacetBucket]
 
     /// Person buckets, descending by count, resolved through the rollup.
-    let people: [FacetBucket]
+    public let people: [FacetBucket]
 
     /// Primary vs editorial note.
-    let documentTypes: [FacetBucket]
+    public let documentTypes: [FacetBucket]
 
     /// Provenance-era buckets, descending by count.
-    let provenance: [FacetBucket]
+    public let provenance: [FacetBucket]
 
     /// How much of the match the provenance facet speaks for.
-    let provenanceCoverage: ProvenanceCoverage
+    public let provenanceCoverage: ProvenanceCoverage
 
     /// Subject buckets at `(category, subcategory)` grain, descending by count.
     ///
@@ -450,7 +467,7 @@ struct ResultSetFacets: Sendable, Equatable {
     /// string matching over subject names and variants rather than semantic analysis. A document
     /// carrying no bucket is not evidence it has no subject. Any surface showing these owes the
     /// reader that distinction — see `FacetPanelView`.
-    let subjects: [FacetBucket]
+    public let subjects: [FacetBucket]
 
     /// How many documents in the match carry **any** subject bucket.
     ///
@@ -458,7 +475,7 @@ struct ResultSetFacets: Sendable, Equatable {
     /// 238,302 of the corpus's 316,839 documents, so a match can be 25% untagged and the section
     /// would not say so. Without this the largest bucket reads as a share of the match when it is
     /// a share of the tagged part of the match.
-    let subjectCoverage: Int
+    public let subjectCoverage: Int
 
     /// Whether `document_subjects` has been populated at all.
     ///
@@ -467,10 +484,10 @@ struct ResultSetFacets: Sendable, Equatable {
     /// empty. Without this flag the section would report "detected for 0 of 1,234 matches", which
     /// is a claim about the corpus; what is actually true is that the answer is not ready yet.
     /// Those are different statements and only one of them is honest.
-    let subjectsPrepared: Bool
+    public let subjectsPrepared: Bool
 
     /// Per-section display bounds. A section absent from this map was not truncated.
-    let bounds: [FacetSection: FacetBound]
+    public let bounds: [FacetSection: FacetBound]
 
     /// The share of the match held by the top `n` volumes, as a fraction.
     ///
@@ -478,14 +495,14 @@ struct ResultSetFacets: Sendable, Equatable {
     /// scale (22.9% measured on a 350-match query) and wildly false at corpus scale — **1.7%**
     /// for a common term across 552 volumes. So it is computed, never templated, and a
     /// surface should think about whether to show it at all when it is this small.
-    func topVolumeShare(_ n: Int = 3) -> Double? {
+    public func topVolumeShare(_ n: Int = 3) -> Double? {
         guard matchCount > 0, !volumes.isEmpty else { return nil }
         let top = volumes.prefix(n).reduce(0) { $0 + $1.count }
         return Double(top) / Double(matchCount)
     }
 
     /// An empty breakdown, for a query with no matches.
-    static func empty(matchCount: Int = 0) -> ResultSetFacets {
+    public static func empty(matchCount: Int = 0) -> ResultSetFacets {
         ResultSetFacets(
             matchCount: matchCount, years: [], undatedCount: 0, volumes: [], people: [],
             documentTypes: [], provenance: [],
@@ -508,10 +525,11 @@ struct ResultSetFacets: Sendable, Equatable {
 /// Version history:
 ///   1.0 — R-1a: initial implementation
 ///   1.1 — Session 2026-08-07: sections fetched whole; display cut moved to `FacetPaging` (#586)
-struct FacetRequest: Sendable, Equatable {
+///   1.2 — FRUS Explorer Light: public, for the web edition's facets, with an initialiser
+public struct FacetRequest: Sendable, Equatable {
 
     /// Which sections to compute.
-    var sections: Set<FacetSection>
+    public var sections: Set<FacetSection>
 
     /// How many rows to return per section before truncating.
     ///
@@ -534,16 +552,21 @@ struct FacetRequest: Sendable, Equatable {
     /// 20,000 clears the largest real section — 16,385 distinct rollups on a whole-corpus
     /// match, against 18,078 in the rollup table — so it should never bite. If it ever does,
     /// ``FacetBound/isTruncated`` still says so.
-    var limitPerSection: Int = FacetRequest.fetchCeiling
+    public var limitPerSection: Int = FacetRequest.fetchCeiling
 
     /// The per-section row ceiling. See ``limitPerSection`` for why it is this high.
-    static let fetchCeiling = 20_000
+    public static let fetchCeiling = 20_000
 
     /// Every section, at the default limit.
-    static let all = FacetRequest(sections: Set(FacetSection.allCases))
+    public static let all = FacetRequest(sections: Set(FacetSection.allCases))
 
     /// One section.
-    static func one(_ section: FacetSection, limit: Int = FacetRequest.fetchCeiling) -> FacetRequest {
+    public static func one(_ section: FacetSection, limit: Int = FacetRequest.fetchCeiling) -> FacetRequest {
         FacetRequest(sections: [section], limitPerSection: limit)
+    }
+
+    public init(sections: Set<FacetSection>, limitPerSection: Int = FacetRequest.fetchCeiling) {
+        self.sections = sections
+        self.limitPerSection = limitPerSection
     }
 }

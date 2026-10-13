@@ -86,6 +86,8 @@ import Observation
 ///   2.5 — #1577 lane 2: `executedRoute`, an `ExecutedSearchRoute`, is what is written with the rows, and
 ///          `resultsAreSemantic` reads it; `offersReadings` is the readings' door, asked of the field's engine and
 ///          of the rows' route
+///   2.6 — FRUS Explorer Light: `sortedResults` is `SearchSortOrder.sorted(_:)`, the kit's date order, which the
+///          macOS view model and the web edition sort by too; this file's copy of the comparator is gone
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -416,26 +418,10 @@ final class SearchViewModel {
 
     /// `results` ordered by `sortOrder`. Date sorting uses the structured `dateISO` value
     /// (`yyyy-MM-dd`); undated rows go last in both directions and ISO-date ties break by BM25
-    /// (more relevant first). Mirrors `MacSearchViewModel.allSortedResults`.
+    /// (more relevant first). The order `MacSearchViewModel.allSortedResults` and the web edition
+    /// return too: `SearchSortOrder.sorted(_:)`.
     var sortedResults: [SearchResult] {
-        switch sortOrder {
-        case .relevance:      return results
-        case .dateAscending:  return results.sorted { Self.dateOrder($0, $1, ascending: true) }
-        case .dateDescending: return results.sorted { Self.dateOrder($0, $1, ascending: false) }
-        }
-    }
-
-    /// Tuple comparator for date-asc / date-desc: undated rows always last; ISO-date ties break by
-    /// BM25 (lower = more relevant first).
-    private static func dateOrder(_ lhs: SearchResult, _ rhs: SearchResult, ascending: Bool) -> Bool {
-        switch (lhs.dateISO, rhs.dateISO) {
-        case let (a?, b?):
-            if a == b { return lhs.bm25Score < rhs.bm25Score }
-            return ascending ? a < b : a > b
-        case (.some, .none): return true
-        case (.none, .some): return false
-        case (.none, .none): return lhs.bm25Score < rhs.bm25Score
-        }
+        sortOrder.sorted(results)
     }
 
     // MARK: - Checklist Mode (#189-D)

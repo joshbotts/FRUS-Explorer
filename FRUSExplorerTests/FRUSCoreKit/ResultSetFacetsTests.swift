@@ -38,6 +38,8 @@ import FTS5Store
 ///
 /// Version history:
 ///   1.0 — R-1a: initial implementation
+///   1.1 — FRUS Explorer Light: the search service's `resultSetFacets(parameters:request:documentKeys:)`
+///          equals the pipeline's aggregation by both routes
 @Suite("Result-set facets")
 struct ResultSetFacetsTests {
 
@@ -205,6 +207,60 @@ struct ResultSetFacetsTests {
         let empty = try await facets(pipeline, keys: [])
         #expect(empty.matchCount == 0)
         #expect(empty.volumes.isEmpty)
+    }
+
+    // MARK: - The search service's entry point
+
+    /// The facet panel and the web edition ask the search service, which builds the match and the
+    /// filters the search runs. Its answer must be the pipeline's over those, section by section.
+    @Test("The search service's facets equal the pipeline's over the search's match and filters")
+    func serviceFacetsEqualPipelineFacets() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let searches: [(query: String, volumeIds: [String]?)] = [
+            ("containment", nil), ("europe", ["vol1"]), ("containment europe", nil),
+        ]
+        for (query, volumeIds) in searches {
+            var params = SearchParameters(keywords: query)
+            params.volumeIds = volumeIds
+            let viaService = try await service.resultSetFacets(parameters: params, request: .all)
+            let viaPipeline = try await facets(pipeline, service, query: query) { $0.volumeIds = volumeIds }
+            #expect(viaService == viaPipeline, "the service's facets differ from the pipeline's for \(query)")
+            let count = try await service.searchCount(parameters: params)
+            #expect(viaService.matchCount == count, "\(query): facets=\(viaService.matchCount) search=\(count)")
+        }
+    }
+
+    /// With keys, the service describes them and builds no expression: text that matches nothing,
+    /// or nothing at all, does not change the answer, and does not throw.
+    @Test("Given keys, the search service describes exactly them, whatever the text")
+    func serviceFacetsDescribeTheKeys() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let results = try await service.search(parameters: SearchParameters(keywords: "europe"))
+        let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        #expect(!keys.isEmpty, "the fixture must match something to prove anything")
+        let viaPipeline = try await facets(pipeline, keys: keys)
+        for params in [SearchParameters(keywords: "zzznothingatall"), SearchParameters()] {
+            let viaService = try await service.resultSetFacets(parameters: params, request: .all, documentKeys: keys)
+            #expect(viaService == viaPipeline, "the typed text changed the facets of a key set")
+        }
+    }
+
+    /// Without keys, a search with nothing to match is refused as the search refuses it, which the
+    /// panel reads as no facets rather than a failure.
+    @Test("A keyword search with nothing to match is refused as emptyQuery")
+    func serviceFacetsRefuseAnEmptySearch() async throws {
+        let (dir, service, _) = try await makeFixture()
+        defer { cleanUp(dir) }
+        do {
+            _ = try await service.resultSetFacets(parameters: SearchParameters(), request: .all)
+            Issue.record("Expected emptyQuery error")
+        } catch FTS5Error.emptyQuery {
+            // Expected.
+        }
     }
 
     // MARK: - The match count is the denominator

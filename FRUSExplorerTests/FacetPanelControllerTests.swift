@@ -26,6 +26,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-1b: initial implementation
+///   1.1 — FRUS Explorer Light: `load` takes no pipeline, since the search service computes the
+///          section, so the fixture returns none; the narrowing map's tests moved to the kit's
+///          `FacetNarrowingTests`, beside the narrowing
 @Suite("Facet panel controller")
 @MainActor
 struct FacetPanelControllerTests {
@@ -33,7 +36,7 @@ struct FacetPanelControllerTests {
     // MARK: - Fixture
 
     private func makeFixture() async throws
-        -> (dir: URL, service: SearchService, pipeline: IndexingPipeline) {
+        -> (dir: URL, service: SearchService) {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("FRUSPanel-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -59,7 +62,7 @@ struct FacetPanelControllerTests {
         let pipeline = try IndexingPipeline(
             fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
         try await pipeline.indexVolume("vol1")
-        return (dir, SearchService(fts5Store: fts5, pipeline: pipeline), pipeline)
+        return (dir, SearchService(fts5Store: fts5, pipeline: pipeline))
     }
 
     private func cleanUp(_ dir: URL) { try? FileManager.default.removeItem(at: dir) }
@@ -76,13 +79,13 @@ struct FacetPanelControllerTests {
 
     @Test("Loading a section computes only that section")
     func loadingOneSectionComputesOnlyIt() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         await controller.load(.volumes, parameters: SearchParameters(keywords: "containment"),
-                              service: service, pipeline: pipeline)
+                              service: service)
 
         let facets = try #require(controller.facets)
         #expect(!facets.volumes.isEmpty)
@@ -92,14 +95,14 @@ struct FacetPanelControllerTests {
 
     @Test("Loading a second section keeps the first")
     func sectionsAccumulate() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         let params = SearchParameters(keywords: "containment")
-        await controller.load(.volumes, parameters: params, service: service, pipeline: pipeline)
-        await controller.load(.years, parameters: params, service: service, pipeline: pipeline)
+        await controller.load(.volumes, parameters: params, service: service)
+        await controller.load(.years, parameters: params, service: service)
 
         let facets = try #require(controller.facets)
         #expect(!facets.volumes.isEmpty, "the first section must survive the second's merge")
@@ -109,24 +112,24 @@ struct FacetPanelControllerTests {
 
     @Test("Re-loading a computed section is a no-op")
     func reloadingIsANoOp() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         let params = SearchParameters(keywords: "containment")
-        await controller.load(.volumes, parameters: params, service: service, pipeline: pipeline)
+        await controller.load(.volumes, parameters: params, service: service)
         let first = controller.facets
-        await controller.load(.volumes, parameters: params, service: service, pipeline: pipeline)
+        await controller.load(.volumes, parameters: params, service: service)
         #expect(controller.facets == first)
     }
 
-    @Test("No service or pipeline is safe rather than a crash")
+    @Test("No service is safe rather than a crash")
     func missingDependenciesAreSafe() async {
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         await controller.load(.volumes, parameters: SearchParameters(keywords: "x"),
-                              service: nil, pipeline: nil)
+                              service: nil)
         #expect(controller.facets == nil)
         #expect(controller.failure == nil, "an absent dependency is not an error to paint")
     }
@@ -137,13 +140,13 @@ struct FacetPanelControllerTests {
     /// previous result set shown beside the current one.
     @Test("A new search discards every computed section")
     func newSearchDiscardsEverything() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         await controller.load(.volumes, parameters: SearchParameters(keywords: "containment"),
-                              service: service, pipeline: pipeline)
+                              service: service)
         #expect(controller.facets != nil)
 
         controller.invalidate(signature: "q2")
@@ -155,13 +158,13 @@ struct FacetPanelControllerTests {
 
     @Test("After a new search, a section still open on screen is asked for again")
     func openSectionIsReRequestedAfterANewSearch() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         await controller.load(.volumes, parameters: SearchParameters(keywords: "containment"),
-                              service: service, pipeline: pipeline)
+                              service: service)
 
         // The reader has Volumes open and it has rows: nothing to request.
         #expect(controller.sectionsNeedingLoad(expanded: [.volumes]).isEmpty)
@@ -206,7 +209,7 @@ struct FacetPanelControllerTests {
 
     @Test("A section already in flight is not asked for twice")
     func inFlightSectionsAreNotRerequested() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
@@ -214,7 +217,7 @@ struct FacetPanelControllerTests {
         // Drive a real load and check the settled state: once loaded, the section stops being
         // requested. The in-flight half is covered by `load`'s own guard, which this mirrors.
         await controller.load(.people, parameters: SearchParameters(keywords: "containment"),
-                              service: service, pipeline: pipeline)
+                              service: service)
         #expect(controller.loadedSections.contains(.people))
         #expect(controller.sectionsNeedingLoad(expanded: [.people]).isEmpty,
                 "a loaded section was requested again, which would re-run a full aggregation on every body evaluation")
@@ -222,13 +225,13 @@ struct FacetPanelControllerTests {
 
     @Test("Re-invalidating with the same signature keeps the cache")
     func sameSignatureKeepsTheCache() async throws {
-        let (dir, service, pipeline) = try await makeFixture()
+        let (dir, service) = try await makeFixture()
         defer { cleanUp(dir) }
 
         let controller = FacetPanelController()
         controller.invalidate(signature: "q1")
         await controller.load(.volumes, parameters: SearchParameters(keywords: "containment"),
-                              service: service, pipeline: pipeline)
+                              service: service)
         controller.invalidate(signature: "q1")
         #expect(controller.facets != nil, "the same search must not discard its own sections")
     }
@@ -272,71 +275,6 @@ struct FacetPanelControllerTests {
         controller.recordNarrowing(from: nil)
         controller.invalidate(signature: "q1-narrowed")
         #expect(controller.narrowedFrom == nil)
-    }
-
-    // MARK: - Narrowing map
-
-    @Test("Every narrowable section maps to a field the filter sheet also owns")
-    func narrowingWritesSharedFields() {
-        var params = SearchParameters(keywords: "containment")
-
-        FacetNarrowing.year("1948").apply(to: &params)
-        #expect(params.dateRange?.earliest == "1948-01-01")
-        #expect(params.dateRange?.latest == "1948-12-31")
-
-        FacetNarrowing.volume("frus1948v03").apply(to: &params)
-        #expect(params.volumeIds == ["frus1948v03"])
-
-        FacetNarrowing.person(77, label: "Acheson, Dean").apply(to: &params)
-        #expect(params.personRollupId == 77)
-        #expect(params.personLabel == "Acheson, Dean", """
-            #1092: the tapped bucket's name must ride into the parameters, or every chip
-            reading the person filter falls back to "person #77" — a slot number that is
-            renumbered on every rollup rebuild.
-            """)
-
-        FacetNarrowing.documentType(.editorialNotesOnly).apply(to: &params)
-        #expect(params.documentTypeFilter == .editorialNotesOnly)
-    }
-
-    /// A rollup and a single ref are alternative expressions of one filter. Leaving a stale
-    /// ref set would AND them and return fewer documents than the facet's own count promised.
-    @Test("Narrowing to a person clears any single-ref person filter")
-    func personNarrowingClearsTheRef() {
-        var params = SearchParameters(keywords: "containment")
-        params.personRef = "#p-acheson"
-        FacetNarrowing.person(77, label: nil).apply(to: &params)
-        #expect(params.personRollupId == 77)
-        #expect(params.personRef == nil, "a stale ref would silently AND with the rollup")
-    }
-
-    @Test("The document-type bucket key maps to the right half")
-    func documentTypeKeyMapping() {
-        let notes = FacetBucket(key: "1", label: "Editorial notes", count: 3)
-        let documents = FacetBucket(key: "0", label: "Documents", count: 7)
-        #expect(FacetNarrowing.forBucket(notes, in: .documentType)
-                == .documentType(.editorialNotesOnly))
-        #expect(FacetNarrowing.forBucket(documents, in: .documentType)
-                == .documentType(.documentsOnly))
-    }
-
-    /// `SearchSQLFilters` has no repository, record-group or citation-era field, and the
-    /// design forbids adding filter plumbing here. So the section is descriptive, and this
-    /// pins that rather than leaving a future reader to discover a dead control.
-    @Test("Provenance offers no narrowing, deliberately")
-    func provenanceIsDescriptiveOnly() {
-        let bucket = FacetBucket(key: "centralDecimalFile", label: "Central Decimal File", count: 12)
-        #expect(FacetNarrowing.forBucket(bucket, in: .provenance) == nil)
-        #expect(!FacetNarrowing.isNarrowable(.provenance))
-        for section in FacetSection.allCases where section != .provenance {
-            #expect(FacetNarrowing.isNarrowable(section), "\(section.rawValue) should narrow")
-        }
-    }
-
-    @Test("A non-numeric person key yields no narrowing rather than a wrong one")
-    func malformedPersonKeyIsRefused() {
-        let bucket = FacetBucket(key: "not-a-rollup-id", label: "?", count: 1)
-        #expect(FacetNarrowing.forBucket(bucket, in: .people) == nil)
     }
 
     // MARK: - Merge

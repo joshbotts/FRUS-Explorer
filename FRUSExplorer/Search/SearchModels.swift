@@ -11,7 +11,9 @@ import Foundation
 // `DocumentTypeFilter`, `SearchParameters`, `PersonRollupAnchor`, `SearchResult` and the indexing
 // progress types (`IndexingStage`, `IndexingProgressUpdate`, `VolumeMetadataDiscovered`,
 // `IndexingProgress`) moved to FRUSCoreKit in part 2, with the search service and the indexing
-// pipeline that take and return them: `FRUSCoreKit/Search/SearchParameters.swift`.
+// pipeline that take and return them: `FRUSCoreKit/Search/SearchParameters.swift`. `SearchSortOrder`
+// followed for FRUS Explorer Light, with the date order both view models sort by:
+// `FRUSCoreKit/Search/SearchSortOrder.swift`.
 
 // MARK: - Search hand-offs
 
@@ -66,12 +68,8 @@ enum ChecklistLoggingNotice {
     }
 }
 
-// MARK: - SearchSortOrder
+// MARK: - SearchMode
 
-/// Ordering applied to search results, shared by the iOS `SearchView` and the macOS Search window
-/// (#305). `relevance` keeps the FTS5 BM25 order as returned; the date orders use the structured
-/// `dateISO` value (undated rows last, BM25 tie-break) — see `SearchViewModel.sortedResults` and
-/// `MacSearchViewModel.allSortedResults`.
 /// Which engine a submitted search runs through (V-5 hybrid page).
 ///
 /// Per-session state, deliberately not persisted: the readings/facet toggles were de-persisted
@@ -176,21 +174,6 @@ enum SearchMode: String, CaseIterable {
             localized: "search.prompt.meaning.withinSet %@",
             defaultValue: "Ask a question to rank the %@ you are searching within by meaning."),
             CountCopy.documents(size))
-    }
-}
-
-enum SearchSortOrder: CaseIterable {
-    case relevance
-    case dateAscending
-    case dateDescending
-
-    /// Short control label.
-    var label: String {
-        switch self {
-        case .relevance:      return String(localized: "search.sort.relevance", defaultValue: "Relevance")
-        case .dateAscending:  return String(localized: "search.sort.dateAscending", defaultValue: "Date ↑")
-        case .dateDescending: return String(localized: "search.sort.dateDescending", defaultValue: "Date ↓")
-        }
     }
 }
 

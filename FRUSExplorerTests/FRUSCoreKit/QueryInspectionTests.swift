@@ -12,10 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Testing
 import Foundation
-import SwiftUI
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app. Testable, for
+// the parser's nesting limit, `FTS5InlineQueryParser.maximumGroupDepth`.
+#if canImport(FTS5Store)
+@testable import FTS5Store
+#endif
+#if !SWIFT_PACKAGE // the strip's drawing test renders the app's SwiftUI view
+import SwiftUI
+#endif
 
 /// The Query Inspector's model: what it claims about a query, against a real index (Q-2a).
 ///
@@ -55,6 +68,8 @@ import SwiftUI
 ///         and counted on both (B4)
 ///   1.8 — #1298: a phrase typed with typographic quotation marks is inspected as one phrase operand with no stem
 ///         warning, and the whole inspection equals its straight spelling's
+///   1.9 — FRUS Explorer Light: a kit suite, beside the model it tests; the tests of the app's controller, view
+///         model, strip and hosts run in Xcode only
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -418,6 +433,7 @@ struct QueryInspectionTests {
         #expect(Set(empty.map(\.text)) == ["containment", "europe"])
     }
 
+    #if !SWIFT_PACKAGE // QueryInspectorController is the app's
     @Test("An excluded term is never blamed for an empty result")
     func negatedOperandsAreNotBlamed() async throws {
         let (dir, inspector) = try await makeFixture()
@@ -460,6 +476,7 @@ struct QueryInspectionTests {
         await controller.decomposeZeroResult(parameters: phrase, service: service)
         #expect(controller.emptyConjuncts.map(\.text) == ["zzz qqq"])
     }
+    #endif
 
     // MARK: - Per-operand re-query fidelity
 
@@ -586,6 +603,7 @@ struct QueryInspectionTests {
         #expect(onlyApplied.showsTermRows)
     }
 
+    #if !SWIFT_PACKAGE // the strip is the app's SwiftUI view
     /// The gate and the rows are view code no model test can reach, so these two checks read the
     /// strip's own source — each scoped to the one member that must do it, not to the file.
     ///
@@ -595,6 +613,7 @@ struct QueryInspectionTests {
     @Test("The strip gates its term rows on showsTermRows and renders every not-applied operand")
     func stripRendersNotAppliedRows() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         func member(_ signature: String) throws -> Substring {
@@ -679,6 +698,7 @@ struct QueryInspectionTests {
         #expect(twoRows.pixels != otherSecond.pixels,
                 "every NOT APPLIED row draws its word, not only the first")
     }
+    #endif
 
     @Test("Replacing the operands carries every other fact across, the not-applied ones included")
     func replacingOperandsKeepsEverythingElse() throws {
@@ -734,6 +754,7 @@ struct QueryInspectionTests {
         #expect(await inspector.emptyConjuncts(parameters: params).map(\.text) == ["cold"])
     }
 
+    #if !SWIFT_PACKAGE // QueryInspectorController is the app's
     /// Needs the #1297 parser: the not-applied rows must survive the controller's scoped-count
     /// update, which rebuilds the inspection.
     @Test("Asking the controller for scoped counts keeps the not-applied rows")
@@ -758,6 +779,7 @@ struct QueryInspectionTests {
         // narrower-than-typed caption; `replacingOperandsKeepsEverythingElse` cannot see the controller (X3).
         #expect(inspection.isApproximate, "a request for counts must not clear the narrower-than-typed caption")
     }
+    #endif
 
     /// Needs the #1297 parser, under which keyword `NOT` marks its operand negated exactly as
     /// `-` does. Before it, `cold NOT korea` listed korea as a second positive term: counted,
@@ -907,12 +929,14 @@ struct QueryInspectionTests {
         #expect(exact.operands.map(\.showsStructuredTag) == [false, true], "only the restored prefix is ADVANCED")
     }
 
+    #if !SWIFT_PACKAGE // reads the app's strip view
     /// The gates are the model's (`approximateCaptionAndStructuredTagGates`); these read the strip's own source to
     /// pin that each member renders its key under that gate and nowhere else. The gate and the key are matched as
     /// one pattern, so `if !inspection.showsApproximateCaption`, or the key under any other condition, fails.
     @Test("The strip tags structured operands ADVANCED and captions an approximation under the MATCH line")
     func stripShowsStructuredTagAndApproximationCaption() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         func member(_ signature: String) throws -> Substring {
@@ -940,6 +964,7 @@ struct QueryInspectionTests {
         #expect(operandRows.components(separatedBy: "\"search.inspector.structuredTag\"").count == 2,
                 "and nowhere else in the operand rows")
     }
+    #endif
 
     // MARK: - Queries that cannot run (#1297 round 1)
 
@@ -1026,11 +1051,13 @@ struct QueryInspectionTests {
         #expect(structured.isRefused)
     }
 
+    #if !SWIFT_PACKAGE // reads the app's strip view and its hosts
     /// F8's view half. With `isFilterOnly` corrected, a refused query had nothing to say and both hosts hid the strip;
     /// the strip now names why there is no expression, and each host shows it on the model's own gate.
     @Test("The strip explains a refused query, and both hosts show the strip for it")
     func stripExplainsARefusedQuery() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         let view = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift"),
                               encoding: .utf8)
         #expect(view.range(
@@ -1049,6 +1076,7 @@ struct QueryInspectionTests {
                     "\(host) must show the strip on QueryInspection.showsStrip, which a refused query sets")
         }
     }
+    #endif
 
     /// Parser 6.3 (D1) reports an `=` term only where every match must contain it. The operand still carries the typed
     /// mark, and the inspector showed it as typed: an EXACT tag on a word the search runs by its stem, and a scoped
@@ -1152,11 +1180,13 @@ struct QueryInspectionTests {
         try await check("(=Containment OR alliance) =containment.", searched: 1, scoped: [1, 1, 1])
     }
 
+    #if !SWIFT_PACKAGE // reads the app's strip view
     /// The strip's EXACT tag must read the parser's per-operand field. The gate and the key are matched as one anchored
     /// pattern, so `if !item.operand.isExactApplied`, or the typed `isExact` the strip read before round 2, fails.
     @Test("The strip tags EXACT on the operand's applied mark")
     func stripTagsExactWhereTheMarkApplies() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         let start = try #require(source.range(of: "private var operandRows: some View"))
@@ -1175,6 +1205,7 @@ struct QueryInspectionTests {
                 "and nowhere else in the operand rows")
         #expect(!operandRows.contains("operand.isExact {"), "the typed mark is not what the search applies")
     }
+    #endif
 
     // MARK: - The refused line needs something refused (#1297 round 2)
 
@@ -1368,6 +1399,7 @@ struct QueryInspectionTests {
         """
     }
 
+    #if !SWIFT_PACKAGE // the controller, the iOS view model and the hosts are the app's
     /// A4: `refresh` cleared `emptyConjuncts` on every run, and the zero-result decomposition is keyed on the executed
     /// search, not on the refresh. So a filter change that re-ran a still-empty search could have its new blame wiped by
     /// the refresh landing after it, and the zero-result view fell back to "each of your terms matches something on its
@@ -1508,6 +1540,7 @@ struct QueryInspectionTests {
     @Test("Both hosts decompose the zero result under the submitted parameters")
     func hostsDecomposeTheSubmittedQuery() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         for (host, model) in [("FRUSExplorer/Search/SearchView.swift", "vm"), ("FRUSExplorer/App/SearchSheet.swift", "searchVM")] {
             let source = try String(contentsOf: root.appendingPathComponent(host), encoding: .utf8)
             #expect(source.range(
@@ -1526,6 +1559,7 @@ struct QueryInspectionTests {
     @Test("The iOS inspector refreshes on the view model's whole-query key, not on the typed text alone")
     func iOSInspectorRefreshesOnEveryQueryPart() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer/Search/SearchView.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         #expect(source.range(
@@ -1535,6 +1569,7 @@ struct QueryInspectionTests {
         #expect(source.components(separatedBy: "inspectorController.refresh(").count == 2,
                 "and there must be no second refresh keyed on something narrower")
     }
+    #endif
 
     // MARK: - The denominator
 
