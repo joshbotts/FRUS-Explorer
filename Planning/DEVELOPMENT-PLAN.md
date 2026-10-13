@@ -38171,3 +38171,64 @@ On the owner's word ("bump build to 50 and update testflight docs"). The branch 
 - **Before the archive, the owner's two scripts,** in the checkout the archive is cut from: `./Scripts/fetch-llama-dsyms.sh` and `./Scripts/check_cloudkit_schema.py`. Neither was run here: the dSYM cache and the schema stamp they write belong to that checkout, and the second reads Production with the owner's token.
 - **`python3 Scripts/check_repository_links.py --stamp`**, the owner's.
 - **No `build-50` tag** is made here. The owner made it on 2026-10-13, on `c6f7b2cb` (the merge of #1661, which carried this entry's last two commits after #1656 was merged at `2bae0459`).
+
+## Session 2026-10-13 — FRUS Explorer Light can call the concordance, the facets, the facet panel's narrowing and selection, the Query Inspector's model and the result list's date order, which the app now calls in the kit too
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exported index read-only. Its phase-1 search features are the facets with include, exclude and Apply, the Query Inspector, the list's date order and the concordance, and the shared code for them was internal or lived in app files. Nothing the app shows changes.
+
+**Changed**
+- **The concordance is public:** `KWICLine`, `KWICSort`, `ConcordanceResult` and `SearchService.concordance(for:parameters:radius:)`. `KWICBuilder` stays internal.
+- **The facets are public, and the panel computes a section through the search service.**
+  - The types in `ResultSetFacets.swift` are public, and `FacetDisplayState` and `FacetRequest` have public initialisers with the memberwise ones' labels and defaults.
+  - `SearchService.resultSetFacets(parameters:request:documentKeys:)` is `FacetPanelController.load`'s route, moved: the search's match expressions and filters, or a meaning search's keys with neither.
+  - `load` calls it and no longer takes the pipeline; both hosts drop the argument.
+  - One difference, in a Debug UI test only: with `UITestBrowseSeams.holdsPipeline` set, the app publishes `appState.indexingPipeline` late, and `load` computed nothing until then. The service has its own pipeline, so the panel now computes. Nothing else sets `searchService` without `indexingPipeline`.
+- **The narrowing and the staged selection are kit code.**
+  - `FacetNarrowing` moved to `FRUSCoreKit/Search/FacetNarrowing.swift`. Its subject case read `DocumentSubjectStore.shared`, so `apply(to:resources:)` reads the vocabulary from the `IndexingResources` a host gives its pipeline. The app keeps `apply(to:)`, which passes `.bundled`, whose subject provider is `DocumentSubjectStore.shared`.
+  - `FacetSelection.swift` moved whole. `FacetPanelController.stagedSections` moved beside the applier as `FacetSelectionApplier.stagedSections`, and the controller's name forwards.
+- **The Query Inspector's model is kit code.** `QueryInspection.swift` moved whole, its reads public, and `QueryInspector`'s three passes are public. The parse-taking entries, the refusal probe and `Inputs` stay internal.
+- **The date order is kit code.** `SearchSortOrder` moved to `FRUSCoreKit/Search/SearchSortOrder.swift` with `sorted(_:)`, the comparator both view models kept a copy of. Both return it now. The order is unchanged, and the enum gains `String` raw values.
+- **Tests**, under both compilers unless marked:
+  - **Moved into the kit's suites:** `FacetSelectionTests.swift` (19 of its 25 tests in the package) and `QueryInspectionTests.swift` (41 of its 54). What needs the app is inside `#if !SWIFT_PACKAGE`: the staged-selection lifetime suite, the two scope-signature tests, and the inspector's 13 tests of its controller, the iOS view model, the strip and its hosts, whose source scans climb one folder more. `QueryInspectionTests` imports FTS5Store `@testable` for the parser's nesting limit.
+  - **The narrowing map's five tests** moved from `FacetPanelControllerTests` to `FacetNarrowingTests` (new).
+  - **New:** `ResultSetFacetsTests` holds the service's facets to the pipeline's by both routes and to the search's count (3). `FacetNarrowingTests` reads a subject bucket's key from the host's resources, and none without them (1). `FacetSelectionTests` holds the staged sections to the applier (1). `SearchSortOrderTests` (new) holds the three orders (3).
+  - **Changed:** `FacetPanelControllerTests` loads without a pipeline. `FacetMeaningModeTests`' route check reads the service. `SubjectResultsFacetTests`' filter-only gate scan reads `QueryInspection.swift` where it moved.
+  - **Count:** FRUSCoreKitTests goes from 950 tests in 126 suites to 1,022 in 132.
+- **Docs.**
+  - `CLAUDE.md`: the folder table's `Search/` row, and the FRUSCoreKit entry's public names.
+  - Version-history lines.
+  - In `Docs/EditableContent/07-Search-and-Browse.md`, 60 ranged blocks are re-pointed by the distance their keys moved, with an amendment-log entry. No block's text changes.
+- **Size:** the kit goes from 34,043 lines in 49 files to 35,258 in 53.
+
+**Apple platforms: nothing changes, and how that was checked**
+- **`FRUSExplorerMac`**, clean, unsigned Debug, beside `v2` @ `13e093ba` built the same way: "** BUILD SUCCEEDED **" both, with the same five warning lines. The debug dylibs define 238,930 and 238,920 unique symbols.
+- **The symbol diff** (normalized as for #1573–#1579): 27 removed, 37 added.
+  - **Removed:**
+    - `FacetPanelController.load` with its pipeline parameter, and its async parts;
+    - the two view models' sort closures and their copies of `dateOrder`;
+    - `SearchSortOrder`'s derived `hash(into:)`, `hashValue` and `==`, which its raw values replace;
+    - `ResultSetFacets.topVolumeShare`'s default-argument generator, no longer a symbol of its own now that the method is public.
+  - **Added:**
+    - `load` without the pipeline, and `SearchService.resultSetFacets(parameters:request:documentKeys:)`, with their async parts and descriptors;
+    - `FacetNarrowing.apply(to:resources:)`;
+    - `FacetSelectionApplier.stagedSections`, with its initialisation and accessors;
+    - `SearchSortOrder.sorted(_:)` with its two closures, `dateOrder`, and the `RawRepresentable` conformance;
+    - two outlined copies.
+- **iOS 27.0**, an iPhone 17 simulator, unsigned:
+  - **Build:** a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **", with the 7 known warning lines, as on `v2`.
+  - **The unit target,** the app removed first, with `TEST_RUNNER_FRUS_TEI_MIRROR`: "✘ Test run with 7147 tests in 844 suites failed after 433.027 seconds with 8 issues."
+  - **Against `v2`** @ `13e093ba`, run the same way on the same simulator: "✘ Test run with 7139 tests in 842 suites failed after 452.795 seconds with 8 issues."
+  - **The differences:** the 8 more tests and 2 more suites are the new ones above. The 8 issues on both are the Keychain tests an unsigned build fails (-34018). Both runs skip the same 17 tests and 2 suites.
+  - **A first run,** before the editable-content blocks were re-pointed and the gate scan's path was corrected, failed those two tests and no other.
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs and 2,852 tests, all passed, none skipped (`FRUSCoreKitTests` 1,022).
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64)
+- **The run:** FRUS Explorer Light's package at its `main` (`ffd0f28`), with this branch copied over its submodule. `scripts/swift test` printed "✔ Test run with 1022 tests in 132 suites passed" for FRUSCoreKitTests, with the one named skip, and every other target passed but the parity suites.
+- **The parity suites:** their 13 issues are all golden-file staleness. The files' source digest covers the kit's folders, and FRUS Explorer Light's pin move remakes them.
+- **The golden files remade at this branch:** `tools/mac-golden` rendered the 392 fixture rows and compiled the 482 queries' expressions. Every row and expression is byte-identical to the committed files, and only the two provenance lines differ.
+
+**Owed by the owner:** Mac check 3 for this pull request (FRUS Explorer Light's plan), from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows, with a second upstream pull request for the citations and titles if it is merged by then.
+
+**Not done:**
+- **`ResultSetScope` stays in the app,** with the captions that name the set each reading counted, because it holds `WorkingCorpus.CaptureTruncation`, a model type. The timeline's chart stays too. FRUS Explorer Light words its own captions and draws its own timeline.
+- **Not run:** the UI suites, iOS 26.x, a device and a signed run. The Mac app was built and not run.

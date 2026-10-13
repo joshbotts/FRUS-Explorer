@@ -34,6 +34,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1193: initial implementation
+///   1.1 — FRUS Explorer Light: the route is chosen in `SearchService.resultSetFacets`, which the
+///          controller hands its keys, so the expression check reads the service
 @Suite("Meaning-mode result reporting")
 struct FacetMeaningModeTests {
 
@@ -120,14 +122,21 @@ struct FacetMeaningModeTests {
     /// The controller must not ask for a match expression when it has keys.
     ///
     /// Computing one and discarding it would be waste; computing one and *using* it is exactly how
-    /// the keyword interpretation leaked into these counts in the first place.
+    /// the keyword interpretation leaked into these counts in the first place. The controller hands
+    /// its keys to the search service, which chooses the route, so the web edition's facets take
+    /// it too; `ResultSetFacetsTests.serviceFacetsDescribeTheKeys` drives the service's choice.
     @Test("The controller skips the match expression when it has keys")
     func controllerSkipsTheExpressionForKeys() throws {
-        let file = try code("FRUSExplorer/Search/FacetPanelView.swift")
-        #expect(file.contains("documentKeys == nil"),
-                "the controller builds a match expression regardless of route")
-        #expect(file.contains("documentKeys: documentKeys"),
-                "the controller does not forward the keys to the pipeline")
+        let controller = try code("FRUSExplorer/Search/FacetPanelView.swift")
+        #expect(controller.contains("service.resultSetFacets("),
+                "the controller computes a section without the search service, which chooses the route")
+        #expect(controller.contains("documentKeys: documentKeys"),
+                "the controller does not forward the keys to the search service")
+        let service = try code("FRUSCoreKit/Search/SearchService.swift")
+        #expect(service.contains("documentKeys == nil"),
+                "the search service builds a match expression regardless of route")
+        #expect(service.contains("documentKeys: documentKeys"),
+                "the search service does not forward the keys to the pipeline")
     }
 
     /// A meaning search's facets describe the results themselves, so the panel must not repeat the

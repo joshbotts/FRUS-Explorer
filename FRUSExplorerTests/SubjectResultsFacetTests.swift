@@ -845,6 +845,7 @@ struct SubjectOnlySearchTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-21: from the #1035 review
+///   1.1 — FRUS Explorer Light: the gate scan reads the Query Inspector's model in the kit, where it moved
 @Suite("Filter-only completion (#1022 review)")
 struct FilterOnlyCompletionTests {
 
@@ -915,7 +916,7 @@ struct FilterOnlyCompletionTests {
                      "FRUSExplorer/Search/SearchViewModel.swift",
                      "FRUSExplorer/App/MacSearchViewModel.swift",
                      "FRUSCoreKit/Search/SearchService.swift",
-                     "FRUSExplorer/Search/QueryInspection.swift"] {
+                     "FRUSCoreKit/Search/QueryInspection.swift"] {
             let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
             #expect(source.contains("supportsFilterOnlySearch"), """
                 \(path) decides whether a query can run and does not consult the shared rule.

@@ -7,6 +7,10 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+// The package builds FTS5Store as a module of its own; Xcode compiles it into the app.
+#if canImport(FTS5Store)
+import FTS5Store
+#endif
 
 // MARK: - QueryInspection
 
@@ -35,21 +39,22 @@ import Foundation
 ///         `NOT (AND)`, refused as exclusions only, set `isRefused` again
 ///   1.7 — #1297 round 4 (docs only): `notApplied` names the zero-result blame the hosts run,
 ///         `QueryInspector.emptyConjuncts(parameters:)`, which reads its parse's operands and never its dropped ones
-struct QueryInspection: Sendable, Equatable {
+///   1.8 — FRUS Explorer Light: moved into the kit, with its reads public, for the web edition's Query Inspector
+public struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
-    let expression: RenderedExpression?
+    public let expression: RenderedExpression?
 
     /// The query's searchable units, in the order typed, each with what the index knows
     /// about it.
-    let operands: [InspectedOperand]
+    public let operands: [InspectedOperand]
 
     /// How many volumes this device has indexed — the denominator every count needs.
     ///
     /// Per-device and live. The corpus has 553 published volumes; what a count is "out
     /// of" is how many of them are indexed *here*, which is the number the researcher's
     /// claim actually rests on.
-    let indexedVolumeCount: Int
+    public let indexedVolumeCount: Int
 
     /// True when the query runs as a filter-only search — no text at all, and a standalone filter such as a
     /// person filter.
@@ -61,7 +66,7 @@ struct QueryInspection: Sendable, Equatable {
     /// The same rule the service applies, `SearchParameters.runsAsFilterOnly`. A query with text and no expression
     /// is not one of these even beside a filter: the service throws `FTS5Error.emptyQuery` for it, and
     /// ``isRefused`` describes it.
-    let isFilterOnly: Bool
+    public let isFilterOnly: Bool
 
     /// Operands the researcher typed that the search leaves out, in the order typed.
     ///
@@ -84,7 +89,7 @@ struct QueryInspection: Sendable, Equatable {
     ///
     /// A `var` with a default so every memberwise call site that predates it compiles
     /// unchanged — which is also why ``replacingOperands(_:)`` exists.
-    var notApplied: [ParsedOperand] = []
+    public var notApplied: [ParsedOperand] = []
 
     /// Whether the expression matches only part of what the query means — `ParsedQuery.isApproximate`.
     ///
@@ -93,7 +98,7 @@ struct QueryInspection: Sendable, Equatable {
     /// `korea` alone. The strip's narrower-than-typed caption reads this, so that case is still reported.
     ///
     /// A `var` with a default for the same reason as ``notApplied``.
-    var isApproximate: Bool = false
+    public var isApproximate: Bool = false
 
     /// Whether the query holds something to search for that the parser refused, so there is no expression and the
     /// search cannot run.
@@ -113,7 +118,7 @@ struct QueryInspection: Sendable, Equatable {
     /// to search for (#1297 round 3).
     ///
     /// A `var` with a default for the same reason as ``notApplied``.
-    var isRefused: Bool = false
+    public var isRefused: Bool = false
 
     /// The `NEAR(…)` that refused this query, as typed, or `nil` (#1304).
     ///
@@ -122,13 +127,13 @@ struct QueryInspection: Sendable, Equatable {
     /// proximity search, so showing them would send the reader looking in the wrong place.
     ///
     /// A `var` with a default for the same reason as ``notApplied``.
-    var malformedProximity: String?
+    public var malformedProximity: String?
 
     /// Whether a host shows the strip at all: there is an expression, or a line saying why there is none.
     ///
     /// Both hosts read this rather than spelling the condition out, so a new reason for an empty expression is
     /// shown on both platforms or on neither.
-    var showsStrip: Bool { expression != nil || isFilterOnly || isRefused }
+    public var showsStrip: Bool { expression != nil || isFilterOnly || isRefused }
 
     /// Whether the strip shows its narrower-than-typed caption under the MATCH line: exactly when the
     /// expression is an approximation.
@@ -137,24 +142,24 @@ struct QueryInspection: Sendable, Equatable {
     /// source cannot tell `if inspection.isApproximate` from its inversion, and the one fact the caption states
     /// — the search is narrower than what was typed — must never appear on an exact query or vanish from an
     /// approximate one.
-    var showsApproximateCaption: Bool { isApproximate }
+    public var showsApproximateCaption: Bool { isApproximate }
 
     /// Whether every operand is present and none of them is the problem.
-    var hasOperands: Bool { !operands.isEmpty }
+    public var hasOperands: Bool { !operands.isEmpty }
 
     /// Whether the strip shows term rows at all: applied operands, or operands the query typed
     /// but did not apply.
     ///
     /// Not `hasOperands` alone: `and OR -korea` applies no operand (the literal `and` is not
     /// one) yet leaves `korea` out, and that row is the only place the researcher learns it.
-    var showsTermRows: Bool { hasOperands || !notApplied.isEmpty }
+    public var showsTermRows: Bool { hasOperands || !notApplied.isEmpty }
 
     /// Whether any applied operand that is not excluded still lacks its scoped count — the
     /// condition for offering "Count each term in scope…".
     ///
     /// An excluded operand has no hit count to fetch, and a ``notApplied`` one was never
     /// searched, so neither may keep the offer open.
-    var hasUncountedOperands: Bool {
+    public var hasUncountedOperands: Bool {
         operands.contains { $0.scopedCount == nil && !$0.operand.isNegated }
     }
 
@@ -164,7 +169,7 @@ struct QueryInspection: Sendable, Equatable {
     /// call site would repeat every field, and a field added later with a default — as
     /// ``notApplied`` was — would silently fall back to it there, so the not-applied rows
     /// would vanish the moment the researcher asked for counts.
-    func replacingOperands(_ operands: [InspectedOperand]) -> QueryInspection {
+    public func replacingOperands(_ operands: [InspectedOperand]) -> QueryInspection {
         QueryInspection(expression: expression, operands: operands,
                         indexedVolumeCount: indexedVolumeCount, isFilterOnly: isFilterOnly,
                         notApplied: notApplied, isApproximate: isApproximate, isRefused: isRefused,
@@ -184,13 +189,14 @@ struct QueryInspection: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
-struct RenderedExpression: Sendable, Equatable {
+///   1.1 — FRUS Explorer Light: moved into the kit, with its reads public, for the web edition's Query Inspector
+public struct RenderedExpression: Sendable, Equatable {
 
     /// The corpus expression, or `nil` when document text is out of scope.
-    let corpus: String?
+    public let corpus: String?
 
     /// The user-content expression, or `nil` when both summaries and notes are out of scope.
-    let userContent: String?
+    public let userContent: String?
 
     /// The expression to display: the corpus one when there is one, else user content.
     ///
@@ -199,11 +205,11 @@ struct RenderedExpression: Sendable, Equatable {
     /// the app cannot emit — `renderExpression` passes `columns: nil` for the corpus, so
     /// the prefix is empty. Displaying a prefix the engine never saw would make the
     /// "rendered expression" column non-reproducible, which defeats the point.
-    var displayed: String? { corpus ?? userContent }
+    public var displayed: String? { corpus ?? userContent }
 
     /// Whether the two expressions differ, which is worth saying out loud because it
     /// means the two halves of the search asked different questions.
-    var expressionsDiffer: Bool {
+    public var expressionsDiffer: Bool {
         guard let corpus, let userContent else { return false }
         return corpus != userContent
     }
@@ -229,7 +235,8 @@ struct RenderedExpression: Sendable, Equatable {
 ///         D4), where round 1 cleared `isExact` by word
 ///   1.4 — #1297 round 4 (docs only): `operand` says marks on one word are compared as the filter reads the word (parser
 ///         6.6), and no longer says round 1's word rule differs from the parser on `=cold war -=cold`, which it never did
-struct InspectedOperand: Sendable, Equatable {
+///   1.5 — FRUS Explorer Light: moved into the kit, with its reads public, for the web edition's Query Inspector
+public struct InspectedOperand: Sendable, Equatable {
 
     /// The parsed operand this describes, exactly as the parser reported it.
     ///
@@ -246,31 +253,31 @@ struct InspectedOperand: Sendable, Equatable {
     /// Not a word rule. Round 1 kept a typed mark on a positive operand wherever the operand's own term was among
     /// `ParsedQuery.exactTerms`, which names each word once, in the spelling of its first applied mark; over parser 6.6
     /// that rule tags only the first mark of `(=café OR war) =cafe`.
-    let operand: ParsedOperand
+    public let operand: ParsedOperand
 
     /// Whether the strip tags this operand ADVANCED: it came from a structured field — a restored saved
     /// search's phrase, prefix or excluded term — not from the search box.
     ///
     /// A property rather than a condition in the view, for the reason ``QueryInspection/showsApproximateCaption``
     /// is: a test can run it, where a scan of the view cannot tell a gate from its inversion.
-    var showsStructuredTag: Bool { operand.source == .structured }
+    public var showsStructuredTag: Bool { operand.source == .structured }
 
     /// The index term this operand's word resolves to, from SQLite's own tokenizer.
     ///
     /// `nil` for phrases, prefixes and proximity operands, which have no single stem, and
     /// for words that tokenize to more than one term.
-    let stem: String?
+    public let stem: String?
 
     /// Exact hit count within the current filters, or `nil` when it has not been computed.
     ///
     /// Populated only by the explicit, expensive pass — see
     /// ``QueryInspector/scopedCounts(for:parameters:)``.
-    let scopedCount: Int?
+    public let scopedCount: Int?
 
     /// How many indexed documents contain this operand's stem, corpus-wide and unfiltered.
     ///
     /// One `fts5vocab` lookup, no search. `nil` when the operand has no single stem.
-    let corpusDocumentFrequency: Int?
+    public let corpusDocumentFrequency: Int?
 
     /// How many times this operand's stem occurs in total, corpus-wide and unfiltered.
     ///
@@ -279,7 +286,7 @@ struct InspectedOperand: Sendable, Equatable {
     /// containing the stem contains it at least once.
     ///
     /// `nil` on the same terms as ``corpusDocumentFrequency``.
-    let corpusOccurrences: Int?
+    public let corpusOccurrences: Int?
 
     /// Average corpus-wide occurrences per document containing the stem, or `nil` when either half
     /// is missing.
@@ -287,7 +294,7 @@ struct InspectedOperand: Sendable, Equatable {
     /// The dispersion signal in one number. Near 1.0 the term is mentioned once wherever it appears;
     /// well above it, discussion concentrates. Both inputs are corpus-wide, so this says nothing
     /// about the researcher's current scope — and the surface that shows it must say so.
-    var corpusOccurrencesPerDocument: Double? {
+    public var corpusOccurrencesPerDocument: Double? {
         guard let corpusOccurrences, let corpusDocumentFrequency, corpusDocumentFrequency > 0
         else { return nil }
         return Double(corpusOccurrences) / Double(corpusDocumentFrequency)
@@ -300,7 +307,7 @@ struct InspectedOperand: Sendable, Equatable {
     /// `containment → contain` is the one that misleads. Telling those apart needs the
     /// stem→surface-forms map that decision Q-3-1 deferred to D-1, so the inspector
     /// reports the fact and the count and lets the researcher judge.
-    var isStemBroadening: Bool {
+    public var isStemBroadening: Bool {
         guard let stem, operand.kind == .word else { return false }
         return stem != operand.text.lowercased()
     }
@@ -348,7 +355,10 @@ struct InspectedOperand: Sendable, Equatable {
 ///   1.6 — #1297 round 4: `emptyConjuncts(in:parameters:)`, which only tests called, is replaced by
 ///         `emptyConjuncts(parsed:parameters:)`, which the production entry `emptyConjuncts(parameters:)` runs, so a test
 ///         that hands in a parse runs the code the hosts do (B1); the docs say parser 6.6 compares marks by word
-struct QueryInspector: Sendable {
+///   1.7 — FRUS Explorer Light: moved into the kit, with its reads public, for the web edition's Query Inspector: the
+///         passes a host runs, `inspect(parameters:indexedVolumeCount:)`, `scopedCounts(for:parameters:)` and
+///         `emptyConjuncts(parameters:)`
+public struct QueryInspector: Sendable {
 
     /// The service every lookup runs through — counts, stems and vocabulary alike.
     ///
@@ -357,7 +367,7 @@ struct QueryInspector: Sendable {
     let searchService: SearchService
 
     /// Creates an inspector.
-    init(searchService: SearchService) {
+    public init(searchService: SearchService) {
         self.searchService = searchService
     }
 
@@ -368,7 +378,7 @@ struct QueryInspector: Sendable {
     /// - Parameter indexedVolumeCount: how many volumes this device has indexed. Supplied
     ///   by the caller because it is app state (`AppState.indexedVolumeIds`), and because
     ///   passing it in keeps this type testable without one.
-    func inspect(parameters: SearchParameters, indexedVolumeCount: Int) async -> QueryInspection {
+    public func inspect(parameters: SearchParameters, indexedVolumeCount: Int) async -> QueryInspection {
         // The corpus parse, unscoped: operands and their reporting do not depend on the column
         // prefix, and the corpus expression is the one the strip displays first.
         await inspect(parsed: SearchService.parsedQuery(for: parameters), parameters: parameters,
@@ -620,7 +630,7 @@ struct QueryInspector: Sendable {
     /// the thing you excluded" is not a number the result set contains, and showing it
     /// beside the others would read as a hit count. Operands in
     /// ``QueryInspection/notApplied`` are not visited at all — the search never used them.
-    func scopedCounts(
+    public func scopedCounts(
         for inspection: QueryInspection, parameters: SearchParameters
     ) async -> [InspectedOperand] {
         var out: [InspectedOperand] = []
@@ -652,7 +662,7 @@ struct QueryInspector: Sendable {
     /// that phrase. No stem or vocabulary lookup runs: the blame needs the operands and their counts, nothing else.
     ///
     /// The only entry the hosts reach, through `QueryInspectorController.decomposeZeroResult`.
-    func emptyConjuncts(parameters: SearchParameters) async -> [ParsedOperand] {
+    public func emptyConjuncts(parameters: SearchParameters) async -> [ParsedOperand] {
         await emptyConjuncts(parsed: SearchService.parsedQuery(for: parameters), parameters: parameters)
     }
 

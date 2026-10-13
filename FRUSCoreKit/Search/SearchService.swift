@@ -98,6 +98,9 @@ import FTS5Store
 ///          `pipeline.resources`; its collocation measure, which tags with NaturalLanguage, moved
 ///          to the app's `SearchService+Collocation.swift`, so `pipeline` and
 ///          `positiveTerms(from:)` are internal for it
+///   2.12 — FRUS Explorer Light: `concordance(for:parameters:radius:)` is public, and
+///          `resultSetFacets(parameters:request:documentKeys:)` computes a search's facets by the
+///          route the facet panel took, for the panel and the web edition alike
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -693,7 +696,7 @@ public actor SearchService {
     ///   per-document bound dropped. Documents with no aligned occurrence contribute no lines —
     ///   which is a real possibility, because matching here uses the Swift `PorterStemmer` while the
     ///   index used SQLite's; see ``KWICBuilder/build(body:stems:radius:volumeId:documentId:header:dateISO:)``.
-    func concordance(
+    public func concordance(
         for results: [SearchResult],
         parameters: SearchParameters,
         radius: Int = 60
@@ -725,6 +728,38 @@ public actor SearchService {
         }
         return ConcordanceResult(lines: lines, omittedCount: omitted,
                                  documentsWithoutLines: documentsWithoutLines)
+    }
+
+    // MARK: - Facets (R-1)
+
+    /// A search's results broken down by `request`'s sections, as the facet panel shows them.
+    ///
+    /// A keyword search's facets describe its whole match (decision R-1-2), through the MATCH
+    /// expressions and filters the search itself runs, so the panel and the list count one set. A
+    /// meaning search has no MATCH, so its facets describe `documentKeys`, the results it ranked,
+    /// and no expression is built: asking for one from the typed text is how the keyword reading of
+    /// a meaning search leaked into these counts (#1193). Both routes run the same aggregation,
+    /// `IndexingPipeline.resultSetFacets`.
+    ///
+    /// - Parameters:
+    ///   - parameters: the search that ran.
+    ///   - request: the sections to compute, and their row ceiling.
+    ///   - documentKeys: the results to describe when no keyword match produced them, such as a
+    ///     meaning search's; `nil` for a keyword search.
+    /// - Throws: `FTS5Error.emptyQuery` when a keyword search has neither text to match nor a
+    ///   filter to run alone, as ``matchExpressions(for:)`` does.
+    public func resultSetFacets(
+        parameters: SearchParameters,
+        request: FacetRequest,
+        documentKeys: [(volumeId: String, documentId: String)]? = nil
+    ) async throws -> ResultSetFacets {
+        let expressions = documentKeys == nil
+            ? try makeMatchExpressions(from: parameters)
+            : (corpus: nil, userContent: nil)
+        let filters = documentKeys == nil ? makeFilters(from: parameters) : SearchSQLFilters()
+        return try await pipeline.resultSetFacets(
+            corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
+            filters: filters, request: request, documentKeys: documentKeys)
     }
 
     /// The query's positive terms, for highlighting and the concordance. Internal rather than

@@ -30,28 +30,30 @@ import FTS5Store
 ///
 /// Version history:
 ///   1.0 — R-3b: initial implementation
-struct KWICLine: Identifiable, Equatable, Sendable {
+///   1.1 — FRUS Explorer Light: public, with ``KWICSort`` and ``ConcordanceResult``, for the web
+///          edition's concordance
+public struct KWICLine: Identifiable, Equatable, Sendable {
 
     /// The document this occurrence is in.
-    let volumeId: String
-    let documentId: String
+    public let volumeId: String
+    public let documentId: String
     /// Display header for the source document.
-    let header: String
+    public let header: String
     /// ISO date, for the date sort and for display.
-    let dateISO: String?
+    public let dateISO: String?
 
     /// Text before the match, already trimmed to the context window.
-    let left: String
+    public let left: String
     /// The matched text, exactly as it appears in the document — not the stem, and not the query.
-    let match: String
+    public let match: String
     /// Text after the match.
-    let right: String
+    public let right: String
 
     /// Character offset of the match in the source body, which makes each line unique within a
     /// document and gives the concordance a stable identity across re-sorts.
-    let offset: Int
+    public let offset: Int
 
-    var id: String { "\(volumeId)/\(documentId)#\(offset)" }
+    public var id: String { "\(volumeId)/\(documentId)#\(offset)" }
 
     /// Sort key for "group by what comes before the match".
     ///
@@ -59,10 +61,10 @@ struct KWICLine: Identifiable, Equatable, Sendable {
     /// same immediately-preceding word together. Sorting on the un-reversed left context would order
     /// by the *start* of the window — which is an arbitrary point ~40 characters back, and groups
     /// nothing.
-    var leftSortKey: String { String(left.lowercased().reversed()) }
+    public var leftSortKey: String { String(left.lowercased().reversed()) }
 
     /// Sort key for "group by what follows the match" — the right context as it reads.
-    var rightSortKey: String { right.lowercased() }
+    public var rightSortKey: String { right.lowercased() }
 }
 
 // MARK: - KWICBuilder
@@ -201,7 +203,8 @@ enum KWICBuilder {
 ///
 /// Version history:
 ///   1.0 — R-3b: initial implementation
-enum KWICSort: String, CaseIterable, Sendable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's concordance
+public enum KWICSort: String, CaseIterable, Sendable {
     /// By the word immediately before the match — how repeated formulae surface.
     case leftContext
     /// By what follows the match.
@@ -212,7 +215,7 @@ enum KWICSort: String, CaseIterable, Sendable {
     /// By volume, then position within the document — the order the corpus itself is in.
     case volume
 
-    var pickerLabel: String {
+    public var pickerLabel: String {
         switch self {
         case .leftContext:
             return String(localized: "search.kwic.sort.left", defaultValue: "Left context")
@@ -230,7 +233,7 @@ enum KWICSort: String, CaseIterable, Sendable {
     /// Every comparison falls through to `id` so the order is total: two lines with identical
     /// context would otherwise be free to swap between renders, and a concordance that reshuffles
     /// under the reader is worse than one sorted oddly.
-    func apply(to lines: [KWICLine]) -> [KWICLine] {
+    public func apply(to lines: [KWICLine]) -> [KWICLine] {
         switch self {
         case .leftContext:
             return lines.sorted { $0.leftSortKey == $1.leftSortKey ? $0.id < $1.id : $0.leftSortKey < $1.leftSortKey }
@@ -265,12 +268,13 @@ enum KWICSort: String, CaseIterable, Sendable {
 ///
 /// Version history:
 ///   1.0 — R-3b: initial implementation
-struct ConcordanceResult: Equatable, Sendable {
+///   1.1 — FRUS Explorer Light: public, for the web edition's concordance
+public struct ConcordanceResult: Equatable, Sendable {
     /// Lines, in the order the results were supplied. Callers apply a ``KWICSort``.
-    let lines: [KWICLine]
+    public let lines: [KWICLine]
     /// Occurrences dropped by ``KWICBuilder/maxLinesPerDocument``.
-    let omittedCount: Int
+    public let omittedCount: Int
     /// Documents in the page that produced no line at all — either absent from the cache, or
     /// matched by SQLite's stemmer in a way the Swift stemmer does not reproduce.
-    let documentsWithoutLines: Int
+    public let documentsWithoutLines: Int
 }

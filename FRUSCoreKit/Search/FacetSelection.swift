@@ -15,7 +15,11 @@ import Foundation
 /// Three states, not two: a row the user has said nothing about is not the same as one they have
 /// ruled out, and collapsing them would make "exclude 1950" indistinguishable from "select every
 /// year except 1950" — which are different requests the moment the panel is re-paged or filtered.
-enum FacetRowState: Sendable, Equatable {
+///
+/// Version history:
+///   1.0 — Session 2026-08-10: #775
+///   1.1 — FRUS Explorer Light: moved into the kit and public, for the web edition's facets
+public enum FacetRowState: Sendable, Equatable {
     /// The user has expressed no opinion. The row does not constrain the search.
     case neutral
     /// The user wants this value.
@@ -24,7 +28,7 @@ enum FacetRowState: Sendable, Equatable {
     case excluded
 
     /// The next state when the row is activated, cycling neutral → included → excluded → neutral.
-    var next: FacetRowState {
+    public var next: FacetRowState {
         switch self {
         case .neutral:  return .included
         case .included: return .excluded
@@ -66,31 +70,32 @@ enum FacetRowState: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #775
-struct FacetSelection: Sendable, Equatable {
+///   1.1 — FRUS Explorer Light: moved into the kit and public, for the web edition's facets
+public struct FacetSelection: Sendable, Equatable {
 
     /// Bucket keys the user included.
-    private(set) var included: Set<String> = []
+    public private(set) var included: Set<String> = []
 
     /// Bucket keys the user excluded.
-    private(set) var excluded: Set<String> = []
+    public private(set) var excluded: Set<String> = []
 
     /// An empty selection — the state a panel opens in and returns to when cleared.
-    init() {}
+    public init() {}
 
     /// Creates a selection directly, for tests and for restoring a live filter into the panel.
-    init(included: Set<String>, excluded: Set<String> = []) {
+    public init(included: Set<String>, excluded: Set<String> = []) {
         self.included = included
         self.excluded = excluded
     }
 
     /// Whether the user has expressed any opinion at all.
-    var isEmpty: Bool { included.isEmpty && excluded.isEmpty }
+    public var isEmpty: Bool { included.isEmpty && excluded.isEmpty }
 
     /// How many rows carry an opinion — what a summary strip counts.
-    var count: Int { included.count + excluded.count }
+    public var count: Int { included.count + excluded.count }
 
     /// This row's state.
-    func state(of key: String) -> FacetRowState {
+    public func state(of key: String) -> FacetRowState {
         if included.contains(key) { return .included }
         if excluded.contains(key) { return .excluded }
         return .neutral
@@ -101,12 +106,12 @@ struct FacetSelection: Sendable, Equatable {
     /// A key is only ever in one of the two sets: the cycle removes it from the previous one
     /// before adding it to the next, so a row can never be both included and excluded — a state
     /// no resolution rule could interpret and no UI could draw.
-    mutating func cycle(_ key: String) {
+    public mutating func cycle(_ key: String) {
         set(key, to: state(of: key).next)
     }
 
     /// Puts one row into an explicit state.
-    mutating func set(_ key: String, to state: FacetRowState) {
+    public mutating func set(_ key: String, to state: FacetRowState) {
         included.remove(key)
         excluded.remove(key)
         switch state {
@@ -117,16 +122,16 @@ struct FacetSelection: Sendable, Equatable {
     }
 
     /// Clears every opinion.
-    mutating func removeAll() {
+    public mutating func removeAll() {
         included.removeAll()
         excluded.removeAll()
     }
 
     /// Every included key, for a summary that has to name them.
-    var includedKeys: Set<String> { included }
+    public var includedKeys: Set<String> { included }
 
     /// Every excluded key.
-    var excludedKeys: Set<String> { excluded }
+    public var excludedKeys: Set<String> { excluded }
 
     /// The single set of keys this selection asks for, over `universe`.
     ///
@@ -134,7 +139,7 @@ struct FacetSelection: Sendable, Equatable {
     ///   dimension at all". An **empty array is a real answer** — the user excluded everything they
     ///   included — and callers must pass it through rather than treating it as absent, or the
     ///   search silently widens to the whole corpus under a chip promising the opposite.
-    func resolved(from universe: [String]) -> [String]? {
+    public func resolved(from universe: [String]) -> [String]? {
         guard !isEmpty else { return nil }
         // Include-only and exclude-only are different questions. With nothing included, the
         // starting point is everything the section currently shows; with something included, it is
@@ -156,7 +161,20 @@ struct FacetSelection: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #775
-enum FacetSelectionApplier {
+///   1.1 — FRUS Explorer Light: moved into the kit and public, for the web edition's facets, with
+///          ``stagedSections``, which the facet panel's controller held
+public enum FacetSelectionApplier {
+
+    /// The sections that stage a selection instead of narrowing on the first tap: the ones
+    /// ``apply(_:keys:to:)`` writes.
+    ///
+    /// Years is here because its filter has no other representation — `dateRange` is one
+    /// contiguous interval and `{1951, 1953}` cannot be written in it, which is #775 exactly.
+    /// Volumes is here because `volumeIds` is already a set end to end and the panel was the only
+    /// thing collapsing it to one. Document type is not: it is a three-valued enum whose `.all`
+    /// case already means "neither excluded", so a second control would be two ways to say one
+    /// thing. People is not, this wave — see the section footer.
+    public static let stagedSections: Set<FacetSection> = [.years, .volumes]
 
     /// Applies a resolved key set for `section` to `parameters`.
     ///
@@ -165,8 +183,8 @@ enum FacetSelectionApplier {
     ///   excluded everything they included" and the SQL contract for `yearKeys` reads that as
     ///   matching nothing. Coercing it to `nil` here would widen the search to the whole corpus
     ///   under a chip promising the opposite.
-    static func apply(_ section: FacetSection, keys: [String]?,
-                      to parameters: inout SearchParameters) {
+    public static func apply(_ section: FacetSection, keys: [String]?,
+                             to parameters: inout SearchParameters) {
         switch section {
         case .years:
             parameters.yearKeys = keys?.sorted()
@@ -178,9 +196,9 @@ enum FacetSelectionApplier {
             // "show me none of the volumes in this match", which the panel expresses as clearing.
             parameters.volumeIds = (keys?.isEmpty ?? true) ? nil : keys?.sorted()
         case .people, .documentType, .provenance, .subjects:
-            // Not staged — see `FacetPanelController.stagedSections`. Reaching here would mean a
-            // section was added to that set without an applier, which is a programming error and
-            // silently doing nothing is the safe failure.
+            // Not staged — see ``stagedSections``. Reaching here would mean a section was added to
+            // that set without an applier, which is a programming error and silently doing nothing
+            // is the safe failure.
             break
         }
     }
