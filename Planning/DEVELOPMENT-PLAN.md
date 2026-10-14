@@ -38286,3 +38286,23 @@ All at the code commit, rebased on `9feff971`, clean and unsigned. The records c
 - **The reader's other scripts stay in the app:** the offset engine, the highlights and the selection, which FRUS Explorer Light needs for highlights in its phase 2.
 - **`DocumentExportSupport`'s other export helpers stay in the app,** a `#if os(macOS)` file.
 - **Not run:** the UI suites, iOS 26.x, a device and a signed run. The Mac app was built and not run.
+
+## Session 2026-10-14 — The Gemma licence re-read, the EmbeddingGemma 2 spike in the plan of record, and a ballpark for the re-embed on the Air
+
+**What was asked.** The licence situation of the embedding model behind the semantic features and what it means for shipping a Meaning search with no gate for the reader, in the app and in FRUS Explorer Light; a ballpark for re-embedding the corpus with EmbeddingGemma 2 on the M5 MacBook Air; and a pull request that puts the spike in the plan of record. No code changed.
+
+**What was found.** The memo `Planning/semantic-vectors/EmbeddingGemma-2-Spike-2026-10-14.md` has the whole reading with its sources; the headlines:
+- **EmbeddingGemma 300m is unchanged** under the Gemma Terms (page last modified 2026-04-01, the Prohibited Use Policy 2024-02-21, the Appendix naming it; `license: gemma`, gated). Every obligation is built except the custom App Store EULA, which is drafted, not entered, and owed before the first App Store submission; the app is TestFlight-only.
+- **Under the Terms the app's gates can move and cannot go.** Weights in the binary are still Distribution; without a download moment the custom EULA is the only enforceable provision for App Store copies and the Mac DMG has none; bundled weights cannot be recalled under §4.5. The vectors, shards and map are Outputs and already ship gate-free.
+- **EmbeddingGemma 2 is Apache 2.0** by Google's announcement, its documentation, the Hugging Face record and the card's licence link, which goes to the Gemma 4 licence page, the plain Apache text. Under it the consent sheet, the EULA clause, the Terms screen, the policy re-reads and the termination exposure all go, in the app and in the web edition. Two things only secondary coverage reports, for the owner to read on the card: a kept "Deployments must adhere to the Gemma Prohibited Use Policy" sentence, and no LICENSE file in the repository.
+- **The web edition under the Terms:** a hosted Meaning search in a multi-user instance is Distribution to its readers (§1.1(b)), so the operator owes the §3.1 flow-down in its own terms with them. FRUS Explorer Light's phase 4 design has the admin's acceptance and no reader-facing terms; its single-user localhost mode has no third party. Recorded for the owner; nothing changed there, per `CLAUDE.md`'s rules.
+- **The runtime:** llama.cpp gained the `gemma-embedding2` architecture on 2026-10-06 (PR 30054); the vendored `llama.xcframework` was last rebuilt 2026-10-05 at commit `8663224`, so a move rebuilds it with a new dSYM release. Upstream llama.cpp drives the M5's neural accelerators through the Metal tensor API (PR 27461); LM Studio's runtime 2.21 is reported to fail that self-test on M5 Macs and fall back, 2 to 3× slower on prompt processing.
+- **The ballpark for the Air,** chained from the Studio's measured 5.96 h for 605,643 chunks and about 353.7 M tokens: 6 to 9 hours if the accelerators engage, 10 to 18 if they do not; the harvester's ETA settles inside the first hour. Nothing about the model was measured.
+
+**What changed.**
+- `Planning/Plan-Of-Record-2026-10-11.md`: decision 10 (the owner's, 2026-10-14: the spike is queued), queue row and bullet 10, the order line, the §3 bullet marked decided, and the EULA line of §3's App Store Connect bullet.
+- `Planning/semantic-vectors/Gemma-Compliance-Runbook.md` §0: the 2026-10-14 re-run paragraph.
+- `Planning/semantic-vectors/EmbeddingGemma-2-Spike-2026-10-14.md`: new. The licence reading for both editions, the spike in two stages (the runtime, the file and the Air's throughput in an afternoon; the full re-embed with the corpus gates and the 25 judged queries as stage 2, which is the move's largest cost paid in advance), what a move would touch, the ballpark, and what is not verified.
+- This entry.
+
+**Not run.** No test target reads the changed files except `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`, which reads the plan's §7 line, unchanged, and counts the live plans, still one. The container could not reach ai.google.dev or huggingface.co, so every statement about the live pages and the model card is second-hand, and the memo marks each.
