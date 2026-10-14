@@ -420,7 +420,7 @@ number of the capture run in `Docs/screenshots/README.md`'s ledger, as the X-8 r
 4. **The README hero row.** Three slots today: `macos/search`, `macos/cross-reference-graph`,
    `ipad/semantic-map`. Swap the graph (stale, and the least legible of the three at README width) for
    `ipad/source-explorer`, which carries the claim no competitor can make.
-5. **Whether to add this file to the plan of record.** `Plan-Of-Record-2026-10-11.md` §3 lists the
+5. **Whether to add this file to the plan of record.** *Answered 2026-10-14: `Plan-Of-Record-2026-10-14.md` §2 names this file and folds its four sittings into the manuals' capture sessions on build 51 (its §6a and §6c).* `Plan-Of-Record-2026-10-11.md` (now in `Completed/`) §3 listed the
    marketing items under *App Store Connect and marketing*; one bullet pointing here keeps the two in
    step. Not done in this pass, because that file's §7 line is checked against
    `Visual-Marketing-Plan.md` by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`

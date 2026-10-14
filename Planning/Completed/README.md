@@ -156,10 +156,26 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     documents that name the 2026-09-28 plan as the live one (`Plan-Of-Record-2026-09-06.md`'s
     status line and `Open-Issues-Resolution-Plan-2026-09-23.md`).
 
-**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-11, by listing the
+- **The 2026-10-14 move (1 document)** — moved with the plan of record that replaced the
+  2026-10-11 one, when the owner made build 51 the first public release candidate and set the
+  work on two tracks. **Residue is carried by the live plan**, in its §4 and §6.
+  - **The superseded plan of record**: `Plan-Of-Record-2026-10-11.md` (superseded 2026-10-14,
+    three days old). It is the record of the owner's seven answers of 2026-10-11, the queue to
+    build 50 (all five items done; the build tagged 2026-10-13 at `c6f7b2cb`), decisions 8 to 10
+    (the printed-form fallback, the rule on tests that pin language, the EmbeddingGemma 2 spike),
+    and build 50's checklist with every result. Its items 6 to 10 are the live plan's Track A
+    (A1, A2, A5) and Track B, and its §5 lists are the live plan's §6d to §6f, carried whole.
+  - **Pointers to this file.** The live plan's own status line; `STATUS.md` of the cross-platform
+    review package, which names the live plan's §6f with this file's §5c beside it;
+    `Index-Bump-Brief-2026-10-11.md` and `Issue-1576-Bulk-Actions-Assessment.md`, whose pointers
+    into this file's §5a and §5b now give its archived path; and
+    `Launch-Marketing-Kit-2026-10-13.md` decision 5, marked answered. Dated records were left as
+    written: `DEVELOPMENT-PLAN.md`'s entries that name the plan at the `Planning/` root.
+
+**Deliberately NOT here** (live at `Planning/` root — verified 2026-10-14, by listing the
 directory):
-- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-11`; every
-  superseded one is in this directory), the log (`DEVELOPMENT-PLAN`) and the spec;
+- **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-14`; every
+  superseded one is in this directory, `Plan-Of-Record-2026-10-11` since 2026-10-14), the log (`DEVELOPMENT-PLAN`) and the spec;
 - **the manuals' review** — `Manual-Update-Build-49-Owner-Review` (the worklist for the owner's
   review, which is not before 2026-10-21) and `Manual-Revisions-Pending` (the lanes' 137
   proposals of the build-49 wave, which the manual update of 2026-10-07 read and the worklist

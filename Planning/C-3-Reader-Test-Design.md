@@ -7,6 +7,8 @@ from the guide, not generated from the review), and the instruments on Fable at 
 Companion to `Agentic-Guide-Accessibility-Review-2026-10-14.md` (the revisions it tests) and
 successor to C-0b/C-0c (`c0c-falsifier/RUBRIC.md`, whose 24 items it carries unchanged) and C-2.
 The runs are the owner's, on the Mac that holds the full index; nothing here was run.
+**Deferred 2026-10-14 (plan of record decision 13): the run waits until build 51 is tagged.** Nothing below
+is changed by the deferral; the four inputs stand, and the guide's v1.29 edits the run tests are in.
 
 **Two questions, one run.**
 
