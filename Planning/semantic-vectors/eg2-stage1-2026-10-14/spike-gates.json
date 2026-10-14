@@ -1,0 +1,238 @@
+{
+  "db": "/Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/frus.db",
+  "models": {
+    "embeddinggemma2": {
+      "chunk_chars": 3200,
+      "dim": 768,
+      "full_corpus_hours": 8.5,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.4602,
+          "hit@100": 0.7257,
+          "hit@50": 0.6195,
+          "median_rank": 15,
+          "mrr@10": 0.1876,
+          "queries": 113
+        },
+        "frus1948v06": {
+          "hit@10": 0.4522,
+          "hit@100": 0.8478,
+          "hit@50": 0.7609,
+          "median_rank": 15,
+          "mrr@10": 0.244,
+          "queries": 230
+        },
+        "overall": {
+          "hit@10": 0.4548,
+          "hit@100": 0.8076,
+          "hit@50": 0.7143,
+          "median_rank": 15,
+          "mrr@10": 0.2254,
+          "queries": 343
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.4248,
+          "hit@100": 0.7257,
+          "hit@50": 0.5929,
+          "median_rank": 23,
+          "mrr@10": 0.1771,
+          "queries": 113
+        },
+        "frus1948v06": {
+          "hit@10": 0.4304,
+          "hit@100": 0.8304,
+          "hit@50": 0.7,
+          "median_rank": 17,
+          "mrr@10": 0.2329,
+          "queries": 230
+        },
+        "overall": {
+          "hit@10": 0.4286,
+          "hit@100": 0.7959,
+          "hit@50": 0.6647,
+          "median_rank": 17,
+          "mrr@10": 0.2145,
+          "queries": 343
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.4849,
+        "float-128": 0.6992,
+        "float-256": 0.8346,
+        "float-512": 0.9214,
+        "hamming200->int8-256": 0.8301,
+        "int8-128": 0.6995,
+        "int8-256": 0.8343,
+        "int8-512": 0.9197
+      },
+      "model": "embeddinggemma-2-Q8_0",
+      "prefix": "title: none | text: ",
+      "throughput_chars_per_s": 44781
+    },
+    "gemma300m-llamacpp": {
+      "chunk_chars": 3200,
+      "dim": 768,
+      "full_corpus_hours": 5.8,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.4513,
+          "hit@100": 0.7522,
+          "hit@50": 0.6195,
+          "median_rank": 16,
+          "mrr@10": 0.2189,
+          "queries": 113
+        },
+        "frus1948v06": {
+          "hit@10": 0.4783,
+          "hit@100": 0.8435,
+          "hit@50": 0.7348,
+          "median_rank": 12,
+          "mrr@10": 0.2432,
+          "queries": 230
+        },
+        "overall": {
+          "hit@10": 0.4694,
+          "hit@100": 0.8134,
+          "hit@50": 0.6968,
+          "median_rank": 13,
+          "mrr@10": 0.2352,
+          "queries": 343
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.4425,
+          "hit@100": 0.7168,
+          "hit@50": 0.6195,
+          "median_rank": 22,
+          "mrr@10": 0.231,
+          "queries": 113
+        },
+        "frus1948v06": {
+          "hit@10": 0.4522,
+          "hit@100": 0.8304,
+          "hit@50": 0.7261,
+          "median_rank": 14,
+          "mrr@10": 0.2249,
+          "queries": 230
+        },
+        "overall": {
+          "hit@10": 0.449,
+          "hit@100": 0.793,
+          "hit@50": 0.691,
+          "median_rank": 14,
+          "mrr@10": 0.2269,
+          "queries": 343
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.5256,
+        "float-128": 0.6565,
+        "float-256": 0.7727,
+        "float-512": 0.8776,
+        "hamming200->int8-256": 0.7714,
+        "int8-128": 0.6567,
+        "int8-256": 0.7723,
+        "int8-512": 0.8767
+      },
+      "model": "embeddinggemma-300m-qat-Q4_0",
+      "prefix": "title: none | text: ",
+      "throughput_chars_per_s": 65269
+    },
+    "gemma300m-shipped": {
+      "chunk_chars": 3200,
+      "dim": 768,
+      "full_corpus_hours": 8.2,
+      "gate_a_float_full": {
+        "frus1938v01": {
+          "hit@10": 0.4513,
+          "hit@100": 0.7522,
+          "hit@50": 0.6195,
+          "median_rank": 16,
+          "mrr@10": 0.2189,
+          "queries": 113
+        },
+        "frus1948v06": {
+          "hit@10": 0.4783,
+          "hit@100": 0.8435,
+          "hit@50": 0.7348,
+          "median_rank": 12,
+          "mrr@10": 0.2432,
+          "queries": 230
+        },
+        "overall": {
+          "hit@10": 0.4694,
+          "hit@100": 0.8134,
+          "hit@50": 0.6968,
+          "median_rank": 13,
+          "mrr@10": 0.2352,
+          "queries": 343
+        }
+      },
+      "gate_a_int8_256": {
+        "frus1938v01": {
+          "hit@10": 0.4425,
+          "hit@100": 0.7168,
+          "hit@50": 0.6195,
+          "median_rank": 22,
+          "mrr@10": 0.2334,
+          "queries": 113
+        },
+        "frus1948v06": {
+          "hit@10": 0.4522,
+          "hit@100": 0.8304,
+          "hit@50": 0.7261,
+          "median_rank": 14,
+          "mrr@10": 0.2234,
+          "queries": 230
+        },
+        "overall": {
+          "hit@10": 0.449,
+          "hit@100": 0.793,
+          "hit@50": 0.691,
+          "median_rank": 14,
+          "mrr@10": 0.2267,
+          "queries": 343
+        }
+      },
+      "gate_b_ladder": {
+        "binary-256": 0.5262,
+        "float-128": 0.6567,
+        "float-256": 0.7725,
+        "float-512": 0.8777,
+        "hamming200->int8-256": 0.7715,
+        "int8-128": 0.6566,
+        "int8-256": 0.7726,
+        "int8-512": 0.8772
+      },
+      "model": "text-embedding-embeddinggemma-300m-qat",
+      "prefix": "title: none | text: ",
+      "throughput_chars_per_s": 46413
+    }
+  },
+  "panel": {
+    "auto_pick": "gemma300m-llamacpp",
+    "auto_pick_basis": "best overall Gate-A MRR@10 at float full-dim, Q4_K_M store excluded",
+    "csv": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-build-50-testflight-docs-ea28f5/333748d1-df70-4a84-9be2-5011d27844f9/scratchpad/b1/gates/blind-panel.csv",
+    "key": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-build-50-testflight-docs-ea28f5/333748d1-df70-4a84-9be2-5011d27844f9/scratchpad/b1/gates/blind-panel-key.csv",
+    "model": "gemma300m-llamacpp",
+    "rows": 100
+  },
+  "pooling": "char-length-weighted mean of unit-norm chunk vectors, L2-renormalized",
+  "rerank_pool": 200,
+  "seed": 18610810,
+  "top_k": 10,
+  "weak_positive_drops": {
+    "cross_volume": 150,
+    "not_in_store": 0,
+    "self": 3,
+    "unresolved_page": 0
+  },
+  "weak_positive_queries": {
+    "frus1938v01": 113,
+    "frus1948v06": 230
+  },
+  "weak_positive_resolved_pairs": 490
+}

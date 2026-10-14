@@ -38336,3 +38336,30 @@ All at the code commit, rebased on `9feff971`, clean and unsigned. The records c
 **Checked.** The one test that reads a plan of record, `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`, was mimicked in Python against the tree as committed: exactly one `Plan-Of-Record-*.md` under `Planning/` lacks "Status: SUPERSEDED", its `§7 struck:` line reads 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14, and `Visual-Marketing-Plan.md` §7's struck rows are the same eleven of its seventeen. The suite itself was not run: this container has no Xcode. No other test reads a changed file, and no source or test names the archived file by path.
 
 **Not done.** The App Intents issue is not filed: A6's session files it on the owner's word. No finding in §6e was filed. #1660's screenshot was not read, and nothing was posted to the issue. Nothing was measured about EmbeddingGemma 2, and no capture was taken.
+
+## Session 2026-10-14 — Track B, step B1: EmbeddingGemma 2's stage 1 on the Air, with the spike gates read against the 300m
+
+**What was asked.** Review the plan of record and start Track B. B1 is stage 1 of `Planning/semantic-vectors/EmbeddingGemma-2-Spike-2026-10-14.md`: a current llama.cpp, the text-only Q8_0 GGUF, the Air's tensor path, the three-volume spike through the harvester, and `spike_gates.py` beside the 300m's store; its product is a dated memo and go or no-go for B2. Run on the M5 MacBook Air, which is the owner's machine for Track B. The owner approved the two downloads (llama.cpp at `a0e6dc73`, the GGUF) and a control run of the shipped 300m on the same runtime. No file the app, a kit, a generator or a test compiles is changed.
+
+**What was measured.** `Planning/semantic-vectors/EmbeddingGemma-2-Stage-1-2026-10-14.md` has every figure and its method; the headlines:
+- **The encoder works.** llama.cpp `a0e6dc73` (master; v0.6.0 predates PR 30054), built in 51 s with no warning, loads `embeddinggemma-2-Q8_0.gguf` (309,855,456 bytes, SHA-256 `2188ac1d…`, the same as Hugging Face's) with no `mmproj`, and returns unit-length 768-dimension vectors. The card's document and query prompts are the strings the app already uses.
+- **The licence, first-hand:** `apache-2.0`, ungated, no LICENSE file in either repository, and the card does keep "Deployments must adhere to the Gemma Prohibited Use Policy".
+- **The tensor path:** `has tensor = true` (Apple10, Metal4). The line is not in any server log at this commit; it was read through a log callback on `libggml-base`, and the A/B with `GGML_METAL_TENSOR_DISABLE=1` halves the rate for both models.
+- **Throughput:** EmbeddingGemma 2 takes 1.46× the 300m's time in the harvester on the same runtime (44,789 against 65,278 document characters a second) and 1.7–1.8× in the embedding alone; the design assumed ×1.1–1.3. The full re-embed is 8.27 h of embedding before throttling, and 8.6–9.1 h at the dip a 25-minute sustained probe measured: the fanless Air held within 10% of its early rate, with no thermal warning. LM Studio's engine 2.57.0 ran the 300m at 0.85–0.88× `llama-server`'s rate. The two tokenizers count identically.
+- **The gates** (343 weak-positive queries, the Mac's v69 index): level overall within the spike's noise, at the shipping shape ΔMRR@10 −0.0108 [−0.0285, +0.0069]; the interwar volume weaker, −0.0448 [−0.0804, −0.0135]; the Cold War volume level, +0.0060 [−0.0146, +0.0266]. The new model keeps more of its own neighbourhood under truncation (recall@10 0.921 at 512 against 0.878). The 300m through the new runtime reproduces the shipped store chunk for chunk (cosine ≥ 0.999982) and Gate A exactly.
+- **Latency and memory**, the step-4 method: 2.14 ms a query warm and 688 ms cold, against 1.66 ms and 390 ms for the 300m on the same runtime.
+
+**Go or no-go.** The design's rule turns on "a weaker gate", and the gate is weaker by its point estimates and level by its intervals. The memo sets out both readings and recommends B2, with B3 reading the era rows. **The owner decided that B2 runs**, and its full harvest started on the Air at 18:16, in one invocation, into `~/frus-semantic-raw-embeddinggemma-2`, with its log and the copies of the harvester and manifest it read in `~/frus-b2/`. The corpus checkout's `volumes/` is unchanged since the bundle's `99d851c79`.
+
+**What changed.**
+- `Planning/semantic-vectors/EmbeddingGemma-2-Stage-1-2026-10-14.md`: new, the stage-1 memo.
+- `Planning/semantic-vectors/eg2-stage1-2026-10-14/`: new; `spike-gates.json`, `spike-compare.json`, the bench, latency and sustained-load measurements, the Metal device lines, and the four probe scripts.
+- `tools/semantic-harvest/spike_compare.py`: new, the paired comparison beside `spike_gates.py`.
+- `tools/semantic-harvest/README.md`: field notes for the Air, among them `llama-server` in place of LM Studio and where to read the tensor path.
+- `Planning/semantic-vectors/EmbeddingGemma-2-Spike-2026-10-14.md`: the status line points at the memo (version 1.1).
+- `Planning/Plan-Of-Record-2026-10-14.md`: §3 gains B1's result; §3's B4 bullet and §4's Track B entry say what the owner now reads and decides.
+- This entry.
+
+**Checked.** The gates' numpy warnings were checked rather than silenced: every vector finite and unit-length, float32 similarities within 1.9×10⁻⁶ of float64. The 300m's Gate B ladder reproduces V-0's of 2026-08-10 to the digit. Today's extraction of the three spike volumes is identical to the shipped store's text layer. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan's §7 line, which is unchanged; the suite was not run, and no other test reads a changed file.
+
+**Not done.** B2's harvest is running and none of its gates is read; that is a fresh session's, once the store is complete. Nothing was posted to #1659. The two spike stores (13 MB each), the GGUF and the llama.cpp build stay on the Air, outside the repository. The query encoder was not run on an iPhone; that is B2's step 7, after `llama.xcframework` is rebuilt.

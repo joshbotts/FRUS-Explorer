@@ -253,6 +253,39 @@ My Models list, reveal the GGUF in Finder, then run the harvest with
   nomic store was kept beside the Q8_0 re-run — same chunks, same prefix, one quant tier
   apart — as a free rung of the Phase 2 quantization ladder.
 
+## Field notes — the Air, 2026-10-14 (EmbeddingGemma 2, stage 1)
+
+The figures are in `Planning/semantic-vectors/EmbeddingGemma-2-Stage-1-2026-10-14.md`; these are
+the parts a later run needs.
+
+- **`llama-server` stands in for LM Studio with no change to the harvester.**
+  `llama-server -m <gguf> --alias <id> --embeddings --port 8089 -ngl 99 -np 4 -c 16384 -b 4096 -ub 4096`
+  serves `/v1/models` and `/v1/embeddings`. Run the harvester with
+  `LMSTUDIO_URL=http://127.0.0.1:8089 MODEL=<id>`. `--alias` sets the id the harvester checks,
+  and a port other than 1234 keeps it clear of a running LM Studio. Its vectors arrive unit-norm,
+  as LM Studio's do. Slot counts of 1, 4 and 8 landed within 7.2% of each other, about the
+  spread of one setting run twice (5%).
+- **The Metal tensor path is read, then tested.** At llama.cpp `a0e6dc73` neither `llama-server`
+  nor `llama-embedding` prints `has tensor` at any verbosity: ggml initialises the backends while
+  the arguments are parsed, before the log sink is set up.
+  `Planning/semantic-vectors/eg2-stage1-2026-10-14/metal_props.py` prints the device lines
+  through a callback on `libggml-base`, and `GGML_METAL_TENSOR_DISABLE=1` on the server is the
+  A/B. On the M5 Air the path halves the time for both EmbeddingGemma models.
+- **LM Studio's engine 2.57.0 ran the 300m at 0.85–0.88× `llama-server`'s rate** on the same
+  640 chunks, and 1.65–1.70× the rate with the tensor path disabled. Either route serves the
+  harvester; `llama-server` is the faster, and the one that names its runtime commit.
+- **No SEP warning** under the upstream runtime, for either EmbeddingGemma model.
+- **A detached run needs `PYTHONUNBUFFERED=1`.** Under `nohup … > harvest.log` the progress
+  lines and their ETA are block-buffered and the log stays empty for hours. `runs.jsonl` is
+  written per volume either way.
+- **`spike_compare.py`** sits beside `spike_gates.py` and reads stores through its loaders: the
+  paired Gate A difference between two models with a bootstrap interval, Gate A at the 512
+  shipping width, and the parity of one model's weights through two runtimes. Two models an MRR
+  point apart over a few hundred spike queries are not told apart without it.
+- **numpy's `RuntimeWarning`s in `matmul` are spurious here** (numpy 2.0.2 on Accelerate): every
+  vector was finite and unit-length, and the float32 similarities matched a float64 recomputation
+  to 1.9×10⁻⁶. Check that before trusting a figure; do not silence it unread.
+
 ## Later phases
 
 **The NER pass (R-1) now has its own runbook and harness in this folder:

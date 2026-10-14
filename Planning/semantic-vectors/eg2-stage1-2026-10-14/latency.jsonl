@@ -1,0 +1,2 @@
+{"model": "embeddinggemma-2-Q8_0", "cold_ms_best_of_3": 688, "per_query_ms": 2.14, "peak_rss_mb": 860, "peak_footprint_mb": 499, "walls_1q_s": [0.7, 0.702, 0.688], "walls_100q_s": [0.995, 0.912, 0.9]}
+{"model": "embeddinggemma-300m-qat-Q4_0", "cold_ms_best_of_3": 390, "per_query_ms": 1.66, "peak_rss_mb": 729, "peak_footprint_mb": 507, "walls_1q_s": [0.39, 0.404, 0.397], "walls_100q_s": [0.57, 0.554, 0.564]}
