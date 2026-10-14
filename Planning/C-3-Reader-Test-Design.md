@@ -1,9 +1,9 @@
 # C-3 — the reader-facing revisions under the block, and model × effort on one question
 
 **Status:** DESIGN, written 2026-10-14 before any run, to be frozen before the first cell launches.
-The owner's three inputs arrived the same day: the question without its dates (§1), the Max 20x
-plan (the budget rule), and the guide edits landing before the run (so the block section is pasted
-from the guide, not generated from the review).
+The owner's four inputs arrived the same day: the question without its dates (§1), the Max 20x
+plan (the budget rule), the guide edits landing before the run (so the block section is pasted
+from the guide, not generated from the review), and the instruments on Fable at max (§2).
 Companion to `Agentic-Guide-Accessibility-Review-2026-10-14.md` (the revisions it tests) and
 successor to C-0b/C-0c (`c0c-falsifier/RUBRIC.md`, whose 24 items it carries unchanged) and C-2.
 The runs are the owner's, on the Mac that holds the full index; nothing here was run.
@@ -90,13 +90,21 @@ section the guide carries since v1.29**, generated into the script from the guid
 canary command against a known answer (runbook §1).
 
 **Fixed across cells, and not under test**: the scorer, the refuter and the reader judge run on
-`claude-opus-5-5` at `medium`, one each per cell, blind to the cell. A measuring instrument that
-changed with the thing measured would measure nothing.
+`claude-fable-5-1` at `max`, one each per cell, blind to the cell (the owner's choice of
+2026-10-14: the most capable setting the matrix contains, so no cell is scored by an instrument
+weaker than itself). A measuring instrument that changed with the thing measured would measure
+nothing. The instruments are the dearest part of a cheap cell, so the calibration in §3 reads
+their cost first, before any Fable cell runs.
 
 ---
 
 ## 3. Order, calibration and the stop rule
 
+0. **Calibrate the instruments on nothing.** Before any cell, score, refute and judge one of the
+   2026-08-31 starter kits as if it were a cell (the Cuba kit, whose question is closest to C-3's),
+   reading `/usage` before and after. That is the instruments' cost on their own, and the rehearsal
+   of their prompts against an output whose errors are already known; a cell's own figure is read
+   net of it.
 1. **Calibrate on the two corners.** Run **F-max** and **S-med** first, one at a time, reading
    `/usage` before and after each. These bound the per-cell cost. If F-max alone exceeds 8% of the
    weekly allowance, the matrix cannot be completed within the budget and the owner decides
@@ -121,9 +129,9 @@ launched, and their cost is in the cell's figure.
 | Measure | Instrument | Records |
 |---|---|---|
 | **Usage** | `/usage` before and after; the workflow journal | weekly-usage %, input and output tokens, cache reads, wall clock, tool calls, whether the session died (runbook §6) |
-| **Compliance** | one blind scorer, C-0c's 24 items unchanged plus O1–O3 (the review §3) | obeyed / violated / not applicable per item, with evidence; compliance = obeyed ÷ (obeyed + violated) |
-| **Correctness** | one refuter, told to find the wrong number: re-derive the five headline numbers of the overview from the log, re-retrieve every quotation for its pair (§8's alphanumeric check), confirm every NAID in the bottom line against the artifact | numbers reproduced of five; quotations verified of N; fabrications; mis-citations |
-| **Reader quality** | one judge, blind to the cell, reading the **overview and the collection only**, never the memo | five yes/no items: the three-part bottom line present and in order; every number a count of a named set in words; citations as the edition with a link; what cannot be answered stated as a search run; no SQL, column name, id pair or path. Plus one ranked preference over all overviews received so far, with a one-line reason |
+| **Compliance** | one blind scorer on Fable at max, C-0c's 24 items unchanged plus O1–O3 (the review §3) | obeyed / violated / not applicable per item, with evidence; compliance = obeyed ÷ (obeyed + violated) |
+| **Correctness** | one refuter on Fable at max, told to find the wrong number: re-derive the five headline numbers of the overview from the log, re-retrieve every quotation for its pair (§8's alphanumeric check), confirm every NAID in the bottom line against the artifact | numbers reproduced of five; quotations verified of N; fabrications; mis-citations |
+| **Reader quality** | one judge on Fable at max, blind to the cell, reading the **overview and the collection only**, never the memo | five yes/no items: the three-part bottom line present and in order; every number a count of a named set in words; citations as the edition with a link; what cannot be answered stated as a search run; no SQL, column name, id pair or path. Plus one ranked preference over all overviews received so far, with a one-line reason |
 | **The historian's deliverable** | `tools/`-style check from the review's R7: the `.fruscollection` opens (the §15.2 checker), carries prose and excerpts, and every document the overview cites is in it | opens / entries by kind / cited-and-present |
 
 **Quality score** = compliance × (numbers reproduced ÷ 5) × (quotations verified ÷ N) × (reader
@@ -173,9 +181,9 @@ const RUNNER = args.runner // the one prompt, generated from the guide and the r
 const results = await pipeline(
   CELLS,
   (c) => agent(RUNNER.replace('{{CELL}}', c.id), { label: 'run:' + c.id, phase: 'Run', model: c.model, effort: c.effort }),
-  (_r, c) => agent(SCORER(c.id), { label: 'score:' + c.id, phase: 'Score', model: 'claude-opus-5-5', effort: 'medium', schema: VERDICT }),
-  (_r, c) => agent(REFUTER(c.id), { label: 'refute:' + c.id, phase: 'Refute', model: 'claude-opus-5-5', effort: 'medium', schema: REFUTATION }),
-  (_r, c) => agent(JUDGE(c.id), { label: 'judge:' + c.id, phase: 'Judge', model: 'claude-opus-5-5', effort: 'medium', schema: READER }),
+  (_r, c) => agent(SCORER(c.id), { label: 'score:' + c.id, phase: 'Score', model: 'claude-fable-5-1', effort: 'max', schema: VERDICT }),
+  (_r, c) => agent(REFUTER(c.id), { label: 'refute:' + c.id, phase: 'Refute', model: 'claude-fable-5-1', effort: 'max', schema: REFUTATION }),
+  (_r, c) => agent(JUDGE(c.id), { label: 'judge:' + c.id, phase: 'Judge', model: 'claude-fable-5-1', effort: 'max', schema: READER }),
 )
 return { cells: results.filter(Boolean) }
 ```
@@ -204,9 +212,15 @@ was generated from, `sqlite3 --version`, the harness version, every prompt as pa
    question, and a question whose scope the agents set is answered over scopes that differ by
    cell: the scorer's first row records each cell's scope (volumes and date span) so the readings
    compare answers of the same question and not answers of nine.
-3. **The instruments share a model.** A judge on Opus 5.5 may prefer Opus 5.5's prose. The reader
-   items are yes/no on checkable properties for that reason, and the ranking is the tie-breaker,
-   never the score.
+3. **The instruments share a model with one cell.** A judge on Fable 5.1 may prefer Fable 5.1's
+   prose, and F-max is scored by its own twin. The reader items are yes/no on checkable properties
+   for that reason, the refuter's work is re-derivation and re-retrieval rather than opinion, and
+   the ranking is the tie-breaker, never the score. If F-max leads on the reader items alone and
+   on nothing else, say so as a possible instrument effect rather than a finding.
+3a. **The instruments cost more than some cells.** Fable at max scoring a Sonnet-at-medium cell may
+   spend more than the cell did. The budget counts it (§3), the calibration step 0 measures it
+   before any cell, and the value reading divides quality by the cell's own usage, instruments
+   included, so a cheap cell is not made to look cheaper than it was.
 4. **Weekly usage is a plan's meter, not a price.** It is the right constraint for the owner and
    the wrong unit for the guide's readers, so the guide's table carries tokens and wall clock
    beside it, and names the plan the percentage was read on.
