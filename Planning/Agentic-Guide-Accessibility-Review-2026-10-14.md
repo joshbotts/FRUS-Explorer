@@ -2,8 +2,11 @@
 
 **Status:** REVIEW, 2026-10-14. Recommendations only; nothing in the guide is changed by this
 document. Written against `Docs/Agentic-Analysis-Guide.md` v1.28 (3,184 lines, `v2` @ `757c6d2`),
-read whole, with one recorded output as the sample (`Planning/c2-long-session/memos/b1.md`, a
-scoping memo on fishing rights), the scoring rubric those runs were marked against
+read whole, with four recorded outputs as samples: one in the repository
+(`Planning/c2-long-session/memos/b1.md`, a scoping memo on fishing rights) and three the owner
+supplied on 2026-10-14, the "starter kits" of the 2026-08-31 scoping runs §14 describes (Foreign
+Service reform, 447 lines; wartime critical materials, 476; direct talks with Cuba, 317), each
+with its archival addendum; the scoring rubric those runs were marked against
 (`Planning/c0c-falsifier/RUBRIC.md`), the test that pins §15's example
 (`CollectionTests.publishedExampleMatchesTheGuide`), and the previous revision pass
 (`Planning/Agentic-Guide-Revisions-2026-09-04.md`), which was about correctness and did not take
@@ -32,7 +35,7 @@ incentive.
 The fix is not to simplify the audit rules. It is to add a second register with its own rules,
 its own place in the block, its own rubric items, and a glossary, so that every number has an audit
 form in the memo and a reader's form in the overview, and the two are checked against each other.
-Thirteen recommendations follow, in four groups: the reader-facing artifacts (§2), the house-rules
+Fifteen recommendations follow, in four groups: the reader-facing artifacts (§2), the house-rules
 block and rubric (§3), the guide's own front door for a historian reader (§4), and worked examples
 (§5). Each carries an effort mark: **S** an hour, **M** a day, **L** more.
 
@@ -73,6 +76,57 @@ process *round*, *thread*, *modality*, *refuter*, *critic*, *harness*, *fleet* a
 and defines none of them in one place. Internal references leak into the prose as well: 85
 occurrences of an issue number or an experiment code (`#1239`, `C-0c`, `W-19`) and 30 of
 *refuter / critic / harness / fleet / modality*. An agent reproduces the register it is given.
+
+
+### 1a. The three starter kits, read against the same five shapes
+
+The kits are the outputs the guide's §14 was written from, and they are a more demanding test than
+the fishing-rights memo because each is two documents at once: a findings report for the historian
+and an instrument for the next operator (a "paste-in house rules" block of 70 to 130 lines, a
+"loop" of moves, a provenance paragraph with the controls). All five shapes recur in all three.
+
+| Shape | Foreign Service reform | Wartime materials | Cuba talks |
+|---|---|---|---|
+| Ids for citations | "`frus1977-80v28` is the anchor by a wide margin"; the only document cited anywhere is `frus1977-80v28/d166` | "Single densest file in scope: `frus1944v04`"; "`frus1945-50Intel` will distort any turf measure" | the nine-volume table carries titles (the right form) and the prose then uses ids throughout |
+| Query syntax as prose | "`\bFSS\b` misses FSSO (111)"; "a 40-sample (seed 20260831)" | "A naive `digits.digits` regex silently deletes 9,256 notes"; "`type="index"` present in 98 of 99 volumes" | "`normaliz*` 224, `dialogue` 385"; "`back channel` (2) vs `backchannel` (23). Two tokens; porter stemming does not join them" |
+| Precision before meaning | "five volumes holding 0.59% of the corpus carry 69.2%, and two volumes holding 0.15% carry 56.7%"; "2.96%, essentially identical to the control's 2.8%" | "0.57% (479 notes) name any non-State origin"; "roughly 55 notes in 84,009 (0.065%)"; "13.6% → 2.2% → 1.9%" | "2,823 (67.0%) resolve to a named archival collection — against a corpus baseline of 28.3%" |
+| Internal names | "a div-scoped pass"; "the hit tested against its enclosing `<div type="document">` span" | "`manifest.dateRange.latest` is derived from document dates"; "`frus:doc-dateTime-min` is on every div" | "Your tags land in `document_cache.user_tag_ids`"; "50 nearest neighbors from `semantic-vectors-binary.bin`" |
+| Unglossed terms | tag-stripped, word-bounded, HDBSCAN, apparatus, "Restricted-Partly", "UD-UP 61/62/63" | tag-stripped text-layer, letter-tolerant regex, "word qualifier", "entries A1 205A–S" | recall@10 of 0.851, Hamming distance, protecting powers, NAID, "Entry P-14" |
+
+Three things the kits show that the guide alone does not.
+
+**The reader's form already exists inside them, and it is their best writing.** Each kit's most
+memorable sentence is in the register the review asks for: *"FRUS shows what State was told about
+these agencies, never their records"* (materials, §0); *"The corpus contains departmental
+administration in about the way an encyclopaedia contains an article about itself"* (reform, §0);
+*"the record shows the option was declined here, on these stated grounds" — never "talks did not
+happen because X"* (Cuba, §4); *"an analysis run over the print volumes alone and one run over
+print + supplement are different analyses of the same question, 25 years apart"* (Cuba, §5);
+*"That is where not to go, and it is as useful as the pull slip"* (reform, addendum). And the
+reform kit's addendum does the rewrite itself: it takes the one-sentence verdict and says
+**"Rewrite the headline verdict as three sentences, not one"**, giving the three. Those three
+sentences are the overview's bottom line in the form R2 asks for. The kit arrived at the reader's
+register by audit, at the end, as a correction; the recommendation is to require it at the start.
+
+**The shelf is given in the form a historian can least use.** All three addenda deliver the most
+valuable thing in the kit, the archival series that hold what FRUS did not print, as a table of
+NAIDs, entry codes and access flags: *"27022977 · UD-UP 61/62/63/66/67/68 · 44 ft, 1955–1973 ·
+Restricted-Partly"*. The reform kit's own prose, one paragraph later, says it better: *"Nine RG 59
+series, 104.1 linear feet, 1955–1980, every one created by the Office of the (Deputy) Under
+Secretary of State for Management. National Archives at College Park."* R5's rule is that
+sentence first and the table in the memo; the Cuba addendum's *"one of them titled Backchannel
+Messages"* is the kind of detail that belongs in the sentence.
+
+**Two kinds of content the guide's §14.16 does not name, and the overview needs.** The Cuba kit's
+§3, *"The definitional call only you can make"*, lists four readings of "direct talks" and says the
+answer changes materially with each; its §4 turns an unanswerable negative into three kinds of
+document the historian can be shown. Both are addressed to the historian, both are in plain prose,
+and neither has a place in the overview template because §14.16 asks for findings, not for the
+decisions a round needs back. They are R14 below. And every kit is addressed to two readers at
+once: the operator who will paste its house rules and run its loop, and the historian who wants
+the answer. The guide names the memo, the overview and the collection and never the kit, so the
+kit became the memo and the overview in one file, with the house rules between the findings and
+the archival answer. That is R15.
 
 ---
 
@@ -194,6 +248,28 @@ Two cautions. The §15.1 JSON block is pinned byte-for-byte by `CollectionTests`
 excerpt guidance as a new §15.1a with its own example rather than editing the block. And an
 excerpt makes the file `formatVersion 2` (the format's own history says so), so §15.3's advice to
 write `formatVersion: 1` needs a sentence for that case.
+
+### R14 — "Decisions this needs from you" is a required part of the overview (S)
+
+Add to the template in R2, between the bottom line and the findings, a short section the Cuba kit
+already models: the definitional choices the question leaves open, each as one sentence with the
+consequence of each choice stated ("counting the anti-hijacking talks as direct talks adds a
+continuous record from 1969; excluding them leaves three episodes"), and the inclusion rule the
+round used meanwhile, in words. A historian reads this before the findings because it tells them
+what the findings are findings about. The §12 block's SCOPING section already asks the agent to
+write the inclusion rule before the first query; this is the same rule handed back.
+
+### R15 — Name the kit as a genre, and keep it out of the overview (S)
+
+The three starter kits are a fourth artifact: an instrument for the next operator, carrying the
+question's house rules, the measured decoys, the volume family and the loop. The guide should say
+so in §14.16, with one rule: **a kit is written for the operator and is never the artifact the
+historian receives.** Its §0 verdict and its addendum's shelf are lifted into the overview in the
+reader's form (R2, R5); its house rules, its false-friend tables with their seeds and samples, and
+its loop stay in the kit. The one thing a historian should see of the kit is its "moves" that are
+theirs to make in the app (the Cuba kit's "Curate (app). Read 20–40 documents from the four
+clusters and tag them"), rewritten without the table names, as a closing "What you can do next in
+the app" paragraph of the overview.
 
 ---
 
@@ -324,6 +400,25 @@ are closed. Their entry numbers and catalog identifiers are in the collection's 
 form: *Of the 24 documents on this thread, 15 date from 1961 to 1963 and nine from 1964 to 1967.*
 The scope word the guide asks for is the sentence's own base.
 
+Two more, from the starter kits, which are the outputs the guide's §14 was built from.
+
+**A verdict.** Audit form (the reform kit, §0): *After correction, the whole reform vocabulary is
+~1,740 occurrences across 552 volumes, of which five volumes holding 0.59% of the corpus carry
+69.2%, and two volumes holding 0.15% carry 56.7%.* Reader's form: *FRUS prints very little on the
+reform of the Foreign Service, and what it prints is in five volumes, all on the organisation and
+management of foreign policy from 1961 to 1980, and two of the five hold more than half of it.
+The series says almost nothing about the reforms of 1924 and 1931, or the Wriston reforms of the
+1950s, in the words of their own time, and the memo shows what was searched to establish that.*
+
+**A loop step for the historian.** Audit form (the Cuba kit, §6): *Curate (app). Read 20–40
+documents from the four clusters and tag them with a project tag, e.g. `cuba-talks-seed`. Tag the
+disposition documents from §4(a) separately (`cuba-talks-declined`). Two tags, because the agent
+will treat them as two different ground truths. Your tags land in `document_cache.user_tag_ids`.*
+Reader's form: *In the app, read twenty to forty of the documents the collection groups under the
+four episodes and tag the ones that are really about a channel to Havana. Give a second tag to the
+documents where an option to talk was put to a decision and declined. Keep the two tags apart: the
+next round uses the first to find more like them and the second to answer why talks stopped.*
+
 ---
 
 ## 6. What not to change
@@ -338,7 +433,7 @@ The scope word the guide asks for is the sentence's own base.
 
 ## 7. Order and cost
 
-1. R1, R3, R4, R5, R9, R12 — one sitting, prose only.
+1. R1, R3, R4, R5, R9, R12, R14, R15 — one sitting, prose only.
 2. R8 — the block section and the three rubric items, then one C-0-style measurement before it is
    called adopted, since the block's length is the known cost.
 3. R2, R6, R7, R10 — a day each; R7 needs a new §15.1a example that opens in the app, which is a
