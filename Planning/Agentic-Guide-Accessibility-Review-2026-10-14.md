@@ -249,25 +249,45 @@ Require the agent's `queries.log` to be summarised into that same table shape fo
 with the raw log beside it. A historian who has exported their own appendix will read the agent's
 without instruction.
 
-### R7 — The collection is an annotated reading list, not a bare one (M)
+### R7 — The collection carries the findings, and the app does the checking (M)
 
 §15.1 says that for a candidate list "you want the first two" entry kinds, `document` and
-`heading`. The format also carries `prose` (a plain `text` body) and `excerpt` (a frozen passage
-with its `volumeId`/`documentId`), and the app renders both in the editor, the preview and every
-export (manual §12.3, §12.4). Recommend that a reading round write:
+`heading`. The format carries five, plus per-document notes and a title page, and the app does
+something useful with each (verified in `NativeCollectionFormat.swift`, `ExcerptVerifier.swift`,
+`CollectionGeneratedBlocks.swift` and the manual's §12.3–§12.5 and §12.11). A reading round should
+write all of them, so the collection is the overview in the historian's own tool:
 
-- one `prose` entry under each heading saying, in two or three sentences, why these documents and
-  what thread they follow, so the collection carries the overview's argument into the app;
-- an `excerpt` entry for each quotation the overview relies on, which is the passage §8's machine
-  check already verified, so the reader meets the quotation beside its document rather than in a
-  markdown file;
-- a closing `prose` entry naming the threads the round could not follow, which §14.16 asks for
-  "so an addition has somewhere to attach".
+| In the file | What the app does with it | What the agent puts there |
+|---|---|---|
+| `introductionText`, `authorLine`, `note` | The title page of every export, and the collection's description | The three-part bottom line (R5); the run's name and date; the one-line answer |
+| `heading`, nested to three levels | Sections in the editor, the preview and every export's table of contents | The overview's findings, in order |
+| `prose` (`text`; rich text optional) | A prose block between documents, kept through every export | The finding of the section: two or three sentences in the reader's register, and a closing block naming the threads the round could not follow |
+| `notes` on a `document` entry | Research notes attached to the document on import: in the Research rail, below the body in exports, indexed for search at once | Why this document is here and what it shows, one short note |
+| `excerpt` (`text` + the document pair) | A block quote with an automatic citation; **checked against the document before every export and again when a corrected volume arrives**, forgiving presentation and no wording, elided fragments in order | Every quotation the overview relies on, which the memo's §8 check already verified |
+| `generated` with `generatedBlockType` | Apparatus built from the app's own data at every export: `archivalSources` (Sources & Archives, with NARA links where resolved), `chronology`, `bibliography`, `personsIndex`, `thematicIndex` | `archivalSources` at the end, so part 2 of the bottom line is kept current by the app; `chronology` at the top for a crisis question |
+| `titleOverride` on a `document` entry | The document's label in the table of contents and export heading | A plain label where the printed header is unreadable |
 
-Two cautions. The §15.1 JSON block is pinned byte-for-byte by `CollectionTests`; add the prose and
-excerpt guidance as a new §15.1a with its own example rather than editing the block. And an
-excerpt makes the file `formatVersion 2` (the format's own history says so), so §15.3's advice to
-write `formatVersion: 1` needs a sentence for that case.
+And one feature outside the file: **Add to Archives Visit…** in the collection's add menu seeds a
+trip packet from the collection's documents, so the historian turns the reading list into research
+targets and an advance-inquiry draft without the agent writing either. The overview's closing
+paragraph says so.
+
+Three limits the guide should state:
+
+1. **Headnotes cannot be supplied.** The Key takeaway card is keyed to a summary id that exists
+   only on the author's devices. A per-document finding goes in `notes` or `prose`, never in a
+   headnote.
+2. **Imported notes carry no author.** They become the historian's own research notes,
+   indistinguishable from ones they wrote. Every agent-written note opens with an attribution
+   line naming the run and date, so the notebook keeps its provenance.
+3. **A collection carries no number the memo does not** (§14.16). The file is the argument and
+   the evidence; the counts and their queries stay in the memo.
+
+Two cautions for the edit. The §15.1 JSON block is pinned byte-for-byte by `CollectionTests`, so
+this goes in a new §15.1a with its own example, which needs a test beside
+`publishedExampleMatchesTheGuide` proving it opens. And an `excerpt`, a `generated` entry, `notes`
+or any title-page field makes the file `formatVersion 2` with `minimumReaderVersion: 1`, so
+§15.3's advice to write `formatVersion: 1` needs a sentence for that case.
 
 ### R14 — "Decisions this needs from you" is a required part of the overview (S)
 
