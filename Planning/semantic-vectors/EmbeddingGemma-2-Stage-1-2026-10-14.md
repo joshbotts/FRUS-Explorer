@@ -304,6 +304,10 @@ commit first.
 - The spike's three volumes are two gated eras; the pre-1900 era and everything after 1948 are
   read only by stage 2.
 - Throttling beyond the probe's 25 minutes; an overnight run on battery or in a warm room.
+- The rate with other work on the Mac. When B2 started, Backblaze's `bztransmit` and Photos'
+  `photoanalysisd` were each using about 70% of a core. The first two volumes then ran 15–16%
+  below the spike's rate (38,177 characters a second for `frus1861` against 45,408), and the
+  live ETA read 11.4 h. Whether the two caused it was not tested.
 - The query encoder on an iPhone, and the app's memory figure under the new model: B2's step 7
   and B4.
 - The model's quality in any sense but these gates; the 25 judged queries are stage 2's.
