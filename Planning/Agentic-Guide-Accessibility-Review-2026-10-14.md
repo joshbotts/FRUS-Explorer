@@ -32,7 +32,8 @@ scores none of it. So the historian-facing layer is a recommendation the operato
 pass on, while the audit layer is a rule the agent is scored against. The outputs follow the
 incentive.
 
-The fix is not to simplify the audit rules. It is to add a second register with its own rules,
+The fix is not to simplify the audit rules. It is to open every output with a three-part bottom
+line in plain language, each part carrying its evidence (R5), and to add a second register with its own rules,
 its own place in the block, its own rubric items, and a glossary, so that every number has an audit
 form in the memo and a reader's form in the overview, and the two are checked against each other.
 Fifteen recommendations follow, in four groups: the reader-facing artifacts (§2), the house-rules
@@ -154,9 +155,15 @@ leaves its form to the agent. Give it a fixed skeleton and three prohibitions. S
 
 ```
 # <The question, as asked>
-**What the printed record answers** — one paragraph, the direct answer.
-**What it cannot answer here, and where to look instead** — one paragraph: the negatives, each
-  with the archival series that holds the rest (R5).
+## The bottom line
+**1. What FRUS answers directly** — one paragraph: the finding, with the documents it rests on
+   cited as the edition, and the size of the set in words.
+**2. Where FRUS points for the rest** — one paragraph: the archival series the printed documents
+   came from and the ones the editors cited without printing, each named as a series with its
+   record group, entry, identifier, dates and access status; and which of the two channels each is.
+**3. What this request cannot get from FRUS** — one paragraph: each part of the question the
+   corpus does not hold, with what was searched to establish it (the terms, the volumes, the
+   controls) and, where one exists, the shelf that holds it anyway.
 **Scope** — two sentences: which volumes, how many documents, what was excluded, in words.
 ## Findings — three to six, each a heading, a paragraph, and one to three quoted documents cited
    as the edition (R3)
@@ -204,17 +211,30 @@ both and to §14.16:
 - A number that is a bound carries its direction: "a lower bound, because tagging is uneven"
   (§7.5), in those words.
 
-### R5 — The negative results and the shelf, first and in plain words (S)
+### R5 — The bottom line is three findings, each with its evidence, and it comes first (S)
 
-§14.16 already puts the negatives in the bottom line and §14.11 already says "a corpus-scoping
-negative is not a research negative". The reader's form is missing: the archival answer is given
-as a resolution table (lot, NAID, entry, union of date spans, claimants). Require that the overview
-states each negative in one sentence and each shelf in the vocabulary a researcher sends to an
-archive, which the app's own Archives Visit packet already uses (manual §14.8): the series title,
-the record group and entry number, the NARA catalog identifier, the date span, the access status,
-in that order, as a short list. Point the historian to **Research ▸ Archives Visits** for the
-advance-inquiry draft rather than reproducing it. The table of claimants and screens stays in the
-memo.
+Every output, a scoping memo as much as an overview, opens with three plain-language paragraphs in
+a fixed order, and each paragraph carries the evidence its claims rest on:
+
+1. **What FRUS answers directly.** The finding, in the historian's terms, with the documents it
+   rests on cited as the edition (R3) and the set sized in words (R4). A claim here with no cited
+   document is not a finding and does not go here.
+2. **Where FRUS points for the rest.** The archival series the printed documents came from and
+   the series the editors cited without printing, kept as two lists because they answer two
+   questions (§8, §14.11), each series named as a researcher would write it to an archive: title,
+   record group and entry number, catalog identifier, date span, access status. The Cuba kit's
+   addendum is the model for the second list: *676 footnote pointers into 61 archival units, 15 of
+   which the source notes never name*, led by the Carter Library's National Security Affairs
+   files. The evidence is the count of citing documents or footnotes behind each series, in words.
+3. **What this request cannot get from FRUS.** Each part of the question the corpus does not
+   hold, stated as a search that was run and found nothing, with the terms, the volumes and the
+   controls that make the zero a measurement (§14.2, §14.6), and, where the shelf exists, where
+   it is anyway (§14.11's rule that a corpus negative is not a research negative).
+
+§14.16 already puts the negatives in the bottom line; what it lacks is the second paragraph as a
+finding in its own right and the evidence rule on all three. The claimant tables, the date-span
+screens and the resolution queries stay in the memo. Point the historian to **Research ▸ Archives
+Visits** for the advance-inquiry draft rather than reproducing it.
 
 ### R6 — The methodological close is a methods paragraph, and the log is the app's own shape (M)
 
@@ -289,8 +309,11 @@ READER-FACING OUTPUT — the overview and the collection are for a historian, no
 - Give every number as a count of a named set in words ("about one document in seven among the
   43 volumes indexed"), rounded to what the comparison needs; put the exact N of M, the rate and
   the denominator in the memo and say "see the memo" once, not at every number.
-- Open with what the printed record cannot answer here, and for each such gap name the archival
-  series that holds the rest: title, record group and entry, NARA identifier, dates, access.
+- Open with three paragraphs, in this order, before any finding: (1) what FRUS answers directly,
+  with the documents cited; (2) where FRUS points for the rest, the series the documents came
+  from and the series the footnotes cite unprinted, as two lists, each series by title, record
+  group and entry, NARA identifier, dates and access; (3) what this request cannot get from FRUS,
+  each as a search you ran, with its terms, volumes and controls, and the shelf if one exists.
 - Every quotation in the overview is one the memo verified against its document; every document
   the overview cites is in the collection. Check both before you finish, and say you did.
 - Explain a technical term the first time it appears, in the sentence, or do not use it: "the
@@ -303,7 +326,7 @@ And three rubric items, so the register is scored like the rest:
 |---|---|---|
 | O1 | READER | The overview contains no SQL, column or table name, id pair or file path. |
 | O2 | READER | Every number in the overview is a count of a named set in words, and traces to a memo line. |
-| O3 | READER | The overview opens with what the corpus cannot answer and names a shelf for each gap, or says none was found. |
+| O3 | READER | The overview opens with the three-part bottom line: answered directly (documents cited), pointed at (series named, by channel), not answerable (the search that established it). |
 
 Measure the block's length cost the way C-0c did before adopting it: the section above is twelve
 lines against a block that stands at 187 today.
@@ -418,6 +441,38 @@ Reader's form: *In the app, read twenty to forty of the documents the collection
 four episodes and tag the ones that are really about a channel to Havana. Give a second tag to the
 documents where an option to talk was put to a decision and declined. Keep the two tags apart: the
 next round uses the first to find more like them and the second to answer why talks stopped.*
+
+**A three-part bottom line, drafted from the Foreign Service reform kit.** The kit holds all three
+parts, in §0, §7, §3 and its addendum, in that order and in the audit register. Assembled in the
+reader's form:
+
+> **What FRUS answers directly.** The series documents the debate over reorganising the Department
+> and its personnel system from 1961 to 1980, and four episodes in it can be followed in the
+> printed documents: the Herter Committee's implementation, with an itemised action-taken report
+> in the 1964–1968 organisation volume; the Macomber programme, *Diplomacy for the 70's*, in the
+> 1969–1976 organisation volume; the Murphy Commission, whose documents include a passage ranking
+> six studies from Hoover in 1949 to Murphy in 1975; and the drafting of the Foreign Service Act
+> of 1980, in the 1977–1980 organisation volume. Almost everything is in five volumes, and two of
+> them hold more than half of it. A fifth, separate thread is the loyalty and security episode of
+> the early 1950s, densest in the 1952–1954 volume on national security affairs.
+>
+> **Where FRUS points for the rest.** The documents the editors printed came, in 143 source notes,
+> every one in those five volumes, from the records of the Under Secretary for Management. Those
+> records survive as nine series at the National Archives at College Park, Record Group 59, 1955 to
+> 1980, about 104 feet in all; three are closed and the rest partly restricted. The editors'
+> footnotes also cite, without printing, the Executive Secretariat's National Security Council
+> policy-paper files (Lot 63 D 351 and Lot 66 D 95, one series, entry A1 1586E), where the
+> reorganisation decisions were recorded.
+>
+> **What this request cannot get from FRUS.** The reforms of 1924 and 1931 and the Wriston reforms
+> of the 1950s are not documented here in their own words: searched across all 552 volumes, the
+> Rogers Act is named four times, all in a 1976–1980 volume's footnotes and index; the
+> Moses-Linthicum Act never; Wristonization never, and the surname only in passing. A search with
+> the period's own vocabulary, civil service reform, found an 1871–1897 cluster instead, which is
+> real and is not about the Foreign Service. The archives do not rescue the gap: the series above
+> begin in 1955, and the bundled catalogue reaches almost nothing before 1940.
+
+Every figure in it is the kit's own, and the memo holds the searches behind each sentence.
 
 ---
 
