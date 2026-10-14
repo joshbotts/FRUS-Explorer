@@ -38232,3 +38232,57 @@ FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exporte
 **Not done:**
 - **`ResultSetScope` stays in the app,** with the captions that name the set each reading counted, because it holds `WorkingCorpus.CaptureTruncation`, a model type. The timeline's chart stays too. FRUS Explorer Light words its own captions and draws its own timeline.
 - **Not run:** the UI suites, iOS 26.x, a device and a signed run. The Mac app was built and not run.
+
+## Session 2026-10-13 — FRUS Explorer Light can call the BibTeX, RIS and Zotero exporters, the TEI's publication year, the display title, the header display and the reader's footnote landing, which the app now calls in the kit too
+
+FRUS Explorer Light (`joshbotts/FRUS-Explorer-Web-App`) serves the Mac's exported index read-only. Its phase-1 Cite offers BibTeX and RIS, its lists name a document as the app's lists do, and its reader lands on a footnote a reference names. The code for those was in app files, two copies of the TEI year scan among them. This is the second of its two phase-1 pull requests. The first, #1664, merged as `9feff971`, and this branch is rebased on it. Nothing the app shows changes.
+
+**Changed**
+- **The exporters are kit code.**
+  - `BibtexExporter`, `RISExporter` and `ZoteroJSONExporter` moved into `FRUSCoreKit/Citation/`, the last with the Zotero items the other two render.
+  - `fetchTagsAndNotes`, which reads SwiftData, stays in the app, unchanged, in `ZoteroJSONExporter+App.swift`.
+  - The two exporters that imported nothing import Foundation.
+- **The TEI's publication year is kit code.** `TEIPublicationYear` (`read(from:)`, `year(inHeader:)`) is the scan iOS's `DocumentViewModel` and the Mac's `DocumentExportSupport` each kept a copy of, verbatim. Both call it, off the main actor as before, and each keeps its own fallback for a header that states no year.
+- **The display title is kit code.** `DocumentDisplayTitle` moved to `FRUSCoreKit/DocumentView/`, with `Facts`, which was `CrossReferenceStore.DocumentTitleFacts`; that name is its typealias now. `DocumentHeaderDisplay` moved to `FRUSCoreKit/Search/` whole.
+- **The footnote landing is kit code.** `FootnoteLanding.script(anchor:)` builds the script `_FRUSWebViewCoordinator.revealFootnote(on:)` built, byte for byte, and the coordinator runs it.
+  - `script(keyExpression:)` takes the key as JavaScript, for a host that has the key only when the script runs.
+  - `FRUSURLSchemeHandler.revealedFootnoteGlobal` forwards to `FootnoteLanding.revealedGlobal`, which the script sets and the figure retry reads.
+- **`FRUSCanonicalURL.volumeURL(volumeId:)` is public:** the page a reference to a volume outside the catalogue opens.
+- **Tests**, under both compilers unless marked:
+  - **Moved into the kit's suites:** `DocumentHeaderDisplayTests`, `DocumentDisplayTitleTests`, `RISExporterTests` and `ZoteroJSONExporterTests`. What needs the app is inside `#if !SWIFT_PACKAGE`: the header display's scan of the four rows that draw it, the Cross-Reference Analytics labels, and the tests that read tags and notes from SwiftData. The header display's source scan climbs one folder more.
+  - **New:** `TEIPublicationYearTests` (5): the bare year, `@when` first, 1751–2099 only, no statement, and the file's first 8 KB. `FootnoteLandingTests` (4): the key, encoded, the global and the wash, and the script's text pinned by SHA-256 and length. `FRUSCanonicalURLTests` (2).
+  - **Count:** FRUSCoreKitTests goes from 1,022 tests in 132 suites at `9feff971` to 1,061 in 139.
+- **Docs.**
+  - `CLAUDE.md`: the folder table's `Search/`, `TEI/`, `DocumentView/` and `Citation/` rows, the kit's folder list, and the FRUSCoreKit entry's public names.
+  - Version-history lines.
+  - In `Docs/EditableContent/08-Reading-Research-Collections.md`, the two blocks of `DocumentDisplayTitle.swift` name it where it moved. Four more ranged blocks are re-pointed by the distance their keys moved, with an amendment-log entry. No block's text changes.
+- **Size:** the kit goes from 35,258 lines in 53 files to 36,288 in 60.
+
+**Apple platforms: nothing changes, and how that was checked**
+All at the code commit, rebased on `9feff971`, clean and unsigned. The records commit changes only `CLAUDE.md` and this entry, which no test reads.
+- **`FRUSExplorerMac`**, Debug, beside `v2` @ `9feff971` built the same way: "** BUILD SUCCEEDED **" both, with the same five warning lines. The debug dylibs define 238,954 and 238,930 unique symbols.
+- **The symbol diff** (normalized as for #1573–#1579 and #1664): 107 removed, 131 added.
+  - **The type's new name:** every symbol that names `CrossReferenceStore.DocumentTitleFacts` names `DocumentDisplayTitle.Facts` now, since a typealias keeps the old spelling in source and not in mangled names. Those are the views' state that holds the facts, the store's `documentTitleFacts(for:)`, `CrossReferenceTargetLabel`'s two functions, `DocumentDisplayTitle.text(_:documentId:)`, and the type's own metadata and witnesses.
+  - **With that rename undone:** 5 removed and 29 added.
+    - **Removed:** the two copies of the year scan's helper, their `defer` blocks, and a metatype reference the iOS copy's closure made.
+    - **Added:** `TEIPublicationYear` and `FootnoteLanding`, with their metadata, static properties and functions.
+  - The moved exporters, the header display and the volume address add no symbol, since public access and an extension in the same module keep their names.
+- **iOS 27.0**, an iPhone 17 simulator, unsigned:
+  - **Build:** a clean `build-for-testing` of `FRUSExplorer`, "** TEST BUILD SUCCEEDED **", with the 7 known warning lines.
+  - **The unit target,** the app removed first, with `TEST_RUNNER_FRUS_TEI_MIRROR`: "✘ Test run with 7158 tests in 847 suites failed after 414.398 seconds with 8 issues."
+  - **Against `v2`** @ `9feff971` (#1664's head, the same tree): "✘ Test run with 7147 tests in 844 suites failed after 433.027 seconds with 8 issues."
+  - **The differences:** the 11 more tests and 3 more suites are the new ones above. The 8 issues on both are the Keychain tests an unsigned build fails (-34018). Both runs skip the same 17 tests and 2 suites.
+  - **Before the rebase,** on `13e093ba`, the run gave 7,150 tests in 845 suites with the same 8 issues, against `v2`'s 7,139 in 842. The first build there failed: a new kit suite was named `FRUSCanonicalURLTests`, a name `ZoteroIOSFallbackTests.swift` already declares, and it became `CanonicalVolumeURLTests`.
+- **`swift test`, whole, on the macOS host:** exit 0; 38 runs and 2,891 tests, all passed, none skipped (`FRUSCoreKitTests` 1,061).
+
+**Linux** (Docker Desktop, `swift:6.4-noble` on arm64)
+- **The run:** FRUS Explorer Light's package at its `main` (`ffd0f28`), with this branch, rebased on `9feff971`, copied over its submodule. `scripts/swift test` printed "✔ Test run with 1061 tests in 139 suites passed" for FRUSCoreKitTests, with the one named skip, and every other target passed but the parity suites.
+- **The parity suites:** their 13 issues are all golden-file staleness. The files' source digest covers the kit's folders, and FRUS Explorer Light's pin move remakes them.
+- **The golden files remade at this branch:** `tools/mac-golden` rendered the 392 fixture rows and compiled the 482 queries' expressions. Every row and expression is byte-identical to the committed files, and only the two provenance lines differ.
+
+**Owed by the owner:** Mac check 3 for this pull request (FRUS Explorer Light's plan), from a clone at a real path; then the merge. FRUS Explorer Light's pin move follows, past #1664 and this.
+
+**Not done:**
+- **The reader's other scripts stay in the app:** the offset engine, the highlights and the selection, which FRUS Explorer Light needs for highlights in its phase 2.
+- **`DocumentExportSupport`'s other export helpers stay in the app,** a `#if os(macOS)` file.
+- **Not run:** the UI suites, iOS 26.x, a device and a signed run. The Mac app was built and not run.

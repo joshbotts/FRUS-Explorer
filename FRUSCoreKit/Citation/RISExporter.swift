@@ -6,6 +6,8 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
+
 // MARK: - RISExporter
 
 /// Formats FRUS citation metadata as an RIS record.
@@ -35,6 +37,8 @@
 ///
 /// Version history:
 ///   1.0 — Session 86
+///   1.1 — FRUS Explorer Light: moved into the kit, for the web edition's Cite, and imports Foundation
+///          itself
 public struct RISExporter: Sendable {
 
     public init() {}

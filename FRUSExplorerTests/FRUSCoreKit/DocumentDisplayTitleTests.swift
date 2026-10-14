@@ -6,9 +6,15 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
-import Testing
 import Foundation
+import Testing
+// Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
+// package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
+#if SWIFT_PACKAGE
+@testable import FRUSCoreKit
+#else
 @testable import FRUSExplorer
+#endif
 
 // MARK: - DocumentDisplayTitleTests
 
@@ -21,11 +27,13 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — initial implementation
+///   1.1 — FRUS Explorer Light: a kit suite, beside the rule, which reads the kit's
+///          `DocumentDisplayTitle.Facts`; the Cross-Reference Analytics labels, the app's, run in Xcode only
 @Suite("Document display titles")
 struct DocumentDisplayTitleTests {
 
     private func facts(header: String? = nil, number: String? = nil,
-                       note: Bool = false) -> CrossReferenceStore.DocumentTitleFacts {
+                       note: Bool = false) -> DocumentDisplayTitle.Facts {
         .init(header: header, documentNumber: number, isEditorialNote: note)
     }
 
@@ -118,6 +126,7 @@ struct DocumentDisplayTitleTests {
     }
 }
 
+#if !SWIFT_PACKAGE // CrossReferenceTargetLabel and CrossReferenceStore are the app's
 // MARK: - CrossReferenceTargetLabelTests
 
 /// What Cross-Reference Analytics calls a row's document (#1372).
@@ -183,3 +192,4 @@ struct CrossReferenceTargetLabelTests {
                 == "\(name) — \(title)")
     }
 }
+#endif

@@ -7,7 +7,6 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
-import SwiftData
 
 // MARK: - ZoteroJSONExporter
 
@@ -43,6 +42,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 155
+///   1.1 — FRUS Explorer Light: moved into the kit with its items, for the web edition's BibTeX and
+///          RIS, which render them; `fetchTagsAndNotes`, which reads SwiftData, stays in the app, in
+///          `ZoteroJSONExporter+App.swift`
 public struct ZoteroJSONExporter: Sendable {
 
     public init() {}
@@ -196,51 +198,6 @@ public struct ZoteroJSONExporter: Sendable {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         return try encoder.encode(Envelope(items: items))
-    }
-
-    // MARK: - Tags & Notes
-
-    /// Resolves the Zotero `tags` and `notes` for a single FRUS document.
-    ///
-    /// `tags` combines `DocumentTagAssignment`s made directly on the document
-    /// with tags applied to any of the document's `ResearchNote`s. `notes`
-    /// carries the body text of every `ResearchNote` for the document.
-    @MainActor
-    public static func fetchTagsAndNotes(
-        documentId: String,
-        volumeId: String,
-        context: ModelContext
-    ) -> (tags: [String], notes: [String]) {
-        let allTags = (try? context.fetch(FetchDescriptor<UserTag>())) ?? []
-        // uniquingKeysWith: CloudKit sync can transiently surface duplicate ids;
-        // uniqueKeysWithValues would crash on them.
-        let tagNameById = Dictionary(allTags.map { ($0.id, $0.name) },
-                                     uniquingKeysWith: { first, _ in first })
-
-        let assignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>(
-            predicate: #Predicate { $0.volumeId == volumeId && $0.documentId == documentId }
-        ))) ?? []
-
-        let notes = (try? context.fetch(FetchDescriptor<ResearchNote>(
-            predicate: #Predicate { $0.volumeId == volumeId && $0.documentId == documentId }
-        ))) ?? []
-
-        var tagNames = Set<String>()
-        for assignment in assignments {
-            if let name = tagNameById[assignment.tagId] {
-                tagNames.insert(name)
-            }
-        }
-        for note in notes {
-            for tagId in note.userTagIds {
-                if let name = tagNameById[tagId] {
-                    tagNames.insert(name)
-                }
-            }
-        }
-
-        let noteBodies = notes.map(\.bodyText).filter { !$0.isEmpty }
-        return (tags: tagNames.sorted(), notes: noteBodies)
     }
 
     // MARK: - Editorial-Note Flags
