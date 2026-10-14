@@ -317,6 +317,10 @@ the app" paragraph of the overview.
 
 ### R8 — A READER-FACING OUTPUT section in the §12 block (S), and three rubric items (S)
 
+*Landed in the guide at v1.29 on 2026-10-14, with the owner's decision that the edits precede C-3. As
+landed the section is 17 lines, six rules, against the twelve estimated below; the block stands at
+205 lines. C-3 measures it.*
+
 The block is what agents actually obey (C-0b measured 100% against a 77.6% control, and the
 2026-09-04 pass warned that each added line costs attention). Twelve lines, placed after REPORTING:
 
@@ -348,8 +352,8 @@ And three rubric items, so the register is scored like the rest:
 | O2 | READER | Every number in the overview is a count of a named set in words, and traces to a memo line. |
 | O3 | READER | The overview opens with the three-part bottom line: answered directly (documents cited), pointed at (series named, by channel), not answerable (the search that established it). |
 
-Measure the block's length cost the way C-0c did before adopting it: the section above is twelve
-lines against a block that stands at 187 today.
+Measure the block's length cost the way C-0c did before adopting it: the section as landed is 17
+lines against the 187 the block stood at before it.
 
 ---
 

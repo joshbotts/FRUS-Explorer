@@ -19,6 +19,16 @@ item in it is a real property of this schema, not a hypothetical. And read
 [§14](#14-scoping-a-question-before-you-answer-it) before you write your first query: most of the
 errors in machine-assisted work here happen while deciding *what to search for*, not while searching.
 
+
+**If you will read the results rather than run the agents**, you need six sections and no SQL:
+[§1](#1-what-you-are-working-with) (what the database is and is not), [§10](#10-what-frus-is-as-evidence)
+(what FRUS is, as evidence), [§14.16](#1416-what-a-round-owes-the-historian-beyond-the-memo) (what a
+round owes you: a three-part bottom line, an overview and a collection you can open in the app), the
+[Glossary](#glossary), the checks in [§9](#9-verification-how-to-check-the-agent) you can make in the
+app without a query (items 3, 4 and 7), and [§14.13](#1413-superlatives-are-claims-over-a-scope) (why
+*only*, *first* and *never* need a scope). Skip §2–§7, §12, §13 and the appendix; hand §12 to whoever
+runs the agents.
+
 ---
 
 ## Contents
@@ -40,6 +50,8 @@ errors in machine-assisted work here happen while deciding *what to search for*,
 15. [Writing a collection the app can open](#15-writing-a-collection-the-app-can-open)
 
 [Appendix A: The semantic vector artifacts](#appendix-a-the-semantic-vector-artifacts)
+
+[Glossary](#glossary)
 
 ---
 
@@ -1071,6 +1083,13 @@ The value of working this way is that every aggregate can be walked back to a do
 that property; it is the whole argument for using a structured corpus rather than asking a model
 what it remembers about FRUS.
 
+**Every number and every quotation exists in two forms, and a round owes both.** The audit form —
+the query, the pair, the counting surface, the share with its denominator — lives in the memo and
+the log and is never dropped. The reader's form — a sentence in plain prose, a printed citation
+with a link, a rounded comparison with its base named in words — lives in the overview and the
+collection and never carries a number the memo does not. §14.16 gives the reader's form its rules;
+a round that produces only the audit form has not finished.
+
 **Every claim carries `(volume_id, document_id)`.** Not a title, not a summary, not a page number
 alone. The pair is the only durable identity in this system, and it resolves to a URL:
 `https://history.state.gov/historicaldocuments/{volume_id}/{document_id}`.
@@ -1108,7 +1127,12 @@ not. Reading has a count of its own — §9 item 8.
 
 **Cite the printed edition, not the database.** Chicago style for FRUS is the printed volume,
 document number, and page — which is why `page_ranges` is in the schema. The database is your
-finding aid; the citation is to the edition. The Office of the Historian's own
+finding aid; the citation is to the edition. The two registers above decide where each form goes:
+in the memo and the log, the pair; in the overview and the collection, the printed citation —
+*Foreign Relations of the United States, 1958–1960, Volume VII, Part 1, Document 12* — followed by
+the canonical URL and, for a reader with the app, the `frusexplorer://` link. The manifest gives
+the volume's title (§5) and `document_cache.document_number` the printed number; where the number
+is `NULL`, cite the header and the date and say the volume prints no number. The Office of the Historian's own
 [citation guidance](https://history.state.gov/historicaldocuments/citing-frus) is authoritative, and
 the app's export formats (BibTeX, RIS, Zotero) already implement it if you would rather not
 hand-roll.
@@ -1400,6 +1424,24 @@ REPORTING
   run on BOTH sides.
 - If you read documents, report how many you retrieved whole (captured length = length(body_text))
   and how many you quoted; keep the reading SELECT and the raw text on disk.
+
+READER-FACING OUTPUT — the overview and the collection are for a historian, not for me
+- Write the overview in plain prose. No SQL, no table or column name, no volume_id/document_id
+  string, no file path, no issue number. Those belong in the memo, which keeps every one.
+- Open with three paragraphs, in this order, before any finding: (1) what FRUS answers directly,
+  with the documents cited; (2) where FRUS points for the rest, the series the documents came
+  from and the series the footnotes cite unprinted, as two lists, each series by title, record
+  group and entry, NARA identifier, dates and access; (3) what this request cannot get from FRUS,
+  each as a search you ran, with its terms, volumes and controls, and the shelf if one exists.
+- Cite as the printed edition — "Foreign Relations of the United States, 1958–1960, Volume VII,
+  Part 1, Document 12" — then the history.state.gov URL. The id pair is for the memo and the log.
+- Give every number as a count of a named set in words ("about one document in seven among the
+  43 volumes indexed"), rounded to what the comparison needs; put the exact N of M, the rate and
+  the denominator in the memo and say "see the memo" once, not at every number.
+- Every quotation in the overview is one the memo verified against its document; every document
+  the overview cites is in the collection. Check both before you finish, and say you did.
+- Explain a technical term the first time it appears, in the sentence, or do not use it: "the
+  index treats 'clearing agreement' and 'clear agreement' as the same words", not "stem".
 
 SCOPING — applies whenever you are scanning the corpus to decide what to search for
 - Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
@@ -2287,57 +2329,129 @@ the harness.
 ### 14.16 What a round owes the historian, beyond the memo
 
 A research memo records what was measured. It is the wrong shape for the person who commissioned it,
-who wants to know the answer and where to look next — so a round that has done reading owes **three
-artifacts, not one**, and the memo is the least immediately useful of them.
+who wants to know the answer and where to look next, and who is usually not the person who ran the
+agents and may never open a terminal. So a round owes **four artifacts**, one of them for the
+operator and three for the historian, and the memo is the least immediately useful of them.
 
-**This applies to a reading round only.** A scoping round's product is a scope memo; it has not read
-anything yet, and a collection built from it would be a list of documents nobody has opened. Round
-1 of the worked example produced nine axis reports and read fourteen documents; the collection and
-overview came out of round 2, which read 616.
+**Every round owes the historian a bottom line; a reading round owes the rest.** A scoping round's
+product is a scope memo and a one-page reader's summary in the form below (its first three
+paragraphs); it has not read anything, and a collection built from it would be a list of documents
+nobody has opened. A reading round owes all four. Round 1 of the worked example produced nine
+axis reports and read fourteen documents; the collection and overview came out of round 2, which
+read 616.
 
-**1 — the memo, unchanged.** The raw record of methodology and findings, including the numbers that
-were refuted and by what. It is the audit trail, and nothing below replaces it.
+**1 — the memo, unchanged.** The raw record of methodology and findings, including the numbers
+that were refuted and by what. It is the audit trail, and nothing below replaces it. Every number
+and quotation in the three artifacts below traces to a line in it (§8's two forms), and the memo
+carries that trace as a table.
 
-**2 — a `.fruscollection` the historian can edit** (§15 is the format; do not restate it here).
-**Scope it by a rule, not by a number.** The rule that works is *every document the argument rests
-on, and nothing else* — it is checkable, it explains itself, and in the worked example it produced
-**74 documents in 33 volumes** where a "most relevant documents" instruction would have produced an
-argument. A collection of 400 is a corpus; a collection of 74 is a reading list.
+**2 — the overview, which answers the question.** It opens with **the bottom line, three
+paragraphs in a fixed order, each carrying its evidence**, before any finding:
+
+1. **What FRUS answers directly.** The finding, in the historian's terms, with the documents it
+   rests on cited as the edition (§8) and the set sized in words. A claim here with no cited
+   document is not a finding and does not go here.
+2. **Where FRUS points for the rest.** The archival series the printed documents came from and
+   the series the editors cited without printing, kept as two lists because they answer two
+   questions (§8, §14.11), each series named as a researcher writes to an archive: title, record
+   group and entry number, catalog identifier, date span, access status. The evidence is the count
+   of citing documents or footnotes behind each series, in words. The Cuba scope's second list ran
+   to 676 footnote pointers into 61 archival units, 15 of which the source notes never name, led
+   by the Carter Library's National Security Affairs files: that is the paragraph.
+3. **What this request cannot get from FRUS.** Each part of the question the corpus does not hold,
+   stated as a search that was run and found nothing, with the terms, the volumes and the controls
+   that make the zero a measurement (§14.2, §14.6), and, where the shelf exists, where it is
+   anyway (§14.11: a corpus negative is not a research negative). **Put these here and not in an
+   appendix.** In the worked example the most useful paragraph for the reader is the one saying
+   there is no aggregate, no personnel consequence and almost nothing from the post's own side —
+   that is what stops a week being spent on a question the corpus cannot answer, and a deliverable
+   rule that asked only for findings would let it fall to the back.
+
+Then, in order: **the scope** in two sentences (which volumes, how many documents, what was
+excluded, in words); **the decisions this needs from you** — the definitional choices the question
+leaves open, each in one sentence with the consequence of each choice ("counting the anti-hijacking
+talks as direct talks adds a continuous record from 1969; excluding them leaves three episodes"),
+and the inclusion rule the round used meanwhile; **the findings**, three to six, each a heading, a
+paragraph and one to three quoted documents, placed in the narrative the corpus documents and not
+given as a list of counts; **how this was done**, one paragraph a methods section would accept —
+what was searched, in words; over what, with the exclusions; with what checks (the positive and
+negative control, the literal-share reading, the five documents opened in the app); what was not
+done; and where the full record is, with the query log summarised into the shape of the app's own
+method appendix (manual §17.6: one row per search, its scope, the volumes indexed at the time,
+what it returned, and whether a count is a floor), the raw log beside it; and **read next**: the
+collection, by name, what the historian's additions would unlock, and what they can do next in the
+app.
+
+Three rules hold throughout the overview, and the §12 block states them to the agent. **No SQL,
+no table or column name, no `volume_id/document_id` string, no file path and no issue number
+appears in it**; the memo keeps all of those. **No table whose header is a column name.** **No
+number without its base in words**: a proportion is a count of a named set ("about one document
+in seven among the 43 volumes indexed", never "14.3%"); a rate is a comparison ("the 1930s is the
+denser decade: about 9 documents in every 1,000 use the phrase, against about 8 in the 1940s,
+even though the 1940s has far more documents"), with the per-1,000 figures and denominators in the
+memo; a figure is rounded to what the comparison needs, since two decimals in prose claim a
+precision the method (§14.3's 14% surface spread, §7.1's literal shares) cannot support; a floor
+is said to be one ("at least 1,000 documents", as the app's method appendix prints a capped count);
+a bound carries its direction ("a lower bound, because tagging is uneven", §7.5). A technical term
+is explained in the sentence the first time or not used.
+
+**Do not let the overview quietly become a second memo.** It may not carry a number the memo does
+not, and every quotation in it must come from a document retrieved in the run and verified by §8's
+check. Cross-check it: in the worked example every document the overview cites was confirmed
+present in the corpus *and* present in the collection, which is a two-line check and catches the
+citation that drifted.
+
+**The two forms, side by side.** Audit form (§6.4): *"commercial policy" runs 1930s 355 / 1940s 582
+raw; per 1,000 dated documents 9.06 / 7.86.* Reader's form: *More documents from the 1940s use the
+phrase "commercial policy" than from the 1930s, 582 against 355. But the 1940s volumes hold nearly
+twice as many documents. Measured against each decade's size, the 1930s is the denser decade:
+about 9 documents in every 1,000, against about 8.* Audit form (§7.1): *"clearing agreement" 157
+of 229 tolerant.* Reader's form: *The search for "clearing agreement" returned 229 documents. The
+index treats "clear agreement" as the same words, so we read a sample; about seven in ten used the
+phrase. Take 229 as an upper bound, and the memo lists the sample.* Audit form (§14.13): *"all 24
+dated 1961–63" (nine were 1964–67).* Reader's form: *Of the 24 documents on this thread, 15 date
+from 1961 to 1963 and nine from 1964 to 1967.*
+
+**3 — a `.fruscollection` the historian opens in the app** (§15 is the format; §15.1a is what a
+reading round's file carries). **Scope it by a rule, not by a number.** The rule that works is
+*every document the argument rests on, and nothing else* — it is checkable, it explains itself,
+and in the worked example it produced **74 documents in 33 volumes** where a "most relevant
+documents" instruction would have produced an argument. A collection of 400 is a corpus; a
+collection of 74 is a reading list.
 
 Order it under headings that follow the overview, so the two objects are the same argument in two
-forms, and date-order within each heading. Verify every pair exists before writing the file — the
-manifest companion (a table of date, id, header, URL) costs one query and is what a historian
-actually reads first. Include a positively documented **absence** where you have one: the worked
-example keeps an editorial note recording that a Presidential letter was drafted four times and
-never sent, which the standing apparatus exclusion removes from every count.
+forms, and date-order within each heading. The file carries the findings, not only the list: the
+bottom line on its title page, a `prose` entry under each heading saying why these documents and
+what thread they follow, a note on each document saying what it shows, an `excerpt` for every
+quotation the overview relies on (the app checks each against its document before every export),
+and a Sources & Archives block the app builds from its own data, so the second paragraph of the
+bottom line stays current. Verify every pair exists before writing the file — the manifest
+companion (a table of date, volume title, printed number, header and URL, with the id pair beside
+them) costs one query and is what a historian actually reads first. Include a positively
+documented **absence** where you have one: the worked example keeps an editorial note recording
+that a Presidential letter was drafted four times and never sent, which the standing apparatus
+exclusion removes from every count.
 
 **The collection is the feedback channel, and say so in the overview.** The historian's additions
 are worth more to the next round than any query you could write, because they carry a thread your
 vocabulary could not reach — and §14.5 has already shown that the question's own words often do not
 retrieve the question's own instruments. Name the specific threads you could not follow, so an
-addition has somewhere to attach.
+addition has somewhere to attach; the closing `prose` entry of the collection is where. And point
+the historian to **Research ▸ Archives Visits** in the app: **Add to Archives Visit…** in the
+collection's add menu turns its documents into research targets and an advance-inquiry draft
+without the agent writing either.
 
-**3 — an overview that answers the question.** Three parts, in this order:
-
-- **A bottom line up front, one page.** The answer FRUS gives *directly*, and the archival sources it
-  points at for work beyond the printed record. **Put the negative results in this page, not in an
-  appendix.** In the worked example the most useful paragraph for the reader is the one saying there
-  is no aggregate, no personnel consequence and almost nothing from the post's own side — that is
-  what stops a week being spent on a question the corpus cannot answer, and a deliverable rule that
-  asked only for findings would let it fall to the back.
-- **The body: thematic or chronological takeaways, placed in the narrative the corpus documents.**
-  Not a list of counts. The reader wants the argument, with every instrument attributed and quoted
-  from a document that was actually retrieved.
-- **A short methodological close.** What kinds of query proved useful, and how the leads were
-  pursued between rounds. Be specific and be willing to report that the obvious approach failed: the
-  worked example's most useful single finding was a *negative* one about vocabulary — the question's
-  own words do not retrieve its own instruments, and a **citation** (`"May 29, 1961"`) outperformed
-  every subject phrase — because that is what redirected the second round from counting to reading.
-
-**Do not let the overview quietly become a second memo.** It may not carry a number the memo does
-not, and every quotation in it must come from a document retrieved in the run. Cross-check it: in
-the worked example every document the overview cites was confirmed present in the corpus *and*
-present in the collection, which is a two-line check and catches the citation that drifted.
+**4 — the kit, for the operator, never for the historian.** The three starter kits of 2026-08-31
+were each two documents in one file: a findings report and an instrument for the next operator —
+the question's house rules, the measured decoys with their seeds and samples, the volume family,
+the loop. A kit is written for whoever pastes its rules and runs its loop. Its verdict and its
+archival shelf are lifted into the overview in the reader's form; its house rules, its tables and
+its loop stay in the kit. The one thing a historian should see of it is the moves that are theirs
+to make in the app, rewritten without the table names, as the overview's closing paragraph: *in
+the app, read twenty to forty of the documents the collection groups under the four episodes and
+tag the ones that are really about a channel to Havana; give a second tag to the documents where
+an option to talk was put to a decision and declined*, not *tag them `cuba-talks-seed`; your tags
+land in `document_cache.user_tag_ids`*.
 
 ---
 
@@ -2389,12 +2503,73 @@ fails.
 | `entries` | Array order **is** collection order. May be `[]`. |
 
 Each entry needs only `kind`. The kinds are `document`, `heading`, `prose`, `excerpt` and
-`generated`; for writing a candidate list you want the first two. A `heading` carries its title in
-`text`; a `document` carries `volumeId` and `documentId` — the same pair everything else in this
-guide is keyed by.
+`generated`; a candidate list needs only the first two, and §15.1a shows what the other three, a
+document's `notes` and the title page carry when the file is a reading round's deliverable. A
+`heading` carries its title in `text`; a `document` carries `volumeId` and `documentId` — the same
+pair everything else in this guide is keyed by.
 
 Save with a `.fruscollection` extension. The file pickers match on the extension, so a `.json` file
 with perfect contents will not be offered.
+
+### 15.1a The findings in the file
+
+A reading round's collection is not a candidate list; it is the overview in the historian's own
+tool (§14.16). The format carries five entry kinds, per-document notes and a title page, and the
+app does something with each of them (`NativeCollectionFormat.swift`, `ExcerptVerifier.swift`,
+`CollectionGeneratedBlocks.swift`; the manuals' §12.3–§12.5 and §12.11):
+
+| In the file | What the app does with it | What the agent puts there |
+|---|---|---|
+| `introductionText`, `authorLine`, `note` | The title page of every export, and the collection's description | The three-part bottom line; the run's name and date; the one-line answer |
+| `heading`, with `level` 1 to 3 | Sections in the editor, the preview and every export's table of contents | The overview's findings, in order |
+| `prose` (`text`; rich text optional) | A prose block between documents, kept through every export | The finding of the section in the reader's register, and a closing block naming the threads the round could not follow |
+| `notes` on a `document` entry | Research notes attached to the document on import: in the Research rail, below the body in exports, indexed for search at once | Why this document is here and what it shows, one short note, opening with an attribution line |
+| `excerpt` (`text` + the document pair) | A block quote with an automatic citation, **checked against the document before every export and again when a corrected volume arrives**: presentation forgiven, wording not, elided fragments in order | Every quotation the overview relies on, as §8's check verified it |
+| `generated` with `generatedBlockType` | Apparatus built from the app's own data at every export: `archivalSources` (Sources & Archives, with NARA links where resolved), `chronology`, `bibliography`, `personsIndex`, `thematicIndex` | `archivalSources` at the end; `chronology` at the top for a question about a crisis |
+| `titleOverride` on a `document` entry | The document's label in the table of contents and export heading | A plain label where the printed header is unreadable |
+
+The example below opens in the app; like §15.1's, it is a test fixture and not an illustration.
+The ids are §15.1's, the texts are placeholders, and an excerpt whose text is not in its document
+is what the app's excerpt check exists to catch, so write the passage as retrieved.
+
+```json
+{
+  "format": "fruscollection",
+  "formatVersion": 2,
+  "minimumReaderVersion": 1,
+  "name": "Escalation rhetoric — round 2",
+  "authorLine": "Agent run, round 2, 2026-10-14",
+  "introductionText": "What FRUS answers directly: … Where FRUS points for the rest: … What this request cannot get from FRUS: …",
+  "composition": {
+    "defaultBodyDepth": "full",
+    "footnoteStyle": "all",
+    "includeSourceNote": true,
+    "tocStyle": "citation",
+    "applyHighlights": false,
+    "includeNotes": true,
+    "includeWordCloud": false
+  },
+  "entries": [
+    { "kind": "heading", "text": "The channel of 1963", "level": 1 },
+    { "kind": "prose", "text": "Why these documents, and what thread they follow, in two or three sentences." },
+    { "kind": "document", "volumeId": "frus1961-63v11", "documentId": "d1",
+      "notes": ["Agent finding, round 2, 2026-10-14: what this document shows, in one short note."] },
+    { "kind": "excerpt", "volumeId": "frus1961-63v11", "documentId": "d1",
+      "text": "The passage, verbatim, as retrieved from the document." },
+    { "kind": "generated", "generatedBlockType": "archivalSources" }
+  ]
+}
+```
+
+Three limits:
+
+1. **Headnotes cannot be supplied.** The Key takeaway card is keyed to a summary id that exists
+   only on the author's devices. A per-document finding goes in `notes` or `prose`.
+2. **Imported notes carry no author.** They become the historian's own research notes,
+   indistinguishable from ones they wrote. Every agent-written note opens with an attribution
+   line naming the run and the date, so the notebook keeps its provenance.
+3. **A collection carries no number the memo does not** (§14.16). The file is the argument and
+   the evidence; the counts and their queries stay in the memo.
 
 ### 15.2 One constraint the app does not enforce
 
@@ -2442,7 +2617,11 @@ The reader's gate is `minimumReaderVersion` when present, and **`formatVersion` 
 not 1, which is a distinction worth knowing if you are tempted to write a higher `formatVersion`. A
 file declaring `formatVersion: 3` with no floor is *rejected* by a version-2 reader; the same file
 declaring `"minimumReaderVersion": 1` is accepted and its unknown features ignored. Write
-`formatVersion: 1` and no floor unless you have a reason.
+`formatVersion: 1` and no floor unless you have a reason. The reason §15.1a gives is the common
+one: a file carrying an excerpt, a generated block, a document's `notes`, a `titleOverride` or a
+title-page field is a version-2 file, so write `"formatVersion": 2` with
+`"minimumReaderVersion": 1`, as its example does, since every one of those degrades in a
+version-1 reader rather than corrupting.
 
 **Unknown top-level keys are free.** You may stamp provenance without any format change:
 
@@ -2773,6 +2952,39 @@ SEMANTIC VECTORS
 ```
 
 
+## Glossary
+
+Each term in one sentence a historian can use, with the section that explains it. The operator's
+terms are here because they appear in the outputs.
+
+| Term | What it means here | See |
+|---|---|---|
+| index, full-text index | The app's search copy of the documents' text, built on your device; a search index, not the edition. | §1 |
+| stem | The index stores each word's root, so *containment*, *contains* and *containing* are one entry, and a search for one finds all three. | §7.1 |
+| literal share | Of the documents a phrase search returned, the fraction that actually use the phrase, found by reading a sample; "tolerant" allows inflections, "strict" does not. | §7.1 |
+| false friend | A search term that measures the corpus, not the question, because it is common everywhere (*reform*, *Herter*). | §14.5 |
+| control | A term searched beside yours to prove the search works: one that must be found (*Department of State*) and one that cannot be. | §14.2 |
+| denominator, base | The set a count is a count of: "43 volumes", "dated documents of the 1930s". | §9 |
+| grain | What one unit is: an occurrence, a footnote, a document, a volume. | §9 |
+| apparatus | The editors' additions: front matter, editorial notes, footnotes, the index. Counted with the documents unless excluded. | §7.2 |
+| counting surface | Which text was counted: the raw XML, the text with tags removed, or whole words; the three differ. | §14.3 |
+| document date, volume year | When the editors say a document was written, against the years a volume covers; a periodisation must say which. | §14.7 |
+| came-from, pointed-at | Where a printed document came from (its source note) against what a footnote cites and did not print; two channels, never summed. | §8, §14.11 |
+| second edition, fold | Two volumes exist in two editions; a count drops one of them and says which. | §14.9 |
+| volume id, document id | The database's names for a volume and a document (`frus1958-60v07p1`, `d12`); they resolve to a history.state.gov address and are not the citation. | §4.1, §8 |
+| record group, entry, lot file, NAID | How the National Archives shelves State Department records: the record group (RG 59 is the Department), the series entry number staff use, the Department's own lot-file number, and the catalog's identifier. | §4.4, §14.11 |
+| decimal class, subject-numeric file | The Department's two central filing systems: numbers like 611.41 to January 1963, letters-and-numbers like POL 27 VIET S after. | §4.4 |
+| citation form | How a source note is written, which tells you the filing system and not the date. | §7.4 |
+| person cluster | The app's grouping of one name across volumes, which prefers to leave two entries apart; a person's count is a floor. | §7.5 |
+| subject tag | A label assigned by matching words, useful for finding and unreliable for counting. | §7.7 |
+| semantic neighbour, map | Documents placed by the language they share; a lead to read, not evidence of a relation. | Appendix A |
+| scoping, scope memo | The pass that decides which volumes and which words a question lives in, before anything is read. | §14 |
+| round, thread | One pass of agents over the question; one line of inquiry within it. | §14.12 |
+| refuter, critic | A second agent told to find the wrong number; a third told to say whether another round would learn anything. | §14.12, §14.15 |
+| reading round | A round whose product is documents read whole and quoted, with the count of each. | §9 item 8 |
+| kit | The operator's instrument for the next round: the question's house rules, decoys, volume family and loop. Not the historian's artifact. | §14.16 |
+| method appendix | The app's export of every search run, with scope, date and result, as a table a paper can cite. | manual §17.6 |
+
 ## See also
 
 - [macOS User Manual](macOS-User-Manual.md) — the app's own analytics, search, and Source Explorer
@@ -2788,6 +3000,20 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.29 — 2026-10-14: **the outputs get a reader's form, for the historian who commissions the
+  work and never opens a terminal** (`Planning/Agentic-Guide-Accessibility-Review-2026-10-14.md`,
+  read against the fishing-rights memo and the three 2026-08-31 starter kits; the owner's
+  decisions of 2026-10-14). The preamble gains a path for that reader; §8 states that every number
+  and quotation exists in an audit form and a reader's form, and where the printed citation goes;
+  §12's block gains a READER-FACING OUTPUT section (17 lines, six rules, to be measured by C-3,
+  `Planning/C-3-Reader-Test-Design.md`, before it is called adopted); §14.16 is rewritten around a
+  three-part bottom line every output opens with (what FRUS answers directly, where it points for
+  the rest, what the request cannot get from FRUS, each with its evidence), an overview template,
+  the decisions a round hands back, the two forms side by side, and the kit named as the
+  operator's artifact; §15.1a shows what a reading round's collection carries (prose, notes,
+  excerpts the app checks, generated apparatus, the title page) with a second test fixture, and
+  §15.3 says when a file is version 2; a Glossary of 26 terms precedes *See also*. The §15.1
+  block is unchanged.
 - 1.28 — 2026-10-12: **the labels the corpus cites in `subject-numeric-labels.json` are read
   against the scan, each one** (the follow-up to #1644). §14.11's row says so. 49 subject labels
   are corrected: broken words (`DIPLOMATIC & CONSULAR REPRESENTA TION`), wrong letters

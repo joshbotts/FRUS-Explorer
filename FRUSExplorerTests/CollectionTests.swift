@@ -3075,6 +3075,55 @@ struct CollectionTests {
                 "the guide publishes a different file from the one this suite proves opens")
     }
 
+    @Test("The guide's §15.1a example opens: a reading round's findings travel as prose, a note, an excerpt and a generated block")
+    func publishedFindingsExampleOpens() throws {
+        // Guide v1.29 (2026-10-14) publishes a second example in §15.1a: the file a reading round
+        // hands the historian, carrying its findings and not only its list. Like §15.1's, it is a
+        // promise that an outside writer's bytes open here, so the test starts from the guide's
+        // text and imports it. Unlike §15.1's, it has no literal twin: what the test pins is the
+        // shape (five kinds, in order; a note recreated on the document; the excerpt's text; the
+        // generated block's type; the title page), which is what the guide says each part becomes.
+        // Decision 9 of the 2026-10-11 plan of record: a pin on language is a reminder, so an
+        // edit to the example moves this test with it, with the reason here.
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let guideURL = root.appendingPathComponent("Docs/Agentic-Analysis-Guide.md")
+        let guide = try String(contentsOf: guideURL, encoding: .utf8)
+
+        let section = try #require(guide.range(of: "### 15.1a The findings in the file"),
+                                   "the guide lost §15.1a")
+        let after = guide[section.upperBound...]
+        let open = try #require(after.range(of: "```json\n"), "§15.1a lost its JSON block")
+        let rest = after[open.upperBound...]
+        let close = try #require(rest.range(of: "\n```"), "§15.1a's JSON block is unterminated")
+        let published = Data(rest[..<close.lowerBound].utf8)
+
+        let file = try NativeCollectionSerializer.decode(published)
+        #expect(file.formatVersion == 2, "an excerpt or a generated block makes the file version 2")
+        #expect(file.minimumReaderVersion == 1, "every feature in it degrades, so the floor stays 1")
+        #expect(file.authorLine != nil && file.introductionText != nil,
+                "the title page carries the run and the bottom line")
+
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = ModelContext(container)
+        let imported = NativeCollectionSerializer.apply(file, into: ctx)
+        try ctx.save()
+
+        let entries = (imported.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        try #require(entries.count == 5)
+        #expect(entries.map(\.entryKind) == [.heading, .prose, .document, .excerpt, .generated])
+        #expect(entries[1].text?.isEmpty == false, "the prose block carries the section's finding")
+        #expect(entries[2].selectedNoteIds.count == 1,
+                "the document's one note is recreated as a research note on import")
+        #expect(entries[3].documentId == entries[2].documentId
+                && entries[3].text?.isEmpty == false,
+                "the excerpt names the document it quotes and carries the passage")
+        #expect(entries[4].generatedBlockType == CollectionGeneratedBlockType.archivalSources.rawValue,
+                "the apparatus block is the one the bottom line's second paragraph rests on")
+        #expect(imported.authorLine == file.authorLine)
+        #expect(imported.introductionText == file.introductionText)
+    }
+
     @Test("An agent may add a generator key: unknown top-level keys are free, and the app does not preserve them")
     func generatorKeyIsFreeAndNotPreserved() throws {
         // §15 tells agents they may stamp provenance with a `generator` key. That costs no format
