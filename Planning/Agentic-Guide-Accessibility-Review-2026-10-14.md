@@ -514,6 +514,7 @@ Every figure in it is the kit's own, and the memo holds the searches behind each
 3. R2, R6, R7, R10 — a day each; R7 needs a new §15.1a example that opens in the app, which is a
    test to add beside `publishedExampleMatchesTheGuide`.
 4. R11 — the long one, and the one a historian would notice most after R10.
+5. Then C-3 (`C-3-Reader-Test-Design.md`): the block section under nine model × effort cells on one new question, within 25% of the owner's weekly usage, whose product is the guide's §3a on which model and effort to choose.
 
 ## 8. Open to the owner
 
