@@ -1,7 +1,7 @@
 # The EmbeddingGemma 2 spike: what it measures, what a move would end, and what the re-embed costs on the Air
 
 **Date:** 2026-10-14 · **Status:** QUEUED, the owner's decision of 2026-10-14 (plan of record
-decision 10, pull request 10) · **Issue:** #1659 · **Precedes:** `Gemma-Compliance-Runbook.md`
+decision 10; since the plan of 2026-10-14, Track B, steps B1 to B5, beside the app's Track A to build 51) · **Issue:** #1659 · **Precedes:** `Gemma-Compliance-Runbook.md`
 §0, whose 2026-10-12 re-check found the model, and the issue, which lists what a move would end
 and touch. Engineering-side, not legal advice.
 
