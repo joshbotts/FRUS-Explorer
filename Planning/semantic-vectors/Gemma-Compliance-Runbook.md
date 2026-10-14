@@ -36,6 +36,21 @@ The two policy pages, read the same day: the Terms page says "Last modified: Apr
 the date recorded in §5, and the Prohibited Use Policy "Last modified: February 21, 2024", as
 it read on 2026-10-02.
 
+**Re-run 2026-10-14, partial, and the owner's decision.** A session re-read the position by web
+search alone, since its container could not reach ai.google.dev or huggingface.co, and nothing
+contradicted the 2026-10-12 reading. `google/embeddinggemma-300m` is still `license: gemma`;
+`google/embeddinggemma-2` is Apache-2.0 by Google's announcement, its developer documentation and
+the Hugging Face record, and its licence link goes to the Gemma 4 licence page, which is the
+Apache 2.0 text. Two things only secondary coverage reports, to be read on the card itself before
+a move: that the card keeps the sentence "Deployments must adhere to the Gemma Prohibited Use
+Policy", and that the repository has no LICENSE file. Neither is a condition of the Apache grant,
+whose redistribution conditions are its section 4 alone. **The owner decided that day to assess
+the model**: the spike is pull request 10 of the plan of record (decision 10), and
+`EmbeddingGemma-2-Spike-2026-10-14.md` beside this file is its design, with the reading of both
+licences for the app and for the web edition, whose hosted Meaning search is a Distribution to
+its readers under §1.1(b). Until the spike's gates are read this runbook stands as it is: build 50
+ships the 300m under the Terms, and §5's custom EULA is owed before the first App Store submission.
+
 ## 1. The four §3.1 conditions, mapped to surfaces
 
 | # | Condition (clause map §2) | Surface | Status |
