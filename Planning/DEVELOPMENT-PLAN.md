@@ -38395,3 +38395,16 @@ All at the code commit, rebased on `9feff971`, clean and unsigned. The records c
 **Checked.** The funnel's rank arithmetic was re-derived for 20 queries through a literal full sort (no mismatch), the 512-bit sweep agrees with `rerank_pool_sweep.py` on every row they share, `nn_verify.py` found no mismatch for either model, and the scorer for the judged queries reproduces the August verdict's figures from the committed sheets. `git status` shows nothing under `FRUSExplorer/Resources/` or `Planning/semantic-vectors/shards/`. No file the app, a kit, a generator or a test compiles is changed, and no test reads a changed file except `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`, whose §7 line is unchanged; the suite was not run.
 
 **Not done.** Step 7 (B4's, after the runtime rebuild). The judged sitting, which is the owner's. The store, the scratch packs and pools, the GGUF and the runtime stay on the Air, outside the repository.
+
+## Session 2026-10-15 — Track B, step B3: the owner's reading recorded — EmbeddingGemma 2 ships, in build 51
+
+**What was asked.** After #1671 merged, the owner asked to be walked through the decisions B2 left them, and gave three: the EmbeddingGemma 2 licence reads as Apache 2.0; the gap Gate A measured is comparable quality, so EmbeddingGemma 2 ships; and build 51 waits for Track B. This session records them. No code changes.
+
+**What changed.**
+- `Planning/Plan-Of-Record-2026-10-14.md`: §0 gains decisions 15 to 17 and the default they overturn (build 51 no longer goes without Track B); §1 places B4 in Track A's queue before the build, with a cut that keeps every merge shippable (the runtime first, then the model, its artifacts and the licence copy together); §2 drops the custom EULA and the Gemma policy re-check from what build 51 owes; §3 records B3, and B4 is in build 51; §4 lists what B4 will bring the owner (how the encoder reaches a device, whether the Meaning chip's percentage is recalibrated, the parity run on the owner's iPhone); §6e's two B2 findings now close with B4.
+- `Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md` (1.1): the status line and §10 record the decision.
+- This entry.
+
+**Checked.** The plan's §7 struck line, which `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads, is unchanged, and there is still exactly one live plan of record. No other test reads a changed file.
+
+**Not done.** B4 itself, which is a Track A lane for a fresh session. Nothing was posted to #1659.
