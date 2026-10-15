@@ -1,0 +1,33 @@
+{
+  "assess": "/Users/jbotts/frus-b2/gates-eg2",
+  "census": {
+    "distinct_missing_endpoints": 1560,
+    "dropped": {
+      "cross_volume": 0,
+      "not_in_store": 11034,
+      "self": 2728,
+      "unresolved_page": 16455
+    },
+    "edges_retained": 157072,
+    "edges_retained_cross_volume": 35685,
+    "not_in_store_url_shaped_targets": 0,
+    "resolved_pairs": 146241,
+    "scanned_clean_edges": 187289
+  },
+  "configs": [
+    "float-512",
+    "float-768",
+    "hamming256-800->int8-256",
+    "hamming512-1600->int8-512",
+    "hamming512-200->int8-512",
+    "hamming512-400->int8-512",
+    "hamming512-800->int8-512",
+    "int8-256",
+    "int8-512"
+  ],
+  "db": "/Users/jbotts/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/frus.db",
+  "docs": 314616,
+  "elapsed_secs": 742.8,
+  "label": "embeddinggemma2",
+  "queries": 83119
+}

@@ -27,6 +27,19 @@ Run order (each script checkpoints and resumes; `ASSESS_DIR` defaults to
 5. `gate_a_corpus.py` — Gate A weak positives at corpus scale. Needs a copy of the app's
    `frus.db` (+`-wal`/`-shm`) at `$ASSESS_DIR/db/frus.db`; keeps `spike_gates.load_edges`
    semantics but retains cross-volume targets. ~10 min for both configs.
+6. `compare_corpus.py` — two models over the same documents, paired (Track B, step B2,
+   2026-10-15). Run `pool_docs.py` and `nn_ladder.py` into one `ASSESS_DIR` per model first.
+   `MODE=ranks` (once per model; `DB` is read in place, read-only) scores Gate A at the
+   widths the app ships and shipped: float-768, float-512, int8-512, int8-256, the 512-bit
+   Hamming funnel at pools of 200, 400, 800 and 1600 into an int8-512 rerank, and the
+   256-bit funnel at 800. `MODE=sweep` re-runs `rerank_pool_sweep.py` with the Hamming stage
+   over 512 sign bits, as the app scans since #933 (step 4 scans 256 at both widths).
+   `MODE=compare` pairs two ranks runs: per-query differences with a bootstrap over queries
+   and one over citing volumes, by era band, by a finer seven-era split, by edge split and
+   for the two spike volumes, and a sensitivity row without the queries that touch
+   `EXCLUDE_DOCS`. On the M5 Air, about 12 minutes a model for 83,119 queries with the two in
+   parallel, and 3.5 minutes for the comparison's bootstraps. Figures:
+   `Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md`.
 
 These are assessment tools, not shipping generators — the deterministic packer the raw
 store feeds is `SemanticVectorsGenerator` (design doc §3.1 Stage 2, unbuilt as of the

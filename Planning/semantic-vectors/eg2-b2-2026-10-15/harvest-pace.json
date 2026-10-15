@@ -1,0 +1,91 @@
+{
+  "definition": "this run's seconds / the Studio's 2026-08-10 seconds for the same volumes (volumes the Studio embedded with the same character count); higher is slower",
+  "hours": [
+    {
+      "chars_per_sec": 34739,
+      "hour": "2026-10-14 18:00",
+      "pace_vs_studio": 1.7,
+      "volumes": 35
+    },
+    {
+      "chars_per_sec": 33416,
+      "hour": "2026-10-14 19:00",
+      "pace_vs_studio": 1.77,
+      "volumes": 45
+    },
+    {
+      "chars_per_sec": 34164,
+      "hour": "2026-10-14 20:00",
+      "pace_vs_studio": 1.75,
+      "volumes": 58
+    },
+    {
+      "chars_per_sec": 32664,
+      "hour": "2026-10-14 21:00",
+      "pace_vs_studio": 1.91,
+      "volumes": 54
+    },
+    {
+      "chars_per_sec": 30765,
+      "hour": "2026-10-14 22:00",
+      "pace_vs_studio": 2.05,
+      "volumes": 43
+    },
+    {
+      "chars_per_sec": 30758,
+      "hour": "2026-10-14 23:00",
+      "pace_vs_studio": 2.08,
+      "volumes": 39
+    },
+    {
+      "chars_per_sec": 29312,
+      "hour": "2026-10-15 00:00",
+      "pace_vs_studio": 2.19,
+      "volumes": 35
+    },
+    {
+      "chars_per_sec": 27880,
+      "hour": "2026-10-15 01:00",
+      "pace_vs_studio": 2.3,
+      "volumes": 41
+    },
+    {
+      "chars_per_sec": 27948,
+      "hour": "2026-10-15 02:00",
+      "pace_vs_studio": 2.27,
+      "volumes": 45
+    },
+    {
+      "chars_per_sec": 27161,
+      "hour": "2026-10-15 03:00",
+      "pace_vs_studio": 2.33,
+      "volumes": 47
+    },
+    {
+      "chars_per_sec": 25430,
+      "hour": "2026-10-15 04:00",
+      "pace_vs_studio": 2.41,
+      "volumes": 41
+    },
+    {
+      "chars_per_sec": 24868,
+      "hour": "2026-10-15 05:00",
+      "pace_vs_studio": 2.51,
+      "volumes": 37
+    },
+    {
+      "chars_per_sec": 23140,
+      "hour": "2026-10-15 06:00",
+      "pace_vs_studio": 2.69,
+      "volumes": 33
+    }
+  ],
+  "power_log": "pmset -g log: on AC from 17:19 at 80% charge; 64% at 18:52, 62% at 18:58, 56% at 19:27 (on AC), 80% by 02:14; no thermal or performance warning recorded",
+  "stage1_spike_rate_chars_per_sec": 44789,
+  "studio_run": "~/Development/frus-semantic-raw/runs.jsonl, EmbeddingGemma 300m through LM Studio on the M1 Max Studio, 5.96 h",
+  "whole_run": {
+    "chars_per_sec": 29312,
+    "embed_secs": 45502.9,
+    "pace_vs_studio": 2.119
+  }
+}

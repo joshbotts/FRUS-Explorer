@@ -1,0 +1,197 @@
+{
+  "bands": {
+    "doc_counts": {
+      "1900_1945": 140238,
+      "post1945": 138027,
+      "pre1900": 36351
+    },
+    "docs_below_char_floor": {
+      "1900_1945": 297,
+      "post1945": 225,
+      "pre1900": 407
+    },
+    "docs_below_char_floor_total": 929,
+    "volume_counts": {
+      "1900_1945": 169,
+      "post1945": 316,
+      "pre1900": 68
+    }
+  },
+  "char_floor": 200,
+  "corpus_docs": 314616,
+  "elapsed_secs": 47.1,
+  "near_duplicate_share_top1_cosine": {
+    "gt_0.98": {
+      "1900_1945": 0.0083,
+      "overall": 0.0222,
+      "post1945": 0.025,
+      "pre1900": 0.0333
+    },
+    "gt_0.995": {
+      "1900_1945": 0.0017,
+      "overall": 0.01,
+      "post1945": 0.0117,
+      "pre1900": 0.0167
+    }
+  },
+  "neighbor_structure": {
+    "float768": {
+      "1900_1945": {
+        "same_band_top1": 0.9883,
+        "same_band_top10": 0.9647,
+        "same_volume_top1": 0.8133,
+        "same_volume_top10": 0.6092
+      },
+      "overall": {
+        "same_band_top1": 0.9867,
+        "same_band_top10": 0.9664,
+        "same_volume_top1": 0.7761,
+        "same_volume_top10": 0.5811
+      },
+      "post1945": {
+        "same_band_top1": 0.9875,
+        "same_band_top10": 0.9702,
+        "same_volume_top1": 0.7442,
+        "same_volume_top10": 0.5752
+      },
+      "pre1900": {
+        "same_band_top1": 0.9842,
+        "same_band_top10": 0.9641,
+        "same_volume_top1": 0.7708,
+        "same_volume_top10": 0.5591
+      }
+    },
+    "shipping_hamming200_int8_256": {
+      "1900_1945": {
+        "same_band_top1": 0.9858,
+        "same_band_top10": 0.9582,
+        "same_volume_top1": 0.7883,
+        "same_volume_top10": 0.5619
+      },
+      "overall": {
+        "same_band_top1": 0.985,
+        "same_band_top10": 0.9594,
+        "same_volume_top1": 0.7569,
+        "same_volume_top10": 0.5437
+      },
+      "post1945": {
+        "same_band_top1": 0.9867,
+        "same_band_top10": 0.9604,
+        "same_volume_top1": 0.73,
+        "same_volume_top10": 0.5369
+      },
+      "pre1900": {
+        "same_band_top1": 0.9825,
+        "same_band_top10": 0.9596,
+        "same_volume_top1": 0.7525,
+        "same_volume_top10": 0.5324
+      }
+    }
+  },
+  "peak_rss_gb": 4.35,
+  "procedures": {
+    "hamming": "XOR + np.bitwise_count over packed 256-bit sign vectors; top-200 tie-break (dist asc, row asc); rerank lexsort((cands,-scores))",
+    "int8": "exact integer dots (f32 GEMM, |dot|<2^24) cast to float64 x scale outer product == spike_gates int8_scores bit-for-bit",
+    "sampling": "random.Random(18610810).sample over sorted eligible rows per band, band order pre1900,1900_1945,post1945; chars >= 200 floor",
+    "truth": "float32 GEMM doc_f32_768 @ doc_f32_768.T (gate_b's sims), top-10 via lexsort tie-break (score desc, row asc), self excluded"
+  },
+  "queries": {
+    "per_band": {
+      "1900_1945": 1200,
+      "post1945": 1200,
+      "pre1900": 1200
+    },
+    "total": 3600
+  },
+  "recall_at_10_vs_float768": {
+    "hamming200->int8-256": {
+      "1900_1945": 0.7284,
+      "overall": 0.7354,
+      "post1945": 0.7087,
+      "pre1900": 0.7691
+    },
+    "hamming200->int8-512": {
+      "1900_1945": 0.7815,
+      "overall": 0.7937,
+      "post1945": 0.7722,
+      "pre1900": 0.8274
+    },
+    "int8-256": {
+      "1900_1945": 0.8065,
+      "overall": 0.8055,
+      "post1945": 0.787,
+      "pre1900": 0.8231
+    },
+    "int8-512": {
+      "1900_1945": 0.9058,
+      "overall": 0.9054,
+      "post1945": 0.9005,
+      "pre1900": 0.9101
+    }
+  },
+  "rerank_pool": 200,
+  "seed": 18610810,
+  "task": "corpus-scale nearest-neighbor structure + quantization ladder",
+  "top1_cosine_float768": {
+    "1900_1945": {
+      "max": 0.9998,
+      "median": 0.9142,
+      "min": 0.8371,
+      "p25": 0.8974,
+      "p75": 0.9305
+    },
+    "overall": {
+      "max": 1.0,
+      "median": 0.917,
+      "min": 0.7943,
+      "p25": 0.8988,
+      "p75": 0.9353
+    },
+    "post1945": {
+      "max": 1.0,
+      "median": 0.9116,
+      "min": 0.8088,
+      "p25": 0.8921,
+      "p75": 0.9288
+    },
+    "pre1900": {
+      "max": 0.9994,
+      "median": 0.9251,
+      "min": 0.7943,
+      "p25": 0.9057,
+      "p75": 0.9435
+    }
+  },
+  "top1_float_cosine_of_shipping_top1": {
+    "1900_1945": {
+      "max": 0.9998,
+      "median": 0.9139,
+      "min": 0.8052,
+      "p25": 0.8961,
+      "p75": 0.93
+    },
+    "overall": {
+      "max": 1.0,
+      "median": 0.916,
+      "min": 0.779,
+      "p25": 0.8971,
+      "p75": 0.935
+    },
+    "post1945": {
+      "max": 1.0,
+      "median": 0.9108,
+      "min": 0.779,
+      "p25": 0.8898,
+      "p75": 0.9284
+    },
+    "pre1900": {
+      "max": 0.9994,
+      "median": 0.9249,
+      "min": 0.7943,
+      "p25": 0.9052,
+      "p75": 0.9432
+    }
+  },
+  "top_k": 10,
+  "top_pairs_file": "/Users/jbotts/frus-b2/gates-eg2/neighbors_top_pairs.jsonl"
+}

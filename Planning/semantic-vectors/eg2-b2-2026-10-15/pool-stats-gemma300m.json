@@ -1,0 +1,163 @@
+{
+  "chunks_read": 605978,
+  "doc_id_nonstandard": 947,
+  "doc_id_ord_fallback": 0,
+  "docs_pooled": 314616,
+  "dup_int8_256": {
+    "examples": [
+      [
+        {
+          "d": "d224",
+          "v": "frus1894app2"
+        },
+        {
+          "d": "d442",
+          "v": "frus1894app2"
+        }
+      ],
+      [
+        {
+          "d": "d241",
+          "v": "frus1894app2"
+        },
+        {
+          "d": "d448",
+          "v": "frus1894app2"
+        }
+      ],
+      [
+        {
+          "d": "d221",
+          "v": "frus1903"
+        },
+        {
+          "d": "d271",
+          "v": "frus1903"
+        }
+      ],
+      [
+        {
+          "d": "d1362",
+          "v": "frus1915"
+        },
+        {
+          "d": "d1419",
+          "v": "frus1915"
+        }
+      ],
+      [
+        {
+          "d": "d684",
+          "v": "frus1918Russiav02"
+        },
+        {
+          "d": "d761",
+          "v": "frus1918Russiav02"
+        }
+      ]
+    ],
+    "groups": 639,
+    "rate": 0.00407,
+    "rows_in_groups": 1282
+  },
+  "elapsed_secs": 14.0,
+  "head_totals": {
+    "chunks": 605978,
+    "docs": 314616
+  },
+  "inf_count": 0,
+  "int8_256": {
+    "nan_in_cut": 0,
+    "scale_max": 0.00447471346706152,
+    "scale_min": 0.001126944669522345,
+    "zero_scales": 0
+  },
+  "int8_512": {
+    "nan_in_cut": 0,
+    "scale_max": 0.004419670440256596,
+    "scale_min": 0.0013442662311717868,
+    "zero_scales": 0
+  },
+  "key_collisions": [],
+  "manifest_totals": {
+    "chunks": 2347,
+    "docs": 1142
+  },
+  "meta_text_order_mismatch": [],
+  "nan_count": 0,
+  "nonstandard_id_examples": [
+    {
+      "d": "d373a",
+      "v": "frus1865p1"
+    },
+    {
+      "d": "d2a",
+      "v": "frus1894app2"
+    },
+    {
+      "d": "d639a",
+      "v": "frus1896"
+    },
+    {
+      "d": "d711a",
+      "v": "frus1898"
+    },
+    {
+      "d": "d712a",
+      "v": "frus1898"
+    },
+    {
+      "d": "d1190a",
+      "v": "frus1898"
+    },
+    {
+      "d": "d1190b",
+      "v": "frus1898"
+    },
+    {
+      "d": "d122a",
+      "v": "frus1901"
+    },
+    {
+      "d": "d133a",
+      "v": "frus1901"
+    },
+    {
+      "d": "d218a",
+      "v": "frus1901"
+    }
+  ],
+  "per_volume_mismatches": [],
+  "pooled_inf_count": 0,
+  "pooled_nan_count": 0,
+  "pooled_norm_max": 1.0000000302392784,
+  "pooled_norm_min": 0.9999999698964044,
+  "raw_chunk_norms": {
+    "full_max": 1.000000068613175,
+    "full_median": 1.0000000001069949,
+    "full_min": 0.9999999321620764,
+    "sample_max": 1.0000000635601791,
+    "sample_median": 1.0000000003478133,
+    "sample_min": 0.9999999373039351,
+    "sample_n": 50499,
+    "sample_stride": 12
+  },
+  "tiling": {
+    "c0_first_nonzero": 0,
+    "c1_last_ne_textlen": 0,
+    "ci_not_dense": 0,
+    "meta_o_mismatch": 0,
+    "no_overlap": 0
+  },
+  "tiling_examples": {
+    "c0_first_nonzero": [],
+    "c1_last_ne_textlen": [],
+    "ci_not_dense": [],
+    "meta_o_mismatch": [],
+    "no_overlap": []
+  },
+  "volumes": 553,
+  "zero_chunk_vectors": 0,
+  "zero_norm_pooled_docs": 0,
+  "zero_weight_docs": 0
+}

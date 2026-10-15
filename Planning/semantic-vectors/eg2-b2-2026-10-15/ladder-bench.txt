@@ -1,0 +1,56 @@
+== run 1 300m
+[bench] corpus 314616 documents, 601 queries, pool 800
+[bench] 256 dims: median 0.976 ms, mean 0.957 ms
+[bench] 512 dims: median 1.490 ms, mean 1.501 ms
+[bench] ratio (median): 1.53x
+[bench] bytes/row: 256 -> 32, 512 -> 64
+✔ Test "the funnel's width-sensitive half, at both widths" passed after 1.567 seconds.
+[bench] rerank over 800 rows of frus1915
+[bench] 256 dims: median 0.062 ms
+[bench] 512 dims: median 0.110 ms
+[bench] ratio (median): 1.78x
+✔ Test "the rerank half, which is linear in width by construction" passed after 0.024 seconds.
+✔ Suite "Dimension ladder benchmark" passed after 1.592 seconds.
+✔ Test run with 2 tests in 1 suite passed after 1.592 seconds.
+== run 1 eg2
+[bench] corpus 314616 documents, 601 queries, pool 800
+[bench] 256 dims: median 0.912 ms, mean 0.920 ms
+[bench] 512 dims: median 1.490 ms, mean 1.493 ms
+[bench] ratio (median): 1.63x
+[bench] bytes/row: 256 -> 32, 512 -> 64
+✔ Test "the funnel's width-sensitive half, at both widths" passed after 1.541 seconds.
+[bench] rerank over 800 rows of frus1915
+[bench] 256 dims: median 0.062 ms
+[bench] 512 dims: median 0.110 ms
+[bench] ratio (median): 1.79x
+✔ Test "the rerank half, which is linear in width by construction" passed after 0.026 seconds.
+✔ Suite "Dimension ladder benchmark" passed after 1.568 seconds.
+✔ Test run with 2 tests in 1 suite passed after 1.568 seconds.
+== run 2 300m
+[bench] corpus 314616 documents, 601 queries, pool 800
+[bench] 256 dims: median 0.982 ms, mean 0.993 ms
+[bench] 512 dims: median 1.572 ms, mean 1.598 ms
+[bench] ratio (median): 1.60x
+[bench] bytes/row: 256 -> 32, 512 -> 64
+✔ Test "the funnel's width-sensitive half, at both widths" passed after 1.614 seconds.
+[bench] rerank over 800 rows of frus1915
+[bench] 256 dims: median 0.061 ms
+[bench] 512 dims: median 0.109 ms
+[bench] ratio (median): 1.79x
+✔ Test "the rerank half, which is linear in width by construction" passed after 0.012 seconds.
+✔ Suite "Dimension ladder benchmark" passed after 1.626 seconds.
+✔ Test run with 2 tests in 1 suite passed after 1.626 seconds.
+== run 2 eg2
+[bench] corpus 314616 documents, 601 queries, pool 800
+[bench] 256 dims: median 1.005 ms, mean 1.016 ms
+[bench] 512 dims: median 1.585 ms, mean 1.580 ms
+[bench] ratio (median): 1.58x
+[bench] bytes/row: 256 -> 32, 512 -> 64
+✔ Test "the funnel's width-sensitive half, at both widths" passed after 1.617 seconds.
+[bench] rerank over 800 rows of frus1915
+[bench] 256 dims: median 0.062 ms
+[bench] 512 dims: median 0.110 ms
+[bench] ratio (median): 1.77x
+✔ Test "the rerank half, which is linear in width by construction" passed after 0.012 seconds.
+✔ Suite "Dimension ladder benchmark" passed after 1.630 seconds.
+✔ Test run with 2 tests in 1 suite passed after 1.630 seconds.
