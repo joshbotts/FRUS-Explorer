@@ -42,15 +42,23 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-2b: initial implementation
+///   1.1 — B4 (#1659): EmbeddingGemma 2's shards, from a folder named for their generation
 public actor SemanticShardFetcher {
 
-    /// Base URL of the vectors repository's raw content.
+    /// Base URL of the vectors repository's raw content, for this build's generation.
     ///
     /// Beta hosting is an app-owned public GitHub repository, fetched the way volumes are: no API,
     /// no credentials, no rate limit worth modelling. The bundled manifest — not a directory listing
     /// — is what says which shards exist, so nothing here needs the contents API.
+    ///
+    /// **The address names the generation** (B4): `generations/<the provenance digest's first
+    /// eight hex digits>/shards`. Builds 42 to 50 fetch EmbeddingGemma 300m's shards from
+    /// `shards/`, an address with no version in it, and a build verifies a download against the
+    /// manifest it shipped with; replacing those files in place would have left every older build
+    /// refusing each fetch. So each generation gets its own folder and keeps it, and
+    /// `SemanticShardFetcherTests` fails when the bundled digest moves without this address.
     public static let defaultBaseURL = URL(
-        string: "https://raw.githubusercontent.com/joshbotts/frus-semantic-vectors/main/shards")!
+        string: "https://raw.githubusercontent.com/joshbotts/frus-semantic-vectors/main/generations/89481b18/shards")!
 
     /// One shard's expected identity, from the bundled manifest.
     public struct Expectation: Sendable {

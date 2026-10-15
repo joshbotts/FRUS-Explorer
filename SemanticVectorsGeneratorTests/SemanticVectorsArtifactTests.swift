@@ -49,6 +49,8 @@ import SemanticVectorsKit
 ///   1.0 — V-1: initial implementation
 ///   1.1 — Session 2026-08-19: shippingDims re-pinned to the shipped 512
 ///   1.2 — lane HYG (2026-10-01): the generator's `DIMS` default is held to the committed width
+///   1.3 — B4 (2026-10-15): the recall and its citation are the committed model's, and the index
+///         carries that model's score calibration
 @Suite("SemanticVectors — committed artifacts")
 struct SemanticVectorsArtifactTests {
 
@@ -171,7 +173,8 @@ struct SemanticVectorsArtifactTests {
         let shipped = Self.index.provenance.shippingDims
         #expect(SemanticVectorsRunner.defaultShippingDims == shipped)
         #expect(try SemanticVectorsRunner.resolveShippingDims(
-            nil, native: Self.index.provenance.nativeDims) == shipped)
+            nil, native: Self.index.provenance.nativeDims,
+            modelFileSHA256: Self.index.provenance.modelFileSHA256) == shipped)
         // And the bundled shard manifest, the third place the width is written, says the same.
         let url = Self.resources.appendingPathComponent("semantic-shards-manifest.json")
         let manifest = try JSONDecoder().decode(
@@ -185,13 +188,26 @@ struct SemanticVectorsArtifactTests {
     func retrievalDefaults() {
         #expect(Self.index.retrieval.rerankPool == SemanticVectorsRunner.rerankPool)
         #expect(Self.index.retrieval.rerankPool >= 800)
-        #expect(Self.index.retrieval.measuredBy.contains("Phase3-Store-Assessment"))
-        // Pinned to the value for THIS artifact's width, not to a floor. A floor (`> 0.7`) is
-        // satisfied by 256's number in a 512-dim artifact, which is exactly the mismatch the
-        // width-keyed table exists to prevent.
-        #expect(Self.index.retrieval.measuredRecallAt10
-            == SemanticVectorsRunner.measuredRecallAt10[Self.index.provenance.shippingDims])
+        // Pinned to the measurement for THIS artifact's model and width, not to a floor. A floor
+        // (`> 0.7`) is satisfied by 256's number in a 512-dim artifact, and by one model's number in
+        // another model's artifact (B2's pack of EmbeddingGemma 2 stated the 300m's 0.851), which is
+        // exactly the mismatch the model- and width-keyed table exists to prevent.
+        let measurement = SemanticVectorsRunner.funnelMeasurements[
+            Self.index.provenance.modelFileSHA256]?[Self.index.provenance.shippingDims]
+        #expect(measurement != nil)
+        #expect(Self.index.retrieval.measuredRecallAt10 == measurement?.recallAt10)
+        #expect(Self.index.retrieval.measuredBy == measurement?.measuredBy)
         #expect(Self.index.retrieval.measuredBy.contains("int8-\(Self.index.provenance.shippingDims)"))
+    }
+
+    /// The shipped generation carries its model's score calibration (B4): EmbeddingGemma 2's
+    /// cosines are shown through the offsets measured for it, never through another model's.
+    @Test("The bundled index carries its model's score calibration")
+    func scoreCalibrationIsTheModels() {
+        #expect(Self.index.retrieval.scoreCalibration
+            == SemanticVectorsRunner.scoreCalibrations[Self.index.provenance.modelFileSHA256])
+        #expect(Self.index.provenance.modelFileSHA256 == SemanticVectorsRunner.embeddingGemma2SHA256)
+        #expect(Self.index.retrieval.scoreCalibration != nil)
     }
 
     // MARK: - Row keying

@@ -973,7 +973,7 @@ final class AppState {
 
     // MARK: - Semantic Query-Encoder Model (V-5 s2)
 
-    /// The store holding the optional 229 MB query-encoder model, once the bundled index has
+    /// The store holding the optional 310 MB query-encoder model, once the bundled index has
     /// loaded — the pin it verifies against is the artifact's `modelFileSHA256`, so it cannot
     /// exist before `BundledSemanticVectors.prepare()` succeeds. `nil` means the semantic stack
     /// did not boot, never that the model is absent (the store answers that itself).
@@ -986,7 +986,7 @@ final class AppState {
     /// Progress of the model download, or `nil` when none is running.
     ///
     /// **Bytes, not a count** — the opposite of ``semanticShardDownload``, for the reason the
-    /// fetcher's header gives: one 229 MB file is exactly the size class where a silent transfer
+    /// fetcher's header gives: one 310 MB file is exactly the size class where a silent transfer
     /// reads as a hang, and a download delegate makes the bytes observable.
     var semanticModelDownload: SemanticModelDownloadProgress?
 
@@ -1061,9 +1061,9 @@ final class AppState {
 
     /// Downloads the encoder model, driving ``semanticModelDownload`` as bytes arrive.
     ///
-    /// The consent surface is the caller's job (the storage screen's sheet carries the Gemma
-    /// notice per the compliance runbook §4); this method owns only the transfer and the progress
-    /// mirror. Failures are remembered by the fetcher and reach the screen through
+    /// The button that calls it states the size and where the model runs; since B4 there is no
+    /// consent sheet, the Gemma Terms' flow-down having retired with EmbeddingGemma 300m. This
+    /// method owns only the transfer and the progress mirror. Failures are remembered by the fetcher and reach the screen through
     /// ``semanticModelStatus()`` — not thrown past the button that started them.
     func downloadSemanticModel() async {
         // Adoption happens inside the fetcher, against the store it was built with — only the

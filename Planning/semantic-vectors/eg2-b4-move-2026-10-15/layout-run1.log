@@ -1,0 +1,52 @@
+[13:04:08] hashing input matrix (traceability, not integrity)
+[13:04:08] documents 314616 | native dims 768 | projecting from 256
+[13:04:10] PCA -> 50 components
+[13:04:10] PCA in 0.1s | explained variance 56.9%
+[13:04:13] UMAP -> 2 (n_neighbors=15, min_dist=0.10, metric=cosine, random_state=18610810)
+/Users/jbotts/Development/FRUS-Explorer/.cache/semantic-map-venv/lib/python3.9/site-packages/umap/umap_.py:1945: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+UMAP(angular_rp_forest=True, metric='cosine', n_jobs=1, random_state=18610810, verbose=True)
+Thu Oct 15 13:04:13 2026 Construct fuzzy simplicial set
+Thu Oct 15 13:04:13 2026 Finding Nearest Neighbors
+Thu Oct 15 13:04:13 2026 Building RP forest with 33 trees
+Thu Oct 15 13:04:16 2026 NN descent for 18 iterations
+	 1  /  18
+	 2  /  18
+	 3  /  18
+	 4  /  18
+	Stopping threshold met -- exiting after 4 iterations
+Thu Oct 15 13:04:27 2026 Finished Nearest Neighbor Search
+Thu Oct 15 13:04:29 2026 Construct embedding
+	completed  0  /  200 epochs
+	completed  20  /  200 epochs
+	completed  40  /  200 epochs
+	completed  60  /  200 epochs
+	completed  80  /  200 epochs
+	completed  100  /  200 epochs
+	completed  120  /  200 epochs
+	completed  140  /  200 epochs
+	completed  160  /  200 epochs
+	completed  180  /  200 epochs
+Thu Oct 15 13:06:09 2026 Finished embedding
+[13:06:09] UMAP in 1.9 min
+[13:06:09] HDBSCAN over the 2-D embedding (min_cluster_size=250)
+[13:08:00] HDBSCAN in 1.8 min | 140 clusters | 88059 unclustered (28.0%)
+[13:08:00] wrote /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-frus-explorer-work-plan-d9ed9f/14664781-3459-41f6-857d-3dc98ee1d0f6/scratchpad/layout-eg2/layout.bin (1.89 MB) + layout-meta.json
+      232.69 real       392.92 user        37.80 sys
+          5567086592  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              462002  page reclaims
+                4282  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                1515  voluntary context switches
+              392576  involuntary context switches
+       5373436213509  instructions retired
+       1623889623738  cycles elapsed
+          5240837208  peak memory footprint

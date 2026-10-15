@@ -2868,8 +2868,10 @@ only for fetched volumes; a missing shard is *typed-unavailable*, not zero simil
 
 To ask the corpus a question in words ("naval blockade diplomacy") rather than by anchor document,
 you must produce a query vector in the same space, and the provenance pins exactly what that
-means: model `text-embedding-embeddinggemma-300m-qat` (Google's EmbeddingGemma-300m, publicly
-distributed), the GGUF's SHA-256 (in the index — verify your download against it), document
+means: model `embeddinggemma-2-Q8_0` (Google's EmbeddingGemma 2, Apache 2.0, as the ggml-org Q8_0
+GGUF; builds 42 to 50 shipped EmbeddingGemma 300m, `text-embedding-embeddinggemma-300m-qat`, and a
+vector from one model is no use against the other's), the GGUF's SHA-256 (in the index — verify
+your download against it), document
 prompt `"title: none | text: "` with its trailing space, 3,200-character chunks with 480 overlap,
 char-length-weighted pooling of unit-norm chunk vectors, Matryoshka truncation to the shipping
 width, L2 renormalization — then int8- or sign-quantize by the rules in §A.4 to score.
@@ -2878,7 +2880,7 @@ width, L2 renormalization — then int8- or sign-quantize by the rules in §A.4 
 previously said the app never embeds queries, which was true when it was written and stopped being
 true at build 44)*. The app ships on-device query embedding: it fetches the pinned EmbeddingGemma
 GGUF and encodes through `SemanticQueryEncoder.encodeQuery`
-(`FRUSExplorer/Semantic/SemanticQueryEncoder.swift:225`) under
+(`FRUSExplorer/Semantic/SemanticQueryEncoder.swift:235`) under
 
 ```
 SemanticQueryPrompt.queryPrefix = "task: search result | query: "
@@ -2891,7 +2893,7 @@ which does not fail so much as quietly return worse neighbours.
 
 **You probably already have the weights.** If you have used Search by Meaning, the app fetched the
 pinned GGUF and checked it against the published length and SHA-256 before keeping it. Rather than
-downloading 229 MB again and trusting a URL, reuse the copy the app validated:
+downloading 310 MB again and trusting a URL, reuse the copy the app validated:
 **Settings ▸ Volumes & Storage ▸ Natural-Language Search** shows the file's location, with *Show in
 Finder* and *Copy Path* on macOS. The path appears only while a verified copy is present, so a path
 you can see is a file that passed its check.
@@ -2901,10 +2903,19 @@ so the index is self-describing on both sides. It is published but deliberately 
 provenance digest — adding it changed no artifact's identity, and every previously downloaded shard
 stayed valid. An artifact generated before this field existed simply omits the key.
 
-**The caveat that stands:** the 0.851 recall was measured **document-to-document**. Nothing has
-measured text-query retrieval, so validate on queries you can check by hand before trusting it in
-bulk. The prompt being pinned removes a source of variance; it does not supply the missing
-measurement.
+**The caveat that stands:** the index's recall, 0.902 for EmbeddingGemma 2 (0.851 for the 300m),
+was measured **document-to-document**. Text-query retrieval has been measured only by the owner's
+25 judged queries, in August and for the 300m; EmbeddingGemma 2 shares 3.6 of its ten documents a
+query with those lists, and the rest are not yet judged. So validate on queries you can check by
+hand before trusting it in bulk. The prompt being pinned removes a source of variance; it does not
+supply the missing measurement.
+
+**The app's percentages are not raw cosines.** Since build 51 a Meaning match's "Semantic match ·
+N%" is the cosine through `retrieval.scoreCalibration` in the index, `(cosine − 0.47) / 0.53` for a
+question against a document and `(cosine − 0.40) / 0.60` between two documents, because
+EmbeddingGemma 2's cosines run about twenty points above the 300m's for the same closeness. A cosine
+you compute yourself reads higher than the app's figure for the same pair; apply the same offsets to
+compare them.
 
 ### A.8 What the vectors cannot tell you
 
@@ -3000,6 +3011,9 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.30 — 2026-10-15: §A.7 follows the move to EmbeddingGemma 2 (#1659, B4): the pinned model, its
+  310 MB, the encoder's line, the index's recall (0.902), the one text-query measurement and whose
+  it is, and the app's calibrated percentages.
 - 1.29 — 2026-10-14: **the outputs get a reader's form, for the historian who commissions the
   work and never opens a terminal** (`Planning/Agentic-Guide-Accessibility-Review-2026-10-14.md`,
   read against the fishing-rights memo and the three 2026-08-31 starter kits; the owner's

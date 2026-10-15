@@ -72,6 +72,7 @@ private enum ShippedVectors {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 3: initial implementation
+///   1.1 — B4 (#1659): EmbeddingGemma 2's bits, and the percentages through its score calibration
 @Suite("The UI-test Meaning seam: its vectors, its match file, and what the bundle makes of them")
 struct UITestMeaningSeederTests {
 
@@ -134,10 +135,11 @@ struct UITestMeaningSeederTests {
         #expect(UITestMeaningSeeder.standInEncoder(for: "no-such-volume", index: index, corpus: corpus) == nil)
     }
 
-    /// The near question's figures. `d2`'s own row is at distance nothing, and the fixture's other
-    /// two documents with rows are the next two of 314,616: so all three are well inside the 800
-    /// candidates a plain search scores, with room for a bundle that moves them a little.
-    @Test("Near: the fixture's three documents with rows are the first three candidates of the whole corpus")
+    /// The near question's figures. `d2`'s own row is at distance nothing, `d1` is the next of
+    /// 314,616 and `d3` the 50th: so all three are inside the 800 candidates a plain search
+    /// scores, with room for a bundle that moves them a little. (With the 300m's bits, through
+    /// build 50, they were the first three.)
+    @Test("Near: the fixture's three documents with rows are the 1st, 2nd and 50th candidates of the whole corpus")
     func theNearQuestionsCandidates() async throws {
         let (index, corpus) = try ShippedVectors.load()
         #expect(index.file.retrieval.rerankPool == 800, "the candidates a plain search scores")
@@ -146,9 +148,13 @@ struct UITestMeaningSeederTests {
         let question = try await embed("how did the exchange of letters begin").map { Float($0) }
         let candidates = SemanticRetrievalKernel.hammingCandidates(
             queryBits: SemanticQuantization.packSignBits(question), in: corpus, limit: 800)
-        let firstThree = candidates.prefix(3).compactMap { index.document(at: $0) }
-        #expect(firstThree.map(\.volumeID) == Array(repeating: ShippedVectors.fixtureVolume, count: 3))
-        #expect(firstThree.map(\.documentID) == ["d2", "d1", "d3"])
+        let rank = { (documentID: String) -> Int? in
+            index.row(documentID: documentID, volumeID: ShippedVectors.fixtureVolume)
+                .flatMap { candidates.firstIndex(of: $0) }
+        }
+        #expect(rank("d2") == 0)
+        #expect(rank("d1") == 1)
+        #expect(rank("d3") == 49)
     }
 
     /// The counts the seeder's comments, the runbook and the UI suite's header quote. On their own,
@@ -178,7 +184,8 @@ struct UITestMeaningSeederTests {
     /// The store opens a match file only under the bundled provenance digest and with the bundled
     /// row count (and the kit's own checks of the file's shape). The planted file has to pass them
     /// as a published one does, and then score a row as `1 − 2h/512`: 1 for the question's own row,
-    /// and 90 and 100 bits away for the other two.
+    /// and 92 and 131 bits away for the other two. The chip shows each through the bundled score
+    /// calibration, as the searcher hands it over (B4).
     @Test("The synthetic match file opens under the bundled pin and row count, and scores a row by its Hamming distance")
     func theSyntheticMatchFile() async throws {
         let (index, corpus) = try ShippedVectors.load()
@@ -199,10 +206,11 @@ struct UITestMeaningSeederTests {
         // d1, d2 and d3 are the volume's first three rows.
         let scores = try (0..<3).map { try #require(shard.cosine(row: $0, query: query.codes, queryScale: query.scale)) }
         #expect(abs(scores[1] - 1) < 1e-4, "the question's own row scores \(scores[1])")
-        #expect(abs(scores[0] - (1 - 2 * 90.0 / 512)) < 1e-4, "d1 scores \(scores[0])")
-        #expect(abs(scores[2] - (1 - 2 * 100.0 / 512)) < 1e-4, "d3 scores \(scores[2])")
-        // What the chip shows for the three.
-        #expect(scores.map(SemanticScoreCopy.percent(for:)) == [65, 100, 61])
+        #expect(abs(scores[0] - (1 - 2 * 92.0 / 512)) < 1e-4, "d1 scores \(scores[0])")
+        #expect(abs(scores[2] - (1 - 2 * 131.0 / 512)) < 1e-4, "d3 scores \(scores[2])")
+        // What the chip shows for the three: each cosine through the bundled calibration.
+        #expect(scores.map { SemanticScoreCopy.percent(
+            for: index.file.retrieval.calibratedQueryScore($0)) } == [32, 100, 3])
 
         #expect(UITestMeaningSeeder.syntheticShard(for: "no-such-volume", index: index, corpus: corpus) == nil)
     }
@@ -230,9 +238,10 @@ struct UITestMeaningSeamSearchTests {
                                            expectedSHA256: index.provenance.modelFileSHA256))
     }
 
-    /// What the UI suite's plain searches read: the near question's first three hits, in order and
-    /// with their percentages, and for the far question no hit at all and 800 candidates unscored,
-    /// which is the figure the suite reads from the strip.
+    /// What the UI suite's plain searches read: the near question's hits among the fixture's three
+    /// documents with rows, in order and with their percentages (the other 77 hits are the real
+    /// volume's, which the UI-test index does not hold), and for the far question no hit at all and
+    /// 800 candidates unscored, which is the figure the suite reads from the strip.
     @Test("A plain search puts the fixture's three documents first for a near question, and scores nothing for a far one")
     func aPlainSearchThroughTheSeam() async throws {
         let (index, corpus) = try ShippedVectors.load()
@@ -241,8 +250,10 @@ struct UITestMeaningSeamSearchTests {
         let searcher = try await makeSearcher(index, corpus, in: directory)
 
         let near = try await searcher.search("how did the exchange of letters begin", limit: 100)
-        #expect(near.hits.prefix(3).map(\.documentID) == ["d2", "d1", "d3"])
-        #expect(near.hits.prefix(3).map { SemanticScoreCopy.percent(for: $0.score) } == [100, 65, 61])
+        let listed = near.hits.filter { ShippedVectors.withRows.contains($0.documentID) }
+        #expect(listed.map(\.documentID) == ["d2", "d1", "d3"])
+        #expect(listed.map { SemanticScoreCopy.percent(for: $0.score) } == [100, 32, 3])
+        #expect(near.hits.first?.documentID == "d2")
         #expect(!near.hits.isEmpty && near.hits.allSatisfy { $0.volumeID == ShippedVectors.fixtureVolume },
                 "the seam's store holds the fixture volume's file alone, so nothing else can be scored")
         #expect(near.downloadingVolumes == 0, "the seam's fetch request declines every volume")
@@ -253,14 +264,14 @@ struct UITestMeaningSeamSearchTests {
         #expect(far.downloadingVolumes == 0)
     }
 
-    /// The near question's three rows are the first three of 78: the real volume has 120 documents,
-    /// 78 of their rows are among the candidates, and the planted file scores every one. The strip
-    /// a reader sees counts the 75 the fixture does not hold, and the 722 candidates elsewhere.
+    /// The near question's three rows are three of 80: the real volume has 120 documents, 80 of
+    /// their rows are among the candidates, and the planted file scores every one. The strip a
+    /// reader sees counts the 77 the fixture does not hold, and the 720 candidates elsewhere.
     ///
     /// These are the figures the seeder's comment, the UI suite's header and the runbook quote. A
     /// re-pack of the bundle that moves one of them and nothing in the test above changes what
     /// those say and nothing the UI suite reads: correct the figure in all three.
-    @Test("The figures the seam's documents quote of a plain search: 78 hits and 722 unscored in 179 volumes; 800 unscored in 134")
+    @Test("The figures the seam's documents quote of a plain search: 80 hits and 720 unscored in 248 volumes; 800 unscored in 124")
     func theFiguresTheDocumentsQuoteOfAPlainSearch() async throws {
         let (index, corpus) = try ShippedVectors.load()
         let directory = ShippedVectors.storeDirectory()
@@ -268,12 +279,12 @@ struct UITestMeaningSeamSearchTests {
         let searcher = try await makeSearcher(index, corpus, in: directory)
 
         let near = try await searcher.search("how did the exchange of letters begin", limit: 100)
-        #expect(near.hits.count == 78, "three are the fixture's; the strip counts the other 75 as not listed")
-        #expect(near.unscoredCandidates == 722)
-        #expect(near.unscoredVolumes == 179)
+        #expect(near.hits.count == 80, "three are the fixture's; the strip counts the other 77 as not listed")
+        #expect(near.unscoredCandidates == 720)
+        #expect(near.unscoredVolumes == 248)
 
         let far = try await searcher.search("a question from far afield", limit: 100)
-        #expect(far.unscoredVolumes == 134, "the volumes a match file in the simulator's own store could have scored")
+        #expect(far.unscoredVolumes == 124, "the volumes a match file in the simulator's own store could have scored")
     }
 
     /// What #1577 lane 1 changed, through the seam: inside a set, every member with a row is
@@ -288,9 +299,12 @@ struct UITestMeaningSeamSearchTests {
             .map { "\(ShippedVectors.fixtureVolume)/\($0)" }
 
         let ranked = try await searcher.search("a question from far afield", within: members, limit: 100)
-        #expect(ranked.hits.map(\.documentID) == ["d2", "d3", "d1"],
-                "d2 and d3 are 194 bits from the far question and tie, the lower row first; d1 is 214")
-        #expect(ranked.hits.map { SemanticScoreCopy.percent(for: $0.score) } == [24, 24, 16])
+        #expect(ranked.hits.map(\.documentID) == ["d3", "d2", "d1"],
+                "d3, d2 and d1 are 186, 187 and 201 bits from the far question")
+        // Each cosine, about 0.27, is below the calibration's offset, so each shows 0% (the
+        // seeder's header says why sign vectors sit there); the order above is the cosine's.
+        #expect(ranked.hits.map { SemanticScoreCopy.percent(for: $0.score) } == [0, 0, 0])
+        #expect(ranked.hits.map(\.score) == ranked.hits.map(\.score).sorted(by: >))
         #expect(ranked.withoutVector == 3, "n1, n2 and t1 are the fixture's own and have no bundled row")
         #expect(ranked.unscoredCandidates == 0)
     }

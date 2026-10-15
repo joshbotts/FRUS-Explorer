@@ -1487,9 +1487,8 @@ final class MacSearchViewModel {
             // nil, not the hit count: the SavedSearch freshness watermark diffs matchCount
             // against a later FTS count, and a semantic number there mints phantom deltas.
             totalMatchCount = nil
-            lastRenderedExpression =
-                "route=semantic; model=text-embedding-embeddinggemma-300m-qat; "
-                + "top=\(SemanticSearchBackend.hitLimit)"
+            // Printed in the method appendix's CSV verbatim — the honest record of what ran.
+            lastRenderedExpression = SemanticSearchBackend.renderedExpression
             executedSearchVersion &+= 1
             // #1310: counted over the results themselves — the meaning route has no FTS match.
             userTagCountScope = .resultKeys(results.map {

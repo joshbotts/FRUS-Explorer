@@ -479,9 +479,9 @@ sidecar** — a sidecar is the first thing lost when a clip is reposted.
 | Provenance lens | plurality-not-majority. The shipped caption says **73 of the 499 volumes it colors**; recomputed from `source-provenance-index.json` as regenerated on 2026-10-01 (#1514) the count is **75 of 499** — `frus1961-63v03` and `frus1961-63v21` joined — so the caption is owed a correction before any asset quotes it (plan of record, "Not placed") | `SemanticMapLens.swift:100` |
 | Any scoped-map animation | the scope-is-a-set-of-volumes grain sentence | `SemanticMapFrameSequence.swift:84-85` |
 | Anything on `provenance-flow-index.json` | 95.3% of edges are footnotes — annotation practice, not a relation between archives | design §8 |
-| Anything showing NARA data | *"not affiliated with, endorsed by, or sponsored by the National Archives…"* | `AboutView.swift:710-719` |
-| Store copy / launch post mentioning meaning search | **Gemma: "describe, never brand"** — no rights to Google marks or to suggest endorsement | `gemma-terms-of-use.txt:132-137`; `Gemma-Compliance-Runbook.md:163-164` |
-| Everything | *not an official product of the Office of the Historian or the U.S. Department of State* — and note it continues *"Any commentary… reflects personal views,"* which is the **operative framing** for Plate A's claim, not boilerplate | `AboutView.swift:750-756` |
+| Anything showing NARA data | *"not affiliated with, endorsed by, or sponsored by the National Archives…"* | `AboutView.swift:622-631` |
+| Store copy / launch post mentioning meaning search | **EmbeddingGemma 2: "describe, never brand"** — no rights to Google marks or to suggest endorsement. Apache 2.0 grants no trademark rights either, so the rule outlived the Gemma Terms (B4, 2026-10-15) | Apache License 2.0 §6; `NOTICE`; `Completed/Gemma-Compliance-Runbook.md:205` |
+| Everything | *not an official product of the Office of the Historian or the U.S. Department of State* — and note it continues *"Any commentary… reflects personal views,"* which is the **operative framing** for Plate A's claim, not boilerplate | `AboutView.swift:662-668` |
 
 **One departure from this table, by owner decision (2026-09-20).** The film carries the owner's
 title — *Visualizing FRUS: Documents are placed on the semantic map in volume publication order.* —

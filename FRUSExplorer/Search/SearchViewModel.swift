@@ -1131,9 +1131,7 @@ final class SearchViewModel {
             totalMatchCount = nil
             lastFetchLimit = SemanticSearchBackend.hitLimit
             // Printed in the method appendix's CSV verbatim — the honest record of what ran.
-            lastRenderedExpression =
-                "route=semantic; model=text-embedding-embeddinggemma-300m-qat; "
-                + "top=\(SemanticSearchBackend.hitLimit)"
+            lastRenderedExpression = SemanticSearchBackend.renderedExpression
             executedSearchVersion &+= 1
             // #1310: the meaning route counts over the results themselves — there is no FTS match
             // to rebuild, and rebuilding one from the typed question is what this fixes.

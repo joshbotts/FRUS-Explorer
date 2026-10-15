@@ -966,7 +966,12 @@ Exported \(size), but the copy did not verify: \(report.integrityProblems.joined
 <!-- END SOURCE: settings.export.database.integrity -->
 
 #### The included copy of the terms could not be loaded. The…
-<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | GemmaTermsView.body | lines: 795–796 | key: about.gemmaTerms.missing -->
+
+> ⚠️ **RETIRED — editing this block has no effect.** The bundled Gemma Terms screen went with
+> EmbeddingGemma 300m (B4, 2026-10-15). Kept so the wording is not lost; delete it when you
+> next revise this section.
+
+<!-- SOURCE: FRUSExplorer/Settings/AboutView.swift | GemmaTermsView.body | key: about.gemmaTerms.missing -->
 
 The included copy of the terms could not be loaded. The authoritative text is at the link below.
 
@@ -1214,7 +1219,7 @@ Every downloaded volume has attached notes, collections, or summaries. Remove th
 <!-- END SOURCE: settings.hub.freeUp.none.detail -->
 
 #### Frees %@. Everything else — volumes, notes, keyword search…
-<!-- SOURCE: FRUSExplorer/Settings/SemanticModelSection.swift | SemanticModelSection.removeButton | lines: 219–220 | key: settings.model.remove.detail %@ -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticModelSection.swift | SemanticModelSection.removeButton | lines: 211–212 | key: settings.model.remove.detail %@ -->
 
 Frees %@. Everything else — volumes, notes, keyword search — stays exactly as it is. You can download it again any time.
 
@@ -1702,13 +1707,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4349–4349 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4350–4350 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3852–3852 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3853–3853 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
 
 Search…
 

@@ -47,6 +47,9 @@ struct SemanticFeedbackEntry: Codable, Identifiable, Sendable, Hashable {
     let verdict: Verdict
     /// The approximate cosine the row was ranked on, so a verdict can be read against the score that
     /// produced it — "everything above 0.9 is good, everything below 0.7 is noise" is a finding.
+    /// Since B4 it is the cosine through the generation's calibration, the score the row showed
+    /// (`retrieval.calibratedDocumentScore`); a generation without one, the 300m's, logged the raw
+    /// cosine. `provenanceDigest` says which, and the key keeps its name so earlier verdicts decode.
     let cosine: Double?
     /// The anchor's coverage era, from the app's own `CoverageEra` banding rather than a second one.
     /// **This is the field the whole log exists for.**

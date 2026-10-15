@@ -241,16 +241,22 @@ struct DocumentIDSegmentsTests {
 ///
 /// Version history:
 ///   1.0 — V-1: initial implementation
+///   1.1 — B4 (2026-10-15): the measured widths are the store's model's
 @Suite("SemanticVectors — shipping-width validation")
 struct ShippingDimsTests {
+
+    /// The model the bundle ships, whose widths the cases below resolve against.
+    static let shipped = SemanticVectorsRunner.embeddingGemma2SHA256
 
     /// Asserts a value is refused, and that the message names the variable.
     /// - Parameters:
     ///   - raw: The `DIMS` value under test.
     ///   - native: The store's native width.
-    static func expectRefused(_ raw: String?, native: Int = 768) {
+    ///   - model: The store's GGUF digest.
+    static func expectRefused(_ raw: String?, native: Int = 768, model: String = shipped) {
         do {
-            let dims = try SemanticVectorsRunner.resolveShippingDims(raw, native: native)
+            let dims = try SemanticVectorsRunner.resolveShippingDims(
+                raw, native: native, modelFileSHA256: model)
             Issue.record("DIMS=\(raw ?? "nil") should have been refused, got \(dims)")
         } catch let error as SemanticVectorsRunner.RunError {
             #expect(error.description.hasPrefix("DIMS"))
@@ -266,8 +272,10 @@ struct ShippingDimsTests {
     @Test("Unset or empty DIMS defaults to the shipping width, 512")
     func defaultsToTheShippingWidth() throws {
         #expect(SemanticVectorsRunner.defaultShippingDims == 512)
-        #expect(try SemanticVectorsRunner.resolveShippingDims(nil, native: 768) == 512)
-        #expect(try SemanticVectorsRunner.resolveShippingDims("", native: 768) == 512)
+        #expect(try SemanticVectorsRunner.resolveShippingDims(
+            nil, native: 768, modelFileSHA256: Self.shipped) == 512)
+        #expect(try SemanticVectorsRunner.resolveShippingDims(
+            "", native: 768, modelFileSHA256: Self.shipped) == 512)
     }
 
     /// The default is validated like any other width: a store narrower than it is refused, not
@@ -278,10 +286,14 @@ struct ShippingDimsTests {
         Self.expectRefused("", native: 384)
     }
 
-    @Test("Measured widths are accepted")
+    @Test("Measured widths are accepted, for both measured models")
     func measuredWidthsAccepted() throws {
-        #expect(try SemanticVectorsRunner.resolveShippingDims("256", native: 768) == 256)
-        #expect(try SemanticVectorsRunner.resolveShippingDims("512", native: 768) == 512)
+        for model in [SemanticVectorsRunner.embeddingGemma300mSHA256, Self.shipped] {
+            #expect(try SemanticVectorsRunner.resolveShippingDims(
+                "256", native: 768, modelFileSHA256: model) == 256)
+            #expect(try SemanticVectorsRunner.resolveShippingDims(
+                "512", native: 768, modelFileSHA256: model) == 512)
+        }
     }
 
     @Test("A non-numeric DIMS is refused rather than silently packing at the default")
@@ -307,17 +319,61 @@ struct ShippingDimsTests {
         Self.expectRefused("768")
     }
 
+    /// The same rule one level up (B4): keyed by width alone, B2's pack of EmbeddingGemma 2 stated
+    /// the 300m's 0.851 and cited the 300m's measurement. A model the gates never measured is
+    /// refused at every width, the default included.
+    @Test("A model with no measurement is refused at every width")
+    func unmeasuredModelRefused() {
+        let unmeasured = String(repeating: "0", count: 64)
+        Self.expectRefused(nil, model: unmeasured)
+        Self.expectRefused("256", model: unmeasured)
+        Self.expectRefused("512", model: unmeasured)
+    }
+
     @Test("Every accepted width has its own measured recall number")
     func everyAcceptedWidthIsPriced() {
-        for (dims, recall) in SemanticVectorsRunner.measuredRecallAt10 {
-            #expect(dims % 8 == 0)
-            #expect(recall > 0 && recall <= 1)
-            #expect((try? SemanticVectorsRunner.resolveShippingDims(String(dims), native: 768))
-                == dims)
+        for (model, widths) in SemanticVectorsRunner.funnelMeasurements {
+            #expect(model.count == 64)
+            for (dims, measurement) in widths {
+                #expect(dims % 8 == 0)
+                #expect(measurement.recallAt10 > 0 && measurement.recallAt10 <= 1)
+                #expect(measurement.measuredBy.contains("int8-\(dims)"))
+                #expect((try? SemanticVectorsRunner.resolveShippingDims(
+                    String(dims), native: 768, modelFileSHA256: model)) == dims)
+            }
         }
-        // The two the corpus gates measured; a third must arrive with its own measurement.
-        #expect(SemanticVectorsRunner.measuredRecallAt10[256] == 0.7449)
-        #expect(SemanticVectorsRunner.measuredRecallAt10[512] == 0.8510)
+        // The four the corpus gates measured; a fifth must arrive with its own measurement.
+        let old = SemanticVectorsRunner.funnelMeasurements[
+            SemanticVectorsRunner.embeddingGemma300mSHA256]
+        #expect(old?[256]?.recallAt10 == 0.7449)
+        #expect(old?[512]?.recallAt10 == 0.8510)
+        let new = SemanticVectorsRunner.funnelMeasurements[Self.shipped]
+        #expect(new?[256]?.recallAt10 == 0.7845)
+        #expect(new?[512]?.recallAt10 == 0.9021)
+        #expect(SemanticVectorsRunner.funnelMeasurements.count == 2)
+    }
+
+    /// The 300m's two entries are August's text, character for character, so a control repack of
+    /// its store reproduces the artifact builds 42 to 50 shipped (the stage-2 memo's §3).
+    @Test("The 300m's measurement is the one its shipped artifact states")
+    func theOldModelsCitationIsUnchanged() {
+        let old = SemanticVectorsRunner.funnelMeasurements[
+            SemanticVectorsRunner.embeddingGemma300mSHA256]
+        #expect(old?[512]?.measuredBy == "Planning/semantic-spike/Phase3-Store-Assessment.md §5, "
+            + "3,600 era-stratified queries over the 314,483-document corpus; Hamming-800 → int8-512")
+    }
+
+    /// The owner's decision of 2026-10-15: EmbeddingGemma 2's cosines are shown through the
+    /// offsets measured for it, and the 300m's are shown raw, as builds 42 to 50 showed them.
+    @Test("Only EmbeddingGemma 2 packs a score calibration, at the measured offsets")
+    func scoreCalibrationsAreTheMeasuredOnes() {
+        #expect(SemanticVectorsRunner.scoreCalibrations.count == 1)
+        #expect(SemanticVectorsRunner.scoreCalibrations[
+            SemanticVectorsRunner.embeddingGemma300mSHA256] == nil)
+        let calibration = SemanticVectorsRunner.scoreCalibrations[Self.shipped]
+        #expect(calibration?.queryOffset == 0.47)
+        #expect(calibration?.documentOffset == 0.40)
+        #expect(calibration?.measuredBy.contains("EmbeddingGemma-2-B4-Move-2026-10-15.md") == true)
     }
 }
 

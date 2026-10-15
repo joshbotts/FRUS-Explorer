@@ -18,25 +18,25 @@ import AppKit
 /// One shared view mounted by BOTH hand-maintained hub twins, for `SemanticStorageSection`'s
 /// reason; a parity test pins the mounts and bans `settings.model.` strings from either hub.
 ///
-/// ## The consent sheet is a licence surface, not chrome
+/// ## The download button downloads
 ///
-/// The download button does not download. It presents a sheet carrying the sentence the Gemma
-/// compliance runbook (§4) specifies — the model is Google's, provided under the Gemma Terms of
-/// Use, and downloading is agreeing to use it consistently with them — with the Terms one tap
-/// away. Pressing Download inside that sheet is the act of consent (the #926 principle), and
-/// together with the custom App Store EULA it is the licence's required use-restriction flow-down.
-/// Rewording this copy is a compliance change, not a copy edit.
+/// Through build 50 it presented a consent sheet instead: EmbeddingGemma 300m was provided under
+/// the Gemma Terms of Use, whose use restrictions had to flow down to every reader, and pressing
+/// Download in that sheet was the agreement. EmbeddingGemma 2 is licensed under Apache 2.0, which
+/// has no restriction to flow down, so the sheet retired with the 300m (B4, the owner's decision of
+/// 2026-10-15). Pressing the button is still the consent the #926 principle asks for, as Download
+/// Missing Vectors is: the row states the size and that the model runs on this device before
+/// anything is fetched.
 ///
 /// Version history:
 ///   1.0 — V-5 s2
+///   1.1 — B4 (#1659): the consent sheet retires, and the button downloads EmbeddingGemma 2
 struct SemanticModelSection: View {
 
     @Environment(AppState.self) private var appState
 
     /// The model's current state. Reloaded on appearance and after any action that changes it.
     @State private var status: AppState.SemanticModelStatus = .unavailable
-    /// Whether the consent sheet is up.
-    @State private var showingConsent = false
     /// Set while removal runs, so the button cannot be pressed twice.
     @State private var busy = false
     /// Bumped to re-run the loader after an action.
@@ -67,24 +67,13 @@ struct SemanticModelSection: View {
                         defaultValue: "Natural-Language Search"))
         } footer: {
             // Names the price, the standing, and whose model it is — the reader deciding whether
-            // to spend 229 MB deserves all three in one place. "Experimental" is a finding, not
+            // to spend 310 MB deserves all three in one place. "Experimental" is a finding, not
             // hedging, for the vectors footer's reason.
             Text(String(
                 localized: "settings.model.footer",
-                defaultValue: "Lets the app understand searches phrased as questions, using a language model that runs entirely on this device — Google’s EmbeddingGemma, an optional 229 MB download. The feature is experimental. The model is provided under the Gemma Terms of Use; see About ▸ Legal for the terms."))
+                defaultValue: "Lets the app understand searches phrased as questions, using a language model that runs entirely on this device — Google’s EmbeddingGemma 2, an optional 310 MB download. The feature is experimental."))
         }
         .task(id: reloadToken) { await reload() }
-        .sheet(isPresented: $showingConsent) {
-            SemanticModelConsentSheet {
-                showingConsent = false
-                Task {
-                    await appState.downloadSemanticModel()
-                    reloadToken += 1
-                }
-            } onCancel: {
-                showingConsent = false
-            }
-        }
     }
 
     // MARK: - Rows
@@ -102,17 +91,20 @@ struct SemanticModelSection: View {
         )
     }
 
-    /// Opens the consent sheet; the sheet's Download button does the downloading.
+    /// Starts the download; the progress row replaces it while the transfer runs.
     private var downloadButton: some View {
         Button {
-            showingConsent = true
+            Task {
+                await appState.downloadSemanticModel()
+                reloadToken += 1
+            }
         } label: {
             SettingsNavRow(
                 label: String(localized: "settings.model.download.label",
                               defaultValue: "Download Search Model"),
                 systemImage: "arrow.down.circle",
                 detail: String(localized: "settings.model.download.detail",
-                               defaultValue: "One 229 MB download. Runs on this device only; nothing you search leaves it.")
+                               defaultValue: "One 310 MB download. Runs on this device only; nothing you search leaves it.")
             )
         }
         .buttonStyle(.plain)
@@ -155,7 +147,7 @@ struct SemanticModelSection: View {
     ///
     /// The app has already fetched this GGUF and checked it against the pinned length and SHA-256.
     /// A researcher pointing their own tooling at the corpus — the audience
-    /// `Docs/Agentic-Analysis-Guide.md` §A.7 is written for — otherwise fetches 229 MB again and
+    /// `Docs/Agentic-Analysis-Guide.md` §A.7 is written for — otherwise fetches 310 MB again and
     /// trusts a URL, when the copy on this disk is the one the app itself validated. Shown only
     /// when a verified copy is present, because a path to a file that failed its check is worse
     /// than no path.
@@ -246,63 +238,5 @@ struct SemanticModelSection: View {
     /// Human byte sizes, one formatter for every figure in this section.
     private static func bytes(_ count: Int) -> String {
         ByteCountFormatter.string(fromByteCount: Int64(count), countStyle: .file)
-    }
-}
-
-// MARK: - SemanticModelConsentSheet
-
-/// The consent sheet the download button presents — the in-app half of the Gemma flow-down.
-///
-/// The sentence is the compliance runbook's (§4), verbatim in substance: whose model this is,
-/// which terms govern it, and that downloading is agreeing. The Terms link opens the live page;
-/// the bundled copy of the terms lives in About ▸ Legal, and the line below the buttons says so.
-struct SemanticModelConsentSheet: View {
-
-    /// Runs when the reader presses Download — the act of consent.
-    let onDownload: () -> Void
-    /// Runs when the reader declines.
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(String(localized: "settings.model.consent.title",
-                        defaultValue: "Download Search Model"))
-                .font(.title3.bold())
-            Text(String(
-                localized: "settings.model.consent.body",
-                defaultValue: "This optional 229 MB download is Google’s EmbeddingGemma model, provided under and subject to the Gemma Terms of Use, including its Prohibited Use Policy. By downloading it you agree to use it consistently with those terms."))
-                .fixedSize(horizontal: false, vertical: true)
-            if let url = URL(string: AboutLinks.gemmaTerms) {
-                Link(String(localized: "settings.model.consent.terms",
-                            defaultValue: "View the Gemma Terms of Use"),
-                     destination: url)
-            }
-            Text(String(
-                localized: "settings.model.consent.bundled",
-                defaultValue: "A copy of the terms is also in About ▸ Legal ▸ Full Notices."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            HStack {
-                Button(String(localized: "settings.model.consent.cancel",
-                              defaultValue: "Cancel"), role: .cancel) {
-                    onCancel()
-                }
-                Spacer()
-                Button {
-                    onDownload()
-                } label: {
-                    Text(String(localized: "settings.model.consent.download",
-                                defaultValue: "Agree and Download"))
-                        .bold()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding(.top, 8)
-        }
-        .padding(24)
-        #if os(macOS)
-        .frame(minWidth: 420, maxWidth: 480)
-        #endif
-        .presentationDetents([.medium])
     }
 }

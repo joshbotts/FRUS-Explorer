@@ -19,7 +19,7 @@ import XCTest
 /// Meaning results, on screen, through `UITestMeaningSeeder`.
 ///
 /// ## What this is the first test of
-/// Until this suite no UI test reached a Meaning result: a Meaning search needs the 229 MB query
+/// Until this suite no UI test reached a Meaning result: a Meaning search needs the 310 MB query
 /// encoder, which no simulator has and no test may download. `FRUS_UI_TEST_SEED_MEANING` stands in
 /// for the encoder and gives the searcher a match-file store of the seam's own, holding one file,
 /// made for the seeded fixture volume. The searcher's code, the backend, the bundled index and the
@@ -28,20 +28,22 @@ import XCTest
 ///
 /// The store is the seam's own so that the simulator's state cannot reach these rows: a match file
 /// the simulator's app had fetched for another volume would score that volume's candidates, and a
-/// far question's 800 candidates lie in 134 volumes. The launch also turns the reader's automatic
+/// far question's 800 candidates lie in 124 volumes. The launch also turns the reader's automatic
 /// match-file download off, which keeps the run offline.
 ///
 /// ## The two questions, and why there are two
 /// Every question is answered as if it were the fixture's second document, so a plain Meaning
-/// search lists the fixture's three documents that have vectors, that one first: 100, 65 and 61
-/// percent. They are three of 78 hits. The real volume has 120 documents, 78 of whose rows are
+/// search lists the fixture's three documents that have vectors, that one first: 100, 32 and 3
+/// percent. They are three of 80 hits. The real volume has 120 documents, 80 of whose rows are
 /// among the question's 800 candidates, and the seam's match file scores them all; the fixture
-/// holds three, so the strip above the list says that 75 close matches are not listed and that 722
-/// possible matches could not be scored.
+/// holds three, so the strip above the list says that 77 close matches are not listed and that 720
+/// possible matches could not be scored. (Through build 50, with EmbeddingGemma 300m's bits and
+/// no score calibration, the three read 100, 65 and 61 percent; `UITestMeaningSeeder`'s header
+/// says why the calibrated figures of the seam's sign vectors sit lower.)
 ///
 /// A question that holds the word "afield" is answered as a document of another volume, far from
 /// all three: a plain search then lists none of them, and a search **inside a working corpus** of
-/// them lists all three, at 24, 24 and 16 percent. That last is what #1577 lane 1 changed. Before
+/// them lists all three, Three, Two and One, each at 0 percent (24, 24 and 16 through build 50). That last is what #1577 lane 1 changed. Before
 /// it, a Meaning search inside a set took the whole series' closest hundred and kept the members
 /// among them, which for the far question is none
 /// (`testAFarQuestionInsideAWorkingCorpusRanksEveryMemberWithAVector` lists no row on that tree:
@@ -61,6 +63,7 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #1577 lane 3: initial implementation
+///   1.1 — B4 (#1659): the rows' order and percentages for EmbeddingGemma 2's bits and calibration
 @MainActor
 final class MeaningResultsSeamTests: XCTestCase {
 
@@ -124,7 +127,7 @@ final class MeaningResultsSeamTests: XCTestCase {
                        ["UI Test Document Two", "UI Test Document One", "UI Test Document Three"],
                        "A Meaning list is in order of score, and the question's own document is first")
         XCTAssertEqual(rows.map(\.score),
-                       ["Semantic match 100 percent", "Semantic match 65 percent", "Semantic match 61 percent"])
+                       ["Semantic match 100 percent", "Semantic match 32 percent", "Semantic match 3 percent"])
     }
 
     /// The control for the next test, on this tree: outside any set the far question reaches none
@@ -149,7 +152,7 @@ final class MeaningResultsSeamTests: XCTestCase {
             """)
         XCTAssertEqual(fixtureRows.count, 0, "A far question outside any set listed fixture documents")
         // Why it is empty: every one of the 800 candidates is in a volume the seam's store has no
-        // file for. The near question leaves 722 unscored, so this figure is the far question's own.
+        // file for. The near question leaves 720 unscored, so this figure is the far question's own.
         let unscored = app.staticTexts.matching(NSPredicate(format: "label CONTAINS '800 possible matches'")).firstMatch
         XCTAssertTrue(unscored.waitForExistence(timeout: Self.patience), """
             The strip does not say that the far question's 800 candidates went unscored. Texts on screen: \
@@ -170,10 +173,12 @@ final class MeaningResultsSeamTests: XCTestCase {
         chooseMeaning()
         let rows = ask(Self.farQuestion, expecting: 3)
         XCTAssertEqual(rows.map(\.title),
-                       ["UI Test Document Two", "UI Test Document Three", "UI Test Document One"],
+                       ["UI Test Document Three", "UI Test Document Two", "UI Test Document One"],
                        "Inside the corpus the three members with vectors are ranked, closest first")
+        // Each is below the score calibration's offset, so each reads 0 percent; the order above is
+        // the cosine's (186, 187 and 201 bits from the question).
         XCTAssertEqual(rows.map(\.score),
-                       ["Semantic match 24 percent", "Semantic match 24 percent", "Semantic match 16 percent"])
+                       ["Semantic match 0 percent", "Semantic match 0 percent", "Semantic match 0 percent"])
     }
 
     // MARK: Steps

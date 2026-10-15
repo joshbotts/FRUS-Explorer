@@ -15,12 +15,13 @@ import CryptoKit
 /// directories — the store's whole point is filesystem truth, so faking the filesystem would
 /// test a different type.
 ///
-/// The pinned SHA in these tests is a FIXTURE hash of small fixture bytes, not the real 229 MB
+/// The pinned SHA in these tests is a FIXTURE hash of small fixture bytes, not the real 310 MB
 /// pin: the store's rules (length before digest, marker after copy, purge on pin change) are
 /// size-independent, and a suite that needed the real file would be a suite nobody runs.
 ///
 /// Version history:
 ///   1.0 — V-5 s2
+///   1.1 — B4 (2026-10-15): the purge discards a model file an earlier release named
 @Suite("Semantic model store")
 struct SemanticModelStoreTests {
 
@@ -37,8 +38,12 @@ struct SemanticModelStoreTests {
         return dir
     }
 
+    /// Writes the incoming file in a folder of its own, as a download lands outside the model's
+    /// folder: since B4 the purge discards any other `.gguf` it finds in that folder.
     private func writeFixture(_ data: Data = fixtureBytes, in dir: URL) throws -> URL {
-        let url = dir.appendingPathComponent("incoming.gguf")
+        let incoming = dir.appendingPathComponent("incoming", isDirectory: true)
+        try FileManager.default.createDirectory(at: incoming, withIntermediateDirectories: true)
+        let url = incoming.appendingPathComponent("incoming.gguf")
         try data.write(to: url)
         return url
     }
@@ -91,7 +96,7 @@ struct SemanticModelStoreTests {
     func wrongLengthRefused() async throws {
         let dir = try makeDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
-        // The default pin is the real 229 MB length; fixture bytes can never match it.
+        // The default pin is the real 310 MB length; fixture bytes can never match it.
         let store = SemanticModelStore(directory: dir, expectedSHA256: Self.fixtureSHA)
         let source = try writeFixture(in: dir)
 
@@ -193,8 +198,55 @@ struct SemanticModelStoreTests {
 
         let store = SemanticModelStore(directory: dir, expectedSHA256: Self.fixtureSHA)
         #expect(await store.purgeIfPinChanged(),
-                "a 229 MB file nothing vouched for must not be kept and counted")
+                "a 310 MB file nothing vouched for must not be kept and counted")
         #expect(await store.bytesOnDisk() == 0)
+    }
+
+    /// **The move's own case (B4).** A device that downloaded EmbeddingGemma 300m in builds 42 to
+    /// 50 holds that release's file name beside a marker for its pin. The store looks for this
+    /// release's name, so a purge that removed only that name would delete the marker and keep
+    /// 229 MB that nothing counts or removes.
+    @Test("A model file an earlier release named is purged with its marker")
+    func earlierReleasesFileIsPurged() async throws {
+        let dir = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let earlier = dir.appendingPathComponent("embeddinggemma-300m-qat-Q4_0.gguf")
+        try Self.fixtureBytes.write(to: earlier)
+        try String(repeating: "5", count: 64).write(
+            to: dir.appendingPathComponent(".sha256"), atomically: true, encoding: .utf8)
+        #expect(SemanticModelStore.fileName != earlier.lastPathComponent)
+
+        let store = SemanticModelStore(directory: dir, expectedSHA256: Self.fixtureSHA)
+        #expect(await store.purgeIfPinChanged())
+        #expect(!FileManager.default.fileExists(atPath: earlier.path))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).isEmpty)
+    }
+
+    /// The same sweep with the marker already gone (a crash between the two removals, or a file
+    /// copied in by hand): the earlier file still goes, and the purge says it discarded one.
+    @Test("An earlier release's file with no marker is purged too")
+    func earlierReleasesFileWithoutMarkerIsPurged() async throws {
+        let dir = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let earlier = dir.appendingPathComponent("embeddinggemma-300m-qat-Q4_0.gguf")
+        try Self.fixtureBytes.write(to: earlier)
+
+        let store = SemanticModelStore(directory: dir, expectedSHA256: Self.fixtureSHA)
+        #expect(await store.purgeIfPinChanged())
+        #expect(!FileManager.default.fileExists(atPath: earlier.path))
+    }
+
+    /// The sweep leaves this release's verified file alone: only another name is an earlier one.
+    @Test("A verified file under this release's name survives the sweep")
+    func currentFileSurvivesTheSweep() async throws {
+        let dir = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = SemanticModelStore(
+            directory: dir, expectedSHA256: Self.fixtureSHA,
+            expectedBytes: Self.fixtureBytes.count)
+        try await store.adoptModel(from: try writeFixture(in: dir))
+        #expect(await !store.purgeIfPinChanged())
+        #expect(await store.verifiedModelURL() != nil)
     }
 
     @Test("An empty directory purges nothing and reports false")

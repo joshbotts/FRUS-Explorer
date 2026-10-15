@@ -15,7 +15,7 @@
 import CryptoKit
 import Foundation
 
-/// The on-device home of the query-encoder model file — one optional 229 MB GGUF, downloaded at
+/// The on-device home of the query-encoder model file — one optional 310 MB GGUF, downloaded at
 /// the reader's request, verified before it is kept (V-5 s2).
 ///
 /// ## The pin is the artifact's, not this type's
@@ -24,7 +24,7 @@ import Foundation
 /// the corpus vectors were embedded by exactly one weights file, and a query embedded by any other
 /// file lives in a different space — the family rule (`refuse, re-fetch, or degrade; never blend`)
 /// applied to weights instead of vectors. The SHA is checked **once, at adoption**, and recorded in
-/// a sidecar marker. It is deliberately not re-hashed at every load: hashing 229 MB costs most of a
+/// a sidecar marker. It is deliberately not re-hashed at every load: hashing 310 MB costs most of a
 /// second and pages in the whole file, defeating the mmap-lazy load the encoder relies on. The
 /// marker plus a byte-length `stat` is the steady-state check; anyone who edits the file in place
 /// on a device defeats a check that exists to catch transfer corruption, not tampering.
@@ -36,6 +36,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-5 s2: initial implementation
+///   1.1 — B4 (#1659, 2026-10-15): the pinned file is EmbeddingGemma 2's Q8_0 GGUF, 309,855,456
+///         bytes, where it was EmbeddingGemma 300m's, 229,093,184. A device that holds the 300m
+///         purges it at launch, since the bundled pin moved (`purgeIfPinChanged()`)
 public actor SemanticModelStore {
 
     /// Directory holding the model file and its marker.
@@ -49,12 +52,13 @@ public actor SemanticModelStore {
     private let expectedBytes: Int
 
     /// The published file's exact byte length — the default pin, injectable only so tests can
-    /// exercise the adopt path with fixture-sized bytes.
-    public static let publishedBytes = 229_093_184
+    /// exercise the adopt path with fixture-sized bytes. EmbeddingGemma 2's Q8_0 GGUF, as
+    /// `ggml-org/embeddinggemma-2-GGUF` publishes it.
+    public static let publishedBytes = 309_855_456
 
     /// The on-disk file name — the upstream release's own, so what a reader sees in a file browser
     /// matches what the notices name.
-    public static let fileName = "embeddinggemma-300m-qat-Q4_0.gguf"
+    public static let fileName = "embeddinggemma-2-Q8_0.gguf"
 
     /// Creates a store over a directory.
     ///
@@ -135,17 +139,35 @@ public actor SemanticModelStore {
     /// Discards the stored file when the artifact pin has moved (or the marker is absent).
     ///
     /// Mirrors `SemanticShardStore.purgeIfGenerationChanged`, including the owner's 2026-08-16
-    /// decision that an ABSENT marker is stale: keeping an unverifiable 229 MB file risks encoding
+    /// decision that an ABSENT marker is stale: keeping an unverifiable 310 MB file risks encoding
     /// queries into another generation's space, and purging it costs a re-download the reader is
     /// asked for anyway.
+    ///
+    /// **A file an earlier release named is discarded too** (B4). The store finds its file by
+    /// ``fileName``, which is the upstream release's own and so moved with the model: a device
+    /// that downloaded EmbeddingGemma 300m holds `embeddinggemma-300m-qat-Q4_0.gguf` beside the
+    /// marker. Removing only this release's name would delete the marker and leave 229 MB that no
+    /// storage row counts and no button removes, so every other `.gguf` in the directory, which is
+    /// the model's own (`makeSemanticModelDirectory`), goes with it.
     ///
     /// - Returns: Whether a file was discarded, so a caller can log it.
     @discardableResult
     public func purgeIfPinChanged() -> Bool {
-        guard bytesOnDisk() > 0 || recordedPin() != nil else { return false }
-        guard recordedPin() != expectedSHA256 else { return false }
+        let earlier = earlierModelFiles()
+        for file in earlier { try? FileManager.default.removeItem(at: file) }
+        guard bytesOnDisk() > 0 || recordedPin() != nil else { return !earlier.isEmpty }
+        guard recordedPin() != expectedSHA256 else { return !earlier.isEmpty }
         removeModel()
         return true
+    }
+
+    /// Model files in the directory under a name other than ``fileName``: what an earlier release
+    /// downloaded, which no pin of this one can verify.
+    private func earlierModelFiles() -> [URL] {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        return names.sorted()
+            .filter { $0.hasSuffix(".gguf") && $0 != Self.fileName }
+            .map { directory.appendingPathComponent($0) }
     }
 
     /// The pin the sidecar records, or `nil`.
@@ -154,7 +176,7 @@ public actor SemanticModelStore {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// SHA-256 of a file, streamed in 4 MB slices so 229 MB never sits in memory at once.
+    /// SHA-256 of a file, streamed in 4 MB slices so 310 MB never sits in memory at once.
     ///
     /// - Parameter url: The file to hash.
     /// - Returns: Lowercase hex.

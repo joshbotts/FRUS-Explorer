@@ -443,3 +443,91 @@ struct SemanticRetrievalKernelTests {
         #expect(SemanticRetrievalKernel.binarySimilarity(4, 999, in: vectors) == nil)
     }
 }
+
+// MARK: - Score calibration
+
+/// How a generation's cosines are shown (B4, the owner's decision of 2026-10-15): one rule,
+/// `(cosine − offset) / (1 − offset)`, with an offset for a typed question against a document and
+/// one for two documents, and the raw cosine for a generation that carries none. A display clamps
+/// the result to 0…1, as it clamped the raw cosine.
+///
+/// Version history:
+///   1.0 — B4 (#1659): initial implementation
+@Suite("SemanticVectorsKit — score calibration")
+struct ScoreCalibrationTests {
+
+    /// EmbeddingGemma 2's measured offsets, as the generator packs them.
+    static let calibration = SemanticVectorsArtifacts.Index.ScoreCalibration(
+        queryOffset: 0.47, documentOffset: 0.40, measuredBy: "fixture")
+
+    /// A retrieval block with or without the calibration.
+    static func retrieval(
+        _ calibration: SemanticVectorsArtifacts.Index.ScoreCalibration?
+    ) -> SemanticVectorsArtifacts.Index.Retrieval {
+        SemanticVectorsArtifacts.Index.Retrieval(
+            rerankPool: 800, measuredRecallAt10: 0.9021, measuredBy: "fixture",
+            scoreCalibration: calibration)
+    }
+
+    /// The medians of the B4 memo's §1b: EmbeddingGemma 2's raw medians land on the 300m's.
+    @Test("Each kind of pair is shown through its own offset")
+    func eachPairHasItsOffset() {
+        let retrieval = Self.retrieval(Self.calibration)
+        // An on-topic question's best match, raw 0.814: 65%, the 300m's 65%.
+        #expect(abs(retrieval.calibratedQueryScore(0.814) - 0.6491) < 0.0001)
+        // An off-topic question's best match, raw 0.637: 32%, the 300m's 32%.
+        #expect(abs(retrieval.calibratedQueryScore(0.637) - 0.3151) < 0.0001)
+        // Related's closest neighbour, raw 0.915: 86%, the 300m's 87%.
+        #expect(abs(retrieval.calibratedDocumentScore(0.915) - 0.8583) < 0.0001)
+        // The two offsets differ, so the same cosine is shown two ways.
+        #expect(retrieval.calibratedQueryScore(0.7) < retrieval.calibratedDocumentScore(0.7))
+    }
+
+    @Test("Identity stays 1, and the offset is 0")
+    func endpoints() {
+        let retrieval = Self.retrieval(Self.calibration)
+        #expect(retrieval.calibratedQueryScore(1) == 1)
+        #expect(retrieval.calibratedDocumentScore(1) == 1)
+        #expect(abs(retrieval.calibratedQueryScore(0.47)) < 1e-12)
+        #expect(abs(retrieval.calibratedDocumentScore(0.40)) < 1e-12)
+    }
+
+    /// Unclamped on purpose: a cosine under the offset stays below one at the offset, so a list
+    /// sorted by the calibrated score is the list sorted by the cosine, with no ties at zero.
+    @Test("The order of any two cosines is the order of their calibrated scores")
+    func monotone() {
+        let retrieval = Self.retrieval(Self.calibration)
+        let cosines = stride(from: -0.2, to: 1.0, by: 0.01).map { $0 }
+        let calibrated = cosines.map(retrieval.calibratedQueryScore)
+        #expect(calibrated == calibrated.sorted())
+        #expect(Set(calibrated).count == calibrated.count)
+        #expect(retrieval.calibratedQueryScore(0.2) < 0)
+    }
+
+    /// The 300m's artifact carries no calibration, and builds 42 to 50 showed its raw cosine.
+    @Test("A generation with no calibration is shown its raw cosine")
+    func uncalibratedIsRaw() {
+        let retrieval = Self.retrieval(nil)
+        #expect(retrieval.calibratedQueryScore(0.6484375) == 0.6484375)
+        #expect(retrieval.calibratedDocumentScore(0.87) == 0.87)
+    }
+
+    /// Outside the digest and optional: an index written before the field existed decodes with no
+    /// calibration, and one written without a calibration writes no key, so the 300m's control
+    /// repack is the bytes its builds shipped.
+    @Test("The field is optional on the wire both ways")
+    func optionalOnTheWire() throws {
+        let old = #"{"measuredBy":"fixture","measuredRecallAt10":0.851,"rerankPool":800}"#
+        let decoded = try JSONDecoder().decode(
+            SemanticVectorsArtifacts.Index.Retrieval.self, from: Data(old.utf8))
+        #expect(decoded.scoreCalibration == nil)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let written = String(decoding: try encoder.encode(Self.retrieval(nil)), as: UTF8.self)
+        #expect(!written.contains("scoreCalibration"))
+        let roundTrip = try JSONDecoder().decode(
+            SemanticVectorsArtifacts.Index.Retrieval.self,
+            from: try encoder.encode(Self.retrieval(Self.calibration)))
+        #expect(roundTrip.scoreCalibration == Self.calibration)
+    }
+}

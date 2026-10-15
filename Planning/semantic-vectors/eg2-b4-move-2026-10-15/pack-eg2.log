@@ -1,0 +1,39 @@
+manifest: 553 volumes | store: /Users/jbotts/frus-semantic-raw-embeddinggemma-2
+model embeddinggemma-2-Q8_0 | 768 -> 512 dims | digest 89481b1869da…
+[1/553] frus1861 312 docs | 312 rows so far
+[51/553] frus1891 688 docs | 24887 rows so far
+[101/553] frus1918Russiav02 1029 docs | 65987 rows so far
+[151/553] frus1931v01 834 docs | 98315 rows so far
+[201/553] frus1941v02 983 docs | 141539 rows so far
+[251/553] frus1946v08 880 docs | 184395 rows so far
+[301/553] frus1951v06p1 811 docs | 220440 rows so far
+[351/553] frus1955-57v18 322 docs | 245279 rows so far
+[401/553] frus1961-63v15 256 docs | 264558 rows so far
+[451/553] frus1969-76v05 455 docs | 283913 rows so far
+[501/553] frus1969-76ve09p2 231 docs | 298203 rows so far
+[551/553] frus1981-88v41 376 docs | 314074 rows so far
+[553/553] frus1989-92v31 247 docs | 314616 rows so far
+  semantic-map.bin              1887760 bytes | 314616 placements, 140 clusters, 88059 unclustered
+
+wrote:
+  semantic-vectors-index.json   73297 bytes | 553 volumes, 314616 documents, 1603 id segments
+  semantic-vectors-binary.bin   20476048 bytes | 314616 sign-bit rows + 660 centroids (553 volume, 107 subseries)
+  shards/*.vec                  553 files, 162377248 bytes total
+      188.43 real       141.04 user         6.76 sys
+          3518447616  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              428108  page reclaims
+                1184  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+             2826009  voluntary context switches
+               75853  involuntary context switches
+       3095535831553  instructions retired
+        599455155206  cycles elapsed
+          5610869824  peak memory footprint

@@ -119,10 +119,17 @@ final class SemanticEncoderExitGuard: @unchecked Sendable {
 /// Version history:
 ///   1.0 — V-5 s2: initial implementation
 ///   1.1 — the Mac quit crash: freeing routed through `SemanticEncoderExitGuard`
+///   1.2 — B4 (2026-10-15): the pinned model is EmbeddingGemma 2, whose trained context is not
+///         the 2,048-token limit; `maxTokens` is described as the batch it is
 actor SemanticQueryEncoder {
 
-    /// The trained context length of the pinned model (GGUF `context_length`); tokenized queries
-    /// past this are refused, per the header's abort-rule section.
+    /// The longest query, in tokens, this wrapper encodes: the one physical batch it allocates
+    /// (`n_batch` and `n_ubatch`), which the encoder path requires a whole query to fit, so a query
+    /// past it is refused, per the header's abort-rule section.
+    ///
+    /// It was also EmbeddingGemma 300m's trained context, which is how this comment described it
+    /// until B4. EmbeddingGemma 2's GGUF declares 262,144 (`n_ctx_train`), so the batch is the limit
+    /// now and the context is not; 2,048 tokens is still several pages of a typed question.
     static let maxTokens = 2048
 
     private var model: OpaquePointer?
@@ -174,8 +181,11 @@ actor SemanticQueryEncoder {
 
         var contextParams = llama_context_default_params()
         contextParams.embeddings = true
-        // 0 = the model's trained context (2048). Batch sizes must cover the whole query in one
-        // physical batch — the encoder path asserts n_ubatch >= n_tokens (see header).
+        // 0 = the model's trained context: 262,144 tokens for EmbeddingGemma 2 (the 300m's was
+        // 2,048). It costs a query nothing measured: the compute buffer is sized by the 2,048-token
+        // batch (228 MiB on the simulator's load), and the footprint shows no cost from the context
+        // (`EmbeddingGemma-2-B4-Runtime-2026-10-15.md` §3). Batch sizes must cover the whole query
+        // in one physical batch — the encoder path asserts n_ubatch >= n_tokens (see header).
         contextParams.n_ctx = 0
         contextParams.n_batch = UInt32(Self.maxTokens)
         contextParams.n_ubatch = UInt32(Self.maxTokens)
