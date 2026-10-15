@@ -2,7 +2,8 @@
 
 **Date:** 2026-10-15 · **Status:** B4'S SECOND PULL REQUEST (plan of record §1 and §3, B4; decisions
 15 to 19). EmbeddingGemma 2 ships in build 51: its artifacts, its download, the recalibrated
-percentage and the Apache licence copy. The public uploads wait for the owner's yes (§7). ·
+percentage and the Apache licence copy. The public uploads were made on the owner's yes the same day
+and read back from their public addresses (§7). ·
 **Issue:** #1659 · **Inherits:** the stage-2 memo's §11 and the runtime memo
 (`EmbeddingGemma-2-B4-Runtime-2026-10-15.md`, #1673) · **Machine:** the M5 MacBook Air (`Mac17,4`,
 32 GB), macOS 27.0.1, Xcode 27.0 · **Artifacts and the scripts that made them:**
@@ -34,6 +35,8 @@ Every figure was measured on 2026-10-15 on the Air. Engineering-side, not legal 
   100, 32 and 3 percent where they were 100, 65 and 61 (§5).
 - **The Gemma licence surfaces retire** and EmbeddingGemma 2 is an Open Source row; the copy, both
   manuals, the EditableContent blocks, `NOTICE`, the README and the agentic guide follow (§6).
+- **The uploads are public and read back** (§7): the GGUF on release `encoder-2` and the 553 shards
+  under `generations/89481b18/`, byte for byte from their addresses and through the app.
 
 ## 1. The owner's two decisions
 
@@ -260,32 +263,37 @@ Under Apache 2.0 the screens shrink, as the spike design's §1 set out:
   EditableContent mirror, both manuals and the agentic guide's §A.7 follow. The custom EULA and the
   compliance runbook are in `Planning/Completed/`, with dated notes at their heads.
 
-## 7. The public uploads, staged
+## 7. The public uploads
 
-Nothing has been uploaded. Everything is ready on the Air for the owner's yes, and build 51 needs
-both before it ships, or its Meaning search finds no model to download and no match files:
+**Made on the owner's word of 2026-10-15, after this pull request merged (#1674, `fafcbff5`), and
+read back from their public addresses.** Until then a build from `v2` would have found no model to
+download and no match files.
 
-- **`~/frus-b4/frus-semantic-vectors`**, a clone of `joshbotts/frus-semantic-vectors` on branch
-  `b4-embeddinggemma-2`, one commit (`9be645e`) over `main` at `38793f0`: the 553 shards under
-  `generations/89481b18/shards/` (verified against the manifest), their manifest beside them,
-  `LICENSES/Apache-2.0.txt`, and the README and NOTICE rewritten for both encoder releases (the
-  Gemma notice kept for `encoder-1`, word for word). `shards/` and the root manifest are untouched.
-- **The release `encoder-2`**: `embeddinggemma-2-Q8_0.gguf` from `~/Development/models/embeddinggemma-2/`
-  (SHA-256 checked) and `~/frus-b4/LICENSE-Apache-2.0.txt`, with `~/frus-b4/encoder-2-release-notes.md`.
+- **`joshbotts/frus-semantic-vectors` `main`**: `38793f0..9be645e`, one commit staged on the Air in
+  `~/frus-b4/frus-semantic-vectors` (branch `b4-embeddinggemma-2`): the 553 shards under
+  `generations/89481b18/shards/`, their manifest beside them, `LICENSES/Apache-2.0.txt`, and the
+  README and NOTICE rewritten for both encoder releases (the Gemma notice kept for `encoder-1`,
+  word for word). `shards/` and the root manifest, which builds 42 to 50 read, are untouched. The
+  first push of the 155 MB pack failed with HTTP 408; the second, with `http.postBuffer` raised to
+  1 GB, went through.
+- **Release `encoder-2`**, "Query encoder — EmbeddingGemma 2 Q8_0 (pinned)", published at
+  19:03:41Z: `embeddinggemma-2-Q8_0.gguf` (309,855,456 bytes) and `LICENSE-Apache-2.0.txt` (8,002),
+  with `~/frus-b4/encoder-2-release-notes.md` as its notes. The upload took 11 minutes.
 
-On the owner's yes, in this order (the README is the Model weights rewrite that precedes the GGUF):
+**Read back:**
 
-```bash
-git -C ~/frus-b4/frus-semantic-vectors push origin b4-embeddinggemma-2:main
-```
+| check | result |
+|---|---|
+| the GGUF from `releases/download/encoder-2/…`, the URL `SemanticModelFetcher` pins | HTTP 200, 309,855,456 bytes in 45 s, SHA-256 `2188ac1d…40b09135` |
+| the licence asset | the staged file's SHA-256 |
+| every shard from `raw.githubusercontent.com/…/main/generations/89481b18/shards/` | 553 of 553 match the bundled manifest by length, SHA-256 and header digest; 162,377,248 bytes in 306 s |
+| the 300m from `encoder-1`, which builds 42 to 50 fetch | still served |
+| the repository's description | "553 volumes", still true |
 
-```bash
-gh release create encoder-2 -R joshbotts/frus-semantic-vectors --title "Query encoder — EmbeddingGemma 2 Q8_0 (pinned)" --notes-file ~/frus-b4/encoder-2-release-notes.md ~/Development/models/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf ~/frus-b4/LICENSE-Apache-2.0.txt
-```
-
-Then read both back: a shard and the GGUF downloaded from their public addresses, compared by
-SHA-256, and the repository's description (`gh repo edit … --description`) checked for the volume
-count.
+**And through the app**, the Mac's check copy built from this pull request: Download Search Model
+fetched the model from `encoder-2` in about 55 seconds and verified it ("Downloaded and verified —
+309.9 MB"), and after Remove Downloaded Vectors, Download Missing Vectors fetched the 36 downloaded
+volumes' match files from the new folder, all 36 matching the manifest, with no problem reported.
 
 ## 8. Checked
 
@@ -323,13 +331,13 @@ count.
   showed it at 63%), then Nos. 942 (59%), 915 (56%), 925, 980 and 916 (55%); About ▸ Legal ▸ Full
   Notices listed EmbeddingGemma 2 under Open Source and no On-Device Model section; and after Remove
   Search Model, **Download Search Model started at once, with no sheet**, and failed "The server
-  refused the download (HTTP 404)": `encoder-2` does not exist until the upload (§7).
+  refused the download (HTTP 404)": `encoder-2` did not exist until the upload. Since the upload the
+  same button downloads and verifies the model (§7).
 
 ## 9. Not verified
 
 - **An iPhone or iPad with the 300m downloaded, upgraded to build 51**: the purge of the earlier
   file (§4) is tested, and seen on the Mac's check copy (§8), not on an iOS device.
-- **The download from the public release**: nothing is uploaded (§7).
 - **EmbeddingGemma 2's quality on typed queries**: the 183 judged rows are the owner's optional
   sitting (the stage-2 memo's §6).
 - **The calibration on other queries than these 90**: the offsets fit the medians within two points
@@ -349,7 +357,7 @@ count.
 - `seam_figures.py` → `seam-figures.txt`: §5's seam table, with the 300m's pool as the control.
 - `layout-meta-run1.json`, `layout-meta-run2.json`, `layout-run1.log`, `pack-eg2.log`: §2's runs.
 
-Outside the repository, on the Air: the staged clone and release files in `~/frus-b4/` (§7), the
+Outside the repository, on the Air: the clone and release files the uploads came from in `~/frus-b4/` (§7), the
 store, B2's pools and packs in `~/frus-b2/`, and the GGUFs.
 
 ---
@@ -359,3 +367,5 @@ Version history:
   1.0 — 2026-10-15: the owner's answers; the pack, the index's recall and calibration, the
   addresses and the purge, the calibrated score in the app and the seam, the licence copy, the
   staged uploads, and the checks (§8), the Mac check copy's among them.
+  1.1 — 2026-10-15: the uploads made on the owner's yes and read back, from their addresses and
+  through the app (§7).
