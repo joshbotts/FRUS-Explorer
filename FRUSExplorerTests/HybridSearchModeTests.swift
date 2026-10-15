@@ -554,6 +554,36 @@ private final class GatedMeaningSearch: MeaningSearchRunning {
     }
 }
 
+/// A Meaning engine whose runs each wait to be let go by their own question, and return two rows headed with it
+/// (#1648), so a test can send two questions and have them come back in either order.
+@MainActor
+private final class QuestionGatedMeaningSearch: MeaningSearchRunning {
+
+    /// The runs that are waiting, by question.
+    private var waiting: [String: CheckedContinuation<Void, Never>] = [:]
+    /// The questions that have reached the engine, in order.
+    private(set) var started: [String] = []
+
+    func run(query: String, parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome {
+        started.append(query)
+        await withCheckedContinuation { waiting[query] = $0 }
+        return SemanticSearchBackend.Outcome(
+            results: (0..<2).map { index in
+                SearchResult(documentId: "d\(index)", volumeId: "vol1", header: query,
+                             snippet: "", bm25Score: -Double(index), semanticScore: 0.9 - Double(index) / 100)
+            },
+            beyondLibrary: [],
+            disclosure: SemanticSearchBackend.Disclosure(
+                unscoredCandidates: 0, unscoredVolumes: 0, downloadingVolumes: 0,
+                filtersApplied: false, filteredOut: 0, beyondUncheckedByFilters: false))
+    }
+
+    /// Lets the run that asked `question` return.
+    func release(_ question: String) {
+        waiting.removeValue(forKey: question)?.resume()
+    }
+}
+
 /// What the search screen says of the rows it shows follows the run that produced them: the ceiling that fetch ran
 /// under, and the engine it ran through.
 ///
@@ -793,12 +823,81 @@ struct SearchResultRouteTests {
         #expect(vm.offersReadings)
     }
 
-    /// Nothing drops a search that has been superseded, so a Meaning run sent before a switch can land after the
-    /// keyword search that followed it. The rows are then a Meaning list under a picker that says Keywords. The door
-    /// has to shut in that state, and each host closes an open reading as it shuts
-    /// (`bothHostsCloseAReadingWhenItsDoorShuts`): until this lane the door stayed open over that list.
-    @Test("A Meaning run that lands after the keyword search which followed it shuts the readings' door")
-    func aMeaningRunThatLandsLateShutsTheDoor() async throws {
+    // MARK: - #1648: a run a later one replaced writes nothing
+
+    /// #1577 lane 2 wrote this test while nothing dropped a superseded search: its precondition was that a Meaning run
+    /// sent before a switch landed after the keyword search that followed it, and that its rows replaced the keyword
+    /// rows under a picker that said Keywords. That was #1648. The run is numbered now, and one a later search replaced
+    /// writes nothing when it comes back, so the keyword rows stay, with their route and their door.
+    @Test("A Meaning run that comes back after the keyword search which replaced it writes nothing (#1648)")
+    func aMeaningRunThatLandsLateIsDropped() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = GatedMeaningSearch(returning: 3)
+        vm.semanticBackend = engine
+
+        vm.searchMode = .meaning
+        vm.keywords = "containment"
+        let meaningRun = Task { await vm.search() }
+        while engine.started == 0 { await Task.yield() }
+        #expect(vm.isSearching, "precondition: the Meaning run is under way")
+
+        // The reader goes back to Keywords, and that search lands while the Meaning run is still out.
+        #expect(vm.switchSearchMode(to: .keywords), "a search that is under way runs again through the new engine")
+        await vm.search()
+        #expect(vm.results.count == 6)
+        #expect(vm.executedRoute == .keywords)
+        #expect(!vm.isSearching)
+        let completed = vm.executedSearchVersion
+
+        engine.release()
+        _ = await meaningRun.value
+        #expect(vm.searchMode == .keywords)
+        #expect(vm.results.count == 6, """
+            The Meaning run's 3 rows replaced the keyword search's 6 when it came back last, so the list was a \
+            Meaning list under a picker that said Keywords (#1648).
+            """)
+        #expect(vm.executedRoute == .keywords)
+        #expect(vm.offersReadings, "keyword rows under the Keywords engine: a reading can still be opened")
+        #expect(vm.executedSearchVersion == completed, "nothing keyed on a completed search fires for the dropped run")
+        #expect(vm.semanticDisclosure == nil, "and the Meaning strip has no run to describe")
+        #expect(!vm.isSearching)
+    }
+
+    /// The same rule within one engine: two questions sent in turn, and the first one's ranking arriving last.
+    @Test("Of two Meaning questions, the later one keeps the list when the earlier one comes back last (#1648)")
+    func theEarlierOfTwoQuestionsComesBackLast() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = QuestionGatedMeaningSearch()
+        vm.semanticBackend = engine
+        vm.searchMode = .meaning
+
+        vm.keywords = "how was containment meant to work"
+        let first = Task { await vm.search() }
+        while engine.started.count < 1 { await Task.yield() }
+        vm.keywords = "who opposed containment"
+        let second = Task { await vm.search() }
+        while engine.started.count < 2 { await Task.yield() }
+
+        engine.release("who opposed containment")
+        _ = await second.value
+        #expect(vm.results.map(\.header) == ["who opposed containment", "who opposed containment"])
+        #expect(!vm.isSearching)
+
+        engine.release("how was containment meant to work")
+        _ = await first.value
+        #expect(vm.results.map(\.header) == ["who opposed containment", "who opposed containment"], """
+            The first question's ranking, arriving last, replaced the second's: the list answered a question the \
+            field no longer held (#1648).
+            """)
+        #expect(!vm.isSearching)
+    }
+
+    /// The switch itself replaces the run: between the switch and the search it starts, a run that comes back has
+    /// the other engine's rows, and they would stand under the new picker until the new rows arrived.
+    @Test("A Meaning run that comes back between a switch to Keywords and the keyword search lands no rows (#1648)")
+    func aSwitchReplacesTheRunUnderWay() async throws {
         let (dir, vm) = try await makeViewModel(documents: 6)
         defer { try? FileManager.default.removeItem(at: dir) }
         let engine = GatedMeaningSearch(returning: 3)
@@ -809,21 +908,98 @@ struct SearchResultRouteTests {
         let meaningRun = Task { await vm.search() }
         while engine.started == 0 { await Task.yield() }
 
-        // The reader goes back to Keywords, and that search lands while the Meaning run is still out.
-        #expect(vm.switchSearchMode(to: .keywords), "a search that is under way runs again through the new engine")
+        #expect(vm.switchSearchMode(to: .keywords))
+        engine.release()
+        _ = await meaningRun.value
+        #expect(vm.results.isEmpty, """
+            The Meaning run's rows landed after the switch to Keywords, under the Keywords picker, before any keyword \
+            search had run.
+            """)
+        #expect(vm.executedRoute == .keywords)
+        #expect(vm.isSearching, "the keyword search the switch asks for is still to come, and owns the spinner")
+
         await vm.search()
         #expect(vm.results.count == 6)
-        #expect(vm.executedRoute == .keywords)
-        #expect(vm.offersReadings, "keyword rows under the Keywords engine: a reading can be opened here")
+        #expect(!vm.isSearching)
+    }
+
+    /// A search the guard refuses is still the reader's latest request, so it replaces the run under way.
+    @Test("A refused search replaces the run under way, which lands nothing and leaves nothing searching (#1648)")
+    func aRefusalReplacesTheRunUnderWay() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = GatedMeaningSearch(returning: 3)
+        vm.semanticBackend = engine
+
+        vm.searchMode = .meaning
+        vm.keywords = "containment"
+        let meaningRun = Task { await vm.search() }
+        while engine.started == 0 { await Task.yield() }
+
+        vm.keywords = "   "
+        await vm.search()
+        let refusal = try #require(vm.searchError, "precondition: a question of spaces is refused")
+        #expect(!vm.isSearching, "nothing is under way once the refusal has replaced the run")
 
         engine.release()
-        await meaningRun.value
-        #expect(vm.searchMode == .keywords)
-        #expect(vm.results.count == 3, "the precondition: the Meaning run's rows replaced the keyword search's")
-        #expect(vm.executedRoute == .meaning)
-        #expect(!vm.offersReadings)
-        #expect(vm.facetDocumentKeys?.count == 3)
-        #expect(vm.resultSetScope.headerDescription == "3 closest matches")
+        _ = await meaningRun.value
+        #expect(vm.results.isEmpty, "the replaced run's rows landed under the refusal")
+        #expect(vm.searchError == refusal, "and the refusal is still what the screen says")
+        #expect(!vm.isSearching)
+    }
+
+    /// Emptying the field clears the rows without a search (`SearchView`'s handler on the field, which this calls as
+    /// the view does), and so does `clearAll()`. Either way a run still out must not put its rows back.
+    @Test("Clearing the list without a search replaces the run under way (#1648)")
+    func clearingTheListReplacesTheRunUnderWay() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for clear in ["the emptied field", "clearAll()"] {
+            let engine = GatedMeaningSearch(returning: 3)
+            vm.semanticBackend = engine
+            vm.searchMode = .meaning
+            vm.keywords = "containment"
+            let meaningRun = Task { await vm.search() }
+            while engine.started == 0 { await Task.yield() }
+
+            if clear == "clearAll()" {
+                vm.clearAll()
+            } else {
+                vm.keywords = ""
+                vm.replaceSearchesUnderWay()
+                vm.results = []
+                vm.hasSearched = false
+            }
+            #expect(!vm.isSearching, "\(clear): nothing is searching once the list is cleared")
+
+            engine.release()
+            #expect(await meaningRun.value == false, "\(clear): the run says it was replaced")
+            #expect(vm.results.isEmpty, "\(clear): the run put its rows back under an empty field")
+            #expect(!vm.isSearching, "\(clear)")
+        }
+    }
+
+    /// `SearchView.runSearch()` records a search, and a recalled one its stamp, only for a run that says it was not
+    /// replaced. A refusal is the reader's latest request too, and says so.
+    @Test("A run says whether a later one replaced it: the replaced one false, the latest and a refusal true (#1648)")
+    func aRunSaysWhetherItWasReplaced() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = GatedMeaningSearch(returning: 3)
+        vm.semanticBackend = engine
+
+        vm.searchMode = .meaning
+        vm.keywords = "containment"
+        let meaningRun = Task { await vm.search() }
+        while engine.started == 0 { await Task.yield() }
+        #expect(vm.switchSearchMode(to: .keywords))
+        #expect(await vm.search(), "the keyword search was not replaced")
+        engine.release()
+        #expect(await meaningRun.value == false, "the Meaning run was")
+
+        vm.keywords = ""
+        #expect(await vm.search(), "a refusal is the latest request, so what it wrote is what the screen shows")
+        #expect(vm.searchError != nil)
     }
 
     /// `results` can be assigned from outside the search functions: each host empties it itself, the iPhone's view when
@@ -947,6 +1123,58 @@ struct SearchResultRouteTests {
         #expect(!excluded.namesASearchToRun, "an exclusion alone names nothing to find")
         var volume = SearchParameters(); volume.volumeIds = ["vol1"]
         #expect(!volume.namesASearchToRun)
+    }
+
+    // MARK: - #1646: a hand-off runs inside the applied working corpus
+
+    /// The rule the Mac's window asks (`SearchParameters.runningInside(workingCorpus:)`): the applied corpus is the only
+    /// document gate, the snapshot's own gates go, and nothing else in the snapshot is touched.
+    @Test("A hand-off's parameters keep the applied corpus as their only document gate (#1646)")
+    func handOffGateRule() {
+        let snapshot = SearchParameters(keywords: "berlin", volumeIds: ["frus1958-60v08"],
+                                        documentIds: ["frus1958-60v08/d1"],
+                                        excludeDocumentIds: ["frus1958-60v08/d2"])
+        let inside = snapshot.runningInside(workingCorpus: ["frus1958-60v08/d3", "frus1958-60v08/d4"])
+        #expect(inside.documentIds == ["frus1958-60v08/d3", "frus1958-60v08/d4"],
+                "the screen's corpus is the gate, not the set the snapshot carried")
+        #expect(inside.excludeDocumentIds == nil, "Focus's exclusion is the project's, and never inherited")
+        #expect(inside.keywords == "berlin")
+        #expect(inside.volumeIds == ["frus1958-60v08"], "the snapshot's own volume scope stays")
+
+        let noCorpus = snapshot.runningInside(workingCorpus: nil)
+        #expect(noCorpus.documentIds == nil, "with no corpus applied there is no document gate at all")
+        #expect(noCorpus.excludeDocumentIds == nil)
+        #expect(SearchParameters().runningInside(workingCorpus: []).documentIds == [],
+                "a corpus holding nothing indexed matches nothing, never everything")
+    }
+
+    /// iPhone and iPad compose the gate from the corpus they hold each time they build parameters, so a hand-off has
+    /// always run inside it there. This drives that through a real index, and holds it to the rule the Mac's window
+    /// asks since #1646, so the two platforms cannot part.
+    @Test("On iPhone and iPad a hand-off runs inside the applied corpus, as the Mac's rule says (#1646)")
+    func aHandOffRunsInsideTheAppliedCorpus() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        vm.appliedWorkingCorpusKeys = ["vol1/d1", "vol1/d4"]
+        vm.appliedWorkingCorpusName = "Two of six"
+        // A History scope in force before the hand-off, which the hand-off turns off (#377 Phase 2).
+        vm.projectEngagedDocumentKeys = ["vol1/d1", "vol1/d2"]
+        vm.projectScope = .history
+
+        let handOff = SearchParameters(keywords: "containment", documentIds: ["vol1/d5"],
+                                       excludeDocumentIds: ["vol1/d4"])
+        #expect(vm.applyHandoff(handOff))
+        #expect(vm.projectScope == .off)
+        #expect(vm.appliedWorkingCorpusName == "Two of six", "the corpus stays applied, and its banner with it")
+        let rule = handOff.runningInside(workingCorpus: vm.appliedWorkingCorpusKeys)
+        #expect(vm.searchParameters.documentIds == rule.documentIds)
+        #expect(vm.searchParameters.excludeDocumentIds == rule.excludeDocumentIds)
+
+        await vm.search()
+        #expect(Set(vm.results.map(\.documentId)) == ["d1", "d4"], """
+            The hand-off did not run inside the applied corpus: the rows are not the corpus's two of the six \
+            documents that match.
+            """)
     }
 
     // MARK: - #1592: Checklist Mode says when Log Research Sessions is off
@@ -1116,7 +1344,9 @@ struct SearchResultRouteTests {
     }
 
     /// The other half of the door: a reading that is open when it shuts. The picker's setter closes the readings on a
-    /// switch, and that is not the only way a Meaning list arrives (`aMeaningRunThatLandsLateShutsTheDoor`).
+    /// switch; this handler is the one place that keeps a reading from outliving its door, whatever shuts it. Until
+    /// #1648 a Meaning run that came back after the keyword search which replaced it was such a way, and it no longer
+    /// lands (`aMeaningRunThatLandsLateIsDropped`).
     @Test("Both hosts send an open reading back to the list when its door shuts")
     func bothHostsCloseAReadingWhenItsDoorShuts() throws {
         for (path, owner) in [("FRUSExplorer/Search/SearchView.swift", "vm"),
@@ -1178,6 +1408,107 @@ struct SearchResultRouteTests {
                     "\(path) does not observe Log Research Sessions")
             #expect(source.contains("ChecklistLoggingNotice.text(checklistMode:"),
                     "\(path) does not show the checklist's line (#1592)")
+        }
+    }
+
+    /// #1646, the Mac's half, which this target cannot run: `applyParameters(_:)` builds the window's parameters by the
+    /// rule `handOffGateRule` holds, and brings the filter view model to them. Until #1646 it set `documentIds` to nil,
+    /// so the banner named a corpus the search was not inside, and it left the filter view model on the search before,
+    /// so the banner's ✕ (`applyAdvancedFilters()`) re-applied that search's filters: after a person's Find all
+    /// mentions it dropped the person and emptied the list.
+    @Test("The Mac's window runs a hand-off inside its corpus and brings its filters to it (#1646)")
+    func macHandOffKeepsTheCorpus() throws {
+        let path = "FRUSExplorer/App/MacSearchViewModel.swift"
+        let source = try Self.source(path)
+        let apply = Self.code(try Self.declaration("func applyParameters(_ params: SearchParameters) {",
+                                                   in: source, path: path))
+        #expect(apply.contains("parameters = params.runningInside(workingCorpus: filterVM?.appliedWorkingCorpusKeys)"),
+                "the window takes a hand-off's parameters whole, with the snapshot's gates and without its corpus")
+        #expect(apply.contains("if let filterVM { mirrorParameters(into: filterVM) }"),
+                "the filter view model keeps the search before the hand-off")
+        #expect(!apply.contains("parameters.documentIds = nil"), "the corpus is dropped with the project's gates")
+        let sync = Self.code(try Self.declaration("func syncToFilterVM(", in: source, path: path))
+        #expect(sync.contains("mirrorParameters(into: filterVM)"),
+                "opening the popover and taking a hand-off copy the parameters by different routines")
+    }
+
+    /// #1648: both view models number a run as it starts, and after every wait write the screen's state only once
+    /// they have asked whether a later run replaced them. Read statement by statement, since the Mac's half cannot run
+    /// here (the iPhone's is driven above): a write of the rows, the route, the total, the expression, the error, the
+    /// version or the tag-count scope that follows an `await`, or opens a `catch`, with no check between, fails.
+    @Test("Both view models write nothing after a wait without asking whether the run was replaced (#1648)")
+    func everyWriteAfterAWaitAsksFirst() throws {
+        let check = "guard searchRuns.isLatest(run) else { return false }"
+        let writes = ["results = ", "executedRoute = ", "totalMatchCount = ", "lastRenderedExpression = ",
+                      "searchError = ", "executedSearchVersion &+= 1", "userTagCountScope = ", "lastFetchLimit = ",
+                      "beyondLibraryHits = ", "semanticDisclosure = "]
+        for (path, headers) in [
+            ("FRUSExplorer/App/MacSearchViewModel.swift",
+             ["func performSearch(service: SearchService?) async -> Bool {",
+              "private func performMeaningSearch(run: Int) async -> Bool {"]),
+            ("FRUSExplorer/Search/SearchViewModel.swift",
+             ["func search() async -> Bool {", "private func searchMeaning(run: Int) async -> Bool {"]),
+        ] {
+            let source = try Self.source(path)
+            for header in headers {
+                let lines = Self.code(try Self.declaration(header, in: source, path: path))
+                    .components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+                var checkedSinceWait = true
+                var waits = 0
+                var checks = 0
+                for line in lines {
+                    // A wait the run comes back from. A `return await` hands the run to the other engine's path,
+                    // which is read on its own.
+                    if line.contains("await "), !line.hasPrefix("return ") {
+                        checkedSinceWait = false
+                        waits += 1
+                    }
+                    // A catch is entered from the wait that threw.
+                    if line.hasPrefix("} catch") { checkedSinceWait = false }
+                    if line == check {
+                        checkedSinceWait = true
+                        checks += 1
+                    }
+                    if writes.contains(where: { line.hasPrefix($0) }) {
+                        #expect(checkedSinceWait, """
+                            \(path), `\(header)`: `\(line)` writes after a wait with no check that the run is still the \
+                            latest, so a run a later one replaced can still write it (#1648).
+                            """)
+                    }
+                }
+                #expect(waits >= 1 && checks >= waits,
+                        "fixture guard, \(path) `\(header)`: \(waits) waits and \(checks) checks were read")
+                // The Meaning paths are handed their number; the two entry points take it before anything else.
+                if !header.contains("(run: Int)") {
+                    #expect(lines.dropFirst().first { !$0.isEmpty } == "let run = searchRuns.startRun()",
+                            "\(path) `\(header)` does not open by numbering its run")
+                }
+            }
+        }
+    }
+
+    /// The hosts' half of #1648. Each records a search, and the Mac starts its facets over, only for a run that was not
+    /// replaced; the Mac's search task is its only search, so a recalled search and a moved person filter run none of
+    /// their own beside it; and a recalled search is stamped with its own count on both, which `SavedSearchFreshness`'s
+    /// tests drive (#1646).
+    @Test("Both hosts act only on a run that was not replaced, and the Mac runs no second search (#1648)")
+    func hostsActOnlyOnTheLatestRun() throws {
+        let ios = Self.code(try Self.source("FRUSExplorer/Search/SearchView.swift"))
+        let mac = Self.code(try Self.source("FRUSExplorer/App/SearchSheet.swift"))
+        #expect(ios.filter { !$0.isWhitespace }.contains("guardawaitvm.search()else{return}vm.recordSearchHistory("),
+                "SearchView records a search a later one replaced")
+        #expect(mac.filter { !$0.isWhitespace }.contains(
+            "guardawaitsearchVM.performSearch(service:appState.searchService)else{return}searchVM.recordSearchHistory("),
+                "the Mac window records a search a later one replaced")
+        #expect(mac.components(separatedBy: "searchVM.performSearch(").count - 1 == 1, """
+            The Mac window runs a search outside its search task. A recalled search and a moved person filter each \
+            change the trigger, so a run of their own raced the task's.
+            """)
+        for (path, text) in [("SearchView.swift", ios), ("SearchSheet.swift", mac)] {
+            #expect(text.contains("await SavedSearchFreshnessEvaluator.recordRun("),
+                    "\(path) does not stamp a recalled search with its own count")
+            #expect(!text.contains("saved.recordRun(matchCount:"),
+                    "\(path) stamps a recalled search with the total on screen")
         }
     }
 

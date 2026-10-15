@@ -88,6 +88,9 @@ import Observation
 ///          of the rows' route
 ///   2.6 — FRUS Explorer Light: `sortedResults` is `SearchSortOrder.sorted(_:)`, the kit's date order, which the
 ///          macOS view model and the web edition sort by too; this file's copy of the comparator is gone
+///   2.7 — #1648: `search()` numbers its run (`SearchRunLedger`), writes nothing once a later search has replaced it,
+///          and returns whether it was replaced; a switch of engine and `replaceSearchesUnderWay()` replace the runs under
+///          way, so a run sent before them cannot land after
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -395,6 +398,10 @@ final class SearchViewModel {
         didSet { if searchError != nil { endSelecting() } }
     }
     var hasSearched: Bool = false
+
+    /// The searches this screen has sent, numbered, so that a run a later one replaced writes
+    /// nothing when it comes back (#1648). See ``SearchRunLedger``.
+    @ObservationIgnored private var searchRuns = SearchRunLedger()
 
     /// Increments once per executed search — a stable `.task(id:)` key for views that
     /// must recompute when a search *runs*, not when its text changes.
@@ -983,10 +990,19 @@ final class SearchViewModel {
     /// *earlier* search. Named for its macOS counterpart, `MacSearchViewModel.submittedQuery`.
     private var submittedQuery: String = ""
 
-    func search() async {
+    /// Runs the search the field and the filters describe, through the engine the picker names.
+    ///
+    /// The run is numbered as it starts, which replaces every run still under way (#1648): a run that
+    /// a later search or a cleared list has replaced by the time it comes back writes nothing. See
+    /// ``SearchRunLedger``.
+    ///
+    /// - Returns: `true` when this run was not replaced, so that what it wrote, rows or a refusal, is
+    ///   what the screen shows. `SearchView.runSearch()` records the search only then.
+    @discardableResult
+    func search() async -> Bool {
+        let run = searchRuns.startRun()
         if searchMode == .meaning {
-            await searchMeaning()
-            return
+            return await searchMeaning(run: run)
         }
         lastRunWasSemantic = false
         let params = searchParameters
@@ -995,11 +1011,13 @@ final class SearchViewModel {
         // a `personRef`) can run without a keyword. Before Session 162 this guard
         // rejected them, so the person handoff surfaced an error instead of results.
         guard Self.hasPositiveKeywordTerm(params) else {
+            // This refusal replaced any run under way, which will clear nothing now (#1648).
+            isSearching = false
             searchError = String(
                 localized: "search.error.empty",
                 defaultValue: "Enter a keyword, phrase, or prefix to search."
             )
-            return
+            return true
         }
         // Freeze the query text for `recordSearchHistory` before awaiting anything (see
         // `submittedQuery`).
@@ -1025,7 +1043,11 @@ final class SearchViewModel {
                 do { return try await searchService.searchCount(parameters: params) }
                 catch { return nil }
             }()
-            results = try await fetched
+            let rows = try await fetched
+            // After every wait, a run a later one replaced stops writing (#1648): its rows, and the
+            // total, expression and checklist that describe them, are not the search on screen.
+            guard searchRuns.isLatest(run) else { return false }
+            results = rows
             let rowsTime = clock.now - sent
             // With the rows, not before the await: `resultSetScope` reads both, and until the rows are
             // replaced the ones on screen are the last search's, fetched under its ceiling (#1584).
@@ -1034,14 +1056,18 @@ final class SearchViewModel {
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
-            totalMatchCount = await counted
+            let total = await counted
+            guard searchRuns.isLatest(run) else { return false }
+            totalMatchCount = total
             if let documentSet = params.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
                     setSize: documentSet.count, rowCount: results.count,
                     rows: rowsTime, total: clock.now - sent))
             }
             // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
-            lastRenderedExpression = try? await searchService.matchExpressions(for: params).corpus
+            let expression = try? await searchService.matchExpressions(for: params).corpus
+            guard searchRuns.isLatest(run) else { return false }
+            lastRenderedExpression = expression
             // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
             // promises is what consumers actually observe. It used to be bumped in the
             // synchronous prefix, five lines and one actor hop earlier: SwiftUI re-evaluated the
@@ -1066,6 +1092,8 @@ final class SearchViewModel {
             print("[SearchView] Search returned \(results.count) results")
             #endif
         } catch {
+            // Nor does a replaced run's failure reach the screen (#1648).
+            guard searchRuns.isLatest(run) else { return false }
             results = []
             executedRoute = .keywords
             beyondLibraryHits = []
@@ -1091,6 +1119,7 @@ final class SearchViewModel {
         // this method returns, and that `SearchHistoryEntry` is now the only record of a search —
         // read by the History surface, Project Home, and the derived session log alike.
         // `ResearchTrailMigration` carries the events already written by earlier builds across.
+        return true
     }
 
     /// The Meaning run (V-5 hybrid page). Mirrors `search()`'s bookkeeping contract exactly —
@@ -1099,19 +1128,25 @@ final class SearchViewModel {
     /// honest Meaning values: the total is `nil` (a top-K list has no uncapped match count, and
     /// recording one would poison the SavedSearch freshness watermark, which diffs against a
     /// later FTS count), and the expression records the route and model instead of an FTS string.
-    private func searchMeaning() async {
+    ///
+    /// - Parameter run: This run's number, from `search()` (#1648).
+    /// - Returns: `true` when this run was not replaced, as `search()` returns.
+    private func searchMeaning(run: Int) async -> Bool {
         submittedQuery = keywords.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !submittedQuery.isEmpty else {
+            // A refusal replaced any run under way, which will clear nothing now (#1648).
+            isSearching = false
             searchError = String(
                 localized: "search.semantic.error.empty",
                 defaultValue: "Type a question or phrase to search by meaning.")
-            return
+            return true
         }
         guard let backend = semanticBackend else {
+            isSearching = false
             searchError = String(
                 localized: "search.semantic.error.unavailable",
                 defaultValue: "Searching by meaning is not available in this build.")
-            return
+            return true
         }
         isSearching = true
         searchError = nil
@@ -1124,6 +1159,10 @@ final class SearchViewModel {
         let checklistAnchorOfThisRun = ChecklistAnchor(query: submittedQuery, parameters: searchParameters)
         do {
             let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)
+            // A Meaning run a later search replaced writes nothing: the case #1648 was filed for, a
+            // Meaning list landing over the keyword rows of the search that followed it. Nor does
+            // such a run's failure, below.
+            guard searchRuns.isLatest(run) else { return false }
             results = outcome.results
             executedRoute = .meaning
             beyondLibraryHits = outcome.beyondLibrary
@@ -1142,6 +1181,7 @@ final class SearchViewModel {
             settleChecklist(for: checklistAnchorOfThisRun)
             settleSelection(for: checklistAnchorOfThisRun)
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
+            guard searchRuns.isLatest(run) else { return false }
             results = []
             executedRoute = .keywords
             beyondLibraryHits = []
@@ -1152,6 +1192,7 @@ final class SearchViewModel {
             executedSearchVersion &+= 1
             userTagCountScope = nil
         } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
+            guard searchRuns.isLatest(run) else { return false }
             results = []
             executedRoute = .keywords
             beyondLibraryHits = []
@@ -1164,6 +1205,7 @@ final class SearchViewModel {
                 localized: "search.semantic.error.tooLong",
                 defaultValue: "This search is too long for the model. Try a shorter phrasing.")
         } catch {
+            guard searchRuns.isLatest(run) else { return false }
             results = []
             executedRoute = .keywords
             beyondLibraryHits = []
@@ -1180,6 +1222,7 @@ final class SearchViewModel {
             #endif
         }
         isSearching = false
+        return true
     }
 
     // MARK: - Switching the engine (#1597)
@@ -1228,8 +1271,12 @@ final class SearchViewModel {
     func switchSearchMode(to newMode: SearchMode) -> Bool {
         guard newMode != searchMode else { return false }
         searchMode = newMode
+        // A run under way is the other engine's, and its rows would land under this picker (#1648).
+        // `isSearching` stays as it is until the run the caller starts now replaces it, or below.
+        searchRuns.replaceRunsUnderWay()
         guard hasSearched || searchSetAsideByModeSwitch else { return false }
         if hasRunnableQuery(in: newMode) { return true }
+        isSearching = false
         results = []
         executedRoute = .keywords
         beyondLibraryHits = []
@@ -1384,7 +1431,16 @@ final class SearchViewModel {
         clearWorkingCorpus()
     }
 
+    /// Replaces every search still under way without starting one, for a list emptied with no search
+    /// (#1648): the field cleared on iPhone and iPad. A run that comes back after this writes nothing,
+    /// so it cannot put rows back under the empty field, and nothing is searching any more.
+    func replaceSearchesUnderWay() {
+        searchRuns.replaceRunsUnderWay()
+        isSearching = false
+    }
+
     func clearAll() {
+        replaceSearchesUnderWay()
         keywords = ""
         clearFilters()
         results = []

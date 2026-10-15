@@ -246,6 +246,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.29 — 2026-10-15: the filter panel's volume list is read again when the panel opens and whenever the
 ///          indexed set changes (`reloadAvailableVolumes`), not only when the tab appears. A Search tab the app
 ///          opened on read the set before boot had, and Filters lost its volume-scoped groups until the tab next appeared.
+///   1.30 — #1646, #1648: `runSearch()` records a search only when no later one replaced it, and an emptied field
+///          replaces the search under way; a recalled saved search is stamped with its own count
+///          (`SavedSearchFreshnessEvaluator.recordRun(of:service:indexedVolumeCount:context:)`), not the total on screen.
 
 struct SearchView: View {
 
@@ -519,6 +522,8 @@ struct SearchView: View {
                 // the initial "enter keywords" prompt state.
                 .onChange(of: vm.keywords) { _, newValue in
                     if newValue.isEmpty {
+                        // #1648: and a search still under way cannot put its rows back.
+                        vm.replaceSearchesUnderWay()
                         vm.results    = []
                         vm.hasSearched = false
                         vm.searchError = nil
@@ -704,11 +709,14 @@ struct SearchView: View {
                         vm.applyParameters(saved.searchParameters)
                         Task {
                             await runSearch()
-                            // W-5 (#266): stamp the run watermark AFTER the search completes —
-                            // see the macOS sibling in SearchSheet for the reasoning.
-                            saved.recordRun(matchCount: vm.totalMatchCount,
-                                            indexedVolumeCount: appState.indexedVolumeIds.count)
-                            try? modelContext.save()
+                            // W-5 (#266): stamp the run watermark after the search, from the saved
+                            // search's own count, which is what its badge compares. Not the total on
+                            // screen: inside a working corpus that is the corpus's, and a run a later
+                            // search replaced leaves none (#1646, #1648).
+                            await SavedSearchFreshnessEvaluator.recordRun(
+                                of: saved, service: appState.searchService,
+                                indexedVolumeCount: appState.indexedVolumeIds.count,
+                                context: modelContext)
                         }
                     }
                     .modelContainer(modelContext.container)
@@ -858,6 +866,17 @@ struct SearchView: View {
 
     // MARK: - Running a Search
 
+    /// Builds the Meaning engine from the booted semantic stack, or `nil` when unavailable.
+    private func makeSemanticBackend() -> SemanticSearchBackend? {
+        guard let searcher = appState.semanticQuerySearcher,
+              let service = appState.searchService else { return nil }
+        return SemanticSearchBackend(
+            searcher: searcher,
+            searchService: service,
+            manifestStore: appState.manifestStore,
+            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
+    }
+
     /// Runs the current query and records it in the research trail (Wave R-4).
     ///
     /// **Every** search entry point in this view must call this rather than `vm.search()`
@@ -870,20 +889,12 @@ struct SearchView: View {
     /// `recordSearchHistory` applies its own skip conditions (logging off, empty query,
     /// errored search, or a filter/scope-only re-run of the same query), so calling it after
     /// every execution is correct — the last two entry points above are re-runs by nature.
-    /// Builds the Meaning engine from the booted semantic stack, or `nil` when unavailable.
-    private func makeSemanticBackend() -> SemanticSearchBackend? {
-        guard let searcher = appState.semanticQuerySearcher,
-              let service = appState.searchService else { return nil }
-        return SemanticSearchBackend(
-            searcher: searcher,
-            searchService: service,
-            manifestStore: appState.manifestStore,
-            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
-    }
-
+    /// A search that a later one replaced is not recorded at all, since nothing it found reached
+    /// the screen (#1648).
     private func runSearch() async {
         vm.semanticBackend = makeSemanticBackend()
-        await vm.search()
+        // A search a later one replaced records nothing: its rows never reached the screen (#1648).
+        guard await vm.search() else { return }
         vm.recordSearchHistory(projectId: appState.activeProjectId,
                                indexedVolumeCount: appState.indexedVolumeIds.count,
                                in: modelContext)

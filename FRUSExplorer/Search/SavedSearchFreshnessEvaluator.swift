@@ -43,6 +43,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — W-5 (#266): initial implementation
+///   1.1 — #1646, #1648: `recordRun(of:service:indexedVolumeCount:context:)`, the stamp a recall
+///          writes, from the saved search's own count rather than the total on screen
 @MainActor
 enum SavedSearchFreshnessEvaluator {
 
@@ -78,5 +80,35 @@ enum SavedSearchFreshnessEvaluator {
     static func verdict(current: Int, baseline: Int) -> Int? {
         let delta = current - baseline
         return delta > 0 ? delta : nil
+    }
+
+    /// Stamps a run of `saved` recalled from the Saved Searches list, with the count its badge is
+    /// computed against (#1646, #1648).
+    ///
+    /// The count is taken here, of the saved search's own parameters, which is the count
+    /// ``newResultCount(for:service:context:)`` compares. It is not read off the run that put rows on
+    /// screen, which can be another search in two ways:
+    /// - **With a working corpus applied**, a recalled search runs inside it, as any search does
+    ///   (`SearchParameters.runningInside(workingCorpus:)`), and the screen's total is that set's.
+    ///   Taken as the baseline, it made the badge count every match outside the corpus as new.
+    /// - **A run a later search replaced** writes no total (#1648), so the screen's could be the
+    ///   total of the search before it.
+    ///
+    /// A count that fails stamps the time with no baseline, which `newResultCount` backfills, as it
+    /// does for the sidebar's hand-off.
+    ///
+    /// - Parameters:
+    ///   - saved: The saved search that was run.
+    ///   - service: The search service to count with, or `nil` when there is none yet.
+    ///   - indexedVolumeCount: How many volumes this device has indexed.
+    ///   - context: The context to save the stamp in.
+    static func recordRun(of saved: SavedSearch, service: SearchService?,
+                          indexedVolumeCount: Int, context: ModelContext) async {
+        var count: Int?
+        if let service {
+            count = try? await service.searchCount(parameters: saved.searchParameters)
+        }
+        saved.recordRun(matchCount: count, indexedVolumeCount: indexedVolumeCount)
+        try? context.save()
     }
 }

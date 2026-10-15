@@ -1006,6 +1006,29 @@ struct SemanticSetRecordAndCopyTests {
         #expect(rebuiltBody.contains("searchVM.semanticDisclosure = nil"))
     }
 
+    /// The same two places replace the search under way (#1648). Neither runs a search, so nothing else would: a run
+    /// still out when the rows are cleared put them back, under the emptied field or over the rebuilt index.
+    /// `HybridSearchModeTests.clearingTheListReplacesTheRunUnderWay` drives what the call does.
+    @Test("Where rows are cleared without a run, the search under way is replaced (#1648)")
+    func clearedRowsReplaceTheSearchUnderWay() throws {
+        let iOS = try Self.source("FRUSExplorer/Search/SearchView.swift")
+        let handler = try #require(iOS.range(of: ".onChange(of: vm.keywords) { _, newValue in"))
+        let afterHandler = iOS[handler.upperBound...]
+        let block = try #require(afterHandler.range(of: "if newValue.isEmpty {"))
+        let blockEnd = try #require(afterHandler[block.upperBound...].range(of: "\n                    }\n"))
+        let body = afterHandler[block.upperBound..<blockEnd.lowerBound]
+        #expect(body.contains("vm.results    = []"), "precondition: this is the block that clears the rows")
+        #expect(body.contains("vm.replaceSearchesUnderWay()"))
+
+        let mac = try Self.source("FRUSExplorer/App/SearchSheet.swift")
+        let rebuilt = try #require(mac.range(of: ".onChange(of: appState.indexGeneration) { _, _ in"))
+        let afterRebuilt = mac[rebuilt.upperBound...]
+        let rebuiltEnd = try #require(afterRebuilt.range(of: "\n        }\n"))
+        let rebuiltBody = afterRebuilt[..<rebuiltEnd.lowerBound]
+        #expect(rebuiltBody.contains("searchVM.results = []"), "precondition: this is the block that clears the rows")
+        #expect(rebuiltBody.contains("searchVM.replaceSearchesUnderWay()"))
+    }
+
     // MARK: The timing lines
 
     @Test("The Meaning line carries the set's counts and four stage times, in milliseconds")

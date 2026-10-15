@@ -207,9 +207,11 @@ struct CollocationWiringAuditTests {
     @Test("iOS bumps its search version AFTER the results and the total land")
     func versionBumpFollowsTheResults() throws {
         let vm = try source("FRUSExplorer/Search/SearchViewModel.swift")
-        // Anchored on the assignment, not on the call: the search and the whole-query count are
-        // now started together with `async let`, so the fetch no longer appears inline here.
-        let body = try #require(vm.range(of: "results = try await fetched"))
+        // Anchored on the await of the rows, not on the call: the search and the whole-query count
+        // are started together with `async let`, so the fetch does not appear inline here. Since
+        // #1648 the rows are awaited into `rows` and assigned after a check that no later search
+        // replaced the run; the anchors below moved with that and the rule did not.
+        let body = try #require(vm.range(of: "let rows = try await fetched"))
         // The success path: from the assignment to the `catch` that ends it. A window of 1,600
         // characters stood here until #1577 lane 1, whose timing lines pushed the bump past it;
         // the bound is the path's own end now, so the catch's own bump can never satisfy this.
@@ -228,7 +230,7 @@ struct CollocationWiringAuditTests {
         // key on; a total assigned after it would let one read the new results beside the
         // previous query's denominator — the same defect the bump ordering exists to prevent,
         // one field over.
-        let totalAt = try #require(after.range(of: "totalMatchCount = await counted"))
+        let totalAt = try #require(after.range(of: "totalMatchCount = total"))
         let bumpAt = try #require(after.range(of: "executedSearchVersion &+= 1"))
         #expect(totalAt.upperBound < bumpAt.lowerBound,
                 "the whole-query total must be assigned before the version is bumped")

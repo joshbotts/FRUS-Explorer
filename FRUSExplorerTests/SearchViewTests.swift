@@ -1622,3 +1622,104 @@ struct SearchDefaultsWiringTests {
         #expect(vm.advancedFilterSignature == afterTagAB)
     }
 }
+
+// MARK: - FilterVolumeListReloadTests
+
+/// The two checks #1647 asked for before it closes, now that #1676 reads Filters' volume list when the Search tab
+/// appears, when the panel opens and whenever the indexed set changes. Both passed on the code #1676 left, so these
+/// are guards and not fixes: they drive the view model's own calls, `loadAvailableVolumes(allEntries:indexedIds:)` and
+/// `applyParameters(_:)`, which `SearchView.reloadAvailableVolumes()` and the tab's first task make.
+///
+/// Version history:
+///   1.0 — #1647: initial implementation
+@Suite("Filters' volume list, read again")
+@MainActor
+struct FilterVolumeListReloadTests {
+
+    /// Builds a minimal SearchService for view-model construction.
+    private func makeService(dir: URL) throws -> SearchService {
+        let dbURL = dir.appendingPathComponent("reload-test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                            volumesDirectory: dir, concurrencyLimit: 1)
+        return SearchService(fts5Store: store, pipeline: pipeline)
+    }
+
+    private func entry(_ volumeId: String, subseries: String) -> VolumeManifestEntry {
+        VolumeManifestEntry(
+            volumeId: volumeId, filename: "\(volumeId).xml", subseries: subseries,
+            title: "Fixture \(volumeId)",
+            dateRange: DateRange(earliest: nil, latest: nil),
+            publicationDate: "2000", status: .published,
+            editors: [], generalEditor: nil,
+            sizeBytes: 0, tags: [])
+    }
+
+    private var entries: [VolumeManifestEntry] {
+        [entry("frus1969-76v01", subseries: "1969-76"), entry("frus1969-76v02", subseries: "1969-76"),
+         entry("frus1969-76v03", subseries: "1969-76"), entry("frus1977-80v01", subseries: "1977-80")]
+    }
+
+    /// The first check: the list is read again after the reader may have chosen in Filters, and a read keeps every
+    /// choice, the volumes and subseries picked and the corpus applied. A subseries takes in a volume indexed since, as
+    /// a subseries choice always has (`effectiveVolumeIds`).
+    @Test("Reading the volume list again keeps the reader's Filters choices (#1647)")
+    func readingTheListAgainKeepsTheChoices() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSVolumeReload-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let vm = SearchViewModel(searchService: try makeService(dir: dir))
+        vm.loadAvailableVolumes(allEntries: entries,
+                                indexedIds: ["frus1969-76v01", "frus1969-76v02", "frus1977-80v01"])
+        vm.selectedSubseriesIds = ["1969-76"]
+        vm.selectedVolumeIds = ["frus1977-80v01"]
+        vm.appliedWorkingCorpusKeys = ["frus1977-80v01/d1"]
+        vm.appliedWorkingCorpusName = "One"
+        #expect(vm.effectiveVolumeIds == ["frus1969-76v01", "frus1969-76v02", "frus1977-80v01"])
+
+        // A volume finishes indexing, and the list is read again.
+        vm.loadAvailableVolumes(allEntries: entries,
+                                indexedIds: ["frus1969-76v01", "frus1969-76v02", "frus1969-76v03", "frus1977-80v01"])
+        #expect(vm.availableVolumes.count == 4, "precondition: the list was read again")
+        #expect(vm.selectedSubseriesIds == ["1969-76"])
+        #expect(vm.selectedVolumeIds == ["frus1977-80v01"])
+        #expect(vm.appliedWorkingCorpusName == "One")
+        #expect(vm.appliedWorkingCorpusKeys == ["frus1977-80v01/d1"])
+        #expect(vm.effectiveVolumeIds == ["frus1969-76v01", "frus1969-76v02", "frus1969-76v03", "frus1977-80v01"],
+                "the subseries takes in the volume indexed since")
+    }
+
+    /// The second check: the tab's first task reads the list and then applies a hand-off, and a hand-off can arrive
+    /// before boot's read of the index has landed, while the list is still empty. `reconstructScope(from:available:)`
+    /// then keeps each volume as a single choice where the list would have let it group a whole subseries. The volumes
+    /// searched, and the banner's count of them, are the same either way; only Filters' grouping differs, and the
+    /// list's arrival changes neither.
+    @Test("A hand-off applied before the volume list arrives searches the volumes one applied after does (#1647)")
+    func aHandOffBeforeTheListSearchesTheSameVolumes() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSVolumeReload-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let service = try makeService(dir: dir)
+        let indexed: Set<String> = ["frus1969-76v01", "frus1969-76v02", "frus1977-80v01"]
+        let handOff = SearchParameters(keywords: "berlin", volumeIds: ["frus1969-76v01", "frus1969-76v02"])
+
+        let early = SearchViewModel(searchService: service)
+        #expect(early.availableVolumes.isEmpty, "precondition: boot's read has not landed")
+        early.applyParameters(handOff)
+        #expect(early.selectedSubseriesIds.isEmpty)
+        #expect(early.selectedVolumeIds == ["frus1969-76v01", "frus1969-76v02"])
+        early.loadAvailableVolumes(allEntries: entries, indexedIds: indexed)
+
+        let late = SearchViewModel(searchService: service)
+        late.loadAvailableVolumes(allEntries: entries, indexedIds: indexed)
+        late.applyParameters(handOff)
+        #expect(late.selectedSubseriesIds == ["1969-76"], "precondition: with the list, the whole subseries is grouped")
+
+        #expect(early.effectiveVolumeIds == late.effectiveVolumeIds)
+        #expect(early.searchParameters.volumeIds == ["frus1969-76v01", "frus1969-76v02"])
+        #expect(early.searchParameters.volumeIds == late.searchParameters.volumeIds)
+    }
+}
