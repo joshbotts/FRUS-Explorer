@@ -128,6 +128,9 @@ import UniformTypeIdentifiers
 ///          Collection menu disable Add Documents, Add Section Heading, Add Note Block and Add Passages, and the
 ///          inspector offers no Insert as Excerpt (`SmartCollectionRule`); Add to Archives Visit… says why when the
 ///          search cannot run
+///   1.23 — 2026-10-15: #1619 review — the ⚙ popover shows a smart collection's link with Unlink
+///          (`SmartCollectionLinkRows`), whether or not its saved search can still be found: the window that refuses
+///          a smart collection's hand-added entries had no way to unlink one
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -670,6 +673,9 @@ private struct CollectionDetailPane: View {
     /// Projects, for the author-line placeholder (the active project's name is offered
     /// as a suggestion only — never persisted automatically).
     @Query(sort: \Project.name) private var allProjects: [Project]
+    /// Saved searches, for the name of the one a smart collection is linked to, in the ⚙ popover's Smart Collection
+    /// rows (#1619 review).
+    @Query(sort: \SavedSearch.createdAt, order: .reverse) private var allSavedSearches: [SavedSearch]
 
     @State private var name: String
     @State private var note: String
@@ -1079,6 +1085,21 @@ private struct CollectionDetailPane: View {
             CollectionCompositionRows(collection: collection,
                                       onApplyPreset: { applyPreset($0) },
                                       presetsCompact: false)
+
+            // #1619 review: a smart collection takes no hand-added entry, so the window that refuses them offers the
+            // way back, Unlink, whether or not the saved search can still be found. Linking an existing collection is
+            // still only in the editor that Add to Collection's New Collection opens.
+            if let searchId = collection.savedSearchId {
+                Section {
+                    SmartCollectionLinkRows(
+                        savedSearchName: allSavedSearches.first(where: { $0.id == searchId })?.name,
+                        onUnlink: {
+                            if CollectionEditorCommit.savedSearch(nil, to: collection) { try? modelContext.save() }
+                        })
+                } header: {
+                    Text(String(localized: "collection.editor.smart.header", defaultValue: "Smart Collection"))
+                }
+            }
         }
         .formStyle(.grouped)
         .frame(minWidth: 420, idealWidth: 420, minHeight: 480, idealHeight: 560)

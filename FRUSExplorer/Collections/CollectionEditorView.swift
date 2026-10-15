@@ -156,6 +156,8 @@ import UIKit
 ///          inspector offers no Insert as Excerpt, and Contents opens with the picker's sentence, whether or not the
 ///          collection holds entries (the sentence it replaces, `collection.editor.docs.smartEmpty`, showed only while
 ///          it held none); Add to Archives Visit… says why when a smart collection's search cannot run
+///   2026-10-15 — #1619 review: Collection settings offers Unlink for a link whose saved search was deleted too
+///          (`SmartCollectionLinkRows`), and reads the link from the model, not the editor's copy
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -885,27 +887,18 @@ struct CollectionEditorView: View {
 
     /// The smart-collection link/unlink rows, usable inside any container (the iPhone
     /// Details disclosure or the sectioned forms).
+    ///
+    /// A linked collection shows its link and Unlink whether or not the saved search can still be found
+    /// (`SmartCollectionLinkRows`, #1619 review): a smart collection takes nothing by hand, so a link to a deleted
+    /// search that could not be undone left the collection unable to take anything again. The link is read from the
+    /// model, which `linkSavedSearch` writes at once and which follows a link made on another device.
     @ViewBuilder
     private var smartCollectionRows: some View {
         Group {
-            if let searchId = linkedSavedSearchId,
-               let savedSearch = allSavedSearches.first(where: { $0.id == searchId }) {
-                HStack {
-                    Label(savedSearch.name, systemImage: "bolt.fill")
-                        .foregroundStyle(Color.accentColor)
-                    Spacer()
-                    Button(String(localized: "collection.editor.smart.unlink",
-                                  defaultValue: "Unlink")) {
-                        linkSavedSearch(nil)
-                    }
-                    .foregroundStyle(.red)
-                    .buttonStyle(.plain)
-                    .font(.callout)
-                }
-                Text(String(localized: "collection.editor.smart.explanation",
-                            defaultValue: "Documents are resolved from this saved search at export time. Static entries are ignored."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            if let searchId = collection.savedSearchId {
+                SmartCollectionLinkRows(
+                    savedSearchName: allSavedSearches.first(where: { $0.id == searchId })?.name,
+                    onUnlink: { linkSavedSearch(nil) })
             } else {
                 Button {
                     showLinkSavedSearch = true
@@ -2376,6 +2369,55 @@ final class NewCollectionSession {
     }
 }
 
+// MARK: - SmartCollectionLinkRows
+
+/// A linked collection's Smart Collection rows: the saved search it is linked to, with Unlink, and what the link does;
+/// or, when no saved search has the linked id any more, that it could not be found, with Unlink all the same (#1619
+/// review).
+///
+/// A smart collection takes no hand-added document, heading, note block or passage (`SmartCollectionRule`), so Unlink is
+/// the way back to taking them. These rows showed only while the linked search could be found; otherwise the section
+/// offered Link to Saved Search…, disabled when no search is saved, so a collection whose search was deleted could not be
+/// unlinked, and after #1619 could not take a hand-added entry again. Shared by the iOS editor's Collection settings
+/// (`CollectionEditorView.smartCollectionRows`, also the Mac's New Collection sheet) and the Mac Collections window's
+/// ⚙ Collection popover (`CollectionDetailPane`), which had no Smart Collection rows at all.
+///
+/// Version history:
+///   1.0 — #1619 review, round 1: initial implementation, from `CollectionEditorView.smartCollectionRows`' linked rows
+struct SmartCollectionLinkRows: View {
+
+    /// The linked saved search's name, or `nil` when no saved search has the linked id: it was deleted, on this device
+    /// or another.
+    let savedSearchName: String?
+    /// Removes the link. The caller commits it.
+    let onUnlink: () -> Void
+
+    var body: some View {
+        HStack {
+            if let savedSearchName {
+                Label(savedSearchName, systemImage: "bolt.fill")
+                    .foregroundStyle(Color.accentColor)
+            } else {
+                Label(String(localized: "collection.editor.smart.missing", defaultValue: "Saved search not found"),
+                      systemImage: "bolt.slash")
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button(String(localized: "collection.editor.smart.unlink", defaultValue: "Unlink"), action: onUnlink)
+                .foregroundStyle(.red)
+                .buttonStyle(.plain)
+                .font(.callout)
+        }
+        Text(savedSearchName == nil
+             ? String(localized: "collection.editor.smart.missing.explanation",
+                      defaultValue: "The linked saved search could not be found. It may have been deleted. Unlink it to add to this collection by hand.")
+             : String(localized: "collection.editor.smart.explanation",
+                      defaultValue: "Documents are resolved from this saved search at export time. Static entries are ignored."))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+}
+
 // MARK: - CollectionEditorCommit
 
 /// The collection editor's rules for writing the reader's edits onto the collection (#1415, #1413): each field is
@@ -2396,13 +2438,14 @@ final class NewCollectionSession {
 /// reader edits, and records the edit — the active project and a save — when one returns `true`. Never from `onChange`:
 /// on the compact layout Collection settings is pushed OVER the editor, and a covered, pushed editor runs none (#1415).
 /// The Mac Collections window's detail pane (`CollectionDetailPane`) calls them the same way, from its ⚙ popover's
-/// controls, and saves when one returns `true` (MACCOL).
+/// controls, and saves when one returns `true` (MACCOL); since #1619's review its Unlink is one of them.
 ///
 /// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the editor calls.
 ///
 /// Version history:
 ///   1.0 — #1415 / #1413: initial implementation, replacing `CollectionEditorView.saveLive()`
 ///   1.1 — MACCOL: the Mac detail pane commits through these too, replacing its `saveMetadata()`
+///   1.2 — #1619 review: the Mac pane's ⚙ popover unlinks a smart collection through `savedSearch`
 enum CollectionEditorCommit {
 
     /// Whether a text field and the optional value saved for it say the same thing: equal once both are trimmed, with

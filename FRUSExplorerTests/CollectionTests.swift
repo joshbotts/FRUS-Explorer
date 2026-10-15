@@ -10951,10 +10951,12 @@ struct CollectionPickerRowTests {
 /// The rule, the three appends both editors call and the Archives Visit seed are called here. The controls that call them
 /// are in views nothing in this target hosts (the iOS editor's two Add menus, the Mac window's toolbar and its Collection
 /// menu, the lists' rows), so their half is read from source: each control's own modifiers, found by the call that holds
-/// its label's key, never a window of text.
+/// its label's key, never a window of text, and each gated control inside its gate's braces, not merely after it.
 ///
 /// Version history:
 ///   1.0 — #1619: initial implementation
+///   1.1 — #1619 review, round 1: the scans read a control's place inside its gate and its `else`, where they read only
+///          the order; the views' `takesHandAddedEntries` is read where it is defined; and `aLinkCanAlwaysBeUndone`
 @MainActor
 @Suite("A smart collection takes no hand-added entry, and the lists say it is smart (#1619)")
 struct SmartCollectionRuleTests {
@@ -11105,6 +11107,22 @@ struct SmartCollectionRuleTests {
         return block.startIndex..<block.endIndex
     }
 
+    /// The braces of the statement that `opener` (an `if …`, its brace included) starts at its first match in `range`.
+    private static func block(opening opener: String, in range: Range<String.Index>, of source: String,
+                              _ place: String) throws -> Range<String.Index> {
+        let start = try #require(source.range(of: opener, range: range), "\(place): no «\(opener)» — re-derive this test")
+        let block = try #require(WindowTargetingTests.balancedBlock(in: source, from: start.lowerBound))
+        return block.startIndex..<block.endIndex
+    }
+
+    /// The braces of the `else` that directly follows the block ending at `end`, or `nil` when none does.
+    private static func elseBlock(after end: String.Index, of source: String) -> Range<String.Index>? {
+        let at = skipBlanks(end, in: source)
+        guard source[at...].hasPrefix("else {"),
+              let block = WindowTargetingTests.balancedBlock(in: source, from: at) else { return nil }
+        return block.startIndex..<block.endIndex
+    }
+
     private static func skipBlanks(_ index: String.Index, in source: String) -> String.Index {
         var at = index
         while at < source.endIndex, source[at].isWhitespace { at = source.index(after: at) }
@@ -11215,10 +11233,14 @@ struct SmartCollectionRuleTests {
             passages: "menu.collection.addHighlights", apparatus: "menu.collection.apparatus",
             refused: "detail?.takesHandAddedEntries != true",
             passagesRefused: "detail?.hasDocuments != true || detail?.takesHandAddedEntries != true")
-        // Both editors ask the rule of the model, which follows a link made on another device.
+        // Every gate above reads the view's `takesHandAddedEntries`, which asks the rule of the model, so a link made on
+        // another device counts.
         for (name, text) in [("the iOS editor", editor), ("the Mac window", mac)] {
-            #expect(text.contains("SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId)"),
-                    "\(name) does not ask the rule of its collection")
+            let property = try Self.block("private var takesHandAddedEntries: Bool {", in: text)
+            let code = text[property].split(separator: "\n")
+                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }.joined(separator: "\n")
+            #expect(code.contains("SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId)"),
+                    "\(name)'s takesHandAddedEntries does not ask the rule of its collection: \(text[property])")
         }
     }
 
@@ -11228,14 +11250,13 @@ struct SmartCollectionRuleTests {
         let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
         for (name, text) in [("the iOS editor", editor), ("the Mac window", mac)] {
             let contents = try Self.block("private var documentsSection: some View {", in: text)
+            let gate = try Self.block(opening: "if !takesHandAddedEntries {", in: contents, of: text, name)
             let notice = try #require(text.range(of: "Label(SmartCollectionRule.sentence, systemImage: \"bolt.fill\")",
                                                  range: contents), "\(name)'s Contents does not print the sentence")
-            let gate = try #require(text.range(of: "if !takesHandAddedEntries {", range: contents),
-                                    "\(name)'s sentence is not gated on the rule")
-            #expect(gate.upperBound < notice.lowerBound)
-            // Not inside the `else` of an empty outline: before it, so a smart collection with entries says it too.
+            #expect(gate.contains(notice.lowerBound), "\(name)'s sentence is drawn outside the rule's gate")
+            // The gate closes before the empty outline's branch opens, so a smart collection with entries says it too.
             let empty = try #require(text.range(of: "if sortedEntries.isEmpty {", range: contents))
-            #expect(notice.upperBound < empty.lowerBound, "\(name) says what a smart collection is only while it is empty")
+            #expect(gate.upperBound <= empty.lowerBound, "\(name) says what a smart collection is only while it is empty")
             let excerpts = text.components(separatedBy: "onInsertExcerpt:").count - 1
             #expect(excerpts == 1 && text.contains(
                 "onInsertExcerpt: takesHandAddedEntries ? { capture in appendExcerpts([capture]) } : nil"),
@@ -11244,22 +11265,20 @@ struct SmartCollectionRuleTests {
         // The sentence it replaces, which showed only while a smart collection was empty, is gone from the code.
         #expect(!editor.split(separator: "\n").contains { $0.contains("localized: \"collection.editor.docs.smartEmpty\"") })
         let addDocuments = try Self.block("private var addDocumentsSection: some View {", in: editor)
-        let gate = try #require(editor.range(of: "if takesHandAddedEntries {", range: addDocuments),
-                                "the Add Documents section is drawn for a smart collection")
+        let gate = try Self.block(opening: "if takesHandAddedEntries {", in: addDocuments, of: editor, "Add Documents")
         let section = try #require(editor.range(of: "Section {", range: addDocuments))
-        #expect(gate.upperBound < section.lowerBound)
+        #expect(gate.contains(section.lowerBound), "the Add Documents section is drawn for a smart collection")
     }
 
     @Test("Both Collections lists print Smart collection where a smart collection's count was")
     func theListsSaySmart() throws {
         let list = try Self.source("FRUSExplorer/Collections/CollectionListView.swift")
         let row = try Self.block("private struct CollectionRow: View {", in: list)
-        let smart = try #require(list.range(of: "if collection.savedSearchId != nil {", range: row))
-        let label = try #require(list.range(of: "Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")",
-                                            range: row), "the Collections list's row does not say Smart collection")
-        let count = try #require(list.range(of: "let count = collection.documentCount", range: row))
-        #expect(smart.upperBound < label.lowerBound && label.upperBound < count.lowerBound,
-                "the row's count is not the else of its smart label")
+        let smart = try Self.block(opening: "if collection.savedSearchId != nil {", in: row, of: list, "the list's row")
+        #expect(list[smart].contains("Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")"),
+                "the Collections list's row does not say Smart collection for a smart collection")
+        let counted = try #require(Self.elseBlock(after: smart.upperBound, of: list), "the row's smart branch has no else")
+        #expect(list[counted].contains("let count = collection.documentCount"), "the row's count is not the else of its label")
 
         let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
         let picker = try Self.block("private var collectionPickerMenu: some View {", in: mac)
@@ -11267,11 +11286,50 @@ struct SmartCollectionRuleTests {
             "let contents = c.savedSearchId == nil ? c.documentCount.formatted() : SmartCollectionRule.listLabel"),
                 "the picker's menu prints a smart collection's count")
         #expect(mac[picker].contains("Text(verbatim: \"\\(collectionDisplayName(c))  ·  \\(contents)\")"))
-        #expect(mac[picker].contains(".accessibilityLabel(SmartCollectionRule.listLabel)"),
+        let labelCount = try Self.block(opening: "if c.savedSearchId == nil {", in: picker, of: mac, "the picker's label")
+        #expect(mac[labelCount].contains("Text(verbatim: c.documentCount.formatted())"))
+        let labelSmart = try #require(Self.elseBlock(after: labelCount.upperBound, of: mac), "the picker's label has no else")
+        #expect(mac[labelSmart].contains("Image(systemName: \"bolt.fill\")")
+                && mac[labelSmart].contains(".accessibilityLabel(SmartCollectionRule.listLabel)"),
                 "the picker's label marks a smart collection with nothing VoiceOver reads")
         let manage = try Self.block("private struct ManageCollectionRow: View {", in: mac)
-        #expect(mac[manage].contains("Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")"),
+        let manageCount = try Self.block(opening: "if collection.savedSearchId == nil {", in: manage, of: mac, "the row")
+        #expect(mac[manageCount].contains("Text(verbatim: collection.documentCount.formatted())"))
+        let manageSmart = try #require(Self.elseBlock(after: manageCount.upperBound, of: mac), "the row has no else")
+        #expect(mac[manageSmart].contains("Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")"),
                 "Manage Collections' row prints a smart collection's count")
+    }
+
+    /// A smart collection takes nothing by hand, so its link must always be undoable, its saved search found or not.
+    /// The rows showed Unlink only while the linked search could be found, and the Mac's Collections window had no
+    /// Smart Collection rows at all (#1619 review).
+    @Test("Both settings surfaces offer Unlink for any linked collection, its saved search found or not")
+    func aLinkCanAlwaysBeUndone() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let rows = try Self.block("private var smartCollectionRows: some View {", in: editor)
+        // The link alone opens the rows, with no clause that also needs the saved search.
+        let linked = try Self.block(opening: "if let searchId = collection.savedSearchId {", in: rows, of: editor,
+                                    "the iOS editor's Smart Collection rows")
+        #expect(editor[linked].contains("SmartCollectionLinkRows("), "the iOS editor's linked rows are not the shared rows")
+        #expect(editor[linked].contains("onUnlink: { linkSavedSearch(nil) })"))
+
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let popover = try Self.block("private var macCollectionSettingsForm: some View {", in: mac)
+        let macLinked = try Self.block(opening: "if let searchId = collection.savedSearchId {", in: popover, of: mac,
+                                       "the Mac's ⚙ popover")
+        #expect(mac[macLinked].contains("SmartCollectionLinkRows("), "the Mac's ⚙ popover shows no Smart Collection rows")
+        #expect(mac[macLinked].contains(
+            "if CollectionEditorCommit.savedSearch(nil, to: collection) { try? modelContext.save() }"),
+                "the Mac popover's Unlink does not commit the unlink")
+
+        // The shared rows hold one Unlink, outside the branch that needs the saved search's name.
+        let shared = try Self.block("struct SmartCollectionLinkRows: View {", in: editor)
+        let named = try Self.block(opening: "if let savedSearchName {", in: shared, of: editor, "the shared rows")
+        let unlink = try #require(editor.range(
+            of: "Button(String(localized: \"collection.editor.smart.unlink\", defaultValue: \"Unlink\"), action: onUnlink)",
+            range: shared), "the shared rows have no Unlink that calls onUnlink")
+        #expect(!named.contains(unlink.lowerBound), "Unlink is drawn only while the saved search can be found")
+        #expect(editor[shared].components(separatedBy: "\"collection.editor.smart.unlink\"").count - 1 == 1)
     }
 
     @Test("Add to Archives Visit's three items show why a smart collection's search could not run")
