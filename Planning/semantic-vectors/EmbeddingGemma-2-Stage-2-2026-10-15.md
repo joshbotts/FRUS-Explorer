@@ -399,6 +399,10 @@ so B4 lands before the bump and the custom EULA is not entered. §11 is now B4's
 
 ## 11. What B4 inherits if the move goes ahead
 
+*Done, all of it, by B4's two pull requests of 2026-10-15: the runtime (#1673,
+`EmbeddingGemma-2-B4-Runtime-2026-10-15.md`) and the move (`EmbeddingGemma-2-B4-Move-2026-10-15.md`,
+which says where each item went). The displayed score is recalibrated, on the owner's decision.*
+
 - **The runtime and step 7**: `llama.xcframework` rebuilt at `a0e6dc73` or later, its dSYM release,
   and the parity procedure with a fixture regenerated at that commit and correctly labelled (§8).
 - **The store is done and verified** (`~/frus-semantic-raw-embeddinggemma-2`, 2.2 GB), and a pack is
@@ -459,3 +463,4 @@ Version history:
   the 512-bit funnel, the judged queries and their sheet, the dimension ladder, the harvest's time,
   and B3 set out for the owner.
   1.1 — 2026-10-15: the owner's B3 recorded in the status line and §10: EmbeddingGemma 2 ships, in build 51.
+  1.2 — 2026-10-15 (B4's second pull request): §11 marked done, with the two memos that did it.

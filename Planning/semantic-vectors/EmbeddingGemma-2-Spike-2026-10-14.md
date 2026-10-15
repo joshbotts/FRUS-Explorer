@@ -199,3 +199,5 @@ Version history:
   1.0 — 2026-10-14: the spike's design, the licence reading for both editions, and the Air ballpark, written when the owner queued the spike.
   1.1 — 2026-10-14: the status line points at the stage-1 memo; the text below it is left as the design was written.
   1.2 — 2026-10-15: the status line points at the stage-2 memo.
+  1.3 — 2026-10-15 (B4's second pull request): §0 and §1 name the compliance runbook and the EULA at
+  their `Completed/` paths.

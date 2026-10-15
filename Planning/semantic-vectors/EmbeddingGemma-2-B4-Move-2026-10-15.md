@@ -1,14 +1,45 @@
 # EmbeddingGemma 2, B4 part 2: the move
 
-**Date:** 2026-10-15 · **Status:** DRAFT — the owner's two decisions (§1) are open. · **Issue:** #1659
-· **Plan of record:** decisions 15 to 17, §1's and §3's B4 bullets · **Inherits:** the stage-2 memo's
-§11 and the runtime memo (`EmbeddingGemma-2-B4-Runtime-2026-10-15.md`, #1673) · **Machine:** the M5
-MacBook Air (`Mac17,4`, 32 GB), macOS 27.0.1, Xcode 27.0 · **Artifacts and the scripts that made
-them:** `eg2-b4-move-2026-10-15/`.
+**Date:** 2026-10-15 · **Status:** B4'S SECOND PULL REQUEST (plan of record §1 and §3, B4; decisions
+15 to 19). EmbeddingGemma 2 ships in build 51: its artifacts, its download, the recalibrated
+percentage and the Apache licence copy. The public uploads wait for the owner's yes (§7). ·
+**Issue:** #1659 · **Inherits:** the stage-2 memo's §11 and the runtime memo
+(`EmbeddingGemma-2-B4-Runtime-2026-10-15.md`, #1673) · **Machine:** the M5 MacBook Air (`Mac17,4`,
+32 GB), macOS 27.0.1, Xcode 27.0 · **Artifacts and the scripts that made them:**
+`eg2-b4-move-2026-10-15/`.
+
+Every figure was measured on 2026-10-15 on the Air. Engineering-side, not legal advice.
+
+## 0. In short
+
+- **The owner decided B4's two questions first** (§1): the encoder reaches a device as an opt-in
+  download with no agreement step (decision 18), and the Meaning chip's percentage is recalibrated
+  (decision 19).
+- **The artifacts are packed and reproduce.** The bundled tier, the 553 shards, their manifest and
+  the map, from the verified store under digest `89481b18…` with `EXPECT_DIGEST` held: byte-identical
+  to B2's scratch pack where B2 packed them, a second pack byte for byte, and a control repack of the
+  300m's store byte for byte against the files builds 42 to 50 ship (§2).
+- **The index states EmbeddingGemma 2's own recall, 0.902**, through the funnel the app runs, and
+  carries the model's score calibration. The generator's recall table is keyed by model as well as
+  width, and refuses a model the gates never measured (§3).
+- **The model downloads from release `encoder-2`, the shards from `generations/89481b18/`**, so
+  builds 42 to 50 keep fetching the 300m and its shards from where they were compiled to look (§4).
+- **A defect the move would have shipped:** the model store's pin-change purge removed the file by
+  the current release's name, so a reader's downloaded 300m (another name) would have stayed on disk,
+  229 MB that no storage row counts and no button removes. The purge now takes any other `.gguf` in
+  the model's folder (§4).
+- **Every semantic percentage is calibrated where its score is made**: the Meaning searcher (query
+  offset 0.47) and Related Documents' semantic axis, its re-score floor and its off-index leads
+  (document offset 0.40). The UI-test Meaning seam's figures move with the bits and the calibration:
+  100, 32 and 3 percent where they were 100, 65 and 61 (§5).
+- **The Gemma licence surfaces retire** and EmbeddingGemma 2 is an Open Source row; the copy, both
+  manuals, the EditableContent blocks, `NOTICE`, the README and the agentic guide follow (§6).
 
 ## 1. The owner's two decisions
 
-Each was measured on 2026-10-15 on the Air, and each is proposed, not decided.
+Both were measured on 2026-10-15 on the Air, proposed, and answered by the owner before the parts
+they shape were built. **Decided 2026-10-15: the opt-in download, and recalibration** (plan of
+record decisions 18 and 19).
 
 ### 1a. How the encoder reaches a device
 
@@ -42,16 +73,16 @@ Connect has the figure). The Mac app is 120.3 MB. Build 51 adds about 4 MB eithe
   300m finds it purged at the first launch of build 51 (the pin moves) and the offer back, once.
 
 The encoder's memory and time do not depend on the delivery: on the owner's iPhone 17 Pro it loads
-in 630 ms and adds about 170 MB while a Meaning search runs (the runtime memo's hand-over).
+in 630 ms and adds about 170 MB while a Meaning search runs (the runtime memo's §5).
 
-**Proposed: the opt-in download.** Most readers keep a small app, nothing is added to the build,
-and the path is the one already measured. The GGUF goes to a new release, `encoder-2`, so
-`encoder-1` stays what builds 42 to 50 fetch, after the artifact repository's Model weights section
-is rewritten (the upload is the owner's yes).
+**Proposed, and decided: the opt-in download.** Most readers keep a small app, nothing is added to
+the build, and the path is the one already measured. The GGUF goes to a new release, `encoder-2`,
+so `encoder-1` stays what builds 42 to 50 fetch, after the artifact repository's Model weights
+section is rewritten (§7).
 
 ### 1b. Whether the Meaning chip's percentage is recalibrated
 
-The chip shows the raw cosine (`SemanticScoreCopy.percent`), and so does Related Documents'
+The chip showed the raw cosine (`SemanticScoreCopy.percent`), and so did Related Documents'
 semantic chip, whose cosine also enters Related's weighted sum (the axis is self-normalising,
 #643). EmbeddingGemma 2's cosines sit higher everywhere: an on-topic question's mean cosine over
 the whole corpus is 0.62 against the 300m's 0.28 to 0.31, and two documents' 0.71 against 0.49.
@@ -76,18 +107,229 @@ off-topic best matches span 58–70% and the on-topic ones 72–86%. EmbeddingGe
 better than the 300m did (on-topic against off-topic best match, AUC 0.997 against 0.988); its raw
 numbers hide it in a band twenty points wide.
 
-**Proposed: recalibrate.** One rule, `shown = (cosine − c) / (1 − c)`, clamped to 0–100%, with `c`
-measured for the model: 0.47 for a question against a document (the Meaning chip, the fallback
-card, the rows of undownloaded volumes, VoiceOver's value) and 0.40 for a document against a
-document (Related's chip and its share of Related's sum). The fitted figures are the table's last
-column, within two points of the 300m's on every row but "Space aliens". 100% still means
+**Proposed, and decided: recalibrate.** One rule, `shown = (cosine − c) / (1 − c)`, clamped to
+0–100%, with `c` measured for the model: 0.47 for a question against a document (the Meaning chip,
+the fallback card, the rows of undownloaded volumes, VoiceOver's value) and 0.40 for a document
+against a document (Related's chip and its share of Related's sum). The offsets are the
+least-squares fits of that rule to the 300m's scores over the same rows (0.462 to 0.477 for typed
+queries, 0.398 for Related; `calibration-summary.txt`), rounded. The fitted figures are the table's
+last column, within two points of the 300m's on every row but "Space aliens". 100% still means
 identical. The constants are pinned to the model's SHA-256, so a later model shows its raw cosine
 until it is measured. Related's sum keeps the balance the owner set on 2026-09-10 (the semantic axis
-at 0.5), which was tuned on the 300m's scale. The alternatives: keep the raw cosine (no code
-change; every figure about twenty points higher on a typed query and five to nine on Related), or
+at 0.5), which was tuned on the 300m's scale. The alternatives were to keep the raw cosine (no code
+change; every figure about twenty points higher on a typed query and five to nine on Related), or to
 drop the number for the rank alone (every surface, both manuals and the EditableContent blocks).
+
+## 2. The pack
+
+**The layout first.** `tools/semantic-map/build_layout.py` over EmbeddingGemma 2's pool
+(`~/frus-b2/gates-eg2/pool`, B2's `pool_docs.py` output, in artifact row order): PCA 56.85% of the
+variance (the 300m's 58.36%), **140 clusters** (172), 88,059 unclustered (28.0%; 29.3%); UMAP 116 s
+and HDBSCAN 111 s, 232 s in all at 5.6 GB peak RSS. A second run wrote the same `layout.bin`, SHA-256
+`46799d5a…`, byte for byte. numpy prints divide-by-zero, overflow and invalid-value warnings from
+PCA's matmul on this Mac, which are Accelerate's spurious floating-point flags; the reproduction,
+the variance and the cluster count are the check.
+
+**Then the generator**, with the model-keyed tables of §3:
+
+```bash
+STORE=~/frus-semantic-raw-embeddinggemma-2 EXPECT_DIGEST=89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101 GENERATED_DATE=2026-10-15 .build/release/SemanticVectorsGenerator
+```
+
+314,616 documents in 1,603 id segments; the index 73,297 bytes, the binary 20,476,048, the 553 shards
+162,377,248, the map 1,887,760 (140 clusters, 88,059 unclustered). The run took 188 s at a peak RSS
+of 3.5 GB and a peak footprint of 5.6 GB; the map's labelling is most of both (B2's pack without the
+map: 3.6 s, 1.0 GB).
+
+| check | result |
+|---|---|
+| against B2's scratch pack (`~/frus-b2/pack/eg2-512/`) | the binary, the shard manifest and all 553 shards byte-identical; the index differs only in `retrieval` (§3) |
+| a second pack into scratch, the same inputs | all five bundled artifacts and all 553 shards byte for byte |
+| a control repack of the 300m's store (`EXPECT_DIGEST=a726ca60…`, `GENERATED_DATE=2026-10-10`, no layout) | its index, binary and shard manifest byte for byte against `HEAD`'s, the files builds 42 to 50 ship |
+| the shards against the manifest | 553 of 553 by length and SHA-256; every header carries `89481b18…` |
+
+The cluster labels are the generator's, not curated (c-TF-IDF through the app's tokenizer), and the
+second pack reproduced them byte for byte.
+
+## 3. What the index states
+
+**The recall.** `SemanticVectorsRunner.measuredRecallAt10` was keyed by width alone, so B2's pack of
+EmbeddingGemma 2 stated the 300m's 0.851 and cited the 300m's measurement (the stage-2 memo's §3).
+It is now `funnelMeasurements`, keyed by the model's GGUF SHA-256 and then the width, each entry a
+recall and its citation:
+
+| model | 256 | 512 |
+|---|---|---|
+| EmbeddingGemma 2 | 0.7845 | **0.9021**, Hamming-800 over 512 sign bits → int8-512, the stage-2 memo's §5 |
+| EmbeddingGemma 300m | 0.7449 | 0.8510, August's, word for word |
+
+`resolveShippingDims` refuses a width the store's model was not measured at, so a model with no
+entry is refused at every width, the default included. The 300m's entries keep August's text so its
+control repack stays byte-identical (§2), though its 0.851 describes a 256-bit scan.
+
+**The score calibration.** `SemanticVectorsArtifacts.Index.Retrieval` gains `scoreCalibration`,
+optional and outside the digest as `Provenance.queryPrefix` is: it says how to read the vectors,
+not how they were made. The generator writes it from `SemanticVectorsRunner.scoreCalibrations`,
+keyed by model, which holds EmbeddingGemma 2's offsets and nothing for the 300m, whose artifact
+never had the field and decodes unchanged. `calibratedQueryScore(_:)` and
+`calibratedDocumentScore(_:)` apply it, and return the cosine itself for a generation with none.
+**They do not clamp**: the rule is affine, so a list sorted by the calibrated score is sorted exactly
+as by the cosine, with no ties at 0%; every display clamps, as each clamped the raw cosine. The kit
+is shared code, and `swift build --target SemanticVectorsKit` and its suites are part of §8.
+
+## 4. The download and the addresses
+
+**The model.** `SemanticModelFetcher.defaultModelURL` is
+`…/frus-semantic-vectors/releases/download/encoder-2/embeddinggemma-2-Q8_0.gguf`, and
+`SemanticModelStore` pins `embeddinggemma-2-Q8_0.gguf`, 309,855,456 bytes; the SHA-256 is the
+bundled index's `modelFileSHA256`, as before. One release a model: `encoder-1` keeps the 300m, which
+builds 42 to 50 fetch by their own pin, and the dSYMs.
+
+**The shards.** `SemanticShardFetcher.defaultBaseURL` is
+`…/frus-semantic-vectors/main/generations/89481b18/shards`. Through build 50 it was `…/main/shards`,
+an address with no version in it; a build verifies each download against the manifest it shipped
+with, so publishing EmbeddingGemma 2's shards there would have left every older build refusing every
+fetch. Each generation now has its own folder, named by its digest's first eight hex digits, and
+`SemanticShardFetcherTests` fails when the bundled digest moves and the address does not.
+
+**The purge.** At launch `purgeIfPinChanged()` discards a stored model whose marker records another
+pin. It found the file by `SemanticModelStore.fileName`, which is the upstream release's own name
+and so moved with the model: on a device holding `embeddinggemma-300m-qat-Q4_0.gguf` and its marker,
+it would have deleted the marker, found no file under the new name, and left 229 MB behind,
+uncounted (the storage rows read the new name) and unremovable (Remove Search Model removes the new
+name). Read, not seen: no device has run build 51. The purge now also discards every other `.gguf` in
+the model's folder, which is the model's own (`makeSemanticModelDirectory`); three tests in
+`SemanticModelStoreTests` hold it, and the test fixtures write their incoming file outside the
+folder, where a download lands.
+
+**The download step.** The Settings row and the search offer card download at once; the consent
+sheet is gone (§6). The fetcher's verification, progress and cellular switch are unchanged. A reader
+who had the 300m sees the offer again, once, at 310 MB.
+
+## 5. The calibrated score in the app
+
+Applied once, where each score is made, so every surface that shows it, sorts by it or sums it reads
+the same number:
+
+- **Meaning** (`SemanticQuerySearcher`): a hit's `score` is the int8 cosine through
+  `calibratedQueryScore`, in the corpus-wide search and the search inside a set. The Meaning rows,
+  the fallback card, the rows of undownloaded volumes and VoiceOver's value all show it through
+  `SemanticScoreCopy`, which clamps and rounds as before.
+- **Related Documents** (`SemanticSimilarityGenerator`): the vended strengths and their chips, the
+  re-score (a candidate's cosine is calibrated before it is compared with the floor, which is the
+  weakest vended strength, so both are on one scale), and the off-index document leads, through
+  `calibratedDocumentScore`. The ranker clamps the axis as before (#643).
+- **The feedback log** records the score the row showed, under its old key `cosine` so earlier
+  verdicts decode; `provenanceDigest` says which generation, and so which scale.
+- **The method appendix** records a Meaning search as `route=semantic; model=embeddinggemma-2-Q8_0;
+  top=100`: `SemanticSearchBackend.renderedExpression` reads the bundled provenance's model, where
+  both view models spelled the 300m's id.
+
+**The UI-test Meaning seam** (#1577 lane 3) answers a question with a document's bundled sign bits
+and plants a match file of ±1 rows, whose cosine is `1 − 2h/512`. Its figures move with
+EmbeddingGemma 2's bits and with the calibration (`seam-figures.txt`, whose control over the 300m's
+pool reproduces the figures the seam quoted through build 50):
+
+| | through build 50 | build 51 |
+|---|---|---|
+| near question (d2): its three rows | d2 100%, d1 65% (90 bits), d3 61% (100) | d2 100%, d1 32% (92 bits), d3 3% (131) |
+| d1 and d3 among the 800 candidates | 2nd and 3rd | 2nd and 50th |
+| near: hits, unscored | 78; 722 in 179 volumes | 80; 720 in 248 volumes |
+| far question (`frus1861` d1): unscored | 800 in 134 volumes | 800 in 124 volumes |
+| far, inside a set of the fixture | d2 24%, d3 24%, d1 16% | d3, d2, d1 (186, 187, 201 bits), each 0% |
+
+Sign vectors sit lower than a model's vectors for the same closeness (two unrelated rows near 0,
+where the model's sit near 0.6), so the seam's far rows, about 0.27, fall below the 0.47 offset and
+read 0%; their order is still the cosine's. `UITestMeaningSeederTests`, `MeaningResultsSeamTests`,
+the seeder's header and both runbooks carry the new figures.
+
+## 6. The licence copy
+
+Under Apache 2.0 the screens shrink, as the spike design's §1 set out:
+
+- **Retired:** the consent sheet (`SemanticModelConsentSheet`) in Settings and on the search offer
+  card; About's On-Device Model section with its two Gemma links and the bundled Terms
+  (`GemmaTermsView`, `gemma-terms-of-use.txt`, removed from both app targets with `xcodegen` and the
+  scheme restore). Their EditableContent blocks (§1.4b, §1.4c, the terms' missing-copy line) carry
+  RETIRED banners with their wording kept.
+- **New:** an Open Source row in About ▸ Legal, "EmbeddingGemma 2", linking the model card on Hugging
+  Face and stating the licence, as llama.cpp's row does (§1.4e).
+- **Changed:** the Settings row and footer and the offer card state 310 MB and drop the Gemma Terms;
+  the offer button reads "Download Search Model" without the ellipsis a sheet implied. `NOTICE`
+  attributes EmbeddingGemma 2 under Apache 2.0 in place of the Gemma notice. The README and its
+  EditableContent mirror, both manuals and the agentic guide's §A.7 follow. The custom EULA and the
+  compliance runbook are in `Planning/Completed/`, with dated notes at their heads.
+
+## 7. The public uploads, staged
+
+Nothing has been uploaded. Everything is ready on the Air for the owner's yes, and build 51 needs
+both before it ships, or its Meaning search finds no model to download and no match files:
+
+- **`~/frus-b4/frus-semantic-vectors`**, a clone of `joshbotts/frus-semantic-vectors` on branch
+  `b4-embeddinggemma-2`, one commit (`9be645e`) over `main` at `38793f0`: the 553 shards under
+  `generations/89481b18/shards/` (verified against the manifest), their manifest beside them,
+  `LICENSES/Apache-2.0.txt`, and the README and NOTICE rewritten for both encoder releases (the
+  Gemma notice kept for `encoder-1`, word for word). `shards/` and the root manifest are untouched.
+- **The release `encoder-2`**: `embeddinggemma-2-Q8_0.gguf` from `~/Development/models/embeddinggemma-2/`
+  (SHA-256 checked) and `~/frus-b4/LICENSE-Apache-2.0.txt`, with `~/frus-b4/encoder-2-release-notes.md`.
+
+On the owner's yes, in this order (the README is the Model weights rewrite that precedes the GGUF):
+
+```bash
+git -C ~/frus-b4/frus-semantic-vectors push origin b4-embeddinggemma-2:main
+```
+
+```bash
+gh release create encoder-2 -R joshbotts/frus-semantic-vectors --title "Query encoder — EmbeddingGemma 2 Q8_0 (pinned)" --notes-file ~/frus-b4/encoder-2-release-notes.md ~/Development/models/embeddinggemma-2/embeddinggemma-2-Q8_0.gguf ~/frus-b4/LICENSE-Apache-2.0.txt
+```
+
+Then read both back: a shard and the GGUF downloaded from their public addresses, compared by
+SHA-256, and the repository's description (`gh repo edit … --description`) checked for the volume
+count.
+
+## 8. Checked
+
+- `swift test` for `SemanticVectorsKitTests` and `SemanticVectorsGeneratorTests`: 40 and 84 tests
+  passed, the new ones among them (the calibration rule, the model-keyed table, a model with no
+  measurement refused, the committed index's recall and calibration).
+- The unit target's semantic, Related, About, search-route and EditableContent suites on the iPhone
+  17 simulator (iOS 27.0), scoped: first 417 tests in 45 suites, whose 14 issues were the seam's
+  figures, the EditableContent ranges and one model-store fixture; after the fixes, 96 in 9 suites
+  passed.
+
+(§8 is completed with the full runs before the pull request opens.)
+
+## 9. Not verified
+
+- **A device with the 300m downloaded, upgraded to build 51**: the purge of the earlier file (§4) is
+  read and tested, not seen.
+- **The download from the public release**: nothing is uploaded (§7).
+- **EmbeddingGemma 2's quality on typed queries**: the 183 judged rows are the owner's optional
+  sitting (the stage-2 memo's §6).
+- **The calibration on other queries than these 90**: the offsets fit the medians within two points
+  here; the off-topic set is 20 queries written for it.
+
+## 10. Files
+
+`eg2-b4-move-2026-10-15/`:
+- `session-topical-queries.txt`, `session-null-queries.txt`: the 65 queries written for §1b (the
+  owner's 25 are `../owner-eval-queries-2026-08-27.txt`).
+- `score_calibration.py` → `calibration.json`: every query's top ten and corpus statistics, and 600
+  anchors' top twenty, for both models. It reads `<dir>/d2/q-<set>-<model>.json`, made by
+  `tools/semantic-harvest/make_query_parity_fixture.py` with `QUERIES` set to each file and the
+  `a0e6dc7` `llama-embedding`, and B2's pools under `~/frus-b2/`.
+- `summarize_calibration.py`, `fit_offset.py`, `offset_errors.py` → `calibration-summary.txt`: §1b's
+  table, the fits and the AUCs.
+- `seam_figures.py` → `seam-figures.txt`: §5's seam table, with the 300m's pool as the control.
+- `layout-meta-run1.json`, `layout-meta-run2.json`, `layout-run1.log`, `pack-eg2.log`: §2's runs.
+
+Outside the repository, on the Air: the staged clone and release files in `~/frus-b4/` (§7), the
+store, B2's pools and packs in `~/frus-b2/`, and the GGUFs.
 
 ---
 
 Version history:
   0.1 — 2026-10-15: draft; §1 the two decisions, measured, for the owner.
+  1.0 — 2026-10-15: the owner's answers; the pack, the index's recall and calibration, the
+  addresses and the purge, the calibrated score in the app and the seam, the licence copy, and the
+  staged uploads.

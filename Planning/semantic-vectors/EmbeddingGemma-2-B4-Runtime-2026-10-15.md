@@ -10,7 +10,9 @@ step 7 · **Stages:** `EmbeddingGemma-2-Stage-1-2026-10-14.md`, `EmbeddingGemma-
 EmbeddingGemma 2 `embeddinggemma-2-Q8_0.gguf` (309,855,456 bytes, `2188ac1d…40b09135`), both SHA-checked
 today · **Artifacts and the scripts that made them:** `eg2-b4-runtime-2026-10-15/`.
 
-Every figure was measured on 2026-10-15 on the Air. The owner's iPhone is §5's, not measured here.
+Every figure was measured on 2026-10-15 on the Air, except the owner's iPhone's, which §5 records
+from the run of that day (added by B4's second pull request,
+`EmbeddingGemma-2-B4-Move-2026-10-15.md`).
 
 ## 0. In short
 
@@ -38,8 +40,9 @@ Every figure was measured on 2026-10-15 on the Air. The owner's iPhone is §5's,
 - **Stage 1's memory comparison set different shapes side by side**: its 507 MB for `a0e6dc7` was
   the peak over 1-prompt and 100-prompt invocations, the record's 639 MB for `8663224` one
   25-prompt invocation. Like for like, the new runtime is lower in both (§4).
-- **The dSYM release is staged, not uploaded**: it publishes to a public repository, so it waits
-  for the owner's word (§6).
+- **The dSYM release is uploaded**, on the owner's word after this pull request merged, and
+  verified from the release (§6). **The owner's iPhone passed step 7** for both models, at the
+  Mac's figures (§5).
 
 ## 1. The rebuild
 
@@ -262,6 +265,16 @@ TEST_RUNNER_FRUS_SEMANTIC_MODEL='~/Library/Application Support/FRUSExplorer/Sema
 TEST_RUNNER_FRUS_SEMANTIC_MODEL='~/tmp/embeddinggemma-2-Q8_0.gguf' xcodebuild test-without-building -project FRUSExplorer.xcodeproj -scheme FRUSExplorer -destination "platform=iOS,name=Josh" -derivedDataPath ~/Library/Developer/Xcode/DerivedData/FRUS-B4-iPhone -only-testing "FRUSExplorerTests/QueryEncoderParityTests/memoryShape()" -collect-test-diagnostics never 2>&1 | tee ~/Desktop/b4-iphone-eg2-memory.log | grep -E "\[QueryEncoder|Test run with|✘"
 ```
 
+**What it measured, 2026-10-15, 12:27 to 12:34**, on "Josh" (iPhone 17 Pro, iOS 27.0.1, Metal), the
+Debug build of `v2` at `28dd78a0` (device slice UUID `4D3C4A5A…`): the 300m's four tests passed,
+min cosine **0.9999996142** ("Deposing shah"), the Mac harness's figure; EmbeddingGemma 2's parity
+passed, min cosine **0.9999997158** ("Diego Garcia base"), the Mac's too. `memoryShape()` alone,
+twice each, footprint MB before → load → 25 encodes → unload, sampled at once with no wait:
+the 300m 95/90 → 185/184 → 194/192 → 138/192, load 450/465 ms, first encode 21 ms, warm median
+6.4–6.5 ms; EmbeddingGemma 2 97/94 → 262/259 → 272/269 → 206/202, load 630/637 ms, first encode
+28–30 ms, warm median 10.4–10.6 ms. So on the phone EmbeddingGemma 2 costs about 77 MB more while
+loaded (its weights are 81 MB larger), 170 ms more load and 4 ms more a warm query.
+
 **What to send back:** the `[QueryEncoder…]` lines of the four logs. **What passing looks like:** each
 run ends `Test run with N tests … passed` (4, then 1, 1 and 1), and both parity lines read 0.999 or
 more; on the phone's Metal they should read near the Mac's 0.9999996 and 0.9999997. If the 300m was
@@ -269,23 +282,28 @@ never downloaded in the app on this phone, copy it in the same way as EmbeddingG
 Air at `~/.lmstudio/models/frus-eval/embeddinggemma-300m-qat/`) and point the 300m runs at
 `'~/tmp/embeddinggemma-300m-qat-Q4_0.gguf'`.
 
-**Afterwards:** reinstall build 50 from TestFlight. iOS clears an app's `tmp` folder on its own; `devicectl`
-has no delete, and copying an empty folder over a folder with `--remove-existing-content true` should
-clear one, which was not tried here.
+**Afterwards:** reinstall build 50 from TestFlight. iOS clears an app's `tmp` folder on its own; leave
+it to do so. **Never run `devicectl device copy to … --remove-existing-content true` against the
+app's container**, which this paragraph suggested until 2026-10-15: run that day to clear `tmp`, it
+errored ("Failed to retrieve the file node") and the app's whole data container on the phone was
+then empty (the SwiftData store, the 3.33 GB index, the volumes, the vectors, the model and the
+preferences). Recovery is a reinstall from TestFlight, iCloud's sync of the research data, and
+downloading the volumes again.
 
-## 6. The dSYM release, staged
+## 6. The dSYM release
 
 The fetch script names its asset by the pinned commit, so `llama-xcframework-dSYMs-a0e6dc7.zip` sits
 beside `-8663224.zip` on the same release without a clash, and older checkouts keep fetching theirs.
-The plan is to add it to `encoder-1`, which leaves `DSYM_RELEASE` as it is, and to add one bullet to
-the release notes, worded as the `8663224` one is. A new release would change the fetch script's
-default too. Uploading publishes to a public repository, so it waits for the owner's word. Until it
-is uploaded, an archive fails at "Embed llama dSYM" on any Mac without the local zip, as the phase
-intends; with it, `DSYM_ZIP=<zip> ./Scripts/fetch-llama-dsyms.sh` fills the cache.
+It went on `encoder-1`, which leaves `DSYM_RELEASE` as it is, with one bullet in the release notes
+worded as the `8663224` one is (that one now reads "embedded through build 50"). **Uploaded on the
+owner's word, 2026-10-15 at 15:58Z, after this pull request merged**: 91,570,299 bytes, SHA-256
+`35d6e829…`, downloaded back byte-identical, and `fetch-llama-dsyms.sh` with an empty cache fetched
+it from the release and verified all six UUIDs. Until then an archive failed at "Embed llama dSYM"
+on any Mac without the local zip, as the phase intends.
 
 ## 7. Not verified
 
-- The iPhone (§5): the device slice under a phone's Metal, and both models' memory and times there.
+- ~~The iPhone (§5)~~: run on 2026-10-15 after the merge, and §5 records it.
 - An archive. The phase's script was run by hand outside the sandbox (§1).
 - The Mac app's encoder memory and times in the app itself; the harness gives them for the app's
   encoder source outside it (§4).
@@ -302,8 +320,8 @@ intends; with it, `DSYM_ZIP=<zip> ./Scripts/fetch-llama-dsyms.sh` fills the cach
 - `mac-harness-ab.jsonl`: §4's Mac table and §2's and §3's Mac rows, one JSON object a run.
 - `mac_parity_harness.swift`, `run_mac_harness.sh`, `latency_ab.py`: the scripts that took them.
 
-Outside the repository, on the Air: the two GGUFs, both `llama-embedding` builds, and the dSYM zip,
-in the worktree's root until it is uploaded.
+Outside the repository, on the Air: the two GGUFs and both `llama-embedding` builds. The dSYM zip is
+on `encoder-1` (§6).
 
 ---
 
@@ -312,3 +330,6 @@ Version history:
   fixed, the 300m's parity under it on the simulator, the Mac and the command line, EmbeddingGemma
   2's step-7 parity on the simulator and the Mac, latency and memory for both models against the
   old runtime, and the owner's iPhone steps.
+  1.1 — 2026-10-15 (B4's second pull request): the iPhone run's figures in §5 and the warning on
+  `--remove-existing-content` that its cleanup earned; the dSYM upload recorded in §0 and §6; §7's
+  iPhone line struck.
