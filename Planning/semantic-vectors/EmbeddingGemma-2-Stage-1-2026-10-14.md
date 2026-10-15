@@ -1,7 +1,7 @@
 # EmbeddingGemma 2, stage 1: the runtime, the file, the Air, and the spike gates
 
 **Date:** 2026-10-14 · **Status:** STAGE 1 DONE (plan of record Track B, step B1). The owner
-decided on 2026-10-14 that stage 2 runs, and its harvest started that evening (§6). · **Issue:** #1659 · **Design:** `EmbeddingGemma-2-Spike-2026-10-14.md`
+decided on 2026-10-14 that stage 2 runs, and its harvest started that evening (§6). Stage 2 ran on 2026-10-15: `EmbeddingGemma-2-Stage-2-2026-10-15.md` holds its figures, and its §9 records what this file's §5 estimate missed. · **Issue:** #1659 · **Design:** `EmbeddingGemma-2-Spike-2026-10-14.md`
 · **Machine:** the M5 MacBook Air (`Mac17,4`, Apple M5, 10 cores, 32 GB), on AC power with Low
 Power Mode off, LM Studio open with no model loaded · **Runtime:** llama.cpp `a0e6dc73` (master, 2026-10-14), Release, Metal ·
 **Weights:** `embeddinggemma-2-Q8_0.gguf` from `ggml-org/embeddinggemma-2-GGUF`, 309,855,456
@@ -332,3 +332,4 @@ The two spike stores stay on the Air, outside the repository (13 MB each), with 
 Version history:
   1.0 — 2026-10-14: stage 1 run on the Air: the runtime, the file, the tensor path, the spike gates
   with paired intervals, the re-embed re-derived, and the two readings of the stop rule.
+  1.1 — 2026-10-15: the status line points at the stage-2 memo; the text below it is left as stage 1 wrote it.

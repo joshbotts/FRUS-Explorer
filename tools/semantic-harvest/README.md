@@ -286,6 +286,21 @@ the parts a later run needs.
   vector was finite and unit-length, and the float32 similarities matched a float64 recomputation
   to 1.9×10⁻⁶. Check that before trusting a figure; do not silence it unread.
 
+## Field notes — the Air, 2026-10-14 to 15 (EmbeddingGemma 2, stage 2)
+
+The figures are in `Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md`.
+
+- **A full run on the Air took 12.64 hours of embedding**, where 25 minutes of sustained probe had
+  predicted 8.6 to 9.1. The pace against the Studio's August seconds rose steadily from 1.70 in the
+  first hour to 2.69 in the last, with no thermal warning in `pmset -g log`, and the battery drained
+  on AC through the first two hours. Budget 13 hours, use an adapter that covers the load, and
+  watch the hourly pace rather than the first hour's ETA.
+- **Compare text layers, not character counts.** Five volumes' text differed from the shipped
+  store's, two of them by the same number of characters, all from corpus edits made after the
+  shipped store embedded them.
+- **Two models over one corpus:** `corpus-gates/compare_corpus.py` pairs them at corpus scale, with
+  a bootstrap over queries and one over citing volumes, by era and by citation split.
+
 ## Later phases
 
 **The NER pass (R-1) now has its own runbook and harness in this folder:

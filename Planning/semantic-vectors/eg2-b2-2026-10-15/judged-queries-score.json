@@ -1,0 +1,157 @@
+{
+  "base": "Planning/semantic-vectors/eval-2026-08-27/verdicts.csv",
+  "base_scores": {
+    "all": {
+      "judged_not": 65,
+      "judged_relevant": 121,
+      "mrr_ceiling": 0.867,
+      "mrr_floor": 0.771,
+      "precision_ceiling": 0.74,
+      "precision_floor": 0.484,
+      "precision_over_judged": 0.651,
+      "unjudged": 64
+    },
+    "keyword": {
+      "judged_not": 20,
+      "judged_relevant": 67,
+      "mrr_ceiling": 0.918,
+      "mrr_floor": 0.745,
+      "precision_ceiling": 0.818,
+      "precision_floor": 0.609,
+      "precision_over_judged": 0.77,
+      "unjudged": 23
+    },
+    "known_item": {
+      "judged_not": 14,
+      "judged_relevant": 9,
+      "mrr_ceiling": 0.667,
+      "mrr_floor": 0.5,
+      "precision_ceiling": 0.533,
+      "precision_floor": 0.3,
+      "precision_over_judged": 0.391,
+      "unjudged": 7
+    },
+    "null": {
+      "judged_not": 7,
+      "judged_relevant": 2,
+      "mrr_ceiling": 1.0,
+      "mrr_floor": 1.0,
+      "precision_ceiling": 0.3,
+      "precision_floor": 0.2,
+      "precision_over_judged": 0.222,
+      "unjudged": 1
+    },
+    "research": {
+      "judged_not": 20,
+      "judged_relevant": 37,
+      "mrr_ceiling": 0.843,
+      "mrr_floor": 0.843,
+      "precision_ceiling": 0.778,
+      "precision_floor": 0.411,
+      "precision_over_judged": 0.649,
+      "unjudged": 33
+    },
+    "wrong_premise": {
+      "judged_not": 4,
+      "judged_relevant": 6,
+      "mrr_ceiling": 1.0,
+      "mrr_floor": 1.0,
+      "precision_ceiling": 0.6,
+      "precision_floor": 0.6,
+      "precision_over_judged": 0.6,
+      "unjudged": 0
+    }
+  },
+  "cand": "Planning/semantic-vectors/eval-eg2-2026-10-15/verdicts.csv",
+  "cand_scores": {
+    "all": {
+      "judged_not": 8,
+      "judged_relevant": 59,
+      "mrr_ceiling": 0.98,
+      "mrr_floor": 0.545,
+      "precision_ceiling": 0.968,
+      "precision_floor": 0.236,
+      "precision_over_judged": 0.881,
+      "unjudged": 183
+    },
+    "keyword": {
+      "judged_not": 1,
+      "judged_relevant": 26,
+      "mrr_ceiling": 0.955,
+      "mrr_floor": 0.436,
+      "precision_ceiling": 0.991,
+      "precision_floor": 0.236,
+      "precision_over_judged": 0.963,
+      "unjudged": 83
+    },
+    "known_item": {
+      "judged_not": 1,
+      "judged_relevant": 9,
+      "mrr_ceiling": 1.0,
+      "mrr_floor": 0.667,
+      "precision_ceiling": 0.967,
+      "precision_floor": 0.3,
+      "precision_over_judged": 0.9,
+      "unjudged": 20
+    },
+    "null": {
+      "judged_not": 2,
+      "judged_relevant": 2,
+      "mrr_ceiling": 1.0,
+      "mrr_floor": 1.0,
+      "precision_ceiling": 0.8,
+      "precision_floor": 0.2,
+      "precision_over_judged": 0.5,
+      "unjudged": 6
+    },
+    "research": {
+      "judged_not": 4,
+      "judged_relevant": 16,
+      "mrr_ceiling": 1.0,
+      "mrr_floor": 0.537,
+      "precision_ceiling": 0.956,
+      "precision_floor": 0.178,
+      "precision_over_judged": 0.8,
+      "unjudged": 70
+    },
+    "wrong_premise": {
+      "judged_not": 0,
+      "judged_relevant": 6,
+      "mrr_ceiling": 1.0,
+      "mrr_floor": 1.0,
+      "precision_ceiling": 1.0,
+      "precision_floor": 0.6,
+      "precision_over_judged": 1.0,
+      "unjudged": 4
+    }
+  },
+  "conflicting_judgments": [],
+  "overlap_by_query": {
+    "1": 0,
+    "2": 6,
+    "3": 5,
+    "4": 7,
+    "5": 3,
+    "6": 1,
+    "7": 4,
+    "8": 7,
+    "9": 7,
+    "10": 2,
+    "11": 2,
+    "12": 2,
+    "13": 7,
+    "14": 5,
+    "15": 6,
+    "16": 6,
+    "17": 7,
+    "18": 7,
+    "19": 1,
+    "20": 0,
+    "21": 4,
+    "22": 0,
+    "23": 0,
+    "24": 1,
+    "25": 0
+  },
+  "overlap_mean": 3.6
+}

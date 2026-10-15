@@ -1,0 +1,11 @@
+{
+  "mismatches": {
+    "ham256": 0,
+    "int8_256": 0,
+    "truth": 0
+  },
+  "spot_check_queries": 12,
+  "truth_cos_finite": true,
+  "truth_cos_max": 1.0000004768371582,
+  "truth_cos_min": 0.6116133332252502
+}

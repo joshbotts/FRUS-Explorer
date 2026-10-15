@@ -1,0 +1,48 @@
+{
+  "files_on_disk": 2215,
+  "finished": "2026-10-15T06:55:14",
+  "first_volume_done": "2026-10-14T18:17:21",
+  "head_models": [
+    "embeddinggemma-2-Q8_0"
+  ],
+  "head_totals": {
+    "chars": 1333780004,
+    "chunks": 605978,
+    "docs": 314616
+  },
+  "run_manifest": {
+    "batch": 64,
+    "chunk_chars": 3200,
+    "dim": 768,
+    "generated": "2026-10-15T06:55:14",
+    "machine": {
+      "arch": "arm64",
+      "cpu": "Apple M5",
+      "hw_model": "Mac17,4",
+      "node": "MacBluey.local",
+      "python": "3.9.6"
+    },
+    "model": "embeddinggemma-2-Q8_0",
+    "model_file_sha256": "2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135",
+    "overlap_chars": 480,
+    "prefix": "title: none | text: ",
+    "script_sha256": "41a6656dddf73e7e837dccc73e2e2cdfbf4bce87af3402a2a7bd5218c004e736",
+    "totals_this_run": {
+      "chars": 1333780004,
+      "chunks": 605978,
+      "docs": 314616,
+      "embed_secs": 45503.7,
+      "est_tokens": 320620193
+    },
+    "volumes_missing": [],
+    "volumes_requested": 553
+  },
+  "server": "llama-server (llama.cpp a0e6dc73) on 127.0.0.1:8089, -ngl 99 -c 16384 -np 4 -b 4096 -ub 4096, alias embeddinggemma-2-Q8_0",
+  "sha256sums": {
+    "checked": "2026-10-15, shasum -a 256 -c SHA256SUMS",
+    "entries": 2212,
+    "ok": 2212
+  },
+  "started": "2026-10-14T18:16:49",
+  "store": "~/frus-semantic-raw-embeddinggemma-2"
+}

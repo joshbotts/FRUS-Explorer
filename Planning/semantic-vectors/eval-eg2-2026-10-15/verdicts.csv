@@ -1,0 +1,656 @@
+query,route,rank,volume,document,header,relevant
+1,lexical,1,frus1894app2,d306,"No. 23. Statement of Charles T. Gulick.",0
+1,semantic,1,frus1863p1,d33,"Mr. Adams to Mr. Seward.",
+1,semantic,2,frus1862,d105,"Mr. Adams to Mr. Seward.",
+1,semantic,3,frus1862,d455,"Mr. Motley to Mr. Seward.",
+1,semantic,4,frus1863p2,d555,"Mr. Fogg to Mr. Seward.",
+1,semantic,5,frus1863p1,d73,"Mr. Adams to Mr. Seward.",
+1,semantic,6,frus1865p3,d415,"Mr. Bigelow to Mr. Seward",
+1,semantic,7,frus1866p1,d250,"Mr. Bigelow to Mr. Seward",
+1,semantic,8,frus1865p3,d472,"Mr. Bigelow to Mr. Seward",
+1,semantic,9,frus1866p1,d254,"Mr. Bigelow to Mr. Seward",
+1,semantic,10,frus1863p2,d215,"Mr. Seward to Mr. Pike.",
+1,prf,1,frus1894app2,d306,"No. 23. Statement of Charles T. Gulick.",0
+1,prf,2,frus1894app2,d265,"No. 17. Mr. Blount to Mr. Gresham.",
+1,prf,3,frus1894app2,d324,"No. 41. Statement of the Hawaiian Patriotic League.",
+1,prf,4,frus1894app2,d288,"No. 5. Statement of Volney V. Ashford.",
+1,prf,5,frus1894app2,d73,"No. 2. Mr. Stevens to Mr. Foster.",
+1,prf,6,frus1894app2,d192,"Mr. Stevens to Mr. Foster.",
+1,prf,7,frus1894app2,d344,"No. 60. Statement of C. B. Wilson.",
+1,prf,8,frus1894app2,d254,"No. 6. Mr. Blount to Mr. Gresham",
+1,prf,9,frus1894app2,d284,"No. 1. Statement of W. D. Alexander.",
+1,prf,10,frus1894app2,d337,"No. 54. Dr. Trousseau’s statements.",
+2,lexical,1,frus1894app2,d306,"No. 23. Statement of Charles T. Gulick.",0
+2,semantic,1,frus1901,d85,"Mr. Wu to Mr. Hay.",1
+2,semantic,2,frus1889,d87,"Mr. Chang Yen Hoon to Mr. Bayard.",1
+2,semantic,3,frus1881,d126,"No. 126. The commission to Mr. Evarts.",
+2,semantic,4,frus1888p1,d239,"No. 239. Mr. Rives to Mr. Denby.",1
+2,semantic,5,frus1890,d140,"Mr. Denby to Mr. Blaine.",
+2,semantic,6,frus1892,d100,"Mr. Denby to Mr. Foster.",
+2,semantic,7,frus1892,d115,"Mr. Wharton to Mr. Tsui.",1
+2,semantic,8,frus1890,d160,"Mr. Tsui to Mr. Blaine.",
+2,semantic,9,frus1888p1,d236,"No. 236. Mr. Denby to Mr. Bayard.",
+2,semantic,10,frus1892,d114,"Mr. Tsui to Mr. Foster.",
+2,prf,1,frus1894app2,d306,"No. 23. Statement of Charles T. Gulick.",0
+2,prf,2,frus1894app2,d265,"No. 17. Mr. Blount to Mr. Gresham.",
+2,prf,3,frus1894app2,d324,"No. 41. Statement of the Hawaiian Patriotic League.",
+2,prf,4,frus1894app2,d288,"No. 5. Statement of Volney V. Ashford.",
+2,prf,5,frus1894app2,d73,"No. 2. Mr. Stevens to Mr. Foster.",
+2,prf,6,frus1894app2,d192,"Mr. Stevens to Mr. Foster.",
+2,prf,7,frus1894app2,d344,"No. 60. Statement of C. B. Wilson.",
+2,prf,8,frus1894app2,d254,"No. 6. Mr. Blount to Mr. Gresham",
+2,prf,9,frus1894app2,d284,"No. 1. Statement of W. D. Alexander.",
+2,prf,10,frus1894app2,d337,"No. 54. Dr. Trousseau’s statements.",
+3,lexical,1,frus1977-80v23,d18,"18. Policy Paper Prepared in the Department of State",0
+3,lexical,2,frus1981-88v03,d221,"221. Memorandum of Conversation",0
+3,lexical,3,frus1958-60v06,d474,"474. Memorandum of Discussion at the 436th Meeting of the National Security Council, Washington, March 10, 1960",0
+3,lexical,4,frus1977-80v16,d68,"68. Memorandum of Conversation",0
+3,lexical,5,frus1969-76ve11p1,d382,"382. Memorandum of Conversation",0
+3,lexical,6,frus1969-76v18,d152,"152. Memorandum of Conversation",0
+3,lexical,7,frus1958-60v06,d342,"342. Memorandum of a Conversation Between the Ambassador in Cuba (Bonsal) and Minister of State Roa, Havana, July 23, 1959",0
+3,lexical,8,frus1981-88v03,d187,"187. Memorandum of Conversation",0
+3,lexical,9,frus1874,d715,"No. 713. Admiral Polo de Bernabé to Mr. Fish.",
+3,lexical,10,frus1958-60v13,d26,"26. Memorandum of a Conversation, Department of State, Washington, June 30, 1958",0
+3,semantic,1,frus1874,d552,"No. 550. Mr. Fish to Mr. Cushing.",1
+3,semantic,2,frus1898,d544,"Mr. Woodford to the President.",
+3,semantic,3,frus1923v01,d679,"Extracts from the Remarks of the Cuban Ambassador (Torriente) on the Occasion of His Reception by President Coolidge, December 13, 1923",
+3,semantic,4,frus1902,d313,"Mr. Squiers to Mr. Hay.",
+3,semantic,5,frus1898,d531,"Mr. Woodford to Mr. Sherman.",
+3,semantic,6,frus1898,d586,"Señor Polo de Bernabé to Mr. Sherman.",
+3,semantic,7,frus1912,d405,"The American Minister to the Secretary of State.",0
+3,semantic,8,frus1898,d557,"Mr. Woodford to Mr. Sherman.",1
+3,semantic,9,frus1898,d545,"Mr. Woodford to the President.",
+3,semantic,10,frus1902,d273,"[Untitled]",0
+3,prf,1,frus1969-76ve11p1,d382,"382. Memorandum of Conversation",0
+3,prf,2,frus1958-60v06,d545,"545. Memorandum of Discussion at the 450th Meeting of the National Security Council, Washington, July 7, 1960",
+3,prf,3,frus1961-63v10,d206,"206. Memorandum for the Record",
+3,prf,4,frus1958-60v06,d536,"536. Memorandum of a Conference, Department of State, Washington, June 27, 1960",
+3,prf,5,frus1977-80v13,d48,"48. Memorandum of Conversation",
+3,prf,6,frus1981-88v03,d221,"221. Memorandum of Conversation",0
+3,prf,7,frus1981-88v03,d138,"138. Memorandum of Conversation",
+3,prf,8,frus1958-60v06,d423,"423. Memorandum of Discussion at the 432d Meeting of the National Security Council, Washington, January 14, 1960, 9 a.m.",
+3,prf,9,frus1977-80v23,d18,"18. Policy Paper Prepared in the Department of State",0
+3,prf,10,frus1958-60v06,d364,"364. Memorandum From the Ambassador to Cuba (Bonsal) to the Assistant Secretary of State for Inter-American Affairs (Rubottom)",
+4,semantic,1,frus1895p1,d526,"Message of the President.",1
+4,semantic,2,frus1894,d820,"Mr. Andrade to Mr. Gresham.",1
+4,semantic,3,frus1895p1,d527,"Mr. Olney to Mr. Bayard.",1
+4,semantic,4,frus1894,d816,"Prominent facts relating to the boundary question between Venezuela and Great Britain.",
+4,semantic,5,frus1912,d1493,"The Secretary of State to various Senators.",0
+4,semantic,6,frus1895p1,d530,"Lord Salisbury to Sir Julian Pauncefote.",1
+4,semantic,7,frus1895p1,d529,"Lord Salisbury to Sir Julian Pauncefote.",1
+4,semantic,8,frus1894,d825,"Mr. Haselton to Mr. Gresham.",
+4,semantic,9,frus1894,d243,"Mr. Gresham to Mr. Bayard.",1
+4,semantic,10,frus1929v01,d522,"The Secretary of State to American Diplomatic Officers in Latin America",
+5,lexical,1,frus1913,d876,"The Acting Secretary for Foreign Affairs of the Vásquez Gómez-Provisional Government to the Secretary of State.",1
+5,lexical,2,frus1913,d1231,"The American Ambassador to the Secretary of State.",1
+5,lexical,3,frus1920v03,d281,"The Secretary of State to the Chargé in Mexico (Summerlin)",1
+5,lexical,4,frus1958-60v06,d571,"571. Memorandum of a Conversation, Department of State, Washington, August 3, 1960",0
+5,lexical,5,frus1927v03,d252,"The Minister in Nicaragua (Eberhardt) to the Secretary of State",0
+5,lexical,6,frus1926v02,d498,"The Chargé in Nicaragua (Dennis) to the Secretary of State",0
+5,lexical,7,frus1915,d839,"The Brazilian Minister to Mexico to the Secretary of State.",0
+5,lexical,8,frus1912,d905,"The American Ambassador to the Secretary of State.",1
+5,lexical,9,frus1918,d695,"The Acting Secretary of State to the Ambassador in Mexico (Fletcher)",1
+5,lexical,10,frus1926v02,d528,"The Minister in Nicaragua (Eberhardt) to the Secretary of State",0
+5,semantic,1,frus1868p2,d332,"Mr. Plumb to Mr. Seward.",
+5,semantic,2,frus1868p2,d296,"Mr. Plumb to Mr. Seward.",
+5,semantic,3,frus1916,d815,"Vice Consul Blocker to the Secretary of State",1
+5,semantic,4,frus1917,d1147,"Ambassador Fletcher to the Secretary of State",
+5,semantic,5,frus1915,d917,"The Brazilian Minister to Mexico to the Secretary of State ad interim.",
+5,semantic,6,frus1913,d785,"The American Ambassador to the Secretary of State.",1
+5,semantic,7,frus1914,d976,"Mr. Arredondo to the Secretary of State.",1
+5,semantic,8,frus1865p3,d572,"Mr. Romero to Mr. Seward",
+5,semantic,9,frus1866p3,d99,"Mr. Romero to Mr. Seward",
+5,semantic,10,frus1913,d837,"General Huerta to the President.",
+5,prf,1,frus1922v02,d576,"The Chargé in Mexico (Summerlin) to the Secretary of State",
+5,prf,2,frus1918,d705,"The Ambassador in Mexico (Fletcher) to the Secretary of State",
+5,prf,3,frus1913,d1213,"The American Ambassador to the Secretary of State.",
+5,prf,4,frus1913,d934,"The American Ambassador to the Secretary of State.",
+5,prf,5,frus1913,d1029,"reply of the secretary of foreign affairs, señor gamboa, to the proposals of the american government conveyed through the honorable john lind.",
+5,prf,6,frus1912,d1216,"The American Chargé d’Affaires to the Secretary of State.",
+5,prf,7,frus1923v02,d472,"The Chargé in Mexico (Summerlin) to the Secretary of State",
+5,prf,8,frus1913,d988,"The American Ambassador to the Secretary of State.",
+5,prf,9,frus1913,d1133,"The American Ambassador to the Secretary of State.",
+5,prf,10,frus1921v02,d345,"The Chargé in Mexico (Summerlin) to the Secretary of State",
+6,lexical,1,frus1955-57v26,d263,"263. Record of the Meeting Between Secretary of State Dulles and President Tito on the Island of Vanga, November 6, 1955, 3–5:40 p.m.",0
+6,lexical,2,frus1981-88v01,d208,"208. Paper Prepared in the National Security Council",0
+6,lexical,3,frus1952-54v07p1,d529,"No. 529 Memorandum of Discussion at the 186th Meeting of the National Security Council, Friday, February 26, 1954",0
+6,lexical,4,frus1945Berlinv01,d33,"No. 33 The Chairman of the President’s War Relief Control Board (Davies) to the President",0
+6,lexical,5,frus1952-54v05p2,d357,"United States Delegation Minutes",0
+6,lexical,6,frus1969-76v18,d58,"58. Memorandum of Conversation",0
+6,lexical,7,frus1981-88v01,d219,"219. Address by Secretary of Defense Weinberger",0
+6,lexical,8,frus1969-76v18,d9,"9. Memorandum of Conversation",0
+6,lexical,9,frus1981-88v05,d71,"71. Memorandum of Conversation",0
+6,lexical,10,frus1969-76v14,d271,"271. Memorandum of Conversation",0
+6,semantic,1,frus1931-41v02,d242,"Memorandum by the Secretary of State",
+6,semantic,2,frus1939v01,d208,"Memorandum of Conversation, by the Acting Secretary of State",
+6,semantic,3,frus1938v02,d359,"Memorandum of Conversation, by the Under Secretary of State (Welles)",
+6,semantic,4,frus1942v05,d78,"The Ambassador in Uruguay (Dawson) to the Secretary of State",0
+6,semantic,5,frus1940v02,d588,"Memorandum of Conversation, by the Secretary of State",
+6,semantic,6,frus1945v03,d27,"The Secretary of State to the United States Political Adviser on Austrian Affairs (Erhardt), at Caserta",
+6,semantic,7,frus1937v01,d665,"The Ambassador in Germany (Dodd) to President Roosevelt",
+6,semantic,8,frus1942v05,d247,"The Secretary of State to the Ambassador in Argentina (Armour)",
+6,semantic,9,frus1941v04,d47,"The Secretary of State to the Ambassador in Japan (Grew)",
+6,semantic,10,frus1937v01,d248,"Memorandum by the Under Secretary of State (Welles)",
+6,prf,1,frus1955-57v04,d249,"249. Verbatim Minutes of the Western European Chiefs of Mission Conference, Paris, May 6, 1957",
+6,prf,2,frus1955-57v26,d263,"263. Record of the Meeting Between Secretary of State Dulles and President Tito on the Island of Vanga, November 6, 1955, 3–5:40 p.m.",0
+6,prf,3,frus1945Berlinv01,d33,"No. 33 The Chairman of the President’s War Relief Control Board (Davies) to the President",0
+6,prf,4,frus1952-54v07p1,d529,"No. 529 Memorandum of Discussion at the 186th Meeting of the National Security Council, Friday, February 26, 1954",0
+6,prf,5,frus1952-54v06p1,d304,"No. 304 Minutes of the Chiefs of Mission Meeting at Luxembourg, September 18–19, 1953",
+6,prf,6,frus1952-54v02p1,d143,"Memorandum of Discussion at the 229th Meeting of the National Security Council, Tuesday, December 21, 1954",
+6,prf,7,frus1952-54v05p2,d341,"United States Delegation Minutes",
+6,prf,8,frus1955-57v05,d150,"150. Memorandum of Discussion at the 254th Meeting of the National Security Council, Washington, July 7, 1955",
+6,prf,9,frus1952-54v06p1,d303,"No. 303 Summary Minutes of the Chiefs of Mission Meeting, London, September 24–26, 1952",
+6,prf,10,frus1955-57v05,d176,"176. Memorandum of the Conversation at the Tripartite Luncheon, President’s Villa, Geneva, July 17, 1955, 1 p.m.",
+7,lexical,1,frus1945-50Intel,d422,"422. National Security Council Intelligence Directive No. 4",1
+7,lexical,2,frus1951v06p1,d129,"The Ambassador in Burma (Key) to the Secretary of State",
+7,lexical,3,frus1950-55Intel,d200,"200. Director of Central Intelligence Directive No. 4/3",
+7,lexical,4,frus1951v01,d18,"Memorandum for the National Security Council by the Executive Secretary (Lay)",1
+7,lexical,5,frus1955-57v27,d97,"97. National Intelligence Estimate",
+7,lexical,6,frus1945v06,d914,"President Sergio Osmeña of the Philippines to the Secretary of the Interior (Ickes)",
+7,lexical,7,frus1945-50Intel,d30,"30. Memorandum From the Assistant Chief of Staff for Military Intelligence of the War Department General Staff (Bissell) to Secretary of War Patterson",
+7,lexical,8,frus1945-50Intel,d413,"413. Memorandum From the Acting Chairman of the National Security Resources Board (Steelman) to the Executive Secretary of the National Security Council (Souers)",
+7,lexical,9,frus1964-68v24,d213,"213. National Intelligence Estimate",
+7,lexical,10,frus1945v06,d911,"The Consul General at Manila (Steintorf) to the Secretary of State",
+7,semantic,1,frus1977-80v28,d41,"41. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski)",
+7,semantic,2,frus1950-55Intel,d221,"221. Report by the Commission on Organization of the Executive Branch of the Government to the Congress",1
+7,semantic,3,frus1977-80v28,d50,"50. Paper Prepared in the Department of Defense",1
+7,semantic,4,frus1977-80v28,d42,"42. Memorandum From Director of Central Intelligence Turner to the President’s Assistant for National Security Affairs (Brzezinski)",
+7,semantic,5,frus1969-76v02,d229,"229. Memorandum From the President’s Deputy Assistant for National Security Affairs (Haig) to the President’s Assistant for National Security Affairs (Kissinger)",
+7,semantic,6,frus1950-55Intel,d220,"220. Report by the Task Force on Intelligence Activities of the Commission on Organization of the Executive Branch of the Government",
+7,semantic,7,frus1969-76v38p2,d82,"82. Memorandum From the President’s Assistant for National Security Affairs (Scowcroft) to President Ford",
+7,semantic,8,frus1969-76v38p2,d73,"73. Memorandum From the National Intelligence Officers to Director of Central Intelligence Bush",
+7,semantic,9,frus1945-50Intel,d70,"70. Memorandum From the Director of the Bureau of the Budget (Smith) to the President’s Special Counsel (Rosenman)",
+7,semantic,10,frus1969-76v02,d206,"206. Memorandum From the Consultant to the National Security Council (Marshall) to the President’s Assistant for National Security Affairs (Kissinger)",
+7,prf,1,frus1951v01,d18,"Memorandum for the National Security Council by the Executive Secretary (Lay)",1
+7,prf,2,frus1950-55Intel,d212,"212. National Security Council Directive",
+7,prf,3,frus1950-55Intel,d200,"200. Director of Central Intelligence Directive No. 4/3",
+7,prf,4,frus1950-55Intel,d250,"250. National Security Council Directive",
+7,prf,5,frus1950-55Intel,d145,"145. Memorandum From Robert P. Joyce of the Policy Planning Staff to the Deputy Under Secretary of State (Matthews)",
+7,prf,6,frus1950-55Intel,d171,"171. Note From the Executive Secretary of the National Security Council (Lay) to the National Security Council",
+7,prf,7,frus1952-54v02p2,d370,"Report to the President by the President’s Committee on International Information Activities",
+7,prf,8,frus1951v01,d17,"Memorandum for the National Security Council by the Executive Secretary (Lay)",
+7,prf,9,frus1950-55Intel,d127,"127. Memorandum From the Executive Secretary of the National Security Council (Lay) to the National Security Council",
+7,prf,10,frus1950-55Intel,d38,"38. Memorandum From Director of Central Intelligence Smith to the Executive Secretary of the National Security Council (Lay)",
+8,lexical,1,frus1961-63v07-09mSupp,d271,"271. Draft Paper, June 22",0
+8,lexical,2,frus1981-88v01,d299,"299. Minutes of a Meeting of the Secretary of State’s Open Forum",0
+8,lexical,3,frus1919Parisv05,d76,"Notes of a Meeting Held at President Wilson’s House in the Place des Etats-Unis, Paris, on Tuesday, May 20, 1919, at 11 a.m.",0
+8,lexical,4,frus1931-41v02,d237,"Memorandum Prepared in the Department of State",0
+8,lexical,5,frus1951v07p2,d2,"Memorandum of Conversation, Prepared in the Department of State",0
+8,lexical,6,frus1945v02,d235,"United States Delegation Minutes, Third Formal Session, Conference of Foreign Ministers, Spiridonovka, Moscow, December 18, 1945, 4:00–7:15 p. m.",0
+8,lexical,7,frus1947v05,d395,"Memorandum Prepared in the Department of State",0
+8,lexical,8,frus1981-88v44p1,d193,"193. Memorandum From Acting Director of Central Intelligence Gates to the President’s Assistant for National Security Affairs (Carlucci)",0
+8,lexical,9,frus1914-20v02,d147,"The Military Representative on the Supreme War Council (Bliss) to the Secretary of State",0
+8,lexical,10,frus1955-57v11,d22,"22. Draft Report Prepared by Lincoln Bloomfield, Special Assistant to the Assistant Secretary of State for International Organization Affairs",0
+8,semantic,1,frus1944v03,d19,"Memorandum by the Secretary of State to President Roosevelt",1
+8,semantic,2,frus1944v03,d23,"Memorandum by the Secretary of State to President Roosevelt",1
+8,semantic,3,frus1944v02,d103,"The British Minister (Campbell) to the Assistant Secretary of State (Acheson)",
+8,semantic,4,frus1944Quebec,d110,"The Secretary of State to the President",1
+8,semantic,5,frus1940v03,d84,"The British Ambassador (Lothian) to the Secretary of State",
+8,semantic,6,frus1940v03,d38,"Memorandum of Conversation, by the Secretary of State",
+8,semantic,7,frus1940v04,d657,"Memorandum by Mr. Howard J. Trueblood of the Office of the Adviser on International Economic Affairs",
+8,semantic,8,frus1932v01,d529,"The British Embassy to the Department of State",
+8,semantic,9,frus1942v01,d142,"The Chargé in the United Kingdom (Matthews) to the Secretary of State",
+8,semantic,10,frus1944v07,d1457,"The Secretary of State to the Diplomatic Representatives in the American Republics Except Argentina",1
+8,prf,1,frus1948v01p2,d4,"Report by the Policy Planning Staff",
+8,prf,2,frus1981-88v01,d299,"299. Minutes of a Meeting of the Secretary of State’s Open Forum",0
+8,prf,3,frus1961-63v07-09mSupp,d271,"271. Draft Paper, June 22",0
+8,prf,4,frus1977-80v13,d109,"109. Memorandum of Conversation",
+8,prf,5,frus1950v01,d52,"Memorandum by the Counselor (Kennan) to the Secretary of State",
+8,prf,6,frus1922v01,d88,"Report of the American Delegation, February 9, 1922",
+8,prf,7,frus1977-80v13,d47,"47. Memorandum of Conversation",
+8,prf,8,frus1955-57v04,d252,"252. Northern European Chiefs of Mission Conference, London, September 19–21, 1957: Summary of Proceedings",
+8,prf,9,frus1951v07p2,d2,"Memorandum of Conversation, Prepared in the Department of State",0
+8,prf,10,frus1950v01,d62,"Draft Memorandum by the Counselor (Kennan) to the Secretary of State",
+9,lexical,1,frus1969-76v02,d338,"338. Action Memorandum From the Chairman of the Secretary’s Open Forum Panel, Department of State (Thomas) to the Deputy Under Secretary of State for Administration (Macomber)",1
+9,lexical,2,frus1977-80v28,preface,"Preface",1
+9,lexical,3,frus1872p1,d201,"No. 201. Mr. Francis to Mr. Fish.",0
+9,lexical,4,frus1977-80v28,d171,"171. Memorandum From the Senior Officer Bunch to the Under Secretary of State for Management (Read) and the Director General of the Foreign Service and Director of Personnel (Barnes)",1
+9,lexical,5,frus1977-80v28,d153,"153. Memorandum From the Director of the Office of Civil Service Career Development and Assignments (Bourbon) to the Director General of the Foreign Service and Director of Personnel (Barnes)",1
+9,lexical,6,frus1969-76v02,d326,"326. Memorandum From Mary S. Olmsted of the Ad Hoc Women’s Committee, Department of State to Chris Petrow of the Office of the Deputy Under Secretary of State for Administration",1
+9,lexical,7,frus1906p1,ch57,"Reforms, governmental, judicial, and educational",
+9,lexical,8,frus1977-80v28,d155,"155. Memorandum From the Director of the Office of Civil Service Career Development and Assignments (Bourbon) to the Director General of the Foreign Service and Director of Personnel (Barnes)",1
+9,lexical,9,frus1969-76v02,d339,"339. Memorandum From the Chairman of the Department of State Task Force VII Committee (Petrow) to the Deputy Under Secretary of State for Management (Macomber)",1
+9,lexical,10,frus1981-88v38,d256,"256. Paper Prepared in the Department of the Treasury",0
+9,semantic,1,frus1969-76v38p2,d158,"158. Report to Congress Prepared in the Department of State",1
+9,semantic,2,frus1969-76v38p2,d143,"143. Action Memorandum From the Director General of the Foreign Service (Laise) to Secretary of State Kissinger",
+9,semantic,3,frus1969-76v38p2,d223,"223. Briefing Paper Prepared in the Department of State",1
+9,semantic,4,frus1969-76v38p2,d154,"154. Memorandum From the Director General of the Foreign Service (Laise) to the Deputy Under Secretary of State for Management (Eagleburger)",1
+9,semantic,5,frus1969-76v02,d338,"338. Action Memorandum From the Chairman of the Secretary’s Open Forum Panel, Department of State (Thomas) to the Deputy Under Secretary of State for Administration (Macomber)",1
+9,semantic,6,frus1964-68v33,d38,"38. Letter From President Johnson to the Speaker of the House of Representatives (McCormack)",
+9,semantic,7,frus1977-80v28,d164,"164. Memorandum From the Director of the Office of UN Political Affairs (Bridges) to the Under Secretary of State for Management (Read) and the Director General of the Foreign Service and Director of Personnel (Barnes)",1
+9,semantic,8,frus1977-80v28,d161,"161. Memorandum From the Director General of the Foreign Service and Director of Personnel (Barnes) to Secretary of State Vance",1
+9,semantic,9,frus1977-80v28,d174,"174. Airgram From the Department of State to All Diplomatic and Consular Posts",1
+9,semantic,10,frus1977-80v28,d181,"181. Letter From the Under Secretary of State for Management (Read) to the Director of the Office of Management and Budget (McIntyre)",1
+9,prf,1,frus1977-80v28,d171,"171. Memorandum From the Senior Officer Bunch to the Under Secretary of State for Management (Read) and the Director General of the Foreign Service and Director of Personnel (Barnes)",1
+9,prf,2,frus1969-76v02,d338,"338. Action Memorandum From the Chairman of the Secretary’s Open Forum Panel, Department of State (Thomas) to the Deputy Under Secretary of State for Administration (Macomber)",1
+9,prf,3,frus1977-80v28,d161,"161. Memorandum From the Director General of the Foreign Service and Director of Personnel (Barnes) to Secretary of State Vance",1
+9,prf,4,frus1977-80v28,d174,"174. Airgram From the Department of State to All Diplomatic and Consular Posts",1
+9,prf,5,frus1977-80v28,d172,"172. Memorandum From the Under Secretary of State for Management (Read) to Secretary of State Vance",
+9,prf,6,frus1977-80v28,d164,"164. Memorandum From the Director of the Office of UN Political Affairs (Bridges) to the Under Secretary of State for Management (Read) and the Director General of the Foreign Service and Director of Personnel (Barnes)",1
+9,prf,7,frus1969-76v38p2,d223,"223. Briefing Paper Prepared in the Department of State",1
+9,prf,8,frus1977-80v28,d170,"170. Memorandum of Conversation",
+9,prf,9,frus1969-76v38p2,d154,"154. Memorandum From the Director General of the Foreign Service (Laise) to the Deputy Under Secretary of State for Management (Eagleburger)",1
+9,prf,10,frus1977-80v28,d169,"169. Memorandum From the Under Secretary of State for Management (Read) and the Director General of the Foreign Service and Director of Personnel (Barnes) to Secretary of State Vance",
+10,lexical,1,frus1969-76v34,d59,"59. Editorial Note",0
+10,lexical,2,frus1981-88v01,d8,"8. Address by Ronald Reagan",0
+10,lexical,3,frus1964-68v12,summary,"Volume Summary",0
+10,lexical,4,frus1977-80v12,d241,"241. Memorandum of Conversation",0
+10,lexical,5,frus1981-88v01,d192,"192. Remarks by President Reagan",0
+10,lexical,6,frus1952-54v02p2,d370,"Report to the President by the President’s Committee on International Information Activities",0
+10,lexical,7,frus1969-76ve07,d300,"300. Response to National Security Study Memorandum 156",0
+10,semantic,1,frus1951v04p2,d302,"Draft Department of State Policy Statement",
+10,semantic,2,frus1969-76v01,d41,"41. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon",
+10,semantic,3,frus1945Berlinv01,d25,"No. 25 Memorandum by the Assistant to the Secretary of State (Bohlen)",
+10,semantic,4,frus1951v01,d323,"Memorandum by the Assistant Secretary of State for Public Affairs (Barrett)",
+10,semantic,5,frus1969-76v13,d153,"153. Memorandum From Helmut Sonnenfeldt of the National Security Council Staff to the President’s Assistant for National Security Affairs (Kissinger)",
+10,semantic,6,frus1952-54v05p2,d341,"United States Delegation Minutes",
+10,semantic,7,frus1958-60v03mSupp,d17,"17. National Intelligence Estimate",
+10,semantic,8,frus1952-54v08,d44,"No. 44 Summary Minutes of the Chiefs of Mission Meeting at Vienna, September 22–24, 1953",
+10,semantic,9,frus1933-39,d47,"The Chargé in Latvia (Cole) to the Acting Secretary of State",
+10,semantic,10,frus1955-57v04,d252,"252. Northern European Chiefs of Mission Conference, London, September 19–21, 1957: Summary of Proceedings",
+10,prf,1,frus1981-88v01,d8,"8. Address by Ronald Reagan",0
+10,prf,2,frus1969-76v01,d69,"69. Background Press Briefing by the President’s Assistant for National Security Affairs (Kissinger)",
+10,prf,3,frus1977-80v13,d108,"108. Memorandum of Conversation",
+10,prf,4,frus1977-80v01,d147,"147. Address by President Carter",
+10,prf,5,frus1981-88v01,d99,"99. Address by President Reagan",
+10,prf,6,frus1969-76v38p1,d35,"35. Address by President Nixon",
+10,prf,7,frus1981-88v01,d192,"192. Remarks by President Reagan",0
+10,prf,8,frus1981-88v01,d306,"306. Remarks by President Reagan",
+10,prf,9,frus1977-80v01,d52,"52. Remarks by President Carter",
+10,prf,10,frus1969-76v38p1,d12,"12. Remarks by President Nixon",
+11,semantic,1,frus1950v06,d331,"Memorandum of Conversation, by Mr. John Foster Dulles, Consultant to the Secretary of State",
+11,semantic,2,frus1950v02,d161,"Minutes of Briefing Session of the United States Delegation to the General Assembly, Washington, Department of State, September 7, 1950, 3:00 p. m.",0
+11,semantic,3,frus1948v08,d105,"Note by Rear Admiral Sidney W. Souers, Executive Secretary to the National Security Council",1
+11,semantic,4,frus1946v09,d645,"Draft of New China News Agency",
+11,semantic,5,frus1944v06,d524,"Colonel David D. Barrett to Major General Albert C. Wedemeyer",
+11,semantic,6,frus1945v07,d560,"Memorandum by Mr. James R. Shepley to General Marshall",
+11,semantic,7,frus1946v10,d359,"The Ambassador in China (Stuart) to the Secretary of State",
+11,semantic,8,frus1945v07,d73,"The Ambassador in China (Hurley) to President Truman",
+11,semantic,9,frus1955-57v02,d204,"204. National Intelligence Estimate",
+11,semantic,10,frus1948v07,d418,"The Ambassador in China (Stuart) to the Secretary of State",
+12,lexical,1,frus1906p2,d327,"Minister Pearson to the Secretary of State.",0
+12,lexical,2,frus1951-54Iran,d279,"279. Telegram From the Embassy in Italy to the Department of State",0
+12,lexical,3,frus1951-54IranEd2,d279,"279. Telegram From the Embassy in Italy to the Department of State",1
+12,lexical,4,frus1943v04,d437,"The Chargé in Iran (Ford) to the Secretary of State",0
+12,lexical,5,frus1911,d988,"The Acting Secretary of State to the American Minister.",1
+12,lexical,6,frus1952-54v10,d316,"No. 316 The Ambassador in Iran (Henderson) to the Department of State",
+12,lexical,7,frus1877,d250,"No. 250. Mr. Gibbs to Mr. Evarts.",1
+12,lexical,8,frus1945v08,d349,"The Ambassador in Iran (Murray) to the Secretary of State",0
+12,lexical,9,frus1958-60v12,d291,"291. Memorandum of Discussion at the 449th Meeting of the National Security Council",0
+12,lexical,10,frus1955-57v12,d393,"393. Despatch From the Embassy in Iran to the Department of State",1
+12,semantic,1,frus1951-54Iran,d118,"118. Memorandum Prepared by Max Thornburg",
+12,semantic,2,frus1951-54IranEd2,d118,"118. Memorandum Prepared by Max Thornburg",
+12,semantic,3,frus1955-57v12,d393,"393. Despatch From the Embassy in Iran to the Department of State",1
+12,semantic,4,frus1951-54IranEd2,d205,"205. Despatch From the Embassy in Iran to the Department of State",
+12,semantic,5,frus1951-54Iran,d205,"205. Despatch From the Embassy in Iran to the Department of State",
+12,semantic,6,frus1969-76ve04,d180,"180. Intelligence Report 2035–72",
+12,semantic,7,frus1952-54v10,d301,"No. 301 The Ambassador in Iran (Henderson) to the Department of State",1
+12,semantic,8,frus1964-68v22,d110,"110. Telegram From the Embassy in Iran to the Department of State",
+12,semantic,9,frus1951-54IranEd2,d166,"166. Telegram From the Embassy in Iran to the Department of State",
+12,semantic,10,frus1951-54Iran,d166,"166. Telegram From the Embassy in Iran to the Department of State",
+12,prf,1,frus1951-54Iran,d279,"279. Telegram From the Embassy in Italy to the Department of State",0
+12,prf,2,frus1951-54IranEd2,d279,"279. Telegram From the Embassy in Italy to the Department of State",1
+12,prf,3,frus1951-54IranEd2,d237,"237. Telegram From the Embassy in Iran to the Department of State",
+12,prf,4,frus1951-54Iran,d237,"237. Telegram From the Embassy in Iran to the Department of State",
+12,prf,5,frus1951-54IranEd2,d284,"284. Telegram From the Central Intelligence Agency [text not declassified]",
+12,prf,6,frus1951-54Iran,d284,"284. Telegram From the Central Intelligence Agency [text not declassified]",
+12,prf,7,frus1911,d988,"The Acting Secretary of State to the American Minister.",1
+12,prf,8,frus1951-54Iran,d272,"272. Telegram From the Central Intelligence Agency [text not declassified]",
+12,prf,9,frus1951-54IranEd2,d272,"272. Telegram From the Central Intelligence Agency [text not declassified]",
+12,prf,10,frus1951-54IranEd2,d266,"266. Telegram From the Embassy in Iran to the Department of State",
+13,lexical,1,frus1964-68v21,d46,"46. Memorandum From Secretary of Defense McNamara to the Secretary of the Navy (Ignatius)",1
+13,lexical,2,frus1969-76ve08,d86,"86. Minutes of the Secretary of State’s Staff Regional Staff Meeting",
+13,lexical,3,frus1969-76ve08,d65,"65. Memorandum From the Deputy Assistant Secretary of Defense for European and NATO Affairs (Bergold) to the Deputy Assistant Secretary of Defense for Security Assistance (Peet)",1
+13,lexical,4,frus1969-76ve08,d87,"87. Minutes of the Senior Review Group Meeting",1
+13,lexical,5,frus1977-80v18,d126,"126. Memorandum From Secretary of Defense Brown to Secretary of State Vance and the President’s Assistant for National Security Affairs (Brzezinski)",1
+13,lexical,6,frus1969-76ve08,d69,"69. Memorandum From Secretary of State Kissinger to President Nixon",
+13,lexical,7,frus1969-76ve08,d89,"89. Memorandum of Conversation",1
+13,lexical,8,frus1977-80v18,d129,"129. Briefing Memorandum From the Director of the Bureau of Politico-Military Affairs (Bartholomew) to Secretary of State Muskie",1
+13,lexical,9,frus1964-68v21,d47,"47. Memorandum From the Joint Chiefs of Staff to Secretary of Defense McNamara",1
+13,lexical,10,frus1969-76v24,d40,"40. Memorandum From the Assistant Secretary of Defense for International Security Affairs (Nutter) to Secretary of Defense Laird",1
+13,semantic,1,frus1969-76v24,d39,"39. Paper Prepared in the Office of the Chief of Naval Operations (Moorer)",1
+13,semantic,2,frus1969-76ve08,d65,"65. Memorandum From the Deputy Assistant Secretary of Defense for European and NATO Affairs (Bergold) to the Deputy Assistant Secretary of Defense for Security Assistance (Peet)",1
+13,semantic,3,frus1977-80v18,d126,"126. Memorandum From Secretary of Defense Brown to Secretary of State Vance and the President’s Assistant for National Security Affairs (Brzezinski)",1
+13,semantic,4,frus1964-68v21,d46,"46. Memorandum From Secretary of Defense McNamara to the Secretary of the Navy (Ignatius)",1
+13,semantic,5,frus1969-76ve08,d86,"86. Minutes of the Secretary of State’s Staff Regional Staff Meeting",
+13,semantic,6,frus1964-68v21,d44,"44. Memorandum From the Secretary of the Navy (Nitze) to Secretary of Defense McNamara",1
+13,semantic,7,frus1969-76ve08,d80,"80. Telegram 201428 From the Department of State to the Embassies in India and Thailand",
+13,semantic,8,frus1969-76v24,d40,"40. Memorandum From the Assistant Secretary of Defense for International Security Affairs (Nutter) to Secretary of Defense Laird",1
+13,semantic,9,frus1969-76v24,d37,"37. Memorandum From the Assistant Secretary of State for Near Eastern and South Asian Affairs (Sisco) to Secretary of State Rogers",1
+13,semantic,10,frus1969-76ve08,d66,"66. Letter From the Chairman of the Senate Committee on Armed Services (Stennis) to Secretary of Defense Schlesinger",
+13,prf,1,frus1969-76ve08,d65,"65. Memorandum From the Deputy Assistant Secretary of Defense for European and NATO Affairs (Bergold) to the Deputy Assistant Secretary of Defense for Security Assistance (Peet)",1
+13,prf,2,frus1977-80v18,d126,"126. Memorandum From Secretary of Defense Brown to Secretary of State Vance and the President’s Assistant for National Security Affairs (Brzezinski)",1
+13,prf,3,frus1969-76ve08,d87,"87. Minutes of the Senior Review Group Meeting",1
+13,prf,4,frus1964-68v21,d44,"44. Memorandum From the Secretary of the Navy (Nitze) to Secretary of Defense McNamara",1
+13,prf,5,frus1969-76v24,d39,"39. Paper Prepared in the Office of the Chief of Naval Operations (Moorer)",1
+13,prf,6,frus1969-76ve08,d66,"66. Letter From the Chairman of the Senate Committee on Armed Services (Stennis) to Secretary of Defense Schlesinger",
+13,prf,7,frus1969-76ve08,d86,"86. Minutes of the Secretary of State’s Staff Regional Staff Meeting",
+13,prf,8,frus1964-68v21,d47,"47. Memorandum From the Joint Chiefs of Staff to Secretary of Defense McNamara",1
+13,prf,9,frus1969-76ve08,d80,"80. Telegram 201428 From the Department of State to the Embassies in India and Thailand",
+13,prf,10,frus1964-68v21,d46,"46. Memorandum From Secretary of Defense McNamara to the Secretary of the Navy (Ignatius)",1
+14,lexical,1,frus1948v08,d858,"The Consul General at Shanghai (Cabot) to the Secretary of State",0
+14,lexical,2,frus1942v01,d192,"The Secretary of State to the Consul General at Rangoon (Schnare)",0
+14,lexical,3,frus1939v01,d661,"The Ambassador in the United Kingdom (Kennedy) to the Secretary of State",0
+14,lexical,4,frus1948v08,d847,"The Ambassador in China (Stuart) to the Secretary of State",0
+14,lexical,5,frus1942v01,d199,"The Acting Secretary of State to Certain Diplomatic and Consular Officers",0
+14,lexical,6,frus1873p1v2,d217,"Extract from the Constitution of May 23, 1845.",0
+14,lexical,7,frus1943v03,d732,"The Minister in Switzerland (Harrison) to the Secretary of State",0
+14,lexical,8,frus1961-63v25,d383,"383. Memorandum From Maxwell W. Hunter II of the National Aeronautics and Space Council to Robert F. Packard of the Office of International Scientific Affairs",1
+14,lexical,9,frus1927v01,d360,"The Assistant Secretary of Labor (White) to the Assistant Secretary of State (Carr)",0
+14,lexical,10,frus1948v08,d257,"Bear Admiral C. W. Styer, of the Office of Chief of Naval Operations, to the Director of the Office of Far Eastern Affairs (Butterworth)",0
+14,semantic,1,frus1961-63v25,d383,"383. Memorandum From Maxwell W. Hunter II of the National Aeronautics and Space Council to Robert F. Packard of the Office of International Scientific Affairs",1
+14,semantic,2,frus1958-60v02,d479,"479. Report by the National Aeronautics and Space Council",
+14,semantic,3,frus1958-60v02,d442,"442. National Security Council Report",0
+14,semantic,4,frus1964-68v34,d55,"55. Department of State Policy Paper",1
+14,semantic,5,frus1964-68v34,d23,"23. Report Prepared by the Committee on National Security Policy Planning Implications of Outer Space in the 1970s, Basic National Security Policy Planning Task I (1)",
+14,semantic,6,frus1969-76ve03,d104,"104. Telegram 703 From the Mission to the United Nations to the Department of State",
+14,semantic,7,frus1961-63v06,d43,"43. Letter From Chairman Khrushchev to President Kennedy",0
+14,semantic,8,frus1918Supp02,d178,"Proclamation No. 1408, November 16, 1917, Setting Forth Additional Regulations Prescribing Conduct toward Alien Enemies",
+14,semantic,9,frus1969-76ve03,d127,"127. Telegram 2755 From the Mission to the United Nations to the Department of State",
+14,semantic,10,frus1958-60v02,d438,"438. Memorandum of a Conversation, Department of State, Washington, March 20, 1958",
+14,prf,1,frus1948v08,d847,"The Ambassador in China (Stuart) to the Secretary of State",0
+14,prf,2,frus1948v08,d858,"The Consul General at Shanghai (Cabot) to the Secretary of State",0
+14,prf,3,frus1942v01,d192,"The Secretary of State to the Consul General at Rangoon (Schnare)",0
+14,prf,4,frus1942v01,d199,"The Acting Secretary of State to Certain Diplomatic and Consular Officers",0
+14,prf,5,frus1942v01,d187,"The Secretary of State to the Consul General at Singapore (Patton)",
+14,prf,6,frus1941v05,d503,"The Secretary of State to the Consul General at Batavia (Foote)",
+14,prf,7,frus1942v01,d208,"The Secretary of State to the Minister in Egypt (Kirk)",
+14,prf,8,frus1939v01,d661,"The Ambassador in the United Kingdom (Kennedy) to the Secretary of State",0
+14,prf,9,frus1939v01,d655,"The Secretary of State to the Ambassador in the United Kingdom (Kennedy)",
+14,prf,10,frus1949v09,d1355,"The Chargé in China (Strong) to the Secretary of State",
+15,lexical,1,frus1941v04,d359,"The Ambassador in Japan (Grew) to the Secretary of State",0
+15,lexical,2,frus1945Berlinv02,d710a-90,"Joint Chiefs of Staff Minutes",0
+15,lexical,3,frus1946v02,d76,"United States Delegation Record, Council of Foreign Ministers, Second Session, Third Meeting, Paris, April 27, 1946, 4 p.m.",0
+15,lexical,4,frus1946v03,d18,"Verbatim Record",0
+15,lexical,5,frus1894app2,d134,"Mr. Stevens to Mr. Blaine.",0
+15,lexical,6,frus1902app1,d30,"EXHIBIT V. Annex 1.",0
+15,lexical,7,frus1945Berlinv02,d710a-28,"Thompson Minutes",0
+15,lexical,8,frus1905,d345,"Minister Dawson to the President.",0
+15,lexical,9,frus1917Supp02v01,d370,"Report of the Special Representative of the United States Government (House)",0
+15,lexical,10,frus1961-63v01,d210,"210. Letter From the President’s Military Representative (Taylor) to the President",0
+15,semantic,1,frus1964-68v19,d284,"284. Intelligence Memorandum Prepared in the Central Intelligence Agency",1
+15,semantic,2,frus1964-68v19,d219,"219. Memorandum for the Record",1
+15,semantic,3,frus1964-68v19,d204,"204. Editorial Note",1
+15,semantic,4,frus1964-68v19,d234,"234. Memorandum for the Record",1
+15,semantic,5,frus1964-68v19,d373,"373. Memorandum From the Chairman of the President’s Foreign Intelligence Advisory Board (Clifford) to the President’s Special Assistant (Rostow)",1
+15,semantic,6,frus1964-68v19,d46,"46. Telegram From the Director of the National Security Agency (Carter) to the Joint Chiefs of Staff/Joint Reconnaissance Center",
+15,semantic,7,frus1964-68v19,d285,"285. Memorandum From the Director of the Bureau of Intelligence and Research (Hughes) to Acting Secretary of State Katzenbach",
+15,semantic,8,frus1964-68v19,d352,"352. Diplomatic Note From Secretary of State Rusk to the Israeli Ambassador (Harman)",1
+15,semantic,9,frus1964-68v19,d210,"210. Memorandum of Telephone Conversations",
+15,semantic,10,frus1964-68v19,d205,"205. Memorandum From the President’s Special Assistant (Rostow) to President Johnson",
+15,prf,1,frus1922v01,d88,"Report of the American Delegation, February 9, 1922",
+15,prf,2,frus1917Supp02v01,d370,"Report of the Special Representative of the United States Government (House)",0
+15,prf,3,frus1941v04,d395,"Memorandum by Bishop James E. Walsh, Superior General of the Catholic Foreign Mission Society of America",
+15,prf,4,frus1919Parisv06,d75,"Notes of a Meeting Held at President Wilson’s House in the Place des Etats-Unis, Paris, on Wednesday, June 25, 1919, at 4 p.m.",
+15,prf,5,frus1940v01,d28,"Report by the Under Secretary of State (Welles) on His Special Mission to Europe",
+15,prf,6,frus1914-20v02,d147,"The Military Representative on the Supreme War Council (Bliss) to the Secretary of State",
+15,prf,7,frus1919Parisv09,d19,"Notes of a Meeting of the Heads of Delegations of the Five Great Powers Held in M. Pichon’s Room, Quai d’Orsay, Paris, on Monday, December 1, 1919, at 10:30 a.m.",
+15,prf,8,frus1931-41v02,d237,"Memorandum Prepared in the Department of State",
+15,prf,9,frus1944v03,d1,"The Under Secretary of State (Stettinius) to the Secretary of State",
+15,prf,10,frus1919Parisv08,d19,"Notes of a Meeting of the Heads of Delegations of the Five Great Powers Held in M. Pichon’s Room at the Quai d’Orsay, Paris, on Thursday, September 25, 1919, at 10:30 a.m.",
+16,lexical,1,frus1969-76v35,d90,"90. Minutes of Secretary of State Kissinger’s Regional Staff Meeting",
+16,lexical,2,frus1969-76v38p2,d139,"139. Memorandum of Conversation",1
+16,lexical,3,frus1969-76v37,d11,"11. Minutes of the Secretary of State’s Staff Meeting",
+16,lexical,4,frus1969-76v38p1,d42,"42. Memorandum of Conversation",
+16,lexical,5,frus1969-76v22,d86,"86. Minutes of Secretary of State Kissinger’s Principals and Regionals Staff Meeting",
+16,lexical,6,frus1969-76v25,d350,"350. Memorandum of Conversation",
+16,lexical,7,frus1969-76v38p2,d144,"144. Memorandum of Conversation",1
+16,lexical,8,frus1969-76v02,d230,"230. Memorandum From the Assistant Director, Office of Management and Budget (Schlesinger) to the Director (Shultz)",
+16,lexical,9,frus1969-76v38p2,d218,"218. Memorandum of Conversation",1
+16,lexical,10,frus1969-76v39,d177,"177. Minutes of Secretary of State Kissinger’s Staff Meeting",
+16,semantic,1,frus1969-76v38p2,d117,"117. Editorial Note",1
+16,semantic,2,frus1969-76v38p2,d139,"139. Memorandum of Conversation",1
+16,semantic,3,frus1969-76v38p1,d53,"53. Editorial Note",
+16,semantic,4,frus1969-76v13,d95,"95. Editorial Note",
+16,semantic,5,frus1969-76v02,d29,"29. Editorial Note",
+16,semantic,6,frus1969-76v38p2,d137,"137. Memorandum of Conversation",1
+16,semantic,7,frus1969-76v38p1,d84,"84. Interview With Secretary of State Kissinger",
+16,semantic,8,frus1969-76v18,d24,"24. Memorandum of Conversation",
+16,semantic,9,frus1969-76v18,d14,"14. Memorandum of Conversation",
+16,semantic,10,frus1969-76v01,d80,"80. Memorandum of Conversation",
+16,prf,1,frus1969-76v38p2,d139,"139. Memorandum of Conversation",1
+16,prf,2,frus1969-76v38p2,d218,"218. Memorandum of Conversation",1
+16,prf,3,frus1969-76v38p2,d137,"137. Memorandum of Conversation",1
+16,prf,4,frus1969-76v35,d64,"64. Minutes of the Secretary of State’s Staff Meeting",
+16,prf,5,frus1969-76v37,d11,"11. Minutes of the Secretary of State’s Staff Meeting",
+16,prf,6,frus1969-76v38p1,d53,"53. Editorial Note",
+16,prf,7,frus1969-76v10,d224,"224. Minutes of the Secretary of State’s Regionals Staff Meeting",
+16,prf,8,frus1969-76v22,d86,"86. Minutes of Secretary of State Kissinger’s Principals and Regionals Staff Meeting",
+16,prf,9,frus1969-76v38p1,d42,"42. Memorandum of Conversation",
+16,prf,10,frus1969-76v38p1,d40,"40. Minutes of a National Security Council Meeting",
+17,lexical,1,frus1969-76ve13,d126,"126. Memorandum of Conversation, Beijing, April 22, 1972, 4:30-8 p.m.",1
+17,semantic,1,frus1969-76v18,d12,"12. Memorandum of Conversation",1
+17,semantic,2,frus1969-76ve13,d86,"86. Paper Prepared by the National Security Council Staff, Washington, undated",
+17,semantic,3,frus1969-76v18,d124,"124. Memorandum of Conversation",1
+17,semantic,4,frus1969-76v18,d58,"58. Memorandum of Conversation",1
+17,semantic,5,frus1969-76v17,d234,"234. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon",
+17,semantic,6,frus1964-68v30,d303,"303. Paper Prepared by Alfred Jenkins of the National Security Council Staff",
+17,semantic,7,frus1955-57v03,d264,"264. Memorandum From the Director of the Office of Chinese Affairs (Clough) to the Assistant Secretary of State for Far Eastern Affairs (Robertson)",
+17,semantic,8,frus1964-68v30,d160,"160. Memorandum From the Executive Secretary of the National Security Council (Smith) to President Johnson",
+17,semantic,9,frus1945v07,d224,"Report by the Second Secretary of Embassy in China (Service)",
+17,semantic,10,frus1945v07,d139,"Mr. Mao Tse-tung to the Ambassador in China (Hurley)",
+17,prf,1,frus1969-76ve13,d126,"126. Memorandum of Conversation, Beijing, April 22, 1972, 4:30-8 p.m.",1
+17,prf,2,frus1969-76ve13,d124,"124. Memorandum of Conversation, Beijing, April 20, 1972, 10:45 a.m.-1:22 p.m.",
+17,prf,3,frus1969-76ve13,d123,"123. Memorandum of Conversation, Beijing, April 19, 1972, 10:05 a.m.-12:52 p.m.",
+17,prf,4,frus1969-76ve13,d125,"125. Memorandum of Conversation, Beijing, April 20, 1972, 8:55-10:40 p.m.",
+17,prf,5,frus1969-76v17,d196,"196. Memorandum of Conversation",
+17,prf,6,frus1969-76v17,d140,"140. Memorandum of Conversation",
+17,prf,7,frus1969-76v17,d199,"199. Memorandum of Conversation",
+17,prf,8,frus1969-76ve13,d79,"79. Memorandum of Conversation, Beijing, January 7, 1972, 11:45 p.m.",
+17,prf,9,frus1969-76v17,d139,"139. Memorandum of Conversation",
+17,prf,10,frus1969-76ve13,d78,"78. Memorandum of Conversation, Beijing January 6, 1972, 11 a.m.",
+18,semantic,1,frus1977-80v29,d223,"223. Internal Transcript of a White House Briefing",
+18,semantic,2,frus1977-80v29,d3,"3. Paper Prepared in the Department of State",1
+18,semantic,3,frus1977-80v29,d20,"20. Briefing Memorandum From Ambassador at Large (Bunker) and Panama Canal Treaty Co-Negotiator (Linowitz) to Secretary of State Vance",
+18,semantic,4,frus1977-80v29,d52,"52. Memorandum of Conversation",
+18,semantic,5,frus1977-80v01,d67,"67. Address by President Carter to the Nation",
+18,semantic,6,frus1969-76ve10,d533,"533. Memorandum From the NSC Inter-Departmental Group for Inter-American Affairs to President Nixon",1
+18,semantic,7,frus1977-80v29,d55,"55. Memorandum of Conversation",
+18,semantic,8,frus1977-80v29,d89,"89. Minutes of a Cabinet Meeting",
+18,semantic,9,frus1969-76ve10,d553,"553. Memorandum From Secretary of Defense Laird to President Nixon",
+18,semantic,10,frus1969-76v22,d77,"77. Minutes of a National Security Council Meeting",
+19,lexical,1,frus1977-80v02,d303,"303. Memorandum From the Assistant to the President’s Special Assistant for Health Issues (Fill) to the President’s Special Assistant for Health Issues (Bourne)",
+19,lexical,2,frus1977-80v26,d497,"497. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to Secretary of State Vance, Secretary of Defense Brown, the Director of the Office of Management and Budget (McIntyre), the Director of the Arms Control and Disarmament Agency (Warnke), and the Director of the International Communication Agency (Reinhardt)",
+19,lexical,3,frus1969-76v01,d6,"6. Editorial Note",
+19,lexical,4,frus1977-80v30,d134,"134. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to Secretary of State Vance, Secretary of Defense Brown, the Director of the Office of Management and Budget (McIntyre), the Director of the Arms Control and Disarmament Agency (Warnke), and the Director of the International Communication Agency (Reinhardt)",
+19,lexical,5,frus1946v06,d487,"The Chargé in the Soviet Union (Kennan) to the Secretary of State",
+19,lexical,6,frus1961-63v19,d317,"317. Letter From Prime Minister Nehru to President Kennedy",
+19,lexical,7,frus1969-76ve15p1,d43,"43. Contingency Study Prepared by the National Security Council Interdepartmental Working Group/Europe, Washington, undated.",
+19,lexical,8,frus1969-76v35,d172,"172. Minutes of National Security Council Meeting",
+19,lexical,9,frus1874,d786,"No. 783. Mr. Beardsley to Mr. Fish.",
+19,lexical,10,frus1977-80v24,d33,"33. Memorandum From Robert Pastor of the National Security Council Staff to the President’s Assistant for National Security Affairs (Brzezinski)",
+19,semantic,1,frus1977-80v01,d74,"74. Article by the Assistant Secretary of State for International Organization Affairs (Maynes)",
+19,semantic,2,frus1981-88v38,d3,"3. Notes of a Meeting",
+19,semantic,3,frus1977-80v13,d48,"48. Memorandum of Conversation",
+19,semantic,4,frus1981-88v38,d32,"32. Notes of a Meeting",
+19,semantic,5,frus1981-88v01,d331,"331. Talking Points Prepared in the Policy Planning Staff",
+19,semantic,6,frus1969-76ve08,d100,"100. Memorandum of Conversation",
+19,semantic,7,frus1961-63v11,d120,"120. Message From Chairman Khrushchev to President Kennedy",
+19,semantic,8,frus1981-88v41,d352,"352. Telegram From the Department of State to Multiple Diplomatic Posts",1
+19,semantic,9,frus1969-76ve14p1,d42,"42. Briefing Memorandum From the Assistant Secretary of State for International Organization Affairs (Lewis) to Secretary of State Kissinger, Washington, March 3, 1976.",
+19,semantic,10,frus1961-63v06,d71,"71. Letter From Chairman Khrushchev to President Kennedy",
+19,prf,1,frus1977-80v30,d134,"134. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to Secretary of State Vance, Secretary of Defense Brown, the Director of the Office of Management and Budget (McIntyre), the Director of the Arms Control and Disarmament Agency (Warnke), and the Director of the International Communication Agency (Reinhardt)",
+19,prf,2,frus1977-80v26,d497,"497. Memorandum From the President’s Assistant for National Security Affairs (Brzezinski) to Secretary of State Vance, Secretary of Defense Brown, the Director of the Office of Management and Budget (McIntyre), the Director of the Arms Control and Disarmament Agency (Warnke), and the Director of the International Communication Agency (Reinhardt)",
+19,prf,3,frus1977-80v01,d52,"52. Remarks by President Carter",
+19,prf,4,frus1977-80v13,d108,"108. Memorandum of Conversation",
+19,prf,5,frus1969-76v16,d86,"86. Memorandum From the Counselor of the Department of State (Sonnenfeldt) to Secretary of State Kissinger",
+19,prf,6,frus1981-88v05,d23,"23. Letter From President Reagan to Soviet General Secretary Gorbachev",
+19,prf,7,frus1961-63v07-09mSupp,d10,"10. Memorandum from Battle to Swank, April 21",
+19,prf,8,frus1981-88v05,d41,"41. Memorandum From Secretary of State Shultz to President Reagan",
+19,prf,9,frus1961-63v06,d98,"98. Message From Chairman Khrushchev to President Kennedy",
+19,prf,10,frus1981-88v01,d8,"8. Address by Ronald Reagan",
+20,lexical,1,frus1977-80v04,d183,"183. Memorandum From Secretary of Defense Brown to President Carter",1
+20,lexical,2,frus1981-88v11,d264,"264. Information Memorandum From the Director of the Policy Planning Staff (Solomon) to Secretary of State Shultz",
+20,lexical,3,frus1981-88v38,d237,"237. Memorandum From the Assistant Secretary of the Treasury for International Affairs (Mulford) to Secretary of the Treasury Baker",
+20,lexical,4,frus1969-76v35,d204,"204. Memorandum to the Chairman of the 40 Committee",
+20,lexical,5,frus1946v06,d463,"The Ambassador in the Soviet Union (Harriman) to the Secretary of State",
+20,lexical,6,frus1969-76v21,d96,"96. Backchannel Message From the Ambassador to Chile (Korry) to the Under Secretary of State for Political Affairs (Johnson)",
+20,lexical,7,frus1969-76v20,d211,"211. Memorandum From the President’s Assistant for National Security Affairs (Kissinger) to President Nixon",
+20,lexical,8,frus1989-92v31,d80,"80. Memorandum From Senator Nunn to President Bush",1
+20,lexical,9,frus1958-60v12,d368,"368. Telegram From the Embassy in the United Arab Republic to the Department of State",
+20,lexical,10,frus1943v03,d374,"Memorandum of Conversation, by Mr. Elbridge Durbrow of the Division of European Affairs",
+20,semantic,1,frus1961-63v21,d96,"96. Editorial Note",
+20,semantic,2,frus1964-68v33,d274,"274. Editorial Note",
+20,semantic,3,frus1961-63v03,d100,"100. Airgram From the Embassy in Vietnam to the Department of State",
+20,semantic,4,frus1964-68v06,d88,"88. Memorandum From the Ambassador’s Special Assistant (Lansdale) to the Ambassador to Vietnam (Bunker)",
+20,semantic,5,frus1958-60v03mSupp,d486,"486. Report of Joint U.S.–U.K. Technical Group",
+20,semantic,6,frus1961-63v02,d302,"302. Letter From the Ambassador in Vietnam (Nolting) to the Deputy Assistant Secretary of State for Far Eastern Affairs (Cottrell)",
+20,semantic,7,frus1961-63v10-12mSupp,d230,"230. Memorandum from Gordon Chase to McGeorge Bundy, April 30",
+20,semantic,8,frus1961-63v01,d59,"59. Paper Prepared by the Vice President",
+20,semantic,9,frus1961-63v02,d127,"127. Airgram From the Embassy in Vietnam to the Department of State",
+20,semantic,10,frus1964-68v02,d186,"186. Telegram From the Embassy in Vietnam to the Department of State",
+20,prf,1,frus1989-92v31,d21,"21. Memorandum From Linton Brooks of the National Security Council Staff to the President’s Deputy Assistant for National Security Affairs (Gates)",
+20,prf,2,frus1969-76v35,d113,"113. Memorandum From Secretary of Defense Rumsfeld to President Ford",
+20,prf,3,frus1964-68v10,d103,"103. Draft Memorandum From Secretary of Defense McNamara to President Johnson",
+20,prf,4,frus1964-68v10,d210,"210. Draft Memorandum From Secretary of Defense Clifford to President Johnson",
+20,prf,5,frus1969-76v35,d170,"170. Memorandum From the Director of Central Intelligence (Bush) to Recipients of National Intelligence Estimate 11–3/8–76",
+20,prf,6,frus1961-63v08,d17,"17. Letter From Secretary of Defense McNamara to President Kennedy",
+20,prf,7,frus1981-88v44p1,d126,"126. Memorandum From the Under Secretary of Defense for Policy (Ikle) to Secretary of Defense Weinberger",
+20,prf,8,frus1981-88v44p1,d193,"193. Memorandum From Acting Director of Central Intelligence Gates to the President’s Assistant for National Security Affairs (Carlucci)",
+20,prf,9,frus1981-88v05,d97,"97. Paper Prepared by the Arms Control Support Group",
+20,prf,10,frus1989-92v31,d29,"29. Memorandum From Richard Davis of the National Security Council Staff to the President’s Deputy Assistant for National Security Affairs (Gates)",
+21,lexical,1,frus1934v03,d21,"The Ambassador in Japan (Grew) to the Secretary of State",1
+21,lexical,2,frus1934v03,d192,"The Minister in China (Johnson) to the Secretary of State",
+21,lexical,3,frus1929v01,d180,"The Secretary of State to the Japanese Ambassador (Debuchi)",1
+21,lexical,4,frus1933v01,d59,"The Acting Chairman of the American Delegation (Gibson) to the Secretary of State",
+21,lexical,5,frus1934v01,d174,"Memorandum by the Chief of the Division of Far Eastern Affairs (Hornbeck) to the Secretary of State",
+21,lexical,6,frus1929v01,d207,"The Department of State to the Japanese Embassy",
+21,lexical,7,frus1934v01,d184,"Memorandum by the Under Secretary of State (Phillips)",
+21,lexical,8,frus1934v01,d207,"The Ambassador in Great Britain (Bingham) to the Secretary of State",
+21,lexical,9,frus1931-41v01,d203,"The Chargé in Japan (Neville) to the Secretary of State",
+21,lexical,10,frus1922v01,d47,"The Ambassador in Japan (Warren) to the Secretary of State",1
+21,semantic,1,frus1929v01,d180,"The Secretary of State to the Japanese Ambassador (Debuchi)",1
+21,semantic,2,frus1931-41v01,d211,"The Chairman of the American Delegation (Davis) to the Secretary of State",
+21,semantic,3,frus1929v01,d207,"The Department of State to the Japanese Embassy",
+21,semantic,4,frus1931-41v01,d206,"Memorandum of Conversation Between the American and the Japanese Delegations",
+21,semantic,5,frus1922v01,d43,"Memorandum by the Japanese Naval Experts",1
+21,semantic,6,frus1922v01,d42,"The Ambassador in Japan (Warren) to the Secretary of State",
+21,semantic,7,frus1932v01,d215,"Memorandum of a Meeting of Representatives of the State, War, and Navy Departments",
+21,semantic,8,frus1929v01,d192,"Memorandum by the Secretary of State",
+21,semantic,9,frus1935v01,d147,"The Secretary of State to the Chairman of the American Delegation to the London Naval Conference (Davis)",
+21,semantic,10,frus1927v01,d126,"The Secretary of State to the Chairman of the American Delegation (Gibson)",
+21,prf,1,frus1929v01,d180,"The Secretary of State to the Japanese Ambassador (Debuchi)",1
+21,prf,2,frus1934v03,d21,"The Ambassador in Japan (Grew) to the Secretary of State",1
+21,prf,3,frus1934v01,d174,"Memorandum by the Chief of the Division of Far Eastern Affairs (Hornbeck) to the Secretary of State",
+21,prf,4,frus1934v03,d563,"The Ambassador in Japan (Grew) to the Secretary of State",
+21,prf,5,frus1932v01,d101,"The Secretary of State to the Acting Chairman of the American Delegation (Gibson)",
+21,prf,6,frus1934v01,d173,"The Chairman of the American Delegation to the General Disarmament Conference (Davis) to President Roosevelt",
+21,prf,7,frus1934v03,d192,"The Minister in China (Johnson) to the Secretary of State",
+21,prf,8,frus1931-41v01,d211,"The Chairman of the American Delegation (Davis) to the Secretary of State",
+21,prf,9,frus1931-41v01,d180,"The Ambassador in Japan (Grew) to the Secretary of State",
+21,prf,10,frus1930v01,d20,"The Ambassador in Japan (Castle) to the Acting Secretary of State",
+22,lexical,1,frus1916Supp,d308,"The Secretary of State to the Ambassador in Germany (Gerard)",1
+22,lexical,2,frus1914-20v01,d656,"The Ambassador in Germany (Gerard) to the Secretary of State",
+22,lexical,3,frus1914-20v01,d536,"The Secretary of State to President Wilson",1
+22,lexical,4,frus1914-20v01,d509,"Draft Instructions to the Ambassador in Germany (Gerard)",1
+22,lexical,5,frus1914-20v02,d53,"The Secretary of State to the Chairman of the Senate Committee on Privileges and Elections (Pomerene)",
+22,lexical,6,frus1864p1,d394,"Mr. Adams to Mr. Seward.",
+22,semantic,1,frus1873p1v2,d279,"Chief Baron Pigott’s refusal of a mixed jury in Warren’s case.",
+22,semantic,2,frus1867p1,d33,"Mr. Adams to Mr. Seward.",
+22,semantic,3,frus1916Supp,d294,"The Secretary of State to the Ambassador in Great Britain (Page)",
+22,semantic,4,frus1861,d74,"Mr. Adams to Mr. Seward.",
+22,semantic,5,frus1866p1,d124,"Mr. Adams to Mr. Seward.",
+22,semantic,6,frus1871,d226,"General Schenck to Mr. Fish",
+22,semantic,7,frus1863p1,d175,"Mr. Adams to Mr. Seward.",
+22,semantic,8,frus1868p1,d1,"Mr. Adams to Mr. Seward",
+22,semantic,9,frus1863p1,d317,"Mr. Stuart to Mr. Seward.",
+22,semantic,10,frus1863p1,d675,"Mr. Seward to Mr. Adams.",
+22,prf,1,frus1914-20v01,d509,"Draft Instructions to the Ambassador in Germany (Gerard)",1
+22,prf,2,frus1916Supp,d308,"The Secretary of State to the Ambassador in Germany (Gerard)",1
+22,prf,3,frus1914-20v01,d350,"The Counselor for the Department of State (Lansing) to the Secretary of State",
+22,prf,4,frus1914-20v01,d392,"The Counselor for the Department of State (Lansing) to the Secretary of State",
+22,prf,5,frus1916Supp,d337,"The Ambassador in Germany (Gerard) to the Secretary of State",
+22,prf,6,frus1914-20v01,d507,"The Secretary of State to President Wilson",1
+22,prf,7,frus1914-20v01,d510,"The Secretary of State to President Wilson",1
+22,prf,8,frus1914-20v02,d53,"The Secretary of State to the Chairman of the Senate Committee on Privileges and Elections (Pomerene)",
+22,prf,9,frus1914-20v01,d536,"The Secretary of State to President Wilson",1
+22,prf,10,frus1917Supp01v01,d100,"Address of the President of the United States to Congress, February 3, 1917",
+23,lexical,1,frus1981-88v11,d168,"168. Memorandum From the Special Advisor to the President and Secretary of State on Arms Control Matters (Nitze) to Secretary of State Shultz",
+23,lexical,2,frus1981-88v05,d301,"301. Memorandum of Conversation",1
+23,lexical,3,frus1981-88v06,d3,"3. Minutes of a National Security Planning Group Meeting",1
+23,lexical,4,frus1981-88v01,d335,"335. Address by President Reagan to the Nation",1
+23,lexical,5,frus1981-88v01,d306,"306. Remarks by President Reagan",1
+23,lexical,6,frus1981-88v01,d333,"333. Remarks by President Reagan",1
+23,lexical,7,frus1981-88v10,d360,"360. Memorandum of Conversation",1
+23,lexical,8,frus1981-88v06,d68,"68. Memorandum of Conversation",1
+23,lexical,9,frus1981-88v11,d308,"308. Memorandum of Conversation",1
+23,semantic,1,frus1981-88v11,d38,"38. Letter From the Chairman of the President’s Foreign Intelligence Advisory Board (Armstrong) to President Reagan",
+23,semantic,2,frus1908,d165,"The Acting Secretary of State to Minister Rockhill.",
+23,semantic,3,frus1961-63v21,d96,"96. Editorial Note",
+23,semantic,4,frus1981-88v11,d3,"3. Telegram From the Department of State to the Embassy in the Soviet Union",
+23,semantic,5,frus1894Nicaragua,d9,"No. 9. Mr. Gresham to Mr. Baker.",
+23,semantic,6,frus1900,d137,"Mr. Hay to Mr. Conger.",
+23,semantic,7,frus1915Supp,d1015,"The Secretary of State to the Minister in the Netherlands (Van Dyke)",
+23,semantic,8,frus1977-80v06,d181,"181. Letter From Soviet General Secretary Brezhnev to President Carter",
+23,semantic,9,frus1981-88v11,d41,"41. National Security Decision Directive 65",
+23,semantic,10,frus1948v05p2,d290,"The United States Representative at the United Nations (Austin) to the Secretary of State",
+23,prf,1,frus1981-88v06,d3,"3. Minutes of a National Security Planning Group Meeting",1
+23,prf,2,frus1981-88v11,d119,"119. Notes of a Conversation",
+23,prf,3,frus1981-88v01,d306,"306. Remarks by President Reagan",1
+23,prf,4,frus1981-88v05,d138,"138. Telegram From the Embassy in the Soviet Union to the Department of State",
+23,prf,5,frus1981-88v11,d168,"168. Memorandum From the Special Advisor to the President and Secretary of State on Arms Control Matters (Nitze) to Secretary of State Shultz",
+23,prf,6,frus1981-88v05,d306,"306. Memorandum of Conversation",
+23,prf,7,frus1981-88v05,d302,"302. Memorandum of Conversation",
+23,prf,8,frus1981-88v01,d314,"314. Address by President Reagan to the Nation",
+23,prf,9,frus1981-88v06,d158,"158. Memorandum of Conversation",
+23,prf,10,frus1981-88v05,d143,"143. Memorandum From Secretary of State Shultz to President Reagan",
+24,lexical,1,frus1947v05,ch8,"United States concern over the assassination of a Legation employee considered “persona non grata” by the Ethiopian government",1
+24,lexical,2,frus1947v04,d273,"The Acting Secretary of State to the Legation in Hungary",
+24,lexical,3,frus1950v02,d450,"Memorandum by the Chief of the Division of Security (Nicholson) to the Director of the Office of Middle American Affairs (Mann)",
+24,lexical,4,frus1950v04,d537,"Editorial Note",1
+24,lexical,5,frus1955-57v13,d355,"355. Memorandum From the Assistant Secretary of State for Near Eastern, South Asian, and African Affairs (Rountree) to the Acting Secretary of State",1
+24,lexical,6,frus1941v02,d797,"The Italian Ambassador (Colonna) to the Secretary of State",1
+24,lexical,7,frus1949v05,d204,"The Chargé in Bulgaria (O’Donoghue) to the Secretary of State",1
+24,lexical,8,frus1950v04,d560,"The Secretary of State to the Embassy in Poland",
+24,lexical,9,frus1944v05,d255,"Memorandum of Conversation, by the Assistant Secretary of State (Long)",
+24,lexical,10,frus1964-68v14,d109,"109. Telegram From the Embassy in the Soviet Union to the Department of State",1
+24,semantic,1,frus1925v02,d319,"The Ambassador in Italy (Fletcher) to the Secretary of State",0
+24,semantic,2,frus1964-68v14,d109,"109. Telegram From the Embassy in the Soviet Union to the Department of State",1
+24,semantic,3,frus1948v04,d244,"Editorial Note",
+24,semantic,4,frus1947v04,d273,"The Acting Secretary of State to the Legation in Hungary",
+24,semantic,5,frus1868p2,d443,"Mr. Washburn to Señor Benitez.",
+24,semantic,6,frus1894,d750,"Mr. Terrell to Mr. Gresham.",
+24,semantic,7,frus1955-57v25,d249,"249. Letter From the Acting Assistant Secretary of State for European Affairs (Beam) to the Director of Special Operations, Department of Defense (Erskine)",
+24,semantic,8,frus1894,d331,"Mr. Gresham to Mr. Smythe.",
+24,semantic,9,frus1941v02,d795,"Memorandum of Conversation, by the Assistant Secretary of State (Long)",
+24,semantic,10,frus1894,d758,"Mr. Gresham to Mr. Terrell.",
+24,prf,1,frus1947v04,d273,"The Acting Secretary of State to the Legation in Hungary",
+24,prf,2,frus1951v04p2,d271,"Editorial Note",
+24,prf,3,frus1955-57v13,d355,"355. Memorandum From the Assistant Secretary of State for Near Eastern, South Asian, and African Affairs (Rountree) to the Acting Secretary of State",1
+24,prf,4,frus1955-57v25,d249,"249. Letter From the Acting Assistant Secretary of State for European Affairs (Beam) to the Director of Special Operations, Department of Defense (Erskine)",
+24,prf,5,frus1950v04,d537,"Editorial Note",1
+24,prf,6,frus1950v02,d450,"Memorandum by the Chief of the Division of Security (Nicholson) to the Director of the Office of Middle American Affairs (Mann)",
+24,prf,7,frus1950v04,d536,"The Legation in Hungary to the Hungarian Foreign Ministry",
+24,prf,8,frus1947v04,d272,"The Minister in Hungary (Chapin) to the Secretary of State",
+24,prf,9,frus1917Supp01v01,d833,"The Chargé in Turkey (Tarler) to the Secretary of State",
+24,prf,10,frus1949v05,d286,"Memorandum by the Chief of the Division of Southeast European Affairs (Barbour) to the Director of the Office of European Affairs (Hickerson)",
+25,lexical,1,frus1981-88v41,d3,"3. Telegram From the Department of State to All Diplomatic and Consular Posts",0
+25,lexical,2,frus1981-88v41,d7,"7. Telegram From the Department of State to the Medical Collective",0
+25,lexical,3,frus1943China,d700,"The Secretary of State to the Ambassador in China (Gauss)",0
+25,lexical,4,frus1935v02,d305,"The Ambassador in Germany (Dodd) to the Secretary of State",0
+25,lexical,5,frus1981-88v41,d2,"2. Telegram From the Department of State to the Embassy in Haiti",0
+25,lexical,6,frus1952-54v14p2,d807,"No. 807 The Ambassador in Japan (Allison) to the Department of State",0
+25,lexical,7,frus1977-80v19,d199,"199. Memorandum From Secretary of State Muskie to President Carter",0
+25,lexical,8,frus1940v01,d402,"The Minister in Lithuania (Norem) to the Secretary of State",0
+25,lexical,9,frus1981-88v41,d19,"19. Telegram From the Department of State to All African Diplomatic Posts",0
+25,lexical,10,frus1969-76ve07,d74,"74. Telegram 1569 From the Consulate General in Dacca to the Department of State",
+25,semantic,1,frus1907p2,d365,"Chargé Bliss to the Secretary of State.",
+25,semantic,2,frus1896,d762,"Mr. Rockhill to Mr. Williams.",
+25,semantic,3,frus1917,d1469,"The Secretary of State to Minister Ewing",
+25,semantic,4,frus1923v02,d454,"The Secretary of State to the Chargé in Japan (Caffery)",
+25,semantic,5,frus1934v05,d239,"The Minister in Costa Rica (Sack) to the Secretary of State",
+25,semantic,6,frus1916Supp,d1216,"The Secretary of State to the Consul at Jerusalem (Glazebrook)",
+25,semantic,7,frus1918Russiav01,d638,"The Secretary of State to the Consul at Vladivostok (Caldwell)",
+25,semantic,8,frus1981-88v24,d440,"440. Telegram 7835 From the Embassy in Morocco to the Department of State",
+25,semantic,9,frus1914Supp,d148,"The Secretary of State to the Minister in Belgium (Whitlock)",
+25,semantic,10,frus1907p1,d431,"The Governor of Porto Rico to the Secretary of State.",
+25,prf,1,frus1981-88v41,d3,"3. Telegram From the Department of State to All Diplomatic and Consular Posts",0
+25,prf,2,frus1981-88v41,d7,"7. Telegram From the Department of State to the Medical Collective",0
+25,prf,3,frus1981-88v41,d8,"8. Paper Prepared in the Department of State",
+25,prf,4,frus1981-88v41,d2,"2. Telegram From the Department of State to the Embassy in Haiti",0
+25,prf,5,frus1981-88v41,d18,"18. Paper Prepared in the Department of State",
+25,prf,6,frus1981-88v41,d17,"17. Letter From Acting Secretary of State Whitehead to the Director of the Office of Management and Budget (Miller)",
+25,prf,7,frus1981-88v41,d27,"27. Memorandum From the Domestic Policy Council to President Reagan",
+25,prf,8,frus1981-88v41,d16,"16. Telegram From the Department of State to All Diplomatic and Consular Posts",
+25,prf,9,frus1981-88v41,d24,"24. Telegram From the Department of State to Agency for International Development Mission Directors and Representatives",
+25,prf,10,frus1981-88v41,d12,"12. Minutes of AIDS Working Group Meeting",

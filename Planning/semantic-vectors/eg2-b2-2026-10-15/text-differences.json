@@ -1,0 +1,128 @@
+{
+  "char_delta_total": 44,
+  "chunks_compared": 605978,
+  "chunks_with_different_text": 80,
+  "documents_compared": 314616,
+  "documents_with_different_text": 50,
+  "harvester_sha256_both_runs": "41a6656dddf73e7e837dccc73e2e2cdfbf4bce87af3402a2a7bd5218c004e736 (unchanged in the repository since 2026-09-02, #1177)",
+  "new_store": "~/frus-semantic-raw-embeddinggemma-2",
+  "shipped_store": "~/frus-semantic-raw",
+  "volumes": [
+    {
+      "char_delta": -10,
+      "chunks_a": 1195,
+      "chunks_b": 1195,
+      "chunks_text_differ": 1,
+      "corpus_change": "cdeef4ca0 (2026-09-29, fix: characters lost to encoding mistakes)",
+      "docs": [
+        "d205"
+      ],
+      "docs_text_differ": 1,
+      "other_fields_differ": [],
+      "shipped_store_embedded": "2026-08-10T15:53:51",
+      "volume": "frus1926v02"
+    },
+    {
+      "char_delta": -2,
+      "chunks_a": 785,
+      "chunks_b": 785,
+      "chunks_text_differ": 1,
+      "corpus_change": "cdeef4ca0 (2026-09-29, fix: characters lost to encoding mistakes)",
+      "docs": [
+        "d847"
+      ],
+      "docs_text_differ": 1,
+      "other_fields_differ": [],
+      "shipped_store_embedded": "2026-08-10T18:05:33",
+      "volume": "frus1952-54v14p2"
+    },
+    {
+      "char_delta": 0,
+      "chunks_a": 2092,
+      "chunks_b": 2092,
+      "chunks_text_differ": 1,
+      "corpus_change": "cdeef4ca0 (2026-09-29, fix: characters lost to encoding mistakes)",
+      "docs": [
+        "d471"
+      ],
+      "docs_text_differ": 1,
+      "other_fields_differ": [],
+      "shipped_store_embedded": "2026-08-10T18:26:31",
+      "volume": "frus1958-60v03mSupp"
+    },
+    {
+      "char_delta": 0,
+      "chunks_a": 1387,
+      "chunks_b": 1387,
+      "chunks_text_differ": 5,
+      "corpus_change": "cdeef4ca0 (2026-09-29, fix: characters lost to encoding mistakes)",
+      "docs": [
+        "ch_d11",
+        "eta_d3",
+        "ha_d12",
+        "pm_d31",
+        "pm_d57"
+      ],
+      "docs_text_differ": 5,
+      "other_fields_differ": [],
+      "shipped_store_embedded": "2026-08-10T18:28:27",
+      "volume": "frus1958-60v05mSupp"
+    },
+    {
+      "char_delta": 56,
+      "chunks_a": 257,
+      "chunks_b": 257,
+      "chunks_text_differ": 72,
+      "corpus_change": "4e9694796 (2026-09-11, fix: enrich cross-references) and the volume's later edits through 59134163c (2026-09-29, fix: replace no-break space with space); the shipped store embedded the volume on 2026-09-09 at 23:30",
+      "docs": [
+        "d368",
+        "d371",
+        "d373",
+        "d374",
+        "d375",
+        "d376",
+        "d377",
+        "d378",
+        "d382",
+        "d386",
+        "d388",
+        "d390",
+        "d391",
+        "d392",
+        "d395",
+        "d396",
+        "d398",
+        "d401",
+        "d402",
+        "d403",
+        "d413",
+        "d445",
+        "d451",
+        "d454",
+        "d456",
+        "d459",
+        "d460",
+        "d462",
+        "d464",
+        "d465",
+        "d466",
+        "d468",
+        "d469",
+        "d470",
+        "d471",
+        "d472",
+        "d474",
+        "d475",
+        "d476",
+        "d478",
+        "d479",
+        "d481"
+      ],
+      "docs_text_differ": 42,
+      "other_fields_differ": [],
+      "shipped_store_embedded": "2026-09-09T23:30:45",
+      "volume": "frus1981-88v16"
+    }
+  ],
+  "volumes_compared": 553
+}
