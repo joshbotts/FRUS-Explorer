@@ -115,7 +115,7 @@ than being flattened into plain text.
 
 Search is SQLite FTS5 with BM25 ranking and English stemming, built on device as volumes finish
 downloading. Semantic features rely on vector embeddings generated ahead of time with Google's
-EmbeddingGemma model; searching by meaning runs the same model on your device. Everything you
+EmbeddingGemma 2 model; searching by meaning runs the same model on your device. Everything you
 write — notes, tags, highlights, collections, projects, prompts — lives
 in SwiftData and syncs through CloudKit; nothing you write leaves your devices for a server we run.
 Summarization uses Apple's on-device `FoundationModels` framework, so document text is never sent
@@ -158,7 +158,7 @@ Apache 2.0. See [LICENSE](LICENSE) for the full license text.
 
 All source files carry the Apache 2.0 license header.
 
-The optional natural-language search feature downloads Google's EmbeddingGemma model at the user's request and runs it on-device. The model weights are never part of this repository and are not covered by the Apache License: Gemma is provided under and subject to the [Gemma Terms of Use](https://ai.google.dev/gemma/terms), including its [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy). The app ships the model unmodified (the Q4_0 QAT GGUF build, SHA-256-pinned in the semantic artifacts) and embeds [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) to run it. See [NOTICE](NOTICE) and `Planning/semantic-vectors/Gemma-Compliance-Runbook.md`.
+The optional natural-language search feature downloads Google's [EmbeddingGemma 2](https://huggingface.co/google/embeddinggemma-2) model at the user's request and runs it on-device. The model weights are never part of this repository; Google licenses the model under the Apache License, Version 2.0. The app downloads it unmodified (the ggml-org Q8_0 GGUF build, SHA-256-pinned in the semantic artifacts) and embeds [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) to run it. See [NOTICE](NOTICE). Builds 42 to 50 used EmbeddingGemma 300m, under the Gemma Terms of Use, and asked the reader to accept those terms before the download.
 
 ## Contributing
 

@@ -29,13 +29,13 @@ private enum EncoderGate {
 /// missing normalize, wrong prompt, tokenizer misuse — never model drift. Cross-engine parity (LM
 /// Studio, whose vectors the judged sitting ranked with) is the spike's separate, measured result.
 ///
-/// ONE FIXTURE A MODEL, chosen by the model file's SHA-256 (`fixtureNames`). EmbeddingGemma 300m's,
-/// the model the app ships, was made at llama.cpp 8663224, the runtime vendored until 2026-10-15;
-/// the runtime is a0e6dc7 since then (plan of record B4), so that fixture is now also the check
-/// that the rebuild left the shipped model's query vectors where they were. EmbeddingGemma 2's
-/// was made at a0e6dc7, for the move to that model (design step 7 of
-/// `EmbeddingGemma-2-Spike-2026-10-14.md`). Two of the four tests run in the bundled tier's space
-/// and so need the model the tier was embedded with; for any other model, run
+/// ONE FIXTURE A MODEL, chosen by the model file's SHA-256 (`fixtureNames`). EmbeddingGemma 2's,
+/// the model the app ships from build 51 (plan of record B4), was made at llama.cpp a0e6dc7, the
+/// runtime vendored since 2026-10-15 (design step 7 of `EmbeddingGemma-2-Spike-2026-10-14.md`).
+/// EmbeddingGemma 300m's, the model builds 42 to 50 shipped, was made at 8663224, the runtime
+/// vendored until then, and stays as the check on that model's query vectors under the rebuilt
+/// runtime. Two of the four tests run in the bundled tier's space and so need the model the tier
+/// was embedded with, EmbeddingGemma 2 since B4's second pull request; for any other model, run
 /// `parityAgainstFixture()` and `memoryShape()` alone.
 ///
 /// GATED on the real model file: set `FRUS_SEMANTIC_MODEL` to a GGUF's path — via
@@ -53,6 +53,8 @@ private enum EncoderGate {
 ///   1.1 — B4, 2026-10-15: a fixture a model, chosen by the GGUF's SHA-256, with EmbeddingGemma
 ///         2's added; `~/` paths for a device; the two tier-space tests require the tier's model;
 ///         the memory test also prints its load and encode times
+///   1.2 — B4's second pull request, 2026-10-15: the bundled tier is EmbeddingGemma 2's, so the
+///         two tier-space tests run with that model
 @Suite("Query encoder parity", .enabled(if: EncoderGate.modelPath != nil))
 struct QueryEncoderParityTests {
 

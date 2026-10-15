@@ -51,7 +51,8 @@ import llama
 /// completely, ending below its own baseline. Against the CPU shape's 141 → 349 → 393 → 140, Metal
 /// peaks **~91 MB lower** rather than higher: the GGUF is mmapped and its clean pages are resident
 /// without being charged to `phys_footprint` — the resident column peaks ~645 MB against a 229 MB
-/// model file. Full record in `Planning/semantic-vectors/encoder-footprint-metal.json`.
+/// model file (EmbeddingGemma 300m's; EmbeddingGemma 2's figures, from B4, are in
+/// `EmbeddingGemma-2-B4-Runtime-2026-10-15.md` §4). Full record in `Planning/semantic-vectors/encoder-footprint-metal.json`.
 ///
 /// ## How to run it — and do NOT launch it from a shell
 /// Launch with `open -n --env FRUS_ENCODER_FOOTPRINT=1 -a "<...>/FRUS Explorer.app"`. Running the

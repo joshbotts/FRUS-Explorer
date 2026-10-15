@@ -1,5 +1,12 @@
 # App Store Custom EULA — paste-ready text (V-5, Gemma flow-down)
 
+> **Moved to `Completed/` on 2026-10-15 (#1659, B4), never entered.** It was owed before the first
+> App Store submission only while the app downloaded EmbeddingGemma 300m under the Gemma Terms.
+> Build 51, the first public release candidate, ships EmbeddingGemma 2 under Apache 2.0, which has
+> no use restriction to flow down (plan of record decisions 15 to 17), so App Store Connect keeps
+> Apple's standard licence agreement. Its clause 9 (*Data*) wording is still cited by
+> `../Store-Listing-Draft.md`.
+
 **Status:** prepared 2026-08-28, adversarially reviewed (four-reviewer panel; every finding
 addressed — the findings and their dispositions are in the PR that landed this file), then
 re-verified against the revised text. The owner enters it in App Store Connect. **This file is

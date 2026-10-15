@@ -1743,7 +1743,8 @@ struct FRUSExplorerApp: App {
                         // The query-encoder model store (V-5 s2), pinned to the same artifact's
                         // modelFileSHA256 — a stored file verified against another generation's
                         // pin is purged here for the reason the shard purge runs: the family rule
-                        // forbids blending, and 229 MB sitting unusable would still be counted.
+                        // forbids blending, and 310 MB sitting unusable would still be counted. The
+                        // purge also takes a file an earlier release named (the 300m's, B4).
                         let modelStore = SemanticModelStore(
                             directory: Self.makeSemanticModelDirectory(),
                             expectedSHA256: semanticIndex.provenance.modelFileSHA256)
@@ -3225,7 +3226,7 @@ struct FRUSExplorerApp: App {
     ///
     /// Its own directory for the shard directory's reason: the extension sweeps that clean the
     /// Volumes directory would never touch a `.gguf`, and the shard store's `removeAllShards`
-    /// walks `.vec` files — a 229 MB model inside either directory would survive teardowns that
+    /// walks `.vec` files — a 310 MB model inside either directory would survive teardowns that
     /// believe they emptied it.
     static func makeSemanticModelDirectory() -> URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]

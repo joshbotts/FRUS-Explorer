@@ -172,6 +172,21 @@ the live plan of record — the one `../Plan-Of-Record-*.md` not marked SUPERSED
     `Launch-Marketing-Kit-2026-10-13.md` decision 5, marked answered. Dated records were left as
     written: `DEVELOPMENT-PLAN.md`'s entries that name the plan at the `Planning/` root.
 
+- **The 2026-10-15 move (2 documents)** — moved by B4's second pull request (#1659), when build 51
+  took EmbeddingGemma 2 under Apache 2.0 (the live plan's decisions 15 to 17). **Residue is carried
+  by the live plan's §2 and §3** and by `../semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md`.
+  - **`Gemma-Compliance-Runbook.md`**, the Gemma Terms' obligations and the surfaces that met
+    them: the consent sheet, the bundled Terms and the per-release policy re-read retired with the
+    300m. What builds 42 to 50 distribute (the 300m on `frus-semantic-vectors`' `encoder-1`) is
+    still under its §3 text, which that repository's README and NOTICE keep.
+  - **`App-Store-Custom-EULA.md`**, never entered: it was owed before the first App Store
+    submission only while the app downloaded the 300m.
+  - **Pointers to these files.** Source: `SemanticModelFetcher.swift`'s header. Live plans:
+    `Store-Listing-Draft.md` (clause 9's wording), `Visual-Marketing-Plan.md` (the trademark row),
+    `New-Volume-Release-Plan.md` (the artifact repository's Model weights section), and the spike
+    design's §0 and §1. Dated records were left as written: `DEVELOPMENT-PLAN.md`, the archived
+    plans of record and the stage memos.
+
 **Deliberately NOT here** (live at `Planning/` root — verified 2026-10-14, by listing the
 directory):
 - **the plan of record** — the one `Plan-Of-Record-*.md` there (`Plan-Of-Record-2026-10-14`; every

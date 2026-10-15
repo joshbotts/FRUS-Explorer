@@ -1,0 +1,25 @@
+# seam_figures.py over EmbeddingGemma 2's pool
+fixture rows 120 [260019, 260020, 260021]
+near d2 first six: [('frus1961-63v06', 'd2', 0), ('frus1961-63v06', 'd1', 92), ('frus1961-63v06', 'd14', 109), ('frus1961-63v06', 'd4', 110), ('frus1961-63v06', 'd54', 113), ('frus1961-63v06', 'd119', 116)]
+  fixture rows among 800: 80; unscored 720 in 248 volumes
+  d1: h=92 rank=2 shown raw=64% calibrated=32% cos=0.6406
+  d2: h=0 rank=1 shown raw=100% calibrated=100% cos=1.0000
+  d3: h=131 rank=50 shown raw=49% calibrated=3% cos=0.4883
+far frus1861/d1 first six: [('frus1861', 'd1', 0), ('frus1864p4', 'd88', 120), ('frus1867p2', 'd50', 121), ('frus1863p1', 'd582', 122), ('frus1872p2v1', 'd158', 123), ('frus1863p2', 'd606', 125)]
+  fixture rows among 800: 0; unscored 800 in 124 volumes
+  d1: h=201 rank=307790 shown raw=21% calibrated=0% cos=0.2148
+  d2: h=187 rank=255425 shown raw=27% calibrated=0% cos=0.2695
+  d3: h=186 rank=247831 shown raw=27% calibrated=0% cos=0.2734
+
+# the same over the 300m's pool (the control: the figures the seam quoted through build 50)
+fixture rows 120 [260019, 260020, 260021]
+near d2 first six: [('frus1961-63v06', 'd2', 0), ('frus1961-63v06', 'd1', 90), ('frus1961-63v06', 'd3', 100), ('frus1961-63v06', 'd12', 114), ('frus1961-63v06', 'd13', 116), ('frus1961-63v06', 'd69', 117)]
+  fixture rows among 800: 78; unscored 722 in 179 volumes
+  d1: h=90 rank=2 shown raw=65% calibrated=34% cos=0.6484
+  d2: h=0 rank=1 shown raw=100% calibrated=100% cos=1.0000
+  d3: h=100 rank=3 shown raw=61% calibrated=26% cos=0.6094
+far frus1861/d1 first six: [('frus1861', 'd1', 0), ('frus1901China', 'd78', 147), ('frus1865p1', 'd184', 150), ('frus1861', 'd284', 151), ('frus1867p2', 'd502', 152), ('frus1881', 'd726', 152)]
+  fixture rows among 800: 0; unscored 800 in 134 volumes
+  d1: h=214 rank=256637 shown raw=16% calibrated=0% cos=0.1641
+  d2: h=194 rank=75495 shown raw=24% calibrated=0% cos=0.2422
+  d3: h=194 rank=75496 shown raw=24% calibrated=0% cos=0.2422

@@ -20,7 +20,7 @@ import Foundation
 /// A Meaning search a UI test can reach (#1577 lane 3).
 ///
 /// ## Why
-/// No UI test reached a Meaning result. A Meaning search needs the 229 MB query encoder, which no
+/// No UI test reached a Meaning result. A Meaning search needs the 310 MB query encoder, which no
 /// simulator has and no test may download, and it needs a match file for each volume it ranks.
 /// So every surface a Meaning list reaches — its rows and chips, its strip, a working corpus it
 /// ranks inside — was tested below the view or not at all.
@@ -54,19 +54,28 @@ import Foundation
 /// and t1, which have none):
 ///
 /// - **Near, the default**: the bits of the fixture's ``nearDocumentID``, d2. Its three documents
-///   with rows are the first three of the whole corpus by Hamming distance (d2, then d1 at 90 bits,
-///   then d3 at 100), so a plain Meaning search lists all three: d2 at 100%, d1 at 65%, d3 at 61%.
-///   **They are three of 78 hits.** The real volume has 120 documents and 78 of their rows are
-///   among the 800 candidates; the planted file scores every one, and the fixture holds three. So
-///   the strip above the list says that 75 close matches are not listed because the device's index
-///   does not hold those documents, and that 722 possible matches in 179 volumes could not be
-///   scored.
+///   with rows are all among the 800 candidates of the whole corpus by Hamming distance: d2 first,
+///   d1 second at 92 bits, d3 50th at 131. So a plain Meaning search lists all three: d2 at 100%,
+///   d1 at 32%, d3 at 3%. **They are three of 80 hits.** The real volume has 120 documents and 80
+///   of their rows are among the 800 candidates; the planted file scores every one, and the
+///   fixture holds three. So the strip above the list says that 77 close matches are not listed
+///   because the device's index does not hold those documents, and that 720 possible matches in
+///   248 volumes could not be scored.
 /// - **Far**, for a question that holds the word ``farMarker``: the bits of ``farDocument``, the
 ///   first document of `frus1861`. None of the fixture volume's 120 rows is among its 800
-///   candidates (the nearest of d1, d2 and d3 is 75,495th), so a plain Meaning search lists
-///   nothing, with all 800 unscored, in 134 volumes, while a search inside a set of the fixture's
-///   documents scores every member that has a row: d2 and d3 at 24%, d1 at 16%. That difference
-///   is what #1577 lane 1 changed, and it is the reason for a second question.
+///   candidates (the nearest of d1, d2 and d3 is 247,831st), so a plain Meaning search lists
+///   nothing, with all 800 unscored, in 124 volumes, while a search inside a set of the fixture's
+///   documents scores every member that has a row: d3, d2 and d1, at 186, 187 and 201 bits, each
+///   at 0%. That difference is what #1577 lane 1 changed, and it is the reason for a second
+///   question.
+///
+/// **The percentages are the searcher's, through the bundled generation's score calibration**
+/// (B4): a planted row's cosine `1 − 2h/512` is shown as `(cosine − 0.47) / 0.53`, the offset
+/// measured for EmbeddingGemma 2's own cosines. Sign vectors sit lower than a model's vectors for
+/// the same closeness (two unrelated rows near 0, where the model's sit near 0.6), so the far
+/// question's three rows, each about 0.27, fall below the offset and show 0%; their order is still
+/// the cosine's. Through build 50, with the 300m's bits and no calibration, the figures were 100,
+/// 65 and 61, 78 hits, 722 unscored in 179 volumes, and 24, 24 and 16 inside the set.
 ///
 /// `UITestMeaningSeederTests` holds those figures against the bundled artifacts. A regenerated
 /// bundle that moves them fails there first, and says which figure moved; the UI suite would fail
@@ -83,6 +92,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1577 lane 3: initial implementation
+///   1.1 — B4 (#1659): the figures for EmbeddingGemma 2's bundled bits and score calibration
 enum UITestMeaningSeeder {
 
     /// The launch-environment key that turns the seam on, when its value is `1`.

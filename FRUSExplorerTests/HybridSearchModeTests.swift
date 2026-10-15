@@ -1183,6 +1183,26 @@ struct SearchResultRouteTests {
 
     // MARK: - Two defects seen in the running app while checking #1584 and #1597
 
+    /// The method appendix prints a Meaning search's rendered expression as the record of what ran
+    /// (B4). Each view model used to spell the 300m's id itself, so the move to EmbeddingGemma 2
+    /// would have recorded the old model beside the new model's results.
+    @Test("A Meaning search records the bundled generation's model, from one place")
+    @MainActor
+    func meaningExpressionNamesTheBundledModel() async throws {
+        await BundledSemanticVectors.prepare()
+        let model = try #require(BundledSemanticVectors.provenance?.model)
+        #expect(model == "embeddinggemma-2-Q8_0")
+        #expect(SemanticSearchBackend.renderedExpression
+            == "route=semantic; model=embeddinggemma-2-Q8_0; top=100")
+        for path in ["FRUSExplorer/Search/SearchViewModel.swift",
+                     "FRUSExplorer/App/MacSearchViewModel.swift"] {
+            let source = try Self.source(path)
+            #expect(source.contains(
+                "lastRenderedExpression = SemanticSearchBackend.renderedExpression"), "\(path)")
+            #expect(!source.contains("embeddinggemma"), "\(path) names a model of its own")
+        }
+    }
+
     @Test("The model offer says a keyword search found nothing only where one ran")
     func modelOfferNamesTheSearchThatRan() throws {
         let afterKeywords = SemanticModelOfferCard.offerText(followsKeywordSearch: true)
@@ -1191,10 +1211,19 @@ struct SearchResultRouteTests {
         #expect(!inMeaningMode.contains("Keyword search"), """
             In Meaning mode no keyword search ran, and the offer says one found nothing.
             """)
+        // The size the copy states is the pinned file's, in decimal megabytes: "310 MB" for
+        // EmbeddingGemma 2 (B4), where it said "229 MB" for the 300m. Derived, so the next model's
+        // pin fails here until the sentence says its size.
+        let size = "\(Int((Double(SemanticModelStore.publishedBytes) / 1_000_000).rounded())) MB"
+        #expect(size == "310 MB")
         for text in [afterKeywords, inMeaningMode] {
-            #expect(text.contains("229 MB"), "both state the size of the download")
+            #expect(text.contains(size), "both state the size of the download")
             #expect(text.contains("entirely on this device"), "and where the model runs")
         }
+        // Settings' row and footer state the same size.
+        let settings = try Self.source("FRUSExplorer/Settings/SemanticModelSection.swift")
+        #expect(settings.contains("One \(size) download."))
+        #expect(settings.contains("an optional \(size) download"))
         // The two mounts: Meaning mode's empty state says which it is; the keyword fallback takes the default.
         let meaning = try Self.source("FRUSExplorer/Search/SemanticMeaningModeViews.swift")
         #expect(meaning.contains("SemanticModelOfferCard(followsKeywordSearch: false, onModelReady: onModelReady)"))

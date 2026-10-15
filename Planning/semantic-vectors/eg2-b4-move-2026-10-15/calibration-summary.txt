@@ -1,0 +1,61 @@
+# summarize_calibration.py
+NaN values: 0
+== 300m
+   owner null 'Space aliens': rank1 0.596 rank10 0.460 mean 0.260
+   owner    n=24 rank1 p10/50/90 0.495 / 0.606 / 0.678 | rank10 0.450 / 0.574 / 0.635 | corpus mean 0.236 / 0.308 / 0.346 | std 0.049 | p99.9 0.488
+   topical  n=45 rank1 p10/50/90 0.585 / 0.653 / 0.704 | rank10 0.535 / 0.596 / 0.660 | corpus mean 0.236 / 0.280 / 0.321 | std 0.052 | p99.9 0.500
+   null     n=20 rank1 p10/50/90 0.279 / 0.317 / 0.438 | rank10 0.259 / 0.291 / 0.388 | corpus mean 0.095 / 0.147 / 0.182 | std 0.034 | p99.9 0.260
+   related n=600 top1 p10/50/90 0.803 / 0.869 / 0.918 | top10 0.738 / 0.794 / 0.853 | top20 0.718 / 0.776 / 0.834 | mean 0.485
+== eg2
+   owner null 'Space aliens': rank1 0.744 rank10 0.669 mean 0.543
+   owner    n=24 rank1 p10/50/90 0.732 / 0.800 / 0.839 | rank10 0.717 / 0.773 / 0.813 | corpus mean 0.578 / 0.619 / 0.659 | std 0.028 | p99.9 0.726
+   topical  n=45 rank1 p10/50/90 0.786 / 0.814 / 0.844 | rank10 0.755 / 0.788 / 0.820 | corpus mean 0.586 / 0.618 / 0.638 | std 0.030 | p99.9 0.737
+   null     n=20 rank1 p10/50/90 0.591 / 0.637 / 0.675 | rank10 0.575 / 0.614 / 0.659 | corpus mean 0.481 / 0.512 / 0.539 | std 0.023 | p99.9 0.590
+   related n=600 top1 p10/50/90 0.882 / 0.915 / 0.949 | top10 0.846 / 0.876 / 0.909 | top20 0.836 / 0.865 / 0.898 | mean 0.706
+300m: AUC rank1 on vs off 0.988 (n 69 vs 21); rank10 0.997; z rank1 0.654; on rank1 median 0.639 off median 0.321; max off 0.596; on below max off: 17
+eg2: AUC rank1 on vs off 0.997 (n 69 vs 21); rank10 1.000; z rank1 0.720; on rank1 median 0.808 off median 0.638; max off 0.744; on below max off: 4
+shift eg2-300m owner: rank1 p10/50/90 0.151 / 0.184 / 0.253; rank10 0.176 / 0.210 / 0.278
+shift eg2-300m topical: rank1 p10/50/90 0.127 / 0.155 / 0.203; rank10 0.149 / 0.196 / 0.228
+shift eg2-300m null: rank1 p10/50/90 0.217 / 0.298 / 0.341; rank10 0.269 / 0.314 / 0.357
+
+# fit_offset.py
+typed, all         n=  900 c0=0.462 rmse=3.7 pts | median shown raw 78% -> mapped 60% vs 300m 58% | free affine: 1.661x-0.715 (1.0 -> 0.947)
+typed, on-topic    n=  700 c0=0.477 rmse=3.2 pts | median shown raw 79% -> mapped 61% vs 300m 61% | free affine: 1.767x-0.798 (1.0 -> 0.969)
+typed, null        n=  200 c0=0.444 rmse=4.1 pts | median shown raw 62% -> mapped 32% vs 300m 31% | free affine: 1.173x-0.411 (1.0 -> 0.762)
+related doc-doc    n=12000 c0=0.398 rmse=2.1 pts | median shown raw 88% -> mapped 80% vs 300m 80% | free affine: 1.682x-0.679 (1.0 -> 1.003)
+
+owner    rank1: 300m raw 61% | EG2 raw 80% | EG2 at c0=0.47 62% ;; rank10: 300m 57% | EG2 raw 77% | EG2 mapped 57%
+topical  rank1: 300m raw 65% | EG2 raw 81% | EG2 at c0=0.47 65% ;; rank10: 300m 60% | EG2 raw 79% | EG2 mapped 60%
+null     rank1: 300m raw 32% | EG2 raw 64% | EG2 at c0=0.47 32% ;; rank10: 300m 29% | EG2 raw 61% | EG2 mapped 27%
+Space aliens rank1: 300m 60% | EG2 raw 74% | mapped 52%
+related top1: 300m 87% | EG2 raw 92% | mapped 84%
+related top10: 300m 79% | EG2 raw 88% | mapped 77%
+related top20: 300m 78% | EG2 raw 87% | mapped 75%
+
+# offset_errors.py
+-- offsets query 0.47 document 0.4
+   owner    rank1  300m  60.6  EG2 raw  80.0  EG2 shown  62.2
+   owner    rank10 300m  57.4  EG2 raw  77.3  EG2 shown  57.3
+   topical  rank1  300m  65.3  EG2 raw  81.4  EG2 shown  64.9
+   topical  rank10 300m  59.6  EG2 raw  78.8  EG2 shown  59.9
+   null     rank1  300m  31.7  EG2 raw  63.7  EG2 shown  31.5
+   null     rank10 300m  29.1  EG2 raw  61.4  EG2 shown  27.1
+   related  top1   300m  86.9  EG2 raw  91.5  EG2 shown  85.9
+   related  top10  300m  79.4  EG2 raw  87.6  EG2 shown  79.4
+   related  top20  300m  77.6  EG2 raw  86.5  EG2 shown  77.5
+   Space aliens EG2 shown 51.7
+-- offsets query 0.45 document 0.45
+   owner    rank1  300m  60.6  EG2 raw  80.0  EG2 shown  63.6
+   owner    rank10 300m  57.4  EG2 raw  77.3  EG2 shown  58.8
+   topical  rank1  300m  65.3  EG2 raw  81.4  EG2 shown  66.1
+   topical  rank10 300m  59.6  EG2 raw  78.8  EG2 shown  61.4
+   null     rank1  300m  31.7  EG2 raw  63.7  EG2 shown  34.0
+   null     rank10 300m  29.1  EG2 raw  61.4  EG2 shown  29.7
+   related  top1   300m  86.9  EG2 raw  91.5  EG2 shown  84.6
+   related  top10  300m  79.4  EG2 raw  87.6  EG2 shown  77.5
+   related  top20  300m  77.6  EG2 raw  86.5  EG2 shown  75.5
+   Space aliens EG2 shown 53.5
+300m: null best p90 43.784 on-topic best p10 55.228
+EG2 raw: null best p90 67.50600000000001 on-topic best p10 76.48400000000001
+EG2 raw on-topic best range 72.17 86.41 null best range 58.01 70.15
+300m on-topic best range 46.39 77.06 null best range 27.310000000000002 45.129999999999995

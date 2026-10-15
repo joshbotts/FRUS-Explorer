@@ -149,7 +149,7 @@ the *current* `collection-usage-index.json` — so run it after that index, neve
 
 `administrations.json`, `tei-rendering-config.json`, `word-cloud-lexicons.json`,
 `word-cloud-stopwords.json` — plus `frus-highlights.js`, `frus-offset-engine.js`,
-`frus-selection.js`, `frus-print.css` and `gemma-terms-of-use.txt`, which are not data at all. **Do not edit
+`frus-selection.js` and `frus-print.css`, which are not data at all (`gemma-terms-of-use.txt` was one until B4 removed it on 2026-10-15). **Do not edit
 `word-cloud-stopwords.json` or `word-cloud-lexicons.json` during a volume release**: their
 SHA-256s are pinned by `BundledKeynessBaseline`, and an edit makes every keyness read report
 `.configurationMismatch` until `CloudVectorsGenerator` runs again.
@@ -157,6 +157,17 @@ SHA-256s are pinned by `BundledKeynessBaseline`, and an edit makes every keyness
 ---
 
 ## 4. The semantic pipeline — the long pole, and the one step that can go quietly wrong
+
+> **Since B4 (2026-10-15, #1659) the shipped family is EmbeddingGemma 2's**, and five facts below
+> are read through it: the store is `~/frus-semantic-raw-embeddinggemma-2` (the 300m's,
+> `~/frus-semantic-raw`, is what builds 42 to 50 were packed from); the model is
+> `embeddinggemma-2-Q8_0` (`2188ac1d…40b09135`), served by `llama-server` at llama.cpp `a0e6dc73`
+> as B2 served it (`-ngl 99 -c 16384 -np 4 -b 4096 -ub 4096`, the alias set to the model id; the
+> stage-2 memo's §1), not by LM Studio; the digest a pack must hold is
+> `89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101`; the shards go to
+> `generations/89481b18/shards/` in `joshbotts/frus-semantic-vectors`, never to `shards/`, which
+> builds 42 to 50 read; and that repository's README and NOTICE describe both encoder releases,
+> so a volume's push edits neither. The steps below carry these in place.
 
 ### 4.1 It is incremental, and that is the good news
 
@@ -204,8 +215,9 @@ Mitigation, and it is not optional:
   GGUF SHA, dims, chunking, prefix, pooling and quantization — and it reaches the index as a
   separate `harvestScriptSHA256` field. A run that stopped on it would be stopping on the guard.)
 - **Then:** confirm the packed `semantic-vectors-index.json` carries `provenanceDigest`
-  `a726ca606bdf4d1984ba7cfda4d5605c2e9dc1a8320654a1b5742e06aa6e3a64`, unchanged from the shipped
-  artifact. A changed digest means a changed family and a 162 MB re-download for every user.
+  `89481b1869da1880c599a6923df9a90bef19fc402c3db5a370ead2809b7e6101` (EmbeddingGemma 2's, since
+  B4; `a726ca60…` before it), unchanged from the shipped artifact. A changed digest means a
+  changed family and a 162 MB re-download for every user.
 
 **Work item W-1 — SHIPPED 2026-09-02 (PR #1177), both halves and a third.** The harvester refuses
 a resume whose `model` / GGUF SHA-256 / `prefix` / `chunk_chars` / `overlap_chars` differ from
@@ -230,8 +242,9 @@ any other width is refused when it is set.
 ### 4.4 The shards live in another repository
 
 `SemanticShardFetcher.defaultBaseURL` is
-`https://raw.githubusercontent.com/joshbotts/frus-semantic-vectors/main/shards`
-(`SemanticShardFetcher.swift:52`). The new volume's `.vec` must be **pushed to that repo before
+`https://raw.githubusercontent.com/joshbotts/frus-semantic-vectors/main/generations/89481b18/shards`
+since B4 (`SemanticShardFetcher.swift:60`); through build 50 it was `…/main/shards`, which those
+builds still read. The new volume's `.vec` must be **pushed to that repo before
 the app build reaches users**, or every device that downloads the volume gets an HTTP 404 on its
 shard fetch. That repository is outside this one and outside this session's scope; it is an owner
 step.
@@ -540,8 +553,10 @@ Steps marked **[owner]** cannot be done from this repository.
 9. `CloudVectorsGenerator` (about 21 min on the M5 MacBook, ~50–60 on the Mac of August 2026; writes four files since #1608).
 
 **Phase D — semantic** (§4; the long pole)
-10. **[owner]** Studio: LM Studio + the pinned gemma GGUF; snapshot `run-manifest.json`; run the
-    exact Phase-3 command; diff the manifest; transfer and `shasum -c SHA256SUMS`.
+10. **[owner]** The Air: `llama-server` at `a0e6dc73` with the pinned EmbeddingGemma 2 GGUF (§4's
+    note; LM Studio and the 300m through build 50); snapshot `run-manifest.json`; run the
+    harvester as B2 ran it, into `~/frus-semantic-raw-embeddinggemma-2`; diff the manifest;
+    `shasum -c SHA256SUMS`.
 11. `pool_docs.py` → `build_layout.py` → `DIMS=512 … SemanticVectorsGenerator`.
 12. Verify the provenance digest is unchanged. Review the new cluster labels properly.
     **The language analysis is checked before step 11 writes anything** (#1439, closed by lane
@@ -552,11 +567,13 @@ Steps marked **[owner]** cannot be done from this repository.
     re-run in a new process. One case can still refuse after the vectors are written, a store
     whose heads misstate its documents; `CLAUDE.md`'s `SemanticVectorsGenerator` entry has it.
 13. **[owner]** Push the new `.vec` shard(s) to `joshbotts/frus-semantic-vectors`, `main`,
-    `shards/`. **Before** the app build ships.
+    `generations/89481b18/shards/` (since B4; `shards/` is the 300m's). **Before** the app build
+    ships.
 13a. **With that push, the repository's own record** (added 2026-10-10; §4.4's last paragraph):
     - Copy `FRUSExplorer/Resources/semantic-shards-manifest.json`, as it is or will be on `v2`,
-      over its `shards-manifest.json`, and check every file in its `shards/` against it (553 of
-      553 on 2026-10-10).
+      over `generations/89481b18/shards-manifest.json`, and check every file in that folder's
+      `shards/` against it (553 of 553 on 2026-10-15). The root `shards-manifest.json` and
+      `shards/` are the 300m's and stay as they are.
     - In its `README.md`: the count and sizes under "What is here", a row in "Changes since
       publication", and the corpus, harvest and pack lines of the Provenance table. The README
       counts in binary units and calls them MB and KB: 155 MB there is 162.4 million bytes.
@@ -564,10 +581,11 @@ Steps marked **[owner]** cannot be done from this repository.
       leave that sentence.
     - Its one-line description, which states the volume count
       (`gh repo edit joshbotts/frus-semantic-vectors --description …`).
-    - **Leave its "Model weights" section and its `NOTICE` file byte for byte.** They are the
-      Gemma compliance text (`Planning/semantic-vectors/Gemma-Compliance-Runbook.md` §3), and an
-      edit there is a compliance change, not a documentation one. Leave its "Licence" section
-      too: it says what the vectors are under those terms.
+    - **Leave its "Model weights" section and its `NOTICE` file as they are.** Since B4 they
+      describe both encoder releases: EmbeddingGemma 300m on `encoder-1`, under the Gemma Terms,
+      whose text there is still that model's compliance text
+      (`Planning/Completed/Gemma-Compliance-Runbook.md` §3), and EmbeddingGemma 2 on `encoder-2`,
+      under Apache 2.0. A volume changes neither. Leave its "Licence" section too.
     - Read the manifest and the README back from the pushed commit.
 
 **Phase D for a CORRECTED volume** (added 2026-10-01; §13's release rule, which steps 10–13 did
@@ -587,8 +605,9 @@ exists and has no force option, so a correction is invisible to it until its sto
   2026-10-10, over 2,264 chunks), which is the one check that the model, the prefix and the
   context length were what they were. A different machine or runtime makes none bit-identical,
   so a few sign bits move in the unchanged documents' rows (71 of 460,288 that day). The store,
-  LM Studio and the model file with the pinned SHA-256 are on the M5 MacBook since 2026-09-09:
-  load the model with `lms load text-embedding-embeddinggemma-300m-qat --context-length 2048`.
+  The store, `llama-server` at `a0e6dc73` and EmbeddingGemma 2's GGUF are on the M5 MacBook Air
+  since B2 (2026-10-15). Through build 50 it was LM Studio and the 300m:
+  `lms load text-embedding-embeddinggemma-300m-qat --context-length 2048`.
 - **D-c2.** Step 11 as written. The volume's shard changes its SHA-256 in
   `semantic-shards-manifest.json`, and its length only if its document count moved.
 - **D-c3.** **[owner]** Push the re-packed shard over the old one, before the build ships.

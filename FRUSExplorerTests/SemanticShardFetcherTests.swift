@@ -53,6 +53,7 @@ final class StubShardProtocol: URLProtocol, @unchecked Sendable {
 ///
 /// Version history:
 ///   1.0 — V-2b: initial implementation
+///   1.1 — B4 (#1659): the shard and model addresses name their generation and their release
 @Suite("Semantic shard fetch")
 struct SemanticShardFetcherTests {
 
@@ -94,6 +95,33 @@ struct SemanticShardFetcherTests {
             #expect(expectation.bytes == expectedBytes, "\(volume.volumeID) byte length")
             #expect(expectation.sha256.count == 64)
         }
+    }
+
+    // MARK: - The addresses
+
+    /// **The family rule at the address (B4).** Builds 42 to 50 fetch the 300m's shards from
+    /// `shards/`, and a build verifies a download against the manifest it shipped with, so a new
+    /// generation published over them would leave every older build refusing each fetch. Each
+    /// generation has its own folder, named by its digest's first eight hex digits; a repack that
+    /// moves the digest fails here until the address moves with it.
+    @Test("The shard address names the bundled generation, and never the unversioned folder")
+    func shardAddressNamesTheGeneration() throws {
+        let digest = try #require(SemanticShardFetcher.bundledProvenanceDigest())
+        let path = SemanticShardFetcher.defaultBaseURL.path
+        #expect(path.hasSuffix("/generations/\(digest.prefix(8))/shards"))
+        #expect(SemanticShardFetcher.defaultBaseURL.host == "raw.githubusercontent.com")
+        #expect(!path.hasSuffix("/main/shards"),
+                "the 300m's folder, which builds 42 to 50 still read")
+    }
+
+    /// The model's address is its own release's, and the file it names is the one the store keeps:
+    /// EmbeddingGemma 2 on `encoder-2`, while `encoder-1` keeps what builds 42 to 50 fetch.
+    @Test("The model address is EmbeddingGemma 2's release and the store's file name")
+    func modelAddressIsTheStoresFile() {
+        let url = SemanticModelFetcher.defaultModelURL
+        #expect(url.lastPathComponent == SemanticModelStore.fileName)
+        #expect(url.path.contains("/releases/download/encoder-2/"))
+        #expect(url.host == "github.com")
     }
 
     // MARK: - Verification

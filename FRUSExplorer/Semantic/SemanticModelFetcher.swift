@@ -14,7 +14,7 @@
 
 import Foundation
 
-/// Fetches the query-encoder model file — one 229 MB GGUF from the app-owned release — and hands
+/// Fetches the query-encoder model file — one 310 MB GGUF from the app-owned release — and hands
 /// it to `SemanticModelStore`, which validates before it keeps (V-5 s2).
 ///
 /// ## Why this reports progress when the shard fetcher does not
@@ -33,15 +33,21 @@ import Foundation
 /// A GitHub **release asset** on the same app-owned repo the shards live in. Not a git blob (the
 /// file exceeds GitHub's 100 MB hard limit), not LFS (bandwidth quotas, and `raw.githubusercontent`
 /// serves LFS pointers, not content) — a release asset has a stable direct URL and no quota. The
-/// decision is recorded in `Planning/semantic-vectors/Gemma-Compliance-Runbook.md` §3.
+/// decision is recorded in `Planning/Completed/Gemma-Compliance-Runbook.md` §3.
+///
+/// **One release a model.** EmbeddingGemma 2 is release `encoder-2`; `encoder-1` keeps
+/// EmbeddingGemma 300m, which builds 42 to 50 fetch by their own pin, and the llama.cpp dSYMs.
+/// A model's address never changes after a build ships it, for the shards' reason
+/// (`SemanticShardFetcher.defaultBaseURL`).
 ///
 /// Version history:
 ///   1.0 — V-5 s2: initial implementation
+///   1.1 — B4 (#1659): EmbeddingGemma 2, from release `encoder-2`
 public actor SemanticModelFetcher {
 
     /// The published location of the pinned model file.
     public static let defaultModelURL = URL(
-        string: "https://github.com/joshbotts/frus-semantic-vectors/releases/download/encoder-1/embeddinggemma-300m-qat-Q4_0.gguf")!
+        string: "https://github.com/joshbotts/frus-semantic-vectors/releases/download/encoder-2/embeddinggemma-2-Q8_0.gguf")!
 
     private let modelURL: URL
     private let store: SemanticModelStore

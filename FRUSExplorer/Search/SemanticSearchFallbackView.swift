@@ -17,9 +17,8 @@ import SwiftUI
 /// SHARED by both platforms' search surfaces, the `QueryZeroResultView` precedent, and mounted
 /// ONLY in Keywords mode: the Meaning mode (V-5 hybrid page) runs the semantic route as the
 /// primary engine through the view models, and mounting this beside it would run every query
-/// twice. The offer card, consent sheet, score chip, and beyond-library row are the shared
-/// views in `SemanticSearchSharedViews.swift`, so this surface and the Meaning mode cannot
-/// drift on copy or terms.
+/// twice. The offer card, score chip, and beyond-library row are the shared views in
+/// `SemanticSearchSharedViews.swift`, so this surface and the Meaning mode cannot drift on copy.
 ///
 /// Version history:
 ///   1.0 — V-5 s3

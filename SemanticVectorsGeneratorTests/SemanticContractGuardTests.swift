@@ -29,6 +29,7 @@ import WordCloudKit
 ///
 /// Version history:
 ///   1.0 — R-2 (release plan §4.2, W-1): initial implementation
+///   1.1 — B4 (2026-10-15): the fixture store names EmbeddingGemma 2, a model the run will pack
 @Suite("SemanticVectors — R-2 contract guards", .serialized)
 struct SemanticContractGuardTests {
 
@@ -509,7 +510,7 @@ struct RunWriteOrderTests {
 /// A two-kilobyte raw store: one volume, one document, one chunk at the shipping width.
 private enum Fixture {
     static let volume = "frus1861"
-    static let model = "text-embedding-embeddinggemma-300m-qat"
+    static let model = "embeddinggemma-2-Q8_0"
     static let prefix = "title: none | text: "
     static let dim = 512
 
@@ -601,7 +602,10 @@ private enum Fixture {
         let store = Store(url: root)
 
         let runManifest: [String: Any] = [
-            "model": model, "model_file_sha256": String(repeating: "ab", count: 32),
+            // A measured model's digest, since B4: the run packs only a model whose funnel the
+            // corpus gates measured (`SemanticVectorsRunner.funnelMeasurements`), and refuses any
+            // other at every width before it reads the store.
+            "model": model, "model_file_sha256": SemanticVectorsRunner.embeddingGemma2SHA256,
             "dim": dim, "chunk_chars": 3200, "overlap_chars": 480, "prefix": prefix,
             "generated": "2026-09-01T00:00:00", "script_sha256": String(repeating: "cd", count: 32),
         ]

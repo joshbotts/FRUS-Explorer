@@ -10,9 +10,10 @@ import SwiftUI
 
 // MARK: - SemanticScoreChip
 
-/// The semantic score, as every semantic surface shows it: a rounded percentage on the axis's
-/// self-normalising scale. One view, so the fallback card, the Meaning mode's rows, and the
-/// beyond-library rows cannot drift on format.
+/// The semantic score, as every semantic surface shows it: a rounded percentage of the cosine
+/// through the generation's score calibration (B4), which the score's producer applied — a Meaning
+/// hit the query offset, a Related row the document offset. One view, so the fallback card, the
+/// Meaning mode's rows, and the beyond-library rows cannot drift on format.
 /// The percentage itself is ``SemanticScoreCopy``'s, which also words it for an accessibility value.
 struct SemanticScoreChip: View {
     let score: Double
@@ -112,12 +113,16 @@ struct SemanticUndownloadedRow: View {
 
 // MARK: - SemanticModelOfferCard
 
-/// The model offer, self-contained: card → the SAME consent sheet Settings uses (no download
-/// path around the Gemma flow-down) → byte progress → verification → `onModelReady`. Mounted by
-/// the zero-result fallback and by the Meaning mode's model-absent state, so the two surfaces
-/// offer identical terms.
+/// The model offer, self-contained: card → its Download button → byte progress → verification →
+/// `onModelReady`. Mounted by the zero-result fallback and by the Meaning mode's model-absent state,
+/// so the two surfaces offer the same download.
 ///
-/// The terms are identical; the opening sentence is not. Under a keyword search that found nothing the
+/// Through build 50 the button opened the consent sheet Settings used, the in-app half of the
+/// Gemma Terms' flow-down. EmbeddingGemma 2 is licensed under Apache 2.0, so the sheet retired with
+/// EmbeddingGemma 300m (B4, the owner's decision of 2026-10-15), and the button downloads: the
+/// card's paragraph states the size and that the model runs on this device before the button does.
+///
+/// The download is the same; the opening sentence is not. Under a keyword search that found nothing the
 /// card says so. In Meaning mode no keyword search ran, and the card said it had: seen on iPhone 17e
 /// while checking #1597, a Meaning search with no model on the device answered "Keyword search found
 /// nothing, but…". ``followsKeywordSearch`` picks the sentence.
@@ -139,14 +144,13 @@ struct SemanticModelOfferCard: View {
         followsKeywordSearch
             ? String(
                 localized: "search.semantic.offer.body",
-                defaultValue: "Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.")
+                defaultValue: "Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 310 MB model download that runs entirely on this device.")
             : String(
                 localized: "search.semantic.offer.body.meaning",
-                defaultValue: "A Meaning search ranks documents by what an AI model detects your question to mean, including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.")
+                defaultValue: "A Meaning search ranks documents by what an AI model detects your question to mean, including questions whose words never appear in the documents. This needs a one-time 310 MB model download that runs entirely on this device.")
     }
 
     @Environment(AppState.self) private var appState
-    @State private var showingConsent = false
     @State private var downloading = false
     @State private var failure: String?
 
@@ -174,10 +178,10 @@ struct SemanticModelOfferCard: View {
                 }
             } else {
                 Button {
-                    showingConsent = true
+                    Task { await downloadModel() }
                 } label: {
                     Text(String(localized: "search.semantic.offer.button",
-                                defaultValue: "Download Search Model…"))
+                                defaultValue: "Download Search Model"))
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!appState.isOnline)
@@ -192,14 +196,6 @@ struct SemanticModelOfferCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal)
-        .sheet(isPresented: $showingConsent) {
-            SemanticModelConsentSheet {
-                showingConsent = false
-                Task { await downloadModel() }
-            } onCancel: {
-                showingConsent = false
-            }
-        }
     }
 
     private func downloadModel() async {
