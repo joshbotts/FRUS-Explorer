@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import XCTest
+import notify
 
 // MARK: - MeaningResultsSeamTests (#1577 lane 3)
 
@@ -61,6 +62,10 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #1577 lane 3: initial implementation
+///   1.1 — 2026-10-15: `submit` empties the field with its Clear text button and waits for the list to
+///          empty, so `ask` reads the new question's rows and not the last search's. The third test's
+///          Filters step failed on iPhone 17 (iOS 27.0) from a defect in Search, not here:
+///          `FilterVolumeListTests`, below, is its guard.
 @MainActor
 final class MeaningResultsSeamTests: XCTestCase {
 
@@ -195,13 +200,30 @@ final class MeaningResultsSeamTests: XCTestCase {
     }
 
     /// Replaces the field's text with `text` and submits it.
+    ///
+    /// The field is emptied with its own Clear text button, not with delete keys. A tap on a field
+    /// that already has the keyboard puts the cursor where it lands, and the keys then delete only
+    /// what is before it: on an iPhone 17 (iOS 26.5) the far question went out as `a question from
+    /// far afield content"`. Emptying the field empties the list too (Search clears its results
+    /// when the text goes), and the wait for that is what lets ``ask(_:expecting:file:line:)`` wait
+    /// for the new question's rows. Without it the third test asked while the list still held
+    /// three fixture rows, from the Meaning search that choosing Meaning runs on the field's text,
+    /// and read them while they were being replaced: Three, Two, One, on the same iPhone.
     private func submit(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
         let field = app.searchFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field",
                       file: file, line: line)
         field.tap()
         if let typed = field.value as? String, !typed.isEmpty, typed != field.placeholderValue {
-            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: typed.count))
+            let clear = field.buttons["Clear text"].firstMatch
+            XCTAssertTrue(clear.waitForExistence(timeout: Self.patience),
+                          "The search field holds \"\(typed)\" and shows no Clear text button", file: file, line: line)
+            clear.tap()
+            let emptied = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"),
+                                                    object: fixtureRows.firstMatch)
+            XCTAssertEqual(XCTWaiter.wait(for: [emptied], timeout: Self.patience), .completed,
+                           "The field was emptied and the last search's rows are still listed", file: file, line: line)
+            field.tap()
         }
         field.typeText(text + "\n")
     }
@@ -291,5 +313,175 @@ final class MeaningResultsSeamTests: XCTestCase {
         let applied = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", Self.corpusName)).firstMatch
         XCTAssertTrue(applied.waitForExistence(timeout: Self.patience),
                       "No line says the search is inside \"\(Self.corpusName)\"", file: file, line: line)
+    }
+}
+
+// MARK: - FilterVolumeListTests
+
+/// Filters offers a volume that was indexed while the Search tab was on screen.
+///
+/// ## The defect
+/// Search read the filter panel's volume list once, when the tab appeared, from the indexed set as it
+/// stood then. The list gates four of the panel's groups: My Working Corpora, My Volume Scopes, By
+/// Subject and Limit to Volumes. `MeaningResultsSeamTests`' third test met it on an iPhone 17 (iOS
+/// 27.0) whose restored window opens on Search: the tab read the set a second before boot's own read
+/// of the index began, and Filters had no My Working Corpora group to apply the corpus from. That
+/// test sees the defect only where the app opens on Search, which the simulator's saved scene
+/// decides, and only while boot's read loses the race; on an iPad Pro 13-inch whose saved scene opens
+/// on Collections it passed. `SearchView.reloadAvailableVolumes` says what Search does now.
+///
+/// ## How this test makes it certain
+/// The fixture is cold at launch (`FRUS_UI_TEST_COLD_SEEDED_VOLUME`), so the tab reads a set without
+/// it whatever the timing. It is indexed only when the test, on Search, sends the signal that
+/// finishes its download (`FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL`), and then by the app's own
+/// post-download closure, as after any download. Nothing in between leaves the tab, so its `.task`
+/// does not run again. A keyword search for the fixture's phrase says when the index holds it, so a
+/// failure below is Filters' and not a slow index.
+///
+/// ## Devices
+/// Any iPhone or iPad; nothing skips. A simulator that holds other indexed volumes draws Limit to
+/// Volumes from the start, so the test looks for the fixture's own row in it, by its title.
+///
+/// Version history:
+///   1.0 — 2026-10-15: initial implementation
+@MainActor
+final class FilterVolumeListTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// The seeded volume, `frus1961-63v06`, by words of its title that no other volume's title holds.
+    private static let volumeTitle = "Kennedy-Khrushchev"
+    /// The start of the fixture's document titles that a keyword search lists.
+    private static let documentTitlePrefix = "UI Test Document"
+    /// A phrase every fixture document holds and no published document does.
+    private static let fixturePhrase = "\"Synthetic UI-test content\""
+    /// Long, because a wait that is met returns at once and this Mac is not always quiet.
+    private static let patience: TimeInterval = 30
+
+    /// What this suite can tell the running app: `UITestBrowseSeams.Signal`'s raw value, repeated
+    /// here because a UI suite cannot reference the app's constants.
+    private enum SeamSignal: String {
+        /// Finish the seeded volume's download (`FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL`).
+        case finishSeededDownload = "bottsywattsy.FRUS-Explorer.uitest.finish-seeded-download"
+    }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_COLD_SEEDED_VOLUME"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_ON_SIGNAL"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .search)
+        // The post-download closure also fetches the volume's match file. The reader's own switch,
+        // off, keeps the run offline; see `MeaningResultsSeamTests.setUp` for the spelling.
+        app.launchArguments += ["-frus.semantic.autoDownloadShards", "<false/>"]
+        app.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            if app.state == .runningForeground {
+                UITestPresentation.dismissAnyPresentation(in: app)
+            }
+            app.terminate()
+        }
+        app = nil
+    }
+
+    // MARK: Test
+
+    func testFiltersOffersAVolumeIndexedWhileSearchIsOnScreen() throws {
+        XCTAssertTrue(app.searchFields.firstMatch.waitForExistence(timeout: Self.patience),
+                      "The Search tab shows no search field")
+        XCTAssertFalse(filtersOffersTheVolume(), """
+            Filters offers the seeded volume before its download has finished, though the launch \
+            un-indexed it (FRUS_UI_TEST_COLD_SEEDED_VOLUME). Something else indexed it, so what \
+            follows would pass whatever Search does.
+            """)
+        send(.finishSeededDownload)
+
+        // The app's own post-download closure indexes the volume. Once it has, a keyword search for
+        // the fixture's phrase lists its documents.
+        let documents = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.documentTitlePrefix))
+        let deadline = Date().addingTimeInterval(4 * Self.patience)
+        repeat {
+            search(for: Self.fixturePhrase)
+        } while !documents.firstMatch.waitForExistence(timeout: 10) && Date() < deadline
+        XCTAssertTrue(documents.firstMatch.exists,
+                      "The seeded volume's download was finished and the index never listed its documents")
+
+        XCTAssertTrue(filtersOffersTheVolume(), """
+            The index holds the seeded volume, and Filters ▸ Limit to Volumes does not offer it: the \
+            panel's volume list is still the one the tab read when it appeared, before the volume \
+            was indexed. On an iPhone or iPad that holds no other indexed volume, Limit to Volumes \
+            and the other groups the list gates are not drawn at all.
+            """)
+    }
+
+    // MARK: Steps
+
+    /// Sends `signal` to the app as a Darwin notification. The app registered for it at boot.
+    private func send(_ signal: SeamSignal) {
+        XCTAssertTrue(notify_post(signal.rawValue) == NOTIFY_STATUS_OK,
+                      "The system refused to post \(signal.rawValue), so the volume will never be indexed")
+    }
+
+    /// Replaces the field's text with `text` and submits it, emptying the field with its Clear text
+    /// button (see `MeaningResultsSeamTests.submit`).
+    private func search(for text: String) {
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The Search tab shows no search field")
+        field.tap()
+        if let typed = field.value as? String, !typed.isEmpty, typed != field.placeholderValue {
+            let clear = field.buttons["Clear text"].firstMatch
+            XCTAssertTrue(clear.waitForExistence(timeout: Self.patience),
+                          "The search field holds \"\(typed)\" and shows no Clear text button")
+            clear.tap()
+            field.tap()
+        }
+        field.typeText(text + "\n")
+    }
+
+    /// Whether Filters ▸ Limit to Volumes ▸ Volumes lists the seeded volume. Opens Filters and closes it.
+    ///
+    /// Limit to Volumes is drawn only while some volume is indexed, above Person; on an iPhone it can
+    /// be below the fold. So the panel is swiped until its Volumes row or the Person header is on
+    /// screen, and the Person header with no Volumes row above it means the group is not drawn.
+    private func filtersOffersTheVolume() -> Bool {
+        let filters = app.descendants(matching: .any).matching(identifier: "search.actions.filter").firstMatch
+        XCTAssertTrue(filters.waitForExistence(timeout: Self.patience), "The actions bar has no Filters control")
+        filters.tap()
+        let panel = app.navigationBars["Filters"]
+        XCTAssertTrue(panel.waitForExistence(timeout: Self.patience), "Filters did not open")
+        defer {
+            let done = panel.buttons["Done"].firstMatch
+            if done.waitForExistence(timeout: Self.patience) { done.tap() }
+            let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: panel)
+            XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: Self.patience), .completed, "Filters did not close")
+        }
+
+        let volumesRow = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Volumes'")).firstMatch
+        let personHeader = app.staticTexts["Person"].firstMatch
+        var swipes = 0
+        while !volumesRow.exists && !personHeader.exists && swipes < 6 {
+            app.swipeUp()
+            swipes += 1
+        }
+        guard volumesRow.exists else { return false }
+        volumesRow.tap()
+        let list = app.navigationBars["Volumes"]
+        XCTAssertTrue(list.waitForExistence(timeout: Self.patience), "Filters ▸ Volumes did not open")
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", Self.volumeTitle)).firstMatch
+        let offered = row.waitForExistence(timeout: 5)
+        // Back to the panel's root, where its Done is.
+        list.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(panel.waitForExistence(timeout: Self.patience), "Filters ▸ Volumes did not go back")
+        return offered
     }
 }
