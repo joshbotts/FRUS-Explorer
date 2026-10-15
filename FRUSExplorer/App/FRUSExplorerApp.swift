@@ -3597,6 +3597,11 @@ struct CollectionDetailCommandActions: Equatable {
     /// Whether the collection has any document entries — gates Add Passages (M1).
     let hasDocuments: Bool
 
+    /// Whether the collection takes documents, section headings, note blocks and passages added
+    /// by hand — `false` for a smart collection (`SmartCollectionRule`, #1619). Gates the four
+    /// Add items as it gates the toolbar's; Insert Apparatus stays enabled.
+    let takesHandAddedEntries: Bool
+
     /// Opens the Add Documents sheet (⌘⇧A — the shortcut the toolbar button
     /// used to own; the menu item owns it now).
     let addDocuments: @MainActor () -> Void
@@ -3635,6 +3640,7 @@ struct CollectionDetailCommandActions: Equatable {
             && lhs.canExport == rhs.canExport
             && lhs.hasEntries == rhs.hasEntries
             && lhs.hasDocuments == rhs.hasDocuments
+            && lhs.takesHandAddedEntries == rhs.takesHandAddedEntries
     }
 }
 
@@ -3930,30 +3936,31 @@ struct CollectionMenuContent: View {
 
         Divider()
 
+        // #1619: the four hand-added kinds are disabled for a smart collection, as on the toolbar's Add menu.
         Button(String(localized: "menu.collection.addDocuments",
                       defaultValue: "Add Documents…")) {
             detail?.addDocuments()
         }
         .keyboardShortcut("a", modifiers: [.command, .shift])
-        .disabled(detail == nil)
+        .disabled(detail?.takesHandAddedEntries != true)
 
         Button(String(localized: "menu.collection.addHeading",
                       defaultValue: "Add Section Heading")) {
             detail?.addHeading()
         }
-        .disabled(detail == nil)
+        .disabled(detail?.takesHandAddedEntries != true)
 
         Button(String(localized: "menu.collection.addProse",
                       defaultValue: "Add Note Block")) {
             detail?.addProse()
         }
-        .disabled(detail == nil)
+        .disabled(detail?.takesHandAddedEntries != true)
 
         Button(String(localized: "menu.collection.addHighlights",
                       defaultValue: "Add Highlighted Passages…")) {
             detail?.addHighlights()
         }
-        .disabled(detail?.hasDocuments != true)
+        .disabled(detail?.hasDocuments != true || detail?.takesHandAddedEntries != true)
 
         // Apparatus (M1): the five generated-block types, mirroring the ribbon's
         // Apparatus menu so the Collection menu and ribbon drive one action set.

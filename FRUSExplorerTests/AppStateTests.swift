@@ -530,7 +530,8 @@ struct CommandFocusedValueTests {
         isPreviewShown: Bool = false,
         canExport: Bool = true,
         hasEntries: Bool = true,
-        hasDocuments: Bool = true
+        hasDocuments: Bool = true,
+        takesHandAddedEntries: Bool = true
     ) -> CollectionDetailCommandActions {
         CollectionDetailCommandActions(
             collectionId: collectionId,
@@ -538,6 +539,7 @@ struct CommandFocusedValueTests {
             canExport: canExport,
             hasEntries: hasEntries,
             hasDocuments: hasDocuments,
+            takesHandAddedEntries: takesHandAddedEntries,
             addDocuments: {}, addHeading: {}, addProse: {},
             addHighlights: {}, addApparatus: { _ in }, sortByDate: {},
             togglePreview: {}, toggleSettings: {},
@@ -585,7 +587,7 @@ struct CommandFocusedValueTests {
         let a = detailActions(collectionId: id)
         let b = CollectionDetailCommandActions(
             collectionId: id, isPreviewShown: false, canExport: true,
-            hasEntries: true, hasDocuments: true,
+            hasEntries: true, hasDocuments: true, takesHandAddedEntries: true,
             addDocuments: { sideEffect += 1 }, addHeading: { sideEffect += 1 },
             addProse: { sideEffect += 1 }, addHighlights: { sideEffect += 1 },
             addApparatus: { _ in sideEffect += 1 }, sortByDate: { sideEffect += 1 },
@@ -605,6 +607,7 @@ struct CommandFocusedValueTests {
         #expect(detailActions(collectionId: id, canExport: false) != base)
         #expect(detailActions(collectionId: id, hasEntries: false) != base)
         #expect(detailActions(collectionId: id, hasDocuments: false) != base)
+        #expect(detailActions(collectionId: id, takesHandAddedEntries: false) != base)   // #1619
     }
 
     @Test("CollectionManagerCommandActions: stateless — any two instances are interchangeable")

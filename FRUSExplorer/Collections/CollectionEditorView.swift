@@ -24,7 +24,8 @@ import UIKit
 /// 3. **Documents** — reorderable list of `CollectionEntry` records; each row
 ///    lets the user pick an associated `ResearchNote` for that document
 /// 4. **Add Documents** — opens `CollectionAddDocumentsSheet` (search, browse,
-///    pasted citations, or tags) and appends the selection to the collection
+///    pasted citations, or tags) and appends the selection to the collection; left out
+///    for a smart collection, which takes no hand-added document (#1619)
 /// 5. **Actions** — Sort by date, Export buttons
 ///
 /// ## Creating vs Editing
@@ -150,6 +151,11 @@ import UIKit
 ///          and block insert renumbers, through `CollectionEntryOrdering`, so an editor's append no longer shares a
 ///          position with the Add to Collection picker's on the same device; the inline New Note sheet names its
 ///          entry by id, since the outline can now change under it
+///   2026-10-15 — #1619: a smart collection takes no hand-added document, heading, note block or passage
+///          (`SmartCollectionRule`): both Add menus disable those four items, the Add Documents section is left out, the
+///          inspector offers no Insert as Excerpt, and Contents opens with the picker's sentence, whether or not the
+///          collection holds entries (the sentence it replaces, `collection.editor.docs.smartEmpty`, showed only while
+///          it held none); Add to Archives Visit… says why when a smart collection's search cannot run
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -209,6 +215,8 @@ struct CollectionEditorView: View {
     /// Presents the Add-to-Archive-Visit picker over this collection's resolved documents
     /// (Phase 3 — the ephemeral packet verb this replaced lives on in the plan's own export).
     @State private var planPickerRequest: PlanPickerRequest?
+    /// Why Add to Archives Visit… could not resolve this smart collection's search, while its alert shows (#1619).
+    @State private var addToVisitError: String?
     @State private var showExport         = false
     @State private var showTimeline       = false
     @State private var showLinkSavedSearch = false
@@ -329,6 +337,19 @@ struct CollectionEditorView: View {
         .sheet(item: $planPickerRequest) { request in
             PlanPickerSheet(request: request)
                 .environment(appState)
+        }
+        // #1619 (#1558's reading): a smart collection whose search cannot run says why, where the item did nothing.
+        .alert(
+            String(localized: "archiveVisit.collection.error.title", defaultValue: "Couldn’t Add to Archives Visit"),
+            isPresented: Binding(
+                get: { addToVisitError != nil },
+                set: { if !$0 { addToVisitError = nil } }
+            ),
+            presenting: addToVisitError
+        ) { _ in
+            Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
+        } message: { msg in
+            Text(msg)
         }
         .transientToast($addDocumentsToast)
         // Reload document headers and per-document dates whenever the entry list changes.
@@ -483,8 +504,9 @@ struct CollectionEditorView: View {
                 allNotes: allNotes,
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
-                appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
-                addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
+                if appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) }) {
+                    addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
+                }
             }
         }
         .sheet(isPresented: $showAddHighlights) {
@@ -591,8 +613,9 @@ struct CollectionEditorView: View {
                 allNotes: allNotes,
                 existingDocumentKeys: existingDocumentKeys
             ) { picks in
-                appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) })
-                addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
+                if appendEntries(picks.map { (documentId: $0.documentId, volumeId: $0.volumeId) }) {
+                    addDocumentsToast = CollectionDocumentDiscovery.addedToastMessage(picks.count)
+                }
             }
         }
         .sheet(isPresented: $showAddHighlights) {
@@ -1205,13 +1228,16 @@ struct CollectionEditorView: View {
     @ViewBuilder
     private var documentsSection: some View {
         Section {
+            // #1619: a smart collection says what it is first, whatever it holds. Its documents come from its saved
+            // search, so the Add menus take no hand-added document, heading, note block or passage into it; entries it
+            // held before it was linked stay listed below, ignored by everything it produces, as before.
+            if !takesHandAddedEntries {
+                Label(SmartCollectionRule.sentence, systemImage: "bolt.fill")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             if sortedEntries.isEmpty {
-                if linkedSavedSearchId != nil {
-                    Text(String(localized: "collection.editor.docs.smartEmpty",
-                                defaultValue: "This is a smart collection. Its documents are resolved from the linked saved search when you export — use Export in Actions below."))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                } else {
+                if takesHandAddedEntries {
                     Text(String(localized: "collection.editor.docs.empty",
                                 defaultValue: "No content yet. Add documents, headings, notes, and apparatus from the toolbar above."))
                         .font(.callout)
@@ -1330,6 +1356,8 @@ struct CollectionEditorView: View {
     /// (M1). The Outline | Preview segmented control stays put in the layout.
     private var iPhoneAddMenu: some View {
         Menu {
+            // #1619: the four hand-added kinds are disabled for a smart collection, whose Contents says why; the
+            // Apparatus blocks are not, since a smart collection's exports build them over its search's documents.
             Button {
                 showAddDocuments = true
             } label: {
@@ -1337,6 +1365,7 @@ struct CollectionEditorView: View {
                              defaultValue: "Add Documents…"),
                       systemImage: "plus.rectangle.on.folder")
             }
+            .disabled(!takesHandAddedEntries)
             Divider()
             Button {
                 addStructuralEntry(kind: .heading)
@@ -1344,12 +1373,14 @@ struct CollectionEditorView: View {
                 Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
                       systemImage: "number")
             }
+            .disabled(!takesHandAddedEntries)
             Button {
                 addStructuralEntry(kind: .prose)
             } label: {
                 Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
                       systemImage: "text.alignleft")
             }
+            .disabled(!takesHandAddedEntries)
             Button {
                 showAddHighlights = true
             } label: {
@@ -1357,7 +1388,7 @@ struct CollectionEditorView: View {
                              defaultValue: "Add Highlighted Passages…"),
                       systemImage: "text.quote")
             }
-            .disabled(orderedDocumentKeys.isEmpty)
+            .disabled(orderedDocumentKeys.isEmpty || !takesHandAddedEntries)
             Menu {
                 ForEach(CollectionGeneratedBlockType.allCases) { blockType in
                     Button {
@@ -1375,18 +1406,22 @@ struct CollectionEditorView: View {
             // rather than hidden, so the action is discoverable before a collection has content.
             Button {
                 Task {
-                    guard let docs = await TripPacketSeed.resolve(
-                        collection: collection, appState: appState,
-                        modelContext: modelContext) else { return }
-                    planPickerRequest = PlanPickerRequest(
-                        documents: docs, includeSource: true, includeExternalRefs: true,
-                        // The collection as every list row names it, and the plan after its trimmed name — an
-                        // unnamed one makes an untitled plan (#1464 review, round 1).
-                        basis: String(format: String(
-                            localized: "archiveVisit.basis.collection %@",
-                            defaultValue: "from the collection “%@”"),
-                            CollectionEditorNaming.listName(savedName: collection.name)),
-                        suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
+                    do {
+                        let docs = try await TripPacketSeed.resolve(
+                            collection: collection, appState: appState,
+                            modelContext: modelContext)
+                        planPickerRequest = PlanPickerRequest(
+                            documents: docs, includeSource: true, includeExternalRefs: true,
+                            // The collection as every list row names it, and the plan after its trimmed name — an
+                            // unnamed one makes an untitled plan (#1464 review, round 1).
+                            basis: String(format: String(
+                                localized: "archiveVisit.basis.collection %@",
+                                defaultValue: "from the collection “%@”"),
+                                CollectionEditorNaming.listName(savedName: collection.name)),
+                            suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
+                    } catch {
+                        addToVisitError = error.localizedDescription
+                    }
                 }
             } label: {
                 Label(String(localized: "collection.addToVisit",
@@ -1421,6 +1456,7 @@ struct CollectionEditorView: View {
     /// structural / apparatus items). Sort by Date and Export are their own iPad toolbar items.
     private var iPadAddMenu: some View {
         Menu {
+            // #1619: as in `iPhoneAddMenu`, a smart collection takes none of the four hand-added kinds.
             Button {
                 showAddDocuments = true
             } label: {
@@ -1428,6 +1464,7 @@ struct CollectionEditorView: View {
                              defaultValue: "Add Documents…"),
                       systemImage: "plus.rectangle.on.folder")
             }
+            .disabled(!takesHandAddedEntries)
             Divider()
             Button {
                 addStructuralEntry(kind: .heading)
@@ -1435,12 +1472,14 @@ struct CollectionEditorView: View {
                 Label(String(localized: "collection.add.heading", defaultValue: "Add Section Heading"),
                       systemImage: "number")
             }
+            .disabled(!takesHandAddedEntries)
             Button {
                 addStructuralEntry(kind: .prose)
             } label: {
                 Label(String(localized: "collection.add.prose", defaultValue: "Add Note Block"),
                       systemImage: "text.alignleft")
             }
+            .disabled(!takesHandAddedEntries)
             Button {
                 showAddHighlights = true
             } label: {
@@ -1448,7 +1487,7 @@ struct CollectionEditorView: View {
                              defaultValue: "Add Highlighted Passages…"),
                       systemImage: "text.quote")
             }
-            .disabled(orderedDocumentKeys.isEmpty)
+            .disabled(orderedDocumentKeys.isEmpty || !takesHandAddedEntries)
             Divider()
             // #830: the same item `iPhoneAddMenu` carries, reusing the SAME localization key so the
             // two menus cannot state different things. It was absent here, so at regular width —
@@ -1456,18 +1495,22 @@ struct CollectionEditorView: View {
             // packet at all.
             Button {
                 Task {
-                    guard let docs = await TripPacketSeed.resolve(
-                        collection: collection, appState: appState,
-                        modelContext: modelContext) else { return }
-                    planPickerRequest = PlanPickerRequest(
-                        documents: docs, includeSource: true, includeExternalRefs: true,
-                        // The collection as every list row names it, and the plan after its trimmed name — an
-                        // unnamed one makes an untitled plan (#1464 review, round 1).
-                        basis: String(format: String(
-                            localized: "archiveVisit.basis.collection %@",
-                            defaultValue: "from the collection “%@”"),
-                            CollectionEditorNaming.listName(savedName: collection.name)),
-                        suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
+                    do {
+                        let docs = try await TripPacketSeed.resolve(
+                            collection: collection, appState: appState,
+                            modelContext: modelContext)
+                        planPickerRequest = PlanPickerRequest(
+                            documents: docs, includeSource: true, includeExternalRefs: true,
+                            // The collection as every list row names it, and the plan after its trimmed name — an
+                            // unnamed one makes an untitled plan (#1464 review, round 1).
+                            basis: String(format: String(
+                                localized: "archiveVisit.basis.collection %@",
+                                defaultValue: "from the collection “%@”"),
+                                CollectionEditorNaming.listName(savedName: collection.name)),
+                            suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines))
+                    } catch {
+                        addToVisitError = error.localizedDescription
+                    }
                 }
             } label: {
                 Label(String(localized: "collection.addToVisit",
@@ -1758,20 +1801,26 @@ struct CollectionEditorView: View {
 
     /// Opens the Phase 3 discovery sheet (Search | Browse | Citations | Tags). Added
     /// documents are appended at the end of the entry list in selection order.
+    ///
+    /// Left out for a smart collection (#1619), which takes no hand-added document: its Contents
+    /// section says why, and a disabled button here would sit over a footer promising an add.
+    @ViewBuilder
     private var addDocumentsSection: some View {
-        Section {
-            Button {
-                showAddDocuments = true
-            } label: {
-                Label(
-                    String(localized: "collection.editor.addDocuments.button",
-                           defaultValue: "Add Documents…"),
-                    systemImage: "plus.rectangle.on.folder"
-                )
+        if takesHandAddedEntries {
+            Section {
+                Button {
+                    showAddDocuments = true
+                } label: {
+                    Label(
+                        String(localized: "collection.editor.addDocuments.button",
+                               defaultValue: "Add Documents…"),
+                        systemImage: "plus.rectangle.on.folder"
+                    )
+                }
+            } footer: {
+                Text(String(localized: "collection.editor.addDocuments.footer",
+                            defaultValue: "Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list."))
             }
-        } footer: {
-            Text(String(localized: "collection.editor.addDocuments.footer",
-                        defaultValue: "Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list."))
         }
     }
 
@@ -1808,6 +1857,13 @@ struct CollectionEditorView: View {
 
     // MARK: - Helpers
 
+    /// Whether this collection takes documents, headings, note blocks and passages added by hand: not when it is linked
+    /// to a saved search (`SmartCollectionRule`, #1619). Read from the model, which `linkSavedSearch` writes at once and
+    /// which follows a link made on another device.
+    private var takesHandAddedEntries: Bool {
+        SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId)
+    }
+
     /// Document keys appearing on more than one entry, for the "Also in collection"
     /// badge (A4). Cheap O(n) recompute over the pane-level entry list.
     private var duplicateDocumentKeys: Set<String> {
@@ -1834,19 +1890,20 @@ struct CollectionEditorView: View {
 
     /// Appends excerpt entries (Authoring Phase 5) at the end of the entry list via the
     /// shared `CollectionExcerpts` factory, then saves — the excerpt sibling of
-    /// `appendEntries`.
+    /// `appendEntries`. A smart collection takes none, and nothing is saved (#1619).
     private func appendExcerpts(_ captures: [CollectionExcerptCapture]) {
-        CollectionExcerpts.append(captures, to: collection,
-                                  sortedEntries: &sortedEntries, modelContext: modelContext)
+        guard CollectionExcerpts.append(captures, to: collection,
+                                        sortedEntries: &sortedEntries, modelContext: modelContext) else { return }
         try? modelContext.save()
     }
 
     /// Appends a structural entry (a section heading or a prose block) to the collection, through the append the Mac
     /// pane shares (`CollectionEntryOrdering.appendBlock`, #1416). Heading/prose entries carry empty document
-    /// identifiers and use `text` (Phase 3a).
+    /// identifiers and use `text` (Phase 3a). A smart collection takes neither (#1619), and its outline is not
+    /// renumbered for nothing: a position written, even unchanged, stamps the entry modified.
     private func addStructuralEntry(kind: CollectionEntryKind) {
-        CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,
-                                            modelContext: modelContext)
+        guard CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,
+                                                  modelContext: modelContext) != nil else { return }
         reindexEntries()
     }
 
@@ -1945,7 +2002,8 @@ struct CollectionEditorView: View {
                                        documentOnly: Bool = false) -> some View {
         CollectionEntryInspector(
             entry: entry,
-            onInsertExcerpt: { capture in appendExcerpts([capture]) },
+            // #1619: no Insert as Excerpt into a smart collection, which leaves hand-added passages out of every export.
+            onInsertExcerpt: takesHandAddedEntries ? { capture in appendExcerpts([capture]) } : nil,
             onNewNote: {
                 if sortedEntries.contains(where: { $0.id == entry.id }) {
                     noteCreateContext = NoteCreateContext(
@@ -1979,7 +2037,11 @@ struct CollectionEditorView: View {
     /// Appends document entries at the end of the entry list in the given order.
     /// Duplicates are allowed (A4) — repeats get an "Also in collection" badge instead
     /// of being silently skipped.
-    private func appendEntries(_ pairs: [(documentId: String, volumeId: String)]) {
+    ///
+    /// - Returns: Whether the collection took them: `false` for a smart collection (#1619), so
+    ///   the Add Documents sheet's commit confirms nothing it did not add.
+    @discardableResult
+    private func appendEntries(_ pairs: [(documentId: String, volumeId: String)]) -> Bool {
         CollectionDocumentDiscovery.appendEntries(
             pairs, collection: collection,
             sortedEntries: &sortedEntries, modelContext: modelContext)

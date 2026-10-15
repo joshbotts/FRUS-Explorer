@@ -7567,10 +7567,13 @@ struct CollectionEntryOrderingTests {
 
         let picked = CollectionDocumentDiscovery.appendToCollection(
             documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
-        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
-                                                          modelContext: context)
-        let note = CollectionEntryOrdering.appendBlock(kind: .prose, to: collection, outline: &outline,
-                                                       modelContext: context)
+        // `nil` only for a smart collection (#1619); this one is not.
+        let addedHeading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
+                                                               modelContext: context)
+        let addedNote = CollectionEntryOrdering.appendBlock(kind: .prose, to: collection, outline: &outline,
+                                                            modelContext: context)
+        let heading = try #require(addedHeading)
+        let note = try #require(addedNote)
         #expect(heading.sortOrder > picked.sortOrder && note.sortOrder > heading.sortOrder,
                 "picked \(picked.sortOrder), heading \(heading.sortOrder), note \(note.sortOrder)")
         #expect(heading.entryKind == .heading && note.entryKind == .prose)
@@ -7592,8 +7595,9 @@ struct CollectionEntryOrderingTests {
 
         let picked = CollectionDocumentDiscovery.appendToCollection(
             documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
-        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
-                                                          modelContext: context)
+        let addedHeading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
+                                                               modelContext: context)
+        let heading = try #require(addedHeading)
         outline.move(fromOffsets: [2], toOffset: 0)   // the heading dragged to the top
         CollectionEntryOrdering.renumber(outline, in: collection)
 
@@ -10934,6 +10938,361 @@ struct CollectionPickerRowTests {
         let excerpt = try #require(addBody.range(of: "CollectionExcerpts.appendToCollection("))
         let document = try #require(addBody.range(of: "CollectionDocumentDiscovery.appendToCollection("))
         #expect(guardLine.lowerBound < excerpt.lowerBound && guardLine.lowerBound < document.lowerBound)
+    }
+}
+
+// MARK: - SmartCollectionRuleTests (#1619)
+
+/// A smart collection's preview, every export, its Archives Visit list and its static snapshot are built from its saved
+/// search, which ignores what a reader adds by hand. #1593 stopped the Add to Collection picker taking it; both collection
+/// editors went on taking documents, section headings, note blocks and passages, listing and counting them, and both
+/// Collections lists printed a smart collection's count of them, "0 documents" for a search of hundreds (#1619).
+///
+/// The rule, the three appends both editors call and the Archives Visit seed are called here. The controls that call them
+/// are in views nothing in this target hosts (the iOS editor's two Add menus, the Mac window's toolbar and its Collection
+/// menu, the lists' rows), so their half is read from source: each control's own modifiers, found by the call that holds
+/// its label's key, never a window of text.
+///
+/// Version history:
+///   1.0 — #1619: initial implementation
+@MainActor
+@Suite("A smart collection takes no hand-added entry, and the lists say it is smart (#1619)")
+struct SmartCollectionRuleTests {
+
+    private static let volume = "frus1955-57v16"
+
+    /// A static and a smart collection, each holding one hand-added document, the second linked to a search afterwards,
+    /// as a collection is when it is linked after it was built.
+    private static func pair(in context: ModelContext) throws -> (fixed: Collection, smart: Collection) {
+        let fixed = Collection(name: "Suez Crisis")
+        let smart = Collection(name: "Berlin, as searched")
+        context.insert(fixed)
+        context.insert(smart)
+        for collection in [fixed, smart] {
+            _ = CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d12", volumeId: volume, collection: collection, modelContext: context)
+        }
+        smart.savedSearchId = UUID()
+        try context.save()
+        return (fixed, smart)
+    }
+
+    /// Every `CollectionEntry` the store holds, saved or not: what a refused append must leave as it was.
+    private static func entryCount(in context: ModelContext) throws -> Int {
+        try context.fetchCount(FetchDescriptor<CollectionEntry>())
+    }
+
+    private static func capture() -> CollectionExcerptCapture {
+        CollectionExcerptCapture(text: "A passage.", volumeId: volume, documentId: "d12", start: 0, end: 10,
+                                 renderingVersion: nil, colorTag: nil)
+    }
+
+    // MARK: The rule and its words
+
+    @Test("A collection takes hand-added entries only while it has no saved search")
+    func theRule() {
+        #expect(SmartCollectionRule.takesHandAddedEntries(savedSearchId: nil))
+        #expect(!SmartCollectionRule.takesHandAddedEntries(savedSearchId: UUID()))
+    }
+
+    @Test("The editors' sentence is the picker's, and the lists say Smart collection")
+    func theWords() {
+        #expect(SmartCollectionRule.sentence == "Smart collection. Its documents come from its saved search.")
+        #expect(CollectionPickerRow(savedName: "A", documentCount: 3, isSmart: true).caption == SmartCollectionRule.sentence)
+        #expect(SmartCollectionRule.listLabel == "Smart collection")
+    }
+
+    // MARK: The three appends both editors call
+
+    @Test("Add Documents writes nothing to a smart collection and says so; unlinked, the collection takes them again")
+    func documentsAreRefused() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (fixed, smart) = try Self.pair(in: context)
+        let documents = [(documentId: "d13", volumeId: Self.volume), (documentId: "d14", volumeId: Self.volume)]
+
+        var smartOutline = CollectionEntryOrdering.modelOrder(of: smart)
+        let before = try Self.entryCount(in: context)
+        #expect(!CollectionDocumentDiscovery.appendEntries(documents, collection: smart, sortedEntries: &smartOutline,
+                                                            modelContext: context))
+        #expect(try Self.entryCount(in: context) == before, "a refused append inserted entries")
+        #expect(smartOutline.count == 1, "a refused append grew the outline to \(smartOutline.count)")
+
+        var fixedOutline = CollectionEntryOrdering.modelOrder(of: fixed)
+        #expect(CollectionDocumentDiscovery.appendEntries(documents, collection: fixed, sortedEntries: &fixedOutline,
+                                                           modelContext: context))
+        try context.save()
+        #expect(fixed.documentCount == 3 && fixedOutline.count == 3)
+
+        // The entries a collection held before it was linked count again once it is unlinked, and it takes more.
+        smart.savedSearchId = nil
+        #expect(CollectionDocumentDiscovery.appendEntries(documents, collection: smart, sortedEntries: &smartOutline,
+                                                           modelContext: context))
+        try context.save()
+        #expect(smart.documentCount == 3)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("Add Section Heading and Add Note Block add nothing to a smart collection")
+    func blocksAreRefused() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (fixed, smart) = try Self.pair(in: context)
+        for kind in [CollectionEntryKind.heading, .prose] {
+            var outline = CollectionEntryOrdering.modelOrder(of: smart)
+            let before = try Self.entryCount(in: context)
+            let added = CollectionEntryOrdering.appendBlock(kind: kind, to: smart, outline: &outline,
+                                                            modelContext: context)
+            #expect(added == nil, "a smart collection took a \(kind) block")
+            #expect(try Self.entryCount(in: context) == before && outline.count == 1)
+        }
+        var fixedOutline = CollectionEntryOrdering.modelOrder(of: fixed)
+        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: fixed, outline: &fixedOutline,
+                                                          modelContext: context)
+        #expect(heading?.entryKind == .heading && fixedOutline.count == 2)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("Add Highlighted Passages and Insert as Excerpt add nothing to a smart collection")
+    func passagesAreRefused() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (fixed, smart) = try Self.pair(in: context)
+        var smartOutline = CollectionEntryOrdering.modelOrder(of: smart)
+        let before = try Self.entryCount(in: context)
+        #expect(!CollectionExcerpts.append([Self.capture()], to: smart, sortedEntries: &smartOutline,
+                                           modelContext: context))
+        #expect(try Self.entryCount(in: context) == before && smartOutline.count == 1)
+
+        var fixedOutline = CollectionEntryOrdering.modelOrder(of: fixed)
+        #expect(CollectionExcerpts.append([Self.capture()], to: fixed, sortedEntries: &fixedOutline,
+                                          modelContext: context))
+        #expect(fixedOutline.last?.entryKind == .excerpt && fixedOutline.count == 2)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: Add to Archives Visit (#1558's reading)
+
+    /// The item resolved a smart collection through `try?` and returned without a word when the search could not run,
+    /// so it did nothing and said nothing. The seed now throws the export's own error, whose text the alert shows.
+    @Test("Add to Archives Visit says why a smart collection's search cannot run; a static collection resolves as before")
+    func archivesVisitSaysWhy() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (fixed, smart) = try Self.pair(in: context)
+        let appState = AppState()   // no search service: the state before the index has opened
+        await #expect(throws: CollectionResolveError.searchServiceUnavailable) {
+            _ = try await TripPacketSeed.resolve(collection: smart, appState: appState, modelContext: context)
+        }
+        #expect(CollectionResolveError.searchServiceUnavailable.localizedDescription
+                == "Search is not ready yet. Try again in a moment.")
+        let documents = try await TripPacketSeed.resolve(collection: fixed, appState: appState, modelContext: context)
+        #expect(documents.map(\.documentId) == ["d12"])
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: The views' half, read from source
+
+    private static func source(_ path: String) throws -> String {
+        try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent(path), encoding: .utf8)
+    }
+
+    /// The braces of the declaration that `header` opens in `source`.
+    private static func block(_ header: String, in source: String) throws -> Range<String.Index> {
+        let start = try #require(source.range(of: header), "no «\(header)» — re-derive this test")
+        let block = try #require(WindowTargetingTests.balancedBlock(in: source, from: start.lowerBound))
+        return block.startIndex..<block.endIndex
+    }
+
+    private static func skipBlanks(_ index: String.Index, in source: String) -> String.Index {
+        var at = index
+        while at < source.endIndex, source[at].isWhitespace { at = source.index(after: at) }
+        return at
+    }
+
+    private static func isIdentifier(_ character: Character) -> Bool {
+        character.isLetter || character.isNumber || character == "_"
+    }
+
+    /// Just past the call whose name ends at `index`: its argument list, its trailing closure and a `label:` closure,
+    /// whichever it has.
+    private static func callEnd(after index: String.Index, in source: String) -> String.Index? {
+        var end = index
+        var next = skipBlanks(end, in: source)
+        if next < source.endIndex, source[next] == "(" {
+            guard let arguments = WindowTargetingTests.balancedBlock(in: source, from: next, open: "(", close: ")")
+            else { return nil }
+            end = arguments.endIndex
+            next = skipBlanks(end, in: source)
+        }
+        if next < source.endIndex, source[next] == "{" {
+            guard let closure = WindowTargetingTests.balancedBlock(in: source, from: next) else { return nil }
+            end = closure.endIndex
+            next = skipBlanks(end, in: source)
+            if source[next...].hasPrefix("label:") {
+                let open = skipBlanks(source.index(next, offsetBy: 6), in: source)
+                guard let label = WindowTargetingTests.balancedBlock(in: source, from: open) else { return nil }
+                end = label.endIndex
+            }
+        }
+        return end
+    }
+
+    /// The modifiers chained onto the innermost `name` call in `range` that holds the quoted `key`, each as its name and
+    /// its arguments with their whitespace collapsed: `disabled(!takesHandAddedEntries)`.
+    private static func modifiers(ofCall name: String, holding key: String, in range: Range<String.Index>,
+                                  of source: String) throws -> [String] {
+        let keyAt = try #require(source.range(of: "\"\(key)\"", range: range), "no «\(key)» here — re-derive this test")
+        var searchEnd = keyAt.lowerBound
+        while let found = source.range(of: name, options: .backwards, range: range.lowerBound..<searchEnd) {
+            searchEnd = found.lowerBound
+            let before = found.lowerBound > source.startIndex ? source[source.index(before: found.lowerBound)] : " "
+            let after = found.upperBound < source.endIndex ? source[found.upperBound] : " "
+            guard !isIdentifier(before), !isIdentifier(after),
+                  let end = callEnd(after: found.upperBound, in: source), end >= keyAt.upperBound else { continue }
+            var modifiers: [String] = []
+            var at = skipBlanks(end, in: source)
+            while at < source.endIndex, source[at] == "." {
+                var nameEnd = source.index(after: at)
+                while nameEnd < source.endIndex, isIdentifier(source[nameEnd]) { nameEnd = source.index(after: nameEnd) }
+                var modifierEnd = nameEnd
+                if nameEnd < source.endIndex, source[nameEnd] == "(",
+                   let arguments = WindowTargetingTests.balancedBlock(in: source, from: nameEnd, open: "(", close: ")") {
+                    modifierEnd = arguments.endIndex
+                }
+                modifiers.append(String(source[source.index(after: at)..<nameEnd])
+                                 + source[nameEnd..<modifierEnd].split(whereSeparator: \.isWhitespace).joined(separator: " "))
+                at = skipBlanks(modifierEnd, in: source)
+            }
+            return modifiers
+        }
+        Issue.record("no \(name) call holds «\(key)»")
+        return []
+    }
+
+    /// Checks the four hand-add controls of the menu in `range` against `refused` (the disabling argument a smart
+    /// collection must trip) and `passagesRefused` (Add Passages', which also needs a document), and that the Apparatus
+    /// menu, keyed `apparatus`, is not disabled by the rule.
+    private static func expectHandAddsRefused(in range: Range<String.Index>, of source: String, where place: String,
+                                              keys: [String], passages: String, apparatus: String,
+                                              refused: String, passagesRefused: String) throws {
+        for key in keys {
+            let modifiers = try Self.modifiers(ofCall: "Button", holding: key, in: range, of: source)
+            #expect(modifiers.contains("disabled(\(refused))"), "\(place): «\(key)» is modified only by \(modifiers)")
+        }
+        let passageModifiers = try Self.modifiers(ofCall: "Button", holding: passages, in: range, of: source)
+        #expect(passageModifiers.contains("disabled(\(passagesRefused))"),
+                "\(place): «\(passages)» is modified only by \(passageModifiers)")
+        let apparatusModifiers = try Self.modifiers(ofCall: "Menu", holding: apparatus, in: range, of: source)
+        #expect(!apparatusModifiers.joined().contains("takesHandAddedEntries"),
+                "\(place): a smart collection's exports build its apparatus, but the menu is gated: \(apparatusModifiers)")
+    }
+
+    @Test("Both iOS Add menus, the Mac window's Add menu and its Collection menu disable the four hand-added kinds")
+    func everyAddMenuAsksTheRule() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        for menu in ["private var iPhoneAddMenu: some View {", "private var iPadAddMenu: some View {"] {
+            try Self.expectHandAddsRefused(
+                in: try Self.block(menu, in: editor), of: editor, where: menu,
+                keys: ["collection.editor.addDocuments.button", "collection.add.heading", "collection.add.prose"],
+                passages: "collection.add.highlights", apparatus: "collection.add.apparatus",
+                refused: "!takesHandAddedEntries", passagesRefused: "orderedDocumentKeys.isEmpty || !takesHandAddedEntries")
+        }
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        try Self.expectHandAddsRefused(
+            in: try Self.block("private var toolbarContent: some ToolbarContent {", in: mac), of: mac,
+            where: "the Mac window's toolbar",
+            keys: ["collection.ribbon.addDocuments", "collection.add.heading", "collection.add.prose"],
+            passages: "collection.ribbon.addPassages", apparatus: "collection.add.apparatus",
+            refused: "!takesHandAddedEntries", passagesRefused: "orderedDocumentKeys.isEmpty || !takesHandAddedEntries")
+        #expect(mac.contains("takesHandAddedEntries: takesHandAddedEntries,"),
+                "the Mac window does not hand the rule to its Collection menu")
+        let app = try Self.source("FRUSExplorer/App/FRUSExplorerApp.swift")
+        try Self.expectHandAddsRefused(
+            in: try Self.block("struct CollectionMenuContent: View {", in: app), of: app, where: "the Collection menu",
+            keys: ["menu.collection.addDocuments", "menu.collection.addHeading", "menu.collection.addProse"],
+            passages: "menu.collection.addHighlights", apparatus: "menu.collection.apparatus",
+            refused: "detail?.takesHandAddedEntries != true",
+            passagesRefused: "detail?.hasDocuments != true || detail?.takesHandAddedEntries != true")
+        // Both editors ask the rule of the model, which follows a link made on another device.
+        for (name, text) in [("the iOS editor", editor), ("the Mac window", mac)] {
+            #expect(text.contains("SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId)"),
+                    "\(name) does not ask the rule of its collection")
+        }
+    }
+
+    @Test("Both editors open a smart collection's Contents with the picker's sentence, and offer no Insert as Excerpt")
+    func bothEditorsSayWhy() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        for (name, text) in [("the iOS editor", editor), ("the Mac window", mac)] {
+            let contents = try Self.block("private var documentsSection: some View {", in: text)
+            let notice = try #require(text.range(of: "Label(SmartCollectionRule.sentence, systemImage: \"bolt.fill\")",
+                                                 range: contents), "\(name)'s Contents does not print the sentence")
+            let gate = try #require(text.range(of: "if !takesHandAddedEntries {", range: contents),
+                                    "\(name)'s sentence is not gated on the rule")
+            #expect(gate.upperBound < notice.lowerBound)
+            // Not inside the `else` of an empty outline: before it, so a smart collection with entries says it too.
+            let empty = try #require(text.range(of: "if sortedEntries.isEmpty {", range: contents))
+            #expect(notice.upperBound < empty.lowerBound, "\(name) says what a smart collection is only while it is empty")
+            let excerpts = text.components(separatedBy: "onInsertExcerpt:").count - 1
+            #expect(excerpts == 1 && text.contains(
+                "onInsertExcerpt: takesHandAddedEntries ? { capture in appendExcerpts([capture]) } : nil"),
+                    "\(name) hands the inspector an Insert as Excerpt a smart collection would take")
+        }
+        // The sentence it replaces, which showed only while a smart collection was empty, is gone from the code.
+        #expect(!editor.split(separator: "\n").contains { $0.contains("localized: \"collection.editor.docs.smartEmpty\"") })
+        let addDocuments = try Self.block("private var addDocumentsSection: some View {", in: editor)
+        let gate = try #require(editor.range(of: "if takesHandAddedEntries {", range: addDocuments),
+                                "the Add Documents section is drawn for a smart collection")
+        let section = try #require(editor.range(of: "Section {", range: addDocuments))
+        #expect(gate.upperBound < section.lowerBound)
+    }
+
+    @Test("Both Collections lists print Smart collection where a smart collection's count was")
+    func theListsSaySmart() throws {
+        let list = try Self.source("FRUSExplorer/Collections/CollectionListView.swift")
+        let row = try Self.block("private struct CollectionRow: View {", in: list)
+        let smart = try #require(list.range(of: "if collection.savedSearchId != nil {", range: row))
+        let label = try #require(list.range(of: "Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")",
+                                            range: row), "the Collections list's row does not say Smart collection")
+        let count = try #require(list.range(of: "let count = collection.documentCount", range: row))
+        #expect(smart.upperBound < label.lowerBound && label.upperBound < count.lowerBound,
+                "the row's count is not the else of its smart label")
+
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let picker = try Self.block("private var collectionPickerMenu: some View {", in: mac)
+        #expect(mac[picker].contains(
+            "let contents = c.savedSearchId == nil ? c.documentCount.formatted() : SmartCollectionRule.listLabel"),
+                "the picker's menu prints a smart collection's count")
+        #expect(mac[picker].contains("Text(verbatim: \"\\(collectionDisplayName(c))  ·  \\(contents)\")"))
+        #expect(mac[picker].contains(".accessibilityLabel(SmartCollectionRule.listLabel)"),
+                "the picker's label marks a smart collection with nothing VoiceOver reads")
+        let manage = try Self.block("private struct ManageCollectionRow: View {", in: mac)
+        #expect(mac[manage].contains("Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")"),
+                "Manage Collections' row prints a smart collection's count")
+    }
+
+    @Test("Add to Archives Visit's three items show why a smart collection's search could not run")
+    func archivesVisitItemsSayWhy() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let items = [("private var iPhoneAddMenu: some View {", editor), ("private var iPadAddMenu: some View {", editor),
+                     ("private var toolbarContent: some ToolbarContent {", mac)]
+        for (menu, text) in items {
+            let range = try Self.block(menu, in: text)
+            let resolve = try #require(text.range(of: "let docs = try await TripPacketSeed.resolve(", range: range),
+                                       "\(menu) does not resolve the collection through the seed")
+            let shown = try #require(text.range(of: "} catch {\n", range: range), "\(menu) catches nothing")
+            let message = try #require(text.range(of: "addToVisitError = error.localizedDescription", range: range),
+                                       "\(menu) drops the seed's error")
+            #expect(resolve.upperBound < shown.lowerBound && shown.upperBound < message.lowerBound)
+        }
+        for (name, text) in [("the iOS editor", editor), ("the Mac window", mac)] {
+            #expect(text.components(separatedBy: "localized: \"archiveVisit.collection.error.title\"").count - 1 == 1,
+                    "\(name) presents no alert for the seed's error")
+        }
     }
 }
 

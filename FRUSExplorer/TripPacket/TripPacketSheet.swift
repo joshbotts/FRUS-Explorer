@@ -89,6 +89,8 @@ import AppKit
 ///          and the smart-search empty state they alone could reach are deleted: nothing
 ///          constructed either seed, and on those paths the project's question seeded the topic
 ///          at render time, which #1366 had stopped on the plan path
+///   2.0 — #1619 (#1558's reading): `TripPacketSeed.resolve` throws why a smart collection's
+///          search could not run, where it returned `nil` and its three callers said nothing
 
 /// How a collection becomes a reading list — the one membership rule the add-to-plan flows share.
 ///
@@ -111,17 +113,21 @@ enum TripPacketSeed {
     /// Resolves a collection to its reading list — the ONE membership rule every add-to-plan
     /// flow shares (Phase 3 factored it out of the sheet): smart → the export's own
     /// `smartRefs`; static → documents + excerpts through ``staticSeedDocuments(from:)``.
-    /// Returns `nil` when a smart collection's search cannot run yet. All three callers then
-    /// return without a word, so the menu item does nothing; the sheet's own message for this
-    /// state was reachable only from the `.collection` seed #1423 deleted.
+    ///
+    /// Throws when a smart collection's search cannot run: the export's own errors, "Search is
+    /// not ready yet" before the index has opened and "The linked saved search could not be
+    /// found" after it was deleted (`CollectionResolveError`), or the search's own. Its three
+    /// callers, the iOS editor's two Add menus and the Mac Collections window's, show the
+    /// message in an alert. Until #1619 this returned `nil` and they returned without a word,
+    /// so Add to Archives Visit… did nothing and said nothing (#1558's reading).
     @MainActor
     static func resolve(collection: Collection, appState: AppState,
                         modelContext: ModelContext)
-        async -> [(volumeId: String, documentId: String)]? {
+        async throws -> [(volumeId: String, documentId: String)] {
         if collection.savedSearchId != nil {
             let resolver = CollectionContentResolver(appState: appState,
                                                      modelContext: modelContext)
-            guard let refs = try? await resolver.smartRefs(for: collection) else { return nil }
+            let refs = try await resolver.smartRefs(for: collection)
             return refs.sorted { $0.sortOrder < $1.sortOrder }
                 .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         }

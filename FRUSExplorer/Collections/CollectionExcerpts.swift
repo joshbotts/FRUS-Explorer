@@ -76,6 +76,7 @@ struct CollectionExcerptCapture: Sendable, Equatable {
 ///   1.0 — Authoring Phase 5 (excerpts): initial implementation
 ///   1.1 — #1416: both appends take their position from `CollectionEntryOrdering.nextSortOrder`;
 ///          `append` took the outline's count, which an excerpt added elsewhere could already hold
+///   1.2 — #1619: `append` writes nothing to a smart collection, and says whether it wrote
 enum CollectionExcerpts {
 
     /// Builds a capture from a stored highlight, copying the verbatim passage, offsets,
@@ -134,18 +135,27 @@ enum CollectionExcerpts {
     /// first position, `CollectionEntryOrdering.nextSortOrder` (#1416; it was the outline's
     /// count, which an excerpt added elsewhere while the editor was open had already taken).
     ///
+    /// A smart collection takes none (`SmartCollectionRule`, #1619): its exports are built from its
+    /// saved search and leave hand-added passages out. Both editors disable Add Highlighted
+    /// Passages and the inspector's Insert as Excerpt for one.
+    ///
     /// - Parameters:
     ///   - captures: The excerpt captures, in insertion order.
     ///   - collection: The owning collection.
     ///   - sortedEntries: The editor's pane-level entry array, appended in place.
     ///   - modelContext: The SwiftData context the new entries are inserted into.
+    /// - Returns: Whether the collection took the passages: `false` for a smart collection.
     @MainActor
+    @discardableResult
     static func append(
         _ captures: [CollectionExcerptCapture],
         to collection: Collection,
         sortedEntries: inout [CollectionEntry],
         modelContext: ModelContext
-    ) {
+    ) -> Bool {
+        guard SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId) else {
+            return false
+        }
         var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries)
         for capture in captures {
             let entry = makeEntry(from: capture, collectionId: collection.id, sortOrder: next)
@@ -154,6 +164,7 @@ enum CollectionExcerpts {
             sortedEntries.append(entry)
             next += 1
         }
+        return true
     }
 
     /// Appends a single excerpt entry at the end of a collection **without** a
