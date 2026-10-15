@@ -243,6 +243,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          gate shuts goes back to the list.
 ///   1.28 — #1577 lane 3: a ranked row's score is its accessibility value (`SemanticScoreCopy`). The row's label
 ///          is its heading alone, so VoiceOver, and a UI test, could not read the chip's figure.
+///   1.29 — 2026-10-15: the filter panel's volume list is read again when the panel opens and whenever the
+///          indexed set changes (`reloadAvailableVolumes`), not only when the tab appears. A Search tab the app
+///          opened on read the set before boot had, and Filters lost its volume-scoped groups until the tab next appeared.
 
 struct SearchView: View {
 
@@ -674,9 +677,13 @@ struct SearchView: View {
                 }
                 // Refresh the project's engaged-document set as the filter panel opens, so
                 // the History scope reflects documents engaged since the tab was shown (#377
-                // Phase 2a) — parity with the macOS Advanced panel, which reloads on open.
+                // Phase 2a) — parity with the macOS Advanced panel, which reloads on open. The
+                // panel's volume list is read again for the same reason (`reloadAvailableVolumes`).
                 .onChange(of: vm.showFilterPanel) { _, isOpen in
-                    if isOpen { refreshEngagedKeys() }
+                    if isOpen {
+                        refreshEngagedKeys()
+                        reloadAvailableVolumes()
+                    }
                 }
                 // #1577 lane 2: a reading that is open when its door shuts goes back to the list. The
                 // picker's own setter closes the readings on a switch; this is for rows that arrive
@@ -799,11 +806,7 @@ struct SearchView: View {
             // Load the volume/subseries picker options before applying any incoming
             // parameters so `applyParameters` can reconstruct the subseries selection
             // from a flat `volumeIds` scope (see `SearchViewModel.reconstructScope`).
-            vm.loadAvailableVolumes(
-                allEntries: appState.manifestStore.diffResult?.known
-                    ?? appState.manifestStore.bundledEntries,
-                indexedIds: appState.indexedVolumeIds
-            )
+            reloadAvailableVolumes()
             if let params = initialParameters {
                 vm.applyParameters(params)
             }
@@ -821,6 +824,11 @@ struct SearchView: View {
         // change), and the order so a reorder in Settings or a note picker does (#1275).
         .onChange(of: orderedUserTags.map { "\($0.id.uuidString)|\($0.name)" }) { _, _ in
             vm.availableUserTags = orderedUserTags
+        }
+        // And its volume list current: the set changes while this tab is on screen, the first time
+        // at launch, when the boot's read of the index lands (`reloadAvailableVolumes`).
+        .onChange(of: appState.indexedVolumeIds) { _, _ in
+            reloadAvailableVolumes()
         }
         // Consume handoffs that arrive while the Search tab is already alive —
         // `AppState.pendingSearch` is set by Corpus Analytics, "Find all mentions",
@@ -943,6 +951,28 @@ struct SearchView: View {
             let keys = await ProjectEngagedDocuments.keys(forProject: pid, container: container)
             vm.projectEngagedDocumentKeys = keys.sorted()
         }
+    }
+
+    /// Fills the filter panel's volume list (`SearchViewModel.availableVolumes`) from the volumes
+    /// the index holds now.
+    ///
+    /// Called when the tab appears, when the panel opens, and whenever `appState.indexedVolumeIds`
+    /// changes. Until 2026-10-15 it was called only when the tab appeared, and the set is not final
+    /// then: boot publishes the search service and reads the set from the index afterwards, in a
+    /// task of its own, so a Search tab the app opens on can appear first. Measured on an iPhone 17
+    /// simulator (iOS 27.0) whose restored window opens on Search: the tab read the set while it
+    /// was empty, and boot's read of it began a second later. With an empty list Filters draws
+    /// none of the four groups it gates (My Working Corpora, My Volume Scopes, By Subject and Limit
+    /// to Volumes), and nothing read the list again until the tab next appeared. A volume indexed
+    /// while the tab was on screen was missing in the same way, from the pickers and from a
+    /// selected subseries' scope (`SearchViewModel.effectiveVolumeIds`). The macOS panel reads the
+    /// list each time it opens (`MacSearchViewModel.syncToFilterVM`).
+    private func reloadAvailableVolumes() {
+        vm.loadAvailableVolumes(
+            allEntries: appState.manifestStore.diffResult?.known
+                ?? appState.manifestStore.bundledEntries,
+            indexedIds: appState.indexedVolumeIds
+        )
     }
 
 
