@@ -18,7 +18,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 
 | File | Area | Size | Blocks | ✎ held or changed | ⚑ issues still open |
 |---|---|---|---|---|---|
-| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 0 | — |
+| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 13 | 0 | — |
 | [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
 | [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | — |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 24 KB | 33 | 1 | — |
@@ -31,7 +31,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 ## How to read this file
 
 - **Block text = what the app shows now.** A block is the text between a `SOURCE` comment and its `END SOURCE`
-  comment. Edit it in place; only text inside blocks is written back, by key. (The two blocks under a
+  comment. Edit it in place; only text inside blocks is written back, by key. (The five blocks under a
   RETIRED banner are the exception: their strings are gone from the app.)
 - **✎ = your edit that is not in the app as you wrote it.** It sits directly under its block. Since lane WB
   (2026-09-30) the only ✎ boxes are the eight edits it held and the three it shipped with a name or phrase

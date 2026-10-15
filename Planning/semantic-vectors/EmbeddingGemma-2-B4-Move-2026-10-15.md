@@ -197,10 +197,10 @@ pin. It found the file by `SemanticModelStore.fileName`, which is the upstream r
 and so moved with the model: on a device holding `embeddinggemma-300m-qat-Q4_0.gguf` and its marker,
 it would have deleted the marker, found no file under the new name, and left 229 MB behind,
 uncounted (the storage rows read the new name) and unremovable (Remove Search Model removes the new
-name). Read, not seen: no device has run build 51. The purge now also discards every other `.gguf` in
-the model's folder, which is the model's own (`makeSemanticModelDirectory`); three tests in
-`SemanticModelStoreTests` hold it, and the test fixtures write their incoming file outside the
-folder, where a download lands.
+name). The purge now also discards every other `.gguf` in the model's folder, which is the model's
+own (`makeSemanticModelDirectory`); three tests in `SemanticModelStoreTests` hold it, the test
+fixtures write their incoming file outside the folder, where a download lands, and the Mac's check
+copy showed it at its first launch (§8).
 
 **The download step.** The Settings row and the search offer card download at once; the consent
 sheet is gone (§6). The fetcher's verification, progress and cellular switch are unchanged. A reader
@@ -289,20 +289,46 @@ count.
 
 ## 8. Checked
 
-- `swift test` for `SemanticVectorsKitTests` and `SemanticVectorsGeneratorTests`: 40 and 84 tests
-  passed, the new ones among them (the calibration rule, the model-keyed table, a model with no
-  measurement refused, the committed index's recall and calibration).
-- The unit target's semantic, Related, About, search-route and EditableContent suites on the iPhone
-  17 simulator (iOS 27.0), scoped: first 417 tests in 45 suites, whose 14 issues were the seam's
-  figures, the EditableContent ranges and one model-store fixture; after the fixes, 96 in 9 suites
-  passed.
-
-(§8 is completed with the full runs before the pull request opens.)
+- **The package**: `swift build --target SemanticVectorsKit`, then `swift test`: exit 0, 38 test
+  targets, 2,900 tests, among them the new ones (the calibration rule and its wire format, the
+  model-keyed table, a model with no measurement refused, the committed index's recall and
+  calibration).
+- **The unit target**, iPhone 17 simulator, iOS 27.0: **7,165 tests in 847 suites passed**, with the
+  6 known issues of #1606 (the runtime pull request's run: 7,159; the six new tests are the
+  purge's three, the two addresses' and the recorded model's). The gated encoder suite skipped
+  itself there, as it does without a model.
+- **The encoder suite with EmbeddingGemma 2** (`QueryEncoderParityTests`,
+  `FRUS_SEMANTIC_MODEL` the Q8_0 GGUF), the same simulator: 4 of 4 passed, the tier-space ones
+  against the new tier: parity min cosine 0.999714 ("Diego Garcia base"), the funnel, the memory
+  shape, and the store-verified end to end (the model adopted at the new length and pin, a local
+  EmbeddingGemma 2 shard, the judged Olney query's hits in `frus1895p1`).
+- **`MeaningResultsSeamTests`**, iOS 27.0: **iPad Pro 13-inch (M5), 3 of 3 passed** (one test run
+  first, then the suite; 68, 101 and 353 s with the Mac loaded), the rows reading 100, 32 and 3
+  percent and, inside the working corpus, Three, Two and One at 0. **iPhone 17: the first two
+  passed** (the same percentages), and the third failed twice before its Meaning search, at
+  Filters ▸ My Working Corpora ("no My Working Corpora group after 8 swipes"). **It fails the same
+  way at `v2` (`28dd78a0`, without this change)** on the same simulator with the same
+  `-only-testing`, so it is not this pull request's; it passed on 2026-10-11, and is recorded in
+  `UI-Test-Destinations-Runbook.md`'s entry, not filed.
+- **The Mac build** (`FRUSExplorerMac`, DirectDistribution, unsigned): succeeded with the known
+  `GeneratedSummary` residue only; the app bundles the new index (`89481b18…`,
+  `embeddinggemma-2-Q8_0`, 0.9021, query offset 0.47) and no `gemma-terms-of-use.txt`.
+- **The Mac app itself**, the isolated check copy built from this branch over its library of 36
+  indexed volumes, which held the 300m (downloaded 2026-10-11) and 149 of its match files: **at the
+  first launch the 300m's GGUF and marker were gone and the 149 files discarded** under the new
+  generation marker, which is §4's purge seen in the app. With EmbeddingGemma 2 and its 553 files
+  put in place by hand (nothing is uploaded yet), Settings read "Downloaded and verified — 309.9 MB"
+  with the footer's new sentence; a Meaning search for "reparations" listed **16 closest
+  matches** (the 300m's 14 on 2026-10-11), led by the Berlin volume's No. 894 at **60%** (the 300m
+  showed it at 63%), then Nos. 942 (59%), 915 (56%), 925, 980 and 916 (55%); About ▸ Legal ▸ Full
+  Notices listed EmbeddingGemma 2 under Open Source and no On-Device Model section; and after Remove
+  Search Model, **Download Search Model started at once, with no sheet**, and failed "The server
+  refused the download (HTTP 404)": `encoder-2` does not exist until the upload (§7).
 
 ## 9. Not verified
 
-- **A device with the 300m downloaded, upgraded to build 51**: the purge of the earlier file (§4) is
-  read and tested, not seen.
+- **An iPhone or iPad with the 300m downloaded, upgraded to build 51**: the purge of the earlier
+  file (§4) is tested, and seen on the Mac's check copy (§8), not on an iOS device.
 - **The download from the public release**: nothing is uploaded (§7).
 - **EmbeddingGemma 2's quality on typed queries**: the 183 judged rows are the owner's optional
   sitting (the stage-2 memo's §6).
@@ -331,5 +357,5 @@ store, B2's pools and packs in `~/frus-b2/`, and the GGUFs.
 Version history:
   0.1 — 2026-10-15: draft; §1 the two decisions, measured, for the owner.
   1.0 — 2026-10-15: the owner's answers; the pack, the index's recall and calibration, the
-  addresses and the purge, the calibrated score in the app and the seam, the licence copy, and the
-  staged uploads.
+  addresses and the purge, the calibrated score in the app and the seam, the licence copy, the
+  staged uploads, and the checks (§8), the Mac check copy's among them.
