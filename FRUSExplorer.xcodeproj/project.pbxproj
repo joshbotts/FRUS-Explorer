@@ -48,6 +48,7 @@
 		05D4B3A6E375CB71B376F41D /* IndexingBatchLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D0303A1F29D661C52C19F96 /* IndexingBatchLifecycleTests.swift */; };
 		05E9291EB0EE48B65C621EBA /* KeynessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CFB0FD0357ED14BB6C8C69A /* KeynessTests.swift */; };
 		0617E2027E5E183CE537E903 /* CustomScopesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD2F9B965F27786F60BE298A /* CustomScopesView.swift */; };
+		0632A841CCF75864AA6364CB /* query-parity-fixture-embeddinggemma-2.json in Resources */ = {isa = PBXBuildFile; fileRef = 5A7C8E9A70AC96A6FC2C6879 /* query-parity-fixture-embeddinggemma-2.json */; };
 		0632CD0D0FBEF87470942131 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E25F23B7A7E1469594E312 /* KeychainStore.swift */; };
 		0687C3A32CCFAD5399F36371 /* CustomScopeSaveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 002689A55AA4B8FB5EDEEBA3 /* CustomScopeSaveTests.swift */; };
 		06EAC57BB27383F03E11AB88 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5175DA5DB0C781AF94092EFC /* SearchView.swift */; };
@@ -2036,6 +2037,7 @@
 		59B54DD2D462AC96F50C4030 /* central-files-index.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "central-files-index.json"; sourceTree = "<group>"; };
 		59DCB731F604E3D4F9D1C671 /* ArchivalFlowsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivalFlowsTests.swift; sourceTree = "<group>"; };
 		59E3205E3E4008F89BB4054C /* BrowserBreadcrumbBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserBreadcrumbBar.swift; sourceTree = "<group>"; };
+		5A7C8E9A70AC96A6FC2C6879 /* query-parity-fixture-embeddinggemma-2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "query-parity-fixture-embeddinggemma-2.json"; sourceTree = "<group>"; };
 		5A9A5C7AD20F734859573CFC /* DocumentHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentHighlight.swift; sourceTree = "<group>"; };
 		5AD520140EFD782EB333934C /* SearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
 		5B07C4D4E5E839658A27521B /* DownloadManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManagerTests.swift; sourceTree = "<group>"; };
@@ -3311,6 +3313,7 @@
 		7D797DB5E9C6D0760E196A95 /* Fixtures */ = {
 			isa = PBXGroup;
 			children = (
+				5A7C8E9A70AC96A6FC2C6879 /* query-parity-fixture-embeddinggemma-2.json */,
 				03AA8C70B285D0CEA17DD184 /* query-parity-fixture.json */,
 			);
 			path = Fixtures;
@@ -4462,6 +4465,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0632A841CCF75864AA6364CB /* query-parity-fixture-embeddinggemma-2.json in Resources */,
 				6A3F5F52F8A725E8C63C9279 /* query-parity-fixture.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

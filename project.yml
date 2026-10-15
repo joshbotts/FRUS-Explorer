@@ -270,10 +270,10 @@ targets:
     postBuildScripts:
       # Archive-only: copy the embedded llama.framework slice's dSYM into the archive, so the
       # TestFlight / App Store upload stops warning that the archive "did not include a dSYM
-      # for llama.framework". The committed xcframework carries none (76–153 MB each, past
-      # GitHub's limit); `Scripts/fetch-llama-dsyms.sh` caches them from the release asset,
-      # and the phase FAILS the archive when the cache is missing or its UUIDs do not match
-      # the binary — shipping unsymbolicated is the state this phase exists to end.
+      # for llama.framework". The committed xcframework carries none (63–126 MB each, two of
+      # the three past GitHub's limit); `Scripts/fetch-llama-dsyms.sh` caches them from the
+      # release asset, and the phase FAILS the archive when the cache is missing or its UUIDs
+      # do not match the binary — shipping unsymbolicated is the state this phase exists to end.
       - name: Embed llama dSYM
         # `script:` invoking the file, not `path:` — XcodeGen would inline the file's text
         # into project.pbxproj at generation time, leaving two copies to drift.

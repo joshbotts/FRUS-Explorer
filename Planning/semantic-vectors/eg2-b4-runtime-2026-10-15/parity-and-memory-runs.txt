@@ -1,0 +1,34 @@
+# QueryEncoderParityTests on the iPhone 17 simulator (80CF0F18, iOS 27.0), CPU per the encoder's simulator rule, 2026-10-15, llama.xcframework a0e6dc7
+## EmbeddingGemma 300m, all four tests (parity-300m-sim)
+[QueryEncoderParity] embeddinggemma-300m-qat-Q4_0.gguf against llama-embedding (llama.cpp 8663224), default flags, --embd-normalize 2: 25 queries, min cosine 0.999862071200493 (worst: "Deposing shah")
+[QueryEncoderMemory] embeddinggemma-300m-qat-Q4_0.gguf: footprint MB — before 108, after load 334, after first encode 336, after 25 encodes 337, after unload 104
+[QueryEncoderLatency] embeddinggemma-300m-qat-Q4_0.gguf: load 363 ms, first encode 126.8 ms, warm encode median 139.79 ms (min 71.61, max 558.70)
+[QueryEncoderE2E] local shards absent; end-to-end skipped
+✔ Test run with 4 tests in 1 suite passed after 28.664 seconds.
+## EmbeddingGemma 2, parityAgainstFixture() and memoryShape() in one run (parity-eg2-sim; the memory points are skewed by the parallel parity test)
+[QueryEncoderParity] embeddinggemma-2-Q8_0.gguf against llama-embedding (llama.cpp a0e6dc7), default flags, --embd-normalize 2: 25 queries, min cosine 0.999713980250839 (worst: "Diego Garcia base")
+[QueryEncoderMemory] embeddinggemma-2-Q8_0.gguf: footprint MB — before 352, after load 260, after first encode 267, after 25 encodes 293, after unload 104
+[QueryEncoderLatency] embeddinggemma-2-Q8_0.gguf: load 494 ms, first encode 175.0 ms, warm encode median 156.77 ms (min 83.08, max 609.88)
+✔ Test run with 2 tests in 1 suite passed after 14.592 seconds.
+## memoryShape() alone (-only-testing .../memoryShape()), each model twice, interleaved 300m, EG2, 300m, EG2
+[QueryEncoderMemory] embeddinggemma-300m-qat-Q4_0.gguf: footprint MB — before 123, after load 349, after first encode 350, after 25 encodes 350, after unload 105
+[QueryEncoderLatency] embeddinggemma-300m-qat-Q4_0.gguf: load 396 ms, first encode 1330.5 ms, warm encode median 83.67 ms (min 44.66, max 1067.77)
+[QueryEncoderMemory] embeddinggemma-2-Q8_0.gguf: footprint MB — before 117, after load 312, after first encode 319, after 25 encodes 347, after unload 106
+[QueryEncoderLatency] embeddinggemma-2-Q8_0.gguf: load 640 ms, first encode 719.2 ms, warm encode median 126.18 ms (min 82.19, max 701.57)
+[QueryEncoderMemory] embeddinggemma-300m-qat-Q4_0.gguf: footprint MB — before 121, after load 348, after first encode 349, after 25 encodes 348, after unload 104
+[QueryEncoderLatency] embeddinggemma-300m-qat-Q4_0.gguf: load 488 ms, first encode 1212.7 ms, warm encode median 125.19 ms (min 54.78, max 1403.50)
+[QueryEncoderMemory] embeddinggemma-2-Q8_0.gguf: footprint MB — before 116, after load 315, after first encode 323, after 25 encodes 347, after unload 106
+[QueryEncoderLatency] embeddinggemma-2-Q8_0.gguf: load 765 ms, first encode 2135.0 ms, warm encode median 156.17 ms (min 84.61, max 917.26)
+(each run: "Test run with 1 test in 1 suite passed")
+The simulator's times are not the encoder's: the test host app is launching around the test, and the CPU path is the simulator's.
+EmbeddingGemma 2's load logged n_ctx = 262144 (the GGUF's n_ctx_train, since the encoder passes n_ctx = 0), n_ubatch = 2048, CPU compute buffer 228.06 MiB.
+
+# The command line, llama-embedding, Metal unless -ngl 0 is named, 25 queries under the query prompt
+EmbeddingGemma 300m, a0e6dc7 against the committed fixture (8663224): min 0.9999994, median 0.9999999
+EmbeddingGemma 2, a0e6dc7 fixture regenerated today against B2's scratch fixture (~/frus-b2/query-parity-fixture-eg2.json): 25 of 25 vectors identical
+EmbeddingGemma 300m, a0e6dc7 -ngl 0 (and -ngl 0 -t 2) against a0e6dc7 Metal: min 0.9998654 ("At what point did U.S. decision makers determine that the Nationalists couldn't prevail in the Chinese Civil War?"), median 0.9999350
+EmbeddingGemma 2, a0e6dc7 -ngl 0 (and -ngl 0 -t 2) against a0e6dc7 Metal (the committed fixture): min 0.9998169 ("Deposing shah"), median 0.9999429
+
+# Peak memory of one llama-embedding invocation over the 25 prompts (August's shape), EmbeddingGemma 300m, /usr/bin/time -l
+8663224: -ngl 99 rss 859 MB / footprint 639 MB; --no-warmup 859 / 639; -c 2048 859 / 638; -c 2048 -b 2048 -ub 2048 859 / 638
+a0e6dc7: -ngl 99 rss 661 MB / footprint 430 MB; --no-warmup 662 / 431; -c 2048 661 / 430; -c 2048 -b 2048 -ub 2048 660 / 429

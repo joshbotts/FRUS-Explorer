@@ -9,12 +9,18 @@
 """Generate the QUERY parity fixture the in-app encoder is accepted against (V-5 s2).
 
 Embeds the owner's evaluation queries under the pinned QUERY prompt through a
-llama-embedding build at the spiked commit, and writes the 768-d reference vectors as a
-committed JSON fixture. The in-app `LlamaQueryEncoder` must reproduce these vectors —
-same engine, same weights — so the gate is tight (>=0.9999 cosine): a miss is a wrapper
-bug (wrong pooling, missing normalize, wrong prompt, tokenizer misuse), never model
-drift. Cross-engine parity (LM Studio, the vectors the judged sitting used) is already
-established by the step-4 spike at min cosine 0.9999984 over 300 corpus chunks.
+llama-embedding build, and writes the 768-d reference vectors as a committed JSON
+fixture. The in-app `SemanticQueryEncoder` must reproduce these vectors — same engine,
+same weights — so the gate is tight (min cosine 0.999, `QueryEncoderParityTests` says
+why not 0.9999): a miss is a wrapper bug (wrong pooling, missing normalize, wrong
+prompt, tokenizer misuse), never model drift. Cross-engine parity (LM Studio, the vectors
+the judged sitting used) is already established by the step-4 spike at min cosine
+0.9999984 over 300 corpus chunks.
+
+The fixture's `referenceEngine` names the llama.cpp commit the binary reports through
+its own `--version`. Until 2026-10-15 the label was a literal, `llama.cpp 8663224`, and
+it was written on a fixture made at `a0e6dc7` too (EmbeddingGemma-2-Stage-2-2026-10-15.md
+§8); a binary whose commit cannot be read stops the run instead.
 
 Query lines follow the harness grammar: a line's tag is split off at three-spaces-hash
 ("   #"); '#'-prefixed lines are comments. The prompt prefix is the query template the
@@ -29,10 +35,25 @@ Env:
   OUT              fixture path (default FRUSExplorerTests/Fixtures/query-parity-fixture.json)
 """
 from __future__ import annotations
-import hashlib, json, os, subprocess, sys, tempfile
+import hashlib, json, os, re, subprocess, sys, tempfile
 
 QUERY_PREFIX = "task: search result | query: "
 SEP = "<#frus-sep#>"
+
+
+def engine_commit(binary: str) -> str:
+    """The llama.cpp commit `binary` was built from, read from its own `--version`.
+
+    Both pinned builds print `version: 0.6.0-dev (build 1, commit a0e6dc7)` (8663224's reads
+    `0.3.0-dev`, measured 2026-10-15); the bare `version: 4589 (a1b2c3d)` of builds before
+    upstream's 0.x numbers is read too.
+    """
+    result = subprocess.run([binary, "--version"], capture_output=True, text=True)
+    report = result.stdout + result.stderr
+    match = re.search(r"version: \S+ \((?:build \d+, commit )?([0-9a-f]{7,40})\)", report)
+    if result.returncode != 0 or not match:
+        sys.exit(f"could not read a llama.cpp commit from `{binary} --version`:\n{report[-1000:]}")
+    return match.group(1)
 
 
 def parse_queries(path: str) -> list[str]:
@@ -54,6 +75,7 @@ def main() -> int:
         "QUERIES", "Planning/semantic-vectors/owner-eval-queries-2026-08-27.txt")
     out_path = os.environ.get("OUT", "FRUSExplorerTests/Fixtures/query-parity-fixture.json")
 
+    commit = engine_commit(binary)
     queries = parse_queries(queries_path)
     if not queries:
         sys.exit(f"no queries parsed from {queries_path}")
@@ -80,7 +102,7 @@ def main() -> int:
     fixture = {
         "queryPrefix": QUERY_PREFIX,
         "ggufSHA256": gguf_sha,
-        "referenceEngine": "llama-embedding (llama.cpp 8663224), default flags, --embd-normalize 2",
+        "referenceEngine": f"llama-embedding (llama.cpp {commit}), default flags, --embd-normalize 2",
         "queries": [
             {"text": query, "vector": row["embedding"]}
             for query, row in zip(queries, data)
@@ -90,7 +112,8 @@ def main() -> int:
     with open(out_path, "w") as handle:
         json.dump(fixture, handle, indent=None, sort_keys=True)
     dims = {len(q["vector"]) for q in fixture["queries"]}
-    print(f"wrote {out_path}: {len(queries)} queries, dims={sorted(dims)}, gguf sha {gguf_sha[:12]}…")
+    print(f"wrote {out_path}: {len(queries)} queries, dims={sorted(dims)}, gguf sha {gguf_sha[:12]}…, "
+          f"llama.cpp {commit}")
     if dims != {768}:
         sys.exit("FATAL: expected 768-d reference vectors")
     return 0
