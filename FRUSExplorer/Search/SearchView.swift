@@ -245,7 +245,7 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          is its heading alone, so VoiceOver, and a UI test, could not read the chip's figure.
 ///   1.29 — 2026-10-15: the filter panel's volume list is read again when the panel opens and whenever the
 ///          indexed set changes (`reloadAvailableVolumes`), not only when the tab appears. A Search tab the app
-///          opened on read the set before boot had, and Filters lost its volume-scoped groups for the session.
+///          opened on read the set before boot had, and Filters lost its volume-scoped groups until the tab next appeared.
 
 struct SearchView: View {
 
@@ -963,7 +963,7 @@ struct SearchView: View {
     /// simulator (iOS 27.0) whose restored window opens on Search: the tab read the set while it
     /// was empty, and boot's read of it began a second later. With an empty list Filters draws
     /// none of the four groups it gates (My Working Corpora, My Volume Scopes, By Subject and Limit
-    /// to Volumes), and they stayed away until the tab was left and shown again. A volume indexed
+    /// to Volumes), and nothing read the list again until the tab next appeared. A volume indexed
     /// while the tab was on screen was missing in the same way, from the pickers and from a
     /// selected subseries' scope (`SearchViewModel.effectiveVolumeIds`). The macOS panel reads the
     /// list each time it opens (`MacSearchViewModel.syncToFilterVM`).
