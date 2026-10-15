@@ -1,7 +1,8 @@
 # EmbeddingGemma 2, stage 2: the full store, the corpus gates, the judged queries and the ladder
 
 **Date:** 2026-10-15 · **Status:** STAGE 2 DONE (plan of record Track B, step B2). B3, which model
-ships, is the owner's reading; §10 sets it out and decides nothing. · **Issue:** #1659 · **Design:**
+ships, was the owner's reading; §10 sets it out. **The owner decided on 2026-10-15: EmbeddingGemma
+2 ships, in build 51** (plan of record decisions 15 to 17; §10's last paragraph). · **Issue:** #1659 · **Design:**
 `EmbeddingGemma-2-Spike-2026-10-14.md` §2, steps 5 to 7 · **Stage 1:** `EmbeddingGemma-2-Stage-1-2026-10-14.md`
 · **Machine:** the M5 MacBook Air (`Mac17,4`, Apple M5, 10 cores, 32 GB) · **Index:** the Mac app's
 `frus.db`, v69, written 2026-10-12, read in place and read-only · **Artifacts and the scripts that made
@@ -391,6 +392,11 @@ Three readings follow, and which applies is the owner's:
 
 Build 51 does not wait for Track B by default (plan of record §0). Nothing was posted to #1659.
 
+**The owner's decision, 2026-10-15** (plan of record decisions 15 to 17): the EmbeddingGemma 2
+licence reads as Apache 2.0, the card's sentence notwithstanding; the gap is comparable quality, the
+second reading above, so EmbeddingGemma 2 ships and B5 does not open; and build 51 waits for Track B,
+so B4 lands before the bump and the custom EULA is not entered. §11 is now B4's starting list.
+
 ## 11. What B4 inherits if the move goes ahead
 
 - **The runtime and step 7**: `llama.xcframework` rebuilt at `a0e6dc73` or later, its dSYM release,
@@ -452,3 +458,4 @@ Version history:
   under a new digest, Gate A paired at corpus scale by era and by citation split, the rerank pool and
   the 512-bit funnel, the judged queries and their sheet, the dimension ladder, the harvest's time,
   and B3 set out for the owner.
+  1.1 — 2026-10-15: the owner's B3 recorded in the status line and §10: EmbeddingGemma 2 ships, in build 51.
