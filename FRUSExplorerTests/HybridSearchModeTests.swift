@@ -949,7 +949,8 @@ struct SearchResultRouteTests {
     }
 
     /// Emptying the field clears the rows without a search (`SearchView`'s handler on the field, which this calls as
-    /// the view does), and so does `clearAll()`. Either way a run still out must not put its rows back.
+    /// the view does, for a search for words), and so does `clearAll()`, which only tests call today. Either way a run
+    /// still out must not put its rows back.
     @Test("Clearing the list without a search replaces the run under way (#1648)")
     func clearingTheListReplacesTheRunUnderWay() async throws {
         let (dir, vm) = try await makeViewModel(documents: 6)
@@ -966,6 +967,7 @@ struct SearchResultRouteTests {
                 vm.clearAll()
             } else {
                 vm.keywords = ""
+                #expect(!vm.isSearchingWithNoWords, "precondition: the run under way is a search for words")
                 vm.replaceSearchesUnderWay()
                 vm.results = []
                 vm.hasSearched = false
@@ -977,6 +979,47 @@ struct SearchResultRouteTests {
             #expect(vm.results.isEmpty, "\(clear): the run put its rows back under an empty field")
             #expect(!vm.isSearching, "\(clear)")
         }
+    }
+
+    /// The review's finding on the emptied field (#1648). A hand-off or a recalled search with no words empties the
+    /// field itself (`applyParameters(_:)` sets the keywords to its own, which are none), and the search it starts can
+    /// be under way before `SearchView`'s handler on the field runs. That handler asks `isSearchingWithNoWords` before
+    /// it replaces or clears anything (`clearedRowsReplaceTheSearchUnderWay` reads that order), so it has to be true
+    /// for such a search and false for a search for words, which the emptied field is the reader's way to abandon.
+    @Test("A search with no words under way says so, and one for words does not (#1648)")
+    func aSearchWithNoWordsUnderWayIsNotTheFields() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(!vm.isSearchingWithNoWords, "nothing is under way")
+
+        // The field holds the last search's words when a subject browse is handed over.
+        vm.keywords = "containment"
+        await vm.search()
+        var browse = SearchParameters()
+        browse.subjectBucket = 2
+        #expect(vm.applyHandoff(browse))
+        #expect(vm.keywords.isEmpty, "precondition: the hand-off emptied the field")
+        let handOff = Task { await vm.search() }
+        while !vm.isSearching { await Task.yield() }
+        #expect(vm.isSearchingWithNoWords, """
+            The browse the hand-off started reads as a search for words, so the field it emptied would replace it, and \
+            the reader would get the empty prompt in place of the documents handed over.
+            """)
+        #expect(await handOff.value)
+        #expect(vm.results.count == 6)
+        #expect(!vm.isSearchingWithNoWords, "the browse is over")
+
+        // A question for the Meaning engine has words.
+        let engine = GatedMeaningSearch(returning: 3)
+        vm.semanticBackend = engine
+        vm.searchMode = .meaning
+        vm.keywords = "how was containment meant to work"
+        let meaningRun = Task { await vm.search() }
+        while engine.started == 0 { await Task.yield() }
+        #expect(vm.isSearching)
+        #expect(!vm.isSearchingWithNoWords, "a search for words under way is the one an emptied field abandons")
+        engine.release()
+        #expect(await meaningRun.value)
     }
 
     /// `SearchView.runSearch()` records a search, and a recalled one its stamp, only for a run that says it was not
@@ -1427,16 +1470,48 @@ struct SearchResultRouteTests {
         #expect(apply.contains("if let filterVM { mirrorParameters(into: filterVM) }"),
                 "the filter view model keeps the search before the hand-off")
         #expect(!apply.contains("parameters.documentIds = nil"), "the corpus is dropped with the project's gates")
+        let assigned = try #require(apply.range(of: "parameters = params.runningInside("))
+        let mirrored = try #require(apply.range(of: "mirrorParameters(into: filterVM)"))
+        #expect(assigned.upperBound < mirrored.lowerBound,
+                "the filter view model is given the parameters from before the hand-off: the mirror runs first")
         let sync = Self.code(try Self.declaration("func syncToFilterVM(", in: source, path: path))
         #expect(sync.contains("mirrorParameters(into: filterVM)"),
                 "opening the popover and taking a hand-off copy the parameters by different routines")
     }
 
-    /// #1648: both view models number a run as it starts, and after every wait write the screen's state only once
-    /// they have asked whether a later run replaced them. Read statement by statement, since the Mac's half cannot run
-    /// here (the iPhone's is driven above): a write of the rows, the route, the total, the expression, the error, the
-    /// version or the tag-count scope that follows an `await`, or opens a `catch`, with no check between, fails.
-    @Test("Both view models write nothing after a wait without asking whether the run was replaced (#1648)")
+    /// #1646, found in review: the working corpus banner's ✕ re-applied the filter view model
+    /// (`applyAdvancedFilters()`), and a facet's narrowing writes the window's parameters alone, so the ✕ undid a
+    /// person or a year chosen in Facets. It derives the document gate alone now (`leaveWorkingCorpus()`).
+    @Test("The Mac's corpus banner leaves the corpus and nothing else (#1646)")
+    func macLeavingTheCorpusKeepsTheSearch() throws {
+        let window = try Self.source("FRUSExplorer/App/SearchSheet.swift")
+        let banner = Self.code(try Self.declaration("private var workingCorpusBanner: some View {", in: window,
+                                                    path: "SearchSheet.swift"))
+        #expect(banner.contains("searchVM.leaveWorkingCorpus()"), "the banner's ✕ does not leave the corpus")
+        #expect(!banner.contains("applyAdvancedFilters()"),
+                "the banner's ✕ re-applies the filter view model, which undoes a facet's narrowing")
+
+        let path = "FRUSExplorer/App/MacSearchViewModel.swift"
+        let leave = Self.code(try Self.declaration("func leaveWorkingCorpus() {", in: try Self.source(path), path: path))
+        #expect(leave.contains("filterVM?.clearWorkingCorpus()"))
+        let assignments = leave.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.hasPrefix("parameters.") }
+        #expect(assignments.count == 2 && assignments.allSatisfy {
+            $0.hasPrefix("parameters.documentIds ") || $0.hasPrefix("parameters.excludeDocumentIds ")
+        }, "leaving the corpus writes more of the parameters than its document gate: \(assignments)")
+        #expect(!leave.contains("applyAdvancedFilters") && !leave.contains("applyProjectScope"),
+                "leaving the corpus derives more than its document gate")
+        #expect(leave.contains("parametersVersion += 1"), "leaving the corpus does not run the search again")
+    }
+
+    /// #1648: both view models number a run as it starts, and write the screen's state only once its last wait is over
+    /// and they have asked whether a later run replaced it. Read statement by statement, since the Mac's half cannot
+    /// run here (the iPhone's is driven above). A write of the rows, the route, the total, the expression, the error,
+    /// the version or the tag-count scope fails here when it follows an `await`, or opens a `catch`, with no check
+    /// between; and so does an `await` that follows such a write, since a run replaced at that wait would leave its rows
+    /// under the last search's total (the review's finding).
+    @Test("Both view models write nothing until their last wait is over and they have asked whether the run was replaced (#1648)")
     func everyWriteAfterAWaitAsksFirst() throws {
         let check = "guard searchRuns.isLatest(run) else { return false }"
         let writes = ["results = ", "executedRoute = ", "totalMatchCount = ", "lastRenderedExpression = ",
@@ -1454,12 +1529,17 @@ struct SearchResultRouteTests {
                 let lines = Self.code(try Self.declaration(header, in: source, path: path))
                     .components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
                 var checkedSinceWait = true
+                var wroteAfterAWait = false
                 var waits = 0
                 var checks = 0
                 for line in lines {
                     // A wait the run comes back from. A `return await` hands the run to the other engine's path,
                     // which is read on its own.
                     if line.contains("await "), !line.hasPrefix("return ") {
+                        #expect(!wroteAfterAWait, """
+                            \(path), `\(header)`: `\(line)` waits after the run has written what it found, so a run \
+                            replaced at this wait leaves a half-written result set (#1648).
+                            """)
                         checkedSinceWait = false
                         waits += 1
                     }
@@ -1474,9 +1554,10 @@ struct SearchResultRouteTests {
                             \(path), `\(header)`: `\(line)` writes after a wait with no check that the run is still the \
                             latest, so a run a later one replaced can still write it (#1648).
                             """)
+                        if waits > 0 { wroteAfterAWait = true }
                     }
                 }
-                #expect(waits >= 1 && checks >= waits,
+                #expect(waits >= 1 && checks >= 1,
                         "fixture guard, \(path) `\(header)`: \(waits) waits and \(checks) checks were read")
                 // The Meaning paths are handed their number; the two entry points take it before anything else.
                 if !header.contains("(run: Int)") {

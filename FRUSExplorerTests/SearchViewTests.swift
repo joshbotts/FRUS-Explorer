@@ -1694,8 +1694,10 @@ struct FilterVolumeListReloadTests {
     /// The second check: the tab's first task reads the list and then applies a hand-off, and a hand-off can arrive
     /// before boot's read of the index has landed, while the list is still empty. `reconstructScope(from:available:)`
     /// then keeps each volume as a single choice where the list would have let it group a whole subseries. The volumes
-    /// searched, and the banner's count of them, are the same either way; only Filters' grouping differs, and the
-    /// list's arrival changes neither.
+    /// searched, and the banner's count of them, are the same either way, and the list's arrival changes neither. What
+    /// differs is Filters' grouping, and with it one thing more: a volume of that subseries indexed later joins a
+    /// subseries choice (`readingTheListAgainKeepsTheChoices`) and not single ones. So a hand-off applied early goes on
+    /// searching the volumes it named, and one applied late takes in the subseries' next volume.
     @Test("A hand-off applied before the volume list arrives searches the volumes one applied after does (#1647)")
     func aHandOffBeforeTheListSearchesTheSameVolumes() throws {
         let dir = FileManager.default.temporaryDirectory

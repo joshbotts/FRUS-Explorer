@@ -522,7 +522,11 @@ struct SearchView: View {
                 // the initial "enter keywords" prompt state.
                 .onChange(of: vm.keywords) { _, newValue in
                     if newValue.isEmpty {
-                        // #1648: and a search still under way cannot put its rows back.
+                        // A hand-off or a recalled search with no words empties the field itself, and the
+                        // search it starts can be under way before this runs: it stands, with its screen
+                        // (#1648, `SearchViewModel.isSearchingWithNoWords`).
+                        guard !vm.isSearchingWithNoWords else { return }
+                        // #1648: and a search for words still under way cannot put its rows back.
                         vm.replaceSearchesUnderWay()
                         vm.results    = []
                         vm.hasSearched = false

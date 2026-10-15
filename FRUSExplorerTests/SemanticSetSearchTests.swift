@@ -1009,7 +1009,12 @@ struct SemanticSetRecordAndCopyTests {
     /// The same two places replace the search under way (#1648). Neither runs a search, so nothing else would: a run
     /// still out when the rows are cleared put them back, under the emptied field or over the rebuilt index.
     /// `HybridSearchModeTests.clearingTheListReplacesTheRunUnderWay` drives what the call does.
-    @Test("Where rows are cleared without a run, the search under way is replaced (#1648)")
+    ///
+    /// The emptied field first lets a search with no words stand (the review's finding). A hand-off or a recalled
+    /// search with no words empties the field itself, and the search it starts can be under way before the field's
+    /// handler runs; replaced there, a person's Find all mentions came back as the empty prompt.
+    /// `HybridSearchModeTests.aSearchWithNoWordsUnderWayIsNotTheFields` drives the property it asks.
+    @Test("Where rows are cleared without a run, the search under way is replaced, unless it has no words (#1648)")
     func clearedRowsReplaceTheSearchUnderWay() throws {
         let iOS = try Self.source("FRUSExplorer/Search/SearchView.swift")
         let handler = try #require(iOS.range(of: ".onChange(of: vm.keywords) { _, newValue in"))
@@ -1018,7 +1023,12 @@ struct SemanticSetRecordAndCopyTests {
         let blockEnd = try #require(afterHandler[block.upperBound...].range(of: "\n                    }\n"))
         let body = afterHandler[block.upperBound..<blockEnd.lowerBound]
         #expect(body.contains("vm.results    = []"), "precondition: this is the block that clears the rows")
-        #expect(body.contains("vm.replaceSearchesUnderWay()"))
+        let stands = try #require(body.range(of: "guard !vm.isSearchingWithNoWords else { return }"),
+                                  "the emptied field replaces the search a keyword-less hand-off has just started")
+        let replaced = try #require(body.range(of: "vm.replaceSearchesUnderWay()"))
+        let cleared = try #require(body.range(of: "vm.results    = []"))
+        #expect(stands.upperBound < replaced.lowerBound && stands.upperBound < cleared.lowerBound,
+                "the field's handler replaces or clears before it asks whether the search under way has words")
 
         let mac = try Self.source("FRUSExplorer/App/SearchSheet.swift")
         let rebuilt = try #require(mac.range(of: ".onChange(of: appState.indexGeneration) { _, _ in"))
@@ -1050,6 +1060,10 @@ struct SemanticSetRecordAndCopyTests {
 
     /// Matched on the call inside the condition, not on a window of text: each view model records
     /// the keyword line where the executed parameters carry a set, and nowhere else.
+    ///
+    /// Since #1648 a run writes what it found only after its last wait, so the total's time is taken
+    /// into `totalTime` as the count comes back, the moment `clock.now - sent` was read at before, and
+    /// the iPhone counts the rows it fetched (`rows`) before they are assigned to `results`.
     @Test("Both view models time a keyword search only where it ran inside a set")
     func bothViewModelsTimeAGatedKeywordSearch() throws {
         let iOS = Self.squeezed(try Self.source("FRUSExplorer/Search/SearchViewModel.swift"))
@@ -1057,16 +1071,25 @@ struct SemanticSetRecordAndCopyTests {
         #expect(iOS.contains(Self.squeezed("""
             if let documentSet = params.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
-                    setSize: documentSet.count, rowCount: results.count,
-                    rows: rowsTime, total: clock.now - sent))
+                    setSize: documentSet.count, rowCount: rows.count,
+                    rows: rowsTime, total: totalTime))
             }
             """)))
         #expect(mac.contains(Self.squeezed("""
             if let documentSet = frozenParams.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
                     setSize: documentSet.count, rowCount: fetched.count,
-                    rows: rowsTime, total: clock.now - sent))
+                    rows: rowsTime, total: totalTime))
             }
+            """)))
+        // The total's time is taken as the count comes back, on both.
+        #expect(iOS.contains(Self.squeezed("""
+            let total = await counted
+            let totalTime = clock.now - sent
+            """)))
+        #expect(mac.contains(Self.squeezed("""
+            let counted = try? await countTask
+            let totalTime = clock.now - sent
             """)))
         for source in [iOS, mac] {
             #expect(source.components(separatedBy: "SearchTimingLog.record(").count == 2,

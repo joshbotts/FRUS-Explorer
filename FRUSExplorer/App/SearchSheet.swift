@@ -133,8 +133,9 @@ import SwiftUI
 ///          gate shuts goes back to the list.
 ///   1.23 — #1646, #1648: the search task is the window's only search. A run a later one replaced records nothing and
 ///          leaves the facets alone; a recalled saved search and a moved person filter no longer run a second search
-///          beside the task's; a recalled search is stamped with its own count, not the total on screen; and a rebuilt
-///          index replaces the search under way.
+///          beside the task's; a recalled search is stamped with its own count, not the total on screen; a rebuilt
+///          index replaces the search under way; and the working corpus banner's ✕ leaves the corpus alone
+///          (`MacSearchViewModel.leaveWorkingCorpus()`), where it re-applied the filter view model over a facet's choice.
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -1916,8 +1917,9 @@ struct MacSearchWindowView: View {
                     .truncationMode(.tail)
                 Spacer(minLength: 8)
                 Button {
-                    searchVM.filterVM?.clearWorkingCorpus()
-                    searchVM.applyAdvancedFilters()
+                    // The document gate alone: re-applying the filter view model undid a facet's
+                    // narrowing, which it never sees (#1646).
+                    searchVM.leaveWorkingCorpus()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.subheadline)

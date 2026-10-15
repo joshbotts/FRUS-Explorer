@@ -88,9 +88,10 @@ import Observation
 ///          of the rows' route
 ///   2.6 — FRUS Explorer Light: `sortedResults` is `SearchSortOrder.sorted(_:)`, the kit's date order, which the
 ///          macOS view model and the web edition sort by too; this file's copy of the comparator is gone
-///   2.7 — #1648: `search()` numbers its run (`SearchRunLedger`), writes nothing once a later search has replaced it,
-///          and returns whether it was replaced; a switch of engine and `replaceSearchesUnderWay()` replace the runs under
-///          way, so a run sent before them cannot land after
+///   2.7 — #1648: `search()` numbers its run (`SearchRunLedger`), asks once after its last wait whether a later search
+///          has replaced it, writes nothing if one has, and returns `true` when none has; a switch of engine and
+///          `replaceSearchesUnderWay()` replace the runs under way, so a run sent before them cannot land after, and
+///          `isSearchingWithNoWords` tells the emptied field a hand-off's own search from one to replace
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -1044,11 +1045,18 @@ final class SearchViewModel {
                 catch { return nil }
             }()
             let rows = try await fetched
-            // After every wait, a run a later one replaced stops writing (#1648): its rows, and the
-            // total, expression and checklist that describe them, are not the search on screen.
+            let rowsTime = clock.now - sent
+            let total = await counted
+            let totalTime = clock.now - sent
+            // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
+            let expression = try? await searchService.matchExpressions(for: params).corpus
+            // A run a later one replaced writes nothing (#1648). Asked once, after the last wait, so
+            // that what is written is one run's rows with their own total, expression and checklist:
+            // written as each came back, a run replaced between two waits left its rows under the last
+            // search's total. Waiting costs nothing seen, since the results are not drawn while a
+            // search runs.
             guard searchRuns.isLatest(run) else { return false }
             results = rows
-            let rowsTime = clock.now - sent
             // With the rows, not before the await: `resultSetScope` reads both, and until the rows are
             // replaced the ones on screen are the last search's, fetched under its ceiling (#1584).
             lastFetchLimit = fetchLimit
@@ -1056,17 +1064,12 @@ final class SearchViewModel {
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
-            let total = await counted
-            guard searchRuns.isLatest(run) else { return false }
             totalMatchCount = total
             if let documentSet = params.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
-                    setSize: documentSet.count, rowCount: results.count,
-                    rows: rowsTime, total: clock.now - sent))
+                    setSize: documentSet.count, rowCount: rows.count,
+                    rows: rowsTime, total: totalTime))
             }
-            // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
-            let expression = try? await searchService.matchExpressions(for: params).corpus
-            guard searchRuns.isLatest(run) else { return false }
             lastRenderedExpression = expression
             // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
             // promises is what consumers actually observe. It used to be bumped in the
@@ -1438,6 +1441,15 @@ final class SearchViewModel {
         searchRuns.replaceRunsUnderWay()
         isSearching = false
     }
+
+    /// Whether the search under way has no words (#1648): a browse, such as a person's Find all
+    /// mentions or a subject, or a restored phrase or prefix with nothing typed.
+    ///
+    /// `SearchView` asks it when the field is emptied. A hand-off or a recalled search with no words
+    /// empties the field itself, through ``applyParameters(_:)``, and the search it starts can be under
+    /// way before the field's handler runs. That search is the reader's latest request, so the handler
+    /// leaves it, and its screen, alone; an emptied field replaces only a search for words.
+    var isSearchingWithNoWords: Bool { isSearching && submittedQuery.isEmpty }
 
     func clearAll() {
         replaceSearchesUnderWay()

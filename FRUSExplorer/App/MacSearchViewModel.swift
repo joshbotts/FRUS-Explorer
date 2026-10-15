@@ -101,9 +101,10 @@ import SwiftData
 ///          the iOS view model and the web edition sort by too; this file's copy of the comparator is gone
 ///   1.12 — #1646: `applyParameters(_:)` runs a hand-off or a recalled search inside the applied working corpus
 ///          (`SearchParameters.runningInside(workingCorpus:)`), and brings the filter view model to the new parameters
-///          (`mirrorParameters(into:)`, split out of `syncToFilterVM`). #1648: `performSearch(service:)` numbers its run
-///          (`SearchRunLedger`), writes nothing once a later run has replaced it, and returns whether it was replaced;
-///          `replaceSearchesUnderWay()` is the rebuilt index's
+///          (`mirrorParameters(into:)`, split out of `syncToFilterVM`); `leaveWorkingCorpus()` is the banner's ✕, and
+///          derives the document gate alone. #1648: `performSearch(service:)` numbers its run (`SearchRunLedger`), asks
+///          once after its last wait whether a later run has replaced it, writes nothing if one has, and returns `true`
+///          when none has; the rebuilt index calls `replaceSearchesUnderWay()`
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -1071,14 +1072,14 @@ final class MacSearchViewModel {
     }
 
     /// Copies the window's `parameters` into the filter view model's fields, so that the popover
-    /// shows what is applied and `applyAdvancedFilters()` re-applies it.
+    /// shows what is applied, and what derives from the filter view model derives the search that ran.
     ///
     /// The second half of ``syncToFilterVM(searchService:volumeEntries:indexedVolumeIds:userTags:)``,
     /// split out for ``applyParameters(_:)`` (#1646): a hand-off or a recalled search replaces the
-    /// parameters, and until this ran there too the filter view model kept the search before it. An
-    /// edit made outside the popover then re-applied that search's filters: Leave this working
-    /// corpus, the banner's ✕, calls `applyAdvancedFilters()`, so after a person's Find all mentions
-    /// it dropped the person filter and emptied the list.
+    /// parameters, and until this ran there too the filter view model kept the search before it.
+    /// Whatever derived from it outside the popover then re-applied that search: the banner's ✕ (now
+    /// ``leaveWorkingCorpus()``) dropped a person's Find all mentions and emptied the list, and a
+    /// change of project (``applyProjectScope()``) put back the volumes it held.
     ///
     /// - Parameter filterVM: The filter view model, which the caller has made.
     private func mirrorParameters(into filterVM: SearchViewModel) {
@@ -1265,6 +1266,22 @@ final class MacSearchViewModel {
         }
     }
 
+    /// Leaves the applied working corpus, and runs the same search again over the full scope: the
+    /// banner's ✕ (#1646).
+    ///
+    /// Only the document gate is derived again, from the project's scope with no corpus in it. The ✕
+    /// called `applyAdvancedFilters()`, which copies back every field the popover edits from the
+    /// filter view model, and a facet's narrowing writes `parameters` alone: so the ✕ undid a person
+    /// or a year chosen in Facets, and, until `applyParameters(_:)` mirrored its parameters, a
+    /// hand-off's own filters, which after a person's Find all mentions emptied the list.
+    func leaveWorkingCorpus() {
+        filterVM?.clearWorkingCorpus()
+        let scoped = scopeDerivedParams()
+        parameters.documentIds        = scoped.documentIds
+        parameters.excludeDocumentIds = scoped.excludeDocumentIds
+        parametersVersion += 1
+    }
+
     /// The volume scope + project History/Focus gates derived from the filter VM's current
     /// scope (#377 Phase 2). The single source both `applyAdvancedFilters` and
     /// `applyProjectScope` use, so the executed `parameters` never disagree about the scope.
@@ -1336,9 +1353,9 @@ final class MacSearchViewModel {
     /// Called only from `.task(id: searchTrigger)` in `SearchSheet`. When `searchTrigger` changes,
     /// SwiftUI cancels the running task and starts a new one, but nothing under this checks for
     /// cancellation: `SearchService` and `FTS5Store` run the query to its end and return its rows
-    /// to the cancelled task. So the run is numbered as it starts (``SearchRunLedger``), and after
-    /// every wait a run that is no longer the latest returns without writing anything, leaving the
-    /// rows on screen to the run that replaced it. The `CancellationError` this comment once said
+    /// to the cancelled task. So the run is numbered as it starts (``SearchRunLedger``), and once its
+    /// last wait is over a run that is no longer the latest returns without writing anything, leaving
+    /// the rows on screen to the run that replaced it. The `CancellationError` this comment once said
     /// was caught here was never thrown on the keyword path. `isSearching` is reset by the latest
     /// run alone.
     ///
@@ -1426,10 +1443,17 @@ final class MacSearchViewModel {
         async let expressionTask = try? service.matchExpressions(for: frozenParams).corpus
         do {
             let fetched = try await resultsTask
-            // After every wait, a run a later one replaced stops writing (#1648): its rows, and the
-            // expression and total that describe them, are not the search the window asked for.
-            guard searchRuns.isLatest(run) else { return false }
             let rowsTime = clock.now - sent
+            let expression = await expressionTask
+            let counted = try? await countTask
+            let totalTime = clock.now - sent
+            // A run a later one replaced writes nothing (#1648). Asked once, after the last wait, so
+            // that the window shows one run's rows with their own total and expression. Written as each
+            // came back, the rows stood under the last search's total until the count arrived, and for
+            // good when the run was replaced in between. So the rows now wait for the count, which
+            // follows the fetch on the pipeline: 11 to 21% of the search's time, measured on the full
+            // store (`SearchViewModel.totalMatchCount`).
+            guard searchRuns.isLatest(run) else { return false }
             results = fetched
             // With the rows and before the next suspension, so that no pass draws another
             // search's rows under this one's selection (#1576 lane 4). The anchor is the one the
@@ -1442,15 +1466,11 @@ final class MacSearchViewModel {
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
-            let expression = await expressionTask
-            guard searchRuns.isLatest(run) else { return false }
             lastRenderedExpression = expression
             executedSearchVersion &+= 1
             // #1310: the parameters that RAN. Filter edits re-run the search here, so these are
             // the executed ones by the time the popover reads them.
             userTagCountScope = .match(submittedSearchParameters)
-            let counted = try? await countTask
-            guard searchRuns.isLatest(run) else { return false }
             // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
             // equal to what happened to be fetched — see `totalMatchCount`.
             if let total = counted {
@@ -1463,7 +1483,7 @@ final class MacSearchViewModel {
             if let documentSet = frozenParams.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
                     setSize: documentSet.count, rowCount: fetched.count,
-                    rows: rowsTime, total: clock.now - sent))
+                    rows: rowsTime, total: totalTime))
             }
             // Clamp page index to the new result set.
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
