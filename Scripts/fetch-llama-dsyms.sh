@@ -11,11 +11,12 @@
 # archive can carry them (Scripts/embed-llama-dsyms.sh, an archive-only build phase on both
 # app targets).
 #
-# WHY A FETCH AND NOT A COMMIT: the dSYMs are 76–153 MB per slice, past GitHub's 100 MB hard
-# limit, so Scripts/build-llama-xcframework.sh strips them from the committed xcframework and
-# they are published instead as a release asset on frus-semantic-vectors. Without them every
-# TestFlight / App Store upload warns that the archive "did not include a dSYM for
-# llama.framework", and a crash inside the query encoder cannot be symbolicated.
+# WHY A FETCH AND NOT A COMMIT: the dSYMs are 63–126 MB per slice at llama.cpp a0e6dc7 (76–153 MB
+# at 8663224), two of the three past GitHub's 100 MB hard limit, so
+# Scripts/build-llama-xcframework.sh strips them from the committed xcframework and they are
+# published instead as a release asset on frus-semantic-vectors. Without them every TestFlight /
+# App Store upload warns that the archive "did not include a dSYM for llama.framework", and a
+# crash inside the query encoder cannot be symbolicated.
 #
 # The asset is named by the pinned llama.cpp commit read from build-llama-xcframework.sh —
 # one source of truth for "which build is this" — but the CACHE PATH carries no commit, on

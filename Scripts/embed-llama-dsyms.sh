@@ -12,10 +12,10 @@
 # TestFlight / App Store upload stops warning that the archive "did not include a dSYM for
 # llama.framework" and a crash inside the query encoder symbolicates.
 #
-# The committed xcframework carries no dSYMs (76–153 MB each, past GitHub's limit); they are
-# cached locally by Scripts/fetch-llama-dsyms.sh under .cache/llama-dSYMs/. Xcode collects
-# every *.dSYM in $DWARF_DSYM_FOLDER_PATH into the .xcarchive, which is the same mechanism it
-# uses for the app's own symbols — nothing here is archive-format-specific.
+# The committed xcframework carries no dSYMs (63–126 MB each, two of the three past GitHub's
+# limit); they are cached locally by Scripts/fetch-llama-dsyms.sh under .cache/llama-dSYMs/.
+# Xcode collects every *.dSYM in $DWARF_DSYM_FOLDER_PATH into the .xcarchive, which is the same
+# mechanism it uses for the app's own symbols — nothing here is archive-format-specific.
 #
 # THIS RUNS UNDER ENABLE_USER_SCRIPT_SANDBOXING, and the sandbox grants exactly the files the
 # phase declares in project.yml — a declared directory grants nothing beneath it (measured:

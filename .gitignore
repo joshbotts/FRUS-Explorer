@@ -31,8 +31,9 @@ xcuserdata/
 *.dSYM
 *.dmg
 # The llama.cpp debug symbols Scripts/build-llama-xcframework.sh strips from the committed
-# xcframework (76–153 MB each, past GitHub's limit) and Scripts/fetch-llama-dsyms.sh caches
-# under .cache/ from the frus-semantic-vectors release asset. Neither belongs in the repo.
+# xcframework (63–126 MB each, two of the three past GitHub's limit) and
+# Scripts/fetch-llama-dsyms.sh caches under .cache/ from the frus-semantic-vectors release
+# asset. Neither belongs in the repo.
 /llama-xcframework-dSYMs-*.zip
 
 # Fastlane

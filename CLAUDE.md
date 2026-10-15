@@ -186,9 +186,9 @@ debug symbols once:**
 ./Scripts/fetch-llama-dsyms.sh
 ```
 `Vendor/llama.xcframework` (the on-device query encoder's llama.cpp runtime) is committed WITHOUT
-its dSYMs — 76–153 MB per slice, past GitHub's 100 MB limit — so every TestFlight upload used to
-warn that the archive "did not include a dSYM for llama.framework", and a crash inside the encoder
-could not be symbolicated. The dSYMs live as a release asset on `frus-semantic-vectors`
+its dSYMs — 63–126 MB per slice since the B4 rebuild, two of the three past GitHub's 100 MB
+limit — so every TestFlight upload used to warn that the archive "did not include a dSYM for
+llama.framework", and a crash inside the encoder could not be symbolicated. The dSYMs live as a release asset on `frus-semantic-vectors`
 (`llama-xcframework-dSYMs-<commit7>.zip`, on `encoder-1`); the fetch script downloads them into
 the gitignored `.cache/llama-dSYMs/`, verifies every slice's UUIDs against the committed
 binary, and is a no-op once the cache verifies. An archive-only build phase on both app targets
