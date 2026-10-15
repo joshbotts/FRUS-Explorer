@@ -1,5 +1,13 @@
 # Gemma compliance runbook — every obligation, its surface, and its deadline
 
+> **Moved to `Completed/` on 2026-10-15 (#1659, B4).** Build 51 ships EmbeddingGemma 2 under Apache
+> 2.0 (plan of record decisions 15 to 17), so the obligations below end for the app: the consent
+> sheet, the bundled Terms (`GemmaTermsView`) and the per-release policy re-read are gone, and
+> `App-Store-Custom-EULA.md`, beside this file, was never entered. They still bind what builds 42
+> to 50 distribute: EmbeddingGemma 300m stays on `frus-semantic-vectors`' release `encoder-1`, whose
+> README and NOTICE keep this runbook's §3 text. The move is
+> `../semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md`.
+
 **Date:** 2026-08-28 · **Status:** ACCEPTED by the owner 2026-08-28 ("i accept all of
 these. proceed."), resolving the licence gate the step-4 assessment (§7.2) and spike both
 named. **Authority for the clause readings:** `Planning/semantic-spike/Gemma-License-V5-Implications.md`

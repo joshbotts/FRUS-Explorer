@@ -143,7 +143,7 @@ at `dc17d945`; the wording is the owner's to choose, so the block is unchanged.
   `catalog.archives.gov/api/v2`) and sends a collection to the reader's own Zotero library on
   request (`FRUSExplorer/Zotero/ZoteroAPIClient.swift`, `api.zotero.org`), and the *ON YOUR DEVICE*
   paragraph of the same description says notes and collections sync through iCloud. Accurate
-  wording already exists in `semantic-vectors/App-Store-Custom-EULA.md`, clause 9 (*Data*).
+  wording already exists in `Completed/App-Store-Custom-EULA.md`, clause 9 (*Data*), the custom EULA build 51 does not need (it moved there on 2026-10-15, never entered).
 - ***"Every chart exports as a figure or as a CSV."*** Both manuals say otherwise: "Not every chart
   offers a figure", and the Person Network graph does not export
   (`Docs/macOS-User-Manual.md` §15.8, `Docs/iOS-User-Manual.md` §15.8).

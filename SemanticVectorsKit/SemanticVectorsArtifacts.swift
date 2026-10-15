@@ -199,16 +199,95 @@ public enum SemanticVectorsArtifacts {
             public let measuredRecallAt10: Double
             /// Where those numbers come from.
             public let measuredBy: String
+            /// How this generation's cosines are shown as a percentage, or `nil` for a generation
+            /// whose model was never measured for it, which shows the raw cosine.
+            ///
+            /// Optional and outside the digest, as `Provenance.queryPrefix` is: it says how to read
+            /// the vectors, not how they were made, and a generation packed before it existed (the
+            /// EmbeddingGemma 300m's) carries none and decodes unchanged.
+            public let scoreCalibration: ScoreCalibration?
 
             /// Creates the retrieval block.
             /// - Parameters:
             ///   - rerankPool: Candidates the Hamming stage hands the int8 rerank.
             ///   - measuredRecallAt10: Measured recall@10 for that configuration.
             ///   - measuredBy: Citation for the measurement.
-            public init(rerankPool: Int, measuredRecallAt10: Double, measuredBy: String) {
+            ///   - scoreCalibration: The model's measured display offsets, or `nil`.
+            public init(rerankPool: Int, measuredRecallAt10: Double, measuredBy: String,
+                        scoreCalibration: ScoreCalibration? = nil) {
                 self.rerankPool = rerankPool
                 self.measuredRecallAt10 = measuredRecallAt10
                 self.measuredBy = measuredBy
+                self.scoreCalibration = scoreCalibration
+            }
+
+            /// A typed question's cosine against a document on the scale a reader is shown:
+            /// through ``scoreCalibration`` when the generation has one, the cosine itself when not.
+            ///
+            /// Not clamped, so a list sorted by it is sorted exactly as by the cosine; every
+            /// display clamps it to 0…1 and rounds, as each clamped the raw cosine before.
+            ///
+            /// - Parameter cosine: The int8 cosine of the query against the document.
+            /// - Returns: The score every Meaning surface shows.
+            public func calibratedQueryScore(_ cosine: Double) -> Double {
+                scoreCalibration.map { ScoreCalibration.calibrated(cosine, offset: $0.queryOffset) }
+                    ?? cosine
+            }
+
+            /// One document's cosine against another on the scale a reader is shown: through
+            /// ``scoreCalibration`` when the generation has one, the cosine itself when not.
+            ///
+            /// Not clamped, for ``calibratedQueryScore(_:)``'s reason; Related Documents' sum
+            /// clamps it, as it clamped the cosine (#643).
+            ///
+            /// - Parameter cosine: The int8 cosine of the two documents.
+            /// - Returns: The score Related Documents shows and sums.
+            public func calibratedDocumentScore(_ cosine: Double) -> Double {
+                scoreCalibration.map {
+                    ScoreCalibration.calibrated(cosine, offset: $0.documentOffset)
+                } ?? cosine
+            }
+        }
+
+        /// The rule a generation's cosines are shown by: `(cosine − offset) / (1 − offset)`, with one
+        /// offset for a typed question against a document and one for a document against a
+        /// document (B4, the owner's decision of 2026-10-15). A display clamps the result to 0…1.
+        ///
+        /// A model's cosines sit where its training put them, not where a reader can compare them.
+        /// EmbeddingGemma 2's on-topic question has a mean cosine of 0.62 over the corpus, where
+        /// EmbeddingGemma 300m's had 0.28 to 0.31, so its raw figures read about twenty points
+        /// higher for the same quality, and an off-topic question's best match read 64%, the 300m's
+        /// figure for an on-topic one. The offsets are measured per model by fitting its scores to
+        /// the 300m's over the same queries and anchors, so a figure means what it meant through
+        /// build 50, and 100% still means identical.
+        public struct ScoreCalibration: Codable, Sendable, Equatable {
+            /// The cosine shown as 0% for a typed question scored against a document.
+            public let queryOffset: Double
+            /// The cosine shown as 0% for a document scored against another document.
+            public let documentOffset: Double
+            /// Where the two offsets were measured.
+            public let measuredBy: String
+
+            /// Creates a calibration.
+            /// - Parameters:
+            ///   - queryOffset: The question-against-document offset, below 1.
+            ///   - documentOffset: The document-against-document offset, below 1.
+            ///   - measuredBy: Citation for the measurement.
+            public init(queryOffset: Double, documentOffset: Double, measuredBy: String) {
+                self.queryOffset = queryOffset
+                self.documentOffset = documentOffset
+                self.measuredBy = measuredBy
+            }
+
+            /// A cosine through one offset: `(cosine − offset) / (1 − offset)`. Identity stays 1,
+            /// the offset becomes 0, and the order of any two cosines is kept.
+            ///
+            /// - Parameters:
+            ///   - cosine: The int8 cosine.
+            ///   - offset: The offset for the pair's kind, below 1.
+            /// - Returns: The calibrated score, unclamped.
+            public static func calibrated(_ cosine: Double, offset: Double) -> Double {
+                (cosine - offset) / (1 - offset)
             }
         }
 

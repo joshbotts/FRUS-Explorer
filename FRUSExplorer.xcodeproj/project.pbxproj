@@ -390,7 +390,6 @@
 		3EF20C6610E4AA795003A112 /* CitationBlockSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F14285DBBC3732F2932526AD /* CitationBlockSplitter.swift */; };
 		3F3F38656DA23D95673B117D /* MacDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC526B60C0D44514FDFC572 /* MacDocumentView.swift */; };
 		3F6F74048838C9BDAD35D45E /* ManuscriptRepositoryBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 577CB7289F3041BE4B61ABC2 /* ManuscriptRepositoryBridgeTests.swift */; };
-		40049EC67EBF8482F619989E /* gemma-terms-of-use.txt in Resources */ = {isa = PBXBuildFile; fileRef = D7846C3022F8A05F8288C639 /* gemma-terms-of-use.txt */; };
 		403443780A6CE2D33EA3D41E /* SemanticModelFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97AC959AB1D1E001416C27D2 /* SemanticModelFetcher.swift */; };
 		405B638CF2C0C6FC02466CC9 /* ExcerptVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD727A4DE975FFA7F692C32D /* ExcerptVerifier.swift */; };
 		40A968145349C62D71FA62F0 /* lot-claimants-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 4AAFFAA093C147F6F0CE19D6 /* lot-claimants-index.json */; };
@@ -1638,7 +1637,6 @@
 		FF58CAF35E52584878586F0D /* BrokenRefsReportExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAEE237AF15C7ADA946E1472 /* BrokenRefsReportExporter.swift */; };
 		FF7260FF506F0D648DCA2AF2 /* SemanticSearchSharedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C52C0B8F1DC89246AF8CE17 /* SemanticSearchSharedViews.swift */; };
 		FF7528CE3E231F72C5C9D5CD /* LocalVolumeCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781397470FC64D399EA42614 /* LocalVolumeCatalog.swift */; };
-		FF8D1C3B61E8E9B132F85C47 /* gemma-terms-of-use.txt in Resources */ = {isa = PBXBuildFile; fileRef = D7846C3022F8A05F8288C639 /* gemma-terms-of-use.txt */; };
 		FFA2064494E208ACA4E3F9F7 /* NoteAssignmentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73FE8197338A805DB7491653 /* NoteAssignmentPicker.swift */; };
 		FFBAE8ED4EFCCE3FC9C183ED /* CuratedLibraryResolutionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA95163C58F401025F855304 /* CuratedLibraryResolutionsTests.swift */; };
 		FFFAE59F73D702B79725D71B /* RankingChartLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E84CC1816949B7BA8D1BF8D /* RankingChartLabels.swift */; };
@@ -2560,7 +2558,6 @@
 		D707625BB386335733C8C9E5 /* FRUSExplorerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FRUSExplorerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7080A5712E6CAE599E2BACE /* SemanticShardFetcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticShardFetcherTests.swift; sourceTree = "<group>"; };
 		D74FFCD5D4966C0050FA0FA7 /* AdministrationProfilesDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationProfilesDataTests.swift; sourceTree = "<group>"; };
-		D7846C3022F8A05F8288C639 /* gemma-terms-of-use.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "gemma-terms-of-use.txt"; sourceTree = "<group>"; };
 		D81475CA28849923822135AD /* BrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
 		D81C4772A87DD472F9B4BB3F /* BrokenRefExplanationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokenRefExplanationSheet.swift; sourceTree = "<group>"; };
 		D83CDA1A6FEEAB549384BD4E /* ModelLastModifiedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelLastModifiedTests.swift; sourceTree = "<group>"; };
@@ -3863,7 +3860,6 @@
 				048277CFCB4CE54315008DB9 /* frus-offset-engine.js */,
 				39BF8068D53FC3128464360F /* frus-print.css */,
 				536A71597B7315E933F81136 /* frus-selection.js */,
-				D7846C3022F8A05F8288C639 /* gemma-terms-of-use.txt */,
 				367369BC0084422206E4C87F /* keyness-baseline-printed.json */,
 				CD0BCCE9ACC924CAC60C8286 /* keyness-baseline.json */,
 				E4F0A106DA9F8FD94920CAAA /* LaunchScreen.storyboard */,
@@ -4497,7 +4493,6 @@
 				5C2433FBC73CBDB81E77B226 /* frus-offset-engine.js in Resources */,
 				209063A7FB3FD9DAC85D85DD /* frus-print.css in Resources */,
 				CD059A377FC164AB840C4FCD /* frus-selection.js in Resources */,
-				FF8D1C3B61E8E9B132F85C47 /* gemma-terms-of-use.txt in Resources */,
 				D6DFC821F6BCCE3A022DA7B6 /* keyness-baseline-printed.json in Resources */,
 				10FEA71DF161917DCE4728C1 /* keyness-baseline.json in Resources */,
 				40A968145349C62D71FA62F0 /* lot-claimants-index.json in Resources */,
@@ -4551,7 +4546,6 @@
 				6EBEF52FF2480C0D43466D10 /* frus-offset-engine.js in Resources */,
 				8D7866F2C8D6154A6D91AD5C /* frus-print.css in Resources */,
 				52216BC98666B29A0A741B38 /* frus-selection.js in Resources */,
-				40049EC67EBF8482F619989E /* gemma-terms-of-use.txt in Resources */,
 				B3745F49704F46F3B92FCC2C /* keyness-baseline-printed.json in Resources */,
 				0B30E744796DF2DF4BAB6EC6 /* keyness-baseline.json in Resources */,
 				4A83439D18BBA1F7260E0069 /* lot-claimants-index.json in Resources */,

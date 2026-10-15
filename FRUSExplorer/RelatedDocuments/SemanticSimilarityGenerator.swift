@@ -79,6 +79,9 @@ import Foundation
 ///   1.0 — V-3: initial implementation
 ///   1.1 — S-3: the off-index leads channel (volume counts, plus document grain where a
 ///          Tier-2 shard is already present)
+///   1.2 — B4 (#1659): every cosine the axis vends, re-scores or names off-index is calibrated
+///          for the generation's model (`retrieval.calibratedDocumentScore`), so EmbeddingGemma 2's
+///          scores read, and weigh in the sum, on the scale the 300m's did
 @MainActor
 struct SemanticSimilarityGenerator: SimilarityGenerator {
 
@@ -189,7 +192,9 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
             let key = DocumentKey(volumeId: entry.volumeID, documentId: entry.documentID)
             guard key != anchor else { continue }
             keys.append(key)
-            scoreByKey[key] = entry.score
+            // The generation's document calibration (B4), applied once here: the chip and the
+            // ranker's sum read the same number, and the order is the cosine's.
+            scoreByKey[key] = index.file.retrieval.calibratedDocumentScore(entry.score)
         }
         let records = try await pipeline.candidateRecords(forKeys: keys)
 
@@ -199,9 +204,10 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
                 return GeneratedCandidate(
                     key: key,
                     record: record,
-                    // Raw cosine, absolute in [0, 1]. The axis is `isSelfNormalising`, so the ranker
-                    // clamps it rather than dividing by this list's own max — without that, a weak
-                    // best-of-field neighbour would read as a perfect one (#643).
+                    // The calibrated cosine, absolute on the 300m's scale (B4). The axis is
+                    // `isSelfNormalising`, so the ranker clamps it rather than dividing by this
+                    // list's own max — without that, a weak best-of-field neighbour would read as
+                    // a perfect one (#643).
                     strength: score,
                     evidenceLabel: Self.evidenceLabel(for: score))
             },
@@ -223,7 +229,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     /// anchors, so no constant is a stand-in for it.
     ///
     /// - Parameters:
-    ///   - vended: This axis's own candidates and their raw cosines.
+    ///   - vended: This axis's own candidates and their calibrated cosines.
     ///   - allCandidates: Every key the generators produced.
     ///   - anchor: The document being related, which is never its own candidate.
     /// - Returns: The keys to score and the floor, or `nil` when there is no band to floor against.
@@ -288,9 +294,12 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     /// may have found by citation or provenance, and they are the population this serves.
     ///
     /// ## The floor is the anchor's own band, and a constant would be wrong
-    /// Cosine has no zero. **Measured over 60 anchors on the shipped artifacts: a random corpus pair
+    /// Cosine has no zero. **Measured over 60 anchors on the 300m's artifacts: a random corpus pair
     /// scores a median 0.472**, so re-scoring without a floor adds about half the axis's weight to
     /// every row uniformly — compressing the ranking rather than discriminating within it.
+    /// (EmbeddingGemma 2's raw cosines sit higher, a random pair at about 0.71 (the B4 memo's
+    /// §1b); its calibration brings its scores back to the 300m's scale, and the argument holds on
+    /// either.)
     ///
     /// **But a fixed floor is wrong for the reason S-3 measured on the Hamming side.** The anchor's
     /// own rank-120 cosine runs **0.543 to 0.836** across those same anchors (median 0.695), so any
@@ -311,13 +320,15 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     /// - Parameters:
     ///   - anchor: The document being related.
     ///   - candidates: Keys the other generators produced that this axis has not scored.
-    ///   - floor: The cosine of this axis's own weakest vended neighbour.
+    ///   - floor: The calibrated cosine of this axis's own weakest vended neighbour. A candidate's
+    ///     cosine is calibrated before it is compared, so the two are on one scale.
     ///   - store: The shard store, read-only. **Taking the store rather than the `AppState` its
     ///     siblings take is what makes the paragraph above structural instead of a convention**:
     ///     with no `AppState` in scope there is no `fetchSemanticShardIfNeeded` to call, so a later
     ///     change cannot widen the burst here by accident. A test can pin an outcome; it cannot pin
     ///     the absence of a call that nothing prevents.
-    /// - Returns: Cosines for the candidates that cleared the floor; empty when nothing did.
+    /// - Returns: Calibrated cosines for the candidates that cleared the floor; empty when nothing
+    ///   did.
     static func reScore(
         anchor: DocumentKey,
         candidates: Set<DocumentKey>,
@@ -357,10 +368,11 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
             // A shard the reader does not hold is skipped in silence: this path queues no fetch,
             // so an absent one is a reader's declined download rather than a fault to report.
             guard let shard = shards[candidate.volumeId],
-                  let score = shard.cosine(row: row - entry.rowOffset,
-                                           query: query.codes, queryScale: query.scale),
-                  score >= floor
+                  let cosine = shard.cosine(row: row - entry.rowOffset,
+                                            query: query.codes, queryScale: query.scale)
             else { continue }
+            let score = index.file.retrieval.calibratedDocumentScore(cosine)
+            guard score >= floor else { continue }
             scored[candidate] = score
         }
         return scored
@@ -520,11 +532,12 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
             if shards[located.slot] == nil { shards[located.slot] = await store.shard(for: volumeID) }
             guard let shard = shards[located.slot] ?? nil,
                   let document = index.document(at: row),
-                  let score = shard.cosine(
+                  let cosine = shard.cosine(
                     row: located.localRow, query: query.codes, queryScale: query.scale)
             else { continue }
             scored.append(SemanticOffIndexLeads.DocumentLead(
-                volumeID: document.volumeID, documentID: document.documentID, score: score))
+                volumeID: document.volumeID, documentID: document.documentID,
+                score: index.file.retrieval.calibratedDocumentScore(cosine)))
         }
         return Self.rankOffIndexDocuments(
             scored, anchor: anchor, limit: Self.offIndexDocumentLimit)
@@ -587,7 +600,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
         return indexed.intersection(scope)
     }
 
-    /// The "why related" chip's text for a cosine.
+    /// The "why related" chip's text for a calibrated cosine.
     ///
     /// A percentage of a cosine is the honest thing to show here and the only thing this axis knows:
     /// it has no shared term, no citation and no archival container to name. The design's
@@ -595,7 +608,7 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     /// separate piece of work; until it exists, this says what it measured rather than implying a
     /// relationship it did not find.
     ///
-    /// - Parameter score: The approximate cosine.
+    /// - Parameter score: The approximate cosine, through the generation's calibration (B4).
     /// - Returns: A short label.
     nonisolated static func evidenceLabel(for score: Double) -> String {
         let percent = Int((min(1.0, max(0.0, score)) * 100).rounded())
@@ -639,8 +652,9 @@ struct SemanticOffIndexLeads: Equatable, Sendable {
     struct DocumentLead: Equatable, Sendable, Identifiable {
         let volumeID: String
         let documentID: String
-        /// The exact cosine — the same scale as the ranked rows above it. Never a Hamming
-        /// distance rescaled to look like one; the axis refuses that mix everywhere else.
+        /// The exact cosine through the generation's calibration (B4) — the same scale as the
+        /// ranked rows above it. Never a Hamming distance rescaled to look like one; the axis
+        /// refuses that mix everywhere else.
         let score: Double
         var id: String { "\(volumeID)/\(documentID)" }
     }

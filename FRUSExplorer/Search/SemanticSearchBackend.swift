@@ -64,6 +64,7 @@ import Foundation
 ///   1.3 — #1595, #1597, #1598: conforms to ``MeaningSearchRunning``, which is how the view models hold it
 ///   1.4 — #1577 lane 1: a document set is ranked inside; `Disclosure.rankedWithin` and `withoutVector`;
 ///         a hit the index holds no row for is counted in `notIndexedHere` and no longer in `filteredOut`
+///   1.5 — B4 (#1659): ``renderedExpression`` names the bundled generation's model
 @MainActor
 struct SemanticSearchBackend: MeaningSearchRunning {
 
@@ -76,6 +77,16 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     /// Ranked hits requested from the funnel. 100, not the pool's 800: a ten-page semantic
     /// list is already past what a reader triages, and every row costs a keyed lookup.
     static let hitLimit = 100
+
+    /// What a Meaning search records as its rendered expression, which the method appendix's CSV
+    /// prints verbatim — the honest record of what ran, so it names the bundled generation's
+    /// model rather than a literal. Both view models read it, so the twins cannot drift; through
+    /// build 50 each spelled `text-embedding-embeddinggemma-300m-qat` itself, which would have
+    /// named the 300m beside EmbeddingGemma 2's results (B4).
+    static var renderedExpression: String {
+        let model = BundledSemanticVectors.provenance?.model ?? "unavailable"
+        return "route=semantic; model=\(model); top=\(hitLimit)"
+    }
 
     /// A hit in a volume this device has not indexed — rendered by the #262 rule (manifest
     /// title, no invented metadata, a download affordance where the manifest has a URL).

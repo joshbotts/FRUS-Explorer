@@ -47,6 +47,9 @@ import WordCloudKit
 ///   1.2 — #1439 review, round 1: the manifest's coverage dates are decoded before the first
 ///         write too. `loadVolumeEras` ran after the vectors and shards were on disk and reads a
 ///         stricter shape than the volume list, so a one-sided `dateRange` refused there
+///   1.3 — B4 (#1659, 2026-10-15): the measured recall is keyed by model as well as width
+///         (``funnelMeasurements``), and a model's score calibration is packed with it
+///         (``scoreCalibrations``), for the move to EmbeddingGemma 2
 public enum SemanticVectorsRunner {
 
     /// Artifact schema version for `semantic-vectors-index.json`.
@@ -60,16 +63,79 @@ public enum SemanticVectorsRunner {
     /// flat int8-256, for one wider rerank per query and an unchanged Hamming scan.
     public static let rerankPool = 800
 
-    /// Recall@10 of the shipping funnel (Hamming-800 → int8-`dims`) against exact float-768
-    /// neighbours, measured over 3,600 era-stratified queries at corpus scale — **keyed by width,
-    /// because the number is a property of the width and nothing else in the artifact would say so.**
+    /// What the corpus gates measured of one model's shipping funnel at one width: recall@10
+    /// against exact float-768 neighbours over 3,600 era-stratified queries, and where.
+    public struct FunnelMeasurement: Sendable, Equatable {
+        /// Recall@10 of Hamming-800 → int8 at the width.
+        public let recallAt10: Double
+        /// The artifact's `retrieval.measuredBy`, verbatim.
+        public let measuredBy: String
+    }
+
+    /// The SHA-256 of EmbeddingGemma 300m's GGUF, the model builds 42 to 50 shipped.
+    public static let embeddingGemma300mSHA256 =
+        "5a9e0645541b06367dec3fd14d0019015b872cfe36d35dfb2a9d752dade09020"
+
+    /// The SHA-256 of EmbeddingGemma 2's GGUF, the model shipped from build 51 (#1659, B4).
+    public static let embeddingGemma2SHA256 =
+        "2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135"
+
+    /// Recall@10 of the shipping funnel, **keyed by the model's GGUF SHA-256 and then by width,
+    /// because the number is a property of both and nothing else in the artifact would say so.**
     ///
     /// A single constant here was a real defect: `DIMS` is an operator-set lever, and a 512-dim
     /// artifact carrying 256's 0.7449 would understate its own measured quality by 0.106 while
     /// citing the document that contradicts it. The artifact exists so a consumer need not read that
     /// document, which is exactly why a wrong number here would be the one believed. A width with no
     /// corpus-scale measurement is refused rather than shipped with a borrowed one.
-    public static let measuredRecallAt10: [Int: Double] = [256: 0.7449, 512: 0.8510]
+    ///
+    /// **Keyed by model since B4 (2026-10-15)**, for the same defect one level up: keyed by width
+    /// alone, B2's pack of EmbeddingGemma 2 stated the 300m's 0.851 and cited the 300m's
+    /// measurement (the stage-2 memo's §3). A model with no entry is refused at every width.
+    ///
+    /// The 300m's two entries are August's, word for word, so a control repack of its store is
+    /// byte-identical to the artifact builds 42 to 50 shipped; its 0.851 was measured with 256 sign
+    /// bits ahead of the int8-512 rerank, and the 512-bit funnel those builds ran measures 0.861
+    /// (the stage-2 memo's §5). EmbeddingGemma 2's are that memo's §5, through the funnel the app
+    /// runs.
+    public static let funnelMeasurements: [String: [Int: FunnelMeasurement]] = [
+        embeddingGemma300mSHA256: [
+            256: FunnelMeasurement(
+                recallAt10: 0.7449,
+                measuredBy: "Planning/semantic-spike/Phase3-Store-Assessment.md §5, 3,600 "
+                    + "era-stratified queries over the 314,483-document corpus; "
+                    + "Hamming-800 → int8-256"),
+            512: FunnelMeasurement(
+                recallAt10: 0.8510,
+                measuredBy: "Planning/semantic-spike/Phase3-Store-Assessment.md §5, 3,600 "
+                    + "era-stratified queries over the 314,483-document corpus; "
+                    + "Hamming-800 → int8-512"),
+        ],
+        embeddingGemma2SHA256: [
+            256: FunnelMeasurement(
+                recallAt10: 0.7845,
+                measuredBy: "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md §5, "
+                    + "3,600 era-stratified queries over the 314,616-document corpus; "
+                    + "Hamming-800 over 256 sign bits → int8-256"),
+            512: FunnelMeasurement(
+                recallAt10: 0.9021,
+                measuredBy: "Planning/semantic-vectors/EmbeddingGemma-2-Stage-2-2026-10-15.md §5, "
+                    + "3,600 era-stratified queries over the 314,616-document corpus; "
+                    + "Hamming-800 over 512 sign bits → int8-512"),
+        ],
+    ]
+
+    /// How each model's cosines are shown, by GGUF SHA-256 (B4, the owner's decision of
+    /// 2026-10-15). A model with no entry packs with none, and its consumers show the raw cosine:
+    /// the 300m's builds did, so its control repack stays byte-identical.
+    public static let scoreCalibrations: [String: SemanticVectorsArtifacts.Index.ScoreCalibration] = [
+        embeddingGemma2SHA256: SemanticVectorsArtifacts.Index.ScoreCalibration(
+            queryOffset: 0.47,
+            documentOffset: 0.40,
+            measuredBy: "Planning/semantic-vectors/EmbeddingGemma-2-B4-Move-2026-10-15.md §1b, "
+                + "fitted to EmbeddingGemma 300m's scores over 90 typed queries and 600 anchor "
+                + "documents against the 314,616-document corpus"),
+    ]
 
     /// The width a run packs at when `DIMS` is unset: the width the bundle ships.
     ///
@@ -130,10 +196,14 @@ public enum SemanticVectorsRunner {
                 return "EXPECT_DIGEST must be a 64-character hex SHA-256, got "
                     + "\(value.isEmpty ? "an empty string" : "\"\(value)\"")"
             case .unusableDims(let detail):
-                return "DIMS \(detail). Measured widths: "
-                    + measuredRecallAt10.keys.sorted().map(String.init).joined(separator: ", ")
-                    + " — a width with no corpus-scale measurement would ship a recall number "
-                    + "borrowed from a different artifact"
+                return "DIMS \(detail). Measured models and widths: "
+                    + funnelMeasurements.keys.sorted().map { model in
+                        "\(model.prefix(12))… at "
+                            + (funnelMeasurements[model] ?? [:]).keys.sorted()
+                                .map(String.init).joined(separator: " and ")
+                    }.joined(separator: "; ")
+                    + " — a width with no corpus-scale measurement for the store's model would "
+                    + "ship a recall number borrowed from a different artifact"
             }
         }
     }
@@ -150,7 +220,7 @@ public enum SemanticVectorsRunner {
     /// The run, with its two process-wide inputs supplied by the caller so a test can drive it.
     ///
     /// ## Nothing is written until every refusal that can be made first has been made
-    /// In order: the shipping width, the model pin, `EXPECT_DIGEST`, the manifest, and — when
+    /// In order: the model pin, the shipping width, `EXPECT_DIGEST`, the manifest, and — when
     /// `LAYOUT_DIR/layout.bin` exists, so a map pass will follow — everything that pass can refuse
     /// on: the manifest's coverage dates (`loadVolumeEras`), which the map's era histograms read
     /// and which decode a stricter shape than the volume list does; then the store's volume heads;
@@ -172,7 +242,9 @@ public enum SemanticVectorsRunner {
     ) throws {
         let storeURL = URL(
             fileURLWithPath: (env["STORE"] as NSString?)?.expandingTildeInPath
-                ?? ("~/frus-semantic-raw" as NSString).expandingTildeInPath)
+                // The shipped family's store: EmbeddingGemma 2's since B4. The 300m's is
+                // `~/frus-semantic-raw`; `EXPECT_DIGEST` refuses a pack of the wrong one.
+                ?? ("~/frus-semantic-raw-embeddinggemma-2" as NSString).expandingTildeInPath)
         let manifestPath = env["MANIFEST"] ?? "FRUSExplorer/Resources/manifest.json"
         let outputDir = URL(fileURLWithPath: env["OUTPUT_DIR"] ?? "FRUSExplorer/Resources")
         let shardsDir = URL(
@@ -180,13 +252,18 @@ public enum SemanticVectorsRunner {
         let generated = generatorDateStamp(override: env["GENERATED_DATE"])
 
         let runManifest = try SemanticRawStore.runManifest(at: storeURL)
+        guard runManifest.modelFileSHA256.count == 64 else {
+            throw RunError.unpinnedModel(runManifest.modelFileSHA256)
+        }
         // Validated before anything is read or written. Left unchecked, a plausible typo reached a
         // `precondition` deep in the quantizer — and preconditions keep their teeth but lose their
         // messages in a release build, so `DIMS=7` exited 133 with no diagnostic at all, while
         // `DIMS=abc` silently packed at the default width as though the variable had never been set.
-        let shippingDims = try resolveShippingDims(env["DIMS"], native: runManifest.dim)
-        guard runManifest.modelFileSHA256.count == 64 else {
-            throw RunError.unpinnedModel(runManifest.modelFileSHA256)
+        // After the pin since B4, because the measured widths are the model's.
+        let shippingDims = try resolveShippingDims(
+            env["DIMS"], native: runManifest.dim, modelFileSHA256: runManifest.modelFileSHA256)
+        guard let measurement = funnelMeasurements[runManifest.modelFileSHA256]?[shippingDims] else {
+            throw RunError.unusableDims("(\(shippingDims)) has no corpus-scale measurement")
         }
         let provenance = SemanticVectorsArtifacts.Provenance(
             model: runManifest.model,
@@ -332,10 +409,9 @@ public enum SemanticVectorsRunner {
             documentCount: rowOffset, volumes: entries, subseries: subseriesNames,
             retrieval: SemanticVectorsArtifacts.Index.Retrieval(
                 rerankPool: rerankPool,
-                measuredRecallAt10: measuredRecallAt10[shippingDims] ?? 0,
-                measuredBy: "Planning/semantic-spike/Phase3-Store-Assessment.md §5, 3,600 "
-                    + "era-stratified queries over the 314,483-document corpus; "
-                    + "Hamming-\(rerankPool) → int8-\(shippingDims)"))
+                measuredRecallAt10: measurement.recallAt10,
+                measuredBy: measurement.measuredBy,
+                scoreCalibration: scoreCalibrations[runManifest.modelFileSHA256]))
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
@@ -422,10 +498,13 @@ public enum SemanticVectorsRunner {
     /// - Parameters:
     ///   - raw: The `DIMS` environment value, if set.
     ///   - native: The store's native embedding width.
+    ///   - modelFileSHA256: The store's GGUF digest, whose measured widths are the ones allowed.
     /// - Returns: The validated width, defaulting to ``defaultShippingDims``.
     /// - Throws: `RunError.unusableDims` for anything unparseable, unrepresentable, wider than the
-    ///   store, not byte-aligned, or without a corpus-scale measurement.
-    static func resolveShippingDims(_ raw: String?, native: Int) throws -> Int {
+    ///   store, not byte-aligned, or without a corpus-scale measurement for the store's model.
+    static func resolveShippingDims(
+        _ raw: String?, native: Int, modelFileSHA256: String
+    ) throws -> Int {
         // The default goes through every check below, like a width the operator typed: at 512 it
         // is no longer narrower than every store, and an unchecked default on a 256- or 384-wide
         // one would reach the quantizer's precondition instead of this function's message.
@@ -445,8 +524,9 @@ public enum SemanticVectorsRunner {
         guard dims % 8 == 0 else {
             throw RunError.unusableDims("(\(dims)) must be a multiple of 8 to pack sign bits")
         }
-        guard measuredRecallAt10[dims] != nil else {
-            throw RunError.unusableDims("(\(dims)) has no corpus-scale measurement")
+        guard funnelMeasurements[modelFileSHA256]?[dims] != nil else {
+            throw RunError.unusableDims("(\(dims)) has no corpus-scale measurement for the "
+                + "store's model, \(modelFileSHA256.prefix(12))…")
         }
         return dims
     }

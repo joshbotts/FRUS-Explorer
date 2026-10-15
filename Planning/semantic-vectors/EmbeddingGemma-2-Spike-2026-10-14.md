@@ -13,7 +13,7 @@ the new one, each marked. The spike exists to replace the second kind with the f
 
 ## 0. Why there is a spike
 
-`Gemma-Compliance-Runbook.md` §0 watches for one event: an Apache-2.0 embedder of comparable
+`../Completed/Gemma-Compliance-Runbook.md` §0 (in `semantic-vectors/` until B4 moved it) watches for one event: an Apache-2.0 embedder of comparable
 quality. On 2026-10-12 the first half arrived. `google/embeddinggemma-2` is on Hugging Face,
 ungated, tagged `apache-2.0`, and Google's own announcement and developer guide say Apache 2.0.
 The second half, comparable quality on this corpus, is unmeasured, and the runbook's sentence
@@ -45,7 +45,7 @@ redistribution conditions are its section 4 alone, and Apache 2.0 carries no flo
 current Terms is built except one. The opt-in download, the consent sheet
 (`SemanticModelConsentSheet`), the About notice with the bundled Terms (`GemmaTermsView`), the
 `NOTICE` sentence and the per-release policy re-read are live. The custom App Store EULA
-(`App-Store-Custom-EULA.md`) is drafted and not entered in App Store Connect; it is owed before
+(`../Completed/App-Store-Custom-EULA.md`, moved there by B4) is drafted and not entered in App Store Connect; it is owed before
 the first App Store submission, and the app is TestFlight-only, so the deadline has not arrived.
 
 | Obligation | Under the Gemma Terms (EmbeddingGemma 300m) | Under Apache 2.0 (EmbeddingGemma 2) |

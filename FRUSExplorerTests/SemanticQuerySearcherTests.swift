@@ -10,7 +10,7 @@ import Testing
 import Foundation
 @testable import FRUSExplorer
 
-/// Where the searcher tests find their inputs: the committed query-vector fixture (so no 229 MB
+/// Where the searcher tests find their inputs: the committed query-vector fixture (so no 310 MB
 /// model is needed — the embed step is injected) and the gitignored local shards (so the suite
 /// self-skips on a checkout that has not regenerated them, the shard-fetcher tests' rule).
 private enum SearcherFixtures {
@@ -26,16 +26,32 @@ private enum SearcherFixtures {
             && FileManager.default.fileExists(atPath: shardURL("frus1951-54IranEd2").path)
     }
 
-    /// The committed reference vectors from `make_query_parity_fixture.py`, by query text.
+    /// The committed reference vectors from `make_query_parity_fixture.py`, by query text, from the
+    /// fixture made with the model the bundled tier was embedded with.
+    ///
+    /// Chosen by the bundled index's `modelFileSHA256`, as `QueryEncoderParityTests` chooses: a
+    /// query vector from one model scored against another model's documents ranks nothing in
+    /// particular. Until B4 this read `query-parity-fixture.json`, the 300m's, by name.
     static func fixtureVector(forQueryContaining needle: String) throws -> [Double] {
         struct Fixture: Decodable {
             struct Row: Decodable { let text: String; let vector: [Double] }
+            let ggufSHA256: String
             let queries: [Row]
         }
-        let data = try Data(contentsOf: repoRoot
-            .appendingPathComponent("FRUSExplorerTests/Fixtures/query-parity-fixture.json"))
-        let fixture = try JSONDecoder().decode(Fixture.self, from: data)
-        guard let row = fixture.queries.first(where: { $0.text.contains(needle) }) else {
+        struct Index: Decodable {
+            struct Provenance: Decodable { let modelFileSHA256: String }
+            let provenance: Provenance
+        }
+        let bundled = try JSONDecoder().decode(Index.self, from: Data(contentsOf: repoRoot
+            .appendingPathComponent("FRUSExplorer/Resources/semantic-vectors-index.json")))
+        let fixtures = try ["query-parity-fixture", "query-parity-fixture-embeddinggemma-2"].map {
+            try JSONDecoder().decode(Fixture.self, from: Data(contentsOf: repoRoot
+                .appendingPathComponent("FRUSExplorerTests/Fixtures/\($0).json")))
+        }
+        guard let fixture = fixtures.first(where: {
+                  $0.ggufSHA256 == bundled.provenance.modelFileSHA256 }),
+              let row = fixture.queries.first(where: { $0.text.contains(needle) })
+        else {
             throw CocoaError(.fileNoSuchFile)
         }
         return row.vector

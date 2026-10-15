@@ -239,7 +239,7 @@ struct SemanticSetSearchTests {
     }
 
     /// The model's absence is reported only where the model is what stands between the reader
-    /// and a ranking. A set with nothing to score is told about the set, not offered 229 MB.
+    /// and a ranking. A set with nothing to score is told about the set, not offered 310 MB.
     @Test("With no model, a set that can be ranked names the download and one that cannot does not")
     func modelAbsentIsReportedOnlyWhereItMatters() async throws {
         let directory = try makeSetDirectory()

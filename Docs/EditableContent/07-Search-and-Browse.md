@@ -867,24 +867,23 @@ the container is a finding or a filing-cabinet coincidence.*
 
 ### 7.12 Semantic search fallback (V-5 s3)
 
-> **Compliance note:** the offer card leads to the consent sheet (§1.4c), whose sentence is the
-> Gemma flow-down. The offer copy itself is editable; the consent sheet's is not a copy edit.
+*The card's Download Search Model button starts the download (B4, 2026-10-15); through build 50 it opened the consent sheet, §1.4c, now retired with the Gemma Terms.*
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 141–142 | key: search.semantic.offer.body -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 146–147 | key: search.semantic.offer.body -->
 
-Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
+Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 310 MB model download that runs entirely on this device.
 
 <!-- END SOURCE: search.semantic.offer.body -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 144–145 | key: search.semantic.offer.body.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 149–150 | key: search.semantic.offer.body.meaning -->
 
 *The same card in Meaning mode, where no keyword search ran: shown when a Meaning search is submitted and the model is not on the device.*
 
-A Meaning search ranks documents by what an AI model detects your question to mean, including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
+A Meaning search ranks documents by what an AI model detects your question to mean, including questions whose words never appear in the documents. This needs a one-time 310 MB model download that runs entirely on this device.
 
 <!-- END SOURCE: search.semantic.offer.body.meaning -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 257–258 | key: search.semantic.results.caption -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 256–257 | key: search.semantic.results.caption -->
 
 Ranked by meaning, not keywords, across the whole series — your exact words may not appear.
 
@@ -1340,7 +1339,7 @@ Document text, summaries and research notes are all turned off, so there is noth
 
 #### A search with every Search in chip turned off (macOS)
 
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1621–1622 | key: search.error.emptyScope | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1620–1621 | key: search.error.emptyScope | shared: macOS only -->
 
 *Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
 
@@ -1631,7 +1630,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3866–3866, 4358–4358 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3867–3867, 4359–4359 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -2004,7 +2003,7 @@ Ask a question to rank the %@ you are searching within by meaning. *(%@ is the s
 <!-- END SOURCE: search.semantic.possibleMatches.many -->
 
 #### The model could not be downloaded. You can try again from…
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 215–216 | key: search.semantic.downloadFailed -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 211–212 | key: search.semantic.downloadFailed -->
 
 The model could not be downloaded. You can try again from the button above, or from Settings.
 

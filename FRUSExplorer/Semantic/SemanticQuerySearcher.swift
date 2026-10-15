@@ -56,6 +56,8 @@ import Foundation
 ///         off or the device offline no longer counts as downloading once they change
 ///   1.3 — #1577 lane 1: `search(_:within:limit:)` ranks a given set of documents, every member
 ///         scored exactly, where the corpus-wide search could only be filtered down to the set
+///   1.4 — B4 (#1659): a hit's score is the cosine through the generation's score calibration,
+///         so EmbeddingGemma 2's figures read on the scale the 300m's did
 actor SemanticQuerySearcher {
 
     /// One ranked hit.
@@ -64,7 +66,9 @@ actor SemanticQuerySearcher {
         let volumeID: String
         /// TEI document id (`d139`).
         let documentID: String
-        /// Exact int8 cosine in the pinned space, the axis's self-normalising scale.
+        /// Exact int8 cosine in the pinned space, through the generation's score calibration
+        /// (`retrieval.calibratedQueryScore`, B4): the number the Meaning chip shows once clamped
+        /// and rounded. Unclamped, so the hits keep the cosine's order exactly.
         let score: Double
     }
 
@@ -140,7 +144,7 @@ actor SemanticQuerySearcher {
     /// main actor itself.
     private let requestShardFetch: @Sendable (String) async -> Bool
     /// The embed step, injectable so tests can drive the funnel with fixture vectors and no
-    /// 229 MB model. `nil` means the real encoder through the model store's verified door.
+    /// 310 MB model. `nil` means the real encoder through the model store's verified door.
     private let embedOverride: (@Sendable (String) async throws -> [Double])?
 
     /// The encoder, created lazily on first search and dropped by the idle watchdog.
@@ -229,7 +233,7 @@ actor SemanticQuerySearcher {
         let identified: [Hit] = scored.compactMap { candidate in
             guard let identity = index.document(at: candidate.row) else { return nil }
             return Hit(volumeID: identity.volumeID, documentID: identity.documentID,
-                       score: candidate.score)
+                       score: index.file.retrieval.calibratedQueryScore(candidate.score))
         }
         let folded = SemanticEditionTwins.foldingTwins(identified) { ($0.volumeID, $0.documentID) }
 
@@ -270,7 +274,7 @@ actor SemanticQuerySearcher {
     ///
     /// **A set with nothing to score never loads the encoder.** That is an empty set, a set with
     /// no vectors, and a set whose every rankable member is in a volume with no match file on the
-    /// device. The 229 MB model is not read and its absence is not reported, because the reader
+    /// device. The 310 MB model is not read and its absence is not reported, because the reader
     /// would be offered a download that could not rank a single document; in the last case the
     /// missing files are asked for, and they are what the reader is told about. So the match
     /// files are looked for before the question is encoded, the other way round from the
@@ -376,7 +380,7 @@ actor SemanticQuerySearcher {
         let hits: [Hit] = ranked.prefix(max(0, limit)).compactMap { neighbour in
             guard let identity = identityByRow[neighbour.row] else { return nil }
             return Hit(volumeID: identity.volumeID, documentID: identity.documentID,
-                       score: neighbour.score)
+                       score: index.file.retrieval.calibratedQueryScore(neighbour.score))
         }
 
         let downloading = await Self.requestFetches(
