@@ -25,13 +25,13 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 123 KB | 225 | 0 | — |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 132 KB | 271 | 0 | — |
 | [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 133 KB | 275 | 0 | — |
-| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 153 KB | 299 | 0 | — |
+| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 156 KB | 303 | 0 | — |
 | [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 99 KB | 212 | 0 | — |
 
 ## How to read this file
 
 - **Block text = what the app shows now.** A block is the text between a `SOURCE` comment and its `END SOURCE`
-  comment. Edit it in place; only text inside blocks is written back, by key. (The five blocks under a
+  comment. Edit it in place; only text inside blocks is written back, by key. (The six blocks under a
   RETIRED banner are the exception: their strings are gone from the app.)
 - **✎ = your edit that is not in the app as you wrote it.** It sits directly under its block. Since lane WB
   (2026-09-30) the only ✎ boxes are the eight edits it held and the three it shipped with a name or phrase

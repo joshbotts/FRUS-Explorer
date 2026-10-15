@@ -2341,14 +2341,14 @@ Choose a tag or All Research Documents from the sidebar.
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
 
 #### This volume is downloaded but not yet indexed. Indexing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 807–808 | key: collection.addDocs.browse.notIndexed -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 819–820 | key: collection.addDocs.browse.notIndexed -->
 
 This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn’t.
 
 <!-- END SOURCE: collection.addDocs.browse.notIndexed -->
 
 #### Each line is resolved against the FRUS manifest and your…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 955–956 | key: collection.addDocs.citations.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 967–968 | key: collection.addDocs.citations.hint -->
 
 Each line is resolved against the FRUS manifest and your local index — footnotes, bibliography entries, and document links all work.
 
@@ -2369,27 +2369,69 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1170–1171 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1186–1187 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
 <!-- END SOURCE: collection.frontmatter.footer -->
 
 #### This is a smart collection. Its documents are resolved from…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.documentsSection | lines: 1210–1211 | key: collection.editor.docs.smartEmpty -->
+
+> ⚠️ **RETIRED — editing this block has no effect.** #1619 replaced it with the next block, the picker's
+> sentence, which a smart collection's Contents now opens with whether or not it holds entries. Kept so
+> the wording is not lost; delete it when you next revise this section.
+
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.documentsSection | key: collection.editor.docs.smartEmpty -->
 
 This is a smart collection. Its documents are resolved from the linked saved search when you export — use Export in Actions below.
 
 <!-- END SOURCE: collection.editor.docs.smartEmpty -->
 
 #### Smart collection. Its documents come from its saved search.
-<!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerRow.init(savedName:documentCount:isSmart:) | lines: 621–622 | key: collection.picker.smart -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.sentence | lines: 1074–1075 | key: collection.picker.smart -->
 
-*The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count. The row is listed and does not take a tap (#1593).*
+*The line under a smart collection's name in Add to Collection and Add Excerpt to Collection, on iPhone, iPad and Mac, where an ordinary collection's row prints its document count; the row is listed and does not take a tap (#1593). Since #1619 it is also the first row of a smart collection's Contents, in the iPhone and iPad editor and in the Mac's Collections window, whose Add menus then take no hand-added document, section heading, note block or passage.*
 
 Smart collection. Its documents come from its saved search.
 
 <!-- END SOURCE: collection.picker.smart -->
+
+#### Smart collection
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1081–1081 | key: collection.smart.listLabel -->
+
+*What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, and in the Mac Collections window's collection picker and its Manage Collections sheet. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
+
+Smart collection
+
+<!-- END SOURCE: collection.smart.listLabel -->
+
+#### Saved search not found
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2401–2401 | key: collection.editor.smart.missing -->
+
+*Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
+
+Saved search not found
+
+<!-- END SOURCE: collection.editor.smart.missing -->
+
+#### The linked saved search could not be found. It may have…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2412–2413 | key: collection.editor.smart.missing.explanation -->
+
+*The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
+
+The linked saved search could not be found. It may have been deleted. Unlink it to add to this collection by hand.
+
+<!-- END SOURCE: collection.editor.smart.missing.explanation -->
+
+#### Couldn’t Add to Archives Visit
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 345–345 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+
+*The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
+
+Couldn’t Add to Archives Visit
+
+<!-- END SOURCE: archiveVisit.collection.error.title -->
 
 #### Add %@ Documents to Collection
 <!-- SOURCE: FRUSExplorer/Collections/CollectionPickerSheet.swift | CollectionPickerCopy.documentsTitle(count:locale:) | lines: 508–509 | key: collection.picker.title.documents.many -->
@@ -2468,14 +2510,14 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1416–1417 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1444–1445 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1773–1774 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1814–1815 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
@@ -2589,7 +2631,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 386–387 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 388–389 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -2597,7 +2639,7 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 399–400 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 401–402 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.
@@ -2605,21 +2647,21 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1075–1076 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1147–1148 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1463–1464 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1545–1546 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1743–1744 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1836–1837 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 
