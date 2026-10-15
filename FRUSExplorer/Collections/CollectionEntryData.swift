@@ -233,6 +233,7 @@ enum CollectionEntryData {
 ///
 /// Version history:
 ///   1.0 — #1416: initial implementation
+///   1.1 — #1619: `appendBlock` adds no heading or note block to a smart collection
 enum CollectionEntryOrdering {
 
     /// The entries `collection` holds that its context has not deleted, in no particular order. An entry deleted from
@@ -304,11 +305,15 @@ enum CollectionEntryOrdering {
     /// `CollectionDocumentDiscovery.appendEntries` and `CollectionExcerpts.append`, called by both editors' Add Section
     /// Heading and Add Note Block. Structural entries carry empty document identifiers and use `text`.
     ///
-    /// - Returns: The inserted entry.
+    /// A smart collection takes neither (`SmartCollectionRule`, #1619): every export of one is built from its saved
+    /// search and leaves out the sections and notes a reader writes into it. Both editors disable the two items for one.
+    ///
+    /// - Returns: The inserted entry, or `nil` for a smart collection, which takes none.
     @MainActor
     @discardableResult
     static func appendBlock(kind: CollectionEntryKind, to collection: Collection,
-                            outline: inout [CollectionEntry], modelContext: ModelContext) -> CollectionEntry {
+                            outline: inout [CollectionEntry], modelContext: ModelContext) -> CollectionEntry? {
+        guard SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId) else { return nil }
         let entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "",
                                     sortOrder: nextSortOrder(in: collection, outline: outline))
         entry.entryKind = kind

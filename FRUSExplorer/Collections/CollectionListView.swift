@@ -51,6 +51,8 @@ import UniformTypeIdentifiers
 ///   1.8 — 2026-09-23: #1358 — a row's "N documents" reads `Collection.documentCount`; it
 ///          counted every entry, so six documents under two headings and a prose block read
 ///          "9 documents"
+///   1.9 — 2026-10-15: #1619 — a smart collection's row reads "Smart collection"
+///          (`SmartCollectionRule.listLabel`) where it printed its count of ignored entries
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -443,12 +445,20 @@ private struct CollectionRow: View {
                 .font(.body)
 
             HStack(spacing: 6) {
-                // Documents, not entries: headings and prose blocks are not documents (#1358).
-                let count = collection.documentCount
-                Text(String(localized: "collections.row.count",
-                            defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if collection.savedSearchId != nil {
+                    // #1619: a smart collection's documents come from its saved search, so its count of hand-added
+                    // entries, which everything it produces ignores, read "0 documents" for a search of hundreds.
+                    Label(SmartCollectionRule.listLabel, systemImage: "bolt.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    // Documents, not entries: headings and prose blocks are not documents (#1358).
+                    let count = collection.documentCount
+                    Text(String(localized: "collections.row.count",
+                                defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 if let date = collection.lastModified {
                     Text("·")

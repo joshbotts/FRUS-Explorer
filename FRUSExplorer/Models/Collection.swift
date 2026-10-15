@@ -1031,3 +1031,53 @@ enum CollectionEditorNaming {
             == savedName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
+
+// MARK: - SmartCollectionRule
+
+/// What a collection linked to a saved search takes by hand, and what the app prints of one where it would print a
+/// count (#1619).
+///
+/// A smart collection's preview, every export, its Archives Visit list and its static snapshot come from its saved
+/// search (`CollectionContentResolver.smartRefs(for:)`), which never reads the documents, section headings, note blocks
+/// and highlighted passages a reader adds by hand. The Add to Collection picker stopped taking them in #1593, with
+/// `sentence` under the collection's name. The two editors went on taking them, listing and counting them and leaving
+/// them out of everything the collection produced, and both Collections lists printed a smart collection's count of
+/// them: "0 documents" for a search that returns hundreds. The owner's decision of 2026-10-11 (decision 4 of that day's
+/// plan of record): the editors refuse them with the picker's sentence, and the lists mark the collection as smart.
+///
+/// - **What is refused:** Add Documents, Add Section Heading, Add Note Block, Add Highlighted Passages and an entry
+///   inspector's Insert as Excerpt, in the iOS editor (`CollectionEditorView`, whose `macBody` is also the Mac's New
+///   Collection sheet) and the Mac's Collections window (`CollectionDetailPane`, and its Collection menu through
+///   `CollectionDetailCommandActions`). Each control is disabled or left out, and the three appends the editors share
+///   (`CollectionDocumentDiscovery.appendEntries`, `CollectionEntryOrdering.appendBlock`, `CollectionExcerpts.append`)
+///   write nothing to a smart collection.
+/// - **What is not:** a generated apparatus block. The resolver builds a smart collection's bibliography, chronology,
+///   sources, persons and thematic index from its own `.generated` entries, over the search's documents.
+/// - **What stays:** entries a collection held before it was linked. They are listed and ignored, as before, and count
+///   again once the search is unlinked.
+///
+/// Pure, and beside the model as `CollectionEditorNaming` is, so `SmartCollectionRuleTests` calls what the views call.
+///
+/// Version history:
+///   1.0 — #1619: initial implementation; `sentence` moved here from `CollectionPickerRow` (#1593)
+enum SmartCollectionRule {
+
+    /// Whether a collection whose saved-search link is `savedSearchId` takes documents, section headings, note blocks
+    /// and highlighted passages added by hand: only when it has no link.
+    static func takesHandAddedEntries(savedSearchId: UUID?) -> Bool {
+        savedSearchId == nil
+    }
+
+    /// What a smart collection is, in one sentence: the line under its name in the Add to Collection picker
+    /// (`CollectionPickerRow.caption`) and the first row of its Contents in both editors.
+    static var sentence: String {
+        String(localized: "collection.picker.smart",
+               defaultValue: "Smart collection. Its documents come from its saved search.")
+    }
+
+    /// What the Collections list, the Mac window's collection picker and its Manage Collections rows print for a smart
+    /// collection where they print an ordinary collection's document count.
+    static var listLabel: String {
+        String(localized: "collection.smart.listLabel", defaultValue: "Smart collection")
+    }
+}

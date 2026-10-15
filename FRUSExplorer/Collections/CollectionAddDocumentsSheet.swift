@@ -69,6 +69,7 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///   1.0 — Authoring Phase 3: initial implementation
 ///   1.1 — #1416: both appends take their position from `CollectionEntryOrdering.nextSortOrder`;
 ///          `appendEntries` took the outline's count, which the picker's append could already hold
+///   1.2 — #1619: `appendEntries` writes nothing to a smart collection, and says whether it wrote
 enum CollectionDocumentDiscovery {
 
     /// The canonical `"volumeId/documentId"` key used across the collection editors.
@@ -141,13 +142,23 @@ enum CollectionDocumentDiscovery {
     /// position in the model or the outline — and the rest follow it. Before #1416 it took
     /// `sortedEntries.count`, the position the Add to Collection picker had just given, as
     /// `max + 1`, to a document the open editor's outline had not followed.
+    ///
+    /// A smart collection takes none (`SmartCollectionRule`, #1619): its documents come from its
+    /// saved search. Both editors disable Add Documents for one; this holds as well for a sheet
+    /// opened before the collection was linked.
+    ///
+    /// - Returns: Whether the collection took the documents: `false` for a smart collection.
     @MainActor
+    @discardableResult
     static func appendEntries(
         _ refs: [(documentId: String, volumeId: String)],
         collection: Collection,
         sortedEntries: inout [CollectionEntry],
         modelContext: ModelContext
-    ) {
+    ) -> Bool {
+        guard SmartCollectionRule.takesHandAddedEntries(savedSearchId: collection.savedSearchId) else {
+            return false
+        }
         var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries)
         for ref in refs {
             let entry = CollectionEntry(
@@ -161,6 +172,7 @@ enum CollectionDocumentDiscovery {
             sortedEntries.append(entry)
             next += 1
         }
+        return true
     }
 
     /// Appends a single document entry at the end of a collection **without** a pane-level

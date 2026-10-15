@@ -1707,13 +1707,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4350–4350 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4357–4357 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3853–3853 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3859–3859 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
 
 Search…
 

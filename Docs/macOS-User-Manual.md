@@ -734,13 +734,13 @@ Collections work in two halves, and the split keeps you honest about where decis
 
 ### 12.1 The Collections Window
 
-The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count (a long name is cut short on the toolbar, and listed whole in the menu), plus **New Collection…** (⌥⌘N), **Import Collection…**, and **Manage Collections…** (a sheet where a collection's name is an inline field; right-click a collection there for **Duplicate** — a fully independent copy including composition, sections, and prose — **Word Cloud**, or, on a smart collection, **Create Static Snapshot**). The middle column is the **Contents** outline; the **live preview** sits beside it. The rest of the toolbar carries the authoring verbs:
+The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count, or **Smart collection** for a smart one (a long name is cut short on the toolbar, and listed whole in the menu; on the toolbar a smart collection shows a bolt where the count would be), plus **New Collection…** (⌥⌘N), **Import Collection…**, and **Manage Collections…** (a sheet where a collection's name is an inline field; right-click a collection there for **Duplicate** — a fully independent copy including composition, sections, and prose — **Word Cloud**, or, on a smart collection, **Create Static Snapshot**). The middle column is the **Contents** outline; the **live preview** sits beside it. The rest of the toolbar carries the authoring verbs:
 
 | Control | What it does |
 |---------|--------------|
 | **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts; the Collection menu calls it **Add Highlighted Passages…**), an **Apparatus ▸** submenu of the five generated blocks (**Insert Apparatus** in the Collection menu), and **Add to Archives Visit…** — seeds a plan from this collection's documents (14.8) |
 | **Sort** | Re-order documents chronologically, in one of two modes (12.4) |
-| **⚙ Collection** | The collection-settings popover — name, a note that prints under the title of an export, title-page front matter, composition presets and settings (12.6) |
+| **⚙ Collection** | The collection-settings popover — name, a note that prints under the title of an export, title-page front matter, composition presets and settings (12.6), and a smart collection's link, with **Unlink** (12.8) |
 | **Export…** | The export sheet — format + destination (12.9) |
 | **Document inspector** | Show or hide the trailing inspector for the selected document (12.5) |
 
@@ -827,6 +827,10 @@ The preview sits beside the Contents outline by default (toggle with **⌥⌘P**
 ### 12.8 Smart Collections
 
 A collection linked to a **saved search** resolves its membership from that search at export time — a reading list that keeps itself current. The link is made in the collection editor: with a document open, use the rail's **Collections ▸ Add to Collection**, click **＋ New Collection**, and choose **Link to Saved Search…** in the editor's Smart Collection section. Because membership is dynamic, a smart collection can't be hand-edited or shared as a native file — right-click it and **Create Static Snapshot** to capture the current results as an ordinary collection you can then section, annotate, and share. **Add to Collection**, from a document or from a search result, lists a smart collection under the line *Smart collection. Its documents come from its saved search.* and does not take the click.
+
+The Collections window takes nothing by hand into a smart collection either. Its **Contents** opens with the same line; **Add Documents…**, **Add Section Heading**, **Add Note Block** and **Add Passages…** are dimmed in **＋ Add**, as are their four items in the **Collection** menu; and a highlight in the document inspector offers no **Insert as Excerpt**. **Apparatus** blocks still go in, built over the search's documents. Rows the collection held before you linked it stay in **Contents**, left out of every export while the link stands. The collection picker's menu and **Manage Collections…** read **Smart collection** where another collection shows its document count. **Add to Archives Visit…** runs the search, and when it cannot — the index is not open yet, or the saved search was deleted — an alert says which.
+
+To make a smart collection ordinary again, open **⚙ Collection**: its **Smart Collection** section names the saved search it is linked to, or reads **Saved search not found** if that search was deleted, and **Unlink** removes the link either way. The window cannot link an existing collection; a link is made in the editor **＋ New Collection** opens, as above.
 
 ### 12.9 Export
 

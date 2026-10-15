@@ -591,6 +591,8 @@ enum CollectionPickerOrder {
 ///
 /// Version history:
 ///   1.0 — 2026-10-09: #1593 — initial implementation
+///   1.1 — #1619: the smart collection's sentence is `SmartCollectionRule.sentence`, which both
+///          editors print too
 struct CollectionPickerRow: Equatable {
 
     /// The row's title: the name the Collections list shows.
@@ -618,8 +620,7 @@ struct CollectionPickerRow: Equatable {
         name = CollectionEditorNaming.listName(savedName: savedName)
         takesEntries = !isSmart
         caption = isSmart
-            ? String(localized: "collection.picker.smart",
-                     defaultValue: "Smart collection. Its documents come from its saved search.")
+            ? SmartCollectionRule.sentence
             : String(localized: "collection.picker.docCount",
                      defaultValue: "\(documentCount) document\(documentCount == 1 ? "" : "s")")
     }
