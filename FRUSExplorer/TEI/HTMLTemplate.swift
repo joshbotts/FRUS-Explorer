@@ -50,6 +50,7 @@ import SwiftUI
 ///   1.2 — Session 2026-10-05 (FRUS Explorer Light, S8a): the page, `documentCSS` and `figureCSS`
 ///          moved to FRUSCoreKit's `ReaderPage`, which `build`, `documentCSS` and `figureCSS`
 ///          forward to with the same bytes, so FRUS Explorer Light serves the app's page
+///   1.3 — #1665: `build` takes the column's measure, from the reader's Reading Width
 enum HTMLTemplate {
 
     // MARK: - Public API
@@ -60,17 +61,21 @@ enum HTMLTemplate {
     ///   - model: The render model to display.
     ///   - colorScheme: The current `ColorScheme` from the SwiftUI environment.
     ///   - textSize: The user's text size preference (defaults to `.medium`).
+    ///   - measure: The column's greatest width (defaults to `.classic`, 70ch). The reader passes
+    ///     its Reading Width's measure on this device (#1665).
     /// - Returns: A `String` suitable for `WKWebView.loadHTMLString(_:baseURL:)`.
     static func build(
         model: FRUSDocumentRenderModel,
         colorScheme: ColorScheme,
-        textSize: TextSizePreference = .medium
+        textSize: TextSizePreference = .medium,
+        measure: ReaderMeasure = .classic
     ) -> String {
         // FRUSCoreKit's `ReaderPage.build`, with the reader's serializer: classification chips on
         // source footnotes (Source Explorer Phase 5), which exports leave off, and figure images
         // named by `frusexplorer://figure/` URLs (#1516), which `FRUSURLSchemeHandler` answers from
         // the device's figure store.
-        ReaderPage.build(model: model, appearance: ReaderAppearance(colorScheme), textSize: textSize)
+        ReaderPage.build(model: model, appearance: ReaderAppearance(colorScheme), textSize: textSize,
+                         measure: measure)
     }
 
     // MARK: - Static CSS

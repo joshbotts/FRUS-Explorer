@@ -694,9 +694,47 @@ When on, the app keeps summarizing a few documents at a time while you are not u
 
 ---
 
+#### Reading Width (#1665)
+
+*Settings ▸ Display's Reading Width, beside Document Text Size (#1665, the owner's decisions 20 and 50 of 2026-10-15 and 2026-10-16). Three steps on two ladders: on iPhone 60, 70 and 87ch, on iPad and the Mac 70, 87 and 120ch, so each footer below states its device's figures — the mean characters a line at Medium text, measured on the Long Telegram (`ReadingWidth`). A footer's figures change only with a rung, and `ReadingWidthTests` measures them again.*
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | lines: 1816–1826 | keys: settings.display.readingWidth.label, settings.display.readingWidth.a11y | shared: iOS+macOS (single edit point) -->
+
+**The control's name:** Reading Width
+
+**VoiceOver:** Document reading width
+
+<!-- END SOURCE: settings.display.readingWidth.control -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView | lines: 1829–1830 | key: settings.display.readingWidth.header | shared: iOS+macOS (single edit point) -->
+
+Reading Width
+
+<!-- END SOURCE: settings.display.readingWidth.header -->
+
+<!-- SOURCE: FRUSExplorer/TEI/ReadingWidth.swift | ReadingWidth.label | lines: 52–55 | keys: settings.display.readingWidth.narrow, settings.display.readingWidth.standard, settings.display.readingWidth.wide | shared: iOS+macOS (single edit point) -->
+
+**The three steps:** Narrow · Standard · Wide
+
+<!-- END SOURCE: settings.display.readingWidth.steps -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.readingWidthFooter | lines: 1784–1785 | key: settings.display.readingWidth.footer.phone | shared: iPhone only -->
+
+How long a document’s lines may grow: about 63 characters at Narrow, 77 at Standard and 100 at Wide, at Medium text. In portrait the screen is narrower than all three.
+
+<!-- END SOURCE: settings.display.readingWidth.footer.phone -->
+
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.readingWidthFooter | lines: 1787–1788 | key: settings.display.readingWidth.footer.wide | shared: iPad and macOS -->
+
+How long a document’s lines may grow: about 77 characters at Narrow, 100 at Standard and 145 at Wide, at Medium text. A narrower window, or the Research panel beside the document, makes them shorter.
+
+<!-- END SOURCE: settings.display.readingWidth.footer.wide -->
+
+---
+
 #### Reading mode — footer (iPad and Mac)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1883–1884 | key: settings.display.reading.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1918–1919 | key: settings.display.reading.footer -->
 
 “Remember Last” reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document.
 
@@ -706,7 +744,7 @@ When on, the app keeps summarizing a few documents at a time while you are not u
 
 #### Reading mode — footer (iPhone)
 
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1880–1881 | key: settings.display.reading.footer.iphone -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | lines: 1915–1916 | key: settings.display.reading.footer.iphone -->
 
 The Research rail opens as a bottom sheet from the toolbar’s Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed.
 
@@ -1331,42 +1369,42 @@ All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag
 <!-- END SOURCE: settings.tags.merge.explanation -->
 
 #### Footer — How many volumes appear as distinct colors in the…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1810–1811 | key: settings.display.chartColors.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1845–1846 | key: settings.display.chartColors.footer -->
 
 How many volumes appear as distinct colors in the Chronology and Corpus Analytics charts before the rest fold into a single “Other” series. Each chart can override this per view.
 
 <!-- END SOURCE: settings.display.chartColors.footer -->
 
 #### Footer — Used for Copy Citation, Share Citation, and the citation…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1836–1837 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1871–1872 | key: settings.display.citationStyle.footer.mac | shared: macOS only -->
 
 Used for Copy Citation, Share Citation, and the citation popover’s default. The popover can still switch styles per-presentation for comparison.
 
 <!-- END SOURCE: settings.display.citationStyle.footer.mac -->
 
 #### VoiceOver hint — When on, tapping near the left or right edge of a document…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1871–1872 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | DisplaySettingsView.body | lines: 1906–1907 | key: settings.display.edgeTapNavigation.a11y | shared: iOS only -->
 
 When on, tapping near the left or right edge of a document opens the previous or next one — available whenever the Research rail is closed
 
 <!-- END SOURCE: settings.display.edgeTapNavigation.a11y -->
 
 #### Footer — These defaults can be overridden per-session in the Search…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1964–1965 | key: settings.search.scope.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 1999–2000 | key: settings.search.scope.footer -->
 
 These defaults can be overridden per-session in the Search filter panel. At least one scope stays on — searching nothing has no result to show.
 
 <!-- END SOURCE: settings.search.scope.footer -->
 
 #### Footer — Documents you have reclassified between “document” and…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2032–2033 | key: settings.search.classificationCorrections.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2067–2068 | key: settings.search.classificationCorrections.footer -->
 
 Documents you have reclassified between “document” and “editorial note”. This filter, badges, counts, and exports follow your corrections.
 
 <!-- END SOURCE: settings.search.classificationCorrections.footer -->
 
 #### Footer — How many lines of matched context each search result shows.…
-<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2047–2048 | key: settings.search.snippet.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/SettingsView.swift | SearchDefaultsView.body | lines: 2082–2083 | key: settings.search.snippet.footer -->
 
 How many lines of matched context each search result shows. Individual search screens can override this default.
 

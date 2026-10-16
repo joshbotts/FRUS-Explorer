@@ -20,6 +20,41 @@ public enum ReaderAppearance: String, CaseIterable, Sendable {
     case light, dark
 }
 
+// MARK: - ReaderMeasure
+
+/// The greatest width of the reader's column, in `ch`, which `ReaderPage.cssVariables` writes as
+/// `--reader-measure` (#1665).
+///
+/// The host chooses it: the app from the reader's Reading Width and the device, a host outside
+/// the app however it likes. In `ch`, the width of the font's "0", so a measure keeps the same
+/// number of characters a line at every text size. The column's padding is inside it, since the
+/// page's boxes are `border-box`: 70ch at Medium text is 606 px, 96 of them padding.
+///
+/// Measured on the Long Telegram (frus1946v06/d475) at Medium text, on the reader's page in WebKit
+/// under iOS 27.0 (the iPhone 17 simulator) and macOS 27.0, alike to the line on both: 60ch holds
+/// a mean 63 characters a line, 70ch 77, 87ch 100 and 120ch 145. From Small to Extra Large text
+/// each figure moves by at most 11 (120ch: 142 to 152).
+///
+/// Version history:
+///   1.0 — #1665: initial implementation
+public struct ReaderMeasure: Hashable, Sendable {
+
+    /// The measure in `ch`.
+    public let ch: Int
+
+    /// A measure of `ch` characters' width.
+    public init(ch: Int) {
+        self.ch = ch
+    }
+
+    /// 70ch, the one measure the page had from 2026-08-14 to #1665, and its measure where a host
+    /// names none: a mean 77 characters a line at Medium.
+    public static let classic = ReaderMeasure(ch: 70)
+
+    /// The measure as a CSS length.
+    public var css: String { "\(ch)ch" }
+}
+
 // MARK: - ReaderPage
 
 /// The reader's page: a complete `<!DOCTYPE html>` document around a serializer's fragment, with
@@ -63,6 +98,8 @@ public enum ReaderAppearance: String, CaseIterable, Sendable {
 ///          defined, now light enough (and in the dark palette blue enough) for every text colour
 ///   1.4 — #1599: `.named-references` and `.named-list`, the two lists the reader writes below a
 ///          document that names its people and terms on `@ana`. No colour is new
+///   1.5 — #1665: the column's measure is `--reader-measure`, which the host sets
+///          (`ReaderMeasure`), where it was a fixed 70ch; a host that sets none gets 70ch
 public enum ReaderPage {
 
     // MARK: - Page
@@ -73,6 +110,7 @@ public enum ReaderPage {
     ///   - model: The render model to display.
     ///   - appearance: The palette, `.light` by default.
     ///   - textSize: The body text size, `.medium` by default.
+    ///   - measure: The column's greatest width, `.classic` (70ch) by default (#1665).
     ///   - serializer: What writes the fragment: `FRUSRenderNodeHTMLSerializer.reader`, the app's, by
     ///     default.
     ///   - head: Markup a host adds at the end of the head, such as its scripts, each line ending in
@@ -82,11 +120,12 @@ public enum ReaderPage {
         model: FRUSDocumentRenderModel,
         appearance: ReaderAppearance = .light,
         textSize: TextSizePreference = .medium,
+        measure: ReaderMeasure = .classic,
         serializer: FRUSRenderNodeHTMLSerializer = .reader,
         head: String = ""
     ) -> String {
         let fragment = serializer.serialize(model)
-        let cssVars  = cssVariables(appearance: appearance, textSize: textSize)
+        let cssVars  = cssVariables(appearance: appearance, textSize: textSize, measure: measure)
         return """
         <!DOCTYPE html>
         <html lang="en">
@@ -110,9 +149,9 @@ public enum ReaderPage {
     /// Returns a CSS `:root { }` block containing all custom properties consumed by
     /// ``documentCSS``.
     ///
-    /// Called by ``build(model:appearance:textSize:serializer:head:)``, which the app's
-    /// `HTMLTemplate.build(model:colorScheme:textSize:)` calls whenever the model, system
-    /// appearance, or user text-size preference changes. Because `WKWebView` is reloaded on each
+    /// Called by ``build(model:appearance:textSize:measure:serializer:head:)``, which the app's
+    /// `HTMLTemplate.build(model:colorScheme:textSize:measure:)` calls whenever the model, system
+    /// appearance, or user text-size or reading-width preference changes. Because `WKWebView` is reloaded on each
     /// signature change, no JavaScript injection is required to update the theme at runtime — the
     /// full HTML string is rebuilt with the new variables.
     ///
@@ -149,13 +188,16 @@ public enum ReaderPage {
     /// | `--font-size-dateline`      | p.dateline (≈ 0.86× body)                 |
     /// | `--font-size-footnote`      | aside.footnote content (≈ 0.78× body)     |
     /// | `--font-family`             | System font stack                          |
+    /// | `--reader-measure`          | The column's greatest width (#1665)        |
     ///
     /// - Parameters:
     ///   - appearance:  `.light` or `.dark`; the app passes SwiftUI's colour scheme.
     ///   - textSize:    The user's body-text size preference. Defaults to `.medium`.
+    ///   - measure:     The column's greatest width. Defaults to `.classic`, 70ch.
     public static func cssVariables(
         appearance: ReaderAppearance,
-        textSize: TextSizePreference = .medium
+        textSize: TextSizePreference = .medium,
+        measure: ReaderMeasure = .classic
     ) -> String {
         let dark = appearance == .dark
 
@@ -235,6 +277,7 @@ public enum ReaderPage {
           --font-size-dateline:      \(px(datePt));
           --font-size-footnote:      \(px(footPt));
           --font-family:             \(fontStack);
+          --reader-measure:          \(measure.css);
         }
         """
     }
@@ -324,12 +367,13 @@ public enum ReaderPage {
     /* A maximum measure, reversing the earlier "no max-width, the user can resize freely"
        decision. The 2026-08-14 UI review (X-1, the package's one CRITICAL, filed on Mac and
        iPad independently) measured the consequence of that freedom: ~150-300 characters per
-       line on a resized Mac window, ~190 on a 13-inch iPad — two to four times the ~66-char
-       typographic measure, on the surface the whole app exists to serve. 70ch tracks the
-       reader's own font size, and margin:auto keeps the column centered, so a wide window
-       adds margin rather than line length. iPhone is narrower than 70ch and unaffected. */
+       line on a resized Mac window, ~190 on a 13-inch iPad. The measure is in ch, so it tracks
+       the reader's own font size, and margin:auto keeps the column centered, so a wide window
+       adds margin rather than line length. Since #1665 the host sets it (--reader-measure), so
+       iPad and the Mac read a wider column than a phone and the reader can choose another;
+       a page with no measure set keeps the 70ch it had. */
     .frus-document {
-      max-width: 70ch;
+      max-width: var(--reader-measure, 70ch);
       margin: 0 auto;
       padding: 24px 48px 48px;
     }

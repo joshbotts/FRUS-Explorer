@@ -126,8 +126,9 @@ func decodeSelectionRect(_ value: Any?) -> CGRect? {
 /// - `model.documentId` — the rendered document
 /// - `colorScheme` — system appearance (light / dark)
 /// - `textSize` — user text-size preference
+/// - `measure` — the column's greatest width, from the user's Reading Width (#1665)
 ///
-/// A change to any of these three values triggers a full `loadHTMLString` call. This
+/// A change to any of these four values triggers a full `loadHTMLString` call. This
 /// is acceptable because the web view is always displaying a single document; the
 /// reload is imperceptible at human timescales (~10–50 ms for typical FRUS documents).
 ///
@@ -218,6 +219,8 @@ public struct FRUSDocumentWebView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    /// Settings ▸ Display's Reading Width (#1665), on this device's ladder (`ReadingWidth`).
+    @AppStorage(SettingsKeys.readingWidth) private var readingWidth: ReadingWidth = .standard
 
     // MARK: Body
 
@@ -228,6 +231,7 @@ public struct FRUSDocumentWebView: View {
             footnoteAnchor:     footnoteAnchor,
             colorScheme:        colorScheme,
             textSize:           textSize,
+            measure:            readingWidth.measure,
             highlights:         highlights,
             findController:     findController,
             onPersonTap:        onPersonTap,
@@ -245,6 +249,7 @@ public struct FRUSDocumentWebView: View {
             footnoteAnchor:     footnoteAnchor,
             colorScheme:        colorScheme,
             textSize:           textSize,
+            measure:            readingWidth.measure,
             highlights:         highlights,
             findPresenter:      findPresenter,
             onPersonTap:        onPersonTap,
@@ -322,16 +327,19 @@ extension FRUSDocumentWebView {
 
 /// Equality key used by the coordinator to decide whether to reload the web view.
 ///
-/// Captures the three inputs that, when changed, require a new `loadHTMLString` call.
+/// Captures the four inputs that, when changed, require a new `loadHTMLString` call.
 struct WebViewSignature: Equatable {
     let documentId:  String
     let colorScheme: ColorScheme
     let textSize:    TextSizePreference
+    /// The column's greatest width (#1665).
+    let measure:     ReaderMeasure
 
     static let empty = WebViewSignature(
         documentId:  "",
         colorScheme: .light,
-        textSize:    .medium
+        textSize:    .medium,
+        measure:     .classic
     )
 }
 
@@ -582,6 +590,8 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
     let footnoteAnchor: String?
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
+    /// The column's greatest width (#1665).
+    let measure:        ReaderMeasure
     let highlights:     [DocumentHighlight]
     /// Find-in-document controller (#363 #5); receives the live `WKWebView` on creation.
     var findController:     DocumentFindController?
@@ -639,7 +649,8 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
         let sig = WebViewSignature(
             documentId:  model.documentId,
             colorScheme: colorScheme,
-            textSize:    textSize
+            textSize:    textSize,
+            measure:     measure
         )
         // Always sync selection callbacks (lightweight — just closure assignments)
         context.coordinator.onSelectionChanged = onSelectionChanged
@@ -654,7 +665,8 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
             context.coordinator.schemeHandler?.onBrokenRefTap = onBrokenRefTap
-            let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
+            let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize,
+                                          measure: measure)
             // A new page: whatever was revealed belonged to the outgoing document, so clear the
             // record and let `didFinish` apply the pending anchor against the incoming one.
             context.coordinator.lastRevealedFootnoteAnchor = nil
@@ -831,6 +843,8 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     let footnoteAnchor: String?
     let colorScheme:    ColorScheme
     let textSize:       TextSizePreference
+    /// The column's greatest width (#1665).
+    let measure:        ReaderMeasure
     let highlights:     [DocumentHighlight]
     var findPresenter:  DocumentFindPresenter?
     var onPersonTap:        ((PersonEntry?) -> Void)?
@@ -897,7 +911,8 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         let sig = WebViewSignature(
             documentId:  model.documentId,
             colorScheme: colorScheme,
-            textSize:    textSize
+            textSize:    textSize,
+            measure:     measure
         )
         context.coordinator.onSelectionChanged = onSelectionChanged
         context.coordinator.onSelectionCleared = onSelectionCleared
@@ -912,7 +927,8 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
             context.coordinator.schemeHandler?.onGlossTap    = onGlossTap
             context.coordinator.schemeHandler?.onCrossRefTap = onCrossRefTap
             context.coordinator.schemeHandler?.onBrokenRefTap = onBrokenRefTap
-            let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize)
+            let html = HTMLTemplate.build(model: model, colorScheme: colorScheme, textSize: textSize,
+                                          measure: measure)
             // A new page: whatever was revealed belonged to the outgoing document, so clear the
             // record and let `didFinish` apply the pending anchor against the incoming one.
             context.coordinator.lastRevealedFootnoteAnchor = nil

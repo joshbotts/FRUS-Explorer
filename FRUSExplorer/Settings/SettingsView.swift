@@ -1740,8 +1740,10 @@ struct SyncSettingsView: View {
 /// Version history:
 ///   1.0 — Session 26: iOS Display settings
 ///   1.1 — S-5b: shared with macOS; `SettingsDisplayPane` deleted
+///   1.2 — #1665: Reading Width, beside Document Text Size
 struct DisplaySettingsView: View {
     @AppStorage("frus.display.textSize") private var textSize: TextSizePreference = .medium
+    @AppStorage(SettingsKeys.readingWidth) private var readingWidth: ReadingWidth = .standard
     @AppStorage(SettingsKeys.citationStyle) private var citationStyle: CitationStyle = .historyAtState
     @AppStorage(SettingsKeys.defaultDocumentMode) private var defaultDocumentMode: DefaultDocumentMode = .rememberLast
     @AppStorage(ChartSeriesPalette.storageKey) private var chartSeriesCount = ChartSeriesPalette.defaultCount
@@ -1774,6 +1776,19 @@ struct DisplaySettingsView: View {
         #endif
     }
 
+    /// What each Reading Width step gives on this device's ladder (#1665): the mean characters a
+    /// line `ReadingWidth` records, at Medium text.
+    private var readingWidthFooter: String {
+        switch ReadingWidth.currentLadder {
+        case .phone:
+            return String(localized: "settings.display.readingWidth.footer.phone",
+                          defaultValue: "How long a document’s lines may grow: about 63 characters at Narrow, 77 at Standard and 100 at Wide, at Medium text. In portrait the screen is narrower than all three.")
+        case .wide:
+            return String(localized: "settings.display.readingWidth.footer.wide",
+                          defaultValue: "How long a document’s lines may grow: about 77 characters at Narrow, 100 at Standard and 145 at Wide, at Medium text. A narrower window, or the Research panel beside the document, makes them shorter.")
+        }
+    }
+
     var body: some View {
         Form {
             Section {
@@ -1795,6 +1810,26 @@ struct DisplaySettingsView: View {
             } footer: {
                 Text(String(localized: "settings.display.textSize.footer",
                             defaultValue: "Adjusts the body text size in the Document view."))
+            }
+
+            Section {
+                Picker(String(localized: "settings.display.readingWidth.label",
+                              defaultValue: "Reading Width"),
+                       selection: $readingWidth) {
+                    ForEach(ReadingWidth.allCases) { width in
+                        Text(width.label).tag(width)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel(
+                    String(localized: "settings.display.readingWidth.a11y",
+                           defaultValue: "Document reading width")
+                )
+            } header: {
+                Text(String(localized: "settings.display.readingWidth.header",
+                            defaultValue: "Reading Width"))
+            } footer: {
+                Text(readingWidthFooter)
             }
 
             Section {
@@ -2080,6 +2115,12 @@ func formattedBytes(_ bytes: Int) -> String {
 // MARK: - SettingsKeys
 
 enum SettingsKeys {
+    /// Settings ▸ Display's Reading Width (#1665), a `ReadingWidth` raw value. Device-local, as
+    /// Document Text Size (`frus.display.textSize`) is, and NOT on `SyncedPreferences`: a stored
+    /// property on a mirrored `@Model` would need a Production deploy (the #488 gate), and a width
+    /// suited to one device's screen is not another's.
+    static let readingWidth = "frus.display.readingWidth"
+
     /// The global find-related axis tuning, as an `AxisWeights` raw string.
     ///
     /// Device-local by nature and NOT on `SyncedPreferences`: a ranking tuning is edited in the
