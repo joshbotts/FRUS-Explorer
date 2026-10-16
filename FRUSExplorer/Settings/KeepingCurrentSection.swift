@@ -228,7 +228,8 @@ private struct KeepingCurrentRow: View {
                 Text(row.entry.volumeId)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if row.isSideloaded {
+                // Until the update is done: then the published copy has replaced the reader's.
+                if row.isSideloaded && row.status != .updated {
                     note(KeepingCurrentCopy.sideloaded, systemImage: "exclamationmark.triangle.fill", tint: .orange)
                 }
                 if case .failed(let failure) = row.status {

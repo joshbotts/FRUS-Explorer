@@ -278,19 +278,11 @@ final class KeepingCurrentModel {
     func downloadStateDidChange(_ state: DownloadManagerState) {
         activeVolumeIds = Set(state.activeVolumeIds)
         queuedVolumeIds = activeVolumeIds.union(state.pendingVolumeIds)
-        for index in rows.indices {
-            let id = rows[index].id
-            switch rows[index].status {
-            case .queued where activeVolumeIds.contains(id):
-                rows[index].status = .downloading
-            case .downloading where !activeVolumeIds.contains(id) && queuedVolumeIds.contains(id):
-                // Waiting again, between a failed attempt and its retry.
-                rows[index].status = .queued
-            default:
-                // A row that has left the queue keeps its state until the transfer's own report
-                // says how it ended: it may be between a failure and its retry.
-                break
-            }
+        // Only forward. A row that has started stays Downloading through a failed attempt's wait
+        // for its retry, and a row that has left the queue keeps its state until the transfer's
+        // own report says how it ended.
+        for index in rows.indices where rows[index].status == .queued && activeVolumeIds.contains(rows[index].id) {
+            rows[index].status = .downloading
         }
     }
 

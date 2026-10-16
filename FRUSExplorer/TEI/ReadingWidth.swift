@@ -44,6 +44,7 @@ import UIKit
 enum ReadingWidth: String, CaseIterable, Identifiable, Sendable {
     case narrow, standard, wide
 
+    /// The step's stored value, which names it in a picker.
     var id: String { rawValue }
 
     /// The step's name in Settings.
