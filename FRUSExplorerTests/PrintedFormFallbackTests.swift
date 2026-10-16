@@ -32,6 +32,8 @@ import Testing
 //
 // Version history:
 //   1.0 — #1608: initial implementation
+//   1.1 — #1608, decision 38 of the 2026-10-14 plan of record: an exported image's caption and a collection's plate
+//         carry the device caveat (`PrintedFormWordingTests.exportsCarryTheDeviceCaveat`)
 
 // MARK: - Fixtures
 
@@ -974,12 +976,41 @@ struct PrintedFormWordingTests {
                 == "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference, both counted as printed")
         #expect(WordCloudDisplayState.keynessAxisLabel(for: printedRanking(.dictionary))
                 == "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference")
+        // Since decision 38 of the 2026-10-14 plan of record each segment carries the device caveat in the owner's
+        // words, where it read "…as printed, not in dictionary forms" (see `exportsCarryTheDeviceCaveat`).
         #expect(WordCloudDisplayState.printedFormsCaptionSegment(counted, lens: .allTerms,
                                                                  ranking: printedRanking(.printed))
-                == "counted and compared as printed, not in dictionary forms")
-        // Under Frequency the caption keeps the segment it has had since #1373.
+                == "counted and compared as printed on this device; another device may count and compare differently")
+        // Under Frequency the caption carries the counted form, as it has since #1373.
         #expect(WordCloudDisplayState.printedFormsCaptionSegment(counted, lens: .allTerms, ranking: nil)
-                == "counted as printed, not in dictionary forms")
+                == "counted as printed on this device; another device may count differently")
+    }
+
+    /// The owner's answer of 2026-10-15 (decision 38): an exported image and a collection's cloud plate carry the device
+    /// caveat, "Counted as printed on this device; another device may count differently.", and the same in the counted
+    /// and compared form. The screen and the CSV said that another device can count differently; these two short lines
+    /// said only how the words were counted.
+    @Test("An exported image and a collection's plate say that another device may count differently (decision 38)")
+    func exportsCarryTheDeviceCaveat() {
+        let counted = cloud(PrintedFormFixture.unlemmatised)
+        // The plate is a line of its own, in the owner's words.
+        #expect(WordCloudDisplayState.countedAsPrintedPlateLine(counted, lens: .allTerms)
+                == "Counted as printed on this device; another device may count differently.")
+        // The image's caption carries the same as a segment, in its counted and its counted-and-compared forms.
+        let segments = [
+            WordCloudDisplayState.countedAsPrintedCaptionSegment(counted, lens: .allTerms),
+            WordCloudDisplayState.printedFormsCaptionSegment(counted, lens: .allTerms, ranking: nil),
+            WordCloudDisplayState.printedFormsCaptionSegment(counted, lens: .allTerms, ranking: printedRanking(.printed)),
+        ]
+        #expect(segments == [
+            "counted as printed on this device; another device may count differently",
+            "counted as printed on this device; another device may count differently",
+            "counted and compared as printed on this device; another device may count and compare differently",
+        ])
+        // A cloud counted in dictionary forms carries none of it.
+        #expect(WordCloudDisplayState.countedAsPrintedPlateLine(cloud(.fullyWorking), lens: .allTerms) == nil)
+        #expect(WordCloudDisplayState.printedFormsCaptionSegment(cloud(.fullyWorking), lens: .allTerms,
+                                                                 ranking: nil) == nil)
     }
 }
 
