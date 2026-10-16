@@ -7,8 +7,9 @@ Nothing here is published; App Store Connect metadata is the owner's to paste an
 the build-49 wave's regenerations): the volume count and every map figure had moved since the
 draft was written, when the manifest held 552 volumes. §5 gives each figure's source. The field
 lengths did not move (552 → 553 is the same length), and §6's counter was re-run. **Three
-sentences of the description are contradicted by shipped features and wait on the owner's wording
-— see "Open before paste" under §2.**
+sentences of the description that shipped features contradicted were reworded by the owner on
+2026-10-15 — see "Settled before paste" under §2.** The price (free) and the territories (every
+storefront, English only) were confirmed the same day.
 
 **Every field below is counted, not estimated.** The plan's headline correction for this step is a
 length failure — a candidate subtitle 83 characters over a 30-character field — so the counts are
@@ -70,7 +71,9 @@ FRUS,diplomacy,history,archives,primary source,NARA,research,foreign policy,decl
 
 ## 2. Description
 
-**4,000-character field. This draft is 2,324 / 4,000 ✅**, leaving room for the owner to add or cut.
+**4,000-character field. This draft is 2,525 / 4,000 ✅** (counted with Python's `len()` over the
+block on 2026-10-15, after the owner's three sentences; 2,324 before them), leaving room for the
+owner to add or cut.
 
 The disclaimer is in **this** field, immediately after the "official documentary record" sentence,
 which is the placement §4.1 requires — the two must not be separated.
@@ -85,7 +88,9 @@ series in this app reflects personal views. Those views are not necessarily thos
 Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 
 The app downloads the Office of the Historian's TEI editions, indexes them on your device, and
-works offline from then on. Nothing you read, search, or write is sent anywhere.
+works offline from then on. What you read, search and write stays with you: notes and collections
+sync only through your own iCloud account, and the app reaches the National Archives' catalog or
+your Zotero library only when you ask it to.
 
 READ
 Documents rendered from the original TEI with footnotes, page breaks and live cross-references,
@@ -96,15 +101,15 @@ Full-text search with stemming, phrases, NEAR() proximity and exact-word matchin
 volumes. Save a scope, or capture a working corpus from a result set and search inside it.
 
 SOURCE
-Every document carries the editors' own note saying where it came from. FRUS Explorer resolves
-those notes as far as the offline reference data reaches — a lot file to its record group and
+Most documents carry the editors' own note saying where the original came from. FRUS Explorer
+resolves those notes as far as the offline reference data reaches — a lot file to its record group and
 series, a decimal file number to the subject it encodes, a collection to the archive that holds
 it — so a citation becomes a shelf you could visit.
 
 ANALYSE
 Term frequency over time, cross-reference graphs, person and archival profiles, and a semantic map
-of the whole published series. Every chart exports as a figure or as a CSV carrying its full
-method statement.
+of the whole published series. Nearly every chart exports its data as a CSV carrying its full
+method statement, and most export as a figure too.
 
 COLLECT
 Group documents into collections and projects, annotate them, and export to PDF, DOCX, HTML,
@@ -133,21 +138,26 @@ National Archives and is subject to their terms of use.
 - **"AI-powered."** The on-device model does one thing — turning a typed question into a vector —
   and the feature ships flagged experimental in the app itself. The description says the same.
 
-### Open before paste (owner)
+### Settled before paste (owner, 2026-10-15)
 
-Three sentences in the block above say more than the app does. Each was checked against the tree
-at `dc17d945`; the wording is the owner's to choose, so the block is unchanged.
+Three sentences of the block said more than the app does. Each was checked against the tree at
+`dc17d945`, and the owner chose the wording that replaced each on 2026-10-15 (`Plan-Of-Record-2026-10-14.md`
+§0, decisions 28 to 30). The block above carries the new sentences; what each replaced, and why:
 
-- ***"Nothing you read, search, or write is sent anywhere."*** The app queries the NARA Catalog
+- ***"Nothing you read, search, or write is sent anywhere."*** Now: *"What you read, search and
+  write stays with you: notes and collections sync only through your own iCloud account, and the
+  app reaches the National Archives' catalog or your Zotero library only when you ask it to."* The app queries the NARA Catalog
   when a reader asks it to (`FRUSExplorer/SourceExplorer/NARACatalogClient.swift`,
   `catalog.archives.gov/api/v2`) and sends a collection to the reader's own Zotero library on
   request (`FRUSExplorer/Zotero/ZoteroAPIClient.swift`, `api.zotero.org`), and the *ON YOUR DEVICE*
   paragraph of the same description says notes and collections sync through iCloud. Accurate
   wording already exists in `Completed/App-Store-Custom-EULA.md`, clause 9 (*Data*), the custom EULA build 51 does not need (it moved there on 2026-10-15, never entered).
-- ***"Every chart exports as a figure or as a CSV."*** Both manuals say otherwise: "Not every chart
-  offers a figure", and the Person Network graph does not export
-  (`Docs/macOS-User-Manual.md` §15.8, `Docs/iOS-User-Manual.md` §15.8).
-- ***"Every document carries the editors' own note saying where it came from."***
+- ***"Every chart exports as a figure or as a CSV."*** Now: *"Nearly every chart exports its data
+  as a CSV carrying its full method statement, and most export as a figure too."* Both manuals say
+  "Not every chart offers a figure", and two do not export at all, the Person Network graph and
+  Chronology's distribution chart (`Docs/macOS-User-Manual.md` §15.8, `Docs/iOS-User-Manual.md` §15.8).
+- ***"Every document carries the editors' own note saying where it came from."*** Now: *"Most
+  documents carry the editors' own note saying where the original came from."*
   `collection-usage-index.json` counts 264,598 source notes paired with a document, in 502 of the
   553 volumes, against 314,616 printed documents: 51 volumes carry none.
 
@@ -201,9 +211,9 @@ Not one is quoted from prose.
 | Volumes | 553 | `manifest.json`, entry count |
 | Documents indexed | 316,814 | the index v63 parser's emission over the 553 volumes, reproduced 2026-10-10 with `tools/page-citations/replica.py` at corpus `99d851c79` (316,768 at `8e5da08c1` on 2026-10-01: one fewer since `frus1902app1`'s two re-typed divisions, 47 more since `frus1952-54v09p1`'s restored documents); index v64 and v65 changed no document count. **A device's own `SELECT COUNT(*) FROM document_cache` is owed to the release's re-index census** — the draft's 316,839 was that query at 552 volumes |
 | Documents on the map | 314,616 | `semantic-vectors-index.json`, `documentCount` |
-| Regions | 172 | `semantic-map-index.json`, `clusters` |
-| Documents in a region | 222,348 | `documentCount` − `layout.unclusteredCount` |
-| Documents between regions | 92,268 | `semantic-map-index.json`, `layout.unclusteredCount` |
+| Regions | 140 | `semantic-map-index.json`, `clusters`, re-read 2026-10-15 after B4 (EmbeddingGemma 2's layout; the 300m's held 172) |
+| Documents in a region | 226,557 | `documentCount` − `layout.unclusteredCount`, re-read 2026-10-15 (222,348 under the 300m) |
+| Documents between regions | 88,059 | `semantic-map-index.json`, `layout.unclusteredCount`, re-read 2026-10-15 (92,268 under the 300m) |
 | Series published since | 1861 | `manifest.json`, earliest `publicationDate` |
 | Subseries | 107 | `manifest.json`, distinct `subseries` |
 
