@@ -34,6 +34,8 @@ import FTS5Store
 ///   rows and the count, through `SearchService` (on the code before #1680 both returned their answer).
 /// - A statement whose task is cancelled after the check at its start, so that only the progress
 ///   handler can stop it, stops (the pipeline's prepared-statement hook cancels the task there).
+/// - A statement that ends before the handler's first call, and a snippet pass with no rows, still
+///   give a cancelled task no answer: the checks after them throw.
 /// - The snippet pass stops at its next row.
 /// - Nothing unarmed is stopped: a keyed read and a whole volume's indexing, both on the same
 ///   connection and both in a cancelled task, run to their end.
@@ -91,8 +93,8 @@ struct SearchCancellationTests {
         #expect(try await service.searchCount(parameters: Self.containment) == Self.documents)
 
         let prepared = HookCalls()
-        await fixture.pipeline.setSearchStatementPreparedTestHook {
-            prepared.record()
+        await fixture.pipeline.setSearchStatementTestHook { moment in
+            if moment == .prepared { prepared.record() }
         }
         let rows = Task { () async throws -> [SearchResult] in
             withUnsafeCurrentTask { $0?.cancel() }
@@ -108,10 +110,11 @@ struct SearchCancellationTests {
                 "a statement was prepared for a task already cancelled")
     }
 
-    /// The prepared-statement hook cancels the running task after the check at the statement's start,
-    /// so only the progress handler can stop it: a statement left to run returns its rows or its count.
-    /// Driven on the pipeline itself, since `SearchService`'s snippet pass would stop a search whose rows
-    /// had come back, and so hide a handler that never acted.
+    /// The test hook cancels the running task once the statement is prepared, after the check at its
+    /// start, so only the progress handler can stop it before its end. The hook's second moment says
+    /// whether it did: a statement left to run reaches `.ranToItsEnd`, and its answer would then be
+    /// dropped by the check after it, which would hide a handler that never acted. Driven on the
+    /// pipeline itself, since `SearchService`'s snippet pass would hide it too.
     @Test("A statement whose task is cancelled while it runs stops: the progress handler stops it")
     func aStatementCancelledWhileItRunsStops() async throws {
         let fixture = try await makeFixture()
@@ -120,9 +123,15 @@ struct SearchCancellationTests {
         let (corpus, user) = try await fixture.service.matchExpressions(for: Self.containment)
         let filters = await fixture.service.filtersForTesting(Self.containment)
         let hookCalls = HookCalls()
-        await pipeline.setSearchStatementPreparedTestHook {
-            hookCalls.record()
-            withUnsafeCurrentTask { $0?.cancel() }
+        let ranToItsEnd = HookCalls()
+        await pipeline.setSearchStatementTestHook { moment in
+            switch moment {
+            case .prepared:
+                hookCalls.record()
+                withUnsafeCurrentTask { $0?.cancel() }
+            case .ranToItsEnd:
+                ranToItsEnd.record()
+            }
         }
 
         let rows = Task { () async throws -> [IndexedSearchRow] in
@@ -134,17 +143,52 @@ struct SearchCancellationTests {
             try await pipeline.searchDocumentsCount(corpusMatch: corpus, userContentMatch: user, filters: filters)
         }
         await #expect(throws: CancellationError.self) { try await count.value }
-        // Both statements reached the hook, so the check at their start had passed and the handler
-        // was all that could stop them.
+        // Both statements reached the hook, so the check at their start had passed, and neither ran to
+        // its end: the handler stopped both.
         #expect(hookCalls.count == 2)
+        #expect(ranToItsEnd.count == 0, "a statement whose task was cancelled ran to its end")
 
         // With the hook gone, the same statements run, so the connection was left as it was.
-        await pipeline.setSearchStatementPreparedTestHook(nil)
+        await pipeline.setSearchStatementTestHook(nil)
         let again = try await pipeline.searchDocuments(corpusMatch: corpus, userContentMatch: user,
                                                        filters: filters, limit: 100, offset: 0)
         #expect(again.count == 100)
         #expect(try await pipeline.searchDocumentsCount(corpusMatch: corpus, userContentMatch: user,
                                                         filters: filters) == Self.documents)
+    }
+
+    /// A statement over a word in no document runs a few dozen instructions and ends before the
+    /// handler is ever called, so only the check after it can keep its answer from a cancelled task.
+    @Test("A statement that ends before the handler's first call gives a cancelled task no answer")
+    func aStatementTooShortForTheHandlerGivesNoAnswer() async throws {
+        let fixture = try await makeFixture()
+        defer { cleanUp(fixture.dir) }
+        let pipeline = fixture.pipeline
+        let nowhere = SearchParameters(keywords: "xylophonic")
+        let (corpus, user) = try await fixture.service.matchExpressions(for: nowhere)
+        let filters = await fixture.service.filtersForTesting(nowhere)
+        // Anti-vacuity: uncancelled, the statements answer, with nothing.
+        #expect(try await pipeline.searchDocumentsCount(corpusMatch: corpus, userContentMatch: user,
+                                                        filters: filters) == 0)
+        let ranToItsEnd = HookCalls()
+        await pipeline.setSearchStatementTestHook { moment in
+            switch moment {
+            case .prepared: withUnsafeCurrentTask { $0?.cancel() }
+            case .ranToItsEnd: ranToItsEnd.record()
+            }
+        }
+
+        let rows = Task { () async throws -> [IndexedSearchRow] in
+            try await pipeline.searchDocuments(corpusMatch: corpus, userContentMatch: user, filters: filters,
+                                               limit: 100, offset: 0)
+        }
+        await #expect(throws: CancellationError.self) { try await rows.value }
+        let count = Task { () async throws -> Int in
+            try await pipeline.searchDocumentsCount(corpusMatch: corpus, userContentMatch: user, filters: filters)
+        }
+        await #expect(throws: CancellationError.self) { try await count.value }
+        // Both ended on their own, so the check after them is what threw.
+        #expect(ranToItsEnd.count == 2, "fixture guard: a statement over no match did not run to its end")
     }
 
     /// The snippet pass is `SearchService`'s own loop over the rows, outside SQLite: it checks at
@@ -166,6 +210,12 @@ struct SearchCancellationTests {
             return try await service.results(from: rows, parameters: Self.containment)
         }
         await #expect(throws: CancellationError.self) { try await cancelled.value }
+        // With no row to check at, the check after the loop is the one that answers.
+        let noRows = Task { () async throws -> [SearchResult] in
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await service.results(from: [], parameters: Self.containment)
+        }
+        await #expect(throws: CancellationError.self) { try await noRows.value }
     }
 
     /// The handler belongs to the whole connection, so what keeps it off every other statement is the

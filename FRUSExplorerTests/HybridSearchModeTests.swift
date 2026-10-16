@@ -1735,22 +1735,23 @@ struct ReplacedSearchStopTests {
         return (dir, SearchViewModel(searchService: SearchService(fts5Store: fts5, pipeline: pipeline)))
     }
 
-    /// #1680: on iPhone and iPad the run that replaces another cancels its keyword fetch, and the kit stops the
-    /// replaced run's statement, so the search that replaced it does not wait for it.
+    /// #1680: on iPhone and iPad the run that replaces another cancels its keyword fetch, which is what lets the kit
+    /// stop the replaced run's statements. That the kit then stops them is `SearchCancellationTests`' to show; this
+    /// pins the view model's half, which nothing else drives.
     ///
     /// The pipeline's prepared-statement hook holds the first run's first statement until its task is cancelled, with a
     /// bound so that a run nothing cancels fails here rather than hanging. The second search is sent while it is held:
-    /// its start cancels the first run's fetch, the hook sees the cancellation and lets the statement step, the
-    /// progress handler stops it, and the second search lands. Before #1680 nothing cancelled the first run, and its
-    /// statement ran to its end before the second could start.
-    @Test("A search that replaces one under way cancels it, and the replaced search's statement stops (#1680)")
+    /// its start cancels the first run's fetch, the hook sees the cancellation and lets the statement go, and the
+    /// second search lands with no error. Before #1680 nothing cancelled the first run, and its statement ran to its
+    /// end before the second could start.
+    @Test("A search that replaces one under way cancels the replaced run's fetch, so the kit can stop it (#1680)")
     func aReplacingSearchStopsTheOneUnderWay() async throws {
         let (dir, vm) = try await makeViewModel()
         defer { try? FileManager.default.removeItem(at: dir) }
         let held = HeldStatement()
-        await vm.searchServiceForTesting.pipeline.setSearchStatementPreparedTestHook {
-            // Only the first statement is held; every later one runs.
-            guard held.claimFirst() else { return }
+        await vm.searchServiceForTesting.pipeline.setSearchStatementTestHook { moment in
+            // Only the first statement is held, once prepared; every later one runs.
+            guard moment == .prepared, held.claimFirst() else { return }
             let deadline = ContinuousClock.now + .seconds(10)
             while !Task.isCancelled, ContinuousClock.now < deadline { usleep(1_000) }
             held.release(sawCancellation: Task.isCancelled)

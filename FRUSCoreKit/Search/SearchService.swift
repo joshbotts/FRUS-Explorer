@@ -101,9 +101,10 @@ import FTS5Store
 ///   2.12 — FRUS Explorer Light: `concordance(for:parameters:radius:)` is public, and
 ///          `resultSetFacets(parameters:request:documentKeys:)` computes a search's facets by the
 ///          route the facet panel took, for the panel and the web edition alike
-///   2.13 — #1680: `search` and `searchCount` stop when the calling task is cancelled and throw
-///          `CancellationError`: the pipeline's statement within about a millisecond, and the snippet
-///          pass, now `results(from:parameters:)`, at its next row
+///   2.13 — #1680: `search` and `searchCount` throw `CancellationError` when the calling task is
+///          cancelled before they return: the pipeline's statement stops at its progress handler's
+///          next call, usually within a millisecond, and the snippet pass, now
+///          `results(from:parameters:)`, at its next row
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -155,8 +156,9 @@ public actor SearchService {
     ///     applied before pagination in SQL).
     /// - Returns: Matching documents ordered by BM25 relevance.
     /// - Throws: `FTS5Error.emptyQuery` if no searchable content can be constructed, and
-    ///   `CancellationError` when the calling task is cancelled (#1680): the pipeline's statement
-    ///   stops within about a millisecond, and the snippet pass at its next row.
+    ///   `CancellationError` when the calling task is cancelled before this returns (#1680): the
+    ///   pipeline's statement stops at its progress handler's next call, usually within a
+    ///   millisecond, and the snippet pass at its next row.
     public func search(
         parameters: SearchParameters,
         limit: Int = defaultPageSize,
@@ -175,8 +177,8 @@ public actor SearchService {
 
     /// The pipeline's rows as results, each with its snippet, in their order.
     ///
-    /// Stops at the next row when the calling task is cancelled, and throws `CancellationError`
-    /// (#1680). The snippet pass is most of a search's time at the Mac's 7,500 rows (0.76 s of a
+    /// Stops at the next row when the calling task is cancelled, and after the last one, and throws
+    /// `CancellationError` (#1680). The snippet pass is most of a search's time at the Mac's 7,500 rows (0.76 s of a
     /// common word's 1.15 s, measured over a full index) and runs on this actor, so a search a later
     /// one replaced would otherwise hold up every call into the service, the replacing search's
     /// included, until its last snippet.
@@ -220,6 +222,8 @@ public actor SearchService {
                 isFrontMatter: row.isFrontMatter
             ))
         }
+        // And after the last row, so that a task cancelled at any point gets no answer.
+        try Task.checkCancellation()
         return results
     }
 
@@ -227,7 +231,7 @@ public actor SearchService {
     ///
     /// Runs the same match expressions and SQL filters as `search`, so the count
     /// always agrees with the paginated result set. Throws `CancellationError` when the calling
-    /// task is cancelled, as `search` does (#1680).
+    /// task is cancelled before this returns, as `search` does (#1680).
     public func searchCount(parameters: SearchParameters) async throws -> Int {
         let (corpusMatch, userMatch) = try makeMatchExpressions(from: parameters)
         return try await pipeline.searchDocumentsCount(

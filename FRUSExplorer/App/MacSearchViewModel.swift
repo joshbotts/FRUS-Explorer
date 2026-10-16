@@ -105,8 +105,9 @@ import SwiftData
 ///          derives the document gate alone. #1648: `performSearch(service:)` numbers its run (`SearchRunLedger`), asks
 ///          once after its last wait whether a later run has replaced it, writes nothing if one has, and returns `true`
 ///          when none has; the rebuilt index calls `replaceSearchesUnderWay()`
-///   1.13 — #1680: a search whose task the window cancels now stops in the kit and throws `CancellationError`,
-///          on which `performSearch(service:)` returns `false` and writes nothing; no code here changed
+///   1.13 — #1680: a run whose task the window cancels writes nothing. The kit stops its search and throws
+///          `CancellationError`, on which `performSearch(service:)` returns `false`, and a run whose count alone was
+///          stopped, after its rows came back, returns at `guard !Task.isCancelled` after its last wait
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -1354,13 +1355,15 @@ final class MacSearchViewModel {
     /// ## A run a later one replaced (#1648, #1680)
     /// Called only from `.task(id: searchTrigger)` in `SearchSheet`. When `searchTrigger` changes,
     /// SwiftUI cancels the running task and starts a new one. Since #1680 the kit stops a cancelled
-    /// task's search, the pipeline's statement within about a millisecond and the snippet pass at its
-    /// next row, and `search` and `searchCount` throw `CancellationError`, on which the catch below
-    /// returns: the search that replaced this one no longer waits for it. The run is still numbered as
-    /// it starts (``SearchRunLedger``), because a run whose statement ends in the moment before its
-    /// stop, and a Meaning run, whose engine does not stop, come back all the same; once its last wait
-    /// is over a run that is no longer the latest returns without writing anything, leaving the rows
-    /// on screen to the run that replaced it. `isSearching` is reset by the latest run alone.
+    /// task's search, the pipeline's statement at its progress handler's next call (usually within a
+    /// millisecond) and the snippet pass at its next row, and `search` and `searchCount` throw
+    /// `CancellationError`, on which the catch below returns; a run whose count alone was stopped,
+    /// after its rows came back, returns at the check after its last wait. Either way a cancelled run
+    /// writes nothing, and the search that replaced it no longer waits for it. The run is still
+    /// numbered as it starts (``SearchRunLedger``), because a Meaning run, whose engine does not stop,
+    /// comes back all the same; once its last wait is over a run that is no longer the latest returns
+    /// without writing anything, leaving the rows on screen to the run that replaced it. `isSearching`
+    /// is reset by the latest run alone.
     ///
     /// - Returns: `true` when this run was not replaced, so that what it wrote is what the window
     ///   shows. The window records the search, and starts over its facets, only then.
@@ -1456,6 +1459,10 @@ final class MacSearchViewModel {
             // good when the run was replaced in between. So the rows now wait for the count, which
             // follows the fetch on the pipeline: 11 to 21% of the search's time, measured on the full
             // store (`SearchViewModel.totalMatchCount`).
+            // Nor does a run whose task the window cancelled (#1680). One a later trigger replaced is the
+            // ledger's to drop as well, but one cancelled by the window closing is still the latest, and
+            // its count, stopped by the kit after the rows came back, reads as nil through `try?`.
+            guard !Task.isCancelled else { return false }
             guard searchRuns.isLatest(run) else { return false }
             results = fetched
             // With the rows and before the next suspension, so that no pass draws another

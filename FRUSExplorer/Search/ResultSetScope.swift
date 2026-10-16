@@ -85,12 +85,12 @@ enum ExecutedSearchRoute: Equatable, Sendable {
 /// it comes back (#1648).
 ///
 /// A run's rows could come back however long ago the reader moved on. Until #1680 nothing under a
-/// search checked for cancellation; the kit now stops a keyword search's statements when the task
-/// running them is cancelled, which iPhone and iPad do as a later run starts and the Mac's window
-/// does when its search task is replaced, but a statement can end in the moment before its stop, and
-/// the Meaning engine does not stop at all. Two runs that overlapped landed in the order they
-/// finished, so the older one could take the list: a Meaning search still under way when the reader
-/// switched to Keywords and searched landed over the keyword rows.
+/// search checked for cancellation. The kit now stops a keyword search when the task running it is
+/// cancelled, which iPhone and iPad do as a later run starts and the Mac's window does when its search
+/// task is replaced, and a cancelled keyword search gets no rows; but the Meaning engine does not stop
+/// at all. Two runs that overlapped landed in the order they finished, so the older one could take the
+/// list: a Meaning search still under way when the reader switched to Keywords and searched landed
+/// over the keyword rows.
 ///
 /// So each run takes a number as it starts and, once its last wait is over, asks whether it is still
 /// the latest. A run that is not writes nothing more: no rows, count or error, no trail entry, and
@@ -102,8 +102,8 @@ enum ExecutedSearchRoute: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1648: initial implementation
-///   1.1 — #1680: the kit stops a cancelled keyword search; this still drops a run that came back
-///          anyway, and every Meaning run a later one replaced
+///   1.1 — #1680: the kit stops a cancelled keyword search; this still drops every Meaning run a later
+///          one replaced, and is the one rule both screens drop a replaced run by, whatever its engine
 struct SearchRunLedger: Equatable, Sendable {
 
     /// The number of the latest run, or of the latest replacement of the runs under way.
