@@ -16,8 +16,9 @@ import TaxonomyGeneratorCore
 /// swift run TaxonomyGenerator
 /// ```
 /// It reads `taxonomy/taxonomy.xml` from the public HistoryAtState/tags repository, and the page
-/// `history.state.gov/tags/all` when the file gives nothing to write (#1622). Review the JSON
-/// diff before committing. A run in which every source read gave no tags, tags outside the three
+/// `history.state.gov/tags/all` when the file gives nothing to write (#1622), then adds the tags of
+/// `TaxonomyGenerator/volume-tag-taxonomy-overlay.json` the source does not give (`TaxonomyOverlay`,
+/// decision 39). Review the JSON diff before committing. A run in which every source read gave no tags, tags outside the three
 /// categories, or a list missing more than one in ten of the file's slugs leaves the file as it
 /// was and exits 1 (`TaxonomyGate`, #1600).
 ///

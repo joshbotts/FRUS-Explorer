@@ -131,6 +131,10 @@ import UniformTypeIdentifiers
 ///   1.23 — 2026-10-15: #1619 review — the ⚙ popover shows a smart collection's link with Unlink
 ///          (`SmartCollectionLinkRows`), whether or not its saved search can still be found: the window that refuses
 ///          a smart collection's hand-added entries had no way to unlink one
+///   1.24 — 2026-10-16: #1619, decision 22 of the 2026-10-14 plan of record — a smart collection's Contents lists only
+///          the entries it keeps (`CollectionOutline.contentsRows`), and its entries from before its link follow in a
+///          section of their own under a dimmed heading, with Remove These Entries, which asks first
+///          (`SmartCollectionEntriesFromBeforeLink`, the iOS editor's); its apparatus rows print no document count
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -1134,8 +1138,8 @@ private struct CollectionDetailPane: View {
             // selection) and with every in-row control (buttons/menus keep
             // receiving their own clicks; the row background click selects).
             List(selection: $selectedEntryId) {
-                // #1619: a smart collection says what it is first, whatever it holds — the iOS editor's row. Entries
-                // it held before it was linked stay listed below, ignored as before. Untagged, so selection skips it.
+                // #1619: a smart collection says what it is first, whatever it holds — the iOS editor's row. Untagged,
+                // so selection skips it.
                 if !takesHandAddedEntries {
                     Label(SmartCollectionRule.sentence, systemImage: "bolt.fill")
                         .font(.callout)
@@ -1153,8 +1157,10 @@ private struct CollectionDetailPane: View {
                 } else {
                     let duplicateKeys = duplicateDocumentKeys
                     let outline = CollectionOutline.linearize(sortedEntries)
-                    let rows = CollectionOutline.visibleRows(
-                        in: outline, collapsedHeadingIds: collapsedHeadingIds)
+                    // #1619, decision 22: a smart collection's rows are only the entries it keeps, its apparatus; its
+                    // entries from before its link are listed apart, below.
+                    let rows = CollectionOutline.contentsRows(
+                        in: outline, collapsedHeadingIds: collapsedHeadingIds, savedSearchId: collection.savedSearchId)
                     ForEach(rows) { row in
                         outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
                                    rows: rows)
@@ -1168,6 +1174,17 @@ private struct CollectionDetailPane: View {
                         moveVisibleRows(from, to: to, visible: rows.map(\.index))
                     }
                 }
+                // #1619, decision 22: a smart collection's entries from before its link, under a dimmed heading that
+                // says why they are not part of it, with a button that removes them once the reader confirms — the iOS
+                // editor's section. Its rows refuse selection (`selectionDisabled`), so ↩ and the inspector skip them.
+                let fromBeforeLink = SmartCollectionRule.entriesFromBeforeLink(
+                    in: sortedEntries, savedSearchId: collection.savedSearchId)
+                if !fromBeforeLink.isEmpty {
+                    // The heading is a row here: this inset list sets a section header on one line.
+                    SmartCollectionEntriesFromBeforeLink(entries: fromBeforeLink, documentHeaders: documentHeaders,
+                                                         onRemove: { removeEntriesFromBeforeLink() },
+                                                         headingIsRow: true)
+                }
             }
             .listStyle(.inset)
             // ↩ toggles the selected entry's inspector (A7) — same action as the
@@ -1178,7 +1195,7 @@ private struct CollectionDetailPane: View {
             .onKeyPress(.return) {
                 guard let id = selectedEntryId,
                       let entry = sortedEntries.first(where: { $0.id == id }),
-                      entry.entryKind == .document || entry.entryKind == .heading
+                      isInspectable(entry)
                 else { return .ignored }
                 toggleInspector(for: id)
                 return .handled
@@ -1273,8 +1290,11 @@ private struct CollectionDetailPane: View {
                                  onMoveUp: moveUp,
                                  onMoveDown: moveDown)
         case .generated:
+            // No count for a smart collection's (#1619, decision 22): the block lists the saved search's documents,
+            // and the ones the collection holds are entries from before its link, which it leaves out.
             CollectionGeneratedEntryRow(entry: entry,
-                                        documentCount: sortedEntries.count { $0.entryKind == .document },
+                                        documentCount: takesHandAddedEntries
+                                            ? sortedEntries.count { $0.entryKind == .document } : nil,
                                         onDelete: { deleteEntry(at: row.index) },
                                         onMoveUp: moveUp,
                                         onMoveDown: moveDown)
@@ -1327,14 +1347,16 @@ private struct CollectionDetailPane: View {
         moveVisibleRows(IndexSet(integer: pos), to: pos - 1, visible: rows.map(\.index))
     }
 
-    /// Whether the visible row at `pos` can move down: something must exist after its
-    /// moved block (a heading's block is its whole `sectionRange`). Any entry after the
-    /// block is visible whenever this row is (a block is followed by a same-or-shallower
-    /// item whose ancestors are also this row's ancestors), so this is exactly "a
-    /// visible target exists".
+    /// Whether the visible row at `pos` can move down: a listed row must sit past its moved
+    /// block (a heading's block is its whole `sectionRange`), which `moveVisibleRowDown`
+    /// moves it after. In an outline every entry after the block is listed whenever this row
+    /// is (a block is followed by a same-or-shallower item whose ancestors are also this row's
+    /// ancestors); a smart collection's Contents leaves out its entries from before its link
+    /// (`CollectionOutline.contentsRows`, #1619), so the rows are asked rather than the entries.
     private func canMoveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) -> Bool {
         guard rows.indices.contains(pos) else { return false }
-        return movedBlockEnd(of: rows[pos].index) < sortedEntries.count
+        let blockEnd = movedBlockEnd(of: rows[pos].index)
+        return rows[(pos + 1)...].contains { $0.index >= blockEnd }
     }
 
     /// Moves the visible row at `pos` one visible position down — inserts it after the
@@ -1387,6 +1409,19 @@ private struct CollectionDetailPane: View {
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }
+        finishOutlineMutation()
+    }
+
+    /// Removes a smart collection's entries from before its link (the reader confirmed in
+    /// `SmartCollectionEntriesFromBeforeLink`'s dialog; #1619, decision 22), through the rule the iOS
+    /// editor calls too, then forgets any view state that named them.
+    private func removeEntriesFromBeforeLink() {
+        let removed = CollectionEntryOrdering.removeEntriesFromBeforeLink(
+            of: collection, outline: &sortedEntries, modelContext: modelContext)
+        guard !removed.isEmpty else { return }
+        collapsedHeadingIds.subtract(removed)
+        if let inspected = inspectedEntryId, removed.contains(inspected) { inspectedEntryId = nil }
+        if let selected = selectedEntryId, removed.contains(selected) { selectedEntryId = nil }
         finishOutlineMutation()
     }
 
@@ -1559,24 +1594,31 @@ private struct CollectionDetailPane: View {
                     // would otherwise open a blank document-shaped inspector; fall back to the first
                     // inspectable entry when the selection isn't one.
                     let selectedInspectable = selectedEntryId.flatMap { id in
-                        sortedEntries.first {
-                            $0.id == id && ($0.entryKind == .document || $0.entryKind == .heading)
-                        }?.id
+                        sortedEntries.first { $0.id == id && isInspectable($0) }?.id
                     }
-                    inspectedEntryId = selectedInspectable
-                        ?? sortedEntries.first { $0.entryKind == .document || $0.entryKind == .heading }?.id
+                    inspectedEntryId = selectedInspectable ?? sortedEntries.first { isInspectable($0) }?.id
                 }
             } label: {
                 Label(String(localized: "collection.toolbar.inspector", defaultValue: "Document Inspector"),
                       systemImage: "sidebar.trailing")
             }
             // Enabled only when there is an inspectable entry — otherwise the button would be a
-            // silent no-op (a collection of only prose/apparatus rows has nothing to inspect).
-            .disabled(!sortedEntries.contains { $0.entryKind == .document || $0.entryKind == .heading })
+            // silent no-op (a collection of only prose/apparatus rows has nothing to inspect, and
+            // nor has a smart collection, whose documents and headings it leaves out).
+            .disabled(!sortedEntries.contains { isInspectable($0) })
         }
     }
 
     // MARK: - Helpers
+
+    /// Whether the entry inspector opens on `entry` — from ↩, the toolbar's Document Inspector or its fallback: a
+    /// document or a section heading that Contents lists. Not a smart collection's entries from before its link
+    /// (#1619, decision 22), which Contents lists apart and nothing the collection produces reads, so their overrides
+    /// would change nothing; a smart collection has nothing to inspect.
+    private func isInspectable(_ entry: CollectionEntry) -> Bool {
+        (entry.entryKind == .document || entry.entryKind == .heading)
+            && !SmartCollectionRule.leavesOut(entry.entryKind, savedSearchId: collection.savedSearchId)
+    }
 
     private func notes(for entry: CollectionEntry) -> [ResearchNote] {
         allNotes.filter { $0.documentId == entry.documentId && $0.volumeId == entry.volumeId }

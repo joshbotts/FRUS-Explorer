@@ -234,6 +234,7 @@ enum CollectionEntryData {
 /// Version history:
 ///   1.0 — #1416: initial implementation
 ///   1.1 — #1619: `appendBlock` adds no heading or note block to a smart collection
+///   1.2 — #1619, decision 22: `removeEntriesFromBeforeLink`, both editors' Remove These Entries
 enum CollectionEntryOrdering {
 
     /// The entries `collection` holds that its context has not deleted, in no particular order. An entry deleted from
@@ -322,5 +323,33 @@ enum CollectionEntryOrdering {
         modelContext.insert(entry)
         outline.append(entry)
         return entry
+    }
+
+    /// Deletes from `modelContext`, and takes out of `outline`, the entries of `outline` that `collection` leaves out
+    /// because it is linked to a saved search (`SmartCollectionRule.entriesFromBeforeLink`): its entries from before the
+    /// link. Both editors' Remove These Entries call it, from the dialog that asks first (#1619; decision 22 of the
+    /// 2026-10-14 plan of record), and then number what is left through ``renumber(_:in:)`` and save, as after any
+    /// delete. A heading's headnote draft goes with it, as when an editor deletes the heading itself.
+    ///
+    /// It reads the link when it runs, not when the button was drawn: in a collection unlinked meanwhile, on this device
+    /// or another, those entries count again, and nothing is removed. Only what the outline lists goes, which is what
+    /// the reader was shown.
+    ///
+    /// - Returns: The ids of the entries removed, so an editor can drop any view state that names them; empty when
+    ///   nothing was removed.
+    @MainActor
+    @discardableResult
+    static func removeEntriesFromBeforeLink(of collection: Collection, outline: inout [CollectionEntry],
+                                            modelContext: ModelContext) -> [UUID] {
+        let removed = SmartCollectionRule.entriesFromBeforeLink(in: outline, savedSearchId: collection.savedSearchId)
+        guard !removed.isEmpty else { return [] }
+        for entry in removed {
+            GeneratedSummary.deleteHeadnoteDraft(for: entry, in: modelContext)
+            modelContext.delete(entry)
+        }
+        let ids = removed.map(\.id)
+        let gone = Set(ids)
+        outline.removeAll { gone.contains($0.id) }
+        return ids
     }
 }

@@ -70,6 +70,8 @@ enum WordCloudViewMode: String, CaseIterable {
 ///   1.5 — 2026-10-12: #1608 — the wording for a Distinctive ranking that compared printed forms,
 ///          on screen and in each export; the counted-as-printed note says counts can differ on
 ///          another device; the CSV caveat's example is one the plural fold leaves apart
+///   1.6 — 2026-10-16: #1608, decision 38 of the 2026-10-14 plan of record — an exported image's
+///          caption segments and a collection's plate line carry the device caveat in the owner's words
 enum WordCloudDisplayState: Equatable {
     /// The index could not be opened, so there is no word-frequency service.
     case serviceUnavailable
@@ -237,33 +239,42 @@ enum WordCloudDisplayState: Equatable {
                      defaultValue: "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference")
     }
 
+    // The device caveat (decision 38 of the 2026-10-14 plan of record). Until then an exported image
+    // and a collection's plate said only that a cloud was counted, or counted and compared, as
+    // printed, where the screen and the CSV also say that another device can count differently.
+    // The owner's sentence, "Counted as printed on this device; another device may count
+    // differently.", is the plate's line; the image's caption carries it as a segment, and the same
+    // in the counted-and-compared form.
+
     /// The segment an exported image's caption carries about printed forms: that they were counted
-    /// and compared as printed under such a Distinctive ranking, that they were counted as printed
-    /// under Frequency, and `nil` for a cloud counted in dictionary forms.
+    /// and compared as printed on this device under such a Distinctive ranking, that they were
+    /// counted as printed under Frequency, each with the device caveat, and `nil` for a cloud
+    /// counted in dictionary forms.
     static func printedFormsCaptionSegment(_ result: WordCloudResult, lens: WordCloudLens,
                                            ranking: KeynessCloud.Ranking?) -> String? {
         guard comparedAsPrinted(ranking) else {
             return countedAsPrintedCaptionSegment(result, lens: lens)
         }
         return String(localized: "wordcloud.export.caption.comparedAsPrinted",
-                      defaultValue: "counted and compared as printed, not in dictionary forms")
+                      defaultValue: "counted and compared as printed on this device; another device may count and compare differently")
     }
 
-    /// The segment an exported image's caption carries for a cloud counted as printed, or `nil`
-    /// when ``countedAsPrinted(_:lens:)`` is false.
+    /// The segment an exported image's caption carries for a cloud counted as printed, with the
+    /// device caveat, or `nil` when ``countedAsPrinted(_:lens:)`` is false.
     static func countedAsPrintedCaptionSegment(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
         guard countedAsPrinted(result, lens: lens) else { return nil }
         return String(localized: "wordcloud.export.caption.countedAsPrinted",
-                      defaultValue: "counted as printed, not in dictionary forms")
+                      defaultValue: "counted as printed on this device; another device may count differently")
     }
 
-    /// The line a collection export's cloud plate carries for a cloud counted as printed, or `nil`
-    /// when ``countedAsPrinted(_:lens:)`` is false. That plate has no other caption, so the caption
-    /// segment above would read as a fragment there.
+    /// The line a collection export's cloud plate carries for a cloud counted as printed, the device
+    /// caveat in the owner's words, or `nil` when ``countedAsPrinted(_:lens:)`` is false. That plate
+    /// has no other caption, so the caption segment above would read as a fragment there. A
+    /// collection's cloud is sized by frequency, so the plate has no counted-and-compared form.
     static func countedAsPrintedPlateLine(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
         guard countedAsPrinted(result, lens: lens) else { return nil }
         return String(localized: "wordcloud.export.collection.countedAsPrinted",
-                      defaultValue: "Counted as printed: the device that made this cloud was not reducing words to their dictionary forms.")
+                      defaultValue: "Counted as printed on this device; another device may count differently.")
     }
 
     /// The count line under the Word Cloud's title, or `nil` for a lens that was never counted.

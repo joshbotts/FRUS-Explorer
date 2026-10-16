@@ -188,6 +188,10 @@ enum BundledArtifactProvenance {
         "volume-subject-profiles-index.json": .init(
             generator: "VolumeSubjectProfiles", inputs: ["DOCUMENT_SUBJECTS", "MANIFEST"],
             source: .ohSubjects),
+        // One entry is not the Office's published taxonomy: `lgbtq-rights`, which the Office's TEI carries
+        // on four volumes and its taxonomy file holds only inside a comment, is added by the generator's
+        // committed overlay as "LGBTQ Rights" (`TaxonomyOverlay`, #1622, decision 39). The tag is still the
+        // Office's subject, so the row's source stands.
         "volume-tag-taxonomy.json": .init(
             generator: "Taxonomy", inputs: [], source: .ohSubjects),
 

@@ -15,8 +15,9 @@ import Foundation
 /// 1. Fetch it (`TaxonomyFetcher`)
 /// 2. Parse the hierarchy (`TaxonomyXMLParser` for the repository's file, `TaxonomyParser` for
 ///    the page)
-/// 3. Ask `TaxonomyGate` whether the result may replace the file at the output path
-/// 4. Write `volume-tag-taxonomy.json` (`TaxonomyWriter`)
+/// 3. Lay the local overlay over it (`TaxonomyOverlay`): the tags the Office's sources do not give
+/// 4. Ask `TaxonomyGate` whether the result may replace the file at the output path
+/// 5. Write `volume-tag-taxonomy.json` (`TaxonomyWriter`)
 ///
 /// ## When to Run
 /// Run manually whenever the Office of the Historian's tag taxonomy changes. Review the
@@ -33,7 +34,15 @@ import Foundation
 /// When a source gave no tags, when a tag sits outside people, places and topics, or when more
 /// than one in ten of the slugs in the file at the output path are gone from the new list
 /// (`TaxonomyGate`). When that is so of every source read, the run leaves the file as it was,
-/// says why, and exits 1.
+/// says why, and exits 1. So does an overlay that cannot be read; one that does not fit a source passes
+/// that source over, after the gate has judged it.
+///
+/// ## The overlay (#1622, decision 39)
+/// After a source is parsed, the tags of `TaxonomyGenerator/volume-tag-taxonomy-overlay.json` it
+/// does not give are added to it (`TaxonomyOverlay`), and the gate judges the result; then each added
+/// tag's parent must be in it, or the source is passed over. A source's tags are its own: the overlay
+/// adds and never replaces, and a source with no tags is refused whatever the overlay holds. So the file the run writes is the Office's taxonomy and the
+/// overlay's tags, and no longer reproduces the Office's alone byte for byte.
 ///
 /// ## Output Path
 /// By default writes to `./FRUSExplorer/Resources/volume-tag-taxonomy.json` relative
@@ -46,6 +55,9 @@ import Foundation
 ///   1.2 — #1622: `generate(fromTaxonomyXML:outputPath:)` for the repository's file, and
 ///         `generate(from:outputPath:read:)`, which reads the sources in order and writes the
 ///         first the gate accepts
+///   1.3 — #1622, decision 39: each `generate` takes the overlay (`TaxonomyOverlay`) and lays it over
+///         the source before the gate; `run` reads it from `TaxonomyOverlay.defaultPath` and reports
+///         what it added and what the source now gives itself
 public struct TaxonomyGeneratorRunner {
 
     /// Default output path relative to the project root.
@@ -61,6 +73,11 @@ public struct TaxonomyGeneratorRunner {
         public let lostSlugs: [String]
         /// Slugs the new file has and the replaced one lacked, sorted. Every slug when no file was replaced.
         public let newSlugs: [String]
+        /// The slugs the overlay added, in its order.
+        public let overlaid: [String]
+        /// The overlay's slugs the source gives itself, whose entries were not used: the overlay's
+        /// entry for each can go.
+        public let overlayInSource: [String]
     }
 
     /// A source that gave nothing to write, and why.
@@ -96,12 +113,14 @@ public struct TaxonomyGeneratorRunner {
     ///   - html: The page's HTML.
     ///   - outputPath: Where the taxonomy is written. A taxonomy already there is what the new one
     ///     is measured against.
+    ///   - overlay: The tags to add where the page gives none (`TaxonomyOverlay`); none by default.
     /// - Returns: What was written, and how it differs from the file it replaced.
-    /// - Throws: `TaxonomyRefusal` when the file is left as it was; `TaxonomyWriterError` when
-    ///   the write fails.
+    /// - Throws: `TaxonomyRefusal` when the file is left as it was; `TaxonomyOverlay.Problem` when
+    ///   the overlay does not fit, the file left as it was; `TaxonomyWriterError` when the write fails.
     @discardableResult
-    public static func generate(fromHTML html: String, outputPath: String) throws -> Outcome {
-        try write(TaxonomyParser.parse(html: html).map { $0.asFileEntry() }, to: outputPath)
+    public static func generate(fromHTML html: String, outputPath: String,
+                                overlay: [TaxonomyOverlay.Tag] = []) throws -> Outcome {
+        try write(TaxonomyParser.parse(html: html).map { $0.asFileEntry() }, overlay: overlay, to: outputPath)
     }
 
     /// Parses the repository's taxonomy file and writes the taxonomy, unless `TaxonomyGate`
@@ -109,43 +128,61 @@ public struct TaxonomyGeneratorRunner {
     ///
     /// - Parameters:
     ///   - xml: The file's bytes.
-    ///   - outputPath: Where the taxonomy is written, as in ``generate(fromHTML:outputPath:)``.
+    ///   - outputPath: Where the taxonomy is written, as in ``generate(fromHTML:outputPath:overlay:)``.
+    ///   - overlay: The tags to add where the file gives none (`TaxonomyOverlay`); none by default.
     /// - Returns: What was written, and how it differs from the file it replaced.
     /// - Throws: `TaxonomyXMLError` when the file cannot be read as a taxonomy and
     ///   `TaxonomyRefusal` when the gate refuses it, the file left as it was in both cases;
+    ///   `TaxonomyOverlay.Problem` when the overlay does not fit, the file left as it was;
     ///   `TaxonomyWriterError` when the write fails.
     @discardableResult
-    public static func generate(fromTaxonomyXML xml: Data, outputPath: String) throws -> Outcome {
-        try write(TaxonomyXMLParser.parse(xml: xml).map { $0.asFileEntry() }, to: outputPath)
+    public static func generate(fromTaxonomyXML xml: Data, outputPath: String,
+                                overlay: [TaxonomyOverlay.Tag] = []) throws -> Outcome {
+        try write(TaxonomyXMLParser.parse(xml: xml).map { $0.asFileEntry() }, overlay: overlay, to: outputPath)
     }
 
-    /// The gate and the write, which are the same whichever source the entries came from.
-    private static func write(_ entries: [TagTaxonomyFileEntry], to outputPath: String) throws -> Outcome {
+    /// The overlay, the gate and the write, which are the same whichever source the entries came from.
+    ///
+    /// The overlay adds to a taxonomy and never stands for one, so a source with no tags is refused
+    /// before it is laid over them; the gate then judges what would be written, and only then is the
+    /// overlay asked whether it fits, so a source the gate refuses is passed over for the gate's reason.
+    private static func write(_ entries: [TagTaxonomyFileEntry], overlay: [TaxonomyOverlay.Tag],
+                              to outputPath: String) throws -> Outcome {
+        guard !entries.isEmpty else { throw TaxonomyRefusal.noEntries }
+        let applied = TaxonomyOverlay.apply(overlay, to: entries)
         let existing = existingTaxonomy(at: outputPath)
-        if let refusal = TaxonomyGate.refusal(for: entries, replacing: existing) {
+        if let refusal = TaxonomyGate.refusal(for: applied.entries, replacing: existing) {
             throw refusal
         }
-        try TaxonomyWriter.write(entries: entries, to: outputPath)
+        if let misfit = TaxonomyOverlay.misfit(of: applied, from: overlay) {
+            throw misfit
+        }
+        try TaxonomyWriter.write(entries: applied.entries, to: outputPath)
         return Outcome(
-            entries: entries,
-            lostSlugs: TaxonomyGate.slugs(of: existing ?? [], missingFrom: entries),
-            newSlugs: TaxonomyGate.slugs(of: entries, missingFrom: existing ?? []))
+            entries: applied.entries,
+            lostSlugs: TaxonomyGate.slugs(of: existing ?? [], missingFrom: applied.entries),
+            newSlugs: TaxonomyGate.slugs(of: applied.entries, missingFrom: existing ?? []),
+            overlaid: applied.added,
+            overlayInSource: applied.alreadyInSource)
     }
 
     /// Reads `sources` in order and writes the first taxonomy `TaxonomyGate` accepts (#1622).
     ///
-    /// A source is passed over when it cannot be read, cannot be parsed or is refused. A write
-    /// that fails is not a reason to read another source, and is thrown as it is.
+    /// A source is passed over when it cannot be read, cannot be parsed, is refused, or gives a
+    /// taxonomy the overlay does not fit. A write that fails is not a reason to read another source,
+    /// and is thrown as it is.
     ///
     /// - Parameters:
     ///   - sources: The sources to read, in order.
     ///   - outputPath: Where the taxonomy is written.
+    ///   - overlay: The tags to add where the source gives none (`TaxonomyOverlay`); none by default.
     ///   - read: Returns a source's text. The run fetches it; a test hands its own.
     /// - Returns: The source written from, what was written, and the sources passed over.
     /// - Throws: ``NothingToWrite`` when no source is written, the file left as it was;
     ///   `TaxonomyWriterError` when the write fails.
     public static func generate(
         from sources: [TaxonomySource], outputPath: String,
+        overlay: [TaxonomyOverlay.Tag] = [],
         read: (TaxonomySource) async throws -> String
     ) async throws -> SourcedOutcome {
         var passedOver: [PassedOver] = []
@@ -161,15 +198,18 @@ public struct TaxonomyGeneratorRunner {
                 let outcome: Outcome
                 switch source {
                 case .repository:
-                    outcome = try generate(fromTaxonomyXML: Data(text.utf8), outputPath: outputPath)
+                    outcome = try generate(fromTaxonomyXML: Data(text.utf8), outputPath: outputPath,
+                                           overlay: overlay)
                 case .page:
-                    outcome = try generate(fromHTML: text, outputPath: outputPath)
+                    outcome = try generate(fromHTML: text, outputPath: outputPath, overlay: overlay)
                 }
                 return SourcedOutcome(source: source, outcome: outcome, passedOver: passedOver)
             } catch let refusal as TaxonomyRefusal {
                 passedOver.append(PassedOver(source: source, reason: refusal.explanation(for: source)))
             } catch let error as TaxonomyXMLError {
                 passedOver.append(PassedOver(source: source, reason: error.description))
+            } catch let misfit as TaxonomyOverlay.Problem {
+                passedOver.append(PassedOver(source: source, reason: misfit.description))
             }
         }
         throw NothingToWrite(passedOver: passedOver)
@@ -186,12 +226,23 @@ public struct TaxonomyGeneratorRunner {
     /// - Parameters:
     ///   - outputPath: Where to write the taxonomy JSON. Defaults to `defaultOutputPath`.
     ///   - sources: The sources to read, in order. Defaults to `TaxonomySource.automaticOrder`.
+    ///   - overlayPath: The overlay to read before any source. Defaults to
+    ///     `TaxonomyOverlay.defaultPath`; one that cannot be read stops the run before it fetches.
     public static func run(outputPath: String = defaultOutputPath,
-                           sources: [TaxonomySource] = TaxonomySource.automaticOrder) async {
+                           sources: [TaxonomySource] = TaxonomySource.automaticOrder,
+                           overlayPath: String = TaxonomyOverlay.defaultPath) async {
         print("[TaxonomyGenerator] Starting taxonomy generation…")
 
+        let overlay: [TaxonomyOverlay.Tag]
         do {
-            let result = try await generate(from: sources, outputPath: outputPath) { source in
+            overlay = try TaxonomyOverlay.load(from: overlayPath)
+        } catch {
+            print("[TaxonomyGenerator] ✗ Refusing to write \(outputPath): \(error)")
+            exit(1)
+        }
+
+        do {
+            let result = try await generate(from: sources, outputPath: outputPath, overlay: overlay) { source in
                 try await TaxonomyFetcher.fetch(urlString: source.url)
             }
             report(result.passedOver)
@@ -213,6 +264,15 @@ public struct TaxonomyGeneratorRunner {
             if !outcome.newSlugs.isEmpty, outcome.newSlugs.count < outcome.entries.count {
                 print("[TaxonomyGenerator]   new (\(outcome.newSlugs.count)): "
                       + outcome.newSlugs.joined(separator: ", "))
+            }
+            if !outcome.overlaid.isEmpty {
+                print("[TaxonomyGenerator]   from the overlay \(overlayPath) (\(outcome.overlaid.count)): "
+                      + outcome.overlaid.joined(separator: ", "))
+            }
+            if !outcome.overlayInSource.isEmpty {
+                print("[TaxonomyGenerator]   the source now gives the overlay's "
+                      + outcome.overlayInSource.joined(separator: ", ")
+                      + " itself; its entry was not used, and can be removed from \(overlayPath)")
             }
             print("[TaxonomyGenerator] ✓ volume-tag-taxonomy.json written to \(outputPath)")
         } catch let nothing as NothingToWrite {

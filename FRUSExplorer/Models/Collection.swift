@@ -1053,19 +1053,82 @@ enum CollectionEditorNaming {
 ///   write nothing to a smart collection.
 /// - **What is not:** a generated apparatus block. The resolver builds a smart collection's bibliography, chronology,
 ///   sources, persons and thematic index from its own `.generated` entries, over the search's documents.
-/// - **What stays:** entries a collection held before it was linked. They are listed and ignored, as before, and count
-///   again once the search is unlinked.
+/// - **What stays until the reader removes it:** entries a collection held before it was linked. Everything it produces
+///   leaves them out (`leavesOut`), and they count again once the search is unlinked. Since decision 22 of the
+///   2026-10-14 plan of record both editors list them apart, under a dimmed heading that says why they are not part of
+///   the smart collection (`entriesFromBeforeLinkHeading`), with a button that removes them once the reader confirms
+///   (`CollectionEntryOrdering.removeEntriesFromBeforeLink`). Nothing removes them otherwise.
 ///
 /// Pure, and beside the model as `CollectionEditorNaming` is, so `SmartCollectionRuleTests` calls what the views call.
 ///
 /// Version history:
 ///   1.0 — #1619: initial implementation; `sentence` moved here from `CollectionPickerRow` (#1593)
+///   1.1 — #1619, decision 22: `leavesOut` and `entriesFromBeforeLink`, and the words of the editors' group of entries
+///         from before the link
 enum SmartCollectionRule {
 
     /// Whether a collection whose saved-search link is `savedSearchId` takes documents, section headings, note blocks
     /// and highlighted passages added by hand: only when it has no link.
     static func takesHandAddedEntries(savedSearchId: UUID?) -> Bool {
         savedSearchId == nil
+    }
+
+    /// Whether a collection whose saved-search link is `savedSearchId` leaves an entry of `kind` out of everything it
+    /// produces: a document, section heading, note block or passage in a collection linked to a saved search, which the
+    /// resolver never reads (`CollectionContentResolver.resolveSmartItems`). A smart collection takes none of those by
+    /// hand, so such an entry is one it held before it was linked.
+    ///
+    /// Its generated apparatus is part of it, and so is an entry of a kind this build does not know, which a newer build
+    /// wrote and may count; neither is left out. A collection with no link leaves out nothing.
+    static func leavesOut(_ kind: CollectionEntryKind, savedSearchId: UUID?) -> Bool {
+        guard savedSearchId != nil else { return false }
+        switch kind {
+        case .document, .heading, .prose, .excerpt: return true
+        case .generated, .unrecognized: return false
+        }
+    }
+
+    /// The entries of `outline` that a collection linked by `savedSearchId` leaves out (`leavesOut`), in the outline's
+    /// order: a smart collection's entries from before its link. Empty for a collection with no link.
+    static func entriesFromBeforeLink(in outline: [CollectionEntry], savedSearchId: UUID?) -> [CollectionEntry] {
+        outline.filter { leavesOut($0.entryKind, savedSearchId: savedSearchId) }
+    }
+
+    /// The dimmed heading both editors print over a smart collection's entries from before its link
+    /// (`SmartCollectionEntriesFromBeforeLink`).
+    static var entriesFromBeforeLinkHeading: String {
+        String(localized: "collection.smart.earlier.heading",
+               defaultValue: "Not part of the smart collection: added before it was linked to its saved search.")
+    }
+
+    /// The button under those entries, and the destructive action of the dialog it opens.
+    static var removeEntriesFromBeforeLink: String {
+        String(localized: "collection.smart.earlier.remove", defaultValue: "Remove These Entries")
+    }
+
+    /// The title of the dialog that asks before those entries are removed.
+    static var removeEntriesFromBeforeLinkTitle: String {
+        String(localized: "collection.smart.earlier.remove.confirm.title", defaultValue: "Remove These Entries?")
+    }
+
+    /// The dialog's message, which says how many entries go: "Removes the 3 entries added before…".
+    ///
+    /// - Parameters:
+    ///   - count: How many entries the button removes.
+    ///   - locale: The locale that groups the number; the user's own unless a test passes one.
+    static func removeEntriesFromBeforeLinkMessage(count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        CountCopy.phrase(
+            count,
+            one: String(localized: "collection.smart.earlier.remove.confirm.message.one",
+                        defaultValue: "Removes the entry added before this collection was linked to its saved search."),
+            many: String(localized: "collection.smart.earlier.remove.confirm.message.many",
+                         defaultValue: "Removes the %@ entries added before this collection was linked to its saved search."),
+            locale: locale)
+    }
+
+    /// What the group prints for a note block from before the link that holds no text.
+    static var emptyNoteBlock: String {
+        String(localized: "collection.smart.earlier.emptyNote", defaultValue: "Empty note block")
     }
 
     /// What a smart collection is, in one sentence: the line under its name in the Add to Collection picker
