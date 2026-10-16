@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import Foundation
-import Synchronization
 import Testing
 // Compiled twice: into the app's test target by Xcode, and against FRUSCoreKit alone by the
 // package's FRUSCoreKitTests, where whatever needs the app sits inside `#if !SWIFT_PACKAGE`.
@@ -93,7 +92,7 @@ struct SearchCancellationTests {
 
         let prepared = HookCalls()
         await fixture.pipeline.setSearchStatementPreparedTestHook {
-            _ = prepared.count.wrappingAdd(1, ordering: .relaxed)
+            prepared.record()
         }
         let rows = Task { () async throws -> [SearchResult] in
             withUnsafeCurrentTask { $0?.cancel() }
@@ -105,7 +104,7 @@ struct SearchCancellationTests {
             return try await service.searchCount(parameters: Self.containment)
         }
         await #expect(throws: CancellationError.self) { try await count.value }
-        #expect(prepared.count.load(ordering: .relaxed) == 0,
+        #expect(prepared.count == 0,
                 "a statement was prepared for a task already cancelled")
     }
 
@@ -122,7 +121,7 @@ struct SearchCancellationTests {
         let filters = await fixture.service.filtersForTesting(Self.containment)
         let hookCalls = HookCalls()
         await pipeline.setSearchStatementPreparedTestHook {
-            _ = hookCalls.count.wrappingAdd(1, ordering: .relaxed)
+            hookCalls.record()
             withUnsafeCurrentTask { $0?.cancel() }
         }
 
@@ -137,7 +136,7 @@ struct SearchCancellationTests {
         await #expect(throws: CancellationError.self) { try await count.value }
         // Both statements reached the hook, so the check at their start had passed and the handler
         // was all that could stop them.
-        #expect(hookCalls.count.load(ordering: .relaxed) == 2)
+        #expect(hookCalls.count == 2)
 
         // With the hook gone, the same statements run, so the connection was left as it was.
         await pipeline.setSearchStatementPreparedTestHook(nil)
@@ -197,7 +196,23 @@ struct SearchCancellationTests {
     }
 }
 
-/// How many times a test's prepared-statement hook ran, shared with the `@Sendable` hook.
-private final class HookCalls: Sendable {
-    let count = Atomic<Int>(0)
+/// How many times a test's prepared-statement hook ran, shared with the `@Sendable` hook, which runs on
+/// the pipeline's executor. A lock rather than an atomic: a suite here imports nothing the kit does not.
+private final class HookCalls: @unchecked Sendable {
+    private let lock = NSLock()
+    private var calls = 0
+
+    /// Counts one call.
+    func record() {
+        lock.lock()
+        calls += 1
+        lock.unlock()
+    }
+
+    /// The calls counted so far.
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return calls
+    }
 }
