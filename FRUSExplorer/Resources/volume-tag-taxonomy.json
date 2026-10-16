@@ -1899,6 +1899,13 @@
     "subcategory" : "sub-saharan-africa"
   },
   {
+    "category" : "topics",
+    "displayName" : "LGBTQ Rights",
+    "parentSlug" : "human-rights",
+    "slug" : "lgbtq-rights",
+    "subcategory" : "human-rights"
+  },
+  {
     "category" : "places",
     "displayName" : "Liberia",
     "parentSlug" : "sub-saharan-africa",

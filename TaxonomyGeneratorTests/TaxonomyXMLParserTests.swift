@@ -413,7 +413,8 @@ struct TaxonomySourceParityTests {
 
 // MARK: - TaxonomyRepositoryFileTests
 
-/// The Office of the Historian's taxonomy file writes the bundled taxonomy, byte for byte (#1622).
+/// The Office of the Historian's taxonomy file, with the local overlay laid over it, writes the
+/// bundled taxonomy byte for byte (#1622).
 ///
 /// `Fixtures/taxonomy.xml` is `taxonomy/taxonomy.xml` of the public HistoryAtState/tags
 /// repository at commit `0e701226` (read 2026-10-11; the file's blob is `6fd68631`, 101,303 bytes,
@@ -426,8 +427,15 @@ struct TaxonomySourceParityTests {
 /// `curl -o TaxonomyGeneratorTests/Fixtures/taxonomy.xml` and `TaxonomySource.repository.url`.
 /// A change to the parser that fails it has stopped writing the file the app ships.
 ///
+/// **Since decision 39 the bundled file is the Office's taxonomy and the overlay's tags**
+/// (`TaxonomyOverlay`, `TaxonomyGenerator/volume-tag-taxonomy-overlay.json`), so it no longer
+/// reproduces the Office's file alone byte for byte. What the copy writes alone is the bundled file
+/// less exactly the overlay's tags, which the second test holds.
+///
 /// Version history:
 ///   1.0 — #1622: initial implementation
+///   1.1 — #1622, decision 39: the copy writes the bundled file with the committed overlay laid over
+///         it, and alone writes it less exactly the overlay's one tag
 @Suite("The repository's taxonomy file writes the bundled taxonomy (#1622)")
 struct TaxonomyRepositoryFileTests {
 
@@ -438,20 +446,23 @@ struct TaxonomyRepositoryFileTests {
         .deletingLastPathComponent()
         .appendingPathComponent(TaxonomyGeneratorRunner.defaultOutputPath)
 
-    @Test("The file writes the bundled taxonomy byte for byte, over nothing and over itself")
+    @Test("The file and the overlay write the bundled taxonomy byte for byte, over nothing and over itself")
     func theFileWritesTheBundledTaxonomy() throws {
         let xml = try Data(contentsOf: Self.file)
         let shipped = try Data(contentsOf: Self.bundled)
+        let overlay = try TaxonomyOverlay.load(from: TaxonomyOverlayTests.committed.path)
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("frus-taxonomy-file-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let path = directory.appendingPathComponent("volume-tag-taxonomy.json").path
 
-        // Over nothing: the whole file comes from the source.
-        let first = try TaxonomyGeneratorRunner.generate(fromTaxonomyXML: xml, outputPath: path)
-        // 508 on 2026-10-11. A floor, so a cut-off copy is not read as a small taxonomy.
+        // Over nothing: the whole file comes from the source and the overlay.
+        let first = try TaxonomyGeneratorRunner.generate(fromTaxonomyXML: xml, outputPath: path, overlay: overlay)
+        // 509 since decision 39: 508 from the copy (2026-10-11) and the overlay's one. A floor, so a
+        // cut-off copy is not read as a small taxonomy.
         try #require(first.entries.count > 400, "the copy parses to \(first.entries.count) tags")
+        #expect(first.overlaid == ["lgbtq-rights"] && first.overlayInSource.isEmpty)
         #expect(FileManager.default.contents(atPath: path) == shipped, """
             The bundled taxonomy is not what TaxonomyGeneratorTests/Fixtures/taxonomy.xml writes. \
             If volume-tag-taxonomy.json was regenerated, replace the copy with the file that run \
@@ -460,9 +471,34 @@ struct TaxonomyRepositoryFileTests {
 
         // Over the bundled file: nothing is lost or new, and the bytes are the same.
         try shipped.write(to: URL(fileURLWithPath: path))
-        let second = try TaxonomyGeneratorRunner.generate(fromTaxonomyXML: xml, outputPath: path)
+        let second = try TaxonomyGeneratorRunner.generate(fromTaxonomyXML: xml, outputPath: path, overlay: overlay)
         #expect(second.lostSlugs.isEmpty && second.newSlugs.isEmpty)
         #expect(FileManager.default.contents(atPath: path) == shipped)
+    }
+
+    /// Why the bundled file no longer reproduces the Office's alone, and that the overlay is the only
+    /// reason: the copy alone writes it less exactly the overlay's tags.
+    @Test("The file alone writes the bundled taxonomy less exactly the overlay's tag")
+    func theFileAloneIsTheOfficesTaxonomy() throws {
+        let xml = try Data(contentsOf: Self.file)
+        let shipped = try JSONDecoder().decode([TagTaxonomyFileEntry].self, from: try Data(contentsOf: Self.bundled))
+        let overlay = try TaxonomyOverlay.load(from: TaxonomyOverlayTests.committed.path)
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-taxonomy-office-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let path = directory.appendingPathComponent("volume-tag-taxonomy.json").path
+
+        let office = try TaxonomyGeneratorRunner.generate(fromTaxonomyXML: xml, outputPath: path)
+        let written = try JSONDecoder().decode([TagTaxonomyFileEntry].self,
+                                               from: try #require(FileManager.default.contents(atPath: path)))
+        #expect(office.overlaid.isEmpty)
+        #expect(!written.contains { $0.slug == "lgbtq-rights" }, "the Office's file now gives lgbtq-rights itself")
+        let overlaySlugs = Set(overlay.map(\.slug))
+        #expect(written == shipped.filter { !overlaySlugs.contains($0.slug) },
+                "the bundled taxonomy differs from the Office's in more than the overlay's tags")
+        #expect(shipped.count == written.count + overlay.count)
+        #expect(shipped.first { $0.slug == "lgbtq-rights" } == overlay.first?.fileEntry)
     }
 
     @Test("Every id the file states outside a comment, less its three roots, is an entry")

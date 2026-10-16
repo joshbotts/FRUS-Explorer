@@ -21,9 +21,10 @@ import PackageDescription
 ///
 /// - **TaxonomyGenerator**: reads the Office of the Historian's tag taxonomy, from
 ///   `taxonomy/taxonomy.xml` in the public HistoryAtState/tags repository or, failing that,
-///   from the page `history.state.gov/tags/all`, to produce
-///   `volume-tag-taxonomy.json`, which provides humanised display names and hierarchy for
-///   volume-level subject tag slugs. Run manually when the taxonomy changes.
+///   from the page `history.state.gov/tags/all`, adds the tags of its local overlay that the
+///   Office's taxonomy does not give, and produces `volume-tag-taxonomy.json`, which provides
+///   humanised display names and hierarchy for volume-level subject tag slugs. Run manually when
+///   the taxonomy changes.
 ///
 /// - **CentralFilesIndexGenerator**: harvests the digitized pre-1910 State Dept. Central
 ///   Files from the NARA Catalog v2 API and produces `central-files-index.json`, a bundled
@@ -133,11 +134,13 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Thin entry point — calls TaxonomyGeneratorRunner.run() and exits.
+        /// Thin entry point — calls TaxonomyGeneratorRunner.run() and exits. Beside it is the local
+        /// overlay the run reads after the Office's taxonomy, by path from the project root (#1622).
         .executableTarget(
             name: "TaxonomyGenerator",
             dependencies: [.target(name: "TaxonomyGeneratorCore")],
             path: "TaxonomyGenerator",
+            exclude: ["volume-tag-taxonomy-overlay.json"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 

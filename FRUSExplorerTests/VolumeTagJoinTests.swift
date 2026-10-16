@@ -29,8 +29,10 @@ import Foundation
 /// with no taxonomy entry is not in the set it iterates and cannot fail it.
 ///
 /// The cost is measurable rather than hypothetical: `lgbtq-rights` has been in the shipped manifest
-/// on four volumes for the life of the file, `VolumeLevelTagStore.resolve(slug:)` has been dropping
-/// it silently on all four, and no test, generator or log surfaced it.
+/// on four volumes for the life of the file, `VolumeLevelTagStore.resolve(slug:)` dropped it silently
+/// on all four, and no test, generator or log surfaced it. Since decision 39 of the 2026-10-14 plan
+/// of record it resolves, from the taxonomy generator's local overlay (#1622), and
+/// `lgbtqRightsResolves` pins it.
 ///
 /// ## What an unresolvable slug actually breaks
 /// Not the chip — the FILTER, asymmetrically, in the direction hardest to notice. The tag picker is
@@ -43,6 +45,8 @@ import Foundation
 ///   1.0 — #1284: initial implementation
 ///   1.1 — OH corrected frus1981-88v16's three person slugs (corpus d4d6eecb7, 2026-09-14), so the
 ///         allowlist loses them and the volume's pin moves from 15 resolving tags to all 18
+///   1.2 — #1622, decision 39: `lgbtq-rights` resolves, from the taxonomy generator's local overlay, so
+///         the allowlist is empty and `lgbtqRightsResolves` pins the four volumes' tag
 @Suite("Manifest tag slugs resolve in the taxonomy")
 struct VolumeTagJoinTests {
 
@@ -51,17 +55,14 @@ struct VolumeTagJoinTests {
     /// **An allowlist, not a waiver.** Every entry is a defect somewhere; listing it here says the
     /// defect has been diagnosed and is owned upstream, and makes a NEW one fail. Delete an entry
     /// when its cause is fixed — the test then proves the fix.
-    static let known: [String: String] = [
-        // The publisher retired the tag without removing it from the TEI. `history.state.gov/tags/
-        // lgbtq-rights` returns 404 and `/tags/all` carries no such entry, while `disability-rights`
-        // — printed in the same keywords block of frus1977-80v28 — is live and lists 12 volumes.
-        // The taxonomy artifact is faithful to the publisher; the corpus is not. Four volumes:
-        // frus1952-54v01p2, frus1958-60v03mSupp, frus1977-80v28, frus1981-88v41.
-        "lgbtq-rights": "retired by the publisher; /tags/lgbtq-rights is 404",
-        // frus1981-88v16's `haig-alexander-m`, `reagan-ronald-w` and `shultz-george-p` were listed
-        // here from #1284 until OH restored the canonical spellings in corpus commit d4d6eecb7
-        // (2026-09-14) — the stale check below is what reported the fix.
-    ]
+    ///
+    /// Empty since decision 39 of the 2026-10-14 plan of record (#1622). `lgbtq-rights` was listed
+    /// from #1284: the publisher keeps the tag in the TEI of four volumes and only inside a comment in
+    /// its taxonomy file, and the taxonomy generator now adds it from its local overlay.
+    /// frus1981-88v16's `haig-alexander-m`, `reagan-ronald-w` and `shultz-george-p` were listed from
+    /// #1284 until OH restored the canonical spellings in corpus commit d4d6eecb7 (2026-09-14) — the
+    /// stale check below is what reported each fix.
+    static let known: [String: String] = [:]
 
     @MainActor
     @Test("Every manifest tag slug resolves, or is a known-and-diagnosed exception")
@@ -126,5 +127,23 @@ struct VolumeTagJoinTests {
             Expected all 18 of frus1981-88v16's tags to resolve; \(resolved.count) do. A tag that \
             used to resolve has stopped, or the manifest was regenerated from an older corpus.
             """)
+    }
+
+    /// The four volumes carrying `lgbtq-rights` were missing from a filter no control could reach,
+    /// because the taxonomy had no entry for the tag (decision 39 of the 2026-10-14 plan of record,
+    /// #1622). It now resolves to the owner's name, under Human Rights in Topics, where the Office's
+    /// taxonomy file keeps it inside a comment, and its filter lists the four.
+    @MainActor
+    @Test("LGBTQ Rights resolves under Human Rights in Topics, and its filter lists its four volumes")
+    func lgbtqRightsResolves() throws {
+        let store = VolumeLevelTagStore()
+        let tag = try #require(store.resolve(slug: "lgbtq-rights"), "the taxonomy has no entry for lgbtq-rights")
+        #expect(tag.displayName == "LGBTQ Rights")
+        #expect(tag.category == .topics)
+        #expect(tag.subcategory == "human-rights" && tag.parentSlug == "human-rights")
+        #expect(store.resolve(slug: "human-rights") != nil, "its parent does not resolve")
+        #expect(store.allTags(inCategory: .topics).contains { $0.slug == "lgbtq-rights" })
+        #expect(Set(store.volumes(forTagSlug: "lgbtq-rights"))
+                == ["frus1952-54v01p2", "frus1958-60v03mSupp", "frus1977-80v28", "frus1981-88v41"])
     }
 }
