@@ -1560,8 +1560,12 @@ struct SearchResultRouteTests {
                 #expect(waits >= 1 && checks >= 1,
                         "fixture guard, \(path) `\(header)`: \(waits) waits and \(checks) checks were read")
                 // The Meaning paths are handed their number; the two entry points take it before anything else.
+                // iPhone and iPad take it through `startRun()`, which also cancels the keyword fetch under way so
+                // that the kit stops its statements (#1680); the Mac's window cancels its own search task.
                 if !header.contains("(run: Int)") {
-                    #expect(lines.dropFirst().first { !$0.isEmpty } == "let run = searchRuns.startRun()",
+                    let opening = path.hasSuffix("/SearchViewModel.swift")
+                        ? "let run = startRun()" : "let run = searchRuns.startRun()"
+                    #expect(lines.dropFirst().first { !$0.isEmpty } == opening,
                             "\(path) `\(header)` does not open by numbering its run")
                 }
             }

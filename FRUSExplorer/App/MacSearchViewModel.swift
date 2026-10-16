@@ -105,6 +105,8 @@ import SwiftData
 ///          derives the document gate alone. #1648: `performSearch(service:)` numbers its run (`SearchRunLedger`), asks
 ///          once after its last wait whether a later run has replaced it, writes nothing if one has, and returns `true`
 ///          when none has; the rebuilt index calls `replaceSearchesUnderWay()`
+///   1.13 — #1680: a search whose task the window cancels now stops in the kit and throws `CancellationError`,
+///          on which `performSearch(service:)` returns `false` and writes nothing; no code here changed
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -1349,15 +1351,16 @@ final class MacSearchViewModel {
     /// `currentPage` is reset to 0 on every successful fetch; if the result set shrank below
     /// the previous page index it is clamped to a valid page.
     ///
-    /// ## A run a later one replaced (#1648)
+    /// ## A run a later one replaced (#1648, #1680)
     /// Called only from `.task(id: searchTrigger)` in `SearchSheet`. When `searchTrigger` changes,
-    /// SwiftUI cancels the running task and starts a new one, but nothing under this checks for
-    /// cancellation: `SearchService` and `FTS5Store` run the query to its end and return its rows
-    /// to the cancelled task. So the run is numbered as it starts (``SearchRunLedger``), and once its
-    /// last wait is over a run that is no longer the latest returns without writing anything, leaving
-    /// the rows on screen to the run that replaced it. The `CancellationError` this comment once said
-    /// was caught here was never thrown on the keyword path. `isSearching` is reset by the latest
-    /// run alone.
+    /// SwiftUI cancels the running task and starts a new one. Since #1680 the kit stops a cancelled
+    /// task's search, the pipeline's statement within about a millisecond and the snippet pass at its
+    /// next row, and `search` and `searchCount` throw `CancellationError`, on which the catch below
+    /// returns: the search that replaced this one no longer waits for it. The run is still numbered as
+    /// it starts (``SearchRunLedger``), because a run whose statement ends in the moment before its
+    /// stop, and a Meaning run, whose engine does not stop, come back all the same; once its last wait
+    /// is over a run that is no longer the latest returns without writing anything, leaving the rows
+    /// on screen to the run that replaced it. `isSearching` is reset by the latest run alone.
     ///
     /// - Returns: `true` when this run was not replaced, so that what it wrote is what the window
     ///   shows. The window records the search, and starts over its facets, only then.
@@ -1496,8 +1499,9 @@ final class MacSearchViewModel {
                   + "\(totalMatchCount.map(String.init) ?? "not counted") results")
             #endif
         } catch {
-            // Nothing under the keyword path throws `CancellationError` (#1648), so this keeps the
-            // rows on screen for a cause that does not arise today; a replaced run is the next guard's.
+            // A cancelled run writes nothing and keeps the rows on screen. Since #1680 the kit throws
+            // `CancellationError` for a search whose task the window cancelled: one a later trigger
+            // replaced, or the window closing.
             guard !(error is CancellationError) else { return false }
             // A run a later one replaced says nothing of its failure either.
             guard searchRuns.isLatest(run) else { return false }
@@ -1559,7 +1563,8 @@ final class MacSearchViewModel {
         do {
             let outcome = try await backend.run(query: query, parameters: parameters)
             // A Meaning run a later search replaced writes nothing, nor does its failure below
-            // (#1648): the Meaning engine does not check for cancellation either.
+            // (#1648): the Meaning engine does not stop when its task is cancelled, as the kit's
+            // keyword search does since #1680.
             guard searchRuns.isLatest(run) else { return false }
             results = outcome.results
             settleSelection(for: sentAnchor)

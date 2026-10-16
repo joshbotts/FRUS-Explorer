@@ -1,6 +1,6 @@
 # #1648's second step: stopping the SQL of a search a later one replaced (assessment, 2026-10-15)
 
-**Status: an assessment for the owner. Nothing is built.** Base `v2` @ `470f818c` (A2, #1679, merged). #1648's first step, A2's `SearchRunLedger`, keeps a replaced run's rows off the screen; this memo asks whether the kit should also stop that run's statements, so that the search that replaced it does not wait behind them. The owner files issues on their own word (the plan of record's §0), so §8 is a draft and nothing is filed.
+**Status: decided.** The owner's word of 2026-10-15 (the plan of record's decision 20): filed as #1680, placed in Track A before A5 (A2b), and built by the session that wrote this memo, as its own pull request, to §4's recommendation. The assessment below is as it was written before the decision. Base `v2` @ `470f818c` (A2, #1679, merged). #1648's first step, A2's `SearchRunLedger`, keeps a replaced run's rows off the screen; this memo asks whether the kit should also stop that run's statements, so that the search that replaced it does not wait behind them.
 
 ## 0. In short
 
@@ -142,7 +142,7 @@ FRUS Explorer Light serves every user's search through one `ServedIndex`, one `S
 - **The stop was measured on a connection of the test's own**, with the pipeline's statements copied by hand; the pipeline itself has no handler to measure until the lane builds one.
 - **Not run on Linux**: the Linux claims are read from the C API and the web edition's `Package.swift` and module map.
 
-## 8. The issue, if the owner files it
+## 8. The issue, filed as #1680 on the owner's word
 
 **Title:** A search a later one replaced still runs its statements to the end, so the newer search waits behind them (#1648's second step)
 

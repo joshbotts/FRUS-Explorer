@@ -92,6 +92,9 @@ import Observation
 ///          has replaced it, writes nothing if one has, and returns `true` when none has; a switch of engine and
 ///          `replaceSearchesUnderWay()` replace the runs under way, so a run sent before them cannot land after, and
 ///          `isSearchingWithNoWords` tells the emptied field a hand-off's own search from one to replace
+///   2.8 — #1680: a keyword run's fetch is a task of its own (`keywordFetchUnderWay`), and whatever replaces the
+///          run cancels it (`startRun()`, `replaceRunsUnderWay()`), so the kit stops its statements and the search
+///          that replaced it no longer waits for them
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -403,6 +406,23 @@ final class SearchViewModel {
     /// The searches this screen has sent, numbered, so that a run a later one replaced writes
     /// nothing when it comes back (#1648). See ``SearchRunLedger``.
     @ObservationIgnored private var searchRuns = SearchRunLedger()
+
+    /// The keyword fetch of the run under way, its rows and its total, held so that whatever replaces
+    /// the run can cancel it and the kit stops its statements (#1680). `nil` while no keyword run is
+    /// under way. A Meaning run has none: its engine does not stop when cancelled.
+    @ObservationIgnored private var keywordFetchUnderWay: Task<KeywordFetch, any Error>?
+
+    /// What a keyword run's fetch brings back: its rows, its total, and how long each took.
+    struct KeywordFetch: Sendable {
+        /// The rows, at most the run's fetch limit.
+        let rows: [SearchResult]
+        /// The whole-query count, or `nil` when it could not be taken.
+        let total: Int?
+        /// The time from sending the search to the rows' return.
+        let rowsTime: Duration
+        /// The time from sending the search to the total's return.
+        let totalTime: Duration
+    }
 
     /// Increments once per executed search — a stable `.task(id:)` key for views that
     /// must recompute when a search *runs*, not when its text changes.
@@ -1001,7 +1021,7 @@ final class SearchViewModel {
     ///   what the screen shows. `SearchView.runSearch()` records the search only then.
     @discardableResult
     func search() async -> Bool {
-        let run = searchRuns.startRun()
+        let run = startRun()
         if searchMode == .meaning {
             return await searchMeaning(run: run)
         }
@@ -1037,17 +1057,30 @@ final class SearchViewModel {
             // #1577 lane 1: a search inside a document set is timed, for `SearchTimingLog`.
             let clock = ContinuousClock()
             let sent = clock.now
-            async let fetched = searchService.search(parameters: params, limit: fetchLimit)
-            async let counted: Int? = {
-                // A failed count must not fail the search. The header and the capture warning
-                // both degrade to "total unavailable", which is what macOS already shows.
-                do { return try await searchService.searchCount(parameters: params) }
-                catch { return nil }
-            }()
-            let rows = try await fetched
-            let rowsTime = clock.now - sent
-            let total = await counted
-            let totalTime = clock.now - sent
+            // A task of its own, so that whatever replaces this run stops it (#1680): the kit stops a
+            // search's statements when the task running them is cancelled, and the search that replaced
+            // this one then runs at once instead of after them. See `startRun()`.
+            let fetch = Task { [searchService] () async throws -> KeywordFetch in
+                async let fetched = searchService.search(parameters: params, limit: fetchLimit)
+                async let counted: Int? = {
+                    // A failed count must not fail the search. The header and the capture warning
+                    // both degrade to "total unavailable", which is what macOS already shows.
+                    do { return try await searchService.searchCount(parameters: params) }
+                    catch { return nil }
+                }()
+                let rows = try await fetched
+                let rowsTime = clock.now - sent
+                let total = await counted
+                let totalTime = clock.now - sent
+                return KeywordFetch(rows: rows, total: total, rowsTime: rowsTime, totalTime: totalTime)
+            }
+            keywordFetchUnderWay = fetch
+            defer { if keywordFetchUnderWay == fetch { keywordFetchUnderWay = nil } }
+            let fetchedRun = try await fetch.value
+            let rows = fetchedRun.rows
+            let rowsTime = fetchedRun.rowsTime
+            let total = fetchedRun.total
+            let totalTime = fetchedRun.totalTime
             // Same actor hop as the fetch, no query: a thin face on the renderer the search used.
             let expression = try? await searchService.matchExpressions(for: params).corpus
             // A run a later one replaced writes nothing (#1648). Asked once, after the last wait, so
@@ -1276,7 +1309,7 @@ final class SearchViewModel {
         searchMode = newMode
         // A run under way is the other engine's, and its rows would land under this picker (#1648).
         // `isSearching` stays as it is until the run the caller starts now replaces it, or below.
-        searchRuns.replaceRunsUnderWay()
+        replaceRunsUnderWay()
         guard hasSearched || searchSetAsideByModeSwitch else { return false }
         if hasRunnableQuery(in: newMode) { return true }
         isSearching = false
@@ -1438,8 +1471,29 @@ final class SearchViewModel {
     /// (#1648): the field cleared on iPhone and iPad. A run that comes back after this writes nothing,
     /// so it cannot put rows back under the empty field, and nothing is searching any more.
     func replaceSearchesUnderWay() {
-        searchRuns.replaceRunsUnderWay()
+        replaceRunsUnderWay()
         isSearching = false
+    }
+
+    /// Starts a run, which replaces the runs under way and stops the keyword fetch of the one that has
+    /// one (#1680), and returns its number. `search()` calls nothing else to start one.
+    private func startRun() -> Int {
+        stopKeywordFetchUnderWay()
+        return searchRuns.startRun()
+    }
+
+    /// Replaces the runs under way without starting one, and stops the keyword fetch of the one that
+    /// has one (#1680). Every replacement on this screen goes through here or ``startRun()``.
+    private func replaceRunsUnderWay() {
+        stopKeywordFetchUnderWay()
+        searchRuns.replaceRunsUnderWay()
+    }
+
+    /// Cancels the keyword fetch under way, if any, so that the kit stops its statements (#1680). The
+    /// run it belonged to writes nothing either way: the ledger says it was replaced.
+    private func stopKeywordFetchUnderWay() {
+        keywordFetchUnderWay?.cancel()
+        keywordFetchUnderWay = nil
     }
 
     /// Whether the search under way has no words (#1648): a browse, such as a person's Find all
