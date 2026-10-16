@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 import SwiftData
+import Synchronization
 @testable import FRUSExplorer
 
 /// The hybrid page's machinery (V-5): the filter key set, the semantic display rows, the route
@@ -551,6 +552,57 @@ private final class GatedMeaningSearch: MeaningSearchRunning {
         let held = waiting
         waiting = []
         held.forEach { $0.resume() }
+    }
+}
+
+/// The first search statement a test's prepared-statement hook holds (#1680): whether one has reached the hook,
+/// and whether its task was cancelled when the hook let it go. Shared with the `@Sendable` hook, which runs on the
+/// pipeline's executor.
+private final class HeldStatement: Sendable {
+
+    private struct State {
+        var entered = false
+        var sawCancellation = false
+        var prepared = 0
+        var ranToItsEnd = 0
+    }
+
+    private let state = Mutex(State())
+
+    /// Whether a statement has reached the hook.
+    var entered: Bool { state.withLock { $0.entered } }
+
+    /// Whether the held statement's task was cancelled when the hook let it go.
+    var sawCancellation: Bool { state.withLock { $0.sawCancellation } }
+
+    /// How many statements were prepared, across every search.
+    var preparedCount: Int { state.withLock { $0.prepared } }
+
+    /// How many statements ran to their end, across every search.
+    var ranToItsEndCount: Int { state.withLock { $0.ranToItsEnd } }
+
+    /// Counts one moment a statement reported.
+    func note(_ moment: SearchStatementMoment) {
+        state.withLock { state in
+            switch moment {
+            case .prepared: state.prepared += 1
+            case .ranToItsEnd: state.ranToItsEnd += 1
+            }
+        }
+    }
+
+    /// `true` for the first statement only, which the hook then holds.
+    func claimFirst() -> Bool {
+        state.withLock { state in
+            guard !state.entered else { return false }
+            state.entered = true
+            return true
+        }
+    }
+
+    /// Records how the held statement was let go.
+    func release(sawCancellation: Bool) {
+        state.withLock { $0.sawCancellation = sawCancellation }
     }
 }
 
@@ -1560,8 +1612,12 @@ struct SearchResultRouteTests {
                 #expect(waits >= 1 && checks >= 1,
                         "fixture guard, \(path) `\(header)`: \(waits) waits and \(checks) checks were read")
                 // The Meaning paths are handed their number; the two entry points take it before anything else.
+                // iPhone and iPad take it through `startRun()`, which also cancels the keyword fetch under way so
+                // that the kit stops its statements (#1680); the Mac's window cancels its own search task.
                 if !header.contains("(run: Int)") {
-                    #expect(lines.dropFirst().first { !$0.isEmpty } == "let run = searchRuns.startRun()",
+                    let opening = path.hasSuffix("/SearchViewModel.swift")
+                        ? "let run = startRun()" : "let run = searchRuns.startRun()"
+                    #expect(lines.dropFirst().first { !$0.isEmpty } == opening,
                             "\(path) `\(header)` does not open by numbering its run")
                 }
             }
@@ -1663,5 +1719,88 @@ struct SearchResultRouteTests {
         let sheet = try Self.source("FRUSExplorer/Search/SaveWorkingCorpusSheet.swift")
         #expect(sheet.contains("wasTruncatedAtCapture: scope.isCapturePartial,"))
         #expect(sheet.contains("sourceDescription: scope.captureProvenanceDescription,"))
+    }
+}
+
+/// #1680: a search that replaces one still under way stops it, on iPhone and iPad, where the view model cancels the run
+/// it replaces. The Mac's window cancels its own search task, and its half is the kit's (`SearchCancellationTests`).
+///
+/// Version history:
+///   1.0 — #1680: initial implementation
+@Suite("A search that replaces one under way stops it (#1680)")
+@MainActor
+struct ReplacedSearchStopTests {
+
+    /// A view model over one volume of 400 documents, every one holding "containment" and "doctrine", so that each
+    /// search matches them all and its statements run long enough for the progress handler to be called.
+    private func makeViewModel() async throws -> (dir: URL, vm: SearchViewModel) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSReplaced-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+        for index in 0..<400 {
+            xml += "<div type=\"document\" xml:id=\"d\(index)\"><head>\(index + 1). Item</head>"
+                + "<p>The doctrine of containment shaped policy.</p></div>\n"
+        }
+        xml += "</body></text></TEI>"
+        try Data(xml.utf8).write(to: volDir.appendingPathComponent("vol1.xml"))
+        let dbURL = dir.appendingPathComponent("t.sqlite")
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                            volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, SearchViewModel(searchService: SearchService(fts5Store: fts5, pipeline: pipeline)))
+    }
+
+    /// #1680: on iPhone and iPad the run that replaces another cancels its keyword fetch, and the kit stops the
+    /// replaced run's statements, so the search that replaced it does not wait for them.
+    ///
+    /// The pipeline's test hook holds the first run's first statement, once prepared, until its task is cancelled, with
+    /// a bound so that a run nothing cancels fails here rather than hanging. The second search is sent while it is
+    /// held: its start cancels the first run's fetch, the hook sees the cancellation and lets the statement go, and the
+    /// second search lands with no error. The hook's moments say what the kit did: three statements are prepared (the
+    /// held one and the second search's two; the first run's other one is refused before it is prepared) and only the
+    /// second search's two run to their end, so the held one was stopped. Before #1680 nothing cancelled the first
+    /// run, and its statement ran to its end before the second could start.
+    @Test("A search that replaces one under way cancels it, and the replaced search's statement stops (#1680)")
+    func aReplacingSearchStopsTheOneUnderWay() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let held = HeldStatement()
+        await vm.searchServiceForTesting.pipeline.setSearchStatementTestHook { moment in
+            held.note(moment)
+            // Only the first statement is held, once prepared; every later one runs.
+            guard moment == .prepared, held.claimFirst() else { return }
+            let deadline = ContinuousClock.now + .seconds(10)
+            while !Task.isCancelled, ContinuousClock.now < deadline { usleep(1_000) }
+            held.release(sawCancellation: Task.isCancelled)
+        }
+
+        vm.keywords = "containment"
+        let first = Task { await vm.search() }
+        for _ in 0..<1_000 where !held.entered { try await Task.sleep(for: .milliseconds(5)) }
+        #expect(held.entered, "fixture guard: the first run's statement never reached the hook")
+        #expect(vm.isSearching, "precondition: the first run is under way")
+
+        vm.keywords = "doctrine"
+        let secondLanded = await vm.search()
+        let firstLanded = await first.value
+
+        #expect(held.sawCancellation, """
+            The replacing search did not cancel the run under way: its statement was let go by the hook's deadline, \
+            not by its task's cancellation (#1680).
+            """)
+        #expect(held.preparedCount == 3, "statements prepared: \(held.preparedCount)")
+        #expect(held.ranToItsEndCount == 2, """
+            \(held.ranToItsEndCount) statements ran to their end: the replaced run's held statement was not stopped \
+            by the kit after its task was cancelled (#1680).
+            """)
+        #expect(!firstLanded, "the replaced run reported its rows as the screen's")
+        #expect(secondLanded)
+        #expect(vm.results.count == 400)
+        #expect(vm.totalMatchCount == 400)
+        #expect(vm.searchError == nil, "the replaced run's cancellation reached the screen as an error")
+        #expect(!vm.isSearching)
     }
 }

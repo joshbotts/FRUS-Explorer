@@ -84,25 +84,26 @@ enum ExecutedSearchRoute: Equatable, Sendable {
 /// The searches a screen has sent, numbered, so that a run a later one replaced writes nothing when
 /// it comes back (#1648).
 ///
-/// Nothing stops a search once it is sent. Neither `SearchService` nor `FTS5Store` checks for
-/// cancellation, and neither does the Meaning engine, so a run's rows come back however long ago
-/// the reader moved on. On iPhone and iPad almost every way of starting a search makes a task of
-/// its own and nothing cancels the one before; on the Mac the window cancels its search task, and
-/// the query under it runs to its end and returns its rows all the same. Two runs that overlapped
-/// landed in the order they finished, so the older one could take the list: a Meaning search still
-/// under way when the reader switched to Keywords and searched landed over the keyword rows.
+/// A run's rows could come back however long ago the reader moved on. Until #1680 nothing under a
+/// search checked for cancellation. The kit now stops a keyword search when the task running it is
+/// cancelled, which iPhone and iPad do as a later run starts and the Mac's window does when its search
+/// task is replaced, and a cancelled keyword search gets no rows; but the Meaning engine does not stop
+/// at all. Two runs that overlapped landed in the order they finished, so the older one could take the
+/// list: a Meaning search still under way when the reader switched to Keywords and searched landed
+/// over the keyword rows.
 ///
-/// So each run takes a number as it starts and asks after every wait whether it is still the latest.
-/// A run that is not writes nothing more: no rows, count or error, no trail entry, and not
-/// `isSearching`, which is the later run's to clear. Emptying the list without a search replaces the
-/// runs under way too (``replaceRunsUnderWay()``), so a run cannot put rows back under a field the
+/// So each run takes a number as it starts and, once its last wait is over, asks whether it is still
+/// the latest. A run that is not writes nothing more: no rows, count or error, no trail entry, and
+/// not `isSearching`, which is the later run's to clear. Emptying the list without a search replaces
+/// the runs under way too (``replaceRunsUnderWay()``), so a run cannot put rows back under a field the
 /// reader has just cleared.
 ///
-/// Both search view models hold one, so iPhone, iPad and the Mac drop a run by one rule. The query
-/// itself still runs to its end: stopping it would be a change to the kit's connection.
+/// Both search view models hold one, so iPhone, iPad and the Mac drop a run by one rule.
 ///
 /// Version history:
 ///   1.0 — #1648: initial implementation
+///   1.1 — #1680: the kit stops a cancelled keyword search; this still drops every Meaning run a later
+///          one replaced, and is the one rule both screens drop a replaced run by, whatever its engine
 struct SearchRunLedger: Equatable, Sendable {
 
     /// The number of the latest run, or of the latest replacement of the runs under way.

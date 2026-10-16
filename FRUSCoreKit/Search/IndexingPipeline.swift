@@ -442,6 +442,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `CollectionKeying.centralFilesClass(parsed:note:)` returns, the one definition, and
 ///         `relatedDocuments(for:)` matches a citation on the class it gives before anything else
 ///         (`CollectionKeying.matchesOnClass`), in either wording
+///  4.38 — 2026-10-15 (#1680): `searchDocuments` and `searchDocumentsCount` throw `CancellationError`
+///         when the calling task is cancelled before they return: a statement under way stops through
+///         one progress handler on `auxDb` that stops only a statement they arm (`SearchStatementStop`),
+///         and one that ends first has its answer dropped. No index version: nothing stored changes
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1976,6 +1980,23 @@ public actor IndexingPipeline {
         documentBatchStoredTestHook = hook
     }
 
+    /// Test hook: called by `searchDocuments` and `searchDocumentsCount`, inside the arming (#1680), once
+    /// their statement is prepared and bound, before its first step (`.prepared`), and again if it runs
+    /// to its end (`.ranToItsEnd`), before the check after it. `nil` in the app.
+    ///
+    /// The first moment is the one after the cancellation check at the statement's start and before
+    /// SQLite runs it: a hook that cancels the running task there leaves only the progress handler
+    /// (`SearchStatementStop`) to stop the statement, and one that waits there holds a search under way,
+    /// deterministically, for as long as a test needs it held. The second says whether the handler
+    /// stopped the statement or it ended on its own, which the error alone cannot: either way the
+    /// caller gets `CancellationError`.
+    private var searchStatementTestHook: (@Sendable (SearchStatementMoment) -> Void)?
+
+    /// Test hook: installs `searchStatementTestHook`.
+    func setSearchStatementTestHook(_ hook: (@Sendable (SearchStatementMoment) -> Void)?) {
+        searchStatementTestHook = hook
+    }
+
     /// The bundled person-authority crosswalk (Phase 5), loaded lazily on first consolidation. The
     /// double optional distinguishes "not yet loaded" (`nil`) from "loaded, absent" (`.some(nil)`),
     /// so a missing bundle resource is only looked up once. Injectable for tests.
@@ -2183,6 +2204,7 @@ public actor IndexingPipeline {
             try Self.setupDatabase(h)
         }
         Self.registerExactWordFunction(h)
+        SearchStatementStop.install(on: h)
         auxDb = h
 
         // Pre-prepare the document_cache UPSERT once after schema setup so every
@@ -3477,7 +3499,9 @@ public actor IndexingPipeline {
     ///   - filters: Structured filters applied in the `WHERE` clause.
     ///   - limit: Maximum rows returned.
     ///   - offset: Rows to skip (exact, because filtering precedes pagination).
-    /// - Throws: `FTS5Error.emptyQuery` when both match expressions are `nil`.
+    /// - Throws: `FTS5Error.emptyQuery` when both match expressions are `nil`, and
+    ///   `CancellationError` when the calling task is cancelled before this returns (#1680). A
+    ///   statement under way stops at the progress handler's next call, usually within a millisecond.
     public func searchDocuments(
         corpusMatch: String?,
         userContentMatch: String?,
@@ -3621,31 +3645,37 @@ public actor IndexingPipeline {
                 """
             binds = matchBinds + filterBinds
         }
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        for (i, bind) in binds.enumerated() {
-            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
-        }
+        // Stops when the calling task is cancelled, so a search a later one replaced does not hold up
+        // the one that replaced it on this actor (#1680).
+        return try stoppingWhenCancelled {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, bind) in binds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+            }
+            searchStatementTestHook?(.prepared)
 
-        var rows: [IndexedSearchRow] = []
-        while try auxStep(stmt) {
-            rows.append(IndexedSearchRow(
-                documentId: auxColumnString(stmt, 0) ?? "",
-                volumeId: auxColumnString(stmt, 1) ?? "",
-                documentNumber: auxColumnString(stmt, 2),
-                header: auxColumnString(stmt, 3) ?? "",
-                dateline: auxColumnString(stmt, 4),
-                sourceNote: auxColumnString(stmt, 5),
-                bodyText: auxColumnString(stmt, 6) ?? "",
-                subjectTagIds: auxColumnString(stmt, 7),
-                userTagIds: auxColumnString(stmt, 8),
-                isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
-                isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
-                dateISO: auxColumnString(stmt, 11),
-                score: sqlite3_column_double(stmt, 12)
-            ))
+            var rows: [IndexedSearchRow] = []
+            while try auxStep(stmt) {
+                rows.append(IndexedSearchRow(
+                    documentId: auxColumnString(stmt, 0) ?? "",
+                    volumeId: auxColumnString(stmt, 1) ?? "",
+                    documentNumber: auxColumnString(stmt, 2),
+                    header: auxColumnString(stmt, 3) ?? "",
+                    dateline: auxColumnString(stmt, 4),
+                    sourceNote: auxColumnString(stmt, 5),
+                    bodyText: auxColumnString(stmt, 6) ?? "",
+                    subjectTagIds: auxColumnString(stmt, 7),
+                    userTagIds: auxColumnString(stmt, 8),
+                    isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
+                    isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
+                    dateISO: auxColumnString(stmt, 11),
+                    score: sqlite3_column_double(stmt, 12)
+                ))
+            }
+            searchStatementTestHook?(.ranToItsEnd)
+            return rows
         }
-        return rows
     }
 
     /// Returns the exact number of documents matching the search and all filters.
@@ -3653,6 +3683,9 @@ public actor IndexingPipeline {
     /// Runs the same match CTE and `WHERE` clause as `searchDocuments` with a
     /// `COUNT(*)`, so the count agrees with paginated results — unlike the previous
     /// FTS5-only count, which ignored post-processing filters and could overstate.
+    ///
+    /// Throws `CancellationError` when the calling task is cancelled before this returns, as
+    /// `searchDocuments` does (#1680).
     public func searchDocumentsCount(
         corpusMatch: String?,
         userContentMatch: String?,
@@ -3710,13 +3743,18 @@ public actor IndexingPipeline {
                 """
             binds = matchBinds + filterBinds
         }
-        let stmt = try auxPrepare(sql)
-        defer { sqlite3_finalize(stmt) }
-        for (i, bind) in binds.enumerated() {
-            sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+        // Stops when the calling task is cancelled, as `searchDocuments` does (#1680).
+        return try stoppingWhenCancelled {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, bind) in binds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+            }
+            searchStatementTestHook?(.prepared)
+            let counted = try auxStep(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            searchStatementTestHook?(.ranToItsEnd)
+            return counted
         }
-        guard try auxStep(stmt) else { return 0 }
-        return Int(sqlite3_column_int64(stmt, 0))
     }
 
     /// Builds the `WITH merged(docrowid, score)` CTE for the requested match scopes.
@@ -4541,6 +4579,27 @@ public actor IndexingPipeline {
             },
             nil, nil, nil
         )
+    }
+
+    /// Runs `statement`, which prepares and steps one search statement on `auxDb`, so that it stops
+    /// when the calling task is cancelled (#1680).
+    ///
+    /// A statement of a task already cancelled is not prepared at all, and one whose task is
+    /// cancelled while it runs is stopped by ``SearchStatementStop``'s handler, which the arming
+    /// bound here lets act on it, at the handler's next call. A statement that ends before that call
+    /// has its answer dropped by the check after it, so a task cancelled at any point before this
+    /// returns gets no answer. Each way this throws `CancellationError`, the error a cancelled caller
+    /// already expects, never the `SQLITE_INTERRUPT` that stopped the statement.
+    private func stoppingWhenCancelled<T>(_ statement: () throws -> T) throws -> T {
+        try Task.checkCancellation()
+        let answer: T
+        do {
+            answer = try SearchStatementStop.$isArmed.withValue(true, operation: statement)
+        } catch IndexingError.sqliteError(code: SQLITE_INTERRUPT, message: _) where Task.isCancelled {
+            throw CancellationError()
+        }
+        try Task.checkCancellation()
+        return answer
     }
 
     /// Renders `filters` to a `WHERE` clause and its bind values.
@@ -12372,6 +12431,72 @@ public struct IndexPageStatistics: Sendable, Equatable {
     public init(fileBytes: Int, reclaimableBytes: Int) {
         self.fileBytes = fileBytes
         self.reclaimableBytes = min(max(0, reclaimableBytes), max(0, fileBytes))
+    }
+}
+
+// MARK: - SearchStatementStop
+
+/// The two moments a search statement reports to `IndexingPipeline`'s test hook (#1680): prepared and
+/// bound, before its first step; and run to its end, not stopped by the progress handler.
+enum SearchStatementMoment: Sendable {
+    /// The statement is prepared and bound, and SQLite has not yet run it.
+    case prepared
+    /// The statement ran to its end: the progress handler did not stop it.
+    case ranToItsEnd
+}
+
+/// What stops a search statement when the task running it is cancelled (#1680).
+///
+/// ## Why
+/// A search that a later one replaced used to run its statements to the end, so the search that
+/// replaced it waited on the pipeline for all of them: 0.5 to 0.9 s with warm pages at iPhone and
+/// iPad's 1,000 rows, 1.0 to 4.1 s at the Mac's 7,500, about 8 s with cold pages and 134 s behind
+/// `=government`, measured over a full index (`Planning/Issue-1648-Stopping-A-Replaced-Search-2026-10-15.md`).
+/// A cancellation check between `sqlite3_step` calls cannot help, because the first step is most of
+/// the work: the ranking pass scores and sorts every match before the first row comes back.
+///
+/// ## How
+/// `auxDb` carries one progress handler, which SQLite calls every ``instructionsBetweenChecks``
+/// virtual-machine instructions while a statement runs. It stops the statement, which then returns
+/// `SQLITE_INTERRUPT`, only when both hold:
+/// - the statement runs inside ``isArmed``, which `IndexingPipeline.stoppingWhenCancelled(_:)` binds
+///   around `searchDocuments`' and `searchDocumentsCount`'s own statement, and nothing else binds;
+/// - the task that runs it is cancelled.
+///
+/// A statement that ends before the handler's next call, one too short to reach it or one cancelled
+/// in its last stretch, is not stopped; `stoppingWhenCancelled(_:)` drops its answer instead.
+///
+/// The arming is a task-local value rather than a flag on the pipeline because a handler belongs to
+/// a connection, not to a statement. The pipeline's `nonisolated` reads step on this connection from
+/// other threads, and indexing writes on it from the actor; none of them may be stopped by a
+/// search's cancellation. A task-local is read in the context of whatever is stepping, so any other
+/// statement, in another task or in none, finds it unset. Measured over the full index on a
+/// connection opened as this one is: an armed statement stopped within 0.3 to 1.5 ms of its task's
+/// cancellation (2 to 13 ms inside an exact-word filter, whose one function call can take that long);
+/// the same statement unarmed in a cancelled task, and on a thread outside any task, ran to its end;
+/// and the handler cost nothing measurable.
+///
+/// A connection has one progress handler, and registering another replaces this one, silently ending
+/// the stop. Register no other on `auxDb`.
+///
+/// Version history:
+///   1.0 — #1680: initial implementation
+enum SearchStatementStop {
+
+    /// Whether the statement now running on this task may be stopped by its cancellation. Bound only
+    /// by `IndexingPipeline.stoppingWhenCancelled(_:)`.
+    @TaskLocal static var isArmed = false
+
+    /// How many virtual-machine instructions SQLite runs between two calls of the handler: about one
+    /// call every 33 µs in a common word's ranking pass, measured, at no measurable cost.
+    static let instructionsBetweenChecks: Int32 = 1_000
+
+    /// Registers the handler on `handle`. Called once, where the pipeline opens its connection, for
+    /// the read-write open and the read-only one alike.
+    static func install(on handle: OpaquePointer) {
+        sqlite3_progress_handler(handle, instructionsBetweenChecks, { _ in
+            SearchStatementStop.isArmed && Task.isCancelled ? 1 : 0
+        }, nil)
     }
 }
 
