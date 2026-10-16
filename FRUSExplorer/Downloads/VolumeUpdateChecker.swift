@@ -29,13 +29,25 @@ public struct LocalVolumeInfo: Sendable, Equatable {
 
 /// A downloaded volume whose live copy on GitHub differs from the local copy,
 /// paired with its bundled metadata for display.
+///
+/// Version history:
+///   1.0 — Session 154: initial implementation
+///   1.1 — #1660: `isSideloaded`
 public struct UpdatableVolume: Sendable, Identifiable, Equatable {
+    /// The volume's catalogue entry.
     public let entry: VolumeManifestEntry
 
+    /// Whether the file on this device is one the reader side-loaded under the catalogue
+    /// volume's name (`DownloadManager.isSideloaded(_:)`), which Update replaces (#1660).
+    public let isSideloaded: Bool
+
+    /// The volume's id.
     public var id: String { entry.volumeId }
 
-    public init(entry: VolumeManifestEntry) {
+    /// A volume listed by a check.
+    public init(entry: VolumeManifestEntry, isSideloaded: Bool = false) {
         self.entry = entry
+        self.isSideloaded = isSideloaded
     }
 }
 
@@ -90,7 +102,8 @@ public enum VolumeUpdateChecker {
                   let local = await downloadManager.localVolumeInfo(for: entry.volumeId),
                   hasUpdate(local: local, live: live)
             else { continue }
-            results.append(UpdatableVolume(entry: entry))
+            results.append(UpdatableVolume(entry: entry,
+                                           isSideloaded: await downloadManager.isSideloaded(entry.volumeId)))
         }
         return results
     }

@@ -171,6 +171,7 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          side-loaded volumes' sidecars, which boot now calls
 ///   4.19 — #1531: `unrecoveredExport`, an upload failure remembered across launches, which the
 ///          status summary resolves to `.stopped` and Fix iCloud Sync warns about
+///   4.20 — #1660: `keepingCurrent`, Keeping Current's list and where each volume's update stands
 
 // MARK: - CloudKitSyncState
 
@@ -2010,6 +2011,11 @@ final class AppState {
     /// mark and its re-measure have to reach the hub the reader comes back to. See
     /// `DownloadedVolumesListModel`.
     let downloadedVolumes = DownloadedVolumesListModel()
+
+    /// Keeping Current's list: what the last check found changed upstream, and where each listed
+    /// volume's update stands (#1660). Held here for the reason `downloadedVolumes` is: an update
+    /// keeps running after the hub that started it is gone. See `KeepingCurrentModel`.
+    let keepingCurrent = KeepingCurrentModel()
 
     // MARK: - Live Activity (iOS only)
 

@@ -163,13 +163,6 @@ struct MacVolumesStorageHub: View {
     /// citation resolution leaves out — and so whether `SideloadCatalogueNoticeRow` says so (#1523).
     @State private var sideloadNoticeShown = false
 
-    // MARK: - Keeping Current state
-
-    @State private var updatableVolumes: [UpdatableVolume] = []
-    @State private var isCheckingForUpdates = false
-    @State private var hasCheckedForUpdates = false
-    @State private var isRefreshingCatalog = false
-
     // MARK: - Advanced state
 
     /// Seeded from UserDefaults so the picker reflects the active limit.
@@ -197,7 +190,9 @@ struct MacVolumesStorageHub: View {
             if !appState.interruptedVolumeIds.isEmpty {
                 needsAttentionSection
             }
-            keepingCurrentSection
+            // #1660: one shared view, mounted by BOTH hubs — the #900 rule. The two copies had
+            // drifted: the Mac drew a row's Update button over the volume's title.
+            KeepingCurrentSection()
             // R-5 P2: what the last updates did to the reader's annotated documents. One shared
             // view, mounted by BOTH hubs — the #900 rule, for the same reason.
             VolumeUpdateReviewSection()
@@ -459,104 +454,6 @@ struct MacVolumesStorageHub: View {
         } footer: {
             Text(String(localized: "settings.hub.interrupted.footer.v2",
                         defaultValue: "These volumes were still being indexed when the app last closed. This section appears only when something needs your attention."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    // MARK: - Keeping Current
-
-    @ViewBuilder
-    private var keepingCurrentSection: some View {
-        Section {
-            HStack(spacing: 10) {
-                Button {
-                    Task { await checkForUpdates() }
-                } label: {
-                    if isCheckingForUpdates {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text(String(localized: "settings.hub.corrections.checking",
-                                        defaultValue: "Checking…"))
-                        }
-                    } else {
-                        Text(String(localized: "settings.hub.corrections.button",
-                                    defaultValue: "Check for Corrections"))
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(isCheckingForUpdates
-                          || (storageReport?.perVolume.isEmpty ?? true)
-                          || appState.manifestStore.diffResult == nil)
-                .controlHelp(
-                    String(localized: "settings.hub.corrections.a11y",
-                           defaultValue: "Check downloaded volumes for upstream corrections"),
-                    detail: String(localized: "settings.hub.corrections.help",
-                                   defaultValue: "Compares each downloaded volume against the FRUS repository and lists any that changed since you downloaded them"),
-                    systemImage: "arrow.triangle.2.circlepath"
-                )
-
-                Button {
-                    Task { await refreshCatalog() }
-                } label: {
-                    if isRefreshingCatalog {
-                        HStack(spacing: 6) {
-                            ProgressView().controlSize(.small)
-                            Text(String(localized: "settings.hub.catalog.refreshing",
-                                        defaultValue: "Refreshing…"))
-                        }
-                    } else {
-                        Text(String(localized: "settings.hub.catalog.button",
-                                    defaultValue: "Refresh Available List"))
-                    }
-                }
-                .buttonStyle(.bordered)
-                .disabled(isRefreshingCatalog || !appState.isOnline)
-                .controlHelp(
-                    // .v2 / .v2: both promised newly published volumes appearing in the download
-                    // browser. They cannot — that browser reads `diffResult.known`, a filter over
-                    // the BUNDLED manifest, which can only shrink (D-1).
-                    String(localized: "settings.hub.catalog.a11y.v2",
-                           defaultValue: "Re-read the published volume list"),
-                    detail: String(localized: "settings.hub.catalog.help.v2",
-                                   defaultValue: "Re-reads the FRUS repository’s volume list, refreshing each volume’s download link and size and dropping any the Office of the Historian has withdrawn"),
-                    systemImage: "arrow.clockwise"
-                )
-            }
-
-            if !updatableVolumes.isEmpty {
-                ForEach(updatableVolumes) { updatable in
-                    SettingsNavRow(label: updatable.entry.title, detail: updatable.entry.volumeId)
-                        .overlay(alignment: .trailing) {
-                            Button(String(localized: "settings.hub.corrections.update",
-                                          defaultValue: "Update")) {
-                                Task { await updateVolume(updatable) }
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                }
-                Button {
-                    Task { await updateAllVolumes() }
-                } label: {
-                    Text(String(localized: "settings.hub.corrections.updateAll",
-                                defaultValue: "Update All"))
-                }
-                .buttonStyle(.borderedProminent)
-            } else if hasCheckedForUpdates && !isCheckingForUpdates {
-                SettingsStatusRow(
-                    label: String(localized: "settings.hub.corrections.upToDate",
-                                  defaultValue: "All downloaded volumes are up to date"),
-                    detail: String(localized: "settings.hub.corrections.upToDate.detail",
-                                   defaultValue: "Nothing has changed upstream since you downloaded them."),
-                    state: .ok
-                )
-            }
-        } header: {
-            Text(String(localized: "settings.hub.keepingCurrent.header",
-                        defaultValue: "Keeping Current"))
-        } footer: {
-            Text(String(localized: "settings.hub.keepingCurrent.footer",
-                        defaultValue: "Updating re-downloads and re-indexes a volume. Your notes, highlights, tags, and summaries are preserved."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1069,6 +966,8 @@ struct MacVolumesStorageHub: View {
                 do {
                     let volumeId = try validator.validate(url: url,
                                                           volumesDirectory: dm.volumesDirectory)
+                    // #1660: so Keeping Current's row for it says Update replaces the reader's copy.
+                    await dm.markSideloaded(volumeId)
                     try await pipeline.indexVolume(volumeId)
                     imported += 1
                     importedIds.append(volumeId)
@@ -1094,46 +993,6 @@ struct MacVolumesStorageHub: View {
                 sideloadOutcome = .failed(messages: messages)
             }
             await loadReport()
-        }
-    }
-
-    // MARK: - Keeping Current actions
-
-    /// Re-reads the FRUS repository's volume list so newly published volumes appear.
-    private func refreshCatalog() async {
-        isRefreshingCatalog = true
-        await appState.manifestStore.refresh()
-        isRefreshingCatalog = false
-    }
-
-    /// Diffs every downloaded volume's git blob SHA against the live manifest.
-    /// Runs only on explicit user request — never automatically at launch.
-    private func checkForUpdates() async {
-        guard let dm = appState.downloadManager,
-              let liveInfo = appState.manifestStore.diffResult?.liveInfoByVolumeId else { return }
-        isCheckingForUpdates = true
-        let known = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
-        updatableVolumes = await VolumeUpdateChecker.updatableVolumes(
-            known: known,
-            liveInfoByVolumeId: liveInfo,
-            downloadManager: dm
-        )
-        hasCheckedForUpdates = true
-        isCheckingForUpdates = false
-    }
-
-    /// Re-downloads `updatable`, overwriting the stale local copy. `onVolumeDownloaded`
-    /// re-indexes it once the transfer completes; the UPSERT path preserves user data.
-    private func updateVolume(_ updatable: UpdatableVolume) async {
-        guard let dm = appState.downloadManager else { return }
-        await dm.enqueueDownload(updatable.entry, force: true)
-        updatableVolumes.removeAll { $0.id == updatable.id }
-    }
-
-    /// Re-downloads every volume currently listed as updatable.
-    private func updateAllVolumes() async {
-        for updatable in updatableVolumes {
-            await updateVolume(updatable)
         }
     }
 

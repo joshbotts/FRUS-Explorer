@@ -42,6 +42,8 @@ import Crypto
 ///          collection HTML export's own layer
 ///   1.4 — Session 2026-10-11: #1599 — the heads are re-pinned for the two lists below a document
 ///          that names its people and terms on `@ana`
+///   1.5 — Session 2026-10-16: #1665 — the heads are re-pinned for `--reader-measure`, and
+///          `theMeasureIsTheHosts` says what it does
 @Suite("FRUSCoreKit — the reader's page")
 struct ReaderPageTests {
 
@@ -78,15 +80,23 @@ struct ReaderPageTests {
     ///   No variable and no other rule changed: the lists take the footnote list's size and
     ///   colour and the footnotes section's rule and headings. `NamedReferencesTests`
     ///   (`ReaderRenderingTests.swift`) says what the reader writes there.
+    /// - Session 2026-10-16 re-pinned them for #1665: the column's measure is the host's. The
+    ///   variables gain `--reader-measure`, 70ch on a page built with no measure, as these are, and
+    ///   the stylesheet's `.frus-document` reads it (`max-width: var(--reader-measure, 70ch)`) where
+    ///   it had a fixed `70ch`, with its comment saying why. Each head grew by 125 bytes: 35 for the
+    ///   variable's line and 90 for the stylesheet's rule and comment. Nothing else moved: with the
+    ///   line taken out and the rule and comment put back, all eight heads were the 2026-10-11
+    ///   pins byte for byte when these were taken. `theMeasureIsTheHosts` below says what the
+    ///   variable must do, and `ReadingWidthTests` (Xcode's alone) what each measure holds.
     static let heads: [String: (sha256: String, bytes: Int)] = [
-        "light small": ("eeaa8e04fd3b490410ccd2207bb603f0ccecfcfa4443ff73beb7ffb23fbe48cb", 19742),
-        "light medium": ("e9645f4516f0a05896e1fe8e98605e2a624948afe283439b4836fa81762ac07a", 19743),
-        "light large": ("852e77183c3faad5c9b8d801d9dbd62b4db5f179cbe85a9d5bfb6139ade4b557", 19743),
-        "light extraLarge": ("9d66feafd818257e14afa178ee75c229e004fcccb508b0380935ccca8395aa5a", 19743),
-        "dark small": ("78d22e21528adc779023c3e1f0bc897c6ee5ec2c0ad7c3cf1429bee29ff80781", 19772),
-        "dark medium": ("f2ae1705749b67375ac9e3096ec1b056de499b9b2a8c12df178e159dd36ef8af", 19773),
-        "dark large": ("03e3e3358cabacfe2b360de04761c9e706757070cfb8cdf7629615e5cc748d42", 19773),
-        "dark extraLarge": ("4704ded413faf66eb1b0099b38ffe94fb56026173c1effb545049aa1a72a1852", 19773),
+        "light small": ("6397a62436ce9fbb72be8c747402e58e0e51c8151320416a34e1f787c9284942", 19867),
+        "light medium": ("ce93518bc796ec8cc421c0336bf9eab68f514cdead1dace3200e950fa23e6282", 19868),
+        "light large": ("21b6a883fde157064566fb8cc3cbfe2959d0010fd0a1b0306ede0e0d738a8da3", 19868),
+        "light extraLarge": ("f0262cb7b7d5283fca9fd96f4fe71b6a4bea61461dd16f3a0ffe7ef52435e84f", 19868),
+        "dark small": ("c517c75a53175d01c58174687e724448e2d387544a14612c9262a883d7316bec", 19897),
+        "dark medium": ("af552b27b58226b91c133f3f1ec2703d2d015fa1a94bf2cb968fb9eb423e25e2", 19898),
+        "dark large": ("a74f8901da3481fa65efae71959afb7ea388e71a5f0033a4977b8c7c95c4bd44", 19898),
+        "dark extraLarge": ("5d0ffb3e6c44feba2356e8979f202c5fb68882caad73fec7bab47a86741134c6", 19898),
     ]
 
     /// `frus1946v01/d587`, whose three figures name images.
@@ -116,6 +126,22 @@ struct ReaderPageTests {
                         "\(key): the page's head is \(head.count) bytes with SHA-256 \(Self.sha256(head)), not its pin")
             }
         }
+    }
+
+    /// #1665: the column's measure is the host's. The app passes its Reading Width's (`ReadingWidth`,
+    /// whose own suite measures each rung's characters a line); a page built with none keeps the
+    /// 70ch it had, and so does the collection HTML export, which writes the variables with none.
+    @Test("The host's measure is the page's --reader-measure, and a page that names none keeps 70ch (#1665)")
+    func theMeasureIsTheHosts() async throws {
+        #expect(ReaderMeasure.classic == ReaderMeasure(ch: 70))
+        #expect(ReaderMeasure(ch: 87).css == "87ch")
+        #expect(ReaderPage.cssVariables(appearance: .light).contains("--reader-measure:          70ch;"))
+        #expect(ReaderPage.cssVariables(appearance: .dark, textSize: .large, measure: ReaderMeasure(ch: 120))
+            .contains("--reader-measure:          120ch;"))
+        #expect(ReaderPage.documentCSS.contains("max-width: var(--reader-measure, 70ch);"))
+        #expect(!ReaderPage.documentCSS.contains("max-width: 70ch;"), "the column's measure is fixed again")
+        let page = ReaderPage.build(model: try await model(), measure: ReaderMeasure(ch: 87))
+        #expect(page.contains("--reader-measure:          87ch;"))
     }
 
     @Test("A host's head is added at the end of the page's head, and nothing else changes")

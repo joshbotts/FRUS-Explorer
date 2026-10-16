@@ -84,16 +84,6 @@ private func makeTestUserDefaults() -> UserDefaults {
     return UserDefaults(suiteName: suite)!
 }
 
-/// Removes any cached blob SHA for `volumeId` from the shared `UserDefaults`-backed
-/// cache (`DownloadManager.blobSHA(for:)`), so update-detection tests that reuse a
-/// volumeId across runs never read a stale value (Session 154).
-private func clearBlobSHACache(for volumeId: String) {
-    let key = "frus.downloadedVolumeBlobSHA"
-    var cache = (UserDefaults.standard.dictionary(forKey: key) as? [String: String]) ?? [:]
-    cache.removeValue(forKey: volumeId)
-    UserDefaults.standard.set(cache, forKey: key)
-}
-
 // MARK: - Suite
 
 /// Tests for `DownloadManager` covering queue management, concurrency, persistence,
@@ -518,15 +508,14 @@ struct DownloadManagerTests {
     func blobSHAMatchesGitBlobHash() async throws {
         try await withTempDirectory { dir in
             let volumeId = "frus1990-92v01"
-            clearBlobSHACache(for: volumeId)
-            defer { clearBlobSHACache(for: volumeId) }
-
+            // The cache is kept in the manager's own defaults (#1660), a suite of the test's own.
             let content = "<volumes>blob sha fixture</volumes>"
             let dm = DownloadManager(
                 volumesDirectory: dir,
                 concurrencyLimit: 4,
                 downloadTask: makeMockDownloadTask(content: content),
-                onStateChanged: { _ in }
+                onStateChanged: { _ in },
+                preferences: makeTestUserDefaults()
             )
             await dm.resumeQueuedDownloads()
             await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
@@ -561,15 +550,13 @@ struct DownloadManagerTests {
     func localVolumeInfoReportsSizeAndSha() async throws {
         try await withTempDirectory { dir in
             let volumeId = "frus1990-92v02"
-            clearBlobSHACache(for: volumeId)
-            defer { clearBlobSHACache(for: volumeId) }
-
             let content = "<volumes>local volume info fixture</volumes>"
             let dm = DownloadManager(
                 volumesDirectory: dir,
                 concurrencyLimit: 4,
                 downloadTask: makeMockDownloadTask(content: content),
-                onStateChanged: { _ in }
+                onStateChanged: { _ in },
+                preferences: makeTestUserDefaults()
             )
             await dm.resumeQueuedDownloads()
             await dm.enqueueDownload(volumeId: volumeId, downloadUrl: "https://example.com/\(volumeId).xml")
@@ -1528,12 +1515,17 @@ struct FigureImageDownloadTests {
         }
     }
 
-    @Test("Cancelling a download removes the volume's file and, with it, the images of the copy it was updating")
-    func cancellingADownloadRemovesItsImages() async throws {
+    /// Until #1660 a cancel removed the file at the destination, and #1516 made the images follow
+    /// it. Neither transfer path writes there until the whole file has arrived, so the file was
+    /// always a whole copy — an update's old one — and the index kept a volume whose documents no
+    /// longer opened. The owner's answer of 2026-10-16: cancelling an update keeps the old copy.
+    @Test("Cancelling an update keeps the volume's file and the images of that copy (#1660)")
+    func cancellingAnUpdateKeepsTheOldCopy() async throws {
         try await FigureTestImages.withLibrary { library in
             let png = try FigureTestImages.png(width: 8, height: 8)
             let dm = FigureTestImages.manager(library, png: png, asked: FigureTestImages.Counter())
             try FigureTestImages.seedVolume("frus1946v01", in: library)
+            let before = try Data(contentsOf: dm.volumeURL(for: "frus1946v01"))
             #expect(library.store(png, volumeId: "frus1946v01", fileName: "figure_1162.png"))
             // An update of the volume is queued (the manager is suspended, so it does not start).
             await dm.enqueueDownload(volumeId: "frus1946v01",
@@ -1541,9 +1533,11 @@ struct FigureImageDownloadTests {
             #expect(await dm.currentState.pendingVolumeIds == ["frus1946v01"])
 
             await dm.cancelDownload(volumeId: "frus1946v01")
-            #expect(!dm.isVolumeDownloaded("frus1946v01"), "cancelDownload removes the file at the destination")
-            #expect(!FileManager.default.fileExists(atPath: library.directory(for: "frus1946v01").path),
-                    "the images of a volume whose file a cancel removed were left behind")
+            #expect(await dm.currentState.pendingVolumeIds.isEmpty)
+            #expect(try Data(contentsOf: dm.volumeURL(for: "frus1946v01")) == before,
+                    "cancelling the update removed or changed the copy it was to replace")
+            #expect(library.data(volumeId: "frus1946v01", fileName: "figure_1162.png") == png,
+                    "cancelling the update removed the images of the copy that stays")
         }
     }
 

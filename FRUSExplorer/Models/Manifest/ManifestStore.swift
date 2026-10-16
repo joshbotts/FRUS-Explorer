@@ -75,6 +75,45 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
     public var id: String { filename }
 }
 
+/// Why GitHub's listing of the published volumes was not read: it answered, with a status that
+/// is not a success (#1660).
+///
+/// Thrown by the live fetch, and held in `ManifestStore.liveFetchError`, so Keeping Current can
+/// say which of the causes it was. A transport failure (no connection, a timeout) is the
+/// `URLError` itself.
+///
+/// Version history:
+///   1.0 — #1660: initial implementation
+public struct LiveListingError: Error, Sendable, Equatable {
+    /// The HTTP status GitHub answered with.
+    public let statusCode: Int
+    /// Whether the answer was GitHub's request limit: a 429, or a 403 that says no requests
+    /// remain. The listing is read without signing in, which GitHub allows 60 times an hour from
+    /// one network address.
+    public let isRateLimited: Bool
+    /// When GitHub says requests may be made again, if it said.
+    public let retryAfter: Date?
+
+    /// Reads a non-success answer.
+    ///
+    /// - Parameters:
+    ///   - response: GitHub's answer.
+    ///   - now: The time a `Retry-After` counts from. Default: the current time.
+    public init(response: HTTPURLResponse, now: Date = Date()) {
+        statusCode = response.statusCode
+        let remaining = response.value(forHTTPHeaderField: "X-RateLimit-Remaining")
+        isRateLimited = response.statusCode == 429
+            || (response.statusCode == 403 && remaining == "0")
+        if let reset = response.value(forHTTPHeaderField: "X-RateLimit-Reset").flatMap(TimeInterval.init) {
+            retryAfter = Date(timeIntervalSince1970: reset)
+        } else if let seconds = response.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init) {
+            retryAfter = now.addingTimeInterval(seconds)
+        } else {
+            retryAfter = nil
+        }
+    }
+}
+
 /// Loads and manages the bundled volume manifest, and merges it with the live GitHub listing.
 ///
 /// `ManifestStore` is the single source of truth for volume metadata in the app.
@@ -105,6 +144,9 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 ///          `VolumeUpdateChecker` to detect upstream corrections
 ///   1.5 — FRUSCoreKit, part 2: conforms to the kit's `CitableVolumeCatalogue`, through which
 ///          Citation Lookup's engine, now in the kit, reads `citableEntries`
+///   1.6 — #1660: a fetch asked for while one is under way waits for that one instead of
+///          returning at once, so its caller reads the result it asked for; a non-success answer
+///          is a `LiveListingError`, which keeps the status and GitHub's request limit
 @Observable
 @MainActor
 public final class ManifestStore {
@@ -120,8 +162,12 @@ public final class ManifestStore {
     /// `true` while the live manifest fetch is in progress.
     public private(set) var isFetchingLive: Bool = false
 
-    /// Non-nil if the live manifest fetch failed.
+    /// Non-nil if the last live manifest fetch failed: a `LiveListingError` when GitHub answered
+    /// with a status that is not a success, otherwise the transport's error.
     public private(set) var liveFetchError: Error? = nil
+
+    /// The fetch under way, which a second call waits for (#1660).
+    private var liveFetch: Task<Void, Never>? = nil
 
     /// Entries for volumes on disk that the catalogue does not list — side-loaded files (#777).
     ///
@@ -332,12 +378,26 @@ public final class ManifestStore {
 
     /// Fetches the live GitHub listing and computes the diff against the bundled manifest.
     ///
-    /// Safe to call multiple times (e.g., when the user taps "Check for new volumes").
-    /// Skips if a fetch is already in progress.
+    /// Safe to call multiple times (e.g., when the user taps "Check for Corrections"). A call made
+    /// while a fetch is under way waits for that fetch and starts none of its own (#1660): it
+    /// used to return at once, so Check for Corrections, pressed while the fetch the pane starts
+    /// on opening was still running, read no list and did nothing.
     ///
-    /// - Parameter session: URLSession to use. Defaults to `.shared`.
+    /// - Parameter session: URLSession to use. Defaults to `.shared`. A call that waits for a
+    ///   fetch under way gets that fetch's session.
     public func fetchLiveManifest(session: URLSession = .shared) async {
-        guard !isFetchingLive else { return }
+        if let liveFetch {
+            await liveFetch.value
+            return
+        }
+        let fetch = Task { await performLiveFetch(session: session) }
+        liveFetch = fetch
+        await fetch.value
+        liveFetch = nil
+    }
+
+    /// One fetch of the live listing, run by `fetchLiveManifest(session:)`.
+    private func performLiveFetch(session: URLSession) async {
         isFetchingLive = true
         liveFetchError = nil
 
@@ -395,9 +455,8 @@ public final class ManifestStore {
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
+        guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard (200..<300).contains(http.statusCode) else { throw LiveListingError(response: http) }
         let all = try JSONDecoder().decode([GitHubLiveEntry].self, from: data)
         return all.filter { $0.name.hasSuffix(".xml") && $0.size >= 20_000 }
     }
