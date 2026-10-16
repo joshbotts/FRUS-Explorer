@@ -45,6 +45,66 @@ public struct DownloadManagerState: Sendable {
     public var allQueuedVolumeIds: [String] { activeVolumeIds + pendingVolumeIds }
 }
 
+// MARK: - Enqueue Outcome
+
+/// What `DownloadManager.enqueueDownload` did with a request (#1660).
+///
+/// Every decline used to be silent, so a caller that removed its row on return told the reader a
+/// download had started when none had. Keeping Current reads this to say which happened.
+///
+/// Version history:
+///   1.0 — #1660: initial implementation
+public enum DownloadEnqueueOutcome: Sendable, Equatable {
+    /// Added to the queue; a transfer starts when the queue reaches it.
+    case queued
+    /// A transfer of this volume is already under way or waiting, and it fetches the same file.
+    case alreadyQueued
+    /// On disk already, and the request did not ask to replace it.
+    case alreadyDownloaded
+    /// A side-loaded volume: it has no catalogue address to download from (#777).
+    case noCatalogueURL
+}
+
+// MARK: - Transfer Outcome
+
+/// How a volume's transfer ended, reported once per transfer to `onTransferFinished` (#1660).
+///
+/// Version history:
+///   1.0 — #1660: initial implementation
+public enum DownloadTransferOutcome: Sendable, Equatable {
+    /// The file is on disk; `onVolumeDownloaded` indexes it.
+    case succeeded
+    /// The transfer failed and its automatic retries are spent.
+    case failed(DownloadFailure)
+    /// The reader cancelled it.
+    case cancelled
+}
+
+/// Why a transfer failed, kept as the error's `URLError` code so a screen can word the common
+/// causes itself, with the system's description for the rest (#1660).
+///
+/// Version history:
+///   1.0 — #1660: initial implementation
+public struct DownloadFailure: Sendable, Equatable {
+    /// The failure's `URLError` code, or `nil` when the error was not a `URLError` (a file that
+    /// could not be moved into place, for one).
+    public let urlErrorCode: URLError.Code?
+    /// The error's own description, for a cause no screen words itself.
+    public let description: String
+
+    /// Reads `error`'s code and description.
+    public init(_ error: any Error) {
+        self.urlErrorCode = (error as? URLError)?.code
+        self.description = error.localizedDescription
+    }
+
+    /// A failure with the given parts, for tests.
+    public init(urlErrorCode: URLError.Code?, description: String) {
+        self.urlErrorCode = urlErrorCode
+        self.description = description
+    }
+}
+
 // MARK: - Storage Report
 
 /// Per-volume storage usage. One entry per downloaded volume XML file.

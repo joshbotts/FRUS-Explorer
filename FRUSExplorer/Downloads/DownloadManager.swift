@@ -86,6 +86,13 @@ import Foundation
 ///          comes back online — and tries again what an earlier run could not fetch; a volume
 ///          whose run ended with nothing left to fetch is recorded
 ///          (`FigureImageLibrary.completionRecordName`) and not scanned again until its text changes.
+///   2.5 — #1660 (the owner's answers of 2026-10-16): `enqueueDownload` says what it did
+///          (`DownloadEnqueueOutcome`) and `onTransferFinished` says how each transfer ended, so
+///          Keeping Current can show an update's progress instead of dropping its row; an update's
+///          failed transfer is retried as a first download's is; the blob-SHA cache keeps each hash
+///          with the size and modification date of the file it was taken from, so a file replaced
+///          by any path is hashed again; and a volume side-loaded under a catalogue volume's name is
+///          recorded on the device until a download or a removal replaces it.
 ///
 /// ## Figure Images (#1516)
 /// When a volume's download finishes, `fetchFigureImages(for:)` reads the names its `<figure>`s
@@ -131,6 +138,10 @@ public actor DownloadManager {
     /// Maximum automatic retries for a failed (non-cancelled) download.
     public static let maxRetryCount = 2
 
+    /// The wait before a failed download's first retry; the second waits twice as long. Five
+    /// seconds everywhere but a test, which shortens it so a retry runs within the test.
+    private let retryBackoff: Duration
+
     private let downloadTask: DownloadTask?
     private let onStateChanged: @MainActor (DownloadManagerState) -> Void
 
@@ -142,6 +153,10 @@ public actor DownloadManager {
     /// disk. `FRUSExplorerApp` supplies a closure that removes the volume's search-index
     /// data via `IndexingPipeline.removeVolume(_:)`. `nil` if no cleanup is needed.
     private let onVolumeDeleted: (@Sendable (String) async -> Void)?
+
+    /// Called on the MainActor once per transfer, when it ends (#1660): succeeded, failed with its
+    /// retries spent, or cancelled. `nil` when nothing listens.
+    private let onTransferFinished: (@MainActor (String, DownloadTransferOutcome) -> Void)?
 
     /// `true` when transfers go through the shared `BackgroundDownloadEngine`
     /// (production); `false` when a test injected `downloadTask`.
@@ -173,6 +188,15 @@ public actor DownloadManager {
     /// Automatic retry attempts per volumeId for the current failure streak.
     private var retryCounts: [String: Int] = [:]
 
+    /// Volumes queued to replace a copy already on disk — Keeping Current's Update (#1660).
+    ///
+    /// `retryDownload` declines a volume that is on disk, so that a retry never downloads again
+    /// what another path has meanwhile put there; an update's old copy is always on disk, so
+    /// without this its failed transfer was never retried. Held for the process only: a pending
+    /// update restored from the persisted queue at the next launch still runs, and a failure of
+    /// it is reported without a retry.
+    private var updatingVolumeIds: Set<String> = []
+
     /// Whether downloads should start. Set to `true` by `resumeQueuedDownloads()`,
     /// `false` by `suspend()`. Guards `processQueue()` when offline.
     private var isEnabled: Bool = false
@@ -192,7 +216,10 @@ public actor DownloadManager {
     /// the run stops asking for the old text's names and the update's own run reads the new ones.
     private var figureTexts: [String: Int] = [:]
 
-    /// Where the reader's download settings are read from: `.standard` everywhere but a test.
+    /// Where the reader's download settings are read from, and where the pending queue, the
+    /// blob-SHA cache and the side-load record are kept (#1660): `.standard` everywhere but a
+    /// test. The queue was kept in `.standard` whatever a test passed, so one test's pending
+    /// volumes came back in the next test's manager.
     private let preferences: UserDefaults
 
     /// The running fetch per single image, keyed `volumeId/fileName` (#1516).
@@ -239,8 +266,13 @@ public actor DownloadManager {
     ///   - figureTransfer: How a figure image is fetched (#1516). Default `nil`: the production
     ///     manager (no `downloadTask`) uses `FigureImageLibrary.session`, and a test's manager
     ///     fetches no image at all unless the test supplies this.
-    ///   - preferences: Where Allow Cellular Downloads is read from. Default `.standard`; a test
-    ///     passes a suite of its own, so it changes no setting another test reads.
+    ///   - preferences: Where Allow Cellular Downloads is read from, and where the pending queue,
+    ///     the blob-SHA cache and the side-load record are kept. Default `.standard`; a test passes
+    ///     a suite of its own, so it changes no setting another test reads.
+    ///   - onTransferFinished: Called on the MainActor once per transfer when it ends (#1660).
+    ///     Default `nil`.
+    ///   - retryBackoff: The wait before a failed download's first retry. Default five seconds;
+    ///     a test passes a few milliseconds.
     public init(
         volumesDirectory: URL,
         concurrencyLimit: Int = 4,
@@ -249,7 +281,9 @@ public actor DownloadManager {
         onVolumeDownloaded: (@Sendable (String) async -> Void)? = nil,
         onVolumeDeleted: (@Sendable (String) async -> Void)? = nil,
         figureTransfer: FigureTransfer? = nil,
-        preferences: UserDefaults = .standard
+        preferences: UserDefaults = .standard,
+        onTransferFinished: (@MainActor (String, DownloadTransferOutcome) -> Void)? = nil,
+        retryBackoff: Duration = .seconds(5)
     ) {
         self.volumesDirectory = volumesDirectory
         self.preferences = preferences
@@ -267,9 +301,11 @@ public actor DownloadManager {
         self.onStateChanged = onStateChanged
         self.onVolumeDownloaded = onVolumeDownloaded
         self.onVolumeDeleted = onVolumeDeleted
+        self.onTransferFinished = onTransferFinished
+        self.retryBackoff = retryBackoff
 
         // Restore persisted pending queue from the previous app session.
-        let restored = Self.loadPersistedQueue()
+        let restored = Self.loadPersistedQueue(from: preferences)
         self.pendingQueue = restored.map(\.volumeId)
         self.pendingUrls = Dictionary(uniqueKeysWithValues: restored.map { ($0.volumeId, $0.downloadUrl) })
 
@@ -313,21 +349,7 @@ public actor DownloadManager {
         volumesDirectory.appendingPathComponent("\(volumeId).xml")
     }
 
-    /// Adds a volume to the download queue.
-    ///
-    /// If the volume is already downloaded, already active, or already pending, this is a
-    /// no-op — unless `force` is `true`, which re-queues an already-downloaded volume
-    /// (the transfer engine overwrites the existing file on completion). Downloads start
-    /// immediately if the manager is enabled and below the concurrency limit; otherwise
-    /// the entry waits in the persisted pending queue.
-    ///
-    /// - Parameters:
-    ///   - volumeId: The stable volume identifier (e.g. `"frus1969-76v01"`).
-    ///   - downloadUrl: The direct download URL from the GitHub API listing.
-    ///   - force: If `true`, bypasses the "already downloaded" check so an existing
-    ///     volume is re-downloaded and overwritten. Used by the "Update" action in
-    ///     Downloads settings (Session 154). Default `false`.
-    /// Enqueues a catalogue volume, and silently declines anything the app cannot fetch.
+    /// Enqueues a catalogue volume, and declines anything the app cannot fetch.
     ///
     /// The entry-taking overload exists so no caller has to remember the #777 case. A side-loaded
     /// volume's `downloadUrl` is `nil`, and there is nothing to enqueue: the app never had a URL
@@ -335,26 +357,53 @@ public actor DownloadManager {
     /// to a *different* volume published under that name. Every "Download" affordance in the app
     /// routes through here, so declining is a single decision rather than twelve.
     ///
+    /// - Parameters:
+    ///   - entry: The volume's catalogue entry.
+    ///   - force: If `true`, re-downloads a volume already on disk, as
+    ///     `enqueueDownload(volumeId:downloadUrl:force:)` describes. Default `false`.
+    /// - Returns: What was done with the request (#1660).
+    ///
     /// Version history:
     ///   1.0 — Session 2026-08-09: #777
-    public func enqueueDownload(_ entry: VolumeManifestEntry, force: Bool = false) {
+    ///   1.1 — #1660: returns what it did; a side-loaded entry is `.noCatalogueURL`
+    @discardableResult
+    public func enqueueDownload(_ entry: VolumeManifestEntry, force: Bool = false) -> DownloadEnqueueOutcome {
         guard let url = entry.downloadUrl else {
             #if DEBUG
             print("[DownloadManager] Declined \(entry.volumeId): side-loaded, no catalogue URL")
             #endif
-            return
+            return .noCatalogueURL
         }
-        enqueueDownload(volumeId: entry.volumeId, downloadUrl: url, force: force)
+        return enqueueDownload(volumeId: entry.volumeId, downloadUrl: url, force: force)
     }
 
-    public func enqueueDownload(volumeId: String, downloadUrl: String, force: Bool = false) {
-        guard (force || !isVolumeDownloaded(volumeId)),
-              !activeVolumeIds.contains(volumeId),
-              !pendingQueue.contains(volumeId) else { return }
+    /// Adds a volume to the download queue.
+    ///
+    /// If the volume is already downloaded, already active, or already pending, this declines —
+    /// unless `force` is `true`, which re-queues an already-downloaded volume (the transfer
+    /// engine overwrites the existing file on completion). Downloads start immediately if the
+    /// manager is enabled and below the concurrency limit; otherwise the entry waits in the
+    /// persisted pending queue.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The stable volume identifier (e.g. `"frus1969-76v01"`).
+    ///   - downloadUrl: The direct download URL from the GitHub API listing.
+    ///   - force: If `true`, bypasses the "already downloaded" check so an existing
+    ///     volume is re-downloaded and overwritten. Used by the "Update" action in
+    ///     Keeping Current (Session 154). Default `false`.
+    /// - Returns: What was done with the request (#1660). A volume already active or pending is
+    ///   `.alreadyQueued` even when forced: that transfer fetches the same address.
+    @discardableResult
+    public func enqueueDownload(volumeId: String, downloadUrl: String, force: Bool = false) -> DownloadEnqueueOutcome {
+        guard !activeVolumeIds.contains(volumeId),
+              !pendingQueue.contains(volumeId) else { return .alreadyQueued }
+        let onDisk = isVolumeDownloaded(volumeId)
+        guard force || !onDisk else { return .alreadyDownloaded }
 
         pendingQueue.append(volumeId)
         pendingUrls[volumeId] = downloadUrl
         retryCounts.removeValue(forKey: volumeId)
+        if onDisk { updatingVolumeIds.insert(volumeId) }
         persistQueue()
 
         #if DEBUG
@@ -362,13 +411,20 @@ public actor DownloadManager {
         #endif
 
         processQueue()
+        return .queued
     }
 
     /// Cancels a download that is active or pending.
     ///
-    /// If the volume file was partially written it is removed. If the volume was only
-    /// pending (not yet started) it is removed from the persisted queue.
+    /// If the volume was only pending (not yet started) it is removed from the persisted queue.
+    /// Nothing on disk is touched (#1660, the owner's answer of 2026-10-16): neither transfer path
+    /// writes at the destination until the whole file has arrived — each moves a finished
+    /// temporary file into place — so a file there is a whole copy, either an update's old one,
+    /// which the reader keeps, or the one a transfer that finished first has just put there and
+    /// `onVolumeDownloaded` is indexing. Removing it, as this did until #1660, left the index
+    /// holding a volume whose documents could no longer open.
     public func cancelDownload(volumeId: String) {
+        let wasQueued = activeVolumeIds.contains(volumeId) || pendingQueue.contains(volumeId)
         // Cancel the running transfer.
         if usesBackgroundEngine {
             BackgroundDownloadEngine.shared.cancelDownload(volumeId: volumeId)
@@ -381,16 +437,11 @@ public actor DownloadManager {
         pendingQueue.removeAll { $0 == volumeId }
         pendingUrls.removeValue(forKey: volumeId)
         retryCounts.removeValue(forKey: volumeId)
-
-        // Remove any partially written file.
-        let dest = volumeURL(for: volumeId)
-        try? FileManager.default.removeItem(at: dest)
-        // And the images of the copy that file replaced, when this cancels an update (#1516): no
-        // volume is left for them to illustrate.
-        discardFigureImages(for: volumeId)
+        updatingVolumeIds.remove(volumeId)
 
         persistQueue()
         notifyStateChanged()
+        if wasQueued { notifyTransferFinished(volumeId: volumeId, outcome: .cancelled) }
 
         #if DEBUG
         print("[DownloadManager] Cancelled \(volumeId).")
@@ -412,11 +463,14 @@ public actor DownloadManager {
         // other artifacts must not depend on which of them happens to be removed first.
         if FileManager.default.fileExists(atPath: dest.path) {
             try FileManager.default.removeItem(at: dest)
-            Self.invalidateBlobSHA(for: volumeId)
+            invalidateBlobSHA(for: volumeId)
         }
         // #1516: the volume's figure images go with it — outside the guard, for the reason the
         // callback below is: whichever of a volume's files is removed first, none may outlive it.
         discardFigureImages(for: volumeId)
+        // #1660: and the record that the reader side-loaded it, so a later download of the
+        // catalogue volume under the same name is not marked as their copy.
+        clearSideloaded(volumeId)
 
         // Index cleanup runs in an unstructured Task so file deletion returns
         // immediately; IndexingPipeline.removeVolume is idempotent, so callers that
@@ -563,18 +617,25 @@ public actor DownloadManager {
     /// form GitHub's contents API reports for the same file
     /// (`gitBlobSHA1(for:)`), or `nil` if the volume is not downloaded.
     ///
-    /// Cached in `UserDefaults` keyed by `volumeId` so repeat checks (e.g. opening
-    /// the Downloads settings pane) avoid re-hashing large files. The cache is
-    /// invalidated whenever the volume is deleted or re-downloaded.
+    /// Cached in `preferences`, keyed by `volumeId`, so repeat checks avoid re-hashing large
+    /// files. Each hash is kept with the size and modification date of the file it was taken
+    /// from, and is used only while the file on disk still has both (#1660): until then the cache
+    /// was trusted until something invalidated it, and a file replaced by a path that did not —
+    /// a transfer finishing in a later process before the queue adopted it, or on iPhone and
+    /// iPad one finishing during a background launch, when no manager runs — kept the old file's
+    /// hash, so Keeping Current listed the volume again though it was current. The cache is still
+    /// invalidated on delete and re-download, which keeps it from holding dead entries.
     public func blobSHA(for volumeId: String) -> String? {
-        if let cached = Self.loadBlobSHACache()[volumeId] {
-            return cached
-        }
-        guard let data = try? Data(contentsOf: volumeURL(for: volumeId)) else { return nil }
+        let url = volumeURL(for: volumeId)
+        // The stamp is read before the file is: a file that changes after it is hashed again at
+        // the next check, because its stamp no longer matches the one stored here.
+        guard let stamp = Self.fileStamp(of: url) else { return nil }
+        var cache = loadBlobSHACache()
+        if let entry = cache[volumeId], entry.stamp == stamp { return entry.sha }
+        guard let data = try? Data(contentsOf: url) else { return nil }
         let sha = Self.gitBlobSHA1(for: data)
-        var cache = Self.loadBlobSHACache()
-        cache[volumeId] = sha
-        Self.saveBlobSHACache(cache)
+        cache[volumeId] = CachedBlobSHA(sha: sha, stamp: stamp)
+        saveBlobSHACache(cache)
         return sha
     }
 
@@ -587,20 +648,97 @@ public actor DownloadManager {
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
-    private static let blobSHACacheKey = "frus.downloadedVolumeBlobSHA"
-
-    private static func loadBlobSHACache() -> [String: String] {
-        (UserDefaults.standard.dictionary(forKey: blobSHACacheKey) as? [String: String]) ?? [:]
+    /// A file's size and modification date: what tells a cached hash's file from its replacement.
+    struct FileStamp: Equatable {
+        /// The file's size in bytes.
+        let size: Int
+        /// Its modification date, as seconds since the reference date.
+        let modified: Double
     }
 
-    private static func saveBlobSHACache(_ cache: [String: String]) {
-        UserDefaults.standard.set(cache, forKey: blobSHACacheKey)
+    /// A cached hash and the stamp of the file it was taken from.
+    private struct CachedBlobSHA {
+        let sha: String
+        let stamp: FileStamp
     }
 
-    private static func invalidateBlobSHA(for volumeId: String) {
+    /// The stamp of the file at `url`, or `nil` when there is none.
+    static func fileStamp(of url: URL) -> FileStamp? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = attributes[.size] as? Int,
+              let modified = attributes[.modificationDate] as? Date else { return nil }
+        return FileStamp(size: size, modified: modified.timeIntervalSinceReferenceDate)
+    }
+
+    /// Where the stamped cache is kept. A new key, not the old one's: its entries carry no stamp,
+    /// so none of them could be trusted (#1660). The first check after the upgrade hashes every
+    /// volume once — 3.34 GB for the whole corpus, by the bundled manifest — and the old key is
+    /// removed then.
+    private static let blobSHACacheKey = "frus.downloadedVolumeBlobSHA.v2"
+
+    /// The cache before #1660, keyed by volume with no stamp.
+    private static let unstampedBlobSHACacheKey = "frus.downloadedVolumeBlobSHA"
+
+    private func loadBlobSHACache() -> [String: CachedBlobSHA] {
+        let stored = preferences.dictionary(forKey: Self.blobSHACacheKey) ?? [:]
+        var cache: [String: CachedBlobSHA] = [:]
+        for (volumeId, value) in stored {
+            guard let entry = value as? [String: Any],
+                  let sha = entry["sha"] as? String,
+                  let size = entry["size"] as? Int,
+                  let modified = entry["modified"] as? Double else { continue }
+            cache[volumeId] = CachedBlobSHA(sha: sha, stamp: FileStamp(size: size, modified: modified))
+        }
+        return cache
+    }
+
+    private func saveBlobSHACache(_ cache: [String: CachedBlobSHA]) {
+        let stored = cache.mapValues { entry -> [String: Any] in
+            ["sha": entry.sha, "size": entry.stamp.size, "modified": entry.stamp.modified]
+        }
+        preferences.set(stored, forKey: Self.blobSHACacheKey)
+        preferences.removeObject(forKey: Self.unstampedBlobSHACacheKey)
+    }
+
+    private func invalidateBlobSHA(for volumeId: String) {
         var cache = loadBlobSHACache()
-        cache.removeValue(forKey: volumeId)
+        guard cache.removeValue(forKey: volumeId) != nil else { return }
         saveBlobSHACache(cache)
+    }
+
+    // MARK: - Side-loaded Volumes (#1660)
+
+    /// Where the side-load record is kept: the ids of volumes whose file the reader side-loaded.
+    private static let sideloadedVolumeIdsKey = "frus.sideloadedVolumeIds"
+
+    /// Records that the reader side-loaded `volumeId`'s file (#1660, the owner's answer of
+    /// 2026-10-16).
+    ///
+    /// A file side-loaded under a catalogue volume's name is that volume to the app (#1523), so
+    /// Keeping Current lists it when it differs from the published copy, and Update replaces it.
+    /// The record lets that row say so. It is kept on this device only, and from build 51 on: a
+    /// file side-loaded before then is not marked, since nothing recorded it. A download of the
+    /// volume, or its removal, ends the record.
+    public func markSideloaded(_ volumeId: String) {
+        var ids = sideloadedVolumeIds
+        guard !ids.contains(volumeId) else { return }
+        ids.append(volumeId)
+        preferences.set(ids, forKey: Self.sideloadedVolumeIdsKey)
+    }
+
+    /// Whether `volumeId`'s file on this device is one the reader side-loaded (#1660).
+    public func isSideloaded(_ volumeId: String) -> Bool {
+        sideloadedVolumeIds.contains(volumeId)
+    }
+
+    private var sideloadedVolumeIds: [String] {
+        preferences.stringArray(forKey: Self.sideloadedVolumeIdsKey) ?? []
+    }
+
+    private func clearSideloaded(_ volumeId: String) {
+        let ids = sideloadedVolumeIds
+        guard ids.contains(volumeId) else { return }
+        preferences.set(ids.filter { $0 != volumeId }, forKey: Self.sideloadedVolumeIdsKey)
     }
 
     // MARK: - Private Queue Processing
@@ -621,6 +759,9 @@ public actor DownloadManager {
             guard let urlString = pendingUrls[volumeId],
                   let url = URL(string: urlString) else {
                 pendingUrls.removeValue(forKey: volumeId)
+                updatingVolumeIds.remove(volumeId)
+                // #1660: dropped, so said, as any transfer's end is.
+                notifyTransferFinished(volumeId: volumeId, outcome: .failed(DownloadFailure(URLError(.badURL))))
                 continue
             }
             activeVolumeIds.insert(volumeId)
@@ -676,10 +817,17 @@ public actor DownloadManager {
             // background transfer that finished during a previous process). The
             // file is already on disk; trigger the post-download hook so the
             // volume gets indexed.
-            if error == nil, let callback = onVolumeDownloaded {
+            guard error == nil else { return }
+            // #1660: the file is new, so its cached hash and any side-load record are the old
+            // copy's. The hash is stamped with the file it was taken from and would be taken
+            // again anyway; dropping it here keeps the cache from holding a dead entry.
+            invalidateBlobSHA(for: volumeId)
+            clearSideloaded(volumeId)
+            if let callback = onVolumeDownloaded {
                 Task { await callback(volumeId) }
             }
-            if error == nil { figureTextDidChange(for: volumeId) }
+            figureTextDidChange(for: volumeId)
+            notifyTransferFinished(volumeId: volumeId, outcome: .succeeded)
             return
         }
         if let error {
@@ -713,10 +861,14 @@ public actor DownloadManager {
         testTasks.removeValue(forKey: volumeId)
         pendingUrls.removeValue(forKey: volumeId)
         retryCounts.removeValue(forKey: volumeId)
+        updatingVolumeIds.remove(volumeId)
 
         // The on-disk content just changed (fresh download or "Update" overwrite);
         // drop any cached blob SHA so the next update check re-hashes the new file.
-        Self.invalidateBlobSHA(for: volumeId)
+        invalidateBlobSHA(for: volumeId)
+        // #1660: the catalogue's copy has replaced whatever the reader side-loaded under its name.
+        clearSideloaded(volumeId)
+        notifyTransferFinished(volumeId: volumeId, outcome: .succeeded)
 
         // Trigger post-download indexing (or any other action) without blocking the actor.
         // The callback runs in an unstructured Task so it does not delay queue processing
@@ -981,17 +1133,23 @@ public actor DownloadManager {
             Task {
                 // Linear backoff: 5 s, 10 s. Modest by design — the background
                 // session already retried transport-level hiccups internally.
-                try? await Task.sleep(for: .seconds(5 * attempt))
+                try? await Task.sleep(for: self.retryBackoff * attempt)
                 self.retryDownload(volumeId: volumeId, downloadUrl: urlString)
             }
         } else {
             pendingUrls.removeValue(forKey: volumeId)
             retryCounts.removeValue(forKey: volumeId)
+            updatingVolumeIds.remove(volumeId)
             #if DEBUG
             if !isCancelled {
                 print("[DownloadManager] ✗ \(volumeId) failed permanently: \(error)")
             }
             #endif
+            // #1660: said once, when nothing more will be tried. A cancel made through
+            // `cancelDownload` has already been reported there, and its transfer is no longer
+            // tracked, so it never reaches this method.
+            notifyTransferFinished(volumeId: volumeId,
+                                   outcome: isCancelled ? .cancelled : .failed(DownloadFailure(error)))
         }
 
         processQueue()
@@ -999,8 +1157,11 @@ public actor DownloadManager {
 
     /// Re-enqueues a failed download at the back of the pending queue, preserving
     /// its retry count.
+    ///
+    /// Declines a volume another path has put on disk meanwhile — unless the transfer is an update
+    /// (`updatingVolumeIds`), whose old copy is always on disk (#1660).
     private func retryDownload(volumeId: String, downloadUrl: String) {
-        guard !isVolumeDownloaded(volumeId),
+        guard updatingVolumeIds.contains(volumeId) || !isVolumeDownloaded(volumeId),
               !activeVolumeIds.contains(volumeId),
               !pendingQueue.contains(volumeId) else { return }
         pendingQueue.append(volumeId)
@@ -1022,11 +1183,11 @@ public actor DownloadManager {
             return PersistedEntry(volumeId: volumeId, downloadUrl: url)
         }
         let data = try? JSONEncoder().encode(entries)
-        UserDefaults.standard.set(data, forKey: Self.queueKey)
+        preferences.set(data, forKey: Self.queueKey)
     }
 
-    private static func loadPersistedQueue() -> [PersistedEntry] {
-        guard let data = UserDefaults.standard.data(forKey: queueKey) else { return [] }
+    private static func loadPersistedQueue(from preferences: UserDefaults) -> [PersistedEntry] {
+        guard let data = preferences.data(forKey: queueKey) else { return [] }
         return (try? JSONDecoder().decode([PersistedEntry].self, from: data)) ?? []
     }
 
@@ -1036,6 +1197,14 @@ public actor DownloadManager {
         let state = currentState
         Task { @MainActor [onStateChanged] in
             onStateChanged(state)
+        }
+    }
+
+    /// Reports how a transfer ended to `onTransferFinished`, if anything listens (#1660).
+    private func notifyTransferFinished(volumeId: String, outcome: DownloadTransferOutcome) {
+        guard let onTransferFinished else { return }
+        Task { @MainActor in
+            onTransferFinished(volumeId, outcome)
         }
     }
 

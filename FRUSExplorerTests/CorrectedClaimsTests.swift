@@ -98,19 +98,22 @@ struct CorrectedClaimsTests {
     /// Both platforms promised that refreshing surfaces newly published volumes. It cannot: every
     /// download surface reads `diffResult.known`, which filters the BUNDLED manifest and so can
     /// only shrink. Decision D-1 left that gap silent; the copy went on claiming it was closed.
+    ///
+    /// Since #1660 both platforms' Keeping Current is one shared view, `KeepingCurrentSection`, so
+    /// the iOS detail and the Mac help are read there; the hubs are still read for the old text.
     @Test("Refresh Available List no longer promises newly published volumes")
     func catalogRefreshDoesNotPromiseNewVolumes() throws {
         for file in ["FRUSExplorer/Settings/VolumesStorageHubView.swift",
-                     "FRUSExplorer/Settings/MacVolumesStorageHub.swift"] {
+                     "FRUSExplorer/Settings/MacVolumesStorageHub.swift",
+                     "FRUSExplorer/Settings/KeepingCurrentSection.swift"] {
             let source = try Self.code(file)
             #expect(!source.contains("Look for newly published volumes"), "\(file)")
             #expect(!source.contains("so newly published volumes appear in the download browser"),
                     "\(file)")
         }
-        #expect(try Self.code("FRUSExplorer/Settings/VolumesStorageHubView.swift")
-            .contains("settings.hub.catalog.detail.v2"))
-        #expect(try Self.code("FRUSExplorer/Settings/MacVolumesStorageHub.swift")
-            .contains("settings.hub.catalog.help.v2"))
+        let shared = try Self.code("FRUSExplorer/Settings/KeepingCurrentSection.swift")
+        #expect(shared.contains("settings.hub.catalog.detail.v2"))
+        #expect(shared.contains("settings.hub.catalog.help.v2"))
     }
 
     // MARK: - The facet enumerations

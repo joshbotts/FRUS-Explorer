@@ -917,6 +917,7 @@
 		918FD6684EAC94D52F1A70C5 /* RefreshBypassAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44130EB924BD896526D3659D /* RefreshBypassAuditTests.swift */; };
 		919B3AF045B80278A6A976F3 /* CollectionEntryRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6904FDC72F4181A11B29926 /* CollectionEntryRows.swift */; };
 		91D4115ABA72491519E91CDD /* WordCloudExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A803BE62D1B38E2C378588BA /* WordCloudExport.swift */; };
+		91F076CDE91D8660FC75266E /* KeepingCurrentSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496CC42FB7087288737CE122 /* KeepingCurrentSection.swift */; };
 		922834A5FABE52F3AAA09E4C /* SemanticMapSpikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F788AD5264864EFAE17D1EDF /* SemanticMapSpikeView.swift */; };
 		923E93633583F757607FA6CD /* CollectionAuthority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1B014C2967533C3DAEC54D /* CollectionAuthority.swift */; };
 		925E948C23C194636ECE04F7 /* DownloadsSettingsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB3CD7C0774D261220D22FB /* DownloadsSettingsViewTests.swift */; };
@@ -1013,6 +1014,7 @@
 		A0A299083999A9105B2FB1D9 /* SeriesFactsIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F8EB6D84D17B9CB19F67A5 /* SeriesFactsIndex.swift */; };
 		A0C7E626BF78F426D7A4C5FE /* LotResolutionAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */; };
 		A0D2A3AC2ACB803475351BDC /* KWICLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18CDFA792BE5E542AD58EB12 /* KWICLineTests.swift */; };
+		A10361934B403795EAE6A79E /* KeepingCurrentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942C4372D9771AA9B52F612D /* KeepingCurrentModel.swift */; };
 		A11FD666BB0E2E1E09D2A476 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72108A474E6E3556551B14BE /* FlowLayout.swift */; };
 		A12E59343194D5F2C8939826 /* SourceExplorerProvenance.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FD42614205E86B225A6D65 /* SourceExplorerProvenance.swift */; };
 		A13347DB05A9A9A7C8271EEE /* ArchivesArrangementControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA319EED6B57406042E8CD3 /* ArchivesArrangementControls.swift */; };
@@ -1336,6 +1338,7 @@
 		D24248F073B6C7A8C921A41B /* BulkResultRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6870EB5B89DF3D64400AD78A /* BulkResultRequest.swift */; };
 		D247105EAB89A2A9457E5B2B /* VolumeUpdateReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDD085D0F2DCDC4AE3E58BFC /* VolumeUpdateReview.swift */; };
 		D280A80B763C4A9212705BDA /* ArchivalResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8846F0686338E5846217703A /* ArchivalResolver.swift */; };
+		D280CAFF8540BED9FC1030FE /* KeepingCurrentModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942C4372D9771AA9B52F612D /* KeepingCurrentModel.swift */; };
 		D2ACE36FCFE1D039EDB8429E /* CitationLookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8DA3DEE45576188EE42F070 /* CitationLookupView.swift */; };
 		D2D1CBCC1ABEE718C88AD5D8 /* TermCount.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B0AC87D6D2D373CC930B24 /* TermCount.swift */; };
 		D2D3D0A3AA7CA5D206679882 /* CorrectedVolumeShardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7951FD29885204244C61A0FC /* CorrectedVolumeShardTests.swift */; };
@@ -1440,6 +1443,7 @@
 		E29F478E701DB57C09113048 /* Collocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC82AB12DE9988D3F6CE2E7D /* Collocation.swift */; };
 		E2B7B0A0D88687B240A39B1B /* ProjectPickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE8B1348EC114EC90B45EAB1 /* ProjectPickerMenu.swift */; };
 		E2BFA880CFB78D377923B02D /* curated-lot-resolutions.json in Resources */ = {isa = PBXBuildFile; fileRef = F15A87AD9296CB30DF72C7E0 /* curated-lot-resolutions.json */; };
+		E2DCEE38144463B2689BC8B4 /* KeepingCurrentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0F5E42B99C10B75ED40D22 /* KeepingCurrentTests.swift */; };
 		E2FF5A7E707CC5991DC544F5 /* TEIHeaderParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B6A48541BE87A0974BFCD6 /* TEIHeaderParser.swift */; };
 		E318FDE82F4DC82734D3384D /* ResearchSessionsSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962ABB0A381BEFD120413449 /* ResearchSessionsSummary.swift */; };
 		E336CB3BC326A02994D0B575 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = F1D767EB095F342A813EA1D2 /* manifest.json */; };
@@ -1493,6 +1497,7 @@
 		E9813AF70BC2C90EBF3AD2A0 /* BrokenRefExplanationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81C4772A87DD472F9B4BB3F /* BrokenRefExplanationSheet.swift */; };
 		E99BBC166EB2140E7A567790 /* QueryInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC74E6037A541C694313F3F /* QueryInspectorView.swift */; };
 		E9A2A965B8D61721AF35FCF5 /* BrowseArchivesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0569F88EBDE0969312A3481A /* BrowseArchivesTests.swift */; };
+		E9CE9352E4195D0703834018 /* KeepingCurrentSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496CC42FB7087288737CE122 /* KeepingCurrentSection.swift */; };
 		E9D839124D9FEEC9C6912E86 /* ScopeEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE984196C065D41F0E09DB60 /* ScopeEditorView.swift */; };
 		EA09D5DC86BC057985A4EE8A /* ArchivalNeighborsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2146D6E173015245F0474DAD /* ArchivalNeighborsSheet.swift */; };
 		EA14457D9E37BAD910181C80 /* CrossReferenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F780A07AC89DD895ADBAC9 /* CrossReferenceStoreTests.swift */; };
@@ -1972,6 +1977,7 @@
 		48C1C6D795B63F56AC12433D /* SubjectIndexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectIndexView.swift; sourceTree = "<group>"; };
 		48CA9490CF4D55D71EDD2A15 /* TaxonomyModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaxonomyModels.swift; sourceTree = "<group>"; };
 		494F27398E0CA343906DE73B /* ExternalCitationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalCitationTests.swift; sourceTree = "<group>"; };
+		496CC42FB7087288737CE122 /* KeepingCurrentSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepingCurrentSection.swift; sourceTree = "<group>"; };
 		4A518F36A87F41B3A99187C4 /* SemanticModelStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticModelStoreTests.swift; sourceTree = "<group>"; };
 		4A6FF6BA791B5D41F0FC768D /* DocumentASTCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentASTCache.swift; sourceTree = "<group>"; };
 		4A78976F81BB724FDB704425 /* CaptureStateSeederTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureStateSeederTests.swift; sourceTree = "<group>"; };
@@ -2304,6 +2310,7 @@
 		92EC295184D9C9F1DEC172C5 /* BrowseTwoPaneMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseTwoPaneMetricsTests.swift; sourceTree = "<group>"; };
 		92F33D389816FD9E4DC0FC5D /* ClustersBrowseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClustersBrowseTests.swift; sourceTree = "<group>"; };
 		9311E82A56418BE80A357A01 /* CollectionAddDocumentsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionAddDocumentsSheet.swift; sourceTree = "<group>"; };
+		942C4372D9771AA9B52F612D /* KeepingCurrentModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepingCurrentModel.swift; sourceTree = "<group>"; };
 		94A0F93CC3D156ECF8E0AEED /* SemanticSearchFallbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticSearchFallbackView.swift; sourceTree = "<group>"; };
 		9544B6BB2DA0B054DB1B10B0 /* SummarizationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationServiceTests.swift; sourceTree = "<group>"; };
 		9548E0A9BF3D900143E1777D /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
@@ -2398,6 +2405,7 @@
 		AAF705AA6E4508E1AF061F92 /* DocumentClassificationOverrideData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentClassificationOverrideData.swift; sourceTree = "<group>"; };
 		AB79CB430615942879C8F281 /* EditableContentKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableContentKeyTests.swift; sourceTree = "<group>"; };
 		AB810E6A437710F0FB08ACB9 /* QueryMethodAppendixCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryMethodAppendixCoverageTests.swift; sourceTree = "<group>"; };
+		AC0F5E42B99C10B75ED40D22 /* KeepingCurrentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepingCurrentTests.swift; sourceTree = "<group>"; };
 		AC131D26253372FC469A4B2D /* ParisPeaceRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParisPeaceRecords.swift; sourceTree = "<group>"; };
 		AC6D1C3A629AB2EAF0593518 /* GeneratedSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedSummary.swift; sourceTree = "<group>"; };
 		AC8EF6A6AA20275212262AF9 /* ResearchNoteEditorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchNoteEditorViewModel.swift; sourceTree = "<group>"; };
@@ -3241,6 +3249,8 @@
 				7A2243892329FD25918D4628 /* DataRecoveryView.swift */,
 				87C1CE86F4937BA9A1EAF837 /* FRUSSettingsView.swift */,
 				63BEBE77ECB0D5CB1DC46A17 /* IndexHealthView.swift */,
+				942C4372D9771AA9B52F612D /* KeepingCurrentModel.swift */,
+				496CC42FB7087288737CE122 /* KeepingCurrentSection.swift */,
 				A8959D245CE2A42D6E996478 /* MacVolumesStorageHub.swift */,
 				501B372A37F778939C006313 /* ResearchSessionsView.swift */,
 				71424C2AA6C6C985A477647A /* ResetService.swift */,
@@ -3495,6 +3505,7 @@
 				DD78F8E282DB8E257A3895F6 /* IndexingQueueBannerTests.swift */,
 				34E1CEB90BE3E3FC8CDCE738 /* IndexingSummaryCardTests.swift */,
 				6000E386B1EB64D795D8F282 /* IntegrationTests.swift */,
+				AC0F5E42B99C10B75ED40D22 /* KeepingCurrentTests.swift */,
 				9948E709929FAB592E9B615E /* KeychainStoreTests.swift */,
 				1ABF8381A244009C01C9C91A /* KeynessCloudTests.swift */,
 				8CFB0FD0357ED14BB6C8C69A /* KeynessTests.swift */,
@@ -4985,6 +4996,8 @@
 				95C47642159F1B9CDFCF83E0 /* IndexingStateTracker.swift in Sources */,
 				D6AB6B5AF5D52A42A0F13363 /* IndexingSummaryCard.swift in Sources */,
 				785C804C5CA3228D51B900C2 /* KWICLine.swift in Sources */,
+				A10361934B403795EAE6A79E /* KeepingCurrentModel.swift in Sources */,
+				91F076CDE91D8660FC75266E /* KeepingCurrentSection.swift in Sources */,
 				88F4C333FC0D6D1EA7B75B9D /* KeyboardDismissBar.swift in Sources */,
 				0632CD0D0FBEF87470942131 /* KeychainStore.swift in Sources */,
 				1B5AC32D7C6F5388B2D3996C /* Keyness.swift in Sources */,
@@ -5559,6 +5572,8 @@
 				01F2EF5CC4304783CCD6FDFE /* IndexingStateTracker.swift in Sources */,
 				EA77F5267057C90A63A29C6E /* IndexingSummaryCard.swift in Sources */,
 				4E649743FB899746051358CA /* KWICLine.swift in Sources */,
+				D280CAFF8540BED9FC1030FE /* KeepingCurrentModel.swift in Sources */,
+				E9CE9352E4195D0703834018 /* KeepingCurrentSection.swift in Sources */,
 				4A91D1E8CFAE692FEB16B6D9 /* KeyboardDismissBar.swift in Sources */,
 				CB6AD2656E288EE5C8DA8A18 /* KeychainStore.swift in Sources */,
 				7E571CF62848726B51298DC1 /* Keyness.swift in Sources */,
@@ -6055,6 +6070,7 @@
 				7DE4DB59ECEA6148149CA4B1 /* IndexingTestSupport.swift in Sources */,
 				68BA1099B5A3E26A1EE512E6 /* IntegrationTests.swift in Sources */,
 				A0D2A3AC2ACB803475351BDC /* KWICLineTests.swift in Sources */,
+				E2DCEE38144463B2689BC8B4 /* KeepingCurrentTests.swift in Sources */,
 				E69E1D10C09ABA8D2058E992 /* KeychainStoreTests.swift in Sources */,
 				6EBCA39D43A269FF41981881 /* KeynessCloudTests.swift in Sources */,
 				05E9291EB0EE48B65C621EBA /* KeynessTests.swift in Sources */,

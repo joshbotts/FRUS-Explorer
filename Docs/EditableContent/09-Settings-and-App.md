@@ -186,15 +186,85 @@ This marks every changed document in the volume as reviewed. With iCloud sync it
 
 #### Keeping Current footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | keepingCurrentSection footer | lines: 584–585 | key: settings.hub.keepingCurrent.footer | shared: iOS (macOS carries the same text separately in MacVolumesStorageHub.swift) -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentSection.swift | KeepingCurrentSection footer | lines: 79–80 | key: settings.hub.keepingCurrent.footer | shared: iOS+macOS (single edit point since #1660, when the two hubs' sections became one shared view) -->
 
 Updating re-downloads and re-indexes a volume. Your notes, highlights, tags, and summaries are preserved.
 
 <!-- END SOURCE: settings.hub.keepingCurrent.footer -->
 
+#### Keeping Current — an update's progress, and why a check could not run (#1660)
+
+*Since build 51 (#1660, the owner's answers of 2026-10-16) a listed volume's row stays after Update or Update All and shows where its update stands; a failed update offers Retry with its reason; a side-loaded copy's row says Update replaces it; and when the published list cannot be read, a row under the two buttons says why. One shared view on every platform, so each block below is a single edit point.*
+
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy | lines: 367–383 | keys: settings.hub.corrections.status.queued, settings.hub.corrections.status.downloading, settings.hub.corrections.status.alreadyDownloading, settings.hub.corrections.status.indexing, settings.hub.corrections.status.updated, settings.hub.corrections.retry | shared: iOS+macOS (single edit point) -->
+
+**Waiting in the queue:** Queued
+
+**Downloading:** Downloading…
+
+**A download of the volume was already under way:** Already downloading…
+
+**Re-indexing:** Indexing…
+
+**Done:** Updated
+
+**A failed row's button:** Retry
+
+<!-- END SOURCE: settings.hub.corrections.status -->
+
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.sideloaded | lines: 386–387 | key: settings.hub.corrections.sideloaded | shared: iOS+macOS (single edit point) -->
+
+Your side-loaded copy. Update replaces it with the published volume.
+
+<!-- END SOURCE: settings.hub.corrections.sideloaded -->
+
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.failure(_:) | lines: 395–412 | keys: settings.hub.corrections.failed.offline, settings.hub.corrections.failed.timedOut, settings.hub.corrections.failed.server, settings.hub.corrections.failed.other, settings.hub.corrections.failed.indexing, settings.hub.corrections.failed.noURL | shared: iOS+macOS (single edit point) -->
+
+**No connection:** The download failed: no connection.
+
+**Timed out:** The download failed: it timed out.
+
+**GitHub sent no volume:** The download failed: GitHub did not send the volume.
+
+**Any other cause:** The download failed: \(download.description)
+
+**The re-index failed:** The volume downloaded, and indexing it failed: \(description)
+
+**No catalogue address (not expected, since every listed volume has one):** This volume has no published copy to download.
+
+*(Interpolated with the system's description of the error.)*
+
+<!-- END SOURCE: settings.hub.corrections.failed -->
+
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.listProblem(_:) | lines: 417–443 | keys: settings.hub.corrections.listProblem, settings.hub.corrections.listProblem.offline, settings.hub.corrections.listProblem.rateLimited, settings.hub.corrections.listProblem.rateLimited.noTime, settings.hub.corrections.listProblem.server, settings.hub.corrections.listProblem.unreadable | shared: iOS+macOS (single edit point) -->
+
+**The row's label:** Couldn’t read the published list
+
+**Offline:** This device is offline. Checking compares your volumes with the list on GitHub.
+
+**GitHub's request limit, when it says when it lifts:** GitHub limits how often it answers one network, and this network has reached the limit. Try again after \(time).
+
+**GitHub's request limit, when it does not:** GitHub limits how often it answers one network, and this network has reached the limit. Try again later.
+
+**GitHub answered with an error:** GitHub answered with error \(status). Try again later.
+
+**No reason was recorded:** The list on GitHub could not be read.
+
+*(Any other failure shows the system's own description of it.)*
+
+<!-- END SOURCE: settings.hub.corrections.listProblem -->
+
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentSection.swift | KeepingCurrentRow.control | lines: 266–271 | keys: settings.hub.corrections.update.a11y, settings.hub.corrections.retry.a11y | shared: iOS+macOS (single edit point) -->
+
+**VoiceOver, a row's Update:** Update \(volumeId)
+
+**VoiceOver, a row's Retry:** Retry the update of \(volumeId)
+
+<!-- END SOURCE: settings.hub.corrections.rowButtons -->
+
 #### Storage & Index footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | storageAndIndexSection footer | lines: 655–656 | key: settings.hub.storageIndex.footer | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | storageAndIndexSection footer | lines: 552–553 | key: settings.hub.storageIndex.footer | shared: iOS (macOS carries the same text separately) -->
 
 Notes, highlights, and tags are never affected. For reference: the full FRUS corpus is roughly 3.4 GB of XML plus 9–10 GB of search index.
 
@@ -202,7 +272,7 @@ Notes, highlights, and tags are never affected. For reference: the full FRUS cor
 
 #### Rebuild From Scratch — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | rebuild confirmation | lines: 242–243 | key: settings.hub.rebuild.message.v2 | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | rebuild confirmation | lines: 237–238 | key: settings.hub.rebuild.message.v2 | shared: iOS (macOS carries the same text separately) -->
 
 This deletes everything the app has built for searching — document text, cross-references, page numbers, dates and the people named in each document — and builds it again by re-reading all \(volumes) you have downloaded.
 
@@ -212,7 +282,7 @@ Your research notes, highlights, summaries, collections, and tags are stored sep
 
 #### Free Up Space — removal confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | MacManageStorageSheet / FreeUpSpaceSheet confirmation | lines: 1839–1840 | key: settings.hub.freeUp.confirm.message | shared: iOS+macOS (single edit point — the Mac adopted these keys when its missing confirmation was added) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | MacManageStorageSheet / FreeUpSpaceSheet confirmation | lines: 1697–1698 | key: settings.hub.freeUp.confirm.message | shared: iOS+macOS (single edit point — the Mac adopted these keys when its missing confirmation was added) -->
 
 The XML files and their search-index rows are deleted from this device. Every one of these volumes can be downloaded again.
 
@@ -220,7 +290,7 @@ The XML files and their search-index rows are deleted from this device. Every on
 
 #### Free Up Space — size-estimate note
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet | lines: 1799–1800 | key: settings.hub.freeUp.estimateNote | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet | lines: 1657–1658 | key: settings.hub.freeUp.estimateNote | shared: iOS (macOS carries the same text separately) -->
 
 Each size is the XML file plus an estimated 2.8× for its share of the search index. That ratio comes from the full corpus: about 9–10 GB of index for about 3.4 GB of XML. Per volume the overhead runs from roughly 2.5× to 3×, so treat these sizes as approximate.
 
@@ -228,7 +298,7 @@ Each size is the XML file plus an estimated 2.8× for its share of the search in
 
 #### Needs Attention footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | needsAttentionSection footer | lines: 486–487 | key: settings.hub.interrupted.footer.v2 | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | needsAttentionSection footer | lines: 481–482 | key: settings.hub.interrupted.footer.v2 | shared: iOS (macOS carries the same text separately) -->
 
 These volumes were still being indexed when the app last closed. This section appears only when something needs your attention.
 
@@ -296,7 +366,7 @@ Could not measure storage
 
 #### Download options footer (iOS only)
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | optionsSection footer | lines: 765–766 | key: settings.hub.options.footer | shared: iOS only — absorbed the retired iCloud-Backup exclusion note -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | optionsSection footer | lines: 662–663 | key: settings.hub.options.footer | shared: iOS only — absorbed the retired iCloud-Backup exclusion note -->
 
 Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iCloud Backup — it can be re-downloaded at any time.
 
@@ -308,25 +378,25 @@ Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iC
 has a side-loaded form whose bold warning is the load-bearing sentence — a side-loaded volume has
 no download to fall back on, so removal can be final. Keep the `**…**` emphasis intact.*
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1437–1438 | key: settings.hub.remove.message.iOS -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1295–1296 | key: settings.hub.remove.message.iOS -->
 
 The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
 
 <!-- END SOURCE: settings.hub.remove.message.iOS -->
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1434–1435 | key: settings.hub.remove.message.iOS.sideloaded -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1292–1293 | key: settings.hub.remove.message.iOS.sideloaded -->
 
 The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
 
 <!-- END SOURCE: settings.hub.remove.message.iOS.sideloaded -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation | lines: 1383–1384 | key: settings.hub.remove.message -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation | lines: 1242–1243 | key: settings.hub.remove.message -->
 
 The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
 
 <!-- END SOURCE: settings.hub.remove.message -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation, side-loaded | lines: 1380–1381 | key: settings.hub.remove.message.sideloaded -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation, side-loaded | lines: 1239–1240 | key: settings.hub.remove.message.sideloaded -->
 
 The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
 
@@ -795,42 +865,42 @@ Tips point out controls that are easy to miss — the Research button, the page-
 ### Storage hub — the reindex and maintenance controls
 
 #### No volumes on this device yet. Download them from GitHub,…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 400–401 | key: settings.hub.downloaded.empty.iOS.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 395–396 | key: settings.hub.downloaded.empty.iOS.v2 -->
 
 No volumes on this device yet. Download them from GitHub, or add an XML file you already have.
 
 <!-- END SOURCE: settings.hub.downloaded.empty.iOS.v2 -->
 
 #### No volumes on this Mac yet. Download them from GitHub, or…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 374–375 | key: settings.hub.downloaded.empty.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 369–370 | key: settings.hub.downloaded.empty.v2 -->
 
 No volumes on this Mac yet. Download them from GitHub, or add an XML file you already have.
 
 <!-- END SOURCE: settings.hub.downloaded.empty.v2 -->
 
 #### \(HubCopy.volumes(failures)) could not be indexed
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 629–630 | key: settings.hub.indexFailures.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 526–527 | key: settings.hub.indexFailures.v2 -->
 
 \(HubCopy.volumes(failures)) could not be indexed
 
 <!-- END SOURCE: settings.hub.indexFailures.v2 -->
 
 #### Indexes only the volumes that still need it, and leaves t…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 604–605 | key: settings.hub.indexRemaining.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 501–502 | key: settings.hub.indexRemaining.help.v2 -->
 
 Indexes only the volumes that still need it, and leaves the rest untouched
 
 <!-- END SOURCE: settings.hub.indexRemaining.help.v2 -->
 
 #### Deletes what the app has built for searching and builds i…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 621–622 | key: settings.hub.rebuild.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 518–519 | key: settings.hub.rebuild.help.v2 -->
 
 Deletes what the app has built for searching and builds it again from every downloaded volume. Use this if search results look wrong, or if leftovers remain from volumes you deleted.
 
 <!-- END SOURCE: settings.hub.rebuild.help.v2 -->
 
 #### Rebuilds what Spotlight knows about your documents. Quick…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 677–678 | key: settings.hub.spotlight.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 574–575 | key: settings.hub.spotlight.help.v2 -->
 
 Rebuilds what Spotlight knows about your documents. Quicker than a full reindex, because it reuses text the app has already read.
 
@@ -839,7 +909,7 @@ Rebuilds what Spotlight knows about your documents. Quicker than a full reindex,
 ### Storage hub — index health
 
 #### The app updates the index by itself when a new version im…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 682–683 | key: settings.storage.indexHealth.footer.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 579–580 | key: settings.storage.indexHealth.footer.v2 -->
 
 The app updates the index by itself when a new version improves how indexing works. Check Integrity runs a full check whenever you ask for one.
 
@@ -1161,42 +1231,42 @@ Run the full SQLite and FTS5 corruption diagnostic on the search index — may t
 <!-- END SOURCE: indexHealth.integrity.help -->
 
 #### Tooltip — Compares each downloaded volume against the FRUS repository…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.keepingCurrentSection | lines: 494–495 | key: settings.hub.corrections.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentSection.swift | KeepingCurrentSection.listButtons | lines: 124–125 | key: settings.hub.corrections.help | shared: macOS only -->
 
 Compares each downloaded volume against the FRUS repository and lists any that changed since you downloaded them
 
 <!-- END SOURCE: settings.hub.corrections.help -->
 
 #### Tooltip — Re-reads the FRUS repository’s volume list, refreshing each…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.keepingCurrentSection | lines: 521–522 | key: settings.hub.catalog.help.v2 | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentSection.swift | KeepingCurrentSection.listButtons | lines: 149–150 | key: settings.hub.catalog.help.v2 | shared: macOS only -->
 
 Re-reads the FRUS repository’s volume list, refreshing each volume’s download link and size and dropping any the Office of the Historian has withdrawn
 
 <!-- END SOURCE: settings.hub.catalog.help.v2 -->
 
 #### Tooltip — Lists downloaded volumes with no attached notes…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.storageAndIndexSection | lines: 587–588 | key: settings.hub.freeUp.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.storageAndIndexSection | lines: 484–485 | key: settings.hub.freeUp.help | shared: macOS only -->
 
 Lists downloaded volumes with no attached notes, collections, or summaries so you can remove them
 
 <!-- END SOURCE: settings.hub.freeUp.help -->
 
 #### Tooltip — This volume carries notes, collections, or summaries and is…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacAllVolumesSheet.row | lines: 1405–1406 | key: settings.hub.protected.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacAllVolumesSheet.row | lines: 1264–1265 | key: settings.hub.protected.help | shared: macOS only -->
 
 This volume carries notes, collections, or summaries and is never suggested for automatic removal
 
 <!-- END SOURCE: settings.hub.protected.help -->
 
 #### Empty state — Every published volume will be queued. Downloads run in the…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1535–1536 | key: settings.hub.browse.corpus.body | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1394–1395 | key: settings.hub.browse.corpus.body | shared: macOS only -->
 
 Every published volume will be queued. Downloads run in the background and resume across launches; you can start reading as soon as the first volume lands.
 
 <!-- END SOURCE: settings.hub.browse.corpus.body -->
 
 #### \(…) · \(…) of XML, plus roughly 2.8× that in search index.…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1716–1717 | key: settings.hub.browse.corpus.detail | shared: iOS+macOS (one text on both hubs since #1483; VolumesStorageHubView.swift declares it too, in DownloadVolumesBrowseView.scopeFooter) | same text also in: FRUSExplorer/Settings/VolumesStorageHubView.swift -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1575–1576 | key: settings.hub.browse.corpus.detail | shared: iOS+macOS (one text on both hubs since #1483; VolumesStorageHubView.swift declares it too, in DownloadVolumesBrowseView.scopeFooter) | same text also in: FRUSExplorer/Settings/VolumesStorageHubView.swift -->
 
 \(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.
 
@@ -1205,14 +1275,14 @@ Every published volume will be queued. Downloads run in the background and resum
 *The Entire Corpus card’s detail in the Mac’s download sheet, and the footer under the iPhone and iPad picker. The Mac took the second sentence on 2026-10-01: its downloads use the same background transfer and keep the volumes still waiting in their queue. That was checked in the code, not yet tried on a Mac, and a volume that is mid-download when the app quits comes back only if macOS kept that transfer going. On the Mac the panel below the card, the block above this one, says it too.*
 
 #### Select volumes to remove. Only volumes with no attached…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1850–1851 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1709–1710 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
 
 Select volumes to remove. Only volumes with no attached notes, collections, or summaries are shown.
 
 <!-- END SOURCE: settings.hub.freeUp.subtitle -->
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1869–1870 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1728–1729 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from “Show all” in Volumes & Storage.
 
@@ -1324,7 +1394,7 @@ Merging re-tags everything here with the tag you choose, then removes this one. 
 <!-- END SOURCE: tag.editor.manage.footer -->
 
 #### Re-read the published list to refresh sizes and download…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | VolumesStorageHubView.keepingCurrentSection | lines: 540–541 | key: settings.hub.catalog.detail.v2 | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentSection.swift | KeepingCurrentSection.listButtons | lines: 194–195 | key: settings.hub.catalog.detail.v2 | shared: iOS only -->
 
 Re-read the published list to refresh sizes and download links.
 
@@ -1335,7 +1405,7 @@ Re-read the published list to refresh sizes and download links.
 *One text on both hubs since #1483 (2026-10-01): its one block, `settings.hub.browse.corpus.detail`, is with the Mac hub’s earlier in §18.13, and an edit there is applied to this footer too.*
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1786–1787 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1644–1645 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from the full volume list.
 
@@ -1367,7 +1437,7 @@ Closing this doesn’t stop a run. Progress and the result appear on the Summari
 *The iCloud and sync notices in the status bar, the store-schema diagnostic and its recovery alert, and the macOS indexing queue's finalizing line.*
 
 #### Not signed in to iCloud — notes, highlights, and…
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 587–588 | key: cloudkit.account.noAccount -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 588–589 | key: cloudkit.account.noAccount -->
 
 Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.
 
@@ -1707,13 +1777,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4357–4357 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4376–4376 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4296 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3859–3859 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3878–3878 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3799 -->
 
 Search…
 

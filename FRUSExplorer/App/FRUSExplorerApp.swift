@@ -2697,6 +2697,7 @@ struct FRUSExplorerApp: App {
             concurrencyLimit: UserDefaults.standard.integer(forKey: SettingsKeys.concurrentDownloadLimit).nonZeroOrDefault(4),
             onStateChanged: { @MainActor [appState] state in
                 appState.downloadQueue = state.allQueuedVolumeIds
+                appState.keepingCurrent.downloadStateDidChange(state)
             },
             onVolumeDownloaded: indexPipeline.map { pipeline in
                 // Capture modelContainer so the closure can sync summaries after indexing.
@@ -2710,7 +2711,18 @@ struct FRUSExplorerApp: App {
                     // superseded text from cache while the index — and the change banner — describe
                     // the new one. Idempotent, so a first download pays nothing.
                     await appState.documentASTCache.removeVolume(volumeId)
-                    try? await pipeline.indexVolume(volumeId)
+                    // #1660: Keeping Current's row for an updated volume reads Updated, or why not,
+                    // when this ends.
+                    let indexFailure: String?
+                    do {
+                        try await pipeline.indexVolume(volumeId)
+                        indexFailure = nil
+                    } catch {
+                        indexFailure = error.localizedDescription
+                    }
+                    await MainActor.run {
+                        appState.keepingCurrent.indexingDidFinish(volumeId, failure: indexFailure)
+                    }
                     // After document_cache is populated, push any existing summaries
                     // for this volume into FTS5. This handles the re-download-after-reset
                     // case where CloudKit-synced summaries arrived before the volume was
@@ -2796,8 +2808,15 @@ struct FRUSExplorerApp: App {
                     // re-download without being re-validated.
                     await appState.semanticShardStore?.removeShard(for: volumeId)
                 }
+            },
+            // #1660: how each transfer ended, for Keeping Current's rows.
+            onTransferFinished: { @MainActor [appState] volumeId, outcome in
+                appState.keepingCurrent.transferDidFinish(volumeId, outcome: outcome)
             }
         )
+        // With no index there is no re-index after a download, so an update reads Updated when
+        // its transfer ends rather than waiting for one.
+        appState.keepingCurrent.indexesDownloads = indexPipeline != nil
         appState.downloadManager = dm
 
         // #1516: the reader's scheme handler and the exports draw a figure's image from this store.
