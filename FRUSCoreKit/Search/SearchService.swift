@@ -175,6 +175,16 @@ public actor SearchService {
         return try results(from: rows, parameters: parameters)
     }
 
+    /// Test hook: called by `results(from:parameters:)` before each row's snippet, after the row's
+    /// cancellation check, with the row's index (#1680). `nil` in the app. It lets a test cancel the
+    /// pass at a row and count how many rows the pass went on to, which its error alone cannot say.
+    private var snippetRowTestHook: (@Sendable (Int) -> Void)?
+
+    /// Test hook: installs `snippetRowTestHook`.
+    func setSnippetRowTestHook(_ hook: (@Sendable (Int) -> Void)?) {
+        snippetRowTestHook = hook
+    }
+
     /// The pipeline's rows as results, each with its snippet, in their order.
     ///
     /// Stops at the next row when the calling task is cancelled, and after the last one, and throws
@@ -189,8 +199,9 @@ public actor SearchService {
 
         var results: [SearchResult] = []
         results.reserveCapacity(rows.count)
-        for row in rows {
+        for (index, row) in rows.enumerated() {
             try Task.checkCancellation()
+            snippetRowTestHook?(index)
             let snippet: String
             if !row.bodyText.isEmpty, !stemmedQueryTerms.isEmpty,
                let contextSnippet = Self.makeContextSnippet(

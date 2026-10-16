@@ -36,7 +36,7 @@ import FTS5Store
 ///   handler can stop it, stops (the pipeline's prepared-statement hook cancels the task there).
 /// - A statement that ends before the handler's first call, and a snippet pass with no rows, still
 ///   give a cancelled task no answer: the checks after them throw.
-/// - The snippet pass stops at its next row.
+/// - The snippet pass stops at the row after its task is cancelled.
 /// - Nothing unarmed is stopped: a keyed read and a whole volume's indexing, both on the same
 ///   connection and both in a cancelled task, run to their end.
 ///
@@ -192,8 +192,10 @@ struct SearchCancellationTests {
     }
 
     /// The snippet pass is `SearchService`'s own loop over the rows, outside SQLite: it checks at
-    /// every row, since on the Mac it is most of a search's time.
-    @Test("The snippet pass stops at its next row when its task is cancelled")
+    /// every row, since on the Mac it is most of a search's time, and after the last. Its row hook
+    /// cancels the pass at the tenth row and counts the rows it reached, which the error cannot say:
+    /// a pass that went on to the end would still throw, at the check after its last row.
+    @Test("The snippet pass stops at its next row when its task is cancelled, and gives no answer after its last")
     func theSnippetPassStops() async throws {
         let fixture = try await makeFixture()
         defer { cleanUp(fixture.dir) }
@@ -205,11 +207,18 @@ struct SearchCancellationTests {
         #expect(rows.count == 100)
         #expect(try await service.results(from: rows, parameters: Self.containment).count == 100)
 
-        let cancelled = Task { () async throws -> [SearchResult] in
-            withUnsafeCurrentTask { $0?.cancel() }
-            return try await service.results(from: rows, parameters: Self.containment)
+        let reached = HookCalls()
+        await service.setSnippetRowTestHook { index in
+            reached.record()
+            if index == 9 { withUnsafeCurrentTask { $0?.cancel() } }
         }
-        await #expect(throws: CancellationError.self) { try await cancelled.value }
+        let midway = Task { () async throws -> [SearchResult] in
+            try await service.results(from: rows, parameters: Self.containment)
+        }
+        await #expect(throws: CancellationError.self) { try await midway.value }
+        #expect(reached.count == 10, "the snippet pass went on to \(reached.count) of 100 rows after row 10's cancellation")
+        await service.setSnippetRowTestHook(nil)
+
         // With no row to check at, the check after the loop is the one that answers.
         let noRows = Task { () async throws -> [SearchResult] in
             withUnsafeCurrentTask { $0?.cancel() }

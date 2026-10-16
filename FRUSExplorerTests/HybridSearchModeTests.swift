@@ -563,6 +563,8 @@ private final class HeldStatement: Sendable {
     private struct State {
         var entered = false
         var sawCancellation = false
+        var prepared = 0
+        var ranToItsEnd = 0
     }
 
     private let state = Mutex(State())
@@ -572,6 +574,22 @@ private final class HeldStatement: Sendable {
 
     /// Whether the held statement's task was cancelled when the hook let it go.
     var sawCancellation: Bool { state.withLock { $0.sawCancellation } }
+
+    /// How many statements were prepared, across every search.
+    var preparedCount: Int { state.withLock { $0.prepared } }
+
+    /// How many statements ran to their end, across every search.
+    var ranToItsEndCount: Int { state.withLock { $0.ranToItsEnd } }
+
+    /// Counts one moment a statement reported.
+    func note(_ moment: SearchStatementMoment) {
+        state.withLock { state in
+            switch moment {
+            case .prepared: state.prepared += 1
+            case .ranToItsEnd: state.ranToItsEnd += 1
+            }
+        }
+    }
 
     /// `true` for the first statement only, which the hook then holds.
     func claimFirst() -> Bool {
@@ -1735,21 +1753,23 @@ struct ReplacedSearchStopTests {
         return (dir, SearchViewModel(searchService: SearchService(fts5Store: fts5, pipeline: pipeline)))
     }
 
-    /// #1680: on iPhone and iPad the run that replaces another cancels its keyword fetch, which is what lets the kit
-    /// stop the replaced run's statements. That the kit then stops them is `SearchCancellationTests`' to show; this
-    /// pins the view model's half, which nothing else drives.
+    /// #1680: on iPhone and iPad the run that replaces another cancels its keyword fetch, and the kit stops the
+    /// replaced run's statements, so the search that replaced it does not wait for them.
     ///
-    /// The pipeline's prepared-statement hook holds the first run's first statement until its task is cancelled, with a
-    /// bound so that a run nothing cancels fails here rather than hanging. The second search is sent while it is held:
-    /// its start cancels the first run's fetch, the hook sees the cancellation and lets the statement go, and the
-    /// second search lands with no error. Before #1680 nothing cancelled the first run, and its statement ran to its
-    /// end before the second could start.
-    @Test("A search that replaces one under way cancels the replaced run's fetch, so the kit can stop it (#1680)")
+    /// The pipeline's test hook holds the first run's first statement, once prepared, until its task is cancelled, with
+    /// a bound so that a run nothing cancels fails here rather than hanging. The second search is sent while it is
+    /// held: its start cancels the first run's fetch, the hook sees the cancellation and lets the statement go, and the
+    /// second search lands with no error. The hook's moments say what the kit did: three statements are prepared (the
+    /// held one and the second search's two; the first run's other one is refused before it is prepared) and only the
+    /// second search's two run to their end, so the held one was stopped. Before #1680 nothing cancelled the first
+    /// run, and its statement ran to its end before the second could start.
+    @Test("A search that replaces one under way cancels it, and the replaced search's statement stops (#1680)")
     func aReplacingSearchStopsTheOneUnderWay() async throws {
         let (dir, vm) = try await makeViewModel()
         defer { try? FileManager.default.removeItem(at: dir) }
         let held = HeldStatement()
         await vm.searchServiceForTesting.pipeline.setSearchStatementTestHook { moment in
+            held.note(moment)
             // Only the first statement is held, once prepared; every later one runs.
             guard moment == .prepared, held.claimFirst() else { return }
             let deadline = ContinuousClock.now + .seconds(10)
@@ -1770,6 +1790,11 @@ struct ReplacedSearchStopTests {
         #expect(held.sawCancellation, """
             The replacing search did not cancel the run under way: its statement was let go by the hook's deadline, \
             not by its task's cancellation (#1680).
+            """)
+        #expect(held.preparedCount == 3, "statements prepared: \(held.preparedCount)")
+        #expect(held.ranToItsEndCount == 2, """
+            \(held.ranToItsEndCount) statements ran to their end: the replaced run's held statement was not stopped \
+            by the kit after its task was cancelled (#1680).
             """)
         #expect(!firstLanded, "the replaced run reported its rows as the screen's")
         #expect(secondLanded)
