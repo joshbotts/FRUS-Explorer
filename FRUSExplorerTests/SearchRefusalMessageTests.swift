@@ -151,7 +151,7 @@ struct SearchRefusalMessageTests {
 
     @Test("macOS: the keyword search's catch stores the mapped error, not the raw one")
     func macCatchStoresTheMappedError() throws {
-        let body = try Self.declaration("func performSearch(service: SearchService?) async {",
+        let body = try Self.declaration("func performSearch(service: SearchService?) async -> Bool {",
                                         in: Self.macViewModelSource())
         // The slice is bounded and real, or every absence below is vacuous.
         #expect(body.contains("} catch {"))
@@ -173,7 +173,7 @@ struct SearchRefusalMessageTests {
     func macEmptyQueryClearsTheError() throws {
         let source = try Self.macViewModelSource()
 
-        let keyword = try Self.declaration("func performSearch(service: SearchService?) async {", in: source)
+        let keyword = try Self.declaration("func performSearch(service: SearchService?) async -> Bool {", in: source)
         let keywordGuard = try Self.declaration("guard (!query.isEmpty || hasStandaloneFilter), let service else {",
                                                 in: keyword)
         // The slice is the guard's else block, or the check below is vacuous.
@@ -181,7 +181,7 @@ struct SearchRefusalMessageTests {
         #expect(!keywordGuard.contains("isSearching = true"), "the guard slice ran past its else block")
         #expect(keywordGuard.contains("searchError = nil"), "a keyword search with an empty query keeps the last error")
 
-        let meaning = try Self.declaration("private func performMeaningSearch() async {", in: source)
+        let meaning = try Self.declaration("private func performMeaningSearch(run: Int) async -> Bool {", in: source)
         let meaningGuard = try Self.declaration("guard !query.isEmpty else {", in: meaning)
         #expect(meaningGuard.contains("results = []") && meaningGuard.contains("return"))
         #expect(!meaningGuard.contains("isSearching = true"), "the guard slice ran past its else block")

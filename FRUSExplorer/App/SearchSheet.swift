@@ -131,6 +131,11 @@ import SwiftUI
 ///   1.22 — #1577 lane 2: the facet panel's count, wording and keys, and the Reading picker's gate, are asked of
 ///          the view model, which answers from the route recorded with the rows; a reading that is open when its
 ///          gate shuts goes back to the list.
+///   1.23 — #1646, #1648: the search task is the window's only search. A run a later one replaced records nothing and
+///          leaves the facets alone; a recalled saved search and a moved person filter no longer run a second search
+///          beside the task's; a recalled search is stamped with its own count, not the total on screen; a rebuilt
+///          index replaces the search under way; and the working corpus banner's ✕ leaves the corpus alone
+///          (`MacSearchViewModel.leaveWorkingCorpus()`), where it re-applied the filter view model over a facet's choice.
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -532,7 +537,10 @@ struct MacSearchWindowView: View {
         }
         .task(id: searchVM.searchTrigger) {
             searchVM.semanticBackend = makeSemanticBackend()
-            await searchVM.performSearch(service: appState.searchService)
+            // A run a later one replaced records nothing and leaves the facets alone: nothing it
+            // found reached the window (#1648). This task is the window's only search: every change
+            // that runs one changes the trigger.
+            guard await searchVM.performSearch(service: appState.searchService) else { return }
             searchVM.recordSearchHistory(projectId: appState.activeProjectId,
                                          indexedVolumeCount: appState.indexedVolumeIds.count,
                                          in: modelContext)
@@ -574,9 +582,9 @@ struct MacSearchWindowView: View {
         // Same rollup-renumbering hazard as iOS (#747), in a window that can sit open for days.
         .onChange(of: appState.personRollupGeneration) { _, _ in
             Task {
-                if await searchVM.refreshPersonRollupBinding(using: appState.personMentionStore) {
-                    await searchVM.performSearch(service: appState.searchService)
-                }
+                // A binding that moved bumps `parametersVersion`, so the search task runs the search
+                // again. A second run here raced it, and since #1648 one of the two would be dropped.
+                await searchVM.refreshPersonRollupBinding(using: appState.personMentionStore)
             }
         }
         // A dropped person filter changes the result set, so it is announced rather than left for
@@ -638,6 +646,8 @@ struct MacSearchWindowView: View {
             searchVM.showTips = true
         }
         .onChange(of: appState.indexGeneration) { _, _ in
+            // #1648: a search still under way against the old index cannot put its rows back.
+            searchVM.replaceSearchesUnderWay()
             searchVM.results = []
             searchVM.queryText = ""
             // #1299: `searchErrorView` shows any standing error beside empty results, so it goes with them.
@@ -669,15 +679,18 @@ struct MacSearchWindowView: View {
                 // A SavedSearch archives FTS parameters and its freshness watermark diffs
                 // against FTS counts — running one is a keyword search by definition.
                 searchVM.searchMode = .keywords
+                // The search task runs it: `applyParameters` changes the trigger. This closure ran a
+                // second search of its own until #1648, which raced the task's.
                 searchVM.applyParameters(saved.searchParameters)
                 Task {
-                    await searchVM.performSearch(service: appState.searchService)
-                    // W-5 (#266): stamp the run watermark AFTER the search completes, from the
-                    // exact count this run reported — the baseline the freshness badge is
-                    // computed against. Synced, so running it here clears every device's badge.
-                    saved.recordRun(matchCount: searchVM.totalMatchCount,
-                                    indexedVolumeCount: appState.indexedVolumeIds.count)
-                    try? modelContext.save()
+                    // W-5 (#266): stamp the run watermark from the saved search's own count, the
+                    // baseline the freshness badge is computed against. Synced, so running it here
+                    // clears every device's badge. Not the total on screen: inside a working corpus
+                    // that is the corpus's (#1646).
+                    await SavedSearchFreshnessEvaluator.recordRun(
+                        of: saved, service: appState.searchService,
+                        indexedVolumeCount: appState.indexedVolumeIds.count,
+                        context: modelContext)
                 }
             }
             .modelContainer(modelContext.container)
@@ -1904,8 +1917,9 @@ struct MacSearchWindowView: View {
                     .truncationMode(.tail)
                 Spacer(minLength: 8)
                 Button {
-                    searchVM.filterVM?.clearWorkingCorpus()
-                    searchVM.applyAdvancedFilters()
+                    // The document gate alone: re-applying the filter view model undid a facet's
+                    // narrowing, which it never sees (#1646).
+                    searchVM.leaveWorkingCorpus()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.subheadline)

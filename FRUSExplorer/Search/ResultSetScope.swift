@@ -79,6 +79,54 @@ enum ExecutedSearchRoute: Equatable, Sendable {
     }
 }
 
+// MARK: - SearchRunLedger
+
+/// The searches a screen has sent, numbered, so that a run a later one replaced writes nothing when
+/// it comes back (#1648).
+///
+/// Nothing stops a search once it is sent. Neither `SearchService` nor `FTS5Store` checks for
+/// cancellation, and neither does the Meaning engine, so a run's rows come back however long ago
+/// the reader moved on. On iPhone and iPad almost every way of starting a search makes a task of
+/// its own and nothing cancels the one before; on the Mac the window cancels its search task, and
+/// the query under it runs to its end and returns its rows all the same. Two runs that overlapped
+/// landed in the order they finished, so the older one could take the list: a Meaning search still
+/// under way when the reader switched to Keywords and searched landed over the keyword rows.
+///
+/// So each run takes a number as it starts and asks after every wait whether it is still the latest.
+/// A run that is not writes nothing more: no rows, count or error, no trail entry, and not
+/// `isSearching`, which is the later run's to clear. Emptying the list without a search replaces the
+/// runs under way too (``replaceRunsUnderWay()``), so a run cannot put rows back under a field the
+/// reader has just cleared.
+///
+/// Both search view models hold one, so iPhone, iPad and the Mac drop a run by one rule. The query
+/// itself still runs to its end: stopping it would be a change to the kit's connection.
+///
+/// Version history:
+///   1.0 — #1648: initial implementation
+struct SearchRunLedger: Equatable, Sendable {
+
+    /// The number of the latest run, or of the latest replacement of the runs under way.
+    private(set) var latest = 0
+
+    /// Starts a run, which replaces every run still under way, and returns its number.
+    mutating func startRun() -> Int {
+        latest &+= 1
+        return latest
+    }
+
+    /// Replaces every run still under way without starting another, for a list emptied with no
+    /// search.
+    mutating func replaceRunsUnderWay() {
+        latest &+= 1
+    }
+
+    /// Whether `run` is still the latest: `false` once another run has started, or the runs under
+    /// way have been replaced, since it did.
+    func isLatest(_ run: Int) -> Bool {
+        run == latest
+    }
+}
+
 // MARK: - ResultSetScope
 
 /// Which set a search surface is actually looking at, and the sentences that say so.

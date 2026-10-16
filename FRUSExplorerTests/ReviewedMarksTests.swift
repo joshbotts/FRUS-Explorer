@@ -479,7 +479,7 @@ struct ChecklistStripTests {
     @Test("Both Mac search paths build the checklist's anchor from the parameters they run")
     func macSearchPathsAnchorOnWhatTheyRun() throws {
         let mac = try Self.source("FRUSExplorer/App/MacSearchViewModel.swift")
-        let keyword = try Self.declaration("func performSearch(service: SearchService?) async {", in: mac)
+        let keyword = try Self.declaration("func performSearch(service: SearchService?) async -> Bool {", in: mac)
         #expect(keyword.contains("settleChecklist(for: ChecklistAnchor(query: query, parameters: params))"))
         let settleAt = try #require(keyword.range(of: "settleChecklist(for:"))
         let fetchAt = try #require(keyword.range(of: "service.search(parameters: frozenParams"))
@@ -487,7 +487,7 @@ struct ChecklistStripTests {
         #expect(paramsAt.upperBound < settleAt.lowerBound, "the anchor is built after the parameters are")
         #expect(settleAt.upperBound < fetchAt.lowerBound, "and before the search is sent")
 
-        let meaning = try Self.declaration("private func performMeaningSearch() async {", in: mac)
+        let meaning = try Self.declaration("private func performMeaningSearch(run: Int) async -> Bool {", in: mac)
         #expect(meaning.contains("settleChecklist(for: ChecklistAnchor(query: query, parameters: parameters))"))
 
         let code = mac.split(separator: "\n", omittingEmptySubsequences: false)
@@ -539,9 +539,9 @@ struct ChecklistStripTests {
     @Test("The iPhone's two search paths settle the checklist with the parameters that ran")
     func iOSSearchPathsAnchorOnWhatRan() throws {
         let iOS = try Self.source("FRUSExplorer/Search/SearchViewModel.swift")
-        let keyword = try Self.declaration("func search() async {", in: iOS)
+        let keyword = try Self.declaration("func search() async -> Bool {", in: iOS)
         #expect(keyword.contains("settleChecklist(for: ChecklistAnchor(query: submittedQuery, parameters: params))"))
-        let meaning = try Self.declaration("private func searchMeaning() async {", in: iOS)
+        let meaning = try Self.declaration("private func searchMeaning(run: Int) async -> Bool {", in: iOS)
         let anchorAt = try #require(meaning.range(of:
             "let checklistAnchorOfThisRun = ChecklistAnchor(query: submittedQuery, parameters: searchParameters)"))
         let awaitAt = try #require(meaning.range(of: "try await backend.run("))

@@ -230,4 +230,50 @@ struct SavedSearchFreshnessEvaluatorTests {
         #expect(await SavedSearchFreshnessEvaluator.newResultCount(
             for: search, service: service, context: context) == 1)
     }
+
+    /// A recalled search runs inside the applied working corpus, as any search does (#1646), so the total on screen is
+    /// the corpus's. Both hosts stamped that total as the baseline, so the next time the list appeared every match
+    /// outside the corpus read as new. The stamp is the saved search's own count now, the one the badge compares.
+    @Test("A recall inside a working corpus is stamped with the saved search's own count, and no badge is invented")
+    func recallInsideACorpusStampsItsOwnCount() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSFreshness-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let (pipeline, store) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                        volumeId: "frus1969-76v01",
+                        docs: [("d1", "vietnam negotiations"), ("d2", "vietnam ceasefire")])
+        try await pipeline.indexVolume("frus1969-76v01")
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+
+        let (container, context) = try makeContext()
+        _ = container
+        let search = SavedSearch(name: "Vietnam", parameters: SearchParameters(keywords: "vietnam"))
+        context.insert(search)
+        try context.save()
+
+        // The recall, as the Saved Searches list makes it, on a screen with a corpus of one document applied.
+        let vm = SearchViewModel(searchService: service)
+        vm.appliedWorkingCorpusKeys = ["frus1969-76v01/d1"]
+        vm.appliedWorkingCorpusName = "One"
+        vm.searchMode = .keywords
+        vm.applyParameters(search.searchParameters)
+        await vm.search()
+        #expect(vm.results.map(\.documentId) == ["d1"], "precondition: the recall ran inside the corpus")
+        let screenTotal = try #require(vm.totalMatchCount)
+        #expect(SavedSearchFreshnessEvaluator.verdict(current: 2, baseline: screenTotal) == 1, """
+            precondition: the screen's total taken as the baseline badges the match outside the corpus as new.
+            """)
+
+        await SavedSearchFreshnessEvaluator.recordRun(of: search, service: service, indexedVolumeCount: 1,
+                                                      context: context)
+        #expect(search.freshness?.matchCountAtLastRun == 2, "the stamp is the saved search's own count")
+        #expect(search.freshness?.lastRunAt != nil)
+        #expect(await SavedSearchFreshnessEvaluator.newResultCount(
+            for: search, service: service, context: context) == nil,
+                "nothing is new: the badge and its baseline count the same search")
+    }
 }

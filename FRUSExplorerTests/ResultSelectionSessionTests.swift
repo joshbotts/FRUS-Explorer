@@ -745,16 +745,19 @@ struct MacResultSelectionWiringTests {
     @Test("Both Mac search paths settle the selection as the rows arrive, by the search that was sent")
     func bothPathsSettle() throws {
         let mac = try Self.source(Self.macModel)
-        let keyword = Self.squeezedCode(try Self.declaration("func performSearch(service: SearchService?) async {", in: mac))
+        let keyword = Self.squeezedCode(try Self.declaration("func performSearch(service: SearchService?) async -> Bool {", in: mac))
         #expect(keyword.contains(Self.squeezed("""
             results = fetched
             settleSelection(for: ChecklistAnchor(query: query, parameters: params))
             """)))
-        let meaning = Self.squeezedCode(try Self.declaration("private func performMeaningSearch() async {", in: mac))
+        let meaning = Self.squeezedCode(try Self.declaration("private func performMeaningSearch(run: Int) async -> Bool {", in: mac))
+        // Since #1648 a run that a later one replaced writes nothing, so the rows are written after
+        // that check, and the selection is still settled with them.
         #expect(meaning.contains(Self.squeezed("""
             let sentAnchor = ChecklistAnchor(query: query, parameters: parameters)
             do {
                 let outcome = try await backend.run(query: query, parameters: parameters)
+                guard searchRuns.isLatest(run) else { return false }
                 results = outcome.results
                 settleSelection(for: sentAnchor)
             """)), "the anchor is taken before the run: the filters can change while it is under way")

@@ -99,6 +99,12 @@ import SwiftData
 ///          of the rows' route
 ///   1.11 — FRUS Explorer Light: `allSortedResults` is `SearchSortOrder.sorted(_:)`, the kit's date order, which
 ///          the iOS view model and the web edition sort by too; this file's copy of the comparator is gone
+///   1.12 — #1646: `applyParameters(_:)` runs a hand-off or a recalled search inside the applied working corpus
+///          (`SearchParameters.runningInside(workingCorpus:)`), and brings the filter view model to the new parameters
+///          (`mirrorParameters(into:)`, split out of `syncToFilterVM`); `leaveWorkingCorpus()` is the banner's ✕, and
+///          derives the document gate alone. #1648: `performSearch(service:)` numbers its run (`SearchRunLedger`), asks
+///          once after its last wait whether a later run has replaced it, writes nothing if one has, and returns `true`
+///          when none has; the rebuilt index calls `replaceSearchesUnderWay()`
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -349,6 +355,10 @@ final class MacSearchViewModel {
     var searchError: Error? = nil {
         didSet { if searchError != nil { endSelecting() } }
     }
+
+    /// The searches this window has sent, numbered, so that a run a later one replaced writes
+    /// nothing when it comes back (#1648). See ``SearchRunLedger``.
+    @ObservationIgnored private var searchRuns = SearchRunLedger()
 
     /// True total number of matches for the current query, independent of
     /// `searchHardLimit` — or `nil` when the count could not be obtained.
@@ -1049,10 +1059,30 @@ final class MacSearchViewModel {
         }
         guard let filterVM else { return }
 
-        // Populate the volume/subseries picker options, then reconstruct the picker
-        // selection from the currently active flat `volumeIds` scope so the sheet
-        // shows what is actually applied.
+        // Populate the volume/subseries picker options; `mirrorParameters(into:)` then
+        // reconstructs the picker selection from the currently active flat `volumeIds` scope
+        // so the sheet shows what is actually applied.
         filterVM.loadAvailableVolumes(allEntries: volumeEntries, indexedIds: indexedVolumeIds)
+        // User-tag filter (188-D parity, #212): feed the live tag list so the shared
+        // `SearchFilterView.userTagsSection` appears on macOS. Because this runs on every
+        // "Advanced…" open with a live @Query source, the section always reflects current tags
+        // with no relaunch.
+        filterVM.availableUserTags  = userTags
+        mirrorParameters(into: filterVM)
+    }
+
+    /// Copies the window's `parameters` into the filter view model's fields, so that the popover
+    /// shows what is applied, and what derives from the filter view model derives the search that ran.
+    ///
+    /// The second half of ``syncToFilterVM(searchService:volumeEntries:indexedVolumeIds:userTags:)``,
+    /// split out for ``applyParameters(_:)`` (#1646): a hand-off or a recalled search replaces the
+    /// parameters, and until this ran there too the filter view model kept the search before it.
+    /// Whatever derived from it outside the popover then re-applied that search: the banner's ✕ (now
+    /// ``leaveWorkingCorpus()``) dropped a person's Find all mentions and emptied the list, and a
+    /// change of project (``applyProjectScope()``) put back the volumes it held.
+    ///
+    /// - Parameter filterVM: The filter view model, which the caller has made.
+    private func mirrorParameters(into filterVM: SearchViewModel) {
         let scope = SearchViewModel.reconstructScope(
             from: parameters.volumeIds ?? [],
             available: filterVM.availableVolumes
@@ -1094,12 +1124,8 @@ final class MacSearchViewModel {
         // popover would show it included and the next edit would silently re-include it.
         filterVM.includeFrontMatter = parameters.includeFrontMatter
 
-        // User-tag filter (188-D parity, #212): feed the live tag list so the shared
-        // `SearchFilterView.userTagsSection` appears on macOS, and reconstruct the active
-        // selection from `parameters` so an applied tag filter shows its tags checked. Because
-        // this runs on every "Advanced…" open with a live @Query source, the section always
-        // reflects current tags with no relaunch.
-        filterVM.availableUserTags  = userTags
+        // User-tag filter (188-D parity, #212): reconstruct the active selection from
+        // `parameters` so an applied tag filter shows its tags checked.
         filterVM.selectedUserTagIds = Set(parameters.userTagIds.compactMap { UUID(uuidString: $0) })
     }
 
@@ -1168,10 +1194,13 @@ final class MacSearchViewModel {
 
     // MARK: - Pending Search Application
 
-    /// Applies a `SearchParameters` snapshot received from `AppState.pendingSearch`.
+    /// Applies a `SearchParameters` snapshot received from `AppState.pendingSearch`, or recalled
+    /// from Saved Searches.
     ///
-    /// Sets both `parameters` and the reflected UI state (scope toggles, query text),
-    /// then bumps `parametersVersion` so `.task(id: searchTrigger)` fires a new search.
+    /// Sets both `parameters` and the reflected UI state (scope toggles, query text, the filter
+    /// view model), then bumps `parametersVersion` so `.task(id: searchTrigger)` fires a new search.
+    /// The search runs inside the applied working corpus, if there is one, and under none of the
+    /// snapshot's own document gates (`SearchParameters.runningInside(workingCorpus:)`, #1646).
     ///
     /// A keyword-less person handoff (the People browser's "Find all mentions") runs on its
     /// `personRef`/`personRollupId` filter alone — `performSearch` now treats a person filter as a
@@ -1181,16 +1210,21 @@ final class MacSearchViewModel {
         let kw = params.keywords ?? ""
         queryText = kw
         submittedQuery = kw
-        parameters = params
         // Project History/Focus scope is a live, manual choice — never inherited from a
-        // restored snapshot or a pending-search hand-off (#377 Phase 2). Drop any gates the
-        // snapshot carried and clear the filter VM's selection so the picker matches, and so
-        // a later unrelated filter edit (which re-runs `applyAdvancedFilters`) can't silently
-        // reintroduce a gate.
-        parameters.documentIds = nil
-        parameters.excludeDocumentIds = nil
+        // restored snapshot or a pending-search hand-off (#377 Phase 2). Clear the filter VM's
+        // selection so the picker matches, and so a later unrelated filter edit (which re-runs
+        // `applyAdvancedFilters`) can't silently reintroduce a gate.
         filterVM?.projectScope = .off
         filterVM?.projectOnlyNew = false
+        // The snapshot's own document gates go with it. The applied working corpus does not: it
+        // is this window's state, its banner goes on naming it, and the search runs inside it, as
+        // iPhone and iPad's does (#1646). Until #1646 the corpus was dropped here with the
+        // project's gates and nothing composed it back, so a hand-off or a recalled search ran
+        // over the whole scope under "Inside …".
+        parameters = params.runningInside(workingCorpus: filterVM?.appliedWorkingCorpusKeys)
+        // And the filter VM takes the new parameters, so that an edit made outside the popover
+        // re-applies this search and not the one before it (`mirrorParameters(into:)`).
+        if let filterVM { mirrorParameters(into: filterVM) }
         scopeDocuments = params.includeDocumentText
         scopeNotes     = params.includeNotes
         scopeSummaries = params.includeSummaries
@@ -1230,6 +1264,22 @@ final class MacSearchViewModel {
             parameters.excludeDocumentIds = scoped.excludeDocumentIds
             parametersVersion += 1
         }
+    }
+
+    /// Leaves the applied working corpus, and runs the same search again over the full scope: the
+    /// banner's ✕ (#1646).
+    ///
+    /// Only the document gate is derived again, from the project's scope with no corpus in it. The ✕
+    /// called `applyAdvancedFilters()`, which copies back every field the popover edits from the
+    /// filter view model, and a facet's narrowing writes `parameters` alone: so the ✕ undid a person
+    /// or a year chosen in Facets, and, until `applyParameters(_:)` mirrored its parameters, a
+    /// hand-off's own filters, which after a person's Find all mentions emptied the list.
+    func leaveWorkingCorpus() {
+        filterVM?.clearWorkingCorpus()
+        let scoped = scopeDerivedParams()
+        parameters.documentIds        = scoped.documentIds
+        parameters.excludeDocumentIds = scoped.excludeDocumentIds
+        parametersVersion += 1
     }
 
     /// The volume scope + project History/Focus gates derived from the filter VM's current
@@ -1299,16 +1349,23 @@ final class MacSearchViewModel {
     /// `currentPage` is reset to 0 on every successful fetch; if the result set shrank below
     /// the previous page index it is clamped to a valid page.
     ///
-    /// ## Cancellation handling
-    /// Called exclusively from `.task(id: searchTrigger)` in `SearchSheet`. When
-    /// `searchTrigger` changes, SwiftUI cancels the running task before starting a new one.
-    /// `CancellationError` is caught here and causes an early return **without** clearing
-    /// `results` — preserving the previous result set during the transition rather than
-    /// flashing an empty list. `isSearching` is always reset via `defer`.
-    func performSearch(service: SearchService?) async {
+    /// ## A run a later one replaced (#1648)
+    /// Called only from `.task(id: searchTrigger)` in `SearchSheet`. When `searchTrigger` changes,
+    /// SwiftUI cancels the running task and starts a new one, but nothing under this checks for
+    /// cancellation: `SearchService` and `FTS5Store` run the query to its end and return its rows
+    /// to the cancelled task. So the run is numbered as it starts (``SearchRunLedger``), and once its
+    /// last wait is over a run that is no longer the latest returns without writing anything, leaving
+    /// the rows on screen to the run that replaced it. The `CancellationError` this comment once said
+    /// was caught here was never thrown on the keyword path. `isSearching` is reset by the latest
+    /// run alone.
+    ///
+    /// - Returns: `true` when this run was not replaced, so that what it wrote is what the window
+    ///   shows. The window records the search, and starts over its facets, only then.
+    @discardableResult
+    func performSearch(service: SearchService?) async -> Bool {
+        let run = searchRuns.startRun()
         if searchMode == .meaning {
-            await performMeaningSearch()
-            return
+            return await performMeaningSearch(run: run)
         }
         lastRunWasSemantic = false
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1316,13 +1373,15 @@ final class MacSearchViewModel {
         // standalone term, so a keyword-less "Find all mentions" handoff runs on it alone.
         let hasStandaloneFilter = parameters.supportsFilterOnlySearch
         guard (!query.isEmpty || hasStandaloneFilter), let service else {
+            // This replaced any run under way, which will clear nothing now (#1648).
+            isSearching = false
             results = []
             executedRoute = .keywords
             totalMatchCount = nil
             lastRenderedExpression = nil
             // `SearchSheet` shows any standing error beside empty results, so the last search's must go with them.
             searchError = nil
-            return
+            return true
         }
 
         var params = parameters
@@ -1337,18 +1396,20 @@ final class MacSearchViewModel {
         // while iOS ran it — the twin divergence #1022 set out to remove (#1022 review).
         guard params.includeDocumentText || params.includeSummaries || params.includeNotes
                 || (params.supportsFilterOnlySearch && !params.hasTextTerms) else {
+            isSearching = false
             results = []
             executedRoute = .keywords
             totalMatchCount = nil
             lastRenderedExpression = nil
             searchError = MacSearchError.emptyScope
-            return
+            return true
         }
 
         isSearching = true
         searchError = nil
         currentPage = 0
-        defer { isSearching = false }
+        // The latest run ends the search; a run a later one replaced leaves that to it (#1648).
+        defer { if searchRuns.isLatest(run) { isSearching = false } }
 
         // Re-anchor the checklist ONLY when the search itself changed (#189-D). `performSearch`
         // also re-runs on every filter/scope change (those bump `parametersVersion`, part of
@@ -1383,26 +1444,36 @@ final class MacSearchViewModel {
         do {
             let fetched = try await resultsTask
             let rowsTime = clock.now - sent
+            let expression = await expressionTask
+            let counted = try? await countTask
+            let totalTime = clock.now - sent
+            // A run a later one replaced writes nothing (#1648). Asked once, after the last wait, so
+            // that the window shows one run's rows with their own total and expression. Written as each
+            // came back, the rows stood under the last search's total until the count arrived, and for
+            // good when the run was replaced in between. So the rows now wait for the count, which
+            // follows the fetch on the pipeline: 11 to 21% of the search's time, measured on the full
+            // store (`SearchViewModel.totalMatchCount`).
+            guard searchRuns.isLatest(run) else { return false }
             results = fetched
             // With the rows and before the next suspension, so that no pass draws another
             // search's rows under this one's selection (#1576 lane 4). The anchor is the one the
             // checklist was settled by above: `params` has not changed since.
             settleSelection(for: ChecklistAnchor(query: query, parameters: params))
-            // With the rows, not before the await: a run that is cancelled keeps the previous rows, and
-            // they keep the ceiling and the engine they came from.
+            // With the rows, not before the await: a run that is replaced keeps the previous rows,
+            // and they keep the ceiling and the engine they came from.
             lastFetchLimit = fetchLimit
             executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
-            lastRenderedExpression = await expressionTask
+            lastRenderedExpression = expression
             executedSearchVersion &+= 1
             // #1310: the parameters that RAN. Filter edits re-run the search here, so these are
             // the executed ones by the time the popover reads them.
             userTagCountScope = .match(submittedSearchParameters)
             // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
             // equal to what happened to be fetched — see `totalMatchCount`.
-            if let total = try? await countTask {
+            if let total = counted {
                 // `max` guards the reverse inconsistency: a count that somehow came back
                 // below the fetch would understate the result set.
                 totalMatchCount = max(total, fetched.count)
@@ -1412,7 +1483,7 @@ final class MacSearchViewModel {
             if let documentSet = frozenParams.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
                     setSize: documentSet.count, rowCount: fetched.count,
-                    rows: rowsTime, total: clock.now - sent))
+                    rows: rowsTime, total: totalTime))
             }
             // Clamp page index to the new result set.
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
@@ -1425,9 +1496,11 @@ final class MacSearchViewModel {
                   + "\(totalMatchCount.map(String.init) ?? "not counted") results")
             #endif
         } catch {
-            // CancellationError means this task was superseded by a new search trigger.
-            // Preserve the current results rather than flashing an empty list.
-            guard !(error is CancellationError) else { return }
+            // Nothing under the keyword path throws `CancellationError` (#1648), so this keeps the
+            // rows on screen for a cause that does not arise today; a replaced run is the next guard's.
+            guard !(error is CancellationError) else { return false }
+            // A run a later one replaced says nothing of its failure either.
+            guard searchRuns.isLatest(run) else { return false }
             // The same mapping as iOS: a query the parse refused becomes a readable message pointing at Search
             // Tips, and every other failure is stored unchanged (#1299).
             searchError = SearchQueryRefusal.readable(error, for: frozenParams)
@@ -1439,14 +1512,20 @@ final class MacSearchViewModel {
             print("[MacSearchViewModel] Search failed: \(error)")
             #endif
         }
+        return true
     }
 
     /// The Meaning run — `SearchViewModel.searchMeaning`'s macOS twin, with this window's own
-    /// bookkeeping contract (typed `searchError`, cancellation-preserves-results, the
+    /// bookkeeping contract (typed `searchError`, a replaced run that writes nothing, the
     /// checklist's query-keyed re-anchor).
-    private func performMeaningSearch() async {
+    ///
+    /// - Parameter run: This run's number, from `performSearch(service:)` (#1648).
+    /// - Returns: `true` when this run was not replaced, as `performSearch(service:)` returns.
+    private func performMeaningSearch(run: Int) async -> Bool {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
+            // This replaced any run under way, which will clear nothing now (#1648).
+            isSearching = false
             results = []
             executedRoute = .keywords
             beyondLibraryHits = []
@@ -1455,20 +1534,21 @@ final class MacSearchViewModel {
             lastRenderedExpression = nil
             // As in `performSearch`: the window shows a standing error beside empty results.
             searchError = nil
-            return
+            return true
         }
         guard let backend = semanticBackend else {
+            isSearching = false
             results = []
             executedRoute = .keywords
             searchError = SemanticModeError.unavailable
-            return
+            return true
         }
         isSearching = true
         searchError = nil
         currentPage = 0
         semanticNeedsModel = false
         lastRunWasSemantic = true
-        defer { isSearching = false }
+        defer { if searchRuns.isLatest(run) { isSearching = false } }
         // The same-search rule `performSearch` settles by, and for a question the one the history
         // writer refreshes a Meaning run's row by, so a respelled Meaning query keeps its marks as
         // it keeps its row.
@@ -1478,6 +1558,9 @@ final class MacSearchViewModel {
         let sentAnchor = ChecklistAnchor(query: query, parameters: parameters)
         do {
             let outcome = try await backend.run(query: query, parameters: parameters)
+            // A Meaning run a later search replaced writes nothing, nor does its failure below
+            // (#1648): the Meaning engine does not check for cancellation either.
+            guard searchRuns.isLatest(run) else { return false }
             results = outcome.results
             settleSelection(for: sentAnchor)
             lastFetchLimit = SemanticSearchBackend.hitLimit
@@ -1496,6 +1579,7 @@ final class MacSearchViewModel {
             })
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
+            guard searchRuns.isLatest(run) else { return false }
             results = []
             executedRoute = .keywords
             // No rows, so no reader of the scope sees it; recorded for the history row, which has
@@ -1509,7 +1593,8 @@ final class MacSearchViewModel {
             executedSearchVersion &+= 1
             userTagCountScope = nil
         } catch {
-            guard !(error is CancellationError) else { return }
+            guard !(error is CancellationError) else { return false }
+            guard searchRuns.isLatest(run) else { return false }
             results = []
             executedRoute = .keywords
             lastFetchLimit = SemanticSearchBackend.hitLimit
@@ -1522,6 +1607,16 @@ final class MacSearchViewModel {
             searchError = (error as? SemanticQuerySearcher.SearchUnavailable) == .queryTooLong
                 ? SemanticModeError.tooLong : SemanticModeError.failed
         }
+        return true
+    }
+
+    /// Replaces every search still under way without starting one, for rows cleared with no search
+    /// (#1648): the window empties them itself when the index is rebuilt. A run that comes back after
+    /// this writes nothing, so it cannot put the old index's rows back, and nothing is searching any
+    /// more.
+    func replaceSearchesUnderWay() {
+        searchRuns.replaceRunsUnderWay()
+        isSearching = false
     }
 
     // MARK: - Search History
