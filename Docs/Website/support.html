@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!--
+  One of two copies kept in step (plan of record decision 36). Its twin, on GitHub, is
+  Docs/Support.md. This copy is published at https://frusexplorer.app/support,
+  the address App Store Connect names. Do not edit it: edit the twin and run
+  Scripts/build_website_pages.py, which writes this file. Docs/Website/README.md has the rest.
+
+  To publish on the Squarespace site, paste everything between <main> and </main> into a Code
+  Block on a page whose URL slug is support; the site's own type and colours then apply, and the
+  <style> below, which is only for viewing this file on its own, is left behind.
+
+  Before publishing, replace every [ADDRESS] with the mailbox's name (plan of record decision 26).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FRUS Explorer Support</title>
+<meta name="description" content="Manuals, contact and common questions for FRUS Explorer on iPhone, iPad and Mac.">
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1d1d1f;
+    background: #ffffff;
+  }
+  main { max-width: 46rem; margin: 0 auto; padding: 2.5rem 16px 4rem; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 1rem; }
+  h2 { font-size: 1.3rem; margin: 2.2rem 0 0.6rem; }
+  a { color: #0b57d0; }
+  code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; }
+  blockquote { margin: 1.2rem 0; padding: 0.2rem 1rem; border-left: 3px solid #c7c7cc; color: #3a3a3c; }
+  li { margin: 0.35rem 0; }
+  hr { border: 0; border-top: 1px solid #d2d2d7; margin: 2.5rem 0 1rem; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #f5f5f7; background: #1c1c1e; }
+    a { color: #7cacf8; }
+    blockquote { border-left-color: #48484a; color: #d1d1d6; }
+    hr { border-color: #3a3a3c; }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>FRUS Explorer Support</h1>
+
+<p>FRUS Explorer is a research app for iPhone, iPad and Mac for the Foreign Relations of the United States series: the official documentary record of U.S. foreign policy, published since 1861.</p>
+
+<blockquote><p>FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the FRUS series in this app reflects personal views. Those views are not necessarily those of the Department of State or the U.S. Government. The FRUS series itself is in the public domain.</p></blockquote>
+
+<p>For help with the app, write to its developer, not to the Office of the Historian.</p>
+
+<h2 id="manuals-and-guides">Manuals and guides</h2>
+
+<ul>
+  <li><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/iOS-User-Manual.md">FRUS Explorer for iPad and iPhone — User Manual</a></li>
+  <li><a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/macOS-User-Manual.md">FRUS Explorer for macOS — User Manual</a></li>
+</ul>
+
+<p>The app links to both from <strong>Settings → System → About</strong>. Its <strong>FRUS Research Guide</strong>, an introduction to the series itself, is in the app: on iPhone and iPad, a row on the Research tab or <strong>Settings → System → About → FRUS Research Guide</strong>; on a Mac, <strong>Help → FRUS Research Guide</strong>.</p>
+
+<h2 id="contact">Contact</h2>
+
+<p>Email <strong><a href="mailto:[ADDRESS]@frusexplorer.app">[ADDRESS]@frusexplorer.app</a></strong>. It helps to include:</p>
+
+<ul>
+  <li>your device and its system version;</li>
+  <li>the app's version and build, from <strong>Settings → System → About</strong> (for example, <em>Version 1.0 (1861)</em>);</li>
+  <li>what you did, what you expected, and what happened instead;</li>
+  <li>for an iCloud sync problem, the Sync Log, from <strong>Settings → System → Data &amp; Recovery → Sync Log → Export…</strong>. It holds event types, timing and error codes, never your content.</li>
+</ul>
+
+<p>The <a href="https://frusexplorer.app/privacy">privacy policy</a> says what happens to an email you send.</p>
+
+<h2 id="common-questions">Common questions</h2>
+
+<p><strong>What does the app need?</strong> An iPhone or iPad with iOS or iPadOS 26 or later, or a Mac with macOS 26 or later. Document summaries also need Apple Intelligence, which on a Mac means Apple silicon.</p>
+
+<p><strong>Where do the documents come from?</strong> From the Office of the Historian's public TEI editions of the series. The app downloads the volumes you choose from the Office's repository on GitHub and indexes them on your device; from then on, reading and searching work offline.</p>
+
+<p><strong>Do I need an account?</strong> No. If your device is signed in to iCloud, your notes, collections and other research sync through your own iCloud account. Two services are optional, each with a free key of your own, in <strong>Settings → System → Connections</strong>: the National Archives Catalog, which lets Source Explorer look up the records a document's source note cites (the card links to where you get a key), and Zotero, which lets you send documents with your tags and notes to your Zotero library.</p>
+
+<p><strong>What is natural-language search?</strong> An experimental way to search by meaning rather than by matching words. It needs a model, Google's EmbeddingGemma 2, which is an optional 310 MB download (<strong>Settings → Volumes &amp; Storage → Download Search Model</strong>) and runs on your device only: nothing you search leaves it.</p>
+
+<p><strong>My notes are not reaching my other devices.</strong> Start with the app's iCloud status, at the top of Settings on iPhone and iPad and at the right of the main window's status bar on a Mac, which names the problem when there is one. Then read the manual's section on Data &amp; Recovery, which lists the recovery steps in order and what each one deletes.</p>
+
+<h2 id="privacy">Privacy</h2>
+
+<p>FRUS Explorer collects no data. What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to. The <a href="https://frusexplorer.app/privacy">privacy policy</a> has the details.</p>
+
+<h2 id="source-code">Source code</h2>
+
+<p>FRUS Explorer's source code is public, under the Apache License 2.0, at <a href="https://github.com/joshbotts/FRUS-Explorer">https://github.com/joshbotts/FRUS-Explorer</a>.</p>
+
+<hr>
+
+<p>This page is published in two copies kept identical: at <a href="https://frusexplorer.app/support">https://frusexplorer.app/support</a> and at <a href="https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md">https://github.com/joshbotts/FRUS-Explorer/blob/HEAD/Docs/Support.md</a>.</p>
+
+</main>
+</body>
+</html>
