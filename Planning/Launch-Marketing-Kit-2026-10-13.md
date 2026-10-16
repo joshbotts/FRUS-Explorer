@@ -209,9 +209,10 @@ state (§8).
 **One set, fourteen frames, three audiences in order.** App Store Connect shows up to ten per device
 class, and the first three are what a search result shows, so the three universal frames lead and
 the audience frames follow. The listing takes **ten**: the three universal, then
-`researchers-04`, `researchers-05`, `teachers-08`, `teachers-09`, `analysts-11`, `analysts-12` and
-`teachers-10`. The other four (`researchers-06`, `researchers-07`, `analysts-13`, `analysts-14`) are
-for the landing page and the audience posts, where a set can be shown whole.
+`researchers-04`, `researchers-05`, `researchers-06`, `teachers-08`, `teachers-09`, `analysts-11` and
+`analysts-12`. The other four (`teachers-10`, `researchers-07`, `analysts-13`, `analysts-14`) are
+for the landing page and the audience posts, where a set can be shown whole. (The owner traded
+`teachers-10` for `researchers-06` on 2026-10-15, §8's decision 1.)
 
 The spec is `tools/marketing/shots.json`; `tools/marketing/compose.py` renders it (its README has the
 commands); the drafts are in `Planning/marketing-drafts/`, with one contact sheet per audience.
@@ -412,14 +413,19 @@ number of the capture run in `Docs/screenshots/README.md`'s ledger, as the X-8 r
 
 1. **The ten.** Keep the listing's ten as §3 names them, or trade `teachers-10` for `researchers-06`?
    Recommendation: keep; the analytics frame reads on a phone-sized thumbnail and the graph does not.
+   *Answered 2026-10-15: trade. `researchers-06`, the cross-reference graph, takes the tenth slot and
+   `teachers-10` goes to the landing page (§3 is updated; `Plan-Of-Record-2026-10-14.md` decision 32).*
 2. **Landscape iPad frames.** Every iPad capture is landscape and the app's two-pane layouts are its
    iPad story; if App Store Connect's 13-inch slot takes landscape, keep it. Otherwise the iPad set
    is re-shot portrait, and frames 02 and 08 lose their second pane.
+   *Answered 2026-10-15: landscape, once the upload page confirms the slot takes 2752 × 2064 (decision 33).*
 3. **Price and territories.** The copy says "free" and "English only"; both are owner facts to confirm
    before any of §5 ships.
+   *Answered 2026-10-15: free, in every storefront, English only (decision 31).*
 4. **The README hero row.** Three slots today: `macos/search`, `macos/cross-reference-graph`,
    `ipad/semantic-map`. Swap the graph (stale, and the least legible of the three at README width) for
    `ipad/source-explorer`, which carries the claim no competitor can make.
+   *Answered 2026-10-15: swap, in the plan's §6a S5 (decision 34).*
 5. **Whether to add this file to the plan of record.** *Answered 2026-10-14: `Plan-Of-Record-2026-10-14.md` §2 names this file and folds its four sittings into the manuals' capture sessions on build 51 (its §6a and §6c).* `Plan-Of-Record-2026-10-11.md` (now in `Completed/`) §3 listed the
    marketing items under *App Store Connect and marketing*; one bullet pointing here keeps the two in
    step. Not done in this pass, because that file's §7 line is checked against
