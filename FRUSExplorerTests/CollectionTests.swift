@@ -11354,6 +11354,359 @@ struct SmartCollectionRuleTests {
     }
 }
 
+// MARK: - SmartCollectionEntriesFromBeforeLinkTests (#1619, decision 22)
+
+/// A smart collection's entries from before its link are listed apart, under a dimmed heading that says they are not
+/// part of it because they were added before it was linked, with a button that removes them; nothing is removed without
+/// the reader's tap (decision 22 of the 2026-10-14 plan of record).
+///
+/// Since #1619 a smart collection takes no hand-added document, heading, note block or passage, so an entry of those
+/// kinds is one it held before its link; everything it produces leaves it out. Both editors had listed such entries in
+/// Contents among its apparatus, with nothing to say so.
+///
+/// The rule, the rows Contents lists and the removal are called here, on a store. The editors that mount the section
+/// and the dialog it opens are views nothing in this target hosts, so their half is read from source, each piece inside
+/// the declaration that holds it.
+///
+/// Version history:
+///   1.0 — #1619, decision 22: initial implementation
+@MainActor
+@Suite("A smart collection's entries from before its link are marked, and go only on the reader's word (#1619)")
+struct SmartCollectionEntriesFromBeforeLinkTests {
+
+    private static let volume = "frus1955-57v16"
+
+    /// A collection built by hand and then linked to a saved search: a chronology block (0), a document (1), a section
+    /// heading (2) over a document (3), an empty note block (4), a passage (5) and a bibliography block (6), the last
+    /// four inside the section.
+    private static func builtThenLinked(in context: ModelContext) throws
+        -> (collection: Collection, outline: [CollectionEntry]) {
+        let collection = Collection(name: "Berlin, as built")
+        context.insert(collection)
+        var outline: [CollectionEntry] = []
+        func add(_ kind: CollectionEntryKind, document: String = "", text: String? = nil,
+                 block: CollectionGeneratedBlockType? = nil) {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: document,
+                                        volumeId: document.isEmpty ? "" : volume, sortOrder: outline.count)
+            entry.entryKind = kind
+            entry.text = text
+            entry.generatedBlockType = block?.rawValue
+            entry.collection = collection
+            context.insert(entry)
+            outline.append(entry)
+        }
+        add(.generated, block: .chronology)
+        add(.document, document: "d12")
+        add(.heading, text: "The access routes")
+        add(.document, document: "d13")
+        add(.prose, text: "")
+        add(.excerpt, document: "d13", text: "A passage.")
+        add(.generated, block: .bibliography)
+        collection.savedSearchId = UUID()
+        try context.save()
+        return (collection, outline)
+    }
+
+    // MARK: The rule
+
+    @Test("A smart collection leaves out its documents, headings, notes and passages, and keeps its apparatus")
+    func whatASmartCollectionLeavesOut() throws {
+        let linked = UUID()
+        for kind in [CollectionEntryKind.document, .heading, .prose, .excerpt] {
+            #expect(SmartCollectionRule.leavesOut(kind, savedSearchId: linked), "a smart collection keeps \(kind)")
+            #expect(!SmartCollectionRule.leavesOut(kind, savedSearchId: nil), "a collection with no link leaves out \(kind)")
+        }
+        // Its apparatus is built over the search's documents; an unknown kind is a newer build's, which may count it.
+        for kind in [CollectionEntryKind.generated, .unrecognized] {
+            #expect(!SmartCollectionRule.leavesOut(kind, savedSearchId: linked), "a smart collection leaves out \(kind)")
+        }
+
+        let container = try ModelContainer.makeTestContainer()
+        let built = try Self.builtThenLinked(in: container.mainContext)
+        let outline = built.outline
+        #expect(SmartCollectionRule.entriesFromBeforeLink(in: outline, savedSearchId: built.collection.savedSearchId)
+                    .map(\.id) == [1, 2, 3, 4, 5].map { outline[$0].id })
+        #expect(SmartCollectionRule.entriesFromBeforeLink(in: outline, savedSearchId: nil).isEmpty)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("Contents lists what a smart collection keeps, flush and never collapsed, at the entries' own places")
+    func contentsListsWhatItKeeps() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let built = try Self.builtThenLinked(in: container.mainContext)
+        let outline = built.outline
+        let items = CollectionOutline.linearize(outline)
+        let collapsed: Set<UUID> = [outline[2].id]
+        // The bibliography sits inside the section in the outline.
+        #expect(items[6].depth == 1)
+
+        let rows = CollectionOutline.contentsRows(in: items, collapsedHeadingIds: collapsed,
+                                                  savedSearchId: built.collection.savedSearchId)
+        #expect(rows.map(\.index) == [0, 6], "Contents lists \(rows.map(\.index))")
+        #expect(rows.map(\.id) == [outline[0].id, outline[6].id])
+        #expect(rows.allSatisfy { $0.depth == 0 }, "a row a smart collection keeps is indented")
+
+        // With no link, Contents is the outline as it was: the collapsed section hides what it holds.
+        let unlinked = CollectionOutline.contentsRows(in: items, collapsedHeadingIds: collapsed, savedSearchId: nil)
+        let visible = CollectionOutline.visibleRows(in: items, collapsedHeadingIds: collapsed)
+        #expect(unlinked.map(\.index) == [0, 1, 2])
+        #expect(unlinked.map(\.index) == visible.map(\.index) && unlinked.map(\.depth) == visible.map(\.depth))
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: Removing them
+
+    @Test("Remove These Entries deletes the entries from before the link and a heading's draft, and keeps the rest")
+    func removingTheEntries() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let built = try Self.builtThenLinked(in: context)
+        let collection = built.collection
+        var outline = built.outline
+        let draft = GeneratedSummary(documentId: "", volumeId: "", promptId: UUID(), responseText: "A headnote.",
+                                     authorship: .userWritten, isHeadnoteDraft: true)
+        context.insert(draft)
+        outline[2].headnoteSummaryId = draft.id
+        try context.save()
+        let fromBeforeLink = [1, 2, 3, 4, 5].map { outline[$0].id }
+        let kept = [outline[0].id, outline[6].id]
+
+        let removed = CollectionEntryOrdering.removeEntriesFromBeforeLink(of: collection, outline: &outline,
+                                                                         modelContext: context)
+        try context.save()
+        #expect(removed == fromBeforeLink)
+        #expect(outline.map(\.id) == kept)
+        #expect(Set(try context.fetch(FetchDescriptor<CollectionEntry>()).map(\.id)) == Set(kept))
+        #expect(try context.fetchCount(FetchDescriptor<GeneratedSummary>()) == 0, "the heading's headnote draft stayed")
+        #expect(collection.savedSearchId != nil, "removing the entries touched the link")
+
+        // A second tap has nothing to remove.
+        #expect(CollectionEntryOrdering.removeEntriesFromBeforeLink(of: collection, outline: &outline,
+                                                                   modelContext: context).isEmpty)
+        #expect(outline.map(\.id) == kept)
+        withExtendedLifetime(container) {}
+    }
+
+    /// The dialog can be open while the collection is unlinked on another device; the entries then count again.
+    @Test("In a collection unlinked before the tap, those entries count again and nothing is removed")
+    func anUnlinkedCollectionKeepsThem() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let built = try Self.builtThenLinked(in: context)
+        var outline = built.outline
+        built.collection.savedSearchId = nil
+        try context.save()
+        let before = try context.fetchCount(FetchDescriptor<CollectionEntry>())
+
+        #expect(CollectionEntryOrdering.removeEntriesFromBeforeLink(of: built.collection, outline: &outline,
+                                                                   modelContext: context).isEmpty)
+        try context.save()
+        #expect(outline.count == 7)
+        #expect(try context.fetchCount(FetchDescriptor<CollectionEntry>()) == before)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: The words and the rows
+
+    @Test("The heading, the button, the dialog and an empty note's row say what decision 22 asks")
+    func theWords() {
+        #expect(SmartCollectionRule.entriesFromBeforeLinkHeading
+                == "Not part of the smart collection: added before it was linked to its saved search.")
+        #expect(SmartCollectionRule.removeEntriesFromBeforeLink == "Remove These Entries")
+        #expect(SmartCollectionRule.removeEntriesFromBeforeLinkTitle == "Remove These Entries?")
+        let us = Locale(identifier: "en_US")
+        #expect(SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count: 1, locale: us)
+                == "Removes the entry added before this collection was linked to its saved search.")
+        #expect(SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count: 2, locale: us)
+                == "Removes the 2 entries added before this collection was linked to its saved search.")
+        #expect(SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count: 1_204, locale: us)
+                == "Removes the 1,204 entries added before this collection was linked to its saved search.")
+        #expect(SmartCollectionRule.emptyNoteBlock == "Empty note block")
+    }
+
+    @Test("A row says where a document or passage comes from; a heading and a note name no source")
+    func theRowsSayWhereFrom() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let outline = try Self.builtThenLinked(in: container.mainContext).outline
+        let caption = SmartCollectionEntriesFromBeforeLink.caption(for:documentHeader:)
+        // A document with an indexed header is titled by it, so its caption carries its id; one without is titled by
+        // its id, so the caption carries its volume alone — the rule of its row in Contents.
+        #expect(caption(outline[1], "Telegram From the Embassy in Bonn") == "d12 · \(Self.volume)")
+        #expect(caption(outline[1], nil) == Self.volume)
+        #expect(caption(outline[5], nil) == "d13 · \(Self.volume)")
+        #expect(caption(outline[2], nil) == nil && caption(outline[4], nil) == nil)
+        #expect([outline[1], outline[2], outline[4], outline[5]].map {
+            SmartCollectionEntriesFromBeforeLink.systemImage(for: $0.entryKind)
+        } == ["doc.text", "number", "text.alignleft", "text.quote"])
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: The views' half, read from source
+
+    private static func source(_ path: String) throws -> String {
+        try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent(path), encoding: .utf8)
+    }
+
+    /// The braces of the declaration or statement that `header` opens at its first match in `range` (the whole source
+    /// when `nil`).
+    private static func block(_ header: String, in source: String,
+                              within range: Range<String.Index>? = nil) throws -> Range<String.Index> {
+        let start = try #require(source.range(of: header, range: range), "no «\(header)» — re-derive this test")
+        let block = try #require(WindowTargetingTests.balancedBlock(in: source, from: start.lowerBound))
+        return block.startIndex..<block.endIndex
+    }
+
+    /// `text` with its comment lines left out and every run of whitespace made one space, so a call reads the same
+    /// however it is wrapped.
+    private static func code(_ text: Substring) -> String {
+        text.split(separator: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    @Test("Both editors list the entries apart, through one section, and Contents through contentsRows")
+    func bothEditorsListThemApart() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        // The Mac window's list takes the heading as a row: it sets a section header on one line.
+        let mounts = [
+            "the iOS editor": "SmartCollectionEntriesFromBeforeLink(entries: fromBeforeLink, "
+                + "documentHeaders: documentHeaders) { removeEntriesFromBeforeLink() }",
+            "the Mac window": "SmartCollectionEntriesFromBeforeLink(entries: fromBeforeLink, "
+                + "documentHeaders: documentHeaders, onRemove: { removeEntriesFromBeforeLink() }, headingIsRow: true)",
+        ]
+        for (name, text) in [("the iOS editor", editor), ("the Mac window", mac)] {
+            let contents = try Self.block("private var documentsSection: some View {", in: text)
+            let body = Self.code(text[contents])
+            #expect(body.contains("let rows = CollectionOutline.contentsRows( in: outline, "
+                                  + "collapsedHeadingIds: collapsedHeadingIds, savedSearchId: collection.savedSearchId)"),
+                    "\(name)'s Contents does not list the rows contentsRows gives")
+            #expect(!body.contains("CollectionOutline.visibleRows("), "\(name)'s Contents still lists every visible row")
+            #expect(body.contains("let fromBeforeLink = SmartCollectionRule.entriesFromBeforeLink( "
+                                  + "in: sortedEntries, savedSearchId: collection.savedSearchId)"))
+            let gate = try Self.block("if !fromBeforeLink.isEmpty {", in: text, within: contents)
+            #expect(Self.code(text[gate]).contains(try #require(mounts[name])),
+                    "\(name) does not mount the shared section for the entries from before the link")
+            // After Contents' rows, never among them.
+            let rows = try #require(text.range(of: "ForEach(rows) { row in", range: contents))
+            #expect(rows.upperBound < gate.lowerBound, "\(name) lists the entries from before the link above Contents")
+
+            // The removal goes through the shared rule, then numbers and saves what is left.
+            let remove = Self.code(text[try Self.block("private func removeEntriesFromBeforeLink() {", in: text)])
+            let call = try #require(remove.range(of: "CollectionEntryOrdering.removeEntriesFromBeforeLink( "
+                                                 + "of: collection, outline: &sortedEntries, modelContext: modelContext)"),
+                                    "\(name) does not remove the entries through the shared rule")
+            let finish = try #require(remove.range(of: "finishOutlineMutation()"), "\(name) does not save the removal")
+            #expect(call.upperBound < finish.lowerBound)
+
+            // An apparatus row counts a smart collection's documents no more: they are entries from before its link.
+            let outlineRow = try Self.block("private func outlineRow(", in: text)
+            let rowCall = try #require(text.range(of: "CollectionGeneratedEntryRow(", range: outlineRow),
+                                       "\(name) has no apparatus row")
+            let arguments = try #require(WindowTargetingTests.balancedBlock(in: text, from: rowCall.lowerBound,
+                                                                         open: "(", close: ")"))
+            #expect(Self.code(arguments).contains(
+                "documentCount: takesHandAddedEntries ? sortedEntries.count { $0.entryKind == .document } : nil"),
+                    "\(name)'s apparatus row counts a smart collection's documents from before its link")
+
+            // Move Down is offered only where a listed row lies past the block, so not at Contents' last row while
+            // entries from before the link follow it.
+            let down = Self.code(text[try Self.block("private func canMoveVisibleRowDown(", in: text)])
+            #expect(down.contains("return rows[(pos + 1)...].contains { $0.index >= blockEnd }"),
+                    "\(name) offers Move Down past the rows it lists")
+        }
+
+        // On iPhone and iPad Contents' header offers the timeline only for a collection with no link, and Edit only
+        // over rows it can edit.
+        let contents = try Self.block("private var documentsSection: some View {", in: editor)
+        let timeline = try Self.block("if takesHandAddedEntries && !sortedEntries.isEmpty {", in: editor, within: contents)
+        #expect(editor[timeline].contains("showTimeline = true"))
+        let edit = try Self.block("if !rows.isEmpty {", in: editor, within: contents)
+        #expect(editor[edit].contains("EditButton()"))
+    }
+
+    /// Both found in the Mac check copy (2026-10-16): in the Mac window's Contents `List` a `ForEach` row is tagged with its
+    /// id, the selection's type, so an entry from before the link could be selected and ↩ would open the inspector on it;
+    /// and the inset list cut the heading to one line at the column's width.
+    @Test("In the Mac window's list the rows refuse selection and the heading is a row, which wraps")
+    func theRowsRefuseSelectionAndTheHeadingWraps() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let section = try Self.block("struct SmartCollectionEntriesFromBeforeLink: View {", in: editor)
+        let rows = try Self.block("ForEach(entries, id: \\.id) { entry in", in: editor, within: section)
+        #expect(Self.code(editor[rows]) == "{ entry in row(for: entry) .selectionDisabled() }",
+                "a row from before the link can be selected: \(Self.code(editor[rows]))")
+        // The heading: a header in a form; the section's first row, unselectable, where the host asks for a row.
+        let body = Self.code(editor[try Self.block("var body: some View {", in: editor, within: section)])
+        #expect(body == "{ if headingIsRow { Section { heading .selectionDisabled() content } } "
+                    + "else { Section { content } header: { heading } } }", "the section's body is \(body)")
+        let heading = Self.code(editor[try Self.block("private var heading: some View {", in: editor, within: section)])
+        #expect(heading.contains("Text(SmartCollectionRule.entriesFromBeforeLinkHeading) "
+                                 + ".font(headingIsRow ? .callout.weight(.semibold) : nil) .foregroundStyle(.secondary) "
+                                 + ".textCase(nil) .fixedSize(horizontal: false, vertical: true) "
+                                 + ".accessibilityAddTraits(.isHeader)"), "the heading is \(heading)")
+    }
+
+    /// From the review (2026-10-16): the Mac's toolbar Document Inspector opened on the first document or heading when
+    /// nothing inspectable was selected, and in a smart collection each of those is an entry from before its link.
+    @Test("On the Mac neither ↩ nor Document Inspector opens on an entry from before the link")
+    func theMacInspectorSkipsThem() throws {
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let rule = Self.code(mac[try Self.block("private func isInspectable(_ entry: CollectionEntry) -> Bool {", in: mac)])
+        #expect(rule.contains("(entry.entryKind == .document || entry.entryKind == .heading) "
+                              + "&& !SmartCollectionRule.leavesOut(entry.entryKind, savedSearchId: collection.savedSearchId)"),
+                "isInspectable does not leave out a smart collection's entries: \(rule)")
+        // Every path that opens the inspector by kind asks it, and none asks the kinds alone.
+        let byKind = Self.code(Substring(mac)).components(separatedBy: "== .document || ").count - 1
+        #expect(byKind == 1, "\(byKind) places open the inspector by kind; only isInspectable should")
+        let returnKey = Self.code(mac[try Self.block(".onKeyPress(.return) {", in: mac)])
+        #expect(returnKey.contains("isInspectable(entry)"), "↩ opens the inspector on any document or heading")
+        let toolbar = try Self.block("private var toolbarContent: some ToolbarContent {", in: mac)
+        let toggle = try #require(mac.range(of: "\"collection.toolbar.inspector\"", range: toolbar))
+        let button = try #require(mac.range(of: "Button {", options: .backwards, range: toolbar.lowerBound..<toggle.lowerBound))
+        let action = Self.code(try #require(WindowTargetingTests.balancedBlock(in: mac, from: button.lowerBound)))
+        #expect(action.components(separatedBy: "isInspectable(").count - 1 == 2,
+                "Document Inspector's selection or its fallback skips the rule: \(action)")
+        #expect(Self.code(mac[toolbar]).contains(".disabled(!sortedEntries.contains { isInspectable($0) })"),
+                "Document Inspector is enabled by an entry it should not open")
+    }
+
+    @Test("The section removes nothing until the reader confirms, and nothing else removes the entries")
+    func onlyTheReadersWordRemovesThem() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let section = try Self.block("struct SmartCollectionEntriesFromBeforeLink: View {", in: editor)
+        let content = try Self.block("private var content: some View {", in: editor, within: section)
+        // The button opens the dialog and does nothing else.
+        let button = try #require(editor.range(of: "Button(role: .destructive) {", range: content))
+        let action = try #require(WindowTargetingTests.balancedBlock(in: editor, from: button.lowerBound))
+        #expect(Self.code(action) == "{ isConfirmingRemoval = true }", "the button does more than ask: \(action)")
+        // The dialog's destructive action is the only place the section calls onRemove.
+        let dialog = try Self.block(".confirmationDialog(SmartCollectionRule.removeEntriesFromBeforeLinkTitle,", in: editor,
+                                    within: content)
+        #expect(Self.code(editor[dialog]).contains(
+            "Button(SmartCollectionRule.removeEntriesFromBeforeLink, role: .destructive, action: onRemove)"))
+        let uses = Self.code(editor[section]).components(separatedBy: "onRemove").count - 1
+        #expect(uses == 2, "the section names onRemove \(uses) times, where its declaration and the dialog's button do")
+        #expect(Self.code(editor[content]).contains(
+            "Text(SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count: entries.count))"))
+
+        // The two editors' removal actions are the shared rule's only callers in the app.
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let files = AppSourceTree.swiftFiles(in: root)
+        try #require(files.count > 400, "read only \(files.count) source files")
+        var callers: [String] = []
+        for url in files {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let calls = Self.code(Substring(text))
+                .components(separatedBy: "CollectionEntryOrdering.removeEntriesFromBeforeLink(").count - 1
+            callers += Array(repeating: url.lastPathComponent, count: calls)
+        }
+        #expect(callers.sorted() == ["CollectionEditorView.swift", "MacCollectionManagerView.swift"],
+                "the entries from before a link are removed from \(callers.sorted())")
+    }
+}
+
 #if os(iOS)
 // MARK: - RichTextRestingCapTests (#1360)
 

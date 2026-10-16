@@ -158,6 +158,11 @@ import UIKit
 ///          it held none); Add to Archives Visit… says why when a smart collection's search cannot run
 ///   2026-10-15 — #1619 review: Collection settings offers Unlink for a link whose saved search was deleted too
 ///          (`SmartCollectionLinkRows`), and reads the link from the model, not the editor's copy
+///   2026-10-16 — #1619, decision 22 of the 2026-10-14 plan of record: a smart collection's Contents lists only the
+///          entries it keeps (`CollectionOutline.contentsRows`), and its entries from before its link follow in a section
+///          of their own under a dimmed heading, with Remove These Entries, which asks first
+///          (`SmartCollectionEntriesFromBeforeLink`); its apparatus rows print no document count and its Contents no
+///          timeline button, since both read those entries
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -1220,10 +1225,14 @@ struct CollectionEditorView: View {
 
     @ViewBuilder
     private var documentsSection: some View {
+        // #1619, decision 22: the rows Contents lists. A smart collection's are only the entries it keeps, its
+        // apparatus; its entries from before its link are listed apart, in the section after this one.
+        let outline = CollectionOutline.linearize(sortedEntries)
+        let rows = CollectionOutline.contentsRows(
+            in: outline, collapsedHeadingIds: collapsedHeadingIds, savedSearchId: collection.savedSearchId)
         Section {
             // #1619: a smart collection says what it is first, whatever it holds. Its documents come from its saved
-            // search, so the Add menus take no hand-added document, heading, note block or passage into it; entries it
-            // held before it was linked stay listed below, ignored by everything it produces, as before.
+            // search, so the Add menus take no hand-added document, heading, note block or passage into it.
             if !takesHandAddedEntries {
                 Label(SmartCollectionRule.sentence, systemImage: "bolt.fill")
                     .font(.callout)
@@ -1238,9 +1247,6 @@ struct CollectionEditorView: View {
                 }
             } else {
                 let duplicateKeys = duplicateDocumentKeys
-                let outline = CollectionOutline.linearize(sortedEntries)
-                let rows = CollectionOutline.visibleRows(
-                    in: outline, collapsedHeadingIds: collapsedHeadingIds)
                 ForEach(rows) { row in
                     outlineRow(row, outline: outline, duplicateKeys: duplicateKeys,
                                rows: rows)
@@ -1264,7 +1270,10 @@ struct CollectionEditorView: View {
                 // iPhone nav-bar `primaryAction` menu (labeled, not a bare "+" glyph),
                 // both wired in `collectionAuthoringToolbar`. The in-list header keeps
                 // only the timeline glance and the edit-mode toggle.
-                if !sortedEntries.isEmpty {
+                // Not for a smart collection (#1619, decision 22): the timeline plots the collection's document
+                // entries, and a smart collection's documents come from its saved search; the ones it holds are entries
+                // from before its link, which it leaves out.
+                if takesHandAddedEntries && !sortedEntries.isEmpty {
                     Button {
                         showTimeline = true
                     } label: {
@@ -1281,11 +1290,21 @@ struct CollectionEditorView: View {
                 // EditButton toggles edit mode so drag-handles and swipe-to-delete appear.
                 // On macOS, onMove and onDelete are accessible without explicit edit mode
                 // (drag handles appear automatically; Delete key / context menu handles deletion).
-                if !sortedEntries.isEmpty {
+                // Only over rows it can edit: the entries from before a smart collection's link take neither.
+                if !rows.isEmpty {
                     EditButton()
                         .font(.caption)
                 }
                 #endif
+            }
+        }
+        // #1619, decision 22: a smart collection's entries from before its link, under a dimmed heading that says why
+        // they are not part of it, with a button that removes them once the reader confirms. Nothing else removes them.
+        let fromBeforeLink = SmartCollectionRule.entriesFromBeforeLink(
+            in: sortedEntries, savedSearchId: collection.savedSearchId)
+        if !fromBeforeLink.isEmpty {
+            SmartCollectionEntriesFromBeforeLink(entries: fromBeforeLink, documentHeaders: documentHeaders) {
+                removeEntriesFromBeforeLink()
             }
         }
     }
@@ -1607,9 +1626,12 @@ struct CollectionEditorView: View {
                                  onMoveDown: moveDown)
         case .generated:
             // Movable/deletable like prose; no body-depth or inspector controls —
-            // the block resolves at export and in the live preview (Phase 6).
+            // the block resolves at export and in the live preview (Phase 6). No count for a smart collection's
+            // (#1619, decision 22): the block lists the saved search's documents, and the ones the collection holds
+            // are entries from before its link, which it leaves out.
             CollectionGeneratedEntryRow(entry: entry,
-                                        documentCount: sortedEntries.count { $0.entryKind == .document },
+                                        documentCount: takesHandAddedEntries
+                                            ? sortedEntries.count { $0.entryKind == .document } : nil,
                                         onDelete: isMacOS ? { deleteVisibleRow(row.index) } : nil,
                                         onMoveUp: moveUp,
                                         onMoveDown: moveDown)
@@ -1697,14 +1719,16 @@ struct CollectionEditorView: View {
         moveVisibleRows(IndexSet(integer: pos), to: pos - 1, visible: rows.map(\.index))
     }
 
-    /// Whether the visible row at `pos` can move down: something must exist after its
-    /// moved block (a heading's block is its whole `sectionRange`). Any entry after the
-    /// block is visible whenever this row is (a block is followed by a same-or-shallower
-    /// item whose ancestors are also this row's ancestors), so this is exactly "a
-    /// visible target exists".
+    /// Whether the visible row at `pos` can move down: a listed row must sit past its moved
+    /// block (a heading's block is its whole `sectionRange`), which `moveVisibleRowDown`
+    /// moves it after. In an outline every entry after the block is listed whenever this row
+    /// is (a block is followed by a same-or-shallower item whose ancestors are also this row's
+    /// ancestors); a smart collection's Contents leaves out its entries from before its link
+    /// (`CollectionOutline.contentsRows`, #1619), so the rows are asked rather than the entries.
     private func canMoveVisibleRowDown(_ pos: Int, rows: [CollectionOutline.VisibleRow]) -> Bool {
         guard rows.indices.contains(pos) else { return false }
-        return movedBlockEnd(of: rows[pos].index) < sortedEntries.count
+        let blockEnd = movedBlockEnd(of: rows[pos].index)
+        return rows[(pos + 1)...].contains { $0.index >= blockEnd }
     }
 
     /// Moves the visible row at `pos` one visible position down — inserts it after the
@@ -1779,6 +1803,18 @@ struct CollectionEditorView: View {
             modelContext.delete(sortedEntries[i])
             sortedEntries.remove(at: i)
         }
+        finishOutlineMutation()
+    }
+
+    /// Removes a smart collection's entries from before its link (the reader confirmed in
+    /// `SmartCollectionEntriesFromBeforeLink`'s dialog; #1619, decision 22), through the rule the Mac
+    /// Collections window calls too, then forgets any view state that named them.
+    private func removeEntriesFromBeforeLink() {
+        let removed = CollectionEntryOrdering.removeEntriesFromBeforeLink(
+            of: collection, outline: &sortedEntries, modelContext: modelContext)
+        guard !removed.isEmpty else { return }
+        collapsedHeadingIds.subtract(removed)
+        if let inspected = inspectedEntryId, removed.contains(inspected) { inspectedEntryId = nil }
         finishOutlineMutation()
     }
 
@@ -2415,6 +2451,171 @@ struct SmartCollectionLinkRows: View {
                       defaultValue: "Documents are resolved from this saved search at export time. Static entries are ignored."))
             .font(.caption)
             .foregroundStyle(.secondary)
+    }
+}
+
+// MARK: - SmartCollectionEntriesFromBeforeLink
+
+/// A smart collection's entries from before its link, listed apart from its Contents under a dimmed heading that says
+/// they are not part of it and why, with a button that removes them once the reader confirms (#1619; decision 22 of the
+/// 2026-10-14 plan of record).
+///
+/// A smart collection takes no hand-added document, heading, note block or passage (`SmartCollectionRule`), so an entry
+/// of those kinds is one it held before it was linked, and everything it produces leaves it out. Until decision 22 both
+/// editors listed such entries in Contents among the ones it keeps, with nothing to say they were ignored. Each row here
+/// is a report: the entry's kind by its icon, and its words, dimmed. Nothing is removed without the reader's tap: the
+/// button asks first, saying how many go, and nothing else removes them. Unlinked, the collection counts them again.
+///
+/// A `Section`, so it sits in the iOS editor's `Form` (also the Mac's New Collection sheet) and in the Mac Collections
+/// window's Contents `List`, each of which mounts it under its Contents rows. The heading is the section's header in a
+/// form, and its first row in the Mac window's list (`headingIsRow`), whose header is one line high.
+///
+/// Version history:
+///   1.0 — #1619, decision 22: initial implementation
+struct SmartCollectionEntriesFromBeforeLink: View {
+
+    /// The entries, in the outline's order (`SmartCollectionRule.entriesFromBeforeLink`).
+    let entries: [CollectionEntry]
+    /// The documents' indexed headers, keyed `"volumeId/documentId"`, as the editors load them for their rows; a
+    /// document with none reads by its id, as its row in Contents does.
+    let documentHeaders: [String: String]
+    /// Removes the entries. Called only by the dialog's destructive action; the caller numbers and saves what is left.
+    let onRemove: () -> Void
+    /// Whether the heading is the section's first row rather than its header. The Mac window's inset `List` sets a
+    /// section header on one line and cut this one at the column's width, "…linked to its save…", where the grouped
+    /// forms wrap it (seen in the Mac check copy, 2026-10-16); a row wraps.
+    var headingIsRow = false
+
+    /// Whether the dialog that asks before the entries are removed is showing.
+    @State private var isConfirmingRemoval = false
+
+    var body: some View {
+        if headingIsRow {
+            Section {
+                heading
+                    .selectionDisabled()
+                content
+            }
+        } else {
+            Section {
+                content
+            } header: {
+                heading
+            }
+        }
+    }
+
+    /// The dimmed heading: why these entries are not part of the smart collection.
+    private var heading: some View {
+        Text(SmartCollectionRule.entriesFromBeforeLinkHeading)
+            .font(headingIsRow ? .callout.weight(.semibold) : nil)
+            .foregroundStyle(.secondary)
+            // A sentence, which a list's uppercase header style would set in capitals.
+            .textCase(nil)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    /// The entries' rows and the button that removes them.
+    @ViewBuilder
+    private var content: some View {
+        ForEach(entries, id: \.id) { entry in
+            row(for: entry)
+                // A `ForEach` row is tagged with its id, which in the Mac window's Contents `List` is the
+                // selection's type: unmarked, a row could be selected, and ↩ would open the entry inspector on
+                // an entry the collection leaves out (seen in the Mac check copy, 2026-10-16).
+                .selectionDisabled()
+        }
+        Button(role: .destructive) {
+            isConfirmingRemoval = true
+        } label: {
+            Label(SmartCollectionRule.removeEntriesFromBeforeLink, systemImage: "trash")
+        }
+        #if os(macOS)
+        .buttonStyle(.borderless)
+        .foregroundStyle(.red)
+        #endif
+        .confirmationDialog(SmartCollectionRule.removeEntriesFromBeforeLinkTitle,
+                            isPresented: $isConfirmingRemoval, titleVisibility: .visible) {
+            Button(SmartCollectionRule.removeEntriesFromBeforeLink, role: .destructive, action: onRemove)
+        } message: {
+            Text(SmartCollectionRule.removeEntriesFromBeforeLinkMessage(count: entries.count))
+        }
+    }
+
+    /// One entry's row: its kind by its icon, its words, and for a document or passage where it comes from, dimmed.
+    private func row(for entry: CollectionEntry) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: Self.systemImage(for: entry.entryKind))
+                .font(.caption)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title(for: entry))
+                    .font(entry.entryKind == .excerpt ? .callout.italic() : .callout)
+                    .lineLimit(2)
+                if let caption = Self.caption(for: entry, documentHeader: documentHeader(for: entry)) {
+                    Text(caption)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
+            }
+        }
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The indexed header of a document entry, or `nil`.
+    private func documentHeader(for entry: CollectionEntry) -> String? {
+        entry.entryKind == .document ? documentHeaders["\(entry.volumeId)/\(entry.documentId)"] : nil
+    }
+
+    /// An entry's words: a document's header or id, as its row in Contents reads; a heading's text, or "Untitled
+    /// section"; a note block's text, or `SmartCollectionRule.emptyNoteBlock`; a passage's text.
+    private func title(for entry: CollectionEntry) -> String {
+        let text = (entry.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        switch entry.entryKind {
+        case .document:
+            return documentHeader(for: entry) ?? entry.documentId
+        case .heading:
+            return text.isEmpty ? CollectionEditorNaming.untitledSection : text
+        case .prose:
+            return text.isEmpty ? SmartCollectionRule.emptyNoteBlock : text
+        case .excerpt:
+            return text
+        case .generated, .unrecognized:
+            // Never listed here: a smart collection keeps both (`SmartCollectionRule.leavesOut`).
+            return ""
+        }
+    }
+
+    /// Where a document or passage comes from — its id when its header is the title, and its volume — or `nil` for a
+    /// heading, a note block, and a passage that names neither.
+    static func caption(for entry: CollectionEntry, documentHeader: String?) -> String? {
+        let parts: [String?]
+        switch entry.entryKind {
+        case .document:
+            parts = [documentHeader != nil ? entry.documentId : nil, entry.volumeId]
+        case .excerpt:
+            parts = [entry.documentId, entry.volumeId]
+        case .heading, .prose, .generated, .unrecognized:
+            return nil
+        }
+        let named = parts.compactMap { $0 }.filter { !$0.isEmpty }
+        return named.isEmpty ? nil : named.joined(separator: " · ")
+    }
+
+    /// The icon this group gives an entry of `kind`: a heading's, a note block's and a passage's are the ones their rows
+    /// in Contents and their Add menu items carry, and a document's is the system's page.
+    static func systemImage(for kind: CollectionEntryKind) -> String {
+        switch kind {
+        case .document: return "doc.text"
+        case .heading: return "number"
+        case .prose: return "text.alignleft"
+        case .excerpt: return "text.quote"
+        case .generated: return "list.bullet.rectangle"
+        case .unrecognized: return "questionmark.square.dashed"
+        }
     }
 }
 

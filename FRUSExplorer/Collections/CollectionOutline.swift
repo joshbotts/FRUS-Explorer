@@ -45,6 +45,8 @@ import Foundation
 ///          per-section default cascades by exactly the body-depth rule
 ///   1.3 — #1465: `exportLevels(_:untitled:)` — the levels an export emits once it leaves out every heading saved
 ///          with no text, each named heading under one lifted a level
+///   1.4 — #1619, decision 22: `contentsRows(in:collapsedHeadingIds:savedSearchId:)` — a smart collection's Contents
+///          lists only the entries it keeps; its entries from before its link are listed apart
 enum CollectionOutline {
 
     /// The maximum heading nesting depth (locked decision A6: cap at 3, enforced in the
@@ -405,6 +407,33 @@ enum CollectionOutline {
                             collapsedHeadingIds: Set<UUID>) -> [VisibleRow] {
         visibleIndices(in: items, collapsedHeadingIds: collapsedHeadingIds).map {
             VisibleRow(index: $0, depth: items[$0].depth, id: items[$0].entry.id)
+        }
+    }
+
+    /// The rows a collection's Contents lists in both editors (#1619; decision 22 of the 2026-10-14 plan of record).
+    ///
+    /// For a collection with no saved search, every visible row, as ``visibleRows(in:collapsedHeadingIds:)`` gives
+    /// them. For a smart collection, only the entries it keeps — its generated apparatus, and an entry of a kind this
+    /// build does not know — each flush and none hidden by a collapsed heading: every heading in a smart collection is an
+    /// entry from before its link (`SmartCollectionRule.leavesOut`), which the editors list apart, under their own
+    /// heading, so no row they keep sits in a section on screen.
+    ///
+    /// Each row's `index` is still its place in `items`, so a move, a delete and a binding reach the entry they did.
+    ///
+    /// - Parameters:
+    ///   - items: A linearized outline (from `linearize`).
+    ///   - collapsedHeadingIds: Ids of the headings the user has collapsed.
+    ///   - savedSearchId: The collection's saved-search link, `nil` when it has none.
+    /// - Returns: The rows, in order.
+    static func contentsRows(in items: [OutlineItem], collapsedHeadingIds: Set<UUID>,
+                             savedSearchId: UUID?) -> [VisibleRow] {
+        guard savedSearchId != nil else {
+            return visibleRows(in: items, collapsedHeadingIds: collapsedHeadingIds)
+        }
+        return items.indices.compactMap { index in
+            let entry = items[index].entry
+            return SmartCollectionRule.leavesOut(entry.entryKind, savedSearchId: savedSearchId)
+                ? nil : VisibleRow(index: index, depth: 0, id: entry.id)
         }
     }
 
