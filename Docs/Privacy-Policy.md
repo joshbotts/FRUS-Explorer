@@ -14,7 +14,7 @@ FRUS Explorer is made by Joshua Botts ("the developer").
 
 ## In short
 
-FRUS Explorer collects no data. There is no account to sign in to, no advertising, no analytics and no tracking, and the developer runs no server that the app reports to. Its App Store privacy label reads **Data Not Collected**.
+FRUS Explorer collects no data. The app has no account of its own to sign in to, no advertising, no analytics and no tracking, and the developer runs no server that the app reports to. Its App Store privacy label reads **Data Not Collected**.
 
 What you read, search and write stays with you: notes and collections sync only through your own iCloud account, and the app reaches the National Archives' catalog or your Zotero library only when you ask it to.
 
@@ -47,7 +47,7 @@ The app downloads public files from the hosts below. Each request names a file o
 - **The list of published volumes**, from GitHub (`api.github.com`), the Office of the Historian's public `HistoryAtState/frus` repository: at launch while the device is online, and when you open **Settings → Volumes & Storage** or refresh its list.
 - **Volumes**, from GitHub (`raw.githubusercontent.com`), the same repository: when you download or update a volume, and at launch or when the device reconnects, to finish a download you started.
 - **Figure images**, from the Office of the Historian's image server (`static.history.state.gov`): after a volume with figures downloads; at launch and when the device reconnects, for downloaded volumes still missing images; and for a single image when a document or an export needs it first.
-- **Semantic match files**, a small file for each volume, from GitHub (`raw.githubusercontent.com`), the developer's public `frus-semantic-vectors` repository: with each volume you download, and when Related Documents or a search by meaning needs a volume's file, unless you turn off **Download With Volumes** in **Settings → Volumes & Storage**; and all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**.
+- **Semantic match files**, a small file for each volume, from GitHub (`raw.githubusercontent.com`), the developer's public `frus-semantic-vectors` repository: with each volume you download, and when Related Documents or a search by meaning needs a volume's file, unless you turn off **Download With Volumes** in **Settings → Volumes & Storage**; and all at once when you choose **Download Missing Vectors** or **Download Vectors for Every Volume**. Which files a search by meaning or Related Documents asks for depends on the volumes it found, so those requests show GitHub which volumes they were, though never your question.
 - **The search model**, Google's EmbeddingGemma 2 (310 MB), from GitHub (`github.com`), a release of the same repository: only when you choose **Download Search Model**.
 
 ## Services you connect yourself
