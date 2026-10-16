@@ -196,7 +196,7 @@ Updating re-downloads and re-indexes a volume. Your notes, highlights, tags, and
 
 *Since build 51 (#1660, the owner's answers of 2026-10-16) a listed volume's row stays after Update or Update All and shows where its update stands; a failed update offers Retry with its reason; a side-loaded copy's row says Update replaces it; and when the published list cannot be read, a row under the two buttons says why. One shared view on every platform, so each block below is a single edit point.*
 
-<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy | lines: 367–383 | keys: settings.hub.corrections.status.queued, settings.hub.corrections.status.downloading, settings.hub.corrections.status.alreadyDownloading, settings.hub.corrections.status.indexing, settings.hub.corrections.status.updated, settings.hub.corrections.retry | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy | lines: 359–375 | keys: settings.hub.corrections.status.queued, settings.hub.corrections.status.downloading, settings.hub.corrections.status.alreadyDownloading, settings.hub.corrections.status.indexing, settings.hub.corrections.status.updated, settings.hub.corrections.retry | shared: iOS+macOS (single edit point) -->
 
 **Waiting in the queue:** Queued
 
@@ -212,13 +212,13 @@ Updating re-downloads and re-indexes a volume. Your notes, highlights, tags, and
 
 <!-- END SOURCE: settings.hub.corrections.status -->
 
-<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.sideloaded | lines: 386–387 | key: settings.hub.corrections.sideloaded | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.sideloaded | lines: 378–379 | key: settings.hub.corrections.sideloaded | shared: iOS+macOS (single edit point) -->
 
 Your side-loaded copy. Update replaces it with the published volume.
 
 <!-- END SOURCE: settings.hub.corrections.sideloaded -->
 
-<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.failure(_:) | lines: 395–412 | keys: settings.hub.corrections.failed.offline, settings.hub.corrections.failed.timedOut, settings.hub.corrections.failed.server, settings.hub.corrections.failed.other, settings.hub.corrections.failed.indexing, settings.hub.corrections.failed.noURL | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.failure(_:) | lines: 387–404 | keys: settings.hub.corrections.failed.offline, settings.hub.corrections.failed.timedOut, settings.hub.corrections.failed.server, settings.hub.corrections.failed.other, settings.hub.corrections.failed.indexing, settings.hub.corrections.failed.noURL | shared: iOS+macOS (single edit point) -->
 
 **No connection:** The download failed: no connection.
 
@@ -236,7 +236,7 @@ Your side-loaded copy. Update replaces it with the published volume.
 
 <!-- END SOURCE: settings.hub.corrections.failed -->
 
-<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.listProblem(_:) | lines: 417–443 | keys: settings.hub.corrections.listProblem, settings.hub.corrections.listProblem.offline, settings.hub.corrections.listProblem.rateLimited, settings.hub.corrections.listProblem.rateLimited.noTime, settings.hub.corrections.listProblem.server, settings.hub.corrections.listProblem.unreadable | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/KeepingCurrentModel.swift | KeepingCurrentCopy.listProblem(_:) | lines: 409–435 | keys: settings.hub.corrections.listProblem, settings.hub.corrections.listProblem.offline, settings.hub.corrections.listProblem.rateLimited, settings.hub.corrections.listProblem.rateLimited.noTime, settings.hub.corrections.listProblem.server, settings.hub.corrections.listProblem.unreadable | shared: iOS+macOS (single edit point) -->
 
 **The row's label:** Couldn’t read the published list
 
