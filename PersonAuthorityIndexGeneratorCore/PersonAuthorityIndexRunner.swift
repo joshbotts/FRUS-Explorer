@@ -117,9 +117,13 @@ public enum PersonAuthorityIndexRunner {
                     source += "; held apart, by persons-complete-corrections.json: "
                         + corrections.map(\.peopleId).sorted().joined(separator: ",")
                 }
+                // Decision 55: about 1,600 of the 3,769 Wikidata ids the overlay gave the bundle, and
+                // about 580 of the 2,186 of its VIAF ids that could be checked, named someone else.
+                source += "; the overlay's Wikidata and VIAF ids are not taken"
                 print("Overlay: \(entries.count) entries; audit guard resolved "
                     + "\(flagged.count) people-ids to skip; \(corrections.count) corrections "
-                    + "hold apart what is not an entry's keyed person's.")
+                    + "hold apart what is not an entry's keyed person's; its Wikidata and VIAF ids "
+                    + "are not taken.")
             } catch {
                 FileHandle.standardError.write(Data("error reading overlay inputs: \(error)\n".utf8))
                 exit(1)
@@ -161,6 +165,7 @@ public enum PersonAuthorityIndexRunner {
                       anchors held apart:        \(stats.overlayAnchorsHeldApart)
                       identifiers withheld:      \(stats.overlayIdentifiersWithheld)
                       role texts withheld:       \(stats.overlayRolesWithheld)
+                      identifiers not taken:     \(stats.overlayIdentifiersNotTaken)
                       held apart, then joined:   \(stats.overlayAnchorsJoined)
                       anchors where the two sources DISAGREE (registry kept): \(stats.crosswalkConflicts.count)
                     """)

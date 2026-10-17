@@ -189,6 +189,9 @@ public struct BuildStats: Sendable, Equatable {
     public var overlayIdentifiersWithheld = 0
     /// Overlay entries whose role text a correction kept off the entry's people-ids.
     public var overlayRolesWithheld = 0
+    /// Wikidata and VIAF ids of entries reaching a registry record that were not stamped, because the
+    /// run takes none of the overlay's identifiers (decision 55, `Overlay.takesIdentifiers`).
+    public var overlayIdentifiersNotTaken = 0
     /// Held-apart anchors that joined the registry record their correction names.
     public var overlayAnchorsJoined = 0
     public init() {}

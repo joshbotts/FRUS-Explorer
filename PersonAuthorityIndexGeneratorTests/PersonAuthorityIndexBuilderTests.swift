@@ -165,7 +165,38 @@ struct PersonAuthorityIndexBuilderTests {
           "100002": AuthorityEntry(n: "Bohlen, Charles", b: 1904, d: 1974, v: "12345")])
     }
 
-    @Test("The overlay fills empty identifier fields and adds new anchors")
+    /// Decision 55 (2026-10-17): about 1,600 of the 3,769 Wikidata ids the overlay gave the bundle
+    /// named someone else, and so did about 580 of the 2,186 of its VIAF ids that could be checked. A
+    /// run takes none of them; the entry's role text and anchors still apply, and a VIAF id the
+    /// registry holds is the registry's.
+    @Test("By default the overlay takes no Wikidata or VIAF id, and its role text and anchors still apply")
+    func overlayTakesNoIdentifiersByDefault() throws {
+        var (crosswalk, authority) = baseIndex()
+        var stats = BuildStats()
+        let entries = [PersonsCompleteOverlay.parseEntry("""
+            <person xml:id="FRUS-1"><idno type="people-id">100001</idno>
+            <idno type="wikidata">Q193236</idno><idno type="viaf">99887</idno>
+            <occupation>Secretary of State</occupation>
+            <idno type="frus-ref">frus1955-57v02/persons#p_AD2</idno></person>
+            """), PersonsCompleteOverlay.parseEntry("""
+            <person xml:id="FRUS-2"><idno type="people-id">100002</idno>
+            <idno type="Wikidata">Q-OTHER</idno><idno type="VIAF">55555</idno></person>
+            """)]
+        PersonAuthorityIndexBuilder.applyOverlay(
+            .init(entries: entries, flaggedPeopleIds: ["999"]),
+            crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
+
+        let acheson = try #require(authority["100001"])
+        #expect(acheson.q == nil && acheson.v == nil, "the overlay's ids are not taken")
+        #expect(acheson.r == "Secretary of State", "its role text is")
+        #expect(crosswalk["frus1955-57v02"]?["p_AD2"] == 100001, "and its anchors are")
+        let bohlen = try #require(authority["100002"])
+        #expect(bohlen.q == nil)
+        #expect(bohlen.v == "12345", "the registry's own VIAF id stays")
+        #expect(stats.overlayIdentifiersNotTaken == 4, "two ids on each entry")
+    }
+
+    @Test("With identifiers taken, the overlay fills empty identifier fields and adds new anchors")
     func overlayEnrichesAndExpands() throws {
         var (crosswalk, authority) = baseIndex()
         var stats = BuildStats()
@@ -176,7 +207,7 @@ struct PersonAuthorityIndexBuilderTests {
             <idno type="frus-ref">frus1955-57v02/persons#p_AD2</idno></person>
             """)
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: [entry], flaggedPeopleIds: ["999"]),
+            .init(entries: [entry], flaggedPeopleIds: ["999"], takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
 
         let enriched = try #require(authority["100001"])
@@ -199,7 +230,7 @@ struct PersonAuthorityIndexBuilderTests {
             <idno type="viaf">SHOULD-NOT-WIN</idno></person>
             """)
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: [entry], flaggedPeopleIds: []),
+            .init(entries: [entry], flaggedPeopleIds: [], takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         #expect(try #require(authority["100002"]).v == "12345")
     }
@@ -233,7 +264,7 @@ struct PersonAuthorityIndexBuilderTests {
             <idno type="frus-ref">frus1958-60v03/persons#p_XX1</idno></person>
             """)
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: [entry], flaggedPeopleIds: ["100001"]),
+            .init(entries: [entry], flaggedPeopleIds: ["100001"], takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         #expect(try #require(authority["100001"]).q == nil)
         #expect(crosswalk["frus1958-60v03"] == nil)
@@ -249,7 +280,7 @@ struct PersonAuthorityIndexBuilderTests {
             <idno type="people-id">100002</idno><idno type="wikidata">Q-WRONG</idno></person>
             """)
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: [entry], flaggedPeopleIds: ["100002"]),
+            .init(entries: [entry], flaggedPeopleIds: ["100002"], takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         #expect(try #require(authority["100001"]).q == nil,
                 "the flag is on the merge, so no id in it may be trusted")

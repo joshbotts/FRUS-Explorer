@@ -15,6 +15,8 @@ import Foundation
 /// carry (#736, folding in #260).
 ///
 /// 1. **Enrichment**: Wikidata QIDs, far more VIAF ids than the registry has, and short role text.
+///    The identifiers are read, and the corrections check them, but since decision 55 (2026-10-17) a
+///    shipped run takes none of them: `PersonAuthorityIndexBuilder.Overlay.takesIdentifiers`.
 /// 2. **Crosswalk expansion**: 13,439 additional `(volume, anchor)` pairs across 56 more volumes,
 ///    lifting the app's coverage of its own person rows from 78.5% to 90.1%.
 ///
