@@ -446,9 +446,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         when the calling task is cancelled before they return: a statement under way stops through
 ///         one progress handler on `auxDb` that stops only a statement they arm (`SearchStatementStop`),
 ///         and one that ends first has its answer dropped. No index version: nothing stored changes
-///  4.39 — 2026-10-16 (#1658): `currentPersonRollupVersion` → 11 — `loadPersonClusterInputs` reads
-///         `persons` ordered by `volume_id, ref`, so two libraries of the same volumes roll their
-///         people up alike whatever order they indexed them in (see the v11 note). No index version
+///  4.39 — 2026-10-16 (#1658, #1657): `currentPersonRollupVersion` → 11 — `loadPersonClusterInputs`
+///         reads `persons` ordered by `volume_id, ref`, so two libraries of the same volumes roll
+///         their people up alike whatever order they indexed them in, and the bundled authority
+///         index no longer files Jeane Kirkpatrick under Helen P. Kirkpatrick or Ahmad Khomeini
+///         under his father (see the v11 note). No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1527,6 +1529,15 @@ public actor IndexingPipeline {
     /// authority id between two components carrying different ids joins the first one its block
     /// reaches, so the same 553 files rolled up one member differently in a library upgraded from
     /// build 49 and in a fresh index (build 50's census: vol. XVI's Kirkpatrick entry, 4 mentions).
+    /// The same bump carries #1657: the bundled `person-authority-index.json` was regenerated with
+    /// two overlay entries held apart (`PersonAuthorityIndexGenerator`'s corrections), so nine
+    /// crosswalk anchors no longer send Jeane Kirkpatrick's 1981–1988 entries to Helen P.
+    /// Kirkpatrick's id (1981–1988 vol. I's goes to Jeane Kirkpatrick's own) or Ahmad Khomeini's
+    /// to his father's, and neither record wears the other person's Wikidata or VIAF id.
+    /// Measured over a full library (553 volumes at index v69, 63,667 members, 2026-10-16): the
+    /// regenerated authority moves those 10 members and no other; the key order moves none in
+    /// that library, where the old loader, given the same rows in two other orders, put 6 members
+    /// with a different person (Chip Carter's 1977–1980 entry with Jimmy Carter, for one).
     /// A rollup rebuild only; no index version.
     public static let currentPersonRollupVersion: Int = 11
     /// UserDefaults key under which the installed person-rollup version is persisted.

@@ -99,13 +99,18 @@ public enum PersonAuthorityIndexBuilder {
         public let flaggedPeopleIds: Set<String>
         /// Longest role text to keep. The lever for the bundle-size budget.
         public let roleCharacterLimit: Int
+        /// Entries that merge two people, and what of each to hold apart (#1657):
+        /// `PersonsCompleteCorrections`.
+        public let corrections: [PersonsCompleteCorrections.HeldApart]
 
         public init(entries: [PersonsCompleteOverlay.Entry],
                     flaggedPeopleIds: Set<String>,
-                    roleCharacterLimit: Int = 120) {
+                    roleCharacterLimit: Int = 120,
+                    corrections: [PersonsCompleteCorrections.HeldApart] = []) {
             self.entries = entries
             self.flaggedPeopleIds = flaggedPeopleIds
             self.roleCharacterLimit = roleCharacterLimit
+            self.corrections = corrections
         }
     }
 
@@ -118,6 +123,9 @@ public enum PersonAuthorityIndexBuilder {
     /// existing entries, and additional crosswalk anchors. It runs **after** the registry pass, so
     /// the registry always wins a disagreement — the overlay is a different pipeline carrying
     /// 1,662 unreviewed auto-merges, and it fills gaps rather than overwriting reconciled answers.
+    ///
+    /// - Throws: `PersonsCompleteCorrections.Problem` when one of the overlay's corrections does not
+    ///   fit the registry or the overlay (#1657), before anything is applied; or a read error.
     public static func build(dataDirectory: URL, version: Int, generated: String,
                              source: String, keepVolume: ((String) -> Bool)? = nil,
                              overlay: Overlay? = nil)
@@ -148,6 +156,13 @@ public enum PersonAuthorityIndexBuilder {
         }
 
         if let overlay {
+            // A stale or mistyped correction would do nothing, silently; it is checked against the
+            // registry this pass built and the overlay it is about to change (#1657).
+            if let misfit = PersonsCompleteCorrections.misfit(
+                of: overlay.corrections, entries: overlay.entries,
+                registryName: { authority[$0]?.n }) {
+                throw misfit
+            }
             applyOverlay(overlay, crosswalk: &crosswalk, authority: &authority,
                          keepVolume: keepVolume, stats: &stats)
         }
@@ -170,6 +185,10 @@ public enum PersonAuthorityIndexBuilder {
     /// entries the registry already has, and skips audit-flagged people entirely. Expansion adds
     /// anchors for people the registry already has — an anchor pointing at an id with no entry
     /// would resolve to a person the app cannot name, so those are counted and dropped.
+    ///
+    /// An entry a correction names (`overlay.corrections`, #1657) merges two people: the anchors
+    /// and identifiers the correction lists belong to the other one, and join none of the entry's
+    /// people-ids. The rest of the entry applies as any entry does.
     static func applyOverlay(_ overlay: Overlay,
                              crosswalk: inout [String: [String: Int]],
                              authority: inout [String: AuthorityEntry],
@@ -177,6 +196,8 @@ public enum PersonAuthorityIndexBuilder {
                              stats: inout BuildStats) {
         let volumesBefore = Set(crosswalk.keys)
         stats.overlayEntriesRead = overlay.entries.count
+        var correctionsByPeopleId: [String: PersonsCompleteCorrections.HeldApart] = [:]
+        for correction in overlay.corrections { correctionsByPeopleId[correction.peopleId] = correction }
 
         for entry in overlay.entries {
             // Every people-id, not just the first: 64 entries are auto-merges carrying several,
@@ -192,9 +213,22 @@ public enum PersonAuthorityIndexBuilder {
                 continue
             }
 
+            // What of this entry belongs to another person (#1657): none of it reaches any of the
+            // entry's people-ids, so no correction depends on which id is the canonical one.
+            let corrections = ids.compactMap { correctionsByPeopleId[$0] }
+            let heldApart = Set(corrections.flatMap(\.parsedAnchors))
+            let wikidata = entry.wikidata.flatMap { id in
+                corrections.contains { $0.wikidata == id } ? nil : id
+            }
+            let viaf = entry.viaf.flatMap { id in
+                corrections.contains { $0.viaf == id } ? nil : id
+            }
+            if wikidata != entry.wikidata { stats.overlayIdentifiersWithheld += 1 }
+            if viaf != entry.viaf { stats.overlayIdentifiersWithheld += 1 }
+
             for id in ids where authority[id] != nil {
                 authority[id] = authority[id]?.merging(
-                    viaf: entry.viaf, wikidata: entry.wikidata, role: entry.role,
+                    viaf: viaf, wikidata: wikidata, role: entry.role,
                     roleLimit: overlay.roleCharacterLimit)
             }
 
@@ -208,6 +242,12 @@ public enum PersonAuthorityIndexBuilder {
             }
             for anchor in entry.anchors {
                 guard keepVolume?(anchor.volumeId) ?? true else { continue }
+                if heldApart.contains(anchor) {
+                    // Another person's, by a correction: not this entry's, and so no disagreement
+                    // with the registry either, which may give it to that person.
+                    stats.overlayAnchorsHeldApart += 1
+                    continue
+                }
                 if let existing = crosswalk[anchor.volumeId]?[anchor.ref] {
                     // The registry already answered. Recorded for review, never overwritten:
                     // measured, the two sources agree on 98.96% of shared anchors, and the 0.45%

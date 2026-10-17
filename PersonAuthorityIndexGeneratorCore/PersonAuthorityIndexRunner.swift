@@ -26,6 +26,11 @@ import Foundation
 ///    refuses, rather than enriching from merges a human review rejected.
 /// - `GENERATED_DATE` (optional): pins the `generated` stamp for a reproducible build.
 /// - `ROLE_CHAR_LIMIT` (optional, default 120): the bundle-size lever for overlay role text.
+///
+/// With the overlay, the run also reads `PersonAuthorityIndexGenerator/persons-complete-corrections.json`
+/// from the project root (`PersonsCompleteCorrections`, #1657): the overlay entries that merge two
+/// people, and what of each to hold apart. A file it cannot read, or a correction that no longer
+/// fits the registry or the overlay, stops the run before anything is written.
 public enum PersonAuthorityIndexRunner {
 
     /// Current schema version of the generated index.
@@ -96,15 +101,25 @@ public enum PersonAuthorityIndexRunner {
                     exit(1)
                 }
                 let limit = environment["ROLE_CHAR_LIMIT"].flatMap(Int.init) ?? 120
+                // The entries that merge two people (#1657). Checked against the registry and the
+                // overlay inside the build, which throws before anything is written.
+                let corrections = try PersonsCompleteCorrections.load(
+                    path: PersonsCompleteCorrections.defaultPath)
                 overlay = PersonAuthorityIndexBuilder.Overlay(
-                    entries: entries, flaggedPeopleIds: flagged, roleCharacterLimit: limit)
+                    entries: entries, flaggedPeopleIds: flagged, roleCharacterLimit: limit,
+                    corrections: corrections)
                 // Pinned in provenance because it CANNOT be recomputed later: after the planned
                 // upstream xml:id re-mint, the same CSV rows name different people.
                 source += "; overlay frus-name-authority persons-complete.xml"
                     + " (\(entries.count) entries, audit-guarded ids: "
                     + flagged.sorted().joined(separator: ",") + ")"
+                if !corrections.isEmpty {
+                    source += "; held apart, by persons-complete-corrections.json: "
+                        + corrections.map(\.peopleId).sorted().joined(separator: ",")
+                }
                 print("Overlay: \(entries.count) entries; audit guard resolved "
-                    + "\(flagged.count) people-ids to skip.")
+                    + "\(flagged.count) people-ids to skip; \(corrections.count) corrections "
+                    + "hold apart what an entry's other person owns.")
             } catch {
                 FileHandle.standardError.write(Data("error reading overlay inputs: \(error)\n".utf8))
                 exit(1)
@@ -143,6 +158,8 @@ public enum PersonAuthorityIndexRunner {
                       skipped by the audit guard:\(stats.overlayEntriesSkippedByAudit)
                       crosswalk pairs added:     \(stats.crosswalkPairsAdded)
                       crosswalk volumes added:   \(stats.crosswalkVolumesAdded)
+                      anchors held apart:        \(stats.overlayAnchorsHeldApart)
+                      identifiers withheld:      \(stats.overlayIdentifiersWithheld)
                       anchors where the two sources DISAGREE (registry kept): \(stats.crosswalkConflicts.count)
                     """)
                 if !stats.unknownOverlayIds.isEmpty {

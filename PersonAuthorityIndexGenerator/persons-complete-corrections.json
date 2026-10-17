@@ -1,0 +1,36 @@
+{
+  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to the person the entry is not keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id is stamped on none of them; the rest of the entry applies as before. A run refuses to write when the registry names peopleId otherwise than registryName, or when no entry carrying peopleId lists an anchor or identifier given here. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
+  "heldApart" : [
+    {
+      "peopleId" : "107235",
+      "registryName" : "Kirkpatrick, Helen P.",
+      "otherPerson" : "Kirkpatrick, Jeane J. (Jeane Jordan Kirkpatrick, registry 107237)",
+      "anchors" : [
+        "frus1981-88v01/persons#p_KJJ_1",
+        "frus1981-88v03/persons#p_KJJ_1",
+        "frus1981-88v04/persons#p_KJJ_1",
+        "frus1981-88v05/persons#p_KJJ_1",
+        "frus1981-88v11/persons#p_JJKirkpatrick_1",
+        "frus1981-88v13/persons#p_KJJ_1",
+        "frus1981-88v24/persons#p_KJJ_1",
+        "frus1981-88v38/persons#p_KJJ_1",
+        "frus1981-88v41/persons#p_KJJ_1",
+        "frus1981-88v44p1/persons#p_KJJ_1"
+      ],
+      "wikidata" : "Q240534",
+      "viaf" : "71474039",
+      "reason" : "Entry FRUS-14666 carries people-id 107235, Kirkpatrick, Helen P. (Public Affairs Adviser, Bureau of European Affairs; 1952-1954 vol. XI, Parts 1 and 2), and ten anchors whose own entries read \"Kirkpatrick, Jeane J.\" in 1981-1988 volumes, with Jeane Kirkpatrick's Wikidata and VIAF ids (Q240534 gives VIAF 71474039; she lived 1926-2006). The registry gives 107235 Helen P.'s two anchors and no identifier, and gives Jeane Jordan Kirkpatrick 107237 (vols. III and XIII); FRUS-14668, her own overlay entry, carries 107237, the same two ids and vol. I's anchor. The merge audit has no row for either entry. #1657."
+    },
+    {
+      "peopleId" : "107120",
+      "registryName" : "Khomeini, Ruhollah",
+      "otherPerson" : "Khomeini, Ahmad (his son, in no registry record)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_KA_1"
+      ],
+      "wikidata" : "Q400619",
+      "viaf" : null,
+      "reason" : "Entry FRUS-14463 carries people-id 107120, Khomeini, Ruhollah, and among its eleven anchors 1977-1980 vol. XI Part 1's p_KA_1, whose entry reads \"Khomeini, Ahmad\" (the entry's occupations include \"son of the Ayatollah Khomeini\"), with Wikidata Q400619, which is Ahmad Khomeini (1946-1995). Its VIAF id, 88036173, is Ruhollah Khomeini's (his Wikidata item, Q38823, gives it), so it is kept, and so are his other ten anchors and his role text. The registry's 107120 does not list vol. XI Part 1's p_KA_1, and the merge audit has no row for the entry. #1657."
+    }
+  ]
+}

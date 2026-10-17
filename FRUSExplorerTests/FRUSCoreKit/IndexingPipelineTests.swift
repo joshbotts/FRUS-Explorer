@@ -6603,9 +6603,10 @@ struct PersonRollupConsolidationTests {
     }
 
     /// A version line two lanes edit can be resolved back by a merge and leave every other test
-    /// green, with no library rebuilding its rollup. The order above changes rollup outcomes on a
-    /// device only when the library rebuilds, and v11 is what makes it rebuild once.
-    @Test("The person-rollup version is at least 11 (#1658)")
+    /// green, with no library rebuilding its rollup. The order above and #1657's regenerated
+    /// authority index change rollup outcomes on a device only when the library rebuilds, and v11
+    /// is what makes it rebuild, once for both.
+    @Test("The person-rollup version is at least 11 (#1658, #1657)")
     func rollupVersionCoversTheInputOrder() {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 11)
     }
