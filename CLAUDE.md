@@ -56,8 +56,8 @@ is the index, not the entry.
 | `UIObstructionTests` | an iPhone and any iPad | scenario 4 (#238) self-skips on an iPhone |
 | `BrowseNestedSectionTests` | iPad Pro 13-inch (M5) and iPhone 17; `testLevelStateSurvivesTheTwoPaneGate` on iPad mini (A17 Pro) | 11 tests: 3 skipped on the iPad, 4 on the iPhone; allow 600 s a test on the iPhone and 1,500 on the iPad, which takes both allowance flags |
 | `TopicIndexArrivalTests` | iPad Pro 13-inch (M5), two-pane, and iPhone 17 | 3 passed on each; it never skips, so one device alone is not the guard |
-| `CollectionEditorTitleTests` | iPhone 17, iPad Pro 13-inch (M5), iPad Air 11-inch (M4) `OS=26.5` | 9 tests: 0, 3 and 3 skipped; only the Air folds ＋ Add into the overflow; only the iPads guard Link to Saved Search… (#1704); as of 2026-10-17 #1413's three Section defaults tests fail on `v2` (a 5 s wait against slow queries) |
-| `CollectionProseRowRestTests` (in `CollectionEditorTitleTests.swift`) | iPad Air 11-inch (M4) and iPhone Air, both `OS=26.5` | 5 tests, 0 skipped on each; as of 2026-10-17 two fail on the Air on `v2` too (5 s waits) |
+| `CollectionEditorTitleTests` | iPhone 17 and iPad Pro 13-inch (M5), both `OS=27.0`; iPad Air 11-inch (M4), `OS=26.5` | 9 tests: 0, 3 and 3 skipped; allow 600 s a test; only the Air folds ＋ Add into the overflow; only the iPads guard Link to Saved Search… (#1704) |
+| `CollectionProseRowRestTests` (in `CollectionEditorTitleTests.swift`) | iPad Air 11-inch (M4) and iPhone Air, both `OS=26.5` | 5 tests, 0 skipped on each; allow 600 s a test |
 | `SelectionEditMenuTests` (in `ResearchReadingStaysInTabTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5) | 4 tests, 0 skipped on each |
 | `ResearchReadingDepthTests` | iPad mini (A17 Pro) | skips on an iPad whose portrait is already two-pane |
 | `AnalyticsKeyboardTests`, `KeyboardDismissBarReachTests`, `ToolbarOverflowAccessibilityTests` | iPad mini (A17 Pro), `OS=26.5` | 9 tests, 0 skipped; green on iPhone 17 and iPad Pro 13-inch too, but only the mini catches a restored analytics window (#1279); under iOS 27.0 an iPad simulator kills each test that opens Corpus Analytics (#1620) |
