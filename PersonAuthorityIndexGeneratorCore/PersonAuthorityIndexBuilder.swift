@@ -102,15 +102,26 @@ public enum PersonAuthorityIndexBuilder {
         /// Entries that merge two people, and what of each to hold apart (#1657):
         /// `PersonsCompleteCorrections`.
         public let corrections: [PersonsCompleteCorrections.HeldApart]
+        /// Whether the entries' Wikidata and VIAF ids are stamped on the registry's records.
+        ///
+        /// `false` unless a caller asks, and the runner never does (plan of record decision 55,
+        /// 2026-10-17). About 1,600 of the 3,769 Wikidata ids the overlay gave the bundle named
+        /// someone else, and so did about 580 of the 2,186 of its VIAF ids that could be checked
+        /// (`Planning/Person-Authority-Identifier-Assessment-2026-10-17.md`). The entries' role text
+        /// and anchors still apply, and the registry's own VIAF ids are the registry's. The path stays
+        /// for the rule that is to check each id against its record before it is taken.
+        public let takesIdentifiers: Bool
 
         public init(entries: [PersonsCompleteOverlay.Entry],
                     flaggedPeopleIds: Set<String>,
                     roleCharacterLimit: Int = 120,
-                    corrections: [PersonsCompleteCorrections.HeldApart] = []) {
+                    corrections: [PersonsCompleteCorrections.HeldApart] = [],
+                    takesIdentifiers: Bool = false) {
             self.entries = entries
             self.flaggedPeopleIds = flaggedPeopleIds
             self.roleCharacterLimit = roleCharacterLimit
             self.corrections = corrections
+            self.takesIdentifiers = takesIdentifiers
         }
     }
 
@@ -119,8 +130,9 @@ public enum PersonAuthorityIndexBuilder {
     /// `keepVolume` lets the caller restrict the crosswalk to known volumes (e.g. those in the app
     /// manifest); pass `nil` to keep all FRUS volumes.
     ///
-    /// `overlay` applies the `frus-name-authority` drop (#736 / #260): identifier enrichment onto
-    /// existing entries, and additional crosswalk anchors. It runs **after** the registry pass, so
+    /// `overlay` applies the `frus-name-authority` drop (#736 / #260): role text onto existing
+    /// entries, their Wikidata and VIAF ids only when `Overlay.takesIdentifiers` (no shipped run,
+    /// decision 55), and additional crosswalk anchors. It runs **after** the registry pass, so
     /// the registry always wins a disagreement — the overlay is a different pipeline carrying
     /// 1,662 unreviewed auto-merges, and it fills gaps rather than overwriting reconciled answers.
     ///
@@ -182,7 +194,8 @@ public enum PersonAuthorityIndexBuilder {
     /// Folds the `frus-name-authority` drop into an already-built registry index.
     ///
     /// Two independent passes, because they answer to different rules. Enrichment only touches
-    /// entries the registry already has, and skips audit-flagged people entirely. Expansion adds
+    /// entries the registry already has, and skips audit-flagged people entirely; it takes an entry's
+    /// role text, and its Wikidata and VIAF ids only when `overlay.takesIdentifiers`. Expansion adds
     /// anchors for people the registry already has — an anchor pointing at an id with no entry
     /// would resolve to a person the app cannot name, so those are counted and dropped.
     ///
@@ -231,10 +244,17 @@ public enum PersonAuthorityIndexBuilder {
             if wikidata != entry.wikidata { stats.overlayIdentifiersWithheld += 1 }
             if viaf != entry.viaf { stats.overlayIdentifiersWithheld += 1 }
             if role != entry.role { stats.overlayRolesWithheld += 1 }
+            // Decision 55: the overlay's identifiers too often name someone else to be taken
+            // unchecked (`Overlay.takesIdentifiers`).
+            let reachesARecord = ids.contains { authority[$0] != nil }
+            if !overlay.takesIdentifiers, reachesARecord {
+                stats.overlayIdentifiersNotTaken += [wikidata, viaf].compactMap { $0 }.count
+            }
 
             for id in ids where authority[id] != nil {
                 authority[id] = authority[id]?.merging(
-                    viaf: viaf, wikidata: wikidata, role: role,
+                    viaf: overlay.takesIdentifiers ? viaf : nil,
+                    wikidata: overlay.takesIdentifiers ? wikidata : nil, role: role,
                     roleLimit: overlay.roleCharacterLimit)
             }
 

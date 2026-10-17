@@ -85,8 +85,9 @@ struct PersonsCompleteCorrectionsTests {
         -> (crosswalk: [String: [String: Int]], authority: [String: AuthorityEntry], stats: BuildStats) {
         var (crosswalk, authority) = registry()
         var stats = BuildStats()
+        // Identifiers taken, so these tests see what a correction withholds (decision 55 takes none).
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: entries(), flaggedPeopleIds: [], corrections: corrections),
+            .init(entries: entries(), flaggedPeopleIds: [], corrections: corrections, takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         return (crosswalk, authority, stats)
     }
@@ -148,7 +149,7 @@ struct PersonsCompleteCorrectionsTests {
             <idno type="frus-ref">frus1981-88v04/persons#p_KJJ_1</idno></person>
             """)
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: [merged], flaggedPeopleIds: [], corrections: [kirkpatrick]),
+            .init(entries: [merged], flaggedPeopleIds: [], corrections: [kirkpatrick], takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         #expect(crosswalk["frus1981-88v04"]?["p_KJJ_1"] == nil)
         #expect(try #require(authority["107237"]).q == nil)
@@ -198,7 +199,8 @@ struct PersonsCompleteCorrectionsTests {
         var (crosswalk, authority) = allenRegistry()
         var stats = BuildStats()
         PersonAuthorityIndexBuilder.applyOverlay(
-            .init(entries: [allenEntry()] + extra, flaggedPeopleIds: [], corrections: corrections),
+            .init(entries: [allenEntry()] + extra, flaggedPeopleIds: [], corrections: corrections,
+                  takesIdentifiers: true),
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         return (crosswalk, authority, stats)
     }
@@ -503,7 +505,27 @@ struct PersonsCompleteCorrectionsTests {
         // Where the sources do name the other person, the index follows them.
         #expect(index.crosswalk["frus1981-88v01"]?["p_KJJ_1"] == 107237, "FRUS-14668, Jeane Kirkpatrick's own entry")
         #expect(index.crosswalk["frus1981-88v03"]?["p_KJJ_1"] == 107237, "the registry")
-        #expect(index.authority["107120"]?.v == "88036173")
+        // 88036173 is Ruhollah Khomeini's own VIAF id, but only the overlay gives it (his registry
+        // record holds none), and since decision 55 the overlay's VIAF ids are not taken.
+        #expect(index.authority["107120"]?.v == nil)
         #expect(index.source.contains("held apart"), "the provenance names the corrections")
+    }
+
+    /// Decision 55 (2026-10-17), in the shipped file: about 1,600 of the 3,769 Wikidata ids the
+    /// overlay gave the bundle named someone else, and so did about 580 of the 2,186 of its VIAF ids
+    /// that could be checked (`Planning/Person-Authority-Identifier-Assessment-2026-10-17.md`), so a
+    /// run takes none. No record carries a Wikidata id, and the VIAF ids left are the registry's own:
+    /// 142 at people `63b537ad`. A regeneration against a newer registry may move that count.
+    @Test("The bundled index takes no Wikidata or VIAF id from the overlay")
+    func bundledIndexTakesNoOverlayIdentifier() throws {
+        let data = try Data(contentsOf: Self.repoRoot
+            .appendingPathComponent("FRUSExplorer/Resources/person-authority-index.json"))
+        let index = try JSONDecoder().decode(PersonAuthorityIndex.self, from: data)
+        #expect(index.authority.count == 12_836, "the registry's records, as before")
+        #expect(index.authority.values.allSatisfy { $0.q == nil }, "every Wikidata id came from the overlay")
+        #expect(index.authority.values.count { $0.v != nil } == 142, "the registry's own VIAF ids")
+        #expect(index.authority.values.count { $0.r != nil } == 12_787, "the overlay's role texts still apply")
+        #expect(index.source.contains("the overlay's Wikidata and VIAF ids are not taken"),
+                "the provenance says so")
     }
 }
