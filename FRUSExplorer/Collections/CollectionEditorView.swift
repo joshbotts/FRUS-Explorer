@@ -163,6 +163,9 @@ import UIKit
 ///          of their own under a dimmed heading, with Remove These Entries, which asks first
 ///          (`SmartCollectionEntriesFromBeforeLink`); its apparatus rows print no document count and its Contents no
 ///          timeline button, since both read those entries
+///   2026-10-17 — #1704: Collection settings presents the Link to Saved Search picker, the iPad's sheet and the
+///          compact layout's pushed screen alike, where the editor had, so on iPad it opens over the settings sheet
+///          rather than once Done has closed it; the identifier `collection.editor.smart.link` on its button
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -641,9 +644,8 @@ struct CollectionEditorView: View {
                 appState: appState
             )
         }
-        .sheet(isPresented: $showLinkSavedSearch) {
-            linkSavedSearchSheet
-        }
+        // The Link to Saved Search picker is not presented from here but from Collection settings, which holds its
+        // button (`iPhoneCollectionSettingsScreen`, `iPadCollectionSettingsSheet`; #1704).
         .alert(
             String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
             isPresented: Binding(
@@ -803,6 +805,10 @@ struct CollectionEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // From the screen that holds Link to Saved Search…, as the iPad's settings sheet presents it (#1704).
+        .sheet(isPresented: $showLinkSavedSearch) {
+            linkSavedSearchSheet
+        }
     }
 
     /// iPad (regular width) — Composer v2 §A: two roomy permanent columns, **Contents** (the outline)
@@ -876,6 +882,13 @@ struct CollectionEditorView: View {
                 }
             }
         }
+        // #1704: the Link to Saved Search picker opens over this sheet, from the sheet itself. SwiftUI presents one
+        // sheet at a time from a view, and the picker had hung on the editor, which is already presenting this one: the
+        // tap opened nothing, and the picker came up only once Done had closed the settings. The pushed settings screen
+        // on a compact width presents it the same way.
+        .sheet(isPresented: $showLinkSavedSearch) {
+            linkSavedSearchSheet
+        }
     }
 
     // MARK: - Smart Collection Section
@@ -912,6 +925,8 @@ struct CollectionEditorView: View {
                                  defaultValue: "Link to Saved Search\u{2026}"),
                           systemImage: "bolt")
                 }
+                // `CollectionEditorTitleTests` (#1704) opens the picker from Collection settings with it.
+                .accessibilityIdentifier("collection.editor.smart.link")
                 .disabled(allSavedSearches.isEmpty)
                 if allSavedSearches.isEmpty {
                     Text(String(localized: "collection.editor.smart.noSearches",
@@ -2472,6 +2487,9 @@ struct SmartCollectionLinkRows: View {
 ///
 /// Version history:
 ///   1.0 — #1619, decision 22: initial implementation
+///   1.1 — #1704, from #1702's visual review on the iOS 27.0 simulators: the heading is drawn in the secondary label
+///          colour, where the hierarchical style put it a level below a form header's own; Remove These Entries' icon
+///          is red on iPhone and iPad, where it took the accent colour; and a row's caption wraps rather than being cut
 struct SmartCollectionEntriesFromBeforeLink: View {
 
     /// The entries, in the outline's order (`SmartCollectionRule.entriesFromBeforeLink`).
@@ -2506,10 +2524,15 @@ struct SmartCollectionEntriesFromBeforeLink: View {
     }
 
     /// The dimmed heading: why these entries are not part of the smart collection.
+    ///
+    /// Drawn in the secondary label colour itself (`Color.secondary`), the colour of a form's own section headers, as
+    /// a header and as a row alike. The hierarchical `.secondary` it had resolves one level below whatever holds it,
+    /// and a form's header is already drawn at secondary, so on iPhone and iPad it drew the heading at tertiary
+    /// strength: 1.71:1 on the grouped background, where Contents' header beside it measured 3.29:1 (#1704).
     private var heading: some View {
         Text(SmartCollectionRule.entriesFromBeforeLinkHeading)
             .font(headingIsRow ? .callout.weight(.semibold) : nil)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.secondary)
             // A sentence, which a list's uppercase header style would set in capitals.
             .textCase(nil)
             .fixedSize(horizontal: false, vertical: true)
@@ -2529,7 +2552,14 @@ struct SmartCollectionEntriesFromBeforeLink: View {
         Button(role: .destructive) {
             isConfirmingRemoval = true
         } label: {
-            Label(SmartCollectionRule.removeEntriesFromBeforeLink, systemImage: "trash")
+            // The icon is red itself. In a form row the destructive role reds the title alone, and the icon was drawn
+            // in the accent blue beside it on iPhone and iPad; a red tint on the button left it blue too (#1704).
+            Label {
+                Text(SmartCollectionRule.removeEntriesFromBeforeLink)
+            } icon: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
         }
         #if os(macOS)
         .buttonStyle(.borderless)
@@ -2553,11 +2583,12 @@ struct SmartCollectionEntriesFromBeforeLink: View {
                 Text(title(for: entry))
                     .font(entry.entryKind == .excerpt ? .callout.italic() : .callout)
                     .lineLimit(2)
+                // Wraps where one line cannot hold it: held to one, it read "d172 · frus19…" at the largest
+                // accessibility size on an iPhone, cutting the volume it names (#1704).
                 if let caption = Self.caption(for: entry, documentHeader: documentHeader(for: entry)) {
                     Text(caption)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
-                        .lineLimit(1)
                 }
             }
         }

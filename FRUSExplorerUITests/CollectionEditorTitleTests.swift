@@ -26,7 +26,7 @@ import XCTest
 /// destination proves one route. Each test takes the route the editor actually drew (whichever of the two controls is
 /// on screen), not the device idiom's, because the editor picks its layout by size class. The three tests that leave
 /// Collection settings straight for the list SKIP on the sheet route: only the pushed screen covers the editor, and
-/// that is the state they need. Expect 8 tests with 0 skipped on an iPhone, and 8 with 3 skipped on an iPad.
+/// that is the state they need. Expect 9 tests with 0 skipped on an iPhone, and 9 with 3 skipped on an iPad.
 ///
 /// **A narrow iPad is a third layout, and only it reaches the Add menu's overflow (#1450).** On iPad Air 11-inch in
 /// portrait the regular-width toolbar folds ＋ Add into its ⋯ overflow, while ⚙ Collection stays in the bar and
@@ -40,6 +40,11 @@ import XCTest
 /// for the editor's dismissal. The iPad's own push-over is a document opened in place, and the iPhone's per-entry
 /// inspector is another; no test here drives either. So an iPad pass says the title follows the name through the
 /// sheet, and nothing about the push-over.
+///
+/// **Only the iPad runs guard Link to Saved Search… (#1704)**, the other way round: on the settings SHEET the picker
+/// hung on the editor beneath it and opened nothing, and on the pushed screen it always opened. Measured on the code
+/// before the fix (2026-10-17): `testLinkToSavedSearchOpensOverCollectionSettings` failed on iPad Pro 13-inch (M5),
+/// iOS 27.0, and iPad Air 11-inch (M4), iOS 26.5, and passed on iPhone 17, iOS 27.0.
 ///
 /// **A first visit to settings is not enough to see the push-over defect.** Measured on iPhone 17 (iOS 26.5) before
 /// the review fix: the editor's `onDisappear` fired when Collection settings was pushed over it and wrote "Untitled
@@ -90,6 +95,7 @@ import XCTest
 ///         the toolbar's ⋯ overflow, where a narrow iPad puts it
 ///   1.5 — #1450 review, round 1: run on iPad Air 11-inch (M4) in portrait, iOS 26.5, the device #1450 names — the
 ///         four heading tests open the menu from the overflow and pass, and fail with the bar-only lookup put back
+///   1.6 — #1704: `testLinkToSavedSearchOpensOverCollectionSettings`, which the iPads guard and the iPhone controls
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 
@@ -110,6 +116,10 @@ final class CollectionEditorTitleTests: XCTestCase {
     private static let note = "A working note"
     /// The title-page subtitle the tests give a collection.
     private static let subtitle = "Draft"
+    /// The saved search `UITestSavedSearchSeeder` writes, as its `searchName` spells it.
+    private static let savedSearch = "UI Test Saved Search"
+    /// The Link to Saved Search picker's navigation title.
+    private static let linkPickerTitle = "Link to Saved Search"
 
     /// How the layout on screen reaches the name field.
     private enum SettingsRoute {
@@ -327,14 +337,57 @@ final class CollectionEditorTitleTests: XCTestCase {
         closeSectionDefaults()
     }
 
+    // MARK: - Linking from Collection settings (#1704)
+
+    /// Link to Saved Search… in Collection settings opens its picker over the settings, and the search picked there is
+    /// the collection's link, shown in the settings still open beneath it (#1704).
+    ///
+    /// On a regular width Collection settings is a SHEET, and the picker's sheet hung on the editor beneath it. SwiftUI
+    /// presents one sheet at a time from a view, so the tap opened nothing, and the picker came up only once Done had
+    /// closed the settings. On a compact width the settings screen is PUSHED and the editor presents nothing else, so the
+    /// picker always opened: there this test is the control.
+    func testLinkToSavedSearchOpensOverCollectionSettings() throws {
+        launch(seedingSavedSearch: true)
+        createCollection()
+        let route = openSettings()
+
+        let link = revealInSettings("collection.editor.smart.link", what: "Link to Saved Search…")
+        XCTAssertTrue(link.isEnabled,
+                      "Link to Saved Search… is disabled, so the seeded saved search \"\(Self.savedSearch)\" is not saved")
+        link.tap()
+        let picker = app.navigationBars[Self.linkPickerTitle]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), """
+            Link to Saved Search… in Collection settings (\(route)) opened no picker. Bars: \(barTitles()). On the \
+            sheet route the picker hangs on the editor beneath the settings sheet, and waits for Done to close it.
+            """)
+
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.savedSearch)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5),
+                      "The picker lists no \"\(Self.savedSearch)\". Buttons: \(visibleButtonLabels())")
+        row.tap()
+        waitForAbsence(of: picker, "Picking \"\(Self.savedSearch)\" did not close the picker")
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].exists,
+                      "Collection settings closed with the picker. Bars: \(barTitles())")
+        XCTAssertTrue(app.staticTexts[Self.savedSearch].firstMatch.waitForExistence(timeout: 5), """
+            Collection settings do not show the link to "\(Self.savedSearch)" picked in the picker, so the pick did \
+            not reach the collection
+            """)
+        closeSettings(route)
+    }
+
     // MARK: - Steps
 
-    private func launch() {
+    /// Launches on the Collections list. `seedingSavedSearch` saves one search for Link to Saved Search… to offer
+    /// (`UITestSavedSearchSeeder`).
+    private func launch(seedingSavedSearch: Bool = false) {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        if seedingSavedSearch {
+            app.launchEnvironment["FRUS_UI_TEST_SEED_SAVED_SEARCH"] = "1"
+        }
         app.launchArguments = UITestLaunch.arguments(startingOn: .collections)
         app.launch()
         // Asserted, not attempted (#1279): every step below starts on the Collections list.
@@ -472,6 +525,27 @@ final class CollectionEditorTitleTests: XCTestCase {
         }
         XCTAssertTrue(target.exists && target.isHittable,
                       "\"\(what)\" (\(identifier)) is not on screen to use, after \(drags) drag(s)")
+        return target
+    }
+
+    /// The control `identifier` names in Collection settings, dragged up into view: Smart Collection is the settings'
+    /// last section, below the fold on every device. Each drag runs down the settings' leading edge, under their own
+    /// navigation bar, so on the sheet route it scrolls the sheet's list and never touches the dimmed window around the
+    /// sheet, where a touch closes it.
+    private func revealInSettings(_ identifier: String, what: String) -> XCUIElement {
+        let target = element(identifier)
+        let bar = app.navigationBars[Self.settingsTitle]
+        let origin = app.windows.firstMatch.coordinate(withNormalizedOffset: .zero)
+        var drags = 0
+        while !(target.exists && target.isHittable) && drags < 10 {
+            let x = bar.frame.minX + 24
+            let start = origin.withOffset(CGVector(dx: x, dy: bar.frame.maxY + 360))
+            let end = origin.withOffset(CGVector(dx: x, dy: bar.frame.maxY + 40))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0.3)
+            drags += 1
+        }
+        XCTAssertTrue(target.exists && target.isHittable,
+                      "\"\(what)\" (\(identifier)) is not on screen in Collection settings, after \(drags) drag(s)")
         return target
     }
 

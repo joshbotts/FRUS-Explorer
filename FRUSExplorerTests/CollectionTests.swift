@@ -11370,6 +11370,7 @@ struct SmartCollectionRuleTests {
 ///
 /// Version history:
 ///   1.0 — #1619, decision 22: initial implementation
+///   1.1 — #1704: `theSectionReadsAtEverySize`, and the heading's pinned colour is `Color.secondary`
 @MainActor
 @Suite("A smart collection's entries from before its link are marked, and go only on the reader's word (#1619)")
 struct SmartCollectionEntriesFromBeforeLinkTests {
@@ -11641,11 +11642,42 @@ struct SmartCollectionEntriesFromBeforeLinkTests {
         let body = Self.code(editor[try Self.block("var body: some View {", in: editor, within: section)])
         #expect(body == "{ if headingIsRow { Section { heading .selectionDisabled() content } } "
                     + "else { Section { content } header: { heading } } }", "the section's body is \(body)")
+        // `Color.secondary` since #1704, where the hierarchical `.secondary` drew the heading a level below a form header's
+        // own colour; `theSectionReadsAtEverySize` says why.
         let heading = Self.code(editor[try Self.block("private var heading: some View {", in: editor, within: section)])
         #expect(heading.contains("Text(SmartCollectionRule.entriesFromBeforeLinkHeading) "
-                                 + ".font(headingIsRow ? .callout.weight(.semibold) : nil) .foregroundStyle(.secondary) "
+                                 + ".font(headingIsRow ? .callout.weight(.semibold) : nil) .foregroundStyle(Color.secondary) "
                                  + ".textCase(nil) .fixedSize(horizontal: false, vertical: true) "
                                  + ".accessibilityAddTraits(.isHeader)"), "the heading is \(heading)")
+    }
+
+    /// Three things #1702's visual review found on the iOS 27.0 simulators (#1704), each measured there. The heading
+    /// read 1.71:1 on the grouped background, tertiary strength, where Contents' header beside it read 3.29:1: a form
+    /// draws its section headers at secondary, and the hierarchical `.secondary` resolves one level below that. Remove
+    /// These Entries drew its trash icon in the accent blue beside its red title, since in a form row the destructive
+    /// role reds the title alone. And at the largest accessibility size on an iPhone a document row's caption, held to
+    /// one line, read "d172 · frus19…".
+    @Test("The heading is the secondary label colour, Remove These Entries is red throughout, and a caption wraps")
+    func theSectionReadsAtEverySize() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let section = try Self.block("struct SmartCollectionEntriesFromBeforeLink: View {", in: editor)
+        // The heading names its colour, in a header and in a row alike; no hierarchical style is left on it.
+        let heading = Self.code(editor[try Self.block("private var heading: some View {", in: editor, within: section)])
+        #expect(heading.contains(".foregroundStyle(Color.secondary)") && !heading.contains(".foregroundStyle(.secondary)"),
+                "the heading is \(heading)")
+        // The button's icon is red itself, on every platform; the Mac's borderless button reds its title, as it did. (A
+        // red tint on the button, the first fix tried, left the icon blue on the iPhone 17 simulator.)
+        let content = Self.code(editor[try Self.block("private var content: some View {", in: editor, within: section)])
+        #expect(content.contains("Label { Text(SmartCollectionRule.removeEntriesFromBeforeLink) } icon: { "
+                                 + "Image(systemName: \"trash\") .foregroundStyle(.red) }"), "the button's label is \(content)")
+        #expect(content.contains("#if os(macOS) .buttonStyle(.borderless) .foregroundStyle(.red) #endif .confirmationDialog("),
+                "the button is styled \(content)")
+        // The caption: no line limit, so it wraps; the title keeps its two lines.
+        let row = Self.code(editor[try Self.block("private func row(for entry: CollectionEntry) -> some View {", in: editor,
+                                                  within: section)])
+        #expect(row.contains("Text(caption) .font(.caption) .foregroundStyle(.tertiary) }"), "the caption is \(row)")
+        #expect(row.components(separatedBy: ".lineLimit(").count - 1 == 1 && row.contains(".lineLimit(2)"),
+                "the row's line limits are \(row)")
     }
 
     /// From the review (2026-10-16): the Mac's toolbar Document Inspector opened on the first document or heading when

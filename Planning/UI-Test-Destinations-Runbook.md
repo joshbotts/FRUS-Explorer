@@ -148,8 +148,8 @@ width it is a sheet, which covers nothing and fires no `onDisappear`. So the pus
 tests — `testAnUntouchedCollectionLeftFromItsSettingsIsDiscarded`, and #1415's
 `testANameTypedInSettingsSurvivesTheCollectionsTab` and `testFieldsSetInSettingsSurviveTheCollectionsTab` — need the
 pushed screen and skip on the sheet route. #1413's three Section defaults tests run, and can fail, on both idioms: all
-three failed on the pre-fix editor on iPhone 17 and on iPad Pro 13-inch (M5). Expect **8 tests with 0 skipped on iPhone
-17** and **8 with 3 skipped on iPad Pro 13-inch (M5)**. The suite passed on an iOS 27.0 iPhone 17 when it had its first
+three failed on the pre-fix editor on iPhone 17 and on iPad Pro 13-inch (M5). Expect **9 tests with 0 skipped on iPhone
+17** and **9 with 3 skipped on iPad Pro 13-inch (M5)** (8 and 8 until #1704). The suite passed on an iOS 27.0 iPhone 17 when it had its first
 3 tests (pass the iOS 27 timeout flags below), and all 8 ran on an iOS 27.0 iPad Pro 13-inch (M5) on 2026-10-01 with
 those flags, 5 passing and 3 skipping; the 5 added by #1415 and #1413 have not been run on an iOS 27 iPhone.
 **A third destination guards #1450: iPad Air 11-inch in portrait, which the suite sets.** There the toolbar folds
@@ -162,6 +162,32 @@ already had), and each call prints `[CollectionEditorAddMenu] opened from …`. 
 toolbar's overflow menu"; with the bar-only lookup put back, **those four failed** ("The editor has no Add menu"), 3
 skipped and 1 passed. Neither of the other two devices folds the menu, so on them that line never names the overflow
 and a change to the helper is unexercised: run the Air too.
+**#1704 added a ninth test, `testLinkToSavedSearchOpensOverCollectionSettings`, and only the iPads guard it.** It opens
+Collection settings, taps Link to Saved Search… (the launch seeds the search it needs, `FRUS_UI_TEST_SEED_SAVED_SEARCH`),
+and requires the picker to open over the settings and the pick to show in them. On a regular width the settings are a
+sheet, and before the fix the picker's sheet hung on the editor beneath it, so the tap opened nothing. Measured on the
+code before the fix, 2026-10-17: it failed on iPad Air 11-inch (M4), iOS 26.5, and on iPad Pro 13-inch (M5), iOS 27.0,
+each with "opened no picker. Bars: Collection settings | New Collection" while the app logged SwiftUI's "Currently, only
+presenting a single sheet is supported."; on iPhone 17, iOS 27.0, which pushes its settings screen, it passed: there it
+is the control. With the fix it passed on all three, alone, inside the 300 s allowance: 218 s on the iPad Pro, 222 s on
+the Air, 196 s on the iPhone. It skips on no device. **The seeded search matches nothing, on purpose** (`UITestSavedSearchSeeder.keywords`): with
+"missile" the iPad Pro 13-inch simulator's own volumes gave the linked collection 22 documents, the editor's live preview
+drew them, single queries took up to 67 s, and the test ran out its allowance in its last step, Done, though the run's
+screen recording shows the sheet gone 2 s after the tap. **On iPad Pro 13-inch (M5) under iOS 27.0 the
+runner twice failed before the test began**, "Timed out waiting for AX loaded notification", and the simulator's
+SpringBoard was being killed (`launchctl list` showed it at -9) when the app was launched by hand with a volume seed;
+`simctl shutdown` and `boot` cleared the runner's failure, as the next run showed. Read a run that executes no test as the
+simulator's, not the suite's.
+**#1413's three Section defaults tests fail on `v2` as of 2026-10-17**, on iPhone 17 (iOS 27.0), iPad Air 11-inch (M4)
+(iOS 26.5) and iPad Pro 13-inch (M5) (iOS 27.0): `testTheEditorShowsASubtitleSetInSectionDefaults`,
+`testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit` and `testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet`,
+each "The Section defaults sheet did not close". A4b's control: the same three on `v2` (`b3272d86`), built in a second
+worktree, failed the same way on the iPhone and the Air, as on #1704's branch. On these screens each XCUI query now takes
+4 to 11 s (Xcode 27.1 has been installed since 2026-10-16), and `closeSectionDefaults()` waits 5 s for the sheet to go.
+With that wait at 30 s, all three passed on `v2` on the Air, in 326, 390 and 430 s, so they also need
+`-default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600`. On the iPad Pro the 300 s
+allowance also ended `testContentAloneDoesNotNameANewCollection`, which passed alone with 600 s (191 s). Until the tests
+are fixed, expect those three failures on any device, give the suite 600 s on an iPad, and read the other six.
 
 ```bash
 xcodebuild test \
@@ -508,7 +534,12 @@ took the plain Add. Every test fails on the code it guards on both idioms — th
 editing tests on #1360's first build — measured on iPad Air 11-inch (M4) and iPhone Air, iOS 26.5. Expect **5 tests, 0
 skipped** on each. The AX3 tests prove their size took effect from the recognized line height, and the default-size
 test checks the other side of the same threshold. The unit half is `FRUSExplorerTests/RichTextRestingCapTests`. A
-`name=` alone picks one of several runtimes on this machine, so pin the OS the figures came from:
+`name=` alone picks one of several runtimes on this machine, so pin the OS the figures came from.
+**Measured 2026-10-17 (A4b, #1704):** 5 passed, 0 skipped, on iPhone Air; on iPad Air 11-inch (M4), 3 passed and 2 failed,
+`testALongIntroductionRestsOnItsOpeningWords` ("Done did not put the keyboard away") and
+`testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp`, and both failed the same way on `v2` at `a9361e7e`, built in a
+control worktree. Each XCUI query on those screens took several seconds against the suite's 5 s waits, the cause found in
+`CollectionEditorTitleTests`' Section defaults tests (its entry above).
 
 ```bash
 xcodebuild test \

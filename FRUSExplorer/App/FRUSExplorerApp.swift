@@ -285,6 +285,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.29 — #1577 lane 3: where the launch builds the Meaning searcher it asks `UITestMeaningSeeder`, whose
 ///          searcher has a match-file store of its own holding the seeded fixture volume's planted file, and a
 ///          stand-in for the encoder (DEBUG-only; inert without `FRUS_UI_TEST_SEED_MEANING`).
+///   4.30 — #1704: `bootDownloadManager()` seeds `UITestSavedSearchSeeder`'s saved search, and on request a
+///          collection linked to it, beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_SAVED_SEARCH`).
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2236,6 +2238,9 @@ struct FRUSExplorerApp: App {
         // #1457: a fixed-id project and a collection outside it, for ProjectHomePlanVisitGateTests.
         // Beside the scope seeder for the reason given above. Inert without FRUS_UI_TEST_SEED_PROJECT.
         UITestProjectSeeder.seedIfRequested(context: modelContainer.mainContext)
+        // #1704: a saved search, and on request a collection linked to it, for CollectionEditorTitleTests. Beside the
+        // scope seeder for the reason given above. Inert without FRUS_UI_TEST_SEED_SAVED_SEARCH.
+        UITestSavedSearchSeeder.seedIfRequested(context: modelContainer.mainContext)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()

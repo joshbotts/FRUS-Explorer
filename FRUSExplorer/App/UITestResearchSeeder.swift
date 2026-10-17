@@ -202,4 +202,89 @@ enum UITestProjectSeeder {
         print("[UITestProjectSeeder] Seeded project \(projectIdString) and one unattached collection")
     }
 }
+
+/// Seeds one saved search, so a UI test can link a collection to it in Collection settings (#1704); and, when asked,
+/// a collection already linked to it that holds entries from before its link (#1619, decision 22).
+///
+/// ## Why a seed
+/// Link to Saved Search… is disabled until a search has been saved, and the UI-test store starts empty. Saving one
+/// through Search needs an index and a search that runs; the picker lists saved searches by name and needs neither.
+///
+/// ## The linked collection
+/// With the value ``linkedValue`` the seed also writes ``collectionName``, linked to the search and holding a document,
+/// a section heading, a note block and a passage, the four kinds a smart collection takes only from before its link,
+/// so its editor lists them apart under their heading as soon as it opens. The document is `d1` of the fixture volume:
+/// with `FRUS_UI_TEST_SEED_VOLUME` it has an indexed header and its row's caption names the document and the volume,
+/// the longest caption the section draws. It is the state #1704's items 2 to 5 were seen in, one launch away.
+///
+/// ## Contract — the other seeders' own
+/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_SAVED_SEARCH` is `1` or ``linkedValue``. Runs at the top of the boot
+/// path, beside ``UITestScopeSeeder``, for the reason given at that call site. Launch with `FRUS_UI_TEST_MODE` too, so
+/// what it writes lives in the in-memory store and goes with the process.
+///
+/// Version history:
+///   1.0 — #1704: initial implementation
+enum UITestSavedSearchSeeder {
+
+    /// The launch-environment key a UI test sets to request the seed.
+    static let environmentKey = "FRUS_UI_TEST_SEED_SAVED_SEARCH"
+
+    /// The value that also asks for the linked collection.
+    static let linkedValue = "linked"
+
+    /// The seeded search's name, which its row in the Link to Saved Search picker shows.
+    /// `CollectionEditorTitleTests` repeats it, because a UI-test target cannot import the app.
+    static let searchName = "UI Test Saved Search"
+
+    /// The seeded search's keywords, which its row shows under its name: a word no volume holds, so a collection linked to
+    /// the search resolves to nothing whatever library the simulator has. With "missile", the iPad Pro 13-inch simulator's
+    /// own volumes gave the linked collection 22 documents, the editor's live preview drew them, and XCUI queries on that
+    /// screen took up to a minute each.
+    static let keywords = "uitestnomatch"
+
+    /// The linked collection's name.
+    static let collectionName = "UI Test Smart Collection"
+
+    /// Seeds the search, and the linked collection when asked, once per store.
+    @MainActor
+    static func seedIfRequested(context: ModelContext) {
+        let value = ProcessInfo.processInfo.environment[environmentKey]
+        guard value == "1" || value == linkedValue else { return }
+        let name = searchName
+        let existing = (try? context.fetchCount(FetchDescriptor<SavedSearch>(
+            predicate: #Predicate { $0.name == name }))) ?? 0
+        guard existing == 0 else { return }
+        let search = SavedSearch(name: searchName, parameters: SearchParameters(keywords: keywords))
+        context.insert(search)
+        if value == linkedValue {
+            seedLinkedCollection(linkedTo: search.id, context: context)
+        }
+        try? context.save()
+        print("[UITestSavedSearchSeeder] Seeded saved search \"\(searchName)\""
+              + (value == linkedValue ? " and \"\(collectionName)\", linked to it" : ""))
+    }
+
+    /// Writes the linked collection: the four entries it holds from before its link, in outline order.
+    @MainActor
+    private static func seedLinkedCollection(linkedTo searchId: UUID, context: ModelContext) {
+        let collection = Collection(name: collectionName)
+        context.insert(collection)
+        let volumeId = ProcessInfo.processInfo.environment[UITestVolumeSeeder.environmentKey] ?? "frus1961-63v06"
+        let entries: [(kind: CollectionEntryKind, documentId: String, text: String?)] = [
+            (.document, "d1", nil),
+            (.heading, "", "The first weeks"),
+            (.prose, "", "Read these two together."),
+            (.excerpt, "d1", "A passage taken from the first document."),
+        ]
+        for (position, item) in entries.enumerated() {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: item.documentId,
+                                        volumeId: item.documentId.isEmpty ? "" : volumeId, sortOrder: position)
+            entry.entryKind = item.kind
+            entry.text = item.text
+            entry.collection = collection
+            context.insert(entry)
+        }
+        collection.savedSearchId = searchId
+    }
+}
 #endif
