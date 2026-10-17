@@ -15,6 +15,9 @@
 import Testing
 import Foundation
 import MetalKit
+#if canImport(UIKit)
+import UIKit
+#endif
 @testable import FRUSExplorer
 
 /// Whether this host has a GPU at all.
@@ -23,6 +26,20 @@ import MetalKit
 /// is a real condition, and a red suite there would say something false about the map. Evaluated once
 /// so the three traits agree with each other.
 private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
+
+#if canImport(UIKit)
+/// An `MTKView` whose draw notifications produce nothing: #1700's condition on the Mac, made by hand
+/// for a suite that runs on iOS.
+///
+/// In MetalKit's `enableSetNeedsDisplay` mode a dirty mark reaches the view as the layer's
+/// `displayLayer:`, and the view's implementation of it is what produces the frame. On the Mac that
+/// implementation merges into a dispatch source that a closed window has cancelled, so it produces
+/// nothing; here it simply does nothing. `draw()` does not go through it.
+private final class NotificationlessMTKView: MTKView {
+    /// Takes the layer's display request and draws nothing, as the Mac's cancelled source does.
+    override func display(_ layer: CALayer) {}
+}
+#endif
 
 /// The map surface: the bundled loader, what a colour means, and whether anything reaches the GPU.
 ///
@@ -50,6 +67,11 @@ private let semanticMapHasMetal = MTLCreateSystemDefaultDevice() != nil
 ///         per view, after the platform call) and `pipelineCompileCount` while building real
 ///         renderers. All three are mutation-tested: removing `camera`'s `didSet`, bypassing the
 ///         cache, and making the view list strong each turn one of them red.
+///   1.6 — A3c (#1700): the renderer draws each frame itself, so `markedViewCount` is now
+///         `drawnViewCount` (bumped per view, after `draw()`), the configuration case pins MetalKit's
+///         explicit-drawing mode, and two cases are added: requests drawn on the next main-queue
+///         turn, one frame per turn, and #1700's regression test, a change reaching a presented frame
+///         on a view whose MetalKit draw notifications produce nothing.
 @Suite("Semantic map surface", .serialized)
 struct SemanticMapSurfaceTests {
 
@@ -291,35 +313,39 @@ struct SemanticMapSurfaceTests {
         let view = SemanticMapSurface(model: SemanticMapModel()).makeMap()
         #expect(view.colorPixelFormat == SemanticMapRenderer.pixelFormat)
         #expect(view.isPaused, "a free-running display link redraws a still image 60 times a second")
-        #expect(view.enableSetNeedsDisplay,
-                "paused without this, a dirty mark produces no frame and the map never draws")
+        #expect(!view.enableSetNeedsDisplay, """
+            MetalKit's draw notifications are not how the map draws: on the Mac they run through a \
+            dispatch source a closed window cancels, and the map froze after its window was \
+            reopened (#1700). The renderer calls draw() itself.
+            """)
         #expect(view.preferredFramesPerSecond > 0)
     }
 
-    /// On-demand drawing has one failure mode and it is total: a mutator that does not mark the
-    /// surface dirty leaves the map frozen at whatever it last drew. `UIView` exposes no readable
-    /// `needsDisplay`, so the renderer counts the views it marks — per view, immediately after the
-    /// platform call — and this drives each mutator in turn. A deleted `didSet` fails here rather
-    /// than reaching a reader as a map that will not pan.
+    /// On-demand drawing has one failure mode and it is total: a mutator that does not ask for a
+    /// frame leaves the map frozen at whatever it last drew. The renderer counts the views it draws —
+    /// per view, immediately after `draw()` — and this drives each mutator in turn. A deleted `didSet`
+    /// fails here rather than reaching a reader as a map that will not pan.
+    ///
+    /// `drawPendingFrame()` draws only a frame a request left pending, so calling it here, rather than
+    /// waiting for the main queue to, cannot make a mutator that asked for nothing look as if it had.
+    /// The frame the view's registration asked for is drawn first, so the first mutator cannot ride
+    /// on it.
     @MainActor
-    @Test("Every mutator marks the view dirty, and the view is on the redraw list",
+    @Test("Every mutator asks for a frame, and the view is on the redraw list",
           .enabled(if: semanticMapHasMetal))
     func mutatorsRequestARedraw() throws {
         let model = SemanticMapModel()
         let renderer = try #require(model.renderer)
         let view = SemanticMapSurface(model: model).makeMap()
-        #expect(renderer.attachedViewCount == 1, "an unregistered view is never marked dirty")
+        #expect(renderer.attachedViewCount == 1, "an unregistered view is never drawn")
+        renderer.drawPendingFrame()
 
-        var seen = renderer.markedViewCount
+        var seen = renderer.drawnViewCount
         func expectRequest(_ what: String, _ change: () -> Void) {
             change()
-            #expect(renderer.markedViewCount > seen, "\(what) marked no view dirty")
-            #if os(macOS)
-            // Where the flag is readable, read it rather than trusting the counter.
-            #expect(view.needsDisplay, "\(what) left the view clean")
-            view.needsDisplay = false
-            #endif
-            seen = renderer.markedViewCount
+            renderer.drawPendingFrame()
+            #expect(renderer.drawnViewCount > seen, "\(what) asked for no frame")
+            seen = renderer.drawnViewCount
         }
 
         expectRequest("panning") { renderer.pan(by: CGSize(width: 10, height: 10)) }
@@ -342,7 +368,7 @@ struct SemanticMapSurfaceTests {
     ///
     /// **Not because multiplicity was measured** — entry 1.3 above records the opposite, that the
     /// representable is realized once and that the macOS blank was the sheet — but because the two
-    /// failures are not symmetrical: a redundant view costs one dirty mark on something `draw(in:)`
+    /// failures are not symmetrical: a redundant view costs one `draw()` on something `draw(in:)`
     /// skips, while a single slot holding the wrong instance costs a map that never redraws.
     @MainActor
     @Test("A second realization joins the redraw list rather than replacing the first",
@@ -361,10 +387,111 @@ struct SemanticMapSurfaceTests {
         #expect(first.delegate === renderer)
         #expect(second.delegate === renderer)
 
-        // Both are marked, not just the last one registered — the property the list exists for.
-        let before = renderer.markedViewCount
+        // Both are drawn, not just the last one registered — the property the list exists for.
+        renderer.drawPendingFrame()
+        let before = renderer.drawnViewCount
         renderer.pointSize = 3
-        #expect(renderer.markedViewCount == before + 2, "a redraw request must reach every live view")
+        renderer.drawPendingFrame()
+        #expect(renderer.drawnViewCount == before + 2, "a frame must reach every live view")
+    }
+
+    /// The frame a request asks for is drawn on the next main-queue turn, with nothing calling
+    /// `drawPendingFrame()` — the path every reader's pan takes — and requests made in one turn share
+    /// it, as MetalKit's own source coalesced its merges. A load asks four times in a row; drawing
+    /// each request on the spot would draw the corpus four times and wait on four drawables.
+    @MainActor
+    @Test("A request is drawn on the next main-queue turn, and requests in one turn share it",
+          .enabled(if: semanticMapHasMetal))
+    func requestsAreDrawnOnTheNextTurn() async throws {
+        let model = SemanticMapModel()
+        let renderer = try #require(model.renderer)
+        let view = SemanticMapSurface(model: model).makeMap()
+        await Self.mainQueueTurn()
+        let before = renderer.drawnViewCount
+
+        renderer.pan(by: CGSize(width: 5, height: 0))
+        renderer.zoom(by: 1.2)
+        renderer.pointSize = 3
+        #expect(renderer.drawnViewCount == before, "a request must wait for its turn, not draw on the spot")
+        await Self.mainQueueTurn()
+        #expect(renderer.drawnViewCount == before + 1, """
+            Three requests in one turn drew \(renderer.drawnViewCount - before) frame(s); they share one.
+            """)
+        withExtendedLifetime(view) {}
+    }
+
+    /// #1700's regression test: a change made after MetalKit's draw notifications have stopped still
+    /// reaches a presented frame.
+    ///
+    /// On the Mac the notifications stop for good when the map's window closes, because
+    /// `-[MTKView _windowWillClose:]` cancels the dispatch source a dirty mark goes through, and
+    /// SwiftUI then reopens the same window with the same view. iOS has no such close and the suite
+    /// runs on iOS, so the condition is made by hand: a view whose `displayLayer:` does nothing,
+    /// configured exactly as the map's is (`SemanticMapSurface.configure`) and hosted in a real window
+    /// so that `draw(in:)` has a drawable. Under the code before the fix, which marked the view dirty
+    /// and left the frame to that path, the first frame and the pan's both stopped at the layer and
+    /// this failed; the renderer now calls `draw()`, which does not go through it. The control, the
+    /// same old code with an ordinary `MTKView`, presented both frames, so it is the dead path the
+    /// test fails on and not the window it draws in.
+    @MainActor
+    @Test("A change after MetalKit's draw notifications have stopped still reaches a presented frame",
+          .enabled(if: semanticMapHasMetal))
+    func aChangeAfterTheNotificationsStopStillPresents() async throws {
+        #if canImport(UIKit)
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to draw in")
+        let model = SemanticMapModel()
+        let renderer = try #require(model.renderer)
+        let view = NotificationlessMTKView(
+            frame: CGRect(x: 0, y: 0, width: 240, height: 160), device: renderer.device)
+        SemanticMapSurface(model: model).configure(view)
+        let window = UIWindow(windowScene: scene)
+        window.frame = view.frame
+        window.addSubview(view)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        defer {
+            window.isHidden = true
+            view.removeFromSuperview()
+        }
+        renderer.setPoints([.init(position: SIMD2<Int16>(0, 0), colourIndex: 0, flags: 0)])
+
+        let first = await Self.presentedFrameCount(after: 0, on: renderer)
+        #expect(first > 0, "the map's first frame never reached a drawable")
+
+        renderer.pan(by: CGSize(width: 24, height: 0))
+        #expect(await Self.presentedFrameCount(after: first, on: renderer) > first, """
+            A pan after the draw notifications stopped reached no drawable: the points stay where \
+            they were while the labels move, which is #1700.
+            """)
+        #else
+        Issue.record("the regression test hosts its view in a UIKit window")
+        #endif
+    }
+
+    /// Waits until the main queue has run everything queued before this call, which includes any
+    /// frame a request asked for.
+    @MainActor
+    private static func mainQueueTurn() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+    }
+
+    /// Waits, for two seconds at most, until the renderer has presented more than `count` frames,
+    /// and returns how many it has.
+    ///
+    /// A wait rather than one main-queue turn, so the regression test asks only whether a frame
+    /// arrives, not when: MetalKit's own path draws at the next Core Animation commit, which can
+    /// come after that turn, and the control run that keeps that path alive must be able to pass.
+    @MainActor
+    private static func presentedFrameCount(after count: Int, on renderer: SemanticMapRenderer) async -> Int {
+        let deadline = ContinuousClock.now + .seconds(2)
+        while renderer.presentedFrameCount <= count, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return renderer.presentedFrameCount
     }
 
     /// The list holds views weakly, and the doc comment says a strong reference "would close a cycle
