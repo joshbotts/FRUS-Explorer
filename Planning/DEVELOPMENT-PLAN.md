@@ -38693,3 +38693,38 @@ All at the code commit, rebased on `9feff971`, clean and unsigned. The records c
 **Not done.** Not seen in the app's People screen (the census reads the kit's rollup, which reproduced the app's own). Nothing run on Linux. VIAF ids outside the corrected entries not sized. Why a freshly created simulator fails `RichTextRestingCapTests`' two presentation tests was not looked into.
 
 ---
+
+## Session 2026-10-17 — §6g's identifier findings assessed: how many of the person authority's Wikidata and VIAF ids name someone else, and what a rule, corrections or withholding them would do to the bundle
+
+**What was asked.** Started by the A4c session to begin on the owner's word once #1709 had merged (the owner's word came the same morning), based on `v2` at `b3272d86`: assess, and put options to the owner for, the two findings A4c sized and left (its review's §6.1 and §6.2). The first is the Wikidata ids that name someone else, with VIAF sized the same way. The second is the overlay entries that carry several people-ids and stamp one person's role text and ids on all of them. Measure each option's effect on the bundle after a byte-for-byte control. A memo; no build, and no rollup or index version.
+
+**What was found.** `Planning/Person-Authority-Identifier-Assessment-2026-10-17.md` has the figures and every way of fixing them. The headlines:
+- **About 1,600 of the bundle's 3,769 Wikidata links name someone else (42%)**, not A4c's 450. 190 links read from three strata of a finer test: 37 of 40 hard failures, 40 of 50 soft-only failures and 18 of 100 passing links are someone else. Among them are 176 items that are not people (NARA holdings, obituaries, a ship), namesakes (Senator Paul M. Simon as the singer-songwriter) and relatives (Herbert Hoover Jr. as his father).
+- **VIAF**: about 580 of the 2,186 overlay ids that could be sized name someone else; 824 could not be sized, since no Wikidata item holds them and viaf.org allows 1,003 requests a day. A VIAF id's Wikidata holder and viaf.org's own cluster agree on 362 of 375.
+- **The multi-id entries**: 15 of the 31 are different people (A4c named 12; also Einaudi, Truman and LeBreton), 18 records wear another person's role text, and the entries' own identifiers are mostly name-only matches to a third person.
+- **The options**, each a real bundle through a mirror of the enrichment that reproduces the shipped file byte for byte:
+
+  | Option | Wikidata links kept | Share right |
+  |---|---:|---:|
+  | Withhold a hard failure | 2,968 | ~71% |
+  | Withhold any failure | 2,430 | ~82% |
+  | Keep only what the overlay's VIAF id or the registry's years corroborate | 1,355 | ~98% |
+  | The recommended (b4): that, or a word of the record's registry remarks, with a VIAF id kept when its own holder passes | 1,857 | ~96% |
+  | Withhold every overlay id | 0 | — |
+
+  Under (b4), 1,609 VIAF ids stay at ~97% right. For the roles, giving a multi-id entry's role text only to the ids whose registry remarks hold it removes all 18 wrong ones and costs 10 duplicates their copy.
+- **Option (a)**, identifier-only corrections, was run through the generator itself: 896 corrections for the hard failures alone. It matched the per-record rule on every record but four, and those four are the item-2 limitation: Raúl Castro and both Einaudis lose their right ids with the wrong ones.
+
+**What changed.**
+- `Planning/Person-Authority-Identifier-Assessment-2026-10-17.md`: new.
+- `Planning/Plan-Of-Record-2026-10-14.md`: a §4 bullet for the owner's decision, and §6g's two A4c bullets given the measured figures.
+- This entry.
+
+**Checked.**
+- **The control**: `PersonAuthorityIndexGenerator` at `b3272d86` with `GENERATED_DATE=2026-10-16` reproduced `person-authority-index.json` byte for byte (SHA-256 `a53e0c9a…`).
+- **The mirror**: it matched the shipped Wikidata, VIAF and role values on all 12,836 records, and the file it writes is the shipped file's bytes.
+- **Option (a)** through the generator in a scratch worktree, removed afterwards.
+
+**Not run.** No test reads the new memo. `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan's §7 line, unchanged. Nothing built, so no unit target or `swift test` was owed.
+
+**Not done.** The 824 unheld VIAF ids are not sized; viaf.org's quota resets at 00:00 UTC. Nothing was seen in the app. The fetched facts, the scripts and every verdict are in the session group's notes folder, not the repository. Nothing pushed; waiting on the owner's choice (the memo's §8).
