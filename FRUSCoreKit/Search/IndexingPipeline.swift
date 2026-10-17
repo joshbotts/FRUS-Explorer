@@ -446,6 +446,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         when the calling task is cancelled before they return: a statement under way stops through
 ///         one progress handler on `auxDb` that stops only a statement they arm (`SearchStatementStop`),
 ///         and one that ends first has its answer dropped. No index version: nothing stored changes
+///  4.39 — 2026-10-16 (#1658): `currentPersonRollupVersion` → 11 — `loadPersonClusterInputs` reads
+///         `persons` ordered by `volume_id, ref`, so two libraries of the same volumes roll their
+///         people up alike whatever order they indexed them in (see the v11 note). No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1519,7 +1522,13 @@ public actor IndexingPipeline {
     /// consolidation that runs between two volumes of the re-index is rebuilt after it. The
     /// bundled `person-authority-index.json` was regenerated beside this for #1370's role-text cut,
     /// which changes only `r` — not a field the rollup reads.
-    public static let currentPersonRollupVersion: Int = 10
+    /// v11 (#1658): `loadPersonClusterInputs` reads `persons` in key order, `volume_id` then `ref`,
+    /// where it read rowid order, the order the volumes happened to be indexed in. A member with no
+    /// authority id between two components carrying different ids joins the first one its block
+    /// reaches, so the same 553 files rolled up one member differently in a library upgraded from
+    /// build 49 and in a fresh index (build 50's census: vol. XVI's Kirkpatrick entry, 4 mentions).
+    /// A rollup rebuild only; no index version.
+    public static let currentPersonRollupVersion: Int = 11
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
@@ -1803,6 +1812,16 @@ public actor IndexingPipeline {
     /// therefore reads only documents `document_cache` does not flag `is_front_matter`. A mention
     /// with no `document_cache` row is kept, as it always was: the flag is what excludes, not the
     /// join.
+    ///
+    /// **The rows come in the table's key order, `volume_id` then `ref`** (#1658). The clusterer
+    /// compares a name block's members in input order, so a member with no authority id that would
+    /// join two components carrying different ids joins the first one a pair reaches, and the
+    /// cannot-link guardrail keeps it out of the other. Read with no `ORDER BY`, the rows came in
+    /// the order their volumes happened to be indexed, several at a time: build 50's re-index census
+    /// found 1981–1988 vol. XVI's "Kirkpatrick, Jeane J." under Helen P. Kirkpatrick in a library
+    /// upgraded from build 49 and under Jeane Jordan Kirkpatrick in a fresh index of the same files.
+    /// Which component such a member joins is still the order's choice, and now every library
+    /// makes the same one.
     private func loadPersonClusterInputs() throws -> [PersonClusterInput] {
         // Mention-derived era per (volume_id, ref). GLOB guards against malformed date strings.
         var mentionEra: [String: (Int, Int)] = [:]
@@ -1857,7 +1876,10 @@ public actor IndexingPipeline {
 
         let authIndex = authorityIndex()
         var inputs: [PersonClusterInput] = []
-        let pStmt = try auxPrepare("SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons")
+        let pStmt = try auxPrepare("""
+            SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons
+            ORDER BY volume_id, ref
+            """)
         defer { sqlite3_finalize(pStmt) }
         while try auxStep(pStmt) {
             let vol = auxColumnString(pStmt, 0) ?? ""
