@@ -163,6 +163,9 @@ import UIKit
 ///          of their own under a dimmed heading, with Remove These Entries, which asks first
 ///          (`SmartCollectionEntriesFromBeforeLink`); its apparatus rows print no document count and its Contents no
 ///          timeline button, since both read those entries
+///   2026-10-17 — #1704: Collection settings presents the Link to Saved Search picker, the iPad's sheet and the
+///          compact layout's pushed screen alike, where the editor had, so on iPad it opens over the settings sheet
+///          rather than once Done has closed it; the identifier `collection.editor.smart.link` on its button
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -641,9 +644,8 @@ struct CollectionEditorView: View {
                 appState: appState
             )
         }
-        .sheet(isPresented: $showLinkSavedSearch) {
-            linkSavedSearchSheet
-        }
+        // The Link to Saved Search picker is not presented from here but from Collection settings, which holds its
+        // button (`iPhoneCollectionSettingsScreen`, `iPadCollectionSettingsSheet`; #1704).
         .alert(
             String(localized: "collection.editor.export.error.title", defaultValue: "Export Failed"),
             isPresented: Binding(
@@ -803,6 +805,10 @@ struct CollectionEditorView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // From the screen that holds Link to Saved Search…, as the iPad's settings sheet presents it (#1704).
+        .sheet(isPresented: $showLinkSavedSearch) {
+            linkSavedSearchSheet
+        }
     }
 
     /// iPad (regular width) — Composer v2 §A: two roomy permanent columns, **Contents** (the outline)
@@ -876,6 +882,13 @@ struct CollectionEditorView: View {
                 }
             }
         }
+        // #1704: the Link to Saved Search picker opens over this sheet, from the sheet itself. SwiftUI presents one
+        // sheet at a time from a view, and the picker had hung on the editor, which is already presenting this one: the
+        // tap opened nothing, and the picker came up only once Done had closed the settings. The pushed settings screen
+        // on a compact width presents it the same way.
+        .sheet(isPresented: $showLinkSavedSearch) {
+            linkSavedSearchSheet
+        }
     }
 
     // MARK: - Smart Collection Section
@@ -912,6 +925,8 @@ struct CollectionEditorView: View {
                                  defaultValue: "Link to Saved Search\u{2026}"),
                           systemImage: "bolt")
                 }
+                // `CollectionEditorTitleTests` (#1704) opens the picker from Collection settings with it.
+                .accessibilityIdentifier("collection.editor.smart.link")
                 .disabled(allSavedSearches.isEmpty)
                 if allSavedSearches.isEmpty {
                     Text(String(localized: "collection.editor.smart.noSearches",
