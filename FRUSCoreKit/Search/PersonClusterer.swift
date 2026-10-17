@@ -195,6 +195,11 @@ public enum PersonClusterer {
     /// overriding blocking and the era/role guardrails. `detach` (user "split" corrections) pulls the
     /// anchored member out of whatever cluster it landed in, into its own identity. Detaches are
     /// applied before must-links, so a member can be detached and then re-merged elsewhere.
+    ///
+    /// The result depends on the order of `inputs` where a member with no authority id would
+    /// merge into two components carrying different ids: it joins the first one its block reaches.
+    /// A caller that needs one answer for one set of records passes them in a fixed order, as
+    /// `IndexingPipeline` does (`volume_id`, then `ref`; #1658).
     public static func cluster(_ inputs: [PersonClusterInput],
                                mustLink: [(MemberKey, MemberKey)] = [],
                                detach: [MemberKey] = []) -> PersonClusterOutput {
@@ -238,6 +243,10 @@ public enum PersonClusterer {
         // Blocks are visited in sorted-key order: with the component-level guardrail a merge in
         // one block can influence decisions in another (components span blocks through authority
         // pre-merges), and Dictionary iteration order would make the outcome nondeterministic.
+        // Inside a block the pairs go in input order, which still decides where an uncovered
+        // member that would join two reconciled identities goes: the first pair to reach it wins
+        // and the cannot-link refuses the second. `IndexingPipeline` passes `persons` in key order
+        // so that this is the same choice in every library (#1658).
         for blockKey in blocks.keys.sorted() {
             let indices = blocks[blockKey]!
             guard indices.count > 1 else { continue }

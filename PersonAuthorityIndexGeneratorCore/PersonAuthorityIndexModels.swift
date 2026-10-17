@@ -152,7 +152,7 @@ public struct PersonAuthorityRecord: Sendable, Equatable {
 }
 
 /// A FRUS person anchor decoded from a `…/historicaldocuments/{volume}/persons#{ref}` source URL.
-public struct FRUSAnchor: Sendable, Equatable {
+public struct FRUSAnchor: Sendable, Hashable {
     public let volumeId: String
     public let ref: String
     public init(volumeId: String, ref: String) {
@@ -183,6 +183,10 @@ public struct BuildStats: Sendable, Equatable {
     public var crosswalkConflicts: [CrosswalkConflict] = []
     /// People-ids the overlay's new anchors reach that the registry has no entry for.
     public var unknownOverlayIds: Set<String> = []
+    /// Overlay anchors a correction holds apart from the entry's people-ids (#1657), in kept volumes.
+    public var overlayAnchorsHeldApart = 0
+    /// Overlay identifiers, Wikidata or VIAF, a correction kept off the entry's people-ids (#1657).
+    public var overlayIdentifiersWithheld = 0
     public init() {}
 }
 

@@ -395,11 +395,13 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
-        /// Thin entry point — calls PersonAuthorityIndexRunner.run() and exits.
+        /// Thin entry point — calls PersonAuthorityIndexRunner.run() and exits. Beside it are the
+        /// corrections the run reads with the overlay, by path from the project root (#1657).
         .executableTarget(
             name: "PersonAuthorityIndexGenerator",
             dependencies: [.target(name: "PersonAuthorityIndexGeneratorCore")],
             path: "PersonAuthorityIndexGenerator",
+            exclude: ["persons-complete-corrections.json"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
