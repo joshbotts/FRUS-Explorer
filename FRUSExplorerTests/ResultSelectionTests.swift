@@ -1036,11 +1036,16 @@ struct ResultSelectionWiringTests {
             } label: {
                 Label(ResultSelectionCopy.selectResults, systemImage: "checkmark.circle")
             }
-            .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil)
+            .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil
+                      || vm.isSearching)
             #endif
-            """)), "Select Results is dimmed with no rows, outside the list reading, and under an error")
-        #expect(more.contains("\"search.moreActions.help.v3\""), "the help names the menu's contents, so it is re-keyed")
-        #expect(!more.contains("\"search.moreActions.help.v2\""))
+            """)), """
+            Select Results is dimmed with no rows, outside the list reading, under an error, and while a search \
+            runs, whose picks would last into the next list (#1683)
+            """)
+        // Re-keyed again by #1577 lane 4, for Search Within These Results.
+        #expect(more.contains("\"search.moreActions.help.v4\""), "the help names the menu's contents, so it is re-keyed")
+        #expect(!more.contains("\"search.moreActions.help.v2\"") && !more.contains("\"search.moreActions.help.v3\""))
     }
 
     @Test("In selection a row's tap picks it, its swipe is off, and its menu opens it")

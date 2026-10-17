@@ -47,6 +47,8 @@ import Foundation
 ///          method appendix can print a scope as prose without the trail comparing prose
 ///   1.2 — #1577 lane 1: `semanticSignature(for:)` — a Meaning search inside a document set signs
 ///          the set, and `describe(_:)` says so
+///   1.3 — #1577 lane 4: `layered(_:parameters:base:)` — a layer's signature carries its base as a
+///          `base=` part, and `describe(_:)` names the base
 enum SearchScopeSignature {
 
     /// The signature for `parameters`.
@@ -82,6 +84,31 @@ enum SearchScopeSignature {
     static func semanticSignature(for parameters: SearchParameters) -> String {
         guard parameters.documentIds != nil else { return semanticRouteSignature }
         return semanticRouteSignature + ";docs=\(idComponent(parameters.documentIds))"
+    }
+
+    /// The signature a search inside a held base records (#1577 lane 4), or `signature` itself
+    /// outside one.
+    ///
+    /// A layer signs as the engine it ran through signs, its `docs=` part describing the gate it ran
+    /// inside, the base among it; and it adds `base=`, the base's kind, size and words
+    /// (`PinnedResultBase.signaturePart`). Two searches for the same words inside different bases
+    /// ranked or found different documents, so they must not sign alike, and the appendix's prose
+    /// names the base from this part, which is the only record a browse's base has.
+    ///
+    /// The part comes last, so a Meaning layer's signature still begins `route=semantic`, which is how
+    /// the appendix and every earlier build know a Meaning row; an earlier build passes over the part,
+    /// as this one passes over a part it does not know.
+    ///
+    /// - Parameters:
+    ///   - signature: The route's own signature (a Meaning run's), or `nil` for a keyword run, which
+    ///     signs ``signature(for:)``.
+    ///   - parameters: The executed parameters.
+    ///   - base: The held base, or `nil` outside one.
+    /// - Returns: The signature to record, or `nil` to let the writer derive the keyword one.
+    static func layered(_ signature: String?, parameters: SearchParameters,
+                        base: PinnedResultBase?) -> String? {
+        guard let base else { return signature }
+        return (signature ?? self.signature(for: parameters)) + ";" + base.signaturePart
     }
 
     static func signature(for parameters: SearchParameters) -> String {
@@ -198,6 +225,11 @@ enum SearchScopeSignature {
                                    some: { Self.rankedInsidePhrase(documents: $0) },
                                    empty: String(localized: "appendix.scope.semantic.within.empty",
                                                  defaultValue: "ranked inside a set that held no documents"))
+            // #1577 lane 4: the held list a ranking ran inside.
+            if let base = signature.split(separator: ";").first(where: { $0.hasPrefix("base=") }),
+               let phrase = basePhrase(String(base.dropFirst("base=".count))) {
+                phrases.append(phrase)
+            }
             return phrases
         }
         var pairs: [String: String] = [:]
@@ -307,7 +339,45 @@ enum SearchScopeSignature {
         if pairs["proj"] != nil, pairs["proj"] != "none" {
             phrases.append(String(localized: "appendix.scope.project", defaultValue: "gated to a project"))
         }
+        // #1577 lane 4: the held list words were found in.
+        if let base = pairs["base"], let phrase = basePhrase(base) {
+            phrases.append(phrase)
+        }
         return phrases
+    }
+
+    /// "inside the closest matches of a Meaning search for “how did the embassy…” (100 documents)":
+    /// what the appendix says of a layer's base, from its `base=` part (#1577 lane 4), or `nil` for a
+    /// part it cannot read, which an appendix would rather leave out than guess at.
+    ///
+    /// - Parameter component: The part's value: kind, size and percent-encoded words, `:`-separated.
+    /// - Returns: The phrase, or `nil`.
+    private static func basePhrase(_ component: String) -> String? {
+        let fields = component.split(separator: ":", maxSplits: 2, omittingEmptySubsequences: false)
+        guard fields.count == 3, let count = Int(fields[1]) else { return nil }
+        let text = String(fields[2]).removingPercentEncoding ?? String(fields[2])
+        let documents = CountCopy.documents(count)
+        switch fields[0] {
+        case "meaning":
+            return String(format: String(localized: "appendix.scope.base.meaning %@ %@",
+                                         defaultValue: "inside the closest matches of a Meaning search for “%2$@” (%1$@)"),
+                          documents, text)
+        case "keywords":
+            return String(format: String(localized: "appendix.scope.base.keywords %@ %@",
+                                         defaultValue: "inside the results of a keyword search for “%2$@” (%1$@)"),
+                          documents, text)
+        case "browse":
+            guard !text.isEmpty else {
+                return String(format: String(localized: "appendix.scope.base.browse.unnamed %@",
+                                             defaultValue: "inside the results of a browse (%@)"),
+                              documents)
+            }
+            return String(format: String(localized: "appendix.scope.base.browse %@ %@",
+                                         defaultValue: "inside the results of a browse of %2$@ (%1$@)"),
+                          documents, text)
+        default:
+            return nil
+        }
     }
 
     /// "ranked inside a set of 212 documents, not across the whole series" — what the appendix

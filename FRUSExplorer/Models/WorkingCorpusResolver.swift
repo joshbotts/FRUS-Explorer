@@ -101,6 +101,7 @@ struct WorkingCorpusResolver {
 ///
 /// Version history:
 ///   1.0 — M-1: initial implementation
+///   1.1 — #1577 lane 4: `combine(corpus:projectGate:pin:)`, a held base's members as a third set
 enum DocumentScopeGate {
 
     /// Intersects the constraints, preserving the empty-set contract.
@@ -116,5 +117,24 @@ enum DocumentScopeGate {
         guard let corpus else { return projectGate }
         guard let projectGate else { return corpus }
         return Set(corpus).intersection(projectGate).sorted()
+    }
+
+    /// Intersects the constraints with a held base's members as a third set (#1577 lane 4): a search
+    /// inside a held list is also inside the corpus and the History scope the list was found in.
+    ///
+    /// The same contract as ``combine(corpus:projectGate:)``: `nil` is no constraint, and an empty
+    /// result stays an empty array, which matches nothing. A base whose members fall wholly outside a
+    /// corpus applied since gives a layer that finds nothing, never one that searches the series.
+    ///
+    /// - Parameters:
+    ///   - corpus: The applied working corpus's keys, or `nil`.
+    ///   - projectGate: The project's History scope, or `nil`.
+    ///   - pin: The held base's member keys, or `nil` when no base is held.
+    /// - Returns: The intersection, or `nil` when no constraint is set.
+    static func combine(corpus: [String]?, projectGate: [String]?, pin: [String]?) -> [String]? {
+        let scoped = combine(corpus: corpus, projectGate: projectGate)
+        guard let pin else { return scoped }
+        guard let scoped else { return pin }
+        return Set(scoped).intersection(pin).sorted()
     }
 }

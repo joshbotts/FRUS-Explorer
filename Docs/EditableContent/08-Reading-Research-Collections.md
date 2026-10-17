@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 309 blocks · no ⚑ wording issues
+**In this file:** 313 blocks · no ⚑ wording issues
 
 ---
 
@@ -1598,7 +1598,7 @@ Denominator: the era’s volumes carry %1$@ in all, and this table — every uni
 <!-- END SOURCE: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 #### ranked by meaning (on-device model), not by keywords — the…
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 190–191 | key: appendix.scope.semantic -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 217–218 | key: appendix.scope.semantic -->
 
 ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear
 
@@ -1608,17 +1608,51 @@ ranked by meaning (on-device model), not by keywords — the query’s words wer
 <!-- #1577 lane 1 (2026-10-10): the method appendix's second phrase for a Meaning search that ran inside
      a document set, after the phrase above. %@ is the set's size with its noun ("212 documents").
      The second text is for a set that held no documents. -->
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 319–320 | key: appendix.scope.semantic.within %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 389–390 | key: appendix.scope.semantic.within %@ -->
 
 ranked inside a set of %@, not across the whole series
 
 <!-- END SOURCE: appendix.scope.semantic.within %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 199–200 | key: appendix.scope.semantic.within.empty -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 226–227 | key: appendix.scope.semantic.within.empty -->
 
 ranked inside a set that held no documents
 
 <!-- END SOURCE: appendix.scope.semantic.within.empty -->
+
+
+#### inside the closest matches of a Meaning search for…
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.meaning %@ %@ -->
+
+*The method appendix's phrase for a search run inside a held Meaning list (#1577 lane 4), from the trail row's `base=` part: %2$@ is the list's question and %1$@ its size with its noun ("100 documents").*
+
+inside the closest matches of a Meaning search for “%2$@” (%1$@)
+
+<!-- END SOURCE: appendix.scope.base.meaning %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.keywords %@ %@ -->
+
+*The same for a ranking of a held keyword list.*
+
+inside the results of a keyword search for “%2$@” (%1$@)
+
+<!-- END SOURCE: appendix.scope.base.keywords %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.browse %@ %@ -->
+
+*The same for a ranking of a held browse, by its filter's name. A browse writes no trail row of its own, so this phrase is the only record of it.*
+
+inside the results of a browse of %2$@ (%1$@)
+
+<!-- END SOURCE: appendix.scope.base.browse %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.browse.unnamed %@ -->
+
+*The same for a browse with no name to give.*
+
+inside the results of a browse (%@)
+
+<!-- END SOURCE: appendix.scope.base.browse.unnamed %@ -->
 
 #### Corpus: the map is a bundled artifact covering all %1$lld…
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.corpusStatement | lines: 152–153 | key: semanticMap.export.caveat.corpus.whole %lld -->

@@ -23,13 +23,14 @@ import Foundation
 /// and the new rows' arrival it names an engine the rows on screen did not come from. Whatever
 /// describes those rows asks this, and whatever concerns the field asks the picker.
 ///
-/// **No search produces two of the four yet.** ``wordsInMatches(base:)`` and
-/// ``rankedByMeaning(unranked:)`` are the two layers of Search Within These Results (#1577 lanes 4
-/// and 5). They are here, with their sentences in ``ResultSetScope``, so that those lanes adopt one
-/// vocabulary that was tested before the control existed.
+/// ``wordsInMatches(base:)`` and ``rankedByMeaning(unranked:)`` are the two layers of Search Within These
+/// Results. Lane 2 gave them their sentences in ``ResultSetScope`` before any search produced them, so that
+/// the lanes that build the control adopt one vocabulary; since #1577 lane 4 iPhone and iPad produce both
+/// (`SearchViewModel`'s held base), and the Mac's window is lane 5's.
 ///
 /// Version history:
 ///   1.0 — #1577 lane 2: initial implementation, in place of `ResultSetScope`'s `isMeaningSearch` flag
+///   1.1 — #1577 lane 4: produced by iPhone and iPad; the two cases' owed notes are answered where they stand
 enum ExecutedSearchRoute: Equatable, Sendable {
 
     /// A keyword match, or a browse with no words: rows the index matched.
@@ -39,18 +40,19 @@ enum ExecutedSearchRoute: Equatable, Sendable {
     /// Words found inside a held Meaning list of `base` rows: the rows of it that a keyword match
     /// kept, still closest first.
     ///
-    /// Owed by lane 4, which is to produce it. The header's sentence attributes the whole count to
-    /// the words, so a filter that removes rows of the layer has to be said beside it. And a capture
-    /// stores `totalMatchCount` beside its partial flag, so the run must leave that total `nil`: its
-    /// own row count there would read back as "captured from 7 matches".
+    /// The header's sentence attributes the whole count to the words, so where a filter changed since
+    /// the list was held narrows the layer too, the header says so (``ResultSetScope/layerFiltersNarrowed``).
+    /// And a capture stores `totalMatchCount` beside its partial flag, so the run leaves that total `nil`:
+    /// its own row count there would read back as "captured from 7 matches" (#1577 lane 4 does both).
     case wordsInMatches(base: Int)
     /// A held keyword list reordered by a question: every row of it, closest first, with the
     /// `unranked` rows that could not be scored last.
     ///
-    /// Owed by lane 4. The header says "closest first", which is false of a list sorted by date, so
-    /// that sort must not be offered over a ranked list or the clause not shown under it. And
+    /// The header says "closest first", which is false of a list sorted by date, so under a date order
+    /// the clause is not shown (``ResultSetScope/listIsInRankOrder``). And
     /// ``ResultSetScope/didHitFetchLimit`` reads the keyword fetch's ceiling for this route, so the
-    /// ranking must not overwrite `lastFetchLimit` as a Meaning run does.
+    /// ranking keeps the base's `lastFetchLimit` and total where a Meaning run overwrites them (#1577
+    /// lane 4 does both).
     case rankedByMeaning(unranked: Int)
 
     /// Whether the facet panel describes the rows on screen and not a match in the index.
@@ -189,6 +191,10 @@ struct SearchRunLedger: Equatable, Sendable {
 ///         reads as a fetch that hit one; the capture sentences and ``isCapturePartial`` have a Meaning branch
 ///   1.2 — #1577 lane 2: ``route`` in place of the `isMeaningSearch` flag, with the header and capture sentences of
 ///         the two layered routes
+///   1.3 — #1577 lane 4: ``layerFiltersNarrowed``, ``listIsInRankOrder`` and ``layerBaseLabel``, what the two layers'
+///         sentences owed, and ``layerBaseWasCut`` and ``layerBaseHiddenByChecklist``, so that a ranking with fewer
+///         rows than its list is not read as cut; #1683: a Meaning capture of one document, and a single reviewed
+///         document, have their singular
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -233,6 +239,44 @@ struct ResultSetScope: Equatable, Sendable {
     /// The route that produced these rows: the view models record it where they assign the rows
     /// (`executedRoute`), so it is never the mode the picker shows.
     var route: ExecutedSearchRoute = .keywords
+
+    // MARK: - A layer (#1577 lane 4)
+
+    /// Whether a layer ran under filters other than the ones its held list was found under, so that
+    /// they narrowed the layer as well as the words or the question did.
+    ///
+    /// Recorded with the layer's rows. Words found in a Meaning list are counted against the list
+    /// ("7 of your 100 closest matches contain these words"), which is true only while every one of the
+    /// 100 that holds the words is listed; a date range or a tag chosen since the list was held can
+    /// remove some, and the header then says that they pass the filters too. A filter the list was
+    /// already found under removes none of its rows, so it narrows nothing here.
+    var layerFiltersNarrowed = false
+
+    /// Whether the list is shown in its own order: the relevance sort, where a ranked layer is closest
+    /// first. Under a date order "closest first" would be false, so the ranked header leaves it out.
+    var listIsInRankOrder = true
+
+    /// The held list a layer ran inside, as a capture names it: the question or the words in quotation
+    /// marks, or a browse's name (`PinnedResultBase.captureLabel`). `nil` outside a layer.
+    ///
+    /// A working corpus saved from a layer records both layers (the assessment's record, item 7): its
+    /// `sourceQuery` is the layer's text, and its description names the list that text ran inside.
+    var layerBaseLabel: String? = nil
+
+    /// For a held list ranked by a question, whether that list was itself cut at its fetch
+    /// (`PinnedResultBase.wasCut`), which ``didHitFetchLimit`` then reads in place of the row counts.
+    ///
+    /// A ranking's rows can be fewer than its list's with no cut at all: the rows Checklist Mode hid
+    /// when the list was held are not ranked, and a filter chosen since removes more. Read against the
+    /// list's total, those read as a fetch cut short, and a working corpus saved from the ranking was
+    /// recorded as partial (the review's finding). `nil` keeps lane 2's rule, as the Mac's window does
+    /// until lane 5.
+    var layerBaseWasCut: Bool? = nil
+
+    /// For a held list ranked by a question, the rows Checklist Mode was hiding when the list was held,
+    /// which the ranking leaves out and so a capture of it does too. Counted beside ``hiddenByChecklist``
+    /// by the capture's warning and its record, and by nothing else: the header counts the ranking's own.
+    var layerBaseHiddenByChecklist = 0
 
     /// Whether these results are a Meaning search's: ranked by MEANING, not matched by keyword.
     ///
@@ -282,7 +326,8 @@ struct ResultSetScope: Equatable, Sendable {
     var didHitFetchLimit: Bool {
         switch route {
         case .meaning, .wordsInMatches: return false
-        case .keywords, .rankedByMeaning: break
+        case .rankedByMeaning: if let layerBaseWasCut { return layerBaseWasCut }
+        case .keywords: break
         }
         if loaded >= fetchLimit { return true }
         if let totalMatchCount { return totalMatchCount > loaded }
@@ -311,6 +356,13 @@ struct ResultSetScope: Equatable, Sendable {
 
     /// How many documents checklist mode is withholding.
     var hiddenByChecklist: Int { max(0, loaded - shown) }
+
+    /// How many documents checklist mode keeps out of a capture of these results: those it hides here,
+    /// and for a ranking of a held list those it hid when the list was held (``layerBaseHiddenByChecklist``).
+    var capturedHiddenByChecklist: Int {
+        guard case .rankedByMeaning = route else { return hiddenByChecklist }
+        return hiddenByChecklist + layerBaseHiddenByChecklist
+    }
 
     /// Whether the shown set fits on one page, in which case "on this page" says nothing.
     var isSinglePage: Bool { pageCount <= 1 }
@@ -372,6 +424,7 @@ struct ResultSetScope: Equatable, Sendable {
         case .keywords, .meaning:
             return nil
         case .wordsInMatches(let base):
+            if layerFiltersNarrowed { return wordsInMatchesClauseWithFilters(base: base) }
             if base == 1 {
                 return loaded == 0
                     ? String(localized: "search.count.wordsInMatches.single.none",
@@ -396,12 +449,44 @@ struct ResultSetScope: Equatable, Sendable {
         case .rankedByMeaning(let unranked):
             guard loaded > 0 else { return nil }
             guard unranked > 0 else {
+                // "Closest first" is the order's claim, and a date sort is another order (#1577 lane 4).
+                guard listIsInRankOrder else { return resultsPhrase(loaded) }
                 return String(format: String(localized: "search.count.rankedByMeaning %@",
                                              defaultValue: "%@, closest first"), resultsPhrase(loaded))
             }
             return String(format: String(localized: "search.count.rankedByMeaning.partial %@ %@ %@",
                                          defaultValue: "%1$@ · %2$@ ranked · %3$@ not ranked"),
                           resultsPhrase(loaded), grouped(max(0, loaded - unranked)), grouped(unranked))
+        }
+    }
+
+    /// The words-in-matches clause when filters chosen since the list was held narrowed the layer too
+    /// (``layerFiltersNarrowed``): the count is then of the matches that hold the words AND pass the
+    /// filters, and saying "contain these words" alone would put the filters' removals down to the words.
+    ///
+    /// - Parameter base: The held Meaning list's size.
+    /// - Returns: The clause.
+    private func wordsInMatchesClauseWithFilters(base: Int) -> String {
+        if base == 1 {
+            return loaded == 0
+                ? String(localized: "search.count.wordsInMatches.single.none.filtered",
+                         defaultValue: "Your closest match does not both contain these words and pass your filters")
+                : String(localized: "search.count.wordsInMatches.single.filtered",
+                         defaultValue: "Your closest match contains these words and passes your filters")
+        }
+        switch loaded {
+        case 0:
+            return String(format: String(localized: "search.count.wordsInMatches.none.filtered %@",
+                                         defaultValue: "None of your %@ closest matches both contains these words and passes your filters"),
+                          grouped(base))
+        case 1:
+            return String(format: String(localized: "search.count.wordsInMatches.one.filtered %@",
+                                         defaultValue: "1 of your %@ closest matches contains these words and passes your filters"),
+                          grouped(base))
+        default:
+            return String(format: String(localized: "search.count.wordsInMatches.filtered %@ %@",
+                                         defaultValue: "%1$@ of your %2$@ closest matches contain these words and pass your filters"),
+                          grouped(loaded), grouped(base))
         }
     }
 
@@ -493,8 +578,13 @@ struct ResultSetScope: Equatable, Sendable {
     /// "every matching document". The sentence carries no number: the sheet's Documents row is one line above it.
     var captureTruncationWarning: String? {
         if isMeaningSearch {
-            return String(localized: "corpus.save.meaning",
-                          defaultValue: "These documents are the closest matches a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.")
+            // The capture is of what is shown, so the number agrees with that (#1683: a list of one
+            // read "These documents").
+            return shown == 1
+                ? String(localized: "corpus.save.meaning.one",
+                         defaultValue: "This document is the closest match a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.")
+                : String(localized: "corpus.save.meaning",
+                         defaultValue: "These documents are the closest matches a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.")
         }
         // Never `nil` for words found in a Meaning list either: they are some of that list (#1577 lane 2).
         if case .wordsInMatches = route {
@@ -524,11 +614,14 @@ struct ResultSetScope: Equatable, Sendable {
     /// which is defensible and silent. Saying so at the moment of capture is what makes it a
     /// choice rather than a surprise.
     var captureChecklistWarning: String? {
-        guard hiddenByChecklist > 0 else { return nil }
-        return String(format: String(
-            localized: "corpus.save.checklistHiding %@",
-            defaultValue: "Checklist mode is hiding %@ reviewed documents. They will not be in this corpus."),
-            grouped(hiddenByChecklist))
+        guard capturedHiddenByChecklist > 0 else { return nil }
+        // #1683: one hidden document read "1 reviewed documents".
+        return CountCopy.phrase(
+            capturedHiddenByChecklist,
+            one: String(localized: "corpus.save.checklistHiding.one",
+                        defaultValue: "Checklist mode is hiding %@ reviewed document. It will not be in this corpus."),
+            many: String(localized: "corpus.save.checklistHiding %@",
+                         defaultValue: "Checklist mode is hiding %@ reviewed documents. They will not be in this corpus."))
     }
 
     /// The provenance sentence stored on the corpus itself.
@@ -551,12 +644,29 @@ struct ResultSetScope: Equatable, Sendable {
                          grouped(loaded))
         } else if case .wordsInMatches(let base) = route {
             // Named for what it is, as a Meaning list is: the record outlives the screen that said so.
-            description = String(format: String(
-                localized: "corpus.save.source.wordsInMatches %@ %@",
-                defaultValue: "Words found in a Meaning search’s closest matches — %1$@ of %2$@"),
-                grouped(loaded), grouped(base))
+            // With the list's question where it is known (#1577 lane 4), so the record names both
+            // layers: the words are the corpus's `sourceQuery`.
+            if let label = layerBaseLabel {
+                description = String(format: String(
+                    localized: "corpus.save.source.wordsInMatches.within %@ %@ %@",
+                    defaultValue: "Words found in a Meaning search’s closest matches to %3$@ — %1$@ of %2$@"),
+                    grouped(loaded), grouped(base), label)
+            } else {
+                description = String(format: String(
+                    localized: "corpus.save.source.wordsInMatches %@ %@",
+                    defaultValue: "Words found in a Meaning search’s closest matches — %1$@ of %2$@"),
+                    grouped(loaded), grouped(base))
+            }
+        } else if case .rankedByMeaning = route {
+            // A corpus stores a set and not an order, but the record says the list was ranked, and what
+            // it was a list of: the question is the corpus's `sourceQuery` (#1577 lane 4).
+            description = layerBaseLabel.map {
+                String(format: String(localized: "corpus.save.source.rankedByMeaning %@",
+                                      defaultValue: "Search results for %@, ranked by a question"), $0)
+            } ?? String(localized: "corpus.save.source.rankedByMeaning.unlabelled",
+                        defaultValue: "Search results, ranked by a question")
         } else {
-            // A keyword list, in its own order or reordered by a question: a corpus stores a set and not an order.
+            // A keyword list: a corpus stores a set and not an order.
             description = String(localized: "corpus.save.source.search", defaultValue: "Search results")
         }
         if didHitFetchLimit {
@@ -572,11 +682,14 @@ struct ResultSetScope: Equatable, Sendable {
                     grouped(loaded))
             }
         }
-        if hiddenByChecklist > 0 {
-            description += String(format: String(
-                localized: "corpus.save.source.checklist %@",
-                defaultValue: "; %@ reviewed documents excluded"),
-                grouped(hiddenByChecklist))
+        if capturedHiddenByChecklist > 0 {
+            // #1683: one excluded document read "1 reviewed documents".
+            description += CountCopy.phrase(
+                capturedHiddenByChecklist,
+                one: String(localized: "corpus.save.source.checklist.one",
+                            defaultValue: "; %@ reviewed document excluded"),
+                many: String(localized: "corpus.save.source.checklist %@",
+                             defaultValue: "; %@ reviewed documents excluded"))
         }
         return description
     }
@@ -633,10 +746,13 @@ struct ResultSetScope: Equatable, Sendable {
                          defaultValue: "Measured over every result this search loaded, which is every matching document.")
         }
         if hiddenByChecklist > 0 {
-            description += String(format: String(
-                localized: "search.collocation.caveat.scope.checklist %@",
-                defaultValue: " %@ reviewed documents are excluded."),
-                grouped(hiddenByChecklist))
+            // #1683: one excluded document read "1 reviewed documents are excluded."
+            description += CountCopy.phrase(
+                hiddenByChecklist,
+                one: String(localized: "search.collocation.caveat.scope.checklist.one",
+                            defaultValue: " %@ reviewed document is excluded."),
+                many: String(localized: "search.collocation.caveat.scope.checklist %@",
+                             defaultValue: " %@ reviewed documents are excluded."))
         }
         return description
     }
