@@ -1,6 +1,6 @@
 # The person authority's Wikidata and VIAF ids, and the overlay entries that carry several people: an assessment, 2026-10-17
 
-**What this is.** The assessment of the two findings A4c sized and left (plan of record §6g; `Planning/Person-Authority-Overlay-Review-2026-10-17.md` §6.1 and §6.2), worked on the owner's word of 2026-10-17 after #1709 merged, based on `v2` at `b3272d86`. It measures how many of `person-authority-index.json`'s Wikidata and VIAF ids name someone else, what the overlay's multi-id entries stamp on each of their ids, and what each way of fixing them would do to the bundle. **Nothing is built**: no generator, corrections, bundled file, rollup or index version changed. §8 asks the owner to choose.
+**What this is.** The assessment of the two findings A4c sized and left (plan of record §6g; `Planning/Person-Authority-Overlay-Review-2026-10-17.md` §6.1 and §6.2), worked on the owner's word of 2026-10-17 after #1709 merged, based on `v2` at `b3272d86`. It measures how many of `person-authority-index.json`'s Wikidata and VIAF ids name someone else, what the overlay's multi-id entries stamp on each of their ids, and what each way of fixing them would do to the bundle. Nothing in this memo's measurements changed the generator, the corrections, the bundled file or any version. **Decided on 2026-10-17** (plan of record decision 55): option (c) for build 51, built as A4d, and the fix deferred to a later release (§8).
 
 ## 1. In brief
 
@@ -140,7 +140,7 @@ Written as identifier-only corrections in `persons-complete-corrections.json`, t
 - **(b2)** if coverage matters more than precision: 82%, about 440 wrong.
 - **(a)** only for exceptions. It does not scale (§7.3), and it cannot divide a multi-id entry.
 
-**The choice asked for**: which option, and whether before build 51. **Not proposed**, but measured and open: deriving a record's Wikidata id from the item that holds its VIAF id, which would give 319 records a link (199 whose overlay id (b4) withholds, 120 that had none), 28 of 29 read right; reading the 824 unheld VIAF ids on viaf.org (a day's quota); and telling `frus-name-authority` upstream which of its ids fail, which is the owner's to send.
+**The owner's choice, 2026-10-17** (decision 55): "Option c - withhold VIAF from build 51. Defer fix to later release." Build 51 takes none of the overlay's Wikidata and VIAF ids (A4d): the regenerated file has no Wikidata id and 142 VIAF ids, the registry's own, and matches §7.1's option (c) record for record. (b4) and §7.2's rule are deferred; restoring VIAF ids will need a rollup bump, since build 51's rebuild is v12's. **Not proposed**, but measured and open: deriving a record's Wikidata id from the item that holds its VIAF id, which would give 319 records a link (199 whose overlay id (b4) withholds, 120 that had none), 28 of 29 read right; reading the 824 unheld VIAF ids on viaf.org (a day's quota); and telling `frus-name-authority` upstream which of its ids fail, which is the owner's to send.
 
 ## 9. What a build would owe
 
