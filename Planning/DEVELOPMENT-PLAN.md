@@ -38749,4 +38749,6 @@ All at the code commit, rebased on `9feff971`, clean and unsigned. The records c
 
 **Not run.** Not seen on a device or in the app. Nothing run on Linux.
 
+**In review** as #1710, pushed ahead of A4b on the owner's word.
+
 **Not done.** The deferred fix (the memo's (b4) and §7.2). The macOS manual's Kissinger capture (`screenshots/macos/people-detail.png`), whose caption names his VIAF and Wikidata links, no longer matches his sheet; it is for §6a's sweep. A library already at rollup v12 keeps its old VIAF links until its next rebuild; every build-50 library rewrites them in v12's rebuild in build 51.
