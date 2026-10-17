@@ -119,7 +119,7 @@ public enum PersonAuthorityIndexRunner {
                 }
                 print("Overlay: \(entries.count) entries; audit guard resolved "
                     + "\(flagged.count) people-ids to skip; \(corrections.count) corrections "
-                    + "hold apart what an entry's other person owns.")
+                    + "hold apart what is not an entry's keyed person's.")
             } catch {
                 FileHandle.standardError.write(Data("error reading overlay inputs: \(error)\n".utf8))
                 exit(1)
@@ -160,6 +160,8 @@ public enum PersonAuthorityIndexRunner {
                       crosswalk volumes added:   \(stats.crosswalkVolumesAdded)
                       anchors held apart:        \(stats.overlayAnchorsHeldApart)
                       identifiers withheld:      \(stats.overlayIdentifiersWithheld)
+                      role texts withheld:       \(stats.overlayRolesWithheld)
+                      held apart, then joined:   \(stats.overlayAnchorsJoined)
                       anchors where the two sources DISAGREE (registry kept): \(stats.crosswalkConflicts.count)
                     """)
                 if !stats.unknownOverlayIds.isEmpty {

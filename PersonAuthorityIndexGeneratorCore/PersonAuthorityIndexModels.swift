@@ -187,6 +187,10 @@ public struct BuildStats: Sendable, Equatable {
     public var overlayAnchorsHeldApart = 0
     /// Overlay identifiers, Wikidata or VIAF, a correction kept off the entry's people-ids (#1657).
     public var overlayIdentifiersWithheld = 0
+    /// Overlay entries whose role text a correction kept off the entry's people-ids.
+    public var overlayRolesWithheld = 0
+    /// Held-apart anchors that joined the registry record their correction names.
+    public var overlayAnchorsJoined = 0
     public init() {}
 }
 
