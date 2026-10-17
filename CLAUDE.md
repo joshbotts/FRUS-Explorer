@@ -141,7 +141,7 @@ measured failure).
 | `RecordGroupCatalogGenerator` | `Planning/nara-record-group-catalog/` | NARA's public S3 export; start with `PROBE=1` |
 | `DecimalClassLabelGenerator` | `decimal-class-labels.json` | the Department's manuals in `SCHEDULE_DIR` |
 | `SubjectNumericLabelGenerator` | `subject-numeric-labels.json` | the handbooks in `SCHEDULE_DIR`, the usage index, `decimal-class-labels.json` |
-| `PersonAuthorityIndexGenerator` | `person-authority-index.json` | the people registry, `persons-complete.xml`, the merge audit |
+| `PersonAuthorityIndexGenerator` | `person-authority-index.json` | the people registry, `persons-complete.xml`, the merge audit; then the committed corrections beside the tool |
 | `POCOMIndexGenerator` | `pocom-index.json` | the POCOM register; run it after `PersonAuthorityIndexGenerator` |
 | `DocumentSubjectIndexGenerator` | `document-subject-index.json` | the corrected subject export only, no TEI |
 | `VolumeSubjectProfilesGenerator` | `volume-subject-profiles-index.json` | the same export, the manifest |

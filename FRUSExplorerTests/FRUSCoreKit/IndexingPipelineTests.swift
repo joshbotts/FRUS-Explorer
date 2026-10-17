@@ -6501,6 +6501,116 @@ struct PersonRollupConsolidationTests {
         }
     }
 
+    // MARK: One rollup whatever order the volumes were indexed in (#1658)
+
+    /// Every ordering of `items`.
+    private static func orderings(of items: [String]) -> [[String]] {
+        guard items.count > 1 else { return [items] }
+        return items.indices.flatMap { i -> [[String]] in
+            var rest = items
+            let head = rest.remove(at: i)
+            return orderings(of: rest).map { [head] + $0 }
+        }
+    }
+
+    /// What a rollup build wrote: each rollup's members as `volume/ref`, the same rows with their
+    /// `rollup_id`, and the reasons of the candidate pairs it recorded.
+    private func rollupRows(dbURL: URL) throws
+        -> (partition: Set<Set<String>>, numbered: Set<String>, candidateReasons: [String]) {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        defer { sqlite3_close_v2(db) }
+        func rows(_ sql: String, _ read: (OpaquePointer?) -> Void) throws {
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            defer { sqlite3_finalize(stmt) }
+            while sqlite3_step(stmt) == SQLITE_ROW { read(stmt) }
+        }
+        var members: [Int64: Set<String>] = [:]
+        var numbered = Set<String>()
+        try rows("SELECT rollup_id, volume_id, ref FROM person_rollup_member") { stmt in
+            let rollupId = sqlite3_column_int64(stmt, 0)
+            let key = "\(String(cString: sqlite3_column_text(stmt, 1)))/\(String(cString: sqlite3_column_text(stmt, 2)))"
+            members[rollupId, default: []].insert(key)
+            numbered.insert("\(rollupId) \(key)")
+        }
+        var reasons: [String] = []
+        try rows("SELECT reason FROM person_cluster_candidate") { stmt in
+            reasons.append(String(cString: sqlite3_column_text(stmt, 0)))
+        }
+        return (Set(members.values), numbered, reasons)
+    }
+
+    /// Build 50's re-index census (#1656) built the same 553 files twice, a library upgraded from
+    /// build 49 and a fresh index, and one member of 63,667 rolled up differently: 1981–1988
+    /// vol. XVI's "Kirkpatrick, Jeane J.", which no crosswalk covers, sat under Helen P. Kirkpatrick
+    /// in one and under Jeane Jordan Kirkpatrick in the other. The same name in two other volumes is
+    /// covered by two different authority ids (the bundled crosswalk sent one of them to Helen P.'s,
+    /// #1657), so the uncovered member merges by name with both, the cannot-link refuses the second
+    /// union, and the pair its block reaches first decides. The block was in the order the
+    /// volumes had been indexed. Here the three volumes are indexed in every order, and each
+    /// library must roll them up alike.
+    @Test("Every order of indexing the same volumes builds the same rollup (#1658)")
+    func rollupIsTheSameWhateverTheIndexingOrder() async throws {
+        let orders = Self.orderings(of: ["volA", "volB", "volU"])
+        #expect(orders.count == 6)
+        var builds: [(order: [String], partition: Set<Set<String>>, numbered: Set<String>)] = []
+        for order in orders {
+            try await withTempDir { dir in
+                let (pipeline, _) = try await makeTestPipeline(dir: dir)
+                let volDir = dir.appendingPathComponent("volumes")
+                for (volumeId, year) in [("volA", "1981"), ("volB", "1983"), ("volU", "1985")] {
+                    try writeVolume(
+                        to: volDir.appendingPathComponent("\(volumeId).xml"), volumeId: volumeId, year: year,
+                        documents: [("d1", "p_KJJ_1", "Kirkpatrick")],
+                        persons: [("p_KJJ_1", "Kirkpatrick, Jeane J.: U.S. Representative to the United Nations")])
+                }
+                for volumeId in order { try await pipeline.indexVolume(volumeId) }
+                // volA's entry wears Helen P.'s id, as the bundled crosswalk gave it; volB's wears
+                // Jeane Jordan's; volU's, like vol. XVI's, is in neither source.
+                await pipeline.setAuthorityIndexForTesting(PersonAuthorityIndex(
+                    version: 2, generated: "test", source: "test",
+                    crosswalk: ["volA": ["p_KJJ_1": 107235], "volB": ["p_KJJ_1": 107237]],
+                    authority: [
+                        "107235": .init(n: "Kirkpatrick, Helen P.", b: nil, d: nil, v: nil),
+                        "107237": .init(n: "Kirkpatrick, Jeane Jordan", b: 1926, d: 2006, v: nil),
+                    ]))
+                try await pipeline.consolidatePersonRollup()
+
+                let rows = try rollupRows(dbURL: dir.appendingPathComponent("test.sqlite"))
+                // The tie is real in every order, or the comparison below proves nothing: the
+                // uncovered member joined exactly one of the two covered ones, and the cannot-link
+                // refused the other union and recorded it as a candidate.
+                let uncovered = try #require(rows.partition.first { $0.contains("volU/p_KJJ_1") })
+                #expect(uncovered.count == 2, "order \(order): volU joined \(uncovered.sorted())")
+                #expect(rows.partition.count == 2, "order \(order): \(rows.partition)")
+                #expect(rows.candidateReasons.contains { $0.contains("would bridge two reconciled identities") },
+                        "order \(order): the second union must have been refused")
+                builds.append((order, rows.partition, rows.numbered))
+            }
+        }
+        let first = try #require(builds.first)
+        for build in builds.dropFirst() {
+            #expect(build.partition == first.partition,
+                    "indexed \(build.order) the rollup is \(build.partition); indexed \(first.order) it is \(first.partition)")
+            #expect(build.numbered == first.numbered,
+                    "indexed \(build.order) the rollups are numbered differently from \(first.order)")
+        }
+    }
+
+    /// A version line two lanes edit can be resolved back by a merge and leave every other test
+    /// green, with no library rebuilding its rollup. The order above and #1657's regenerated
+    /// authority index change rollup outcomes on a device only when the library rebuilds, and v11
+    /// is what makes it rebuild, once for both.
+    @Test("The person-rollup version is at least 11 (#1658, #1657)")
+    func rollupVersionCoversTheInputOrder() {
+        #expect(IndexingPipeline.currentPersonRollupVersion >= 11)
+    }
+
     // MARK: Active years come from the volumes (#1370)
 
     /// A volume whose documents carry the editors' dates, with an optional dated preface that names
