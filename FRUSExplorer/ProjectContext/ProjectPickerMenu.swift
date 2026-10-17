@@ -136,9 +136,12 @@ struct ProjectPickerMenu: View {
 /// draws the banner **over** the bar, clipping the back button, the title, and the trailing toolbar
 /// items. That is exactly what #486 was — the Browse tab applied it to `BrowserView()` from
 /// `BrowserTabView`, while `SearchView` (unaffected) applies it to its results content inside its
-/// own stack. The rule is about the iOS navigation bar specifically; the macOS hosts
-/// (`MacCorpusBrowserWindow`, `SearchSheet`) sit under a real window title bar, which is chrome
-/// outside the content view and is not affected.
+/// own stack. **The Mac is not exempt** (#1701). A top inset applied to a `NavigationSplitView`
+/// does not move its columns, each of which keeps its own safe area under the toolbar, so the
+/// banner is drawn over the first rows of both: in the Corpus Browser it hid the sidebar's Browse
+/// header and a pushed volume's header line. So `SearchSheet` sets the banner inline in its one
+/// column, and `MacCorpusBrowserWindow` heads each view inside its detail column's stack with it
+/// (`WorkingOnBarAbove`); above the stack, the Mac's pushed views cover it.
 ///
 /// Version history:
 ///   1.0 — #377 Phase 5: initial implementation
@@ -149,6 +152,8 @@ struct ProjectPickerMenu: View {
 ///   1.2 — #486: documented the inside-the-navigation-container placement rule above. No change
 ///          to this view; the Browse host moved its inset (`BrowserView.stackLayout` /
 ///          `levelView(for:vm:)`).
+///   1.3 — A3c (#1701): the rule covers the Mac's split view too. No change to this view; the
+///          Corpus Browser host moved the banner inside its detail column's stack.
 struct WorkingOnBanner: View {
 
     @Environment(AppState.self) private var appState
