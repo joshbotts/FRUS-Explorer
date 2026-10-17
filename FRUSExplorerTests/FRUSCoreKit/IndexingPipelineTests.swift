@@ -6611,6 +6611,13 @@ struct PersonRollupConsolidationTests {
         #expect(IndexingPipeline.currentPersonRollupVersion >= 11)
     }
 
+    /// A4c regenerated the bundled authority index with eighty more of the overlay's wrong merges held
+    /// apart; a library sees it only when its rollup rebuilds, and v12 is what rebuilds it.
+    @Test("The person-rollup version is at least 12 (A4c)")
+    func rollupVersionCoversTheOverlayCorrections() {
+        #expect(IndexingPipeline.currentPersonRollupVersion >= 12)
+    }
+
     // MARK: Active years come from the volumes (#1370)
 
     /// A volume whose documents carry the editors' dates, with an optional dated preface that names

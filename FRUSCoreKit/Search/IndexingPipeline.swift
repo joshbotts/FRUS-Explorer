@@ -451,6 +451,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         their people up alike whatever order they indexed them in, and the bundled authority
 ///         index no longer files Jeane Kirkpatrick under Helen P. Kirkpatrick or Ahmad Khomeini
 ///         under his father (see the v11 note). No index version
+///  4.40 — 2026-10-17 (A4c, plan of record §6g): `currentPersonRollupVersion` → 12 — the bundled
+///         authority index holds apart eighty more of the overlay's wrong merges, Richard V. Allen's
+///         1981–1988 entries from Richard F. Allen's among them (see the v12 note). No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1539,7 +1542,23 @@ public actor IndexingPipeline {
     /// that library, where the old loader, given the same rows in two other orders, put 6 members
     /// with a different person (Chip Carter's 1977–1980 entry with Jimmy Carter, for one).
     /// A rollup rebuild only; no index version.
-    public static let currentPersonRollupVersion: Int = 11
+    /// v12 (A4c, plan of record §6g): the bundled `person-authority-index.json` was regenerated with
+    /// eighty more overlay entries held apart, read one by one against each anchor's volume, the
+    /// registry and wikidata.org: entries keyed to one person that carry another's anchors (Richard F.
+    /// Allen of the 1951 mission to Yugoslavia with thirteen of Richard V. Allen's; Ernesto
+    /// Betancourt with Romulo Betancourt's; eight of the Tehran hostages with older namesakes), and
+    /// entries carrying several people-ids whose anchors went to the wrong one. 108 crosswalk anchors
+    /// move: 35 to the right person's registry record, 73 to none, for the clusterer to place; 54
+    /// Wikidata ids, 45 VIAF ids and 24 role texts leave records that are not theirs. Measured over a
+    /// full library (553 volumes at index v69, 63,667 members, 2026-10-17): 104 members change person
+    /// and the rollups go from 17,956 to 18,009. 35 join the right person's registry record through
+    /// the crosswalk, 60 a person of their own, and 9 move by name in the clusterer: 8 to the right
+    /// person (two of Richard V. Allen's "Dick" entries among them) and one, Myles Greene of the
+    /// Office of Iranian Affairs, from James F. Greene to Colonel M.J.L. Greene of 1962, neither his.
+    /// Nine held-apart members still rejoin the person they were held apart from, by name, where the
+    /// other person has no record in the bundle (Hamilton Fish III and IV under the Secretary of
+    /// State, for two). A rollup rebuild only; no index version.
+    public static let currentPersonRollupVersion: Int = 12
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,

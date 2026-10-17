@@ -186,9 +186,11 @@ public enum PersonAuthorityIndexBuilder {
     /// anchors for people the registry already has — an anchor pointing at an id with no entry
     /// would resolve to a person the app cannot name, so those are counted and dropped.
     ///
-    /// An entry a correction names (`overlay.corrections`, #1657) merges two people: the anchors
-    /// and identifiers the correction lists belong to the other one, and join none of the entry's
-    /// people-ids. The rest of the entry applies as any entry does.
+    /// An entry a correction names (`overlay.corrections`, #1657) merges two people: the anchors,
+    /// identifiers and role text the correction lists are not the keyed person's, and reach none of
+    /// the entry's people-ids. The rest of the entry applies as any entry does. After every entry,
+    /// the anchors of a correction that names the record they belong to join it where no source
+    /// answered for them.
     static func applyOverlay(_ overlay: Overlay,
                              crosswalk: inout [String: [String: Int]],
                              authority: inout [String: AuthorityEntry],
@@ -223,12 +225,16 @@ public enum PersonAuthorityIndexBuilder {
             let viaf = entry.viaf.flatMap { id in
                 corrections.contains { $0.viaf == id } ? nil : id
             }
+            let role = entry.role.flatMap { text in
+                corrections.contains { $0.role == text } ? nil : text
+            }
             if wikidata != entry.wikidata { stats.overlayIdentifiersWithheld += 1 }
             if viaf != entry.viaf { stats.overlayIdentifiersWithheld += 1 }
+            if role != entry.role { stats.overlayRolesWithheld += 1 }
 
             for id in ids where authority[id] != nil {
                 authority[id] = authority[id]?.merging(
-                    viaf: viaf, wikidata: wikidata, role: entry.role,
+                    viaf: viaf, wikidata: wikidata, role: role,
                     roleLimit: overlay.roleCharacterLimit)
             }
 
@@ -261,6 +267,17 @@ public enum PersonAuthorityIndexBuilder {
                 }
                 crosswalk[anchor.volumeId, default: [:]][anchor.ref] = canonicalId
                 stats.crosswalkPairsAdded += 1
+            }
+        }
+        // A held-apart anchor joins the record its correction names, wherever neither the registry
+        // nor an overlay entry answered for it: held apart and left to the app's clusterer, it can
+        // be merged back by name with the person it was held apart from.
+        for correction in overlay.corrections {
+            guard let joins = correction.joins, let joinedId = Int(joins.peopleId) else { continue }
+            for anchor in correction.parsedAnchors where keepVolume?(anchor.volumeId) ?? true {
+                guard crosswalk[anchor.volumeId]?[anchor.ref] == nil else { continue }
+                crosswalk[anchor.volumeId, default: [:]][anchor.ref] = joinedId
+                stats.overlayAnchorsJoined += 1
             }
         }
         stats.crosswalkVolumesAdded = Set(crosswalk.keys).subtracting(volumesBefore).count

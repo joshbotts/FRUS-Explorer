@@ -1,5 +1,5 @@
 {
-  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to the person the entry is not keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id is stamped on none of them; the rest of the entry applies as before. A run refuses to write when the registry names peopleId otherwise than registryName, or when no entry carrying peopleId lists an anchor or identifier given here. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
+  "about" : "Entries of frus-name-authority's persons-complete.xml that merge two people, and what of each belongs to someone other than the person the entry is keyed to. PersonAuthorityIndexGenerator reads this file whenever it applies the overlay: for an entry carrying peopleId, the listed anchors join none of the entry's people-ids, and the listed Wikidata or VIAF id, and the listed role text, are stamped on none of them; the rest of the entry applies as before. Where joins names the other person's registry record, the listed anchors join it wherever no source answers for them. An identifier or role text is listed when it is not the keyed person's: the other person's, or someone else's that the reconciliation matched by name (each read on wikidata.org or viaf.org). A run refuses to write when the registry names peopleId otherwise than registryName or names joins.peopleId otherwise than joins.registryName, or when no entry carrying peopleId lists an anchor, identifier or role text given here. See PersonsCompleteCorrections.swift and Planning/Generators-Runbook.md.",
   "heldApart" : [
     {
       "peopleId" : "107235",
@@ -17,8 +17,10 @@
         "frus1981-88v41/persons#p_KJJ_1",
         "frus1981-88v44p1/persons#p_KJJ_1"
       ],
+      "joins" : null,
       "wikidata" : "Q240534",
       "viaf" : "71474039",
+      "role" : null,
       "reason" : "Entry FRUS-14666 carries people-id 107235, Kirkpatrick, Helen P. (Public Affairs Adviser, Bureau of European Affairs; 1952-1954 vol. XI, Parts 1 and 2), and ten anchors whose own entries read \"Kirkpatrick, Jeane J.\" in 1981-1988 volumes, with Jeane Kirkpatrick's Wikidata and VIAF ids (Q240534 gives VIAF 71474039; she lived 1926-2006). The registry gives 107235 Helen P.'s two anchors and no identifier, and gives Jeane Jordan Kirkpatrick 107237 (vols. III and XIII); FRUS-14668, her own overlay entry, carries 107237, the same two ids and vol. I's anchor. The merge audit has no row for either entry. #1657."
     },
     {
@@ -28,9 +30,1164 @@
       "anchors" : [
         "frus1977-80v11p1/persons#p_KA_1"
       ],
+      "joins" : null,
       "wikidata" : "Q400619",
       "viaf" : null,
+      "role" : null,
       "reason" : "Entry FRUS-14463 carries people-id 107120, Khomeini, Ruhollah, and among its eleven anchors 1977-1980 vol. XI Part 1's p_KA_1, whose entry reads \"Khomeini, Ahmad\" (the entry's occupations include \"son of the Ayatollah Khomeini\"), with Wikidata Q400619, which is Ahmad Khomeini (1946-1995). Its VIAF id, 88036173, is Ruhollah Khomeini's (his Wikidata item, Q38823, gives it), so it is kept, and so are his other ten anchors and his role text. The registry's 107120 does not list vol. XI Part 1's p_KA_1, and the merge audit has no row for the entry. #1657."
+    },
+    {
+      "peopleId" : "100307",
+      "registryName" : "Allen, Richard F.",
+      "otherPerson" : "Allen, Richard V. (registry 100308)",
+      "anchors" : [
+        "frus1917-72PubDipv08/persons#p_ARV_1",
+        "frus1969-76v04/persons#p_ARV1",
+        "frus1969-76v14/persons#p_ARV1",
+        "frus1969-76v29/persons#p_AR1",
+        "frus1977-80v13/persons#p_ARV_1",
+        "frus1981-88v01/persons#p_ARV_1",
+        "frus1981-88v03/persons#p_ARV_1",
+        "frus1981-88v04/persons#p_ARV_1",
+        "frus1981-88v10/persons#p_ARV_1",
+        "frus1981-88v11/persons#p_RAllen_1",
+        "frus1981-88v13/persons#p_ARV_1",
+        "frus1981-88v38/persons#p_ARV_1",
+        "frus1981-88v41/persons#p_ARV_1"
+      ],
+      "joins" : {
+        "peopleId" : "100308",
+        "registryName" : "Allen, Richard V."
+      },
+      "wikidata" : "Q517683",
+      "viaf" : "44887512",
+      "role" : "planning staff, National Security Council; member, Inter-Agency Youth Committee",
+      "reason" : "Entry FRUS-00645 carries people-id 100307, Allen, Richard F. (Chief, ECA Mission in Yugoslavia, 1951-1952: his three registry anchors), and thirteen anchors of Richard V. Allen (National Security Council staff, 1969-1970; the Council on International Economic Policy, 1971; Reagan's Assistant for National Security Affairs, 1981-1982), six of which the registry gives 100308. Q517683 is Richard V. Allen on Wikidata, and gives VIAF 44887512; the entry's role text (\"planning staff, National Security Council...\") is his too. The anchors join 100308: held apart alone, his 1981-1988 entries rejoined Richard F. Allen in the app's rollup through 1952-1954 vol. VIII's \"Allen, Richard\", which fits either name."
+    },
+    {
+      "peopleId" : "101262",
+      "registryName" : "Betancourt, Ernesto",
+      "otherPerson" : "Betancourt, Rómulo (registry 101263)",
+      "anchors" : [
+        "frus1917-72PubDipv06/persons#p_BR_2",
+        "frus1917-72PubDipv07/persons#p_BR_1",
+        "frus1955-57v06/persons#p_BR1",
+        "frus1955-57v07/persons#p_BR1",
+        "frus1958-60v05/persons#p_BR1",
+        "frus1958-60v05mSupp/persons#p_BR_1",
+        "frus1958-60v06/persons#p_BR1",
+        "frus1961-63v12/persons#p_BR3",
+        "frus1964-68v31/persons#p_BR1",
+        "frus1969-76v21/persons#p_BR_1",
+        "frus1977-80v15/persons#p_BR_4",
+        "frus1977-80v24/persons#p_BR_3"
+      ],
+      "joins" : {
+        "peopleId" : "101263",
+        "registryName" : "Betancourt, Rómulo"
+      },
+      "wikidata" : "Q332081",
+      "viaf" : "106963495",
+      "role" : "President of Venezuela",
+      "reason" : "Entry FRUS-02610 carries people-id 101262, Betancourt, Ernesto (registered agent of the 26th of July Movement, 1958-1959), and twelve anchors of Romulo Betancourt, President of Venezuela, seven of which the registry gives 101263. Q332081 is Romulo Betancourt on Wikidata; VIAF 106963495 is a cluster of his (\"Betancourt, Romulo, 1904-\"); the role text \"President of Venezuela\" is his."
+    },
+    {
+      "peopleId" : "112506",
+      "registryName" : "Simons, Hans",
+      "otherPerson" : "Simons, Thomas W., Jr. (registry 112508)",
+      "anchors" : [
+        "frus1981-88v10/persons#p_ST_1"
+      ],
+      "joins" : {
+        "peopleId" : "112508",
+        "registryName" : "Simons, Thomas W., Jr."
+      },
+      "wikidata" : "Q130776132",
+      "viaf" : "66545568",
+      "role" : null,
+      "reason" : "Entry FRUS-25479 carries people-id 112506, Simons, Hans (OMGUS, 1948), and 1981-1988 vol. X's \"Simons, Thomas\", Director of Soviet Union Affairs 1982-1985. VIAF 66545568 is Thomas W. Simons, Jr. (Q9358534) and Q130776132 is a Thomas Simons; neither is Hans Simons. The role text is his own."
+    },
+    {
+      "peopleId" : "108798",
+      "registryName" : "McCormack, Alfred",
+      "otherPerson" : "McCormack, Richard T. (registry 108802)",
+      "anchors" : [
+        "frus1981-88v38/persons#p_MCRT_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q91470077",
+      "viaf" : "70291291",
+      "role" : null,
+      "reason" : "Entry FRUS-17959 carries people-id 108798, McCormack, Alfred (Special Assistant for Intelligence and Research, 1945-1946), and 1981-1988 vol. XXXVIII's \"McCormack, Richard T.\", Assistant Secretary for Economic and Business Affairs from 1982. VIAF 70291291 is Richard T. McCormack (born 1941); Q91470077 is Richard McCormack, a Vermont politician born 1947. The role text is Alfred McCormack's own."
+    },
+    {
+      "peopleId" : "105915",
+      "registryName" : "Hill, Arthur M.",
+      "otherPerson" : "Hill, A. Alan (Chair, Council on Environmental Quality, 1981-1989)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_HAA_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q58003150",
+      "viaf" : "93748371",
+      "role" : "Chair (1981-1989; Reagan)",
+      "reason" : "Entry FRUS-12076 carries people-id 105915, Hill, Arthur M. (Chairman, National Security Resources Board, 1948), and 1981-1988 vol. XLI's \"Hill, A. Alan\", Chair of the Council on Environmental Quality 1981-1989, with his role text (\"Chair (1981-1989; Reagan)\"). Q58003150 is A. Alan Hill; VIAF 93748371 is Alan Hill, a cricketer (1928-2021). Neither is Arthur M. Hill."
+    },
+    {
+      "peopleId" : "115488",
+      "registryName" : "Freeman, Charles L.",
+      "otherPerson" : "Freeman, Orville L. (registry 104545)",
+      "anchors" : [
+        "frus1917-72PubDipv06/persons#p_FOL_1",
+        "frus1917-72PubDipv07/persons#p_FOL_1",
+        "frus1961-63v07-09mSupp/persons#p_FOL_1",
+        "frus1961-63v09/persons#p_FOL1",
+        "frus1961-63v13/persons#p_FOL1",
+        "frus1961-63v16/persons#p_FOL1",
+        "frus1964-68v09/persons#p_FOL1",
+        "frus1964-68v13/persons#p_FOL1",
+        "frus1964-68v22/persons#p_FOL1",
+        "frus1964-68v25/persons#p_FOL1",
+        "frus1964-68v29p2/persons#p_FOL1",
+        "frus1964-68v30/persons#p_FOL1",
+        "frus1964-68v31/persons#p_FOL1",
+        "frus1977-80v02/persons#p_FOL_1"
+      ],
+      "joins" : {
+        "peopleId" : "104545",
+        "registryName" : "Freeman, Orville L."
+      },
+      "wikidata" : null,
+      "viaf" : "40682506",
+      "role" : "Secretary of Agriculture from January 21, 1961",
+      "reason" : "Entry FRUS-09259 carries people-id 115488, Freeman, Charles L. (Commander, USN, Executive Officer of the USS Augusta, 1945), and fourteen anchors of Orville L. Freeman, Secretary of Agriculture 1961-1969, eleven of which the registry gives 104545. VIAF 40682506 is Orville Freeman (Q888636), and the role text (\"Secretary of Agriculture from January 21, 1961\") is his."
+    },
+    {
+      "peopleId" : "114284",
+      "registryName" : "Warne, William E.",
+      "otherPerson" : "Warne, W. Robert (Office of Caribbean Affairs, 1977-1980)",
+      "anchors" : [
+        "frus1977-80v15/persons#p_WWR_1",
+        "frus1977-80v23/persons#p_WWR_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "249649234",
+      "role" : null,
+      "reason" : "Entry FRUS-29137 carries people-id 114284, Warne, William E. (Director of the Technical Cooperation Administration mission in Iran from 1951), and two 1977-1980 anchors of W. Robert Warne, Director of the Office of Caribbean Affairs. VIAF 249649234 is \"Warne, W. Robert\". The role text is William E. Warne's."
+    },
+    {
+      "peopleId" : "108583",
+      "registryName" : "Martin, William I.",
+      "otherPerson" : "Martin, William F. (NSC Executive Secretary 1982-1986; Deputy Secretary of Energy)",
+      "anchors" : [
+        "frus1981-88v05/persons#p_MWF_1",
+        "frus1981-88v06/persons#p_MW_1",
+        "frus1981-88v38/persons#p_MWF_1",
+        "frus1981-88v44p1/persons#p_MW_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q2072139",
+      "viaf" : "64327120",
+      "role" : "Deputy Secretary of Energy (Reagan)",
+      "reason" : "Entry FRUS-17502 carries people-id 108583, Martin, William I. (Vice Admiral, Commander of the Sixth Fleet from 1967), and four 1981-1988 anchors of William F. Martin: two read \"Martin, William F.\" (NSC Executive Secretary 1982-1986) and two \"Martin, William, Deputy Secretary of Energy\", with that role text. Q2072139 is William Martin, an English naturalist (1767-1810); VIAF 64327120 is William F. Martin, a botanist born 1957. Neither is the admiral."
+    },
+    {
+      "peopleId" : "115673",
+      "registryName" : "Kaiser, Mary J.",
+      "otherPerson" : "Kaiser, Marcus (Swiss chargé in Iran)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_KM_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q103379571",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-13838 carries people-id 115673, Kaiser, Mary J. (INR, 1976), and 1977-1980 vol. XI Part 1's \"Kaiser, Marcus\", Charge d'Affaires of the Swiss Embassy in Iran. Q103379571 is Marcus Kaiser, a 2018 Ph.D. of the University of Bath. The role text is Mary J. Kaiser's."
+    },
+    {
+      "peopleId" : "112673",
+      "registryName" : "Smith, Willard W.",
+      "otherPerson" : "Smith, William Y. (registry 112676)",
+      "anchors" : [
+        "frus1969-76ve14p2/persons#p_SWY_1",
+        "frus1969-76v28/persons#p_SWY_1",
+        "frus1969-76v35/persons#p_SWY_1",
+        "frus1969-76v37/persons#p_SWY_1",
+        "frus1977-80v08/persons#p_SWY_1",
+        "frus1977-80v12/persons#p_SWY_1",
+        "frus1977-80v13/persons#p_SWY_1",
+        "frus1977-80v15/persons#p_SWY_1",
+        "frus1977-80v16/persons#p_SWY_1",
+        "frus1977-80v17p1/persons#p_SWY_1",
+        "frus1977-80v19/persons#p_SWY_1",
+        "frus1977-80v28/persons#p_SWY_1",
+        "frus1977-80v29/persons#p_SWY_1"
+      ],
+      "joins" : {
+        "peopleId" : "112676",
+        "registryName" : "Smith, William Y."
+      },
+      "wikidata" : "Q8020641",
+      "viaf" : "26279393",
+      "role" : null,
+      "reason" : "Entry FRUS-25837 carries people-id 112673, Smith, Willard W. (Brigadier General, Net Evaluation Subcommittee Staff, 1958), and thirteen anchors of William Y. Smith, General, USAF, Assistant to the Chairman of the Joint Chiefs 1975-1979, seven of which the registry gives 112676. Q8020641 is William Y. Smith (1925-2016), which gives VIAF 26279393. The role text is Willard W. Smith's."
+    },
+    {
+      "peopleId" : "116050",
+      "registryName" : "Rosenberg, Alfred",
+      "otherPerson" : "Rosenberg, Alison P. (NSC staff, 1987-1988)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_RAP_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q2158657",
+      "viaf" : "111673310",
+      "role" : null,
+      "reason" : "Entry FRUS-23605 carries people-id 116050, Rosenberg, Alfred (the Nazi Reichsleiter, 1945), and 1981-1988 vol. XLI's \"Rosenberg, Alison P.\", NSC staff 1987-1988. Q2158657 is Robert Rosenberg, a Czech film actor and producer born 1975, which gives VIAF 111673310. The role text is Alfred Rosenberg's."
+    },
+    {
+      "peopleId" : "115547",
+      "registryName" : "Graham, Wallace H.",
+      "otherPerson" : "Graham, William (Director, Office of Science and Technology Policy)",
+      "anchors" : [
+        "frus1981-88v06/persons#p_GW_1",
+        "frus1981-88v44p1/persons#p_GW_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q956335",
+      "viaf" : null,
+      "role" : "White House Director of the Office of Science and Technology Policy (Reagan)",
+      "reason" : "Entry FRUS-10447 carries people-id 115547, Graham, Wallace H. (Lieutenant Colonel, 24th Evacuation Hospital, 1945), and two 1981-1988 anchors of William Graham, Director of the White House Office of Science and Technology Policy, with that role text. Q956335 is Bill Graham, a Canadian politician (1939-2022)."
+    },
+    {
+      "peopleId" : "102259",
+      "registryName" : "Carter, William Beverly, Jr.",
+      "otherPerson" : "Carter, William A. (Billy), brother of Jimmy Carter",
+      "anchors" : [
+        "frus1977-80v17p3/persons#p_CWA_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-04632 carries people-id 102259, Carter, William Beverly, Jr. (Ambassador to Tanzania, 1972-1975), and 1977-1980 vol. XVII Part 3's \"Carter, William A. (Billy), brother of Jimmy Carter\". Its Wikidata and VIAF ids (Q7945355, 201897820) and role text are W. Beverly Carter's own, and stay."
+    },
+    {
+      "peopleId" : "108354",
+      "registryName" : "Maher (Mahir), Ali",
+      "otherPerson" : "Maher, Ahmed (Egyptian diplomat)",
+      "anchors" : [
+        "frus1977-80v09Ed2/persons#p_MA_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q401372",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-17020 carries people-id 108354, Maher (Mahir), Ali (Egyptian Prime Minister, 1952), and 1977-1980 vol. IX's \"Maher, Ahmed\", Director of the Cabinet of the Egyptian Foreign Minister. Q401372 is Ahmed Maher El Sayed (1935-2010). The role text is Ali Maher's."
+    },
+    {
+      "peopleId" : "115089",
+      "registryName" : "Abdul, Monem",
+      "otherPerson" : "Abdul, Mahmood (Bangladeshi Air Force)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_AM_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q3843442",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-00055 carries people-id 115089, Abdul, Monem (Egyptian Minister in Switzerland, 1951), and 1977-1980 vol. XIX's \"Abdul, Mahmood\", Bangladeshi Aviation Minister and Air Force chief of staff. Q3843442 is Mahmood Abdulla, a football player. The role text is Monem Abdul's."
+    },
+    {
+      "peopleId" : "111851",
+      "registryName" : "Salmon, Jean",
+      "otherPerson" : "Salmon, John W., Jr. (Department of State)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_SJW_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "86296384",
+      "role" : "Deputy Director (Reagan)",
+      "reason" : "Entry FRUS-24116 carries people-id 111851, Salmon, Jean (Belgian Ministry for Foreign Affairs, 1948), and 1981-1988 vol. XLI's \"Salmon, John W., Jr.\", Office of Non-Proliferation and Export Policy, with his role text (\"Deputy Director (Reagan)\"). VIAF 86296384 is \"Salmon, J. W. (John W.)\"."
+    },
+    {
+      "peopleId" : "105455",
+      "registryName" : "Hamilton, Fowler",
+      "otherPerson" : "Hamilton, Lee H. (registry 105460)",
+      "anchors" : [
+        "frus1977-80v01/persons#p_HLH_1",
+        "frus1977-80v02/persons#p_HLH_1",
+        "frus1977-80v08/persons#p_HLH_1",
+        "frus1977-80v17p3/persons#p_HLH_1",
+        "frus1977-80v19/persons#p_HLH_1",
+        "frus1977-80v21/persons#p_HLH_1"
+      ],
+      "joins" : {
+        "peopleId" : "105460",
+        "registryName" : "Hamilton, Lee Herbert"
+      },
+      "wikidata" : "Q19094847",
+      "viaf" : "85852018",
+      "role" : null,
+      "reason" : "Entry FRUS-11157 carries people-id 105455, Hamilton, Fowler (AID Administrator, 1961-1962), and six 1977-1980 anchors of Lee H. Hamilton, Representative from Indiana, four of which the registry gives 105460. VIAF 85852018 is Lee H. Hamilton (Q984174); Q19094847 is the Dictionary of National Biography's entry for Eugene Lee-Hamilton. The role text is Fowler Hamilton's."
+    },
+    {
+      "peopleId" : "115622",
+      "registryName" : "Hubbard, Charles J.",
+      "otherPerson" : "Hubbard, Carroll (Representative from Kentucky)",
+      "anchors" : [
+        "frus1977-80v29/persons#p_HC_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q1045188",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-12640 carries people-id 115622, Hubbard, Charles J. (Manhattan District consultant, 1945), and 1977-1980 vol. XXIX's \"Hubbard, Carroll\", Representative from Kentucky. Q1045188 is Carroll Hubbard. The role text is Charles J. Hubbard's."
+    },
+    {
+      "peopleId" : "115246",
+      "registryName" : "Bowen, John W.",
+      "otherPerson" : "Bowen, Otis R. (Secretary of Health and Human Services)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_BOR_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q887335",
+      "viaf" : "1344258",
+      "role" : "School of Professional Studies, Foreign Service Institute, Department of State, (1992-1995), [Clinton]",
+      "reason" : "Entry FRUS-03333 carries people-id 115246, Bowen, John W. (Colonel, White House Map Room, 1945), and 1981-1988 vol. XLI's \"Bowen, Otis R.\", Secretary of Health and Human Services 1985-1989. Q887335 is Otis R. Bowen and gives VIAF 1344258. The role text (Foreign Service Institute, 1992-1995) is a later John W. Bowen's, not the colonel's."
+    },
+    {
+      "peopleId" : "114790",
+      "registryName" : "Woods, Arthur",
+      "otherPerson" : "Woods, Alan (AID Administrator, 1987-1989)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_WA_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q4708100",
+      "viaf" : "114518203",
+      "role" : "Administrator (1987-1989; Reagan)",
+      "reason" : "Entry FRUS-30116 carries people-id 114790, Woods, Arthur (Committee on Public Information, 1917-1919), and 1981-1988 vol. XLI's \"Woods, Alan\", AID Administrator 1987-1989, with that role text. Q4708100 is Alan Woods, a footballer (1937-2021); VIAF 114518203 is Alan Woods, Dean of Gibraltar (Q4708101)."
+    },
+    {
+      "peopleId" : "113171",
+      "registryName" : "Sullivan, John L.",
+      "otherPerson" : "Sullivan, John H. (AID)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_SJH_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q949384",
+      "viaf" : "75092583",
+      "role" : null,
+      "reason" : "Entry FRUS-26826 carries people-id 113171, Sullivan, John L. (Secretary of the Navy, 1947-1949), and 1977-1980 vol. XIX's \"Sullivan, John H.\", AID's Assistant Administrator for Asia. Q949384 is John Sullivan, an Oklahoma politician born 1965; VIAF 75092583 is \"Sullivan, John H., 1935-\". The role text is John L. Sullivan's."
+    },
+    {
+      "peopleId" : "103713",
+      "registryName" : "Duncan, Donald B.",
+      "otherPerson" : "Duncan, Donald Keith (D. K.), of Jamaica",
+      "anchors" : [
+        "frus1977-80v23/persons#p_DDK_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q99439541",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-07634 carries people-id 103713, Duncan, Donald B. (Admiral, Vice Chief of Naval Operations, 1951-1956), and 1977-1980 vol. XXIII's \"Duncan, Donald Keith 'DK'\", General Secretary of Jamaica's People's National Party. Q99439541 is Donald Keith Duncan. The role text is the admiral's."
+    },
+    {
+      "peopleId" : "106471",
+      "registryName" : "Jackson, Elmore",
+      "otherPerson" : "Jackson, Everett (prisoner in Cuba until 1979)",
+      "anchors" : [
+        "frus1977-80v23/persons#p_JE_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q125781008",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-13158 carries people-id 106471, Jackson, Elmore (Special Assistant for UN Planning, 1961), and 1977-1980 vol. XXIII's \"Jackson, Everett\", a U.S. citizen imprisoned in Cuba until 1979. Q125781008 is Everett Jackson, a Rhodes Scholar (1891-1924). The role text is Elmore Jackson's."
+    },
+    {
+      "peopleId" : "100365",
+      "registryName" : "Alvarez, Alberto I.",
+      "otherPerson" : "Alvarez, Alvaro (Uruguayan foreign ministry)",
+      "anchors" : [
+        "frus1977-80v24/persons#p_AA_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q76359495",
+      "viaf" : "306170851",
+      "role" : null,
+      "reason" : "Entry FRUS-00789 carries people-id 100365, Alvarez, Alberto I. (Cuban Representative to the United Nations, 1949), and 1977-1980 vol. XXIV's \"Alvarez, Alvaro\", Uruguayan Director of Foreign Policy Issues. Q76359495 is an Alvaro Alvarez of a peerage database; VIAF 306170851 is held by an item born 1957 (Q133640579). The role text is Alberto Alvarez's."
+    },
+    {
+      "peopleId" : "111651",
+      "registryName" : "Roth, William Matson",
+      "otherPerson" : "Roth, William V., Jr. (registry 111652)",
+      "anchors" : [
+        "frus1977-80v28/persons#p_RWV_1",
+        "frus1977-80v29/persons#p_RWV_1"
+      ],
+      "joins" : {
+        "peopleId" : "111652",
+        "registryName" : "Roth, William Victor, Jr."
+      },
+      "wikidata" : "Q107782682",
+      "viaf" : "17306010",
+      "role" : null,
+      "reason" : "Entry FRUS-23696 carries people-id 111651, Roth, William Matson (Special Trade Representative, 1967-1969), and two 1977-1980 anchors of Senator William V. Roth, Jr., one of which the registry gives 111652. VIAF 17306010 is William Roth, the Delaware senator (Q1400609); Q107782682 is William Roth, a British painter. The role text is William M. Roth's."
+    },
+    {
+      "peopleId" : "107637",
+      "registryName" : "Lang, Kenneth W.",
+      "otherPerson" : "Lang, Kathleen (Office of Soviet Union Affairs)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_LK_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q88926002",
+      "viaf" : "55382181",
+      "role" : "Office of Soviet Union Affairs (Reagan)",
+      "reason" : "Entry FRUS-15535 carries people-id 107637, Lang, Kenneth W. (Master Sergeant, photographer at Potsdam, 1945), and 1981-1988 vol. XLI's \"Lang, Kathleen\", Office of Soviet Union Affairs, with that role text. VIAF 55382181 is \"Lang, Kathleen A.\"; Q88926002 is Kathleen Lang, a researcher."
+    },
+    {
+      "peopleId" : "108089",
+      "registryName" : "Long, Robert W.",
+      "otherPerson" : "Long, Robert L. J. (Admiral, Commander in Chief Pacific)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_LRLJ_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "23849100",
+      "role" : null,
+      "reason" : "Entry FRUS-16523 carries people-id 108089, Long, Robert W. (Assistant Secretary of Agriculture, 1969-1972), and 1977-1980 vol. XI Part 1's \"Long, Robert L.J.\", Admiral, Commander in Chief Pacific 1979-1983. VIAF 23849100 is Robert L. J. Long (Q7346582). The role text is Robert W. Long's."
+    },
+    {
+      "peopleId" : "107108",
+      "registryName" : "Khan, Nawabzada Nasrullah",
+      "otherPerson" : "Khan, Begum Nasim Wali (Awami National Party)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_KNW_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q135402906",
+      "viaf" : "47876548",
+      "role" : null,
+      "reason" : "Entry FRUS-14428 carries people-id 107108, Khan, Nawabzada Nasrullah (Democratic Action Committee, 1969), and 1977-1980 vol. XIX's \"Khan, Nasim (Begum) Wali\", leader of the Awami National Party. Q135402906 is Nur Khan of Bengal; VIAF 47876548 is Mihr Nur Muhammad Khan, born 1944. The role text is Nasrullah Khan's."
+    },
+    {
+      "peopleId" : "104072",
+      "registryName" : "Evans, Barbara",
+      "otherPerson" : "Evans, Ben (CIA Executive Secretary) and Evans, Billy Lee (Representative from Georgia)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_EB_1",
+        "frus1977-80v22/persons#p_EBL_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q57556607",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-08329 carries people-id 104072, Evans, Barbara (Personal Assistant to the Secretary of State, 1951-1953), and two 1977-1980 anchors of two other people: vol. XIX's \"Evans, Ben\", Executive Secretary of the CIA, and vol. XXII's \"Evans, Billy Lee\", Representative from Georgia. Q57556607 is Ben J Evans, a biologist. The role text is Barbara Evans's."
+    },
+    {
+      "peopleId" : "109157",
+      "registryName" : "Miller, George P.",
+      "otherPerson" : "Miller, G. William (registry 109156)",
+      "anchors" : [
+        "frus1977-80v23/persons#p_MGW_1"
+      ],
+      "joins" : {
+        "peopleId" : "109156",
+        "registryName" : "Miller, G. William"
+      },
+      "wikidata" : "Q446960",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-18725 carries people-id 109157, Miller, George P. (Representative from California, 1961-1963), and 1977-1980 vol. XXIII's \"Miller, George William\", Federal Reserve Chairman and Secretary of the Treasury. Q446960 is George Miller, an Australian filmmaker born 1945. The role text is George P. Miller's."
+    },
+    {
+      "peopleId" : "108110",
+      "registryName" : "Lopez, Salvador P.",
+      "otherPerson" : "Lopez, Sheila B. (Office of the Executive Secretary)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_LSB_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : "Office of the Executive Secretary (Reagan)",
+      "reason" : "Entry FRUS-16566 carries people-id 108110, Lopez, Salvador P. (Philippine Secretary of Foreign Affairs, 1963-1964), and 1981-1988 vol. XLI's \"Lopez, Sheila B.\", Office of the Executive Secretary, with her role text (\"Office of the Executive Secretary (Reagan)\"). The entry has no Wikidata or VIAF id."
+    },
+    {
+      "peopleId" : "106680",
+      "registryName" : "Johnson, Tom",
+      "otherPerson" : "Johnson, Thomas (Science Research Laboratory, West Point)",
+      "anchors" : [
+        "frus1981-88v44p1/persons#p_JT_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q110041288",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-13561 carries people-id 106680, Johnson, Tom (White House Press Officer, 1964-1968), and 1981-1988 vol. XLIV's \"Johnson, Thomas\", Director of the Science Research Laboratory, U.S. Military Academy. Q110041288 is a Thomas Johnson who lived 1677-1735. The role text is Tom Johnson's."
+    },
+    {
+      "peopleId" : "113000",
+      "registryName" : "Stevenson, Adlai Ewing, II",
+      "otherPerson" : "Stevenson, Adlai E., III (Senator from Illinois)",
+      "anchors" : [
+        "frus1977-80v23/persons#p_SAE_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-26487 carries people-id 113000, Stevenson, Adlai Ewing, II (1900-1965), and 1977-1980 vol. XXIII's \"Stevenson, Adlai E. III, Senator (D-Illinois)\", his son. The registry's own 113000 holds ten of the son's anchors (1969-1980), which stay: the registry wins. Q311719 is Adlai Stevenson II and stays, as does the role text, his."
+    },
+    {
+      "peopleId" : "105584",
+      "registryName" : "Harris, George L.",
+      "otherPerson" : "Harris, George S. (INR, Near East and South Asia)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_HGS_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q1334754",
+      "viaf" : null,
+      "role" : "Director (1989-1992; Bush (H.W.))",
+      "reason" : "Entry FRUS-11423 carries people-id 105584, Harris, George L. (Public Affairs Adviser, Far Eastern Affairs, 1952-1953), and 1977-1980 vol. XI Part 1's \"Harris, George S.\", INR's director for the Near East and South Asia, with his role text (\"Director (1989-1992; Bush (H.W.))\"). Q1334754 is George Harris, a British comedian born 1949."
+    },
+    {
+      "peopleId" : "105420",
+      "registryName" : "Hall, John A.",
+      "otherPerson" : "Hall, Joseph M. (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_HJM_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q56678232",
+      "viaf" : "36403967",
+      "role" : null,
+      "reason" : "Entry FRUS-11082 carries people-id 105420, Hall, John A. (Atomic Energy Commission, 1952-1957), and 1977-1980 vol. XI Part 1's \"Hall, Joseph M.\", listed in the volume's \"U.S. Hostages Held for 444 Days\". Q56678232 is Joseph M. Hall, Jr., an American historian, and gives VIAF 36403967. The role text is John A. Hall's."
+    },
+    {
+      "peopleId" : "106698",
+      "registryName" : "Jones, Curtis F.",
+      "otherPerson" : "Jones, Charles A., Jr. (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_JCAJR_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q126164068",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-13594 carries people-id 106698, Jones, Curtis F. (Near East affairs and INR, 1964-1976), and 1977-1980 vol. XI Part 1's \"Jones, Charles A., Jr.\", listed in the volume's \"U.S. Hostages Held for 444 Days\". Q126164068 is Charles A. Jones, Los Angeles police chief 1921-1922. VIAF 35793170 (\"Jones, Curtis C.\") is not shown to be someone else and stays, as does the role text."
+    },
+    {
+      "peopleId" : "107780",
+      "registryName" : "Lee, Guy A.",
+      "otherPerson" : "Lee, Gary E. (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_LGE_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-15852 carries people-id 107780, Lee, Guy A. (Near Eastern and South Asian Regional Affairs, 1966), and 1977-1980 vol. XI Part 1's \"Lee, Gary E.\", listed in the volume's \"U.S. Hostages Held for 444 Days\". The entry has no Wikidata or VIAF id; its role text is Guy A. Lee's."
+    },
+    {
+      "peopleId" : "101174",
+      "registryName" : "Bennett, Donald V.",
+      "otherPerson" : "Bennett, Douglas (AID Administrator)",
+      "anchors" : [
+        "frus1977-80v15/persons#p_BD_2"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-02415 carries people-id 101174, Bennett, Donald V. (Lieutenant General, Director of the Defense Intelligence Agency, 1969-1972), and 1977-1980 vol. XV's \"Bennett, Douglas\", AID Administrator. Q5295237 and VIAF 60135263 are Donald V. Bennett's own and stay, as does the role text."
+    },
+    {
+      "peopleId" : "115705",
+      "registryName" : "King, Kenneth",
+      "otherPerson" : "King, Kurleigh (Secretary-General of CARICOM)",
+      "anchors" : [
+        "frus1977-80v23/persons#p_KK_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "72996921",
+      "role" : null,
+      "reason" : "Entry FRUS-14598 carries people-id 115705, King, Kenneth (Guyanese Minister of Economic Development, 1974), and 1977-1980 vol. XXIII's \"King, Kurleigh\", Barbadian, Secretary-General of CARICOM 1979-1983. VIAF 72996921 is \"King, Kurleigh\". The role text is Kenneth King's."
+    },
+    {
+      "peopleId" : "101791",
+      "registryName" : "Brown, Allen W.",
+      "otherPerson" : "Brown, Timothy C. (Uruguay desk officer)",
+      "anchors" : [
+        "frus1977-80v24/persons#p_BTC_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q128303768",
+      "viaf" : "76553806",
+      "role" : null,
+      "reason" : "Entry FRUS-03661 carries people-id 101791, Brown, Allen W. (Technician Third Grade, Joint Chiefs' office, 1945), and 1977-1980 vol. XXIV's \"Brown, Timothy C.\", Uruguay desk officer 1978-1979. VIAF 76553806 is Timothy C. Brown, born 1938; Q128303768 is the family name Taylor-Brown. The role text is Allen W. Brown's."
+    },
+    {
+      "peopleId" : "106198",
+      "registryName" : "Hoyt, Michael P.E.",
+      "otherPerson" : "Hoyt, Mary (Rosalynn Carter's press secretary)",
+      "anchors" : [
+        "frus1977-80v24/persons#p_HM_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q107211205",
+      "viaf" : "19040936",
+      "role" : null,
+      "reason" : "Entry FRUS-12587 carries people-id 106198, Hoyt, Michael P.E. (Consul in Stanleyville, 1964), and 1977-1980 vol. XXIV's \"Hoyt, Mary\", Rosalynn Carter's press secretary. VIAF 19040936 is Mary Finch Hoyt (1924-2013); Q107211205 is a Mary Hoyt who lived 1748-1848. The role text is Michael Hoyt's."
+    },
+    {
+      "peopleId" : "113302",
+      "registryName" : "Taft, William Howard",
+      "otherPerson" : "Taft, William Howard, IV (registry 113304)",
+      "anchors" : [
+        "frus1981-88v05/persons#p_TWHIV_1"
+      ],
+      "joins" : {
+        "peopleId" : "113304",
+        "registryName" : "Taft, William Howard, IV"
+      },
+      "wikidata" : null,
+      "viaf" : "67636647",
+      "role" : "Non-career appointee. Legal Adviser",
+      "reason" : "Entry FRUS-27097 carries people-id 113302, Taft, William Howard (the President, 1857-1930), and 1981-1988 vol. V's \"Taft, William H. IV.\", Deputy Secretary of Defense, with his role text (\"Non-career appointee. Legal Adviser\") and VIAF 67636647, William Howard Taft IV's (Q8012585). Q35648 is the President's and stays. Vol. V's anchor goes to 113304 through FRUS-27099, Taft IV's own entry."
+    },
+    {
+      "peopleId" : "113531",
+      "registryName" : "Thompson, Herbert B.",
+      "otherPerson" : "Thompson, Harold (Department of Health and Human Services)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_TH_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q2661942",
+      "viaf" : null,
+      "role" : "Deputy Director (Reagan)",
+      "reason" : "Entry FRUS-27553 carries people-id 113531, Thompson, Herbert B. (Deputy Executive Secretary; OAS, 1964-1988), and 1981-1988 vol. XLI's \"Thompson, Harold\", Office of International Health, HHS, with his role text (\"Deputy Director (Reagan)\"). Q2661942 is Harold Warris Thompson, a British chemist (1908-1983)."
+    },
+    {
+      "peopleId" : "107055",
+      "registryName" : "Kerr, Robert Samuel",
+      "otherPerson" : "Kerr, Richard (CIA Deputy Director for Intelligence)",
+      "anchors" : [
+        "frus1981-88v06/persons#p_KR_1",
+        "frus1981-88v44p1/persons#p_KR_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q7327057",
+      "viaf" : "49011062",
+      "role" : "Deputy Director of the Central Intelligence for Intelligence (Reagan)",
+      "reason" : "Entry FRUS-14319 carries people-id 107055, Kerr, Robert Samuel (Senator from Oklahoma, died 1963), and two 1981-1988 anchors of Richard Kerr, CIA Deputy Director for Intelligence from 1986, with his role text. Q7327057 is Richard Kerr, a British songwriter (1944-2023), and gives VIAF 49011062."
+    },
+    {
+      "peopleId" : "104298",
+      "registryName" : "Fish, Hamilton",
+      "otherPerson" : "Fish, Hamilton, III (1933-1939) and Fish, Hamilton, IV (1977-1980), Representatives from New York",
+      "anchors" : [
+        "frus1933-39/persons#p_FH2",
+        "frus1977-80v11p1/persons#p_FH_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-08809 carries people-id 104298, Fish, Hamilton (1808-1893, Secretary of State, slug fish-hamilton), and two anchors of later Representatives from New York: 1933-1939's (in the House since 1918: Hamilton Fish III) and 1977-1980 vol. XI Part 1's (Hamilton Fish IV). The registry's own 104298 holds a 1977-1980 vol. XVIII anchor of the latter, which stays. Q685992 (Hamilton Fish, 1808-1893) and the role text stay."
+    },
+    {
+      "peopleId" : "109552",
+      "registryName" : "Murphy, Franklin",
+      "otherPerson" : "Murphy, Frank (Attorney General, 1939-1940)",
+      "anchors" : [
+        "frus1933-39/persons#p_MF1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q63862041",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-19561 carries people-id 109552, Murphy, Franklin (Franklin D. Murphy, PFIAB, 1969-1976), and 1933-1939's \"Murphy, Frank, Attorney General of the United States, 1939-40\". Q63862041 is a sculpture in the National Gallery of Art; VIAF 75194942 is Franklin David Murphy (1916-1994) and stays, as does the role text."
+    },
+    {
+      "peopleId" : "100890",
+      "registryName" : "Barnes, C. Tracy",
+      "otherPerson" : "Barnes, Clair Cortland (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_BCC_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-01866 carries people-id 100890, Barnes, C. Tracy (CIA covert action, 1961; died 1972), and 1977-1980 vol. XI Part 1's \"Barnes, Clair Cortland\", listed in the volume's \"U.S. Hostages Held for 444 Days\". The entry has no Wikidata or VIAF id; its role text is Tracy Barnes's."
+    },
+    {
+      "peopleId" : "102815",
+      "registryName" : "Cooke, David O.",
+      "otherPerson" : "Cooke, Donald J. (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_CDJ_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-05805 carries people-id 102815, Cooke, David O. (Defense Department administration, 1971), and 1977-1980 vol. XI Part 1's \"Cooke, Donald J.\", listed in the volume's \"U.S. Hostages Held for 444 Days\". Q5238165 and VIAF 311371174 are David O. Cooke's own and stay, as does the role text."
+    },
+    {
+      "peopleId" : "103206",
+      "registryName" : "Davis, Richard Hallock",
+      "otherPerson" : "Davis, Richard J. (Assistant Secretary of the Treasury)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_DR_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q7329342",
+      "viaf" : "96752185",
+      "role" : null,
+      "reason" : "Entry FRUS-06587 carries people-id 103206, Davis, Richard Hallock (1913-1972, Ambassador to Romania), and 1977-1980 vol. XI Part 1's \"Davis, Richard\", Assistant Secretary of the Treasury for Operations. Q7329342 is Richard T. Davis, a soldier (1978-2003), and gives VIAF 96752185. The role text is Richard H. Davis's."
+    },
+    {
+      "peopleId" : "104308",
+      "registryName" : "Fisher, Richard",
+      "otherPerson" : "Fisher, Roger (Harvard Negotiation Project)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_FR_2"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : "Professor and Director of the Harvard Negotiation Project",
+      "reason" : "Entry FRUS-08828 carries people-id 104308, Fisher, Richard (Richard W. Fisher, Treasury, 1979), and 1977-1980 vol. XI Part 1's \"Fisher, Roger\", Director of the Harvard Negotiation Project, with his role text. Q7329701 and VIAF 33810607 are Richard W. Fisher's own and stay."
+    },
+    {
+      "peopleId" : "107934",
+      "registryName" : "Lewis, Price, Jr.",
+      "otherPerson" : "Lewis, Paul Edward (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_LPE_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q55439013",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-16137 carries people-id 107934, Lewis, Price, Jr. (Commander, Antarctic Treaty delegation, 1961), and 1977-1980 vol. XI Part 1's \"Lewis, Paul Edward\", listed in the volume's \"U.S. Hostages Held for 444 Days\". Q55439013 is a Paul Lewis, not Price Lewis. The role text is his own."
+    },
+    {
+      "peopleId" : "110787",
+      "registryName" : "Pittman, Charles J.",
+      "otherPerson" : "Pittman, Charles (Chuck), Colonel (Desert One)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_PCC_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q1439529",
+      "viaf" : "167201996",
+      "role" : "Colonel, USAF",
+      "reason" : "Entry FRUS-21903 carries people-id 110787, Pittman, Charles J. (Office of the Legal Adviser, 1969-1972), and 1977-1980 vol. XI Part 1's \"Pittman, Charles (Chuck), Colonel\" of the rescue mission, with his role text (\"Colonel, USAF\"). Q1439529 is Charles Pittman, a basketball player born 1958; VIAF 167201996 is Charles U. Pittman, Jr., born 1939."
+    },
+    {
+      "peopleId" : "112010",
+      "registryName" : "Schaefer, Hermann R.",
+      "otherPerson" : "Schaefer, Thomas E. (hostage in Tehran, 1979-1981)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_STE_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "198857533",
+      "role" : null,
+      "reason" : "Entry FRUS-24438 carries people-id 112010, Schaefer, Hermann R. (Bundestag Vice President, 1953), and 1977-1980 vol. XI Part 1's \"Schaefer, Thomas E.\", listed in the volume's \"U.S. Hostages Held for 444 Days\". VIAF 198857533 is \"Schaefer, Thomas E.\". The role text is Hermann Schaefer's."
+    },
+    {
+      "peopleId" : "111612",
+      "registryName" : "Rosenberg, Richard J.",
+      "otherPerson" : "Rosenberg, Robert (NSC Intelligence Coordinator)",
+      "anchors" : [
+        "frus1977-80v15/persons#p_RR_2"
+      ],
+      "joins" : null,
+      "wikidata" : "Q2158657",
+      "viaf" : "111673310",
+      "role" : null,
+      "reason" : "Entry FRUS-23609 carries people-id 111612, Rosenberg, Richard J. (Vietnam Directorate, 1975), and 1977-1980 vol. XV's \"Rosenberg, Robert\", NSC Intelligence Coordinator 1977-1980. Q2158657 is Robert Rosenberg, a Czech film actor and producer born 1975, which gives VIAF 111673310. The role text is Richard Rosenberg's."
+    },
+    {
+      "peopleId" : "104238",
+      "registryName" : "Ferreira, Antonio Medeiros",
+      "otherPerson" : "Ferreira, Armenio (MPLA representative in Lisbon)",
+      "anchors" : [
+        "frus1977-80v16/persons#p_FA_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q4794372",
+      "viaf" : "99810869",
+      "role" : null,
+      "reason" : "Entry FRUS-08681 carries people-id 104238, Ferreira, Antonio Medeiros (Portuguese Foreign Minister, 1976-1977), and 1977-1980 vol. XVI's \"Ferreira, Armenio\", Lisbon representative of the MPLA. Q4794372 is Armenio Ferreira, an Angolan physician; VIAF 99810869 is \"Ferreira, Armenio, 1920-\". The role text is Medeiros Ferreira's."
+    },
+    {
+      "peopleId" : "105453",
+      "registryName" : "Hamilton, Charles W.",
+      "otherPerson" : "Hamilton, Lee H. (registry 105460)",
+      "anchors" : [
+        "frus1969-76v30/persons#p_HL1",
+        "frus1977-80v17p1/persons#p_HL_1"
+      ],
+      "joins" : {
+        "peopleId" : "105460",
+        "registryName" : "Hamilton, Lee Herbert"
+      },
+      "wikidata" : "Q984174",
+      "viaf" : "85852018",
+      "role" : null,
+      "reason" : "Entry FRUS-11149 carries people-id 105453, Hamilton, Charles W. (Gulf Oil, 1951-1954), and two anchors of Lee Hamilton, Representative from Indiana, one of which the registry gives 105460. Q984174 is Lee H. Hamilton and gives VIAF 85852018. The role text is Charles W. Hamilton's."
+    },
+    {
+      "peopleId" : "101828",
+      "registryName" : "Brown, William Andreas",
+      "otherPerson" : "Brown, William C. (Executive Secretariat)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_BWC_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q8003915",
+      "viaf" : "22325906",
+      "role" : null,
+      "reason" : "Entry FRUS-03755 carries people-id 101828, Brown, William Andreas (East Asian Affairs; Ambassador to Thailand and Israel), and 1977-1980 vol. XIX's \"Brown, William C.\", Information Management Section of the Executive Secretariat. Q8003915 is William A. Brown, a Navy officer born 1960; VIAF 22325906 is William Brown, an operatic tenor (1938-2004). The role text is William A. Brown's."
+    },
+    {
+      "peopleId" : "105126",
+      "registryName" : "Graves, Edwin D., Jr.",
+      "otherPerson" : "Graves, Ernest, Jr. (Director, Defense Security Assistance Agency)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_GE_2"
+      ],
+      "joins" : null,
+      "wikidata" : "Q14950139",
+      "viaf" : "54424064",
+      "role" : null,
+      "reason" : "Entry FRUS-10498 carries people-id 105126, Graves, Edwin D., Jr. (Captain, USN, Joint Chiefs secretariat, 1945), and 1977-1980 vol. XIX's \"Graves, Ernest Jr.\", Lieutenant General. VIAF 54424064 is Ernest Graves, Jr. (Q5393158); Q14950139 is his father, Ernest Graves, Sr. (1880-1953). The role text is Edwin Graves's."
+    },
+    {
+      "peopleId" : "115551",
+      "registryName" : "Greene, James F.",
+      "otherPerson" : "Greene, Myles (Office of Iranian Affairs)",
+      "anchors" : [
+        "frus1977-80v19/persons#p_GM_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "46427952",
+      "role" : null,
+      "reason" : "Entry FRUS-10572 carries people-id 115551, Greene, James F. (Immigration and Naturalization Service, 1974), and 1977-1980 vol. XIX's \"Greene, Myles\", Office of Iranian Affairs. VIAF 46427952 is \"Greene, Myles\". The role text is James Greene's."
+    },
+    {
+      "peopleId" : "105580",
+      "registryName" : "Harris, David",
+      "otherPerson" : "Harris, Don (NBC correspondent)",
+      "anchors" : [
+        "frus1977-80v23/persons#p_HD_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q5292750",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-11413 carries people-id 105580, Harris, David (Department of State; Stanford historian, 1945-1948), and 1977-1980 vol. XXIII's \"Harris, Don\", NBC correspondent. Q5292750 is Don Harris (1936-1978). The role text is David Harris's."
+    },
+    {
+      "peopleId" : "112785",
+      "registryName" : "Southwell, Charles A.P.",
+      "otherPerson" : "Southwell, Paul (Premier of St. Kitts and Nevis)",
+      "anchors" : [
+        "frus1977-80v23/persons#p_SCAP_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q2062527",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-26067 carries people-id 112785, Southwell, Charles A.P. (Kuwait Oil Company, 1952-1954), and 1977-1980 vol. XXIII's \"Southwell, Caleb Azariah Paul\", Premier of St. Kitts and Nevis. Q2062527 is Paul Southwell. The role text is Charles Southwell's."
+    },
+    {
+      "peopleId" : "114659",
+      "registryName" : "Wilson, Charles Erwin",
+      "otherPerson" : "Wilson, Charles (Charlie), Representative from Texas",
+      "anchors" : [
+        "frus1977-80v24/persons#p_WCC_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q615453",
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-29860 carries people-id 114659, Wilson, Charles Erwin (Secretary of Defense, 1953-1957), and 1977-1980 vol. XXIV's \"Wilson, Charles 'Charlie'\", Representative from Texas. The registry's own 114659 holds one of his anchors (vol. II), which stays. Q615453 is Charles Wilson, mayor of Montreal 1851-1854. The role text is Charles E. Wilson's."
+    },
+    {
+      "peopleId" : "101212",
+      "registryName" : "Berger, Samuel David",
+      "otherPerson" : "Berger, Samuel R. (Policy Planning Staff)",
+      "anchors" : [
+        "frus1977-80v29/persons#p_BSR_1"
+      ],
+      "joins" : {
+        "peopleId" : "101213",
+        "registryName" : "Berger, Samuel R. (“Sandy”)"
+      },
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-02498 carries people-id 101212, Berger, Samuel David (1911-1980), and 1977-1980 vol. XXIX's \"Berger, Samuel R.\", Policy Planning Staff. Q19598840 and VIAF 6372747 are Samuel D. Berger's own and stay, as does the role text."
+    },
+    {
+      "peopleId" : "106247",
+      "registryName" : "Hughes, John Chambers",
+      "otherPerson" : "Hughes, (Robert) John (registry 106238, which has no FRUS anchor), Assistant Secretary for Public Affairs, 1982-1985",
+      "anchors" : [
+        "frus1981-88v10/persons#p_HJ_3"
+      ],
+      "joins" : null,
+      "wikidata" : "Q112942102",
+      "viaf" : "73923391",
+      "role" : "Assistant Secretary of State for Public Affairs from August 1982 until January 1985",
+      "reason" : "Entry FRUS-12709 carries people-ids 106247, Hughes, John Chambers (1891-1971, NATO Permanent Representative), 106248, Hughes, John T. (Intelligence Board), and 106238, and 1981-1988 vol. X's \"Hughes, John\", Assistant Secretary for Public Affairs 1982-1985, with his role text. He is 106238, Hughes, (Robert) John, born 1930, a registry record with no FRUS anchor and so none in the bundle; the anchor went to 106247. Q112942102 is James Hughes, a professor born 1959; VIAF 73923391 is Donald J. Hughes, a physicist (1915-1960)."
+    },
+    {
+      "peopleId" : "113613",
+      "registryName" : "Todd, Joseph A.",
+      "otherPerson" : "Todd, James C. (Bureau of Economic and Business Affairs)",
+      "anchors" : [
+        "frus1981-88v38/persons#p_TJC_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "69329453",
+      "role" : "Economic Counselor (1989-1990; Bush (H.W.))",
+      "reason" : "Entry FRUS-27737 carries people-id 113613, Todd, Joseph A. (Occupied Areas Economic Affairs, 1947-1948), and 1981-1988 vol. XXXVIII's \"Todd, James C.\", Industrial and Strategic Materials Division, with a role text of 1989-1990 (\"Economic Counselor (1989-1990; Bush (H.W.))\") that is not Joseph Todd's. VIAF 69329453 is James Campbell Todd (1874-1928)."
+    },
+    {
+      "peopleId" : "116109",
+      "registryName" : "Sherman, C. D.",
+      "otherPerson" : "Sherman, Linda (Office of Oceans and Polar Affairs)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_SL_2"
+      ],
+      "joins" : null,
+      "wikidata" : "Q42403205",
+      "viaf" : "218635106",
+      "role" : "Office of Oceans and Polar Affairs (Reagan)",
+      "reason" : "Entry FRUS-25175 carries people-id 116109, Sherman, C. D. (Lieutenant, Air Transport Command, 1945), and 1981-1988 vol. XLI's \"Sherman, Linda\", Office of Oceans and Polar Affairs, with that role text. Q42403205 is Linda A Sherman, an immunologist; VIAF 218635106 is Linda K. Giannetti Sherman, born 1949."
+    },
+    {
+      "peopleId" : "116183",
+      "registryName" : "Taylor, James H.",
+      "otherPerson" : "Taylor, James E. (Operations Center)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_TJE_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q6135927",
+      "viaf" : null,
+      "role" : "Operations Center (Reagan)",
+      "reason" : "Entry FRUS-27297 carries people-id 116183, Taylor, James H. (CIA Comptroller until 1979), and 1981-1988 vol. XLI's \"Taylor, James E.\", Operations Center, with that role text (\"Operations Center (Reagan)\"). Q6135927 is James Henry Taylor, a mathematician (1893-1972)."
+    },
+    {
+      "peopleId" : "106007",
+      "registryName" : "Hoffman, Johannes",
+      "otherPerson" : "Hoffman, John (Shearman & Sterling)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_HJ_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q16196063",
+      "viaf" : "109857298",
+      "role" : null,
+      "reason" : "Entry FRUS-12242 carries people-id 106007, Hoffman, Johannes (Minister-President of the Saar, 1951-1954), and 1977-1980 vol. XI Part 1's \"Hoffman, John\", a partner of Shearman & Sterling. Q16196063 is John Hoffman, a politician born 1965; VIAF 109857298 is Ross J. S. Hoffman, a historian (1902-1979). The role text is Johannes Hoffmann's."
+    },
+    {
+      "peopleId" : "107525",
+      "registryName" : "Kyle, Joseph B.",
+      "otherPerson" : "Kyle, James, Colonel, USAF (Desert One)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_KJ_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q6137499",
+      "viaf" : "31577767",
+      "role" : null,
+      "reason" : "Entry FRUS-15309 carries people-id 107525, Kyle, Joseph B. (AID, 1961-1963), and 1977-1980 vol. XI Part 1's \"Kyle, James, Colonel, USAF\" of the rescue mission. Q6137499 is James Kyle, a bishop (1788-1869); VIAF 31577767 is James H. Kyle, a senator (1854-1901). The role text is Joseph Kyle's."
+    },
+    {
+      "peopleId" : "109156",
+      "registryName" : "Miller, G. William",
+      "otherPerson" : "Miller, William G. (Senate intelligence committee staff; emissary to Iran)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_MWG_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q102137191",
+      "viaf" : "57347785",
+      "role" : "U.S. Ambassador to Ukraine (1993-10-21-1998-01-06; Clinton)",
+      "reason" : "Entry FRUS-18722 carries people-id 109156, Miller, G. William (Federal Reserve Chairman; Secretary of the Treasury), and 1977-1980 vol. XI Part 1's \"Miller, William G.\", emissary to Iran in 1979, with his role text (Ambassador to Ukraine, 1993-1998). The registry's own 109156 holds one of his anchors (1969-1976 vol. XXXVIII Part 2), which stays. Q102137191 is a William G. Miller, Ph.D. 1951; VIAF 57347785 is William John Miller (1880-1965)."
+    },
+    {
+      "peopleId" : "113288",
+      "registryName" : "Tabatabai, Seyid Zia-ed-din",
+      "otherPerson" : "Tabatabai, Sadegh (Iranian emissary)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_TS_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q1797752",
+      "viaf" : "88171973805518030648",
+      "role" : null,
+      "reason" : "Entry FRUS-27073 carries people-id 113288, Tabatabai, Seyid Zia-ed-din (Majlis deputy, 1944-1946), and 1977-1980 vol. XI Part 1's \"Tabatabai, Sadegh\", Khomeini's relative by marriage. Q1797752 is Sadeq Tabatabaei (1943-2015); VIAF 88171973805518030648 is \"Tabatabai, Mohammad Sadegh (1943- )\". The role text is the entry's cross-reference to Seyid Zia-ed-din."
+    },
+    {
+      "peopleId" : "114410",
+      "registryName" : "Welch, Leo",
+      "otherPerson" : "Welch, Larry D. (Chief of Staff of the Air Force)",
+      "anchors" : [
+        "frus1981-88v11/persons#p_LWelch_1"
+      ],
+      "joins" : null,
+      "wikidata" : "Q1806043",
+      "viaf" : "249780778",
+      "role" : "General (1986-07-; Reagan)",
+      "reason" : "Entry FRUS-29381 carries people-id 114410, Welch, Leo (COMSAT, 1964-1968), and 1981-1988 vol. XI's \"Welch, Larry\", Chief of Staff of the Air Force from 1986, with his role text (\"General (1986-07-; Reagan)\"). Q1806043 is Larry D. Welch, and VIAF 249780778 \"Welch, Larry\"."
+    },
+    {
+      "peopleId" : "106246",
+      "registryName" : "Hughes, James D.",
+      "otherPerson" : "Hughes, James (hostage in Tehran, released November 1979)",
+      "anchors" : [
+        "frus1977-80v11p1/persons#p_HJ_2"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : "73923391",
+      "role" : null,
+      "reason" : "Entry FRUS-12707 carries people-id 106246, Hughes, James D. (Brigadier General, USAF, Military Assistant to the President, 1969-1973), and 1977-1980 vol. XI Part 1's \"Hughes, James\", listed in the volume's \"U.S. Hostages Released, November 1979\". VIAF 73923391 is Donald J. Hughes, a physicist (1915-1960); Q6132145 is James D. Hughes (1922-2024) and stays, as does the role text."
+    },
+    {
+      "peopleId" : "102311",
+      "registryName" : "Castro, Raúl",
+      "otherPerson" : "Castro, Raul Hector (registry 102312), U.S. Ambassador to Argentina",
+      "anchors" : [
+        "frus1977-80v24/persons#p_CRH_1"
+      ],
+      "joins" : {
+        "peopleId" : "102312",
+        "registryName" : "Castro, Raul Hector"
+      },
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-04734 carries people-ids 102311, Castro, Raul (Raul Castro Ruz of Cuba), and 102312, Castro, Raul Hector, the U.S. ambassador. Its 1977-1980 vol. XXIV anchor, \"Castro, Raul Hector, U.S. Ambassador to Argentina\", went to 102311, the first. It is held apart from both, as a correction holds apart from every id of an entry, and then joins 102312. The entry's role text and identifiers reach both ids and are not divided here."
+    },
+    {
+      "peopleId" : "108262",
+      "registryName" : "Macdonald, Donald",
+      "otherPerson" : "MacDonald, Donald G. (AID; registry 108264) and MacDonald, Donald S. (INR)",
+      "anchors" : [
+        "frus1977-80v15/persons#p_MDG_1",
+        "frus1981-88v41/persons#p_MDS_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-16858 carries four people-ids for four Donald MacDonalds, first 108262, Macdonald, Donald (Canadian Minister of Finance). Two overlay anchors went to it: 1977-1980 vol. XV's \"Macdonald, Donald G.\", AID Assistant Administrator, and 1981-1988 vol. XLI's \"MacDonald, Donald S.\", INR. Held apart, they join none of the four; the entry's role text and identifiers are not divided here."
+    },
+    {
+      "peopleId" : "109500",
+      "registryName" : "Mueller, Richard B.",
+      "otherPerson" : "Mueller, Richard (Department of State, Office of the Executive Secretary)",
+      "anchors" : [
+        "frus1981-88v41/persons#p_MR_1"
+      ],
+      "joins" : null,
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-19452 carries people-ids 109500, Mueller, Richard B. (Second Secretary, Finnish Mission to the United Nations), and 109501, Mueller, Richard W. (Department of State). Its 1981-1988 vol. XLI anchor, \"Mueller, Richard, Office of the Executive Secretary, Department of State\", went to 109500. Held apart, it joins neither; the entry's role text and identifiers are not divided here."
+    },
+    {
+      "peopleId" : "111889",
+      "registryName" : "Sanders, Edward",
+      "otherPerson" : "Sanders, Edward G. (Office of Management and Budget; registry 111890)",
+      "anchors" : [
+        "frus1977-80v15/persons#p_SE_1",
+        "frus1977-80v17p1/persons#p_SE_1"
+      ],
+      "joins" : {
+        "peopleId" : "111890",
+        "registryName" : "Sanders, Edward G."
+      },
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-24211 carries people-ids 111889, Sanders, Edward (AIPAC; Carter's adviser on Jewish affairs), and 111890, Sanders, Edward G. (Office of Management and Budget). Two 1977-1980 anchors that describe the OMB official (vols. XV and XVII Part 1) went to 111889. Held apart from both, they join 111890; the entry's role text and identifiers are not divided here."
+    },
+    {
+      "peopleId" : "114233",
+      "registryName" : "Walsh, John",
+      "otherPerson" : "Walsh, John P. (Deputy Executive Secretary; registry 114234)",
+      "anchors" : [
+        "frus1969-76v42/persons#p_WJP_1"
+      ],
+      "joins" : {
+        "peopleId" : "114234",
+        "registryName" : "Walsh, John Patrick"
+      },
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-29041 carries people-ids 114233, Walsh, John (Office of Strategic and Space Systems, Defense), 116252 and 114234, Walsh, John Patrick. Its 1969-1976 vol. XLII anchor, \"Walsh, John P., Deputy Executive Secretary of the Department of State\", went to 114233. Held apart from all three, it joins 114234; the entry's role text and identifiers are not divided here."
+    },
+    {
+      "peopleId" : "115548",
+      "registryName" : "Graham, John",
+      "otherPerson" : "Graham, John S. (Atomic Energy Commissioner; registry 105093)",
+      "anchors" : [
+        "frus1961-63v07-09mSupp/persons#p_GJS_1"
+      ],
+      "joins" : {
+        "peopleId" : "105093",
+        "registryName" : "Graham, John S."
+      },
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-10438 carries people-ids 105092 (Graham, John, 1774-1820, with no FRUS anchor), 115548, Graham, John (Sir John Graham, a British diplomat), and 105093, Graham, John S. Its 1961-1963 microfiche supplement anchor, \"Graham, John S., Commissioner, Atomic Energy Commission\", went to 115548. Held apart from all three, it joins 105093; the entry's role text and identifiers are not divided here."
+    },
+    {
+      "peopleId" : "115397",
+      "registryName" : "Donovan, James",
+      "otherPerson" : "Donovan, James B. (New York lawyer; registry 103588)",
+      "anchors" : [
+        "frus1961-63v10-12mSupp/persons#p_DJB_1"
+      ],
+      "joins" : {
+        "peopleId" : "103588",
+        "registryName" : "Donovan, James B."
+      },
+      "wikidata" : null,
+      "viaf" : null,
+      "role" : null,
+      "reason" : "Entry FRUS-07370 carries people-ids 115397, Donovan, James (Colonel, USAF, Center for Defense Information), and 103588, Donovan, James B. Its 1961-1963 microfiche supplement anchor, \"Donovan, James B., New York lawyer\" of the Bay of Pigs prisoner release, went to 115397. Held apart from both, it joins 103588; the entry's role text and identifiers are not divided here."
     }
   ]
 }
