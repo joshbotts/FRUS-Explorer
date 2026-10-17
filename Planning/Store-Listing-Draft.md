@@ -71,9 +71,10 @@ FRUS,diplomacy,history,archives,primary source,NARA,research,foreign policy,decl
 
 ## 2. Description
 
-**4,000-character field. This draft is 2,525 / 4,000 ✅** (counted with Python's `len()` over the
-block on 2026-10-15, after the owner's three sentences; 2,324 before them), leaving room for the
-owner to add or cut.
+**4,000-character field. This draft is 3,038 / 4,000 ✅** (counted with Python's `len()` over the
+block on 2026-10-17, after the BUILT ON THE EDITORS' WORK section and the READ line's credit to the
+editors; 2,525 on 2026-10-15 after the owner's three sentences, 2,324 before them), leaving room for
+the owner to add or cut.
 
 The disclaimer is in **this** field, immediately after the "official documentary record" sentence,
 which is the placement §4.1 requires — the two must not be separated.
@@ -87,14 +88,23 @@ Historian or the U.S. Department of State. Any commentary, advice, or guidance a
 series in this app reflects personal views. Those views are not necessarily those of the
 Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 
+BUILT ON THE EDITORS' WORK
+FRUS is an edited series. Its editors, today the historians of the
+Department of State's Office of the Historian, choose each document from the
+government's files, write its heading, record where the original is kept,
+annotate what it refers to, and summarize what they could not print. FRUS
+Explorer reads that apparatus: source notes become archival leads,
+cross-references become a graph, and the people the editors identified become
+an index you can search.
+
 The app downloads the Office of the Historian's TEI editions, indexes them on your device, and
 works offline from then on. What you read, search and write stays with you: notes and collections
 sync only through your own iCloud account, and the app reaches the National Archives' catalog or
 your Zotero library only when you ask it to.
 
 READ
-Documents rendered from the original TEI with footnotes, page breaks and live cross-references,
-plus highlights, notes, and a per-document research rail.
+Documents rendered from the original TEI with the editors' headings, footnotes, page breaks and
+live cross-references, plus highlights, notes, and a per-document research rail.
 
 SEARCH
 Full-text search with stemming, phrases, NEAR() proximity and exact-word matching, across 553
@@ -160,6 +170,22 @@ Three sentences of the block said more than the app does. Each was checked again
   documents carry the editors' own note saying where the original came from."*
   `collection-usage-index.json` counts 264,598 source notes paired with a document, in 502 of the
   553 volumes, against 314,616 printed documents: 51 volumes carry none.
+
+### Added 2026-10-17: the editors' theme
+
+`Launch-Marketing-Kit-2026-10-13.md` §1a adds a second theme, *built on the editors' work*, and this
+field carries it in two places: a BUILT ON THE EDITORS' WORK section after the disclaimer, which must
+stay below it so the "official documentary record" sentence and the disclaimer remain together, and
+the READ line's "the editors' headings". The section names the Office of the Historian, which the
+disclaimer above it already covers. It says what the editors do in the terms of the series' own
+prefaces and claims no figure, so §5 owes it nothing. The owner may cut the section whole; nothing
+else in the field depends on it.
+
+The promotional text has an alternate for the theme, 152 / 170, counted the same way:
+
+```
+The edited record of U.S. diplomacy, 553 volumes indexed on your device, with tools built on its editors' source notes, cross-references and annotation.
+```
 
 ---
 

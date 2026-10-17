@@ -6,6 +6,13 @@ sessions, store frames as a separate pass), 12 (the App Preview) and 15 (compose
 frames), and it rides on `Store-Listing-Draft.md`, which stays the copy of record for the App Store
 Connect fields. Where the two differ on a field, the store draft wins until the owner reconciles them.
 
+**Revised 2026-10-17: a second theme, "built on the editors' work" (§1a).** It credits the editorial
+curation and annotation the Office of the Historian's historians put into the series, sets the edited
+series apart from a bulk release of documents, and ties every feature that reads the editors'
+apparatus back to the part it reads. Its copy is in §1, §3 and §5 and its rules in §6. The same pass
+brought three stale figures up to the shipped artifacts: the map's regions in rule 1 and §9, and the
+provenance lens's plurality in §6 and §9.
+
 **What this session could and could not do.** This was written on a Linux container with no simulator
 and no Mac, so **no capture was taken**. Every composed frame in `Planning/marketing-drafts/` stands
 on a capture already in `Docs/screenshots/` (builds 47 and 48, 2026-09-13 to 2026-09-23), and
@@ -18,7 +25,7 @@ layout, the copy and the argument, not as the pixels: the pixels come from §8's
 
 1. **No number that was not measured from a shipped artifact.** The only figures used here are the
    store draft's §5 table: 553 volumes, published since 1861, 107 subseries, 314,616 documents on the
-   map, 172 regions, about 317,000 documents in a full index (316,814 by the parser's replica; a device
+   map, 140 regions (172 under the earlier model's layout), about 317,000 documents in a full index (316,814 by the parser's replica; a device
    count is owed to the release census). "Every document" is never said.
 2. **Caveats travel in the pixels.** A frame that shows the map shows the app's own caveat line; one
    that names a region keeps *Experimental* in view; one that shows NARA data carries the NARA
@@ -31,24 +38,26 @@ layout, the copy and the argument, not as the pixels: the pixels come from §8's
 
 ## 1. Positioning
 
-**One line.** *The U.S. diplomatic record, on your device, with the tools a 553-volume corpus needs.*
+**One line.** *The edited record of U.S. diplomacy, on your device, with tools built on its editors'
+work.* (Until 2026-10-17: *The U.S. diplomatic record, on your device, with the tools a 553-volume
+corpus needs.*)
 
-**The pitch (boilerplate, 98 words).**
+**The pitch (boilerplate, 105 words).**
 
 > FRUS Explorer is a research tool for the *Foreign Relations of the United States* series, the
-> State Department's official documentary record of American foreign policy, published since 1861.
-> It downloads the Office of the Historian's own TEI editions, indexes them on your iPhone, iPad or
-> Mac, and works offline from then on: full-text search, a reader that keeps the editors' apparatus,
-> source notes resolved to the shelf, collections and course readers, and analytics across the whole
-> series. It is an independent project, not an official product of the Office of the Historian or
-> the U.S. Department of State.
+> State Department's documentary record of American foreign policy, published since 1861 and edited
+> today by historians in the Office of the Historian. It downloads the Office's TEI editions, indexes
+> them on your iPhone, iPad or Mac, and works offline. Its tools are built on the editors' apparatus:
+> source notes resolved to the shelf, cross-references drawn as a graph, and the people and dates the
+> editors identified made searchable. It is an independent project, not an official product of the
+> Office of the Historian or the U.S. Department of State.
 
 **Three proof points, each with its screen.**
 
 | Claim | The screen that proves it | Why it is the claim |
 |---|---|---|
 | **Offline, whole-series search with facets.** 553 volumes; phrases, proximity and exact words; facets by year, volume, person, document type, provenance and subject. | Search with the Facets inspector open (`macos/search.png`) | history.state.gov searches one volume at a time and shows no facets. This is the daily-use difference. |
-| **The editors' apparatus, kept.** Footnotes, cross-references, person links and source notes live; a source note resolved to record group, entry, lot and repository. | The reader with the Research rail; Source Explorer (`ipad/source-explorer.png`) | Nothing else turns a FRUS footnote into a pull slip. |
+| **The editors' apparatus, put to work.** Headings, source notes, cross-references and the people the editors tagged, read from the volumes and made live: a source note resolves to record group, entry and lot; a cross-reference becomes an edge in a graph; a name becomes a person you can follow across the series. | The reader with the Research rail; Source Explorer (`ipad/source-explorer.png`) | A bulk release of documents has none of this. Nothing else turns a FRUS footnote into a pull slip. |
 | **The series as a whole.** A map of 314,616 documents by the language they share; term frequency, person networks, chronology, archival sourcing, all exportable with their method. | The semantic map (`ipad/semantic-map.png`); Corpus Analytics (`macos/analytics.png`) | The first time anyone has been able to look at the published record from above. |
 
 **What it is not, said first by us.** Not official. Not every document (two honest counts, neither
@@ -60,6 +69,79 @@ Apple's on-device framework, one document at a time, with authorship recorded. *
 has (source note, lot file, RG, entry, finding aid, course reader, method appendix). No exclamation
 marks. A headline is a verb phrase or a claim, five to eight words. A subline says what the frame
 shows and one honest limit.
+
+---
+
+## 1a. Theme: built on the editors' work
+
+**Why it leads.** FRUS is an edited series, and its value is the editing. By statute it must be "a
+thorough, accurate, and reliable record of major United States foreign policy decisions and
+significant United States diplomatic activity", and any deletion must be marked where it occurs. The
+app's own Research Guide says what that takes: "Historians in the compilation and review team
+identify the most important documents, provide context through editorial notes and annotations, and
+review draft volume manuscripts to ensure they provide 'thorough, accurate, and reliable' coverage."
+A bulk release of documents vouches only for the fact of its release. The app's best tools are
+readings of what the editors wrote, so the copy says so.
+
+**The edited series against a bulk release.** The middle column quotes the preface's "Editorial
+Methodology" in *Foreign Relations of the United States, 1969–1976*, Volume E–9, Part 1 (2014), which
+is public domain. Describe a bulk release in general terms only; never name another archive,
+collection or project.
+
+| What a researcher needs | The edited series | What the app does with it |
+|---|---|---|
+| Selection | "all records needed to provide comprehensive documentation of major foreign policy decisions", chosen from the files of the Department and the other agencies involved | Searches the record the editors assembled; its counts are counts of what they chose to print |
+| Order | "The documents are presented chronologically according to Washington time." | Chronology, Administrations and date order use the dates the editors assigned |
+| A name for each item | "A heading has been supplied by the editors for each document included in the volume." | Results, Browse, citations and collections list documents under those headings |
+| Where the original is | "The first footnote to each document indicates the document's source, original classification, distribution, and drafting information." | Source Explorer, the Archives Visit packet, the provenance facet and Archival Analytics |
+| How documents connect | annotation that will "provide references to important related documents printed in other volumes" | Live links, the Cross-Reference Graph and Cross-Reference Analytics |
+| What isn't there | editorial notes "summarize pertinent material not printed"; withheld text is marked with "the number of lines or pages of text that were omitted" | Editorial notes are searchable; the packet lists files the editors cited but didn't print |
+| Who is speaking | lists of persons and of abbreviations and terms in the front matter | Person cards, the People browser, the person facet and Person Analytics |
+
+**Rules.**
+
+1. **Name the element, then the feature.** "Source Explorer starts from the editors' source note" says
+   who did the work and what the app adds.
+2. **Credit the note to the editors and the reading to the app.** `ProvenanceSource` licenses "this
+   came from FRUS and nowhere else" and never "this is what FRUS says": where a value was parsed out
+   of printed prose, "this app did the reading".
+3. **Keep the layers apart, in the app's own terms.** *FRUS text* is read from the volumes alone.
+   *Joined* values combine them with the National Archives catalog, the Office's people register or
+   subject taxonomy, or the Department's decimal schedule. *Computed* values come from the app's model
+   or word lists and are cited "as the app's output, not the record's". The reader's own notes are a
+   fourth thing: "The app never mixes them into the published text."
+4. **Speak about the series' method, never for the Office.** Quote the prefaces and the statute.
+   Nothing may suggest the Office reviewed, endorsed or uses the app, and copy that names the Office
+   carries the not-an-official-product sentence (§6).
+5. **Mind the eras.** The prefaces describe modern practice. Of the 553 volumes, 51 carry no source
+   note paired with a document, all but one of them published before 1910, and 81 early volumes name
+   no editors. Say "most documents" and "modern volumes" where it matters.
+6. **Don't give the app the editors' credit.** Never "curated", "annotated" or "organized by FRUS
+   Explorer": the app indexes, links, resolves and computes.
+
+**One line per feature**, for the store, the frames, the site and the posts:
+
+| Feature | What it reads | Layer | Line |
+|---|---|---|---|
+| Search facets | the editors' person tags and editorial-note tagging, each document's source note; the Office's subject mappings for the subject facet | FRUS text, joined | Facets sort every match by what the editors recorded: the people they tagged, whether it is a document or an editorial note, and where the original is filed. |
+| The reader | headings, datelines, footnotes, cross-references, person tags, each volume's terms | FRUS text | Documents keep the editors' headings, footnotes and cross-references, live. |
+| Chronology, Administrations | the dates the editors assigned, at the precision they gave | FRUS text | Chronology places each document on the date the editors assigned it. |
+| People, Person Analytics | the editors' person tags and lists of persons; the Office's people register for identity, life years and careers | FRUS text, joined | The people the editors tagged, tied to one identity across the series by the Office's people register. |
+| Source Explorer | the source note and the volumes' Sources sections; the NARA catalog | FRUS text, joined | Source Explorer starts from the editors' source note and resolves it as far as the bundled reference data reaches. |
+| Archives Visit | source notes, and footnotes citing files the editors didn't print | FRUS text, joined | The packet keeps the files the editors printed from apart from the files they only cited. |
+| Cross-Reference Graph and Analytics | the editors' cross-references and archival citations; rankings computed over them | FRUS text, computed | Every edge is one of the editors' footnotes. The rankings measure how the editors linked documents, not historical importance. |
+| Related Documents | five editorial signals (source files, cross-references, dates, placement, people), the Office's subjects, two experimental signals | FRUS text, joined, computed | Ranked mostly by what the editors' apparatus shows two documents share, with two experimental signals the app computes. |
+| Collections and readers | headings, source notes; the Persons Index from person tags; Sources & Archives from source notes | FRUS text | A reader keeps the editors' source notes, and its Sources & Archives block lists the collections they name. |
+| Citations | the volume's title and editors, the document's number, its history.state.gov page | FRUS text | Every citation credits the volume's editors by name. |
+| Topic Index, subject facet | the Office's document–subject mappings, matched by name | joined | Topics come from the Office's subject mappings; they aren't the editors' headings, and the app says so. |
+| Meaning search, the map, clusters | the app's model | computed | The app's model reading the language: experimental, and not an editorial fact. |
+
+**Figures this theme may quote**, each measured from a shipped artifact on 2026-10-17: 264,598 source
+notes paired with a document, in 502 of the 553 volumes (`collection-usage-index.json`, `coverage`);
+8,637 cross-volume citations into 5,747 documents from 185 volumes (`resolved-edge-index.json`:
+77,866 document edges less 69,229 within one volume); 81 volumes, all published between 1861 and 1922, whose
+header names no editor (`manifest.json`). Figures recorded only in planning documents (body footnotes, editorial notes,
+lists of persons, glossaries) need a census first.
 
 ---
 
@@ -220,11 +302,11 @@ commands); the drafts are in `Planning/marketing-drafts/`, with one contact shee
 | # | Headline | Subline (as drafted) | iPad capture | Mac capture | iPhone |
 |---|---|---|---|---|---|
 | 01 | Search 553 volumes of the U.S. diplomatic record. Offline. | Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject. | `ipad/search-results` (build 47, owner's device: re-shoot with the demo status bar) | `macos/search` | **none** |
-| 02 | Read it as printed. Keep what you find. | Documents rendered from the original TEI with footnotes and cross-references live, and a research rail beside the text… | `ipad/research-rail` (build 47) | `macos/research-strip` | **none** |
+| 02 | Read it as printed. Keep what you find. | The editors' headings, footnotes and cross-references, live, with a research rail beside the text… | `ipad/research-rail` (build 47) | `macos/research-strip` | **none** |
 | 03 | See the whole series at once. | 314,616 documents placed by the language they share… Experimental. | `ipad/semantic-map` | `macos/semantic-map` | **none** |
-| 04 | From footnote to shelf. | Every source note resolved as far as the bundled reference data reaches… No network, no API key. | `ipad/source-explorer` | `macos/source-explorer` | — |
+| 04 | From footnote to shelf. | The editors' source note, resolved as far as the bundled reference data reaches… No network, no API key. | `ipad/source-explorer` | `macos/source-explorer` | — |
 | 05 | Plan the trip before you book it. | An Archives Visit turns your documents into research targets… | `ipad/trip-packet` (packet lines changed, #1514/#1515) | `macos/trip-packet` (**stale**, #1444) | — |
-| 06 | Follow what the editors cited. | The cross-reference graph around any document… | `ipad/cross-reference-graph` (**stale**, #1438/#1481) | `macos/cross-reference-graph` (**stale**, #1438) | — |
+| 06 | Follow what the editors cited. | The editors' own cross-references around any document… | `ipad/cross-reference-graph` (**stale**, #1438/#1481) | `macos/cross-reference-graph` (**stale**, #1438) | — |
 | 07 | Cite as you write. | The Department's recommended citation, BibTeX, RIS, or straight into your own Zotero library… | **none** | **none** | — |
 | 08 | Build a course reader in an afternoon. | Section the collection by week, excerpt the passages… apply the Teaching reader preset, export PDF or Word. | `ipad/collections-editor` | `macos/collections` (**stale**, #1446) | — |
 | 09 | Lecture material before a single download. | How late the official record runs against the law that governs it, and three more dashboards… | `ipad/series-production` | `macos/series-production` | — |
@@ -285,7 +367,7 @@ chart exports", "every document carries a note") are **not** repeated here: this
 collections sync through your own iCloud account", "most charts export", and "where the editors gave
 one".
 
-### 5.1 Announcement post (for the README, a blog, or a newsletter; 346 words)
+### 5.1 Announcement post (for the README, a blog, or a newsletter; 447 words)
 
 > **FRUS Explorer, first public release**
 >
@@ -295,6 +377,14 @@ one".
 > independent research tool that puts that series on your iPhone, iPad or Mac and builds a workbench
 > around it. It is not an official product of the Office of the Historian or the U.S. Department of
 > State.
+>
+> The series is worth building on because of how it is made. Its editors, today the historians of
+> the Office of the Historian, choose the documents that record major decisions from the files of
+> the Department and the other agencies involved. They print them in date order, write each one's
+> heading, note where the original is kept, point to related documents, summarize what they could
+> not print, and mark what remains classified. FRUS Explorer is built on that apparatus. Where a
+> feature reads it, the app says so, and where the app computes something of its own, it says that
+> too.
 >
 > Download a volume, a subseries or the whole corpus, and the app indexes it on the device. From then
 > on, search works offline across everything you hold: phrases, proximity, exact words, and facets by
@@ -320,32 +410,43 @@ one".
 >
 > The series is in the public domain; the app's code is Apache 2.0 on GitHub.
 
-### 5.2 Listserv note (H-Diplo, SHAFR members, a departmental list; 142 words)
+### 5.2 Listserv note (H-Diplo, SHAFR members, a departmental list; 163 words)
 
 > Colleagues: I have released FRUS Explorer, a free iPhone, iPad and Mac app for working with the
-> *Foreign Relations of the United States* series offline. It downloads the Office of the Historian's
-> TEI editions, indexes them on the device, and adds full-text search with facets, a reader that keeps
-> the editorial apparatus, source notes resolved to record group and lot file, an archives-visit
-> packet, collections that export as course readers or Zotero records, and series-wide analytics,
-> including a map of 314,616 documents by the language they share. It is an independent project, not
-> an official product of the Office of the Historian or the Department of State; the series itself is
-> public domain and the code is open source. Manuals and the download are at [link]. I would be
-> grateful for bug reports and, especially, for the questions it cannot yet answer.
+> *Foreign Relations of the United States* series offline. It is built on the editors' apparatus. It
+> resolves source notes to record group and lot file, draws the editors' cross-references as a graph,
+> makes the people they identified and the dates they assigned searchable, and plans an archives
+> visit that includes files the editors cited but did not print. It also adds full-text search with
+> facets, collections that export as course readers or Zotero records, and series-wide analytics,
+> and it keeps what it read from the volumes apart from what it computed itself. It is an independent
+> project, not an official product of the Office of the Historian or the Department of State; the
+> series is public domain and the code is open source. Manuals and the download are at [link]. I
+> would be grateful for bug reports and, especially, for the questions it cannot yet answer.
 
 ### 5.3 Social posts (each under 300 characters)
 
 1. *FRUS Explorer is out: 553 volumes of the U.S. diplomatic record on your iPhone, iPad or Mac,
    searchable offline, with the editors' footnotes and source notes kept. Independent, free, open
    source. Not an official product of the Office of the Historian. [link]*
-2. *Every FRUS source note, resolved: record group, entry, lot file, repository. Then an Archives
-   Visit packet with the lines reading-room staff ask you to quote. [frame 04 or 05]*
+2. *Most FRUS documents carry the editors' note on where the original is kept. FRUS Explorer
+   resolves it to record group, lot file and entry, then plans the archives trip, including files
+   the editors cited but didn't print. [frame 04 or 05]*
 3. *A map of 314,616 FRUS documents placed by the language they share, named by the words that set
    each region apart. Experimental, and the layout's own caveat is on the screen. [frame 03]*
+4. *FRUS isn't a document dump. Its editors chose every document, wrote every heading and noted
+   where the originals are filed. FRUS Explorer builds on that work: source notes become archive
+   leads, cross-references a graph. Not an official product of the Office of the Historian. [link]*
+5. *The 1991 statute asks FRUS to be a thorough, accurate and reliable record. That standard is what
+   makes the series worth building tools on. FRUS Explorer reads the editors' apparatus and keeps it
+   in view. Not an official product of the Office of the Historian. [link]*
 
 ### 5.4 One-line press description (under 200 characters)
 
 > FRUS Explorer: an independent, offline research app for the *Foreign Relations of the United
-> States* series, on iPhone, iPad and Mac. Free; the series is public domain.
+> States* series, built on its editors' annotation. iPhone, iPad and Mac. Free.
+
+(Until 2026-10-17: *…the Foreign Relations of the United States series, on iPhone, iPad and Mac.
+Free; the series is public domain.*)
 
 ### 5.5 FAQ (for the landing page and the listing's reviewer notes)
 
@@ -362,6 +463,14 @@ one".
   removed later.
 - **Which languages?** English only, in this release.
 - **Where do my notes live?** On your device and, if you sign in, in your own iCloud account.
+- **What does the editing add?** Selection, order and annotation. The editors choose the documents
+  that record major decisions, print them in date order, write a heading for each, note where the
+  original is filed, point to related documents, summarize what they could not print, and mark what
+  is still classified. Most of FRUS Explorer's research tools read that apparatus.
+- **Which parts come from the editors, and which from the app?** The app labels them. Values read
+  from the volumes alone are marked *FRUS text*. Values joined to other records, such as the National
+  Archives catalog or the Office's people register, name the record. Values the app computes, such
+  as the semantic map, are marked as the app's own and experimental.
 
 ---
 
@@ -375,7 +484,9 @@ one".
 | NARA data | *not affiliated with, endorsed by, or sponsored by the National Archives…* | frames 04 and 05's foot; the FAQ |
 | meaning search | describe, never brand; *experimental* | frame 12's subline; §5.1's last paragraph |
 | a count | only a §5-table figure | 553; 314,616; "about 317,000" with "about"; never "every" |
-| the provenance lens | the plurality caption, which is owed a correction (75 of 499) before any asset quotes it | no frame uses the provenance lens, deliberately |
+| the provenance lens | the plurality caption as the app prints it: 86 of 499, which `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured` recomputes from the bundled index | no frame uses the provenance lens, deliberately |
+| the Office of the Historian, by name | the not-an-official-product sentence, in the same asset | §1a rule 4; every §5 piece that names the Office |
+| a feature built on the editors' apparatus | the part it reads (source note, cross-reference, the people they tagged) and its layer: FRUS text, joined or computed | §1a's feature lines; frames 02, 04 and 06 |
 
 ---
 
@@ -441,8 +552,11 @@ number of the capture run in `Docs/screenshots/README.md`'s ledger, as the X-8 r
 | Volumes | 553 | `Store-Listing-Draft.md` §5, `manifest.json` entry count |
 | Published since | 1861 | same, earliest `publicationDate` |
 | Documents on the map | 314,616 | same, `semantic-vectors-index.json` |
-| Regions | 172 | same, `semantic-map-index.json` |
+| Regions | 140 | same, `semantic-map-index.json`, re-read 2026-10-15 after B4 (172 under the earlier layout) |
 | Documents in a full index | about 317,000 (316,814 by replica) | same; the device count is owed to the release census |
 | Corpus size | ≈ 3.3 GB of volumes; index ≈ 2.8× | the onboarding sheet (`ipad/onboarding-volumes.png`) and the iOS manual §2.3 |
 | Latest coverage | 1981–1988 vol. XVI | the build-50 TestFlight notes |
-| Provenance lens plurality | 75 of 499 | the visual-marketing plan §5, recomputed 2026-10-01; the shipped caption still says 73 |
+| Provenance lens plurality | 86 of 499 | the shipped caption (`SemanticMapLens.swift`), recomputed from `source-provenance-index.json` by `SemanticMapSurfaceTests.provenanceCaptionFiguresAreMeasured`; it was 75 before #1543 added the Subject-Numeric category |
+| Source notes paired with a document | 264,598, in 502 of 553 volumes | `collection-usage-index.json`, `coverage` |
+| Cross-volume citations | 8,637, into 5,747 documents from 185 volumes | `resolved-edge-index.json`, `coverage`: 77,866 document edges less 69,229 within a volume |
+| Volumes naming no editor | 81, all published 1861–1922 | `manifest.json`, an empty `editors` list |
