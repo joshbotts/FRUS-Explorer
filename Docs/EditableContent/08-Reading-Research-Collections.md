@@ -2293,7 +2293,7 @@ Tag documents while you research, then choose which tags focus this project’s 
 <!-- END SOURCE: project.reach.volumeDetail %lld %lld -->
 
 #### Alert message — Projects keep separate research threads — each with its own…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectPickerMenu.swift | SecondProjectNudgeModifier.body | lines: 399–400 | key: project.nudge.secondProject.message -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectPickerMenu.swift | SecondProjectNudgeModifier.body | lines: 404–405 | key: project.nudge.secondProject.message -->
 
 Projects keep separate research threads — each with its own collections, notes, and suggestions. Project Home is where you steer one; switch between them from the project menu.
 

@@ -384,6 +384,45 @@ struct ProjectHomeSummaryTests {
         #expect(WorkingOnBanner.resolvedQuestion(activeProjectId: UUID(), projects: projects) == nil)
     }
 
+    /// #1701: the Mac's Corpus Browser heads each view in its detail column's stack with the bar,
+    /// and no longer insets the whole split view.
+    ///
+    /// A top `.safeAreaInset` on the `NavigationSplitView` was drawn over both columns' first rows,
+    /// the sidebar's Browse header and a pushed volume's header line. Stacked above the whole
+    /// `NavigationStack`, the bar was covered by every pushed view. Only the Mac check copy showed
+    /// either, and the Mac has no runtime test, so the placement is pinned here and walked there:
+    /// once on the stack's root view, once on what its `navigationDestination` builds, and with the
+    /// content filling the column below the bar.
+    @Test("The Corpus Browser heads each view in its detail column's stack with the Working on bar (#1701)")
+    func corpusBrowserBarSitsInTheDetailColumn() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let browser = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/App/MacCorpusBrowserWindow.swift"), encoding: .utf8)
+        #expect(!browser.contains("{ WorkingOnBanner() }"),
+                "a top inset holding the bar is back: on the split view it is drawn over both columns")
+        #expect(browser.contains("""
+                    VStack(spacing: 0) {
+                        WorkingOnBanner()
+                        content
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+            """),
+                "the modifier no longer stacks the bar above content that fills the column")
+
+        let applied = browser.ranges(of: ".modifier(WorkingOnBarAbove())")
+        #expect(applied.count == 2, "the bar heads the stack's root and its pushed views, and nothing else")
+        let stack = try #require(browser.range(of: "NavigationStack(path: $detailPath) {"))
+        let destination = try #require(
+            browser.range(of: ".navigationDestination(for: CorpusNavValue.self) { value in"))
+        let splitViewModifiers = try #require(browser.range(of: ".onChange(of: selection) { _, _ in"))
+        let onRoot = try #require(applied.first, "the stack's root view no longer carries the bar")
+        let onPushed = try #require(applied.last, "the stack's pushed views no longer carry the bar")
+        #expect(stack.upperBound < onRoot.lowerBound && onRoot.upperBound < destination.lowerBound,
+                "the first bar is not on the stack's root view")
+        #expect(destination.upperBound < onPushed.lowerBound && onPushed.upperBound < splitViewModifiers.lowerBound,
+                "the second bar is not on what the stack pushes")
+    }
+
     @Test("SecondProjectNudge.shouldNudge fires only at ≥ 2 projects and only when not already shown")
     func secondProjectNudgeShouldNudge() {
         // The 1 → 2 transition is the trigger; a single project never nudges.

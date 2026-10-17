@@ -966,10 +966,10 @@ final class SemanticMapModel {
     /// tween drives BOTH through `applyCamera`, which writes the renderer and mirrors it. The
     /// invariant holds mid-flight, which is stronger than what shipped, not weaker.
     ///
-    /// **A camera write is exactly one frame.** The renderer is `isPaused = true` with
-    /// `enableSetNeedsDisplay`, and `camera` carries `didSet { setNeedsRedraw() }`, so a transit is
-    /// N dirty marks and costs nothing when idle. That property is why this is affordable on a
-    /// 314,616-point map at all.
+    /// **A camera write is at most one frame.** The renderer is paused and draws only the frames it
+    /// asks for, one per main-queue turn, and `camera` carries `didSet { setNeedsRedraw() }`, so a
+    /// transit is N frame requests and costs nothing when idle. That property is why this is
+    /// affordable on a 314,616-point map at all.
     private func moveCamera(to target: SemanticMapCamera) {
         transitTask?.cancel()
         transitTask = nil
@@ -987,7 +987,7 @@ final class SemanticMapModel {
         }
     }
 
-    /// One frame of a transit — 60 Hz, so a 0.6 s move is ~36 dirty marks.
+    /// One frame of a transit — 60 Hz, so a 0.6 s move is ~36 frame requests.
     private static let transitFrame: Duration = .milliseconds(16)
 
     /// Writes the camera to the renderer and mirrors it, in that order.
@@ -3386,14 +3386,33 @@ struct SemanticMapSurface {
         #else
         let view = MTKView(frame: .zero, device: model.renderer?.device)
         #endif
-        // **On demand, not on a clock.** `isPaused` stops the display link and
-        // `enableSetNeedsDisplay` makes a dirty mark the thing that produces a frame; the renderer
-        // marks itself dirty from every mutator (`SemanticMapRenderer.register(_:)` and its `didSet`
-        // hooks). The map is a still image unless the camera moves, so the free-running loop this
-        // replaces spent 60 identical 314,616-point draw calls a second for as long as a window
-        // stayed open — which was a fair trade for a spike being measured and is not one for a
-        // window a reader leaves open beside their work.
-        view.enableSetNeedsDisplay = true
+        configure(view)
+        return view
+    }
+
+    /// Sets a view up the way the map draws, and attaches the renderer.
+    ///
+    /// Apart from `makeMap()` so the suite can apply the same set-up to a view of its own — #1700's
+    /// regression test uses one whose MetalKit draw notifications produce nothing — and so the two
+    /// cannot drift apart.
+    ///
+    /// - Parameter view: The view to configure.
+    @MainActor
+    func configure(_ view: MTKView) {
+        // **On demand, not on a clock, and drawn by the renderer.** `isPaused` stops the display
+        // link, and `enableSetNeedsDisplay = false` is MetalKit's explicit-drawing mode: the view
+        // draws only when `draw()` is called, and the renderer calls it for every frame it asks for
+        // (`SemanticMapRenderer.setNeedsRedraw()`). The map is a still image unless the camera
+        // moves, so the free-running loop this replaces spent 60 identical 314,616-point draw calls a
+        // second for as long as a window stayed open — a fair trade for a spike being measured and
+        // not one for a window a reader leaves open beside their work.
+        //
+        // **Not MetalKit's other on-demand mode** (`enableSetNeedsDisplay = true`, where a dirty
+        // mark produces the frame), which this used until #1700. On macOS that mode runs through a
+        // dispatch source MetalKit cancels when the view's window closes, and SwiftUI reopens the
+        // same window, so the map stopped drawing for good after its window had been closed once.
+        // The measurement is in `setNeedsRedraw()`'s documentation.
+        view.enableSetNeedsDisplay = false
         view.isPaused = true
         view.preferredFramesPerSecond = 60
         // Must equal the format the pipeline was built for. Nothing in the compiler links the two,
@@ -3402,7 +3421,6 @@ struct SemanticMapSurface {
         view.clearColor = SemanticMapRenderer.backgroundClearColor
         if view.device == nil { view.device = MTLCreateSystemDefaultDevice() }
         attach(to: view)
-        return view
     }
 
     /// Attaches the renderer once the model has one.
@@ -3412,8 +3430,8 @@ struct SemanticMapSurface {
         guard let renderer = model.renderer else { return }
         // Registered before the delegate check rather than after it, so a re-assert that finds the
         // delegate already set still puts the view on the redraw list. Both calls are idempotent —
-        // this is belt-and-braces, not a fix for an observed failure — but an on-demand surface that
-        // is not on the list draws nothing at all, and that failure is total rather than degraded.
+        // this is belt-and-braces, not a fix for an observed failure — but a surface that is not on
+        // the list is never drawn at all, and that failure is total rather than degraded.
         renderer.register(view)
         guard view.delegate !== renderer else { return }
         view.device = renderer.device

@@ -39,10 +39,11 @@ import simd
 /// bytes per document, 2.5 MB for the corpus rather than the 1.26 MB an earlier version of this
 /// comment claimed. The Metal struct has the same layout, which is what makes the indexing agree.
 ///
-/// **Frames are produced on demand.** The view is paused and every mutator here marks it dirty, so a
-/// map nobody is touching costs nothing; see `setNeedsRedraw()`. That is the one thing to know before
-/// adding state that affects the picture — a new stored property without a `didSet` will simply not
-/// appear until something else moves.
+/// **Frames are produced on demand, and this class produces them.** The view is paused with MetalKit's
+/// draw notifications off, and every mutator here asks for a frame, which `drawPendingFrame()` draws by
+/// calling the view's `draw()`. So a map nobody is touching costs nothing; see `setNeedsRedraw()`.
+/// That is the one thing to know before adding state that affects the picture — a new stored property
+/// without a `didSet` will simply not appear until something else moves.
 ///
 /// ## What it deliberately does not do
 ///
@@ -51,7 +52,7 @@ import simd
 /// `SemanticMapPicking`, which is what lets them be tested without a GPU.
 ///
 /// **Main-actor-isolated, and that is load-bearing rather than tidiness.** `MTKView` is
-/// `NS_SWIFT_UI_ACTOR`, so marking a view dirty is a main-actor call; the two `MTKViewDelegate`
+/// `NS_SWIFT_UI_ACTOR`, so asking a view to draw is a main-actor call; the two `MTKViewDelegate`
 /// witnesses are main-actor for the same reason, and every caller — `SemanticMapModel` and the
 /// representable — already was. An earlier version of this file left the class nonisolated and
 /// claimed in a comment that "a renderer is a perfectly reasonable thing to build off the main
@@ -72,6 +73,10 @@ import simd
 ///         call builds its OWN uniforms (aspect from the export texture, point size scaled to the
 ///         export height) and never touches the stored view state, so the restore guarantee is
 ///         structural rather than procedural.
+///   1.3 — A3c (#1700): the renderer draws each frame itself, through the view's `draw()` on the next
+///         main-queue turn, where it used to mark the view dirty and leave the frame to MetalKit. On
+///         macOS that path ran through a dispatch source a closed window cancels, so a map whose
+///         window had been closed and reopened never drew again; see `setNeedsRedraw()`.
 @MainActor
 final class SemanticMapRenderer: NSObject, MTKViewDelegate {
 
@@ -178,7 +183,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// plate rather than a faded one.
     ///
     /// `didSet` redraws for the same reason `camera` does — the view is `isPaused = true`, so a
-    /// write that did not mark the view dirty would simply not appear.
+    /// write that did not ask for a frame would simply not appear.
     var layerAlpha: Float = 1 {
         didSet { if layerAlpha != oldValue { setNeedsRedraw() } }
     }
@@ -258,49 +263,88 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         init(_ view: MTKView) { self.view = view }
     }
 
-    /// The views to mark dirty, weakly.
+    /// The views to draw, weakly.
     ///
     /// **A list rather than one reference.** Whether SwiftUI realizes *this* representable more than
     /// once is a question this file has answered wrongly before — the suite's version history records
     /// "NOT, as this entry first claimed, SwiftUI realizing the representable more than once; it is
     /// realized once" — so the list is not justified by a measured multiplicity. It is justified by
-    /// the cost asymmetry: a second live view costs one redundant dirty mark on a view `draw(in:)`
+    /// the cost asymmetry: a second live view costs one redundant `draw()` on a view `draw(in:)`
     /// already skips for having no window, while a single slot holding the wrong instance costs a map
     /// that never redraws at all. The suite does construct several views from one surface, and every
-    /// one of them is marked.
+    /// one of them is drawn.
     ///
     /// Weak, and it must stay weak: `MTKView.delegate` is itself weak and the model owns the
     /// renderer, so a strong reference here would close a cycle around every window the map opens.
     private var attachedViews: [WeakView] = []
 
-    /// How many views have been marked dirty, in total, across every redraw request.
+    /// How many views have been drawn, in total, across every frame this renderer asked for.
     ///
-    /// **Counts the mark, not the call**, and the distinction is the whole value of the counter.
-    /// `UIView` exposes no readable `needsDisplay`, so on the platform the suite runs on there is
-    /// nothing else to assert; a counter incremented at the top of `setNeedsRedraw` would stay green
-    /// against a body that had stopped marking anything — which is a map frozen at its first frame,
-    /// the most complete failure this surface has. So it is incremented immediately after the
-    /// platform call, per view, where the two cannot be separated by a one-line edit.
-    private(set) var markedViewCount = 0
+    /// **Counts the call, not the request**, and the distinction is the whole value of the counter.
+    /// A counter incremented in `setNeedsRedraw` would stay green against a `drawPendingFrame` that
+    /// had stopped drawing anything, which is a map frozen at its last frame: the most complete
+    /// failure this surface has, and the one #1700 put in front of a reader. So it is incremented
+    /// immediately after the view's `draw()`, per view, where the two cannot be separated by a
+    /// one-line edit.
+    private(set) var drawnViewCount = 0
 
-    /// Marks every attached surface dirty so it asks for one frame.
+    /// Frames `draw(in:)` has encoded, presented and committed, in total.
+    ///
+    /// `drawnViewCount` cannot see past the `draw()` call: a view with no window or no drawable takes
+    /// it and returns without a frame. This is counted after `commit()`, so it moves only when a
+    /// request reached a drawable, which is what #1700's regression test needs to see.
+    private(set) var presentedFrameCount = 0
+
+    /// Whether a frame has been asked for and not yet drawn.
+    private var isFramePending = false
+
+    /// Asks every attached surface for one frame, drawn on the next main-queue turn.
     ///
     /// **The map draws on demand, not on a clock.** It is a static image unless the camera moves,
     /// the lens changes or the corpus is re-uploaded, so a free-running display link re-issued the
     /// same 314,616-point draw call sixty times a second for as long as a window stayed open —
     /// affordable while this was a spike being measured, not for a window a reader leaves open
-    /// beside their work. Every mutator above marks the surface instead, which is why they are
+    /// beside their work. Every mutator above asks for a frame instead, which is why they are
     /// `didSet` rather than plain stored properties.
+    ///
+    /// **And the renderer draws that frame itself** (#1700). It used to mark the view dirty and leave
+    /// the frame to MetalKit, whose paused `enableSetNeedsDisplay` mode turns a dirty mark into a
+    /// frame through machinery of its own: on macOS, `-[MTKView displayLayer:]` merges into a private
+    /// dispatch source on the main queue, and that source's handler calls `draw()`. When the view's
+    /// window closes, `-[MTKView _windowWillClose:]` cancels the source. SwiftUI's `Window` scene does
+    /// not destroy a closed window; it hides it and shows the same one, with the same view, when the
+    /// reader opens it again. So after the Semantic Analytics window had been closed once, every dirty
+    /// mark went into a cancelled source: the labels and the legend, which are SwiftUI, followed each
+    /// pan, zoom and lens while the points stayed where they were. Measured in the Mac check copy at
+    /// `0b511628` on 2026-10-16: on a fresh map a zoom went `displayLayer:`, the source, `draw()`,
+    /// `draw(in:)`; closing the window ran `_windowWillClose:`, after which libdispatch described the
+    /// source as "cancelled, deleted"; after the window was reopened, 71 `displayLayer:` merges
+    /// produced no `draw()`, and `draw()` called on that same view drew the current camera and lens at
+    /// once. The surface now uses MetalKit's explicit-drawing mode (`SemanticMapSurface.configure`),
+    /// in which nothing draws unless `draw()` is called, and `drawPendingFrame()` calls it.
+    ///
+    /// Requests made in one turn share a frame, as the source's merges did: a load sets the points,
+    /// the scope, the camera and the palette back to back and draws once.
     private func setNeedsRedraw() {
+        attachedViews.removeAll { $0.view == nil }
+        guard !attachedViews.isEmpty, !isFramePending else { return }
+        isFramePending = true
+        DispatchQueue.main.async { [weak self] in self?.drawPendingFrame() }
+    }
+
+    /// Draws the frame `setNeedsRedraw()` asked for, on every attached view.
+    ///
+    /// The main queue calls it on the turn after the request, and the suite calls it directly to
+    /// draw without waiting for that turn. It draws nothing when no frame is pending, so a test that
+    /// calls it cannot produce a frame no mutator asked for.
+    func drawPendingFrame() {
+        guard isFramePending else { return }
+        isFramePending = false
         attachedViews.removeAll { $0.view == nil }
         for box in attachedViews {
             guard let view = box.view else { continue }
-            #if os(macOS)
-            view.needsDisplay = true
-            #else
-            view.setNeedsDisplay()
-            #endif
-            markedViewCount += 1
+            view.draw()
+            drawnViewCount += 1
         }
     }
 
@@ -655,6 +699,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         #endif
         buffer.present(drawable)
         buffer.commit()
+        presentedFrameCount += 1
     }
 
     /// Encodes the point pass into a descriptor — the ONE encode path (W-3 / #1007).

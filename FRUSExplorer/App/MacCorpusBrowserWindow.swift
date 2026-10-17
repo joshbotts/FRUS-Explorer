@@ -121,6 +121,9 @@ enum CorpusSidebarItem: Hashable {
 ///          the shipped `CollectionBrowserView` through its `onSelect` seam); a
 ///          collection pushes `CorpusNavValue.collection` hosting the shared
 ///          `CollectionDetailView` with its citing-volume rows routed in place
+///   1.10 — A3c (#1701): the "Working on:" bar moves from a top inset on the whole split
+///          view, drawn over the sidebar's Browse header and a pushed volume's header line,
+///          to the head of each view in the detail column's stack (`WorkingOnBarAbove`)
 struct CorpusBrowserWindowView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
@@ -290,66 +293,74 @@ struct CorpusBrowserWindowView: View {
                         )
                     }
                 }
+                // #1701: the "Working on:" bar heads every view the detail column's stack shows,
+                // the root here and each pushed view below, as the Search window sets it in its
+                // column. On the whole split view it was drawn over both columns' first rows, and
+                // outside the stack the Mac's pushed views cover it.
+                .modifier(WorkingOnBarAbove())
                 .navigationDestination(for: CorpusNavValue.self) { value in
-                    switch value {
-                    case .volume(let volumeId):
-                        if let entry = allEntries.first(where: { $0.volumeId == volumeId }) {
-                            CorpusVolumeDetailView(volume: entry, path: $detailPath)
-                        }
-                    case .section(let volumeId, let section):
-                        CorpusSectionDocumentView(volumeId: volumeId, section: section, path: $detailPath)
-                    case .axisList(let spec):
-                        MacAxisVolumeListView(spec: spec, path: $detailPath)
-                    case .scopeEditor(let id):
-                        ScopeEditorView(scopeId: id, onDone: {
-                            if case .scopeEditor = detailPath.last {
-                                detailPath.removeLast()
+                    Group {
+                        switch value {
+                        case .volume(let volumeId):
+                            if let entry = allEntries.first(where: { $0.volumeId == volumeId }) {
+                                CorpusVolumeDetailView(volume: entry, path: $detailPath)
                             }
-                        })
-                    case .corpusDocuments(let id, _):
-                        // Indexed rows route to this browser's document host — the
-                        // browser window stays open beside the opened document
-                        // (`CorpusSectionDocumentView`'s precedent).
-                        CorpusDocumentsView(corpusId: id, onOpenDocument: { entry in
-                            appState.openDocument(entry, from: .tool(.corpusBrowser),
-                                                  using: openWindow)
-                        })
-                    case .clusterDocuments(let id, let label):
-                        // #1051 B-7: indexed rows route to this browser's document host
-                        // (the `.corpusDocuments` precedent); "See on map" rides the
-                        // Handoff into the singleton Semantic Analytics window and
-                        // fronts it — `openWindow(value:)` has no macOS scene for this
-                        // request type (the ResearchRailView-documented mistake).
-                        ClusterDocumentsView(
-                            clusterId: id,
-                            label: label,
-                            onOpenDocument: { entry in
+                        case .section(let volumeId, let section):
+                            CorpusSectionDocumentView(volumeId: volumeId, section: section, path: $detailPath)
+                        case .axisList(let spec):
+                            MacAxisVolumeListView(spec: spec, path: $detailPath)
+                        case .scopeEditor(let id):
+                            ScopeEditorView(scopeId: id, onDone: {
+                                if case .scopeEditor = detailPath.last {
+                                    detailPath.removeLast()
+                                }
+                            })
+                        case .corpusDocuments(let id, _):
+                            // Indexed rows route to this browser's document host — the
+                            // browser window stays open beside the opened document
+                            // (`CorpusSectionDocumentView`'s precedent).
+                            CorpusDocumentsView(corpusId: id, onOpenDocument: { entry in
                                 appState.openDocument(entry, from: .tool(.corpusBrowser),
                                                       using: openWindow)
-                            },
-                            onSeeMap: { request in
-                                appState.openSemanticMap(request, from: nil)
-                                openWindow.fronting(id: "frus.semanticAnalytics")
                             })
-                    case .collection(let collectionId):
-                        // #1051 B-5: the shared detail, push-hosted, with citing-volume
-                        // rows routed IN PLACE so the axis back-stack survives. The
-                        // NAID/catalog-link trust gate stays inside the shared detail.
-                        if let record = CollectionAuthorityStore.shared?.record(id: collectionId) {
-                            CollectionDetailView(record: record, onOpenVolumeInPlace: { volumeId in
-                                detailPath.append(.volume(volumeId: volumeId))
-                            })
-                        } else {
-                            ContentUnavailableView(
-                                String(localized: "browser.archives.collection.unavailable.title",
-                                       defaultValue: "Collection Unavailable"),
-                                systemImage: "archivebox",
-                                description: Text(String(
-                                    localized: "browser.archives.collection.unavailable.detail",
-                                    defaultValue: "This collection is not in the bundled archival authority."))
-                            )
+                        case .clusterDocuments(let id, let label):
+                            // #1051 B-7: indexed rows route to this browser's document host
+                            // (the `.corpusDocuments` precedent); "See on map" rides the
+                            // Handoff into the singleton Semantic Analytics window and
+                            // fronts it — `openWindow(value:)` has no macOS scene for this
+                            // request type (the ResearchRailView-documented mistake).
+                            ClusterDocumentsView(
+                                clusterId: id,
+                                label: label,
+                                onOpenDocument: { entry in
+                                    appState.openDocument(entry, from: .tool(.corpusBrowser),
+                                                          using: openWindow)
+                                },
+                                onSeeMap: { request in
+                                    appState.openSemanticMap(request, from: nil)
+                                    openWindow.fronting(id: "frus.semanticAnalytics")
+                                })
+                        case .collection(let collectionId):
+                            // #1051 B-5: the shared detail, push-hosted, with citing-volume
+                            // rows routed IN PLACE so the axis back-stack survives. The
+                            // NAID/catalog-link trust gate stays inside the shared detail.
+                            if let record = CollectionAuthorityStore.shared?.record(id: collectionId) {
+                                CollectionDetailView(record: record, onOpenVolumeInPlace: { volumeId in
+                                    detailPath.append(.volume(volumeId: volumeId))
+                                })
+                            } else {
+                                ContentUnavailableView(
+                                    String(localized: "browser.archives.collection.unavailable.title",
+                                           defaultValue: "Collection Unavailable"),
+                                    systemImage: "archivebox",
+                                    description: Text(String(
+                                        localized: "browser.archives.collection.unavailable.detail",
+                                        defaultValue: "This collection is not in the bundled archival authority."))
+                                )
+                            }
                         }
                     }
+                    .modifier(WorkingOnBarAbove())
                 }
             }
         }
@@ -381,8 +392,6 @@ struct CorpusBrowserWindowView: View {
             consumePendingVolume()
         }
         .frame(minWidth: 540, minHeight: 440)
-        // #377 Phase 5: the ambient "Working on: <question>" lens across sidebar + detail.
-        .safeAreaInset(edge: .top, spacing: 0) { WorkingOnBanner() }
     }
 
     /// Applies (and clears) `AppState.pendingBrowseVolume`: selects the volume's
@@ -496,6 +505,36 @@ struct CorpusBrowserWindowView: View {
                 detailPath.append(.scopeEditor(id))
             }
         )
+    }
+}
+
+// MARK: - WorkingOnBarAbove
+
+/// Heads a view in the Corpus Browser's detail column with the "Working on:" bar (#1701).
+///
+/// A top `.safeAreaInset` on a `NavigationSplitView` does not move its columns: each keeps its
+/// own safe area under the toolbar, so the inset is drawn over the first rows of both. In the
+/// Corpus Browser that hid the sidebar's Browse header and a pushed volume's header line, which
+/// sat at the same height with the bar showing as without it. Stacked above the column's whole
+/// `NavigationStack` instead, the bar showed over the stack's root and was covered by every view
+/// pushed onto it, which on the Mac takes the column's full height. So it goes where #486 put
+/// iOS's: inside the stack, on the root view and on each pushed view. All three measured in the
+/// Mac check copy on 2026-10-16.
+///
+/// The content fills the column below the bar. Without that, a root view that does not, such as
+/// the empty column's placeholder, was centred in the column with the bar just above it, halfway
+/// down. `WorkingOnBanner` draws nothing when no project with a question is active, so the stack
+/// is then the content alone.
+///
+/// Version history:
+///   1.0 — A3c (#1701): initial implementation
+private struct WorkingOnBarAbove: ViewModifier {
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            WorkingOnBanner()
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 }
 
