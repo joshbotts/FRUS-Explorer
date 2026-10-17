@@ -151,7 +151,7 @@ pushed screen and skip on the sheet route. #1413's three Section defaults tests 
 three failed on the pre-fix editor on iPhone 17 and on iPad Pro 13-inch (M5). Expect **9 tests with 0 skipped on iPhone
 17** and **9 with 3 skipped on iPad Pro 13-inch (M5)** (8 and 8 until #1704). The suite passed on an iOS 27.0 iPhone 17 when it had its first
 3 tests (pass the iOS 27 timeout flags below), and all 8 ran on an iOS 27.0 iPad Pro 13-inch (M5) on 2026-10-01 with
-those flags, 5 passing and 3 skipping; the 5 added by #1415 and #1413 have not been run on an iOS 27 iPhone.
+those flags, 5 passing and 3 skipping; all 9 ran on both on 2026-10-17 (below).
 **A third destination guards #1450: iPad Air 11-inch in portrait, which the suite sets.** There the toolbar folds
 ＋ Add into its ⋯ overflow (⚙ Collection stays in the bar, and Collection settings is still the sheet), and the suite,
 which looked for the menu in the bar alone, failed in `addSectionHeading()` before testing anything. Lane K3 measured
@@ -178,35 +178,47 @@ runner twice failed before the test began**, "Timed out waiting for AX loaded no
 SpringBoard was being killed (`launchctl list` showed it at -9) when the app was launched by hand with a volume seed;
 `simctl shutdown` and `boot` cleared the runner's failure, as the next run showed. Read a run that executes no test as the
 simulator's, not the suite's.
-**#1413's three Section defaults tests fail on `v2` as of 2026-10-17**, on iPhone 17 (iOS 27.0), iPad Air 11-inch (M4)
-(iOS 26.5) and iPad Pro 13-inch (M5) (iOS 27.0): `testTheEditorShowsASubtitleSetInSectionDefaults`,
-`testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit` and `testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet`,
-each "The Section defaults sheet did not close". A4b's control: the same three on `v2` (`b3272d86`), built in a second
-worktree, failed the same way on the iPhone and the Air, as on #1704's branch. On these screens each XCUI query now takes
-4 to 11 s (Xcode 27.1 has been installed since 2026-10-16), and `closeSectionDefaults()` waits 5 s for the sheet to go.
-With that wait at 30 s, all three passed on `v2` on the Air, in 326, 390 and 430 s, so they also need
-`-default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600`. On the iPad Pro the 300 s
-allowance also ended `testContentAloneDoesNotNameANewCollection`, which passed alone with 600 s (191 s). Until the tests
-are fixed, expect those three failures on any device, give the suite 600 s on an iPad, and read the other six.
+**Every wait in the suite is 30 s, and it needs 600 s a test** (2026-10-17, plan of record §6g). Since Xcode 27.1
+(installed 2026-10-16) one XCUI query on these screens takes seconds: in #1704's runs a query for a control by its
+identifier took 4 to 13 s at a run's median, and up to 28 s, against about a second for one by label, on all three
+devices and on a quiet Mac too. XCTest first checks a wait's condition about a second after the wait begins, so a 5 s wait
+ran out while that first check was still running, whatever the screen showed. #1413's three Section defaults tests
+(`testTheEditorShowsASubtitleSetInSectionDefaults`, `testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit` and
+`testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet`) wait for the sheet to go in an `XCTWaiter` of their
+own, which checks nothing more once it runs out, so all three failed "The Section defaults sheet did not close" on iPhone
+17 (iOS 27.0), iPad Air 11-inch (M4) (iOS 26.5) and iPad Pro 13-inch (M5) (iOS 27.0), on `v2` itself (`b3272d86`, built in
+a control worktree) as on #1704's branch. `waitForExistence(timeout:)` does check once more after it runs out, and that
+second check is all that kept the suite's other 5 s waits passing: all 61 waits for a control by identifier in #1704's
+runs ran past their 5 s. Every wait is now the suite's `patience`, 30 s; a wait that is met returns at once.
+**Measured on 2026-10-17 with the commands below:** iPhone 17 (iOS 27.0) **9 tests, 0 skipped, 0 failed**, in 1,514 s;
+iPad Air 11-inch (M4) (iOS 26.5) **9, 3 skipped, 0 failed**, in 1,081 s; iPad Pro 13-inch (M5) (iOS 27.0) **9, 3 skipped,
+0 failed**, in 1,222 s. In each run all five waits for the Section defaults sheet to go took longer than 5 s (up to 11.6 s
+on the iPhone, 7.6 s on the Air, 8.1 s on the iPad Pro), and 22 to 29 of a run's 102 to 124 waits did. The Section
+defaults tests took 139 to 348 s on the iPhone, 166 to 266 s on the Air and 191 to 342 s on the iPad Pro; in #1704's
+control with a 30 s wait they took 326 to 430 s on the Air, and in #1704's run of the whole suite the 300 s allowance
+ended `testContentAloneDoesNotNameANewCollection` on the iPad Pro (it passed alone in 191 s, given 600). Hence 600 s.
 
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPhone 17" \
-  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
+  -destination "platform=iOS Simulator,name=iPhone 17,OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
-  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Air 11-inch (M4),OS=26.5" \
-  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
+  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
 **`SelectionEditMenuTests` (#1540) must run on an iPhone AND an iPad, and it lives in
@@ -535,11 +547,17 @@ editing tests on #1360's first build — measured on iPad Air 11-inch (M4) and i
 skipped** on each. The AX3 tests prove their size took effect from the recognized line height, and the default-size
 test checks the other side of the same threshold. The unit half is `FRUSExplorerTests/RichTextRestingCapTests`. A
 `name=` alone picks one of several runtimes on this machine, so pin the OS the figures came from.
-**Measured 2026-10-17 (A4b, #1704):** 5 passed, 0 skipped, on iPhone Air; on iPad Air 11-inch (M4), 3 passed and 2 failed,
-`testALongIntroductionRestsOnItsOpeningWords` ("Done did not put the keyboard away") and
-`testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp`, and both failed the same way on `v2` at `a9361e7e`, built in a
-control worktree. Each XCUI query on those screens took several seconds against the suite's 5 s waits, the cause found in
-`CollectionEditorTitleTests`' Section defaults tests (its entry above).
+**Every wait in it is 30 s, and give it 600 s a test** (2026-10-17, plan of record §6g). In #1704's runs on iPad Air
+11-inch (M4) 3 passed and 2 failed: `testALongIntroductionRestsOnItsOpeningWords` ("Done did not put the keyboard away",
+its first check of the settings sheet's Done taking 4.3 s) and `testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp`
+("The colour picker did not close", and once "Text Color opened no colour picker with a Sliders tab"), each the same way
+on `v2` at `a9361e7e`, built in a control worktree; iPhone Air passed all 5. The cause is the one
+`CollectionEditorTitleTests`' entry above gives: a 5 s wait ran out while XCTest's first check, a second in, was still
+running. With every wait at the suite's `patience`, 30 s, it passed whole on both on 2026-10-17 with the commands below:
+**5 tests, 0 skipped, 0 failed** on each, in 583 s on the Air and 590 s on the iPhone Air. The wait for the keyboard to
+go took about 5.3 s on the Air and 5.5 s on the iPhone Air in that run, past the old 5 s. The slowest test took 137 s,
+but #1704's runs of the Text Color test on the Air reached 214 and 228 s before failing in its last steps, so the
+commands pass 600 s.
 
 ```bash
 xcodebuild test \
@@ -547,14 +565,14 @@ xcodebuild test \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Air 11-inch (M4),OS=26.5" \
   -only-testing FRUSExplorerUITests/CollectionProseRowRestTests \
-  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone Air,OS=26.5" \
   -only-testing FRUSExplorerUITests/CollectionProseRowRestTests \
-  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
 
 **`BrowseWithinScopeTests` (#1364) must run on an iPhone AND an iPad, and neither is a control.**

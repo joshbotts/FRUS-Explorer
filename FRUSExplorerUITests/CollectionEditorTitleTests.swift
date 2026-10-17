@@ -85,6 +85,13 @@ import XCTest
 /// `tearDown` (`UITestPresentation.dismissAnyPresentation`), because the iPad route opens a sheet and a presentation
 /// left standing is what the next launch restores (#1279).
 ///
+/// **Every wait is ``patience``, 30 s, and the suite needs 600 s a test** (`-test-timeouts-enabled YES
+/// -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600`), not the 300 s CLAUDE.md
+/// gives an iOS 27 run. One query on these screens takes seconds, so a 5 s wait could run out before its first check
+/// came back. With 30 s waits the slowest Section defaults test took 348 s on iPhone 17 and 342 s on iPad Pro 13-inch
+/// (M5), iOS 27.0, on 2026-10-17, and the three took 326 to 430 s on iPad Air 11-inch (M4), iOS 26.5, in #1704's
+/// control.
+///
 /// Version history:
 ///   1.0 — #1359: initial implementation
 ///   1.1 — #1359 review: the push-over tests; each test takes the route the layout on screen offers, not the idiom's
@@ -96,6 +103,9 @@ import XCTest
 ///   1.5 — #1450 review, round 1: run on iPad Air 11-inch (M4) in portrait, iOS 26.5, the device #1450 names — the
 ///         four heading tests open the menu from the overflow and pass, and fail with the bar-only lookup put back
 ///   1.6 — #1704: `testLinkToSavedSearchOpensOverCollectionSettings`, which the iPads guard and the iPhone controls
+///   1.7 — 2026-10-17 (plan of record §6g): every wait is ``patience``, 30 s, where most were 5 s, because one query
+///         on these screens takes seconds under Xcode 27.1; the three Section defaults tests, which failed on `v2` in a
+///         5 s wait, pass again, given 600 s a test
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 
@@ -120,6 +130,16 @@ final class CollectionEditorTitleTests: XCTestCase {
     private static let savedSearch = "UI Test Saved Search"
     /// The Link to Saved Search picker's navigation title.
     private static let linkPickerTitle = "Link to Saved Search"
+    /// How long a wait waits. Long, because a wait that is met returns at once, and on these screens one XCUI query
+    /// takes seconds. Measured in #1704's runs on 2026-10-17, under Xcode 27.1 (installed the day before): a query for
+    /// a control by its identifier took 4 to 13 s at a run's median and up to 28 s, on iPhone 17 and iPad Pro 13-inch
+    /// (M5) (iOS 27.0) and iPad Air 11-inch (M4) (iOS 26.5), against about a second for a query by label. XCTest first
+    /// checks a wait's condition a second after the wait begins, so a 5 s wait ran out while that first check was
+    /// still running, whatever the screen showed: all three Section defaults tests failed "The Section defaults sheet
+    /// did not close" on all three devices, on `v2` itself. `waitForExistence(timeout:)` checks once more after it
+    /// runs out, which is all that kept the other 5 s waits passing: every wait for a control by identifier ran past
+    /// its 5 s.
+    private static let patience: TimeInterval = 30
 
     /// How the layout on screen reaches the name field.
     private enum SettingsRoute {
@@ -150,15 +170,15 @@ final class CollectionEditorTitleTests: XCTestCase {
         let route = openSettings()
         typeName()
         closeSettings(route)
-        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: Self.patience),
                       "After naming it, the editor is not titled \"\(Self.name)\". Bars: \(barTitles())")
 
         backOut(from: Self.name)
         let row = listRow(Self.name)
-        XCTAssertTrue(row.waitForExistence(timeout: 5),
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience),
                       "The Collections list shows no row named \"\(Self.name)\" to reopen")
         row.tap()
-        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: Self.patience),
                       "The collection reopened from the list is not titled \"\(Self.name)\". Bars: \(barTitles())")
         backOut(from: Self.name)
     }
@@ -174,7 +194,7 @@ final class CollectionEditorTitleTests: XCTestCase {
         var route = openSettings()
         assertNameFieldIsEmpty("on the first visit to Collection settings")
         closeSettings(route)
-        XCTAssertTrue(app.navigationBars[Self.newTitle].waitForExistence(timeout: 5), """
+        XCTAssertTrue(app.navigationBars[Self.newTitle].waitForExistence(timeout: Self.patience), """
             Back from Collection settings, the unnamed collection's editor is not titled "\(Self.newTitle)". Bars: \
             \(barTitles()). The editor took the settings screen pushed over it for its own dismissal and named the \
             collection "\(Self.untitled)".
@@ -184,10 +204,10 @@ final class CollectionEditorTitleTests: XCTestCase {
         assertNameFieldIsEmpty("on the second visit to Collection settings")
         typeName()
         closeSettings(route)
-        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: Self.patience),
                       "After naming it, the editor is not titled \"\(Self.name)\". Bars: \(barTitles())")
         backOut(from: Self.name)
-        XCTAssertTrue(listRow(Self.name).waitForExistence(timeout: 5),
+        XCTAssertTrue(listRow(Self.name).waitForExistence(timeout: Self.patience),
                       "The Collections list shows no row named \"\(Self.name)\". Rows: \(listRowLabels())")
     }
 
@@ -200,7 +220,7 @@ final class CollectionEditorTitleTests: XCTestCase {
         try openPushedSettings()
         returnToTheListByTab()
         // Positive, not merely "no rows found": the list's own empty state is showing.
-        XCTAssertTrue(app.staticTexts[Self.emptyListTitle].waitForExistence(timeout: 5), """
+        XCTAssertTrue(app.staticTexts[Self.emptyListTitle].waitForExistence(timeout: Self.patience), """
             An untouched new collection outlived its editor: the list does not read "\(Self.emptyListTitle)". Rows: \
             \(listRowLabels()). Leaving Collection settings for the list dismissed the editor without ending its \
             new-collection session.
@@ -222,13 +242,13 @@ final class CollectionEditorTitleTests: XCTestCase {
         dismissKeyboard()
         returnToTheListByTab()
         let row = listRow(Self.name)
-        XCTAssertTrue(row.waitForExistence(timeout: 5), """
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), """
             The name typed in Collection settings was lost when the Collections tab took the stack back to the list: \
             the list has no row named "\(Self.name)". Rows: \(listRowLabels()). The editor under the settings screen \
             saved the name only when it came back on screen, and it never did.
             """)
         row.tap()
-        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: Self.patience),
                       "The collection reopened from the list is not titled \"\(Self.name)\". Bars: \(barTitles())")
         backOut(from: Self.name)
     }
@@ -242,7 +262,7 @@ final class CollectionEditorTitleTests: XCTestCase {
         createCollection()
         try openPushedSettings()
         let addNote = element("collection.editor.note.add")
-        XCTAssertTrue(addNote.waitForExistence(timeout: 5), "Collection settings offers no Add a note")
+        XCTAssertTrue(addNote.waitForExistence(timeout: Self.patience), "Collection settings offers no Add a note")
         addNote.tap()
         type(Self.note, into: "collection.editor.note.field", what: "note")
         type(Self.subtitle, into: "collection.editor.subtitle.field", what: "subtitle")
@@ -251,13 +271,13 @@ final class CollectionEditorTitleTests: XCTestCase {
         returnToTheListByTab()
 
         let row = listRow(Self.untitled)
-        XCTAssertTrue(row.waitForExistence(timeout: 5), """
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), """
             The collection given a note, a subtitle and a colophon in Collection settings was lost when the \
             Collections tab took the stack back to the list: the list has no "\(Self.untitled)" row. Rows: \
             \(listRowLabels()).
             """)
         row.tap()
-        XCTAssertTrue(app.navigationBars[Self.untitled].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.navigationBars[Self.untitled].waitForExistence(timeout: Self.patience),
                       "The kept collection's editor is not titled \"\(Self.untitled)\". Bars: \(barTitles())")
         try openPushedSettings()
         XCTAssertEqual(value(of: "collection.editor.note.field"), Self.note,
@@ -303,7 +323,7 @@ final class CollectionEditorTitleTests: XCTestCase {
         let route = openSettings()
         typeName()
         closeSettings(route)
-        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: Self.patience),
                       "After naming it, the editor is not titled \"\(Self.name)\". Bars: \(barTitles())")
 
         openSectionDefaults()
@@ -356,19 +376,19 @@ final class CollectionEditorTitleTests: XCTestCase {
                       "Link to Saved Search… is disabled, so the seeded saved search \"\(Self.savedSearch)\" is not saved")
         link.tap()
         let picker = app.navigationBars[Self.linkPickerTitle]
-        XCTAssertTrue(picker.waitForExistence(timeout: 10), """
+        XCTAssertTrue(picker.waitForExistence(timeout: Self.patience), """
             Link to Saved Search… in Collection settings (\(route)) opened no picker. Bars: \(barTitles()). On the \
             sheet route the picker hangs on the editor beneath the settings sheet, and waits for Done to close it.
             """)
 
         let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.savedSearch)).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 5),
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience),
                       "The picker lists no \"\(Self.savedSearch)\". Buttons: \(visibleButtonLabels())")
         row.tap()
         waitForAbsence(of: picker, "Picking \"\(Self.savedSearch)\" did not close the picker")
         XCTAssertTrue(app.navigationBars[Self.settingsTitle].exists,
                       "Collection settings closed with the picker. Bars: \(barTitles())")
-        XCTAssertTrue(app.staticTexts[Self.savedSearch].firstMatch.waitForExistence(timeout: 5), """
+        XCTAssertTrue(app.staticTexts[Self.savedSearch].firstMatch.waitForExistence(timeout: Self.patience), """
             Collection settings do not show the link to "\(Self.savedSearch)" picked in the picker, so the pick did \
             not reach the collection
             """)
@@ -393,17 +413,17 @@ final class CollectionEditorTitleTests: XCTestCase {
         // Asserted, not attempted (#1279): every step below starts on the Collections list.
         XCTAssertTrue(navigator.select(.collections, resolveTimeout: 15).tapped,
                       "Could not open the Collections tab, so this suite would read another screen")
-        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: Self.patience),
                       "The Collections list is not showing. Bars: \(barTitles())")
     }
 
     /// Opens a new collection's editor from the Collections list.
     private func createCollection() {
         let create = app.buttons["Create new collection"].firstMatch
-        XCTAssertTrue(create.waitForExistence(timeout: 10),
+        XCTAssertTrue(create.waitForExistence(timeout: Self.patience),
                       "The Collections tab offers no New Collection button. Buttons: \(visibleButtonLabels())")
         create.tap()
-        XCTAssertTrue(app.navigationBars[Self.newTitle].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.navigationBars[Self.newTitle].waitForExistence(timeout: Self.patience),
                       "The new collection's editor did not open titled \"\(Self.newTitle)\". Bars: \(barTitles())")
     }
 
@@ -417,10 +437,10 @@ final class CollectionEditorTitleTests: XCTestCase {
     private func addSectionHeading() {
         CollectionEditorAddMenu.open(in: app)
         let heading = app.buttons["Add Section Heading"].firstMatch
-        XCTAssertTrue(heading.waitForExistence(timeout: 5),
+        XCTAssertTrue(heading.waitForExistence(timeout: Self.patience),
                       "The Add menu has no Add Section Heading. Buttons: \(visibleButtonLabels())")
         heading.tap()
-        XCTAssertTrue(app.buttons["Section defaults"].firstMatch.waitForExistence(timeout: 5),
+        XCTAssertTrue(app.buttons["Section defaults"].firstMatch.waitForExistence(timeout: Self.patience),
                       "Add Section Heading added no heading row. Buttons: \(visibleButtonLabels())")
     }
 
@@ -429,7 +449,7 @@ final class CollectionEditorTitleTests: XCTestCase {
         let (button, row) = settingsControls()
         let route: SettingsRoute = button.exists ? .sheet : .pushed
         (route == .sheet ? button : row).tap()
-        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
                       "Collection settings did not open (\(route)). Bars: \(barTitles())")
         return route
     }
@@ -442,7 +462,7 @@ final class CollectionEditorTitleTests: XCTestCase {
             screen this test needs belongs to the compact-width layout. Run it on an iPhone.
             """)
         row.tap()
-        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
                       "The Collection settings row did not push its screen. Bars: \(barTitles())")
     }
 
@@ -462,7 +482,8 @@ final class CollectionEditorTitleTests: XCTestCase {
         switch route {
         case .sheet:
             let done = app.navigationBars[Self.settingsTitle].buttons["Done"]
-            XCTAssertTrue(done.waitForExistence(timeout: 5), "The Collection settings sheet has no navigation-bar Done")
+            XCTAssertTrue(done.waitForExistence(timeout: Self.patience),
+                          "The Collection settings sheet has no navigation-bar Done")
             done.tap()
             waitForAbsence(of: app.navigationBars[Self.settingsTitle], "The Collection settings sheet did not close")
         case .pushed:
@@ -474,13 +495,13 @@ final class CollectionEditorTitleTests: XCTestCase {
     private func returnToTheListByTab() {
         XCTAssertTrue(navigator.select(.collections, resolveTimeout: 10).tapped,
                       "Could not tap the Collections tab from Collection settings")
-        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.listTitle].waitForExistence(timeout: Self.patience),
                       "Tapping the Collections tab did not return to the list. Bars: \(barTitles())")
     }
 
     private func typeName() {
         let field = element("collection.editor.name.field")
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "The settings show no collection-name field")
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The settings show no collection-name field")
         field.tap()
         field.typeText(Self.name)
     }
@@ -488,7 +509,8 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// Taps the field `identifier` names and types `text` into it.
     private func type(_ text: String, into identifier: String, what: String) {
         let field = element(identifier)
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "There is no \(what) field (\(identifier)) to type into")
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience),
+                      "There is no \(what) field (\(identifier)) to type into")
         field.tap()
         field.typeText(text)
     }
@@ -496,7 +518,7 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// The text a field holds: its value, or "" when the value is only the field's placeholder.
     private func value(of identifier: String) -> String {
         let field = element(identifier)
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "There is no field \(identifier) to read")
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "There is no field \(identifier) to read")
         let value = (field.value as? String) ?? ""
         return value == field.placeholderValue ? "" : value
     }
@@ -505,7 +527,7 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// and the lower rows are under it. The bar's Done is a TOOLBAR button: a navigation bar's Done closes a sheet.
     private func dismissKeyboard() {
         let done = app.toolbars.buttons["Done"].firstMatch
-        XCTAssertTrue(done.waitForExistence(timeout: 5), "The keyboard has no Done bar to put it away with")
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The keyboard has no Done bar to put it away with")
         done.tap()
         XCTAssertTrue(waitUntil { app.keyboards.count == 0 }, "The keyboard's Done did not put it away")
     }
@@ -567,10 +589,10 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// line and front-matter toggles on the model itself (`CollectionAttributesRows`).
     private func openSectionDefaults() {
         let pill = app.buttons["Section defaults"].firstMatch
-        XCTAssertTrue(pill.waitForExistence(timeout: 5),
+        XCTAssertTrue(pill.waitForExistence(timeout: Self.patience),
                       "The outline has no heading with a Section defaults pill. Buttons: \(visibleButtonLabels())")
         pill.tap()
-        XCTAssertTrue(element("collection.attributes.subtitle.field").waitForExistence(timeout: 5),
+        XCTAssertTrue(element("collection.attributes.subtitle.field").waitForExistence(timeout: Self.patience),
                       "Section defaults opened no sheet holding the collection's Subtitle. Bars: \(barTitles())")
     }
 
@@ -578,7 +600,8 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// the pushed editor's own bar has none — and waits for it to go.
     private func closeSectionDefaults() {
         let done = app.navigationBars.buttons["Done"].firstMatch
-        XCTAssertTrue(done.waitForExistence(timeout: 5), "The Section defaults sheet has no navigation-bar Done")
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience),
+                      "The Section defaults sheet has no navigation-bar Done")
         done.tap()
         waitForAbsence(of: element("collection.attributes.subtitle.field"), "The Section defaults sheet did not close")
     }
@@ -586,7 +609,7 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// The name field shows no text of its own: its value is empty, or is the field's placeholder.
     private func assertNameFieldIsEmpty(_ when: String) {
         let field = element("collection.editor.name.field")
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "The settings show no collection-name field")
+        XCTAssertTrue(field.waitForExistence(timeout: Self.patience), "The settings show no collection-name field")
         let value = (field.value as? String) ?? ""
         XCTAssertTrue(value.isEmpty || value == field.placeholderValue, """
             The unnamed collection's name field reads "\(value)" \(when); it should be empty, showing its \
@@ -597,7 +620,7 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// Taps the Back button in the bar titled `title`, and waits for that bar to go.
     private func backOut(from title: String) {
         let back = app.navigationBars[title].buttons["BackButton"]
-        XCTAssertTrue(back.waitForExistence(timeout: 5),
+        XCTAssertTrue(back.waitForExistence(timeout: Self.patience),
                       "The bar titled \"\(title)\" has no Back button. Bars: \(barTitles())")
         back.tap()
         waitForAbsence(of: app.navigationBars[title], "Back did not leave the screen titled \"\(title)\"")
@@ -622,11 +645,12 @@ final class CollectionEditorTitleTests: XCTestCase {
 
     private func waitForAbsence(of element: XCUIElement, _ message: String) {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
-        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, message)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: Self.patience), .completed, message)
     }
 
     /// Polls `condition` until it holds or `timeout` passes, and reports whether it held.
-    private func waitUntil(_ timeout: TimeInterval = 5, _ condition: () -> Bool) -> Bool {
+    private func waitUntil(_ timeout: TimeInterval = CollectionEditorTitleTests.patience,
+                           _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if condition() { return true }
@@ -679,12 +703,19 @@ final class CollectionEditorTitleTests: XCTestCase {
 ///   1.0 — #1450 (lane HYG): lifted from `CollectionProseRowRestTests.openAddMenu()`, unchanged in what it does
 ///   1.1 — #1450 review, round 1: the overflow branch measured from `CollectionEditorTitleTests` on iPad Air 11-inch
 ///         (M4), iOS 26.5; the doc says what was measured failing, and when
+///   1.2 — 2026-10-17 (plan of record §6g): waits ``patience``, as both suites do, for the slow queries
+///         `CollectionEditorTitleTests.patience` records
 @MainActor
 enum CollectionEditorAddMenu {
 
     /// The compact editor's Add menu, by its accessibility label; the regular-width one reads "Add".
     static let compactLabel =
         "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"
+
+    /// How long `open` waits for the menu, and then for the overflow's Add: the suites' own wait
+    /// (`CollectionEditorTitleTests.patience`). In #1704's runs the overflow's Add once took 12.6 s to be found, past
+    /// the 5 s this waited before.
+    private static let patience: TimeInterval = 30
 
     /// Where the layout put the Add menu.
     enum Place: String {
@@ -702,7 +733,7 @@ enum CollectionEditorAddMenu {
         let compact = app.buttons[compactLabel].firstMatch
         let regular = app.buttons["Add"].firstMatch
         let overflow = app.navigationBars.buttons["More"].firstMatch
-        let deadline = Date().addingTimeInterval(10)
+        let deadline = Date().addingTimeInterval(patience)
         while !(compact.exists || regular.exists || overflow.exists), Date() < deadline {
             RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         }
@@ -716,7 +747,7 @@ enum CollectionEditorAddMenu {
         } else if overflow.exists {
             overflow.tap()
             let nested = app.buttons["Add"].firstMatch
-            guard nested.waitForExistence(timeout: 5) else {
+            guard nested.waitForExistence(timeout: patience) else {
                 XCTFail("The toolbar's overflow menu holds no Add menu", file: file, line: line)
                 return nil
             }
@@ -771,11 +802,18 @@ enum CollectionEditorAddMenu {
 /// coming up or going down is one of the iOS 27 idle-stall triggers CLAUDE.md records. **The suite closes what it
 /// opens** in `tearDown`: the iPad's Collection settings is a sheet.
 ///
+/// **Every wait is ``patience``, 30 s, and the suite needs 600 s a test** (`-test-timeouts-enabled YES
+/// -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600`). On 2026-10-17 its slowest
+/// test took 137 s on iPad Air 11-inch (M4) and 129 s on iPhone Air, but #1704's runs of the Text Color test on the
+/// Air reached 214 and 228 s before failing in its last steps, and a busier Mac takes longer still.
+///
 /// Version history:
 ///   1.0 — #1360: initial implementation
 ///   1.1 — #1360 review, round 1: `testEditingALongNoteBlockAtAnAccessibilitySizeDoesNotShrinkIt` and
 ///          `testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp`; the Add-menu note corrected for AX3 and for
 ///          iPad Pro 13-inch
+///   1.2 — 2026-10-17 (plan of record §6g): every wait is ``patience``, 30 s, where most were 5 s; the introduction
+///          and Text Color tests, which failed on `v2` in a 5 s wait on iPad Air 11-inch, pass again
 @MainActor
 final class CollectionProseRowRestTests: XCTestCase {
 
@@ -814,6 +852,13 @@ final class CollectionProseRowRestTests: XCTestCase {
     private static let noteBlockEditingHeight: CGFloat = 220
     /// The note block's six resting lines at the default text size: measured 142 pt on iPad Air 11-inch and iPhone Air.
     private static let defaultRestingHeight: CGFloat = 142
+    /// How long a wait waits: long, for the reason `CollectionEditorTitleTests.patience` records. Here the slow screens
+    /// are the colour picker and the Collection settings sheet. In #1704's runs on iPad Air 11-inch (M4), iOS 26.5,
+    /// `testALongIntroductionRestsOnItsOpeningWords` failed "Done did not put the keyboard away" while the first check
+    /// for the sheet's Done took 4.3 s, and `testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp` failed "The colour
+    /// picker did not close", and once "Text Color opened no colour picker with a Sliders tab", neither of that 5 s
+    /// wait's two checks having found the picker. Both failed so on `v2` itself.
+    private static let patience: TimeInterval = 30
 
     var app: XCUIApplication!
 
@@ -875,7 +920,7 @@ final class CollectionProseRowRestTests: XCTestCase {
             """)
 
         editor.tap()
-        XCTAssertTrue(app.toolbars.buttons["Done"].firstMatch.waitForExistence(timeout: 5),
+        XCTAssertTrue(app.toolbars.buttons["Done"].firstMatch.waitForExistence(timeout: Self.patience),
                       "Tapping the resting note block did not begin editing: no formatting bar")
         Thread.sleep(forTimeInterval: 1)
         XCTAssertGreaterThanOrEqual(editor.frame.height, resting - 1, """
@@ -895,7 +940,7 @@ final class CollectionProseRowRestTests: XCTestCase {
         editor.tap()
         editor.typeText(Self.paragraph)
         let done = app.toolbars.buttons["Done"].firstMatch
-        XCTAssertTrue(done.waitForExistence(timeout: 5), "The note block's formatting bar offers no Done")
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The note block's formatting bar offers no Done")
         Thread.sleep(forTimeInterval: 1)
         let open = editor.frame.height
         XCTAssertGreaterThan(open, Self.defaultRestingHeight + 20, """
@@ -904,19 +949,21 @@ final class CollectionProseRowRestTests: XCTestCase {
             """)
 
         let color = app.toolbars.buttons["Text Color"].firstMatch
-        XCTAssertTrue(color.waitForExistence(timeout: 5), "The note block's formatting bar offers no Text Color")
+        XCTAssertTrue(color.waitForExistence(timeout: Self.patience),
+                      "The note block's formatting bar offers no Text Color")
         color.tap()
         let sliders = app.buttons["Sliders"].firstMatch
-        XCTAssertTrue(sliders.waitForExistence(timeout: 5), "Text Color opened no colour picker with a Sliders tab")
+        XCTAssertTrue(sliders.waitForExistence(timeout: Self.patience),
+                      "Text Color opened no colour picker with a Sliders tab")
         XCTAssertGreaterThanOrEqual(editor.frame.height, open - 1, """
             With the colour picker just opened the note block is \(editor.frame.height) pt, from the \(open) pt it \
             was open at.
             """)
         sliders.tap()
         let red = app.textFields["sliderRed"].firstMatch
-        XCTAssertTrue(red.waitForExistence(timeout: 5), "The colour picker's Sliders tab has no Red field")
+        XCTAssertTrue(red.waitForExistence(timeout: Self.patience), "The colour picker's Sliders tab has no Red field")
         red.tap()
-        XCTAssertTrue(waitUntil(5) { (red.value(forKey: "hasKeyboardFocus") as? Bool) == true },
+        XCTAssertTrue(waitUntil { (red.value(forKey: "hasKeyboardFocus") as? Bool) == true },
                       "The picker's Red field did not take focus, so the note block's edit never ended")
         Thread.sleep(forTimeInterval: 1)
         XCTAssertTrue(editor.exists, "Behind the colour picker the note block is not in the element tree")
@@ -926,13 +973,13 @@ final class CollectionProseRowRestTests: XCTestCase {
             """)
 
         let close = app.buttons["close"].firstMatch
-        XCTAssertTrue(close.waitForExistence(timeout: 5), "The colour picker has no close button")
+        XCTAssertTrue(close.waitForExistence(timeout: Self.patience), "The colour picker has no close button")
         if !close.isHittable {
             // On iPad Pro 13-inch (iOS 26.4) the Red field's number pad floats over the picker's close button, in a
             // popover whose dismissal region leaves nothing else hittable either. A tap at the picker's Grid tab —
             // outside the pad, by coordinate — puts the pad away.
             app.buttons["Grid"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-            XCTAssertTrue(waitUntil(5) { close.isHittable }, "The colour picker's close button stays covered")
+            XCTAssertTrue(waitUntil { close.isHittable }, "The colour picker's close button stays covered")
         }
         close.tap()
         waitForAbsence(of: sliders, "The colour picker did not close")
@@ -962,9 +1009,10 @@ final class CollectionProseRowRestTests: XCTestCase {
                       "Could not open the Collections tab, so this suite would read another screen")
 
         let create = app.buttons["Create new collection"].firstMatch
-        XCTAssertTrue(create.waitForExistence(timeout: 10), "The Collections tab offers no New Collection button")
+        XCTAssertTrue(create.waitForExistence(timeout: Self.patience),
+                      "The Collections tab offers no New Collection button")
         create.tap()
-        XCTAssertTrue(editorBar().waitForExistence(timeout: 10), "The new collection's editor did not open")
+        XCTAssertTrue(editorBar().waitForExistence(timeout: Self.patience), "The new collection's editor did not open")
     }
 
     /// The new collection's editor's navigation bar.
@@ -976,12 +1024,12 @@ final class CollectionProseRowRestTests: XCTestCase {
     private func addNoteBlock() -> XCUIElement {
         openAddMenu()
         let addNote = app.buttons["Add Note Block"].firstMatch
-        XCTAssertTrue(addNote.waitForExistence(timeout: 5), "The Add menu has no Add Note Block")
+        XCTAssertTrue(addNote.waitForExistence(timeout: Self.patience), "The Add menu has no Add Note Block")
         addNote.tap()
 
         // The outline holds no other text view: the introduction and the collection note live in Collection settings.
         let editor = app.textViews.firstMatch
-        XCTAssertTrue(editor.waitForExistence(timeout: 5), "Add Note Block added no editable row")
+        XCTAssertTrue(editor.waitForExistence(timeout: Self.patience), "Add Note Block added no editable row")
         XCTAssertEqual(app.textViews.count, 1, "The outline holds \(app.textViews.count) text views, not the one note")
         return editor
     }
@@ -993,13 +1041,13 @@ final class CollectionProseRowRestTests: XCTestCase {
     private func openIntroduction() throws -> XCUIElement {
         let button = app.descendants(matching: .any)["collection.editor.settings.button"].firstMatch
         let row = app.descendants(matching: .any)["collection.editor.settings.row"].firstMatch
-        XCTAssertTrue(waitUntil(10) { button.exists || row.exists },
+        XCTAssertTrue(waitUntil { button.exists || row.exists },
                       "The editor shows neither the ⚙ Collection button nor the Collection settings row")
         (button.exists ? button : row).tap()
-        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.navigationBars[Self.settingsTitle].waitForExistence(timeout: Self.patience),
                       "Collection settings did not open")
         let label = app.staticTexts[Self.introductionLabel].firstMatch
-        XCTAssertTrue(label.waitForExistence(timeout: 5), "Collection settings shows no Introduction label")
+        XCTAssertTrue(label.waitForExistence(timeout: Self.patience), "Collection settings shows no Introduction label")
         let below = app.textViews.allElementsBoundByIndex
             .filter { $0.frame.minY >= label.frame.maxY - 2 }
             .min { $0.frame.minY < $1.frame.minY }
@@ -1015,7 +1063,7 @@ final class CollectionProseRowRestTests: XCTestCase {
 
         // The formatting bar's own Done (#861/#928) — the keyboard's accessory, not a navigation-bar button.
         let done = app.toolbars.buttons["Done"].firstMatch
-        XCTAssertTrue(done.waitForExistence(timeout: 5), "The \(what)'s formatting bar offers no Done")
+        XCTAssertTrue(done.waitForExistence(timeout: Self.patience), "The \(what)'s formatting bar offers no Done")
         done.tap()
         waitForAbsence(of: done, "Done did not put the keyboard away")
         Thread.sleep(forTimeInterval: 1)
@@ -1131,11 +1179,12 @@ final class CollectionProseRowRestTests: XCTestCase {
 
     private func waitForAbsence(of element: XCUIElement, _ message: String) {
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
-        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 5), .completed, message)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: Self.patience), .completed, message)
     }
 
     /// Polls `condition` until it holds or `timeout` passes, and reports whether it held.
-    private func waitUntil(_ timeout: TimeInterval = 5, _ condition: () -> Bool) -> Bool {
+    private func waitUntil(_ timeout: TimeInterval = CollectionProseRowRestTests.patience,
+                           _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if condition() { return true }
