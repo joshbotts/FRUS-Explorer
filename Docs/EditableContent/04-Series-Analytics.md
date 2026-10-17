@@ -18,7 +18,7 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 248–249 | key: series.provenance.intro -->
 
-Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival provenance changed. The State Department’s central files predominated until bureau lot files and presidential libraries appeared after World War II. Modern volumes draw on a much wider range of sources.
+Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, nearly every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival provenance changed. The State Department’s central files predominated until bureau lot files and presidential libraries appeared after World War II. Modern volumes draw on a much wider range of sources.
 
 <!-- END SOURCE: series.provenance.intro -->
 
