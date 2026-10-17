@@ -2487,6 +2487,9 @@ struct SmartCollectionLinkRows: View {
 ///
 /// Version history:
 ///   1.0 — #1619, decision 22: initial implementation
+///   1.1 — #1704, from #1702's visual review on the iOS 27.0 simulators: the heading is drawn in the secondary label
+///          colour, where the hierarchical style put it a level below a form header's own; Remove These Entries' icon
+///          is red on iPhone and iPad, where it took the accent colour; and a row's caption wraps rather than being cut
 struct SmartCollectionEntriesFromBeforeLink: View {
 
     /// The entries, in the outline's order (`SmartCollectionRule.entriesFromBeforeLink`).
@@ -2521,10 +2524,15 @@ struct SmartCollectionEntriesFromBeforeLink: View {
     }
 
     /// The dimmed heading: why these entries are not part of the smart collection.
+    ///
+    /// Drawn in the secondary label colour itself (`Color.secondary`), the colour of a form's own section headers, as
+    /// a header and as a row alike. The hierarchical `.secondary` it had resolves one level below whatever holds it,
+    /// and a form's header is already drawn at secondary, so on iPhone and iPad it drew the heading at tertiary
+    /// strength: 1.71:1 on the grouped background, where Contents' header beside it measured 3.29:1 (#1704).
     private var heading: some View {
         Text(SmartCollectionRule.entriesFromBeforeLinkHeading)
             .font(headingIsRow ? .callout.weight(.semibold) : nil)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.secondary)
             // A sentence, which a list's uppercase header style would set in capitals.
             .textCase(nil)
             .fixedSize(horizontal: false, vertical: true)
@@ -2544,7 +2552,14 @@ struct SmartCollectionEntriesFromBeforeLink: View {
         Button(role: .destructive) {
             isConfirmingRemoval = true
         } label: {
-            Label(SmartCollectionRule.removeEntriesFromBeforeLink, systemImage: "trash")
+            // The icon is red itself. In a form row the destructive role reds the title alone, and the icon was drawn
+            // in the accent blue beside it on iPhone and iPad; a red tint on the button left it blue too (#1704).
+            Label {
+                Text(SmartCollectionRule.removeEntriesFromBeforeLink)
+            } icon: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
         }
         #if os(macOS)
         .buttonStyle(.borderless)
@@ -2568,11 +2583,12 @@ struct SmartCollectionEntriesFromBeforeLink: View {
                 Text(title(for: entry))
                     .font(entry.entryKind == .excerpt ? .callout.italic() : .callout)
                     .lineLimit(2)
+                // Wraps where one line cannot hold it: held to one, it read "d172 · frus19…" at the largest
+                // accessibility size on an iPhone, cutting the volume it names (#1704).
                 if let caption = Self.caption(for: entry, documentHeader: documentHeader(for: entry)) {
                     Text(caption)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
-                        .lineLimit(1)
                 }
             }
         }
