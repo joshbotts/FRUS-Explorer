@@ -136,6 +136,9 @@ import SwiftUI
 ///          beside the task's; a recalled search is stamped with its own count, not the total on screen; a rebuilt
 ///          index replaces the search under way; and the working corpus banner's ✕ leaves the corpus alone
 ///          (`MacSearchViewModel.leaveWorkingCorpus()`), where it re-applied the filter view model over a facet's choice.
+///   1.24 — 2026-10-18: the bookmark button presents `SaveSearchSheet`, iPhone and iPad's sheet with a body for the
+///          Mac, from a `SaveSearchRequest`. This window's own sheet was built from a name and a Bool set beside it,
+///          which the body never read, so it opened with its Save dimmed, and a click on it did nothing.
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -265,9 +268,10 @@ struct MacSearchWindowView: View {
     @AppStorage(SearchCollocationDefaults.windowKey) private var collocationWindow = 10
     @AppStorage(SearchCollocationDefaults.orderKey)
     private var collocationOrderRaw = CollocationOrder.evidence.rawValue
-    @State private var showSaveSearchSheet = false
+    /// What the bookmark button's Save this search names and saves, from the click until the sheet closes: one item, not
+    /// a name beside a Bool (`SaveSearchRequest` says why).
+    @State private var saveSearchRequest: SaveSearchRequest? = nil
     @State private var showSavedSearches = false
-    @State private var saveSearchName = ""
     /// The result row selected in the results List (UI audit A7): gives the list
     /// native ↑/↓ keyboard traversal, and ↩ opens the selected result. A stale id
     /// (after a new search or page change) simply matches no row. Never persisted.
@@ -670,9 +674,11 @@ struct MacSearchWindowView: View {
         .onChange(of: appState.activeProjectId) { _, _ in
             refreshProjectScope(resetSelection: true)
         }
-        .sheet(isPresented: $showSaveSearchSheet) {
-            saveSearchSheet
-                .modelContainer(modelContext.container)
+        .sheet(item: $saveSearchRequest) { request in
+            SaveSearchSheet(request: request) { name in
+                modelContext.insert(SavedSearch(name: name, parameters: request.parameters))
+            }
+            .modelContainer(modelContext.container)
         }
         .sheet(isPresented: $showSavedSearches) {
             SavedSearchesView { saved in
@@ -810,8 +816,7 @@ struct MacSearchWindowView: View {
 
             // Save this search
             Button {
-                saveSearchName = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
-                showSaveSearchSheet = true
+                saveSearchRequest = SaveSearchRequest(words: searchVM.submittedQuery, parameters: parametersToSave)
             } label: {
                 Image(systemName: "bookmark")
                     .font(.callout)
@@ -848,90 +853,15 @@ struct MacSearchWindowView: View {
         }
     }
 
-    // MARK: - Save Search Sheet
+    // MARK: - Save this search
 
-    /// macOS-native save-search dialog.
-    ///
-    /// Uses a `VStack` layout rather than `NavigationStack { Form }` — a
-    /// `NavigationStack` inside a sheet adds a 44 pt navigation bar and toolbar
-    /// chrome that is inappropriate for a two-field confirmation dialog on macOS.
-    /// The native macOS pattern is a content area with `LabeledContent` rows
-    /// and a `Divider`-separated button bar (Cancel left, default action right).
-    private var saveSearchSheet: some View {
-        VStack(spacing: 0) {
-
-            // Content
-            VStack(alignment: .leading, spacing: 14) {
-                Text(String(localized: "search.saveSearch.title",
-                            defaultValue: "Save Search"))
-                    .font(.headline)
-
-                LabeledContent(String(localized: "search.saveSearch.section",
-                                      defaultValue: "Name")) {
-                    TextField(
-                        String(localized: "search.saveSearch.placeholder",
-                               defaultValue: "Name this search"),
-                        text: $saveSearchName
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { performSave() }
-                }
-
-                LabeledContent(String(localized: "search.saveSearch.query",
-                                      defaultValue: "Query")) {
-                    Text(searchVM.submittedQuery)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                // #756 retired the #258 Q4(a) disclosure. It read "The volume scope is not saved
-                // with the search — re-apply it after running the saved search", which was true
-                // when SavedSearch flattened SearchParameters into columns and dropped eight of
-                // twenty fields. The whole value is now archived, so the volume scope IS saved —
-                // and the notice had become a false warning telling users to redo work the app had
-                // already done. Removing it is part of the fix, not a cosmetic tidy.
-            }
-            .padding(20)
-
-            Divider()
-
-            // Button bar — Cancel left, Save right (standard macOS dialog layout)
-            HStack {
-                Button(String(localized: "search.saveSearch.cancel",
-                              defaultValue: "Cancel")) {
-                    showSaveSearchSheet = false
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Spacer()
-
-                Button(String(localized: "search.saveSearch.save",
-                              defaultValue: "Save")) {
-                    performSave()
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(saveSearchName.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-        .frame(minWidth: 360, idealWidth: 400, minHeight: 180, idealHeight: 200)
-    }
-
-    /// Persists the current search with the entered name and dismisses the sheet.
-    private func performSave() {
-        let name = saveSearchName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-        // Merge the submitted query text into the parameters snapshot before
-        // persisting — MacSearchViewModel tracks keywords separately in `submittedQuery`.
-        var paramsToSave = searchVM.parameters
-        let kw = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
-        paramsToSave.keywords = kw.isEmpty ? nil : kw
-        let record = SavedSearch(name: name, parameters: paramsToSave)
-        modelContext.insert(record)
-        showSaveSearchSheet = false
+    /// The search Save this search saves: the window's parameters with the submitted words in them, which
+    /// `MacSearchViewModel` keeps apart, in `submittedQuery`.
+    private var parametersToSave: SearchParameters {
+        var parameters = searchVM.parameters
+        let words = searchVM.submittedQuery.trimmingCharacters(in: .whitespaces)
+        parameters.keywords = words.isEmpty ? nil : words
+        return parameters
     }
 
     // MARK: - Scope Row

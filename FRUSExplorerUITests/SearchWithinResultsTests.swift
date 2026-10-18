@@ -219,6 +219,8 @@ struct LayerScreen {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — the recalled-search test saves the name the Save Search sheet offers, with no edit to it: the sheet's Save
+///         is on as it opens since its fix (`SaveSearchSheetTests`)
 @MainActor
 final class SearchWithinResultsTests: XCTestCase {
 
@@ -374,17 +376,11 @@ final class SearchWithinResultsTests: XCTestCase {
         screen.chooseFromTheMoreMenu("Save this search")
         let sheet = app.navigationBars["Save Search"]
         XCTAssertTrue(sheet.waitForExistence(timeout: LayerScreen.patience), "Save this search opened no sheet")
-        // The sheet names the search by its words, which is the row's name below. Its Save is off until the name is
-        // edited, though the name is there (iPhone 17 and iPad Pro 13-inch, iOS 27.0, 2026-10-17; the sheet is older
-        // than #1577): so the test makes a reader's edit, a space after the name, which saving trims. The tap lands
-        // right of the words, which puts the cursor after them. Replacing the name by keystrokes was not reliable.
-        let name = app.textFields["Name this search"].firstMatch
-        XCTAssertTrue(name.waitForExistence(timeout: LayerScreen.patience), "The sheet has no name field")
-        name.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
-        name.typeText(" ")
+        // The sheet names the search by its words, which is the row's name below, with its Save on as it opens
+        // (`SaveSearchSheetTests`).
         let saveButton = sheet.buttons["Save"].firstMatch
         XCTAssertTrue(saveButton.waitForExistence(timeout: LayerScreen.patience) && saveButton.isEnabled,
-                      "The sheet's Save is not there to tap, or is still off after the name was edited")
+                      "The sheet's Save is not there to tap, or is off")
         saveButton.tap()
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: sheet)
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: LayerScreen.patience), .completed, "The sheet did not close")
