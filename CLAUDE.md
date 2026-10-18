@@ -28,9 +28,29 @@ xcodegen generate --spec project.yml
 
 ## Build & Test Commands
 
+**One heavy job at a time on this Mac, across every session: run it through `Scripts/heavy.sh`.** A heavy job is any of these:
+- an `xcodebuild` build, test or archive;
+- `swift build` or `swift test`;
+- a `swift run` of a generator;
+- `tools/mac-check-copy/build.sh`.
+
+Prefix the command: `Scripts/heavy.sh xcodebuild test …`. The script takes one lock with `/usr/bin/lockf` on a file outside every worktree, so a second job waits for the first however many sessions are running, and prints who holds the lock. `FRUS_HEAVY_WAIT=<seconds>` gives up after that long, with exit status 75. A UI run is a heavy job too, so no build can start in the middle of one.
+
+Why: on 2026-10-18 two sessions ran three builds from empty and a UI run at once on the M5 MacBook Air (fanless, 10 cores, 32 GB).
+- The load average reached 785 under thermal pressure.
+- The Claude app froze for up to 84 s at a time, and tore one session down after 996 s with no output.
+- The Mac had to be restarted.
+
+A request by message between the two sessions had not held.
+
+Three habits go with the lock:
+- Run a long job in the background, since the wait is part of its run.
+- Reuse a worktree's DerivedData: a build from empty is the costliest job there is.
+- Keep one simulator booted, and shut it down after its run.
+
 **Run all tests (iOS Simulator):**
 ```bash
-xcodebuild test \
+Scripts/heavy.sh xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17"
@@ -38,7 +58,7 @@ xcodebuild test \
 
 **Run a single test suite:**
 ```bash
-xcodebuild test \
+Scripts/heavy.sh xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -only-testing FRUSExplorerTests/CitationParserTests
