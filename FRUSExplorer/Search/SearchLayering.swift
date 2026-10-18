@@ -1,0 +1,529 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import Foundation
+
+// MARK: - SearchLayerDirection
+
+/// Which way a search runs inside a held list (#1577 lane 4): Search Within These Results.
+///
+/// The reader holds the list on screen as a base, and the search field then runs the OTHER engine
+/// inside it. A keyword layer filters a Meaning list; a Meaning layer reorders a keyword list or a
+/// browse. Same-engine layers and deeper stacks are left out (the owner's decision 5), so the
+/// direction follows from the base and nothing else.
+///
+/// Version history:
+///   1.0 — #1577 lane 4: initial implementation
+enum SearchLayerDirection: Equatable, Sendable {
+
+    /// Words found in a held Meaning list: a keyword search inside it, its rows kept closest first.
+    case wordsInMatches
+    /// A held keyword list or browse reordered by a question: every row of it, closest first.
+    case rankByMeaning
+
+    /// The direction a layer over rows of `route` would take, or `nil` when none can start there: a
+    /// list that is already a layer, since a layer is never stacked on a layer.
+    ///
+    /// - Parameter route: The route that produced the rows on screen.
+    /// - Returns: The direction, or `nil`.
+    static func starting(over route: ExecutedSearchRoute) -> SearchLayerDirection? {
+        switch route {
+        case .meaning: return .wordsInMatches
+        case .keywords: return .rankByMeaning
+        case .wordsInMatches, .rankedByMeaning: return nil
+        }
+    }
+
+    /// The engine the field runs while the base is held: the other one from the base's.
+    var fieldEngine: SearchMode {
+        switch self {
+        case .wordsInMatches: return .keywords
+        case .rankByMeaning: return .meaning
+        }
+    }
+
+    /// The engine the base came from, which the Keywords | Meaning control shows again when the
+    /// reader leaves the base.
+    var baseEngine: SearchMode {
+        switch self {
+        case .wordsInMatches: return .meaning
+        case .rankByMeaning: return .keywords
+        }
+    }
+
+    /// The title of the command that starts the layer, named by what it will do.
+    var startTitle: String {
+        switch self {
+        case .wordsInMatches:
+            return String(localized: "search.layer.start.wordsInMatches",
+                          defaultValue: "Find Words in These Matches")
+        case .rankByMeaning:
+            return String(localized: "search.layer.start.rankByMeaning",
+                          defaultValue: "Rank These Results by a Question")
+        }
+    }
+
+    /// The search field's prompt while the base is held: what to type, and where it will run.
+    var fieldPrompt: String {
+        switch self {
+        case .wordsInMatches:
+            return String(localized: "search.layer.prompt.wordsInMatches",
+                          defaultValue: "Words to find in these matches…")
+        case .rankByMeaning:
+            return String(localized: "search.layer.prompt.rankByMeaning",
+                          defaultValue: "A question to rank these results by…")
+        }
+    }
+}
+
+// MARK: - PinnedResultBase
+
+/// The list a layer runs inside, frozen when the reader chose to search within it (#1577 lane 4).
+///
+/// ## What it holds, and why each part
+///
+/// - **The rows**, in the order the search returned them, so that leaving the base puts them back
+///   exactly, the ones Checklist Mode hides included.
+/// - **The members**: those rows less the ones Checklist Mode was hiding when the base was held,
+///   still in their order. They are the set the layer runs inside, which is the list the reader
+///   saw: what Save as Working Corpus captures (`displayedResults`), and the only notion of a held
+///   set the app has. A hit beyond the library has no row and is not a member; ``notDownloaded``
+///   counts it.
+/// - **Everything a return to the base must put back** without running a search: the route, the
+///   total and the ceiling the fetch ran under, the rendered expression, the Meaning disclosure and
+///   beyond-library hits, the tag-count scope, the trail's anchor and the checklist's.
+///
+/// A value, built from an array of rows, so that a selection of rows (#1576) can feed one later. It
+/// holds no rowid (rule 6): a re-indexed volume gets new ones, and the members are keyed
+/// `"volumeId/documentId"` as `SearchParameters.documentIds` keys them.
+///
+/// ## The trail's anchor is set aside
+///
+/// `SearchHistoryWriter` refreshes the row it last wrote whenever the query text is the same,
+/// whatever the scope. A layer typed with the base's own words would therefore overwrite the base's
+/// row, so the view model holds the base's anchor here while a layer runs, gives each layer an
+/// anchor of its own, and puts the base's back when the reader leaves (rule 5).
+///
+/// Version history:
+///   1.0 — #1577 lane 4: initial implementation
+struct PinnedResultBase: Sendable {
+
+    /// What kind of list the base is, for the row that names it and the record.
+    enum Kind: Equatable, Sendable {
+        /// A Meaning search's closest matches.
+        case meaning
+        /// A keyword search's results.
+        case keywords
+        /// A browse with no words (a person's mentions, a topic, a subject area), with its name where
+        /// it has one.
+        case browse(name: String?)
+    }
+
+    /// The way the layer runs.
+    let direction: SearchLayerDirection
+    /// What kind of list the base is.
+    let kind: Kind
+    /// The submitted query the base came from, trimmed, which leaving puts back in the field; empty for a
+    /// browse, and for a list restored with a phrase or a prefix alone (``describedQuery``).
+    let query: String
+    /// Every row the base loaded, in its order: what leaving the base puts back. Its tags follow the rows on
+    /// screen (``takeUserTags(from:)``).
+    private(set) var rows: [SearchResult]
+    /// The rows the layer runs inside: ``rows`` less those Checklist Mode was hiding, in order.
+    private(set) var members: [SearchResult]
+    /// Rows of the base Checklist Mode was hiding when it was held, which the layer leaves out.
+    let hiddenByChecklist: Int
+    /// Meaning hits in volumes the reader has not downloaded, which have no rows to search.
+    let notDownloaded: Int
+
+    /// The route that produced the base.
+    let route: ExecutedSearchRoute
+    /// The ceiling the base's fetch ran under (`lastFetchLimit`).
+    let fetchLimit: Int
+    /// The base's whole-query count, when it had one.
+    let totalMatchCount: Int?
+    /// The expression the base recorded for the trail.
+    let renderedExpression: String?
+    /// The base's Meaning disclosure, for a Meaning base.
+    let disclosure: SemanticSearchBackend.Disclosure?
+    /// The base's hits beyond the library, for a Meaning base.
+    let beyondLibraryHits: [SemanticSearchBackend.BeyondLibraryHit]
+    /// What the base's tag counts described (#1310).
+    let userTagCountScope: UserTagCountScope?
+    /// The trail anchor the base's own search left, set aside while a layer runs (rule 5).
+    let historyAnchor: SearchHistoryWriter.Anchor?
+    /// The search the base's rows came from, for the checklist and the selection.
+    let completedSearchAnchor: ChecklistAnchor?
+    /// The signature of the filters the base ran under, its document set included, so that a layer
+    /// can say when filters changed since narrow it as well (``ResultSetScope/layerFiltersNarrowed``).
+    /// Taken from the run that produced the rows, not from the fields, which may hold a filter set
+    /// since and never run.
+    let filterSignature: String
+    /// The words a keyword list with no typed text was found by, as its row and its record name it: a
+    /// phrase in quotation marks, a prefix with its asterisk (``describedWords(phrase:prefix:)``). `nil`
+    /// where ``query`` says it, and for a browse.
+    var describedQuery: String? = nil
+
+    /// The members' keys, as `SearchParameters.documentIds` keys them.
+    var memberKeys: [String] { members.map(\.id) }
+
+    /// The words the base names itself by: ``describedQuery`` where there is one, ``query`` otherwise.
+    private var shownQuery: String { describedQuery ?? query }
+
+    /// How a list found by a restored phrase or prefix, with no typed words, names its words: `"wheat
+    /// shipments"`, `embarg*`, or both. `nil` when it had neither, which makes it a browse.
+    ///
+    /// - Parameters:
+    ///   - phrase: The run's phrase (`SearchParameters.phrase`).
+    ///   - prefix: The run's prefix (`SearchParameters.prefixWildcard`).
+    /// - Returns: The words, or `nil`.
+    static func describedWords(phrase: String?, prefix: String?) -> String? {
+        let phrase = phrase?.trimmingCharacters(in: .whitespaces) ?? ""
+        let prefix = prefix?.trimmingCharacters(in: .whitespaces) ?? ""
+        let parts = [phrase.isEmpty ? nil : "\"\(phrase)\"", prefix.isEmpty ? nil : "\(prefix)*"].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    /// Gives the held rows the tags the same documents carry in `shown`, the rows on screen (#1576 lane
+    /// 5's refresh writes those alone). Tags given to a layer's rows, or to the base's own while they
+    /// were on screen, then last into the next layer and back to the list on leaving.
+    ///
+    /// - Parameter shown: The rows on screen.
+    mutating func takeUserTags(from shown: [SearchResult]) {
+        let tags = Dictionary(shown.map { ($0.id, $0.userTagIds) }, uniquingKeysWith: { first, _ in first })
+        guard !tags.isEmpty else { return }
+        func carried(_ row: SearchResult) -> SearchResult {
+            guard let ids = tags[row.id], ids != row.userTagIds else { return row }
+            return row.replacingUserTagIds(Set(ids.compactMap(UUID.init(uuidString:))))
+        }
+        rows = rows.map(carried)
+        members = members.map(carried)
+    }
+
+    /// Each member's Meaning score, for a Meaning base: what a keyword layer's rows carry on their
+    /// chips, so that a row found by its words still says how close it was.
+    var scoreByKey: [String: Double] {
+        Dictionary(members.compactMap { row in row.semanticScore.map { (row.id, $0) } },
+                   uniquingKeysWith: { first, _ in first })
+    }
+
+    /// Whether the base's fetch stopped short of the whole match: a keyword list at its ceiling, or
+    /// one whose total is larger than what it loaded. A Meaning list never is (#1595).
+    var wasCut: Bool {
+        guard kind != .meaning else { return false }
+        if rows.count >= fetchLimit { return true }
+        if let totalMatchCount { return totalMatchCount > rows.count }
+        return false
+    }
+
+    // MARK: - The row that names the base
+
+    /// "100 closest matches to “how did the embassy…”", "212 results for “offset agreement”", "the
+    /// first 1,000 of 35,275 results for “negotiations”": the set, as the row that names the base
+    /// says it after "Within".
+    ///
+    /// Counted by its members, the rows the layer runs inside, which is what the list showed. Where
+    /// the base was cut at its fetch ceiling the sentence says so, as the assessment's design
+    /// requires: the members are then the highest-scoring slice of a larger match, and a ranking of
+    /// them is not a ranking of it. "The first 1,000" is the fetch, so it counts every row loaded;
+    /// what Checklist Mode hid among them is ``leftOutDescription``'s to say.
+    var setDescription: String {
+        let count = members.count
+        switch kind {
+        case .meaning:
+            guard count != 1 else {
+                return String(format: String(localized: "search.layer.set.meaning.one %@",
+                                             defaultValue: "the closest match to “%@”"), shownQuery)
+            }
+            return String(format: String(localized: "search.layer.set.meaning %@ %@",
+                                         defaultValue: "%1$@ closest matches to “%2$@”"),
+                          count.formatted(), shownQuery)
+        case .keywords:
+            if wasCut {
+                if let totalMatchCount {
+                    return String(format: String(localized: "search.layer.set.keywords.cut %@ %@ %@",
+                                                 defaultValue: "the first %1$@ of %2$@ results for “%3$@”"),
+                                  rows.count.formatted(), totalMatchCount.formatted(), shownQuery)
+                }
+                return String(format: String(localized: "search.layer.set.keywords.cutUnknown %@ %@",
+                                             defaultValue: "the first %1$@ results for “%2$@”"),
+                              rows.count.formatted(), shownQuery)
+            }
+            return String(format: String(localized: "search.layer.set.keywords %@ %@",
+                                         defaultValue: "%1$@ for “%2$@”"),
+                          Self.resultsPhrase(count), shownQuery)
+        case .browse(let name):
+            guard let name, !name.isEmpty else {
+                return String(format: String(localized: "search.layer.set.browse.unnamed %@",
+                                             defaultValue: "%@ of your browse"),
+                              Self.resultsPhrase(count))
+            }
+            if wasCut {
+                if let totalMatchCount {
+                    return String(format: String(localized: "search.layer.set.browse.cut %@ %@ %@",
+                                                 defaultValue: "the first %1$@ of %2$@ results for %3$@"),
+                                  rows.count.formatted(), totalMatchCount.formatted(), name)
+                }
+                return String(format: String(localized: "search.layer.set.browse.cutUnknown %@ %@",
+                                             defaultValue: "the first %1$@ results for %2$@"),
+                              rows.count.formatted(), name)
+            }
+            return String(format: String(localized: "search.layer.set.browse %@ %@",
+                                         defaultValue: "%1$@ for %2$@"),
+                          Self.resultsPhrase(count), name)
+        }
+    }
+
+    /// The row's sentence: "Within 100 closest matches to “how did the embassy…”".
+    var rowDescription: String {
+        String(format: String(localized: "search.layer.base.within %@", defaultValue: "Within %@"),
+               setDescription)
+    }
+
+    /// What VoiceOver reads for the row, and announces when the layer starts: "Searching within 100
+    /// closest matches to “how did the embassy…”".
+    var accessibilityLabel: String {
+        String(format: String(localized: "search.layer.base.a11y %@", defaultValue: "Searching within %@"),
+               setDescription)
+    }
+
+    /// The row's second line, or `nil`: what the base held that the layer leaves out. Rows Checklist
+    /// Mode was hiding are not searched, and a Meaning hit in a volume that is not downloaded has no
+    /// row to search; the row says so rather than letting a count quietly fall short.
+    var leftOutDescription: String? {
+        var parts: [String] = []
+        if hiddenByChecklist > 0 {
+            parts.append(CountCopy.phrase(
+                hiddenByChecklist,
+                one: String(localized: "search.layer.leftOut.reviewed.one",
+                            defaultValue: "%@ result hidden as reviewed is not included."),
+                many: String(localized: "search.layer.leftOut.reviewed.many",
+                             defaultValue: "%@ results hidden as reviewed are not included.")))
+        }
+        if notDownloaded > 0 {
+            parts.append(CountCopy.phrase(
+                notDownloaded,
+                one: String(localized: "search.layer.leftOut.notDownloaded.one",
+                            defaultValue: "%@ match in a volume you have not downloaded is not included."),
+                many: String(localized: "search.layer.leftOut.notDownloaded.many",
+                             defaultValue: "%@ matches in volumes you have not downloaded are not included.")))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    /// The command that returns to the base from a layer that found nothing: "Back to the 100
+    /// Matches", "Back to the 212 Results".
+    var backTitle: String {
+        let count = members.count
+        switch kind {
+        case .meaning:
+            return count == 1
+                ? String(localized: "search.layer.back.match", defaultValue: "Back to the Closest Match")
+                : String(format: String(localized: "search.layer.back.matches %@",
+                                        defaultValue: "Back to the %@ Matches"), count.formatted())
+        case .keywords, .browse:
+            return count == 1
+                ? String(localized: "search.layer.back.result", defaultValue: "Back to the Result")
+                : String(format: String(localized: "search.layer.back.results %@",
+                                        defaultValue: "Back to the %@ Results"), count.formatted())
+        }
+    }
+
+    /// The base as a capture names it, for a working corpus saved inside a layer: the question in
+    /// quotation marks, the words in quotation marks, or a browse's name (``ResultSetScope/layerBaseLabel``).
+    var captureLabel: String? {
+        switch kind {
+        case .meaning, .keywords:
+            return shownQuery.isEmpty ? nil : "“\(shownQuery)”"
+        case .browse(let name):
+            return name
+        }
+    }
+
+    // MARK: - The record
+
+    /// The `base=` part a layer's trail row carries (#1577 lane 4): the base's kind, its members'
+    /// count and its query, percent-encoded so that a `;` or `=` in the words cannot break the
+    /// signature apart. Locale-free, as every part of a signature is.
+    ///
+    /// `base=meaning:100:how%20did%20the%20embassy`, `base=keywords:212:offset%20agreement`,
+    /// `base=browse:1976:Aerial%20reconnaissance`. `SearchScopeSignature.describe` turns it into a
+    /// phrase; an earlier build passes over it, as it passes over any part it does not know.
+    var signaturePart: String {
+        let kindToken: String
+        let text: String
+        switch kind {
+        case .meaning: kindToken = "meaning"; text = shownQuery
+        case .keywords: kindToken = "keywords"; text = shownQuery
+        case .browse(let name): kindToken = "browse"; text = name ?? ""
+        }
+        return "base=\(kindToken):\(members.count):\(Self.percentEncoded(text))"
+    }
+
+    /// What a layer's rendered expression adds, for the method appendix's CSV, which prints the
+    /// expression verbatim: the base, in the same three parts as ``signaturePart``.
+    var renderedExpressionSuffix: String {
+        "; " + signaturePart
+    }
+
+    /// Percent-encodes everything but the unreserved characters of RFC 3986, so the text survives
+    /// inside a signature part whose separators are `;`, `=` and `:`, and the signature stays plain
+    /// ASCII. `CharacterSet.alphanumerics` would let any letter through, an accented one included, in
+    /// whichever Unicode form it was typed.
+    static func percentEncoded(_ text: String) -> String {
+        text.addingPercentEncoding(withAllowedCharacters: unreserved) ?? ""
+    }
+
+    /// The characters a signature part keeps as they are: ASCII letters and digits, `-`, `.`, `_`, `~`.
+    private static let unreserved = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+
+    /// "1 result" or "212 results", in the words the results header uses.
+    private static func resultsPhrase(_ count: Int) -> String {
+        count == 1
+            ? String(localized: "search.count.one", defaultValue: "1 result")
+            : String(format: String(localized: "search.count %@", defaultValue: "%@ results"), count.formatted())
+    }
+}
+
+// MARK: - LayeredResultComposer
+
+/// The pure steps of a layer (#1577 lane 4), shared by both search view models so the two cannot
+/// order or gate a layer differently.
+///
+/// - A keyword layer's rows, put in the base's order with the base's scores.
+/// - A ranking merged with the members it could not rank, which go last in the base's order.
+/// - The gate a search runs with, the held base joining the working corpus and the History scope.
+///
+/// Version history:
+///   1.0 — #1577 lane 4: initial implementation
+enum LayeredResultComposer {
+
+    /// The rows a keyword search inside a Meaning base found, in the base's order and each with the
+    /// base's score (rule 1: words decide which documents are in the list, meaning their order).
+    ///
+    /// The keyword search ranks them by BM25, which inside a hundred documents says little, and the
+    /// layer is "atop" the Meaning list, so its order is the list's. A row keeps its own snippet, which
+    /// carries the words in bold, and gains the base's chip. A row the base does not hold cannot come
+    /// from a search gated to it and is dropped; a row found twice is kept once.
+    ///
+    /// - Parameters:
+    ///   - keywordRows: The keyword search's rows, in any order.
+    ///   - base: The held Meaning list.
+    /// - Returns: The rows, in the base's order.
+    static func wordsInMatches(keywordRows: [SearchResult], base: PinnedResultBase) -> [SearchResult] {
+        let found = Dictionary(keywordRows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let scores = base.scoreByKey
+        return base.members.compactMap { member in
+            guard let row = found[member.id] else { return nil }
+            let score = scores[member.id]
+            return row.replacingScores(bm25: score.map { -$0 } ?? row.bm25Score, semantic: score)
+        }
+    }
+
+    /// A ranking of the base's members merged with the members it could not rank: the ranked ones
+    /// closest first, each with its score, then the others in the base's order with none (rule 4: a
+    /// document that cannot be ranked is shown last, never dropped and never scored as zero).
+    ///
+    /// Each row is the base's own, so it keeps its keyword snippet and its words in bold.
+    ///
+    /// - Parameters:
+    ///   - ranked: The ranked members' keys and scores, closest first.
+    ///   - members: The members, in the base's order.
+    /// - Returns: The rows, and how many of them were not ranked.
+    static func rankedWithTail(ranked: [(key: String, score: Double)],
+                               members: [SearchResult]) -> (rows: [SearchResult], unranked: Int) {
+        let byKey = Dictionary(members.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var placed: Set<String> = []
+        var rows: [SearchResult] = []
+        rows.reserveCapacity(members.count)
+        for hit in ranked {
+            guard let row = byKey[hit.key], placed.insert(hit.key).inserted else { continue }
+            // The negated score, as a Meaning search's rows carry it, so every lower-is-better reader
+            // (the date sorts' tie-break) orders ranked rows by closeness.
+            rows.append(row.replacingScores(bm25: -hit.score, semantic: hit.score))
+        }
+        var unranked = 0
+        for member in members where placed.insert(member.id).inserted {
+            rows.append(member.replacingScores(bm25: member.bm25Score, semantic: nil))
+            unranked += 1
+        }
+        return (rows, unranked)
+    }
+
+    /// `parameters` gated to the base as well: its document set joins the working corpus and the
+    /// History scope already there (``DocumentScopeGate/combine(corpus:projectGate:pin:)``). With no
+    /// base the value is returned unchanged.
+    ///
+    /// The one place a held base enters the value a search runs with, on both platforms, so that
+    /// the parameters stored for the filter summary and the token caption on the Mac never hold it
+    /// (rule 3: the pin is a scope, not a filter).
+    ///
+    /// - Parameters:
+    ///   - parameters: The parameters the next search would run with.
+    ///   - base: The held base, or `nil`.
+    /// - Returns: The parameters a search inside the base runs with.
+    static func gating(_ parameters: SearchParameters, inside base: PinnedResultBase?) -> SearchParameters {
+        guard let base else { return parameters }
+        var gated = parameters
+        gated.documentIds = DocumentScopeGate.combine(corpus: parameters.documentIds,
+                                                      projectGate: nil,
+                                                      pin: base.memberKeys)
+        return gated
+    }
+}
+
+// MARK: - ExecutedSearchRoute + layers
+
+extension ExecutedSearchRoute {
+
+    /// Whether these rows are a layer's: words found in a held Meaning list, or a held list ranked by
+    /// a question (#1577 lane 4).
+    var isLayer: Bool {
+        switch self {
+        case .keywords, .meaning: return false
+        case .wordsInMatches, .rankedByMeaning: return true
+        }
+    }
+}
+
+// MARK: - SearchResult + scores
+
+extension SearchResult {
+
+    /// This result with other scores and nothing else changed (#1577 lane 4): a layer moves a row's
+    /// chip and its place in a ranking, and keeps its snippet, its words in bold and its tags.
+    ///
+    /// - Parameters:
+    ///   - bm25: The lower-is-better score the date sorts break ties by.
+    ///   - semantic: The Meaning score the chip shows, or `nil` for none.
+    /// - Returns: The row.
+    func replacingScores(bm25: Double, semantic: Double?) -> SearchResult {
+        SearchResult(
+            documentId: documentId,
+            volumeId: volumeId,
+            documentNumber: documentNumber,
+            header: header,
+            dateline: dateline,
+            dateISO: dateISO,
+            sourceNote: sourceNote,
+            snippet: snippet,
+            bm25Score: bm25,
+            semanticScore: semantic,
+            subjectTagIds: subjectTagIds,
+            userTagIds: userTagIds,
+            isEditorialNote: isEditorialNote,
+            isFrontMatter: isFrontMatter)
+    }
+}

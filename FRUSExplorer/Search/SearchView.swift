@@ -249,6 +249,13 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.30 — #1646, #1648: `runSearch()` records a search only when no later one replaced it, and an emptied field
 ///          replaces the search under way; a recalled saved search is stamped with its own count
 ///          (`SavedSearchFreshnessEvaluator.recordRun(of:service:indexedVolumeCount:context:)`), not the total on screen.
+///   1.31 — #1577 lane 4: Search Within These Results. More ▸ Find Words in These Matches / Rank These Results by a
+///          Question, and on a keyword list Sort ▸ Closest to a Question…, hold the list as a base
+///          (`SearchViewModel.holdBase(meaningAvailable:)`); `SearchLayerBaseRow` takes the Keywords | Meaning control's
+///          place, and the field runs the other engine inside the base. A layer that finds nothing shows
+///          `SearchLayerEmptyState`; a ranking's unranked rows follow a line that counts them. Save this search is off
+///          while a base is held, the Meaning strip waits until a question has ranked a held list, and the More menu's
+///          help is `.v4`. Select Results is off while a search runs (#1683)
 
 struct SearchView: View {
 
@@ -272,6 +279,10 @@ struct SearchView: View {
     /// relative to `.largeTitle` so it tracks the prompt text. Clamped via
     /// `FRUSTheme.cappedGlyphSize` at the glyph site.
     @ScaledMetric(relativeTo: .largeTitle) private var promptGlyphSize: CGFloat = 48
+
+    /// Whether the search field has the keyboard, so that holding a base can hand it the field (#1577 lane 4): the
+    /// rows stay on screen and the reader's next move is to type the words or the question.
+    @FocusState private var searchFieldFocused: Bool
 
     /// The actions bar's glyph size, tracking `.title3` and capped at
     /// `FRUSTheme.barGlyphMaxScale` (#1307).
@@ -356,12 +367,15 @@ struct SearchView: View {
                 Task {
                     await facetController.load(
                         section,
-                        parameters: vm.searchParameters,
+                        // A held list's own rows are aggregated under the match that found them (#1577 lane 4).
+                        parameters: vm.facetParameters,
                         service: appState.searchService,
                         // Every route but a keyword match describes the keys of the list it holds.
                         documentKeys: vm.facetDocumentKeys)
                 }
-            })
+            },
+            // #1577 lane 4: a layer's preamble says what its list is.
+            layerRoute: vm.executedRoute.isLayer ? vm.executedRoute : nil)
     }
 
     /// Whether the inspector card's detail rows are showing. `@SceneStorage` so the choice
@@ -510,10 +524,12 @@ struct SearchView: View {
                 .searchable(
                     text: $vm.keywords,
                     placement: searchFieldPlacement,
-                    prompt: vm.searchMode.fieldPrompt(
+                    // Inside a held base the prompt says what to type and where it runs (#1577 lane 4).
+                    prompt: vm.pinnedBase?.direction.fieldPrompt ?? vm.searchMode.fieldPrompt(
                         keywordPrompt: String(localized: "search.keywords.placeholder",
                                               defaultValue: "Keywords…"))
                 )
+                .searchFocused($searchFieldFocused)
                 // Fire search on keyboard Return / iOS "Search" button.
                 .onSubmit(of: .search) {
                     Task { await runSearch() }
@@ -522,6 +538,9 @@ struct SearchView: View {
                 // the initial "enter keywords" prompt state.
                 .onChange(of: vm.keywords) { _, newValue in
                     if newValue.isEmpty {
+                        // #1577 lane 4: inside a held base the emptied field shows the base's rows again, and
+                        // the base stays; leaving a browse's base empties the field itself.
+                        guard !vm.fieldEmptiedInsideBase() else { return }
                         // A hand-off or a recalled search with no words empties the field itself, and the
                         // search it starts can be under way before this runs: it stands, with its screen
                         // (#1648, `SearchViewModel.isSearchingWithNoWords`).
@@ -584,9 +603,14 @@ struct SearchView: View {
                         if vm.searchMode == .meaning {
                             // The Meaning strip replaces the MATCH inspector: there is no FTS
                             // expression to show, and the strip carries the route's disclosures.
-                            SemanticModeStrip(disclosure: vm.semanticDisclosure,
-                                              beyondCount: vm.beyondLibraryHits.count,
-                                              pendingSetSize: vm.documentSetSize)
+                            // Not over a held list's own rows, before a question has ranked them
+                            // (#1577 lane 4): the row and the field's prompt say what the field will
+                            // do, and at AX3 and AX5 the strip's opening put the list below the screen.
+                            if !vm.isShowingBase {
+                                SemanticModeStrip(disclosure: vm.semanticDisclosure,
+                                                  beyondCount: vm.beyondLibraryHits.count,
+                                                  pendingSetSize: vm.documentSetSize)
+                            }
                         } else {
                             queryInspectorCard
                         }
@@ -700,6 +724,12 @@ struct SearchView: View {
                 // dimmed control with no way back.
                 .onChange(of: vm.offersReadings) { _, offered in
                     if !offered { readingSelection.wrappedValue = .list }
+                }
+                // #1577 lane 4: a layer's finish is announced, the header that says what it found.
+                .onChange(of: vm.executedSearchVersion) { _, _ in
+                    if vm.executedRoute.isLayer {
+                        AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
+                    }
                 }
                 .sheet(isPresented: $showSaveSearchSheet) {
                     saveSearchSheet
@@ -902,6 +932,50 @@ struct SearchView: View {
         vm.recordSearchHistory(projectId: appState.activeProjectId,
                                indexedVolumeCount: appState.indexedVolumeIds.count,
                                in: modelContext)
+    }
+
+    // MARK: - Search within these results (#1577 lane 4)
+
+    /// The way the More menu's layer command will run, for its title: the way a layer over the rows on screen would
+    /// take, or the held base's, or the engine's other way while there are no rows to hold.
+    private var layerMenuDirection: SearchLayerDirection {
+        vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil)
+            ?? SearchLayerDirection.starting(over: vm.executedRoute)
+            ?? vm.pinnedBase?.direction
+            ?? (vm.searchMode == .meaning ? .wordsInMatches : .rankByMeaning)
+    }
+
+    /// Holds the list on screen as a base, hands the field the keyboard and says so to VoiceOver. A reading or the facet
+    /// panel open over the list is closed: the field's engine changes, as a switch of the picker changes it.
+    private func holdBase() {
+        guard let base = vm.holdBase(meaningAvailable: appState.semanticQuerySearcher != nil) else { return }
+        readingSelection.wrappedValue = .list
+        showFacetSheet = false
+        searchFieldFocused = true
+        AccessibilityNotification.Announcement(base.accessibilityLabel).post()
+    }
+
+    /// Leaves the held base: its rows and figures come back with no search, and VoiceOver hears it.
+    private func leaveBase() {
+        vm.leaveBase()
+        readingSelection.wrappedValue = .list
+        showFacetSheet = false
+        AccessibilityNotification.Announcement(SearchLayerCopy.leftAnnouncement).post()
+    }
+
+    /// What a layer that found nothing shows (#1577 lane 4): the header's own sentence, which says what it looked in,
+    /// and the ways on.
+    private func layerEmptyState(_ base: PinnedResultBase) -> some View {
+        let wordsInMatches = base.direction == .wordsInMatches
+        return SearchLayerEmptyState(
+            statement: wordsInMatches ? resultSetScope.headerDescription : SearchLayerEmptyState.rankedStatement,
+            searchLibraryTitle: wordsInMatches ? SearchLayerEmptyState.searchLibraryTitle : nil,
+            backTitle: base.backTitle,
+            searchLibrary: {
+                vm.leaveBaseKeepingTheWords()
+                Task { await runSearch() }
+            },
+            back: { leaveBase() })
     }
 
     /// Re-resolves the person filter after a rollup rebuild, re-running only if it moved (#747).
@@ -1217,10 +1291,19 @@ struct SearchView: View {
                 saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
                 showSaveSearchSheet = true
             } label: {
-                Label(String(localized: "search.saveSearch.a11y", defaultValue: "Save this search"),
-                      systemImage: "bookmark")
+                Label {
+                    Text(String(localized: "search.saveSearch.a11y", defaultValue: "Save this search"))
+                    // #1577 lane 4: a layered search is not saved (the owner's decision 4). Its gate would be
+                    // stored and dropped on recall, and a smart collection honours it, so one saved layered
+                    // search would give two result sets. The second line says where the durable form is.
+                    if vm.pinnedBase != nil {
+                        Text(SearchLayerCopy.saveSearchUnavailable)
+                    }
+                } icon: {
+                    Image(systemName: "bookmark")
+                }
             }
-            .disabled(!vm.hasSearched)
+            .disabled(!vm.hasSearched || vm.pinnedBase != nil)
             // Saving the RESULTS is the sibling of saving the QUERY, which is why it lives here
             // and not among the readings. Every other item in the examine menu re-presents the set
             // and leaves nothing behind; this one writes a CloudKit-synced `WorkingCorpus` whose
@@ -1238,13 +1321,27 @@ struct SearchView: View {
             // #1576 lane 3: selection, after the two save items, which
             // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. The list reading only:
             // the other readings have no rows to pick. And not under an error, which is drawn in
-            // the rows' place while `results` may still hold them.
+            // the rows' place while `results` may still hold them, nor while a search runs (#1683).
             Button {
                 vm.beginSelecting()
             } label: {
                 Label(ResultSelectionCopy.selectResults, systemImage: "checkmark.circle")
             }
-            .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil)
+            .disabled(vm.displayedResults.isEmpty || activeReading != .list || vm.searchError != nil
+                      || vm.isSearching)
+            #endif
+            #if os(iOS)
+            // #1577 lane 4: Search Within These Results, after Select Results, and titled by what it will
+            // do: words found in a Meaning list, or a keyword list or browse ranked by a question. Not
+            // before it: at AX5 an iPhone SE's menu shows three items and scrolls to the rest, and
+            // Select Results keeps its place among them (`ResultSelectionBarFitTests`).
+            Button {
+                holdBase()
+            } label: {
+                Label(layerMenuDirection.startTitle,
+                      systemImage: layerMenuDirection == .rankByMeaning ? SemanticGlyph.feature : "text.magnifyingglass")
+            }
+            .disabled(vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil) == nil)
             #endif
             Button {
                 showSavedSearches = true
@@ -1300,8 +1397,9 @@ struct SearchView: View {
         }
         .controlHelp(
             String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
-            detail: String(localized: "search.moreActions.help.v3",
-                           defaultValue: "Save this search or its results, select results to act on several at once, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips"),
+            // .v4: the menu gained Search Within These Results (#1577 lane 4), after .v3's Select Results (#1576).
+            detail: String(localized: "search.moreActions.help.v4",
+                           defaultValue: "Save this search or its results, select results to act on several at once, search within these results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips"),
             systemImage: "ellipsis.circle"
         )
     }
@@ -1424,9 +1522,14 @@ struct SearchView: View {
 
     /// The engine picker (V-5 hybrid page). Rendered only when the semantic stack booted —
     /// on a build without it the search surface is exactly what it always was.
+    ///
+    /// While a base is held the row that names it takes the picker's place (#1577 lane 4), so the inset does not gain
+    /// a row: the field runs the other engine inside the base, and the picker has nothing to choose.
     @ViewBuilder
     private var searchModePicker: some View {
-        if appState.semanticQuerySearcher != nil {
+        if let base = vm.pinnedBase {
+            SearchLayerBaseRow(base: base, leave: { leaveBase() })
+        } else if appState.semanticQuerySearcher != nil {
             Picker(String(localized: "search.mode.title", defaultValue: "Search by"),
                    selection: Binding(
                        get: { vm.searchMode },
@@ -1495,6 +1598,15 @@ struct SearchView: View {
                 }
             }
             .pickerStyle(.inline)
+            // #1577 lane 4: on a keyword list, an order by a question, the second way into a ranking.
+            if vm.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil) == .rankByMeaning {
+                Divider()
+                Button {
+                    holdBase()
+                } label: {
+                    Label(SearchLayerCopy.closestToAQuestion, systemImage: SemanticGlyph.feature)
+                }
+            }
         } label: {
             Label(String(localized: "search.sort.title", defaultValue: "Sort results"),
                   systemImage: vm.sortOrder == .relevance
@@ -1689,6 +1801,10 @@ struct SearchView: View {
                 systemImage: "exclamationmark.triangle",
                 description: Text(err)
             )
+        } else if let base = vm.pinnedBase, vm.hasSearched, vm.results.isEmpty, !vm.semanticNeedsModel {
+            // #1577 lane 4: before both zero-states below, neither of which may show while a base is held (rule 7).
+            // With no search model the Meaning empty state's download offer shows, and the base row stays.
+            layerEmptyState(base)
         } else if vm.searchMode == .meaning && vm.hasSearched && vm.results.isEmpty {
             // The Meaning mode's empty surface: the keyword zero-state below diagnoses which
             // TERM is absent, which is the wrong claim twice over here — and a meaning search
@@ -2252,8 +2368,18 @@ struct SearchView: View {
 
     /// The paged result rows — extracted so the List can hold them AND the beyond-library
     /// section without re-nesting this already-large ForEach.
+    ///
+    /// In a ranking of a held list the rows it could not rank follow a line that counts them (#1577 lane 4, rule 4).
     private var resultRows: some View {
-            ForEach(vm.pagedResults) { result in
+            let unrankedTail = vm.unrankedTail
+            return ForEach(vm.pagedResults) { result in
+                if result.id == unrankedTail?.firstId, let count = unrankedTail?.count {
+                    Text(SearchLayerCopy.unrankedHeader(count))
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("search.layer.unranked")
+                }
                 Button {
                     // #1576 lane 3: in selection a tap picks the row, and its menu opens it.
                     if vm.resultSelection.isSelecting {

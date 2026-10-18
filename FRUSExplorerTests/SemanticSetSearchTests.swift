@@ -714,11 +714,16 @@ struct SemanticSetRecordAndCopyTests {
     @Test("Both view models sign a Meaning run with the set in the parameters they record")
     func bothViewModelsSignTheSet() throws {
         let call = Self.squeezed("""
-            signatureOverride: lastRunWasSemantic
+            lastRunWasSemantic
                 ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil
             """)
+        // iPhone and iPad hand the signature to `SearchScopeSignature.layered(_:parameters:base:)`, which adds a held
+        // list's `base=` part to a layer's row and returns any other row's signature as it is (#1577 lane 4).
+        let signings = [Self.squeezed("signatureOverride: ") + call,
+                        Self.squeezed("signatureOverride: SearchScopeSignature.layered(") + call]
         for path in ["FRUSExplorer/Search/SearchViewModel.swift", "FRUSExplorer/App/MacSearchViewModel.swift"] {
-            #expect(Self.squeezed(try Self.source(path)).contains(call),
+            let source = Self.squeezed(try Self.source(path))
+            #expect(signings.contains { source.contains($0) },
                     "\(path) must sign a Meaning run through semanticSignature(for:)")
         }
     }

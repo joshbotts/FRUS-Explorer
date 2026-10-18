@@ -894,7 +894,8 @@ struct TrailCountParityTests {
                              encoding: .utf8)
         let mac = try String(contentsOf: root.appending(path: "FRUSExplorer/App/MacSearchViewModel.swift"),
                              encoding: .utf8)
-        #expect(iOS.contains("resultCount: totalMatchCount ?? results.count"))
+        // A layer's row (#1577 lane 4) records the list it shows as its whole answer, the one difference.
+        #expect(iOS.contains("resultCount: layer != nil ? results.count : (totalMatchCount ?? results.count)"))
         // macOS reaches the same value through `resultCountForDisplay`, which is defined as
         // `totalMatchCount ?? results.count`.
         #expect(mac.contains("resultCount: resultCountForDisplay"))

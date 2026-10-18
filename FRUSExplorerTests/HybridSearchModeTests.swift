@@ -350,7 +350,9 @@ struct HybridSearchModeTests {
         // What this CANNOT check: that the placeholder visibly changes when the reader taps
         // Meaning. That is an on-device check on both platforms.
         let ios = try Self.searchSurfaceSource("FRUSExplorer/Search/SearchView.swift")
-        #expect(ios.contains("prompt: vm.searchMode.fieldPrompt("),
+        // Inside a held list the field runs the other engine within it, and its prompt says so first
+        // (#1577 lane 4, `SearchLayerDirection.fieldPrompt`); everywhere else it is the mode's.
+        #expect(ios.contains("prompt: vm.pinnedBase?.direction.fieldPrompt ?? vm.searchMode.fieldPrompt("),
                 "SearchView must derive its prompt from the mode")
         #expect(ios.contains("search.keywords.placeholder"),
                 "iOS keeps its own compact keyword wording")
@@ -1328,7 +1330,8 @@ struct SearchResultRouteTests {
             let scope = try Self.declaration("var resultSetScope: ResultSetScope {", in: source, path: path)
             #expect(scope.contains("fetchLimit: lastFetchLimit,"),
                     "\(path): the scope must carry the ceiling this fetch ran under, not a constant (#1584)")
-            #expect(scope.contains("route: executedRoute)"),
+            // Followed on iPhone and iPad by what a layer's sentences owe (#1577 lane 4).
+            #expect(scope.contains("route: executedRoute)") || scope.contains("route: executedRoute,"),
                     "\(path): the scope must carry the route that produced the rows, not the picker (#1597)")
             #expect(!scope.contains("searchMode"), "\(path): the scope reads the picker")
             #expect(!scope.contains("HardLimit"), "\(path): the scope reads a ceiling constant")
@@ -1345,10 +1348,12 @@ struct SearchResultRouteTests {
     /// "Written with the rows" is a rule about statements: the route is assigned beside each assignment of `results`,
     /// in the same branch, so no path can show rows under another route. Counted in each file, so that a new
     /// assignment of rows without one fails here. The one exception rewrites rows in place and cannot change their
-    /// route: the tag refresh of #1576 lane 5.
+    /// route: the tag refresh of #1576 lane 5. iPhone and iPad have three more since #1577 lane 4: a held list's rows
+    /// put back with their own route, words found in a Meaning list, and a list ranked by a question (whose rows are
+    /// `ranking.results`, never `outcome.results`, so that only a Meaning run's rows are a Meaning list).
     @Test("Each view model writes the route beside every statement that assigns the rows")
     func theRouteIsAssignedBesideEveryAssignmentOfRows() throws {
-        for (path, expected) in [("FRUSExplorer/Search/SearchViewModel.swift", 8),
+        for (path, expected) in [("FRUSExplorer/Search/SearchViewModel.swift", 11),
                                  ("FRUSExplorer/App/MacSearchViewModel.swift", 9)] {
             let lines = try Self.source(path).components(separatedBy: "\n")
             var assignments = 0
@@ -1574,7 +1579,9 @@ struct SearchResultRouteTests {
              ["func performSearch(service: SearchService?) async -> Bool {",
               "private func performMeaningSearch(run: Int) async -> Bool {"]),
             ("FRUSExplorer/Search/SearchViewModel.swift",
-             ["func search() async -> Bool {", "private func searchMeaning(run: Int) async -> Bool {"]),
+             ["func search() async -> Bool {", "private func searchMeaning(run: Int) async -> Bool {",
+              // The ranking of a held list, `searchMeaning(run:)`'s second path (#1577 lane 4).
+              "private func rankHeldList(run: Int, base: PinnedResultBase, backend: any MeaningSearchRunning)"]),
         ] {
             let source = try Self.source(path)
             for header in headers {
@@ -1614,7 +1621,7 @@ struct SearchResultRouteTests {
                 // The Meaning paths are handed their number; the two entry points take it before anything else.
                 // iPhone and iPad take it through `startRun()`, which also cancels the keyword fetch under way so
                 // that the kit stops its statements (#1680); the Mac's window cancels its own search task.
-                if !header.contains("(run: Int)") {
+                if !header.contains("(run: Int") {
                     let opening = path.hasSuffix("/SearchViewModel.swift")
                         ? "let run = startRun()" : "let run = searchRuns.startRun()"
                     #expect(lines.dropFirst().first { !$0.isEmpty } == opening,

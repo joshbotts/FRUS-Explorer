@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 274 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 327 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -114,7 +114,7 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1165–1166 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1239–1240 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
@@ -180,6 +180,70 @@ Counted over the results themselves, not the whole corpus. Narrowing to a row re
 
 <!-- END SOURCE: facets.preamble.detail.meaning -->
 
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.one -->
+
+*The keyword preamble when the match is one document (#1683): it read "Describing all 1 matches". The plural is not in this file.*
+
+Describing the 1 match
+
+<!-- END SOURCE: facets.preamble.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.meaning.one -->
+
+*The Meaning preamble when the list is one document (#1683): it read "Describing the 1 closest matches".*
+
+Describing the closest match
+
+<!-- END SOURCE: facets.preamble.meaning.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.wordsInMatches %@ -->
+
+*The facet panel's heading over words found inside a held Meaning list (#1577 lane 4). It is counted over the list, as a Meaning list's facets are, and the line under it is the Meaning one, "Counted over the results themselves…".*
+
+Describing the %@ closest matches that contain your words
+
+<!-- END SOURCE: facets.preamble.wordsInMatches %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.wordsInMatches.one -->
+
+*The same for one document.*
+
+Describing the closest match that contains your words
+
+<!-- END SOURCE: facets.preamble.wordsInMatches.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.wordsInMatches.unknown -->
+
+*The same before the count is known.*
+
+Describing the closest matches that contain your words
+
+<!-- END SOURCE: facets.preamble.wordsInMatches.unknown -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.rankedByMeaning %@ -->
+
+*The facet panel's heading over a held list ranked by a question (#1577 lane 4). On iPhone and iPad Facets is shut over a ranking, as over a Meaning list; the Mac's window, which offers Facets either way, is lane 5's.*
+
+Describing these %@ results, ranked by your question
+
+<!-- END SOURCE: facets.preamble.rankedByMeaning %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.rankedByMeaning.one -->
+
+*The same for one result.*
+
+Describing this result, ranked by your question
+
+<!-- END SOURCE: facets.preamble.rankedByMeaning.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.preambleHeadline | key: facets.preamble.rankedByMeaning.unknown -->
+
+*The same before the count is known.*
+
+Describing these results, ranked by your question
+
+<!-- END SOURCE: facets.preamble.rankedByMeaning.unknown -->
+
 
 
 
@@ -217,7 +281,7 @@ Semantic match %lld percent
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.wordsInMatches %@ %@ -->
 
-*The results header for words found inside a held Meaning list: how many of that list's rows contain the words, and the list's size. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The results header for words found inside a held Meaning list: how many of that list's rows contain the words, and the list's size. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 %1$@ of your %2$@ closest matches contain these words
 
@@ -225,7 +289,7 @@ Semantic match %lld percent
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.wordsInMatches.one %@ -->
 
-*The same header when exactly one row of the held Meaning list contains the words. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The same header when exactly one row of the held Meaning list contains the words. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 1 of your %@ closest matches contains these words
 
@@ -233,7 +297,7 @@ Semantic match %lld percent
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.wordsInMatches.none %@ -->
 
-*The same header when no row of the held Meaning list contains the words. It names what was searched, where "No results" would not. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The same header when no row of the held Meaning list contains the words. It names what was searched, where "No results" would not. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 None of your %@ closest matches contains these words
 
@@ -241,7 +305,7 @@ None of your %@ closest matches contains these words
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.wordsInMatches.single -->
 
-*The same header when the held Meaning list is one document, and it contains the words. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The same header when the held Meaning list is one document, and it contains the words. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 Your closest match contains these words
 
@@ -249,7 +313,7 @@ Your closest match contains these words
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.wordsInMatches.single.none -->
 
-*The same header when the held Meaning list is one document, and it does not contain the words. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The same header when the held Meaning list is one document, and it does not contain the words. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 Your closest match does not contain these words
 
@@ -257,7 +321,7 @@ Your closest match does not contain these words
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.rankedByMeaning %@ -->
 
-*The results header for a keyword list reordered by a question, when every row could be ranked. The placeholder is the count as the keyword header says it, "212 results" or "1 result". No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The results header for a keyword list reordered by a question, when every row could be ranked. The placeholder is the count as the keyword header says it, "212 results" or "1 result". Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 %@, closest first
 
@@ -265,11 +329,51 @@ Your closest match does not contain these words
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.rankedByMeaning.partial %@ %@ %@ -->
 
-*The same header when some rows could not be ranked: the count, how many were ranked, and how many were not. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The same header when some rows could not be ranked: the count, how many were ranked, and how many were not. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 %1$@ · %2$@ ranked · %3$@ not ranked
 
 <!-- END SOURCE: search.count.rankedByMeaning.partial %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wordsInMatchesClauseWithFilters | key: search.count.wordsInMatches.filtered %@ %@ -->
+
+*The results header for words found inside a held Meaning list when filters chosen since the list was held narrow the layer as well (#1577 lane 4). "Contain these words" alone would put what the filters removed down to the words.*
+
+%1$@ of your %2$@ closest matches contain these words and pass your filters
+
+<!-- END SOURCE: search.count.wordsInMatches.filtered %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wordsInMatchesClauseWithFilters | key: search.count.wordsInMatches.one.filtered %@ -->
+
+*The same when one row is left.*
+
+1 of your %@ closest matches contains these words and passes your filters
+
+<!-- END SOURCE: search.count.wordsInMatches.one.filtered %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wordsInMatchesClauseWithFilters | key: search.count.wordsInMatches.none.filtered %@ -->
+
+*The same when none is left: either the words are in none of the list, or the filters removed every row that holds them, and the header cannot say which.*
+
+None of your %@ closest matches both contains these words and passes your filters
+
+<!-- END SOURCE: search.count.wordsInMatches.none.filtered %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wordsInMatchesClauseWithFilters | key: search.count.wordsInMatches.single.filtered -->
+
+*The same when the held list is one document, and it is left.*
+
+Your closest match contains these words and passes your filters
+
+<!-- END SOURCE: search.count.wordsInMatches.single.filtered -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wordsInMatchesClauseWithFilters | key: search.count.wordsInMatches.single.none.filtered -->
+
+*The same when the held list is one document, and it is not left.*
+
+Your closest match does not both contain these words and pass your filters
+
+<!-- END SOURCE: search.count.wordsInMatches.single.none.filtered -->
 
 <!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.checklistNote -->
 
@@ -445,11 +549,27 @@ Measured over every result this search loaded, which is every matching document.
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.collocation.caveat.scope.loaded.wordsInMatches -->
 
-*The Collocates reading's scope line over words found inside a held Meaning list. The line above it says "the highest-scoring matches", which those rows are not: they were chosen by a question and kept for their words. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The Collocates reading's scope line over words found inside a held Meaning list. The line above it says "the highest-scoring matches", which those rows are not: they were chosen by a question and kept for their words. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 Measured over every result this search loaded, not the page on screen — those are the closest matches that contain your words, not every document that contains them.
 
 <!-- END SOURCE: search.collocation.caveat.scope.loaded.wordsInMatches -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.collocationScopeDescription | key: search.collocation.caveat.scope.checklist %@ -->
+
+*Added after the Collocates scope line while Checklist Mode hides rows. Its leading space joins it to the sentence before.*
+
+ %@ reviewed documents are excluded.
+
+<!-- END SOURCE: search.collocation.caveat.scope.checklist %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.collocationScopeDescription | key: search.collocation.caveat.scope.checklist.one -->
+
+*The same for one hidden document (#1683): it read "1 reviewed documents are excluded."*
+
+ %@ reviewed document is excluded.
+
+<!-- END SOURCE: search.collocation.caveat.scope.checklist.one -->
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.timeline.bias -->
 
@@ -459,7 +579,7 @@ These are the highest-scoring matches, not a sample across time — this shape i
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.timeline.bias.wordsInMatches -->
 
-*The Timeline reading's caption over words found inside a held Meaning list, for the same reason. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The Timeline reading's caption over words found inside a held Meaning list, for the same reason. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 These are the closest matches that contain your words, not a sample across time — this shape is theirs, not the whole match’s.
 
@@ -489,7 +609,7 @@ The set is fixed at capture. Re-running the query later may find different docum
 
 <!-- END SOURCE: corpus.save.footer -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 510–511 | key: corpus.save.truncated.total %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 601–602 | key: corpus.save.truncated.total %@ %@ -->
 
 *Interpolated with the captured and total counts.*
 
@@ -497,7 +617,7 @@ These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts 
 
 <!-- END SOURCE: corpus.save.truncated.total %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 515–516 | key: corpus.save.truncated.unknown %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 606–607 | key: corpus.save.truncated.unknown %@ -->
 
 *Interpolated with the captured count.*
 
@@ -505,7 +625,7 @@ These %@ documents are the highest-scoring of a larger match, not all of it. Cou
 
 <!-- END SOURCE: corpus.save.truncated.unknown %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 528–529 | key: corpus.save.checklistHiding %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 623–624 | key: corpus.save.checklistHiding %@ -->
 
 *Interpolated with the hidden count.*
 
@@ -513,7 +633,15 @@ Checklist mode is hiding %@ reviewed documents. They will not be in this corpus.
 
 <!-- END SOURCE: corpus.save.checklistHiding %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 495–496 | key: corpus.save.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureChecklistWarning | key: corpus.save.checklistHiding.one -->
+
+*The capture sheet's checklist line for one hidden document (#1683): it read "hiding 1 reviewed documents. They will not be…".*
+
+Checklist mode is hiding %@ reviewed document. It will not be in this corpus.
+
+<!-- END SOURCE: corpus.save.checklistHiding.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 586–587 | key: corpus.save.meaning -->
 
 *The Save Working Corpus sheet's warning for a list saved from a Meaning search (#1598).*
 
@@ -521,7 +649,15 @@ These documents are the closest matches a Meaning search found, not every docume
 
 <!-- END SOURCE: corpus.save.meaning -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 548–549 | key: corpus.save.source.meaning %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureTruncationWarning | key: corpus.save.meaning.one -->
+
+*The Meaning caution for a capture of one document (#1683): it read "These documents are…" whatever the count.*
+
+This document is the closest match a Meaning search found, not every document on your subject. Counts taken inside this corpus are counts inside that set.
+
+<!-- END SOURCE: corpus.save.meaning.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 642–643 | key: corpus.save.source.meaning %@ -->
 
 *Stored on a working corpus saved from a Meaning search, and shown wherever the corpus is listed. Interpolated with the number of rows the search returned.*
 
@@ -529,7 +665,7 @@ Meaning search — the %@ closest matches
 
 <!-- END SOURCE: corpus.save.source.meaning %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 546–547 | key: corpus.save.source.meaning.one -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 640–641 | key: corpus.save.source.meaning.one -->
 
 *The same, when the search returned one row.*
 
@@ -539,7 +675,7 @@ Meaning search — the closest match
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: corpus.save.wordsInMatches -->
 
-*The caution in the Save Working Corpus sheet when the list is words found inside a Meaning list. Like the Meaning list's own caution it carries no number, since the sheet's Documents row is one line above it. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The caution in the Save Working Corpus sheet when the list is words found inside a Meaning list. Like the Meaning list's own caution it carries no number, since the sheet's Documents row is one line above it. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 These documents are the ones among a Meaning search’s closest matches that contain your words, not every document that contains them. Counts taken inside this corpus are counts inside that set.
 
@@ -547,7 +683,7 @@ These documents are the ones among a Meaning search’s closest matches that con
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: corpus.save.wordsInMatches.one -->
 
-*The same caution when the capture is one document. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*The same caution when the capture is one document. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 This document is the one among a Meaning search’s closest matches that contains your words, not every document that contains them. Counts taken inside this corpus are counts inside that set.
 
@@ -555,11 +691,43 @@ This document is the one among a Meaning search’s closest matches that contain
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: corpus.save.source.wordsInMatches %@ %@ -->
 
-*What a working corpus saved from such a list records as its source: how many documents were found, of how many closest matches. No search produces this line yet: it is one of the sentences of Search Within These Results (#1577), written and tested in lane 2 for lanes 4 and 5 to show.*
+*What a working corpus saved from such a list records as its source: how many documents were found, of how many closest matches. Shown on iPhone and iPad since #1577 lane 4, over a list held with Search Within These Results (§7.15); written in lane 2, and the Mac's window is lane 5's.*
 
 Words found in a Meaning search’s closest matches — %1$@ of %2$@
 
 <!-- END SOURCE: corpus.save.source.wordsInMatches %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.wordsInMatches.within %@ %@ %@ -->
+
+*What a working corpus saved from words found in a held Meaning list records as its source, when the list's question is known, which since #1577 lane 4 it always is: the record names both layers, the question here and the words in the corpus's own query field. %3$@ is the question in quotation marks; %1$@ of %2$@ are the rows found and the list's size.*
+
+Words found in a Meaning search’s closest matches to %3$@ — %1$@ of %2$@
+
+<!-- END SOURCE: corpus.save.source.wordsInMatches.within %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.rankedByMeaning %@ -->
+
+*What a working corpus saved from a held keyword list ranked by a question records as its source (#1577 lane 4): the list it ranked, by its words in quotation marks or a browse's name. The question is in the corpus's own query field. Where the list was cut at its fetch ceiling, the truncation clause follows as for any search.*
+
+Search results for %@, ranked by a question
+
+<!-- END SOURCE: corpus.save.source.rankedByMeaning %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.rankedByMeaning.unlabelled -->
+
+*The same when the list has no name to give.*
+
+Search results, ranked by a question
+
+<!-- END SOURCE: corpus.save.source.rankedByMeaning.unlabelled -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.checklist.one -->
+
+*Added to a corpus's source when Checklist Mode hid one document from the capture (#1683): it read "; 1 reviewed documents excluded". The plural is not in this file.*
+
+; %@ reviewed document excluded
+
+<!-- END SOURCE: corpus.save.source.checklist.one -->
 
 <!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | lines: 88–89 | key: search.checklist.loggingOff -->
 
@@ -1349,7 +1517,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1038–1039 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1343–1344 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1359,7 +1527,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1688–1688 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1800–1800 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1372,28 +1540,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2806–2806 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2932–2932 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2795–2795 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2921–2921 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2802–2802 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2928–2928 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1278–1278 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1375–1375 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1402,13 +1570,13 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1303–1304 | key: search.moreActions.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1401–1402 | key: search.moreActions.help.v4 -->
 
-*The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, and `.v3` adds Select Results (#1576).*
+*The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
-Save this search or its results, select results to act on several at once, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips
+Save this search or its results, select results to act on several at once, search within these results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips
 
-<!-- END SOURCE: search.moreActions.help.v3 -->
+<!-- END SOURCE: search.moreActions.help.v4 -->
 
 #### Selecting results: what a command did (iOS)
 
@@ -1621,7 +1789,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2779–2779 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2905–2905 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1683,6 +1851,278 @@ Tap the bookmark button in Search to save a search for quick access later.
 Click the bookmark button in Search to save a search for quick access later.
 
 <!-- END SOURCE: savedSearches.empty.detail.mac -->
+
+---
+
+### 7.15 Search within these results (#1577 lane 4)
+
+*Search Within These Results on iPhone and iPad: the list on screen is held as a base, a row names it, and the search field runs the other engine inside it. Words typed over a Meaning list are found in it, its order and scores kept; a question typed over a keyword list or a browse reorders it, closest first. The results header's lines for both are in §7.3, the capture's in §7.7 and the method appendix's in `08-Reading-Research-Collections.md`. The Mac's window is lane 5's.*
+
+#### The ways in (iOS)
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.startTitle | key: search.layer.start.wordsInMatches -->
+
+*The More menu's item over a Meaning list, after Save as Working Corpus…. It holds the list on screen as a base and turns the field to Keywords, so that the words typed next are found inside it.*
+
+Find Words in These Matches
+
+<!-- END SOURCE: search.layer.start.wordsInMatches -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.startTitle | key: search.layer.start.rankByMeaning -->
+
+*The same item over a keyword list or a browse: the field turns to Meaning, and the question typed next reorders the list, closest first.*
+
+Rank These Results by a Question
+
+<!-- END SOURCE: search.layer.start.rankByMeaning -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.closestToAQuestion | key: search.layer.sort.closestToQuestion -->
+
+*The Sort menu's second way into a ranking, below the three orders, on a keyword list only.*
+
+Closest to a Question…
+
+<!-- END SOURCE: search.layer.sort.closestToQuestion -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.saveSearchUnavailable | key: search.saveSearch.layered -->
+
+*Save this search's second line in the More menu while a base is held, when the item is off: a layered search is not saved (the owner's decision 4), and the durable form is the result set.*
+
+Not while searching within results. Save as Working Corpus keeps these results.
+
+<!-- END SOURCE: search.saveSearch.layered -->
+
+#### The field (iOS)
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.fieldPrompt | key: search.layer.prompt.wordsInMatches -->
+
+*The search field's prompt while a Meaning list is held.*
+
+Words to find in these matches…
+
+<!-- END SOURCE: search.layer.prompt.wordsInMatches -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | SearchLayerDirection.fieldPrompt | key: search.layer.prompt.rankByMeaning -->
+
+*The search field's prompt while a keyword list or a browse is held.*
+
+A question to rank these results by…
+
+<!-- END SOURCE: search.layer.prompt.rankByMeaning -->
+
+#### The row that names the base (iOS)
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.rowDescription | key: search.layer.base.within %@ -->
+
+*The row that takes the Keywords | Meaning control's place while a base is held. %@ is one of the descriptions below.*
+
+Within %@
+
+<!-- END SOURCE: search.layer.base.within %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.accessibilityLabel | key: search.layer.base.a11y %@ -->
+
+*What VoiceOver reads for the row, and announces when the base is held.*
+
+Searching within %@
+
+<!-- END SOURCE: search.layer.base.a11y %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.meaning %@ %@ -->
+
+*A Meaning list: its size, then its question in quotation marks.*
+
+%1$@ closest matches to “%2$@”
+
+<!-- END SOURCE: search.layer.set.meaning %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.meaning.one %@ -->
+
+*A Meaning list of one document.*
+
+the closest match to “%@”
+
+<!-- END SOURCE: search.layer.set.meaning.one %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords %@ %@ -->
+
+*A keyword list that loaded every match: "212 results" or "1 result", then the words.*
+
+%1$@ for “%2$@”
+
+<!-- END SOURCE: search.layer.set.keywords %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cut %@ %@ %@ -->
+
+*A keyword list cut at its fetch ceiling, whose total is known: the rows loaded, the total, the words. A ranking of it is a ranking of that slice, which this says.*
+
+the first %1$@ of %2$@ results for “%3$@”
+
+<!-- END SOURCE: search.layer.set.keywords.cut %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cutUnknown %@ %@ -->
+
+*The same when the total could not be counted.*
+
+the first %1$@ results for “%2$@”
+
+<!-- END SOURCE: search.layer.set.keywords.cutUnknown %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse %@ %@ -->
+
+*A browse with no words, named by its filter: a person, a topic or a subject area.*
+
+%1$@ for %2$@
+
+<!-- END SOURCE: search.layer.set.browse %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cut %@ %@ %@ -->
+
+*A browse cut at its fetch ceiling, whose total is known.*
+
+the first %1$@ of %2$@ results for %3$@
+
+<!-- END SOURCE: search.layer.set.browse.cut %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cutUnknown %@ %@ -->
+
+*The same when the total could not be counted.*
+
+the first %1$@ results for %2$@
+
+<!-- END SOURCE: search.layer.set.browse.cutUnknown %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed %@ -->
+
+*A browse whose filter has no name to give.*
+
+%@ of your browse
+
+<!-- END SOURCE: search.layer.set.browse.unnamed %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.reviewed.one -->
+
+*The row's second line when Checklist Mode was hiding one of the list's rows as it was held: the layer runs inside the list as it was shown.*
+
+%@ result hidden as reviewed is not included.
+
+<!-- END SOURCE: search.layer.leftOut.reviewed.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.reviewed.many -->
+
+*The same for several.*
+
+%@ results hidden as reviewed are not included.
+
+<!-- END SOURCE: search.layer.leftOut.reviewed.many -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.notDownloaded.one -->
+
+*The row's second line when the Meaning list had a close match in a volume not downloaded, which has no row to search.*
+
+%@ match in a volume you have not downloaded is not included.
+
+<!-- END SOURCE: search.layer.leftOut.notDownloaded.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.leftOutDescription | key: search.layer.leftOut.notDownloaded.many -->
+
+*The same for several.*
+
+%@ matches in volumes you have not downloaded are not included.
+
+<!-- END SOURCE: search.layer.leftOut.notDownloaded.many -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerBaseRow | key: search.layer.leave.a11y -->
+
+*The row's close button, for VoiceOver and the Large Content Viewer. It puts the list back as it was, with no search.*
+
+Stop searching within these results
+
+<!-- END SOURCE: search.layer.leave.a11y -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerBaseRow | key: search.layer.leave.help -->
+
+*The close button's pointer help on iPad, and its Large Content Viewer detail.*
+
+Show the list you were searching within again, as it was
+
+<!-- END SOURCE: search.layer.leave.help -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.leftAnnouncement | key: search.layer.announce.leave -->
+
+*What VoiceOver announces when the reader leaves a base.*
+
+Stopped searching within these results
+
+<!-- END SOURCE: search.layer.announce.leave -->
+
+#### A layer that found nothing (iOS)
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerEmptyState.searchLibraryTitle | key: search.layer.empty.searchLibrary -->
+
+*Under "None of your 100 closest matches contains these words": leaves the base and searches the words as keywords across the whole library.*
+
+Search the Whole Library for These Words
+
+<!-- END SOURCE: search.layer.empty.searchLibrary -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerEmptyState.rankedStatement | key: search.layer.empty.ranked -->
+
+*What an empty ranking says. A ranking returns its whole list, so it is empty only when the filters, or a working corpus applied since, removed every member.*
+
+None of the results you are searching within passes your filters.
+
+<!-- END SOURCE: search.layer.empty.ranked -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.matches %@ -->
+
+*Back to a Meaning list of several.*
+
+Back to the %@ Matches
+
+<!-- END SOURCE: search.layer.back.matches %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.match -->
+
+*Back to a Meaning list of one.*
+
+Back to the Closest Match
+
+<!-- END SOURCE: search.layer.back.match -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.results %@ -->
+
+*Back to a keyword list or a browse of several.*
+
+Back to the %@ Results
+
+<!-- END SOURCE: search.layer.back.results %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.backTitle | key: search.layer.back.result -->
+
+*Back to a keyword list of one.*
+
+Back to the Result
+
+<!-- END SOURCE: search.layer.back.result -->
+
+#### A ranking's unranked rows (iOS)
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.unrankedHeader | key: search.layer.unranked.many -->
+
+*The line over the rows a ranking could not rank, which follow the ranked ones in the list's own order: front matter and headings have no match data, and a volume's match file may not be on the device. The Meaning strip above says which. Shown under the relevance order only.*
+
+%@ results not ranked by meaning
+
+<!-- END SOURCE: search.layer.unranked.many -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.unrankedHeader | key: search.layer.unranked.one -->
+
+*The same for one row.*
+
+%@ result not ranked by meaning
+
+<!-- END SOURCE: search.layer.unranked.one -->
 
 ---
 
@@ -1866,28 +2306,28 @@ Open advanced filters — date range, volume scope, document type, person, searc
 <!-- END SOURCE: search.filter.advanced.help -->
 
 #### This breakdown stopped at \(…) of \(…) values.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 735–736 | key: facets.bound -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.sectionBody | lines: 787–788 | key: facets.bound -->
 
 This breakdown stopped at \(bound.shown.formatted()) of \(bound.total.formatted()) values.
 
 <!-- END SOURCE: facets.bound -->
 
 #### Subjects detected for \(…) of \(…) matches.
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 992–993 | key: facets.subjects.coverage -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1044–1045 | key: facets.subjects.coverage -->
 
 Subjects detected for \(facets.subjectCoverage.formatted()) of \(facets.matchCount.formatted()) matches.
 
 <!-- END SOURCE: facets.subjects.coverage -->
 
 #### Detected topics from the Office of the Historian, matched…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1000–1001 | key: facets.subjects.provenance -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.subjectsCaveat | lines: 1052–1053 | key: facets.subjects.provenance -->
 
 Detected topics from the Office of the Historian, matched by name — not the volumes’ own markup.
 
 <!-- END SOURCE: facets.subjects.provenance -->
 
 #### Ranks the collections behind all %lld volumes these matches…
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1090–1091 | key: facets.provenance.openProfile.detail %lld -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | FacetPanelView.archivalProfileButton | lines: 1142–1143 | key: facets.provenance.openProfile.detail %lld -->
 
 Ranks the collections behind all %lld volumes these matches sit in — whole volumes, not the matches themselves.
 

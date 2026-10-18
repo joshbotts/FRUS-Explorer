@@ -65,6 +65,8 @@ import Foundation
 ///   1.4 — #1577 lane 1: a document set is ranked inside; `Disclosure.rankedWithin` and `withoutVector`;
 ///         a hit the index holds no row for is counted in `notIndexedHere` and no longer in `filteredOut`
 ///   1.5 — B4 (#1659): ``renderedExpression`` names the bundled generation's model
+///   1.6 — #1577 lane 4: ``rerank(query:base:parameters:)`` ranks a held keyword list or browse by a
+///         question, its own rows reordered with their keyword snippets, the rows it cannot rank last
 @MainActor
 struct SemanticSearchBackend: MeaningSearchRunning {
 
@@ -86,6 +88,17 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     static var renderedExpression: String {
         let model = BundledSemanticVectors.provenance?.model ?? "unavailable"
         return "route=semantic; model=\(model); top=\(hitLimit)"
+    }
+
+    /// What a ranking of a held list records as its rendered expression (#1577 lane 4): the same
+    /// route and model, and the size of the list it ranked whole, where a search of the series records
+    /// the hundred it returns. "top=100" over a ranking of 212 documents would misstate what ran.
+    ///
+    /// - Parameter count: The held list's members, every one of which the ranking returns.
+    /// - Returns: The expression.
+    static func renderedExpression(rankingAll count: Int) -> String {
+        let model = BundledSemanticVectors.provenance?.model ?? "unavailable"
+        return "route=semantic; model=\(model); ranked=\(count)"
     }
 
     /// A hit in a volume this device has not indexed — rendered by the #262 rule (manifest
@@ -256,6 +269,64 @@ struct SemanticSearchBackend: MeaningSearchRunning {
                 withoutVector: searched.withoutVector,
                 notIndexedHere: notIndexedHere))
     }
+
+    /// Ranks a held list by a question (#1577 lane 4): every member closest first, then the members
+    /// that could not be ranked, in the list's own order.
+    ///
+    /// The same path as ``run(query:parameters:)`` inside a document set, with the list's members as
+    /// the set and its whole size as the limit (the owner's decision 3: a ranking returns the whole
+    /// list, since the reader found those documents and a cut to 100 would lose some without saying
+    /// which). Two things differ:
+    ///
+    /// - **The rows are the list's own**, so each keeps its keyword snippet with the words in bold,
+    ///   and gains the chip. A Meaning search's rows carry a prose snippet, which here would throw
+    ///   the keyword search's evidence away.
+    /// - **A member that cannot be ranked is kept**, last and with no score (rule 4): it has no vector,
+    ///   or its volume's match file is not on this device. The disclosure counts each kind, as a
+    ///   search inside a set does, and the strip says why.
+    ///
+    /// The members are the list's rows that the document gate admits: the view model joins the held
+    /// list to it (`DocumentScopeGate.combine(corpus:projectGate:pin:)`), so a working corpus applied
+    /// since narrows them. Every other filter narrows the ranked list afterwards, as for any Meaning
+    /// search, ranked rows and unranked alike.
+    ///
+    /// - Parameters:
+    ///   - query: The reader's question, verbatim.
+    ///   - base: The held list's members, in its order.
+    ///   - parameters: The parameters the layer runs with, the held list's gate among them.
+    /// - Returns: The rows, no beyond-library hits, and the disclosure.
+    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, as ``run(query:parameters:)`` does.
+    func rerank(query: String, base: [SearchResult], parameters: SearchParameters) async throws -> Outcome {
+        let admitted = parameters.documentIds.map(Set.init)
+        let members = admitted.map { gate in base.filter { gate.contains($0.id) } } ?? base
+        let searched = try await searcher.search(query, within: members.map(\.id), limit: members.count)
+        var (rows, _) = LayeredResultComposer.rankedWithTail(
+            ranked: searched.hits.map { (key: "\($0.volumeID)/\($0.documentID)", score: $0.score) },
+            members: members)
+
+        var filterParameters = parameters
+        filterParameters.documentIds = nil
+        let filterKeys = try await searchService.filterKeySet(parameters: filterParameters)
+        var filteredOut = 0
+        if let filterKeys {
+            let before = rows.count
+            rows = rows.filter { filterKeys.contains($0.id) }
+            filteredOut = before - rows.count
+        }
+
+        return Outcome(
+            results: rows,
+            beyondLibrary: [],
+            disclosure: Disclosure(
+                unscoredCandidates: searched.unscoredCandidates,
+                unscoredVolumes: searched.unscoredVolumes,
+                downloadingVolumes: searched.downloadingVolumes,
+                filtersApplied: filterKeys != nil,
+                filteredOut: filteredOut,
+                beyondUncheckedByFilters: false,
+                rankedWithin: searched.rankedWithin,
+                withoutVector: searched.withoutVector))
+    }
 }
 
 // MARK: - MeaningSearchRunning
@@ -280,4 +351,26 @@ protocol MeaningSearchRunning {
     /// - Returns: The ranked rows, the hits beyond the indexed library, and what the caption owes the reader.
     /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, which the view models map to their own states.
     func run(query: String, parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome
+
+    /// Ranks a held list by a question (#1577 lane 4): its members closest first, then those that
+    /// could not be ranked. See `SemanticSearchBackend.rerank(query:base:parameters:)`.
+    ///
+    /// - Parameters:
+    ///   - query: The reader's question, verbatim.
+    ///   - base: The held list's members, in its order.
+    ///   - parameters: The parameters the layer runs with, the held list's gate among them.
+    /// - Returns: The rows, and what the caption owes the reader.
+    /// - Throws: `SemanticQuerySearcher.SearchUnavailable`.
+    func rerank(query: String, base: [SearchResult],
+                parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome
+}
+
+extension MeaningSearchRunning {
+
+    /// A stand-in that ranks nothing: the engine a test builds for a plain Meaning run need not rank a
+    /// held list, and one that is asked to says it cannot run, as an engine with no vectors does.
+    func rerank(query: String, base: [SearchResult],
+                parameters: SearchParameters) async throws -> SemanticSearchBackend.Outcome {
+        throw SemanticQuerySearcher.SearchUnavailable.vectorsUnavailable
+    }
 }

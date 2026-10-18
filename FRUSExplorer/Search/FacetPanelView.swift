@@ -410,6 +410,12 @@ struct FacetPanelView: View {
     /// Called when a section is first disclosed, so the controller can compute it.
     let onDiscloseSection: (FacetSection) -> Void
 
+    /// The route that produced the list, where it is a layer's (#1577 lane 4): words found in a held
+    /// Meaning list, or a held list ranked by a question. Each is counted over the list itself, as a
+    /// Meaning list is, and its preamble says what the list is. `nil` for a search through one engine,
+    /// which ``isMeaningSearch`` describes; the Mac's window passes none until its lane gives it layers.
+    var layerRoute: ExecutedSearchRoute? = nil
+
     @State private var expanded: Set<FacetSection> = []
 
     var body: some View {
@@ -466,25 +472,15 @@ struct FacetPanelView: View {
             // the list, which the facets read past. A similarity ranking has no whole match: the
             // results ARE the set, and these counts describe exactly them. Saying "all N matches"
             // there would be the same overclaim in a new place.
-            Text(isMeaningSearch
-                 ? (matchCount.map {
-                        String(format: String(localized: "facets.preamble.meaning %@",
-                                              defaultValue: "Describing the %@ closest matches"),
-                               $0.formatted())
-                    } ?? String(localized: "facets.preamble.meaning.unknown",
-                                defaultValue: "Describing the closest matches"))
-                 : (matchCount.map {
-                        String(localized: "facets.preamble",
-                               defaultValue: "Describing all \($0.formatted()) matches")
-                    } ?? String(localized: "facets.preamble.unknown",
-                                defaultValue: "Describing this result set — total unavailable")))
+            Text(Self.preambleHeadline(matchCount: matchCount, isMeaningSearch: isMeaningSearch,
+                                       layerRoute: layerRoute))
                 .font(.callout.weight(.medium))
             // The distinction the design asks for, and the one the Q-M2 work showed matters:
             // the result *list* is capped while these counts are not. In meaning mode the opposite
             // is true and the sentence says so — the counts cover the results themselves, and a
             // bucket's count is what narrowing to it returns, because the backend takes the global
             // top-N and filters afterwards.
-            Text(isMeaningSearch
+            Text(isMeaningSearch || layerRoute != nil
                  ? String(localized: "facets.preamble.detail.meaning",
                           defaultValue: "Counted over the results themselves, not the whole corpus. Narrowing to a row returns exactly its documents.")
                  : String(localized: "facets.preamble.detail",
@@ -499,6 +495,62 @@ struct FacetPanelView: View {
         // On the preamble, not the rows: attaching to the row Button would mint one popover per
         // facet row, dozens per section.
         .popoverTip(FacetNarrowTip())
+    }
+
+    /// The preamble's first line: what the panel describes, counted.
+    ///
+    /// A layer says what its list is (#1577 lane 4), and a list of one has its singular (#1683: "Describing all 1
+    /// matches", "Describing the 1 closest matches").
+    ///
+    /// - Parameters:
+    ///   - matchCount: The count the panel heads, or `nil` when it is not known.
+    ///   - isMeaningSearch: Whether the rows are a Meaning search's.
+    ///   - layerRoute: The layer's route, or `nil` for a search through one engine.
+    /// - Returns: The line.
+    nonisolated static func preambleHeadline(matchCount: Int?, isMeaningSearch: Bool,
+                                             layerRoute: ExecutedSearchRoute?) -> String {
+        switch layerRoute {
+        case .wordsInMatches:
+            guard let matchCount else {
+                return String(localized: "facets.preamble.wordsInMatches.unknown",
+                              defaultValue: "Describing the closest matches that contain your words")
+            }
+            return matchCount == 1
+                ? String(localized: "facets.preamble.wordsInMatches.one",
+                         defaultValue: "Describing the closest match that contains your words")
+                : String(format: String(localized: "facets.preamble.wordsInMatches %@",
+                                        defaultValue: "Describing the %@ closest matches that contain your words"),
+                         matchCount.formatted())
+        case .rankedByMeaning:
+            guard let matchCount else {
+                return String(localized: "facets.preamble.rankedByMeaning.unknown",
+                              defaultValue: "Describing these results, ranked by your question")
+            }
+            return matchCount == 1
+                ? String(localized: "facets.preamble.rankedByMeaning.one",
+                         defaultValue: "Describing this result, ranked by your question")
+                : String(format: String(localized: "facets.preamble.rankedByMeaning %@",
+                                        defaultValue: "Describing these %@ results, ranked by your question"),
+                         matchCount.formatted())
+        case .keywords, .meaning, nil:
+            break
+        }
+        guard let matchCount else {
+            return isMeaningSearch
+                ? String(localized: "facets.preamble.meaning.unknown", defaultValue: "Describing the closest matches")
+                : String(localized: "facets.preamble.unknown",
+                         defaultValue: "Describing this result set — total unavailable")
+        }
+        if isMeaningSearch {
+            return matchCount == 1
+                ? String(localized: "facets.preamble.meaning.one", defaultValue: "Describing the closest match")
+                : String(format: String(localized: "facets.preamble.meaning %@",
+                                        defaultValue: "Describing the %@ closest matches"),
+                         matchCount.formatted())
+        }
+        return matchCount == 1
+            ? String(localized: "facets.preamble.one", defaultValue: "Describing the 1 match")
+            : String(localized: "facets.preamble", defaultValue: "Describing all \(matchCount.formatted()) matches")
     }
 
     private var checklistNote: some View {

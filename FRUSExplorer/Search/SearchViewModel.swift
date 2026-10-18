@@ -95,6 +95,10 @@ import Observation
 ///   2.8 — #1680: a keyword run's fetch is a task of its own (`keywordFetchUnderWay`), and whatever replaces the
 ///          run cancels it (`startRun()`, `replaceRunsUnderWay()`), so the kit stops its statements and the search
 ///          that replaced it no longer waits for them
+///   2.9 — #1577 lane 4: Search Within These Results. `holdBase(meaningAvailable:)` holds the list on screen as a
+///          `PinnedResultBase`, the field then runs the other engine inside it (`search()`'s layer), and
+///          `leaveBase()` puts the list and its figures back with no search. Every hand-off leaves the base; Clear
+///          Filters does not. A layer never overwrites the base's trail row, and keeps the checklist's marks
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -1001,9 +1005,292 @@ final class SearchViewModel {
             : nil
     }
 
+    /// The parameters the facet panel aggregates a keyword match under: the live ones, except while a
+    /// held list's own rows are on screen (#1577 lane 4), whose match is the one they were found by.
+    /// The live ones then hold the emptied field and the list as the document gate, which aggregated a
+    /// keyword list as an empty query and a browse as its loaded rows alone (the review's finding).
+    var facetParameters: SearchParameters {
+        if isShowingBase, case .match(let ran)? = pinnedBase?.userTagCountScope { return ran }
+        return searchParameters
+    }
+
     /// Whether a mode switch cleared a search's rows because the new engine had nothing to run, so that
     /// the switch back runs it again (#1597). See ``switchSearchMode(to:)``.
     private var searchSetAsideByModeSwitch = false
+
+    // MARK: - Search within these results (#1577 lane 4)
+
+    /// The list a layer runs inside, or `nil` while none is held. See ``PinnedResultBase``.
+    ///
+    /// Held in memory for the session and never saved (the owner's decision 4): Save this search is
+    /// off while one is held, and Save as Working Corpus is the durable form. It is a scope and not a
+    /// filter, so ``hasActiveFilters`` does not count it and the filter glyph does not light for it
+    /// (rule 3); it joins the document gate in ``searchParameters`` only.
+    private(set) var pinnedBase: PinnedResultBase?
+
+    /// Whether the rows on screen are the held list's own: from the moment it is held, after the
+    /// field is emptied during a layer, until a layer completes, its failure included.
+    ///
+    /// Read from the search version rather than kept as a flag, since every completed run bumps the
+    /// version, a failure and a refusal of the model included, and a flag left behind by any one of
+    /// them would leave the field's handler showing an emptied list for the base.
+    var isShowingBase: Bool { pinnedBase != nil && baseRowsVersion == executedSearchVersion }
+
+    /// The search version at which the held base's own rows were last put on screen, or `nil`.
+    private var baseRowsVersion: Int?
+
+    /// Whether the filters the last layer ran under were other than its list's (`ResultSetScope.layerFiltersNarrowed`),
+    /// recorded with the layer's rows.
+    private var lastLayerFiltersNarrowed = false
+
+    /// The sort the reader had chosen when a ranking was started, which the list gets back on leaving
+    /// the base: a ranking is read closest first, and its own control turns the sort to relevance.
+    private var sortOrderBeforeBase: SearchSortOrder?
+
+    /// Set when leaving a browse's base empties the field, which the field's handler would otherwise
+    /// take for the reader clearing it and empty the list just put back (``fieldEmptiedInsideBase()``).
+    @ObservationIgnored private var fieldEmptiedByLeaving = false
+
+    /// The scope signature of the filters the rows on screen ran under, written with them by the two
+    /// runs a base can be held from: what a held list's ``PinnedResultBase/filterSignature`` is, so
+    /// that a filter set in the sheet and never run is not taken for the list's own.
+    @ObservationIgnored private var filterSignatureOfTheRows: String?
+
+    /// The way a layer over the rows on screen would run, or `nil` when none can start now: no rows
+    /// shown, a search under way or failed, a base already held (no deeper stacks), rows that are a
+    /// layer's own, or a ranking asked for with no Meaning engine.
+    ///
+    /// - Parameter meaningAvailable: Whether the Meaning engine has booted, which a ranking needs.
+    /// - Returns: The direction, or `nil`.
+    func layerDirection(meaningAvailable: Bool) -> SearchLayerDirection? {
+        guard pinnedBase == nil, !isSearching, searchError == nil, !displayedResults.isEmpty,
+              let direction = SearchLayerDirection.starting(over: executedRoute) else { return nil }
+        if direction == .rankByMeaning, !meaningAvailable { return nil }
+        return direction
+    }
+
+    /// Holds the list on screen as the base a layer runs inside, and turns the field to the other
+    /// engine (#1577 lane 4).
+    ///
+    /// The rows stay on screen. The field empties, and its prompt asks for words or a question; the
+    /// row that names the base takes the Keywords | Meaning control's place. Nothing is searched until
+    /// the reader types.
+    ///
+    /// The trail's anchor is set aside with the base, so that no layer refreshes the base's row
+    /// (rule 5). The checklist is left as it is: its marks belong to the base's search, and they last
+    /// through every layer and the return (``search()`` does not settle the checklist inside a base).
+    ///
+    /// - Parameter meaningAvailable: Whether the Meaning engine has booted, which a ranking needs.
+    /// - Returns: The held base, or `nil` when no layer can start (``layerDirection(meaningAvailable:)``).
+    @discardableResult
+    func holdBase(meaningAvailable: Bool) -> PinnedResultBase? {
+        guard let direction = layerDirection(meaningAvailable: meaningAvailable) else { return nil }
+        let hidden = hiddenReviewedKeys
+        let members = hidden.isEmpty ? results : results.filter {
+            !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId))
+        }
+        let kind: PinnedResultBase.Kind
+        // A list restored with a phrase or a prefix and no typed words (an older saved search's) is a
+        // keyword list all the same, named by those words.
+        var describedQuery: String?
+        switch executedRoute {
+        case .meaning: kind = .meaning
+        default:
+            if submittedQuery.isEmpty, case .match(let ran)? = userTagCountScope,
+               let words = PinnedResultBase.describedWords(phrase: ran.phrase, prefix: ran.prefixWildcard) {
+                kind = .keywords
+                describedQuery = words
+            } else {
+                kind = submittedQuery.isEmpty ? .browse(name: browseName) : .keywords
+            }
+        }
+        let base = PinnedResultBase(
+            direction: direction,
+            kind: kind,
+            query: submittedQuery,
+            rows: results,
+            members: members,
+            hiddenByChecklist: results.count - members.count,
+            notDownloaded: executedRoute == .meaning ? beyondLibraryHits.count : 0,
+            route: executedRoute,
+            fetchLimit: lastFetchLimit,
+            totalMatchCount: totalMatchCount,
+            renderedExpression: lastRenderedExpression,
+            disclosure: semanticDisclosure,
+            beyondLibraryHits: beyondLibraryHits,
+            userTagCountScope: userTagCountScope,
+            historyAnchor: historyAnchor,
+            completedSearchAnchor: lastCompletedSearchAnchor,
+            filterSignature: filterSignatureOfTheRows
+                ?? SearchScopeSignature.signature(for: parameters(insideBase: nil)),
+            describedQuery: describedQuery)
+        replaceRunsUnderWay()
+        endSelecting()
+        pinnedBase = base
+        baseRowsVersion = executedSearchVersion
+        lastLayerFiltersNarrowed = false
+        // Set aside, and given back by `leaveBase()` (rule 5).
+        historyAnchor = nil
+        if direction == .rankByMeaning {
+            sortOrderBeforeBase = sortOrder
+            sortOrder = .relevance
+        }
+        // The field turns to the other engine and empties. The field's handler finds the base on
+        // screen and leaves it there.
+        searchMode = direction.fieldEngine
+        keywords = ""
+        return base
+    }
+
+    /// What a browse with no words is of, for the row that names it as a held base: the person, the
+    /// topic or the subject area its filter names, in that order, or `nil` when none has a name.
+    var browseName: String? {
+        if personRollupId != nil || !personRefText.trimmingCharacters(in: .whitespaces).isEmpty,
+           let personLabel, !personLabel.isEmpty {
+            return personLabel
+        }
+        if subjectRef != nil, let subjectName, !subjectName.isEmpty { return subjectName }
+        if let bucket = subjectBucketKey
+            .flatMap({ DocumentSubjectStore.shared?.bucketVocabulary.id(forKey: $0) }) ?? subjectBucket {
+            return DocumentSubjectStore.shared?.bucketVocabulary.label(at: bucket)
+        }
+        return nil
+    }
+
+    /// Leaves the held base: its rows and every figure come back from memory with no search, the field
+    /// holds the base's words again and the Keywords | Meaning control its engine (#1577 lane 4).
+    ///
+    /// The version is bumped, because facets, the concordance and the tag counts are keyed on it:
+    /// rows put back without it would sit under the layer's figures. The base's trail anchor comes
+    /// back, so a re-run of its words refreshes its own row as before it was held.
+    func leaveBase() {
+        foldShownTagsIntoBase()
+        guard let base = pinnedBase else { return }
+        dropBase()
+        restoreRows(of: base)
+        searchMode = base.direction.baseEngine
+        if !keywords.isEmpty, base.query.isEmpty { fieldEmptiedByLeaving = true }
+        keywords = base.query
+        if let sort = sortOrderBeforeBase { sortOrder = sort }
+        sortOrderBeforeBase = nil
+    }
+
+    /// Leaves a held base for a hand-off or a recalled search (rule 3) as ✕ does, the list, its
+    /// figures and the reader's sort coming back, so that a hand-off that runs nothing (Search this
+    /// volume) leaves the screen as it was before the list was held. One that runs a search replaces the
+    /// rows itself. The field and the engine are the caller's.
+    private func leaveBaseForHandoff() {
+        foldShownTagsIntoBase()
+        guard let base = pinnedBase else { return }
+        dropBase()
+        restoreRows(of: base)
+        if let sort = sortOrderBeforeBase { sortOrder = sort }
+        sortOrderBeforeBase = nil
+    }
+
+    /// Carries the tags the rows on screen were given since the list was held into the held list
+    /// (`PinnedResultBase.takeUserTags(from:)`), before those rows are replaced: by a layer, by the
+    /// list's own rows, or on leaving. `refreshUserTags(_:)` writes the rows on screen alone.
+    private func foldShownTagsIntoBase() {
+        guard var base = pinnedBase else { return }
+        base.takeUserTags(from: results)
+        pinnedBase = base
+    }
+
+    /// Leaves a held Meaning list and runs the layer's words across the whole library: the command
+    /// a layer that found nothing offers ("Search the Whole Library for These Words"). The field and
+    /// the engine stay as they are; the caller runs the search.
+    func leaveBaseKeepingTheWords() {
+        guard pinnedBase != nil else { return }
+        dropBase()
+        sortOrderBeforeBase = nil
+    }
+
+    /// Lets go of the held base without putting its rows back, which its callers do or not: leaving,
+    /// a hand-off, and the words searched across the whole library, which run a search of their own
+    /// (rule 3). The base's trail anchor comes back, as on leaving it.
+    private func dropBase() {
+        guard let base = pinnedBase else { return }
+        replaceRunsUnderWay()
+        isSearching = false
+        pinnedBase = nil
+        baseRowsVersion = nil
+        lastLayerFiltersNarrowed = false
+        historyAnchor = base.historyAnchor
+    }
+
+    /// Puts a base's rows and figures back, and counts a completed list, with no search.
+    private func restoreRows(of base: PinnedResultBase) {
+        results = base.rows
+        executedRoute = base.route
+        // The rows' own words, which a Save as Working Corpus records (the review's finding: a layer's
+        // stayed after its rows had gone), and the filters they ran under.
+        submittedQuery = base.query
+        filterSignatureOfTheRows = base.filterSignature
+        totalMatchCount = base.totalMatchCount
+        lastFetchLimit = base.fetchLimit
+        lastRenderedExpression = base.renderedExpression
+        semanticDisclosure = base.disclosure
+        beyondLibraryHits = base.beyondLibraryHits
+        semanticNeedsModel = false
+        userTagCountScope = base.userTagCountScope
+        lastCompletedSearchAnchor = base.completedSearchAnchor
+        hasSearched = true
+        searchError = nil
+        currentPage = 0
+        executedSearchVersion &+= 1
+    }
+
+    /// Shows the held base's own rows again while it stays held: a layer's words or question erased.
+    private func showBaseRows() {
+        foldShownTagsIntoBase()
+        guard let base = pinnedBase else { return }
+        replaceRunsUnderWay()
+        isSearching = false
+        endSelecting()
+        restoreRows(of: base)
+        baseRowsVersion = executedSearchVersion
+        lastLayerFiltersNarrowed = false
+    }
+
+    /// What an emptied field means while a base is held, asked by `SearchView`'s handler on the field
+    /// before it clears anything (#1577 lane 4).
+    ///
+    /// With a base held, emptying the field shows the base's rows again, and the base stays: the
+    /// reader has erased a layer's words, not left the list (the assessment's first state trap). And
+    /// leaving a browse's base empties the field itself, which is not the reader clearing it.
+    ///
+    /// - Returns: `true` when this has dealt with the emptied field, so that the handler clears nothing.
+    func fieldEmptiedInsideBase() -> Bool {
+        if fieldEmptiedByLeaving {
+            fieldEmptiedByLeaving = false
+            return true
+        }
+        guard pinnedBase != nil else { return false }
+        // A layer's rows, a run under way, or a refusal drawn in the rows' place.
+        if isSearching || !isShowingBase || searchError != nil { showBaseRows() }
+        return true
+    }
+
+    /// Where a ranking's unranked rows begin in the list as shown, and how many it shows (#1577 lane 4): the line
+    /// that counts them goes above the first. `nil` outside a ranking of a held list, with every row ranked, and under
+    /// a date order, where the unranked rows are no longer together at the end.
+    var unrankedTail: (firstId: String, count: Int)? {
+        guard case .rankedByMeaning = executedRoute, sortOrder == .relevance else { return nil }
+        let unranked = displayedResults.filter { $0.semanticScore == nil }
+        guard let first = unranked.first else { return nil }
+        return (first.id, unranked.count)
+    }
+
+    /// The parameters with the held base joined to the document gate, or without it.
+    ///
+    /// - Parameter base: The held base, or `nil` for the parameters outside any base.
+    private func parameters(insideBase base: PinnedResultBase?) -> SearchParameters {
+        var params = parametersOutsideBase
+        params.documentIds = DocumentScopeGate.combine(corpus: params.documentIds, projectGate: nil,
+                                                       pin: base?.memberKeys)
+        return params
+    }
 
     /// Frozen at the top of `search()` rather than read from `keywords` at recording time:
     /// `keywords` is bound live to the `.searchable` field, so a user who keeps typing while
@@ -1022,11 +1309,29 @@ final class SearchViewModel {
     @discardableResult
     func search() async -> Bool {
         let run = startRun()
+        // #1577 lane 4: tags given to the rows on screen go with the held list before a layer replaces
+        // them, so that a ranking of it, built from its members, carries them.
+        foldShownTagsIntoBase()
+        // Inside a held base an empty field searches nothing. The base's own rows are shown, and the
+        // filters wait for the words or the question they will narrow. Nothing new is on screen, so
+        // nothing is recorded.
+        if pinnedBase != nil, keywords.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            showBaseRows()
+            return false
+        }
         if searchMode == .meaning {
             return await searchMeaning(run: run)
         }
         lastRunWasSemantic = false
         let params = searchParameters
+        // Inside a held Meaning list this run is the words found in it (#1577 lane 4): its rows are put
+        // in the list's order, with the list's scores. Read before the await, with the run.
+        let base = pinnedBase
+        // A filter narrows the words only where one is set and it is not one the list ran under: a
+        // filter taken away since the list was held removes none of its rows (the review's finding).
+        let filtersNarrowed = base.map {
+            hasActiveFilters && SearchScopeSignature.signature(for: parametersOutsideBase) != $0.filterSignature
+        } ?? false
         // A person or subject filter is a valid standalone constraint — `SearchService`
         // applies it SQL-side, so "Find all mentions" handoffs (which carry only
         // a `personRef`) can run without a keyword. Before Session 162 this guard
@@ -1089,21 +1394,34 @@ final class SearchViewModel {
             // search's total. Waiting costs nothing seen, since the results are not drawn while a
             // search runs.
             guard searchRuns.isLatest(run) else { return false }
-            results = rows
+            if let base {
+                // Words found in a held Meaning list (#1577 lane 4). Its total stays `nil`: a capture
+                // stores the total beside its partial flag, and the layer's own count there would read
+                // back as "captured from 7 matches" (`ExecutedSearchRoute.wordsInMatches`).
+                results = LayeredResultComposer.wordsInMatches(keywordRows: rows, base: base)
+                executedRoute = .wordsInMatches(base: base.members.count)
+                totalMatchCount = nil
+                lastLayerFiltersNarrowed = filtersNarrowed
+            } else {
+                results = rows
+                executedRoute = .keywords
+                totalMatchCount = total
+                filterSignatureOfTheRows = SearchScopeSignature.signature(for: params)
+            }
             // With the rows, not before the await: `resultSetScope` reads both, and until the rows are
             // replaced the ones on screen are the last search's, fetched under its ceiling (#1584).
             lastFetchLimit = fetchLimit
-            executedRoute = .keywords
             beyondLibraryHits = []
             semanticDisclosure = nil
             semanticNeedsModel = false
-            totalMatchCount = total
             if let documentSet = params.documentIds {
                 SearchTimingLog.record(SearchTimingLog.GatedKeyword(
                     setSize: documentSet.count, rowCount: rows.count,
                     rows: rowsTime, total: totalTime))
             }
-            lastRenderedExpression = expression
+            // A layer's expression names its base as well, for the method appendix's CSV (#1577 lane 4).
+            lastRenderedExpression = base.map { inside in expression.map { $0 + inside.renderedExpressionSuffix } }
+                ?? expression
             // Bumped AFTER `results` is replaced, so the "completed search" the doc comment
             // promises is what consumers actually observe. It used to be bumped in the
             // synchronous prefix, five lines and one actor hop earlier: SwiftUI re-evaluated the
@@ -1117,13 +1435,20 @@ final class SearchViewModel {
             // #1310: the parameters that RAN, frozen here. The live field may already have moved.
             userTagCountScope = .match(params)
             currentPage = 0
-            // A new search is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
-            // clear prior marks, so results reviewed under a *previous* search aren't silently
-            // hidden in this one. A re-run of the same search keeps them (#1576 lane 1). Built
-            // from the parameters that ran, not the live ones.
-            settleChecklist(for: ChecklistAnchor(query: submittedQuery, parameters: params))
-            // #1576 lane 3: the picks last as long as the checklist's marks do, by the same rule.
-            settleSelection(for: ChecklistAnchor(query: submittedQuery, parameters: params))
+            if base == nil {
+                // A new search is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
+                // clear prior marks, so results reviewed under a *previous* search aren't silently
+                // hidden in this one. A re-run of the same search keeps them (#1576 lane 1). Built
+                // from the parameters that ran, not the live ones.
+                settleChecklist(for: ChecklistAnchor(query: submittedQuery, parameters: params))
+                // #1576 lane 3: the picks last as long as the checklist's marks do, by the same rule.
+                settleSelection(for: ChecklistAnchor(query: submittedQuery, parameters: params))
+            } else {
+                // A layer runs inside the base's search, whose checklist it keeps: marks made on the
+                // base last through every layer and the return to it (#1577 lane 4). Its rows are
+                // another list, so picks end.
+                endSelecting()
+            }
             #if DEBUG
             print("[SearchView] Search returned \(results.count) results")
             #endif
@@ -1193,7 +1518,14 @@ final class SearchViewModel {
         // The checklist's anchor is of the search that ran: read here, before the await, as the
         // engine's parameters are on the next line.
         let checklistAnchorOfThisRun = ChecklistAnchor(query: submittedQuery, parameters: searchParameters)
+        // And the filters it runs under, which a list held from it compares a layer's with (#1577 lane 4).
+        let filterSignatureOfThisRun = SearchScopeSignature.signature(for: searchParameters)
         do {
+            // Inside a held keyword list or browse this run ranks it by the question (#1577 lane 4). Its
+            // failures are this function's, in the `catch`es below.
+            if let base = pinnedBase {
+                return try await rankHeldList(run: run, base: base, backend: backend)
+            }
             let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)
             // A Meaning run a later search replaced writes nothing: the case #1648 was filed for, a
             // Meaning list landing over the keyword rows of the search that followed it. Nor does
@@ -1201,6 +1533,7 @@ final class SearchViewModel {
             guard searchRuns.isLatest(run) else { return false }
             results = outcome.results
             executedRoute = .meaning
+            filterSignatureOfTheRows = filterSignatureOfThisRun
             beyondLibraryHits = outcome.beyondLibrary
             semanticDisclosure = outcome.disclosure
             totalMatchCount = nil
@@ -1257,6 +1590,41 @@ final class SearchViewModel {
             print("[SearchView] Meaning search error: \(error)")
             #endif
         }
+        isSearching = false
+        return true
+    }
+
+    /// A held keyword list or browse ranked by the question in the field (#1577 lane 4): every row of the
+    /// list, closest first, and the rows the engine cannot rank last, in the list's own order.
+    ///
+    /// ``searchMeaning(run:)``'s second path, with its bookkeeping; what fails here is thrown to that
+    /// function's `catch`es. A ranking keeps the list's ceiling and total, so the list stays cut where its
+    /// keyword fetch was cut (`ExecutedSearchRoute.rankedByMeaning`), and its expression says it ranked the
+    /// whole list, not a top hundred. It runs inside the base's search, whose checklist it keeps, as words
+    /// found in a list do; its rows are another list, so picks end.
+    ///
+    /// - Parameters:
+    ///   - run: This run's number, from `search()` (#1648).
+    ///   - base: The held list.
+    ///   - backend: The Meaning engine.
+    /// - Returns: `true` when this run was not replaced, as `search()` returns.
+    private func rankHeldList(run: Int, base: PinnedResultBase, backend: any MeaningSearchRunning) async throws -> Bool {
+        let ranking = try await backend.rerank(query: submittedQuery, base: base.members, parameters: searchParameters)
+        guard searchRuns.isLatest(run) else { return false }
+        results = ranking.results
+        executedRoute = .rankedByMeaning(unranked: ranking.results.filter { $0.semanticScore == nil }.count)
+        beyondLibraryHits = ranking.beyondLibrary
+        semanticDisclosure = ranking.disclosure
+        totalMatchCount = base.totalMatchCount
+        lastFetchLimit = base.fetchLimit
+        lastRenderedExpression = SemanticSearchBackend.renderedExpression(rankingAll: base.members.count)
+            + base.renderedExpressionSuffix
+        executedSearchVersion &+= 1
+        userTagCountScope = .resultKeys(results.map {
+            UserTagCountScope.DocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
+        })
+        currentPage = 0
+        endSelecting()
         isSearching = false
         return true
     }
@@ -1345,8 +1713,12 @@ final class SearchViewModel {
     /// - Returns: `true` when the caller must run the search now, through `SearchView.runSearch()`.
     func applyHandoff(_ params: SearchParameters) -> Bool {
         let namesASearch = params.namesASearchToRun
+        // A held list's own engine, which comes back with its rows when the hand-off runs nothing (#1577
+        // lane 4): the picker then names the engine of the rows it sits over.
+        let heldListEngine = pinnedBase?.direction.baseEngine
         if namesASearch { searchMode = .keywords }
         applyParameters(params)
+        if !namesASearch, let heldListEngine { searchMode = heldListEngine }
         return namesASearch
     }
 
@@ -1362,14 +1734,25 @@ final class SearchViewModel {
     /// It also read the picker for the engine (#1597). Here both come from the run that produced the
     /// rows, and a test can read the result without a view.
     var resultSetScope: ResultSetScope {
-        ResultSetScope(loaded: results.count,
-                       shown: displayedResults.count,
-                       fetchLimit: lastFetchLimit,
-                       totalMatchCount: totalMatchCount,
-                       documentsOnPage: pagedResults.count,
-                       pageCount: totalPages,
-                       appliedCorpusTruncation: appliedWorkingCorpusTruncation,
-                       route: executedRoute)
+        let layered = executedRoute.isLayer
+        var ranking = false
+        if case .rankedByMeaning = executedRoute { ranking = true }
+        return ResultSetScope(loaded: results.count,
+                              shown: displayedResults.count,
+                              fetchLimit: lastFetchLimit,
+                              totalMatchCount: totalMatchCount,
+                              documentsOnPage: pagedResults.count,
+                              pageCount: totalPages,
+                              appliedCorpusTruncation: appliedWorkingCorpusTruncation,
+                              route: executedRoute,
+                              // #1577 lane 4: what a layer's sentences owe.
+                              layerFiltersNarrowed: layered && lastLayerFiltersNarrowed,
+                              listIsInRankOrder: sortOrder == .relevance,
+                              layerBaseLabel: layered ? pinnedBase?.captureLabel : nil,
+                              // A ranking's rows can be fewer than its list's with nothing cut: those the
+                              // checklist hid when it was held, and those a filter chosen since removes.
+                              layerBaseWasCut: ranking ? pinnedBase?.wasCut : nil,
+                              layerBaseHiddenByChecklist: ranking ? pinnedBase?.hiddenByChecklist ?? 0 : 0)
     }
 
     // MARK: - Search History
@@ -1400,14 +1783,18 @@ final class SearchViewModel {
                              indexedVolumeCount: Int? = nil,
                              in context: ModelContext,
                              defaults: UserDefaults = .standard) {
+        // A layer's row records the list it shows as its whole answer (#1577 lane 4): left with no
+        // match count, a complete ranking of 212 rows under a 1,000-row ceiling would print as "at
+        // least 212", and a ranking keeps its base's total, which is no count of the layer.
+        let layer = executedRoute.isLayer ? pinnedBase : nil
         let outcome = SearchHistoryWriter.record(
             SearchHistoryWriter.Reading(
                 queryText: submittedQuery,
                 // The true total when there is one, the fetched count otherwise. `resultCount`
                 // cannot express "unknown", so the honest fallback is what was actually seen.
-                resultCount: totalMatchCount ?? results.count,
+                resultCount: layer != nil ? results.count : (totalMatchCount ?? results.count),
                 loadedCount: results.count,
-                matchCount: totalMatchCount,
+                matchCount: layer != nil ? results.count : totalMatchCount,
                 fetchLimit: lastFetchLimit,
                 indexedVolumeCount: indexedVolumeCount,
                 // The executed parameters, not the live filter state — those may have moved.
@@ -1419,9 +1806,12 @@ final class SearchViewModel {
                 // A Meaning run must not be stamped with an FTS-shaped scope signature — the
                 // appendix would decode it into "searched document text" claims. The route
                 // signature has no `mode=` key, so the fails-closed decoder prints it verbatim.
-                // Inside a document set it names the set as well (#1577 lane 1).
-                signatureOverride: lastRunWasSemantic
-                    ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil,
+                // Inside a document set it names the set as well (#1577 lane 1), and a layer adds
+                // its base (`base=`, #1577 lane 4), which an earlier build passes over.
+                signatureOverride: SearchScopeSignature.layered(
+                    lastRunWasSemantic
+                        ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil,
+                    parameters: submittedSearchParameters, base: layer),
                 projectId: projectId,
                 hasError: searchError != nil),
             anchor: &historyAnchor,
@@ -1506,6 +1896,8 @@ final class SearchViewModel {
     var isSearchingWithNoWords: Bool { isSearching && submittedQuery.isEmpty }
 
     func clearAll() {
+        // Given the same clear as a hand-off, though only a test calls this (#1577 lane 4).
+        leaveBaseForHandoff()
         replaceSearchesUnderWay()
         keywords = ""
         clearFilters()
@@ -1640,7 +2032,17 @@ final class SearchViewModel {
 
     /// The live parameter set: the typed text, the restored structured fields, the scope flags and every filter, as
     /// the next search would run them.
-    var searchParameters: SearchParameters {
+    ///
+    /// While a base is held its members join the document gate (#1577 lane 4,
+    /// `DocumentScopeGate.combine(corpus:projectGate:pin:)`), so a layer runs inside it, the Query Inspector's counts
+    /// "in your current scope" are counts inside it, and the Meaning strip and prompt name its size. Nothing else
+    /// reads the base from here: ``hasActiveFilters`` and ``activeNarrowings`` read the fields, so the filter glyph
+    /// does not light for it.
+    var searchParameters: SearchParameters { parameters(insideBase: pinnedBase) }
+
+    /// The live parameter set with no held base: what ``searchParameters`` was before #1577 lane 4, and what a held
+    /// base's own filters are compared with.
+    private var parametersOutsideBase: SearchParameters {
         let kw = keywords.trimmingCharacters(in: .whitespaces)
         let ph = phrase.trimmingCharacters(in: .whitespaces)
         let pw = prefixWildcard.trimmingCharacters(in: .whitespaces)
@@ -2078,6 +2480,9 @@ final class SearchViewModel {
     /// Called by `SearchView` when presented with pre-filled parameters via
     /// `AppState.pendingSearch`.
     func applyParameters(_ params: SearchParameters) {
+        // Every hand-off and saved-search recall leaves a held base (#1577 lane 4, rule 3): the base it
+        // would otherwise run inside is no part of what it hands over.
+        leaveBaseForHandoff()
         keywords          = params.keywords ?? ""
         phrase            = params.phrase ?? ""
         prefixWildcard    = params.prefixWildcard ?? ""

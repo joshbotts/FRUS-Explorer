@@ -454,6 +454,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.40 — 2026-10-17 (A4c, plan of record §6g): `currentPersonRollupVersion` → 12 — the bundled
 ///         authority index holds apart eighty more of the overlay's wrong merges, Richard V. Allen's
 ///         1981–1988 entries from Richard F. Allen's among them (see the v12 note). No index version
+///  4.41 — 2026-10-17 (#1577 lane 4, plan of record decision 53): a document gate (`documentIds`) is
+///         a set of `document_cache` rowids, found through the table's primary key and tested against
+///         the match's own rowid, where it was a test of each matched row's key and so one row lookup
+///         for every row the words match. A search, a count or a facet match set with no other filter
+///         drops its joins (`FilterClause.readsRowColumns`). The same rows in the same order; measured
+///         on a full index through `SearchService`, a common word inside 327 documents fell from 6.8 s
+///         to 0.6 s cold, and its count with it from 7.2 s to 0.8 s. No index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -3560,9 +3567,70 @@ public actor IndexingPipeline {
         filters: SearchSQLFilters,
         limit: Int,
         offset: Int,
-        singlePhaseForParity: Bool = false
+        singlePhaseForParity: Bool = false,
+        gateByKeyForParity: Bool = false
     ) throws -> [IndexedSearchRow] {
-        let (whereClause, filterBinds) = Self.filterConditions(filters)
+        guard let (sql, binds) = try Self.searchDocumentsStatement(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            limit: limit, offset: offset, singlePhaseForParity: singlePhaseForParity,
+            gateByKeyForParity: gateByKeyForParity)
+        else { return [] }
+        // Stops when the calling task is cancelled, so a search a later one replaced does not hold up
+        // the one that replaced it on this actor (#1680).
+        return try stoppingWhenCancelled {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, bind) in binds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+            }
+            searchStatementTestHook?(.prepared)
+
+            var rows: [IndexedSearchRow] = []
+            while try auxStep(stmt) {
+                rows.append(IndexedSearchRow(
+                    documentId: auxColumnString(stmt, 0) ?? "",
+                    volumeId: auxColumnString(stmt, 1) ?? "",
+                    documentNumber: auxColumnString(stmt, 2),
+                    header: auxColumnString(stmt, 3) ?? "",
+                    dateline: auxColumnString(stmt, 4),
+                    sourceNote: auxColumnString(stmt, 5),
+                    bodyText: auxColumnString(stmt, 6) ?? "",
+                    subjectTagIds: auxColumnString(stmt, 7),
+                    userTagIds: auxColumnString(stmt, 8),
+                    isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
+                    isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
+                    dateISO: auxColumnString(stmt, 11),
+                    score: sqlite3_column_double(stmt, 12)
+                ))
+            }
+            searchStatementTestHook?(.ranToItsEnd)
+            return rows
+        }
+    }
+
+    /// The statement `searchDocuments` runs and its bind values, or `nil` for a search with no words
+    /// and no filter, which runs nothing. Split out so a test can explain the real statement rather
+    /// than a copy of it (#1577 lane 4), as `materializeMatchSetSQL` is.
+    ///
+    /// - Parameters:
+    ///   - corpusMatch: The MATCH expression for `frus_documents`, or `nil`.
+    ///   - userContentMatch: The MATCH expression for `user_content`, or `nil`.
+    ///   - filters: The filters.
+    ///   - limit: The window's size.
+    ///   - offset: The window's start.
+    ///   - singlePhaseForParity: The pre-R-3a shape, for its parity tests alone.
+    ///   - gateByKeyForParity: The document gate as the key test it was before decision 53, for its
+    ///     parity tests alone.
+    /// - Returns: The statement and its binds.
+    private static func searchDocumentsStatement(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        limit: Int,
+        offset: Int,
+        singlePhaseForParity: Bool,
+        gateByKeyForParity: Bool
+    ) throws -> (sql: String, binds: [String])? {
         let sql: String
         let binds: [String]
         if corpusMatch == nil, userContentMatch == nil {
@@ -3571,7 +3639,8 @@ public actor IndexingPipeline {
             // standalone filter admitted the query, person or subject — does the work, ordered by
             // volume + document for a stable browse. Guard against an unbounded dump if somehow no
             // filter is present.
-            guard !whereClause.isEmpty else { return [] }
+            let clause = Self.filterConditions(filters, gateByKeyForParity: gateByKeyForParity)
+            guard !clause.whereClause.isEmpty else { return nil }
             // `body_text` IS DELIBERATELY NOT SELECTED HERE, and the empty literal keeps the column
             // arity so the row decode below is shared with every other shape.
             //
@@ -3594,15 +3663,17 @@ public actor IndexingPipeline {
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-                \(whereClause)
+                \(clause.whereClause)
                 ORDER BY dc.volume_id, dc.document_id
                 LIMIT \(limit) OFFSET \(offset)
                 """
-            binds = filterBinds
+            binds = clause.binds
         } else if singlePhaseForParity {
             // The pre-R-3a shape, retained ONLY so `searchDocumentsSinglePhaseForTesting` can assert
             // the two-phase rewrite against it in-process. Never taken in the app.
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            let clause = Self.filterConditions(filters, gateRowid: "m.docrowid",
+                                               gateByKeyForParity: gateByKeyForParity)
             sql = """
                 \(matchCTE)
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
@@ -3612,11 +3683,11 @@ public actor IndexingPipeline {
                 JOIN document_cache dc ON dc.rowid = m.docrowid
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-                \(whereClause)
+                \(clause.whereClause)
                 ORDER BY m.score
                 LIMIT \(limit) OFFSET \(offset)
                 """
-            binds = matchBinds + filterBinds
+            binds = matchBinds + clause.binds
         } else {
             // TWO-PHASE FETCH (R-3a). Rank narrow, then hydrate only the window that survives.
             //
@@ -3661,6 +3732,9 @@ public actor IndexingPipeline {
             // backwards. The ordinal reuses the sort the ORDER BY already needs, which is why the
             // A/B measured no difference.
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            // The gate is tested against the match's own rowid (decision 53): see `filterConditions`.
+            let clause = Self.filterConditions(filters, gateRowid: "m.docrowid",
+                                               gateByKeyForParity: gateByKeyForParity)
             // The joins in phase one are CONDITIONAL, and that is the whole optimisation.
             //
             // They exist only to let the filters see `dc.`/`dd.` columns. With no filters they are
@@ -3669,7 +3743,12 @@ public actor IndexingPipeline {
             // joins and **0.376 s** without. I wrote them in unconditionally first, and only caught
             // it by measuring the finished statement instead of trusting the number I had taken
             // earlier from a shape that did not have them.
-            let rankingJoins = whereClause.isEmpty ? "" : """
+            //
+            // Since #1577 lane 4 a document gate alone does not need them either: it reads the
+            // match's rowid, and the clause says so (`readsRowColumns`). Joined, a gate of 327
+            // documents cost a common word 6.8 s cold on a full index, against 0.85 s for the same
+            // word unfiltered.
+            let rankingJoins = !clause.readsRowColumns ? "" : """
                     JOIN document_cache dc ON dc.rowid = m.docrowid
                     LEFT JOIN document_dates dd
                         ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
@@ -3682,7 +3761,7 @@ public actor IndexingPipeline {
                            ROW_NUMBER() OVER (ORDER BY m.score) AS ordinal
                     FROM merged m
                     \(rankingJoins)
-                    \(whereClause)
+                    \(clause.whereClause)
                     ORDER BY m.score
                     LIMIT \(limit) OFFSET \(offset)
                 )
@@ -3695,39 +3774,9 @@ public actor IndexingPipeline {
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
                 ORDER BY r.ordinal
                 """
-            binds = matchBinds + filterBinds
+            binds = matchBinds + clause.binds
         }
-        // Stops when the calling task is cancelled, so a search a later one replaced does not hold up
-        // the one that replaced it on this actor (#1680).
-        return try stoppingWhenCancelled {
-            let stmt = try auxPrepare(sql)
-            defer { sqlite3_finalize(stmt) }
-            for (i, bind) in binds.enumerated() {
-                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
-            }
-            searchStatementTestHook?(.prepared)
-
-            var rows: [IndexedSearchRow] = []
-            while try auxStep(stmt) {
-                rows.append(IndexedSearchRow(
-                    documentId: auxColumnString(stmt, 0) ?? "",
-                    volumeId: auxColumnString(stmt, 1) ?? "",
-                    documentNumber: auxColumnString(stmt, 2),
-                    header: auxColumnString(stmt, 3) ?? "",
-                    dateline: auxColumnString(stmt, 4),
-                    sourceNote: auxColumnString(stmt, 5),
-                    bodyText: auxColumnString(stmt, 6) ?? "",
-                    subjectTagIds: auxColumnString(stmt, 7),
-                    userTagIds: auxColumnString(stmt, 8),
-                    isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
-                    isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
-                    dateISO: auxColumnString(stmt, 11),
-                    score: sqlite3_column_double(stmt, 12)
-                ))
-            }
-            searchStatementTestHook?(.ranToItsEnd)
-            return rows
-        }
+        return (sql, binds)
     }
 
     /// Returns the exact number of documents matching the search and all filters.
@@ -3741,23 +3790,63 @@ public actor IndexingPipeline {
     public func searchDocumentsCount(
         corpusMatch: String?,
         userContentMatch: String?,
-        filters: SearchSQLFilters
+        filters: SearchSQLFilters,
+        gateByKeyForParity: Bool = false
     ) throws -> Int {
-        let (whereClause, filterBinds) = Self.filterConditions(filters)
+        guard let (sql, binds) = try Self.searchDocumentsCountStatement(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            gateByKeyForParity: gateByKeyForParity)
+        else { return 0 }
+        // Stops when the calling task is cancelled, as `searchDocuments` does (#1680).
+        return try stoppingWhenCancelled {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, bind) in binds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+            }
+            searchStatementTestHook?(.prepared)
+            let counted = try auxStep(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
+            searchStatementTestHook?(.ranToItsEnd)
+            return counted
+        }
+    }
+
+    /// The statement `searchDocumentsCount` runs and its bind values, or `nil` for a count with no
+    /// words and no filter, which counts nothing. Split out so a test can explain the real statement
+    /// (#1577 lane 4).
+    ///
+    /// - Parameters:
+    ///   - corpusMatch: The MATCH expression for `frus_documents`, or `nil`.
+    ///   - userContentMatch: The MATCH expression for `user_content`, or `nil`.
+    ///   - filters: The filters.
+    ///   - gateByKeyForParity: The document gate as the key test it was before decision 53, for its
+    ///     parity tests alone.
+    /// - Returns: The statement and its binds.
+    private static func searchDocumentsCountStatement(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        gateByKeyForParity: Bool
+    ) throws -> (sql: String, binds: [String])? {
         let sql: String
         let binds: [String]
         if corpusMatch == nil, userContentMatch == nil {
             // Filter-only count (mirrors searchDocuments' filter-only path).
-            guard !whereClause.isEmpty else { return 0 }
+            let clause = Self.filterConditions(filters, gateByKeyForParity: gateByKeyForParity)
+            guard !clause.whereClause.isEmpty else { return nil }
             sql = """
                 SELECT COUNT(*)
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-                \(whereClause)
+                \(clause.whereClause)
                 """
-            binds = filterBinds
-        } else if whereClause.isEmpty {
+            binds = clause.binds
+            return (sql, binds)
+        }
+        let clause = Self.filterConditions(filters, gateRowid: "m.docrowid",
+                                           gateByKeyForParity: gateByKeyForParity)
+        if clause.whereClause.isEmpty {
             // No filters: the joins cannot change the answer, so do not pay for them.
             //
             // This is the DEFAULT case, not an edge case — `includeFrontMatter` defaults
@@ -3782,6 +3871,19 @@ public actor IndexingPipeline {
                 SELECT COUNT(*) FROM merged m
                 """
             binds = matchBinds
+        } else if !clause.readsRowColumns {
+            // A document gate alone (#1577 lane 4, decision 53): it reads the match's rowid, so the
+            // count needs no join either, and does not look up every row the words match. Measured
+            // on a full index, the statement alone for a common word inside 327 documents fell from
+            // 6.7 s to 0.5 s cold, and from 145,350 page reads to 2,182.
+            // `searchDocumentsCountGateByKeyForTesting` keeps the joined key test it replaced.
+            let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+            sql = """
+                \(matchCTE)
+                SELECT COUNT(*) FROM merged m
+                \(clause.whereClause)
+                """
+            binds = matchBinds + clause.binds
         } else {
             let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             sql = """
@@ -3791,22 +3893,11 @@ public actor IndexingPipeline {
                 JOIN document_cache dc ON dc.rowid = m.docrowid
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-                \(whereClause)
+                \(clause.whereClause)
                 """
-            binds = matchBinds + filterBinds
+            binds = matchBinds + clause.binds
         }
-        // Stops when the calling task is cancelled, as `searchDocuments` does (#1680).
-        return try stoppingWhenCancelled {
-            let stmt = try auxPrepare(sql)
-            defer { sqlite3_finalize(stmt) }
-            for (i, bind) in binds.enumerated() {
-                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
-            }
-            searchStatementTestHook?(.prepared)
-            let counted = try auxStep(stmt) ? Int(sqlite3_column_int64(stmt, 0)) : 0
-            searchStatementTestHook?(.ranToItsEnd)
-            return counted
-        }
+        return (sql, binds)
     }
 
     /// Builds the `WITH merged(docrowid, score)` CTE for the requested match scopes.
@@ -4268,25 +4359,33 @@ public actor IndexingPipeline {
         corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters,
         joinedMaterializationForParity: Bool
     ) throws -> (sql: String, binds: [String])? {
-        let (whereClause, filterBinds) = Self.filterConditions(filters)
         let sql: String
         let binds: [String]
         if corpusMatch == nil, userContentMatch == nil {
             // Filter-only search (a person or subject filter with no terms). Mirrors
             // `searchDocuments`' filter-only path; an unfiltered filter-only query would be
             // the whole corpus, which is not a result set.
-            guard !whereClause.isEmpty else { return nil }
+            let clause = Self.filterConditions(filters, gateByKeyForParity: joinedMaterializationForParity)
+            guard !clause.whereClause.isEmpty else { return nil }
             sql = """
                 INSERT INTO temp.facet_mset(docrowid)
                 SELECT dc.rowid
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
-                \(whereClause)
+                \(clause.whereClause)
                 """
-            binds = filterBinds
-        } else if whereClause.isEmpty, !joinedMaterializationForParity {
-            // UNFILTERED MATCH — the joins are pure cost, so drop them.
+            binds = clause.binds
+            return (sql, binds)
+        }
+        // The gate reads the match's rowid (#1577 lane 4, decision 53), as in `searchDocuments`. The
+        // parity shape keeps the key test it replaced, so that it is the shape before both changes.
+        let clause = Self.filterConditions(filters, gateRowid: "m.docrowid",
+                                           gateByKeyForParity: joinedMaterializationForParity)
+        let whereClause = clause.whereClause
+        let filterBinds = clause.binds
+        if !clause.readsRowColumns, !joinedMaterializationForParity {
+            // UNFILTERED MATCH, OR A DOCUMENT GATE ALONE — the joins are pure cost, so drop them.
             //
             // `dc.rowid` in the joined shape below is `m.docrowid` by construction, and with no
             // WHERE clause neither join can influence which rows land in the match set. Both joins
@@ -4310,22 +4409,28 @@ public actor IndexingPipeline {
             //
             // This is the DEFAULT path, not a corner: an unfiltered search over the whole corpus is
             // what the facet panel and the tag counts see before the researcher narrows anything.
+            //
+            // A document gate alone joins nothing either (#1577 lane 4): it reads `m.docrowid`, so a
+            // facet over a keyword search inside a working corpus is not one row lookup for each row
+            // the words match across the corpus.
             let (matchCTE, matchBinds) = try Self.matchCTE(
                 corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             sql = """
                 \(matchCTE)
                 INSERT INTO temp.facet_mset(docrowid)
                 SELECT m.docrowid FROM merged m
+                \(whereClause)
                 """
-            binds = matchBinds
+            binds = matchBinds + filterBinds
         } else {
             let (matchCTE, matchBinds) = try Self.matchCTE(
                 corpusMatch: corpusMatch, userContentMatch: userContentMatch)
             // The filters live here, in phase one, exactly as in `searchDocuments` — a facet
             // must describe the set the researcher is actually looking at.
             //
-            // Every one of the 13 conditions `filterConditions` can emit references `dc.` or `dd.`
-            // and every one changes which rows match, so none may be deferred to a later pass.
+            // Every condition `filterConditions` can emit but the document gate references `dc.` or
+            // `dd.` (the gate reads `m.docrowid` since #1577 lane 4), and every one changes which
+            // rows match, so none may be deferred to a later pass.
             // A filter applied after the match set is built would describe a different set than the
             // researcher is looking at, silently.
             sql = """
@@ -4482,7 +4587,9 @@ public actor IndexingPipeline {
     ///
     /// Not used by the app. "Dropping these joins cannot change the answer" is a claim about
     /// SQLite's external-content invariants, and a claim like that is worth asserting against the
-    /// real emitter rather than against a reviewer's reading. Do not delete as dead code.
+    /// real emitter rather than against a reviewer's reading. Do not delete as dead code. Since
+    /// #1577 lane 4 it also renders a document gate as the key test it was, so it is the shape from
+    /// before both changes.
     func resultSetFacetsJoinedMaterializationForTesting(
         corpusMatch: String?,
         userContentMatch: String?,
@@ -4519,6 +4626,60 @@ public actor IndexingPipeline {
         try searchDocuments(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
                             filters: filters, limit: limit, offset: offset,
                             singlePhaseForParity: true)
+    }
+
+    /// `searchDocuments` with the document gate rendered as the key test it replaced, joined for every
+    /// matched row (#1577 lane 4, decision 53), kept solely so a test can assert that the rowid gate
+    /// returns the same rows in the same order. Not used by the app.
+    func searchDocumentsGateByKeyForTesting(
+        corpusMatch: String?,
+        userContentMatch: String?,
+        filters: SearchSQLFilters,
+        limit: Int,
+        offset: Int
+    ) throws -> [IndexedSearchRow] {
+        try searchDocuments(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                            filters: filters, limit: limit, offset: offset,
+                            gateByKeyForParity: true)
+    }
+
+    /// `searchDocumentsCount` with the document gate as the key test it replaced, for the same parity
+    /// tests (#1577 lane 4). Not used by the app.
+    func searchDocumentsCountGateByKeyForTesting(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+    ) throws -> Int {
+        try searchDocumentsCount(corpusMatch: corpusMatch, userContentMatch: userContentMatch,
+                                 filters: filters, gateByKeyForParity: true)
+    }
+
+    /// The query plan of the statement `searchDocuments` really runs, or `""` for one that runs
+    /// nothing (#1577 lane 4).
+    ///
+    /// Not used by the app. Output parity cannot see a join put back into the ranking phase: the rows
+    /// are the same either way, and only the plan says each matched row is looked up again.
+    func searchDocumentsPlanForTesting(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters,
+        limit: Int, offset: Int, gateByKeyForParity: Bool = false
+    ) throws -> String {
+        guard let (sql, _) = try Self.searchDocumentsStatement(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            limit: limit, offset: offset, singlePhaseForParity: false,
+            gateByKeyForParity: gateByKeyForParity)
+        else { return "" }
+        return try queryPlanForTesting(sql)
+    }
+
+    /// The query plan of the statement `searchDocumentsCount` really runs, or `""` for one that runs
+    /// nothing (#1577 lane 4). Not used by the app.
+    func searchDocumentsCountPlanForTesting(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters,
+        gateByKeyForParity: Bool = false
+    ) throws -> String {
+        guard let (sql, _) = try Self.searchDocumentsCountStatement(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+            gateByKeyForParity: gateByKeyForParity)
+        else { return "" }
+        return try queryPlanForTesting(sql)
     }
 
     /// The pre-optimisation count shape, kept solely so a test can assert the optimised one
@@ -4654,14 +4815,66 @@ public actor IndexingPipeline {
         return answer
     }
 
+    /// A rendered `WHERE` clause, its bind values, and whether it reads the candidate row's own
+    /// columns (#1577 lane 4, decision 53).
+    struct FilterClause {
+        /// `WHERE …`, or empty when nothing constrains.
+        let whereClause: String
+        /// The values for the clause's `?`s, in order.
+        let binds: [String]
+        /// Whether a condition reads `document_cache` (`dc.`) or `document_dates` (`dd.`), so that a
+        /// statement driven by the match must join them for each matched row.
+        ///
+        /// `false` for an empty clause and for one that holds only a document gate: the gate is tested
+        /// against the match's own rowid (`filterConditions(_:gateRowid:gateByKeyForParity:)`), so a
+        /// search, a count or a facet match set inside a set of documents need not look up every row
+        /// the words match, which is what made a common word inside a working corpus take seconds.
+        let readsRowColumns: Bool
+    }
+
     /// Renders `filters` to a `WHERE` clause and its bind values.
     ///
     /// Tag conditions wrap the space-separated tag-ID columns in spaces and use
     /// `LIKE '% <id> %'` so each ID matches as a whole token; multiple IDs are
     /// ANDed, mirroring the previous Swift-side `allSatisfy` semantics.
-    private static func filterConditions(_ filters: SearchSQLFilters) -> (whereClause: String, binds: [String]) {
+    ///
+    /// ## The document gate is a set of rowids (#1577 lane 4, decision 53)
+    ///
+    /// `documentIds` was rendered as `(dc.volume_id || '/' || dc.document_id) IN (…)`, a test of each
+    /// candidate row's key. In a statement driven by the match, that needs `document_cache` joined for
+    /// every row the words match, before the gate can discard it: one rowid seek into the index's
+    /// largest table for each of a common word's matches across the whole corpus, whatever the size of
+    /// the set. Measured on a full index (553 volumes, 318,104 documents, `government` matching 195,778
+    /// of them) through `SearchService`, a search inside 327 documents took 6.8 s cold where the same
+    /// word across the whole corpus took 0.85 s; on TestFlight build 50 the owner's iPhone took 7.5 s.
+    ///
+    /// The gate is now the rowids of its members, found through `document_cache`'s primary key (one
+    /// index seek a member), and the condition tests `gateRowid`, the expression that names the
+    /// candidate's rowid in the statement: `m.docrowid` where the match drives it, `dc.rowid` where
+    /// `document_cache` does. Where the gate is the only condition the clause does not read the row
+    /// (``FilterClause/readsRowColumns``), and a statement driven by the match drops its joins. Where
+    /// other filters need them, SQLite tests the gate at the match's own loop, before the joins.
+    ///
+    /// A key is split at its first `/`, as `SemanticQuerySearcher` splits one: a volume id holds none,
+    /// so a row's key equals a member exactly when its volume and document ids equal the member's two
+    /// halves, which is what the old test compared. A member the index does not hold has no rowid and
+    /// matches nothing, as before; an empty gate still matches nothing (`1 = 0`).
+    ///
+    /// - Parameters:
+    ///   - filters: The filters to render.
+    ///   - gateRowid: The SQL expression for the candidate's `document_cache` rowid.
+    ///   - gateByKeyForParity: Renders the gate as the key test it replaced, for the parity tests
+    ///     alone (`searchDocumentsGateByKeyForTesting`). Never set in the app.
+    /// - Returns: The clause.
+    private static func filterConditions(
+        _ filters: SearchSQLFilters,
+        gateRowid: String = "dc.rowid",
+        gateByKeyForParity: Bool = false
+    ) -> FilterClause {
         var conditions: [String] = []
         var binds: [String] = []
+        // Conditions that read no column of the candidate row: the document gate, and its empty form.
+        var rowFreeConditions = 0
 
         if let vids = filters.volumeIds, !vids.isEmpty {
             let placeholders = vids.map { _ in "?" }.joined(separator: ", ")
@@ -4687,11 +4900,27 @@ public actor IndexingPipeline {
         // Contract: `nil` = no document gate (the default). A non-nil array gates to exactly
         // that set — so an *empty* array (a History scope whose project has engaged no documents
         // yet) matches nothing, rather than silently degrading to "search the whole corpus".
+        //
+        // The members are rowids since #1577 lane 4 (decision 53): see this function's notes. One
+        // bind a member, as the key test had, inside a `VALUES` list, which needs no chunking.
         if let docIds = filters.documentIds {
             if docIds.isEmpty {
                 conditions.append("1 = 0")
-            } else {
+                rowFreeConditions += 1
+            } else if gateByKeyForParity {
                 appendChunkedKeyCondition(docIds, op: "IN", chunkJoin: " OR ")
+            } else {
+                let members = docIds.map { _ in "(?)" }.joined(separator: ", ")
+                binds.append(contentsOf: docIds)
+                conditions.append("""
+                    \(gateRowid) IN (
+                        SELECT gate.rowid
+                        FROM (VALUES \(members)) AS gate_key
+                        JOIN document_cache gate
+                            ON gate.volume_id = substr(gate_key.column1, 1, instr(gate_key.column1, '/') - 1)
+                           AND gate.document_id = substr(gate_key.column1, instr(gate_key.column1, '/') + 1))
+                    """)
+                rowFreeConditions += 1
             }
         }
 
@@ -4831,7 +5060,8 @@ public actor IndexingPipeline {
         }
 
         let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
-        return (whereClause, binds)
+        return FilterClause(whereClause: whereClause, binds: binds,
+                            readsRowColumns: conditions.count > rowFreeConditions)
     }
 
     // MARK: - Date Range Query (used by SearchService)
@@ -9864,7 +10094,9 @@ public actor IndexingPipeline {
     /// - Parameter filters: The SQL filters, from `SearchService.makeFilters`.
     /// - Returns: Matching `"volumeId/documentId"` keys, or `nil` for an unfiltered request.
     func documentKeysMatchingFilters(_ filters: SearchSQLFilters) throws -> Set<String>? {
-        let (whereClause, binds) = Self.filterConditions(filters)
+        let clause = Self.filterConditions(filters)
+        let whereClause = clause.whereClause
+        let binds = clause.binds
         guard !whereClause.isEmpty else { return nil }
         // The LEFT JOIN must stay whenever dates might be referenced: yearKeys and dateRange
         // filter on `dd.` columns, and `document_dates`' composite primary key means the join

@@ -824,10 +824,13 @@ struct ResultSetScopeRouteTests {
                 == "Words found in a Meaning search’s closest matches — 7 of 100")
         #expect(scope(.wordsInMatches(base: 100), loaded: 7, shown: 5, fetchLimit: 100).captureProvenanceDescription
                 == "Words found in a Meaning search’s closest matches — 7 of 100; 2 reviewed documents excluded")
+        // A corpus stores a set and not an order, but since #1577 lane 4 the record says the list was ranked, as it
+        // names words found in a Meaning list: it outlives the screen that said so. `SearchLayeringTests` holds the
+        // sentence that also names the list (`layerBaseLabel`).
         #expect(scope(.rankedByMeaning(unranked: 9), loaded: 212, total: 212).captureProvenanceDescription
-                == "Search results")
+                == "Search results, ranked by a question")
         #expect(scope(.rankedByMeaning(unranked: 0), loaded: 1_000, total: 35_275).captureProvenanceDescription
-                == "Search results — the highest-scoring 1,000 of 35,275 matches")
+                == "Search results, ranked by a question — the highest-scoring 1,000 of 35,275 matches")
     }
 
     @Test("Whether a capture is stored as partial, by route")
