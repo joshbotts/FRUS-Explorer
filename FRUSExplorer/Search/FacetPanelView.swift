@@ -413,7 +413,7 @@ struct FacetPanelView: View {
     /// The route that produced the list, where it is a layer's (#1577 lane 4): words found in a held
     /// Meaning list, or a held list ranked by a question. Each is counted over the list itself, as a
     /// Meaning list is, and its preamble says what the list is. `nil` for a search through one engine,
-    /// which ``isMeaningSearch`` describes; the Mac's window passes none until its lane gives it layers.
+    /// which ``isMeaningSearch`` describes. Both hosts pass it since #1577 lane 5, which gave the Mac's window layers.
     var layerRoute: ExecutedSearchRoute? = nil
 
     @State private var expanded: Set<FacetSection> = []

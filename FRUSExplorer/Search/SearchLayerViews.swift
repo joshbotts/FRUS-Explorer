@@ -172,6 +172,7 @@ struct SearchLayerEmptyState: View {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 5: the Mac window's toolbar button and the label in the Keywords | Meaning control's place
 enum SearchLayerCopy {
 
     /// The Sort menu's way into a ranking, on a keyword list: it is an order, as the menu's others are.
@@ -202,5 +203,49 @@ enum SearchLayerCopy {
                                      defaultValue: "%@ result not ranked by meaning"),
                          many: String(localized: "search.layer.unranked.many",
                                       defaultValue: "%@ results not ranked by meaning"))
+    }
+
+    // MARK: The Mac's window (#1577 lane 5)
+
+    /// The Mac Search window's toolbar button that holds the list on screen. Titled, as its neighbours are, and the
+    /// same whichever way the layer will run, since a toolbar button's title is its place; its help says which.
+    static var searchWithinResults: String {
+        String(localized: "search.layer.toolbar", defaultValue: "Search Within Results")
+    }
+
+    /// The toolbar button's help: what it will do with the list on screen, or why it does nothing now.
+    ///
+    /// - Parameters:
+    ///   - direction: The way a layer over the list on screen would run, or `nil` when none can start.
+    ///   - isHolding: Whether a list is held already, which is one reason none can start.
+    /// - Returns: The help.
+    static func searchWithinResultsHelp(_ direction: SearchLayerDirection?, isHolding: Bool) -> String {
+        if isHolding {
+            return String(localized: "search.layer.toolbar.help.held",
+                          defaultValue: "You are searching within results already. Stop searching within them to hold another list.")
+        }
+        switch direction {
+        case .wordsInMatches?:
+            return String(localized: "search.layer.toolbar.help.wordsInMatches",
+                          defaultValue: "Find words in these closest matches. They keep their order, and only those that contain your words stay listed.")
+        case .rankByMeaning?:
+            return String(localized: "search.layer.toolbar.help.rankByMeaning",
+                          defaultValue: "Rank these results by a question. Every result stays listed, the closest first.")
+        case nil:
+            return String(localized: "search.layer.toolbar.help.unavailable",
+                          defaultValue: "Hold the list on screen and search inside it with the other engine: words in a Meaning search’s matches, or a question over keyword results.")
+        }
+    }
+
+    /// The help of the plain label that takes the Keywords | Meaning control's place on the Mac while a list is held:
+    /// a disabled control explains nothing, and the field runs one engine only inside a held list (the owner's
+    /// decision 5).
+    ///
+    /// - Parameter engine: The engine the field runs inside the held list.
+    /// - Returns: The help.
+    static func heldEngineHelp(_ engine: SearchMode) -> String {
+        String(format: String(localized: "search.layer.engine.help %@",
+                              defaultValue: "While you search within results, the field searches by %@. Stop searching within them to choose the engine again."),
+               engine.label)
     }
 }

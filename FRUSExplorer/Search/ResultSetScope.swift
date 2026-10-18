@@ -26,11 +26,12 @@ import Foundation
 /// ``wordsInMatches(base:)`` and ``rankedByMeaning(unranked:)`` are the two layers of Search Within These
 /// Results. Lane 2 gave them their sentences in ``ResultSetScope`` before any search produced them, so that
 /// the lanes that build the control adopt one vocabulary; since #1577 lane 4 iPhone and iPad produce both
-/// (`SearchViewModel`'s held base), and the Mac's window is lane 5's.
+/// (`SearchViewModel`'s held base), and since lane 5 the Mac's window does (`MacSearchViewModel`'s).
 ///
 /// Version history:
 ///   1.0 — #1577 lane 2: initial implementation, in place of `ResultSetScope`'s `isMeaningSearch` flag
 ///   1.1 — #1577 lane 4: produced by iPhone and iPad; the two cases' owed notes are answered where they stand
+///   1.2 — #1577 lane 5: produced by the Mac's window too
 enum ExecutedSearchRoute: Equatable, Sendable {
 
     /// A keyword match, or a browse with no words: rows the index matched.
@@ -195,6 +196,9 @@ struct SearchRunLedger: Equatable, Sendable {
 ///         sentences owed, and ``layerBaseWasCut`` and ``layerBaseHiddenByChecklist``, so that a ranking with fewer
 ///         rows than its list is not read as cut; #1683: a Meaning capture of one document, and a single reviewed
 ///         document, have their singular
+///   1.4 — #1577 lane 5: both view models set the layer's five members by one rule,
+///         `describingLayer(over:filtersNarrowed:sortOrder:)` (`SearchLayering.swift`), and the Mac's count line
+///         renders ``headerDescription`` over a layer
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -269,8 +273,8 @@ struct ResultSetScope: Equatable, Sendable {
     /// A ranking's rows can be fewer than its list's with no cut at all: the rows Checklist Mode hid
     /// when the list was held are not ranked, and a filter chosen since removes more. Read against the
     /// list's total, those read as a fetch cut short, and a working corpus saved from the ranking was
-    /// recorded as partial (the review's finding). `nil` keeps lane 2's rule, as the Mac's window does
-    /// until lane 5.
+    /// recorded as partial (the review's finding). `nil` keeps lane 2's rule. Both view models set it
+    /// through `describingLayer(over:filtersNarrowed:sortOrder:)` since lane 5.
     var layerBaseWasCut: Bool? = nil
 
     /// For a held list ranked by a question, the rows Checklist Mode was hiding when the list was held,
@@ -413,7 +417,7 @@ struct ResultSetScope: Equatable, Sendable {
     /// ranked list of no rows.
     ///
     /// Shared for the reason ``closestMatchesClause`` is: iPhone and iPad render it through ``headerDescription``,
-    /// and the Mac's count label is to render the same words when lane 5 gives that window a layer.
+    /// and since lane 5 the Mac's count label renders the same sentence over a layer.
     ///
     /// - Words in matches: how many of the held Meaning list's rows hold the words, with the list's size, and a
     ///   sentence of its own when none does.

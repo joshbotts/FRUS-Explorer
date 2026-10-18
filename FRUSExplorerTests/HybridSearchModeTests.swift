@@ -358,7 +358,8 @@ struct HybridSearchModeTests {
                 "iOS keeps its own compact keyword wording")
 
         let mac = try Self.searchSurfaceSource("FRUSExplorer/App/SearchSheet.swift")
-        #expect(mac.contains("searchVM.searchMode.fieldPrompt("),
+        // The same on the Mac since #1577 lane 5.
+        #expect(mac.contains("searchVM.pinnedBase?.direction.fieldPrompt ?? searchVM.searchMode.fieldPrompt("),
                 "SearchSheet must derive its prompt from the mode")
         #expect(!mac.contains("TextField(\"Search documents, notes, summaries…\""),
                 "the raw literal is gone; this line is the only mechanical guard against its return")
@@ -1350,11 +1351,12 @@ struct SearchResultRouteTests {
     /// assignment of rows without one fails here. The one exception rewrites rows in place and cannot change their
     /// route: the tag refresh of #1576 lane 5. iPhone and iPad have three more since #1577 lane 4: a held list's rows
     /// put back with their own route, words found in a Meaning list, and a list ranked by a question (whose rows are
-    /// `ranking.results`, never `outcome.results`, so that only a Meaning run's rows are a Meaning list).
+    /// `ranking.results`, never `outcome.results`, so that only a Meaning run's rows are a Meaning list). The Mac has the
+    /// same three since lane 5, which gave its window held lists.
     @Test("Each view model writes the route beside every statement that assigns the rows")
     func theRouteIsAssignedBesideEveryAssignmentOfRows() throws {
         for (path, expected) in [("FRUSExplorer/Search/SearchViewModel.swift", 11),
-                                 ("FRUSExplorer/App/MacSearchViewModel.swift", 9)] {
+                                 ("FRUSExplorer/App/MacSearchViewModel.swift", 12)] {
             let lines = try Self.source(path).components(separatedBy: "\n")
             var assignments = 0
             var meaning = 0
@@ -1577,7 +1579,9 @@ struct SearchResultRouteTests {
         for (path, headers) in [
             ("FRUSExplorer/App/MacSearchViewModel.swift",
              ["func performSearch(service: SearchService?) async -> Bool {",
-              "private func performMeaningSearch(run: Int) async -> Bool {"]),
+              "private func performMeaningSearch(run: Int) async -> Bool {",
+              // The ranking of a held list, `performMeaningSearch(run:)`'s second path (#1577 lane 5).
+              "private func rankHeldList(run: Int, base: PinnedResultBase, backend: any MeaningSearchRunning)"]),
             ("FRUSExplorer/Search/SearchViewModel.swift",
              ["func search() async -> Bool {", "private func searchMeaning(run: Int) async -> Bool {",
               // The ranking of a held list, `searchMeaning(run:)`'s second path (#1577 lane 4).

@@ -411,8 +411,13 @@ struct ChecklistStripTests {
             #expect(!body.contains("hidden>0"), "\(host.path): the strip must not wait for a hidden row")
             #expect(body.contains(Self.squeezed(
                 "hiddenCount: \(model).results.count - \(model).displayedResults.count,")))
-            #expect(body.contains(Self.squeezed(
-                "pageRowCount: activeReading.isPaged ? \(model).pagedResults.count : 0,")))
+            // The Mac's page mark also waits for the rows of the search it marks (#1683's Mac line, taken by
+            // #1577 lane 5): that window anchors its checklist before a search runs, and keeps the last search's
+            // rows on screen until the new ones arrive. iPhone and iPad settle the checklist with the rows.
+            let pageRows = model == "searchVM"
+                ? "pageRowCount: activeReading.isPaged && searchVM.canMarkReviewed ? searchVM.pagedResults.count : 0,"
+                : "pageRowCount: activeReading.isPaged ? \(model).pagedResults.count : 0,"
+            #expect(body.contains(Self.squeezed(pageRows)), "\(host.path): Mark Page Reviewed's page is not handed over")
             // Undo is offered where Mark Page Reviewed is: under a reading with a page. A
             // collocation is not rebuilt when a mark changes, so an undo made under it would
             // leave the panel ranking a set it no longer describes.
@@ -505,9 +510,12 @@ struct ChecklistStripTests {
     func turningTheModeOnAnchorsToTheSearchOnScreen() throws {
         let mac = try Self.source("FRUSExplorer/App/MacSearchViewModel.swift")
         let macOn = Self.squeezed(String(try Self.declaration("func setChecklistMode(_ on: Bool) {", in: mac)))
+        // Inside a held list (#1577 lane 5) the submitted words are a layer's, or none, so the mode takes the list's own
+        // search, which every search inside it keeps; elsewhere the submitted query and its parameters, as before.
         #expect(macOn.contains(Self.squeezed("""
             checklistEnabledAt = .now
-            checklistAnchor = ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
+            checklistAnchor = pinnedBase?.completedSearchAnchor
+                ?? ChecklistAnchor(query: submittedQuery, parameters: submittedSearchParameters)
             forgetReviewedMarks()
             """)), "the Mac anchors the mode to the submitted query and the parameters it runs with")
 

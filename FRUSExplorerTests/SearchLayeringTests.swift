@@ -34,14 +34,16 @@ private func base(direction: SearchLayerDirection = .wordsInMatches,
                   notDownloaded: Int = 0,
                   route: ExecutedSearchRoute = .meaning,
                   fetchLimit: Int = 100,
-                  total: Int? = nil) -> PinnedResultBase {
+                  total: Int? = nil,
+                  userTagCountScope: UserTagCountScope? = nil,
+                  filterSignature: String = "") -> PinnedResultBase {
     let shown = members ?? rows
     return PinnedResultBase(
         direction: direction, kind: kind, query: query, rows: rows, members: shown,
         hiddenByChecklist: rows.count - shown.count, notDownloaded: notDownloaded,
         route: route, fetchLimit: fetchLimit, totalMatchCount: total, renderedExpression: nil,
-        disclosure: nil, beyondLibraryHits: [], userTagCountScope: nil, historyAnchor: nil,
-        completedSearchAnchor: nil, filterSignature: "")
+        disclosure: nil, beyondLibraryHits: [], userTagCountScope: userTagCountScope, historyAnchor: nil,
+        completedSearchAnchor: nil, filterSignature: filterSignature)
 }
 
 /// `count` rows `d1`… with no score, as a keyword list's are.
@@ -435,5 +437,238 @@ struct SearchLayeringTests {
     func unrankedHeader() {
         #expect(SearchLayerCopy.unrankedHeader(1) == "1 result not ranked by meaning")
         #expect(SearchLayerCopy.unrankedHeader(1_204) == "1,204 results not ranked by meaning")
+    }
+}
+
+// MARK: - SearchLayerHoldingRulesTests
+
+/// The rules both search windows hold a list by, and say a layer by (#1577 lane 5).
+///
+/// They were `SearchViewModel`'s own in lane 4. Lane 5 moved them into `PinnedResultBase`, `LayeredResultComposer`,
+/// `ResultSetScope` and `AnsweredSearchTrigger`, because the Mac's window holds a list too and `MacSearchViewModel` is
+/// compiled for the Mac alone: no test runs it. So each rule is held here, with no view model, and the iPhone's view
+/// model, which `SearchWithinResultsModelTests` drives, and the Mac's, which `MacSearchWithinResultsWiringTests`
+/// reads, call the same functions.
+///
+/// Version history:
+///   1.0 — #1577 lane 5: initial implementation
+@Suite("Search within results: the rules both windows hold a list by (#1577 lane 5)")
+struct SearchLayerHoldingRulesTests {
+
+    // MARK: Holding
+
+    /// The fixture's list is closest first, d1 … d6, and it is shown under a date order with d3 hidden as reviewed, so
+    /// that neither the shown order nor the key order passes for the search's.
+    @Test("A held list's members are the rows shown, in the search's own order, whatever the sort")
+    func membersKeepTheSearchOrder() {
+        let rows = (1...6).map { row("d\($0)", semantic: 1 - Double($0) / 10) }
+        let shown = [rows[5], rows[3], rows[0], rows[4], rows[1]]
+        #expect(PinnedResultBase.members(of: rows, shown: shown).map(\.documentId) == ["d1", "d2", "d4", "d5", "d6"],
+                "the search's order, less the row the list does not show")
+        #expect(PinnedResultBase.members(of: rows, shown: rows).map(\.id) == rows.map(\.id))
+        #expect(PinnedResultBase.members(of: rows, shown: []).isEmpty)
+        #expect(PinnedResultBase.members(of: Array(rows.prefix(2)), shown: rows).map(\.documentId) == ["d1", "d2"],
+                "a row shown that the search did not load is not added")
+    }
+
+    @Test("A Meaning list is a Meaning base, typed words a keyword base, and a list with nothing typed a browse unless a phrase or a prefix found it")
+    func kindOfAHeldList() {
+        let phrase = SearchParameters(phrase: "wheat shipments")
+        let prefix = SearchParameters(prefixWildcard: "embarg")
+        let person = SearchParameters(personRollupId: 7, personLabel: "Dean Rusk")
+
+        let meaning = PinnedResultBase.kind(route: .meaning, query: "how did the embassy", ran: phrase, browseName: "x")
+        #expect(meaning.kind == .meaning && meaning.describedQuery == nil)
+        let meaningUntyped = PinnedResultBase.kind(route: .meaning, query: "", ran: nil, browseName: "x")
+        #expect(meaningUntyped.kind == .meaning && meaningUntyped.describedQuery == nil,
+                "the route decides a Meaning list, not the words")
+
+        let typed = PinnedResultBase.kind(route: .keywords, query: "containment", ran: phrase, browseName: "x")
+        #expect(typed.kind == .keywords && typed.describedQuery == nil, "typed words name the list themselves")
+        let byPhrase = PinnedResultBase.kind(route: .keywords, query: "", ran: phrase, browseName: "x")
+        #expect(byPhrase.kind == .keywords && byPhrase.describedQuery == "\"wheat shipments\"",
+                "a list found by a phrase alone is a keyword list (lane 4's review)")
+        let byPrefix = PinnedResultBase.kind(route: .keywords, query: "", ran: prefix, browseName: "x")
+        #expect(byPrefix.kind == .keywords && byPrefix.describedQuery == "embarg*")
+
+        let browse = PinnedResultBase.kind(route: .keywords, query: "", ran: person, browseName: "Dean Rusk")
+        #expect(browse.kind == .browse(name: "Dean Rusk") && browse.describedQuery == nil)
+        let unknown = PinnedResultBase.kind(route: .keywords, query: "", ran: nil, browseName: nil)
+        #expect(unknown.kind == .browse(name: nil) && unknown.describedQuery == nil)
+    }
+
+    @Test("A browse is named by its person, then its topic, from the parameters it ran with")
+    func browseNameFromTheParameters() {
+        #expect(PinnedResultBase.browseName(of: SearchParameters(personRollupId: 7, personLabel: "Dean Rusk"))
+                == "Dean Rusk")
+        #expect(PinnedResultBase.browseName(of: SearchParameters(personRef: " #rusk-dean ", personLabel: "Dean Rusk"))
+                == "Dean Rusk", "a single volume's reference names its person too")
+        #expect(PinnedResultBase.browseName(of: SearchParameters(personRef: "   ", personLabel: "Dean Rusk")) == nil,
+                "a reference of spaces is no person")
+        #expect(PinnedResultBase.browseName(of: SearchParameters(personRollupId: 7, personLabel: "",
+                                                                 subjectRef: "t-12", subjectName: "Aerial reconnaissance"))
+                == "Aerial reconnaissance", "a person with no name gives way to the topic")
+        #expect(PinnedResultBase.browseName(of: SearchParameters(subjectRef: "t-12", subjectName: "Aerial reconnaissance"))
+                == "Aerial reconnaissance")
+        #expect(PinnedResultBase.browseName(of: SearchParameters(subjectRef: "t-12", subjectName: "")) == nil)
+        #expect(PinnedResultBase.browseName(of: SearchParameters(subjectName: "Aerial reconnaissance")) == nil,
+                "a topic's name with no topic filter names nothing the browse ran under")
+        #expect(PinnedResultBase.browseName(of: SearchParameters(keywords: "containment")) == nil)
+    }
+
+    @Test("The parameters a held list's rows were found by are its keyword run's, and a Meaning list has none")
+    func ranParameters() {
+        let ran = SearchParameters(keywords: "containment", dateRange: DateRange(earliest: "1950-01-01", latest: nil))
+        #expect(UserTagCountScope.match(ran).ranParameters == ran)
+        #expect(UserTagCountScope.resultKeys([]).ranParameters == nil)
+        #expect(base(kind: .keywords, query: "containment", rows: keywordRows(3), route: .keywords,
+                     userTagCountScope: .match(ran)).ranParameters == ran)
+        #expect(base(rows: [row("d1", semantic: 0.5)], userTagCountScope: .resultKeys([])).ranParameters == nil)
+    }
+
+    // MARK: The filters
+
+    /// One fixture for each conjunct of the rule: filters the list was found under narrow nothing, and a filter taken
+    /// away narrows nothing either; only a filter set, and not the list's, narrows the layer.
+    @Test("A layer is narrowed by filters only where one is set and the list was not found under it")
+    func filtersNarrowALayer() {
+        let unfiltered = SearchParameters(keywords: "containment")
+        let dated = SearchParameters(keywords: "containment", dateRange: DateRange(earliest: "1953-01-01",
+                                                                                 latest: "1959-12-31"))
+        var datedAndScoped = dated
+        datedAndScoped.volumeIds = ["frus1952-54v02"]
+
+        let foundUnfiltered = base(rows: keywordRows(3), filterSignature: SearchScopeSignature.signature(for: unfiltered))
+        #expect(!foundUnfiltered.filtersNarrow(SearchParameters(keywords: "quillon")),
+                "no filter, and the words are not one")
+        #expect(foundUnfiltered.filtersNarrow(SearchParameters(keywords: "quillon",
+                                                               dateRange: dated.dateRange)))
+
+        let foundDated = base(rows: keywordRows(3), filterSignature: SearchScopeSignature.signature(for: dated))
+        #expect(foundDated.wasFound(under: SearchParameters(keywords: "quillon", dateRange: dated.dateRange)))
+        #expect(!foundDated.filtersNarrow(SearchParameters(keywords: "quillon", dateRange: dated.dateRange)),
+                "a filter the list was found under removes none of its rows")
+        #expect(!foundDated.wasFound(under: unfiltered))
+        #expect(!foundDated.filtersNarrow(unfiltered), "a filter taken away removes none of its rows")
+        #expect(foundDated.filtersNarrow(datedAndScoped), "a filter set since does")
+    }
+
+    @Test("Any filter counts as one, a document set, a scope toggle and a topic among them; the words do not")
+    func whatSetsAFilter() {
+        #expect(!PinnedResultBase.setsAFilter(SearchParameters()))
+        #expect(!PinnedResultBase.setsAFilter(SearchParameters(keywords: "containment")))
+        #expect(PinnedResultBase.setsAFilter(SearchParameters(dateRange: DateRange(earliest: "1950-01-01", latest: nil))))
+        #expect(PinnedResultBase.setsAFilter(SearchParameters(documentIds: ["vol/d1"])), "a working corpus")
+        #expect(PinnedResultBase.setsAFilter(SearchParameters(includeNotes: false)), "a scope toggle off")
+        #expect(PinnedResultBase.setsAFilter(SearchParameters(documentTypeFilter: .documentsOnly)))
+        #expect(PinnedResultBase.setsAFilter(SearchParameters(booleanMode: .or)))
+        #expect(PinnedResultBase.setsAFilter(SearchParameters(subjectRef: "t-12", subjectName: "Aerial reconnaissance")),
+                "a topic, which the scope signature does not record")
+    }
+
+    @Test("A list is found under a document set whatever the order its keys are given in")
+    func wasFoundUnderADocumentSet() {
+        let corpus = SearchParameters(documentIds: ["vol/d2", "vol/d1"])
+        let held = base(rows: keywordRows(2), filterSignature: SearchScopeSignature.signature(for: corpus))
+        #expect(held.wasFound(under: SearchParameters(keywords: "x", documentIds: ["vol/d1", "vol/d2"])))
+        #expect(!held.wasFound(under: SearchParameters(documentIds: ["vol/d1"])), "a corpus applied since")
+        #expect(!held.wasFound(under: SearchParameters()), "a corpus left since")
+    }
+
+    // MARK: A ranking's unranked rows
+
+    @Test("A ranking's unranked rows begin where the first is shown, and only in its own order")
+    func unrankedTail() throws {
+        let ranked = ExecutedSearchRoute.rankedByMeaning(unranked: 2)
+        let shown = [row("d4", semantic: 0.9), row("d2", semantic: 0.5), row("d1"), row("d3")]
+        let tail = try #require(LayeredResultComposer.unrankedTail(of: shown, route: ranked, sortOrder: .relevance))
+        #expect(tail.firstId == "vol/d1" && tail.count == 2)
+        #expect(LayeredResultComposer.unrankedTail(of: shown, route: ranked, sortOrder: .dateAscending) == nil,
+                "under a date order the unranked rows are no longer together")
+        #expect(LayeredResultComposer.unrankedTail(of: Array(shown.prefix(2)), route: ranked, sortOrder: .relevance) == nil,
+                "every row shown is ranked")
+        #expect(LayeredResultComposer.unrankedTail(of: shown, route: .keywords, sortOrder: .relevance) == nil)
+        #expect(LayeredResultComposer.unrankedTail(of: shown, route: .wordsInMatches(base: 100),
+                                                   sortOrder: .relevance) == nil)
+    }
+
+    // MARK: What a layer's sentences owe
+
+    private func plainScope(loaded: Int, route: ExecutedSearchRoute, total: Int? = nil) -> ResultSetScope {
+        ResultSetScope(loaded: loaded, shown: loaded, fetchLimit: 1_000, totalMatchCount: total,
+                       documentsOnPage: min(loaded, 25), pageCount: max(1, (loaded + 24) / 25), route: route)
+    }
+
+    @Test("A layer's scope says its list, its filters and its cut, by route, and a list through one engine says none of them")
+    func describingALayer() {
+        let meaningList = base(query: "how did the embassy", rows: (1...10).map { row("d\($0)", semantic: 0.5) })
+        let rows = keywordRows(1_000)
+        let cutList = base(direction: .rankByMeaning, kind: .keywords, query: "negotiations", rows: rows,
+                           members: Array(rows.dropFirst(4)), route: .keywords, fetchLimit: 1_000, total: 35_275)
+
+        let words = plainScope(loaded: 3, route: .wordsInMatches(base: 10))
+            .describingLayer(over: meaningList, filtersNarrowed: true, sortOrder: .relevance)
+        #expect(words.layerFiltersNarrowed && words.layerBaseLabel == "“how did the embassy”")
+        #expect(words.layerBaseWasCut == nil && words.layerBaseHiddenByChecklist == 0,
+                "words found in a list are no ranking: the list's cut and hidden rows are not theirs to read")
+        #expect(words.headerDescription == "3 of your 10 closest matches contain these words and pass your filters")
+        let wordsUnfiltered = plainScope(loaded: 3, route: .wordsInMatches(base: 10))
+            .describingLayer(over: meaningList, filtersNarrowed: false, sortOrder: .relevance)
+        #expect(!wordsUnfiltered.layerFiltersNarrowed)
+
+        let ranking = plainScope(loaded: 996, route: .rankedByMeaning(unranked: 0), total: 35_275)
+            .describingLayer(over: cutList, filtersNarrowed: false, sortOrder: .relevance)
+        #expect(ranking.layerBaseWasCut == true && ranking.didHitFetchLimit, "the list was cut at its fetch")
+        #expect(ranking.layerBaseHiddenByChecklist == 4)
+        #expect(ranking.layerBaseLabel == "“negotiations”" && ranking.listIsInRankOrder)
+        let byDate = plainScope(loaded: 996, route: .rankedByMeaning(unranked: 0), total: 35_275)
+            .describingLayer(over: cutList, filtersNarrowed: false, sortOrder: .dateDescending)
+        #expect(!byDate.listIsInRankOrder && !byDate.headerDescription.contains("closest first"))
+        let rankingNoList = plainScope(loaded: 5, route: .rankedByMeaning(unranked: 0))
+            .describingLayer(over: nil, filtersNarrowed: true, sortOrder: .relevance)
+        #expect(rankingNoList.layerBaseLabel == nil && rankingNoList.layerBaseWasCut == nil
+                && rankingNoList.layerBaseHiddenByChecklist == 0)
+
+        let plain = plainScope(loaded: 1_000, route: .keywords, total: 35_275)
+            .describingLayer(over: cutList, filtersNarrowed: true, sortOrder: .dateAscending)
+        #expect(!plain.layerFiltersNarrowed && plain.layerBaseLabel == nil && plain.layerBaseWasCut == nil
+                && plain.layerBaseHiddenByChecklist == 0, "a list through one engine owes none of a layer's sentences")
+        #expect(!plain.listIsInRankOrder, "the order is the list's, whatever its route")
+    }
+
+    // MARK: The Mac's window
+
+    /// What the Mac's search task asks before it runs a search: whether rows put back on leaving a held list answer it.
+    @Test("A trigger answered by the rows put back is skipped once, and any other trigger is searched")
+    func answeredTrigger() {
+        // Each answer is taken into a constant first: `#expect` cannot call a mutating method.
+        var answered = AnsweredSearchTrigger()
+        let beforeAny = answered.consume("keywords|embassy|3")
+        #expect(!beforeAny, "nothing answered yet")
+        answered.answer("keywords|embassy|3")
+        let first = answered.consume("keywords|embassy|3")
+        let second = answered.consume("keywords|embassy|3")
+        #expect(first)
+        #expect(!second, "once: a later search of the same words runs")
+        answered.answer("meaning|how did the embassy|4")
+        let another = answered.consume("meaning|how did the embassy|5")
+        let afterAnother = answered.consume("meaning|how did the embassy|4")
+        #expect(!another, "a filter edited first is searched")
+        #expect(!afterAnother, "and the answer is forgotten once asked about")
+    }
+
+    @Test("The Mac's toolbar button keeps its title, and its help says which way it will run or why it will not")
+    func macCopy() {
+        #expect(SearchLayerCopy.searchWithinResults == "Search Within Results")
+        let words = SearchLayerCopy.searchWithinResultsHelp(.wordsInMatches, isHolding: false)
+        let rank = SearchLayerCopy.searchWithinResultsHelp(.rankByMeaning, isHolding: false)
+        let none = SearchLayerCopy.searchWithinResultsHelp(nil, isHolding: false)
+        let held = SearchLayerCopy.searchWithinResultsHelp(nil, isHolding: true)
+        #expect(Set([words, rank, none, held]).count == 4)
+        #expect(words.hasPrefix("Find words in these closest matches."))
+        #expect(rank.hasPrefix("Rank these results by a question."))
+        #expect(held.hasPrefix("You are searching within results already."))
+        #expect(SearchLayerCopy.heldEngineHelp(.keywords).contains("the field searches by Keywords."))
+        #expect(SearchLayerCopy.heldEngineHelp(.meaning).contains("the field searches by Meaning."))
     }
 }

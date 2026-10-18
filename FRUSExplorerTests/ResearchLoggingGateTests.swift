@@ -897,8 +897,8 @@ struct TrailCountParityTests {
         // A layer's row (#1577 lane 4) records the list it shows as its whole answer, the one difference.
         #expect(iOS.contains("resultCount: layer != nil ? results.count : (totalMatchCount ?? results.count)"))
         // macOS reaches the same value through `resultCountForDisplay`, which is defined as
-        // `totalMatchCount ?? results.count`.
-        #expect(mac.contains("resultCount: resultCountForDisplay"))
+        // `totalMatchCount ?? results.count`, and records a layer's rows whole too since #1577 lane 5.
+        #expect(mac.contains("resultCount: layer != nil ? results.count : resultCountForDisplay"))
         #expect(mac.contains("var resultCountForDisplay: Int { totalMatchCount ?? results.count }"))
         // Both go through the shared writer, and neither constructs an entry itself.
         for (name, source) in [("iOS", iOS), ("macOS", mac)] {
