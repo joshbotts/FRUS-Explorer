@@ -1143,13 +1143,13 @@ Ranked by meaning, not keywords, across the whole series — your exact words ma
      volume's fetch failed; the second otherwise. Both search surfaces read them from
      SemanticUnscoredCopy. %@ in each is the volume count with its noun ("1 volume", "12 volumes");
      the first was "%lld volumes" until review round 1 (2026-09-30), which read "1 volumes". -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 200–201 | key: search.semantic.empty.warming.v2 %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 370–371 | key: search.semantic.empty.warming.v2 %@ -->
 
 Match files for %@ are still downloading in the background. Searching again in a moment may find more.
 
 <!-- END SOURCE: search.semantic.empty.warming.v2 %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 205–206 | key: search.semantic.empty.notFetching %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 375–376 | key: search.semantic.empty.notFetching %@ -->
 
 Match files for %@ are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search.
 
@@ -1163,37 +1163,37 @@ Match files for %@ are required. Use Download Vectors for Every Volume in Settin
      device's copy of a volume does not hold); no document in the set has match data; the match
      files are downloading; or they are not on the device. The first is also the pre-search prompt for an
      empty set. In the last two %@ is the volume count with its noun. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 293–294 | key: search.semantic.empty.set.none -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 463–464 | key: search.semantic.empty.set.none -->
 
 The set you are searching within holds no documents on this device, so there is nothing to rank.
 
 <!-- END SOURCE: search.semantic.empty.set.none -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 298–299 | key: search.semantic.empty.set.filtered -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 468–469 | key: search.semantic.empty.set.filtered -->
 
 None of the closest matches inside the documents you are searching within passes your other filters.
 
 <!-- END SOURCE: search.semantic.empty.set.filtered -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 300–301 | key: search.semantic.empty.set.notIndexed -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 470–471 | key: search.semantic.empty.set.notIndexed -->
 
 None of the closest matches inside the documents you are searching within is indexed on this device.
 
 <!-- END SOURCE: search.semantic.empty.set.notIndexed -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 304–305 | key: search.semantic.empty.set.noVectors -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 474–475 | key: search.semantic.empty.set.noVectors -->
 
 None of the documents you are searching within can be ranked by meaning: the app has no match data for them. Front matter and chapter headings never have any.
 
 <!-- END SOURCE: search.semantic.empty.set.noVectors -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 309–310 | key: search.semantic.empty.set.warming %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 479–480 | key: search.semantic.empty.set.warming %@ -->
 
 Match files for %@ are still downloading in the background. Searching again in a moment may rank the documents you are searching within.
 
 <!-- END SOURCE: search.semantic.empty.set.warming %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 314–315 | key: search.semantic.empty.set.notFetching %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.emptyInsideSet | lines: 484–485 | key: search.semantic.empty.set.notFetching %@ -->
 
 The documents you are searching within could not be ranked: match files for %@ are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.
 
@@ -1201,7 +1201,7 @@ The documents you are searching within could not be ranked: match files for %@ a
 
 ---
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 106–107 | key: search.meaning.strip.base -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 234–235 | key: search.meaning.strip.base -->
 
 Meaning search (experimental): ranked by what your question means, across the whole series — your exact words may not appear. Front matter and chapter headings are not reachable this way.
 
@@ -1211,7 +1211,7 @@ Meaning search (experimental): ranked by what your question means, across the wh
      a project's History scope) ranks that set's members and no others, so the strip's opening
      names the set where it said "across the whole series". The block above is still what a search
      of the whole series shows. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 115–116 | key: search.meaning.strip.base.within %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 243–244 | key: search.meaning.strip.base.within %@ -->
 
 Meaning search (experimental): ranked by what your question means, inside the %@ you are searching within — your exact words may not appear. Front matter and chapter headings are not reachable this way. *(%@ is the set's size with its noun, “1 document” or “212 documents”.)*
 
@@ -1219,7 +1219,7 @@ Meaning search (experimental): ranked by what your question means, inside the %@
 
 <!-- The same opening when the set is empty here: a History scope with nothing in it yet, or a
      corpus and a History scope with no document in common. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 111–112 | key: search.meaning.strip.base.emptySet -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.opening | lines: 239–240 | key: search.meaning.strip.base.emptySet -->
 
 Meaning search (experimental): the set you are searching within holds no documents on this device, so there is nothing to rank.
 
@@ -1232,13 +1232,13 @@ Meaning search (experimental): the set you are searching within holds no documen
      removed since the build's match data was made. Such a match was dropped without a word, or
      counted under "Your filters removed" when any filter was set. One and many forms; %@ is the
      count. It names no cause, because the app cannot tell which applies. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 245–246 | key: search.meaning.strip.notIndexed.one -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 415–416 | key: search.meaning.strip.notIndexed.one -->
 
 %@ close match is not listed: this device's index does not hold that document.
 
 <!-- END SOURCE: search.meaning.strip.notIndexed.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 247–248 | key: search.meaning.strip.notIndexed.many -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.notIndexedHere | lines: 417–418 | key: search.meaning.strip.notIndexed.many -->
 
 %@ close matches are not listed: this device's index does not hold those documents.
 
@@ -1248,13 +1248,13 @@ Meaning search (experimental): the set you are searching within holds no documen
      forms; %@ is the count. Kept short: it follows the opening, which has just said that front
      matter and chapter headings are not reachable, and on an iPhone the strip sits above the
      results. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 265–266 | key: search.meaning.strip.withoutVector.one -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 435–436 | key: search.meaning.strip.withoutVector.one -->
 
 %@ document in the set has no match data and cannot be ranked.
 
 <!-- END SOURCE: search.meaning.strip.withoutVector.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 267–268 | key: search.meaning.strip.withoutVector.many -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.withoutVector | lines: 437–438 | key: search.meaning.strip.withoutVector.many -->
 
 %@ documents in the set have no match data and cannot be ranked.
 
@@ -1266,13 +1266,13 @@ Meaning search (experimental): the set you are searching within holds no documen
      ways: the count is of the reader's own documents ("12 documents", not "12 possible matches"),
      and the control named is Download Missing Vectors, which fetches files for downloaded volumes.
      %1$@ is the documents with their noun and %2$@ the volumes with theirs. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 222–223 | key: search.meaning.strip.unranked.downloading %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 392–393 | key: search.meaning.strip.unranked.downloading %@ %@ -->
 
 %1$@ in %2$@ could not be ranked yet; their match files are downloading.
 
 <!-- END SOURCE: search.meaning.strip.unranked.downloading %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 227–228 | key: search.meaning.strip.unranked.notFetching %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unranked | lines: 397–398 | key: search.meaning.strip.unranked.notFetching %@ %@ -->
 
 %1$@ in %2$@ could not be ranked: their match files are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.
 
@@ -1282,11 +1282,44 @@ Meaning search (experimental): the set you are searching within holds no documen
      active (#1127). The claim is precise: the volume scope IS checked for those matches, the other
      filters are NOT — a rewrite that says "filters are ignored" would claim too much, one that
      stays silent would claim too little. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.caption | lines: 74–75 | key: search.meaning.strip.beyondUnchecked -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.parts | lines: 202–203 | key: search.meaning.strip.beyondUnchecked -->
 
 Matches in volumes you have not downloaded are checked against your volume scope only, not your other filters.
 
 <!-- END SOURCE: search.meaning.strip.beyondUnchecked -->
+
+<!-- 2026-10-18, the strip at the accessibility text sizes (iPhone and iPad; the Mac's strip is
+     unchanged). There the strip is one row: these words, drawn at XXXL at most, and an ⓘ that opens
+     the whole strip in a sheet at the reader's own size, the opening and each disclosure a paragraph
+     of its own. VoiceOver reads the whole strip from the row, as at every size. Grown with the text,
+     the strip had pushed Search's controls and results off the screen. Keep the row's words short:
+     on an iPhone SE they share a line with the glyph and the ⓘ. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.rowTitle | lines: 142–142 | key: search.meaning.strip.row -->
+
+Meaning search (experimental)
+
+<!-- END SOURCE: search.meaning.strip.row -->
+
+<!-- The ⓘ's name, which VoiceOver reads and a touch and hold shows enlarged. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.wholeCaptionLabel | lines: 147–147 | key: search.meaning.strip.more.a11y -->
+
+About Meaning search
+
+<!-- END SOURCE: search.meaning.strip.more.a11y -->
+
+<!-- What the ⓘ does: VoiceOver's hint, read after its name. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.wholeCaptionHelp | lines: 152–153 | key: search.meaning.strip.more.help -->
+
+Shows the strip's whole text at your text size
+
+<!-- END SOURCE: search.meaning.strip.more.help -->
+
+<!-- The title of the sheet the ⓘ opens; its other control is the shared Done. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | property: SemanticModeStrip.sheetTitle | lines: 158–158 | key: search.meaning.strip.sheet.title -->
+
+Meaning Search
+
+<!-- END SOURCE: search.meaning.strip.sheet.title -->
 
 ---
 
@@ -2638,13 +2671,13 @@ Ask a question to rank the %@ you are searching within by meaning. *(%@ is the s
      above. In each, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
      ("1 possible match", "1 volume"), from the forms below; the first was "%lld … %lld" until review
      round 1 (2026-09-30), which read "1 possible matches in 1 volumes". -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 179–180 | key: search.semantic.results.unscored.v2 %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 349–350 | key: search.semantic.results.unscored.v2 %@ %@ -->
 
 %1$@ in %2$@ could not be scored yet; their match files are downloading.
 
 <!-- END SOURCE: search.semantic.results.unscored.v2 %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 184–185 | key: search.semantic.results.unscored.notFetching %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 354–355 | key: search.semantic.results.unscored.notFetching %@ %@ -->
 
 %1$@ in %2$@ could not be scored. Try Download Vectors for Every Volume in Settings to enable scoring.
 
