@@ -492,3 +492,325 @@ final class FilterVolumeListTests: XCTestCase {
         return offered
     }
 }
+
+// MARK: - MeaningStripFitTests
+
+/// Search in Meaning mode at five text sizes on the two iPhone widths: the Keywords | Meaning control, the actions bar
+/// and the Meaning strip under the search field, and a result between them and the tab shell's banner; and at AX5 the
+/// whole caption, a tap away.
+///
+/// ## The defect it guards
+/// The Meaning strip (`SemanticModeStrip`) is drawn in the top inset under the actions bar, and its sentences grew with
+/// the reader's text size. A Meaning search adds to its opening what the run could not do, and the fixture's near
+/// question gives it its longest caption: "77 close matches are not listed…" and "720 possible matches in 248 volumes
+/// could not be scored…" (the `MeaningResultsSeamTests` header says why). At the accessibility sizes the inset was then
+/// taller than the screen, and SwiftUI centres a view taller than its room, so the control and the actions bar went
+/// above the screen and the list below it. Found by #1577 lane 7 on an iPhone 17 (iOS 27.0): the More menu at y −394 at
+/// AX5, and no result row on screen at AX3 or AX5. A reader at those sizes could reach none of More, Sort or Filters in
+/// Meaning mode. On the code before the fix this suite failed at AX3 and AX5 on an iPhone 17, the strip 857 and 1,530
+/// points tall, and at AX1, AX3 and AX5 on an iPhone SE, 404, 896 and 1,785.
+///
+/// ## What it requires
+/// Once the near question has listed the fixture's three, with the keyboard put away (the tab shell's banner gives way
+/// to a keyboard, #1070): the control and the bar's five controls inside the window and under the search field's foot,
+/// the bar under the control and above the banner; the strip starting under the bar and above the banner, with every
+/// sentence of its caption in what VoiceOver reads; and the first result between the strip and the banner. At the
+/// accessibility sizes the strip is one row, its ⓘ inside it and the window and 44 points each way, no less, as a
+/// target, and no more, since the row is drawn at XXXL at most, and the row no taller than its ⓘ; at the standard
+/// sizes the strip is the whole caption and offers no ⓘ. It requires the banner, which a simulator with no
+/// iCloud account always shows, as `ResultSelectionBarFitTests` does. Each accessibility size proves it took effect by
+/// the search field's height, and every run prints `[Meaning strip]` lines with the frames, pass or fail, and attaches
+/// a screenshot of what it measured.
+///
+/// A sixth test opens the ⓘ at AX5 and requires the sheet to hold the whole caption, a paragraph to each part, starting
+/// under its navigation bar, and its Done to close it.
+///
+/// Every frame is read from one accessibility snapshot (`XCUIElement.snapshot()`), as `TabShellBannerClearanceTests`
+/// reads its lists: a query per frame costs 4 to 13 s under Xcode 27.1 (`SearchLayerBaseRowFitTests`).
+///
+/// ## Devices
+/// An iPhone 17 (402 pt) and an iPhone SE (3rd generation, 375 pt, iOS 27), as for the other suites that measure
+/// Search's top inset. It skips on an iPad.
+///
+/// Version history:
+///   1.0 — the Meaning strip at the accessibility sizes: initial implementation
+@MainActor
+final class MeaningStripFitTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// The search field's height at the default text size, measured once per run.
+    private static var defaultFieldHeight: CGFloat = 0
+    private static let phoneOnlyReason =
+        "iPhone-only: the suites that measure Search's top inset run on the two iPhone widths, where it is tightest"
+    /// How every caption of the strip begins, and the row's own words at the accessibility sizes.
+    private static let stripOpening = "Meaning search (experimental)"
+    /// What only the near question's run that listed the fixture's three adds to the strip: of its 80 hits in the real
+    /// volume the fixture holds three, and 720 of its 800 candidates lie in volumes the seam has no match file for.
+    private static let disclosures = ["77 close matches are not listed",
+                                      "720 possible matches in 248 volumes could not be scored"]
+    /// The actions bar's controls, in the order the row lays them out.
+    private static let barIdentifiers = ["search.actions.filter", "search.actions.examine", "search.actions.checklist",
+                                         "search.actions.sort", "search.actions.more"]
+    /// The title of the sheet the strip's ⓘ opens (`SemanticModeStrip.sheetTitle`).
+    private static let sheetTitle = "Meaning Search"
+
+    override func tearDown() async throws {
+        if let app {
+            LayerScreen(app: app).leave()
+            app.terminate()
+        }
+        app = nil
+    }
+
+    func testMeaningStripFitsAtStandardSize() throws { try assertMeaningScreenFits(at: nil, named: "L") }
+    func testMeaningStripFitsAtLargestStandardSize() throws {
+        try assertMeaningScreenFits(at: "UICTContentSizeCategoryXXXL", named: "XXXL")
+    }
+    func testMeaningStripFitsAtFirstAccessibilitySize() throws {
+        try assertMeaningScreenFits(at: "UICTContentSizeCategoryAccessibilityM", named: "AX1")
+    }
+    func testMeaningStripFitsAtMiddleAccessibilitySize() throws {
+        try assertMeaningScreenFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3")
+    }
+    func testMeaningStripFitsAtLargestAccessibilitySize() throws {
+        try assertMeaningScreenFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5")
+    }
+
+    /// The strip's ⓘ at AX5 opens the whole caption at the reader's size, a paragraph to each part.
+    func testTheWholeCaptionOpensFromTheStripAtLargestAccessibilitySize() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
+        launch(at: "UICTContentSizeCategoryAccessibilityXXXL")
+        let screen = LayerScreen(app: app)
+        screen.chooseMeaning()
+        askUntilTheStripDiscloses(screen, at: "AX5")
+        screen.putTheKeyboardAway()
+
+        let more = screen.element("search.meaning.strip.more")
+        XCTAssertTrue(more.waitForExistence(timeout: LayerScreen.patience), "The strip offers no ⓘ at AX5")
+        XCTAssertEqual(more.label, "About Meaning search", "The ⓘ's name for VoiceOver")
+        more.tap()
+        let sheet = app.navigationBars[Self.sheetTitle]
+        XCTAssertTrue(sheet.waitForExistence(timeout: LayerScreen.patience), "The ⓘ opened no \(Self.sheetTitle) sheet")
+
+        // Each part of the caption is a paragraph of its own, the opening first. The paragraphs are read by their
+        // identifier and from one snapshot: the row behind the sheet begins with the opening's words too.
+        let part = app.staticTexts.matching(identifier: "search.meaning.strip.sheet.part")
+        XCTAssertTrue(part.element(boundBy: Self.disclosures.count).waitForExistence(timeout: LayerScreen.patience),
+                      "The sheet does not hold the opening and the \(Self.disclosures.count) disclosures as paragraphs")
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "The whole caption at AX5"
+        shot.lifetime = .keepAlways
+        add(shot)
+        var paragraphs: [(frame: CGRect, label: String)] = []
+        func collect(_ node: XCUIElementSnapshot) {
+            if node.identifier == "search.meaning.strip.sheet.part" { paragraphs.append((node.frame, node.label)) }
+            node.children.forEach(collect)
+        }
+        collect(try app.snapshot())
+        let barFoot = sheet.frame.maxY
+        print("[Meaning strip] sheet: bar foot \(Int(barFoot)), paragraphs at y "
+              + paragraphs.map { Self.span($0.frame) }.joined(separator: ", "))
+        XCTAssertEqual(paragraphs.count, 1 + Self.disclosures.count, "The sheet's paragraphs: \(paragraphs.map(\.label))")
+        for (paragraph, start) in zip(paragraphs, [Self.stripOpening] + Self.disclosures) {
+            XCTAssertTrue(paragraph.label.hasPrefix(start), "A paragraph of the sheet begins \"\(paragraph.label.prefix(40))\", "
+                          + "where the caption's part begins \"\(start)\"")
+        }
+        let opening = try XCTUnwrap(paragraphs.first).frame
+        XCTAssertGreaterThanOrEqual(opening.minY, barFoot - 0.5, "The sheet's opening is behind its navigation bar")
+        XCTAssertLessThan(opening.minY, app.windows.firstMatch.frame.maxY, "The sheet's opening is below the screen")
+        XCTAssertTrue(zip(paragraphs, paragraphs.dropFirst()).allSatisfy { $0.frame.maxY <= $1.frame.minY + 0.5 },
+                      "The sheet's paragraphs are not one under another, in the caption's order")
+        // Done closes it.
+        sheet.buttons["Done"].firstMatch.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: sheet)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: LayerScreen.patience), .completed, "Done left the sheet open")
+    }
+
+    private func assertMeaningScreenFits(at category: String?, named size: String) throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
+        if Self.defaultFieldHeight == 0 {
+            launch(at: nil)
+            let field = app.searchFields.firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: LayerScreen.patience), "The Search tab shows no search field")
+            Self.defaultFieldHeight = field.frame.height
+        }
+        launch(at: category)
+        let screen = LayerScreen(app: app)
+        screen.chooseMeaning()
+        askUntilTheStripDiscloses(screen, at: size)
+        // The layout a reader reads the list in: the keyboard the search raised put away, and the banner back.
+        screen.putTheKeyboardAway()
+        // Up for as long as no iCloud account syncs, so always on a test simulator with the keyboard away:
+        // `ResultSelectionBarFitTests` relies on it the same way.
+        XCTAssertTrue(screen.element("tabShell.syncBanner").waitForExistence(timeout: LayerScreen.patience),
+                      "The tab shell's banner is not showing, so nothing here is measured against it")
+
+        let reading = try MeaningScreenReading(app.snapshot(), stripOpening: Self.stripOpening,
+                                               barIdentifiers: Self.barIdentifiers)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Meaning strip at \(size)"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        let window = reading.window
+        let barFrames = Self.barIdentifiers.compactMap { identifier in reading.bar[identifier].map { (identifier, $0) } }
+        let barTop = barFrames.map(\.1.minY).min() ?? 0
+        let barFoot = barFrames.map(\.1.maxY).max() ?? 0
+        // The measurement record, printed before anything is required of it.
+        print("[Meaning strip] \(size) window \(Int(window.width))x\(Int(window.height)) "
+              + "field foot \(reading.field.map { String(Int($0.maxY)) } ?? "none") "
+              + "control y \(Self.span(reading.picker)) bar y \(Int(barTop))–\(Int(barFoot)) "
+              + "x \(Int(barFrames.map(\.1.minX).min() ?? 0))–\(Int(barFrames.map(\.1.maxX).max() ?? 0)) "
+              + "more y \(Self.span(reading.bar["search.actions.more"])) "
+              + "strip y \(Self.span(reading.stripFrame)) (\(reading.stripFrame.map { String(Int($0.height)) } ?? "no") pt) "
+              + "ⓘ \(reading.wholeCaptionButton.map { "x \(Int($0.minX))–\(Int($0.maxX)) \(Int($0.width))x\(Int($0.height))" } ?? "none") "
+              + "banner top \(reading.banner.map { String(Int($0.minY)) } ?? "none") "
+              + "first row top \(reading.firstRowTop.map { String(Int($0)) } ?? "none")")
+        let field = try XCTUnwrap(reading.field, "The snapshot holds no search field at \(size)")
+        let picker = try XCTUnwrap(reading.picker, "The snapshot holds no Keywords | Meaning control at \(size)")
+        XCTAssertEqual(barFrames.map(\.0), Self.barIdentifiers, "The snapshot does not hold the whole actions bar at \(size)")
+        let strip = try XCTUnwrap(reading.stripFrame, "The snapshot holds no Meaning strip at \(size)")
+        let speech = try XCTUnwrap(reading.stripSpeech, "Nothing VoiceOver reads begins \"\(Self.stripOpening)\" at \(size)")
+        let bannerTop = try XCTUnwrap(reading.banner, "The snapshot holds no banner at \(size)").minY
+
+        // The control and the bar inside the window, under the search field, the bar under the control.
+        for (name, frame) in [("the Keywords | Meaning control", picker)] + barFrames {
+            XCTAssertGreaterThanOrEqual(frame.minY, field.maxY - 0.5,
+                                        "\(name) is above the screen or behind the search field at \(size): \(frame)")
+            XCTAssertGreaterThanOrEqual(frame.minX, 0, "\(name) runs off the leading edge at \(size): \(frame)")
+            XCTAssertLessThanOrEqual(frame.maxX, window.maxX + 0.5, "\(name) runs off the trailing edge at \(size): \(frame)")
+            XCTAssertGreaterThan(frame.width, 0, "\(name) has no width at \(size)")
+        }
+        XCTAssertGreaterThanOrEqual(barTop, picker.maxY - 0.5,
+                                    "The actions bar is drawn over the Keywords | Meaning control at \(size)")
+        XCTAssertLessThanOrEqual(barFoot, bannerTop + 0.5, "The actions bar is under the banner at \(size)")
+        // The strip starts under the bar, on screen, and VoiceOver reads the whole of it.
+        XCTAssertGreaterThanOrEqual(strip.minY, barFoot - 0.5, "The strip is drawn over the actions bar at \(size)")
+        XCTAssertLessThan(strip.minY, bannerTop, "The strip starts under the banner at \(size)")
+        for disclosure in Self.disclosures {
+            XCTAssertTrue(speech.contains(disclosure),
+                          "VoiceOver does not read \"\(disclosure)\" in the strip at \(size): \(speech)")
+        }
+        // At the accessibility sizes the strip is one row with its ⓘ in it; at the standard sizes it is the caption.
+        if let category, category.contains("Accessibility") {
+            let more = try XCTUnwrap(reading.wholeCaptionButton, "The strip offers no ⓘ at \(size)")
+            XCTAssertGreaterThanOrEqual(more.minX, 0, "The ⓘ runs off the leading edge at \(size): \(more)")
+            XCTAssertLessThanOrEqual(more.maxX, window.maxX + 0.5, "The ⓘ runs off the trailing edge at \(size): \(more)")
+            XCTAssertGreaterThanOrEqual(more.width, 44 - 0.5, "The ⓘ is under 44 points wide at \(size)")
+            XCTAssertGreaterThanOrEqual(more.height, 44 - 0.5, "The ⓘ is under 44 points tall at \(size)")
+            XCTAssertGreaterThanOrEqual(more.minY, strip.minY - 0.5, "The ⓘ is above the strip at \(size)")
+            XCTAssertLessThanOrEqual(more.maxY, strip.maxY + 0.5, "The ⓘ is below the strip at \(size)")
+            // Drawn at XXXL at most, the row keeps to its ⓘ's 44 points. Uncapped, the ⓘ grew to 62 points at AX5 on
+            // an iPhone SE and the row's words were cut to "Meaning…", which no frame shows; at AX3 the row took 77.
+            XCTAssertLessThanOrEqual(max(more.width, more.height), 44 + 0.5,
+                                     "The ⓘ grew past 44 points at \(size): the row is not drawn at XXXL at most")
+            XCTAssertLessThanOrEqual(strip.height, more.height + 0.5,
+                                     "The row is taller than its ⓘ at \(size): its words take more than one line")
+        } else {
+            XCTAssertNil(reading.wholeCaptionButton, "The strip offers its ⓘ at \(size), a standard size")
+        }
+        // A result starts between the strip and the banner.
+        let rowTop = try XCTUnwrap(reading.firstRowTop, "no result row is in the tree at \(size)")
+        XCTAssertGreaterThanOrEqual(rowTop, strip.maxY - 0.5, "the first result is drawn over the strip at \(size)")
+        XCTAssertLessThan(rowTop, bannerTop, "no result starts above the banner at \(size)")
+
+        // The category really applied.
+        if let category, category.contains("Accessibility") {
+            XCTAssertGreaterThan(field.height, Self.defaultFieldHeight + 1, """
+                \(size) rendered the search field at its default height (\(field.height) vs \(Self.defaultFieldHeight)): \
+                the content-size category did not take effect, so this run says nothing
+                """)
+        }
+    }
+
+    /// Submits the near question until the strip says what only the run that listed the fixture's three says. The
+    /// fixture is indexed during launch, and a Meaning search that runs first lists none of it, with every one of its
+    /// 80 hits not listed. The wait is on the strip and not on the rows: on the code before the fix the list was below
+    /// the screen at AX3 and AX5, and a list draws only the rows near the screen, so there was no row to wait for.
+    private func askUntilTheStripDiscloses(_ screen: LayerScreen, at size: String,
+                                           file: StaticString = #filePath, line: UInt = #line) {
+        // Any element: at the accessibility sizes the caption is what VoiceOver reads of the row's words, not the
+        // words drawn.
+        let disclosed = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", Self.disclosures[0])).firstMatch
+        for _ in 1...5 {
+            screen.submit(LayerScreen.nearQuestion, file: file, line: line)
+            if disclosed.waitForExistence(timeout: 12) { return }
+        }
+        XCTFail("At \(size) the strip never said \"\(Self.disclosures[0])\"; texts on screen: "
+                + app.staticTexts.allElementsBoundByIndex.prefix(40).map { "\"\($0.label)\"" }.joined(separator: ", "),
+                file: file, line: line)
+    }
+
+    private func launch(at category: String?) {
+        if let app {
+            LayerScreen(app: app).leave()
+            app.terminate()
+        }
+        app = LayerScreen.launch(contentSizeCategory: category)
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+    }
+
+    /// A frame's vertical extent, to the point, or "none".
+    private static func span(_ frame: CGRect?) -> String {
+        frame.map { "\(Int($0.minY))–\(Int($0.maxY))" } ?? "none"
+    }
+}
+
+/// What `MeaningStripFitTests` measures, read from one accessibility snapshot of the app.
+@MainActor
+private struct MeaningScreenReading {
+    /// The window's frame.
+    private(set) var window: CGRect = .zero
+    /// The search field's frame.
+    private(set) var field: CGRect?
+    /// The Keywords | Meaning control's frame.
+    private(set) var picker: CGRect?
+    /// The actions bar's controls' frames, by identifier.
+    private(set) var bar: [String: CGRect] = [:]
+    /// The Meaning strip's frame: the row's at the accessibility sizes, the caption's otherwise.
+    var stripFrame: CGRect? { row ?? caption?.frame }
+    /// What VoiceOver reads of the strip: the caption's label, at the accessibility sizes the row's words'.
+    var stripSpeech: String? { caption?.label }
+    /// The ⓘ that opens the whole caption, which the strip offers at the accessibility sizes.
+    private(set) var wholeCaptionButton: CGRect?
+    /// The tab shell's banner's frame.
+    private(set) var banner: CGRect?
+    /// The top of the highest fixture row in the tree.
+    private(set) var firstRowTop: CGFloat?
+
+    /// The strip's row, at the accessibility sizes.
+    private var row: CGRect?
+    /// The first element whose label begins as the strip does, and that label.
+    private var caption: (frame: CGRect, label: String)?
+    private let stripOpening: String
+    private let barIdentifiers: Set<String>
+
+    init(_ root: XCUIElementSnapshot, stripOpening: String, barIdentifiers: [String]) {
+        self.stripOpening = stripOpening
+        self.barIdentifiers = Set(barIdentifiers)
+        window = root.children.first { $0.elementType == .window }?.frame ?? root.frame
+        visit(root)
+    }
+
+    /// Takes each element the first time the walk meets it, in the tree's order, as a query's `firstMatch` does.
+    private mutating func visit(_ node: XCUIElementSnapshot) {
+        let frame = node.frame
+        if field == nil, node.elementType == .searchField { field = frame }
+        if picker == nil, node.elementType == .segmentedControl,
+           node.children.contains(where: { $0.identifier == "Keywords" || $0.label == "Keywords" }) {
+            picker = frame
+        }
+        if barIdentifiers.contains(node.identifier), bar[node.identifier] == nil { bar[node.identifier] = frame }
+        if row == nil, node.identifier == "search.meaning.strip" { row = frame }
+        if caption == nil, node.label.hasPrefix(stripOpening) { caption = (frame, node.label) }
+        if wholeCaptionButton == nil, node.identifier == "search.meaning.strip.more" { wholeCaptionButton = frame }
+        if banner == nil, node.identifier == "tabShell.syncBanner" { banner = frame }
+        if node.elementType == .button, node.label.hasPrefix(LayerScreen.titlePrefix) {
+            firstRowTop = min(firstRowTop ?? frame.minY, frame.minY)
+        }
+        for child in node.children { visit(child) }
+    }
+}
