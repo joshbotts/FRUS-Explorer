@@ -256,6 +256,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          `SearchLayerEmptyState`; a ranking's unranked rows follow a line that counts them. Save this search is off
 ///          while a base is held, the Meaning strip waits until a question has ranked a held list, and the More menu's
 ///          help is `.v4`. Select Results is off while a search runs (#1683)
+///   1.32 — 2026-10-18: More ▸ Save this search presents `SaveSearchSheet` from a `SaveSearchRequest`, which carries
+///          the name it offers and the search it saves. The sheet was built from a name and a Bool set beside it,
+///          which the body never read, so it opened with its Save off until the name was edited.
 
 struct SearchView: View {
 
@@ -400,7 +403,9 @@ struct SearchView: View {
     @AppStorage(SearchCollocationDefaults.orderKey)
     private var collocationOrderRaw = CollocationOrder.evidence.rawValue
     @State private var isLoadingConcordance = false
-    @State private var showSaveSearchSheet = false
+    /// What More ▸ Save this search names and saves, from the tap until the sheet closes: one item, not a name beside a
+    /// Bool (`SaveSearchRequest` says why).
+    @State private var saveSearchRequest: SaveSearchRequest? = nil
     @State private var showSavedSearches = false
     /// #265: the corpus-wide abbreviation lookup.
     @State private var showGlossaryLookup = false
@@ -408,7 +413,6 @@ struct SearchView: View {
     /// the iPadOS Find menu. iOS-only in effect: the macOS window is `SearchSheet`, which has its own Tips panel.
     @State private var showSearchTips = false
     @State private var showCitationLookup = false
-    @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
     @State private var archivalNeighborsTarget: ArchivalNeighborsDocKey? = nil
     /// A command chosen on a result row, with its documents frozen (#1576 lane 2). Presented by
@@ -731,8 +735,10 @@ struct SearchView: View {
                         AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
                     }
                 }
-                .sheet(isPresented: $showSaveSearchSheet) {
-                    saveSearchSheet
+                .sheet(item: $saveSearchRequest) { request in
+                    SaveSearchSheet(request: request) { name in
+                        modelContext.insert(SavedSearch(name: name, parameters: request.parameters))
+                    }
                 }
                 .sheet(isPresented: $showSavedSearches) {
                     SavedSearchesView { saved in
@@ -1288,8 +1294,7 @@ struct SearchView: View {
     private var moreMenu: some View {
         Menu {
             Button {
-                saveSearchName = vm.keywords.trimmingCharacters(in: .whitespaces)
-                showSaveSearchSheet = true
+                saveSearchRequest = SaveSearchRequest(words: vm.keywords, parameters: vm.searchParameters)
             } label: {
                 Label {
                     Text(String(localized: "search.saveSearch.a11y", defaultValue: "Save this search"))
@@ -2186,66 +2191,6 @@ struct SearchView: View {
         #endif
         #if DEBUG
         print("[SearchView] Over-cap handoff to Analytics — term: \"\(term)\", years: \(String(describing: startYear))–\(String(describing: endYear))")
-        #endif
-    }
-
-    // MARK: - Save Search Sheet
-
-    private var saveSearchSheet: some View {
-        NavigationStack {
-            Form {
-                // These two keys were swapped relative to the macOS sheet: iOS had the section
-                // titled "Search Name" with a "Name" placeholder, macOS the reverse. Same keys,
-                // so one of the two was always going to be wrong once a catalog ships.
-                Section(String(localized: "search.saveSearch.section",
-                               defaultValue: "Name")) {
-                    TextField(
-                        String(localized: "search.saveSearch.placeholder",
-                               defaultValue: "Name this search"),
-                        text: $saveSearchName
-                    )
-                }
-                if !vm.keywords.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Section(String(localized: "search.saveSearch.query",
-                                   defaultValue: "Query")) {
-                        Text(vm.keywords)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                // #756 retired the #258 Q4(a) disclosure — see the macOS twin for the reasoning.
-                // The volume scope IS saved now, so the notice had become a false warning asking
-                // users to redo work the app had already done. (#258 called the real fix "the
-                // named fast-follow"; this is it, arriving as one archived value rather than the
-                // one additive field it imagined.)
-            }
-            .navigationTitle(String(localized: "search.saveSearch.title",
-                                    defaultValue: "Save Search"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "search.saveSearch.save",
-                                  defaultValue: "Save")) {
-                        let record = SavedSearch(
-                            name: saveSearchName.trimmingCharacters(in: .whitespaces),
-                            parameters: vm.searchParameters
-                        )
-                        modelContext.insert(record)
-                        showSaveSearchSheet = false
-                    }
-                    .disabled(saveSearchName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "search.saveSearch.cancel",
-                                  defaultValue: "Cancel")) {
-                        showSaveSearchSheet = false
-                    }
-                }
-            }
-        }
-        #if os(macOS)
-        .frame(minWidth: 340, minHeight: 180)
         #endif
     }
 
