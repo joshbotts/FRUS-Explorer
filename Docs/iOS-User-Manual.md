@@ -704,6 +704,12 @@ your submitted query runs through. In Meaning mode:
   Matches in volumes you have not downloaded are listed separately below the results ("In
   volumes you have not downloaded"), checked against your volume scope only — the strip
   discloses that too.
+- **At the largest text sizes the strip is one line**, *Meaning search (experimental)*, with an
+  ⓘ at its end, so that the Keywords | Meaning control, the actions bar and the results keep
+  their place on the screen. Tap the ⓘ to read everything the strip says at your text size, one
+  paragraph to each part, and **Done** to close it; VoiceOver reads all of it from the line. These
+  are the five accessibility sizes under **Larger Text** in Settings → Accessibility → Display &
+  Text Size.
 - **Keyword-only readings close**: the binoculars menu — Timeline, Concordance, Collocates and
   Facets — is disabled, and **Visualize in Corpus Analytics** is not offered, rather than
   describing a different query. The Query Inspector's MATCH strip is replaced by the Meaning strip, since no FTS

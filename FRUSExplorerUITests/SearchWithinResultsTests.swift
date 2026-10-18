@@ -554,18 +554,16 @@ final class SearchWithinTheWholeMatchTests: XCTestCase {
 /// the field the keyboard, and the banner gives way to a keyboard (#1070), so the layout is measured as a reader reads
 /// the list, with the keyboard put away. Each accessibility size proves it took effect by the search field's height.
 ///
-/// Each size is measured once with a held keyword list, before a search has run inside it. Since #1577 lane 7, L, XXXL
-/// and AX1 are measured a second time, with Swap on the row, which it offers once a search has run inside the list: the
-/// near question's Meaning list, whose sentence is the longest the fixture gives the row, held, with words found in it.
-/// Swap narrows the sentence's column, so the row is measured where it is narrowest too: Swap after the sentence and
-/// before the ✕, inside the window, 44 points tall, and a result still above the banner.
+/// Each size is measured once with a held keyword list, before a search has run inside it. Since #1577 lane 7 each is
+/// measured a second time, with Swap on the row, which it offers once a search has run inside the list: the near
+/// question's Meaning list, whose sentence is the longest the fixture gives the row, held, with words found in it. Swap
+/// narrows the sentence's column, so the row is measured where it is narrowest too: Swap after the sentence and before
+/// the ✕, inside the window, 44 points tall, and a result still above the banner.
 ///
-/// **Not at AX3 and AX5, and why.** The way to that row passes through a plain Meaning list, and at AX3 and AX5 its
-/// Meaning strip makes the top inset taller than an iPhone 17's screen: SwiftUI centres it, the More menu sat at y −394
-/// and the list below the screen, so the near question listed nothing on screen (measured 2026-10-18; lane 4 recorded
-/// that no suite measured plain Meaning mode at those sizes). That is the strip's, before any list is held, and not the
-/// row's. And from AX1 up the row is drawn alike, at XXXL in two lines at most: the first measurement put its sentence
-/// at x 51–342 at AX1, AX3 and AX5. So AX1's second measurement is the row with Swap at every accessibility size.
+/// The way to that row passes through a plain Meaning list. Lane 7 measured it at L, XXXL and AX1 only: at AX3 and AX5
+/// the Meaning strip made the top inset taller than an iPhone 17's screen, SwiftUI centred it, and the More menu sat at
+/// y −394 with the list below the screen. Since the strip's fix (2026-10-18, `MeaningStripFitTests`) the strip is one
+/// row at the accessibility sizes, and all five sizes measure the row with Swap.
 ///
 /// ## Devices
 /// An iPhone 17 (402 pt) and an iPhone SE (3rd generation, 375 pt, iOS 27). It skips at iPad width, where the row fits
@@ -574,6 +572,7 @@ final class SearchWithinTheWholeMatchTests: XCTestCase {
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — #1577 lane 7: L, XXXL and AX1 measured again with Swap on the row
+///   1.2 — 2026-10-18: AX3 and AX5 measured with Swap too, since the Meaning strip's fix
 @MainActor
 final class SearchLayerBaseRowFitTests: XCTestCase {
 
@@ -593,23 +592,21 @@ final class SearchLayerBaseRowFitTests: XCTestCase {
         app = nil
     }
 
-    func testBaseRowFitsAtStandardSize() throws { try assertBaseRowFits(at: nil, named: "L", withSwap: true) }
+    func testBaseRowFitsAtStandardSize() throws { try assertBaseRowFits(at: nil, named: "L") }
     func testBaseRowFitsAtLargestStandardSize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryXXXL", named: "XXXL", withSwap: true)
+        try assertBaseRowFits(at: "UICTContentSizeCategoryXXXL", named: "XXXL")
     }
     func testBaseRowFitsAtFirstAccessibilitySize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityM", named: "AX1", withSwap: true)
+        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityM", named: "AX1")
     }
-    /// With no second measurement: see the suite's note on AX3 and AX5.
     func testBaseRowFitsAtMiddleAccessibilitySize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3", withSwap: false)
+        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3")
     }
-    /// With no second measurement: see the suite's note on AX3 and AX5.
     func testBaseRowFitsAtLargestAccessibilitySize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5", withSwap: false)
+        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5")
     }
 
-    private func assertBaseRowFits(at category: String?, named size: String, withSwap: Bool) throws {
+    private func assertBaseRowFits(at category: String?, named size: String) throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
         if Self.defaultFieldHeight == 0 {
             launch(at: nil)
@@ -686,7 +683,7 @@ final class SearchLayerBaseRowFitTests: XCTestCase {
                 """)
         }
 
-        if withSwap { try assertTheRowWithSwapFits(at: size, screen: screen) }
+        try assertTheRowWithSwapFits(at: size, screen: screen)
     }
 
     /// The row with Swap on it (#1577 lane 7): the near question's Meaning list held, whose sentence is the longest the
