@@ -983,8 +983,10 @@ struct SemanticSetRecordAndCopyTests {
             "var documentSetSize: Int? { searchParameters.documentIds?.count }")))
         #expect(mac.contains(Self.squeezed(
             "let outcome = try await backend.run(query: query, parameters: parameters)")))
+        // A plain Meaning run holds no list, so its parameters are the window's; while a list is held a question
+        // ranks it, with the list joined to the gate, and the strip counts that set (#1577 lane 5).
         #expect(mac.contains(Self.squeezed(
-            "var documentSetSize: Int? { parameters.documentIds?.count }")))
+            "var documentSetSize: Int? { LayeredResultComposer.gating(parameters, inside: pinnedBase).documentIds?.count }")))
     }
 
     /// Two places clear a search's rows without running one: the emptied field on iPhone and

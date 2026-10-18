@@ -99,6 +99,10 @@ import Observation
 ///          `PinnedResultBase`, the field then runs the other engine inside it (`search()`'s layer), and
 ///          `leaveBase()` puts the list and its figures back with no search. Every hand-off leaves the base; Clear
 ///          Filters does not. A layer never overwrites the base's trail row, and keeps the checklist's marks
+///   2.10 — #1577 lane 5: the rules a list is held by, its filters' narrowing, its unranked rows' line and the
+///          layer's scope sentences are read from `PinnedResultBase`, `LayeredResultComposer` and
+///          `ResultSetScope.describingLayer(over:filtersNarrowed:sortOrder:)`, which the Mac's window reads too; the
+///          held list is built from `displayedResults`, in the search's order, as before
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -1085,25 +1089,13 @@ final class SearchViewModel {
     @discardableResult
     func holdBase(meaningAvailable: Bool) -> PinnedResultBase? {
         guard let direction = layerDirection(meaningAvailable: meaningAvailable) else { return nil }
-        let hidden = hiddenReviewedKeys
-        let members = hidden.isEmpty ? results : results.filter {
-            !hidden.contains(Self.reviewedKey(volumeId: $0.volumeId, documentId: $0.documentId))
-        }
-        let kind: PinnedResultBase.Kind
-        // A list restored with a phrase or a prefix and no typed words (an older saved search's) is a
-        // keyword list all the same, named by those words.
-        var describedQuery: String?
-        switch executedRoute {
-        case .meaning: kind = .meaning
-        default:
-            if submittedQuery.isEmpty, case .match(let ran)? = userTagCountScope,
-               let words = PinnedResultBase.describedWords(phrase: ran.phrase, prefix: ran.prefixWildcard) {
-                kind = .keywords
-                describedQuery = words
-            } else {
-                kind = submittedQuery.isEmpty ? .browse(name: browseName) : .keywords
-            }
-        }
+        // The list as shown, in the search's own order; the rules are `PinnedResultBase`'s, which the Mac's window
+        // holds a list by too (#1577 lane 5). A list restored with a phrase or a prefix and no typed words (an older
+        // saved search's) is a keyword list all the same, named by those words.
+        let members = PinnedResultBase.members(of: results, shown: displayedResults)
+        let (kind, describedQuery) = PinnedResultBase.kind(route: executedRoute, query: submittedQuery,
+                                                           ran: userTagCountScope?.ranParameters,
+                                                           browseName: browseName)
         let base = PinnedResultBase(
             direction: direction,
             kind: kind,
@@ -1143,19 +1135,9 @@ final class SearchViewModel {
     }
 
     /// What a browse with no words is of, for the row that names it as a held base: the person, the
-    /// topic or the subject area its filter names, in that order, or `nil` when none has a name.
-    var browseName: String? {
-        if personRollupId != nil || !personRefText.trimmingCharacters(in: .whitespaces).isEmpty,
-           let personLabel, !personLabel.isEmpty {
-            return personLabel
-        }
-        if subjectRef != nil, let subjectName, !subjectName.isEmpty { return subjectName }
-        if let bucket = subjectBucketKey
-            .flatMap({ DocumentSubjectStore.shared?.bucketVocabulary.id(forKey: $0) }) ?? subjectBucket {
-            return DocumentSubjectStore.shared?.bucketVocabulary.label(at: bucket)
-        }
-        return nil
-    }
+    /// topic or the subject area its filter names, in that order, or `nil` when none has a name
+    /// (`PinnedResultBase.browseName(of:)`, the rule the Mac's window names a browse by too).
+    var browseName: String? { PinnedResultBase.browseName(of: parametersOutsideBase) }
 
     /// Leaves the held base: its rows and every figure come back from memory with no search, the field
     /// holds the base's words again and the Keywords | Meaning control its engine (#1577 lane 4).
@@ -1274,12 +1256,10 @@ final class SearchViewModel {
 
     /// Where a ranking's unranked rows begin in the list as shown, and how many it shows (#1577 lane 4): the line
     /// that counts them goes above the first. `nil` outside a ranking of a held list, with every row ranked, and under
-    /// a date order, where the unranked rows are no longer together at the end.
+    /// a date order, where the unranked rows are no longer together at the end
+    /// (`LayeredResultComposer.unrankedTail(of:route:sortOrder:)`, which the Mac's window reads too).
     var unrankedTail: (firstId: String, count: Int)? {
-        guard case .rankedByMeaning = executedRoute, sortOrder == .relevance else { return nil }
-        let unranked = displayedResults.filter { $0.semanticScore == nil }
-        guard let first = unranked.first else { return nil }
-        return (first.id, unranked.count)
+        LayeredResultComposer.unrankedTail(of: displayedResults, route: executedRoute, sortOrder: sortOrder)
     }
 
     /// The parameters with the held base joined to the document gate, or without it.
@@ -1329,9 +1309,7 @@ final class SearchViewModel {
         let base = pinnedBase
         // A filter narrows the words only where one is set and it is not one the list ran under: a
         // filter taken away since the list was held removes none of its rows (the review's finding).
-        let filtersNarrowed = base.map {
-            hasActiveFilters && SearchScopeSignature.signature(for: parametersOutsideBase) != $0.filterSignature
-        } ?? false
+        let filtersNarrowed = base?.filtersNarrow(parametersOutsideBase) ?? false
         // A person or subject filter is a valid standalone constraint — `SearchService`
         // applies it SQL-side, so "Find all mentions" handoffs (which carry only
         // a `personRef`) can run without a keyword. Before Session 162 this guard
@@ -1734,25 +1712,16 @@ final class SearchViewModel {
     /// It also read the picker for the engine (#1597). Here both come from the run that produced the
     /// rows, and a test can read the result without a view.
     var resultSetScope: ResultSetScope {
-        let layered = executedRoute.isLayer
-        var ranking = false
-        if case .rankedByMeaning = executedRoute { ranking = true }
-        return ResultSetScope(loaded: results.count,
-                              shown: displayedResults.count,
-                              fetchLimit: lastFetchLimit,
-                              totalMatchCount: totalMatchCount,
-                              documentsOnPage: pagedResults.count,
-                              pageCount: totalPages,
-                              appliedCorpusTruncation: appliedWorkingCorpusTruncation,
-                              route: executedRoute,
-                              // #1577 lane 4: what a layer's sentences owe.
-                              layerFiltersNarrowed: layered && lastLayerFiltersNarrowed,
-                              listIsInRankOrder: sortOrder == .relevance,
-                              layerBaseLabel: layered ? pinnedBase?.captureLabel : nil,
-                              // A ranking's rows can be fewer than its list's with nothing cut: those the
-                              // checklist hid when it was held, and those a filter chosen since removes.
-                              layerBaseWasCut: ranking ? pinnedBase?.wasCut : nil,
-                              layerBaseHiddenByChecklist: ranking ? pinnedBase?.hiddenByChecklist ?? 0 : 0)
+        ResultSetScope(loaded: results.count,
+                       shown: displayedResults.count,
+                       fetchLimit: lastFetchLimit,
+                       totalMatchCount: totalMatchCount,
+                       documentsOnPage: pagedResults.count,
+                       pageCount: totalPages,
+                       appliedCorpusTruncation: appliedWorkingCorpusTruncation,
+                       route: executedRoute)
+            // #1577 lane 4: what a layer's sentences owe, by the rule the Mac's window says them by (lane 5).
+            .describingLayer(over: pinnedBase, filtersNarrowed: lastLayerFiltersNarrowed, sortOrder: sortOrder)
     }
 
     // MARK: - Search History

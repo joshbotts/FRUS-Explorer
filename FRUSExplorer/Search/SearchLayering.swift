@@ -117,6 +117,9 @@ enum SearchLayerDirection: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 5: the rules a view model holds a list by, for the Mac's window as for iPhone and iPad:
+///          ``members(of:shown:)``, ``kind(route:query:ran:browseName:)``, ``browseName(of:)``, and the filters'
+///          ``filtersNarrow(_:)`` and ``wasFound(under:)``
 struct PinnedResultBase: Sendable {
 
     /// What kind of list the base is, for the row that names it and the record.
@@ -177,6 +180,10 @@ struct PinnedResultBase: Sendable {
 
     /// The members' keys, as `SearchParameters.documentIds` keys them.
     var memberKeys: [String] { members.map(\.id) }
+
+    /// The parameters the held list's keyword search ran with, or `nil` for a Meaning list, whose rows no match
+    /// found: the match a facet over the list's own rows aggregates (#1577 lane 4's finding, on the Mac since lane 5).
+    var ranParameters: SearchParameters? { userTagCountScope?.ranParameters }
 
     /// The words the base names itself by: ``describedQuery`` where there is one, ``query`` otherwise.
     private var shownQuery: String { describedQuery ?? query }
@@ -397,6 +404,146 @@ struct PinnedResultBase: Sendable {
     }
 }
 
+// MARK: - PinnedResultBase + holding a list
+
+/// The rules a view model holds the list on screen by (#1577 lane 5). They were `SearchViewModel`'s own in lane 4;
+/// here, the Mac's window holds a list by the same ones, and a test reads them with no view model: the Mac's is
+/// compiled for the Mac alone, and no test runs it.
+extension PinnedResultBase {
+
+    /// The rows a layer over `rows` runs inside: those the list on screen shows, in the search's own order.
+    ///
+    /// `shown` is the list as the reader sees it (`displayedResults`): the rows less those Checklist Mode hides, in
+    /// the order the sort menu gives them. The members keep the search's order instead, so that words found in a
+    /// Meaning list come back closest first, and a ranking's unranked rows follow in the list's own order, whatever
+    /// date order the list was in when it was held.
+    ///
+    /// - Parameters:
+    ///   - rows: Every row the search loaded, in its order.
+    ///   - shown: The rows the list shows.
+    /// - Returns: The members.
+    static func members(of rows: [SearchResult], shown: [SearchResult]) -> [SearchResult] {
+        let shownIds = Set(shown.map(\.id))
+        return rows.filter { shownIds.contains($0.id) }
+    }
+
+    /// What kind of list a base is held from, and the words that name it where none were typed.
+    ///
+    /// A Meaning list is a Meaning base, and a list found by typed words a keyword base. With nothing typed, a list
+    /// found by a restored phrase or prefix is a keyword base all the same, named by those words (lane 4's review
+    /// found it held as "your browse"); anything else is a browse, named by its filter.
+    ///
+    /// - Parameters:
+    ///   - route: The route that produced the rows.
+    ///   - query: The submitted words, trimmed.
+    ///   - ran: The parameters the rows' keyword search ran with (``UserTagCountScope/ranParameters``), or `nil`.
+    ///   - browseName: What a browse is of (``browseName(of:)``), or `nil` where it has no name.
+    /// - Returns: The kind, and the words a list with nothing typed is named by.
+    static func kind(route: ExecutedSearchRoute, query: String, ran: SearchParameters?,
+                     browseName: String?) -> (kind: Kind, describedQuery: String?) {
+        if route == .meaning { return (.meaning, nil) }
+        guard query.isEmpty else { return (.keywords, nil) }
+        if let words = describedWords(phrase: ran?.phrase, prefix: ran?.prefixWildcard) { return (.keywords, words) }
+        return (.browse(name: browseName), nil)
+    }
+
+    /// What a browse with no words is of, for the row that names it as a held base: the person, the topic or the
+    /// subject area its filter names, in that order, or `nil` when none has a name.
+    ///
+    /// - Parameter parameters: The browse's parameters.
+    /// - Returns: The name, or `nil`.
+    static func browseName(of parameters: SearchParameters) -> String? {
+        let personRef = parameters.personRef?.trimmingCharacters(in: .whitespaces) ?? ""
+        if parameters.personRollupId != nil || !personRef.isEmpty,
+           let label = parameters.personLabel, !label.isEmpty {
+            return label
+        }
+        if parameters.subjectRef != nil, let name = parameters.subjectName, !name.isEmpty { return name }
+        let vocabulary = DocumentSubjectStore.shared?.bucketVocabulary
+        if let bucket = parameters.subjectBucketKey.flatMap({ vocabulary?.id(forKey: $0) }) ?? parameters.subjectBucket {
+            return vocabulary?.label(at: bucket)
+        }
+        return nil
+    }
+
+    /// Whether the filters of `parameters` narrow a layer beyond the held list, so that the header says the words
+    /// "pass your filters" too (`ResultSetScope.layerFiltersNarrowed`): a filter is set, and the filters are not the
+    /// ones the list was found under.
+    ///
+    /// A filter taken away since the list was held removes none of its rows, and the first condition says so where no
+    /// filter is left. The comparison is with the run that found the list (``filterSignature``), not the fields:
+    /// lane 4's review found a filter set in the sheet and never run taken for the list's own.
+    ///
+    /// - Parameter parameters: The filters the layer runs under, without the held list's gate.
+    /// - Returns: Whether they narrow it.
+    func filtersNarrow(_ parameters: SearchParameters) -> Bool {
+        !wasFound(under: parameters) && Self.setsAFilter(parameters)
+    }
+
+    /// Whether the held list was found under the filters of `parameters`, its document set among them.
+    ///
+    /// The Mac's window applies a filter as it is set, so a filter changed while a list was held is one its rows were
+    /// not found under: leaving the list then runs its search again, and puts it back with no search only when this
+    /// holds (`MacSearchViewModel.leaveBase()`).
+    ///
+    /// - Parameter parameters: The filters in force, without the held list's gate.
+    /// - Returns: Whether they are the list's own.
+    func wasFound(under parameters: SearchParameters) -> Bool {
+        SearchScopeSignature.signature(for: parameters) == filterSignature
+    }
+
+    /// Whether `parameters` filter a search at all: a topic, or anything the scope signature records away from its
+    /// default, a document set, a scope toggle off and a document type among them. The same set as
+    /// `SearchViewModel.hasActiveFilters`, read from a parameter value, which the Mac's window holds and iPhone and
+    /// iPad build from their fields.
+    ///
+    /// - Parameter parameters: The parameters.
+    /// - Returns: Whether any filter is set.
+    static func setsAFilter(_ parameters: SearchParameters) -> Bool {
+        parameters.subjectRef != nil
+            || SearchScopeSignature.signature(for: parameters) != unfilteredSignature
+    }
+
+    /// The scope signature of a search with no filter set.
+    private static let unfilteredSignature = SearchScopeSignature.signature(for: SearchParameters())
+}
+
+// MARK: - AnsweredSearchTrigger
+
+/// A search the rows on screen already answer (#1577 lane 5), which the Mac's window then does not run.
+///
+/// The Mac's Search window runs a search whenever its trigger changes: the engine, the submitted words or the filters'
+/// version. Leaving a held list puts back its engine and its words, which changes the trigger, though the list's own
+/// rows are already back on screen from memory: run, the search would fetch them again, flash "Searching…" and, for a
+/// Meaning list, encode the question again. So the view model records the trigger its restored rows answer, and the
+/// search the window's task starts for it does nothing. Any other trigger, a filter edited before the task ran
+/// included, is searched as always.
+///
+/// Version history:
+///   1.0 — #1577 lane 5: initial implementation
+struct AnsweredSearchTrigger: Equatable, Sendable {
+
+    /// The trigger the rows on screen answer, until a search asks about it.
+    private var trigger: String?
+
+    /// Records that the rows on screen answer `trigger`.
+    ///
+    /// - Parameter trigger: The window's trigger as the rows were put back.
+    mutating func answer(_ trigger: String) {
+        self.trigger = trigger
+    }
+
+    /// Whether the rows on screen answer the search `trigger` asks for. True once, for the trigger answered last;
+    /// asking about any trigger forgets the answer, so a later search of the same words runs.
+    ///
+    /// - Parameter trigger: The trigger of the search about to run.
+    /// - Returns: Whether that search has nothing to do.
+    mutating func consume(_ trigger: String) -> Bool {
+        defer { self.trigger = nil }
+        return self.trigger == trigger
+    }
+}
+
 // MARK: - LayeredResultComposer
 
 /// The pure steps of a layer (#1577 lane 4), shared by both search view models so the two cannot
@@ -405,9 +552,12 @@ struct PinnedResultBase: Sendable {
 /// - A keyword layer's rows, put in the base's order with the base's scores.
 /// - A ranking merged with the members it could not rank, which go last in the base's order.
 /// - The gate a search runs with, the held base joining the working corpus and the History scope.
+/// - Where a ranking's unranked rows begin in the list as shown.
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 5: ``unrankedTail(of:route:sortOrder:)``, the iPhone view model's rule, which the Mac's window
+///          follows too; ``gating(_:inside:)`` has its four Mac callers
 enum LayeredResultComposer {
 
     /// The rows a keyword search inside a Meaning base found, in the base's order and each with the
@@ -482,6 +632,23 @@ enum LayeredResultComposer {
                                                       pin: base.memberKeys)
         return gated
     }
+
+    /// Where a ranking's unranked rows begin in the list as shown, and how many it shows: the line that counts them
+    /// goes above the first (rule 4). `nil` outside a ranking of a held list, with every row ranked, and under a date
+    /// order, where the unranked rows are no longer together at the end.
+    ///
+    /// - Parameters:
+    ///   - shown: The list as shown (`displayedResults`).
+    ///   - route: The route that produced the rows.
+    ///   - sortOrder: The order the list is shown in.
+    /// - Returns: The first unranked row's key and the count, or `nil`.
+    static func unrankedTail(of shown: [SearchResult], route: ExecutedSearchRoute,
+                             sortOrder: SearchSortOrder) -> (firstId: String, count: Int)? {
+        guard case .rankedByMeaning = route, sortOrder == .relevance else { return nil }
+        let unranked = shown.filter { $0.semanticScore == nil }
+        guard let first = unranked.first else { return nil }
+        return (first.id, unranked.count)
+    }
 }
 
 // MARK: - ExecutedSearchRoute + layers
@@ -495,6 +662,53 @@ extension ExecutedSearchRoute {
         case .keywords, .meaning: return false
         case .wordsInMatches, .rankedByMeaning: return true
         }
+    }
+}
+
+// MARK: - ResultSetScope + layers
+
+extension ResultSetScope {
+
+    /// This scope with what a layer's sentences owe, from the held list and the layer's run (#1577 lanes 4 and 5).
+    /// The one place either view model says them, so that the Mac's window, which no test runs, says what the iPhone's
+    /// tested view model says.
+    ///
+    /// - Words found in a list, and a ranking: whether filters chosen since narrow them
+    ///   (``layerFiltersNarrowed``), and the list a capture names beside the layer's text (``layerBaseLabel``).
+    /// - A ranking: whether the list was cut at its fetch (``layerBaseWasCut``), and the rows the checklist hid when it
+    ///   was held (``layerBaseHiddenByChecklist``). A ranking's rows can be fewer than its list's with nothing cut:
+    ///   those the checklist hid, and those a filter chosen since removes (lane 4's review).
+    /// - Every route: whether the list is in its own order (``listIsInRankOrder``), which only a ranking's header reads.
+    ///
+    /// - Parameters:
+    ///   - base: The held list, or `nil`.
+    ///   - filtersNarrowed: Whether filters narrowed the last layer, as its run recorded
+    ///     (`PinnedResultBase.filtersNarrow(_:)`).
+    ///   - sortOrder: The order the list is shown in.
+    /// - Returns: The scope.
+    func describingLayer(over base: PinnedResultBase?, filtersNarrowed: Bool,
+                         sortOrder: SearchSortOrder) -> ResultSetScope {
+        var scope = self
+        var ranking = false
+        if case .rankedByMeaning = route { ranking = true }
+        scope.layerFiltersNarrowed = route.isLayer && filtersNarrowed
+        scope.listIsInRankOrder = sortOrder == .relevance
+        scope.layerBaseLabel = route.isLayer ? base?.captureLabel : nil
+        scope.layerBaseWasCut = ranking ? base?.wasCut : nil
+        scope.layerBaseHiddenByChecklist = ranking ? base?.hiddenByChecklist ?? 0 : 0
+        return scope
+    }
+}
+
+// MARK: - UserTagCountScope + the run
+
+extension UserTagCountScope {
+
+    /// The parameters a keyword search ran with, where these counts are over its match; `nil` for counts over result
+    /// keys, a Meaning list's (#1577 lane 5). What a held list's kind and name are read from.
+    var ranParameters: SearchParameters? {
+        if case .match(let parameters) = self { return parameters }
+        return nil
     }
 }
 

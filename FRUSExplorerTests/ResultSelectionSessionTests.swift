@@ -682,11 +682,14 @@ struct MacResultSelectionWiringTests {
                 let hidden = markReviewed(selectedResults)
                 selectionSession.recordMark(hidden: hidden)
                 """)), "marked first and recorded after, so the two writes to the session do not overlap")
-        // The rule is `ChecklistAnchor.isOnTheSearch(shown:)`, which `ChecklistShownSearchTests` runs.
-        #expect(Self.squeezedCode(try Self.declaration("var canMarkSelectionReviewed: Bool {", in: mac))
+        // The rule is `ChecklistAnchor.isOnTheSearch(shown:)`, which `ChecklistShownSearchTests` runs. Since #1683's
+        // Mac line (#1577 lane 5) a row's Mark Reviewed and Mark Page Reviewed wait by it too, so it is
+        // `canMarkReviewed`'s, which the selection's reads.
+        #expect(Self.squeezedCode(try Self.declaration("var canMarkReviewed: Bool {", in: mac))
             .contains(Self.squeezed("""
                 checklistMode && (checklistAnchor?.isOnTheSearch(shown: lastCompletedSearchAnchor) ?? true)
                 """)), "this window anchors its checklist to a search before the search's rows arrive")
+        #expect(Self.squeezedCode(mac).contains(Self.squeezed("var canMarkSelectionReviewed: Bool { canMarkReviewed }")))
         #expect(!(try Self.source(Self.iOSModel)).contains("canMarkSelectionReviewed"),
                 "the iPhone settles its checklist with the rows, and has no gap to guard")
         #expect(Self.squeezedCode(try Self.declaration(
@@ -752,10 +755,15 @@ struct MacResultSelectionWiringTests {
             """)))
         let meaning = Self.squeezedCode(try Self.declaration("private func performMeaningSearch(run: Int) async -> Bool {", in: mac))
         // Since #1648 a run that a later one replaced writes nothing, so the rows are written after
-        // that check, and the selection is still settled with them.
+        // that check, and the selection is still settled with them. Since #1577 lane 5 a question over
+        // a held list goes to the ranking first, which ends a selection rather than settling it.
         #expect(meaning.contains(Self.squeezed("""
             let sentAnchor = ChecklistAnchor(query: query, parameters: parameters)
+            let sentFilterSignature = SearchScopeSignature.signature(for: parameters)
             do {
+                if let base = pinnedBase {
+                    return try await rankHeldList(run: run, base: base, backend: backend)
+                }
                 let outcome = try await backend.run(query: query, parameters: parameters)
                 guard searchRuns.isLatest(run) else { return false }
                 results = outcome.results
@@ -791,11 +799,12 @@ struct MacResultSelectionWiringTests {
                 .foregroundStyle(searchVM.resultSelection.isSelecting ? Color.accentColor : Color.secondary)
                 .disabled(!searchVM.resultSelection.isSelecting
                           && (searchVM.displayedResults.isEmpty || activeReading != .list
-                              || searchVM.searchError != nil))
+                              || searchVM.searchError != nil || searchVM.isSearching))
             """)), """
             titled, since macOS draws a toolbar Label icon-only unless told; dimmed with no rows to \
-            check; and never dimmed while on, or a selection marked reviewed to its last row could \
-            not be left from the toolbar
+            check, and while a search runs, whose rows are not yet on screen (#1683's Mac line, taken \
+            by #1577 lane 5); and never dimmed while on, or a selection marked reviewed to its last row \
+            could not be left from the toolbar
             """)
         // Its neighbour Checklist carries the same two modifiers. The running toolbar gives
         // accessibility the Label's own title and this value: "Select", and "On" or "Off".

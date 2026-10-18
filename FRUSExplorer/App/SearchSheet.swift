@@ -139,6 +139,15 @@ import SwiftUI
 ///   1.24 — 2026-10-18: the bookmark button presents `SaveSearchSheet`, iPhone and iPad's sheet with a body for the
 ///          Mac, from a `SaveSearchRequest`. This window's own sheet was built from a name and a Bool set beside it,
 ///          which the body never read, so it opened with its Save dimmed, and a click on it did nothing.
+///   1.25 — #1577 lane 5: Search Within These Results. A titled toolbar button, Search Within Results, after Save as
+///          Working Corpus…, holds the list on screen (`MacSearchViewModel.holdBase(meaningAvailable:)`); a row under
+///          the corpus banner names it, with a ✕ that puts it back, and a plain label naming the field's engine takes the
+///          Keywords | Meaning control's place. The field's prompt says what to type; a layer that finds nothing shows
+///          `SearchLayerEmptyState`; a ranking's unranked rows follow a line that counts them; the count line, the facet
+///          panel's preamble and a capture say what a layer is; and Save this search is off while a list is held. #1683:
+///          a row's Mark Reviewed and Mark Page Reviewed wait for the rows of the search they mark, Select is off while a
+///          search runs, a highlighted row's location and chips are drawn white (`SearchResultRow.tint(_:)`), and the
+///          Reading picker is drawn dimmed while it is off
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -330,6 +339,8 @@ struct MacSearchWindowView: View {
             // #377 Phase 5: the ambient "Working on: <question>" lens (self-padded; zero height when inactive).
             WorkingOnBanner()
             workingCorpusBanner
+            // #1577 lane 5: the held list, named where the corpus is, inside it.
+            heldListRow
 
             Divider()
 
@@ -379,6 +390,10 @@ struct MacSearchWindowView: View {
                 // empty-scope guard's own message, and the Meaning-mode errors were all a blank list. Before the
                 // Meaning-mode empty state, which is a zero result and not a failure.
                 searchErrorView(searchError)
+            } else if let base = searchVM.pinnedBase, hasZeroResults, !searchVM.semanticNeedsModel {
+                // #1577 lane 5: before both zero-states below, neither of which may show while a list is held
+                // (rule 7). With no search model the Meaning empty state's download offer shows, and the row stays.
+                layerEmptyState(base)
             } else if searchVM.searchMode == .meaning && hasZeroResults {
                 // The Meaning mode's empty surface — the keyword zero-state diagnoses which
                 // TERM is absent, the wrong claim twice over here, and beyond-library-only
@@ -531,12 +546,15 @@ struct MacSearchWindowView: View {
                     Task {
                         await facetController.load(
                             section,
-                            parameters: searchVM.submittedSearchParameters,
+                            // A held list's own rows are aggregated under the match that found them (#1577 lane 5).
+                            parameters: searchVM.facetParameters,
                             service: appState.searchService,
                             // Every route but a keyword match describes the keys of the list it holds.
                             documentKeys: searchVM.facetDocumentKeys)
                     }
-                })
+                },
+                // #1577 lane 5: a layer's preamble says what its list is.
+                layerRoute: searchVM.facetLayerRoute)
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 420)
         }
         .task(id: searchVM.searchTrigger) {
@@ -621,7 +639,8 @@ struct MacSearchWindowView: View {
         .sheet(isPresented: $showSaveCorpusSheet) {
             SaveWorkingCorpusSheet(
                 results: searchVM.displayedResults,
-                queryText: searchVM.submittedSearchParameters.keywords ?? "",
+                // A held list's own words while its rows are shown, where the field is empty (#1577 lane 5).
+                queryText: searchVM.wordsOfTheRowsShown,
                 indexedVolumeCount: appState.indexedVolumeIds.count,
                 scope: resultSetScope)
         }
@@ -652,6 +671,8 @@ struct MacSearchWindowView: View {
         .onChange(of: appState.indexGeneration) { _, _ in
             // #1648: a search still under way against the old index cannot put its rows back.
             searchVM.replaceSearchesUnderWay()
+            // #1577 lane 5: nor can a held list, whose rows were the old index's.
+            searchVM.letGoOfBaseForRebuiltIndex()
             searchVM.results = []
             searchVM.queryText = ""
             // #1299: `searchErrorView` shows any standing error beside empty results, so it goes with them.
@@ -666,6 +687,10 @@ struct MacSearchWindowView: View {
         // not on the toolbar's picker, which is not in the window while it is folded into the » menu.
         .onChange(of: searchVM.offersReadings) { _, offered in
             if !offered { readingSelection.wrappedValue = .list }
+        }
+        // #1577 lane 5: a layer's finish is announced, the header that says what it found.
+        .onChange(of: searchVM.executedSearchVersion) { _, _ in
+            announceLayerFinished()
         }
         // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
         // Window scene, so an active-project change must reset the scope and drop any stale
@@ -708,8 +733,12 @@ struct MacSearchWindowView: View {
     private var searchInputRow: some View {
         HStack(spacing: 10) {
             // The engine picker (V-5 hybrid page); absent on a build whose semantic stack
-            // never booted, leaving the window exactly what it always was.
-            if appState.semanticQuerySearcher != nil {
+            // never booted, leaving the window exactly what it always was. While a list is held it
+            // gives way to a label naming the engine the field runs inside it (#1577 lane 5): the
+            // field runs the other engine only, and a disabled picker would explain nothing.
+            if let base = searchVM.pinnedBase {
+                heldEngineLabel(base.direction.fieldEngine)
+            } else if appState.semanticQuerySearcher != nil {
                 Picker(String(localized: "search.mode.title", defaultValue: "Search by"),
                        selection: Binding(
                            get: { searchVM.searchMode },
@@ -738,9 +767,10 @@ struct MacSearchWindowView: View {
                 // The prompt follows the engine (Meaning mode asks for a question), and the
                 // keyword wording keeps naming this window's three searchable scopes — their
                 // chips are far below the field, so this is where a reader learns notes and
-                // summaries are in play.
+                // summaries are in play. Inside a held list it says what to type and where it
+                // runs (#1577 lane 5, `SearchLayerDirection.fieldPrompt`).
                 TextField(
-                    searchVM.searchMode.fieldPrompt(
+                    searchVM.pinnedBase?.direction.fieldPrompt ?? searchVM.searchMode.fieldPrompt(
                         keywordPrompt: String(localized: "search.query.placeholder.mac",
                                               defaultValue: "Search documents, notes, summaries…")),
                     text: $searchVM.queryText)
@@ -823,11 +853,17 @@ struct MacSearchWindowView: View {
                     .foregroundStyle(Color.secondary)
             }
             .buttonStyle(.plain)
-            .disabled(searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty)
-            .help(String(
-                localized: "search.saveSearch.help",
-                defaultValue: "Save this search so you can quickly run it again"
-            ))
+            // #1577 lane 5: a layered search is not saved (the owner's decision 4). Its gate would be
+            // stored and dropped on recall, and a smart collection honours it, so one saved layered
+            // search would give two result sets. The help says where the durable form is.
+            .disabled(searchVM.submittedQuery.trimmingCharacters(in: .whitespaces).isEmpty
+                      || searchVM.pinnedBase != nil)
+            .help(searchVM.pinnedBase != nil
+                  ? SearchLayerCopy.saveSearchUnavailable
+                  : String(
+                      localized: "search.saveSearch.help",
+                      defaultValue: "Save this search so you can quickly run it again"
+                  ))
             .accessibilityLabel(String(
                 localized: "search.saveSearch.a11y",
                 defaultValue: "Save this search"
@@ -1053,6 +1089,9 @@ struct MacSearchWindowView: View {
             // Every reading reads the words a keyword match found: the view model's rule, as on iOS
             // (#1577 lane 2). A reading open when the door shuts is closed with it, in `body`.
             .disabled(searchVM.results.isEmpty || !searchVM.offersReadings)
+            // Dimmed by hand (#1683): macOS 27 draws a disabled segmented picker in the titlebar at full strength
+            // beside its dimmed neighbours, though it answers no click.
+            .opacity(searchVM.results.isEmpty || !searchVM.offersReadings ? 0.45 : 1)
             .help(String(
                 format: String(localized: "search.reading.help %@",
                                defaultValue: "How to read these results. The concordance covers %@; the others cover the whole retained set."),
@@ -1072,6 +1111,22 @@ struct MacSearchWindowView: View {
             .disabled(searchVM.displayedResults.isEmpty)
             .help(String(localized: "search.corpus.save.help",
                          defaultValue: "Save these results as a named working corpus you can search inside later"))
+        }
+
+        // #1577 lane 5: Search Within Results, after Save as Working Corpus…, titled as its neighbours are.
+        // It holds the list on screen and turns the field to the other engine: words in a Meaning list, a
+        // question over a keyword list or a browse. The help says which; no shortcut, as for the rest.
+        ToolbarItem(placement: .automatic) {
+            let direction = searchVM.layerDirection(meaningAvailable: appState.semanticQuerySearcher != nil)
+            Button {
+                holdBase()
+            } label: {
+                Label(SearchLayerCopy.searchWithinResults,
+                      systemImage: direction == .rankByMeaning ? SemanticGlyph.feature : "text.magnifyingglass")
+            }
+            .labelStyle(.titleAndIcon)
+            .disabled(direction == nil)
+            .help(SearchLayerCopy.searchWithinResultsHelp(direction, isHolding: searchVM.pinnedBase != nil))
         }
 
         ToolbarItem(placement: .primaryAction) {
@@ -1112,9 +1167,11 @@ struct MacSearchWindowView: View {
             }
             .labelStyle(.titleAndIcon)
             .foregroundStyle(searchVM.resultSelection.isSelecting ? Color.accentColor : Color.secondary)
+            // Not while a search runs (#1683): the rows on screen are the last search's until the new
+            // ones arrive, and a selection begun over them lasted into the other engine's list.
             .disabled(!searchVM.resultSelection.isSelecting
                       && (searchVM.displayedResults.isEmpty || activeReading != .list
-                          || searchVM.searchError != nil))
+                          || searchVM.searchError != nil || searchVM.isSearching))
             .help(searchVM.resultSelection.isSelecting
                   ? ResultSelectionCopy.selectToggleOffHelp
                   : ResultSelectionCopy.selectToggleOnHelp)
@@ -1635,7 +1692,8 @@ struct MacSearchWindowView: View {
             if searchVM.isSearching {
                 ProgressView().controlSize(.small)
                 Text("Searching…").font(.subheadline).foregroundStyle(.secondary)
-            } else if !searchVM.queryText.isEmpty {
+            } else if !searchVM.queryText.isEmpty || searchVM.pinnedBase != nil {
+                // A held list's rows are counted with the field empty, as it is when the list is held (#1577 lane 5).
                 resultCountLabel
             }
 
@@ -1705,7 +1763,9 @@ struct MacSearchWindowView: View {
         let total: Int? = searchVM.totalMatchCount.map { max($0, loaded) }
         let start    = searchVM.currentPage * searchVM.pageSize + 1
         let end      = min(start + searchVM.pageSize - 1, loaded)
-        let truncated = searchVM.isResultSetTruncated
+        // Over a layer the held list's row says where the list was cut (#1577 lane 5).
+        let layered  = resultSetScope.route.isLayer
+        let truncated = searchVM.isResultSetTruncated && !layered
 
         // Inside a corpus that was itself a capped capture, BOTH `loaded` and `total` describe
         // the corpus-scoped query — so the ordinary "267 loaded · 267 total" reads as a complete
@@ -1715,7 +1775,11 @@ struct MacSearchWindowView: View {
         let corpusClause = resultSetScope.corpusCaptureClause
 
         HStack(spacing: 6) {
-            if loaded == 0 {
+            if layered {
+                // The layers' sentences, shared with iPhone and iPad (#1577 lane 5).
+                Text(resultSetScope.headerDescription)
+                    .font(.subheadline.weight(.medium))
+            } else if loaded == 0 {
                 Text("No results")
                     .font(.subheadline.weight(.medium))
             } else if let corpusClause, loaded <= searchVM.pageSize {
@@ -1869,6 +1933,122 @@ struct MacSearchWindowView: View {
         }
     }
 
+    // MARK: - Search within these results (#1577 lane 5)
+
+    /// The held list, named where the working corpus is: "Within 100 closest matches to “…”", with its ✕. It sits
+    /// under the corpus banner, the wider scope it runs inside, and is drawn as that banner is.
+    ///
+    /// One element for VoiceOver, "Searching within 100 closest matches to …", with its close button a child of its
+    /// own, "Stop searching within these results", as on iPhone and iPad. The sentences are `PinnedResultBase`'s, so a
+    /// test reads them with no window; the second line counts what the list held that a layer leaves out.
+    @ViewBuilder
+    private var heldListRow: some View {
+        if let base = searchVM.pinnedBase {
+            HStack(spacing: 6) {
+                Image(systemName: base.kind == .meaning ? SemanticGlyph.feature : "magnifyingglass")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(base.rowDescription)
+                        .font(.subheadline.weight(.medium))
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                    if let leftOut = base.leftOutDescription {
+                        Text(leftOut)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel([base.accessibilityLabel, base.leftOutDescription]
+                    .compactMap { $0 }.joined(separator: ". "))
+                .help([base.rowDescription, base.leftOutDescription].compactMap { $0 }.joined(separator: " "))
+                .accessibilityIdentifier("search.layer.base")
+                Spacer(minLength: 8)
+                Button {
+                    leaveBase()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(String(localized: "search.layer.leave.help",
+                             defaultValue: "Show the list you were searching within again, as it was"))
+                .accessibilityLabel(String(localized: "search.layer.leave.a11y",
+                                           defaultValue: "Stop searching within these results"))
+                .accessibilityIdentifier("search.layer.leave")
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.thinMaterial)
+            .overlay(alignment: .bottom) { Divider() }
+            .accessibilityElement(children: .contain)
+        }
+    }
+
+    /// The plain label in the Keywords | Meaning control's place while a list is held: the engine the field runs inside
+    /// the list. VoiceOver reads it as the control it stands for, "Search by", with the engine as its value.
+    ///
+    /// - Parameter engine: The engine the field runs.
+    /// - Returns: The label.
+    private func heldEngineLabel(_ engine: SearchMode) -> some View {
+        Text(engine.label)
+            .font(.subheadline.weight(.medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color.secondary.opacity(0.12), in: Capsule())
+            .fixedSize()
+            .help(SearchLayerCopy.heldEngineHelp(engine))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(String(localized: "search.mode.title", defaultValue: "Search by"))
+            .accessibilityValue(engine.label)
+            .accessibilityIdentifier("search.layer.engine")
+    }
+
+    /// What a layer that found nothing shows: the header's own sentence, which says what it looked in, and the ways on.
+    /// The view is the iPhone's and iPad's (`SearchLayerEmptyState`).
+    ///
+    /// - Parameter base: The held list.
+    /// - Returns: The empty state.
+    private func layerEmptyState(_ base: PinnedResultBase) -> some View {
+        let wordsInMatches = base.direction == .wordsInMatches
+        return SearchLayerEmptyState(
+            statement: wordsInMatches ? resultSetScope.headerDescription : SearchLayerEmptyState.rankedStatement,
+            searchLibraryTitle: wordsInMatches ? SearchLayerEmptyState.searchLibraryTitle : nil,
+            backTitle: base.backTitle,
+            searchLibrary: { searchVM.leaveBaseKeepingTheWords() },
+            back: { leaveBase() })
+    }
+
+    /// Holds the list on screen, hands the field the keyboard and says so to VoiceOver. A reading open over the list
+    /// goes back to the list: the field's engine changes, as a switch of the picker changes it.
+    private func holdBase() {
+        guard let base = searchVM.holdBase(meaningAvailable: appState.semanticQuerySearcher != nil) else { return }
+        readingSelection.wrappedValue = .list
+        queryFieldFocused = true
+        AccessibilityNotification.Announcement(base.accessibilityLabel).post()
+    }
+
+    /// Leaves the held list, and VoiceOver hears it. Its rows come back with no search, unless a filter changed since,
+    /// and the facets start over for them, which no search's completion does then.
+    private func leaveBase() {
+        if searchVM.leaveBase() {
+            facetController.invalidate(signature: searchVM.searchTrigger)
+        }
+        readingSelection.wrappedValue = .list
+        AccessibilityNotification.Announcement(SearchLayerCopy.leftAnnouncement).post()
+    }
+
+    /// Announces a layer's finish to VoiceOver: the header that says what it found.
+    private func announceLayerFinished() {
+        guard searchVM.executedRoute.isLayer else { return }
+        AccessibilityNotification.Announcement(resultSetScope.headerDescription).post()
+    }
+
     /// Which set this window is showing: `MacSearchViewModel.resultSetScope`, which composes it from
     /// what the run recorded with the rows (#1584, #1595). It was composed here from the keyword
     /// ceiling as a constant and from the picker.
@@ -1879,9 +2059,13 @@ struct MacSearchWindowView: View {
     ///
     /// Encourages the user to constrain with date filters rather than scrolling
     /// through a partial set unknowingly.
+    ///
+    /// Not over a layer (#1577 lane 5): the held list's row says where the list was cut, and the advice
+    /// to narrow with more specific terms is not advice a reader can take with a question in the field
+    /// (`ResultSetScope.overCapGuidance`, which iPhone and iPad withhold there too).
     @ViewBuilder
     private var overCapAdvisory: some View {
-        if searchVM.isResultSetTruncated {
+        if searchVM.isResultSetTruncated, !resultSetScope.route.isLayer {
             let loaded = searchVM.results.count.formatted()
             let total  = searchVM.totalMatchCount?.formatted()
             HStack(alignment: .top, spacing: 6) {
@@ -1923,7 +2107,9 @@ struct MacSearchWindowView: View {
                 // The timeline and the collocates cover the whole retained set, so there is no
                 // page under them to mark, and none to bring back: a collocation is not rebuilt
                 // when a mark changes, so an undo under it would leave a ranking of another set.
-                pageRowCount: activeReading.isPaged ? searchVM.pagedResults.count : 0,
+                // Nor is there while another search's rows are coming (#1683): the page on screen is
+                // the last search's, and its marks would be kept under the new one.
+                pageRowCount: activeReading.isPaged && searchVM.canMarkReviewed ? searchVM.pagedResults.count : 0,
                 canUndo: activeReading.isPaged && searchVM.canUndoBulkMark,
                 // #1592: with Log Research Sessions off nothing records that a result was opened,
                 // so opening one cannot hide it. Shown whether or not anything is hidden yet: the
@@ -2073,7 +2259,17 @@ struct MacSearchWindowView: View {
         // the long-standing click-to-open behavior AND records the row as selected,
         // so ↑/↓ continue from the result the user last opened.
         List(selection: $selectedResultId) {
+            // #1577 lane 5: in a ranking of a held list, the rows it could not rank follow a line that counts them
+            // (rule 4), which no click selects or opens.
+            let unrankedTail = searchVM.unrankedTail
             ForEach(searchVM.pagedResults, id: \.id) { result in
+            if result.id == unrankedTail?.firstId, let count = unrankedTail?.count {
+                Text(SearchLayerCopy.unrankedHeader(count))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                    .selectionDisabled()
+            }
             // #1576 lane 4: in selection every row has a checkbox at its leading edge. It is
             // beside the row and not in it: `SearchResultRow` is private, `InAppCitationNumberTests`
             // reads it, and the click that opens a document is the row's own, so a click on the
@@ -2194,6 +2390,8 @@ struct MacSearchWindowView: View {
                                 systemImage: "checklist"
                             )
                         }
+                        // Not while another search's rows are coming (#1683): the mark would be kept under it.
+                        .disabled(!searchVM.canMarkReviewed)
                     }
                 }
             }
@@ -2594,6 +2792,31 @@ private struct SearchResultRow: View {
     @AppStorage(SearchDefaults.snippetLineCountKey) private var globalSnippetLines = SearchDefaults.defaultSnippetLineCount
     @AppStorage(SearchDefaults.snippetLineCountMainOverrideKey) private var snippetOverride = 0
 
+    /// `.increased` while the row is drawn on the list's emphasised highlight, the accent fill. The title and the
+    /// snippet, in `.primary` and `.secondary`, turn white there by themselves; the location and the chips are drawn in
+    /// fixed colours, which all but vanished into the fill (#1683), so they take ``tint(_:)`` and ``chipFill(_:opacity:)``.
+    @Environment(\.backgroundProminence) private var backgroundProminence
+
+    /// A colour the row draws text in, the location's accent or a chip's purple or teal: itself, or white on the
+    /// emphasised highlight (#1683), as `CollectionChipStyle` draws a collection row's chips there (#1477).
+    ///
+    /// - Parameter color: The colour at standard prominence.
+    /// - Returns: The colour to draw in.
+    private func tint(_ color: Color) -> Color {
+        backgroundProminence == .increased ? .white : color
+    }
+
+    /// A chip's fill: its colour, faint, or white at 22 % on the emphasised highlight (#1683), where the faint colour
+    /// does not show at all.
+    ///
+    /// - Parameters:
+    ///   - color: The chip's colour at standard prominence.
+    ///   - opacity: How faint the fill is at standard prominence.
+    /// - Returns: The fill.
+    private func chipFill(_ color: Color, opacity: Double = 0.1) -> Color {
+        backgroundProminence == .increased ? .white.opacity(0.22) : color.opacity(opacity)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
 
@@ -2610,15 +2833,15 @@ private struct SearchResultRow: View {
                               CitableDocumentNumber.captionLabel(printed: result.documentNumber,
                                                                  documentId: result.documentId)))
                     .font(.caption2.weight(.medium))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(tint(Color.accentColor))
 
                 if result.isEditorialNote {
                     Text("editorial note")
                         .font(.caption2)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(Color.purple.opacity(0.1))
-                        .foregroundStyle(.purple)
+                        .background(chipFill(.purple))
+                        .foregroundStyle(tint(.purple))
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
                 if result.isFrontMatter {
@@ -2626,8 +2849,8 @@ private struct SearchResultRow: View {
                         .font(.caption2)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(Color.teal.opacity(0.1))
-                        .foregroundStyle(.teal)
+                        .background(chipFill(.teal))
+                        .foregroundStyle(tint(.teal))
                         .clipShape(RoundedRectangle(cornerRadius: 3))
                 }
                 // Meaning mode's score, in the shared chip every semantic surface uses.
@@ -2676,8 +2899,8 @@ private struct SearchResultRow: View {
                             .font(.caption2)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
-                            .background(Color.accentColor.opacity(0.08))
-                            .foregroundStyle(Color.accentColor)
+                            .background(chipFill(Color.accentColor, opacity: 0.08))
+                            .foregroundStyle(tint(Color.accentColor))
                             .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
                 }
