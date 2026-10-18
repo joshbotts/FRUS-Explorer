@@ -38960,3 +38960,46 @@ Lane 4's ranking of the 1,000 held rows took 3 to 4 ms, and of 7,500 14 to 16 ms
 **Docs.** `Docs/iOS-User-Manual.md` §7.12b and `Docs/macOS-User-Manual.md` §7.11b: a list that stopped at its ceiling is ranked whole, with the row, the header, the snippets, the unranked rows, the filters, the time a common word takes and the capture's record (the AI Generated notices stay). `Docs/EditableContent/`: 17 blocks in `07-Search-and-Browse.md` (§7.3's header, its form under filters chosen since, its two none-ranked forms and its not-ranked part; §7.7's three warnings and two provenance clauses; §7.15's Mac help and six row descriptions), notes on lane 4's four cut-list blocks, the keyword truncation warning and the layer's empty statement, 28 ranged blocks re-pointed, the README's table, the file's header and an Amendment-Log bullet. The runbook's entry and `CLAUDE.md`'s row for the new UI suite. A5's entry in the plan of record: lane 5 merged as #1717 (`b222fcb7`), lane 6 with its timing and the decision, and the open question in "What the timings settle" answered.
 
 **Not done.** The phone's own figures are the owner's to read from the `whole-match` line on a build that has it; these are the simulator's. *None of the 24 results could be ranked* and an empty ranking's sentences were seen in tests, not on a screen, since the check copy has every match file. The toolbar's tooltip was read through accessibility, not seen under a pointer, and dark mode was not looked at. The pull request is #1718, opened on the owner's word, and the plan of record names it.
+
+## Session 2026-10-18 — One heavy job at a time on this Mac: `Scripts/heavy.sh` and the rule in `CLAUDE.md`
+
+**What was asked.** The owner restarted the Mac at 16:48 after Claude stopped responding while #1577's lane 7 and its side session (the Meaning strip at AX3 and AX5) both ran. The owner asked:
+- what happened, and where the two sessions stand;
+- then, on the owner's word, a shared `lockf` wrapper for `xcodebuild` and `swift test`, with a rule in `CLAUDE.md`, in a pull request, before lane 7 resumes.
+
+**What happened, as measured.** Sources: the Claude app's `~/Library/Logs/Claude/main.log`, the system log and `/Library/Logs/DiagnosticReports`.
+- **The machine.** The Mac is a MacBook Air M5: fanless, 4 performance and 6 efficiency cores, 32 GB.
+- **The load.** From about 15:26 lane 7 ran an iPhone SE UI run and two builds from empty (`FRUS-A5L7-clean`, and a v2 control). At 15:32 the strip session started a from-empty build-for-testing for two destinations (`StripFit-eager-noyce`) and booted two fresh simulators. Lane 7 read the load average at 785.
+- **Heat, not memory or disk.** The system log shows thermal pressure from 15:25. It shows no jetsam event and no kernel memory or swap message, and the disk had 110 GB free.
+- **What it did to Claude.**
+  - From 15:40 the app's main thread was blocked for 10 to 84 s at a time.
+  - `git config --list` was killed at its 20 s deadline.
+  - Lane 7 asked the strip session to hold, and it did, but lane 7's own two builds went on.
+  - At 16:27 the app tore lane 7 down after 996 s without output, with 3 live tasks.
+  - The shutdown at 16:48 stalled (`shutdown_stall_2026-10-18-164837`).
+
+**The wrapper** (`Scripts/heavy.sh`):
+- `/usr/bin/lockf -k` takes one lock on `$HOME/Library/Caches/FRUS-Explorer/heavy-job.lock`, or `$FRUS_HEAVY_LOCK`, which lies outside every worktree. It runs the command and drops the lock when the command exits. The kernel releases the lock with its holder, so a kill cannot leave it held.
+- The exit status is the command's, or 75 once `FRUS_HEAVY_WAIT` seconds pass without the lock.
+- Before it waits it prints who holds the lock, from a note the holder writes at its start.
+- Inside the lock `FRUS_HEAVY_LOCK_HELD=1` is set, so a script run through the wrapper may call it again without waiting on itself.
+- The lock file is kept (`-k`). Removing it while a job waits would let a third job lock a new file.
+
+**`CLAUDE.md`.** A rule heads *Build & Test Commands*: one heavy job at a time across every session, run through the wrapper, with the measurement behind it. A heavy job is an `xcodebuild` build, test or archive, `swift build`, `swift test`, a generator's `swift run`, or `tools/mac-check-copy/build.sh`. The section's two example commands now go through it.
+
+**Checked**, on a test lock in the scratchpad:
+- no arguments exits 64;
+- `exit 3` comes back as 3;
+- arguments with spaces arrive intact;
+- the holder note is cleared after a run;
+- a second job started 0.5 s into a 3 s one began at the second the first ended, and printed the first job's note;
+- a nested call ran at once, and with `FRUS_HEAVY_LOCK_HELD` unset it waited on its own parent and gave up with 75 (the control);
+- `FRUS_HEAVY_WAIT=1` against a held lock exits 75;
+- after the holder was killed with SIGKILL, the next job took the lock at once.
+
+`bash -n` passes, and the script never names `FRUS_MAC_CHECK`, which `CodingStandardsAuditTests` scans `Scripts/` for. No test reads `CLAUDE.md`.
+
+**Not done:**
+- Sessions started before this rule do not read it. Lane 7 and the strip session are told by message.
+- `notarize.sh` and `tools/mac-check-copy/build.sh` do not call the wrapper themselves; the rule asks whoever runs them to wrap them.
+- No test enforces the rule.
