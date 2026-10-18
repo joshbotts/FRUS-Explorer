@@ -224,6 +224,19 @@ struct PinnedResultBase: Sendable {
         return max(0, count - hiddenByChecklist)
     }
 
+    /// Whether filters chosen since the list was held narrow a ranking of its whole match (#1577 lane 6): the closest
+    /// rows the ranking lists, which those filters narrow after it, as they narrow every Meaning list. The document
+    /// gate is left out, set back to the list's own: a working corpus applied since narrows the set before the ranking,
+    /// so the closest rows all pass it.
+    ///
+    /// - Parameter parameters: The filters in force outside the held list.
+    /// - Returns: Whether they narrow the ranking's rows (`ResultSetScope.layerFiltersNarrowed`).
+    func filtersNarrowTheClosest(_ parameters: SearchParameters) -> Bool {
+        var after = parameters
+        after.documentIds = ranParameters?.documentIds
+        return filtersNarrow(after)
+    }
+
     /// Keeps the keys of the list's whole match, which a ranking has read, for the questions after it.
     ///
     /// - Parameter keys: The keys, as `SearchService.matchKeys(parameters:)` returned them.
@@ -286,9 +299,9 @@ struct PinnedResultBase: Sendable {
 
     // MARK: - The row that names the base
 
-    /// "100 closest matches to “how did the embassy…”", "212 results for “offset agreement”", "the
-    /// first 1,000 of 35,275 results for “negotiations”": the set, as the row that names the base
-    /// says it after "Within".
+    /// "100 closest matches to “how did the embassy…”", "212 results for “offset agreement”", "all
+    /// 35,275 results for “negotiations”": the set, as the row that names the base says it after
+    /// "Within".
     ///
     /// Counted by its members, the rows the layer runs inside, which is what the list showed. Where
     /// the base was cut at its fetch ceiling the sentence says so, as the assessment's design

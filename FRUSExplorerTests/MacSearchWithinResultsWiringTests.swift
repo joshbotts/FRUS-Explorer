@@ -542,6 +542,8 @@ struct MacSearchWithinResultsWiringTests {
             "endSelecting()",
             "semanticDisclosure = whole.outcome.disclosure",
             "rankedSetSignature = whole.setSignature",
+            "let filtersNarrowed = base.filtersNarrowTheClosest(parameters)",
+            "lastLayerFiltersNarrowed = filtersNarrowed",
             "totalMatchCount = base.totalMatchCount",
             "lastFetchLimit = base.fetchLimit",
             "lastRenderedExpression = SemanticSearchBackend.renderedExpression(rankingAll: whole.ranking.size, listing: base.fetchLimit) + (pinnedBase ?? base).renderedExpressionSuffix",

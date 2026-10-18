@@ -146,6 +146,31 @@ struct WholeMatchRulesTests {
                 "a list ranked by its rows has no whole match to rank")
     }
 
+    @Test("Filters chosen since narrow the closest rows where one is set beside the list's own, a corpus applied since aside")
+    func filtersNarrowTheClosest() {
+        let ran = SearchParameters(keywords: "negotiations",
+                                   dateRange: DateRange(earliest: "1961-01-01", latest: "1963-12-31"))
+        let held = PinnedResultBase(
+            direction: .rankByMeaning, kind: .keywords, query: "negotiations", rows: listRows(1_000),
+            members: listRows(1_000), hiddenByChecklist: 0, notDownloaded: 0, route: .keywords, fetchLimit: 1_000,
+            totalMatchCount: 3_120, renderedExpression: nil, disclosure: nil, beyondLibraryHits: [],
+            userTagCountScope: .match(ran), historyAnchor: nil, completedSearchAnchor: nil,
+            filterSignature: SearchScopeSignature.signature(for: ran))
+        var live = ran
+        live.keywords = "how was the test ban argued"
+        #expect(!held.filtersNarrowTheClosest(live), "the list's own filters remove none of its match")
+        var typed = live
+        typed.documentTypeFilter = .documentsOnly
+        #expect(held.filtersNarrowTheClosest(typed), "a filter set since narrows the closest rows")
+        var cornered = live
+        cornered.documentIds = ["vol/d1", "vol/d2"]
+        #expect(!held.filtersNarrowTheClosest(cornered),
+                "a corpus applied since narrows the set before the ranking, so the closest all pass it")
+        var removed = live
+        removed.dateRange = nil
+        #expect(!held.filtersNarrowTheClosest(removed), "a filter taken away removes nothing")
+    }
+
     // MARK: The composer
 
     @Test("The set ranked is the match less the hidden rows, inside a corpus applied since, in the match's order")
@@ -639,10 +664,14 @@ struct WholeMatchViewModelTests {
         #expect(vm.lastRenderedExpression?.hasSuffix("; ranked=1001; top=1000; base=keywords:1001:containment") == true,
                 "\(vm.lastRenderedExpression ?? "nil")")
 
-        // A second question reads the keys the list kept.
+        // A second question reads the keys the list kept; a filter chosen since narrows its closest rows, which the
+        // header says (the stand-in lists the same rows whatever the filter).
+        vm.documentTypeFilter = .documentsOnly
         vm.keywords = "who argued for it"
         #expect(await vm.search())
         #expect(engine.calls.count == 2 && engine.calls[1].hadKeys)
+        #expect(vm.resultSetScope.headerDescription == "Closest 1,000 of 1,001 results · 1,000 pass your filters")
+        vm.documentTypeFilter = .all
 
         // Leaving puts the list and its figures back, with no search.
         vm.leaveBase()

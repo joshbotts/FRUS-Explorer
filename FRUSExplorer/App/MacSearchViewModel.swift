@@ -2064,6 +2064,8 @@ final class MacSearchViewModel {
     private func rankWholeMatch(run: Int, base: PinnedResultBase, match ran: SearchParameters,
                                 backend: any MeaningSearchRunning) async throws -> Bool {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Read with the run, as the words' layer reads it: whether filters chosen since narrow the closest rows.
+        let filtersNarrowed = base.filtersNarrowTheClosest(parameters)
         let whole = try await backend.rankWholeMatch(query: query, base: base, match: ran,
                                                      parameters: parameters, limit: base.fetchLimit)
         guard searchRuns.isLatest(run) else { return false }
@@ -2075,6 +2077,7 @@ final class MacSearchViewModel {
         beyondLibraryHits = whole.outcome.beyondLibrary
         semanticDisclosure = whole.outcome.disclosure
         rankedSetSignature = whole.setSignature
+        lastLayerFiltersNarrowed = filtersNarrowed
         totalMatchCount = base.totalMatchCount
         lastFetchLimit = base.fetchLimit
         // The held list as it is now, with its match's keys, so that its part counts the match (`signaturePart`).

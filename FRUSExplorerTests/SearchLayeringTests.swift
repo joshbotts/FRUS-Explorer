@@ -111,6 +111,8 @@ struct SearchLayeringTests {
         #expect(whole.rowDescription == "Within 212 results for “offset agreement”")
         #expect(whole.backTitle == "Back to the 212 Results")
         #expect(!whole.wasCut)
+        // These lists carry no search (the fixture's `userTagCountScope` is `nil`), so they keep lane 4's wording for a
+        // cut list; since lane 6 a cut list whose search is known reads "all 35,275 results" (`WholeMatchRulesTests`).
         let cut = base(direction: .rankByMeaning, kind: .keywords, query: "negotiations",
                        rows: keywordRows(1_000), route: .keywords, fetchLimit: 1_000, total: 35_275)
         #expect(cut.wasCut)
