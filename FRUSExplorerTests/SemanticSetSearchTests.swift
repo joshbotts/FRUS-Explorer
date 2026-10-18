@@ -713,18 +713,25 @@ struct SemanticSetRecordAndCopyTests {
     /// which is in the same turn as the run's completion.
     @Test("Both view models sign a Meaning run with the set in the parameters they record")
     func bothViewModelsSignTheSet() throws {
-        let call = Self.squeezed("""
-            lastRunWasSemantic
-                ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil
+        // Both hand the signature to `SearchScopeSignature.layered(_:parameters:base:)`, which adds a held list's
+        // `base=` part to a layer's row and returns any other row's signature as it is (#1577 lanes 4 and 5). Since
+        // lane 6 they read it through `meaningSignature`, which signs a ranking of a list's whole match by the set it
+        // ranked inside (`rankedSetSignature`, which `WholeMatchViewModelTests` drives) and every other Meaning run by
+        // the set in its parameters, as before.
+        let signing = Self.squeezed("""
+            signatureOverride: SearchScopeSignature.layered(
+                lastRunWasSemantic ? meaningSignature : nil,
             """)
-        // iPhone and iPad hand the signature to `SearchScopeSignature.layered(_:parameters:base:)`, which adds a held
-        // list's `base=` part to a layer's row and returns any other row's signature as it is (#1577 lane 4).
-        let signings = [Self.squeezed("signatureOverride: ") + call,
-                        Self.squeezed("signatureOverride: SearchScopeSignature.layered(") + call]
+        let signature = Self.squeezed("""
+            private var meaningSignature: String {
+                if case .rankedByMeaning(_, _?) = executedRoute, let rankedSetSignature { return rankedSetSignature }
+                return SearchScopeSignature.semanticSignature(for: submittedSearchParameters)
+            }
+            """)
         for path in ["FRUSExplorer/Search/SearchViewModel.swift", "FRUSExplorer/App/MacSearchViewModel.swift"] {
             let source = Self.squeezed(try Self.source(path))
-            #expect(signings.contains { source.contains($0) },
-                    "\(path) must sign a Meaning run through semanticSignature(for:)")
+            #expect(source.contains(signing), "\(path) must sign a Meaning run through its Meaning signature")
+            #expect(source.contains(signature), "\(path) must sign a Meaning run through semanticSignature(for:)")
         }
     }
 
@@ -979,14 +986,25 @@ struct SemanticSetRecordAndCopyTests {
         let mac = Self.squeezed(try Self.source("FRUSExplorer/App/MacSearchViewModel.swift"))
         #expect(iOS.contains(Self.squeezed(
             "let outcome = try await backend.run(query: submittedQuery, parameters: searchParameters)")))
-        #expect(iOS.contains(Self.squeezed(
-            "var documentSetSize: Int? { searchParameters.documentIds?.count }")))
+        // While a list cut at its ceiling is held a question ranks its whole match, not the parameters' set, and the
+        // strip counts that match where it is known (#1577 lane 6; `WholeMatchRulesTests.theSetSizeAhead`).
+        #expect(iOS.contains(Self.squeezed("""
+            var documentSetSize: Int? {
+                if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parametersOutsideBase) }
+                return searchParameters.documentIds?.count
+            }
+            """)))
         #expect(mac.contains(Self.squeezed(
             "let outcome = try await backend.run(query: query, parameters: parameters)")))
         // A plain Meaning run holds no list, so its parameters are the window's; while a list is held a question
-        // ranks it, with the list joined to the gate, and the strip counts that set (#1577 lane 5).
-        #expect(mac.contains(Self.squeezed(
-            "var documentSetSize: Int? { LayeredResultComposer.gating(parameters, inside: pinnedBase).documentIds?.count }")))
+        // ranks it, with the list joined to the gate, and the strip counts that set (#1577 lane 5), or its whole match
+        // (lane 6).
+        #expect(mac.contains(Self.squeezed("""
+            var documentSetSize: Int? {
+                if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parameters) }
+                return LayeredResultComposer.gating(parameters, inside: pinnedBase).documentIds?.count
+            }
+            """)))
     }
 
     /// Two places clear a search's rows without running one: the emptied field on iPhone and

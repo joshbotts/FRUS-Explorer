@@ -108,6 +108,8 @@ struct SearchLayerBaseRow: View {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 6: ``rankedStatement(route:disclosure:)``, an empty ranking of a whole match whose set held
+///          documents, which says why none could be listed
 struct SearchLayerEmptyState: View {
 
     /// What the layer looked in, and that it found nothing: the results header's sentence.
@@ -163,6 +165,29 @@ struct SearchLayerEmptyState: View {
         String(localized: "search.layer.empty.ranked",
                defaultValue: "None of the results you are searching within passes your filters.")
     }
+
+    /// What an empty ranking says, by what it ranked (#1577 lane 6).
+    ///
+    /// A ranking of a list's rows, and a ranking of a whole match whose set was empty, say
+    /// ``rankedStatement``: the filters or a working corpus applied since removed every member. A ranking of a
+    /// whole match whose set held documents is empty for another reason, since its filters narrowed the set before
+    /// it was ranked: none of the documents could be ranked and the list held none of them to list unranked, or those
+    /// ranked are not in this device's index. A search inside a set words those cases already
+    /// (`SemanticUnscoredCopy.emptyInsideSet`), and a ranking of a whole match is one; "passes your filters" there
+    /// would blame filters every one of the set passes.
+    ///
+    /// - Parameters:
+    ///   - route: The rows' route, as the view model recorded it.
+    ///   - disclosure: The ranking's disclosure, or `nil`.
+    /// - Returns: The sentence.
+    static func rankedStatement(route: ExecutedSearchRoute, disclosure: SemanticSearchBackend.Disclosure?) -> String {
+        guard case .rankedByMeaning(_, let wholeMatch?) = route, wholeMatch.size > 0, let disclosure else {
+            return rankedStatement
+        }
+        return SemanticUnscoredCopy.emptyInsideSet(
+            setSize: wholeMatch.size, ranked: disclosure.rankedCount ?? 0, filteredOut: 0,
+            volumes: disclosure.unscoredVolumes, downloading: disclosure.downloadingVolumes)
+    }
 }
 
 // MARK: - SearchLayerCopy
@@ -173,6 +198,7 @@ struct SearchLayerEmptyState: View {
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — #1577 lane 5: the Mac window's toolbar button and the label in the Keywords | Meaning control's place
+///   1.2 — #1577 lane 6: the toolbar button's help over a list cut at its ceiling, which a question ranks whole
 enum SearchLayerCopy {
 
     /// The Sort menu's way into a ranking, on a keyword list: it is an order, as the menu's others are.
@@ -215,11 +241,22 @@ enum SearchLayerCopy {
 
     /// The toolbar button's help: what it will do with the list on screen, or why it does nothing now.
     ///
+    /// Over a keyword list or a browse cut at its ceiling a question ranks the whole match and lists the closest of it
+    /// (#1577 lane 6), so "every result stays listed" would be untrue there, and the help says what happens instead.
+    ///
     /// - Parameters:
     ///   - direction: The way a layer over the list on screen would run, or `nil` when none can start.
     ///   - isHolding: Whether a list is held already, which is one reason none can start.
+    ///   - cutAt: The list's ceiling where the list on screen was cut at it, so that a question would rank its whole
+    ///     match; `nil` otherwise.
     /// - Returns: The help.
-    static func searchWithinResultsHelp(_ direction: SearchLayerDirection?, isHolding: Bool) -> String {
+    static func searchWithinResultsHelp(_ direction: SearchLayerDirection?, isHolding: Bool,
+                                        cutAt ceiling: Int? = nil) -> String {
+        if direction == .rankByMeaning, !isHolding, let ceiling {
+            return String(format: String(localized: "search.layer.toolbar.help.rankWholeMatch %@",
+                                         defaultValue: "Rank every result of this search by a question, not only those loaded. The closest %@ are listed."),
+                          ceiling.formatted())
+        }
         if isHolding {
             return String(localized: "search.layer.toolbar.help.held",
                           defaultValue: "You are searching within results already. Stop searching within them to hold another list.")

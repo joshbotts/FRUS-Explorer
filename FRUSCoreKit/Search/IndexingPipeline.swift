@@ -461,6 +461,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         drops its joins (`FilterClause.readsRowColumns`). The same rows in the same order; measured
 ///         on a full index through `SearchService`, a common word inside 327 documents fell from 6.8 s
 ///         to 0.6 s cold, and its count with it from 7.2 s to 0.8 s. No index version
+///  4.42 — 2026-10-18 (#1577 lane 6): `documentKeysMatching(corpusMatch:userContentMatch:filters:)`,
+///         the key of every document a search matches, for `SearchService.matchKeys(parameters:)`: one
+///         `SELECT` over the search's own match and filter builders, which reads the keys from an index
+///         of `document_cache` and not from each matched row, unless a tag or an exact word is among the
+///         filters (`FilterClause.readsUnindexedColumns`; `FilterClause.conditions` is the clause without
+///         its `WHERE`). No other statement changes; no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2039,9 +2045,10 @@ public actor IndexingPipeline {
         documentBatchStoredTestHook = hook
     }
 
-    /// Test hook: called by `searchDocuments` and `searchDocumentsCount`, inside the arming (#1680), once
-    /// their statement is prepared and bound, before its first step (`.prepared`), and again if it runs
-    /// to its end (`.ranToItsEnd`), before the check after it. `nil` in the app.
+    /// Test hook: called by `searchDocuments` and `searchDocumentsCount`, inside the arming (#1680), and by
+    /// `documentKeysMatching` (#1577 lane 6), once their statement is prepared and bound, before its first
+    /// step (`.prepared`), and again if it runs to its end (`.ranToItsEnd`), before the check after it.
+    /// `nil` in the app.
     ///
     /// The first moment is the one after the cancellation check at the statement's start and before
     /// SQLite runs it: a hook that cancels the running task there leaves only the progress handler
@@ -3900,6 +3907,134 @@ public actor IndexingPipeline {
         return (sql, binds)
     }
 
+    // MARK: - The Whole Match (used by SearchService, #1577 lane 6)
+
+    /// The key of every document the search's words and filters match, `"volumeId/documentId"`, each
+    /// once and in no particular order: the whole match, of which `searchDocuments` returns a window
+    /// (#1577 lane 6).
+    ///
+    /// The match and the filters are `searchDocuments`' and `searchDocumentsCount`'s, from the same
+    /// builders, so the keys are the documents the count counts and the search pages through. It is
+    /// one `SELECT`, which writes nothing, not even a temporary table, so it runs on an index opened
+    /// read-only too.
+    ///
+    /// ## The keys are read from an index, not from each matched row
+    ///
+    /// A key is two columns of `document_cache`, the index's largest table, and looking each matched
+    /// row up there is the cost the count is written to avoid. Measured on a full index (553 volumes,
+    /// 318,104 documents) in the `sqlite3` shell, cold on a fresh copy of the file, the keys of
+    /// `government`'s 195,778 matches took 6.37 s read row by row, and 0.23 s read from an index of
+    /// the table that holds both columns and the rowid (0.15 s and 0.05 s warm). So the statement scans
+    /// that index and keeps the entries whose rowid the match holds: the `+` before `dc.rowid` stops
+    /// SQLite from looking each matched rowid up in the table instead. The gate is tested inside the
+    /// `IN`, against the match's own rowid, as the search tests it (decision 53).
+    ///
+    /// The other filters are tested on the index's entries, since `document_cache`'s indexes hold every
+    /// column they read but two (``FilterClause/readsUnindexedColumns``): the front-matter and
+    /// editorial-note flags and the key, beside which a date is read from `document_dates` and a
+    /// person or a subject from the tables keyed by the key. Through `SearchService`, cold and then
+    /// warm: `government` 0.73 s and 0.33 s; with documents only 0.68 s and 0.34 s, where the count of
+    /// the same search, which joins the table, took 6.47 s; with a person, a subject area or two years
+    /// 1.0 to 1.1 s and about 0.4 s. A tag and an exact word read columns no index holds, so with
+    /// either each matched row is joined, as the count joins it (`government` with a tag 6.6 s and
+    /// 0.42 s; `=government`, which reads every matched document's text, 72 s and 58 s, where its
+    /// count took 59 s).
+    ///
+    /// - Parameters:
+    ///   - corpusMatch: The MATCH expression for `frus_documents`, or `nil`.
+    ///   - userContentMatch: The MATCH expression for `user_content`, or `nil`.
+    ///   - filters: The filters.
+    /// - Returns: The keys. None for a search with no words and no filter, which runs nothing, as
+    ///   `searchDocuments` runs nothing for it.
+    /// - Throws: `CancellationError` when the calling task is cancelled before this returns, as the
+    ///   search's statements do (#1680), and `IndexingError.sqliteError` when the statement fails.
+    func documentKeysMatching(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+    ) throws -> [String] {
+        guard let (sql, binds) = try Self.documentKeysMatchingStatement(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+        else { return [] }
+        return try stoppingWhenCancelled {
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (i, bind) in binds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 1), bind, -1, SQLITE_TRANSIENT_IP)
+            }
+            searchStatementTestHook?(.prepared)
+            var keys: [String] = []
+            while try auxStep(stmt) {
+                if let key = auxColumnString(stmt, 0) { keys.append(key) }
+            }
+            searchStatementTestHook?(.ranToItsEnd)
+            return keys
+        }
+    }
+
+    /// The statement `documentKeysMatching` runs and its bind values, or `nil` for a search with no
+    /// words and no filter, which runs nothing. Split out so that a test can explain the real
+    /// statement (#1577 lane 6).
+    ///
+    /// - Parameters:
+    ///   - corpusMatch: The MATCH expression for `frus_documents`, or `nil`.
+    ///   - userContentMatch: The MATCH expression for `user_content`, or `nil`.
+    ///   - filters: The filters.
+    /// - Returns: The statement and its binds.
+    private static func documentKeysMatchingStatement(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+    ) throws -> (sql: String, binds: [String])? {
+        if corpusMatch == nil, userContentMatch == nil {
+            // A browse with no words: the filters alone, as `searchDocuments`' filter-only path runs them.
+            let clause = Self.filterConditions(filters)
+            guard !clause.whereClause.isEmpty else { return nil }
+            let sql = """
+                SELECT dc.volume_id || '/' || dc.document_id
+                FROM document_cache dc
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(clause.whereClause)
+                """
+            return (sql, clause.binds)
+        }
+        let (matchCTE, matchBinds) = try Self.matchCTE(corpusMatch: corpusMatch, userContentMatch: userContentMatch)
+        // The gate is tested against the match's own rowid, as in the search and the count (decision 53).
+        let clause = Self.filterConditions(filters, gateRowid: "m.docrowid")
+        if clause.readsUnindexedColumns {
+            // A tag or an exact word reads a column no index holds: each matched row is joined, as the
+            // count's statement joins it.
+            let sql = """
+                \(matchCTE)
+                SELECT dc.volume_id || '/' || dc.document_id
+                FROM merged m
+                JOIN document_cache dc ON dc.rowid = m.docrowid
+                LEFT JOIN document_dates dd
+                    ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+                \(clause.whereClause)
+                """
+            return (sql, matchBinds + clause.binds)
+        }
+        // Every other filter: the match's rowids, gated as the search gates them, and the keys read from
+        // an index of `document_cache` that holds them and the columns the other filters test, rather than
+        // from each matched row (see `documentKeysMatching`). The binds follow the text's `?`s: the match's,
+        // the gate's inside the `IN`, then the other filters'.
+        let gate = Self.filterConditions(SearchSQLFilters(documentIds: filters.documentIds), gateRowid: "m.docrowid")
+        var others = filters
+        others.documentIds = nil
+        let rows = Self.filterConditions(others)
+        let dates = rows.conditions.isEmpty ? "" : """
+            LEFT JOIN document_dates dd
+                ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
+            """
+        let sql = """
+            \(matchCTE)
+            SELECT dc.volume_id || '/' || dc.document_id
+            FROM document_cache dc
+            \(dates)
+            WHERE +dc.rowid IN (SELECT m.docrowid FROM merged m \(gate.whereClause))
+            \(rows.conditions.isEmpty ? "" : "AND (\(rows.conditions))")
+            """
+        return (sql, matchBinds + gate.binds + rows.binds)
+    }
+
     /// Builds the `WITH merged(docrowid, score)` CTE for the requested match scopes.
     ///
     /// One scope yields a single MATCH subquery; both scopes yield a `UNION ALL`
@@ -4669,6 +4804,20 @@ public actor IndexingPipeline {
         return try queryPlanForTesting(sql)
     }
 
+    /// The query plan of the statement `documentKeysMatching` really runs, or `""` for one that runs
+    /// nothing (#1577 lane 6).
+    ///
+    /// Not used by the app. The keys are the same whichever way SQLite reads them, so only the plan
+    /// can say that a match with no filter is not looked up row by row in `document_cache`.
+    func documentKeysMatchingPlanForTesting(
+        corpusMatch: String?, userContentMatch: String?, filters: SearchSQLFilters
+    ) throws -> String {
+        guard let (sql, _) = try Self.documentKeysMatchingStatement(
+            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters)
+        else { return "" }
+        return try queryPlanForTesting(sql)
+    }
+
     /// The query plan of the statement `searchDocumentsCount` really runs, or `""` for one that runs
     /// nothing (#1577 lane 4). Not used by the app.
     func searchDocumentsCountPlanForTesting(
@@ -4818,8 +4967,10 @@ public actor IndexingPipeline {
     /// A rendered `WHERE` clause, its bind values, and whether it reads the candidate row's own
     /// columns (#1577 lane 4, decision 53).
     struct FilterClause {
+        /// The conditions joined by `AND`, or empty when nothing constrains.
+        let conditions: String
         /// `WHERE …`, or empty when nothing constrains.
-        let whereClause: String
+        var whereClause: String { conditions.isEmpty ? "" : "WHERE " + conditions }
         /// The values for the clause's `?`s, in order.
         let binds: [String]
         /// Whether a condition reads `document_cache` (`dc.`) or `document_dates` (`dd.`), so that a
@@ -4830,6 +4981,15 @@ public actor IndexingPipeline {
         /// search, a count or a facet match set inside a set of documents need not look up every row
         /// the words match, which is what made a common word inside a working corpus take seconds.
         let readsRowColumns: Bool
+        /// Whether a condition reads a column of `document_cache` that none of the table's indexes holds
+        /// (#1577 lane 6): a user tag's `user_tag_ids`, and the text columns of the exact-word filter.
+        ///
+        /// Every other condition reads the row's key, its front-matter or editorial-note flag, its date
+        /// in `document_dates`, or a table keyed by the row's key, and an index of `document_cache`
+        /// holds the first three (`idx_document_cache_facet` and the primary key's). So a statement can
+        /// scan those indexes rather than the table and still test them; `documentKeysMatching` does,
+        /// where no condition sets this.
+        let readsUnindexedColumns: Bool
     }
 
     /// Renders `filters` to a `WHERE` clause and its bind values.
@@ -5024,9 +5184,12 @@ public actor IndexingPipeline {
         // Project defaults) for schema stability but no longer contributes a WHERE
         // condition — otherwise a persisted saved search carrying now-retired subject
         // ids would silently filter every result out against the (now-empty) column.
+        // Conditions that read a column no index of `document_cache` holds: a tag, and the exact word.
+        var unindexedConditions = 0
         for tagId in filters.userTagIds {
             conditions.append("(' ' || COALESCE(dc.user_tag_ids, '') || ' ') LIKE ('% ' || ? || ' %')")
             binds.append(tagId)
+            unindexedConditions += 1
         }
 
         switch filters.documentTypeFilter {
@@ -5056,12 +5219,13 @@ public actor IndexingPipeline {
                 let checks = filters.exactColumns.map { "frus_exact_word(dc.\($0), ?) = 1" }
                 conditions.append("(" + checks.joined(separator: " OR ") + ")")
                 binds.append(contentsOf: Array(repeating: term, count: filters.exactColumns.count))
+                unindexedConditions += 1
             }
         }
 
-        let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
-        return FilterClause(whereClause: whereClause, binds: binds,
-                            readsRowColumns: conditions.count > rowFreeConditions)
+        return FilterClause(conditions: conditions.joined(separator: " AND "), binds: binds,
+                            readsRowColumns: conditions.count > rowFreeConditions,
+                            readsUnindexedColumns: unindexedConditions > 0)
     }
 
     // MARK: - Date Range Query (used by SearchService)

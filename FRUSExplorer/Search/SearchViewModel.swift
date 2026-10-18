@@ -103,6 +103,10 @@ import Observation
 ///          layer's scope sentences are read from `PinnedResultBase`, `LayeredResultComposer` and
 ///          `ResultSetScope.describingLayer(over:filtersNarrowed:sortOrder:)`, which the Mac's window reads too; the
 ///          held list is built from `displayedResults`, in the search's order, as before
+///   2.11 — #1577 lane 6: a question over a list held at its ceiling ranks the list's whole match, inside the filters
+///          chosen since (`rankWholeMatch(run:base:match:backend:)`), in a task whatever replaces the run cancels, and
+///          the trail signs the documents it ranked inside; a UI test can lower the keyword ceiling
+///          (`keywordFetchCeiling`)
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -419,6 +423,16 @@ final class SearchViewModel {
     /// the run can cancel it and the kit stops its statements (#1680). `nil` while no keyword run is
     /// under way. A Meaning run has none: its engine does not stop when cancelled.
     @ObservationIgnored private var keywordFetchUnderWay: Task<KeywordFetch, any Error>?
+
+    /// The ranking of a held list's whole match under way (#1577 lane 6), held for the reason
+    /// ``keywordFetchUnderWay`` is: it reads the match's keys and fetches rows through the kit, whose statements
+    /// stop when the task is cancelled, and for a common word that can be most of a second, or a minute for an
+    /// exact word. `nil` while none is under way.
+    @ObservationIgnored private var wholeMatchRankingUnderWay: Task<SemanticSearchBackend.WholeMatchOutcome, any Error>?
+
+    /// The trail's signature of the documents the last ranking of a whole match ranked inside, written with its rows
+    /// (#1577 lane 6) and read only while ``executedRoute`` is that ranking's (``meaningSignature``).
+    @ObservationIgnored private var rankedSetSignature: String?
 
     /// What a keyword run's fetch brings back: its rows, its total, and how long each took.
     struct KeywordFetch: Sendable {
@@ -840,6 +854,17 @@ final class SearchViewModel {
     /// row's context snippet, and it measures a 7,416-character mean over the corpus — ~7.7 MB per
     /// thousand rows, off SQLite overflow pages. That is what this ceiling bounds.
     static let searchHardLimit: Int = 1_000
+
+    /// The ceiling a search with text in it is fetched at: ``searchHardLimit``, except under a UI test that asks for
+    /// a lower one (`UITestSearchCeiling`, #1577 lane 6), so that a fixture of a few documents can be a list cut at
+    /// its ceiling, which a question then ranks whole. DEBUG builds only read the request; a release build has none.
+    static var keywordFetchCeiling: Int {
+        #if DEBUG
+        UITestSearchCeiling.requested ?? searchHardLimit
+        #else
+        searchHardLimit
+        #endif
+    }
 
     /// Maximum results fetched for a **filter-only browse** — a subject or person constraint with
     /// no keyword, phrase, or prefix.
@@ -1336,7 +1361,7 @@ final class SearchViewModel {
             // `MacSearchViewModel.performSearch`, which has always done it this way.
             // A browse fetches deeper than a keyword search because its rows are far smaller —
             // no `body_text`, since there are no terms to snippet against. See `filterOnlyHardLimit`.
-            let fetchLimit = params.runsAsFilterOnly ? Self.filterOnlyHardLimit : Self.searchHardLimit
+            let fetchLimit = params.runsAsFilterOnly ? Self.filterOnlyHardLimit : Self.keywordFetchCeiling
             // #1577 lane 1: a search inside a document set is timed, for `SearchTimingLog`.
             let clock = ContinuousClock()
             let sent = clock.now
@@ -1587,6 +1612,10 @@ final class SearchViewModel {
     ///   - backend: The Meaning engine.
     /// - Returns: `true` when this run was not replaced, as `search()` returns.
     private func rankHeldList(run: Int, base: PinnedResultBase, backend: any MeaningSearchRunning) async throws -> Bool {
+        // A list cut at its ceiling is ranked whole (#1577 lane 6).
+        if base.ranksWholeMatch, let ran = base.ranParameters {
+            return try await rankWholeMatch(run: run, base: base, match: ran, backend: backend)
+        }
         let ranking = try await backend.rerank(query: submittedQuery, base: base.members, parameters: searchParameters)
         guard searchRuns.isLatest(run) else { return false }
         results = ranking.results
@@ -1597,6 +1626,60 @@ final class SearchViewModel {
         lastFetchLimit = base.fetchLimit
         lastRenderedExpression = SemanticSearchBackend.renderedExpression(rankingAll: base.members.count)
             + base.renderedExpressionSuffix
+        executedSearchVersion &+= 1
+        userTagCountScope = .resultKeys(results.map {
+            UserTagCountScope.DocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
+        })
+        currentPage = 0
+        endSelecting()
+        isSearching = false
+        return true
+    }
+
+    /// A held list cut at its ceiling ranked whole by the question in the field (#1577 lane 6): the closest documents
+    /// of its match, up to the list's ceiling, then the list's own rows the engine cannot rank, if there is room.
+    ///
+    /// ``rankHeldList(run:base:backend:)``'s path for such a list, with the same bookkeeping: the list's ceiling and
+    /// total are kept, the checklist is kept, picks end. Three things are its own. The ranking runs in a task of its
+    /// own, which whatever replaces this run cancels (``stopKeywordFetchUnderWay()``), since reading the match's keys
+    /// and fetching rows go through the kit, whose statements stop when it is cancelled, and the searcher stops between
+    /// its steps. The match's keys are kept with
+    /// the held list, so a second question does not read them again. And the trail signs the documents it ranked
+    /// inside (``rankedSetSignature``), which the parameters a search runs with do not hold: their gate is the list's
+    /// rows.
+    ///
+    /// - Parameters:
+    ///   - run: This run's number, from `search()` (#1648).
+    ///   - base: The held list.
+    ///   - ran: The search that found it, whose match is ranked.
+    ///   - backend: The Meaning engine.
+    /// - Returns: `true` when this run was not replaced, as `search()` returns.
+    private func rankWholeMatch(run: Int, base: PinnedResultBase, match ran: SearchParameters,
+                                backend: any MeaningSearchRunning) async throws -> Bool {
+        let query = submittedQuery
+        // The filters chosen since the list was held narrow the match before the ranking, which says what they left out.
+        let parameters = parametersOutsideBase
+        let ranking = Task { () async throws -> SemanticSearchBackend.WholeMatchOutcome in
+            try await backend.rankWholeMatch(query: query, base: base, match: ran,
+                                             parameters: parameters, limit: base.fetchLimit)
+        }
+        wholeMatchRankingUnderWay = ranking
+        defer { if wholeMatchRankingUnderWay == ranking { wholeMatchRankingUnderWay = nil } }
+        let whole = try await ranking.value
+        guard searchRuns.isLatest(run) else { return false }
+        pinnedBase?.keepWholeMatch(whole.matchKeys)
+        results = whole.outcome.results
+        executedRoute = .rankedByMeaning(unranked: whole.outcome.results.filter { $0.semanticScore == nil }.count,
+                                         wholeMatch: whole.ranking)
+        beyondLibraryHits = whole.outcome.beyondLibrary
+        semanticDisclosure = whole.outcome.disclosure
+        rankedSetSignature = whole.setSignature
+        totalMatchCount = base.totalMatchCount
+        lastFetchLimit = base.fetchLimit
+        // The held list as it is now, with its match's keys, so that its part counts the match (`signaturePart`).
+        lastRenderedExpression = SemanticSearchBackend.renderedExpression(rankingAll: whole.ranking.size,
+                                                                          listing: base.fetchLimit)
+            + (pinnedBase ?? base).renderedExpressionSuffix
         executedSearchVersion &+= 1
         userTagCountScope = .resultKeys(results.map {
             UserTagCountScope.DocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
@@ -1778,8 +1861,7 @@ final class SearchViewModel {
                 // Inside a document set it names the set as well (#1577 lane 1), and a layer adds
                 // its base (`base=`, #1577 lane 4), which an earlier build passes over.
                 signatureOverride: SearchScopeSignature.layered(
-                    lastRunWasSemantic
-                        ? SearchScopeSignature.semanticSignature(for: submittedSearchParameters) : nil,
+                    lastRunWasSemantic ? meaningSignature : nil,
                     parameters: submittedSearchParameters, base: layer),
                 projectId: projectId,
                 hasError: searchError != nil),
@@ -1791,6 +1873,13 @@ final class SearchViewModel {
         #else
         _ = outcome
         #endif
+    }
+
+    /// The Meaning signature the trail records for the rows on screen: the documents a ranking of a whole match
+    /// ranked inside (#1577 lane 6), which ``submittedSearchParameters`` does not hold, or the set the parameters hold.
+    private var meaningSignature: String {
+        if case .rankedByMeaning(_, _?) = executedRoute, let rankedSetSignature { return rankedSetSignature }
+        return SearchScopeSignature.semanticSignature(for: submittedSearchParameters)
     }
 
     func clearFilters() {
@@ -1848,11 +1937,14 @@ final class SearchViewModel {
         searchRuns.replaceRunsUnderWay()
     }
 
-    /// Cancels the keyword fetch under way, if any, so that the kit stops its statements (#1680). The
-    /// run it belonged to writes nothing either way: the ledger says it was replaced.
+    /// Cancels the keyword fetch under way, if any, so that the kit stops its statements (#1680), and the
+    /// ranking of a whole match under way (#1577 lane 6). The run it belonged to writes nothing either way: the
+    /// ledger says it was replaced.
     private func stopKeywordFetchUnderWay() {
         keywordFetchUnderWay?.cancel()
         keywordFetchUnderWay = nil
+        wholeMatchRankingUnderWay?.cancel()
+        wholeMatchRankingUnderWay = nil
     }
 
     /// Whether the search under way has no words (#1648): a browse, such as a person's Find all
@@ -1931,7 +2023,15 @@ final class SearchViewModel {
     ///
     /// The Meaning strip and the pre-search prompt read it to say where a Meaning search will
     /// rank. Zero is a set that holds nothing, which is not the same as no set.
-    var documentSetSize: Int? { searchParameters.documentIds?.count }
+    ///
+    /// While a list cut at its ceiling is held it is the list's whole match, which a question ranks (#1577 lane 6;
+    /// `PinnedResultBase.wholeMatchSetSize(for:)`), or `nil` where only reading the match could say it: under a gate
+    /// or a filter chosen since. The strip waits over a held list's own rows here in any case (`SearchView`), and the
+    /// Mac's window by the same rule.
+    var documentSetSize: Int? {
+        if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parametersOutsideBase) }
+        return searchParameters.documentIds?.count
+    }
 
     /// Clears any applied working corpus.
     func clearWorkingCorpus() {

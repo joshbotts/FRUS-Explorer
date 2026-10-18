@@ -361,10 +361,13 @@ struct MacSearchWindowView: View {
 
             if searchVM.searchMode == .meaning {
                 // The Meaning strip replaces the MATCH inspector — no FTS expression exists,
-                // and the strip carries the route's own disclosures.
-                SemanticModeStrip(disclosure: searchVM.semanticDisclosure,
-                                  beyondCount: searchVM.beyondLibraryHits.count,
-                                  pendingSetSize: searchVM.documentSetSize)
+                // and the strip carries the route's own disclosures. Not over a list cut at its
+                // ceiling while what a question would rank inside it is not known (#1577 lane 6).
+                if !searchVM.holdsTheMeaningStripBack {
+                    SemanticModeStrip(disclosure: searchVM.semanticDisclosure,
+                                      beyondCount: searchVM.beyondLibraryHits.count,
+                                      pendingSetSize: searchVM.documentSetSize)
+                }
             } else {
                 queryInspectorStrip
             }
@@ -1126,7 +1129,10 @@ struct MacSearchWindowView: View {
             }
             .labelStyle(.titleAndIcon)
             .disabled(direction == nil)
-            .help(SearchLayerCopy.searchWithinResultsHelp(direction, isHolding: searchVM.pinnedBase != nil))
+            // #1577 lane 6: over a list cut at its ceiling, the help says a question ranks the whole match.
+            .help(SearchLayerCopy.searchWithinResultsHelp(
+                direction, isHolding: searchVM.pinnedBase != nil,
+                cutAt: searchVM.isResultSetTruncated ? searchVM.lastFetchLimit : nil))
         }
 
         ToolbarItem(placement: .primaryAction) {
@@ -2017,7 +2023,10 @@ struct MacSearchWindowView: View {
     private func layerEmptyState(_ base: PinnedResultBase) -> some View {
         let wordsInMatches = base.direction == .wordsInMatches
         return SearchLayerEmptyState(
-            statement: wordsInMatches ? resultSetScope.headerDescription : SearchLayerEmptyState.rankedStatement,
+            statement: wordsInMatches
+                ? resultSetScope.headerDescription
+                : SearchLayerEmptyState.rankedStatement(route: resultSetScope.route,
+                                                        disclosure: searchVM.semanticDisclosure),
             searchLibraryTitle: wordsInMatches ? SearchLayerEmptyState.searchLibraryTitle : nil,
             backTitle: base.backTitle,
             searchLibrary: { searchVM.leaveBaseKeepingTheWords() },

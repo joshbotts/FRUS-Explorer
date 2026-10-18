@@ -960,3 +960,15 @@ xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -only-testing FRUSExplorerUITests/SaveSearchSheetTests \
   -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
 ```
+
+**`SearchWithinTheWholeMatchTests` (#1577 lane 6, in `SearchWithinResultsTests.swift`) runs on an iPhone and an iPad, and nothing skips on either.** It is the one suite that reaches a list cut at its ceiling, which a question ranks whole. No fixture holds more than thirty documents one search matches, so the launch lowers the ceiling: `FRUS_UI_TEST_SEARCH_CEILING=4` (`UITestSearchCeiling`, DEBUG-only and inert without `FRUS_UI_TEST_MODE`) fetches a search with text in it at four rows, and the fixture's phrase, which all six of its documents hold (the `SearchWithinResultsTests` entry above), lists four of them, "4 loaded · 6 total". The suite waits for that header rather than for titled rows, since which four the keyword engine loads is its own. Sort ▸ Closest to a Question… holds the list, and the row must read "Searching within all 6 results for “"Synthetic UI-test content"”" to VoiceOver. The near question must then rank all six, not the four loaded: "Closest 3 of 6 results · 3 not ranked", Two, One and Three at 100, 32 and 3 percent, and "1 result not ranked by meaning" over one of the list's own unranked rows, the room the ceiling of four leaves. One test.
+
+**The control** (`v2` at `b222fcb7` with the seam and this suite added, iPhone 17, iOS 27.0, 2026-10-18): **1 test, 1 failed (141 s)**, at the row that names the base, which there reads "Searching within the first 4 of 6 results for “"Synthetic UI-test content"”": lane 4 ranked the four rows loaded.
+
+Measured on 2026-10-18 under iOS 27.0 at the lane's last code commit (`799f9813`), run with `SearchWithinResultsTests` and nothing building beside them: **iPhone 17 (`E32250EF…`): 1 test, 1 passed (162 s); iPad Pro 13-inch (M5) (`4A953DF9…`): 1 test, 1 passed (90 s)**, and `SearchWithinResultsTests` 5 of 5 on each. At the lane's first app commit the same test had passed in 237 s and 202 s; that iPhone's first run never started its test, its runner "Timed out waiting for AX loaded notification", and after the simulator was rebooted it ran.
+```bash
+xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/SearchWithinTheWholeMatchTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```

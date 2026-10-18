@@ -23,7 +23,7 @@ import Foundation
 /// and the new rows' arrival it names an engine the rows on screen did not come from. Whatever
 /// describes those rows asks this, and whatever concerns the field asks the picker.
 ///
-/// ``wordsInMatches(base:)`` and ``rankedByMeaning(unranked:)`` are the two layers of Search Within These
+/// ``wordsInMatches(base:)`` and ``rankedByMeaning(unranked:wholeMatch:)`` are the two layers of Search Within These
 /// Results. Lane 2 gave them their sentences in ``ResultSetScope`` before any search produced them, so that
 /// the lanes that build the control adopt one vocabulary; since #1577 lane 4 iPhone and iPad produce both
 /// (`SearchViewModel`'s held base), and since lane 5 the Mac's window does (`MacSearchViewModel`'s).
@@ -32,6 +32,7 @@ import Foundation
 ///   1.0 — #1577 lane 2: initial implementation, in place of `ResultSetScope`'s `isMeaningSearch` flag
 ///   1.1 — #1577 lane 4: produced by iPhone and iPad; the two cases' owed notes are answered where they stand
 ///   1.2 — #1577 lane 5: produced by the Mac's window too
+///   1.3 — #1577 lane 6: a ranking carries ``WholeMatchRanking`` when it ranked a list's whole match
 enum ExecutedSearchRoute: Equatable, Sendable {
 
     /// A keyword match, or a browse with no words: rows the index matched.
@@ -54,7 +55,11 @@ enum ExecutedSearchRoute: Equatable, Sendable {
     /// ``ResultSetScope/didHitFetchLimit`` reads the keyword fetch's ceiling for this route, so the
     /// ranking keeps the base's `lastFetchLimit` and total where a Meaning run overwrites them (#1577
     /// lane 4 does both).
-    case rankedByMeaning(unranked: Int)
+    ///
+    /// `wholeMatch` is set when the list held was cut at its ceiling and the question ranked its whole
+    /// match instead (#1577 lane 6): the rows are then the closest of the match, up to the ceiling, and
+    /// the `unranked` rows those the ranking listed after them. `nil` for a ranking of the rows held.
+    case rankedByMeaning(unranked: Int, wholeMatch: WholeMatchRanking? = nil)
 
     /// Whether the facet panel describes the rows on screen and not a match in the index.
     ///
@@ -82,6 +87,43 @@ enum ExecutedSearchRoute: Equatable, Sendable {
     }
 }
 
+// MARK: - WholeMatchRanking
+
+/// What a question ranked when the list it ranked had been cut at its ceiling (#1577 lane 6), for the sentences
+/// that describe the rows.
+///
+/// A keyword list or a browse held at its ceiling (1,000 rows on iPhone and iPad, 7,500 on the Mac) is the
+/// highest-scoring slice of a larger match. Lane 4 ranked the slice. Since lane 6 the question ranks the whole
+/// match and lists the closest rows up to the ceiling, so the header names the match the rows were chosen from as
+/// well as the rows: "Closest 1,000 of 35,275 results". A ranking that could list every document of the match, a
+/// working corpus applied since having narrowed it below the ceiling, is not cut, and reads as lane 4's.
+///
+/// Filters chosen since the list was held narrow the match before the ranking, so the closest listed are the closest
+/// of the documents that pass them, and the header says so: "Closest 1,000 of the 4,012 results that pass your
+/// filters". Narrowing the closest rows after the ranking, as every other Meaning list is narrowed, left the documents
+/// that pass the filters and rank below the ceiling out of reach: a volume none of whose documents was among the
+/// closest 1,000 listed nothing, under the row naming all 35,275 (the diff's review).
+///
+/// Version history:
+///   1.0 — #1577 lane 6: initial implementation
+struct WholeMatchRanking: Equatable, Sendable {
+    /// The documents the ranking chose its rows from: the held list's whole match, less the rows Checklist Mode hid
+    /// when it was held, inside a working corpus applied since, and passing the filters chosen since.
+    let size: Int
+    /// The documents of the match the filters chosen since left out of ``size``, before the ranking: 0 where none was
+    /// chosen or none left anything out.
+    var filteredOut = 0
+    /// Of the documents ranked inside, those no ranking can place: with no vector, or in a volume whose match file is
+    /// not on this device.
+    let notRanked: Int
+    /// The rows the ranking listed by their closeness: the closest of the documents it ranked, at most the ceiling.
+    /// The list's own rows that it could not rank follow them, where there is room.
+    let closest: Int
+    /// Whether the ranking listed fewer of the documents than there are: the closest up to the ceiling, of a larger
+    /// match. What makes its list partial evidence, and a working corpus saved from it a partial capture.
+    let isCut: Bool
+}
+
 // MARK: - SearchRunLedger
 
 /// The searches a screen has sent, numbered, so that a run a later one replaced writes nothing when
@@ -90,8 +132,9 @@ enum ExecutedSearchRoute: Equatable, Sendable {
 /// A run's rows could come back however long ago the reader moved on. Until #1680 nothing under a
 /// search checked for cancellation. The kit now stops a keyword search when the task running it is
 /// cancelled, which iPhone and iPad do as a later run starts and the Mac's window does when its search
-/// task is replaced, and a cancelled keyword search gets no rows; but the Meaning engine does not stop
-/// at all. Two runs that overlapped landed in the order they finished, so the older one could take the
+/// task is replaced, and a cancelled keyword search gets no rows; but the Meaning engine stops only
+/// between the steps of a search inside a set (#1577 lane 6), and a search across the series runs to
+/// its end. Two runs that overlapped landed in the order they finished, so the older one could take the
 /// list: a Meaning search still under way when the reader switched to Keywords and searched landed
 /// over the keyword rows.
 ///
@@ -199,6 +242,9 @@ struct SearchRunLedger: Equatable, Sendable {
 ///   1.4 — #1577 lane 5: both view models set the layer's five members by one rule,
 ///         `describingLayer(over:filtersNarrowed:sortOrder:)` (`SearchLayering.swift`), and the Mac's count line
 ///         renders ``headerDescription`` over a layer
+///   1.5 — #1577 lane 6: a ranking of a whole match (`WholeMatchRanking`): its header ("Closest 1,000 of 35,275
+///         results", "… of the 4,012 results that pass your filters", "None of the 24 results could be ranked"), its
+///         cut, and its capture's warning and record, each counted from the rows the ranking ranked
 struct ResultSetScope: Equatable, Sendable {
 
     // MARK: - The sets
@@ -330,6 +376,9 @@ struct ResultSetScope: Equatable, Sendable {
     var didHitFetchLimit: Bool {
         switch route {
         case .meaning, .wordsInMatches: return false
+        // A ranking of a whole match is cut where it listed fewer of the match than there are (#1577 lane 6); a
+        // ranking of the rows held, where the list it ranked was (lane 4).
+        case .rankedByMeaning(_, let wholeMatch?): return wholeMatch.isCut
         case .rankedByMeaning: if let layerBaseWasCut { return layerBaseWasCut }
         case .keywords: break
         }
@@ -450,8 +499,10 @@ struct ResultSetScope: Equatable, Sendable {
                                              defaultValue: "%1$@ of your %2$@ closest matches contain these words"),
                               grouped(loaded), grouped(base))
             }
-        case .rankedByMeaning(let unranked):
+        case .rankedByMeaning(let unranked, let wholeMatch):
             guard loaded > 0 else { return nil }
+            // A whole match ranked and cut (#1577 lane 6): the closest rows, and the match they were chosen from.
+            if let wholeMatch, wholeMatch.isCut { return wholeMatchClause(wholeMatch) }
             guard unranked > 0 else {
                 // "Closest first" is the order's claim, and a date sort is another order (#1577 lane 4).
                 guard listIsInRankOrder else { return resultsPhrase(loaded) }
@@ -462,6 +513,43 @@ struct ResultSetScope: Equatable, Sendable {
                                          defaultValue: "%1$@ · %2$@ ranked · %3$@ not ranked"),
                           resultsPhrase(loaded), grouped(max(0, loaded - unranked)), grouped(unranked))
         }
+    }
+
+    /// The header clause of a ranking of a whole match that listed the closest of it (#1577 lane 6): "Closest 1,000 of
+    /// 35,275 results", with how many of the documents it ranked inside no ranking could place.
+    ///
+    /// The first figure is a claim about a set, which is true whatever order the list is shown in, so a date sort
+    /// leaves it, where it drops lane 4's "closest first". Filters chosen since narrowed the match before the ranking
+    /// (``WholeMatchRanking/filteredOut``), so the second figure is of the documents that pass them, and the clause
+    /// says so: the row above names the whole match. Where nothing could be ranked, the rows are the list's own, under
+    /// the line that counts them, and the clause says only that.
+    ///
+    /// - Parameter wholeMatch: What the ranking ranked.
+    /// - Returns: The clause.
+    private func wholeMatchClause(_ wholeMatch: WholeMatchRanking) -> String {
+        let filtered = wholeMatch.filteredOut > 0
+        guard wholeMatch.closest > 0 else {
+            return filtered
+                ? String(format: String(localized: "search.count.rankedWholeMatch.noneRanked.filtered %@",
+                                        defaultValue: "None of the %@ results that pass your filters could be ranked"),
+                         grouped(wholeMatch.size))
+                : String(format: String(localized: "search.count.rankedWholeMatch.noneRanked %@",
+                                        defaultValue: "None of the %@ results could be ranked"),
+                         grouped(wholeMatch.size))
+        }
+        var parts = [filtered
+            ? String(format: String(localized: "search.count.rankedWholeMatch.filtered %@ %@",
+                                    defaultValue: "Closest %1$@ of the %2$@ results that pass your filters"),
+                     grouped(wholeMatch.closest), grouped(wholeMatch.size))
+            : String(format: String(localized: "search.count.rankedWholeMatch %@ %@",
+                                    defaultValue: "Closest %1$@ of %2$@ results"),
+                     grouped(wholeMatch.closest), grouped(wholeMatch.size))]
+        if wholeMatch.notRanked > 0 {
+            parts.append(String(format: String(localized: "search.count.rankedWholeMatch.notRanked %@",
+                                               defaultValue: "%@ not ranked"),
+                                grouped(wholeMatch.notRanked)))
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// The words-in-matches clause when filters chosen since the list was held narrowed the layer too
@@ -600,16 +688,58 @@ struct ResultSetScope: Equatable, Sendable {
                          defaultValue: "These documents are the ones among a Meaning search’s closest matches that contain your words, not every document that contains them. Counts taken inside this corpus are counts inside that set.")
         }
         guard didHitFetchLimit else { return nil }
-        if let totalMatchCount {
+        // The closest of a whole match, not its highest-scoring rows (#1577 lane 6), counted from what the ranking
+        // ranked: the rows listed after the closest, which it could not rank, are not the closest of anything.
+        if case .rankedByMeaning(let unranked, let wholeMatch?) = route {
+            // Nothing ranked: the rows are the list's own inside the set, which are the highest-scoring of the set by
+            // the keyword engine's measure, since any document of the set the list did not hold scored below them all.
+            guard wholeMatch.closest > 0 else { return highestScoringWarning(of: wholeMatch.size) }
+            guard unranked > 0 else {
+                return wholeMatch.closest == 1
+                    ? String(format: String(
+                        localized: "corpus.save.rankedWholeMatch.one %@",
+                        defaultValue: "This document is the closest to your question of %@ matching documents, not all of them. Counts taken inside this corpus are counts inside that subset."),
+                        grouped(wholeMatch.size))
+                    : String(format: String(
+                        localized: "corpus.save.rankedWholeMatch %@ %@",
+                        defaultValue: "These %1$@ documents are the closest to your question of %2$@ matching documents, not all of them. Counts taken inside this corpus are counts inside that subset."),
+                        grouped(wholeMatch.closest), grouped(wholeMatch.size))
+            }
             return String(format: String(
-                localized: "corpus.save.truncated.total %@ %@",
-                defaultValue: "These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts taken inside this corpus are counts inside that subset."),
-                grouped(loaded), grouped(totalMatchCount))
+                localized: "corpus.save.rankedWholeMatch.unranked %@ %@ %@ %@",
+                defaultValue: "These %1$@ documents are the %2$@ closest to your question of %3$@ matching documents, and %4$@ that it could not rank. Counts taken inside this corpus are counts inside that subset."),
+                grouped(loaded), grouped(wholeMatch.closest), grouped(wholeMatch.size), grouped(unranked))
         }
+        if let totalMatchCount { return highestScoringWarning(of: totalMatchCount) }
         return String(format: String(
             localized: "corpus.save.truncated.unknown %@",
             defaultValue: "These %@ documents are the highest-scoring of a larger match, not all of it. Counts taken inside this corpus are counts inside that subset."),
             grouped(loaded))
+    }
+
+    /// "These 1,000 documents are the highest-scoring of 35,275 matching documents": the warning over a keyword list
+    /// cut at its ceiling, and over a ranking of a whole match that could rank none of it, whose rows are then the
+    /// list's own (#1577 lane 6).
+    ///
+    /// - Parameter total: The documents the rows are the highest-scoring of.
+    /// - Returns: The warning.
+    private func highestScoringWarning(of total: Int) -> String {
+        String(format: String(
+            localized: "corpus.save.truncated.total %@ %@",
+            defaultValue: "These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts taken inside this corpus are counts inside that subset."),
+            grouped(loaded), grouped(total))
+    }
+
+    /// " — the highest-scoring 1,000 of 35,275 matches": the record's clause for the rows of
+    /// ``highestScoringWarning(of:)``.
+    ///
+    /// - Parameter total: The documents the rows are the highest-scoring of.
+    /// - Returns: The clause, with its leading dash.
+    private func highestScoringClause(of total: Int) -> String {
+        String(format: String(
+            localized: "corpus.save.source.truncated.total %@ %@",
+            defaultValue: " — the highest-scoring %1$@ of %2$@ matches"),
+            grouped(loaded), grouped(total))
     }
 
     /// What checklist mode is keeping out of the capture.
@@ -673,12 +803,25 @@ struct ResultSetScope: Equatable, Sendable {
             // A keyword list: a corpus stores a set and not an order.
             description = String(localized: "corpus.save.source.search", defaultValue: "Search results")
         }
-        if didHitFetchLimit {
-            if let totalMatchCount {
+        if didHitFetchLimit, case .rankedByMeaning(let unranked, let wholeMatch?) = route {
+            // The closest of a whole match, which is not the highest-scoring slice of it (#1577 lane 6), counted as
+            // the warning counts them.
+            if wholeMatch.closest == 0 {
+                description += highestScoringClause(of: wholeMatch.size)
+            } else if unranked > 0 {
                 description += String(format: String(
-                    localized: "corpus.save.source.truncated.total %@ %@",
-                    defaultValue: " — the highest-scoring %1$@ of %2$@ matches"),
-                    grouped(loaded), grouped(totalMatchCount))
+                    localized: "corpus.save.source.rankedWholeMatch.unranked %@ %@ %@",
+                    defaultValue: " — the closest %1$@ of %2$@ matches, and %3$@ not ranked"),
+                    grouped(wholeMatch.closest), grouped(wholeMatch.size), grouped(unranked))
+            } else {
+                description += String(format: String(
+                    localized: "corpus.save.source.rankedWholeMatch %@ %@",
+                    defaultValue: " — the closest %1$@ of %2$@ matches"),
+                    grouped(wholeMatch.closest), grouped(wholeMatch.size))
+            }
+        } else if didHitFetchLimit {
+            if let totalMatchCount {
+                description += highestScoringClause(of: totalMatchCount)
             } else {
                 description += String(format: String(
                     localized: "corpus.save.source.truncated.unknown %@",

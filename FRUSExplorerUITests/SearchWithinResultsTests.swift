@@ -33,14 +33,16 @@ struct LayerScreen {
     /// Long, because a wait that is met returns at once and this Mac is not always quiet.
     static let patience: TimeInterval = 30
 
-    /// A launch on the Search tab with the fixture volume and the Meaning seam, offline.
-    static func launch(contentSizeCategory: String? = nil) -> XCUIApplication {
+    /// A launch on the Search tab with the fixture volume and the Meaning seam, offline, and with a search with text in
+    /// it fetched at `searchCeiling` rows where one is given (`UITestSearchCeiling`, #1577 lane 6).
+    static func launch(contentSizeCategory: String? = nil, searchCeiling: Int? = nil) -> XCUIApplication {
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
         app.launchEnvironment["FRUS_UI_TEST_SEED_MEANING"] = "1"
+        if let searchCeiling { app.launchEnvironment["FRUS_UI_TEST_SEARCH_CEILING"] = String(searchCeiling) }
         app.launchArguments = UITestLaunch.arguments(startingOn: .search, contentSizeCategory: contentSizeCategory)
         // The reader's own automatic match-file download, off; see `MeaningResultsSeamTests.setUp`.
         app.launchArguments += ["-frus.semantic.autoDownloadShards", "<false/>"]
@@ -133,6 +135,20 @@ struct LayerScreen {
         }
         XCTFail("\"\(text)\" never listed \(count) fixture documents; buttons on screen: "
                 + app.buttons.allElementsBoundByIndex.prefix(40).map { "\"\($0.label)\"" }.joined(separator: ", "),
+                file: file, line: line)
+    }
+
+    /// Submits `text` until the results header reads `header`: a list whose rows the fixture's titles do not tell apart,
+    /// such as one cut at a lowered ceiling. The fixture is indexed during launch, and a search that runs first finds
+    /// nothing.
+    func searchUntilHeader(_ text: String, reads header: String, file: StaticString = #filePath, line: UInt = #line) {
+        let found = app.staticTexts.matching(NSPredicate(format: "label == %@", header)).firstMatch
+        for _ in 1...5 {
+            submit(text, file: file, line: line)
+            if found.waitForExistence(timeout: 12) { return }
+        }
+        XCTFail("\"\(text)\" never read \"\(header)\"; texts on screen: "
+                + app.staticTexts.allElementsBoundByIndex.prefix(40).map { "\"\($0.label)\"" }.joined(separator: ", "),
                 file: file, line: line)
     }
 
@@ -403,6 +419,75 @@ final class SearchWithinResultsTests: XCTestCase {
                       "A recalled search leaves the base, and the control comes back")
         XCTAssertFalse(screen.element("search.layer.base").exists)
         XCTAssertEqual(screen.fixtureRows.count, 3)
+    }
+}
+
+// MARK: - SearchWithinTheWholeMatchTests (#1577 lane 6)
+
+/// A keyword list cut at its ceiling, ranked whole by a question (#1577 lane 6), end to end through lane 3's Meaning
+/// seam and a lowered ceiling (`UITestSearchCeiling`).
+///
+/// ## What it drives
+/// The launch fetches a search with text in it at four rows, so the fixture's phrase, which all six of its documents
+/// hold, lists four of them, "4 loaded · 6 total": a list cut at its ceiling, as 1,000 of 35,275 are. Sort ▸ Closest to
+/// a Question… holds it, and the row names the whole match: "all 6 results". The near question then ranks all six, not
+/// the four loaded: the three with vectors, Two, One and Three, at 100, 32 and 3 percent, which of them were loaded or
+/// not, under "Closest 3 of 6 results · 3 not ranked", and one of the list's own unranked rows after them, the room the
+/// ceiling leaves, under "1 result not ranked by meaning".
+///
+/// ## Devices
+/// An iPhone 17 and an iPad Pro 13-inch (M5), `OS=27.0`; nothing skips. On the code before lane 6, with the seam and
+/// this suite added, it fails at the row, which names "the first 4 of 6 results", and a ranking there ranks only the
+/// four loaded.
+///
+/// Version history:
+///   1.0 — #1577 lane 6: initial implementation
+@MainActor
+final class SearchWithinTheWholeMatchTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = LayerScreen.launch(searchCeiling: 4)
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            LayerScreen(app: app).leave()
+            app.terminate()
+        }
+        app = nil
+    }
+
+    /// The phrase's six documents, four loaded, held from the Sort menu and ranked whole by the near question.
+    func testAQuestionRanksTheWholeMatchOfAListCutAtItsCeiling() throws {
+        let screen = LayerScreen(app: app)
+        screen.searchUntilHeader(LayerScreen.fixturePhrase, reads: "4 loaded · 6 total")
+        screen.waitForTheMeaningEngine()
+        let sort = screen.element("search.actions.sort")
+        XCTAssertTrue(sort.waitForExistence(timeout: LayerScreen.patience), "The actions bar has no Sort menu")
+        sort.tap()
+        let closest = app.buttons["Closest to a Question…"].firstMatch
+        XCTAssertTrue(closest.waitForExistence(timeout: LayerScreen.patience), "The Sort menu has no Closest to a Question…")
+        closest.tap()
+
+        screen.waitForBaseRow("Searching within all 6 results for “\(LayerScreen.fixturePhrase)”")
+
+        screen.type(LayerScreen.nearQuestion)
+        screen.waitForText("Closest 3 of 6 results · 3 not ranked", "after the question was asked")
+        let rows = screen.listed()
+        XCTAssertEqual(rows.map(\.title), ["UI Test Document Two", "UI Test Document One", "UI Test Document Three"],
+                       "All three with vectors are ranked, closest first, those the list had not loaded among them")
+        XCTAssertEqual(rows.map(\.score),
+                       ["Semantic match 100 percent", "Semantic match 32 percent", "Semantic match 3 percent"])
+        let unranked = screen.element("search.layer.unranked")
+        XCTAssertTrue(unranked.waitForExistence(timeout: LayerScreen.patience), "No line counts the unranked rows")
+        XCTAssertEqual(unranked.label, "1 result not ranked by meaning",
+                       "One of the list's own unranked rows, the room the ceiling of four leaves")
     }
 }
 

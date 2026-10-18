@@ -33,6 +33,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — #1577 lane 5: initial implementation
+///   1.1 — #1577 lane 6: a list cut at its ceiling is ranked whole, and the trail signs the set it ranked inside
 @Suite("Search within results on the Mac, the wiring (#1577 lane 5)")
 struct MacSearchWithinResultsWiringTests {
 
@@ -136,8 +137,10 @@ struct MacSearchWithinResultsWiringTests {
             #expect(body.contains(Self.squeezed(call)), "`\(header)` does not gate its value by the composer")
         }
         let model = Self.code(try Self.source(Self.model))
-        #expect(model.contains(
-            "var documentSetSize: Int? { LayeredResultComposer.gating(parameters, inside: pinnedBase).documentIds?.count }"),
+        // Since #1577 lane 6 a list cut at its ceiling is ranked inside its whole match, which the property names first
+        // (`aCutListIsRankedWhole` reads that branch); every other list, as here, by the composer's gate.
+        #expect(Self.squeezedCode(try Self.declaration("var documentSetSize: Int? {", in: Self.model)).contains(
+            Self.squeezed("return LayeredResultComposer.gating(parameters, inside: pinnedBase).documentIds?.count")),
                 "the Meaning strip names a set other than the one a ranking runs inside")
         #expect(model.components(separatedBy: "LayeredResultComposer.gating(").count - 1 == 5,
                 "a value a search runs with is gated somewhere this test does not read")
@@ -358,8 +361,9 @@ struct MacSearchWithinResultsWiringTests {
                     holdBase()
                 } label: {
             """)))
+        // The help's call gained lane 6's `cutAt:`, which `aCutListIsRankedWhole` reads whole.
         for modifier in [".labelStyle(.titleAndIcon)", ".disabled(direction == nil)",
-                         ".help(SearchLayerCopy.searchWithinResultsHelp(direction, isHolding: searchVM.pinnedBase != nil))"] {
+                         ".help(SearchLayerCopy.searchWithinResultsHelp(direction, isHolding: searchVM.pinnedBase != nil,"] {
             #expect(item.contains(Self.squeezed(modifier)), "the button lost `\(modifier)`")
         }
         #expect(!Self.code(toolbar).contains("keyboardShortcut"))
@@ -436,6 +440,10 @@ struct MacSearchWithinResultsWiringTests {
         let empty = Self.squeezedCode(try Self.declaration("private func layerEmptyState(_ base: PinnedResultBase) -> some View {",
                                                            in: Self.window))
         #expect(empty.contains(Self.squeezed("searchLibrary: { searchVM.leaveBaseKeepingTheWords() },")))
+        // An empty ranking says why by what it ranked (#1577 lane 6), as iPhone and iPad's does.
+        #expect(empty.contains(Self.squeezed(
+            "SearchLayerEmptyState.rankedStatement(route: resultSetScope.route, disclosure: searchVM.semanticDisclosure)")),
+                "an empty ranking of a whole match blames the filters")
         let model = Self.squeezedCode(try Self.source(Self.model))
         #expect(model.contains(Self.squeezed("if isShowingBase, let ran = pinnedBase?.ranParameters { return ran }")))
         #expect(model.contains(Self.squeezed("if isShowingBase, let base = pinnedBase { return base.query }")))
@@ -510,5 +518,75 @@ struct MacSearchWithinResultsWiringTests {
             .disabled(searchVM.results.isEmpty || !searchVM.offersReadings)
             .opacity(searchVM.results.isEmpty || !searchVM.offersReadings ? 0.45 : 1)
             """)), "the Reading picker is dimmed by the condition that turns it off")
+    }
+
+    // MARK: A list cut at its ceiling (#1577 lane 6)
+
+    /// A question over a list held at its 7,500-row ceiling ranks the list's whole match, as on iPhone and iPad, where
+    /// `WholeMatchViewModelTests` runs the twin: the branch is the held list's own rule, the ranking is handed the
+    /// parameters outside the list and its ceiling, its rows are written with the ranking's route and the list keeps the
+    /// match's keys, and the trail signs the set ranked inside. The toolbar's help says so over a cut list.
+    @Test("A list cut at its ceiling is ranked whole, by the iPhone's rule, and the trail signs the set it ranked inside (#1577 lane 6)")
+    func aCutListIsRankedWhole() throws {
+        let rank = Self.squeezedCode(try Self.declaration(
+            "private func rankHeldList(run: Int, base: PinnedResultBase, backend: any MeaningSearchRunning)", in: Self.model))
+        #expect(rank.contains(Self.squeezed("""
+            if base.ranksWholeMatch, let ran = base.ranParameters {
+                return try await rankWholeMatch(run: run, base: base, match: ran, backend: backend)
+            }
+            """)), "rankHeldList no longer hands a cut list to the whole-match ranking")
+        let whole = Self.squeezedCode(try Self.declaration(
+            "private func rankWholeMatch(run: Int, base: PinnedResultBase, match ran: SearchParameters,", in: Self.model))
+        for statement in [
+            "let whole = try await backend.rankWholeMatch(query: query, base: base, match: ran, parameters: parameters, limit: base.fetchLimit)",
+            "guard searchRuns.isLatest(run) else { return false }",
+            "pinnedBase?.keepWholeMatch(whole.matchKeys)",
+            "results = whole.outcome.results",
+            "executedRoute = .rankedByMeaning(unranked: whole.outcome.results.filter { $0.semanticScore == nil }.count, wholeMatch: whole.ranking)",
+            "endSelecting()",
+            "semanticDisclosure = whole.outcome.disclosure",
+            "rankedSetSignature = whole.setSignature",
+            "totalMatchCount = base.totalMatchCount",
+            "lastFetchLimit = base.fetchLimit",
+            "lastRenderedExpression = SemanticSearchBackend.renderedExpression(rankingAll: whole.ranking.size, listing: base.fetchLimit) + (pinnedBase ?? base).renderedExpressionSuffix",
+            "executedSearchVersion &+= 1",
+        ] {
+            #expect(whole.contains(Self.squeezed(statement)), "rankWholeMatch lost `\(statement)`")
+        }
+        // Handed `parameters`, never the list's gated value: the gate a search inside the list runs with is its rows.
+        #expect(!whole.contains("LayeredResultComposer.gating"), "the whole match is narrowed by the gate outside the list")
+        // The filters chosen since narrow the match before the ranking, which says what they left out
+        // (`WholeMatchRanking.filteredOut`): the window's flag for a layer's filters is the words' alone.
+        #expect(!whole.contains("lastLayerFiltersNarrowed"), "a ranking of a whole match writes the words' flag, where its own record says what its filters left out")
+        #expect(!whole.contains("settleChecklist") && !whole.contains("settleSelection"),
+                "a ranking inside a held list keeps the list's checklist")
+        // The Meaning strip names the whole match a question would rank, or waits where only reading it could say.
+        let size = Self.squeezedCode(try Self.declaration("var documentSetSize: Int? {", in: Self.model))
+        #expect(size.contains(Self.squeezed(
+            "if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parameters) }")),
+                "the strip names a set the filters chosen since would narrow")
+        let holds = Self.squeezedCode(try Self.declaration("var holdsTheMeaningStripBack: Bool {", in: Self.model))
+        #expect(holds.contains(Self.squeezed(
+            "isShowingBase && pinnedBase?.ranksWholeMatch == true && documentSetSize == nil")))
+        #expect(Self.squeezedCode(try Self.source(Self.window)).contains(Self.squeezed("""
+            if !searchVM.holdsTheMeaningStripBack {
+                SemanticModeStrip(disclosure: searchVM.semanticDisclosure,
+                                  beyondCount: searchVM.beyondLibraryHits.count,
+                                  pendingSetSize: searchVM.documentSetSize)
+            }
+            """)), "the window holds the strip back over a cut list whose ranked set is not known")
+        let signature = Self.squeezedCode(try Self.declaration("private var meaningSignature: String {", in: Self.model))
+        #expect(signature.contains(Self.squeezed(
+            "if case .rankedByMeaning(_, _?) = executedRoute, let rankedSetSignature { return rankedSetSignature }")))
+        let record = Self.squeezedCode(try Self.declaration("func recordSearchHistory(projectId: UUID?,", in: Self.model))
+        #expect(record.contains(Self.squeezed("lastRunWasSemantic ? meaningSignature : nil,")),
+                "the trail signs a Meaning row through the whole match's signature")
+        let toolbar = Self.squeezedCode(try Self.declaration("private var searchToolbar: some ToolbarContent {",
+                                                             in: Self.window))
+        #expect(toolbar.contains(Self.squeezed("""
+            .help(SearchLayerCopy.searchWithinResultsHelp(
+                direction, isHolding: searchVM.pinnedBase != nil,
+                cutAt: searchVM.isResultSetTruncated ? searchVM.lastFetchLimit : nil))
+            """)), "the toolbar's help says a question ranks a cut list whole")
     }
 }

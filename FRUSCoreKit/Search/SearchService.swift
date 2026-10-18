@@ -105,6 +105,8 @@ import FTS5Store
 ///          cancelled before they return: the pipeline's statement stops at its progress handler's
 ///          next call, usually within a millisecond, and the snippet pass, now
 ///          `results(from:parameters:)`, at its next row
+///   2.14 — #1577 lane 6: `matchKeys(parameters:)`, the key of every document a search matches,
+///          which Search Within These Results ranks by a question when the list was cut at its ceiling
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -282,6 +284,30 @@ public actor SearchService {
         var filtersOnly = parameters
         filtersOnly.keywords = nil
         return try await pipeline.documentKeysMatchingFilters(makeFilters(from: filtersOnly))
+    }
+
+    /// Every document `parameters` match, keyed `"volumeId/documentId"`: the whole match, where
+    /// ``search(parameters:limit:offset:)`` returns a window of it (#1577 lane 6).
+    ///
+    /// The same match expressions and the same filters as `search` and ``searchCount(parameters:)``,
+    /// so there are as many keys as the count says, and they are the documents a search with no limit
+    /// would list. A search ranks the match and fills each row's snippet; this does neither, and so
+    /// stays cheap for a match of any size: what Search Within These Results ranks by a question when
+    /// the list on screen was cut at its ceiling. A key appears once. The order is none in particular,
+    /// so a caller that needs the search's order runs the search.
+    ///
+    /// - Parameter parameters: The search: its words, its scopes and its filters, a document gate among
+    ///   them.
+    /// - Returns: The keys; none for a search with no words and no filter.
+    /// - Throws: `FTS5Error.emptyQuery` where `search` throws it, and `CancellationError` when the
+    ///   calling task is cancelled before this returns, as `search` does (#1680).
+    public func matchKeys(parameters: SearchParameters) async throws -> [String] {
+        let (corpusMatch, userMatch) = try makeMatchExpressions(from: parameters)
+        return try await pipeline.documentKeysMatching(
+            corpusMatch: corpusMatch,
+            userContentMatch: userMatch,
+            filters: makeFilters(from: parameters)
+        )
     }
 
     /// Splits a stored space-separated tag-id column for a semantic display row — the same rule

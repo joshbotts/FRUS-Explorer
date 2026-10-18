@@ -120,6 +120,10 @@ enum SearchLayerDirection: Equatable, Sendable {
 ///   1.1 — #1577 lane 5: the rules a view model holds a list by, for the Mac's window as for iPhone and iPad:
 ///          ``members(of:shown:)``, ``kind(route:query:ran:browseName:)``, ``browseName(of:)``, and the filters'
 ///          ``filtersNarrow(_:)`` and ``wasFound(under:)``
+///   1.2 — #1577 lane 6: a list cut at its ceiling and held for a question is ranked whole
+///          (``ranksWholeMatch``): its row says "all 35,275 results", it keeps its match's keys once a ranking
+///          has read them (``wholeMatch``), and its record counts the match; ``wholeMatchSetSize(for:)`` and
+///          ``filtersNarrowTheMatch(_:)``, what the Meaning strip may say before a question
 struct PinnedResultBase: Sendable {
 
     /// What kind of list the base is, for the row that names it and the record.
@@ -181,6 +185,68 @@ struct PinnedResultBase: Sendable {
     /// The members' keys, as `SearchParameters.documentIds` keys them.
     var memberKeys: [String] { members.map(\.id) }
 
+    /// The keys of the list's whole match, as the index gave them (`SearchService.matchKeys(parameters:)`), once a
+    /// ranking has read them, and `nil` before (#1577 lane 6). Kept with the list so that a second question asks
+    /// the index nothing: the list is frozen, and so is its match. Keys only, never rowids (rule 6).
+    private(set) var wholeMatch: [String]?
+
+    /// Whether a question ranks this list's whole match rather than its rows (#1577 lane 6): a keyword list or a
+    /// browse cut at its ceiling, held for a Meaning layer, whose search is known.
+    ///
+    /// Such a list is the highest-scoring slice of a larger match, a different slice on each platform, and a ranking
+    /// of the slice is not a ranking of the match. So the question ranks every document of the match, and the list
+    /// shows the closest up to the ceiling (`SemanticSearchBackend.rankWholeMatch(query:base:match:parameters:limit:)`).
+    /// A layer of words never takes this path: words are found only inside a Meaning list, which is never cut.
+    var ranksWholeMatch: Bool {
+        direction == .rankByMeaning && wasCut && ranParameters != nil
+    }
+
+    /// How many documents the list's whole match holds: its search's count, or the keys a ranking read where the
+    /// count failed, or `nil` while neither is known.
+    var wholeMatchCount: Int? { totalMatchCount ?? wholeMatch?.count }
+
+    /// The keys of the rows Checklist Mode was hiding when the list was held, which no layer searches: a ranking of
+    /// the whole match leaves them out of it as the members leave them out of the rows.
+    var hiddenKeys: Set<String> {
+        Set(rows.map(\.id)).subtracting(members.map(\.id))
+    }
+
+    /// How many documents a question would rank inside this list's whole match, where that is known without reading
+    /// the match (#1577 lane 6): its count less the rows hidden as reviewed, under no gate or the gate the list was
+    /// found under, which narrowed its match already, and under no filter it was not found under. `nil` for a list
+    /// ranked by its rows; under a gate applied since, or a filter chosen since (``filtersNarrowTheMatch(_:)``), whose
+    /// intersection with the match only the keys say; and while the count is not known: the Meaning strip then says
+    /// nothing in advance rather than a number the ranking would not bear out.
+    ///
+    /// - Parameter parameters: The parameters in force outside the held list: its document gate and its filters.
+    /// - Returns: The size, or `nil`.
+    func wholeMatchSetSize(for parameters: SearchParameters) -> Int? {
+        let gate = parameters.documentIds
+        guard ranksWholeMatch, gate == nil || gate == ranParameters?.documentIds,
+              !filtersNarrowTheMatch(parameters),
+              let count = wholeMatchCount else { return nil }
+        return max(0, count - hiddenByChecklist)
+    }
+
+    /// Whether filters chosen since the list was held narrow its whole match (#1577 lane 6), which a ranking of it then
+    /// ranks inside them (`SemanticSearchBackend.rankWholeMatch(query:base:match:parameters:limit:)`). The document
+    /// gate is left out, set back to the list's own: a working corpus applied since is the gate's to narrow.
+    ///
+    /// - Parameter parameters: The filters in force outside the held list.
+    /// - Returns: Whether they narrow the match.
+    func filtersNarrowTheMatch(_ parameters: SearchParameters) -> Bool {
+        var after = parameters
+        after.documentIds = ranParameters?.documentIds
+        return filtersNarrow(after)
+    }
+
+    /// Keeps the keys of the list's whole match, which a ranking has read, for the questions after it.
+    ///
+    /// - Parameter keys: The keys, as `SearchService.matchKeys(parameters:)` returned them.
+    mutating func keepWholeMatch(_ keys: [String]) {
+        wholeMatch = keys
+    }
+
     /// The parameters the held list's keyword search ran with, or `nil` for a Meaning list, whose rows no match
     /// found: the match a facet over the list's own rows aggregates (#1577 lane 4's finding, on the Mac since lane 5).
     var ranParameters: SearchParameters? { userTagCountScope?.ranParameters }
@@ -236,15 +302,20 @@ struct PinnedResultBase: Sendable {
 
     // MARK: - The row that names the base
 
-    /// "100 closest matches to “how did the embassy…”", "212 results for “offset agreement”", "the
-    /// first 1,000 of 35,275 results for “negotiations”": the set, as the row that names the base
-    /// says it after "Within".
+    /// "100 closest matches to “how did the embassy…”", "212 results for “offset agreement”", "all
+    /// 35,275 results for “negotiations”": the set, as the row that names the base says it after
+    /// "Within".
     ///
     /// Counted by its members, the rows the layer runs inside, which is what the list showed. Where
     /// the base was cut at its fetch ceiling the sentence says so, as the assessment's design
     /// requires: the members are then the highest-scoring slice of a larger match, and a ranking of
     /// them is not a ranking of it. "The first 1,000" is the fetch, so it counts every row loaded;
     /// what Checklist Mode hid among them is ``leftOutDescription``'s to say.
+    ///
+    /// Since #1577 lane 6 a cut list held for a question is ranked whole (``ranksWholeMatch``), and the
+    /// row says so instead: "all 35,275 results for “negotiations”", counted by the match, or "every
+    /// result for “negotiations”" while its size is not known. The first slice no longer bounds the
+    /// layer, so the row does not name it.
     var setDescription: String {
         let count = members.count
         switch kind {
@@ -257,6 +328,17 @@ struct PinnedResultBase: Sendable {
                                          defaultValue: "%1$@ closest matches to “%2$@”"),
                           count.formatted(), shownQuery)
         case .keywords:
+            // A question ranks the whole match of a list cut at its ceiling (#1577 lane 6), so the row names it whole.
+            if ranksWholeMatch {
+                if let count = wholeMatchCount {
+                    return String(format: String(localized: "search.layer.set.keywords.whole %@ %@",
+                                                 defaultValue: "all %1$@ results for “%2$@”"),
+                                  count.formatted(), shownQuery)
+                }
+                return String(format: String(localized: "search.layer.set.keywords.wholeUnknown %@",
+                                             defaultValue: "every result for “%@”"),
+                              shownQuery)
+            }
             if wasCut {
                 if let totalMatchCount {
                     return String(format: String(localized: "search.layer.set.keywords.cut %@ %@ %@",
@@ -272,9 +354,28 @@ struct PinnedResultBase: Sendable {
                           Self.resultsPhrase(count), shownQuery)
         case .browse(let name):
             guard let name, !name.isEmpty else {
+                if ranksWholeMatch {
+                    if let total = wholeMatchCount {
+                        return String(format: String(localized: "search.layer.set.browse.unnamed.whole %@",
+                                                     defaultValue: "all %@ results of your browse"),
+                                      total.formatted())
+                    }
+                    return String(localized: "search.layer.set.browse.unnamed.wholeUnknown",
+                                  defaultValue: "every result of your browse")
+                }
                 return String(format: String(localized: "search.layer.set.browse.unnamed %@",
                                              defaultValue: "%@ of your browse"),
                               Self.resultsPhrase(count))
+            }
+            if ranksWholeMatch {
+                if let total = wholeMatchCount {
+                    return String(format: String(localized: "search.layer.set.browse.whole %@ %@",
+                                                 defaultValue: "all %1$@ results for %2$@"),
+                                  total.formatted(), name)
+                }
+                return String(format: String(localized: "search.layer.set.browse.wholeUnknown %@",
+                                             defaultValue: "every result for %@"),
+                              name)
             }
             if wasCut {
                 if let totalMatchCount {
@@ -362,7 +463,8 @@ struct PinnedResultBase: Sendable {
 
     /// The `base=` part a layer's trail row carries (#1577 lane 4): the base's kind, its members'
     /// count and its query, percent-encoded so that a `;` or `=` in the words cannot break the
-    /// signature apart. Locale-free, as every part of a signature is.
+    /// signature apart. Locale-free, as every part of a signature is. For a list ranked whole the
+    /// count is its whole match's, less the rows hidden as reviewed (#1577 lane 6).
     ///
     /// `base=meaning:100:how%20did%20the%20embassy`, `base=keywords:212:offset%20agreement`,
     /// `base=browse:1976:Aerial%20reconnaissance`. `SearchScopeSignature.describe` turns it into a
@@ -375,7 +477,14 @@ struct PinnedResultBase: Sendable {
         case .keywords: kindToken = "keywords"; text = shownQuery
         case .browse(let name): kindToken = "browse"; text = name ?? ""
         }
-        return "base=\(kindToken):\(members.count):\(Self.percentEncoded(text))"
+        return "base=\(kindToken):\(recordedSize):\(Self.percentEncoded(text))"
+    }
+
+    /// The size the record gives the list: its members, or for a list ranked whole (#1577 lane 6) its whole match
+    /// less the rows Checklist Mode hid, which is what a question ranked inside.
+    private var recordedSize: Int {
+        guard ranksWholeMatch, let whole = wholeMatchCount else { return members.count }
+        return max(0, whole - hiddenByChecklist)
     }
 
     /// What a layer's rendered expression adds, for the method appendix's CSV, which prints the
@@ -558,6 +667,10 @@ struct AnsweredSearchTrigger: Equatable, Sendable {
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — #1577 lane 5: ``unrankedTail(of:route:sortOrder:)``, the iPhone view model's rule, which the Mac's window
 ///          follows too; ``gating(_:inside:)`` has its four Mac callers
+///   1.2 — #1577 lane 6: a ranking of a list's whole match: the set it ranks (``wholeMatchSet(_:leavingOut:inside:)``,
+///          inside the filters chosen since: ``wholeMatchSet(_:passing:)``), the rows it lists
+///          (``wholeMatchSelection(ranked:members:admitted:limit:)``, ``admittedMembers(_:of:)``) and their scores
+///          (``wholeMatchRows(ranked:fill:rows:)``)
 enum LayeredResultComposer {
 
     /// The rows a keyword search inside a Meaning base found, in the base's order and each with the
@@ -610,6 +723,116 @@ enum LayeredResultComposer {
             unranked += 1
         }
         return (rows, unranked)
+    }
+
+    /// The documents a ranking of a list's whole match ranks inside (#1577 lane 6): the match's keys, less the rows
+    /// Checklist Mode hid when the list was held, inside the document gate a working corpus applied since sets.
+    ///
+    /// A list's members are its rows less the hidden ones, and a working corpus applied since narrows them (rule 2:
+    /// filters edited during a layer only narrow it); the whole match is narrowed by the same two. Pure, and called
+    /// off the main actor: a common word's match is some 200,000 keys.
+    ///
+    /// - Parameters:
+    ///   - keys: The match's keys, as the index gave them.
+    ///   - hidden: The keys of the rows hidden as reviewed when the list was held (`PinnedResultBase.hiddenKeys`).
+    ///   - gate: The document gate in force outside the held list, or `nil` for none. An empty gate admits nothing,
+    ///     as it does everywhere.
+    /// - Returns: The keys, in the order given.
+    static func wholeMatchSet(_ keys: [String], leavingOut hidden: Set<String>, inside gate: [String]?) -> [String] {
+        let admitted = gate.map { Set($0) }
+        guard !hidden.isEmpty || admitted != nil else { return keys }
+        return keys.filter { !hidden.contains($0) && (admitted?.contains($0) ?? true) }
+    }
+
+    /// The documents of a whole match's set that pass the filters chosen since the list was held (#1577 lane 6), which
+    /// is the set a ranking of the match ranks inside: so the closest it lists are the closest of those that pass, and a
+    /// document that passes and ranks below the ceiling is not lost to the cut. Pure, and called off the main actor.
+    ///
+    /// - Parameters:
+    ///   - set: The set (``wholeMatchSet(_:leavingOut:inside:)``).
+    ///   - filterKeys: The keys the other filters admit (`SearchService.filterKeySet(parameters:)`), or `nil` where
+    ///     nothing constrains.
+    /// - Returns: The members that pass, in the set's order.
+    static func wholeMatchSet(_ set: [String], passing filterKeys: Set<String>?) -> [String] {
+        guard let filterKeys else { return set }
+        return set.filter { filterKeys.contains($0) }
+    }
+
+    /// The rows a ranking of a whole match lists, chosen before they are fetched (#1577 lane 6): the ranked documents,
+    /// closest first, at most `limit`; then, where fewer than `limit` could be ranked, the held list's own members that
+    /// could not be, in the list's order, up to `limit` in all.
+    ///
+    /// Rule 4 as far as the ceiling allows: a document no ranking can place is listed after those it ranked, never
+    /// scored as zero, and those the list has no room for are counted (`WholeMatchRanking.notRanked`). The members are
+    /// the keyword search's highest-scoring rows, so the unranked among them, in their order, are the unranked
+    /// documents that search puts first, and a ranking with nothing it can score lists the held list's own rows. When
+    /// fewer than `limit` are ranked, `ranked` holds every document that was, so a member not among them is one that
+    /// could not be.
+    ///
+    /// - Parameters:
+    ///   - ranked: The ranked documents' keys and scores, closest first, at most `limit`: the searcher's hits.
+    ///   - members: The held list's members, in its order.
+    ///   - admitted: The members' keys that are in the set ranked (``admittedMembers(_:of:)``): a member a working
+    ///     corpus applied since leaves out, or one the match no longer holds, is not listed.
+    ///   - limit: The ceiling.
+    /// - Returns: The ranked documents to list, and the members to list after them.
+    static func wholeMatchSelection(ranked: [(key: String, score: Double)], members: [SearchResult],
+                                    admitted: Set<String>, limit: Int)
+        -> (ranked: [(key: String, score: Double)], fill: [SearchResult]) {
+        let chosen = Array(ranked.prefix(max(0, limit)))
+        let room = max(0, limit) - chosen.count
+        guard room > 0 else { return (chosen, []) }
+        let placed = Set(chosen.map(\.key))
+        let fill = members.lazy
+            .filter { !placed.contains($0.id) && admitted.contains($0.id) }
+            .prefix(room)
+        return (chosen, Array(fill))
+    }
+
+    /// The keys of the held list's members that are in the set a ranking of its whole match ranks (#1577 lane 6): the
+    /// rows it may list after the ranked ones (``wholeMatchSelection(ranked:members:admitted:limit:)``). Pure, and called
+    /// off the main actor with ``wholeMatchSet(_:leavingOut:inside:)``, since the set is some 200,000 keys.
+    ///
+    /// - Parameters:
+    ///   - members: The held list's members.
+    ///   - set: The set ranked.
+    /// - Returns: The members' keys in it.
+    static func admittedMembers(_ members: [SearchResult], of set: [String]) -> Set<String> {
+        let keys = Set(members.map(\.id))
+        var admitted: Set<String> = []
+        for key in set where keys.contains(key) {
+            admitted.insert(key)
+            if admitted.count == keys.count { break }
+        }
+        return admitted
+    }
+
+    /// A whole match's chosen rows with their scores (#1577 lane 6): each ranked document's row, closest first, with
+    /// its score on the chip and negated for the date sorts' tie-break, as a Meaning list's rows carry it; then the
+    /// members listed after them, with none.
+    ///
+    /// - Parameters:
+    ///   - ranked: The ranked documents to list, closest first.
+    ///   - fill: The members to list after them, in the list's order.
+    ///   - rows: A row for each ranked document: the held list's own, or the keyword search's run again for those it
+    ///     does not hold, so each keeps its keyword snippet.
+    /// - Returns: The rows, and how many ranked documents had no row, which are not listed.
+    static func wholeMatchRows(ranked: [(key: String, score: Double)], fill: [SearchResult],
+                               rows: [String: SearchResult]) -> (rows: [SearchResult], missing: Int) {
+        var listed: [SearchResult] = []
+        listed.reserveCapacity(ranked.count + fill.count)
+        var missing = 0
+        for hit in ranked {
+            guard let row = rows[hit.key] else {
+                missing += 1
+                continue
+            }
+            listed.append(row.replacingScores(bm25: -hit.score, semantic: hit.score))
+        }
+        for member in fill {
+            listed.append(member.replacingScores(bm25: member.bm25Score, semantic: nil))
+        }
+        return (listed, missing)
     }
 
     /// `parameters` gated to the base as well: its document set joins the working corpus and the
