@@ -77,6 +77,8 @@ is the index, not the entry.
 | `FilterVolumeListTests` (in `MeaningResultsSeamTests.swift`) | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 1 test, 1 passed on each; never skips; the guard for Filters' volume list, which fails on the code before its fix on both |
 | `SearchBulkActionsTests` | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 5 tests, 5 passed on each; never skips; allow 600 s a test when the Mac is busy; on a simulator just booted, run one test first |
 | `ResultSelectionBarFitTests` (in `SearchBulkActionsTests.swift`) | iPhone 17 and iPhone SE (3rd generation), `OS=27.0` | 6 tests, 6 passed on each; iPhone-only, self-skips at iPad width; fails when the tab shell's banner is not showing; on a simulator just booted, run one test first |
+| `SearchWithinResultsTests` | iPhone 17 and iPad Pro 13-inch (M5), `OS=27.0` | 5 tests, 5 passed on each; never skips; needs no search model (`FRUS_UI_TEST_SEED_MEANING`); fails on the code before #1577 lane 4; allow 600 s a test; on a simulator just booted, run one test first |
+| `SearchLayerBaseRowFitTests` (in `SearchWithinResultsTests.swift`) | iPhone 17 and iPhone SE (3rd generation), `OS=27.0` | 5 tests, 5 passed on each; iPhone-only, self-skips at iPad width; fails when the tab shell's banner is not showing; allow 600 s a test |
 | `WordCloudLensTests`, `NaturalLanguageReadinessWarmUpTests` (unit target) | iPad Pro 13-inch (M5), `OS=27.0` | a guard only on iOS 27.0; a control elsewhere |
 
 Five rules hold for every UI run, and the runbook gives the measurement behind each:
