@@ -30,6 +30,9 @@ struct LayerScreen {
     static let nearQuestion = "how did the exchange of letters begin"
     /// A phrase every fixture document holds, its three without vectors included, and no published document does.
     static let fixturePhrase = "\"Synthetic UI-test content\""
+    /// Words two fixture documents hold, and nothing published: Two, which has a vector, and Nested Document Two, which
+    /// has none. Of the near question's three closest matches only Two holds them (#1577 lane 7).
+    static let swapWords = "\(fixturePhrase) Two"
     /// Long, because a wait that is met returns at once and this Mac is not always quiet.
     static let patience: TimeInterval = 30
 
@@ -227,6 +230,9 @@ struct LayerScreen {
 /// - **Words found nowhere** show what was looked in, and the two ways on: back to the list, or the words across the
 ///   whole library, which leaves the base.
 /// - **A recalled saved search**, a hand-off, leaves the base; and Save this search is off while a base is held.
+/// - **Swap** (#1577 lane 7): the words found in one of the Meaning list's three, swapped, list every document that
+///   holds them, closest to the question first, a row with no vector that the Meaning list never held among them; and
+///   swapped back, the words are found in the three again.
 ///
 /// ## Devices
 /// An iPhone 17 and an iPad Pro 13-inch (M5); nothing skips. The view is shared, but the iPad adds the regular-width
@@ -237,6 +243,7 @@ struct LayerScreen {
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — the recalled-search test saves the name the Save Search sheet offers, with no edit to it: the sheet's Save
 ///         is on as it opens since its fix (`SaveSearchSheetTests`)
+///   1.2 — #1577 lane 7: Swap, each way
 @MainActor
 final class SearchWithinResultsTests: XCTestCase {
 
@@ -420,6 +427,51 @@ final class SearchWithinResultsTests: XCTestCase {
         XCTAssertFalse(screen.element("search.layer.base").exists)
         XCTAssertEqual(screen.fixtureRows.count, 3)
     }
+
+    /// Words found in one of the near question's three closest matches, swapped: both documents that hold the words,
+    /// closest to the question first, and the one with no vector, which the Meaning list never held, after the line
+    /// that counts it. Swapped back, the words are found in the three again.
+    func testSwapRanksEveryResultForTheWordsAndSwapsBack() throws {
+        let screen = LayerScreen(app: app)
+        screen.chooseMeaning()
+        screen.searchUntilListed(LayerScreen.nearQuestion, count: 3)
+        screen.chooseFromTheMoreMenu("Find Words in These Matches")
+        screen.waitForBaseRow("Searching within 3 closest matches to “\(LayerScreen.nearQuestion)”")
+        let swap = screen.element("search.layer.swap")
+        XCTAssertFalse(swap.exists, "Swap is offered before a search has run inside the list")
+        screen.type(LayerScreen.swapWords)
+        screen.waitForText("1 of your 3 closest matches contains these words", "after the words were searched for")
+        XCTAssertTrue(swap.waitForExistence(timeout: LayerScreen.patience),
+                      "The row offers no Swap once a search has run inside the list")
+        XCTAssertEqual(swap.label, "Swap the two searches")
+        swap.tap()
+
+        screen.waitForBaseRow("Searching within 2 results for “\(LayerScreen.swapWords)”")
+        screen.waitForText("2 results · 1 ranked · 1 not ranked", "after the swap")
+        let rows = screen.listed()
+        XCTAssertEqual(rows.map(\.title), ["UI Test Document Two"], "The document with a vector, ranked")
+        XCTAssertEqual(rows.map(\.score), ["Semantic match 100 percent"])
+        let unranked = screen.element("search.layer.unranked")
+        XCTAssertTrue(unranked.waitForExistence(timeout: LayerScreen.patience), "No line counts the unranked row")
+        XCTAssertEqual(unranked.label, "1 result not ranked by meaning")
+        let nested = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'UI Test Nested Document Two'")).firstMatch
+        XCTAssertTrue(nested.waitForExistence(timeout: LayerScreen.patience),
+                      "The document the Meaning list never held, which the words find, is not listed")
+        XCTAssertGreaterThanOrEqual(nested.frame.minY, unranked.frame.maxY - 0.5, "It is not under the line")
+        XCTAssertEqual(app.searchFields.firstMatch.value as? String, LayerScreen.nearQuestion,
+                       "The field holds the list's question, asked inside the words' results")
+        XCTAssertFalse(screen.modePicker.exists, "The row still takes the Keywords | Meaning control's place")
+
+        // And back: a swap is a list held with a search inside it, which can be swapped in turn.
+        let on = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: swap)
+        XCTAssertEqual(XCTWaiter.wait(for: [on], timeout: LayerScreen.patience), .completed, "Swap stays off")
+        swap.tap()
+        screen.waitForBaseRow("Searching within 3 closest matches to “\(LayerScreen.nearQuestion)”")
+        screen.waitForText("1 of your 3 closest matches contains these words", "after swapping back")
+        XCTAssertEqual(screen.listed().map(\.title), ["UI Test Document Two"])
+        XCTAssertEqual(app.searchFields.firstMatch.value as? String, LayerScreen.swapWords,
+                       "The field holds the words again")
+    }
 }
 
 // MARK: - SearchWithinTheWholeMatchTests (#1577 lane 6)
@@ -502,12 +554,26 @@ final class SearchWithinTheWholeMatchTests: XCTestCase {
 /// the field the keyboard, and the banner gives way to a keyboard (#1070), so the layout is measured as a reader reads
 /// the list, with the keyboard put away. Each accessibility size proves it took effect by the search field's height.
 ///
+/// Each size is measured once with a held keyword list, before a search has run inside it. Since #1577 lane 7, L, XXXL
+/// and AX1 are measured a second time, with Swap on the row, which it offers once a search has run inside the list: the
+/// near question's Meaning list, whose sentence is the longest the fixture gives the row, held, with words found in it.
+/// Swap narrows the sentence's column, so the row is measured where it is narrowest too: Swap after the sentence and
+/// before the ✕, inside the window, 44 points tall, and a result still above the banner.
+///
+/// **Not at AX3 and AX5, and why.** The way to that row passes through a plain Meaning list, and at AX3 and AX5 its
+/// Meaning strip makes the top inset taller than an iPhone 17's screen: SwiftUI centres it, the More menu sat at y −394
+/// and the list below the screen, so the near question listed nothing on screen (measured 2026-10-18; lane 4 recorded
+/// that no suite measured plain Meaning mode at those sizes). That is the strip's, before any list is held, and not the
+/// row's. And from AX1 up the row is drawn alike, at XXXL in two lines at most: the first measurement put its sentence
+/// at x 51–342 at AX1, AX3 and AX5. So AX1's second measurement is the row with Swap at every accessibility size.
+///
 /// ## Devices
 /// An iPhone 17 (402 pt) and an iPhone SE (3rd generation, 375 pt, iOS 27). It skips at iPad width, where the row fits
 /// either way.
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 7: L, XXXL and AX1 measured again with Swap on the row
 @MainActor
 final class SearchLayerBaseRowFitTests: XCTestCase {
 
@@ -527,21 +593,23 @@ final class SearchLayerBaseRowFitTests: XCTestCase {
         app = nil
     }
 
-    func testBaseRowFitsAtStandardSize() throws { try assertBaseRowFits(at: nil, named: "L") }
+    func testBaseRowFitsAtStandardSize() throws { try assertBaseRowFits(at: nil, named: "L", withSwap: true) }
     func testBaseRowFitsAtLargestStandardSize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryXXXL", named: "XXXL")
+        try assertBaseRowFits(at: "UICTContentSizeCategoryXXXL", named: "XXXL", withSwap: true)
     }
     func testBaseRowFitsAtFirstAccessibilitySize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityM", named: "AX1")
+        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityM", named: "AX1", withSwap: true)
     }
+    /// With no second measurement: see the suite's note on AX3 and AX5.
     func testBaseRowFitsAtMiddleAccessibilitySize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3")
+        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3", withSwap: false)
     }
+    /// With no second measurement: see the suite's note on AX3 and AX5.
     func testBaseRowFitsAtLargestAccessibilitySize() throws {
-        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5")
+        try assertBaseRowFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5", withSwap: false)
     }
 
-    private func assertBaseRowFits(at category: String?, named size: String) throws {
+    private func assertBaseRowFits(at category: String?, named size: String, withSwap: Bool) throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
         if Self.defaultFieldHeight == 0 {
             launch(at: nil)
@@ -617,6 +685,68 @@ final class SearchLayerBaseRowFitTests: XCTestCase {
                 content-size category did not take effect, so this run says nothing
                 """)
         }
+
+        if withSwap { try assertTheRowWithSwapFits(at: size, screen: screen) }
+    }
+
+    /// The row with Swap on it (#1577 lane 7): the near question's Meaning list held, whose sentence is the longest the
+    /// fixture gives the row, with words found in it, the keyboard the search raised put away.
+    private func assertTheRowWithSwapFits(at size: String, screen: LayerScreen) throws {
+        let leave = screen.element("search.layer.leave")
+        leave.tap()
+        XCTAssertTrue(screen.modePicker.waitForExistence(timeout: LayerScreen.patience),
+                      "Closing the row at \(size) did not bring the Keywords | Meaning control back")
+        screen.chooseMeaning()
+        screen.searchUntilListed(LayerScreen.nearQuestion, count: 1)
+        screen.chooseFromTheMoreMenu("Find Words in These Matches")
+        screen.type("Two")
+        screen.waitForText("1 of your 3 closest matches contains these words", "at \(size), after the words")
+        let swap = screen.element("search.layer.swap")
+        XCTAssertTrue(swap.waitForExistence(timeout: LayerScreen.patience), "The row offers no Swap at \(size)")
+        screen.putTheKeyboardAway()
+
+        let window = app.windows.firstMatch.frame
+        let field = app.searchFields.firstMatch.frame
+        let base = screen.element("search.layer.base")
+        XCTAssertTrue(base.exists, "Putting the keyboard away let go of the held list at \(size)")
+        let baseFrame = base.frame
+        let swapFrame = swap.frame
+        let leaveFrame = leave.frame
+        // The bar's two outermost controls: its height and its edges.
+        let filter = screen.element("search.actions.filter").frame
+        let more = screen.element("search.actions.more").frame
+        let banner = screen.element("tabShell.syncBanner")
+        XCTAssertTrue(banner.waitForExistence(timeout: LayerScreen.patience),
+                      "The tab shell's banner is not showing, so nothing here is measured against it")
+        let bannerTop = banner.frame.minY
+        let firstRow = screen.fixtureRows.allElementsBoundByIndex.map(\.frame.minY).min()
+        let barTop = min(filter.minY, more.minY)
+        let barFoot = max(filter.maxY, more.maxY)
+        print("[#1577 lane 7] \(size) window \(Int(window.width))x\(Int(window.height)) field foot \(Int(field.maxY)) "
+              + "base x \(Int(baseFrame.minX))–\(Int(baseFrame.maxX)) y \(Int(baseFrame.minY))–\(Int(baseFrame.maxY)) "
+              + "swap x \(Int(swapFrame.minX))–\(Int(swapFrame.maxX)) \(Int(swapFrame.width))x\(Int(swapFrame.height)) "
+              + "leave x \(Int(leaveFrame.minX))–\(Int(leaveFrame.maxX)) "
+              + "bar y \(Int(barTop))–\(Int(barFoot)) "
+              + "banner top \(Int(bannerTop)) first row top \(firstRow.map { String(Int($0)) } ?? "none")")
+
+        for (identifier, frame) in [("search.layer.base", baseFrame), ("search.layer.swap", swapFrame),
+                                    ("search.layer.leave", leaveFrame), ("search.actions.filter", filter),
+                                    ("search.actions.more", more)] {
+            XCTAssertGreaterThanOrEqual(frame.minX, 0, "\(identifier) runs off the leading edge at \(size): \(frame)")
+            XCTAssertLessThanOrEqual(frame.maxX, window.maxX + 0.5, "\(identifier) runs off the trailing edge at \(size): \(frame)")
+            XCTAssertGreaterThan(frame.width, 0, "\(identifier) has no width at \(size)")
+        }
+        XCTAssertLessThanOrEqual(baseFrame.maxX, swapFrame.minX + 0.5, "The sentence runs under Swap at \(size)")
+        XCTAssertLessThanOrEqual(swapFrame.maxX, leaveFrame.minX + 0.5, "Swap runs under the close button at \(size)")
+        XCTAssertGreaterThanOrEqual(swapFrame.width, 44 - 0.5, "Swap is under 44 points wide at \(size)")
+        XCTAssertGreaterThanOrEqual(swapFrame.height, 44 - 0.5, "Swap is under 44 points tall at \(size)")
+        XCTAssertGreaterThanOrEqual(min(baseFrame.minY, swapFrame.minY, leaveFrame.minY), field.maxY - 0.5,
+                                    "The base row is behind the search field at \(size)")
+        XCTAssertGreaterThanOrEqual(barTop, max(baseFrame.maxY, swapFrame.maxY, leaveFrame.maxY) - 0.5,
+                                    "The actions bar is drawn over the base row at \(size)")
+        let rowTop = try XCTUnwrap(firstRow, "no result row is in the tree at \(size), with Swap on the row")
+        XCTAssertGreaterThanOrEqual(rowTop, barFoot - 0.5, "the first result is drawn over the actions bar at \(size)")
+        XCTAssertLessThan(rowTop, bannerTop, "no result starts above the banner at \(size), with Swap on the row")
     }
 
     private func launch(at category: String?) {

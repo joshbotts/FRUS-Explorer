@@ -816,6 +816,49 @@ struct ResearchLoggingGateTests {
                 """)
     }
 
+    /// The one other way a search runs on iPhone and iPad, and how it is recorded (#1577 lane 7).
+    ///
+    /// Swap, on the row that names a held list, runs two searches through the view model's `search()`:
+    /// `SearchViewModel.swapLayer(meaningAvailable:recording:)` runs the layer's words or question as a search of
+    /// their own, then the held list's own inside it. It never goes through `runSearch()`, which runs one search, so
+    /// the recorder is handed in: the view model calls it after each of the two that was not replaced, and
+    /// `SearchView` hands it the same recorder `runSearch()` calls. Without the second half, a swap would leave the
+    /// trail without either of its searches, which `SearchLayerSwapModelTests` cannot see, since it hands in its own.
+    @Test("A swap's two searches are each recorded, by the recorder runSearch() calls")
+    func iOSSwapRoutesThroughTheRecorder() throws {
+        func squeezed(_ text: String) -> String {
+            text.split(separator: "\n", omittingEmptySubsequences: false)
+                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+                .joined().filter { !$0.isWhitespace }
+        }
+        let vmSource = try String(contentsOf: Self.sourceRoot.appendingPathComponent("Search/SearchViewModel.swift"),
+                                  encoding: .utf8)
+        let swapStart = try #require(vmSource.range(of: "func swapLayer(meaningAvailable: Bool, recording record: () -> Void) async -> Bool {"),
+                                     "SearchViewModel.swapLayer(meaningAvailable:recording:) is gone")
+        let swapEnd = try #require(vmSource.range(of: "\n    }\n", range: swapStart.upperBound..<vmSource.endIndex))
+        let swap = squeezed(String(vmSource[swapStart.lowerBound..<swapEnd.upperBound]))
+        #expect(swap.components(separatedBy: "guardawaitsearch()else{returnfalse}record()").count - 1 == 2,
+                "each of the swap's two searches must be followed by the recorder, and only when not replaced")
+        #expect(!swap.contains("record()record()"))
+
+        let view = squeezed(try String(contentsOf: Self.sourceRoot.appendingPathComponent("Search/SearchView.swift"),
+                                       encoding: .utf8))
+        #expect(view.components(separatedBy: "vm.swapLayer(").count - 1 == 1, "SearchView swaps from one place")
+        #expect(view.contains(squeezed("""
+            await vm.swapLayer(meaningAvailable: appState.semanticQuerySearcher != nil) {
+                vm.recordSearchHistory(projectId: appState.activeProjectId,
+                                       indexedVolumeCount: appState.indexedVolumeIds.count,
+                                       in: modelContext)
+            }
+            """)), "SearchView hands the swap a recorder other than the one runSearch() calls, or none")
+        #expect(view.contains(squeezed("""
+            guard await vm.search() else { return }
+            vm.recordSearchHistory(projectId: appState.activeProjectId,
+                                   indexedVolumeCount: appState.indexedVolumeIds.count,
+                                   in: modelContext)
+            """)), "runSearch() records with other arguments now: bring the swap's recorder to them")
+    }
+
     /// The preference key is read in exactly one place. `SettingsSyncCoordinator`, the two
     /// `@AppStorage` bindings and the three writers all route through `AppState`, so a future
     /// call site that reaches for `UserDefaults` directly — and gets the absent-means-on

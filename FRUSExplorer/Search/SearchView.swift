@@ -259,6 +259,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.32 — 2026-10-18: More ▸ Save this search presents `SaveSearchSheet` from a `SaveSearchRequest`, which carries
 ///          the name it offers and the search it saves. The sheet was built from a name and a Bool set beside it,
 ///          which the body never read, so it opened with its Save off until the name was edited.
+///   1.33 — #1577 lane 7: the base row's Swap, once a search has run inside the held list (`swapLayer()`), records
+///          each of the swap's two searches as `runSearch()` records one; the row goes on naming the list a swap let go
+///          of until the new one is held
 
 struct SearchView: View {
 
@@ -969,6 +972,24 @@ struct SearchView: View {
         AccessibilityNotification.Announcement(SearchLayerCopy.leftAnnouncement).post()
     }
 
+    /// Swaps the held list and the search inside it (#1577 lane 7): the row's Swap. The view model runs the two searches
+    /// of the other order (`SearchViewModel.swapLayer(meaningAvailable:recording:)`), and each is recorded in the trail
+    /// as ``runSearch()`` records a search. VoiceOver hears what the swap will do as it starts, and the new layer's
+    /// header as it finishes. A reading or the facet panel open over the list goes back to the list: the field's engine
+    /// changes, as holding a list changes it.
+    private func swapLayer() async {
+        guard !vm.isSearching, let swap = vm.layerSwap else { return }
+        vm.semanticBackend = makeSemanticBackend()
+        readingSelection.wrappedValue = .list
+        showFacetSheet = false
+        AccessibilityNotification.Announcement(SearchLayerCopy.swapHelp(swap)).post()
+        await vm.swapLayer(meaningAvailable: appState.semanticQuerySearcher != nil) {
+            vm.recordSearchHistory(projectId: appState.activeProjectId,
+                                   indexedVolumeCount: appState.indexedVolumeIds.count,
+                                   in: modelContext)
+        }
+    }
+
     /// What a layer that found nothing shows (#1577 lane 4): the header's own sentence, which says what it looked in,
     /// and the ways on.
     private func layerEmptyState(_ base: PinnedResultBase) -> some View {
@@ -1531,11 +1552,18 @@ struct SearchView: View {
     /// on a build without it the search surface is exactly what it always was.
     ///
     /// While a base is held the row that names it takes the picker's place (#1577 lane 4), so the inset does not gain
-    /// a row: the field runs the other engine inside the base, and the picker has nothing to choose.
+    /// a row: the field runs the other engine inside the base, and the picker has nothing to choose. While a swap runs
+    /// its first search the row goes on naming the list it let go of (#1577 lane 7), its buttons dimmed, rather than
+    /// give way to the picker for a moment.
     @ViewBuilder
     private var searchModePicker: some View {
-        if let base = vm.pinnedBase {
-            SearchLayerBaseRow(base: base, leave: { leaveBase() })
+        if let base = vm.pinnedBase ?? vm.swapUnderWay?.heldList {
+            SearchLayerBaseRow(base: base,
+                               swap: vm.swapUnderWay ?? vm.layerSwap,
+                               canSwap: vm.swapUnderWay == nil && !vm.isSearching,
+                               canLeave: vm.swapUnderWay == nil,
+                               performSwap: { Task { await swapLayer() } },
+                               leave: { leaveBase() })
         } else if appState.semanticQuerySearcher != nil {
             Picker(String(localized: "search.mode.title", defaultValue: "Search by"),
                    selection: Binding(

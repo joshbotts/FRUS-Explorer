@@ -25,6 +25,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 7: ``swapped``, the way a swap turns a layer
 enum SearchLayerDirection: Equatable, Sendable {
 
     /// Words found in a held Meaning list: a keyword search inside it, its rows kept closest first.
@@ -42,6 +43,15 @@ enum SearchLayerDirection: Equatable, Sendable {
         case .meaning: return .wordsInMatches
         case .keywords: return .rankByMeaning
         case .wordsInMatches, .rankedByMeaning: return nil
+        }
+    }
+
+    /// The other way, which a swap turns this one into (``SearchLayerSwap``): words found in a Meaning list become a
+    /// ranking of the words' own results, and a ranking becomes words found in the question's closest matches.
+    var swapped: SearchLayerDirection {
+        switch self {
+        case .wordsInMatches: return .rankByMeaning
+        case .rankByMeaning: return .wordsInMatches
         }
     }
 
@@ -615,6 +625,81 @@ extension PinnedResultBase {
 
     /// The scope signature of a search with no filter set.
     private static let unfilteredSignature = SearchScopeSignature.signature(for: SearchParameters())
+}
+
+// MARK: - SearchLayerSwap
+
+/// The held list and the search inside it, swapped (#1577 lane 7): the layer's words or question become a list of their
+/// own, and the list's own words or question become the search inside it. The base row's Swap.
+///
+/// The two orders give different lists (the assessment's §9). Words found in a Meaning list are at most its hundred
+/// closest, "7 of your 100 closest matches contain these words", where a question ranking the words' own results lists
+/// every document that holds them, "212 results, closest first". Swap turns either into the other without retyping.
+///
+/// It runs what the reader would run by hand in the other order, and nothing besides: the layer's words or question
+/// through its own engine, under the working corpus and the filters in force, as a search of its own; that list held,
+/// as Search Within These Results holds one; and the held list's words or question inside it. So the list it shows is
+/// the one built by hand in that order, a list cut at its ceiling ranked whole as lane 6 ranks one, and each of the two
+/// searches writes a trail row of its own, as by hand. The checklist's marks are the held list's search's, and the new
+/// list's search is a search of its own, which Checklist Mode treats as any search: other words start it over.
+///
+/// ## The trail's anchor is set aside
+/// The layer's row is the one the trail writer last wrote, and the new list's search runs the layer's own words or
+/// question, so the writer would take it for a re-run and rewrite the layer's row as a search across the library. The
+/// held list's anchor, which leaving gives back, names the held list's words, which the swap then searches inside the
+/// new list. So a view model sets the anchor aside before the swap's first search, as holding a list sets it aside
+/// (rule 5), and every row written before the swap stays as it was.
+///
+/// ## What a swap needs
+/// A layer's rows on screen, since there is nothing to swap before the field has run inside the list, and words or a
+/// question on each side: a browse has none of its own (a person's mentions, a subject area), nor does a list found by a
+/// restored phrase or prefix with nothing typed, whose words are a filter's and not the field's.
+///
+/// Version history:
+///   1.0 — #1577 lane 7: initial implementation
+struct SearchLayerSwap: Sendable {
+
+    /// The list held when the swap began, which the row goes on naming until the new list is held, so that the row
+    /// does not give way to the Keywords | Meaning control while the new list's search runs.
+    let heldList: PinnedResultBase
+    /// The way the search inside the new list runs: the other way from the held list's.
+    let direction: SearchLayerDirection
+    /// The words or question the new list is found by: the layer's, as it ran.
+    let listQuery: String
+    /// The words or question searched inside the new list: the held list's own.
+    let layerQuery: String
+
+    /// The engine the new list's own search runs through, which is the one the field ran inside the held list.
+    var listEngine: SearchMode { direction.baseEngine }
+
+    /// The swap of `heldList` and the layer on screen over it, or `nil` where none can be made.
+    ///
+    /// - Parameters:
+    ///   - heldList: The held list.
+    ///   - route: The route that produced the rows on screen: a layer's, or there is nothing to swap.
+    ///   - layerQuery: The words or question the rows on screen ran with (the submitted query, not the live field).
+    init?(heldList: PinnedResultBase, route: ExecutedSearchRoute, layerQuery: String) {
+        let layer = layerQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let own = heldList.query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard route.isLayer, !layer.isEmpty, !own.isEmpty else { return nil }
+        self.heldList = heldList
+        self.direction = heldList.direction.swapped
+        self.listQuery = layer
+        self.layerQuery = own
+    }
+
+    /// Whether the rows on screen are the new list's own search: a list its engine gives, found by its words or
+    /// question. The swap holds that list and goes on; anything else on screen, a search the reader ran meanwhile or a
+    /// hand-off's, ends it.
+    ///
+    /// - Parameters:
+    ///   - route: The route that produced the rows on screen.
+    ///   - query: The words or question those rows ran with.
+    /// - Returns: Whether they are the new list.
+    func isAnswered(by route: ExecutedSearchRoute, query: String) -> Bool {
+        SearchLayerDirection.starting(over: route) == direction
+            && query.trimmingCharacters(in: .whitespacesAndNewlines) == listQuery
+    }
 }
 
 // MARK: - AnsweredSearchTrigger

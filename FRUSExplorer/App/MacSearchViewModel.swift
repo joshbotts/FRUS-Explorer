@@ -121,6 +121,10 @@ import SwiftData
 ///   1.15 — #1577 lane 6: a question over a list held at its 7,500-row ceiling ranks the list's whole match, inside the
 ///          filters chosen since (`rankWholeMatch(run:base:match:backend:)`), as on iPhone and iPad, and the trail signs
 ///          the documents it ranked inside
+///   1.16 — #1577 lane 7: `swapLayer()` swaps a held list and the search inside it: the layer's words or question run
+///          as a search of their own on a version bump, with the trail's anchor set aside, and the window's search task
+///          then holds that list and submits the held list's own inside it (`continueSwap(meaningAvailable:)`);
+///          `layerSwap` is the swap the row offers, and `swapUnderWay` the list the row names meanwhile
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -1024,8 +1028,10 @@ final class MacSearchViewModel {
 
     /// Leaves a held list for a hand-off or a recalled search (rule 3) as ✕ does, its rows, figures and
     /// the reader's sort coming back. The hand-off's own search replaces them. The field, the words and
-    /// the engine are the caller's. `SearchViewModel`'s is its twin.
+    /// the engine are the caller's. `SearchViewModel`'s is its twin. A swap under way ends too (#1577
+    /// lane 7), so that the search task holds nothing once the hand-off's search is on screen.
     private func leaveBaseForHandoff() {
+        swapUnderWay = nil
         foldShownTagsIntoBase()
         guard let base = pinnedBase else { return }
         dropBase()
@@ -1046,12 +1052,74 @@ final class MacSearchViewModel {
 
     /// Lets go of a held list when the window empties its rows for a rebuilt index: they were the old
     /// index's. The engine and the submitted words are left as they are, so that no search runs, and the
-    /// reader's sort comes back.
+    /// reader's sort comes back. A swap under way ends with it (#1577 lane 7).
     func letGoOfBaseForRebuiltIndex() {
+        swapUnderWay = nil
         guard pinnedBase != nil else { return }
         dropBase()
         if let sort = sortOrderBeforeBase { sortOrder = sort }
         sortOrderBeforeBase = nil
+    }
+
+    // MARK: Swap (#1577 lane 7)
+
+    /// A swap under way, from the row's Swap until the window's search task holds the new list or finds the swap
+    /// over, or `nil`. The row goes on naming the list it let go of (`SearchLayerSwap.heldList`) while the new list's
+    /// search runs; a hand-off and a rebuilt index end it. `SearchViewModel.swapUnderWay` is its twin.
+    private(set) var swapUnderWay: SearchLayerSwap?
+
+    /// The swap the held list's row offers, or `nil`: no list held, no search run inside it on screen, or a list with
+    /// no words of its own (`SearchLayerSwap.init(heldList:route:layerQuery:)`). Read from the submitted words, which
+    /// ran, not the field. `SearchViewModel.layerSwap` is its twin.
+    var layerSwap: SearchLayerSwap? {
+        guard let base = pinnedBase, searchError == nil else { return nil }
+        return SearchLayerSwap(heldList: base, route: executedRoute, layerQuery: submittedQuery)
+    }
+
+    /// Starts a swap of the held list and the search inside it (#1577 lane 7): the row's Swap.
+    /// `SearchViewModel.swapLayer(meaningAvailable:recording:)` is its twin, which runs both searches itself; this
+    /// window runs a search only from its search task, when the trigger changes, so the swap is carried by that task.
+    ///
+    /// Here the list is let go of, the trail's anchor set aside, as holding a list sets it aside (rule 5), the reader's
+    /// sort put back, and the engine and the submitted words set to the layer's. Those are the trigger's already, as
+    /// they are for the words searched across the whole library, so a version bump runs them: the new list's own
+    /// search, which the task records as any search. ``continueSwap(meaningAvailable:)`` then holds it and submits the
+    /// held list's own words or question inside it, which the task runs and records in turn.
+    ///
+    /// - Returns: Whether a swap started: `false` with no swap to make, or while a search runs.
+    @discardableResult
+    func swapLayer() -> Bool {
+        guard !isSearching, let swap = layerSwap else { return false }
+        swapUnderWay = swap
+        dropBase()
+        // Set aside, as a held list sets it aside: the swap's searches write rows of their own (rule 5).
+        historyAnchor = nil
+        if let sort = sortOrderBeforeBase { sortOrder = sort }
+        sortOrderBeforeBase = nil
+        searchMode = swap.listEngine
+        queryText = swap.listQuery
+        submittedQuery = swap.listQuery
+        parametersVersion += 1
+        return true
+    }
+
+    /// Holds a swap's new list once its search is on screen and recorded, and submits the held list's own words or
+    /// question inside it (#1577 lane 7): the window's search task calls it after each search it records. The swap is
+    /// over either way: where the rows on screen are not the new list's (a search the reader ran meanwhile), or there
+    /// is nothing to hold, it ends with them.
+    ///
+    /// - Parameter meaningAvailable: Whether the Meaning engine has booted, which a ranking needs.
+    /// - Returns: The new list held, or `nil` with no swap under way or none to hold.
+    @discardableResult
+    func continueSwap(meaningAvailable: Bool) -> PinnedResultBase? {
+        guard let swap = swapUnderWay else { return nil }
+        swapUnderWay = nil
+        // Held the way the swap names: `isAnswered` reads the way from the route `holdBase` reads it from.
+        guard swap.isAnswered(by: executedRoute, query: submittedQuery),
+              let held = holdBase(meaningAvailable: meaningAvailable) else { return nil }
+        queryText = swap.layerQuery
+        submittedQuery = swap.layerQuery
+        return held
     }
 
     /// Carries the tags the rows on screen were given since the list was held into the held list
