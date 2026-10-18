@@ -111,7 +111,7 @@
       "order": 2,
       "preset": "ipad-13-landscape",
       "headline": "Read it as printed. Keep what you find.",
-      "subline": "Documents rendered from the original TEI with footnotes and cross-references live, and a research rail beside the text for notes, highlights, tags, summaries and citations.",
+      "subline": "The editors' headings, footnotes and cross-references, live, with a research rail beside the text for notes, highlights, tags, summaries and citations.",
       "capture": "Docs/screenshots/ipad/research-rail.png"
     },
     {
@@ -120,7 +120,7 @@
       "order": 2,
       "preset": "mac",
       "headline": "Read it as printed. Keep what you find.",
-      "subline": "Documents rendered from the original TEI with footnotes and cross-references live, and a research rail beside the text for notes, highlights, tags, summaries and citations.",
+      "subline": "The editors' headings, footnotes and cross-references, live, with a research rail beside the text for notes, highlights, tags, summaries and citations.",
       "capture": "Docs/screenshots/macos/research-strip.png"
     },
     {
@@ -129,7 +129,7 @@
       "order": 2,
       "preset": "iphone-6.9",
       "headline": "Read it as printed.",
-      "subline": "Footnotes, cross-references and people, live. Highlight, note and tag as you read.",
+      "subline": "The editors' footnotes, cross-references and people, live. Highlight, note and tag as you read.",
       "route": "iPhone, portrait: frus1946v06/d474 (the Long Telegram) open in Read mode, one highlight visible, the floating selection bar closed."
     },
     {
@@ -170,7 +170,7 @@
       "order": 4,
       "preset": "ipad-13-landscape",
       "headline": "From footnote to shelf.",
-      "subline": "Every source note resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
+      "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/ipad/source-explorer.png",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
@@ -180,7 +180,7 @@
       "order": 4,
       "preset": "mac",
       "headline": "From footnote to shelf.",
-      "subline": "Every source note resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
+      "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/macos/source-explorer.png",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
@@ -211,7 +211,7 @@
       "order": 6,
       "preset": "ipad-13-landscape",
       "headline": "Follow what the editors cited.",
-      "subline": "The cross-reference graph around any document, as a timeline or a network, one to three hops out. Unprinted sources open their collection record.",
+      "subline": "The editors' own cross-references around any document, as a timeline or a network, one to three hops out. Files they cited without printing open their collection record.",
       "capture": "Docs/screenshots/ipad/cross-reference-graph.png",
       "status": "stale: re-capture on build 50 (#1438 label placement, #1481 menu wording)"
     },
@@ -221,7 +221,7 @@
       "order": 6,
       "preset": "mac",
       "headline": "Follow what the editors cited.",
-      "subline": "The cross-reference graph around any document, as a timeline or a network, one to three hops out. Unprinted sources open their collection record.",
+      "subline": "The editors' own cross-references around any document, as a timeline or a network, one to three hops out. Files they cited without printing open their collection record.",
       "capture": "Docs/screenshots/macos/cross-reference-graph.png",
       "status": "stale: re-capture on build 50 (#1438 label placement)"
     },
