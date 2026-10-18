@@ -54,9 +54,9 @@ struct SaveSearchRequest: Identifiable {
 /// and the name is saved trimmed. One view, where each Search screen had its own, with each platform's layout as it
 /// was: a form under a navigation bar on iPhone and iPad, a dialog with a button bar on the Mac.
 ///
-/// No note says what the saved search leaves out. Until #756 the sheet warned that the volume scope was not saved,
-/// which was true while `SavedSearch` flattened `SearchParameters` into columns and dropped eight of its twenty fields;
-/// the whole value is archived since, so the scope is saved, and the warning had become false.
+/// The sheet carries no notice about the volume scope. #258's said the scope was not saved, which was true while
+/// `SavedSearch` flattened `SearchParameters` into columns and dropped eight of its twenty fields; #756 archives the
+/// whole value, so the scope is saved, and #756 retired the notice as a false warning.
 ///
 /// Version history:
 ///   1.0 — 2026-10-18: one sheet for both Search screens, which holds its own name (initial implementation)
