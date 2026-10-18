@@ -548,3 +548,74 @@ final class SearchLayerBaseRowFitTests: XCTestCase {
                       "Could not open the Search tab, so this suite would read another screen")
     }
 }
+
+// MARK: - SaveSearchSheetTests
+
+/// Search ▸ More ▸ Save this search on iPhone and iPad: the sheet offers the search's words as the name, and its Save is
+/// on as it opens, so the name can be saved as offered.
+///
+/// ## The defect it guards
+/// The sheet opened with the search's words in its name field and its Save off, and Save came on only once the name
+/// was edited (found 2026-10-17 by `SearchWithinResultsTests`, which typed a space to get past it). The More menu's
+/// command set the name and the sheet's Bool, two `@State`s of `SearchView` that its body never reads, so the body did
+/// not run again, and the sheet was built from the closure made before the tap. A probe measured it on an iPhone 17,
+/// iOS 27.0: no body ran between the tap and the sheet, whose content read the name as empty and its own Bool as false.
+/// The field showed the words, since a binding reads the stored value; Save's `.disabled` was worked out from the old
+/// one. The sheet now takes a `SaveSearchRequest` as its item and keeps the name as its own state, #1590's shape. Like
+/// #1590's, the defect needs the launch's first Save this search, so the test opens the sheet before anything else.
+///
+/// ## Devices
+/// An iPhone 17 and an iPad Pro 13-inch (M5), `OS=27.0`; nothing skips. The sheet is one view on both, a form sheet on
+/// the iPad. On the code before the fix it fails on both at "Save is off".
+///
+/// Version history:
+///   1.0 — the Save Search sheet's Save, on as it opens: initial implementation
+@MainActor
+final class SaveSearchSheetTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        app = LayerScreen.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
+    }
+
+    override func tearDown() async throws {
+        if let app {
+            LayerScreen(app: app).leave()
+            app.terminate()
+        }
+        app = nil
+    }
+
+    /// The fixture's phrase, saved under the name the sheet offers, with no edit to it.
+    func testTheOfferedNameSavesAsItIs() throws {
+        let screen = LayerScreen(app: app)
+        screen.searchUntilListed(LayerScreen.fixturePhrase, count: 3)
+        screen.chooseFromTheMoreMenu("Save this search")
+        let sheet = app.navigationBars["Save Search"]
+        XCTAssertTrue(sheet.waitForExistence(timeout: LayerScreen.patience), "Save this search opened no sheet")
+        let name = app.textFields["Name this search"].firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: LayerScreen.patience), "The sheet has no name field")
+        XCTAssertEqual(name.value as? String, LayerScreen.fixturePhrase, "The sheet names the search by its words")
+
+        // Nothing touches the field. A wait rather than one read, so a bar that catches up late still passes.
+        let save = sheet.buttons["Save"].firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: LayerScreen.patience), "The sheet has no Save")
+        let on = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: save)
+        XCTAssertEqual(XCTWaiter.wait(for: [on], timeout: LayerScreen.patience), .completed,
+                       "Save is off though the sheet offers the name \(LayerScreen.fixturePhrase)")
+        save.tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: sheet)
+        XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: LayerScreen.patience), .completed, "The sheet did not close")
+
+        // Under FRUS_UI_TEST_MODE the store is in memory, so a row of that name is this launch's save.
+        screen.chooseFromTheMoreMenu("Saved searches")
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", LayerScreen.fixturePhrase)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: LayerScreen.patience),
+                      "No saved search is listed under the name the sheet offered")
+    }
+}
