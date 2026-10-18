@@ -102,6 +102,8 @@ import SwiftUI
 ///          and Cross-Reference Analytics, method travels in the CSV); Word Cloud
 ///          copy names the Options menu and the CSV's ranked terms, shares, and
 ///          hidden-word disclosure
+///   1.22 — #1577 lane 7's docs pass: page 5's narrowing section says a list of results can be searched within by the
+///          other kind of search, in either order, and the two swapped
 ///   1.21 — #1380 review, round 1: page 5's facet sentence says "one click or tap", not "one tap"
 ///   1.20 — Owner content revision (build 43): pages 5–7 rewritten as CONTRACTS — what a reader
 ///          will be able to do, organized by research task, never where the buttons live; the
@@ -931,7 +933,7 @@ private extension EducationPage {
                 id: "narrowing",
                 heading: "Narrow Without Losing Count",
                 paragraphs: [
-                    "Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap; archival provenance is the exception — it is descriptive only. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets you choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method."
+                    "Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap; archival provenance is the exception — it is descriptive only. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets you choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. Any list of results can also be searched within, for as long as you are working with it, by the other kind of search: words found among a question’s closest matches, or keyword results ranked by a question, and the two swapped, since each order gives a different list. The app keeps track of these scopes so you can replicate and document your research method."
                 ]
             ),
             EducationSection(

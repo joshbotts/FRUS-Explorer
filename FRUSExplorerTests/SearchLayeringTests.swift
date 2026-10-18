@@ -674,3 +674,117 @@ struct SearchLayerHoldingRulesTests {
         #expect(SearchLayerCopy.heldEngineHelp(.meaning).contains("the field searches by Meaning."))
     }
 }
+
+// MARK: - SearchLayerSwapRulesTests
+
+/// The rule a swap of a held list and the search inside it is made by (#1577 lane 7), which both search windows offer
+/// on the row that names the list: `SearchLayerSwap`, read here with no view model. `SearchLayerSwapModelTests` drives
+/// the swap through the iPhone's view model, and `MacSearchWithinResultsWiringTests` reads the Mac's.
+///
+/// Version history:
+///   1.0 — #1577 lane 7: initial implementation
+@Suite("Search within results: the rule a swap is made by (#1577 lane 7)")
+struct SearchLayerSwapRulesTests {
+
+    /// A held Meaning list, as a words layer runs inside it.
+    private var meaningList: PinnedResultBase {
+        base(direction: .wordsInMatches, kind: .meaning, query: "how did the embassy report",
+             rows: (1...3).map { row("d\($0)", semantic: 1 - Double($0) / 10) })
+    }
+
+    /// A held keyword list, as a ranking runs inside it.
+    private var keywordList: PinnedResultBase {
+        base(direction: .rankByMeaning, kind: .keywords, query: "offset agreement", rows: keywordRows(4),
+             route: .keywords, fetchLimit: 1_000)
+    }
+
+    @Test("A swap turns each way into the other")
+    func directionsSwap() {
+        #expect(SearchLayerDirection.wordsInMatches.swapped == .rankByMeaning)
+        #expect(SearchLayerDirection.rankByMeaning.swapped == .wordsInMatches)
+    }
+
+    @Test("Words found in a Meaning list swap into a ranking of the words' own results by the list's question")
+    func wordsSwapIntoARanking() throws {
+        let swap = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
+                                                layerQuery: "  quillon \n"))
+        #expect(swap.direction == .rankByMeaning)
+        #expect(swap.listQuery == "quillon", "the new list is found by the layer's words, trimmed")
+        #expect(swap.layerQuery == "how did the embassy report", "and ranked by the held list's question")
+        #expect(swap.listEngine == .keywords, "the words run through the engine they ran through inside the list")
+        #expect(swap.heldList.query == "how did the embassy report", "the row names the held list meanwhile")
+    }
+
+    @Test("A ranking swaps into the list's words found in the question's closest matches")
+    func aRankingSwapsIntoWords() throws {
+        let ranked = try #require(SearchLayerSwap(heldList: keywordList, route: .rankedByMeaning(unranked: 2),
+                                                  layerQuery: "which talks failed"))
+        #expect(ranked.direction == .wordsInMatches)
+        #expect(ranked.listQuery == "which talks failed")
+        #expect(ranked.layerQuery == "offset agreement")
+        #expect(ranked.listEngine == .meaning)
+        // A list cut at its ceiling and ranked whole (#1577 lane 6) is a ranking all the same.
+        let whole = WholeMatchRanking(size: 35_275, notRanked: 0, closest: 1_000, isCut: true)
+        #expect(SearchLayerSwap(heldList: keywordList, route: .rankedByMeaning(unranked: 0, wholeMatch: whole),
+                                layerQuery: "which talks failed")?.direction == .wordsInMatches)
+        // Swapped again, the first swap's two searches come back.
+        let back = try #require(SearchLayerSwap(
+            heldList: base(direction: .rankByMeaning, kind: .keywords, query: "quillon", rows: keywordRows(3),
+                           route: .keywords),
+            route: .rankedByMeaning(unranked: 0), layerQuery: "how did the embassy report"))
+        #expect(back.direction == .wordsInMatches && back.listQuery == "how did the embassy report"
+                && back.layerQuery == "quillon")
+    }
+
+    /// One fixture for each conjunct, each beside the control it differs from in that alone.
+    @Test("No swap before a search has run inside the list, nor for a list or a search with no words")
+    func whenThereIsNoSwap() {
+        #expect(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3), layerQuery: "quillon") != nil,
+                "control")
+        #expect(SearchLayerSwap(heldList: meaningList, route: .meaning, layerQuery: "quillon") == nil,
+                "the list's own rows on screen, before a search inside it or with the field emptied")
+        #expect(SearchLayerSwap(heldList: keywordList, route: .keywords, layerQuery: "which talks failed") == nil,
+                "the same for a keyword list")
+        #expect(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3), layerQuery: " \n ") == nil,
+                "a search with no words")
+        let browse = base(direction: .rankByMeaning, kind: .browse(name: "Aerial reconnaissance"), query: "",
+                          rows: keywordRows(4), route: .keywords)
+        #expect(SearchLayerSwap(heldList: browse, route: .rankedByMeaning(unranked: 0), layerQuery: "which talks failed")
+                == nil, "a browse has no words of its own to search inside the question's matches")
+        var phrase = base(direction: .rankByMeaning, kind: .keywords, query: "", rows: keywordRows(4), route: .keywords)
+        phrase.describedQuery = "\"wheat shipments\""
+        #expect(SearchLayerSwap(heldList: phrase, route: .rankedByMeaning(unranked: 0), layerQuery: "which talks failed")
+                == nil, "nor a list found by a restored phrase alone, whose words are a filter's and not the field's")
+    }
+
+    @Test("A swap holds the new list only where the rows on screen are its own search's")
+    func theNewListIsTheSearchsOwn() throws {
+        let toRanking = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
+                                                     layerQuery: "quillon"))
+        #expect(toRanking.isAnswered(by: .keywords, query: "quillon"))
+        #expect(toRanking.isAnswered(by: .keywords, query: " quillon "), "trimmed, as a submitted query is")
+        #expect(!toRanking.isAnswered(by: .keywords, query: "quillons"), "a search the reader ran meanwhile")
+        #expect(!toRanking.isAnswered(by: .meaning, query: "quillon"), "the other engine's list")
+        #expect(!toRanking.isAnswered(by: .wordsInMatches(base: 3), query: "quillon"), "a layer, the list's still")
+        let toWords = try #require(SearchLayerSwap(heldList: keywordList, route: .rankedByMeaning(unranked: 1),
+                                                   layerQuery: "which talks failed"))
+        #expect(toWords.isAnswered(by: .meaning, query: "which talks failed"))
+        #expect(!toWords.isAnswered(by: .keywords, query: "which talks failed"))
+        #expect(!toWords.isAnswered(by: .rankedByMeaning(unranked: 1), query: "which talks failed"))
+    }
+
+    @Test("Swap is titled, named for VoiceOver, and its help names both searches")
+    func swapCopy() throws {
+        #expect(SearchLayerCopy.swapTitle == "Swap")
+        #expect(SearchLayerCopy.swapLabel == "Swap the two searches")
+        #expect(SearchLayerCopy.swapGlyph == "arrow.left.arrow.right")
+        let toRanking = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
+                                                     layerQuery: "quillon"))
+        #expect(SearchLayerCopy.swapHelp(toRanking)
+                == "Search for “quillon” first, then rank what it finds by “how did the embassy report”")
+        let toWords = try #require(SearchLayerSwap(heldList: keywordList, route: .rankedByMeaning(unranked: 1),
+                                                   layerQuery: "which talks failed"))
+        #expect(SearchLayerCopy.swapHelp(toWords)
+                == "Ask “which talks failed” first, then find “offset agreement” among its closest matches")
+    }
+}

@@ -85,7 +85,11 @@ struct ResearchGuideCoverageTests {
         // and both manuals before the section was written (the same discipline as above). NOT
         // "archive visit" — that phrase already headed the manuals' §18.3 recipe, so a row using
         // it would have passed on day one and pinned nothing.
-        "the research trip packet": ["trip packet", "pull worksheet"]
+        "the research trip packet": ["trip packet", "pull worksheet"],
+        // #1577: Search Within These Results, both orders and the swap (lane 7's docs pass, which put the contract on
+        // the guide's narrowing page). The term was zero-hit in the guide, the mirror and both manuals before the
+        // sentence was written; the manuals say "searching within", not "searched within".
+        "searching within a list of results": ["searched within"]
     ]
 
     private static func source(_ path: String) throws -> String {

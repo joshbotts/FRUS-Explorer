@@ -382,7 +382,9 @@ struct MacSearchWithinResultsWiringTests {
         #expect(body.contains(Self.squeezed("WorkingOnBanner() workingCorpusBanner heldListRow Divider()")),
                 "the held list is not named beside the corpus it runs inside")
         let row = Self.squeezedCode(try Self.declaration("private var heldListRow: some View {", in: Self.window))
-        for call in ["if let base = searchVM.pinnedBase {", "Text(base.rowDescription)",
+        // Since #1577 lane 7 the row also names the list a swap under way let go of, until the new one is held
+        // (`swapsWiring` below).
+        for call in ["if let base = searchVM.pinnedBase ?? searchVM.swapUnderWay?.heldList {", "Text(base.rowDescription)",
                      "if let leftOut = base.leftOutDescription {",
                      ".accessibilityLabel([base.accessibilityLabel, base.leftOutDescription]",
                      "leaveBase()", "defaultValue: \"Stop searching within these results\"",
@@ -390,8 +392,9 @@ struct MacSearchWithinResultsWiringTests {
             #expect(row.contains(Self.squeezed(call)), "the held list's row lost `\(call)`")
         }
         let input = Self.squeezedCode(try Self.declaration("private var searchInputRow: some View {", in: Self.window))
+        // A swap under way keeps the label until its new list is held (#1577 lane 7).
         #expect(input.contains(Self.squeezed("""
-            if let base = searchVM.pinnedBase {
+            if let base = searchVM.pinnedBase ?? searchVM.swapUnderWay?.heldList {
                 heldEngineLabel(base.direction.fieldEngine)
             } else if appState.semanticQuerySearcher != nil {
                 Picker(
@@ -416,8 +419,10 @@ struct MacSearchWithinResultsWiringTests {
                 "a held list's facets aggregate the emptied field")
         #expect(window.contains("layerRoute: searchVM.facetLayerRoute)"))
         #expect(window.contains("queryText: searchVM.wordsOfTheRowsShown,"), "a capture of a held list records no words")
+        // Since #1577 lane 7 the empty layer also stands for the list a swap under way let go of, until its first
+        // search runs, so that no zero-state of the library flashes in its place.
         let layer = try #require(window.range(of:
-            "} else if let base = searchVM.pinnedBase, hasZeroResults, !searchVM.semanticNeedsModel {"))
+            "} else if let base = searchVM.pinnedBase ?? searchVM.swapUnderWay?.heldList, hasZeroResults,"))
         let meaning = try #require(window.range(of: "} else if searchVM.searchMode == .meaning && hasZeroResults {"))
         let keyword = try #require(window.range(of: "} else if hasZeroResults {"))
         #expect(layer.upperBound < meaning.lowerBound && meaning.upperBound < keyword.lowerBound,
@@ -588,5 +593,104 @@ struct MacSearchWithinResultsWiringTests {
                 direction, isHolding: searchVM.pinnedBase != nil,
                 cutAt: searchVM.isResultSetTruncated ? searchVM.lastFetchLimit : nil))
             """)), "the toolbar's help says a question ranks a cut list whole")
+    }
+
+    // MARK: Swap (#1577 lane 7)
+
+    /// The row's Swap starts by the shared rule (`SearchLayerSwap`), lets go of the list with the trail's anchor set
+    /// aside after it, which `dropBase()` gives back (rule 5), puts the reader's sort back, and runs the layer's own words
+    /// or question as a search of their own through the trigger: they are the trigger's already, so a version bump.
+    @Test("Swap starts by the shared rule, sets the trail's anchor aside, and runs the layer's words through the trigger")
+    func aSwapStarts() throws {
+        let offered = Self.squeezedCode(try Self.declaration("var layerSwap: SearchLayerSwap? {", in: Self.model))
+        #expect(offered.contains(Self.squeezed("""
+            guard let base = pinnedBase, searchError == nil else { return nil }
+            return SearchLayerSwap(heldList: base, route: executedRoute, layerQuery: submittedQuery)
+            """)), "the row offers a swap by another rule than iPhone and iPad's")
+        let swap = Self.codeLines(try Self.declaration("func swapLayer() -> Bool {", in: Self.model))
+        let expected = ["guard !isSearching, let swap = layerSwap else { return false }",
+                        "swapUnderWay = swap",
+                        "dropBase()",
+                        "historyAnchor = nil",
+                        "if let sort = sortOrderBeforeBase { sortOrder = sort }",
+                        "sortOrderBeforeBase = nil",
+                        "searchMode = swap.listEngine",
+                        "queryText = swap.listQuery",
+                        "submittedQuery = swap.listQuery",
+                        "parametersVersion += 1",
+                        "return true"]
+        // In this order: the anchor set aside after `dropBase()`, which gives the list's back, and before the search.
+        #expect(Array(swap.dropFirst().prefix(expected.count)) == expected, """
+            swapLayer() is not, line for line, the shared rule, the list let go of, the anchor set aside after it, the \
+            reader's sort back and the layer's words searched: \(swap)
+            """)
+    }
+
+    /// The window runs a search only from its search task, so the swap goes on there: once the new list's search is on
+    /// screen and recorded, `continueSwap(meaningAvailable:)` holds it, by the rule a list is held by, and submits the
+    /// held list's own words or question, which the task runs and records next. Only rows that are the new list's are
+    /// held; the swap is over either way.
+    @Test("The search task holds the swap's new list once its search is recorded, and searches the list's words in it")
+    func theSearchTaskCarriesTheSwapOn() throws {
+        let carry = Self.codeLines(try Self.declaration("func continueSwap(meaningAvailable: Bool) -> PinnedResultBase? {",
+                                                        in: Self.model))
+        let expected = ["guard let swap = swapUnderWay else { return nil }",
+                        "swapUnderWay = nil",
+                        "guard swap.isAnswered(by: executedRoute, query: submittedQuery),",
+                        "let held = holdBase(meaningAvailable: meaningAvailable) else { return nil }",
+                        "queryText = swap.layerQuery",
+                        "submittedQuery = swap.layerQuery",
+                        "return held"]
+        #expect(Array(carry.dropFirst().prefix(expected.count)) == expected,
+                "continueSwap(meaningAvailable:) is not the shared rule's hold and the list's words submitted: \(carry)")
+        let task = Self.squeezedCode(try Self.declaration(".task(id: searchVM.searchTrigger) {\n            searchVM.semanticBackend",
+                                                          in: Self.window))
+        #expect(task.contains(Self.squeezed("""
+            guard await searchVM.performSearch(service: appState.searchService) else { return }
+            searchVM.recordSearchHistory(projectId: appState.activeProjectId,
+                                         indexedVolumeCount: appState.indexedVolumeIds.count,
+                                         in: modelContext)
+            facetController.invalidate(signature: searchVM.searchTrigger)
+            searchVM.continueSwap(meaningAvailable: appState.semanticQuerySearcher != nil)
+            """)), "the swap's new list is held before its search is recorded, or for a search replaced since")
+        #expect(Self.code(try Self.source(Self.window)).components(separatedBy: "searchVM.continueSwap(").count - 1 == 1,
+                "the swap goes on from somewhere other than the search task")
+    }
+
+    /// A hand-off and a rebuilt index end a swap under way as they leave a held list, whether or not one is held yet:
+    /// during the swap's first search none is.
+    @Test("A hand-off and a rebuilt index end a swap under way, a list held or not")
+    func handOffsEndASwap() throws {
+        let leave = Self.codeLines(try Self.declaration("private func leaveBaseForHandoff() {", in: Self.model))
+        #expect(leave.dropFirst().first == "swapUnderWay = nil", "a hand-off leaves a swap under way to hold its list")
+        let rebuilt = Self.codeLines(try Self.declaration("func letGoOfBaseForRebuiltIndex() {", in: Self.model))
+        #expect(rebuilt.dropFirst().first == "swapUnderWay = nil", "a rebuilt index leaves a swap under way to hold its list")
+        let model = Self.code(try Self.source(Self.model))
+        #expect(model.components(separatedBy: "swapUnderWay = swap").count - 1 == 1,
+                "a swap starts somewhere other than swapLayer()")
+    }
+
+    /// Swap on the row, before the ✕: the shared copy, off while a search runs, a swap's included; the ✕ off while a
+    /// swap runs; and the row and the empty layer go on naming the list the swap let go of until the new one is held.
+    @Test("The row's Swap stands before its close button, says what it will do, and is off while a search runs")
+    func theRowsSwap() throws {
+        let row = Self.squeezedCode(try Self.declaration("private var heldListRow: some View {", in: Self.window))
+        for call in ["if let swap = searchVM.swapUnderWay ?? searchVM.layerSwap {",
+                     "swapLayer()",
+                     "Label(SearchLayerCopy.swapTitle, systemImage: SearchLayerCopy.swapGlyph)",
+                     ".disabled(searchVM.swapUnderWay != nil || searchVM.isSearching)",
+                     ".help(SearchLayerCopy.swapHelp(swap))",
+                     ".accessibilityLabel(SearchLayerCopy.swapLabel)",
+                     ".accessibilityIdentifier(\"search.layer.swap\")",
+                     ".disabled(searchVM.swapUnderWay != nil) .help(String(localized: \"search.layer.leave.help\","] {
+            #expect(row.contains(Self.squeezed(call)), "the held list's row lost `\(call)`")
+        }
+        let swapAt = try #require(row.range(of: Self.squeezed("swapLayer()")))
+        let leaveAt = try #require(row.range(of: Self.squeezed("leaveBase()")))
+        #expect(swapAt.upperBound <= leaveAt.lowerBound, "Swap is not before the close button")
+        let start = Self.squeezedCode(try Self.declaration("private func swapLayer() {", in: Self.window))
+        #expect(start.contains(Self.squeezed("guard let swap = searchVM.layerSwap, searchVM.swapLayer() else { return }")))
+        #expect(start.contains(Self.squeezed("AccessibilityNotification.Announcement(SearchLayerCopy.swapHelp(swap)).post()")),
+                "VoiceOver hears nothing as a swap starts")
     }
 }

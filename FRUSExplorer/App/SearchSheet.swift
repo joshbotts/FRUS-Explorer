@@ -148,6 +148,10 @@ import SwiftUI
 ///          a row's Mark Reviewed and Mark Page Reviewed wait for the rows of the search they mark, Select is off while a
 ///          search runs, a highlighted row's location and chips are drawn white (`SearchResultRow.tint(_:)`), and the
 ///          Reading picker is drawn dimmed while it is off
+///   1.26 — #1577 lane 7: the held list's row offers Swap once a search has run inside the list
+///          (`MacSearchViewModel.swapLayer()`), and the search task holds the swap's new list once its search is
+///          recorded (`continueSwap(meaningAvailable:)`); the row and the engine label go on naming the list a swap let
+///          go of until then
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -393,9 +397,11 @@ struct MacSearchWindowView: View {
                 // empty-scope guard's own message, and the Meaning-mode errors were all a blank list. Before the
                 // Meaning-mode empty state, which is a zero result and not a failure.
                 searchErrorView(searchError)
-            } else if let base = searchVM.pinnedBase, hasZeroResults, !searchVM.semanticNeedsModel {
+            } else if let base = searchVM.pinnedBase ?? searchVM.swapUnderWay?.heldList, hasZeroResults,
+                      !searchVM.semanticNeedsModel {
                 // #1577 lane 5: before both zero-states below, neither of which may show while a list is held
                 // (rule 7). With no search model the Meaning empty state's download offer shows, and the row stays.
+                // A swap that has let go of the list keeps this until its first search runs (#1577 lane 7).
                 layerEmptyState(base)
             } else if searchVM.searchMode == .meaning && hasZeroResults {
                 // The Meaning mode's empty surface — the keyword zero-state diagnoses which
@@ -572,6 +578,9 @@ struct MacSearchWindowView: View {
             // A new result set invalidates every computed section. Keyed on the same trigger
             // the search itself uses, so a facet can never describe a previous match.
             facetController.invalidate(signature: searchVM.searchTrigger)
+            // #1577 lane 7: a swap's new list is on screen and recorded. Holding it and submitting the held list's own
+            // words inside it changes the trigger, so this task runs that search next, and records it.
+            searchVM.continueSwap(meaningAvailable: appState.semanticQuerySearcher != nil)
         }
         // Keyed on the *live* text plus the filter version, not `searchTrigger`, so the
         // inspector explains the query as it is being typed — the design's "a researcher
@@ -738,8 +747,9 @@ struct MacSearchWindowView: View {
             // The engine picker (V-5 hybrid page); absent on a build whose semantic stack
             // never booted, leaving the window exactly what it always was. While a list is held it
             // gives way to a label naming the engine the field runs inside it (#1577 lane 5): the
-            // field runs the other engine only, and a disabled picker would explain nothing.
-            if let base = searchVM.pinnedBase {
+            // field runs the other engine only, and a disabled picker would explain nothing. A swap
+            // under way keeps the label until its new list is held (#1577 lane 7).
+            if let base = searchVM.pinnedBase ?? searchVM.swapUnderWay?.heldList {
                 heldEngineLabel(base.direction.fieldEngine)
             } else if appState.semanticQuerySearcher != nil {
                 Picker(String(localized: "search.mode.title", defaultValue: "Search by"),
@@ -1947,9 +1957,13 @@ struct MacSearchWindowView: View {
     /// One element for VoiceOver, "Searching within 100 closest matches to …", with its close button a child of its
     /// own, "Stop searching within these results", as on iPhone and iPad. The sentences are `PinnedResultBase`'s, so a
     /// test reads them with no window; the second line counts what the list held that a layer leaves out.
+    ///
+    /// Once a search has run inside the list, **Swap** stands before the ✕ (#1577 lane 7): the two searches change
+    /// places (`MacSearchViewModel.swapLayer()`), a titled button as the row's on iPhone and iPad is, its help naming
+    /// both searches. While a swap runs its first search the row goes on naming the list it let go of, both buttons off.
     @ViewBuilder
     private var heldListRow: some View {
-        if let base = searchVM.pinnedBase {
+        if let base = searchVM.pinnedBase ?? searchVM.swapUnderWay?.heldList {
             HStack(spacing: 6) {
                 Image(systemName: base.kind == .meaning ? SemanticGlyph.feature : "magnifyingglass")
                     .font(.subheadline)
@@ -1973,6 +1987,20 @@ struct MacSearchWindowView: View {
                 .help([base.rowDescription, base.leftOutDescription].compactMap { $0 }.joined(separator: " "))
                 .accessibilityIdentifier("search.layer.base")
                 Spacer(minLength: 8)
+                if let swap = searchVM.swapUnderWay ?? searchVM.layerSwap {
+                    Button {
+                        swapLayer()
+                    } label: {
+                        Label(SearchLayerCopy.swapTitle, systemImage: SearchLayerCopy.swapGlyph)
+                            .labelStyle(.titleAndIcon)
+                    }
+                    .controlSize(.small)
+                    .disabled(searchVM.swapUnderWay != nil || searchVM.isSearching)
+                    .help(SearchLayerCopy.swapHelp(swap))
+                    .accessibilityLabel(SearchLayerCopy.swapLabel)
+                    .accessibilityHint(SearchLayerCopy.swapHelp(swap))
+                    .accessibilityIdentifier("search.layer.swap")
+                }
                 Button {
                     leaveBase()
                 } label: {
@@ -1981,6 +2009,7 @@ struct MacSearchWindowView: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .disabled(searchVM.swapUnderWay != nil)
                 .help(String(localized: "search.layer.leave.help",
                              defaultValue: "Show the list you were searching within again, as it was"))
                 .accessibilityLabel(String(localized: "search.layer.leave.a11y",
@@ -2050,6 +2079,16 @@ struct MacSearchWindowView: View {
         }
         readingSelection.wrappedValue = .list
         AccessibilityNotification.Announcement(SearchLayerCopy.leftAnnouncement).post()
+    }
+
+    /// Swaps the held list and the search inside it (#1577 lane 7): the row's Swap. The view model starts it, and this
+    /// window's search task runs and records its two searches (`MacSearchViewModel.continueSwap(meaningAvailable:)`).
+    /// VoiceOver hears what the swap will do as it starts, and the new layer's header as it finishes. A reading open
+    /// over the list goes back to the list: the field's engine changes, as holding a list changes it.
+    private func swapLayer() {
+        guard let swap = searchVM.layerSwap, searchVM.swapLayer() else { return }
+        readingSelection.wrappedValue = .list
+        AccessibilityNotification.Announcement(SearchLayerCopy.swapHelp(swap)).post()
     }
 
     /// Announces a layer's finish to VoiceOver: the header that says what it found.
