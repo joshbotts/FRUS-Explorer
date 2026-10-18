@@ -118,9 +118,9 @@ import SwiftData
 ///          (`AnsweredSearchTrigger`) unless a filter changed since. Every hand-off leaves the held list, and a layer
 ///          keeps the checklist's anchor. #1683: the checklist's marks wait for the rows of the search they belong to
 ///          (`canMarkReviewed`)
-///   1.15 — #1577 lane 6: a question over a list held at its 7,500-row ceiling ranks the list's whole match
-///          (`rankWholeMatch(run:base:match:backend:)`), as on iPhone and iPad, and the trail signs the documents it
-///          ranked inside
+///   1.15 — #1577 lane 6: a question over a list held at its 7,500-row ceiling ranks the list's whole match, inside the
+///          filters chosen since (`rankWholeMatch(run:base:match:backend:)`), as on iPhone and iPad, and the trail signs
+///          the documents it ranked inside
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -290,10 +290,11 @@ final class MacSearchViewModel {
     /// its twin.
     ///
     /// A list cut at its ceiling is ranked inside its whole match, not its rows (#1577 lane 6), so while one is held
-    /// this is the match's size (`PinnedResultBase.wholeMatchSetSize(inside:)`), and `nil` where only reading the
-    /// match could say it; the window then holds the strip back (``holdsTheMeaningStripBack``).
+    /// this is the match's size (`PinnedResultBase.wholeMatchSetSize(for:)`), and `nil` where only reading the match
+    /// could say it, under a gate or a filter chosen since; the window then holds the strip back
+    /// (``holdsTheMeaningStripBack``).
     var documentSetSize: Int? {
-        if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(inside: parameters.documentIds) }
+        if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parameters) }
         return LayeredResultComposer.gating(parameters, inside: pinnedBase).documentIds?.count
     }
 
@@ -1678,7 +1679,8 @@ final class MacSearchViewModel {
     /// `CancellationError`, on which the catch below returns; a run whose count alone was stopped,
     /// after its rows came back, returns at the check after its last wait. Either way a cancelled run
     /// writes nothing, and the search that replaced it no longer waits for it. The run is still
-    /// numbered as it starts (``SearchRunLedger``), because a Meaning run, whose engine does not stop,
+    /// numbered as it starts (``SearchRunLedger``), because a Meaning run across the series, whose
+    /// engine does not stop (a search inside a set stops only between its steps, since #1577 lane 6),
     /// comes back all the same; once its last wait is over a run that is no longer the latest returns
     /// without writing anything, leaving the rows on screen to the run that replaced it. `isSearching`
     /// is reset by the latest run alone.
@@ -1949,8 +1951,10 @@ final class MacSearchViewModel {
             }
             let outcome = try await backend.run(query: query, parameters: parameters)
             // A Meaning run a later search replaced writes nothing, nor does its failure below
-            // (#1648): the Meaning engine does not stop when its task is cancelled, as the kit's
-            // keyword search does since #1680.
+            // (#1648): the Meaning engine does not stop a search across the series when its task is
+            // cancelled, as the kit's keyword search stops since #1680, and stops a search inside a set
+            // only between its steps (#1577 lane 6), throwing `CancellationError`, which the catch below
+            // drops.
             guard searchRuns.isLatest(run) else { return false }
             results = outcome.results
             settleSelection(for: sentAnchor)
@@ -2052,8 +2056,8 @@ final class MacSearchViewModel {
     /// ``rankHeldList(run:base:backend:)``'s path for such a list, with the same bookkeeping. The ranking is handed the
     /// parameters outside the held list, ``parameters``, whose gate is a working corpus applied since, never the
     /// list's rows. It runs in the window's search task, which the window cancels when its trigger changes, and the
-    /// kit then stops its statements. The match's keys are kept with the held list, and the trail signs the documents
-    /// ranked inside (``rankedSetSignature``).
+    /// kit then stops its statements and the searcher stops between its steps. The match's keys are kept with the held
+    /// list, and the trail signs the documents ranked inside (``rankedSetSignature``).
     ///
     /// - Parameters:
     ///   - run: This run's number, from `performSearch(service:)` (#1648).
@@ -2064,8 +2068,7 @@ final class MacSearchViewModel {
     private func rankWholeMatch(run: Int, base: PinnedResultBase, match ran: SearchParameters,
                                 backend: any MeaningSearchRunning) async throws -> Bool {
         let query = submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Read with the run, as the words' layer reads it: whether filters chosen since narrow the closest rows.
-        let filtersNarrowed = base.filtersNarrowTheClosest(parameters)
+        // The filters chosen since the list was held narrow the match before the ranking, which says what they left out.
         let whole = try await backend.rankWholeMatch(query: query, base: base, match: ran,
                                                      parameters: parameters, limit: base.fetchLimit)
         guard searchRuns.isLatest(run) else { return false }
@@ -2077,7 +2080,6 @@ final class MacSearchViewModel {
         beyondLibraryHits = whole.outcome.beyondLibrary
         semanticDisclosure = whole.outcome.disclosure
         rankedSetSignature = whole.setSignature
-        lastLayerFiltersNarrowed = filtersNarrowed
         totalMatchCount = base.totalMatchCount
         lastFetchLimit = base.fetchLimit
         // The held list as it is now, with its match's keys, so that its part counts the match (`signaturePart`).

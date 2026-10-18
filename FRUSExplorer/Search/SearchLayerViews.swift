@@ -108,6 +108,8 @@ struct SearchLayerBaseRow: View {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — #1577 lane 6: ``rankedStatement(route:disclosure:)``, an empty ranking of a whole match whose set held
+///          documents, which says why none could be listed
 struct SearchLayerEmptyState: View {
 
     /// What the layer looked in, and that it found nothing: the results header's sentence.
@@ -162,6 +164,29 @@ struct SearchLayerEmptyState: View {
     static var rankedStatement: String {
         String(localized: "search.layer.empty.ranked",
                defaultValue: "None of the results you are searching within passes your filters.")
+    }
+
+    /// What an empty ranking says, by what it ranked (#1577 lane 6).
+    ///
+    /// A ranking of a list's rows, and a ranking of a whole match whose set was empty, say
+    /// ``rankedStatement``: the filters or a working corpus applied since removed every member. A ranking of a
+    /// whole match whose set held documents is empty for another reason, since its filters narrowed the set before
+    /// it was ranked: none of the documents could be ranked and the list held none of them to list unranked, or those
+    /// ranked are not in this device's index. A search inside a set words those cases already
+    /// (`SemanticUnscoredCopy.emptyInsideSet`), and a ranking of a whole match is one; "passes your filters" there
+    /// would blame filters every one of the set passes.
+    ///
+    /// - Parameters:
+    ///   - route: The rows' route, as the view model recorded it.
+    ///   - disclosure: The ranking's disclosure, or `nil`.
+    /// - Returns: The sentence.
+    static func rankedStatement(route: ExecutedSearchRoute, disclosure: SemanticSearchBackend.Disclosure?) -> String {
+        guard case .rankedByMeaning(_, let wholeMatch?) = route, wholeMatch.size > 0, let disclosure else {
+            return rankedStatement
+        }
+        return SemanticUnscoredCopy.emptyInsideSet(
+            setSize: wholeMatch.size, ranked: disclosure.rankedCount ?? 0, filteredOut: 0,
+            volumes: disclosure.unscoredVolumes, downloading: disclosure.downloadingVolumes)
     }
 }
 

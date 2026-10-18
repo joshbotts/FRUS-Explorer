@@ -103,9 +103,10 @@ import Observation
 ///          layer's scope sentences are read from `PinnedResultBase`, `LayeredResultComposer` and
 ///          `ResultSetScope.describingLayer(over:filtersNarrowed:sortOrder:)`, which the Mac's window reads too; the
 ///          held list is built from `displayedResults`, in the search's order, as before
-///   2.11 — #1577 lane 6: a question over a list held at its ceiling ranks the list's whole match
-///          (`rankWholeMatch(run:base:match:backend:)`), in a task whatever replaces the run cancels, and the trail
-///          signs the documents it ranked inside; a UI test can lower the keyword ceiling (`keywordFetchCeiling`)
+///   2.11 — #1577 lane 6: a question over a list held at its ceiling ranks the list's whole match, inside the filters
+///          chosen since (`rankWholeMatch(run:base:match:backend:)`), in a task whatever replaces the run cancels, and
+///          the trail signs the documents it ranked inside; a UI test can lower the keyword ceiling
+///          (`keywordFetchCeiling`)
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -1641,7 +1642,8 @@ final class SearchViewModel {
     /// ``rankHeldList(run:base:backend:)``'s path for such a list, with the same bookkeeping: the list's ceiling and
     /// total are kept, the checklist is kept, picks end. Three things are its own. The ranking runs in a task of its
     /// own, which whatever replaces this run cancels (``stopKeywordFetchUnderWay()``), since reading the match's keys
-    /// and fetching rows go through the kit, whose statements stop when it is cancelled. The match's keys are kept with
+    /// and fetching rows go through the kit, whose statements stop when it is cancelled, and the searcher stops between
+    /// its steps. The match's keys are kept with
     /// the held list, so a second question does not read them again. And the trail signs the documents it ranked
     /// inside (``rankedSetSignature``), which the parameters a search runs with do not hold: their gate is the list's
     /// rows.
@@ -1655,9 +1657,8 @@ final class SearchViewModel {
     private func rankWholeMatch(run: Int, base: PinnedResultBase, match ran: SearchParameters,
                                 backend: any MeaningSearchRunning) async throws -> Bool {
         let query = submittedQuery
+        // The filters chosen since the list was held narrow the match before the ranking, which says what they left out.
         let parameters = parametersOutsideBase
-        // Read with the run, as the words' layer reads it: whether filters chosen since narrow the closest rows.
-        let filtersNarrowed = base.filtersNarrowTheClosest(parameters)
         let ranking = Task { () async throws -> SemanticSearchBackend.WholeMatchOutcome in
             try await backend.rankWholeMatch(query: query, base: base, match: ran,
                                              parameters: parameters, limit: base.fetchLimit)
@@ -1673,7 +1674,6 @@ final class SearchViewModel {
         beyondLibraryHits = whole.outcome.beyondLibrary
         semanticDisclosure = whole.outcome.disclosure
         rankedSetSignature = whole.setSignature
-        lastLayerFiltersNarrowed = filtersNarrowed
         totalMatchCount = base.totalMatchCount
         lastFetchLimit = base.fetchLimit
         // The held list as it is now, with its match's keys, so that its part counts the match (`signaturePart`).
@@ -2025,10 +2025,11 @@ final class SearchViewModel {
     /// rank. Zero is a set that holds nothing, which is not the same as no set.
     ///
     /// While a list cut at its ceiling is held it is the list's whole match, which a question ranks (#1577 lane 6;
-    /// `PinnedResultBase.wholeMatchSetSize(inside:)`), or `nil` where only reading the match could say it. The strip
-    /// waits over a held list's own rows here in any case (`SearchView`), and the Mac's window by the same rule.
+    /// `PinnedResultBase.wholeMatchSetSize(for:)`), or `nil` where only reading the match could say it: under a gate
+    /// or a filter chosen since. The strip waits over a held list's own rows here in any case (`SearchView`), and the
+    /// Mac's window by the same rule.
     var documentSetSize: Int? {
-        if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(inside: parametersOutsideBase.documentIds) }
+        if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parametersOutsideBase) }
         return searchParameters.documentIds?.count
     }
 

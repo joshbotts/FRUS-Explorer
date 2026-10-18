@@ -31,7 +31,8 @@ private func listRows(_ count: Int) -> [SearchResult] {
     (1...count).map { wholeRow("d\($0)", bm25: -Double(count - $0)) }
 }
 
-/// A keyword list or a browse held for a question, its search known unless `ran` is `nil`.
+/// A keyword list or a browse held for a question, its search known unless `ran` is `nil`, and found under that search's
+/// filters.
 private func heldList(kind: PinnedResultBase.Kind = .keywords, query: String = "negotiations",
                       rows: [SearchResult], members: [SearchResult]? = nil, fetchLimit: Int, total: Int?,
                       ran: SearchParameters? = SearchParameters(keywords: "negotiations")) -> PinnedResultBase {
@@ -41,7 +42,7 @@ private func heldList(kind: PinnedResultBase.Kind = .keywords, query: String = "
         hiddenByChecklist: rows.count - shown.count, notDownloaded: 0, route: .keywords,
         fetchLimit: fetchLimit, totalMatchCount: total, renderedExpression: nil, disclosure: nil,
         beyondLibraryHits: [], userTagCountScope: ran.map { .match($0) }, historyAnchor: nil,
-        completedSearchAnchor: nil, filterSignature: "")
+        completedSearchAnchor: nil, filterSignature: ran.map { SearchScopeSignature.signature(for: $0) } ?? "")
 }
 
 // MARK: - WholeMatchRulesTests
@@ -135,19 +136,27 @@ struct WholeMatchRulesTests {
     func theSetSizeAhead() {
         let rows = listRows(1_000)
         let held = heldList(rows: rows, members: Array(rows.dropFirst(13)), fetchLimit: 1_000, total: 35_275)
-        #expect(held.wholeMatchSetSize(inside: nil) == 35_262)
-        #expect(held.wholeMatchSetSize(inside: ["vol/x"]) == nil, "under a gate applied since only the keys can say")
+        let outside = SearchParameters(keywords: "how was the test ban argued")
+        #expect(held.wholeMatchSetSize(for: outside) == 35_262)
+        var gated = outside
+        gated.documentIds = ["vol/x"]
+        #expect(held.wholeMatchSetSize(for: gated) == nil, "under a gate applied since only the keys can say")
+        var filtered = outside
+        filtered.documentTypeFilter = .documentsOnly
+        #expect(held.wholeMatchSetSize(for: filtered) == nil,
+                "under a filter chosen since, which narrows the match before the ranking, only the keys can say")
         let corpus = (1...500).map { "vol/c\($0)" }
         let inside = heldList(rows: rows, fetchLimit: 1_000, total: 4_000,
                               ran: SearchParameters(keywords: "negotiations", documentIds: corpus))
-        #expect(inside.wholeMatchSetSize(inside: corpus) == 4_000, "the gate it was found under narrowed its match already")
-        #expect(heldList(rows: rows, fetchLimit: 1_000, total: nil).wholeMatchSetSize(inside: nil) == nil)
-        #expect(heldList(rows: listRows(212), fetchLimit: 1_000, total: 212).wholeMatchSetSize(inside: nil) == nil,
-                "a list ranked by its rows has no whole match to rank")
+        #expect(inside.wholeMatchSetSize(for: SearchParameters(documentIds: corpus)) == 4_000,
+                "the gate it was found under narrowed its match already")
+        #expect(heldList(rows: rows, fetchLimit: 1_000, total: nil).wholeMatchSetSize(for: SearchParameters()) == nil)
+        #expect(heldList(rows: listRows(212), fetchLimit: 1_000, total: 212).wholeMatchSetSize(for: SearchParameters())
+                == nil, "a list ranked by its rows has no whole match to rank")
     }
 
-    @Test("Filters chosen since narrow the closest rows where one is set beside the list's own, a corpus applied since aside")
-    func filtersNarrowTheClosest() {
+    @Test("Filters chosen since narrow the whole match where one is set beside the list's own, a corpus applied since aside")
+    func filtersNarrowTheMatch() {
         let ran = SearchParameters(keywords: "negotiations",
                                    dateRange: DateRange(earliest: "1961-01-01", latest: "1963-12-31"))
         let held = PinnedResultBase(
@@ -158,17 +167,16 @@ struct WholeMatchRulesTests {
             filterSignature: SearchScopeSignature.signature(for: ran))
         var live = ran
         live.keywords = "how was the test ban argued"
-        #expect(!held.filtersNarrowTheClosest(live), "the list's own filters remove none of its match")
+        #expect(!held.filtersNarrowTheMatch(live), "the list's own filters remove none of its match")
         var typed = live
         typed.documentTypeFilter = .documentsOnly
-        #expect(held.filtersNarrowTheClosest(typed), "a filter set since narrows the closest rows")
+        #expect(held.filtersNarrowTheMatch(typed), "a filter set since narrows the match")
         var cornered = live
         cornered.documentIds = ["vol/d1", "vol/d2"]
-        #expect(!held.filtersNarrowTheClosest(cornered),
-                "a corpus applied since narrows the set before the ranking, so the closest all pass it")
+        #expect(!held.filtersNarrowTheMatch(cornered), "a corpus applied since is the gate's to narrow, not a filter's")
         var removed = live
         removed.dateRange = nil
-        #expect(!held.filtersNarrowTheClosest(removed), "a filter taken away removes nothing")
+        #expect(!held.filtersNarrowTheMatch(removed), "a filter taken away removes nothing")
     }
 
     // MARK: The composer
@@ -184,6 +192,11 @@ struct WholeMatchRulesTests {
                 "inside the gate, less the hidden, in the match's order and not the gate's")
         #expect(LayeredResultComposer.wholeMatchSet(keys, leavingOut: [], inside: []).isEmpty,
                 "an empty gate admits nothing, as everywhere")
+        // The filters chosen since narrow the set before the ranking, in the set's order.
+        #expect(LayeredResultComposer.wholeMatchSet(keys, passing: nil) == keys, "with nothing constraining, the set")
+        #expect(LayeredResultComposer.wholeMatchSet(keys, passing: ["vol/d7", "other/d1", "vol/d3"])
+                == ["vol/d3", "vol/d7"], "the members the filters admit, in the set's order and not the filters'")
+        #expect(LayeredResultComposer.wholeMatchSet(keys, passing: []).isEmpty, "filters that admit nothing")
     }
 
     @Test("The closest are listed up to the ceiling, and the list's own unranked rows in the set follow only where there is room")
@@ -226,28 +239,36 @@ struct WholeMatchRulesTests {
 
     // MARK: The sentences
 
-    /// A ranking of a whole match of `size` documents, listing `loaded` rows, `unranked` of them unranked.
-    private func ranking(loaded: Int, shown: Int? = nil, unranked: Int = 0, size: Int, notRanked: Int = 0,
-                         closest: Int? = nil, isCut: Bool = true, total: Int? = 35_275) -> ResultSetScope {
+    /// A ranking of a whole match of `size` documents, listing `loaded` rows, `unranked` of them unranked, `filteredOut`
+    /// of the match left out by filters chosen since.
+    private func ranking(loaded: Int, shown: Int? = nil, unranked: Int = 0, size: Int, filteredOut: Int = 0,
+                         notRanked: Int = 0, isCut: Bool = true, total: Int? = 35_275) -> ResultSetScope {
         let shown = shown ?? loaded
         return ResultSetScope(
             loaded: loaded, shown: shown, fetchLimit: 1_000, totalMatchCount: total,
             documentsOnPage: min(25, shown), pageCount: max(1, (shown + 24) / 25),
             route: .rankedByMeaning(unranked: unranked, wholeMatch: WholeMatchRanking(
-                size: size, notRanked: notRanked, closest: closest ?? (loaded - unranked), isCut: isCut)))
+                size: size, filteredOut: filteredOut, notRanked: notRanked, closest: loaded - unranked,
+                isCut: isCut)))
     }
 
-    @Test("The header names the closest and the match they were chosen from, what was not ranked, and what filters kept")
+    @Test("The header names the closest and the documents they were chosen from, those that pass the filters, and what was not ranked")
     func theHeader() {
         #expect(ranking(loaded: 1_000, size: 35_275).headerDescription == "Closest 1,000 of 35,275 results")
         #expect(ranking(loaded: 1_000, size: 35_275, notRanked: 1_204).headerDescription
                 == "Closest 1,000 of 35,275 results · 1,204 not ranked")
-        var filtered = ranking(loaded: 870, size: 35_275, closest: 1_000)
-        filtered.layerFiltersNarrowed = true
-        #expect(filtered.headerDescription == "Closest 1,000 of 35,275 results · 870 pass your filters")
-        var one = ranking(loaded: 1, size: 35_275, closest: 1_000)
-        one.layerFiltersNarrowed = true
-        #expect(one.headerDescription == "Closest 1,000 of 35,275 results · 1 passes your filters")
+        // Filters chosen since narrowed the match before the ranking, so the second figure is of those that pass them.
+        #expect(ranking(loaded: 1_000, size: 4_012, filteredOut: 31_263).headerDescription
+                == "Closest 1,000 of the 4,012 results that pass your filters")
+        #expect(ranking(loaded: 1_000, size: 4_012, filteredOut: 31_263, notRanked: 12).headerDescription
+                == "Closest 1,000 of the 4,012 results that pass your filters · 12 not ranked")
+        // A filter chosen since that left nothing out is not named.
+        #expect(ranking(loaded: 1_000, size: 35_275, filteredOut: 0).headerDescription == "Closest 1,000 of 35,275 results")
+        // Nothing could be ranked: the rows are the list's own, under the line that counts them.
+        #expect(ranking(loaded: 10, unranked: 10, size: 24, notRanked: 24).headerDescription
+                == "None of the 24 results could be ranked")
+        #expect(ranking(loaded: 10, unranked: 10, size: 24, filteredOut: 6, notRanked: 24).headerDescription
+                == "None of the 24 results that pass your filters could be ranked")
         // A set claim, true in any order: a date sort keeps it, where it drops lane 4's "closest first".
         var byDate = ranking(loaded: 1_000, size: 35_275)
         byDate.listIsInRankOrder = false
@@ -263,18 +284,35 @@ struct WholeMatchRulesTests {
                 == "212 results · 203 ranked · 9 not ranked")
     }
 
-    @Test("A cut ranking is partial evidence, and its capture says the closest, not the highest-scoring")
+    @Test("A cut ranking is partial evidence, and its capture says the closest it ranked, not the highest-scoring")
     func theCapture() {
         let cut = ranking(loaded: 1_000, size: 35_275)
         #expect(cut.didHitFetchLimit && cut.isPartialEvidence && cut.isCapturePartial)
         #expect(cut.overCapGuidance == nil, "the field holds a question, so keyword advice does not apply")
         #expect(cut.captureTruncationWarning == "These 1,000 documents are the closest to your question of 35,275 matching documents, not all of them. Counts taken inside this corpus are counts inside that subset.")
-        #expect(ranking(loaded: 20, unranked: 2, size: 24, notRanked: 6).captureTruncationWarning
-                == "These 20 documents are the closest to your question of 24 matching documents, and 2 of them could not be ranked by it. Counts taken inside this corpus are counts inside that subset.")
+        #expect(ranking(loaded: 1, size: 2).captureTruncationWarning
+                == "This document is the closest to your question of 2 matching documents, not all of them. Counts taken inside this corpus are counts inside that subset.")
+        // The rows listed after the closest, which it could not rank, are not called the closest.
+        #expect(ranking(loaded: 1_000, unranked: 700, size: 35_275, notRanked: 34_975).captureTruncationWarning
+                == "These 1,000 documents are the 300 closest to your question of 35,275 matching documents, and 700 that it could not rank. Counts taken inside this corpus are counts inside that subset.")
         var labelled = cut
         labelled.layerBaseLabel = "“negotiations”"
         #expect(labelled.captureProvenanceDescription
                 == "Search results for “negotiations”, ranked by a question — the closest 1,000 of 35,275 matches")
+        var partly = ranking(loaded: 1_000, unranked: 700, size: 35_275, notRanked: 34_975)
+        partly.layerBaseLabel = "“negotiations”"
+        #expect(partly.captureProvenanceDescription
+                == "Search results for “negotiations”, ranked by a question — the closest 300 of 35,275 matches, and 700 not ranked")
+        // Nothing ranked: the rows are the list's own inside the set, its highest-scoring, as lane 4 recorded them.
+        var none = ranking(loaded: 10, unranked: 10, size: 24, notRanked: 24, total: 24)
+        none.layerBaseLabel = "“talks”"
+        #expect(none.captureTruncationWarning
+                == "These 10 documents are the highest-scoring of 24 matching documents. Counts taken inside this corpus are counts inside that subset.")
+        #expect(none.captureProvenanceDescription
+                == "Search results for “talks”, ranked by a question — the highest-scoring 10 of 24 matches")
+        // Filters chosen since: the documents passing them are the match the closest were chosen from.
+        let filtered = ranking(loaded: 1_000, size: 4_012, filteredOut: 31_263)
+        #expect(filtered.captureTruncationWarning == "These 1,000 documents are the closest to your question of 4,012 matching documents, not all of them. Counts taken inside this corpus are counts inside that subset.")
         // Not cut: whole, as a ranking of a whole list is.
         let whole = ranking(loaded: 212, size: 212, isCut: false)
         #expect(!whole.didHitFetchLimit && !whole.isCapturePartial && whole.captureTruncationWarning == nil)
@@ -282,6 +320,41 @@ struct WholeMatchRulesTests {
         var overridden = ranking(loaded: 212, size: 212, isCut: false)
         overridden.layerBaseWasCut = true
         #expect(!overridden.didHitFetchLimit)
+    }
+
+    @Test("An empty ranking of a whole match whose set held documents says why none was listed, and blames no filter")
+    func theEmptyStatement() {
+        let filters = "None of the results you are searching within passes your filters."
+        #expect(SearchLayerEmptyState.rankedStatement == filters)
+        #expect(SearchLayerEmptyState.rankedStatement(route: .rankedByMeaning(unranked: 0), disclosure: nil) == filters,
+                "a ranking of a list's rows is empty only when the filters removed every member")
+        func whole(size: Int, filteredOut: Int = 18, notRanked: Int) -> ExecutedSearchRoute {
+            .rankedByMeaning(unranked: 0, wholeMatch: WholeMatchRanking(
+                size: size, filteredOut: filteredOut, notRanked: notRanked, closest: 0, isCut: size > 0))
+        }
+        func disclosure(set: Int, unscored: Int = 0, volumes: Int = 0, downloading: Int = 0,
+                        withoutVector: Int = 0) -> SemanticSearchBackend.Disclosure {
+            SemanticSearchBackend.Disclosure(
+                unscoredCandidates: unscored, unscoredVolumes: volumes, downloadingVolumes: downloading,
+                filtersApplied: true, filteredOut: 0, beyondUncheckedByFilters: false, rankedWithin: set,
+                withoutVector: withoutVector)
+        }
+        #expect(SearchLayerEmptyState.rankedStatement(route: whole(size: 0, filteredOut: 24, notRanked: 0),
+                                                      disclosure: disclosure(set: 0)) == filters,
+                "the filters left none of the match, which the sentence says")
+        // Six pass the filters and none can be ranked, and the list held none of them to list unranked.
+        #expect(SearchLayerEmptyState.rankedStatement(
+            route: whole(size: 6, notRanked: 6), disclosure: disclosure(set: 6, unscored: 6, volumes: 1))
+                == "The documents you are searching within could not be ranked: match files for 1 volume are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.")
+        #expect(SearchLayerEmptyState.rankedStatement(
+            route: whole(size: 6, notRanked: 6), disclosure: disclosure(set: 6, withoutVector: 6))
+                == "None of the documents you are searching within can be ranked by meaning: the app has no match data for them. Front matter and chapter headings never have any.")
+        #expect(SearchLayerEmptyState.rankedStatement(
+            route: whole(size: 6, notRanked: 6), disclosure: disclosure(set: 6, unscored: 6, volumes: 2, downloading: 2))
+                == SemanticUnscoredCopy.emptyInsideSet(setSize: 6, ranked: 0, filteredOut: 0, volumes: 2, downloading: 2))
+        // Ranked, but none of the ranked is in this device's index.
+        #expect(SearchLayerEmptyState.rankedStatement(route: whole(size: 6, notRanked: 0), disclosure: disclosure(set: 6))
+                == "None of the closest matches inside the documents you are searching within is indexed on this device.")
     }
 
     // MARK: The Mac's help, the seam and the timing line
@@ -478,10 +551,17 @@ struct WholeMatchRankingTests {
             #expect(whole.outcome.results.allSatisfy { $0.semanticScore == nil })
             #expect(whole.ranking == WholeMatchRanking(size: 24, notRanked: 24, closest: 0, isCut: true))
             #expect(embedCalls.count == 0, "nothing could be scored, so the question was not encoded")
+            var scope = ResultSetScope(loaded: 10, shown: 10, fetchLimit: 10, totalMatchCount: 24, documentsOnPage: 10,
+                                       pageCount: 1, route: .rankedByMeaning(unranked: 10, wholeMatch: whole.ranking))
+            scope.layerBaseLabel = "“talks”"
+            #expect(scope.headerDescription == "None of the 24 results could be ranked")
+            #expect(scope.captureProvenanceDescription
+                    == "Search results for “talks”, ranked by a question — the highest-scoring 10 of 24 matches",
+                    "the list's own rows, recorded as lane 4 recorded them, not as the closest of anything")
         }
     }
 
-    @Test("Keys kept with the list are ranked, not the index's; a corpus applied since and hidden rows narrow the set, and other filters the rows after")
+    @Test("Keys kept with the list are ranked, not the index's; a corpus applied since and hidden rows narrow the set")
     func theSetIsNarrowed() async throws {
         try await withDirectory { directory in
             let (backend, service) = try await makeBackend(in: directory)
@@ -505,14 +585,6 @@ struct WholeMatchRankingTests {
             #expect(gated.ranking.size == 7 && !gated.ranking.isCut)
             #expect(Set(gated.outcome.results.map(\.id)) == Set(corpus).intersection(match))
 
-            // Filters chosen since narrow the rows after the ranking.
-            let scoped = try await backend.rankWholeMatch(query: "q", base: base, match: Self.talks,
-                                                          parameters: SearchParameters(volumeIds: [SemanticSetFixture.held]),
-                                                          limit: 10)
-            #expect(scoped.outcome.results.allSatisfy { $0.volumeId == SemanticSetFixture.held })
-            #expect(scoped.outcome.disclosure.filtersApplied && scoped.outcome.disclosure.filteredOut > 0)
-            #expect(scoped.ranking.size == 24, "the filters narrow the rows, not the set ranked")
-
             // Rows hidden as reviewed when the list was held are left out of the set.
             let hiding = try await heldTalks(service, limit: 10, hiding: 3)
             let hidden = hiding.hiddenKeys
@@ -521,6 +593,138 @@ struct WholeMatchRankingTests {
             #expect(unhidden.ranking.size == 21)
             #expect(!unhidden.outcome.results.contains { hidden.contains($0.id) })
         }
+    }
+
+    @Test("Filters chosen since narrow the match before the ranking: the closest of those that pass are listed, those the unfiltered ceiling would cut among them")
+    func filtersNarrowTheMatchBeforeTheRanking() async throws {
+        try await withDirectory { directory in
+            let (backend, service) = try await makeBackend(in: directory)
+            let base = try await heldTalks(service, limit: 10)
+            let match = try await service.matchKeys(parameters: Self.talks)
+            let twins = [SemanticSetFixture.twinFirst, SemanticSetFixture.twinSecond]
+            let passing = match.filter { key in twins.contains { key.hasPrefix($0 + "/") } }
+            let expected = SemanticSetFixture.bruteForceRanking(of: passing).map(\.key)
+            // Fixture guard: two of the whole match's closest four are the twins', so filters narrowing the closest
+            // rows after the ranking would list two, where six pass and four fit.
+            try #require(expected.count == 6 && SemanticSetFixture.bruteForceRanking(of: match).prefix(4)
+                .filter { passing.contains($0.key) }.count == 2)
+
+            let scoped = try await backend.rankWholeMatch(query: "q", base: base, match: Self.talks,
+                                                          parameters: SearchParameters(volumeIds: twins), limit: 4)
+            #expect(scoped.outcome.results.map(\.id) == Array(expected.prefix(4)),
+                    "the closest four of the six that pass, in the cosine's order")
+            #expect(scoped.ranking == WholeMatchRanking(size: 6, filteredOut: 18, notRanked: 0, closest: 4, isCut: true))
+            #expect(scoped.outcome.disclosure.filtersApplied && scoped.outcome.disclosure.filteredOut == 0,
+                    "no hit is removed after the ranking")
+            #expect(scoped.outcome.disclosure.rankedWithin == 6)
+            #expect(scoped.setSignature == SearchScopeSignature.semanticSignature(rankingInside: passing))
+            let scope = ResultSetScope(loaded: 4, shown: 4, fetchLimit: 4, totalMatchCount: 24, documentsOnPage: 4,
+                                       pageCount: 1, route: .rankedByMeaning(unranked: 0, wholeMatch: scoped.ranking))
+            #expect(scope.headerDescription == "Closest 4 of the 6 results that pass your filters")
+
+            // A filter that leaves out the whole match lists nothing, and the filters' sentence says so.
+            let nothing = try await backend.rankWholeMatch(query: "q", base: base, match: Self.talks,
+                                                           parameters: SearchParameters(volumeIds: ["frus2099v01"]),
+                                                           limit: 4)
+            #expect(nothing.outcome.results.isEmpty)
+            #expect(nothing.ranking == WholeMatchRanking(size: 0, filteredOut: 24, notRanked: 0, closest: 0, isCut: false))
+            #expect(SearchLayerEmptyState.rankedStatement(
+                route: .rankedByMeaning(unranked: 0, wholeMatch: nothing.ranking), disclosure: nothing.outcome.disclosure)
+                    == SearchLayerEmptyState.rankedStatement)
+        }
+    }
+
+    @Test("A set whose members pass and cannot be ranked, none of them held, lists nothing, and says why rather than blaming the filters")
+    func nothingRankedAndNothingHeld() async throws {
+        try await withDirectory { directory in
+            let (backend, service) = try await makeBackend(in: directory)
+            let base = try await heldTalks(service, limit: 4)
+            let match = try await service.matchKeys(parameters: Self.talks)
+            // The absent volume's documents the list of four does not hold: six, less any it does.
+            let unheld = match.filter { $0.hasPrefix(SemanticSetFixture.absent + "/") && !base.memberKeys.contains($0) }
+            try #require(unheld.count >= 2, "fixture guard: documents of the absent volume lie outside the held list")
+            let whole = try await backend.rankWholeMatch(query: "q", base: base, match: Self.talks,
+                                                         parameters: SearchParameters(documentIds: unheld), limit: 4)
+            #expect(whole.outcome.results.isEmpty)
+            #expect(whole.ranking == WholeMatchRanking(size: unheld.count, notRanked: unheld.count, closest: 0, isCut: true))
+            #expect(SearchLayerEmptyState.rankedStatement(
+                route: .rankedByMeaning(unranked: 0, wholeMatch: whole.ranking), disclosure: whole.outcome.disclosure)
+                    == "The documents you are searching within could not be ranked: match files for 1 volume are not on this device. Download Missing Vectors in Settings fetches the files for volumes you have downloaded.")
+        }
+    }
+
+    @Test("A search inside a set whose task is cancelled stops: before it encodes the question, or after, asking for no match file")
+    func aCancelledSearchStops() async throws {
+        try await withDirectory { directory in
+            let embedCalls = EmbedCalls()
+            let fetches = FetchRequests()
+            let cancelWhileEncoding = CancelSwitch()
+            let artifacts = try SemanticSetFixture.writeArtifacts(in: directory,
+                                                                  withShards: SemanticSetFixture.volumesWithShards)
+            let searcher = SemanticQuerySearcher(
+                index: artifacts.index, corpus: artifacts.corpus, modelStore: artifacts.modelStore,
+                shardStore: artifacts.shardStore,
+                requestShardFetch: { volume in
+                    fetches.record(volume)
+                    return false
+                },
+                embedOverride: { _ in
+                    embedCalls.record()
+                    // The override runs in the task of the search that awaits it.
+                    if cancelWhileEncoding.isOn { withUnsafeCurrentTask { $0?.cancel() } }
+                    return SemanticSetFixture.queryEmbedding
+                })
+            // Uncancelled, the search encodes the question once and asks for the absent volume's match file once.
+            let control = try await searcher.search("q", within: SemanticSetFixture.documentSet, limit: 5)
+            try #require(!control.hits.isEmpty && embedCalls.count == 1 && fetches.count == 1,
+                         "fixture guard: the set's search encodes and asks for a file")
+
+            let cancelledFirst = await Task { () -> Bool in
+                withUnsafeCurrentTask { $0?.cancel() }
+                do {
+                    _ = try await searcher.search("q", within: SemanticSetFixture.documentSet, limit: 5)
+                    return false
+                } catch {
+                    return error is CancellationError
+                }
+            }.value
+            #expect(cancelledFirst, "a search cancelled before it started came back")
+            #expect(embedCalls.count == 1 && fetches.count == 1, "it encoded the question or asked for a file")
+
+            cancelWhileEncoding.isOn = true
+            let cancelledEncoding = await Task { () -> Bool in
+                do {
+                    _ = try await searcher.search("q", within: SemanticSetFixture.documentSet, limit: 5)
+                    return false
+                } catch {
+                    return error is CancellationError
+                }
+            }.value
+            #expect(cancelledEncoding, "a search cancelled while it encoded the question came back")
+            #expect(embedCalls.count == 2, "fixture guard: the search reached the encoder")
+            #expect(fetches.count == 1, "a search cancelled while it encoded asked for a match file")
+        }
+    }
+}
+
+/// Counts the match files a searcher asks for, from whichever task it asks in.
+private final class FetchRequests: @unchecked Sendable {
+    private let lock = NSLock()
+    private var volumes: [String] = []
+    /// Counts one request.
+    func record(_ volume: String) { lock.lock(); volumes.append(volume); lock.unlock() }
+    /// The requests counted so far.
+    var count: Int { lock.lock(); defer { lock.unlock() }; return volumes.count }
+}
+
+/// A switch a test sets and a searcher's encoder reads, from whichever task it runs in.
+private final class CancelSwitch: @unchecked Sendable {
+    private let lock = NSLock()
+    private var on = false
+    /// Whether the encoder cancels the task it runs in.
+    var isOn: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return on }
+        set { lock.lock(); on = newValue; lock.unlock() }
     }
 }
 
@@ -537,6 +741,8 @@ private final class WholeMatchEngine: MeaningSearchRunning {
         let hadKeys: Bool
         let ran: SearchParameters
         let gate: [String]?
+        /// The parameters outside the held list it was handed, the filters chosen since among them.
+        let parameters: SearchParameters
         let limit: Int
     }
 
@@ -544,6 +750,8 @@ private final class WholeMatchEngine: MeaningSearchRunning {
     private(set) var reranks = 0
     /// The match's keys the ranking returns.
     var matchKeys: [String] = []
+    /// What the ranking says the filters chosen since left out of the match.
+    var filteredOut = 0
     /// Set to hold the next ranking at its start.
     var holdNext = false
     /// The held ranking's continuation, once it is held.
@@ -564,7 +772,7 @@ private final class WholeMatchEngine: MeaningSearchRunning {
     func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,
                         parameters: SearchParameters, limit: Int) async throws -> SemanticSearchBackend.WholeMatchOutcome {
         calls.append(Call(query: query, hadKeys: base.wholeMatch != nil, ran: ran, gate: parameters.documentIds,
-                          limit: limit))
+                          parameters: parameters, limit: limit))
         if holdNext {
             holdNext = false
             await withCheckedContinuation { held = $0 }
@@ -583,8 +791,8 @@ private final class WholeMatchEngine: MeaningSearchRunning {
                     unscoredCandidates: 0, unscoredVolumes: 0, downloadingVolumes: 0, filtersApplied: false,
                     filteredOut: 0, beyondUncheckedByFilters: false, rankedWithin: matchKeys.count, withoutVector: 0)),
             matchKeys: matchKeys,
-            ranking: WholeMatchRanking(size: matchKeys.count, notRanked: 0, closest: rows.count,
-                                       isCut: rows.count < matchKeys.count),
+            ranking: WholeMatchRanking(size: matchKeys.count, filteredOut: filteredOut, notRanked: 0,
+                                       closest: rows.count, isCut: rows.count < matchKeys.count),
             setSignature: "route=semantic;engine=on-device;docs=\(matchKeys.count)/test")
     }
 
@@ -664,14 +872,20 @@ struct WholeMatchViewModelTests {
         #expect(vm.lastRenderedExpression?.hasSuffix("; ranked=1001; top=1000; base=keywords:1001:containment") == true,
                 "\(vm.lastRenderedExpression ?? "nil")")
 
-        // A second question reads the keys the list kept; a filter chosen since narrows its closest rows, which the
-        // header says (the stand-in lists the same rows whatever the filter).
+        // A second question reads the keys the list kept. A filter chosen since reaches the ranking, which narrows the
+        // match by it and says what it left out, and the header says so (the stand-in reports a figure, whatever the
+        // filter). Until then the strip cannot say what the question will rank.
         vm.documentTypeFilter = .documentsOnly
+        #expect(vm.documentSetSize == nil, "under a filter chosen since only the match's keys can say what is ranked")
+        engine.filteredOut = 7
         vm.keywords = "who argued for it"
         #expect(await vm.search())
         #expect(engine.calls.count == 2 && engine.calls[1].hadKeys)
-        #expect(vm.resultSetScope.headerDescription == "Closest 1,000 of 1,001 results · 1,000 pass your filters")
+        #expect(engine.calls[1].parameters.documentTypeFilter == .documentsOnly, "the filter chosen since is not handed on")
+        #expect(engine.calls[1].gate == nil)
+        #expect(vm.resultSetScope.headerDescription == "Closest 1,000 of the 1,001 results that pass your filters")
         vm.documentTypeFilter = .all
+        engine.filteredOut = 0
 
         // Leaving puts the list and its figures back, with no search.
         vm.leaveBase()
@@ -718,5 +932,29 @@ struct WholeMatchViewModelTests {
         #expect(vm.executedRoute == .rankedByMeaning(unranked: 0, wholeMatch: WholeMatchRanking(
             size: 1_001, notRanked: 0, closest: 1_000, isCut: true)))
         #expect(vm.isSearching == false)
+    }
+}
+
+// MARK: - WholeMatchScreenWiringTests
+
+/// The iPhone and iPad screen's half of an empty ranking of a whole match (#1577 lane 6), which no test drives through
+/// the view: the screen asks `SearchLayerEmptyState.rankedStatement(route:disclosure:)` with the rows' route and the
+/// ranking's disclosure, which `WholeMatchRulesTests.theEmptyStatement` holds to its sentences, as the Mac's window
+/// does (`MacSearchWithinResultsWiringTests`).
+///
+/// Version history:
+///   1.0 — #1577 lane 6: initial implementation
+@Suite("Search within results: the iPhone and iPad screen says why an empty ranking of a whole match is empty (#1577 lane 6)")
+struct WholeMatchScreenWiringTests {
+
+    @Test("The layer's empty state asks for the statement by the rows' route and the ranking's disclosure")
+    func theEmptyStateAsksByRoute() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let screen = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SearchView.swift"),
+                                encoding: .utf8).filter { !$0.isWhitespace }
+        let call = "SearchLayerEmptyState.rankedStatement(route: resultSetScope.route, disclosure: vm.semanticDisclosure)"
+        #expect(screen.contains(call.filter { !$0.isWhitespace }), "an empty ranking of a whole match blames the filters")
+        #expect(!screen.contains("SearchLayerEmptyState.rankedStatement,"),
+                "the screen still says the filters' sentence over every empty ranking")
     }
 }

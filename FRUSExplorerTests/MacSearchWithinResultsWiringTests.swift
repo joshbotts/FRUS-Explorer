@@ -440,6 +440,10 @@ struct MacSearchWithinResultsWiringTests {
         let empty = Self.squeezedCode(try Self.declaration("private func layerEmptyState(_ base: PinnedResultBase) -> some View {",
                                                            in: Self.window))
         #expect(empty.contains(Self.squeezed("searchLibrary: { searchVM.leaveBaseKeepingTheWords() },")))
+        // An empty ranking says why by what it ranked (#1577 lane 6), as iPhone and iPad's does.
+        #expect(empty.contains(Self.squeezed(
+            "SearchLayerEmptyState.rankedStatement(route: resultSetScope.route, disclosure: searchVM.semanticDisclosure)")),
+                "an empty ranking of a whole match blames the filters")
         let model = Self.squeezedCode(try Self.source(Self.model))
         #expect(model.contains(Self.squeezed("if isShowingBase, let ran = pinnedBase?.ranParameters { return ran }")))
         #expect(model.contains(Self.squeezed("if isShowingBase, let base = pinnedBase { return base.query }")))
@@ -542,8 +546,6 @@ struct MacSearchWithinResultsWiringTests {
             "endSelecting()",
             "semanticDisclosure = whole.outcome.disclosure",
             "rankedSetSignature = whole.setSignature",
-            "let filtersNarrowed = base.filtersNarrowTheClosest(parameters)",
-            "lastLayerFiltersNarrowed = filtersNarrowed",
             "totalMatchCount = base.totalMatchCount",
             "lastFetchLimit = base.fetchLimit",
             "lastRenderedExpression = SemanticSearchBackend.renderedExpression(rankingAll: whole.ranking.size, listing: base.fetchLimit) + (pinnedBase ?? base).renderedExpressionSuffix",
@@ -553,12 +555,16 @@ struct MacSearchWithinResultsWiringTests {
         }
         // Handed `parameters`, never the list's gated value: the gate a search inside the list runs with is its rows.
         #expect(!whole.contains("LayeredResultComposer.gating"), "the whole match is narrowed by the gate outside the list")
+        // The filters chosen since narrow the match before the ranking, which says what they left out
+        // (`WholeMatchRanking.filteredOut`): the window's flag for a layer's filters is the words' alone.
+        #expect(!whole.contains("lastLayerFiltersNarrowed"), "a ranking of a whole match writes the words' flag, where its own record says what its filters left out")
         #expect(!whole.contains("settleChecklist") && !whole.contains("settleSelection"),
                 "a ranking inside a held list keeps the list's checklist")
         // The Meaning strip names the whole match a question would rank, or waits where only reading it could say.
         let size = Self.squeezedCode(try Self.declaration("var documentSetSize: Int? {", in: Self.model))
         #expect(size.contains(Self.squeezed(
-            "if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(inside: parameters.documentIds) }")))
+            "if let base = pinnedBase, base.ranksWholeMatch { return base.wholeMatchSetSize(for: parameters) }")),
+                "the strip names a set the filters chosen since would narrow")
         let holds = Self.squeezedCode(try Self.declaration("var holdsTheMeaningStripBack: Bool {", in: Self.model))
         #expect(holds.contains(Self.squeezed(
             "isShowingBase && pinnedBase?.ranksWholeMatch == true && documentSetSize == nil")))

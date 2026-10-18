@@ -122,7 +122,8 @@ enum SearchLayerDirection: Equatable, Sendable {
 ///          ``filtersNarrow(_:)`` and ``wasFound(under:)``
 ///   1.2 — #1577 lane 6: a list cut at its ceiling and held for a question is ranked whole
 ///          (``ranksWholeMatch``): its row says "all 35,275 results", it keeps its match's keys once a ranking
-///          has read them (``wholeMatch``), and its record counts the match
+///          has read them (``wholeMatch``), and its record counts the match; ``wholeMatchSetSize(for:)`` and
+///          ``filtersNarrowTheMatch(_:)``, what the Meaning strip may say before a question
 struct PinnedResultBase: Sendable {
 
     /// What kind of list the base is, for the row that names it and the record.
@@ -194,8 +195,8 @@ struct PinnedResultBase: Sendable {
     ///
     /// Such a list is the highest-scoring slice of a larger match, a different slice on each platform, and a ranking
     /// of the slice is not a ranking of the match. So the question ranks every document of the match, and the list
-    /// shows the closest up to the ceiling (`SemanticSearchBackend.rankWholeMatch(query:base:parameters:limit:)`). A
-    /// layer of words never takes this path: words are found only inside a Meaning list, which is never cut.
+    /// shows the closest up to the ceiling (`SemanticSearchBackend.rankWholeMatch(query:base:match:parameters:limit:)`).
+    /// A layer of words never takes this path: words are found only inside a Meaning list, which is never cut.
     var ranksWholeMatch: Bool {
         direction == .rankByMeaning && wasCut && ranParameters != nil
     }
@@ -212,26 +213,28 @@ struct PinnedResultBase: Sendable {
 
     /// How many documents a question would rank inside this list's whole match, where that is known without reading
     /// the match (#1577 lane 6): its count less the rows hidden as reviewed, under no gate or the gate the list was
-    /// found under, which narrowed its match already. `nil` for a list ranked by its rows, under a gate applied since,
-    /// whose intersection with the match only the keys say, and while the count is not known: the Meaning strip then
-    /// says nothing in advance rather than a number the ranking would not bear out.
+    /// found under, which narrowed its match already, and under no filter it was not found under. `nil` for a list
+    /// ranked by its rows; under a gate applied since, or a filter chosen since (``filtersNarrowTheMatch(_:)``), whose
+    /// intersection with the match only the keys say; and while the count is not known: the Meaning strip then says
+    /// nothing in advance rather than a number the ranking would not bear out.
     ///
-    /// - Parameter gate: The document gate in force outside the held list, or `nil`.
+    /// - Parameter parameters: The parameters in force outside the held list: its document gate and its filters.
     /// - Returns: The size, or `nil`.
-    func wholeMatchSetSize(inside gate: [String]?) -> Int? {
+    func wholeMatchSetSize(for parameters: SearchParameters) -> Int? {
+        let gate = parameters.documentIds
         guard ranksWholeMatch, gate == nil || gate == ranParameters?.documentIds,
+              !filtersNarrowTheMatch(parameters),
               let count = wholeMatchCount else { return nil }
         return max(0, count - hiddenByChecklist)
     }
 
-    /// Whether filters chosen since the list was held narrow a ranking of its whole match (#1577 lane 6): the closest
-    /// rows the ranking lists, which those filters narrow after it, as they narrow every Meaning list. The document
-    /// gate is left out, set back to the list's own: a working corpus applied since narrows the set before the ranking,
-    /// so the closest rows all pass it.
+    /// Whether filters chosen since the list was held narrow its whole match (#1577 lane 6), which a ranking of it then
+    /// ranks inside them (`SemanticSearchBackend.rankWholeMatch(query:base:match:parameters:limit:)`). The document
+    /// gate is left out, set back to the list's own: a working corpus applied since is the gate's to narrow.
     ///
     /// - Parameter parameters: The filters in force outside the held list.
-    /// - Returns: Whether they narrow the ranking's rows (`ResultSetScope.layerFiltersNarrowed`).
-    func filtersNarrowTheClosest(_ parameters: SearchParameters) -> Bool {
+    /// - Returns: Whether they narrow the match.
+    func filtersNarrowTheMatch(_ parameters: SearchParameters) -> Bool {
         var after = parameters
         after.documentIds = ranParameters?.documentIds
         return filtersNarrow(after)
@@ -664,9 +667,10 @@ struct AnsweredSearchTrigger: Equatable, Sendable {
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — #1577 lane 5: ``unrankedTail(of:route:sortOrder:)``, the iPhone view model's rule, which the Mac's window
 ///          follows too; ``gating(_:inside:)`` has its four Mac callers
-///   1.2 — #1577 lane 6: a ranking of a list's whole match: the set it ranks (``wholeMatchSet(_:leavingOut:inside:)``),
-///          the rows it lists (``wholeMatchSelection(ranked:members:admitted:limit:)``, ``admittedMembers(_:of:)``)
-///          and their scores (``wholeMatchRows(ranked:fill:rows:)``)
+///   1.2 — #1577 lane 6: a ranking of a list's whole match: the set it ranks (``wholeMatchSet(_:leavingOut:inside:)``,
+///          inside the filters chosen since: ``wholeMatchSet(_:passing:)``), the rows it lists
+///          (``wholeMatchSelection(ranked:members:admitted:limit:)``, ``admittedMembers(_:of:)``) and their scores
+///          (``wholeMatchRows(ranked:fill:rows:)``)
 enum LayeredResultComposer {
 
     /// The rows a keyword search inside a Meaning base found, in the base's order and each with the
@@ -738,6 +742,20 @@ enum LayeredResultComposer {
         let admitted = gate.map { Set($0) }
         guard !hidden.isEmpty || admitted != nil else { return keys }
         return keys.filter { !hidden.contains($0) && (admitted?.contains($0) ?? true) }
+    }
+
+    /// The documents of a whole match's set that pass the filters chosen since the list was held (#1577 lane 6), which
+    /// is the set a ranking of the match ranks inside: so the closest it lists are the closest of those that pass, and a
+    /// document that passes and ranks below the ceiling is not lost to the cut. Pure, and called off the main actor.
+    ///
+    /// - Parameters:
+    ///   - set: The set (``wholeMatchSet(_:leavingOut:inside:)``).
+    ///   - filterKeys: The keys the other filters admit (`SearchService.filterKeySet(parameters:)`), or `nil` where
+    ///     nothing constrains.
+    /// - Returns: The members that pass, in the set's order.
+    static func wholeMatchSet(_ set: [String], passing filterKeys: Set<String>?) -> [String] {
+        guard let filterKeys else { return set }
+        return set.filter { filterKeys.contains($0) }
     }
 
     /// The rows a ranking of a whole match lists, chosen before they are fetched (#1577 lane 6): the ranked documents,

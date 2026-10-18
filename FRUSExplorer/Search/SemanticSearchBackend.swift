@@ -68,7 +68,8 @@ import Foundation
 ///   1.6 — #1577 lane 4: ``rerank(query:base:parameters:)`` ranks a held keyword list or browse by a
 ///         question, its own rows reordered with their keyword snippets, the rows it cannot rank last
 ///   1.7 — #1577 lane 6: ``rankWholeMatch(query:base:match:parameters:limit:)`` ranks the whole match of a list
-///         held at its ceiling, and lists the closest rows up to the ceiling with their keyword snippets
+///         held at its ceiling, inside the filters chosen since, and lists the closest rows up to the ceiling with
+///         their keyword snippets
 @MainActor
 struct SemanticSearchBackend: MeaningSearchRunning {
 
@@ -372,7 +373,8 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     ///
     /// 1. **The match's keys**: the list's own once a ranking has read them, otherwise `SearchService.matchKeys` over
     ///    the search that found the list. Less the rows Checklist Mode hid when it was held, inside a working corpus
-    ///    applied since (`LayeredResultComposer.wholeMatchSet(_:leavingOut:inside:)`), off the main actor.
+    ///    applied since (`LayeredResultComposer.wholeMatchSet(_:leavingOut:inside:)`), and passing the other filters
+    ///    chosen since (`LayeredResultComposer.wholeMatchSet(_:passing:)`), off the main actor.
     /// 2. **The ranking**, which counts the members it cannot rank, as any search inside a set does.
     /// 3. **The rows**: the closest, and where fewer than `limit` could be ranked, the list's own unranked rows after
     ///    them (`LayeredResultComposer.wholeMatchSelection(ranked:members:admitted:limit:)`), those in the set ranked.
@@ -380,19 +382,26 @@ struct SemanticSearchBackend: MeaningSearchRunning {
     ///    own; the rest come from the list's keyword search run again with them as its gate, so every row keeps its
     ///    keyword snippet, where `SearchService.semanticResultRows(forKeys:)` would give none. That gate holds at
     ///    most `limit` keys, so no statement binds more than the 7,500 the Mac's ceiling allows (rule 8).
-    /// 4. **The other filters** narrow the listed rows after, as they narrow every Meaning list.
+    ///
+    /// ## The filters narrow the match, not the closest rows
+    ///
+    /// Every other Meaning list is ranked first and narrowed by the filters after. Here that would leave out of reach
+    /// every document that passes them and ranks below the ceiling: a volume none of whose documents is among the
+    /// closest 1,000 of the whole match would list nothing, under a row naming all of it. So the filters narrow the set
+    /// before it is ranked, and the closest listed are the closest of the documents that pass them. The set is scored
+    /// whole either way, so the filters cost the ranking nothing and save it the documents they leave out.
     ///
     /// - Parameters:
     ///   - query: The reader's question, verbatim.
     ///   - base: The held list (`PinnedResultBase.ranksWholeMatch`).
     ///   - ran: The search that found the list (`PinnedResultBase.ranParameters`): its match is the one ranked.
-    ///   - parameters: The parameters in force outside the held list: their document gate narrows the match before
-    ///     the ranking, and their other filters the rows after it.
+    ///   - parameters: The parameters in force outside the held list: their document gate and their other filters
+    ///     narrow the match before the ranking.
     ///   - limit: The ceiling: the list's own fetch limit.
     /// - Returns: The rows, the match's keys, what the ranking ranked, and the set's signature for the trail.
     /// - Throws: `SemanticQuerySearcher.SearchUnavailable`, as ``run(query:parameters:)`` does, and
-    ///   `CancellationError` when the task is cancelled: the kit's statements stop (#1680), and so does this between
-    ///   its steps.
+    ///   `CancellationError` when the task is cancelled: the kit's statements stop (#1680), the set is not finished,
+    ///   and the searcher stops between its steps.
     func rankWholeMatch(query: String, base: PinnedResultBase, match ran: SearchParameters,
                         parameters: SearchParameters, limit: Int) async throws -> WholeMatchOutcome {
         let clock = ContinuousClock()
@@ -406,17 +415,34 @@ struct SemanticSearchBackend: MeaningSearchRunning {
         }
         let keysTime = clock.now - keysStart
 
+        // The other filters, which narrow the match before the ranking. `filterKeySet` is nil exactly when nothing
+        // constrains; built without the document gate, which the set honours below.
+        let setStart = clock.now
+        var filterParameters = parameters
+        filterParameters.documentIds = nil
+        let filterKeys = try await searchService.filterKeySet(parameters: filterParameters)
+
         // The set and its trail signature, off the main actor: a common word's match is some 200,000 keys, and the
-        // signature's digest sorts them.
+        // signature's digest sorts them. A detached task is not cancelled with this one, so it is told.
         let hidden = base.hiddenKeys
         let gate = parameters.documentIds
         let members = base.members
-        let setStart = clock.now
-        let (set, admitted, setSignature) = await Task.detached(priority: .userInitiated) {
-            let set = LayeredResultComposer.wholeMatchSet(matchKeys, leavingOut: hidden, inside: gate)
-            return (set, LayeredResultComposer.admittedMembers(members, of: set),
-                    SearchScopeSignature.semanticSignature(rankingInside: set))
-        }.value
+        let setWork = Task.detached(priority: .userInitiated) { () throws -> WholeMatchSet in
+            let inside = LayeredResultComposer.wholeMatchSet(matchKeys, leavingOut: hidden, inside: gate)
+            try Task.checkCancellation()
+            let set = LayeredResultComposer.wholeMatchSet(inside, passing: filterKeys)
+            try Task.checkCancellation()
+            return WholeMatchSet(keys: set, filteredOut: inside.count - set.count,
+                                 admitted: LayeredResultComposer.admittedMembers(members, of: set),
+                                 signature: SearchScopeSignature.semanticSignature(rankingInside: set))
+        }
+        let prepared = try await withTaskCancellationHandler {
+            try await setWork.value
+        } onCancel: {
+            setWork.cancel()
+        }
+        let set = prepared.keys
+        let admitted = prepared.admitted
         let setTime = clock.now - setStart
         try Task.checkCancellation()
 
@@ -441,18 +467,8 @@ struct SemanticSearchBackend: MeaningSearchRunning {
             }
         }
         let fetchTime = clock.now - fetchStart
-        var (listed, missing) = LayeredResultComposer.wholeMatchRows(ranked: chosen, fill: fill, rows: rows)
+        let (listed, missing) = LayeredResultComposer.wholeMatchRows(ranked: chosen, fill: fill, rows: rows)
         let closest = listed.count - fill.count
-
-        var filterParameters = parameters
-        filterParameters.documentIds = nil
-        let filterKeys = try await searchService.filterKeySet(parameters: filterParameters)
-        var filteredOut = 0
-        if let filterKeys {
-            let before = listed.count
-            listed = listed.filter { filterKeys.contains($0.id) }
-            filteredOut = before - listed.count
-        }
 
         let size = searched.rankedWithin ?? set.count
         SearchTimingLog.record(SearchTimingLog.WholeMatch(
@@ -463,12 +479,14 @@ struct SemanticSearchBackend: MeaningSearchRunning {
             outcome: Outcome(
                 results: listed,
                 beyondLibrary: [],
+                // The filters narrowed the set before the ranking, so no hit was removed after it: the ranking's own
+                // record says what they left out (`WholeMatchRanking.filteredOut`).
                 disclosure: Disclosure(
                     unscoredCandidates: searched.unscoredCandidates,
                     unscoredVolumes: searched.unscoredVolumes,
                     downloadingVolumes: searched.downloadingVolumes,
                     filtersApplied: filterKeys != nil,
-                    filteredOut: filteredOut,
+                    filteredOut: 0,
                     beyondUncheckedByFilters: false,
                     rankedWithin: searched.rankedWithin,
                     withoutVector: searched.withoutVector,
@@ -476,10 +494,25 @@ struct SemanticSearchBackend: MeaningSearchRunning {
             matchKeys: matchKeys,
             ranking: WholeMatchRanking(
                 size: size,
+                filteredOut: prepared.filteredOut,
                 notRanked: searched.withoutVector + searched.unscoredCandidates,
                 closest: closest,
                 isCut: closest + fill.count < size),
-            setSignature: setSignature)
+            setSignature: prepared.signature)
+    }
+
+    /// The set a ranking of a whole match ranks inside, made off the main actor
+    /// (``rankWholeMatch(query:base:match:parameters:limit:)``): its keys, what the filters left out of it, the held
+    /// list's members it holds, and its signature for the trail.
+    private struct WholeMatchSet: Sendable {
+        /// The set, in the match's order.
+        let keys: [String]
+        /// The documents of the match inside the gate, less the hidden rows, that the other filters left out.
+        let filteredOut: Int
+        /// The held list's members in the set.
+        let admitted: Set<String>
+        /// `SearchScopeSignature.semanticSignature(rankingInside:)` of the set.
+        let signature: String
     }
 }
 

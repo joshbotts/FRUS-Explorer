@@ -58,6 +58,8 @@ import Foundation
 ///         scored exactly, where the corpus-wide search could only be filtered down to the set
 ///   1.4 — B4 (#1659): a hit's score is the cosine through the generation's score calibration,
 ///         so EmbeddingGemma 2's figures read on the scale the 300m's did
+///   1.5 — #1577 lane 6: `search(_:within:limit:)` stops between its steps when its task is
+///         cancelled, and asks for no match file once it is
 actor SemanticQuerySearcher {
 
     /// One ranked hit.
@@ -280,13 +282,22 @@ actor SemanticQuerySearcher {
     /// files are looked for before the question is encoded, the other way round from the
     /// corpus-wide search, which needs the embedding to choose its candidates at all.
     ///
+    /// ## A cancelled task stops it (#1577 lane 6)
+    ///
+    /// Between its steps, keys to rows, match files, the question's encoding and the scoring, a
+    /// search whose task is cancelled throws `CancellationError`, and once it is cancelled it asks
+    /// for no match file. A ranking of a common word's whole match hands it some 200,000 keys, and
+    /// each step then takes a measurable part of a second on an actor the next question waits for.
+    /// The scoring itself is one call into the kernel and runs to its end. Every caller's task is
+    /// cancelled only when a later search has replaced it, and writes nothing then.
+    ///
     /// - Parameters:
     ///   - query: The reader's text, verbatim; the query template is applied inside.
     ///   - keys: The set, each member keyed `"volumeId/documentId"` as `SearchParameters.documentIds`
     ///     keys it. Order carries no meaning and a repeated key counts once.
     ///   - limit: Ranked hits to return.
     /// - Returns: The best `limit` members, best first, with the set's accounting.
-    /// - Throws: `SearchUnavailable`.
+    /// - Throws: `SearchUnavailable`, and `CancellationError` when the task is cancelled.
     func search(_ query: String, within keys: [String], limit: Int) async throws -> Results {
         let clock = ContinuousClock()
 
@@ -317,6 +328,7 @@ actor SemanticQuerySearcher {
             members.append((row: row, slot: located.slot))
         }
         let resolveTime = clock.now - resolveStart
+        try Task.checkCancellation()
 
         guard !members.isEmpty else {
             return Results(hits: [], unscoredCandidates: 0, unscoredVolumes: 0,
@@ -347,6 +359,8 @@ actor SemanticQuerySearcher {
         }
         let shardTime = clock.now - shardStart
         let unscored = unscoredByVolume.values.reduce(0, +)
+        // Before the files are asked for, and before the question is encoded.
+        try Task.checkCancellation()
 
         // Nothing to score: every rankable member's file is missing. The files are asked for and
         // the question is not encoded.
@@ -362,6 +376,7 @@ actor SemanticQuerySearcher {
         let encodeStart = clock.now
         let (_, int8) = try await quantizedQuery(query)
         let encodeTime = clock.now - encodeStart
+        try Task.checkCancellation()
 
         // Asked for in full, and cut to `limit` below, so the count of what was scored is the
         // kernel's own and not a guess at what it dropped.
@@ -382,6 +397,8 @@ actor SemanticQuerySearcher {
             return Hit(volumeID: identity.volumeID, documentID: identity.documentID,
                        score: index.file.retrieval.calibratedQueryScore(neighbour.score))
         }
+        // A cancelled search asks for no match file: the search that replaced it asks for its own.
+        try Task.checkCancellation()
 
         let downloading = await Self.requestFetches(
             for: Set(Self.volumesWorthFetching(unscoredByVolume)), using: requestShardFetch)

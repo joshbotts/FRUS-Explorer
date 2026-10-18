@@ -2023,7 +2023,10 @@ struct MacSearchWindowView: View {
     private func layerEmptyState(_ base: PinnedResultBase) -> some View {
         let wordsInMatches = base.direction == .wordsInMatches
         return SearchLayerEmptyState(
-            statement: wordsInMatches ? resultSetScope.headerDescription : SearchLayerEmptyState.rankedStatement,
+            statement: wordsInMatches
+                ? resultSetScope.headerDescription
+                : SearchLayerEmptyState.rankedStatement(route: resultSetScope.route,
+                                                        disclosure: searchVM.semanticDisclosure),
             searchLibraryTitle: wordsInMatches ? SearchLayerEmptyState.searchLibraryTitle : nil,
             backTitle: base.backTitle,
             searchLibrary: { searchVM.leaveBaseKeepingTheWords() },

@@ -1352,11 +1352,12 @@ struct SearchResultRouteTests {
     /// route: the tag refresh of #1576 lane 5. iPhone and iPad have three more since #1577 lane 4: a held list's rows
     /// put back with their own route, words found in a Meaning list, and a list ranked by a question (whose rows are
     /// `ranking.results`, never `outcome.results`, so that only a Meaning run's rows are a Meaning list). The Mac has the
-    /// same three since lane 5, which gave its window held lists.
+    /// same three since lane 5, which gave its window held lists. Each has one more since lane 6: a list cut at its
+    /// ceiling ranked whole (`whole.outcome.results`, with the ranking's route).
     @Test("Each view model writes the route beside every statement that assigns the rows")
     func theRouteIsAssignedBesideEveryAssignmentOfRows() throws {
-        for (path, expected) in [("FRUSExplorer/Search/SearchViewModel.swift", 11),
-                                 ("FRUSExplorer/App/MacSearchViewModel.swift", 12)] {
+        for (path, expected) in [("FRUSExplorer/Search/SearchViewModel.swift", 12),
+                                 ("FRUSExplorer/App/MacSearchViewModel.swift", 13)] {
             let lines = try Self.source(path).components(separatedBy: "\n")
             var assignments = 0
             var meaning = 0
