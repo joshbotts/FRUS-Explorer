@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 333 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 347 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -120,7 +120,7 @@ Read the results you have as a timeline, as your search term in context, or as t
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1198–1199 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1204–1205 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1832–1834 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1838–1840 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1837–1839 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1843–1845 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -334,6 +334,38 @@ Your closest match does not contain these words
 %1$@ · %2$@ ranked · %3$@ not ranked
 
 <!-- END SOURCE: search.count.rankedByMeaning.partial %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wholeMatchClause | key: search.count.rankedWholeMatch %@ %@ -->
+
+*The results header for a keyword list or a browse held at its ceiling and ranked by a question, which since #1577 lane 6 ranks the list's whole match and lists the closest of it up to the ceiling (1,000 on iPhone and iPad, 7,500 on the Mac): how many of the closest are listed, and of how many documents. A claim about a set, so a date sort keeps it. The two parts below follow it after a “·” where they apply. A ranking that could list the whole set reads as the two blocks above.*
+
+Closest %1$@ of %2$@ results
+
+<!-- END SOURCE: search.count.rankedWholeMatch %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wholeMatchClause | key: search.count.rankedWholeMatch.passing.one -->
+
+*After the header above when filters chosen since the list was held narrow the closest rows, and one of them passes: the filters narrow a Meaning list after its ranking, so “Closest 1 of …” would be untrue.*
+
+%@ passes your filters
+
+<!-- END SOURCE: search.count.rankedWholeMatch.passing.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wholeMatchClause | key: search.count.rankedWholeMatch.passing.many -->
+
+*The same when more than one passes.*
+
+%@ pass your filters
+
+<!-- END SOURCE: search.count.rankedWholeMatch.passing.many -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wholeMatchClause | key: search.count.rankedWholeMatch.notRanked %@ -->
+
+*After the header above when some of the documents ranked inside could not be ranked: with no vector (front matter, chapter headings), or in a volume whose match file is not on the device. They are counted here; those the list has room for follow the closest under the unranked rows' line (§7.15).*
+
+%@ not ranked
+
+<!-- END SOURCE: search.count.rankedWholeMatch.notRanked %@ -->
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.wordsInMatchesClauseWithFilters | key: search.count.wordsInMatches.filtered %@ %@ -->
 
@@ -609,7 +641,7 @@ The set is fixed at capture. Re-running the query later may find different docum
 
 <!-- END SOURCE: corpus.save.footer -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 605–606 | key: corpus.save.truncated.total %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 691–692 | key: corpus.save.truncated.total %@ %@ -->
 
 *Interpolated with the captured and total counts.*
 
@@ -617,7 +649,7 @@ These %1$@ documents are the highest-scoring of %2$@ matching documents. Counts 
 
 <!-- END SOURCE: corpus.save.truncated.total %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 610–611 | key: corpus.save.truncated.unknown %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 696–697 | key: corpus.save.truncated.unknown %@ -->
 
 *Interpolated with the captured count.*
 
@@ -625,7 +657,23 @@ These %@ documents are the highest-scoring of a larger match, not all of it. Cou
 
 <!-- END SOURCE: corpus.save.truncated.unknown %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 627–628 | key: corpus.save.checklistHiding %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureTruncationWarning | key: corpus.save.rankedWholeMatch %@ %@ -->
+
+*Save as Working Corpus's warning over a ranking of a whole match that listed the closest of it (#1577 lane 6), in place of the highest-scoring sentence above: these rows were chosen by a question, not by the keyword score. Interpolated with the captured count and the documents ranked.*
+
+These %1$@ documents are the closest to your question of %2$@ matching documents, not all of them. Counts taken inside this corpus are counts inside that subset.
+
+<!-- END SOURCE: corpus.save.rankedWholeMatch %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureTruncationWarning | key: corpus.save.rankedWholeMatch.unranked %@ %@ %@ -->
+
+*The same when some rows listed after the closest could not be ranked. %3$@ is how many.*
+
+These %1$@ documents are the closest to your question of %2$@ matching documents, and %3$@ of them could not be ranked by it. Counts taken inside this corpus are counts inside that subset.
+
+<!-- END SOURCE: corpus.save.rankedWholeMatch.unranked %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 713–714 | key: corpus.save.checklistHiding %@ -->
 
 *Interpolated with the hidden count.*
 
@@ -641,7 +689,7 @@ Checklist mode is hiding %@ reviewed document. It will not be in this corpus.
 
 <!-- END SOURCE: corpus.save.checklistHiding.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 590–591 | key: corpus.save.meaning -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 663–664 | key: corpus.save.meaning -->
 
 *The Save Working Corpus sheet's warning for a list saved from a Meaning search (#1598).*
 
@@ -657,7 +705,7 @@ This document is the closest match a Meaning search found, not every document on
 
 <!-- END SOURCE: corpus.save.meaning.one -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 646–647 | key: corpus.save.source.meaning %@ -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 732–733 | key: corpus.save.source.meaning %@ -->
 
 *Stored on a working corpus saved from a Meaning search, and shown wherever the corpus is listed. Interpolated with the number of rows the search returned.*
 
@@ -665,7 +713,7 @@ Meaning search — the %@ closest matches
 
 <!-- END SOURCE: corpus.save.source.meaning %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 644–645 | key: corpus.save.source.meaning.one -->
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | lines: 730–731 | key: corpus.save.source.meaning.one -->
 
 *The same, when the search returned one row.*
 
@@ -720,6 +768,14 @@ Search results for %@, ranked by a question
 Search results, ranked by a question
 
 <!-- END SOURCE: corpus.save.source.rankedByMeaning.unlabelled -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.rankedWholeMatch %@ %@ -->
+
+*What follows a ranking's provenance line above when it ranked the list's whole match and listed the closest of it (#1577 lane 6), in place of the truncation clause “ — the highest-scoring … of … matches”: the captured count and the documents ranked.*
+
+ — the closest %1$@ of %2$@ matches
+
+<!-- END SOURCE: corpus.save.source.rankedWholeMatch %@ %@ -->
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | ResultSetScope.captureProvenanceDescription | key: corpus.save.source.checklist.one -->
 
@@ -1507,7 +1563,7 @@ Document text, summaries and research notes are all turned off, so there is noth
 
 #### A search with every Search in chip turned off (macOS)
 
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 2130–2131 | key: search.error.emptyScope | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 2208–2209 | key: search.error.emptyScope | shared: macOS only -->
 
 *Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
 
@@ -1517,7 +1573,7 @@ Enable at least one of Documents, Notes, or Summaries to search.
 
 #### An empty search (iOS)
 
-<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1321–1322 | key: search.error.empty | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 1345–1346 | key: search.error.empty | shared: iOS only -->
 
 *Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
 
@@ -1807,14 +1863,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 811–811 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 814–814 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 818–819 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 821–822 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1823,7 +1879,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2543–2543 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2549–2549 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1918,6 +1974,14 @@ Rank these results by a question. Every result stays listed, the closest first.
 
 <!-- END SOURCE: search.layer.toolbar.help.rankByMeaning -->
 
+<!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.searchWithinResultsHelp | key: search.layer.toolbar.help.rankWholeMatch %@ -->
+
+*The button's help over a keyword list or a browse cut at its ceiling (#1577 lane 6), in place of the sentence above, which would be untrue there: a question then ranks every result of the search and lists the closest up to the ceiling. %@ is the ceiling, 7,500.*
+
+Rank every result of this search by a question, not only those loaded. The closest %@ are listed.
+
+<!-- END SOURCE: search.layer.toolbar.help.rankWholeMatch %@ -->
+
 <!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.searchWithinResultsHelp | key: search.layer.toolbar.help.unavailable -->
 
 *The button's help while it is dimmed with no list it can hold: no results, a search under way or failed, a list that is a layer's own, or a keyword list with no Meaning model to rank it.*
@@ -2004,7 +2068,7 @@ the closest match to “%@”
 
 <!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cut %@ %@ %@ -->
 
-*A keyword list cut at its fetch ceiling, whose total is known: the rows loaded, the total, the words. A ranking of it is a ranking of that slice, which this says.*
+*A keyword list cut at its fetch ceiling, whose total is known: the rows loaded, the total, the words. A ranking of it is a ranking of that slice, which this says. Since #1577 lane 6 a question ranks the whole match of such a list, and the row reads “all … results” (below); this shows only for a list whose search the app does not know, which no screen holds today.*
 
 the first %1$@ of %2$@ results for “%3$@”
 
@@ -2012,7 +2076,7 @@ the first %1$@ of %2$@ results for “%3$@”
 
 <!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.cutUnknown %@ %@ -->
 
-*The same when the total could not be counted.*
+*The same when the total could not be counted. Since #1577 lane 6, as the block above says, shown only for a list whose search is not known.*
 
 the first %1$@ results for “%2$@”
 
@@ -2028,7 +2092,7 @@ the first %1$@ results for “%2$@”
 
 <!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cut %@ %@ %@ -->
 
-*A browse cut at its fetch ceiling, whose total is known.*
+*A browse cut at its fetch ceiling, whose total is known. Since #1577 lane 6 such a browse held for a question reads “all … results” (below); this shows only for a browse whose search is not known.*
 
 the first %1$@ of %2$@ results for %3$@
 
@@ -2036,11 +2100,59 @@ the first %1$@ of %2$@ results for %3$@
 
 <!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.cutUnknown %@ %@ -->
 
-*The same when the total could not be counted.*
+*The same when the total could not be counted. Since #1577 lane 6, as the block above says, shown only for a browse whose search is not known.*
 
 the first %1$@ results for %2$@
 
 <!-- END SOURCE: search.layer.set.browse.cutUnknown %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.whole %@ %@ -->
+
+*A keyword list cut at its ceiling and held for a question, since #1577 lane 6: the question ranks the whole match, so the row names it whole, by the search's count, then the words.*
+
+all %1$@ results for “%2$@”
+
+<!-- END SOURCE: search.layer.set.keywords.whole %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.keywords.wholeUnknown %@ -->
+
+*The same when the search's count failed, until a question has ranked the match and counted it.*
+
+every result for “%@”
+
+<!-- END SOURCE: search.layer.set.keywords.wholeUnknown %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.whole %@ %@ -->
+
+*A browse cut at its ceiling of 7,500 and held for a question (#1577 lane 6), named by its filter.*
+
+all %1$@ results for %2$@
+
+<!-- END SOURCE: search.layer.set.browse.whole %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.wholeUnknown %@ -->
+
+*The same when the browse's count failed.*
+
+every result for %@
+
+<!-- END SOURCE: search.layer.set.browse.wholeUnknown %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed.whole %@ -->
+
+*A browse cut at its ceiling whose filter has no name to give (#1577 lane 6).*
+
+all %@ results of your browse
+
+<!-- END SOURCE: search.layer.set.browse.unnamed.whole %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed.wholeUnknown -->
+
+*The same when its count failed.*
+
+every result of your browse
+
+<!-- END SOURCE: search.layer.set.browse.unnamed.wholeUnknown -->
 
 <!-- SOURCE: FRUSExplorer/Search/SearchLayering.swift | PinnedResultBase.setDescription | key: search.layer.set.browse.unnamed %@ -->
 
@@ -2334,7 +2446,7 @@ Retry
 *The Search screen's explanatory text outside the Search Tips (§7.13) and the result-set copy §7 already carries: the filter and project-scope footers, the Meaning-mode prompts and notices, the facet panel's coverage lines, the collocation refusals, and the notice when a saved corpus had to be truncated.*
 
 #### The person filter was cleared — \(…) is no longer in the…
-<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 1248–1249 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchViewModel.refreshPersonRollupBinding | lines: 1271–1272 | key: search.person.filterDropped | same text also in: FRUSExplorer/Search/SearchViewModel.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 The person filter was cleared — \(before.label ?? "that person") is no longer in the indexed corpus.
@@ -2342,14 +2454,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1096–1097 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1099–1100 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1574–1575 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1580–1581 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 

@@ -42,6 +42,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1577 lane 1: initial implementation
+///   1.1 — #1577 lane 6: `writeTEIVolumes(to:omitting:withoutTalks:)` can leave volumes out of a keyword match
 enum SemanticSetFixture {
 
     /// The vectors' width, native and shipping.
@@ -266,13 +267,17 @@ enum SemanticSetFixture {
     ///   - volumesDirectory: The directory an `IndexingPipeline` reads volumes from.
     ///   - omitting: Keys (`"volumeId/documentId"`) to leave out of the files, for a document the
     ///     vectors name and the device's volume does not hold.
-    static func writeTEIVolumes(to volumesDirectory: URL, omitting: Set<String> = []) throws {
+    ///   - withoutTalks: Volumes whose documents report on the weather and not on "the talks", so that
+    ///     a keyword search for "talks" leaves them out of its match (#1577 lane 6).
+    static func writeTEIVolumes(to volumesDirectory: URL, omitting: Set<String> = [],
+                                withoutTalks: Set<String> = []) throws {
         try FileManager.default.createDirectory(at: volumesDirectory, withIntermediateDirectories: true)
         for volume in volumes {
             var xml = "<?xml version=\"1.0\"?>\n<TEI><text><body>\n"
+            let subject = withoutTalks.contains(volume.id) ? "weather" : "talks"
             for id in volume.documentIDs where !omitting.contains("\(volume.id)/\(id)") {
                 xml += "<div type=\"document\" xml:id=\"\(id)\"><head>Paper \(id)</head>"
-                    + "<p>The mission reported on the talks.</p></div>\n"
+                    + "<p>The mission reported on the \(subject).</p></div>\n"
             }
             xml += "</body></text></TEI>"
             try Data(xml.utf8).write(to: volumesDirectory.appendingPathComponent("\(volume.id).xml"))

@@ -49,6 +49,8 @@ import Foundation
 ///          the set, and `describe(_:)` says so
 ///   1.3 — #1577 lane 4: `layered(_:parameters:base:)` — a layer's signature carries its base as a
 ///          `base=` part, and `describe(_:)` names the base
+///   1.4 — #1577 lane 6: `semanticSignature(rankingInside:)` — a ranking of a list's whole match signs the
+///          documents it ranked inside, which no parameter value holds
 enum SearchScopeSignature {
 
     /// The signature for `parameters`.
@@ -84,6 +86,20 @@ enum SearchScopeSignature {
     static func semanticSignature(for parameters: SearchParameters) -> String {
         guard parameters.documentIds != nil else { return semanticRouteSignature }
         return semanticRouteSignature + ";docs=\(idComponent(parameters.documentIds))"
+    }
+
+    /// The signature a ranking of a held list's whole match records (#1577 lane 6): the Meaning route, and the
+    /// documents it ranked inside as `docs=`, in the form ``semanticSignature(for:)`` gives a set.
+    ///
+    /// The set is the list's whole match, which no parameter value holds: the gate a search runs with holds the
+    /// list's rows, and a whole match of some 200,000 keys there would be read and intersected at every glance at
+    /// the parameters. So the ranking signs the set it ranked, once, off the main actor, since the digest sorts the
+    /// keys.
+    ///
+    /// - Parameter keys: The documents the ranking ranked inside.
+    /// - Returns: The signature.
+    static func semanticSignature(rankingInside keys: [String]) -> String {
+        semanticRouteSignature + ";docs=\(idComponent(keys))"
     }
 
     /// The signature a search inside a held base records (#1577 lane 4), or `signature` itself

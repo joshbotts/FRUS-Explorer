@@ -173,6 +173,7 @@ struct SearchLayerEmptyState: View {
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
 ///   1.1 — #1577 lane 5: the Mac window's toolbar button and the label in the Keywords | Meaning control's place
+///   1.2 — #1577 lane 6: the toolbar button's help over a list cut at its ceiling, which a question ranks whole
 enum SearchLayerCopy {
 
     /// The Sort menu's way into a ranking, on a keyword list: it is an order, as the menu's others are.
@@ -215,11 +216,22 @@ enum SearchLayerCopy {
 
     /// The toolbar button's help: what it will do with the list on screen, or why it does nothing now.
     ///
+    /// Over a keyword list or a browse cut at its ceiling a question ranks the whole match and lists the closest of it
+    /// (#1577 lane 6), so "every result stays listed" would be untrue there, and the help says what happens instead.
+    ///
     /// - Parameters:
     ///   - direction: The way a layer over the list on screen would run, or `nil` when none can start.
     ///   - isHolding: Whether a list is held already, which is one reason none can start.
+    ///   - cutAt: The list's ceiling where the list on screen was cut at it, so that a question would rank its whole
+    ///     match; `nil` otherwise.
     /// - Returns: The help.
-    static func searchWithinResultsHelp(_ direction: SearchLayerDirection?, isHolding: Bool) -> String {
+    static func searchWithinResultsHelp(_ direction: SearchLayerDirection?, isHolding: Bool,
+                                        cutAt ceiling: Int? = nil) -> String {
+        if direction == .rankByMeaning, !isHolding, let ceiling {
+            return String(format: String(localized: "search.layer.toolbar.help.rankWholeMatch %@",
+                                         defaultValue: "Rank every result of this search by a question, not only those loaded. The closest %@ are listed."),
+                          ceiling.formatted())
+        }
         if isHolding {
             return String(localized: "search.layer.toolbar.help.held",
                           defaultValue: "You are searching within results already. Stop searching within them to hold another list.")

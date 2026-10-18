@@ -38,8 +38,12 @@ import OSLog
 /// can be read from a connected device in Console with the filter
 /// `subsystem:bottsywattsy.FRUS-Explorer category:SearchTiming`.
 ///
+/// Since #1577 lane 6 a third line times a ranking of a held list's whole match, beside the line its search inside the
+/// set writes: reading the match's keys, narrowing them, ranking them, and fetching the rows the held list did not hold.
+///
 /// Version history:
 ///   1.0 — #1577 lane 1: initial implementation
+///   1.1 — #1577 lane 6: ``WholeMatch``, the line for a ranking of a held list's whole match
 enum SearchTimingLog {
 
     /// The log both lines are written to.
@@ -122,6 +126,55 @@ enum SearchTimingLog {
     ///
     /// - Parameter timing: The search's counts and durations.
     static func record(_ timing: GatedKeyword) {
+        let text = line(timing)
+        logger.notice("\(text, privacy: .public)")
+    }
+
+    // MARK: - A ranking of a held list's whole match (#1577 lane 6)
+
+    /// What `SemanticSearchBackend.rankWholeMatch(query:base:match:parameters:limit:)` spent, by step. The ranking's
+    /// own stages, the question's encoding among them, are in the `meaning-in-set` line it writes beside this one.
+    struct WholeMatch: Equatable, Sendable {
+        /// Documents the list's whole match holds.
+        let matchSize: Int
+        /// Of those, the documents ranked inside: less the rows hidden as reviewed, inside a working corpus.
+        let setSize: Int
+        /// Whether the match's keys were the list's own, kept from an earlier question, so the index was not asked.
+        let keysKept: Bool
+        /// Ranked documents listed, at most the ceiling.
+        let ranked: Int
+        /// Of those, the documents whose rows the held list did not hold, fetched again with their snippets.
+        let refetched: Int
+        /// Rows listed after the filters, the unranked among them.
+        let listed: Int
+        /// Reading the match's keys from the index (`SearchService.matchKeys(parameters:)`).
+        let keys: Duration
+        /// Narrowing them to the set, and signing it for the trail.
+        let set: Duration
+        /// The search inside the set: the encoding, the keys' resolution, the match files and the scoring.
+        let rank: Duration
+        /// The keyword search run again for the rows the held list did not hold.
+        let refetch: Duration
+    }
+
+    /// The line for a ranking of a held list's whole match.
+    ///
+    /// - Parameter timing: The ranking's counts and step durations.
+    /// - Returns: The line, such as `whole-match docs=35275 set=35262 kept=0 ranked=1000 refetched=812 listed=1000
+    ///   keys_ms=731.0 set_ms=48.2 rank_ms=212.9 refetch_ms=804.4`.
+    static func line(_ timing: WholeMatch) -> String {
+        "whole-match docs=\(timing.matchSize) set=\(timing.setSize) kept=\(timing.keysKept ? 1 : 0)"
+            + " ranked=\(timing.ranked) refetched=\(timing.refetched) listed=\(timing.listed)"
+            + " keys_ms=\(milliseconds(timing.keys))"
+            + " set_ms=\(milliseconds(timing.set))"
+            + " rank_ms=\(milliseconds(timing.rank))"
+            + " refetch_ms=\(milliseconds(timing.refetch))"
+    }
+
+    /// Writes the line for a ranking of a held list's whole match.
+    ///
+    /// - Parameter timing: The ranking's counts and step durations.
+    static func record(_ timing: WholeMatch) {
         let text = line(timing)
         logger.notice("\(text, privacy: .public)")
     }
