@@ -26,6 +26,7 @@
 
 - **Accessibility:** at the five largest text sizes, Meaning mode's strip is one line; its **ⓘ** opens all of it.
 - **Word cloud:** an exported cloud counted as printed says another device may count differently.
+- **Semantic Match Feedback** (Settings ▸ System ▸ Data & Recovery): **Email Feedback File** opens a message to feedback@frusexplorer.app with your verdicts attached.
 
 **Fixes:** many, on every tab and in accessibility.
 

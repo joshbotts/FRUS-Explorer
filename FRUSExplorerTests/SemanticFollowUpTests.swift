@@ -295,3 +295,58 @@ struct SemanticFeedbackLogTests {
         #expect(source.contains("CoverageEra.bucket(year:"))
     }
 }
+
+// MARK: - The mail draft (#1545)
+
+/// Semantic Match Feedback's mail draft: one address, named by the owner on 2026-10-18 (plan of
+/// record decision 26), written into the draft and into the screen's footer from one constant.
+///
+/// Version history:
+///   1.0 — 2026-10-18 (#1545): initial implementation
+@Suite("Semantic Match Feedback mail draft (#1545)")
+struct SemanticFeedbackMailTests {
+
+    @Test("The draft is addressed to the one feedback address and to nobody else")
+    func draftAddressesTheOneConstant() {
+        let draft = SemanticFeedbackMail(version: "1.0 (1861)")
+        #expect(SemanticFeedbackMail.address == "feedback@frusexplorer.app")
+        #expect(draft.recipients == ["feedback@frusexplorer.app"])
+        #expect(!draft.subject.isEmpty)
+        #expect(SemanticFeedbackMail.fileName == "frus-semantic-feedback.json")
+        #expect(SemanticFeedbackMail.mimeType == "application/json")
+    }
+
+    @Test("The body names the build that wrote the file")
+    func bodyNamesTheBuild() {
+        let draft = SemanticFeedbackMail(version: "1.0 (1861)")
+        #expect(draft.body.contains("1.0 (1861)"))
+        #expect(SemanticFeedbackMail(version: "2.0 (9)").body != draft.body)
+    }
+
+    @Test("The running build's draft names this bundle's version and build")
+    func currentNamesTheBundle() {
+        let expected = "\(SyncDiagnosticsLog.appVersion) (\(SyncDiagnosticsLog.appBuild))"
+        #expect(SemanticFeedbackMail.current.body.contains(expected))
+        #expect(SemanticFeedbackMail.current == SemanticFeedbackMail(version: expected))
+    }
+
+    /// Source-scanned: the footer and the buttons are view code no unit test renders, and the gap
+    /// #1545 recorded was a screen that named no destination.
+    @Test("The screen names the address from the constant and offers the draft beside the share sheet")
+    func screenOffersTheDraft() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("FRUSExplorer/Settings/SemanticFeedbackView.swift"),
+            encoding: .utf8)
+        #expect(source.contains("\\(SemanticFeedbackMail.address)"),
+                "the footer must name the address from the constant")
+        #expect(source.contains("if SemanticFeedbackMail.canCompose(attaching: exportURL) {"))
+        #expect(source.contains("composeMail(attaching: exportURL)"))
+        #expect(source.contains("ShareLink(item: exportURL)"), "the share sheet stays as the fallback")
+        #expect(source.contains(".appendingPathComponent(SemanticFeedbackMail.fileName)"),
+                "the draft must attach the file Prepare Feedback File writes")
+        #expect(source.components(separatedBy: "feedback@frusexplorer.app").count == 2,
+                "the address is one constant, spelt once")
+    }
+}

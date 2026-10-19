@@ -22,6 +22,10 @@
 - A **smart collection** (one linked to a saved search) takes nothing by hand: the Collections window dims its **＋ Add** items, and the collection picker and **Manage Collections…** say *Smart collection*.
 - Entries it held before the link are listed apart, dimmed, with **Remove These Entries**.
 
+## Also
+
+- **Semantic Match Feedback** (Settings ▸ System ▸ Data & Recovery): **Email Feedback File** opens a message in your mail app to feedback@frusexplorer.app with your verdicts attached.
+
 **Fixes:** many, in every window and in accessibility.
 
 ## What to test
