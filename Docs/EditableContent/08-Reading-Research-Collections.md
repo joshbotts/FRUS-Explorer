@@ -2188,7 +2188,7 @@ Ranked from the first %1$@ of %2$@ documents that share this anchor’s archival
 <!-- END SOURCE: related.poolCut %@ %@ -->
 
 #### No indexed documents share this document’s archival…
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 470–471 | key: related.empty.detail -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | RelatedDocumentsContent.emptyDetail | lines: 479–480 | key: related.empty.detail -->
 
 No indexed documents share this document’s archival provenance or cross-references — indexing more volumes may surface some.
 

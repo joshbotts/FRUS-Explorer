@@ -56,11 +56,16 @@ extension NeighborScope {
 ///
 /// Version history:
 ///   1.0 — #308 Phase 2: initial implementation
+///   1.1 — 2026-10-19 (plan of record §6g): the anchor's year is read from the index
+///          (``resolvedAnchorYear(pipeline:)``), and a tester's verdict on a semantic row is built
+///          here (``semanticFeedback(_:on:pipeline:provenanceDigest:recordedAt:)``)
 struct RelatedDocumentsRequest: Codable, Hashable, Sendable {
 
     /// The seed document.
     let anchor: DocumentKey
-    /// The seed's coverage year, if known — threaded to date-sensitive generators.
+    /// The year the door that opened the seed read from its `DocumentBrowserEntry.dateline`, or
+    /// `nil` when that entry carried none, as most doors' entries do. Nothing ranks or bands on it
+    /// directly: ``resolvedAnchorYear(pipeline:)`` prefers the index's date and falls back to this.
     let anchorYear: Int?
     /// The user's per-axis weights (the restored tuning).
     var weights: AxisWeights
@@ -93,12 +98,95 @@ struct RelatedDocumentsRequest: Codable, Hashable, Sendable {
     /// the macOS window scene reconstruct the fetch from the restored request.
     @MainActor
     func load(appState: AppState) async -> RelatedDocumentsResult {
-        await RelatedDocumentsEngine.rank(
+        let year = await resolvedAnchorYear(pipeline: appState.indexingPipeline)
+        return await RelatedDocumentsEngine.rank(
             anchor: anchor,
-            anchorYear: anchorYear,
+            anchorYear: year,
             weights: weights,
             scopeVolumeIds: scope.resolveVolumeIds(appState: appState),
             limit: limit,
             appState: appState)
+    }
+}
+
+// MARK: - The anchor's year
+
+extension RelatedDocumentsRequest {
+
+    /// The anchor's year as Related Documents uses it, for the ranking and for every verdict a tester
+    /// gives on the list: the year of the index's date for the anchor, and only where the index has
+    /// none, the year the door read from the dateline (``anchorYear``).
+    ///
+    /// **The index first, because the doors disagree** (plan of record §6g, found in A8). A door can
+    /// pass only the dateline its `DocumentBrowserEntry` carries, and most build theirs without one:
+    /// Continue reading, History, a collection, a cross-reference, a link, a Related Documents row.
+    /// A verdict given after one of those was recorded with no era and counted under *Undated
+    /// anchor*, while the same document opened from Search counted under its era: in the iPhone
+    /// simulator on 2026-10-19, `frus1900/d60` (January 25, 1899) gave no era from Continue reading
+    /// and `0` from Search. The index's `document_dates` row is the same whichever door was taken,
+    /// and it is the date the date-proximity axis already reads for the anchor.
+    ///
+    /// It is also the better date where both exist. Over a full index (version 65, 316,768
+    /// documents, measured 2026-10-19), 17,747 documents (827 of them before 1900) have a date in
+    /// the index and a dateline that names no year, and none has a dateline year without a date in
+    /// the index. 22 put the two years in different eras, and in 21 of them the dateline is the one
+    /// that is wrong: a misprint (`frus1929v02/d1030`, a telegram of September 18, 1929 whose
+    /// dateline reads 1829) or a time read as a year (`October 22, 1515Z`). The door's year is kept
+    /// as the fallback for an index that cannot answer.
+    ///
+    /// Read through `IndexingPipeline.documentDates(for:)`, which finds the row by the table's key.
+    /// `datesByDocumentKey(_:)` returns the same dictionary but matches on a concatenation of the
+    /// two columns, which no index serves: on a full library that is a scan of all 316,768 rows,
+    /// 17 ms warm against 0.03 ms by the key (the two statements in `sqlite3` on the M5 Mac,
+    /// 2026-10-19), and this runs at every load of the list and every verdict.
+    ///
+    /// - Parameter pipeline: The live index; `nil` (not open yet) leaves the door's year.
+    /// - Returns: The year, or `nil` for an anchor that neither the index nor its dateline dates.
+    func resolvedAnchorYear(pipeline: IndexingPipeline?) async -> Int? {
+        guard let pipeline else { return anchorYear }
+        let dates = (try? await pipeline.documentDates(
+            for: [(volumeId: anchor.volumeId, documentId: anchor.documentId)])) ?? [:]
+        return Self.anchorYear(indexDate: dates[anchor.compositeString], doorYear: anchorYear)
+    }
+
+    /// The rule ``resolvedAnchorYear(pipeline:)`` applies: the year of the index's `date_iso` when
+    /// it has one, otherwise the door's year.
+    ///
+    /// - Parameters:
+    ///   - indexDate: The anchor's `document_dates.date_iso` (`yyyy-MM-dd`), if the index has one.
+    ///   - doorYear: The year the door read from the dateline, if any.
+    /// - Returns: The year Related Documents gives the anchor.
+    static func anchorYear(indexDate: String?, doorYear: Int?) -> Int? {
+        indexDate.flatMap { Int($0.prefix(4)) } ?? doorYear
+    }
+
+    /// A tester's verdict on one semantic row of this request's list, as `SemanticFeedbackLog`
+    /// records it: the era is the anchor's ``resolvedAnchorYear(pipeline:)`` in the app's own
+    /// `CoverageEra` banding, so the same anchor is banded the same whichever door opened it.
+    ///
+    /// Built here rather than in `RelatedDocumentsContent`, whose context menu calls it, so a test can
+    /// run the verdict a tester's tap records over a real index.
+    ///
+    /// - Parameters:
+    ///   - verdict: The tester's verdict.
+    ///   - row: The row being judged.
+    ///   - pipeline: The live index the anchor's year is read from.
+    ///   - provenanceDigest: The vector generation the row was ranked with.
+    ///   - recordedAt: When the tester gave the verdict.
+    /// - Returns: The entry to record.
+    func semanticFeedback(
+        _ verdict: SemanticFeedbackEntry.Verdict, on row: RelatedDocumentRow,
+        pipeline: IndexingPipeline?, provenanceDigest: String?, recordedAt: Date
+    ) async -> SemanticFeedbackEntry {
+        let year = await resolvedAnchorYear(pipeline: pipeline)
+        return SemanticFeedbackEntry(
+            recordedAt: recordedAt,
+            anchor: anchor.compositeString,
+            neighbour: row.key.compositeString,
+            verdict: verdict,
+            cosine: row.axisScores[.semanticSimilarity],
+            era: year.map { CoverageEra.bucket(year: $0).rawValue.description },
+            sameVolume: row.key.volumeId == anchor.volumeId,
+            provenanceDigest: provenanceDigest)
     }
 }

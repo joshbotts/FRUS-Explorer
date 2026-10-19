@@ -1575,14 +1575,14 @@ Chapter openers, front matter and appendix material were not included when the m
 #### Axis caption when the weight is 0
 <!-- The axis shipped OFF until 2026-09-10 and is on at half weight since, so a reader sees this caption only after turning it down to 0. Until build 42 the only prose describing it lived in a feedback screen in Settings ▸ Data & Recovery, so the app's most usable semantic feature was its least discoverable. -->
 
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 584–585 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 593–594 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
 
 Off. Raise it to also match documents whose meaning an AI model measured as alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.
 
 <!-- END SOURCE: related.weights.semantic.off -->
 
 #### Axis caption when the weight is raised
-<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 586–587 | key: related.weights.semantic.on | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 595–596 | key: related.weights.semantic.on | shared: iOS+macOS (single edit point) -->
 
 Matches carry a “Semantic match” score. Consider providing feedback to say whether it helped. Those verdicts are how this axis gets judged.
 

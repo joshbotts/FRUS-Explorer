@@ -291,8 +291,267 @@ struct SemanticFeedbackLogTests {
         #expect(source.contains("semanticFeedbackButtons(for: row)"))
         #expect(source.contains("if row.axisScores[.semanticSimilarity] != nil"))
         #expect(source.contains("SemanticFeedbackLog.shared.record"))
-        // The era must be captured, or the log cannot answer the question it replaced.
-        #expect(source.contains("CoverageEra.bucket(year:"))
+        // The era must be captured, or the log cannot answer the question it replaced. Since §6g
+        // the verdict, era included, is built by `RelatedDocumentsRequest.semanticFeedback`, which
+        // `SemanticFeedbackAnchorEraTests` runs over a real index; this scan checks only that the
+        // row's menu records through it.
+        #expect(source.contains("request.semanticFeedback("))
+    }
+}
+
+// MARK: - The anchor's era (plan of record §6g)
+
+/// Every verdict carries its anchor's era, whichever door opened the anchor.
+///
+/// Found in A8 (plan of record §6g): a verdict given on `frus1961-63v09/d65` (November 15, 1962),
+/// opened from the Mac's Continue reading, was recorded with no `era` and counted under *Undated
+/// anchor*. The request took the anchor's year from the reader's `DocumentBrowserEntry.dateline`,
+/// and Continue reading, like most doors, builds its entry with none. Each test builds the request
+/// as a door builds it, with the platform's own `extractYear`, and runs
+/// `RelatedDocumentsRequest.semanticFeedback`, the call the row's menu makes, over a real index.
+///
+/// Version history:
+///   1.0 — 2026-10-19 (plan of record §6g): initial implementation
+@Suite("Semantic feedback: the anchor's era (§6g)")
+@MainActor
+struct SemanticFeedbackAnchorEraTests {
+
+    /// Two documents as the corpus marks them up, cut to their openings, and an undated one.
+    ///
+    /// `frus1900/d60` (January 25, 1899) is the anchor of the iPhone walk that reproduced the
+    /// finding. `frus1929v02/d1030` is a telegram of September 18, 1929 whose printed dateline reads
+    /// 1829; the corpus's own `@ana` calls it a typo, and the index keeps the day of its `@when`.
+    private static let volumes: [(id: String, body: String)] = [
+        ("frus1900", """
+            <div frus:doc-dateTime-max="1899-01-25T23:59:59-05:00" \
+            frus:doc-dateTime-min="1899-01-25T00:00:00-05:00" n="60" \
+            subtype="historical-document" type="document" xml:id="d60">
+              <head><hi rend="italic">Mr. <persName type="from">Hay</persName> to Señor \
+            <persName type="to">Morla Vicuña</persName>.</hi></head>
+              <opener><dateline rendition="#right"><placeName><hi rend="smallcaps">Department of \
+            State</hi>,<lb/><hi rend="italic">Washington</hi></placeName>, <date calendar="gregorian" \
+            when="1899-01-25"><hi rend="italic">January 25, 1899</hi></date>.</dateline></opener>
+              <p>Sir: I have the honor to call your attention to the protocol, signed at this city on \
+            May 24, 1897.</p>
+            </div>
+            """),
+        ("frus1929v02", """
+            <div frus:doc-dateTime-max="1929-09-18T04:00:00-05:00" \
+            frus:doc-dateTime-min="1929-09-18T04:00:00-05:00" n="1030" \
+            subtype="historical-document" type="document" xml:id="d1030">
+              <note rend="inline" type="source">851.4061 Motion Pictures/138: Telegram</note>
+              <head><hi rend="italic">The Chargé in France</hi> (<persName type="from"><hi \
+            rend="italic">Armour</hi></persName>) <hi rend="italic">to the <gloss type="to">Secretary \
+            of State</gloss></hi></head>
+              <opener><dateline rendition="#right"><placeName><hi rend="smallcaps">Paris</hi>\
+            </placeName>, <date ana="#date_apparent-typo-based-on-document-content" \
+            calendar="gregorian" when="1929-09-18T10:00:00+01:00">September 18, 1829—10 a.m.</date>\
+            </dateline></opener>
+              <p>The French Government has informed the Embassy of its film quota decree.</p>
+            </div>
+            """),
+        ("fixture-undated", """
+            <div n="1" type="document" xml:id="d1">
+              <head>Memorandum.</head>
+              <p>A document that names no date and carries no dateline.</p>
+            </div>
+            """),
+    ]
+
+    /// When the tester gave the verdict.
+    private static let moment = Date(timeIntervalSince1970: 1_792_404_297)
+
+    /// A semantic row on the anchor's neighbour.
+    private static func row(_ volumeId: String, _ documentId: String) -> RelatedDocumentRow {
+        RelatedDocumentRow(
+            key: DocumentKey(volumeId: volumeId, documentId: documentId),
+            record: CandidateRecord(
+                header: "H", dateline: nil, documentNumber: nil, isEditorialNote: false),
+            totalScore: 0.87,
+            axisScores: [.semanticSimilarity: 0.869])
+    }
+
+    /// The year a door hands the request: what `DocumentView.openRelatedDocuments()` (iOS) and
+    /// `ResearchRailView.openRelated()` (macOS) compute from the reader's entry.
+    private static func doorYear(_ entry: DocumentBrowserEntry) -> Int? {
+        #if os(iOS)
+        return DocumentView.extractYear(from: entry.dateline)
+        #elseif os(macOS)
+        return MacDocumentView.extractYear(from: entry.dateline)
+        #else
+        return nil
+        #endif
+    }
+
+    /// The request a door builds from the reader's entry.
+    private static func request(from entry: DocumentBrowserEntry) -> RelatedDocumentsRequest {
+        RelatedDocumentsRequest(
+            anchor: DocumentKey(volumeId: entry.volumeId, documentId: entry.documentId),
+            anchorYear: doorYear(entry))
+    }
+
+    /// The entry Continue reading opens the reader with (`ResumeReadingRow`): ids and a title.
+    private static func continueReadingEntry(_ volumeId: String, _ documentId: String)
+        -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: documentId, volumeId: volumeId, header: documentId)
+    }
+
+    /// The entry a volume's document list opens the reader with, dateline included.
+    private static func listEntry(
+        _ volumeId: String, _ documentId: String, in pipeline: IndexingPipeline
+    ) async throws -> DocumentBrowserEntry {
+        let listed = try await pipeline.documents(forVolume: volumeId)
+        return try #require(listed.first { $0.documentId == documentId })
+    }
+
+    /// Indexes the fixture volumes into a fresh database and runs `body` with its pipeline.
+    private func withIndex(_ body: (IndexingPipeline) async throws -> Void) async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SemanticFeedbackAnchorEra-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        for volume in Self.volumes {
+            let xml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TEI xmlns="http://www.tei-c.org/ns/1.0" \
+                xmlns:frus="http://history.state.gov/frus/ns/1.0" xml:id="\(volume.id)">
+                  <teiHeader><fileDesc><titleStmt><title>\(volume.id)</title></titleStmt>
+                  <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+                  <text><body>
+                \(volume.body)
+                  </body></text>
+                </TEI>
+                """
+            try Data(xml.utf8).write(
+                to: dir.appendingPathComponent("volumes/\(volume.id).xml"))
+            try await pipeline.indexVolume(volume.id)
+        }
+        try await body(pipeline)
+    }
+
+    /// The finding itself: Continue reading hands the request no year, and the verdict was banded
+    /// by that.
+    @Test("A verdict after Continue reading, whose entry has no dateline, carries the anchor's era")
+    func continueReadingCarriesTheEra() async throws {
+        try await withIndex { pipeline in
+            let entry = Self.continueReadingEntry("frus1900", "d60")
+            #expect(Self.doorYear(entry) == nil, "the door hands no year, as in the finding")
+            let verdict = await Self.request(from: entry).semanticFeedback(
+                .helpful, on: Self.row("frus1900", "d59"), pipeline: pipeline,
+                provenanceDigest: "abc", recordedAt: Self.moment)
+            #expect(verdict.era == String(CoverageEra.pre1900.rawValue))
+        }
+    }
+
+    /// The iPhone walk's A/B, as a test: one anchor, two doors, one era.
+    @Test("The anchor is banded the same whichever door opened it")
+    func everyDoorBandsTheSame() async throws {
+        try await withIndex { pipeline in
+            let listed = try await Self.listEntry("frus1900", "d60", in: pipeline)
+            let doors = [Self.continueReadingEntry("frus1900", "d60"), listed]
+            #expect(doors.map { Self.doorYear($0) } == [nil, 1899],
+                    "the two doors disagree on the year")
+            var eras: [String?] = []
+            for entry in doors {
+                eras.append(await Self.request(from: entry).semanticFeedback(
+                    .notHelpful, on: Self.row("frus1900", "d61"), pipeline: pipeline,
+                    provenanceDigest: nil, recordedAt: Self.moment).era)
+            }
+            #expect(eras == ["0", "0"])
+        }
+    }
+
+    /// A misprinted dateline put a 1929 telegram before 1900 for a door that carries the dateline.
+    @Test("The index's date wins over a dateline that misprints its year")
+    func indexDateWinsOverAMisprint() async throws {
+        try await withIndex { pipeline in
+            let entry = try await Self.listEntry("frus1929v02", "d1030", in: pipeline)
+            #expect(Self.doorYear(entry) == 1829, "the door reads the misprint")
+            let request = Self.request(from: entry)
+            #expect(await request.resolvedAnchorYear(pipeline: pipeline) == 1929)
+            let verdict = await request.semanticFeedback(
+                .helpful, on: Self.row("frus1929v02", "d1031"), pipeline: pipeline,
+                provenanceDigest: "abc", recordedAt: Self.moment)
+            #expect(verdict.era == String(CoverageEra.earlyTwentieth.rawValue))
+        }
+    }
+
+    /// Measured over a full index, no document has a dateline year and no date in the index; the
+    /// rule still keeps the door's year for one, and an anchor nothing dates stays undated, which
+    /// is what *Undated anchor* says.
+    @Test("An anchor the index does not date keeps the door's year, and one nothing dates stays undated")
+    func undatedInTheIndex() async throws {
+        try await withIndex { pipeline in
+            let undated = DocumentKey(volumeId: "fixture-undated", documentId: "d1")
+            let stored = try await pipeline.documentDates(
+                for: [(volumeId: undated.volumeId, documentId: undated.documentId)])
+            #expect(stored.isEmpty, "the fixture must be undated in the index")
+            let row = Self.row("fixture-undated", "d2")
+            let withYear = await RelatedDocumentsRequest(anchor: undated, anchorYear: 1962)
+                .semanticFeedback(.helpful, on: row, pipeline: pipeline,
+                                  provenanceDigest: nil, recordedAt: Self.moment)
+            #expect(withYear.era == String(CoverageEra.coldWar.rawValue))
+            let without = await RelatedDocumentsRequest(anchor: undated)
+                .semanticFeedback(.helpful, on: row, pipeline: pipeline,
+                                  provenanceDigest: nil, recordedAt: Self.moment)
+            #expect(without.era == nil)
+        }
+    }
+
+    @Test("With no index open, the door's year stands")
+    func noIndexKeepsTheDoorsYear() async {
+        let anchor = DocumentKey(volumeId: "frus1900", documentId: "d60")
+        #expect(await RelatedDocumentsRequest(anchor: anchor, anchorYear: 1899)
+            .resolvedAnchorYear(pipeline: nil) == 1899)
+        #expect(await RelatedDocumentsRequest(anchor: anchor)
+            .resolvedAnchorYear(pipeline: nil) == nil)
+    }
+
+    /// The verdict's other fields moved out of the view with the era; this holds them to what the
+    /// view recorded.
+    @Test("A verdict keeps the pair, its score, the vectors judged and the moment")
+    func verdictKeepsItsFields() async throws {
+        try await withIndex { pipeline in
+            let request = Self.request(from: Self.continueReadingEntry("frus1900", "d60"))
+            let sameVolume = await request.semanticFeedback(
+                .notHelpful, on: Self.row("frus1900", "d59"), pipeline: pipeline,
+                provenanceDigest: "89481b18", recordedAt: Self.moment)
+            #expect(sameVolume.anchor == "frus1900/d60")
+            #expect(sameVolume.neighbour == "frus1900/d59")
+            #expect(sameVolume.verdict == .notHelpful)
+            #expect(sameVolume.cosine == 0.869)
+            #expect(sameVolume.sameVolume == true)
+            #expect(sameVolume.provenanceDigest == "89481b18")
+            #expect(sameVolume.recordedAt == Self.moment)
+            let otherVolume = await request.semanticFeedback(
+                .helpful, on: Self.row("frus1901", "d12"), pipeline: pipeline,
+                provenanceDigest: nil, recordedAt: Self.moment)
+            #expect(otherVolume.sameVolume == false)
+            #expect(otherVolume.provenanceDigest == nil)
+        }
+    }
+
+    /// Source-scanned, because the list's load and its row menu are view code no unit test renders:
+    /// the list must rank with the year it bands verdicts by, and must not read the door's year
+    /// itself. Comment lines are dropped first, so a comment naming `anchorYear` is not a read.
+    @Test("Related Documents ranks with the index's year and builds no verdict of its own")
+    func viewReadsOnlyTheResolvedYear() throws {
+        let source = try String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appendingPathComponent("FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift"),
+            encoding: .utf8)
+        let code = source.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        #expect(code.range(of: #"\.anchorYear\b"#, options: .regularExpression) == nil,
+                "the view reads the door's year only through resolvedAnchorYear(pipeline:)")
+        #expect(code.contains(
+            "let anchorYear = await request.resolvedAnchorYear(pipeline: appState.indexingPipeline)"))
+        #expect(code.contains("anchorYear: anchorYear,"), "the ranking takes the resolved year")
+        #expect(!code.contains("SemanticFeedbackEntry("),
+                "a verdict is built by RelatedDocumentsRequest.semanticFeedback, era included")
     }
 }
 
