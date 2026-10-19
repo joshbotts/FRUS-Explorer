@@ -332,3 +332,32 @@ struct CollocationVocabularyPairingTests {
                 "Porter stems scored \(overlap) against a lemma reference — if this ever rises, the guard in the sibling test has stopped discriminating and both are vacuous")
     }
 }
+
+// MARK: - CollocationCaveatCopyTests
+
+/// Collocates' caveat printed its counts through `%lld`, with no locale to group them: "6387 matches, in 1512
+/// documents that had indexed text." and "The scan stopped at 500 of your 1204 results" (#1683).
+///
+/// Version history:
+///   1.0 — #1683: initial implementation
+@Suite("Collocates' caveat groups its counts (#1683)")
+struct CollocationCaveatCopyTests {
+
+    private static let enUS = Locale(identifier: "en_US")
+
+    @Test("What the scan read is grouped, and singular at one")
+    func scannedIsGrouped() {
+        #expect(CollocationCaveatCopy.scanned(matches: 6_387, documents: 1_512, locale: Self.enUS)
+                == "6,387 matches, in 1,512 documents that had indexed text.")
+        #expect(CollocationCaveatCopy.scanned(matches: 1, documents: 1, locale: Self.enUS)
+                == "1 match, in 1 document that had indexed text.")
+        #expect(CollocationCaveatCopy.scanned(matches: 12, documents: 3, locale: Self.enUS)
+                == "12 matches, in 3 documents that had indexed text.")
+    }
+
+    @Test("Where the scan stopped names both counts, grouped")
+    func boundedIsGrouped() {
+        #expect(CollocationCaveatCopy.bounded(offered: 1_000, inScope: 7_500, locale: Self.enUS)
+                == "The scan stopped at 1,000 of your 7,500 results, so this ranking covers part of them, not all.")
+    }
+}

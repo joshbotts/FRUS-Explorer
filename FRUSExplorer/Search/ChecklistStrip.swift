@@ -25,11 +25,17 @@ enum ChecklistCopy {
 
     /// "12 reviewed hidden": how many results Checklist Mode is hiding.
     ///
-    /// - Parameter count: Results hidden as reviewed.
+    /// The count is grouped (#1683): through `%lld` it read "1852 reviewed hidden" beside the
+    /// selection's "1,852 results marked reviewed".
+    ///
+    /// - Parameters:
+    ///   - count: Results hidden as reviewed.
+    ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     /// - Returns: The line.
-    static func hidden(_ count: Int) -> String {
-        String(format: String(localized: "search.checklist.hiddenBanner %lld",
-                              defaultValue: "%lld reviewed hidden"), Int64(count))
+    static func hidden(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(localized: "search.checklist.hiddenBanner.v2 %@",
+                              defaultValue: "%@ reviewed hidden"),
+               count.formatted(.number.locale(locale)))
     }
 
     /// The strip's line while the mode is on and hides nothing in this list. It says nothing of

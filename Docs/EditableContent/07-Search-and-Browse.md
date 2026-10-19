@@ -545,13 +545,37 @@ Nothing near your matches is used more here than across the corpus. That is a re
 
 <!-- END SOURCE: search.collocation.unavailable.nothingDistinctive -->
 
-<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.caveat.bounded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | CollocationCaveatCopy.bounded | key: search.collocation.caveat.bounded.v3 %@ %@ -->
 
-*Interpolated with the scanned and total counts.*
+*Interpolated with the scanned and total counts, grouped since #1683 (`.v2` printed them through `%lld`, as "1204"). A scan that stopped short of its results had at least two, so “results” has no form for one.*
 
-The scan stopped at %lld of your %lld results, so this ranking covers part of them, not all.
+The scan stopped at %1$@ of your %2$@ results, so this ranking covers part of them, not all.
 
-<!-- END SOURCE: search.collocation.caveat.bounded.v2 %lld %lld -->
+<!-- END SOURCE: search.collocation.caveat.bounded.v3 %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | CollocationCaveatCopy.scanned | key: search.collocation.caveat.scope.v3 %@ %@ -->
+
+*Collocates' line of what the scan read, after the sentence naming the set it read (#1683). %1$@ is the matches with their noun and %2$@ the documents with theirs, from the forms below and “1 document” / “12 documents”: “6,387 matches, in 1,512 documents that had indexed text.” Its `.v2` printed both counts through `%lld`, as "6387 matches, in 1512 documents", and had no block here.*
+
+%1$@, in %2$@ that had indexed text.
+
+<!-- END SOURCE: search.collocation.caveat.scope.v3 %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | CollocationCaveatCopy.scanned | key: search.collocation.caveat.matches.one -->
+
+*The line's count of matches, for one (#1683).*
+
+%@ match
+
+<!-- END SOURCE: search.collocation.caveat.matches.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | CollocationCaveatCopy.scanned | key: search.collocation.caveat.matches.many -->
+
+*The same, for any other number.*
+
+%@ matches
+
+<!-- END SOURCE: search.collocation.caveat.matches.many -->
 
 <!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.caveat.perDocument %lld -->
 
@@ -816,6 +840,14 @@ Search results, ranked by a question
 Opening a result does not hide it while Log Research Sessions is off in Settings. Mark Reviewed still hides a result.
 
 <!-- END SOURCE: search.checklist.loggingOff -->
+
+<!-- SOURCE: FRUSExplorer/Search/ChecklistStrip.swift | ChecklistCopy.hidden | key: search.checklist.hiddenBanner.v2 %@ -->
+
+*The checklist strip's count of what Checklist Mode is hiding, on iPhone, iPad and Mac, beside “Nothing hidden”. Grouped since #1683: its `%lld` key read "1852 reviewed hidden" beside the selection's "1,852 results marked reviewed".*
+
+%@ reviewed hidden
+
+<!-- END SOURCE: search.checklist.hiddenBanner.v2 %@ -->
 
 <!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 798–799 | key: search.corpus.footer -->
 

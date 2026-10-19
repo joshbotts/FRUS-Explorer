@@ -357,9 +357,11 @@ struct ChecklistStripTests {
         #expect(ChecklistCopy.undoneAnnouncement(25, locale: Self.enUS) == "25 results are back in the list")
     }
 
-    @Test("The hidden line keeps the words it has always had, and has words for none")
+    @Test("The hidden line keeps the words it has always had, grouped past 999, and has words for none")
     func hiddenLine() {
         #expect(ChecklistCopy.hidden(12) == "12 reviewed hidden")
+        // #1683: through `%lld` the count read "1852 reviewed hidden".
+        #expect(ChecklistCopy.hidden(1_852, locale: Self.enUS) == "1,852 reviewed hidden")
         #expect(ChecklistCopy.nothingHidden == "Nothing hidden")
     }
 
