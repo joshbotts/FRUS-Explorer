@@ -1,46 +1,45 @@
-# What's New Since Build 49 (iOS)
+# What's New Since Build 50 (iOS)
 
-**Search results can be selected, tagged and collected. Browse opens text a chapter prints outside its documents. Collocates works where the device has no dictionary forms.**
+**Version 1.0 (1861) is the release candidate. Search runs inside a list of results. Meaning search runs EmbeddingGemma 2. Keeping Current shows each update.**
 
-**First launch re-indexes every downloaded volume, once**, in the background. Nothing is re-downloaded.
+**First launch rebuilds People once**, in the background. It also removes the earlier search model and its match files; Related Documents and Meaning fetch the new ones as you use them. No volume is re-indexed or re-downloaded.
 
 ## Search
 
-- **Select Results** (the **•••** menu, or touch and hold a result ▸ **Select**): pick results, then **Add to Collection…**, **Add Tags…** or, in Checklist Mode, **Mark Reviewed**. Each has **Undo**.
-- One result's menu has the first two. Add Tags takes no tag off.
-- **Checklist Mode** has **Mark Page Reviewed** and **Undo**. Its marks last as long as the search.
-- A **Meaning** search inside a working corpus or a project's **History** scope ranks that set alone.
+- **Search within these results.** After a Meaning question, **•••** ▸ **Find Words in These Matches**. After a keyword search, **•••** ▸ **Rank These Results by a Question**, or **Sort** ▸ **Closest to a Question…**; a list cut at 1,000 is ranked whole. A row names the held list, and its **✕** puts the list back.
+- Once you have searched inside the list, the row's **Swap** turns one order into the other without retyping.
+- **Meaning search runs EmbeddingGemma 2**, open source. If you had the earlier model, **Download Search Model** (310 MB) is offered again, once, with no agreement to accept. Its percentages read as the earlier model's did.
+- A common word searched inside a working corpus is much faster (it took seven seconds or more).
 
-## Browse and the reader
+## Library and reading
 
-- A chapter of text alone (a treaty, say) opens with **Read**, where it said "No documents in this section."
-- Text a section prints above its documents (those present at a meeting, say) is a **Read** row heading the section, and Search finds it.
-- 1981–1988 vol. XVI's documents end with **Persons** and **Abbreviations & Terms** lists, and its people have mentions.
-- "See volume V" opens that volume's page, and a reference to a footnote counts for its document.
-- Person names and cross-references are underlined, in darker colours, for WCAG 2.2 AA contrast.
-- 1952–1954 vol. IX, Part 1 gains documents 900–946: Settings ▸ Volumes & Storage ▸ **Check for Corrections** brings them.
+- **Keeping Current** (Settings ▸ Volumes & Storage): a volume keeps its row through **Update** or **Update All** and reads *Queued*, *Downloading…*, *Indexing…*, *Updated*. A failed update is tried twice more, then says why and offers **Retry**. When **Check for Corrections** cannot read the published list, it says why. A copy you side-load from now on says so in its row, since **Update** replaces it.
+- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**. On iPad, Standard is wider than the old column.
+- **People:** Jeane Kirkpatrick, Ahmad Khomeini, Richard V. Allen, Romulo Betancourt and some eighty more people once filed under namesakes have their own entries. A person's sheet shows no Wikidata link, and **View on VIAF** only where the Office of the Historian's own register names one.
+
+## Collections
+
+- A **smart collection** (one linked to a saved search) takes nothing by hand: **Add to Collection**, its editor and both Collections lists say *Smart collection*.
+- Entries it held before the link are listed apart, dimmed, with **Remove These Entries**.
 
 ## Also
 
-- **Language analysis:** where Settings ▸ Data & Recovery ▸ **Language Analysis** reads *Limited*, **Collocates**, a word cloud's **Distinctive** sizing and Related Documents' **shares:** chips compare words as printed and say so, where they refused or were withheld. **Copy Language Analysis Record** is for a report.
-- **Archives:** a Subject-Numeric file with no subject number (POL US-USSR) has **Archival Neighbors** and is ranked under its category; a file is one list however it is cited. A lot cited through the National Archives gets its lot cards with no API key.
-- **Live Activity:** two minutes after the app stops, it turns grey and reads *Indexing has stopped.* One left behind goes when the app is opened.
-- **Accessibility:** all eleven About the Series charts have an Audio Graph.
+- **Accessibility:** at the five largest text sizes, Meaning mode's strip is one line; its **ⓘ** opens all of it.
+- **Word cloud:** an exported cloud counted as printed says another device may count differently.
 
 **Fixes:** many, on every tab and in accessibility.
 
 ## What to test
 
-1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 49?
-2. **Selecting results.** Add a selection to a collection, tag it, and **Undo** each. In Checklist Mode: **Mark Page Reviewed**, **Undo**. At a large text size, is anything covered?
-3. **Meaning inside a set.** Apply a working corpus in Filters, switch to Meaning, ask a question: every row in the corpus?
-4. **Read rows.** 1945 Potsdam vol. II ▸ VI. Minutes… ▸ Monday, July 16 ▸ Meeting of the Joint Chiefs of Staff, 10 a.m.: a **Read** row above Documents (1)? Does Search find Esposito there?
-5. **Links.** 1981–88 vol. XVI doc. 368: tap Haig and OAS in the lists at its end. 1961–63 vol. VI doc. 16, footnote 1: tap "volume V". Underlines readable, light and dark?
-6. **Collocates**, if Language Analysis reads *Limited*: does it rank, under a note? (*Working*: no change.)
-7. **Sources.** 1961–63 vol. V doc. 323: a list under "Same Subject-Numeric file — POL US-USSR"? 1969–76 vol. XLI doc. 34: "NARA divided this lot file across 4 series"?
-8. **Live Activity.** Index a large volume and lock the phone: grey and stopped after two minutes? Force-quit mid-index and reopen: gone?
-9. **Your build-49 reports**, and the sync banner over a list's last row: fixed?
+1. **First launch.** Does People open whole? Search it for Kirkpatrick, Khomeini and Allen: one entry for each person?
+2. **Search within these results**, both ways, then **Swap** and **✕**. Do the row and the header say what you see? At a large text size?
+3. **Meaning.** Download the model: no agreement to accept? Ask a question: do the percentages read as before?
+4. **A common word** (*government*) in a working corpus (Filters): how long does it take?
+5. **Keeping Current.** **Check for Corrections**, then **Update**: does the row show each step? Open the app in Airplane Mode and check: does it say why it cannot?
+6. **Reading Width.** Each width, portrait and landscape (on iPhone, turn it sideways).
+7. **Smart collections.** Link a collection to a saved search: are earlier entries listed apart? Does **Remove These Entries** ask first?
+8. **Your build-50 reports**: fixed?
 
-Not bugs: counts that differ from build 49's (search totals, mentions, cross-reference figures); new region labels on the semantic map; Collocates that differ between a *Limited* device and a *Working* one.
+Not bugs: People counts that differ from build 50's; Meaning results that differ from build 50's; no Wikidata link on a person's sheet.
 
 Include device + iOS version, taps, expected, actual — and for anything archival, the document id. Thanks!
