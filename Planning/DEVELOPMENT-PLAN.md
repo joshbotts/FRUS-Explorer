@@ -39310,7 +39310,7 @@ Measured over a full index (the iPhone 17e simulator's, version 65, 316,768 docu
 **Not done.**
 - **Not driven on the Mac.** Access to the check copy was declined, so the Mac's door was not walked after the fix. The list and its menu are the shared `RelatedDocumentsContent`, which the Mac's window shows, and the Mac build compiles the change.
 - **Verdicts recorded before this change keep what they were given**: no `era` after a door with no dateline, and a misprinted dateline's era after one with it. The export's `anchor` key is what bands them again.
-- **Not pushed.** The PR is drafted for the owner's word.
+- **Opened as #1727** on the owner's word of 2026-10-19 ("Open PR"), against `v2` at `0fc70e8e`, which had not moved since the branch was cut. Not merged.
 
 **Seen on the way, not fixed.**
 - `ProjectLeadsService` ranks each seed with `RelatedDocumentsEngine.rank` and no year, so a project's leads match a yearless decimal file across every band; it records no verdicts. The semantic map's nearest list passes no year to the semantic generator alone, which reads none.
