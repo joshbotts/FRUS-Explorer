@@ -156,7 +156,7 @@ That is the M5's simulator, and a phone is slower. Nothing of it reaches the rea
 No declaration settles whether Siri surfaces an associated document, and the simulator's Siri did not reach the app. The check needs the owner's go-ahead, an iPhone and about fifteen minutes.
 
 **Install.**
-- **Install the spike, not FRUS Explorer.** Spike Reader has its own bundle identifier, so it cannot touch FRUS Explorer's container. Open `A6Spike/A6Spike.xcodeproj` from this worktree in Xcode, choose the iPhone, and Run.
+- **Install the spike, not FRUS Explorer.** Spike Reader has its own bundle identifier, so it cannot touch FRUS Explorer's container. Generate its project from `project.yml` with XcodeGen, open it in Xcode, choose the iPhone, and Run. The sources are in this worktree's `A6Spike/`, and a copy is in the session group's notes folder (`a6-spike/`).
 - **Signing registers a new App ID**, `bottsywattsy.A6Spike`, on team 828S8SXVLC.
 - **`devicectl device install app` serves as well, but never with `--remove-existing-content`**: that flag emptied FRUS Explorer's container on this phone on 2026-10-15.
 
@@ -287,6 +287,7 @@ The full text is in this session group's notes folder (`a6-issue-draft.md`), to 
 
 ## 9. Redoing it
 
+- **The spike's sources** (`project.yml`, `Sources/`, `UITests/` and `redonation-timing2.sh`) are copied to the session group's notes folder (`a6-spike/`), since this worktree may not outlive the merge.
 - **The spike** stays in this worktree's `A6Spike/`, untracked:
   - the app, the UI-test target and `project.yml` (generated with XcodeGen);
   - the logs;
