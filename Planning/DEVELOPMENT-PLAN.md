@@ -39365,3 +39365,4 @@ Two answers departed from the session's advice: the index bump, which it had adv
 - No lane is started. A9 is first, from the plan once this change merges.
 - S0's card, proposed earlier in this session, is withdrawn: S0 now runs after A18, beside A19.
 - §6a still plans A7's capture slots, which S0 takes up.
+- **Opened as #1729** on the owner's word of 2026-10-19 ("Open PR"), against `v2` at `4825bcc6`, which had not moved since the branch was cut. Not merged.
