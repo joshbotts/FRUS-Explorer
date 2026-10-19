@@ -51,6 +51,8 @@ import Foundation
 ///          `base=` part, and `describe(_:)` names the base
 ///   1.4 — #1577 lane 6: `semanticSignature(rankingInside:)` — a ranking of a list's whole match signs the
 ///          documents it ranked inside, which no parameter value holds
+///   1.5 — plan of record §6g, found in A8: `describe(_:)` quotes a base found by one phrase once, as the row
+///          that named it does (`PinnedResultBase.quotable(_:)`); the `base=` part still records it as typed
 enum SearchScopeSignature {
 
     /// The signature for `parameters`.
@@ -364,7 +366,10 @@ enum SearchScopeSignature {
 
     /// "inside the closest matches of a Meaning search for “how did the embassy…” (100 documents)":
     /// what the appendix says of a layer's base, from its `base=` part (#1577 lane 4), or `nil` for a
-    /// part it cannot read, which an appendix would rather leave out than guess at.
+    /// part it cannot read, which an appendix would rather leave out than guess at. The words or the
+    /// question are quoted as the row that named the base quotes them (`PinnedResultBase.quotable(_:)`),
+    /// so a part recorded `%22offset%20agreement%22` reads “offset agreement”, in a row recorded before
+    /// that rule as in one recorded since.
     ///
     /// - Parameter component: The part's value: kind, size and percent-encoded words, `:`-separated.
     /// - Returns: The phrase, or `nil`.
@@ -377,11 +382,11 @@ enum SearchScopeSignature {
         case "meaning":
             return String(format: String(localized: "appendix.scope.base.meaning %@ %@",
                                          defaultValue: "inside the closest matches of a Meaning search for “%2$@” (%1$@)"),
-                          documents, text)
+                          documents, PinnedResultBase.quotable(text))
         case "keywords":
             return String(format: String(localized: "appendix.scope.base.keywords %@ %@",
                                          defaultValue: "inside the results of a keyword search for “%2$@” (%1$@)"),
-                          documents, text)
+                          documents, PinnedResultBase.quotable(text))
         case "browse":
             guard !text.isEmpty else {
                 return String(format: String(localized: "appendix.scope.base.browse.unnamed %@",

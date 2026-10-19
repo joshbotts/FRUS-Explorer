@@ -134,6 +134,8 @@ enum SearchLayerDirection: Equatable, Sendable {
 ///          (``ranksWholeMatch``): its row says "all 35,275 results", it keeps its match's keys once a ranking
 ///          has read them (``wholeMatch``), and its record counts the match; ``wholeMatchSetSize(for:)`` and
 ///          ``filtersNarrowTheMatch(_:)``, what the Meaning strip may say before a question
+///   1.3 — plan of record §6g, found in A8: a list found by one phrase in quotation marks is quoted once, as the
+///          manuals print it (``quotable(_:)``), in its row, its VoiceOver label and its capture's description
 struct PinnedResultBase: Sendable {
 
     /// What kind of list the base is, for the row that names it and the record.
@@ -264,6 +266,37 @@ struct PinnedResultBase: Sendable {
     /// The words the base names itself by: ``describedQuery`` where there is one, ``query`` otherwise.
     private var shownQuery: String { describedQuery ?? query }
 
+    /// ``shownQuery`` as a sentence quotes it (``quotable(_:)``): what the row, its VoiceOver label and a capture's
+    /// description print between their quotation marks.
+    private var quotedQuery: String { Self.quotable(shownQuery) }
+
+    /// What a sentence prints between its own quotation marks for `query`: a query that is one phrase in quotation
+    /// marks without them, and any other query as typed (plan of record §6g, found in A8).
+    ///
+    /// The sentence's marks then enclose the phrase once. Both manuals print *Within 212 results for “offset
+    /// agreement”* for a search typed `"offset agreement"`; with the phrase's own marks kept inside the sentence's,
+    /// the row read *“"offset agreement"”* (A8, in the Mac check copy). A list named by a restored phrase alone
+    /// (``describedWords(phrase:prefix:)``) is quoted the same way. A mark is any the search's grammar reads as a
+    /// double quotation mark (`FTS5InlineQueryParser.isDoubleQuotationMark(_:)`): straight, curly, low-9, fullwidth
+    /// or a guillemet, at either end. Any other query keeps its marks, since they say what ran: a phrase beside a word
+    /// or a prefix (`"wheat" embarg*`), two phrases, a mark left open, or an empty pair. A single mark is none, as the
+    /// grammar gives it no meaning.
+    ///
+    /// For the held list's words or question, and for Swap's two searches (`SearchLayerCopy.swapHelp(_:)`). The record
+    /// keeps the query as typed (``signaturePart``), and the method appendix quotes it by this rule as it reads it
+    /// back (`SearchScopeSignature.describe(_:)`).
+    ///
+    /// - Parameter query: The words or question as typed, trimmed, as a submitted query is.
+    /// - Returns: The words to print between the quotation marks.
+    static func quotable(_ query: String) -> String {
+        let isMark = FTS5InlineQueryParser.isDoubleQuotationMark
+        guard let first = query.first, let last = query.last, isMark(first), isMark(last) else { return query }
+        let phrase = query.dropFirst().dropLast()
+        let words = phrase.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !words.isEmpty, !phrase.contains(where: isMark) else { return query }
+        return words
+    }
+
     /// How a list found by a restored phrase or prefix, with no typed words, names its words: `"wheat
     /// shipments"`, `embarg*`, or both. `nil` when it had neither, which makes it a browse.
     ///
@@ -326,42 +359,45 @@ struct PinnedResultBase: Sendable {
     /// row says so instead: "all 35,275 results for “negotiations”", counted by the match, or "every
     /// result for “negotiations”" while its size is not known. The first slice no longer bounds the
     /// layer, so the row does not name it.
+    ///
+    /// The words are quoted once (``quotable(_:)``): a list found by `"offset agreement"`, typed with its
+    /// quotation marks, is "212 results for “offset agreement”", as both manuals print it.
     var setDescription: String {
         let count = members.count
         switch kind {
         case .meaning:
             guard count != 1 else {
                 return String(format: String(localized: "search.layer.set.meaning.one %@",
-                                             defaultValue: "the closest match to “%@”"), shownQuery)
+                                             defaultValue: "the closest match to “%@”"), quotedQuery)
             }
             return String(format: String(localized: "search.layer.set.meaning %@ %@",
                                          defaultValue: "%1$@ closest matches to “%2$@”"),
-                          count.formatted(), shownQuery)
+                          count.formatted(), quotedQuery)
         case .keywords:
             // A question ranks the whole match of a list cut at its ceiling (#1577 lane 6), so the row names it whole.
             if ranksWholeMatch {
                 if let count = wholeMatchCount {
                     return String(format: String(localized: "search.layer.set.keywords.whole %@ %@",
                                                  defaultValue: "all %1$@ results for “%2$@”"),
-                                  count.formatted(), shownQuery)
+                                  count.formatted(), quotedQuery)
                 }
                 return String(format: String(localized: "search.layer.set.keywords.wholeUnknown %@",
                                              defaultValue: "every result for “%@”"),
-                              shownQuery)
+                              quotedQuery)
             }
             if wasCut {
                 if let totalMatchCount {
                     return String(format: String(localized: "search.layer.set.keywords.cut %@ %@ %@",
                                                  defaultValue: "the first %1$@ of %2$@ results for “%3$@”"),
-                                  rows.count.formatted(), totalMatchCount.formatted(), shownQuery)
+                                  rows.count.formatted(), totalMatchCount.formatted(), quotedQuery)
                 }
                 return String(format: String(localized: "search.layer.set.keywords.cutUnknown %@ %@",
                                              defaultValue: "the first %1$@ results for “%2$@”"),
-                              rows.count.formatted(), shownQuery)
+                              rows.count.formatted(), quotedQuery)
             }
             return String(format: String(localized: "search.layer.set.keywords %@ %@",
                                          defaultValue: "%1$@ for “%2$@”"),
-                          Self.resultsPhrase(count), shownQuery)
+                          Self.resultsPhrase(count), quotedQuery)
         case .browse(let name):
             guard let name, !name.isEmpty else {
                 if ranksWholeMatch {
@@ -458,12 +494,13 @@ struct PinnedResultBase: Sendable {
         }
     }
 
-    /// The base as a capture names it, for a working corpus saved inside a layer: the question in
-    /// quotation marks, the words in quotation marks, or a browse's name (``ResultSetScope/layerBaseLabel``).
+    /// The base as a capture names it, for a working corpus saved inside a layer: the question or the
+    /// words in quotation marks, quoted once as the row quotes them (``quotable(_:)``), or a browse's
+    /// name (``ResultSetScope/layerBaseLabel``).
     var captureLabel: String? {
         switch kind {
         case .meaning, .keywords:
-            return shownQuery.isEmpty ? nil : "“\(shownQuery)”"
+            return quotedQuery.isEmpty ? nil : "“\(quotedQuery)”"
         case .browse(let name):
             return name
         }
@@ -478,7 +515,9 @@ struct PinnedResultBase: Sendable {
     ///
     /// `base=meaning:100:how%20did%20the%20embassy`, `base=keywords:212:offset%20agreement`,
     /// `base=browse:1976:Aerial%20reconnaissance`. `SearchScopeSignature.describe` turns it into a
-    /// phrase; an earlier build passes over it, as it passes over any part it does not know.
+    /// phrase; an earlier build passes over it, as it passes over any part it does not know. The words
+    /// are recorded as typed, a phrase's quotation marks included (`%22offset%20agreement%22`), and
+    /// the phrase quotes them once (``quotable(_:)``).
     var signaturePart: String {
         let kindToken: String
         let text: String

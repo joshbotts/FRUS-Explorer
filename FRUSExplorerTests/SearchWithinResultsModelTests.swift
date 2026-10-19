@@ -132,6 +132,7 @@ private func makeTrail() throws -> (container: ModelContainer, context: ModelCon
 ///
 /// Version history:
 ///   1.0 — #1577 lane 4: initial implementation
+///   1.1 — plan of record §6g, found in A8: words typed as one phrase name a held list quoted once
 @Suite("Search within results: the iPhone and iPad view model")
 @MainActor
 struct SearchWithinResultsModelTests {
@@ -553,8 +554,48 @@ struct SearchWithinResultsModelTests {
         #expect(vm.results.count == LayerFixture.count, "precondition: every document holds the phrase")
         let base = try #require(vm.holdBase(meaningAvailable: true))
         #expect(base.kind == .keywords)
-        #expect(base.rowDescription == "Within 10 results for “\"doctrine of containment\"”")
+        #expect(base.rowDescription == "Within 10 results for “doctrine of containment”", "quoted once (§6g)")
         #expect(base.signaturePart == "base=keywords:10:%22doctrine%20of%20containment%22")
+    }
+
+    /// Plan of record §6g, found in A8 in the Mac check copy: a search typed `"offset agreement"`, with its quotation
+    /// marks, as both manuals' example is, held a list whose row read “"offset agreement"”.
+    @Test("Words typed as one phrase name a held list quoted once wherever it is named, and are recorded as typed")
+    func aTypedPhraseIsQuotedOnce() async throws {
+        let (dir, vm) = try await LayerFixture.makeViewModel()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let engine = LayerMeaningSearch()
+        vm.semanticBackend = engine
+        let (container, context, defaults) = try makeTrail()
+        defer { _ = container }
+        let phrase = "\"doctrine of containment\""
+        vm.keywords = phrase
+        await vm.search()
+        try #require(vm.results.count == LayerFixture.count, "precondition: every document holds the phrase")
+        let base = try #require(vm.holdBase(meaningAvailable: true))
+        #expect(base.kind == .keywords && base.query == phrase)
+        #expect(base.rowDescription == "Within 10 results for “doctrine of containment”")
+        #expect(base.accessibilityLabel == "Searching within 10 results for “doctrine of containment”")
+
+        engine.rankScores = [LayerFixture.key(3): 0.9]
+        vm.keywords = "which talks failed"
+        await vm.search()
+        try #require(vm.executedRoute == .rankedByMeaning(unranked: LayerFixture.count - 1), "precondition: a ranking")
+        let swap = try #require(vm.layerSwap)
+        #expect(SearchLayerCopy.swapHelp(swap)
+                == "Ask “which talks failed” first, then find “doctrine of containment” among its closest matches")
+        #expect(vm.resultSetScope.captureProvenanceDescription
+                == "Search results for “doctrine of containment”, ranked by a question")
+
+        vm.recordSearchHistory(projectId: nil, indexedVolumeCount: 1, in: context, defaults: defaults)
+        let row = try #require(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).first)
+        let signature = try #require(row.scopeSignature)
+        #expect(signature.hasSuffix(";base=keywords:10:%22doctrine%20of%20containment%22"), "the marks are recorded")
+        #expect(SearchScopeSignature.describe(signature)?.last
+                == "inside the results of a keyword search for “doctrine of containment” (10 documents)")
+
+        vm.leaveBase()
+        #expect(vm.keywords == phrase && vm.searchMode == .keywords, "the field gets the words back as typed")
     }
 
     @Test("Words found nowhere in the list can be searched across the library, which leaves the base")
