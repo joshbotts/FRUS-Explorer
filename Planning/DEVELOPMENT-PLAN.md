@@ -39192,4 +39192,4 @@ The timing was then run as the note prescribes: install first, which moved the c
 - **The mail draft by eye:** Mail's compose sheet on an iPhone or iPad with a Mail account (the simulator has none, so the button does not show there), and the Mac's draft, which opens the owner's own mail app. The Mac's feedback screen was walked up to the button (above).
 - **Not seen on a phone:** the rollup rebuild's time, and B4's purge of real match files on iOS (the timed library had none).
 - **In the check copy:** an update's rows in Keeping Current (no volume was outdated), a smart collection's earlier entries (unchanged since A4b's walk), dark appearance, Extra Large, VoiceOver and Full Keyboard Access.
-- **Nothing pushed and no pull request opened:** both wait for the owner's word.
+- **Not merged and not tagged.** Pushed and opened on the owner's word as #1724, against `v2` at `71bf2de0`.
