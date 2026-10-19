@@ -39314,3 +39314,54 @@ Measured over a full index (the iPhone 17e simulator's, version 65, 316,768 docu
 **Seen on the way, not fixed.**
 - `ProjectLeadsService` ranks each seed with `RelatedDocumentsEngine.rank` and no year, so a project's leads match a yearless decimal file across every band; it records no verdicts. The semantic map's nearest list passes no year to the semantic generator alone, which reads none.
 - On the iPhone 17 at the default weights, the archival chip is cut to *851.4061 Motion Pi…* beside three other chips, so the cohort's count (*· 1 of 22*) does not show.
+
+## Session 2026-10-19 — The open issues placed: build 51 takes A9 to A19, an index bump among them (plan of record decisions 59 to 72)
+
+**What was asked.** From the plan-of-record session, after #1728, in three steps:
+- "before the screenshots, assess the open issues for fixes that belong in build 51";
+- "Please plan sessions around all open issues other than 234 and 1723. Ask me for decisions required.";
+- while the plan was being written, "Note that this plan will all apply to build 51, not build 52".
+
+**What was read**, against `v2` at `4825bcc6`, by reading the code; nothing was run. The open-issue review's workflow was not used: under the rule on subagent cost, the reading and its check were this session's.
+- **The 17 open issues** with their comments. #1723 (A7) and #234 stay deferred; #1620 is the simulator's.
+- **#1683:** #1715 and #1717 fixed six of its lines: the singular counts in the facet preamble and `ResultSetScope`; `canMarkReviewed` on the Mac; Select off while a search runs on both platforms; the highlighted row's colours; the Reading picker's dimming. Still so: `ChecklistCopy.hidden` and Collocates' two caveats print through `%lld`; All N Shown passes 1,000; the Within picker sits in `.frame(maxWidth: 300)`.
+- **Still so, read in the code:**
+  - #1684: `.accessibilityLabel(result.header)` on the row;
+  - #1685: `runSearch()` writes `phase` with no cancellation check, and `SemanticQuerySearcher.search(_:limit:)` has none;
+  - #1686: `applyProjectScope()` writes `parameters.volumeIds` from the filter view model;
+  - #1687: Project Home counts hand-added documents, and the Mac's ⚙ popover mounts `SmartCollectionLinkRows` alone;
+  - #1688: all five strings, and the floor rule;
+  - #1689: `isVolumeIndexed` in both hubs, and no reindex in `merge`;
+  - #1690: `documentRows(docs:)` and `ORDER BY rowid`.
+- **Still so, their code unchanged since the issues' re-read at `226fa99b`:** #1691, #1692, #1693, #1694 and #1695. #1694's four suites still query `BEGINSWITH 'Subseries '`, 2, 2, 3 and 3 times.
+- **Measured for decision 68.** `subject-numeric-labels.json`'s two schedules list all 433 areas identically. Of the 1,359 subject leaves both print, 1,095 match once spaces, case and full stops are set aside, and 264 differ: POL 24 is *Subversion. Espionage. Sabotage.* in 1963 and *Sanctions* in 1965. The table's coverage note gives the straddle rule's reason, the decimal table's across 1950.
+- **For #1696:** the subject export on the M5 (`frus-subject-taxonomy/exports/document_subjects.json`) and its repository are unchanged since 2026-08-20.
+- **For #1620:** this Mac has the iOS 26.3, 26.4, 26.5 and 27.0 simulator runtimes.
+- **For #1693's third line:** the store's tenth frame, `researchers-06`, shows the document graph (`ipad/cross-reference-graph`), not the volume graph.
+
+**Decided** by the owner, in four rounds of questions and the word that followed them (decisions 59 to 72):
+- Build 51 takes every open issue but #234, #1696 and #1723, as A9 to A19. Among them is an index bump, v69 → v70 (A18).
+- Section rows stay out of Meaning search.
+- The 688 notes are keyed by class, with a join.
+- One Live Activity follows a whole queue, with its summarizing sentence.
+- Three of #1688's lines take the owner's wording.
+- Archival Analytics labels a file where both handbooks agree.
+- All N Shown gives its reason beside the dimmed commands.
+- The Mac links a collection from the ⚙ popover.
+- Nothing is posted to frus#469.
+- #1620 is re-tested on iOS 27.1 once the owner installs it.
+
+Two answers departed from the session's advice: the index bump, which it had advised holding back from build 52, and #1696, for which it had offered to draft a comment. Build 51 was first to take only A9 to A11; the owner's last word put all of it there.
+
+**The plan of record.**
+- **§0:** decisions 59 to 72, and twelve defaults the owner can overturn.
+- **§1:** A9 to A19 in the table, each with a bullet, and their order. The A6 and A8 bullets now say they merged (#1722 as `71bf2de0`, #1724 as `45d9fe05`); both still read "in review".
+- **§2:** the re-index census is owed again, in A19, and each lane adds its line to both TestFlight notes.
+- **§4, §5, §6d and §6e:** where each issue went.
+
+**Checked.** After the edits, `CodingStandardsAuditTests` (which reads the plan of record) ran on the iPhone 17 simulator under iOS 27.0 (`80CF0F18`), built from an empty build folder through `Scripts/heavy.sh`: "✔ Test run with 63 tests in 1 suite passed", `** TEST SUCCEEDED **`.
+
+**Not done.**
+- No lane is started. A9 is first, from the plan once this change merges.
+- S0's card, proposed earlier in this session, is withdrawn: S0 now runs after A18, beside A19.
+- §6a still plans A7's capture slots, which S0 takes up.
