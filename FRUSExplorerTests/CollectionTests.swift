@@ -10957,6 +10957,7 @@ struct CollectionPickerRowTests {
 ///   1.0 — #1619: initial implementation
 ///   1.1 — #1619 review, round 1: the scans read a control's place inside its gate and its `else`, where they read only
 ///          the order; the views' `takesHandAddedEntries` is read where it is defined; and `aLinkCanAlwaysBeUndone`
+///   1.2 — #1687: `projectHomeSaysSmart`, Project Home's Collections sheet, which the two lists' change left
 @MainActor
 @Suite("A smart collection takes no hand-added entry, and the lists say it is smart (#1619)")
 struct SmartCollectionRuleTests {
@@ -11298,6 +11299,25 @@ struct SmartCollectionRuleTests {
         let manageSmart = try #require(Self.elseBlock(after: manageCount.upperBound, of: mac), "the row has no else")
         #expect(mac[manageSmart].contains("Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")"),
                 "Manage Collections' row prints a smart collection's count")
+    }
+
+    /// Project Home's Collections sheet counted a smart collection's hand-added documents, so most read "0 documents"
+    /// (#1687). It is Project Home's on every platform. The count it prints for an ordinary collection is the one that
+    /// seeds the project's leads, and stays.
+    @Test("Project Home's Collections sheet prints Smart collection where a smart collection's count was")
+    func projectHomeSaysSmart() throws {
+        let home = try Self.source("FRUSExplorer/ProjectContext/ProjectHomeView.swift")
+        let info = try Self.block("private func collectionInfo(_ collection: Collection) -> some View {", in: home)
+        let smart = try Self.block(opening: "if collection.savedSearchId != nil {", in: info, of: home,
+                                   "Project Home's collection row")
+        #expect(home[smart].contains("Label(SmartCollectionRule.listLabel, systemImage: \"bolt.fill\")"),
+                "Project Home's collection row does not say Smart collection for a smart collection")
+        #expect(!home[smart].contains("docCount"), "the smart branch counts entries")
+        let counted = try #require(Self.elseBlock(after: smart.upperBound, of: home), "the row's smart branch has no else")
+        #expect(home[counted].contains("project.collections.manage.docCount.other"),
+                "an ordinary collection's count is not the else of its label")
+        #expect(home[counted].contains(".filter { $0.entryKind == .document"),
+                "the count is no longer the distinct documents that seed the project's leads")
     }
 
     /// A smart collection takes nothing by hand, so its link must always be undoable, its saved search found or not.

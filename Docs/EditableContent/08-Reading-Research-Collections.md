@@ -2442,7 +2442,7 @@ Smart collection. Its documents come from its saved search.
 #### Smart collection
 <!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1144–1144 | key: collection.smart.listLabel -->
 
-*What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, and in the Mac Collections window's collection picker and its Manage Collections sheet. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
+*What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
 Smart collection
 
