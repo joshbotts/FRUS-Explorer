@@ -39257,5 +39257,5 @@ The timing was then run as the note prescribes: install first, which moved the c
 - The method appendix's plain-text lines, which the PDF, Word and HTML exports print (`QueryMethodAppendix.plainTextLines`); its Markdown table and CSV print the query bare. That line is the record of what was typed, where a phrase's marks say it was a phrase, so whether it changes is the owner's call.
 
 **Not done.**
-- **Not pushed, and no PR.** The PR is drafted in the session notes (`quote-once-pr-body.md`), to open on the owner's word; A8 (#1724) and #1725 have merged.
+- **Opened as #1726** on the owner's word of 2026-10-19 ("Push claude/eloquent-pascal-4cbd68 and open the PR against v2 from the drafted body"), against `v2` at `b18c1a05`, which had not moved since the branch was cut. Not merged.
 - **Not seen:** VoiceOver reading the row and Swap's hint, which read the same functions the unit tests and the UI suite's labels cover; a method appendix exported from a library, whose phrase the unit tests read back from a recorded trail row; dark appearance and the accessibility sizes (a phrase's row is two characters shorter, and `SearchLayerBaseRowFitTests` was not run again).
