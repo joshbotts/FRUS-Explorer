@@ -39060,3 +39060,76 @@ Lane 4's ranking of the 1,000 held rows took 3 to 4 ms, and of 7,500 14 to 16 ms
 **Docs.** `Docs/iOS-User-Manual.md` §7.12a: a bullet on the strip at the largest text sizes. `Docs/EditableContent/07-Search-and-Browse.md`: four blocks for the new strings, `beyondUnchecked` naming `SemanticModeStrip.parts`, and 20 ranged blocks re-pointed (`Amendment-Log.md`, `README.md`). The runbook's `MeaningStripFitTests` entry and `SearchLayerBaseRowFitTests`' updated one, and `CLAUDE.md`'s two rows; the plan of record's TestFlight line.
 
 **Not done.** VoiceOver aloud over the row and the sheet, the sheet in Dark Mode, and the iPad at the accessibility sizes (where the strip takes the same row and the sheet opens as a form sheet) are the owner's to check; no suite measures the iPad here. The SE's room at AX5 is a sliver in every arrangement (22 pt with the row, 8 with the base row and Swap), because the Local Only banner starts halfway down its screen; a device that syncs has none.
+
+## Session 2026-10-18 — A6: App Intents and Siri, stage 1, the assessment on the shipped SDK
+
+**What and why.** Plan-of-record item A6, the one OS 27 feature the plans name. Parked since 2026-08-01 for want of the SDK, it is assessed now on Xcode 27.1 (27A9275), with the iOS 27.1 and macOS 27.0 SDKs. The memo is `Planning/App-Intents-Siri-Assessment-2026-10-18.md`. It settles `Planning/OS27-Semantic-Retrieval-Design.md` §3.3, whether `IndexedEntity` adds to the Spotlight donation or replaces it, and so places A7 under decision 23.
+
+**Read in the SDK.**
+- **The declarations:**
+  - the `AppIntents` and `CoreSpotlight` interfaces and headers;
+  - the documentation compiled into `AppIntents.swiftdoc`;
+  - the App Schema database in the toolchain (`AppIntentSchemas.sqlite`, opened with `?immutable=1`).
+- **Both shapes are declared.**
+  - `associateAppEntity(_:priority:)` (iOS 18, macOS 15) attaches an entity to the app's own `CSSearchableItem`.
+  - `indexAppEntities(_:priority:)` donates entities instead.
+  - The `IndexedEntityQuery` documentation names an entity associated with a `CSSearchableItem` as a donation, reindexed through the app's `CSSearchableIndexDelegate`.
+- **Availability:** `IndexedEntity` is iOS 18 and macOS 15, and `IndexedEntityQuery` and `relatedAppEntityIdentifier` are 27.0.
+- **The schema domains that fit FRUS documents are 27.0's `.system.open` and `.system.searchInApp`.** `.reader`'s intents take files or search inside given documents, and its document entity carries a pixel width and height.
+
+**Measured: a throwaway spike, not committed.** "Spike Reader" (`bottsywattsy.A6Spike`, untracked in the worktree's `A6Spike/`) ran on an iPhone 17 simulator under iOS 27.0. It donated fictional FRUS-shaped documents five ways: plain as today, associated, associated later by update, with 27.0's related identifier, and by `indexAppEntities`. It offered Open, Search, Summarize and a stand-in for Add to Collection, and was driven by launch arguments and a UI-test target.
+- **It built under the 26.0 target with no warning.** `IndexedEntityQuery` was gated with `@available(iOS 27.0, *)`.
+  - The metadata processor halts on `.system.open` beside a classic `OpenIntent` ("OpenIntent targets should be unique").
+  - `.system.searchInApp` builds beside a classic search intent.
+  - Strict concurrency refuses `indexAppEntities` on an index an actor holds, since the method is `@concurrent`.
+- **What the association writes.** Six `kMDItemAppEntity` attributes (+572 archived bytes on a 767-character document). The item keeps its identifier and its volume domain, and a volume's domain delete removes it.
+  - An `isUpdate` item carrying only the association gave an already-donated item the same six attributes, and kept its text: a body-only word still matched.
+  - `indexAppEntities` keyed its items `SpikeDocumentEntity/<id>` under the domain `SpikeDocumentEntity`. The domain delete left them, and `deleteAppEntities(ofType:)` removed them and nothing else.
+- **In Shortcuts, the intents listed and Summarize ran without opening the app.** A parameterised phrase expanded into one tile per suggested document. Summarize resolved its document through the query, and the on-device model answered in about 3 s.
+- **In home-screen Spotlight, searched by full title, a suggested document appeared as a runnable Open or Summarize action**, and a tap ran the intent. No tap arrived as `CSSearchableItemActionType`. Without the parameterised phrases, no app content appeared for any of the five shapes, today's included.
+- **Siri, through `XCUISiriService`, never reached the app**, though `linkd` had donated the phrases: "Search Spike Reader" gave web results.
+- **Expiry.** A new item expires 31 days after it is made unless `expirationDate` is set, and `makeSearchableItem` sets none. An item given a 60-second expiry was still there 3 minutes later.
+- **A full library's re-donation, timed on a clone of A4's simulator** (iPhone 17e, iOS 27.0, index v69, the stamp set back to 3): the existing gated path resubmitted 318,104 items in at most 1 min 54 s from the pipeline's start, with `searchd` at 230 to 320% of a core meanwhile, and idle within seconds of the last batch.
+
+**The answer.** **`IndexedEntity` is additive**, so by decision 23 A7 would be in build 51. The memo cuts it in two lanes.
+- **A7a** is the document and collection entities, the four intents, the phrases, the reader's activity naming the document on screen, the Mac, the copy and the manuals. It re-donates nothing.
+- **A7b** is the association, with `expirationDate` and a `CSSearchableIndexDelegate`. It takes every library on a device through one pass at launch, by the shape bump 4 → 5 or an update pass without the text. Its place is the owner's after the device check.
+
+No CloudKit change and no index version. Not kit code.
+
+**The owner's decision, 2026-10-18 (decision 57), on reading the memo: "I would like to defer A7."** A7 is deferred past build 51, A7a and A7b alike, so build 51 is cut without App Intents and A8 follows A6. The memo's §5 stands as A7's plan (plan of record §6h).
+
+**The device check is the owner's step** (memo §4): Spike Reader installed on the owner's iPhone with Xcode's Run (never `devicectl … --remove-existing-content`).
+- Spotlight and Siri checks.
+- FRUS Explorer's own donation searched in Spotlight as the control.
+- The expiry probe read a day later.
+
+**Found** (plan §6g):
+- the donated items expire 31 days after donation, and whether Spotlight purges them is not measured;
+- the app answers none of Spotlight's requests to reindex;
+- the simulator's Spotlight listed none of the donated items.
+
+**An incident, repaired.** The re-donation timing first launched FRUS Explorer on a fresh clone of A4's simulator before installing on it. That is against `env_simulator_full_corpus_seeding`'s rule: straight after a clone, the app's container still resolves to the source device. So two launches ran against A4's container (`8BE32D39`).
+- `frus.db` and the preferences were untouched.
+- Twelve files changed: SQLite journals, `sync-diagnostics.json`, the saved scene state and caches.
+- All twelve were restored byte for byte from the clone's copy, taken before either launch.
+- The pinned iPhone 17e (`4E79C806`) was not touched.
+
+The timing was then run as the note prescribes: install first, which moved the cloned library into a container of the clone's own.
+
+**The plan of record.**
+- A5's lane 7 merged on 2026-10-18 as #1720 (`67a3a0b7`), and A5 is complete.
+- A6's entry, in review as #1722.
+- Decision 57: A7 deferred past build 51, its two lanes kept in a new §6h, and A8 following A6. §0's default on where build 51 is cut is settled, and §2's TestFlight line loses A7.
+- §2's rollup timing reads v12.
+- §4: the device check. §5: the result. §6g: the three findings.
+
+**Checked.**
+- The plan-of-record gate's two conditions, by a script that mirrors `planOfRecordMatchesTheVisualMarketingPlan`: one live plan, and the struck list matches.
+- `git diff --check` is clean.
+- No unit run: nothing compiled changes.
+
+**Not done.**
+- The device check, which no longer gates build 51.
+- The Mac, which was not tried.
+- The issue, drafted in the session notes (`a6-issue-draft.md`) and filed on the owner's word.
