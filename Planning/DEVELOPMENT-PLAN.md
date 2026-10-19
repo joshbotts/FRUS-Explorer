@@ -39119,7 +39119,7 @@ The timing was then run as the note prescribes: install first, which moved the c
 
 **The plan of record.**
 - A5's lane 7 merged on 2026-10-18 as #1720 (`67a3a0b7`), and A5 is complete.
-- A6's entry, in review.
+- A6's entry, in review as #1722.
 - Decision 57: A7 deferred past build 51, its two lanes kept in a new §6h, and A8 following A6. §0's default on where build 51 is cut is settled, and §2's TestFlight line loses A7.
 - §2's rollup timing reads v12.
 - §4: the device check. §5: the result. §6g: the three findings.
