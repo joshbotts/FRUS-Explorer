@@ -346,6 +346,7 @@ public enum CompilationRowKind: Hashable, Sendable {
     /// The terminal failure row: a localized headline, a readable sentence, and **Retry**.
     case errorRow
 
-    /// The document list, which renders "No documents in this section." for an empty array.
+    /// The document list, which renders "No documents in this section." for an empty array when the
+    /// section lists no subsections, and nothing under the subsections when it does (#1690).
     case documentRows
 }

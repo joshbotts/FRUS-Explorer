@@ -65,8 +65,9 @@ import SQLite3
 /// The branch mirrors `frus1945Malta`'s real shape, measured from the TEI: `comp3` (0 direct
 /// documents, 2 subsections) → `ch8` (0 direct documents, 7 subsections) → `ch11` (8 documents,
 /// 0 subsections). ``chapterTitle`` is the middle rung and holds **no documents of its own**, so
-/// a completed load renders "No documents in this section." there — the fingerprint that
-/// distinguishes a load that ran and found nothing from a load that never ran at all.
+/// a completed load there draws an empty document list, which since #1690 prints nothing under
+/// the chapter's list of sections. `BrowseNestedSectionTests` tells it from a load that never ran
+/// by the spinner's going, with no failure row or index banner in its place.
 ///
 /// The compilation keeps its three direct documents unchanged, so `CompilationDocumentsTests`
 /// and `TwoPaneDocumentTests` see exactly what they saw before. The nested titles are chosen so
@@ -106,8 +107,8 @@ enum UITestVolumeSeeder {
 
     /// The `<head>` of the chapter nested inside ``compilationTitle`` (#1301).
     ///
-    /// Holds **no documents of its own** — only ``subchapterTitle`` — so reaching it and seeing
-    /// "No documents in this section." proves a load completed here rather than never starting.
+    /// Holds **no documents of its own** — only ``subchapterTitle`` — so a completed load here is
+    /// an empty list, which prints nothing under the chapter's Sections list (#1690).
     static let chapterTitle = "UI Test Chapter"
 
     /// The `<head>` of the subchapter nested inside ``chapterTitle`` (#1301). This is the leaf

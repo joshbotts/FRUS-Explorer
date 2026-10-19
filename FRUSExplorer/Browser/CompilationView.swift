@@ -99,6 +99,8 @@ import SwiftUI
 ///          own shows that text's row first, under the title and above both lists
 ///          (`ownTextSection`). The row is the index's, kept by the view model with the section's
 ///          documents, so it appears when they do and not before the volume is indexed.
+///   2.6 — 2026-10-19 (#1690): `documentRows(docs:)` says "No documents in this section." only for
+///          a section that lists no subsections, as the Mac's Corpus Browser does
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -567,11 +569,17 @@ struct CompilationView: View {
     @ViewBuilder
     private func documentRows(docs: [DocumentBrowserEntry]) -> some View {
         if docs.isEmpty {
-            Section {
-                Text(String(localized: "browser.compilation.noDocs",
-                            defaultValue: "No documents in this section."))
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
+            // Not under a list of sections (#1690). A section whose documents are all in its
+            // subsections, as `frus1945Malta`'s *8. Minutes and related documents*'s are, printed
+            // the sentence directly beneath the list of the sections that hold them. The Mac's
+            // Corpus Browser prints it only for a section with no subsections either.
+            if section.subsections.isEmpty {
+                Section {
+                    Text(String(localized: "browser.compilation.noDocs",
+                                defaultValue: "No documents in this section."))
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                }
             }
         } else {
             Section(header: Text(docsHeader(count: docs.count))) {

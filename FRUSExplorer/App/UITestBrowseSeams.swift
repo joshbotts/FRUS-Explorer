@@ -176,8 +176,9 @@ enum UITestBrowseSeams {
     /// Real loads finish in milliseconds, which makes the in-flight row unobservable: by the time
     /// a UI test can assert anything the rows are up. That is why the mutation which drew the
     /// pre-load and in-flight states as the *document list* survived every suite — on screen it
-    /// shows "No documents in this section." for a section that has documents, and then corrects
-    /// itself. Held open for a few seconds, the lie is assertable.
+    /// shows an empty list for a section that has documents (nothing at all, since #1690, under a
+    /// section that lists sections), and then corrects itself. Held open for a few seconds, the
+    /// missing spinner is assertable.
     ///
     /// Sleeps AFTER `.loading` is recorded and before the query, which is exactly the window the
     /// spinner exists for.
