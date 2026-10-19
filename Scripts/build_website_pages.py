@@ -34,9 +34,10 @@ from pathlib import Path
 
 _REPO = Path(__file__).resolve().parent.parent
 
-# The mailbox decision 26 waits on. Every copy spells it this way until the owner names it, and
-# the HTML makes each one a mailto link.
-ADDRESS = "[ADDRESS]@frusexplorer.app"
+# The two mailboxes the owner named on 2026-10-18 (plan of record decision 26): help@ for the
+# Support page and the policy's questions, feedback@ for Semantic Match Feedback's file, which the
+# app's mail draft addresses (`SemanticFeedbackMail.address`). The HTML makes each a mailto link.
+ADDRESSES = ("help@frusexplorer.app", "feedback@frusexplorer.app")
 
 PAGES = [
     dict(source="Docs/Privacy-Policy.md", target="Docs/Website/privacy.html",
@@ -61,8 +62,6 @@ TEMPLATE = """<!DOCTYPE html>
   To publish on the Squarespace site, paste everything between <main> and </main> into a Code
   Block on a page whose URL slug is {slug}; the site's own type and colours then apply, and the
   <style> below, which is only for viewing this file on its own, is left behind.
-
-  Before publishing, replace every [ADDRESS] with the mailbox's name (plan of record decision 26).
 -->
 <html lang="en">
 <head>
@@ -118,7 +117,9 @@ def inline(text):
     out = re.sub(r"(?<![\w*])\*([^*]+)\*(?![\w*])", r"<em>\1</em>", out)
     out = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', out)
     out = re.sub(r"&lt;(https?://[^&]+)&gt;", r'<a href="\1">\1</a>', out)
-    return out.replace(ADDRESS, '<a href="mailto:{0}">{0}</a>'.format(ADDRESS))
+    for address in ADDRESSES:
+        out = out.replace(address, '<a href="mailto:{0}">{0}</a>'.format(address))
+    return out
 
 
 def body(markdown):

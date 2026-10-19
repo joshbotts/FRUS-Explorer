@@ -13,6 +13,11 @@
 // limitations under the License.
 
 import SwiftUI
+#if os(iOS)
+import MessageUI
+#elseif os(macOS)
+import AppKit
+#endif
 
 /// Settings screen for the experimental semantic axis: what it is, what is unknown about it, what the
 /// tester has said so far, and how to send it back.
@@ -25,12 +30,19 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — V-3 follow-up: initial implementation
+///   1.1 — 2026-10-18 (#1545, plan of record decision 26): **Email Feedback File** writes a mail draft
+///         to ``SemanticFeedbackMail/address`` with the file attached, beside Share Feedback File
 struct SemanticFeedbackView: View {
 
     /// Verdict totals, loaded on appear.
     @State private var summary: (total: Int, helpful: Int, byEra: [(era: String, count: Int)])?
     /// The export file, written on demand.
     @State private var exportURL: URL?
+    #if os(iOS)
+    /// The file Mail's compose sheet is attaching while it shows; the sheet carries it as its item,
+    /// so it never reads a sibling state that has moved on.
+    @State private var mailAttachment: URL?
+    #endif
     /// Whether the clear-confirmation is showing.
     @State private var isConfirmingClear = false
 
@@ -98,17 +110,29 @@ struct SemanticFeedbackView: View {
                             defaultValue: "Recorded on this device"))
             } footer: {
                 Text(String(
-                    localized: "settings.semanticFeedback.privacy",
+                    localized: "settings.semanticFeedback.privacy.v2",
                     defaultValue: """
                         Stored on-device and not synced to iCloud. Each verdict records the two \
                         documents, your judgement, the match score, which release of the vectors it \
                         applies to, and when you gave it. The app sends none of it: to share your \
-                        verdicts, choose Prepare Feedback File, then Share Feedback File.
+                        verdicts, choose Prepare Feedback File, then send the file to \
+                        \(SemanticFeedbackMail.address). Where this device can send mail, Email \
+                        Feedback File writes that message with the file attached; Share Feedback \
+                        File sends the file any other way.
                         """))
             }
 
             Section {
                 if let exportURL {
+                    if SemanticFeedbackMail.canCompose(attaching: exportURL) {
+                        Button {
+                            composeMail(attaching: exportURL)
+                        } label: {
+                            Label(String(localized: "settings.semanticFeedback.email",
+                                         defaultValue: "Email Feedback File"),
+                                  systemImage: "envelope")
+                        }
+                    }
                     ShareLink(item: exportURL) {
                         Label(String(localized: "settings.semanticFeedback.share",
                                      defaultValue: "Share Feedback File"),
@@ -153,6 +177,14 @@ struct SemanticFeedbackView: View {
             }
             Button(String(localized: "common.cancel", defaultValue: "Cancel"), role: .cancel) {}
         }
+        #if os(iOS)
+        .sheet(item: $mailAttachment) { url in
+            SemanticFeedbackMailComposer(draft: .current, attachmentURL: url) {
+                mailAttachment = nil
+            }
+            .ignoresSafeArea()
+        }
+        #endif
     }
 
     /// Loads the totals.
@@ -160,11 +192,23 @@ struct SemanticFeedbackView: View {
         summary = await SemanticFeedbackLog.shared.summary()
     }
 
-    /// Writes the export file to a temporary location for `ShareLink`.
+    /// Opens the mail draft for the prepared file: Mail's compose sheet on iPhone and iPad, and a new
+    /// message in the default mail app on the Mac. The reader sends it, or does not.
+    ///
+    /// - Parameter url: The file Prepare Feedback File wrote.
+    private func composeMail(attaching url: URL) {
+        #if os(iOS)
+        mailAttachment = url
+        #elseif os(macOS)
+        SemanticFeedbackMail.current.compose(attaching: url)
+        #endif
+    }
+
+    /// Writes the export file to a temporary location for `ShareLink` and the mail draft.
     private func prepareExport() async {
         guard let data = await SemanticFeedbackLog.shared.exportData() else { return }
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("frus-semantic-feedback.json")
+            .appendingPathComponent(SemanticFeedbackMail.fileName)
         guard (try? data.write(to: url, options: .atomic)) != nil else { return }
         exportURL = url
     }
@@ -185,3 +229,136 @@ struct SemanticFeedbackView: View {
         return era.label
     }
 }
+
+// MARK: - The mail draft (#1545)
+
+/// The message Semantic Match Feedback offers to write (#1545, plan of record decision 26): the
+/// feedback file attached and ``address`` filled in, sent by the reader from their own mail app.
+///
+/// The app still sends nothing. The draft opens in Mail, where the reader can read it, change it or
+/// throw it away, and Share Feedback File stays beside it for every other way. The address is this
+/// one constant: the footer names it from here, and both platforms' drafts address it from here.
+struct SemanticFeedbackMail: Equatable, Sendable {
+
+    /// Where the verdicts go, the address the owner named on 2026-10-18.
+    static let address = "feedback@frusexplorer.app"
+
+    /// The attachment's name, the one Prepare Feedback File writes.
+    static let fileName = "frus-semantic-feedback.json"
+
+    /// The attachment's type.
+    static let mimeType = "application/json"
+
+    /// The draft's To: line, ``address`` alone.
+    let recipients: [String]
+    /// The draft's subject.
+    let subject: String
+    /// The draft's body: which build wrote the file.
+    let body: String
+
+    /// A draft naming the build that wrote the file.
+    ///
+    /// - Parameter version: The app's version and build, as About writes them (`1.0 (1861)`).
+    init(version: String) {
+        recipients = [Self.address]
+        subject = String(localized: "settings.semanticFeedback.mail.subject",
+                         defaultValue: "FRUS Explorer Semantic Match Feedback")
+        body = String(localized: "settings.semanticFeedback.mail.body",
+                      defaultValue: "My Semantic Match Feedback verdicts from FRUS Explorer \(version) are attached.")
+    }
+
+    /// The draft for the running build.
+    static var current: SemanticFeedbackMail {
+        SemanticFeedbackMail(version: "\(SyncDiagnosticsLog.appVersion) (\(SyncDiagnosticsLog.appBuild))")
+    }
+}
+
+#if os(iOS)
+extension SemanticFeedbackMail {
+
+    /// Whether this device can write the draft: Mail must have an account. Where it cannot, the
+    /// screen offers Share Feedback File alone, and its footer still names ``address``.
+    ///
+    /// - Parameter url: The prepared file (unused on iPhone and iPad, where Mail decides alone).
+    /// - Returns: `true` when Mail's compose sheet can open.
+    @MainActor
+    static func canCompose(attaching url: URL) -> Bool {
+        MFMailComposeViewController.canSendMail()
+    }
+}
+
+/// Mail's compose sheet holding a ``SemanticFeedbackMail`` draft with the feedback file attached.
+struct SemanticFeedbackMailComposer: UIViewControllerRepresentable {
+
+    /// The message to write.
+    let draft: SemanticFeedbackMail
+    /// The file Prepare Feedback File wrote.
+    let attachmentURL: URL
+    /// Ends the sheet once Mail is done with the draft: sent, saved, cancelled or failed.
+    let onFinish: @MainActor () -> Void
+
+    /// The delegate that hears Mail finish.
+    func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
+
+    /// Builds the compose sheet with the address, subject, body and attachment filled in.
+    func makeUIViewController(context: Context) -> MFMailComposeViewController {
+        let controller = MFMailComposeViewController()
+        controller.mailComposeDelegate = context.coordinator
+        controller.setToRecipients(draft.recipients)
+        controller.setSubject(draft.subject)
+        controller.setMessageBody(draft.body, isHTML: false)
+        if let data = try? Data(contentsOf: attachmentURL) {
+            controller.addAttachmentData(data, mimeType: SemanticFeedbackMail.mimeType,
+                                         fileName: SemanticFeedbackMail.fileName)
+        }
+        return controller
+    }
+
+    /// Nothing to update: the draft is written once, when the sheet opens.
+    func updateUIViewController(_ controller: MFMailComposeViewController, context: Context) {}
+
+    /// Hears Mail finish with the draft and ends the sheet.
+    ///
+    /// `MFMailComposeViewControllerDelegate` carries no actor, so the callback is nonisolated here;
+    /// Mail calls it on the main thread, which `assumeIsolated` states.
+    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate, @unchecked Sendable {
+
+        /// Ends the sheet.
+        let onFinish: @MainActor () -> Void
+
+        /// - Parameter onFinish: Ends the sheet.
+        init(onFinish: @escaping @MainActor () -> Void) {
+            self.onFinish = onFinish
+        }
+
+        /// Mail is done with the draft, however it ended.
+        func mailComposeController(_ controller: MFMailComposeViewController,
+                                   didFinishWith result: MFMailComposeResult, error: (any Error)?) {
+            MainActor.assumeIsolated { onFinish() }
+        }
+    }
+}
+#elseif os(macOS)
+extension SemanticFeedbackMail {
+
+    /// Whether this Mac's default mail app can take the draft.
+    ///
+    /// - Parameter url: The prepared file.
+    /// - Returns: `true` when the compose-email sharing service can perform with the file.
+    @MainActor
+    static func canCompose(attaching url: URL) -> Bool {
+        NSSharingService(named: .composeEmail)?.canPerform(withItems: [url]) ?? false
+    }
+
+    /// Opens a new message in the default mail app with the address, subject, body and file.
+    ///
+    /// - Parameter url: The prepared file.
+    @MainActor
+    func compose(attaching url: URL) {
+        guard let service = NSSharingService(named: .composeEmail) else { return }
+        service.recipients = recipients
+        service.subject = subject
+        service.perform(withItems: [body, url])
+    }
+}
+#endif

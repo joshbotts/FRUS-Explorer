@@ -1739,42 +1739,62 @@ before build 44 but never carried here. The `unknown` block is the honest center
 the axis is unmeasured exactly where it is meant to help most — and any edit that softens that
 admission is a defect. Short chrome not carried: `settings.semanticFeedback.about.header`,
 `.how.header`, `.recorded.header`, `.total`, `.helpful`, `.share`, `.export`, `.clear`,
-`.clear.confirm`, `.clear.confirmAction`, `.era.unknown`.*
+`.clear.confirm`, `.clear.confirmAction`, `.era.unknown`, and since #1545 `.email` (**Email Feedback File**).*
 
 #### Window title
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 138–139 | key: settings.semanticFeedback.title -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 162–163 | key: settings.semanticFeedback.title -->
 
 Semantic Match Feedback
 
 <!-- END SOURCE: settings.semanticFeedback.title -->
 
 #### What the axis is
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 41–49 | key: settings.semanticFeedback.what -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 53–61 | key: settings.semanticFeedback.what -->
 
 The “Semantically similar (experimental)” axis in Related Documents finds documents by an AI model’s scoring of the meaning of their language rather than by citations or archival provenance. It contributes to every Related Documents list unless you lower its weight there. It is still experimental: how well it works on nineteenth-century material is not established, which is what the verdicts below are for.
 
 <!-- END SOURCE: settings.semanticFeedback.what -->
 
 #### What is not known
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 51–58 | key: settings.semanticFeedback.unknown -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 63–70 | key: settings.semanticFeedback.unknown -->
 
 What we do not know is how good it is before 1900. The automatic check we can run relies on the editors’ cross-references, and that citation style only becomes common after 1945 — so it reaches barely 500 early documents out of the whole corpus. Nineteenth-century volumes are exactly where this axis is meant to help most, and exactly where nothing has measured it.
 
 <!-- END SOURCE: settings.semanticFeedback.unknown -->
 
 #### How to give feedback
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 67–72 | key: settings.semanticFeedback.how -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 79–84 | key: settings.semanticFeedback.how -->
 
 Long-press (or right-click) any related document that shows the magnifier icon, then choose whether the match was helpful. Nineteenth-century verdicts are worth the most.
 
 <!-- END SOURCE: settings.semanticFeedback.how -->
 
 #### The privacy footer
-<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 101–107 | key: settings.semanticFeedback.privacy -->
+*Re-keyed from `settings.semanticFeedback.privacy` for #1545 (2026-10-18): it names where the file goes. `\(SemanticFeedbackMail.address)` is feedback@frusexplorer.app, the one constant the draft is addressed from.*
 
-Stored on-device and not synced to iCloud. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you gave it. The app sends none of it: to share your verdicts, choose Prepare Feedback File, then Share Feedback File.
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 113–121 | key: settings.semanticFeedback.privacy.v2 -->
 
-<!-- END SOURCE: settings.semanticFeedback.privacy -->
+Stored on-device and not synced to iCloud. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you gave it. The app sends none of it: to share your verdicts, choose Prepare Feedback File, then send the file to \(SemanticFeedbackMail.address). Where this device can send mail, Email Feedback File writes that message with the file attached; Share Feedback File sends the file any other way.
+
+<!-- END SOURCE: settings.semanticFeedback.privacy.v2 -->
+
+#### The mail draft's subject
+*Added for #1545 (2026-10-18). Email Feedback File opens Mail with this subject, the file attached and feedback@frusexplorer.app filled in; the reader sends it, changes it or throws it away.*
+
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 264–265 | key: settings.semanticFeedback.mail.subject -->
+
+FRUS Explorer Semantic Match Feedback
+
+<!-- END SOURCE: settings.semanticFeedback.mail.subject -->
+
+#### The mail draft's body
+*Added for #1545 (2026-10-18). `\(version)` is the app's version and build, as About writes them: 1.0 (1861).*
+
+<!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 266–267 | key: settings.semanticFeedback.mail.body -->
+
+My Semantic Match Feedback verdicts from FRUS Explorer \(version) are attached.
+
+<!-- END SOURCE: settings.semanticFeedback.mail.body -->
 
 ---
 
