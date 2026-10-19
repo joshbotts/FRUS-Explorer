@@ -22,7 +22,8 @@
 - **Found on the way: the simulator's Spotlight never listed a donated item as such.** None of the five donation shapes appeared in home-screen Spotlight, today's shape included, even searched by full title. Every app result it showed was an App Shortcut. The privacy policy says the donation is "so that system search can find them"; that is to be seen on a device (§4, §6).
 - **Found on the way: the donated items expire.** A new `CSSearchableItem` expires 31 days after it is made unless `expirationDate` is set, and the app sets none. Whether and when Spotlight purges an expired item is not measured: one given a 60-second expiry was still there 3 minutes later (§2.6, §6).
 - **A7 needs no CloudKit change and no index version.** It adds no `@Model` and no stored property, and changes nothing indexing stores. Only the association would move the Spotlight shape stamp (`currentSpotlightSchemaVersion`, a defaults key, not an index version); the entity and the intents do not.
-- **Where A7 goes: build 51.** Decision 23 puts it there because `IndexedEntity` is additive. One part of A7 would re-donate every library on upgrade: associating the entity with the items a library already holds. That part is separable, and it is the owner's call after the device check (§5).
+- **Where A7 goes: decision 23 put it in build 51**, because `IndexedEntity` is additive. One part of A7 would re-donate every library on upgrade: associating the entity with the items a library already holds. That part is separable, and its place would turn on the device check (§5).
+- **The owner's decision, 2026-10-18 (decision 57): A7 is deferred past build 51.** Build 51 is cut without App Intents, and this memo stands as A7's plan (§5).
 
 ## 2. What the spike measured
 
@@ -240,10 +241,17 @@ No declaration settles whether Siri surfaces an associated document, and the sim
 
   Either is a pass over every document of every library, and it is exactly what decision 23 kept out of build 51 had the answer been "replacing".
 
-**Where A7 goes (decision 23).** `IndexedEntity` is additive, so A7 is in build 51 and the build is cut after it.
+**Where A7 goes (decision 23).** `IndexedEntity` is additive, so by decision 23 A7 would be in build 51, with the build cut after it.
 - **The recommendation:** A7a in build 51, since it re-donates nothing, and A7b's place to be the owner's after the device check.
 - **If the phone shows that Siri surfaces associated documents and plain ones not,** A7b is what gives Siri the corpus. Its pass is then the decision 23 trade in small: build 51 with a once-per-library pass at launch, timed in §2.7, or build 52.
 - **If the phone shows Siri surfaces neither,** A7b waits. Only its expiry fix and its delegate are left, and those turn on §6's first finding, not on App Intents.
+
+**The owner's decision, 2026-10-18** (decision 57), on reading this memo: "I would like to defer A7."
+- **A7 is deferred past build 51**, A7a and A7b alike. Build 51 is cut without App Intents, and A8 follows A6.
+- **This section stands as A7's plan.** The plan of record keeps it in §6h.
+- **The device check no longer gates the build.** It still answers §6's questions about the donation that ships.
+- **The issue (§8) is filed on the owner's word.**
+- **When A7 is taken up,** the SDK's facts are worth reading again on whatever Xcode is current then.
 
 ## 6. Found on the way
 

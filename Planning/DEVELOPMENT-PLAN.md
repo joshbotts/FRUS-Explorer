@@ -39091,11 +39091,13 @@ Lane 4's ranking of the 1,000 held rows took 3 to 4 ms, and of 7,500 14 to 16 ms
 - **Expiry.** A new item expires 31 days after it is made unless `expirationDate` is set, and `makeSearchableItem` sets none. An item given a 60-second expiry was still there 3 minutes later.
 - **A full library's re-donation, timed on a clone of A4's simulator** (iPhone 17e, iOS 27.0, index v69, the stamp set back to 3): the existing gated path resubmitted 318,104 items in at most 1 min 54 s from the pipeline's start, with `searchd` at 230 to 320% of a core meanwhile, and idle within seconds of the last batch.
 
-**The answer.** **`IndexedEntity` is additive**, so by decision 23 A7 is in build 51. The memo cuts it in two lanes.
+**The answer.** **`IndexedEntity` is additive**, so by decision 23 A7 would be in build 51. The memo cuts it in two lanes.
 - **A7a** is the document and collection entities, the four intents, the phrases, the reader's activity naming the document on screen, the Mac, the copy and the manuals. It re-donates nothing.
 - **A7b** is the association, with `expirationDate` and a `CSSearchableIndexDelegate`. It takes every library on a device through one pass at launch, by the shape bump 4 → 5 or an update pass without the text. Its place is the owner's after the device check.
 
 No CloudKit change and no index version. Not kit code.
+
+**The owner's decision, 2026-10-18 (decision 57), on reading the memo: "I would like to defer A7."** A7 is deferred past build 51, A7a and A7b alike, so build 51 is cut without App Intents and A8 follows A6. The memo's §5 stands as A7's plan (plan of record §6h).
 
 **The device check is the owner's step** (memo §4): Spike Reader installed on the owner's iPhone with Xcode's Run (never `devicectl … --remove-existing-content`).
 - Spotlight and Siri checks.
@@ -39118,7 +39120,7 @@ The timing was then run as the note prescribes: install first, which moved the c
 **The plan of record.**
 - A5's lane 7 merged on 2026-10-18 as #1720 (`67a3a0b7`), and A5 is complete.
 - A6's entry, in review.
-- A7 in build 51 with its two lanes.
+- Decision 57: A7 deferred past build 51, its two lanes kept in a new §6h, and A8 following A6. §0's default on where build 51 is cut is settled, and §2's TestFlight line loses A7.
 - §2's rollup timing reads v12.
 - §4: the device check. §5: the result. §6g: the three findings.
 
@@ -39128,6 +39130,6 @@ The timing was then run as the note prescribes: install first, which moved the c
 - No unit run: nothing compiled changes.
 
 **Not done.**
-- The device check.
+- The device check, which no longer gates build 51.
 - The Mac, which was not tried.
 - The issue, drafted in the session notes (`a6-issue-draft.md`) and filed on the owner's word.
