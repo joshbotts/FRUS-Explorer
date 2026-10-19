@@ -315,8 +315,8 @@ targets:
         PRODUCT_MODULE_NAME: FRUSExplorer
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
         TARGETED_DEVICE_FAMILY: "1,2"
-        CURRENT_PROJECT_VERSION: 50
-        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: 1861
+        MARKETING_VERSION: "1.0"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-iOS.entitlements"
 
@@ -476,8 +476,8 @@ targets:
       base:
         PRODUCT_NAME: "FRUS Explorer"
         PRODUCT_BUNDLE_IDENTIFIER: "bottsywattsy.FRUS-Explorer"
-        CURRENT_PROJECT_VERSION: 50
-        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: 1861
+        MARKETING_VERSION: "1.0"
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: "FRUSExplorer/FRUSExplorer-AppStore.entitlements"
       configs:
@@ -534,8 +534,8 @@ targets:
         # and CLAUDE.md's build-number bump procedure) — App Store validation
         # rejects extensions whose CFBundleShortVersionString/CFBundleVersion
         # don't match their containing app's.
-        CURRENT_PROJECT_VERSION: 50
-        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: 1861
+        MARKETING_VERSION: "1.0"
 
   # -------------------------------------------------------------------------
   # Unit Tests

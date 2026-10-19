@@ -12,7 +12,7 @@ offline once volumes are downloaded.
 
 It is an independent project, developed with [Claude Code](https://claude.ai/code), and is **not**
 an official product of the Office of the Historian or the U.S. Department of State. Current build:
-**50** (version 0.2).
+**1861** (version 1.0).
 
 ## Screenshots
 

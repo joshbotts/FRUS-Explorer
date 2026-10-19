@@ -22,7 +22,7 @@ The app links to both from **Settings → System → About**. Its **FRUS Researc
 
 ## Contact
 
-Email **[ADDRESS]@frusexplorer.app**. It helps to include:
+Email **help@frusexplorer.app**. It helps to include:
 
 - your device and its system version;
 - the app's version and build, from **Settings → System → About** (for example, *Version 1.0 (1861)*);

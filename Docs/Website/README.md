@@ -29,22 +29,25 @@ pastes the new HTML into the site, and the two copies are in step again only the
 ## Publishing on frusexplorer.app
 
 The domain is a Squarespace site (it answered `server: Squarespace` on 2026-10-15, as a private
-site behind a password). For each page:
+site behind a password). The pages' addresses are in place, named by the owner on 2026-10-18
+(decision 26): **help@frusexplorer.app** on the Support page and for the policy's questions, and
+**feedback@frusexplorer.app** for Semantic Match Feedback's file, which the app's own mail draft
+addresses (`SemanticFeedbackMail.address`). A change to either is made in the Markdown, in the
+script's `ADDRESSES` and, for feedback@, in that constant. For each page:
 
-1. Replace every `[ADDRESS]` with the mailbox the owner names (decision 26), in the Markdown,
-   then run the script.
-2. Make a page whose URL slug is `privacy` (or `support`), add a Code Block, and paste everything
+1. Make a page whose URL slug is `privacy` (or `support`), add a Code Block, and paste everything
    between `<main>` and `</main>` of the HTML file. The site's own type and colours apply; the
    file's `<style>` is only for viewing it on its own.
-3. Make the site public before the submission. App Review opens both URLs, and on 2026-10-15
+2. Make the site public before the submission. App Review opens both URLs, and on 2026-10-15
    both answered 401. `https://frusexplorer.app/privacy` redirects to `www.`, keeping the path.
 
 ## What each factual sentence rests on
 
 Read at `v2` @ `470f818c` on 2026-10-15. A change to anything in the right-hand column owes the
-policy an edit. In particular: **A3b's mail draft for Semantic Match Feedback** (decision 26)
-needs no edit, since the policy already names email as one way to share the file; **a new
-network request, a new `@Model`, or a new kind of record** does.
+policy an edit. In particular: **the mail draft for Semantic Match Feedback** (decision 26,
+built on 2026-10-18 for build 51) needed no edit beyond its address, since the policy already named
+email as one way to share the file; **a new network request, a new `@Model`, or a new kind of
+record** does.
 
 ### The policy
 
@@ -58,7 +61,8 @@ network request, a new `@Model`, or a new kind of record** does.
 | A question typed into a search by meaning does not leave the device | The encoder runs in `Vendor/llama.xcframework` on the device; `settings.model.download.detail`: "Runs on this device only; nothing you search leaves it." |
 | Summaries come from Apple Intelligence's on-device model | `Summarization/AppleIntelligenceProvider.swift` (`FoundationModels`, `SystemLanguageModel.default`); both manuals §13 ("no document text leaves your device") |
 | Diagnostic records stay unless copied or exported | `Settings/SyncDiagnosticsView.swift` (`settings.syncDiag.footer`: event types, timing and error codes; Copy and Export…); `DataRecoveryView` (`Copy Report`, `Copy Language Analysis Record`); `IndexHealthView` (`Copy Research-State Record`). None is sent by the app |
-| Semantic Match Feedback is on the device, not synced, sent only by the reader, and what each verdict holds | `Semantic/SemanticFeedbackLog.swift` (`SemanticFeedbackEntry`); `Settings/SemanticFeedbackView.swift` (`settings.semanticFeedback.privacy`) |
+| Semantic Match Feedback is on the device, not synced, sent only by the reader, and what each verdict holds | `Semantic/SemanticFeedbackLog.swift` (`SemanticFeedbackEntry`); `Settings/SemanticFeedbackView.swift` (`settings.semanticFeedback.privacy.v2`) |
+| The file goes by email to feedback@frusexplorer.app only when the reader sends it | `Settings/SemanticFeedbackView.swift` (`SemanticFeedbackMail.address`; **Email Feedback File** writes a draft the reader sends from their own mail app: `MFMailComposeViewController` on iPhone and iPad, `NSSharingService(named: .composeEmail)` on the Mac), beside **Share Feedback File** |
 | Spotlight index on the device | `Search/IndexingPipeline+App.swift` (`CSSearchableIndex.default().indexSearchableItems`) |
 | Handoff names the document, or the map's volumes and scope | `DocumentView.swift` and `MacDocumentView.swift` (`userInfo` = volume and document ids); `Semantic/Map/SemanticMapSpikeView.swift` (`SemanticMapRequest`: volume ids, scope label, lens, axis poles) |
 | iCloud: the private database; local-only without iCloud | `ModelContainer+FRUS.swift` (`cloudKitDatabase: .private("iCloud.bottsywattsy.FRUS-Explorer")`, and `makeLocalContainer()` when CloudKit cannot start) |

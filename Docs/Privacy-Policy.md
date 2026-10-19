@@ -64,7 +64,7 @@ Links in About and the FRUS Research Guide open in a built-in browser inside the
 
 ## Sending feedback
 
-**Semantic Match Feedback** (**Settings → System → Data & Recovery**) keeps the verdicts you give Related Documents' experimental semantic matches. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you gave it. The app sends none of it on its own. If you choose to share the file, by email to [ADDRESS]@frusexplorer.app or any other way your device offers, it goes where you send it.
+**Semantic Match Feedback** (**Settings → System → Data & Recovery**) keeps the verdicts you give Related Documents' experimental semantic matches. Each verdict records the two documents, your judgement, the match score, which release of the vectors it applies to, and when you gave it. The app sends none of it on its own. If you choose to share the file, by email to feedback@frusexplorer.app or any other way your device offers, it goes where you send it.
 
 If you write to the developer, with a question, a bug report or the feedback file, the developer receives your message, your email address and anything you attach, and uses them only to answer you and to improve the app. They are not sold or shared, and you can ask for them to be deleted.
 
@@ -89,4 +89,4 @@ When the app's handling of data changes, this page changes with it, and the date
 
 ## Contact
 
-Questions about this policy: [ADDRESS]@frusexplorer.app. For help with the app, see [FRUS Explorer Support](https://frusexplorer.app/support).
+Questions about this policy: help@frusexplorer.app. For help with the app, see [FRUS Explorer Support](https://frusexplorer.app/support).
