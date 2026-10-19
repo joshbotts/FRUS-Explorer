@@ -557,7 +557,7 @@ final class StubVolumeListing: URLProtocol, @unchecked Sendable {
         Self.requests += 1
         let scenario = Self.scenario
         Self.lock.unlock()
-        let respond = { [self] in
+        let respond: @Sendable () -> Void = { [self] in
             let response = HTTPURLResponse(url: request.url!, statusCode: scenario.status,
                                            httpVersion: nil, headerFields: scenario.headers)!
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
