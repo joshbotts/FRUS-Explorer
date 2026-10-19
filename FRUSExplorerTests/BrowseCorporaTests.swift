@@ -108,6 +108,57 @@ struct BrowseCorporaTests {
         #expect(CorporaAxis.truncationLine(.unrecorded, documentCount: 100) != nil)
     }
 
+    /// #1688's first line: a corpus saved from a Meaning list read "The capture stopped short of every match", in
+    /// amber, the words written for a keyword fetch.
+    @Test func aMeaningCaptureNamesItsSetQuietly() {
+        #expect(CorporaAxis.truncationLine(.truncated(total: nil), documentCount: 100, isMeaningCapture: true)
+                == "The 100 closest matches of a Meaning search")
+        #expect(CorporaAxis.truncationLine(.truncated(total: nil), documentCount: 1, isMeaningCapture: true)
+                == "The closest match of a Meaning search")
+        #expect(CorporaAxis.truncationLine(.truncated(total: nil), documentCount: 1_204, isMeaningCapture: true)?
+                    .contains(1_204.formatted()) == true, "the count is grouped")
+        // A keyword capture cut short keeps its line, and a complete or unrecorded one is not a Meaning search's.
+        #expect(CorporaAxis.truncationLine(.truncated(total: nil), documentCount: 100)
+                == "The capture stopped short of every match")
+        #expect(CorporaAxis.truncationLine(.complete, documentCount: 100, isMeaningCapture: true) == nil)
+        #expect(CorporaAxis.truncationLine(.unrecorded, documentCount: 100, isMeaningCapture: true)
+                == "Capture completeness not recorded")
+        // Amber for a capture cut short of its match, quiet for a ranking's and for an unrecorded one.
+        #expect(!CorporaAxis.drawsTruncationLineInAmber(.truncated(total: nil), isMeaningCapture: true))
+        #expect(CorporaAxis.drawsTruncationLineInAmber(.truncated(total: nil), isMeaningCapture: false))
+        #expect(CorporaAxis.drawsTruncationLineInAmber(.truncated(total: 9212), isMeaningCapture: false))
+        #expect(!CorporaAxis.drawsTruncationLineInAmber(.unrecorded, isMeaningCapture: false))
+        #expect(!CorporaAxis.drawsTruncationLineInAmber(.complete, isMeaningCapture: false))
+    }
+
+    /// The corpus the Save Working Corpus sheet writes for a Meaning list, read back the way the corpus lists read it:
+    /// the sheet's stored sentence is what says the set was a Meaning search's (#1688).
+    ///
+    /// The sheet's `save()` is a view's private method, so the corpus is built here with the arguments it passes;
+    /// `SearchResultRouteTests.captureStoresTheScopesAnswer` pins the sheet to those two scope members.
+    @Test func theSheetsMeaningCorpusReadsAsOne() {
+        let scope = ResultSetScope(loaded: 100, shown: 100, fetchLimit: 100, totalMatchCount: nil,
+                                   documentsOnPage: 25, pageCount: 4, route: .meaning)
+        let corpus = WorkingCorpus(name: "Containment", documentKeys: (0..<100).map { "v/d\($0)" },
+                                   sourceQuery: "how was containment meant to work",
+                                   sourceDescription: scope.captureProvenanceDescription,
+                                   wasTruncatedAtCapture: scope.isCapturePartial,
+                                   totalMatchCountAtCapture: scope.totalMatchCount)
+        #expect(corpus.isMeaningCapture)
+        #expect(CorporaAxis.truncationLine(corpus.truncationAtCapture, documentCount: corpus.documentCount,
+                                           isMeaningCapture: corpus.isMeaningCapture)
+                == "The 100 closest matches of a Meaning search")
+        // A keyword capture cut at its ceiling, through the same sheet, keeps the amber line.
+        let keyword = ResultSetScope(loaded: 1_000, shown: 1_000, fetchLimit: 1_000, totalMatchCount: nil,
+                                     documentsOnPage: 25, pageCount: 40)
+        let cut = WorkingCorpus(name: "Cut", documentKeys: ["v/d1"],
+                                sourceDescription: keyword.captureProvenanceDescription,
+                                wasTruncatedAtCapture: keyword.isCapturePartial,
+                                totalMatchCountAtCapture: keyword.totalMatchCount)
+        #expect(!cut.isMeaningCapture)
+        #expect(CorporaAxis.drawsTruncationLineInAmber(cut.truncationAtCapture, isMeaningCapture: cut.isMeaningCapture))
+    }
+
     // MARK: Captions
 
     @Test func rowCaptionPrefersSourceDescriptionOverQuery() {

@@ -2668,6 +2668,16 @@ Ask a question to rank the %@ you are searching within by meaning. *(%@ is the s
 
 <!-- END SOURCE: search.prompt.meaning.withinSet %@ -->
 
+#### Enter keywords to search the %@ you are searching within.
+<!-- #1688 (2026-10-19), decision 66: the pre-search prompt in Keywords mode while a working corpus or a
+     project's History scope is applied, where it read "Enter keywords to search the FRUS corpus." (or
+     "…within the selected volumes."). iPhone and iPad only; the Mac window has no pre-search prompt. -->
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchMode.documentSetPrompt | key: search.prompt.withinSet %@ -->
+
+Enter keywords to search the %@ you are searching within. *(%@ is the set's size with its noun, “1 document” or “212 documents”.)*
+
+<!-- END SOURCE: search.prompt.withinSet %@ -->
+
 #### %1$@ in %2$@ could not be scored…
 <!-- #1527 (2026-09-30): two texts, your option (a), by the same rule as the empty state's pair
      above. In each, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
@@ -2801,6 +2811,26 @@ A working corpus is a fixed set of documents captured from a result set — use 
 A corpus is captured from a result set — in Search results or with the semantic map’s lasso — and syncs via iCloud. There is nothing to create here.
 
 <!-- END SOURCE: browser.corpora.footer -->
+
+#### Corpus row — The %@ closest matches of a Meaning search
+<!-- #1688 (2026-10-19), decision 65: the line under a working corpus saved from a Meaning search, in Browse's
+     corpus list and Project Home's corpus tiles, and in the method appendix after the corpus's name, where it read
+     "The capture stopped short of every match" in amber. Drawn in grey, as the line for a corpus whose
+     completeness was not recorded is. -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaAxis.truncationLine | key: browser.corpora.meaning %@ -->
+
+The %@ closest matches of a Meaning search *(%@ is the corpus's own document count.)*
+
+<!-- END SOURCE: browser.corpora.meaning %@ -->
+
+#### Corpus row — The closest match of a Meaning search
+<!-- SOURCE: FRUSExplorer/Browser/CorpusBrowseView.swift | CorporaAxis.truncationLine | key: browser.corpora.meaning.one -->
+
+*The same, for a corpus of one document.*
+
+The closest match of a Meaning search
+
+<!-- END SOURCE: browser.corpora.meaning.one -->
 
 #### Tooltip — Browse an alphabetical index of all people mentioned across…
 <!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 319–320 | key: browser.corpus.people.help -->

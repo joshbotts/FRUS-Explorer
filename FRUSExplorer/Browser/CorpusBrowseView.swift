@@ -88,12 +88,28 @@ enum CorporaAxis {
 
     /// The truncation disclosure line, or `nil` when the capture was complete.
     ///
-    /// - Parameter truncation: The corpus's `truncationAtCapture`.
+    /// A Meaning search's capture is recorded as cut short with no total (`ResultSetScope.isCapturePartial`), the
+    /// value every reader of the flag treats with care, and until #1688 it read "The capture stopped short of every
+    /// match", the words written for a keyword fetch. A ranking has no "every match": the line names what the set
+    /// is instead, with the corpus's own count, and is drawn quiet (``drawsTruncationLineInAmber(_:isMeaningCapture:)``).
+    ///
+    /// - Parameters:
+    ///   - truncation: The corpus's `truncationAtCapture`.
+    ///   - documentCount: The corpus's `documentCount`.
+    ///   - isMeaningCapture: The corpus's `isMeaningCapture`.
     /// - Returns: The amber line for a truncated capture, the quiet line for an
-    ///   unrecorded one, `nil` for a complete one.
+    ///   unrecorded one or a Meaning search's, `nil` for a complete one.
     static func truncationLine(_ truncation: WorkingCorpus.CaptureTruncation,
-                               documentCount: Int) -> String? {
+                               documentCount: Int,
+                               isMeaningCapture: Bool = false) -> String? {
         switch truncation {
+        case .truncated where isMeaningCapture:
+            return documentCount == 1
+                ? String(localized: "browser.corpora.meaning.one",
+                         defaultValue: "The closest match of a Meaning search")
+                : String(format: String(localized: "browser.corpora.meaning %@",
+                                        defaultValue: "The %@ closest matches of a Meaning search"),
+                         documentCount.formatted())
         case .truncated(let total?):
             return String(localized: "browser.corpora.truncated",
                           defaultValue: "Saved \(documentCount) of \(total) matches")
@@ -106,6 +122,20 @@ enum CorporaAxis {
             return String(localized: "browser.corpora.unrecorded",
                           defaultValue: "Capture completeness not recorded")
         }
+    }
+
+    /// Whether ``truncationLine(_:documentCount:isMeaningCapture:)`` is drawn in amber: for a capture that stopped
+    /// short of what its query matched. The line for an unrecorded capture is quiet, and so since #1688 is a Meaning
+    /// search's, whose list is the whole of what it was.
+    ///
+    /// - Parameters:
+    ///   - truncation: The corpus's `truncationAtCapture`.
+    ///   - isMeaningCapture: The corpus's `isMeaningCapture`.
+    /// - Returns: `true` for the amber line.
+    static func drawsTruncationLineInAmber(_ truncation: WorkingCorpus.CaptureTruncation,
+                                           isMeaningCapture: Bool) -> Bool {
+        guard case .truncated = truncation else { return false }
+        return !isMeaningCapture
     }
 
     /// Groups a corpus's keys into per-volume sections, volumes ordered by id.
@@ -237,11 +267,13 @@ struct CorporaIndexView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let line = CorporaAxis.truncationLine(corpus.truncationAtCapture,
-                                                        documentCount: corpus.documentCount) {
+                                                        documentCount: corpus.documentCount,
+                                                        isMeaningCapture: corpus.isMeaningCapture) {
                     Text(line)
                         .font(.caption2)
-                        .foregroundStyle(corpus.truncationAtCapture == .unrecorded
-                                         ? Color.secondary : Color.orange)
+                        .foregroundStyle(CorporaAxis.drawsTruncationLineInAmber(
+                            corpus.truncationAtCapture, isMeaningCapture: corpus.isMeaningCapture)
+                                         ? Color.orange : Color.secondary)
                 }
             }
             // Both modifiers, in this order — the #312 full-row tap-target idiom.

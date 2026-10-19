@@ -67,6 +67,18 @@ enum SearchScopeSignature {
     /// run as a keyword scope.
     static let semanticRouteSignature = "route=semantic;engine=on-device"
 
+    /// Whether `signature` records a Meaning-route search: one that begins `route=semantic`, as
+    /// every signature a Meaning search or a ranking by a question has written does, in this build
+    /// and in every earlier one. The method appendix reads its Meaning rows by it
+    /// (`QueryMethodAppendix.isSemanticRow`), and a trail row's count by it (#1688,
+    /// `SearchHistoryEntry.recordedCount`).
+    ///
+    /// - Parameter signature: A trail row's `scopeSignature`, or `nil` for one with none.
+    /// - Returns: `true` for a Meaning-route signature.
+    static func isMeaningRoute(_ signature: String?) -> Bool {
+        signature?.hasPrefix("route=semantic") == true
+    }
+
     /// The signature a Meaning search records (#1577 lane 1).
     ///
     /// With no document set this is ``semanticRouteSignature``, byte for byte, so every row

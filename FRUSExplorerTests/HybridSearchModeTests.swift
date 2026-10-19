@@ -648,6 +648,7 @@ private final class QuestionGatedMeaningSearch: MeaningSearchRunning {
 ///
 /// Version history:
 ///   1.0 — #1584, #1595, #1596, #1597, #1598: initial implementation
+///   1.1 — #1688: a full Meaning list's trail row records its count as exact
 @Suite("Search results are described by the run that produced them")
 @MainActor
 struct SearchResultRouteTests {
@@ -1169,6 +1170,40 @@ struct SearchResultRouteTests {
         #expect(scope.captureTruncationWarning?.contains("Meaning search") == true)
         #expect(scope.isCapturePartial, "a ranking's nearest documents are never every matching document")
         #expect(scope.totalMatchCount == nil)
+    }
+
+    /// #1688's second line. A Meaning run was recorded under the engine's list length with no match count, so a full
+    /// list of 100 read back as a floor and the method appendix printed "at least 100" of it.
+    @Test("A full Meaning list is recorded whole, so the method appendix prints its count")
+    func aFullMeaningListIsRecordedWhole() async throws {
+        let (dir, vm) = try await makeViewModel(documents: 6)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let container = try ModelContainer(
+            for: SearchHistoryEntry.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+        let context = ModelContext(container)
+        let defaults = try #require(UserDefaults(suiteName: "meaning-count-\(UUID().uuidString)"))
+        defaults.set(true, forKey: AppState.researchLoggingPreferenceKey)
+        vm.semanticBackend = FixedMeaningSearch.returning(SemanticSearchBackend.hitLimit)
+        vm.searchMode = .meaning
+        vm.keywords = "how was containment meant to work"
+        await vm.search()
+        try #require(vm.results.count == 100 && vm.executedRoute == .meaning, "precondition: a full Meaning list")
+
+        vm.recordSearchHistory(projectId: nil, in: context, defaults: defaults)
+        let entry = try #require(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).first)
+        // The record itself, which the research-data export carries field by field: the count read
+        // below would come out exact from a Meaning row with no match count too, since such rows are
+        // read as their list (`TrailRecordedCountTests.meaningRowIsItsList`).
+        #expect(entry.matchCount == 100, "the row does not record the list's length as its match count")
+        #expect(entry.recordedCount == .exact(match: 100, loaded: 100), """
+            A full Meaning list is recorded as a floor: \(entry.recordedCount). The list is the whole of its ranking, \
+            and the engine's 100-row length is not a ceiling the answer was cut at.
+            """)
+        #expect(entry.recordedCount.appendixDescription == 100.formatted())
+        #expect(entry.recordedCount.basisToken == "exact")
+        #expect(entry.fetchLimit == 100, "the ceiling recorded with the rows is kept, as a layer's is")
+        #expect(!entry.isPartialEvidence(), "a whole ranking is not partial evidence")
     }
 
     // MARK: - A hand-off that names a search runs as a keyword search

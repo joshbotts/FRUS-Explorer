@@ -213,3 +213,16 @@ import SwiftData
         Set(documentKeys.compactMap { $0.split(separator: "/").first.map(String.init) })
     }
 }
+
+// MARK: - What kind of capture
+
+extension WorkingCorpus {
+
+    /// Whether the set is a Meaning search's closest matches, as its stored provenance says (#1688).
+    ///
+    /// Read from ``sourceDescription`` by `ResultSetScope.isMeaningCaptureProvenance(_:)`, which says why it is a
+    /// sentence and not a field. The corpus lists and the method appendix say "The 100 closest matches of a Meaning
+    /// search" of such a corpus (`CorporaAxis.truncationLine`), where a keyword capture cut short is said to have
+    /// stopped short of every match: a ranking has no "every match" to stop short of.
+    var isMeaningCapture: Bool { ResultSetScope.isMeaningCaptureProvenance(sourceDescription) }
+}

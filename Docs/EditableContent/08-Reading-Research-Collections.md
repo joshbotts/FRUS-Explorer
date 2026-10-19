@@ -902,6 +902,15 @@ Shares an editable copy of this collection: its documents, composition, sections
 
 Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim from source.
 
+#### Export format grid — Web page
+<!-- #1688 (2026-10-19), decision 67: the caption under the HTML card in the export sheet's format grid, where it
+     read "Web page + word cloud" though PDF and Word carry the word-cloud overview too when it is on. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | ExportFormat.gridCaption | key: export.grid.html.caption.v2 -->
+
+Web page
+
+<!-- END SOURCE: export.grid.html.caption.v2 -->
+
 ---
 
 *End of editable content. Source locations span the About screen (§1), Onboarding (§2),

@@ -577,6 +577,27 @@ struct ResultSetScopeMeaningTests {
         #expect(scope.captureChecklistWarning?.contains("4") == true)
     }
 
+    /// The corpus lists tell a Meaning capture by the sentence it stored, since a corpus records no route (#1688).
+    @Test("Every sentence a Meaning capture stores reads back as one, and no other capture's does")
+    func theStoredSentenceIsRecognised() {
+        for scope in everyMeaningShape + [meaning(loaded: 100, shown: 96)] {
+            #expect(ResultSetScope.isMeaningCaptureProvenance(scope.captureProvenanceDescription),
+                    "\(scope.captureProvenanceDescription)")
+        }
+        func scope(_ route: ExecutedSearchRoute, totalMatchCount: Int? = nil) -> ResultSetScope {
+            ResultSetScope(loaded: 40, shown: 40, fetchLimit: 1_000, totalMatchCount: totalMatchCount,
+                           documentsOnPage: 25, pageCount: 2, route: route)
+        }
+        let others = [scope(.keywords, totalMatchCount: 40), scope(.keywords),
+                      scope(.wordsInMatches(base: 100)), scope(.rankedByMeaning(unranked: 3))]
+            .map(\.captureProvenanceDescription)
+            + ["Semantic map selection", "Semantic map selection, scoped to Berlin", "Semantic cluster, browsed", ""]
+        for other in others {
+            #expect(!ResultSetScope.isMeaningCaptureProvenance(other), "\(other)")
+        }
+        #expect(!ResultSetScope.isMeaningCaptureProvenance(nil), "a corpus with no provenance")
+    }
+
     /// The numbers of #1584: 3,000 tagged documents, all loaded. Under the ceiling the browse was fetched at they are
     /// a complete set; under the keyword ceiling, which the screen passed, they are "truncated".
     @Test("3,000 loaded of 3,000 is complete under the browse ceiling and was truncated under the keyword one")

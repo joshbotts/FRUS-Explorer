@@ -342,4 +342,30 @@ struct QueryMethodAppendixCoverageProducerTests {
         #expect(appendix.coverageLines.contains { $0.contains("7,500") },
                 "lines were: \(appendix.coverageLines)")
     }
+
+    /// A corpus saved from a Meaning list is a ranking's closest matches, and its line says so where it said the
+    /// capture stopped short of every match (#1688), in the corpus browser's words.
+    @Test("A Meaning capture's line in the appendix names its set")
+    @MainActor
+    func aMeaningCaptureNamesItsSet() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let project = Project(name: "Oil diplomacy")
+        context.insert(project)
+        let corpus = WorkingCorpus(name: "Suez closest", documentKeys: ["v1/d1", "v1/d2"],
+                                   sourceDescription: "Meaning search — the 2 closest matches",
+                                   wasTruncatedAtCapture: true, totalMatchCountAtCapture: nil)
+        context.insert(corpus)
+        context.insert(SearchHistoryEntry(queryText: "suez", projectId: project.id,
+                                          appliedCorpusId: corpus.id))
+        try context.save()
+
+        let appendix = ResearchDataExporter.methodAppendix(modelContext: context,
+                                                           activeProjectId: project.id)
+        let row = try #require(appendix.corpusCoverage.first)
+        #expect(row.isMeaningCapture)
+        #expect(appendix.coverageLines.contains("Suez closest: The 2 closest matches of a Meaning search"),
+                "lines were: \(appendix.coverageLines)")
+        #expect(!appendix.coverageLines.contains { $0.contains("stopped short") })
+    }
 }

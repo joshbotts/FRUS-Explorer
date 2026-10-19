@@ -41,6 +41,8 @@ import SwiftData
 ///   1.2 — Wave R-2a: `init` gained `id` and `executedAt` so ``ResearchTrailMigration`` can
 ///          re-home a legacy `SessionEvent.searchSubmit` with its original identity and time.
 ///          No stored property changed, so the CloudKit schema is untouched by this.
+///   1.3 — 2026-10-19: #1688 — `recordedCount` reads a Meaning-route row written with no match
+///          count as its list, never a floor. No stored property changed.
 @Model final class SearchHistoryEntry {
 
     // MARK: - Identity
@@ -206,6 +208,13 @@ import SwiftData
         // legitimate nil on a new row, which is what makes it the discriminator.
         guard let fetchLimit, let loadedCount else { return .unrecorded(reported: resultCount) }
         if let matchCount { return .exact(match: matchCount, loaded: loadedCount) }
+        // A Meaning list is the whole of its ranking (#1688). Since build 51 its row records the
+        // list's length as its match count; a row an earlier build wrote has none, under the
+        // engine's 100-row length, and read by the rule below a full list was "at least 100". It is
+        // read as the list it recorded, never as a floor.
+        if SearchScopeSignature.isMeaningRoute(scopeSignature) {
+            return .exact(match: loadedCount, loaded: loadedCount)
+        }
         // The same predicate `ResultSetScope.didHitFetchLimit` uses. Sound because `loadedCount`
         // is the unfiltered fetch: checklist filtering happens after, and never lowers it.
         if loadedCount >= fetchLimit { return .floor(loaded: loadedCount, fetchLimit: fetchLimit) }

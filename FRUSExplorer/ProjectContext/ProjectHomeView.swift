@@ -54,6 +54,10 @@ struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
     /// floor, and a tile reading "43/267" must not imply 267 was every match.
     let truncation: WorkingCorpus.CaptureTruncation
 
+    /// Whether the corpus is a Meaning search's closest matches (`WorkingCorpus.isMeaningCapture`), whose
+    /// line names the set, in the quiet style, where a capture cut short is said to be one in amber (#1688).
+    let isMeaningCapture: Bool
+
     /// `ForEach` identity.
     var id: UUID { corpusId }
 }
@@ -343,7 +347,8 @@ struct ProjectHomeView: View {
                 coverage: DocumentEngagementService.partition(corpusKeys: corpus.documentKeys,
                                                               keys: keys,
                                                               isOpenedComplete: isOpenedComplete),
-                truncation: corpus.truncationAtCapture)
+                truncation: corpus.truncationAtCapture,
+                isMeaningCapture: corpus.isMeaningCapture)
         }
     }
 
@@ -693,10 +698,12 @@ struct ProjectHomeView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             if let note = CorporaAxis.truncationLine(entry.truncation,
-                                                     documentCount: entry.coverage.totalCount) {
+                                                     documentCount: entry.coverage.totalCount,
+                                                     isMeaningCapture: entry.isMeaningCapture) {
                 Text(note)
                     .font(.caption2)
-                    .foregroundStyle(.orange)
+                    // A Meaning search's line is quiet (#1688), as the corpus lists draw it.
+                    .foregroundStyle(entry.isMeaningCapture ? Color.secondary : Color.orange)
                     .lineLimit(2)
             }
         }
