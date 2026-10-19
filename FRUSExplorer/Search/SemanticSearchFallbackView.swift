@@ -27,6 +27,9 @@ import SwiftUI
 ///         with the count of volumes whose match files are really downloading
 ///   1.3 — Session 2026-09-30, review round 1: #1527 — that count is the searcher's own,
 ///         `Results.downloadingVolumes`, rather than an ask count gated on the switch at caption time
+///   1.4 — 2026-10-19: #1685 — the phase machine is `SemanticFallbackSearch`, whose runs write only while they are
+///         the view's, and the offer card's search runs in the view's one task, keyed on the host's search and on
+///         the card's requests, where it ran in a `Task` nothing cancelled
 struct SemanticSearchFallbackView: View {
 
     /// The executed query, verbatim (the submitted one, never the live field).
@@ -40,43 +43,21 @@ struct SemanticSearchFallbackView: View {
 
     @Environment(AppState.self) private var appState
 
-    /// What the surface is currently showing.
-    private enum Phase: Equatable {
-        /// Nothing to show (semantic stack absent, or no query).
-        case hidden
-        /// The model is not downloaded; the shared offer card is up (it owns consent,
-        /// progress, and failure internally).
-        case offer
-        /// The semantic search is running.
-        case searching
-        /// Ranked hits, resolved for display.
-        case results([ResolvedHit], unscored: Int, unscoredVolumes: Int, downloadingVolumes: Int)
-        /// The search ran and nothing was scorable.
-        case empty(unscoredVolumes: Int, downloadingVolumes: Int)
-        /// The search failed, in words.
-        case failed(String)
-    }
+    /// What the surface shows, and the runs that decide it (#1685).
+    @State private var search = SemanticFallbackSearch()
 
-    /// One hit, resolved against the index (openable) or the manifest (not downloaded).
-    struct ResolvedHit: Equatable, Identifiable {
-        let volumeID: String
-        let documentID: String
-        let score: Double
-        /// The document's own header when this device has it indexed; `nil` otherwise.
-        let header: String?
-        let dateline: String?
-        let documentNumber: String?
-        let isEditorialNote: Bool
-        /// The volume's manifest title — always available, the not-downloaded row's headline.
-        let volumeTitle: String
-        /// Whether the reader can open it here (indexed = downloaded and rendered).
-        let isOpenable: Bool
-        /// Whether the manifest carries a download URL (side-loaded volumes do not).
-        let isDownloadable: Bool
-        var id: String { "\(volumeID)/\(documentID)" }
-    }
+    /// How many times the offer card has asked for the search since the model came down: part of the key of the
+    /// view's one task, so the card's search runs in that task, and is cancelled with it when the host's search
+    /// changes or the view goes away.
+    @State private var offerRequests = 0
 
-    @State private var phase: Phase = .hidden
+    /// What the view's one task is keyed on.
+    private struct RunKey: Equatable {
+        /// The host's executed-search version.
+        let searchVersion: Int
+        /// The offer card's requests.
+        let offerRequests: Int
+    }
 
     var body: some View {
         // A VStack, not a Group, and the distinction is a recorded trap: Group applies
@@ -84,12 +65,12 @@ struct SemanticSearchFallbackView: View {
         // would attach to that EmptyView and never fire — the phase machine would be stuck
         // at `.hidden` forever. The VStack is a real container; its task always runs.
         VStack(spacing: 0) {
-            switch phase {
+            switch search.phase {
             case .hidden:
                 EmptyView()
             case .offer:
                 SemanticModelOfferCard {
-                    Task { await runSearch() }
+                    offerRequests += 1
                 }
             case .searching:
                 searchingRow
@@ -102,67 +83,26 @@ struct SemanticSearchFallbackView: View {
                 failedRow(message)
             }
         }
-        .task(id: searchVersion) { await enter() }
+        .task(id: RunKey(searchVersion: searchVersion, offerRequests: offerRequests)) {
+            await search.enter(query: query, engine: engine)
+        }
     }
 
-    // MARK: - State machine
+    // MARK: - What a run asks of the app
 
-    /// Decides the initial phase for this executed search, and runs the search when it can.
-    private func enter() async {
-        guard appState.semanticQuerySearcher != nil,
-              !query.trimmingCharacters(in: .whitespaces).isEmpty else {
-            phase = .hidden
-            return
-        }
-        let status = await appState.semanticModelStatus()
-        guard status.isAvailable else {
-            phase = .hidden
-            return
-        }
-        guard status.isPresent else {
-            phase = .offer
-            return
-        }
-        await runSearch()
-    }
-
-    private func runSearch() async {
-        guard let searcher = appState.semanticQuerySearcher else {
-            phase = .hidden
-            return
-        }
-        phase = .searching
-        do {
-            let results = try await searcher.search(query)
-            let resolved = await resolve(results.hits)
-            // The searcher counts a volume as downloading only when its fetch request said a
-            // download is under way (#1527).
-            let downloading = results.downloadingVolumes
-            if resolved.isEmpty {
-                phase = .empty(unscoredVolumes: results.unscoredVolumes,
-                               downloadingVolumes: downloading)
-            } else {
-                phase = .results(resolved, unscored: results.unscoredCandidates,
-                                 unscoredVolumes: results.unscoredVolumes,
-                                 downloadingVolumes: downloading)
-            }
-        } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
-            phase = .offer
-        } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
-            phase = .failed(String(
-                localized: "search.semantic.tooLong",
-                defaultValue: "This search is too long for the model. Try a shorter phrasing."))
-        } catch {
-            phase = .failed(String(
-                localized: "search.semantic.failed",
-                defaultValue: "Semantic search could not run. Try again."))
-        }
+    /// The model's status, the search and the lookup of its hits, or `nil` while the semantic stack is absent.
+    private var engine: SemanticFallbackSearch.Engine? {
+        guard let searcher = appState.semanticQuerySearcher else { return nil }
+        return SemanticFallbackSearch.Engine(
+            modelStatus: { await appState.semanticModelStatus() },
+            search: { query in try await searcher.search(query) },
+            resolve: { hits in await resolve(hits) })
     }
 
     /// Resolves hits for display: indexed documents get their own header from `document_cache`
     /// (the `candidateRecords` fence, used here as a LOOKUP rather than a fence); the rest get
     /// their volume's manifest title and the not-downloaded treatment.
-    private func resolve(_ hits: [SemanticQuerySearcher.Hit]) async -> [ResolvedHit] {
+    private func resolve(_ hits: [SemanticQuerySearcher.Hit]) async -> [SemanticFallbackSearch.ResolvedHit] {
         let indexed = appState.indexedVolumeIds
         let keys = hits.filter { indexed.contains($0.volumeID) }
             .map { DocumentKey(volumeId: $0.volumeID, documentId: $0.documentID) }
@@ -171,7 +111,7 @@ struct SemanticSearchFallbackView: View {
         return hits.map { hit in
             let record = records[DocumentKey(volumeId: hit.volumeID, documentId: hit.documentID)]
             let entry = appState.manifestStore.entry(forVolumeId: hit.volumeID)
-            return ResolvedHit(
+            return SemanticFallbackSearch.ResolvedHit(
                 volumeID: hit.volumeID,
                 documentID: hit.documentID,
                 score: hit.score,
@@ -228,7 +168,7 @@ struct SemanticSearchFallbackView: View {
     // MARK: - Results
 
     private func resultsSection(
-        _ hits: [ResolvedHit], unscored: Int, unscoredVolumes: Int, downloadingVolumes: Int
+        _ hits: [SemanticFallbackSearch.ResolvedHit], unscored: Int, unscoredVolumes: Int, downloadingVolumes: Int
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(String(localized: "search.semantic.results.title",
@@ -267,7 +207,7 @@ struct SemanticSearchFallbackView: View {
     }
 
     @ViewBuilder
-    private func hitRow(_ hit: ResolvedHit) -> some View {
+    private func hitRow(_ hit: SemanticFallbackSearch.ResolvedHit) -> some View {
         if hit.isOpenable {
             Button {
                 openEntry(DocumentBrowserEntry(
@@ -292,7 +232,7 @@ struct SemanticSearchFallbackView: View {
         }
     }
 
-    private func openableRowLabel(_ hit: ResolvedHit) -> some View {
+    private func openableRowLabel(_ hit: SemanticFallbackSearch.ResolvedHit) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(hit.header ?? hit.documentID)
                 .font(.callout)
@@ -308,5 +248,146 @@ struct SemanticSearchFallbackView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - SemanticFallbackSearch
+
+/// The zero-result offer's state machine, apart from its view so that its runs can be driven (#1685).
+///
+/// `SemanticSearchFallbackView` stays mounted from one zero-result keyword search to the next, and its search runs in
+/// the view's task, which a new search replaces. Cancelling that task did not stop the run: the search across the
+/// series it runs, `SemanticQuerySearcher.search(_:limit:)`, checks for cancellation nowhere (a search inside a set
+/// does, between its steps), and the run wrote ``phase`` after its waits whatever had happened meanwhile. So
+/// after two zero-result searches in a row the first one's matches could land under the second, whichever finished
+/// last writing the card — the shape #1648 fixed in the two search view models, here in a view of its own. And the
+/// offer card's button started a `Task` of its own that nothing cancelled at all.
+///
+/// Each run now takes a number as it starts, from a `SearchRunLedger`, the view models' rule, and after each of its
+/// waits asks whether it is still the latest run, and still not cancelled, before it writes anything. A run a later
+/// search replaced writes nothing, nor does one whose view has gone away.
+///
+/// Version history:
+///   1.0 — #1685: the phase machine of `SemanticSearchFallbackView` 1.3, with the runs' check
+@MainActor
+@Observable
+final class SemanticFallbackSearch {
+
+    /// What the surface is currently showing.
+    enum Phase: Equatable {
+        /// Nothing to show (semantic stack absent, or no query).
+        case hidden
+        /// The model is not downloaded; the shared offer card is up (it owns consent,
+        /// progress, and failure internally).
+        case offer
+        /// The semantic search is running.
+        case searching
+        /// Ranked hits, resolved for display.
+        case results([ResolvedHit], unscored: Int, unscoredVolumes: Int, downloadingVolumes: Int)
+        /// The search ran and nothing was scorable.
+        case empty(unscoredVolumes: Int, downloadingVolumes: Int)
+        /// The search failed, in words.
+        case failed(String)
+    }
+
+    /// One hit, resolved against the index (openable) or the manifest (not downloaded).
+    struct ResolvedHit: Equatable, Identifiable {
+        let volumeID: String
+        let documentID: String
+        let score: Double
+        /// The document's own header when this device has it indexed; `nil` otherwise.
+        let header: String?
+        let dateline: String?
+        let documentNumber: String?
+        let isEditorialNote: Bool
+        /// The volume's manifest title — always available, the not-downloaded row's headline.
+        let volumeTitle: String
+        /// Whether the reader can open it here (indexed = downloaded and rendered).
+        let isOpenable: Bool
+        /// Whether the manifest carries a download URL (side-loaded volumes do not).
+        let isDownloadable: Bool
+        var id: String { "\(volumeID)/\(documentID)" }
+    }
+
+    /// What a run asks of the app: the view builds it from `AppState`, and a test stands in for each part.
+    struct Engine {
+        /// The encoder model's status: whether the semantic stack booted, and whether the model is on disk.
+        var modelStatus: @MainActor () async -> AppState.SemanticModelStatus
+        /// The search itself, `SemanticQuerySearcher.search(_:limit:)`.
+        var search: @MainActor (String) async throws -> SemanticQuerySearcher.Results
+        /// The hits, resolved against the index and the manifest for display.
+        var resolve: @MainActor ([SemanticQuerySearcher.Hit]) async -> [ResolvedHit]
+    }
+
+    /// What the surface shows.
+    private(set) var phase: Phase = .hidden
+
+    /// The runs started, numbered, so that a run another one replaced writes nothing.
+    @ObservationIgnored private var runs = SearchRunLedger()
+
+    /// Decides the phase for an executed search, and runs the search when it can. Each call is a new run, which
+    /// replaces any still under way.
+    ///
+    /// - Parameters:
+    ///   - query: The executed query, verbatim.
+    ///   - engine: What the run asks of the app, or `nil` while the semantic stack is absent.
+    func enter(query: String, engine: Engine?) async {
+        let run = runs.startRun()
+        guard let engine, !query.trimmingCharacters(in: .whitespaces).isEmpty else {
+            phase = .hidden
+            return
+        }
+        let status = await engine.modelStatus()
+        guard isCurrent(run) else { return }
+        guard status.isAvailable else {
+            phase = .hidden
+            return
+        }
+        guard status.isPresent else {
+            phase = .offer
+            return
+        }
+        await runSearch(query: query, engine: engine, run: run)
+    }
+
+    /// Runs the search for `run`, and writes its outcome only while `run` is still the latest.
+    private func runSearch(query: String, engine: Engine, run: Int) async {
+        phase = .searching
+        do {
+            let results = try await engine.search(query)
+            guard isCurrent(run) else { return }
+            let resolved = await engine.resolve(results.hits)
+            guard isCurrent(run) else { return }
+            // The searcher counts a volume as downloading only when its fetch request said a
+            // download is under way (#1527).
+            let downloading = results.downloadingVolumes
+            if resolved.isEmpty {
+                phase = .empty(unscoredVolumes: results.unscoredVolumes,
+                               downloadingVolumes: downloading)
+            } else {
+                phase = .results(resolved, unscored: results.unscoredCandidates,
+                                 unscoredVolumes: results.unscoredVolumes,
+                                 downloadingVolumes: downloading)
+            }
+        } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
+            guard isCurrent(run) else { return }
+            phase = .offer
+        } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
+            guard isCurrent(run) else { return }
+            phase = .failed(String(
+                localized: "search.semantic.tooLong",
+                defaultValue: "This search is too long for the model. Try a shorter phrasing."))
+        } catch {
+            guard isCurrent(run) else { return }
+            phase = .failed(String(
+                localized: "search.semantic.failed",
+                defaultValue: "Semantic search could not run. Try again."))
+        }
+    }
+
+    /// Whether `run` may still write: no later run has started, and its task has not been cancelled, which SwiftUI
+    /// does to the view's task when the host's search changes and when the view goes away.
+    private func isCurrent(_ run: Int) -> Bool {
+        runs.isLatest(run) && !Task.isCancelled
     }
 }

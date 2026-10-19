@@ -1851,3 +1851,156 @@ struct ReplacedSearchStopTests {
         #expect(!vm.isSearching)
     }
 }
+
+// MARK: - SemanticFallbackRunTests (#1685)
+
+/// The zero-result offer's search engine, standing in for the app's: each search returns one hit named for its query,
+/// and a query in ``held`` waits until it is let go, so that a test can send a second search while the first is out.
+@MainActor
+private final class HeldFallbackEngine {
+
+    /// The queries whose searches wait to be let go.
+    var held: Set<String> = []
+    /// The queries whose searches throw, once let go, the refusal of a query too long for the model.
+    var failing: Set<String> = []
+    /// The searches waiting, by query.
+    private var waiting: [String: CheckedContinuation<Void, Never>] = [:]
+
+    /// Whether `query`'s search is waiting to be let go.
+    func isWaiting(_ query: String) -> Bool { waiting[query] != nil }
+
+    /// Lets `query`'s search go on.
+    func letGo(_ query: String) { waiting.removeValue(forKey: query)?.resume() }
+
+    private func search(_ query: String) async throws -> SemanticQuerySearcher.Results {
+        if held.contains(query) {
+            await withCheckedContinuation { waiting[query] = $0 }
+        }
+        if failing.contains(query) { throw SemanticQuerySearcher.SearchUnavailable.queryTooLong }
+        return SemanticQuerySearcher.Results(
+            hits: [SemanticQuerySearcher.Hit(volumeID: "vol1", documentID: query, score: 0.5)],
+            unscoredCandidates: 0, unscoredVolumes: 0, downloadingVolumes: 0)
+    }
+
+    /// The engine a run asks, with the model present.
+    var engine: SemanticFallbackSearch.Engine {
+        SemanticFallbackSearch.Engine(
+            modelStatus: {
+                AppState.SemanticModelStatus(isAvailable: true, verifiedURL: URL(fileURLWithPath: "/model.gguf"),
+                                             bytesOnDisk: 1, failure: nil)
+            },
+            search: { [unowned self] query in try await self.search(query) },
+            resolve: { hits in
+                hits.map { hit in
+                    SemanticFallbackSearch.ResolvedHit(
+                        volumeID: hit.volumeID, documentID: hit.documentID, score: hit.score,
+                        header: hit.documentID, dateline: nil, documentNumber: nil, isEditorialNote: false,
+                        volumeTitle: "Volume 1", isOpenable: true, isDownloadable: true)
+                }
+            })
+    }
+}
+
+/// #1685: after two keyword searches in a row that found nothing, the first one's Search by meaning matches could land
+/// under the second. `SemanticSearchFallbackView` stays mounted from one to the next, and its run wrote its phase after
+/// its waits whatever had replaced it meanwhile, since the search it runs, `SemanticQuerySearcher.search(_:limit:)`,
+/// checks for cancellation nowhere.
+///
+/// Version history:
+///   1.0 — #1685: initial implementation
+@Suite("The zero-result offer writes only the search on screen (#1685)")
+@MainActor
+struct SemanticFallbackRunTests {
+
+    /// The documents a phase lists, or `nil` for a phase that lists none.
+    private func listed(_ phase: SemanticFallbackSearch.Phase) -> [String]? {
+        if case .results(let hits, _, _, _) = phase { return hits.map(\.documentID) }
+        return nil
+    }
+
+    @Test("A run a later search replaced writes nothing when it comes back")
+    func aReplacedRunWritesNothing() async {
+        let model = SemanticFallbackSearch()
+        let stand = HeldFallbackEngine()
+        stand.held = ["why did the marshall plan happen"]
+        let engine = stand.engine
+        let first = Task { await model.enter(query: "why did the marshall plan happen", engine: engine) }
+        while !stand.isWaiting("why did the marshall plan happen") { await Task.yield() }
+        #expect(model.phase == .searching)
+
+        await model.enter(query: "how was containment meant to work", engine: engine)
+        #expect(listed(model.phase) == ["how was containment meant to work"])
+
+        stand.letGo("why did the marshall plan happen")
+        await first.value
+        #expect(listed(model.phase) == ["how was containment meant to work"], """
+            The first search's matches were written over the second's: \(model.phase). A run another search replaced \
+            must write nothing when its wait is over.
+            """)
+    }
+
+    @Test("A replaced run that fails writes no failure over the search that replaced it")
+    func aReplacedFailureWritesNothing() async {
+        let model = SemanticFallbackSearch()
+        let stand = HeldFallbackEngine()
+        stand.held = ["first"]
+        stand.failing = ["first"]
+        let engine = stand.engine
+        let first = Task { await model.enter(query: "first", engine: engine) }
+        while !stand.isWaiting("first") { await Task.yield() }
+
+        await model.enter(query: "second", engine: engine)
+        stand.letGo("first")
+        await first.value
+        #expect(listed(model.phase) == ["second"], "the replaced run wrote its failure: \(model.phase)")
+    }
+
+    @Test("A run whose task was cancelled writes nothing")
+    func aCancelledRunWritesNothing() async {
+        let model = SemanticFallbackSearch()
+        let stand = HeldFallbackEngine()
+        stand.held = ["first"]
+        let engine = stand.engine
+        let first = Task { await model.enter(query: "first", engine: engine) }
+        while !stand.isWaiting("first") { await Task.yield() }
+
+        // What SwiftUI does to the view's task when the view goes away.
+        first.cancel()
+        stand.letGo("first")
+        await first.value
+        #expect(model.phase == .searching, "a cancelled run wrote its matches: \(model.phase)")
+    }
+
+    @Test("A run that is not replaced writes its outcome")
+    func aRunAloneWrites() async {
+        let model = SemanticFallbackSearch()
+        let stand = HeldFallbackEngine()
+        await model.enter(query: "first", engine: stand.engine)
+        #expect(listed(model.phase) == ["first"])
+        stand.failing = ["second"]
+        await model.enter(query: "second", engine: stand.engine)
+        #expect(model.phase == .failed("This search is too long for the model. Try a shorter phrasing."))
+        await model.enter(query: "third", engine: nil)
+        #expect(model.phase == .hidden, "with no semantic stack the surface shows nothing")
+    }
+
+    /// The offer card's search ran in a `Task` of its own, which nothing cancelled. It runs in the view's one task now,
+    /// keyed on the card's requests as well as on the host's search, so SwiftUI cancels it with that task.
+    @Test("The offer card's search runs in the view's one task")
+    func theOffersSearchRunsInTheViewsTask() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appendingPathComponent(
+            "FRUSExplorer/Search/SemanticSearchFallbackView.swift"), encoding: .utf8)
+        let code = source.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        let squeezed = code.filter { !$0.isWhitespace }
+        #expect(!squeezed.contains("Task{") && !squeezed.contains("Task.detached"),
+                "the view starts a task SwiftUI does not own")
+        #expect(squeezed.contains("SemanticModelOfferCard{offerRequests+=1}"),
+                "the offer card asks for its search by moving the task's key")
+        #expect(squeezed.components(separatedBy: ".task(id:").count - 1 == 1, "the view has one task")
+        #expect(squeezed.contains(".task(id:RunKey(searchVersion:searchVersion,offerRequests:offerRequests)){"
+                                  + "awaitsearch.enter(query:query,engine:engine)}"))
+    }
+}
