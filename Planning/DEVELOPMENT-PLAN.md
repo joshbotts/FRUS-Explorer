@@ -39211,4 +39211,6 @@ The timing was then run as the note prescribes: install first, which moved the c
 
 **The plan of record.** §6g's bullet is struck and marked fixed.
 
-**Not done.** The full unit target: the change is one declaration in one test file, and the clean build compiled the whole target.
+**Landed as #1725**, opened on the owner's word of 2026-10-19 once #1724 (A8) had merged: "1724 merged. open PR for fix". Merging `v2` at `45d9fe05` conflicted in the two record files only, as a dry merge with #1724's branch had shown. Both PRs append to this file, and both change §6g's bullet, which keeps A8's sentence inside the strike. A read-only check found every file one parent changed identical to that parent's. On the merged tree, on the same simulator:
+- a clean `build-for-testing` from an emptied build folder: `** TEST BUILD SUCCEEDED **` in 2 min 20 s, with the same 7 `warning:` lines;
+- the full unit target: "Test run with 7383 tests in 872 suites passed after 336.716 seconds with 6 known issues", A8's count, the 6 being #1606's.
