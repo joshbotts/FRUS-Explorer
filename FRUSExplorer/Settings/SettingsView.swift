@@ -718,7 +718,8 @@ private struct UserTagsView: View {
                 sourceTag: sourceTag,
                 allTags: orderedTags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
-                    UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
+                    UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext,
+                                       pipeline: appState?.indexingPipeline)
                     mergingTag = nil
                     counts = ResearchItemCounts.fetch(from: modelContext)
                 }

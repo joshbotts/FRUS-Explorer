@@ -327,6 +327,7 @@ struct OrphanedTagRepairTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-10-09: #1591
+///   1.1 — 2026-10-19: #1689 — a merge rewrites the rows of the documents it re-pointed, as a delete does
 @Suite("The index's tag column follows the assignments (#1591)")
 @MainActor
 struct TagColumnReconcileTests {
@@ -539,6 +540,58 @@ struct TagColumnReconcileTests {
         #expect(try await waitForColumn(pipeline, "d1", toBe: nil) == nil)
         #expect(try context.fetch(FetchDescriptor<DocumentTagAssignment>()).isEmpty)
         _ = container
+    }
+
+    /// #1689: merging re-pointed the assignments and left the index naming the merged tag until the next reconcile,
+    /// so a search filtered by the surviving tag missed those documents and their rows showed no chip for it.
+    @Test("Merging a tag rewrites the rows of the documents that carried it, at once")
+    func mergingATagRewritesItsDocuments() async throws {
+        let (dir, container, context, pipeline) = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let merged = UserTag(name: "Berlin")
+        merged.id = Self.tagA
+        let kept = UserTag(name: "Berlin Crisis")
+        kept.id = Self.tagB
+        context.insert(merged)
+        context.insert(kept)
+        // d1 carries only the tag merged away, d2 both, d3 only the one that survives.
+        for (document, tag) in [("d1", Self.tagA), ("d2", Self.tagA), ("d2", Self.tagB), ("d3", Self.tagB)] {
+            context.insert(DocumentTagAssignment(volumeId: "vol1", documentId: document, tagId: tag))
+        }
+        try context.save()
+        await DocumentTagAssignment.reconcileTagColumn(
+            container: container, pipeline: pipeline, sweepingStaleRows: true)
+        #expect(try await column(pipeline, "d1") == Self.a)
+        #expect(try await column(pipeline, "d2") == "\(Self.a) \(Self.b)")
+
+        let touched = UserTagAdmin.merge(merged, into: kept, context: context, pipeline: pipeline)
+
+        #expect(touched.map(\.documentId).sorted() == ["d1", "d2"])
+        #expect(try await waitForColumn(pipeline, "d1", toBe: Self.b) == Self.b,
+                "the index still names the merged tag for a document only it was on")
+        #expect(try await waitForColumn(pipeline, "d2", toBe: Self.b) == Self.b,
+                "a document that carried both keeps the surviving tag, once")
+        #expect(try await column(pipeline, "d3") == Self.b)
+        #expect(try context.fetch(FetchDescriptor<DocumentTagAssignment>()).allSatisfy { $0.tagId == Self.tagB })
+        _ = container
+    }
+
+    @Test("A merge with no index to write still re-points every assignment, and a tag merged into itself is left")
+    func aMergeWithNoIndexRePoints() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let merged = UserTag(name: "Berlin")
+        let kept = UserTag(name: "Berlin Crisis")
+        context.insert(merged)
+        context.insert(kept)
+        context.insert(DocumentTagAssignment(volumeId: "vol1", documentId: "d1", tagId: merged.id))
+        try context.save()
+
+        #expect(UserTagAdmin.merge(kept, into: kept, context: context, pipeline: nil).isEmpty)
+        let touched = UserTagAdmin.merge(merged, into: kept, context: context, pipeline: nil)
+        #expect(touched.map(\.documentId) == ["d1"])
+        #expect(try context.fetch(FetchDescriptor<DocumentTagAssignment>()).map(\.tagId) == [kept.id])
+        #expect(try context.fetch(FetchDescriptor<UserTag>()).map(\.id) == [kept.id])
     }
 
     @Test("Finding the tagged rows walks the partial index, not the table")

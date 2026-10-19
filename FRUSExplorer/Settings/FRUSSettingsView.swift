@@ -607,6 +607,10 @@ private struct SettingsScopesPane: View {
 ///   editor replaces.
 private struct SettingsTagsPane: View {
     @Environment(\.modelContext) private var modelContext
+    /// The app's state, for the index a merged tag's documents are rewritten in (#1689). Optional,
+    /// as iOS's tag list's and `TagEditorView`'s are: a host without it leaves the index to the next
+    /// reconcile.
+    @Environment(AppState.self) private var appState: AppState?
     @Query(sort: \UserTag.name) private var tags: [UserTag]
     /// The preferences record carrying the reader's own tag order (#1275). Observed, so a reorder
     /// from this list's Move commands, another window or another device re-renders it.
@@ -720,7 +724,8 @@ private struct SettingsTagsPane: View {
                 sourceTag: sourceTag,
                 allTags: orderedTags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
-                    UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
+                    UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext,
+                                       pipeline: appState?.indexingPipeline)
                     mergingTag = nil
                     counts = ResearchItemCounts.fetch(from: modelContext)
                 }
