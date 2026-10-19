@@ -145,6 +145,9 @@ extension AxisWeights: RawRepresentable {
 ///          `WhyRelatedChip.displayText` and `RelatedDocumentsCounts`, which group their counts
 ///   1.2 — 2026-10-11: #1618 — Beyond your library's sentence, each volume's count and the
 ///          "more volumes" line come from `RelatedDocumentsCounts` too
+///   1.3 — 2026-10-19 (plan of record §6g): the ranking and every semantic verdict take the
+///          anchor's year from the index (`RelatedDocumentsRequest.resolvedAnchorYear(pipeline:)`),
+///          not from the door that opened the document
 struct RelatedDocumentsContent: View {
 
     /// Shared app state — resolves the scope, runs the ranking, and receives the row-tap hand-off.
@@ -292,9 +295,13 @@ struct RelatedDocumentsContent: View {
             guard pipelineReady, lastLoadedKey != claimedKey else { return }
             lastLoadedKey = claimedKey
             isLoading = true
+            // The index's year for the anchor, not the door's (§6g): most doors open the reader
+            // with no dateline, and the archival axis bands a decimal file without a year of its
+            // own by this one.
+            let anchorYear = await request.resolvedAnchorYear(pipeline: appState.indexingPipeline)
             let result = await RelatedDocumentsEngine.rank(
                 anchor: request.anchor,
-                anchorYear: request.anchorYear,
+                anchorYear: anchorYear,
                 weights: weights,
                 scopeVolumeIds: scope.resolveVolumeIds(appState: appState),
                 limit: request.limit,
@@ -361,7 +368,9 @@ struct RelatedDocumentsContent: View {
     /// Captures the anchor's era, because that is the question the retired blind panel existed to
     /// answer and a verdict without it cannot answer it. The era comes from the app's own
     /// `CoverageEra` banding rather than a second one, so this feedback is comparable with every
-    /// other era-split surface in the app.
+    /// other era-split surface in the app, and from the index's year for the anchor rather than the
+    /// door's (`RelatedDocumentsRequest.semanticFeedback`, plan of record §6g), so a verdict given
+    /// after Continue reading is banded as one given after Search.
     ///
     /// - Parameters:
     ///   - row: The row being judged.
@@ -369,16 +378,16 @@ struct RelatedDocumentsContent: View {
     private func recordSemanticFeedback(
         row: RelatedDocumentRow, verdict: SemanticFeedbackEntry.Verdict
     ) {
-        let entry = SemanticFeedbackEntry(
-            recordedAt: Date(),
-            anchor: request.anchor.compositeString,
-            neighbour: row.key.compositeString,
-            verdict: verdict,
-            cosine: row.axisScores[.semanticSimilarity],
-            era: request.anchorYear.map { CoverageEra.bucket(year: $0).rawValue.description },
-            sameVolume: row.key.volumeId == request.anchor.volumeId,
-            provenanceDigest: BundledSemanticVectors.provenance?.digestHex)
-        Task { await SemanticFeedbackLog.shared.record(entry) }
+        let request = request
+        let recordedAt = Date()
+        let pipeline = appState.indexingPipeline
+        let provenanceDigest = BundledSemanticVectors.provenance?.digestHex
+        Task {
+            let entry = await request.semanticFeedback(
+                verdict, on: row, pipeline: pipeline,
+                provenanceDigest: provenanceDigest, recordedAt: recordedAt)
+            await SemanticFeedbackLog.shared.record(entry)
+        }
     }
 
     /// Fills in the shared-distinctive-terms chip for the displayed semantic rows.

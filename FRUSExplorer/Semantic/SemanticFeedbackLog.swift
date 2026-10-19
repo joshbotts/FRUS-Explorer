@@ -51,7 +51,11 @@ struct SemanticFeedbackEntry: Codable, Identifiable, Sendable, Hashable {
     /// (`retrieval.calibratedDocumentScore`); a generation without one, the 300m's, logged the raw
     /// cosine. `provenanceDigest` says which, and the key keeps its name so earlier verdicts decode.
     let cosine: Double?
-    /// The anchor's coverage era, from the app's own `CoverageEra` banding rather than a second one.
+    /// The anchor's coverage era, from the app's own `CoverageEra` banding rather than a second one,
+    /// of the anchor's year in the index (`RelatedDocumentsRequest.resolvedAnchorYear(pipeline:)`),
+    /// so it does not depend on the door that opened the anchor. `nil` for an anchor that neither the
+    /// index nor its dateline dates, and, in a file written before 2026-10-19 (plan of record §6g),
+    /// for many dated anchors too: the export's `anchor` key is what bands those.
     /// **This is the field the whole log exists for.**
     let era: String?
     /// Whether anchor and neighbour are in the same volume — the corpus-scale measurement found 78%
