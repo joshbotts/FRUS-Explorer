@@ -519,6 +519,8 @@ against volume scope only); a separate "In volumes you have not downloaded" sect
 Download Volume buttons; sorting, paging and checklist unchanged; a corpus saved from the list
 recorded as a Meaning search's closest matches (Section 7.9); the
 Reading picker (Timeline, Concordance, Collocates) disabled, the "Search in" scope chips hidden and **Visualize in Corpus Analytics** not offered, while **Facets** stays available and describes the closest matches;
+no section ranked, so the text a chapter prints of its own, such as the list of those present
+above a meeting's minutes (Section 6.1), is found by a keyword search and not by meaning;
 recorded searches carrying a route marker so the method appendix never misdescribes them. Saved
 Searches always run as keyword searches, and so does a search handed over from elsewhere in the
 app (Find all mentions, a topic, a chart's documents link); either leaves a held list (Section 7.11b). The mode resets to Keywords each session.

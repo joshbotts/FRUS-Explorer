@@ -10,6 +10,7 @@
 - Once you have searched inside the list, the row's **Swap** turns one order into the other without retyping.
 - **Meaning search runs EmbeddingGemma 2**, open source. If you had the earlier model, **Download Search Model** (310 MB) is offered again, once, with no agreement to accept. Its percentages read as the earlier model's did.
 - A common word searched inside a working corpus is much faster (it took seven seconds or more).
+- Browse lists a Meaning search's corpus as its closest matches.
 
 ## Library and reading
 
@@ -19,7 +20,7 @@
 
 ## Collections
 
-- A **smart collection** (one linked to a saved search) takes nothing by hand: **Add to Collection**, its editor and both Collections lists say *Smart collection*.
+- A **smart collection** (one linked to a saved search) takes nothing by hand: **Add to Collection**, its editor, both Collections lists and Project Home say *Smart collection*.
 - Entries it held before the link are listed apart, dimmed, with **Remove These Entries**.
 
 ## Also

@@ -665,7 +665,9 @@ your submitted query runs through. In Meaning mode:
   opening prose), and a **Semantic match · N%** score, which VoiceOver reads after the row's
   heading. Sorting, paging and checklist review work as in keyword mode.
   The header counts *N closest matches* — at most 100, the nearest the model found, not a
-  total — and front matter and chapter headings cannot be reached this way.
+  total — and front matter and chapter headings cannot be reached this way. Nor can the text a
+  chapter prints of its own, such as the list of those present above a meeting's minutes
+  (Section 6.1a): a keyword search finds it, but no section is ranked by meaning.
 - **Inside a working corpus or a project's History scope, the ranking runs inside that set.**
   With a corpus applied (Section 7.9), or **History** chosen under the project's section of
   **Filters**, a Meaning search scores every document in the set against your question and lists
