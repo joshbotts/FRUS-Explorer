@@ -39097,7 +39097,7 @@ Lane 4's ranking of the 1,000 held rows took 3 to 4 ms, and of 7,500 14 to 16 ms
 
 No CloudKit change and no index version. Not kit code.
 
-**The owner's decision, 2026-10-18 (decision 57), on reading the memo: "I would like to defer A7."** A7 is deferred past build 51, A7a and A7b alike, so build 51 is cut without App Intents and A8 follows A6. The memo's §5 stands as A7's plan (plan of record §6h).
+**The owner's decision, 2026-10-18 (decision 57), on reading the memo: "I would like to defer A7."** A7 is deferred past build 51, A7a and A7b alike, so build 51 is cut without App Intents and A8 follows A6. The memo's §5 stands as A7's plan (plan of record §6h), and its issue is filed on the owner's word as #1723.
 
 **The device check is the owner's step** (memo §4): Spike Reader installed on the owner's iPhone with Xcode's Run (never `devicectl … --remove-existing-content`).
 - Spotlight and Siri checks.
@@ -39132,7 +39132,6 @@ The timing was then run as the note prescribes: install first, which moved the c
 **Not done.**
 - The device check, which no longer gates build 51.
 - The Mac, which was not tried.
-- The issue, drafted in the session notes (`a6-issue-draft.md`) and filed on the owner's word.
 
 ## Session 2026-10-18 — A8: build 51, the release candidate — version 1.0 (1861), the TestFlight notes, #1545's mail draft, and the release checklist
 

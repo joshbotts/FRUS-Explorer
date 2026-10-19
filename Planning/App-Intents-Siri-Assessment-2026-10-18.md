@@ -23,7 +23,7 @@
 - **Found on the way: the donated items expire.** A new `CSSearchableItem` expires 31 days after it is made unless `expirationDate` is set, and the app sets none. Whether and when Spotlight purges an expired item is not measured: one given a 60-second expiry was still there 3 minutes later (§2.6, §6).
 - **A7 needs no CloudKit change and no index version.** It adds no `@Model` and no stored property, and changes nothing indexing stores. Only the association would move the Spotlight shape stamp (`currentSpotlightSchemaVersion`, a defaults key, not an index version); the entity and the intents do not.
 - **Where A7 goes: decision 23 put it in build 51**, because `IndexedEntity` is additive. One part of A7 would re-donate every library on upgrade: associating the entity with the items a library already holds. That part is separable, and its place would turn on the device check (§5).
-- **The owner's decision, 2026-10-18 (decision 57): A7 is deferred past build 51.** Build 51 is cut without App Intents, and this memo stands as A7's plan (§5).
+- **The owner's decision, 2026-10-18 (decision 57): A7 is deferred past build 51.** Build 51 is cut without App Intents, and this memo stands as A7's plan (§5; #1723).
 
 ## 2. What the spike measured
 
@@ -250,7 +250,7 @@ No declaration settles whether Siri surfaces an associated document, and the sim
 - **A7 is deferred past build 51**, A7a and A7b alike. Build 51 is cut without App Intents, and A8 follows A6.
 - **This section stands as A7's plan.** The plan of record keeps it in §6h.
 - **The device check no longer gates the build.** It still answers §6's questions about the donation that ships.
-- **The issue (§8) is filed on the owner's word.**
+- **The issue (§8) is filed as #1723**, on the owner's word.
 - **When A7 is taken up,** the SDK's facts are worth reading again on whatever Xcode is current then.
 
 ## 6. Found on the way
@@ -270,7 +270,7 @@ No declaration settles whether Siri surfaces an associated document, and the sim
 - **Not exercised:** the time the system gives a background intent, a long document's chunked summary inside it, and Add to Collection's SwiftData write.
 - **Not studied:** the onscreen awareness for the iPad's and the Mac's several windows.
 
-## 8. The issue, drafted
+## 8. The issue, filed as #1723 on the owner's word
 
 **Title:** App Intents and Siri: FRUS documents as entities, four intents, and the Spotlight association (A7)
 
@@ -283,7 +283,7 @@ No declaration settles whether Siri surfaces an associated document, and the sim
 - the device check (§4);
 - §6's three findings, as the questions the device check and A7b answer.
 
-The full text is in this session group's notes folder (`a6-issue-draft.md`), to be filed on the owner's word.
+Filed on 2026-10-18 as #1723, labelled enhancement, iOS and Mac, after the owner deferred A7 (decision 57). The draft is in this session group's notes folder (`a6-issue-draft.md`).
 
 ## 9. Redoing it
 
