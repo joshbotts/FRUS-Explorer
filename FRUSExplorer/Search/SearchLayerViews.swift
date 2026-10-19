@@ -233,6 +233,7 @@ struct SearchLayerEmptyState: View {
 ///   1.1 — #1577 lane 5: the Mac window's toolbar button and the label in the Keywords | Meaning control's place
 ///   1.2 — #1577 lane 6: the toolbar button's help over a list cut at its ceiling, which a question ranks whole
 ///   1.3 — #1577 lane 7: Swap's title, glyph, name and help
+///   1.4 — plan of record §6g, found in A8: Swap's help quotes a search that is one phrase once, as the row does
 enum SearchLayerCopy {
 
     /// The Sort menu's way into a ranking, on a keyword list: it is an order, as the menu's others are.
@@ -269,20 +270,23 @@ enum SearchLayerCopy {
     }
 
     /// What Swap will do, with both searches named: its help, its VoiceOver hint, and what VoiceOver hears as a swap
-    /// starts.
+    /// starts. Each search is quoted as the row quotes the held list (`PinnedResultBase.quotable(_:)`), so words typed
+    /// as one phrase, `"offset agreement"`, read “offset agreement”.
     ///
     /// - Parameter swap: The swap the row offers.
     /// - Returns: The sentence.
     static func swapHelp(_ swap: SearchLayerSwap) -> String {
+        let list = PinnedResultBase.quotable(swap.listQuery)
+        let layer = PinnedResultBase.quotable(swap.layerQuery)
         switch swap.direction {
         case .rankByMeaning:
             return String(format: String(localized: "search.layer.swap.help.rankByMeaning %@ %@",
                                          defaultValue: "Search for “%1$@” first, then rank what it finds by “%2$@”"),
-                          swap.listQuery, swap.layerQuery)
+                          list, layer)
         case .wordsInMatches:
             return String(format: String(localized: "search.layer.swap.help.wordsInMatches %@ %@",
                                          defaultValue: "Ask “%1$@” first, then find “%2$@” among its closest matches"),
-                          swap.listQuery, swap.layerQuery)
+                          list, layer)
         }
     }
 

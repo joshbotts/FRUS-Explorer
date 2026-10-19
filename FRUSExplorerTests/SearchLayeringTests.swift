@@ -175,10 +175,15 @@ struct SearchLayeringTests {
         #expect(PinnedResultBase.describedWords(phrase: nil, prefix: nil) == nil)
         var described = base(kind: .keywords, query: "", rows: keywordRows(12), route: .keywords)
         described.describedQuery = "\"wheat shipments\""
-        #expect(described.rowDescription == "Within 12 results for “\"wheat shipments\"”")
-        #expect(described.captureLabel == "“\"wheat shipments\"”")
+        // Quoted once, as a phrase typed with its marks is (plan of record §6g), and recorded with them.
+        #expect(described.rowDescription == "Within 12 results for “wheat shipments”")
+        #expect(described.captureLabel == "“wheat shipments”")
         #expect(described.signaturePart == "base=keywords:12:%22wheat%20shipments%22")
         #expect(described.query.isEmpty, "the field gets back what it held")
+        // A phrase and a prefix are not one phrase, so they keep their marks.
+        described.describedQuery = PinnedResultBase.describedWords(phrase: "wheat", prefix: "embarg")
+        #expect(described.rowDescription == "Within 12 results for “\"wheat\" embarg*”")
+        #expect(described.captureLabel == "“\"wheat\" embarg*”")
     }
 
     @Test("A held list takes the tags the rows on screen were given, and nothing else of them")
@@ -454,6 +459,7 @@ struct SearchLayeringTests {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 5: initial implementation
+///   1.1 — plan of record §6g, found in A8: a list found by one phrase in quotation marks is quoted once
 @Suite("Search within results: the rules both windows hold a list by (#1577 lane 5)")
 struct SearchLayerHoldingRulesTests {
 
@@ -638,6 +644,102 @@ struct SearchLayerHoldingRulesTests {
         #expect(!plain.listIsInRankOrder, "the order is the list's, whatever its route")
     }
 
+    // MARK: Quoting the list's words (plan of record §6g)
+
+    /// One fixture for each condition of the rule, each beside the control it differs from in that alone.
+    @Test("A query that is one phrase in quotation marks is quoted without them, and any other as typed")
+    func onePhraseIsQuotedOnce() {
+        let quotable = PinnedResultBase.quotable
+        #expect(quotable("\"offset agreement\"") == "offset agreement", "control")
+        // Every mark the search's grammar reads as a double quotation mark, at either end.
+        for typed in ["“offset agreement”", "„offset agreement“", "‟offset agreement”", "«offset agreement»",
+                      "»offset agreement«", "＂offset agreement＂", "\"offset agreement”"] {
+            #expect(quotable(typed) == "offset agreement", "\(typed)")
+        }
+        #expect(quotable("\" offset agreement \"") == "offset agreement", "the phrase's own spaces are not quoted")
+        #expect(quotable("\"x\"") == "x")
+        // Each condition broken alone leaves the query as typed.
+        #expect(quotable("offset agreement\"") == "offset agreement\"", "no mark first")
+        #expect(quotable("\"offset agreement") == "\"offset agreement", "no mark last: a phrase left open")
+        #expect(quotable("\"wheat\" \"embargo\"") == "\"wheat\" \"embargo\"", "a mark inside: two phrases")
+        #expect(quotable("\"  \"") == "\"  \"", "nothing but spaces between the marks")
+        #expect(quotable("\"\"") == "\"\"", "nothing between the marks")
+        #expect(quotable("\"") == "\"", "one mark, first and last")
+        // What stands beside a phrase is part of the query, and so are the phrase's marks.
+        #expect(quotable("\"offset agreement\" wheat") == "\"offset agreement\" wheat")
+        #expect(quotable("wheat \"offset agreement\"") == "wheat \"offset agreement\"")
+        #expect(quotable("-\"offset agreement\"") == "-\"offset agreement\"")
+        #expect(quotable("\"offset agree\"*") == "\"offset agree\"*")
+        #expect(quotable("NEAR(\"offset agreement\" wheat, 5)") == "NEAR(\"offset agreement\" wheat, 5)")
+        // Marks the grammar gives no meaning do not make a phrase.
+        #expect(quotable("'offset agreement'") == "'offset agreement'")
+        #expect(quotable("‘offset agreement’") == "‘offset agreement’")
+        #expect(quotable("″offset agreement″") == "″offset agreement″", "a double prime is a unit mark")
+        #expect(quotable("offset agreement") == "offset agreement")
+        #expect(quotable("") == "")
+    }
+
+    /// The row's nine sentences for a list with words, its VoiceOver label, its capture and the appendix: the manuals
+    /// print "Within 212 results for “offset agreement”" for the search typed `"offset agreement"`.
+    @Test("Every sentence that names a held list quotes one phrase once, and the record keeps its marks")
+    func everySentenceQuotesAPhraseOnce() throws {
+        let gated = SearchParameters(keywords: "SAVAK", documentIds: ["vol/d1", "vol/d2"])
+        let whole = base(direction: .rankByMeaning, kind: .keywords, query: "\"offset agreement\"",
+                         rows: keywordRows(212), route: .keywords, fetchLimit: 1_000, total: 212)
+        #expect(whole.rowDescription == "Within 212 results for “offset agreement”")
+        #expect(whole.accessibilityLabel == "Searching within 212 results for “offset agreement”")
+        #expect(whole.captureLabel == "“offset agreement”")
+        #expect(whole.signaturePart == "base=keywords:212:%22offset%20agreement%22", "recorded as typed")
+        #expect(whole.query == "\"offset agreement\"", "and leaving gives the field the words as typed")
+        let ranked = try #require(SearchScopeSignature.layered(
+            SearchScopeSignature.semanticSignature(for: gated), parameters: gated, base: whole))
+        #expect(SearchScopeSignature.describe(ranked)?.last
+                == "inside the results of a keyword search for “offset agreement” (212 documents)")
+
+        let one = base(direction: .rankByMeaning, kind: .keywords, query: "\"offset agreement\"",
+                       rows: keywordRows(1), route: .keywords, fetchLimit: 1_000, total: 1)
+        #expect(one.rowDescription == "Within 1 result for “offset agreement”")
+        let cut = base(direction: .rankByMeaning, kind: .keywords, query: "\"arms talks\"", rows: keywordRows(1_000),
+                       route: .keywords, fetchLimit: 1_000, total: 35_275)
+        #expect(cut.rowDescription == "Within the first 1,000 of 35,275 results for “arms talks”")
+        let cutUnknown = base(direction: .rankByMeaning, kind: .keywords, query: "\"arms talks\"",
+                              rows: keywordRows(1_000), route: .keywords, fetchLimit: 1_000, total: nil)
+        #expect(cutUnknown.rowDescription == "Within the first 1,000 results for “arms talks”")
+        // A cut list whose search is known is ranked whole (#1577 lane 6).
+        let ran = UserTagCountScope.match(SearchParameters(keywords: "\"arms talks\""))
+        let rankedWhole = base(direction: .rankByMeaning, kind: .keywords, query: "\"arms talks\"",
+                               rows: keywordRows(1_000), route: .keywords, fetchLimit: 1_000, total: 35_275,
+                               userTagCountScope: ran)
+        try #require(rankedWhole.ranksWholeMatch, "precondition: the list is ranked whole")
+        #expect(rankedWhole.rowDescription == "Within all 35,275 results for “arms talks”")
+        let rankedWholeUnknown = base(direction: .rankByMeaning, kind: .keywords, query: "\"arms talks\"",
+                                      rows: keywordRows(1_000), route: .keywords, fetchLimit: 1_000, total: nil,
+                                      userTagCountScope: ran)
+        #expect(rankedWholeUnknown.rowDescription == "Within every result for “arms talks”")
+
+        let question = base(query: "“how did the embassy report”", rows: (1...100).map { row("d\($0)", semantic: 0.5) })
+        #expect(question.rowDescription == "Within 100 closest matches to “how did the embassy report”")
+        #expect(question.accessibilityLabel == "Searching within 100 closest matches to “how did the embassy report”")
+        #expect(question.captureLabel == "“how did the embassy report”")
+        #expect(question.signaturePart == "base=meaning:100:%E2%80%9Chow%20did%20the%20embassy%20report%E2%80%9D")
+        let words = try #require(SearchScopeSignature.layered(nil, parameters: gated, base: question))
+        #expect(SearchScopeSignature.describe(words)?.last
+                == "inside the closest matches of a Meaning search for “how did the embassy report” (100 documents)")
+        let closest = base(query: "“how did the embassy report”", rows: [row("d1", semantic: 0.5)])
+        #expect(closest.rowDescription == "Within the closest match to “how did the embassy report”")
+
+        // Words beside a phrase are not one phrase: every sentence quotes them as typed.
+        let beside = base(direction: .rankByMeaning, kind: .keywords, query: "\"offset agreement\" wheat",
+                          rows: keywordRows(18), route: .keywords, fetchLimit: 1_000, total: 18)
+        #expect(beside.rowDescription == "Within 18 results for “\"offset agreement\" wheat”")
+        #expect(beside.accessibilityLabel == "Searching within 18 results for “\"offset agreement\" wheat”")
+        #expect(beside.captureLabel == "“\"offset agreement\" wheat”")
+        let besideRanked = try #require(SearchScopeSignature.layered(
+            SearchScopeSignature.semanticSignature(for: gated), parameters: gated, base: beside))
+        #expect(SearchScopeSignature.describe(besideRanked)?.last
+                == "inside the results of a keyword search for “\"offset agreement\" wheat” (18 documents)")
+    }
+
     // MARK: The Mac's window
 
     /// What the Mac's search task asks before it runs a search: whether rows put back on leaving a held list answer it.
@@ -683,6 +785,7 @@ struct SearchLayerHoldingRulesTests {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 7: initial implementation
+///   1.1 — plan of record §6g, found in A8: Swap's help quotes a search that is one phrase once
 @Suite("Search within results: the rule a swap is made by (#1577 lane 7)")
 struct SearchLayerSwapRulesTests {
 
@@ -786,5 +889,27 @@ struct SearchLayerSwapRulesTests {
                                                    layerQuery: "which talks failed"))
         #expect(SearchLayerCopy.swapHelp(toWords)
                 == "Ask “which talks failed” first, then find “offset agreement” among its closest matches")
+    }
+
+    /// Plan of record §6g: the help names the two searches as the row names the held list.
+    @Test("Swap's help quotes a search that is one phrase once, on either side, and any other search as typed")
+    func swapHelpQuotesAPhraseOnce() throws {
+        let phraseList = base(direction: .rankByMeaning, kind: .keywords, query: "\"offset agreement\"",
+                              rows: keywordRows(4), route: .keywords, fetchLimit: 1_000)
+        let toWords = try #require(SearchLayerSwap(heldList: phraseList, route: .rankedByMeaning(unranked: 1),
+                                                   layerQuery: "“which talks failed”"))
+        #expect(SearchLayerCopy.swapHelp(toWords)
+                == "Ask “which talks failed” first, then find “offset agreement” among its closest matches")
+        let toRanking = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
+                                                     layerQuery: "\"offset agreement\""))
+        #expect(SearchLayerCopy.swapHelp(toRanking)
+                == "Search for “offset agreement” first, then rank what it finds by “how did the embassy report”")
+        let beside = try #require(SearchLayerSwap(heldList: meaningList, route: .wordsInMatches(base: 3),
+                                                  layerQuery: "\"offset agreement\" wheat"))
+        #expect(SearchLayerCopy.swapHelp(beside) == """
+            Search for “"offset agreement" wheat” first, then rank what it finds by “how did the embassy report”
+            """)
+        // Only the sentence quotes them once: the swap runs each search as typed.
+        #expect(toRanking.listQuery == "\"offset agreement\"" && toWords.layerQuery == "\"offset agreement\"")
     }
 }

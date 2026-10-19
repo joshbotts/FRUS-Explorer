@@ -1598,7 +1598,7 @@ Denominator: the era’s volumes carry %1$@ in all, and this table — every uni
 <!-- END SOURCE: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 #### ranked by meaning (on-device model), not by keywords — the…
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 233–234 | key: appendix.scope.semantic -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 235–236 | key: appendix.scope.semantic -->
 
 ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear
 
@@ -1608,13 +1608,13 @@ ranked by meaning (on-device model), not by keywords — the query’s words wer
 <!-- #1577 lane 1 (2026-10-10): the method appendix's second phrase for a Meaning search that ran inside
      a document set, after the phrase above. %@ is the set's size with its noun ("212 documents").
      The second text is for a set that held no documents. -->
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 405–406 | key: appendix.scope.semantic.within %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 410–411 | key: appendix.scope.semantic.within %@ -->
 
 ranked inside a set of %@, not across the whole series
 
 <!-- END SOURCE: appendix.scope.semantic.within %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 242–243 | key: appendix.scope.semantic.within.empty -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 244–245 | key: appendix.scope.semantic.within.empty -->
 
 ranked inside a set that held no documents
 
@@ -1624,7 +1624,7 @@ ranked inside a set that held no documents
 #### inside the closest matches of a Meaning search for…
 <!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.basePhrase | key: appendix.scope.base.meaning %@ %@ -->
 
-*The method appendix's phrase for a search run inside a held Meaning list (#1577 lane 4), from the trail row's `base=` part: %2$@ is the list's question and %1$@ its size with its noun ("100 documents").*
+*The method appendix's phrase for a search run inside a held Meaning list (#1577 lane 4), from the trail row's `base=` part: %2$@ is the list's question and %1$@ its size with its noun ("100 documents"). %2$@ is quoted as the row quoted it, so a question or words typed as one phrase in quotation marks fill it without their own marks; the trail still records them as typed (plan of record §6g, 2026-10-19). The same holds for the keyword list's phrase below.*
 
 inside the closest matches of a Meaning search for “%2$@” (%1$@)
 

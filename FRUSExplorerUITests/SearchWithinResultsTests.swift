@@ -29,7 +29,10 @@ struct LayerScreen {
     /// percent.
     static let nearQuestion = "how did the exchange of letters begin"
     /// A phrase every fixture document holds, its three without vectors included, and no published document does.
-    static let fixturePhrase = "\"Synthetic UI-test content\""
+    static let fixturePhrase = "\"\(fixturePhraseWords)\""
+    /// The phrase's words, as the row that names a list held from it quotes them: once, without the phrase's own
+    /// quotation marks (plan of record §6g).
+    static let fixturePhraseWords = "Synthetic UI-test content"
     /// Words two fixture documents hold, and nothing published: Two, which has a vector, and Nested Document Two, which
     /// has none. Of the near question's three closest matches only Two holds them (#1577 lane 7).
     static let swapWords = "\(fixturePhrase) Two"
@@ -244,6 +247,7 @@ struct LayerScreen {
 ///   1.1 — the recalled-search test saves the name the Save Search sheet offers, with no edit to it: the sheet's Save
 ///         is on as it opens since its fix (`SaveSearchSheetTests`)
 ///   1.2 — #1577 lane 7: Swap, each way
+///   1.3 — plan of record §6g: a list held from the fixture's phrase is named with its words quoted once
 @MainActor
 final class SearchWithinResultsTests: XCTestCase {
 
@@ -302,7 +306,7 @@ final class SearchWithinResultsTests: XCTestCase {
         XCTAssertTrue(closest.waitForExistence(timeout: LayerScreen.patience), "The Sort menu has no Closest to a Question…")
         closest.tap()
 
-        screen.waitForBaseRow("Searching within 6 results for “\(LayerScreen.fixturePhrase)”")
+        screen.waitForBaseRow("Searching within 6 results for “\(LayerScreen.fixturePhraseWords)”")
         XCTAssertEqual(app.searchFields.firstMatch.placeholderValue, "A question to rank these results by…")
 
         screen.type(LayerScreen.nearQuestion)
@@ -409,7 +413,7 @@ final class SearchWithinResultsTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [gone], timeout: LayerScreen.patience), .completed, "The sheet did not close")
 
         screen.chooseFromTheMoreMenu("Rank These Results by a Question")
-        screen.waitForBaseRow("Searching within 6 results for “\(LayerScreen.fixturePhrase)”")
+        screen.waitForBaseRow("Searching within 6 results for “\(LayerScreen.fixturePhraseWords)”")
         let more = screen.element("search.actions.more")
         more.tap()
         let save = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Save this search'")).firstMatch
@@ -446,6 +450,8 @@ final class SearchWithinResultsTests: XCTestCase {
         XCTAssertEqual(swap.label, "Swap the two searches")
         swap.tap()
 
+        // A phrase beside a word is not one phrase, so the row quotes the words as typed, the phrase's marks included
+        // (plan of record §6g).
         screen.waitForBaseRow("Searching within 2 results for “\(LayerScreen.swapWords)”")
         screen.waitForText("2 results · 1 ranked · 1 not ranked", "after the swap")
         let rows = screen.listed()
@@ -494,6 +500,7 @@ final class SearchWithinResultsTests: XCTestCase {
 ///
 /// Version history:
 ///   1.0 — #1577 lane 6: initial implementation
+///   1.1 — plan of record §6g: the row quotes the fixture's phrase once
 @MainActor
 final class SearchWithinTheWholeMatchTests: XCTestCase {
 
@@ -527,7 +534,7 @@ final class SearchWithinTheWholeMatchTests: XCTestCase {
         XCTAssertTrue(closest.waitForExistence(timeout: LayerScreen.patience), "The Sort menu has no Closest to a Question…")
         closest.tap()
 
-        screen.waitForBaseRow("Searching within all 6 results for “\(LayerScreen.fixturePhrase)”")
+        screen.waitForBaseRow("Searching within all 6 results for “\(LayerScreen.fixturePhraseWords)”")
 
         screen.type(LayerScreen.nearQuestion)
         screen.waitForText("Closest 3 of 6 results · 3 not ranked", "after the question was asked")

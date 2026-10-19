@@ -2087,6 +2087,8 @@ A question to rank these results by…
 
 *The row that takes the Keywords | Meaning control's place while a base is held; on the Mac, the row under the working corpus banner, beside which a label names the field's engine. %@ is one of the descriptions below.*
 
+*In each description the words or the question are quoted once: a search typed as one phrase in quotation marks, `"offset agreement"`, fills the placeholder without its own marks, so the description's “…” are the only pair and the row reads "Within 212 results for “offset agreement”". Any other search fills it as typed (plan of record §6g, 2026-10-19).*
+
 Within %@
 
 <!-- END SOURCE: search.layer.base.within %@ -->
@@ -2363,7 +2365,7 @@ Swap the two searches
 
 <!-- SOURCE: FRUSExplorer/Search/SearchLayerViews.swift | SearchLayerCopy.swapHelp | key: search.layer.swap.help.rankByMeaning %@ %@ -->
 
-*Swap's help over words found in a Meaning list: its VoiceOver hint, its pointer help on iPad, its tooltip on the Mac, and what VoiceOver hears as the swap starts. The first `%@` is the words, the second the list's question.*
+*Swap's help over words found in a Meaning list: its VoiceOver hint, its pointer help on iPad, its tooltip on the Mac, and what VoiceOver hears as the swap starts. The first `%@` is the words, the second the list's question. Each is quoted once, as the row quotes the held list: a search typed as one phrase in quotation marks fills its placeholder without its own marks.*
 
 Search for “%1$@” first, then rank what it finds by “%2$@”
 
