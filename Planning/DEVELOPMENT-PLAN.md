@@ -39259,3 +39259,59 @@ The timing was then run as the note prescribes: install first, which moved the c
 **Not done.**
 - **Opened as #1726** on the owner's word of 2026-10-19 ("Push claude/eloquent-pascal-4cbd68 and open the PR against v2 from the drafted body"), against `v2` at `b18c1a05`, which had not moved since the branch was cut. Not merged.
 - **Not seen:** VoiceOver reading the row and Swap's hint, which read the same functions the unit tests and the UI suite's labels cover; a method appendix exported from a library, whose phrase the unit tests read back from a recorded trail row; dark appearance and the accessibility sizes (a phrase's row is two characters shorter, and `SearchLayerBaseRowFitTests` was not run again).
+
+## Session 2026-10-19 — Every Semantic Match Feedback verdict carries its anchor's era, whichever door opened the anchor (plan of record §6g)
+
+**What was asked.** From the plan-of-record session, after A8 (#1724) had merged: make every Semantic Match Feedback verdict carry its anchor document's era. A8 found it in the Mac check copy on 2026-10-18 (§6g): a verdict given in Related Documents on 1961–1963 vol. IX doc. 65 (November 15, 1962), opened from the main window's *Continue reading*, was recorded with no `era`, so Settings ▸ System ▸ Data & Recovery ▸ Semantic Match Feedback counted it under *Undated anchor*. Seen once and not traced: reproduce it first, list the doors that give the request no year, take the year from where it is reliably known, and write tests that fail on the code before. App code, tests and docs: no kit code, no index version, no CloudKit change, and no string's text changes. Based on `v2` at `0fc70e8e`.
+
+**Reproduced.**
+- **The check copy's own record** (read, not driven: access to the copy was declined when asked, so it was quit with its feedback file unchanged, checked with `cmp`). `semantic-feedback.json` holds A8's verdict, `frus1961-63v09/d65` → `d53`, helpful, with no `era` key. The copy's index dates d65 `1962-11-15` and stores its dateline, *Washington, November 15, 1962.* Its reading history has d65 read at 03:19:08 UTC, and the verdict was recorded at 03:19:58.
+- **The iPhone 17 simulator** (iOS 27.0, `80CF0F18`), on the build 1861 already installed there, whose code on this path is `v2`'s. `frus1900/d60`, *Mr. Hay to Señor Morla Vicuña*, January 25, 1899: opened by link and then from Continue reading, a verdict on d59 was recorded with no `era`; opened from Search, a verdict on d61 was recorded with `era: "0"`. So one anchor counted under *Undated anchor* by one door and *Before 1900* by the other.
+- **A wrong era as well as a missing one.** `frus1929v02/d1030`, a telegram of September 18, 1929 whose dateline misprints the year as 1829, opened from Search: its verdict was recorded with `era: "0"`, before 1900.
+
+**The cause.** `DocumentView.openRelatedDocuments()` (iPhone and iPad) and `ResearchRailView.openRelated()` (Mac) build the `RelatedDocumentsRequest` with the year of `entry.dateline`, and `RelatedDocumentsContent.recordSemanticFeedback` banded the verdict by that year. `entry` is the `DocumentBrowserEntry` the door built, and the reader never refreshes it. 28 of the app's 39 constructions of one carry no dateline:
+- Continue reading (`ResumeReadingRow`), History (iOS and the Mac's window), Collections (both editors), Project Home, the Research sidebar (two), and a document's change review.
+- A cross-reference (iOS passes `nil`, the Mac none); a `frusexplorer://` link, Handoff and a Spotlight result (one entry, `navigateToDocument`); Citation Lookup's match.
+- A row of Related Documents, Archival Neighbors, Cross-Reference Analytics, the archive-visit editor or the semantic map (two), and a related document tapped in Source Explorer (two).
+- Clusters, Working Corpora and a compilation's sections, the Mac's corpus browser (two), a standalone document window, and the reading sequence's fallback for a document the cache lacks.
+
+The 11 that carry one: Search (iOS's view model and the Mac's window, two), Chronology, the cross-reference graph, the semantic search fallback, a volume's document list and its page-turns (three), and the Mac's document window and graph window, each passing on the dateline of the entry it was given (two).
+
+Measured over a full index (the iPhone 17e simulator's, version 65, 316,768 documents, read-only): 17,747 documents, 827 of them before 1900, have a date in the index and a dateline that names no year, and no document has a dateline year without a date in the index. 22 put the two years in different eras, and in 21 of them the dateline is the one that is wrong: a misprint, like d1030's 1829, or a time read as a year (`October 22, 1515Z`). The one the other way round is `frus1945Malta/d273`, Kennan's telegram of November 27, 1944: its dateline and file number (740.00114 EW/11–2744) say 1944, and the TEI's `@when`, so the index, says 1945.
+
+**The same year was the archival axis's.** `IndexingPipeline.relatedByDecimal` bands a decimal file whose number carries no year of its own by this year (`DecimalFileSegment.segment(for:fallbackYear:documentDay:)`), and with none it matches the file across every band. With 1929, 1932 and 1935 vol. II indexed and every weight but archival provenance at 0, `frus1929v02/d1031` (September 19, 1929) listed 33 documents in `851.4061 Motion Pictures` from a link, and from Search the 22 of its own 1910–1929 band; d1030 from Search listed 33, since 1829 is in no band.
+
+**What changed.**
+- `RelatedDocumentsRequest.swift`: `resolvedAnchorYear(pipeline:)` takes the anchor's year from the index's date for it, read through `IndexingPipeline.documentDates(for:)` by the table's key, and only where the index has none from the door's year. `anchorYear(indexDate:doorYear:)` is the rule. `semanticFeedback(_:on:pipeline:provenanceDigest:recordedAt:)` builds the verdict, its era from that year in `CoverageEra`'s banding as before. The request still carries the door's year, so a restored Mac window decodes as it did. `load(appState:)`, which nothing calls, takes the resolved year too, so a later caller cannot bring the defect back. Not `datesByDocumentKey(_:)`, which returns the same dictionary but matches on the two columns joined, a scan of every row: 17 ms warm against 0.03 ms by the key, in `sqlite3` on the full index on the M5.
+- `RelatedDocumentsView.swift`: the list resolves the year before it ranks, and the row's menu records through `semanticFeedback`, with the tap's moment, the index and the vector generation taken at the tap.
+- `SemanticFeedbackLog.swift`: `era`'s doc comment says where the year comes from, and that a file written before this change has dated anchors with no `era`.
+- `SemanticFollowUpTests.swift`: `SemanticFeedbackAnchorEraTests`, seven tests over a real index of three fixture volumes, two of them cut from the corpus's own markup of d60 and d1030. Each builds the request as a door does, through the platform's own `extractYear`, and calls what the menu calls. The finding; one anchor, two doors, one era; the index's date over a misprinted dateline; an anchor the index does not date (the door's year stands, and with none the verdict stays undated); no index open; the verdict's other fields; and a scan of the view, comment lines dropped, that the list ranks with the resolved year and builds no verdict of its own. `rowOffersTheControl`'s era check now names the builder.
+- `Docs/EditableContent/`: three ranged blocks on `RelatedDocumentsView.swift` re-pointed, each down 9, and the amendment log. No block's text changes, and neither manual nor the Research Guide describes where the era comes from.
+
+**Checked.** Each heavy job through `Scripts/heavy.sh`, Xcode 27.1 (27A9275), on the iPhone 17 under iOS 27.0 (`80CF0F18`).
+- **`build-for-testing`** into a copy of another worktree's build folder, whose sources sit at other paths, so it compiled every Swift file again: all 575 of the app target's and 379 of the unit test target's. `** TEST BUILD SUCCEEDED **` in about 2½ minutes. Its warnings are the two known residues (7 lines) and 2,207 notes that the copied folder's products were stale; no source warning.
+- **The new suite and its neighbours**, 24 suites named by type with `test-without-building` (the feedback and chip suites, the ranker and request suites, the count-copy sites, `CentralFilesClassifierTests`, `CodingStandardsAuditTests`, `EditableContentKeyTests` after the re-points, and the scans that read `RelatedDocumentsView.swift`): "✔ Test run with 271 tests in 24 suites passed", each new test in the log by name.
+- **Each piece of the fix is held by a test.** Five mutations, each run against the two feedback suites (15 tests), the first four built, each restored from a copy outside git and checked with `cmp` and a clean `git status`:
+  - *The verdict banded by the door's year*, the code before the fix: 3 issues, the finding's test, the two doors' test and the misprint's.
+  - *The door's year before the index's*: the misprint's test.
+  - *No fallback to the door's year*: the undated anchor's test.
+  - *The moment taken when the verdict is built, not at the tap*: the fields test.
+  - *The view as at the base* (source only, run on the build before it): the scan's four expectations and `rowOffersTheControl`'s.
+- **The full unit target**, rebuilt from the clean tree after the sweep: "Test run with 7394 tests in 873 suites passed after 334.227 seconds with 6 known issues". That is #1726's 7,387 in 872 and this change's 7 in 1; the six are #1606's, in the Sync event monitor suite.
+- **The Mac**: `FRUSExplorerMac`, DirectDistribution, unsigned, into a copy of #1721's Mac build folder, so all 575 of its Swift files compiled again: `** BUILD SUCCEEDED **` in 3 min 33 s. Its warnings are the `GeneratedSummary` residue and the AppIntents note, and 1,271 notes of stale products; no source warning. Not launched: it carries the real bundle id.
+- **On the iPhone after the fix**, the branch's build as the run of the 24 suites installed it, before the sweep:
+  - d1031 from a link and d1030 from Search each list the 22 of their band (archival provenance alone, as above).
+  - With the default weights again, a verdict on d1030 from Search was recorded with `era: "1"`, and one on d60 from Continue reading with `era: "0"`.
+  - Settings ▸ System ▸ Data & Recovery ▸ Semantic Match Feedback read *Before 1900* 1 and *1900–1944* 1, with no *Undated anchor* row.
+- **`swift test` is not owed**: no kit file changed, and no package target compiles these files.
+
+**The plan of record.** §6g's bullet is struck and marked fixed, with what was traced and measured, and a new bullet after it lists what was found while fixing it: the two items below, `datesByDocumentKey(_:)`'s scan, and `frus1945Malta/d273`'s year.
+
+**Not done.**
+- **Not driven on the Mac.** Access to the check copy was declined, so the Mac's door was not walked after the fix. The list and its menu are the shared `RelatedDocumentsContent`, which the Mac's window shows, and the Mac build compiles the change.
+- **Verdicts recorded before this change keep what they were given**: no `era` after a door with no dateline, and a misprinted dateline's era after one with it. The export's `anchor` key is what bands them again.
+- **Not pushed.** The PR is drafted for the owner's word.
+
+**Seen on the way, not fixed.**
+- `ProjectLeadsService` ranks each seed with `RelatedDocumentsEngine.rank` and no year, so a project's leads match a yearless decimal file across every band; it records no verdicts. The semantic map's nearest list passes no year to the semantic generator alone, which reads none.
+- On the iPhone 17 at the default weights, the archival chip is cut to *851.4061 Motion Pi…* beside three other chips, so the cohort's count (*· 1 of 22*) does not show.
