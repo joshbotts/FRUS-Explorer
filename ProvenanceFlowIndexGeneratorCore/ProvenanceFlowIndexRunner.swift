@@ -30,6 +30,9 @@ import SourceNoteKit
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #764
+///   1.1 — #1693: an edge is a reference to a document or to a note in one
+///          (`RefDestination.citedDocument`), now that the grammar's twin reads a footnote anchor as
+///          the app does, by the app's widened pattern
 public enum ProvenanceFlowIndexRunner {
 
     /// The artifact schema version.
@@ -134,8 +137,11 @@ public enum ProvenanceFlowIndexRunner {
             for ref in refs {
                 guard let sourceDocument = ref.enclosingDocument else { continue }
                 referencesInsideDocuments += 1
-                guard case .document(let volumeOverride, let targetDocument) =
+                // A document, or the document holding a footnote (#1693): the app's index stores
+                // a reference to a note as one to its document (#1613).
+                guard let (volumeOverride, targetDocument) =
                         CrossRefGrammar.resolveDestination(ref.rawTarget, volumeId: sourceVolume)
+                            .citedDocument
                 else { continue }
                 let targetVolume = volumeOverride ?? sourceVolume
                 // The target must be a real document div in a shippable volume. Without this the

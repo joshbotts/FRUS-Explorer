@@ -26,16 +26,15 @@ public enum AnchorShape: String, Sendable, Equatable {
 /// generator can decide whether it *resolves*.
 ///
 /// This is deliberately distinct from `RefDestination` (navigation): validation asks "does the
-/// target xml:id exist?", which the app's navigation grammar does not — the app treats `mailto:`
-/// as a bogus document anchor, collapses footnote refs to their base doc, and marks roman-numeral
-/// pages unresolved even when their `pg_` id exists. `classifyForValidation` corrects those for the
-/// existence question while `CrossRefGrammar.resolveDestination` stays a faithful navigation mirror.
+/// target xml:id exist?", which the app's navigation grammar does not — the app sends a footnote
+/// ref to the document holding the note, and marks roman-numeral pages unresolved even when their
+/// `pg_` id exists. `classifyForValidation` answers the existence question for those while
+/// `CrossRefGrammar.resolveDestination` stays a faithful navigation mirror.
 public enum RefClassification: Equatable, Sendable {
-    /// `http(s)://` or `mailto:` — an external resource, never existence-checked.
-    ///
-    /// > Note: unlike `resolveDestination` (which mirrors the app and routes `mailto:` to a
-    /// > document anchor), the validator recognises `mailto:` so those refs are skipped, not
-    /// > reported broken.
+    /// `http(s)://` or `mailto:` — an external resource, never existence-checked, so those refs are
+    /// skipped, not reported broken. `resolveDestination` reads `mailto:` as external too, as the
+    /// app's grammar does (#1693 brought the mirror to it; until then it routed them to a document
+    /// anchor).
     case external
 
     /// An empty target: `""`, `"#"`, or `"vol#"` (no anchor after the hash).
@@ -101,7 +100,10 @@ extension CrossRefGrammar {
     ///      xml:id), `inN`, `t_X`, and named front/back-matter divisions;
     ///   2. the base document `dN` for a `dNfnM` footnote anchor — the app navigates footnote refs
     ///      to their document, so a ref to an existing document's footnote resolves even if the
-    ///      footnote element id is absent;
+    ///      footnote element id is absent. The navigation grammar's pattern is wider
+    ///      (`cr_d6fn4`, `d705fn-sym1`, `d12fn5a`); this one is not widened with it, because each
+    ///      of the 33 corpus references only the wider pattern reads names a note whose own
+    ///      xml:id exists, so the literal candidate resolves it (corpus `6170e4b32`, #1693);
     ///   3. the canonical `pg_<arabic>` for a `pageN` / `pgN` page anchor written without the
     ///      underscore — the app resolves those by page number to the `<pb xml:id="pg_N">`.
     ///
