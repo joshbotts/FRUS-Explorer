@@ -3,6 +3,11 @@
 > **A guide for researchers who want to point Claude, ChatGPT, Gemini, or a comparable
 > agentic tool at FRUS Explorer's local SQLite index and ask it questions.**
 
+> **Status, October 2026.** The guide's rules have been tested with one agent (Claude) and scored
+> by other models; test results are promising, but have not been comprehensively reviewed against
+> cited FRUS documents or flagged archival locations. The guide is a work in progress. The export
+> it starts from is Mac only.
+
 FRUS Explorer builds a full-text index of the *Foreign Relations of the United States* series on
 your own machine. That index is an ordinary SQLite database. Nothing stops you from opening it with
 an AI coding agent, handing the agent SQL access, and asking it to find patterns across the
@@ -107,11 +112,11 @@ on a Mac.
 
 ### Or let the app do it
 
-On macOS, **Settings ▸ Data & Recovery ▸ Export Research Database…** runs everything this section
-and [§11](#11-safety-privacy-and-what-leaves-your-machine) describe, in the right order: the backup
-API rather than a file copy, the optional strip of your own writing (with the `VACUUM` that makes it
-an erase rather than an unlinking), and the `rank`-1 integrity check afterwards — reporting any
-problem instead of handing you a file that looks fine. The switch is **off** by default, so the
+On macOS, **Settings ▸ System ▸ Data & Recovery ▸ Export Research Database…** runs everything this
+section and [§11](#11-safety-privacy-and-what-leaves-your-machine) describe, in the right order: the
+backup API rather than a file copy, the optional strip of your own writing (with the `VACUUM` that
+makes it an erase rather than an unlinking), and the `rank`-1 integrity check afterwards — reporting
+any problem instead of handing you a file that looks fine. The switch is **off** by default, so the
 export excludes your notes, summaries and tag names unless you say otherwise.
 
 The exported copy also carries two things the live index does not: a `research_provenance` table
@@ -163,9 +168,9 @@ INSERT INTO user_content(user_content, rank)     VALUES('integrity-check', 1);
 The `rank` argument matters and is counter-intuitive. Verified empirically against SQLite 3.45:
 with the default (`rank` 0) the check tests only the FTS index's *internal* consistency and passes
 happily on an index that has drifted from its content table. **`rank` 1 is the one that cross-checks
-the index against `document_cache`** — it is the form the app's own Settings ▸ Storage ▸ *Check
-Integrity* button uses. A malformed-image error from the `rank` 1 form means your copy's search
-index and its text no longer agree; recopy.
+the index against `document_cache`** — it is the form the app's own Settings ▸ Library ▸ Volumes &
+Storage ▸ Advanced ▸ *Check Integrity* button uses. A malformed-image error from the `rank` 1 form
+means your copy's search index and its text no longer agree; recopy.
 
 Work on the copy, and open it read-only (`file:frus-copy.db?mode=ro`). An agent with write access
 to your live index can corrupt the app's state; an agent with write access to a copy can silently
@@ -545,9 +550,9 @@ Three properties worth knowing before you build on it:
 
 ### 4.7 What the app's export adds
 
-Four objects exist only in a copy made by **Settings ▸ Data & Recovery ▸ Export Research Database…**
-([§2](#or-let-the-app-do-it)). They are not in the live index and not in a copy you made with
-`.backup`, so a query written against them is a query that will not run on a hand-made file.
+Four objects exist only in a copy made by **Settings ▸ System ▸ Data & Recovery ▸ Export Research
+Database…** ([§2](#or-let-the-app-do-it)). They are not in the live index and not in a copy you made
+with `.backup`, so a query written against them is a query that will not run on a hand-made file.
 
 **`research_provenance`** — `(key TEXT PRIMARY KEY, value TEXT)`. What this copy is:
 
@@ -1566,8 +1571,8 @@ self-describe, so capture these alongside your results:
 | Record | Where to get it |
 |---|---|
 | Date of the copy | When you ran `.backup`. |
-| App build and version | FRUS Explorer ▸ About. |
-| Index format version | Settings ▸ Storage ▸ Index Health — this is the parser generation that built your rows, and it changes what is extracted. |
+| App build and version | FRUS Explorer ▸ About FRUS Explorer. |
+| Index format version | Settings ▸ Library ▸ Volumes & Storage ▸ Advanced, the index's status line (*Format version N*) — this is the parser generation that built your rows, and it changes what is extracted. |
 | Indexed volume list | `SELECT DISTINCT volume_id FROM document_cache ORDER BY 1;` — save the full list, not the count. |
 | Subject vocabulary digest | `SELECT DISTINCT digest FROM document_subject_volumes;` if you used subjects. |
 | The queries themselves | Verbatim, in a file, with their result counts — **the pattern actually executed**, every disjunct included; a TEI, heading or JSON regex is a query for this purpose. Keep the log per agent session; a reading claim with no retrieval line in it is unverified. |
@@ -1576,11 +1581,11 @@ self-describe, so capture these alongside your results:
 | The exact text each agent was given | The house-rules block *as pasted*, with everything you appended to it (resources, tooling notes), saved as a file. Two agents given different texts are two different instruments. |
 | Tool versions | `sqlite3 --version`; `python3 -c 'import sqlite3, sys; print(sqlite3.sqlite_version, sys.version)'`; the harness version. |
 
-**The app can now hand you the index-side rows.** Settings ▸ Storage ▸ Index Health ▸ **Copy
-Research-State Record** puts a small JSON on the clipboard carrying the date, the app build and
-version, *both* index-version pairs (installed and current, for the date index and the FTS schema),
-the sorted indexed-volume list, the subject-vocabulary digests, and the semantic provenance digest.
-Paste it beside your results.
+**The app can now hand you the index-side rows.** Settings ▸ Library ▸ Volumes & Storage ▸ Advanced
+▸ **Copy Research-State Record** puts a small JSON on the clipboard carrying the date, the app build
+and version, *both* index-version pairs (installed and current, for the date index and the FTS
+schema), the sorted indexed-volume list, the subject-vocabulary digests, and the semantic provenance
+digest. Paste it beside your results.
 
 Two of those rows it deliberately does not carry, and the four rows after the queries it cannot:
 the model and sessions, the prompt text, the tool versions and the writing count live in your
@@ -2589,7 +2594,10 @@ import json, sqlite3, sys
 path, db = sys.argv[1], sys.argv[2]        # the .fruscollection, and the index it was written from
 c, problems = json.load(open(path)), []
 if not path.endswith(".fruscollection"): problems.append("extension is not .fruscollection")
-if (c.get("format"), c.get("formatVersion")) != ("fruscollection", 1): problems.append("format gate")
+v = c.get("minimumReaderVersion")          # §15.3: the gate is this floor, else formatVersion,
+if v is None: v = c.get("formatVersion")   # and the app opens a file whose gate is 2 or less
+if c.get("format") != "fruscollection" or type(c.get("formatVersion")) is not int \
+        or type(v) is not int or v > 2: problems.append("format gate (§15.3)")
 missing = {"defaultBodyDepth", "footnoteStyle", "tocStyle", "applyHighlights", "includeNotes",
            "includeWordCloud"} - set(c.get("composition", {}))
 if missing: problems.append(f"composition keys missing: {sorted(missing)}")
@@ -2678,11 +2686,12 @@ to you.)*
 
 The bundle path on macOS is `/Applications/FRUS Explorer.app/Contents/Resources/`. The Tier-2
 shards live beside the database in Application Support and exist **only for volumes whose vectors
-have been fetched** (by default that tracks volume downloads; Settings ▸ Storage controls it) —
-whereas Tier 1 and the map cover the **entire 553-volume corpus regardless of your library**. That
-asymmetry cuts both ways: semantic neighbors can point at documents you cannot open locally
-(resolve them via the canonical URL), and the semantic tier is the one place in the app's data
-where a claim about the *whole* corpus is actually possible.
+have been fetched** (by default that tracks volume downloads; Settings ▸ Library ▸ Volumes & Storage
+▸ Semantic Vectors ▸ *Download With Volumes* controls it) — whereas Tier 1 and the map cover the
+**entire 553-volume corpus regardless of your library**. That asymmetry cuts both ways: semantic
+neighbors can point at documents you cannot open locally (resolve them via the canonical URL), and
+the semantic tier is the one place in the app's data where a claim about the *whole* corpus is
+actually possible.
 
 ### A.2 The provenance pin, and the one family rule
 
@@ -2894,9 +2903,9 @@ which does not fail so much as quietly return worse neighbours.
 **You probably already have the weights.** If you have used Search by Meaning, the app fetched the
 pinned GGUF and checked it against the published length and SHA-256 before keeping it. Rather than
 downloading 310 MB again and trusting a URL, reuse the copy the app validated:
-**Settings ▸ Volumes & Storage ▸ Natural-Language Search** shows the file's location, with *Show in
-Finder* and *Copy Path* on macOS. The path appears only while a verified copy is present, so a path
-you can see is a file that passed its check.
+**Settings ▸ Library ▸ Volumes & Storage ▸ Natural-Language Search** shows the file's location, with
+*Show in Finder* and *Copy Path* on macOS. The path appears only while a verified copy is present,
+so a path you can see is a file that passed its check.
 
 The prompt itself is in the artifact too: `semantic-vectors-index.json`'s `provenance.queryPrefix`,
 so the index is self-describing on both sides. It is published but deliberately **not** part of the
@@ -3011,6 +3020,24 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.32 — 2026-10-20: **§15.2's checker passes the version-2 file §15.1a publishes.** Its format
+  gate accepted `formatVersion` 1 alone, so the guide's own §15.1a example (`formatVersion` 2,
+  `minimumReaderVersion` 1), and every file §15.3 tells a writer to mark version 2, failed it. The
+  gate is now the app's (`NativeCollectionSerializer.decode`): `format` is `fruscollection`, and
+  `minimumReaderVersion`, or `formatVersion` where it is absent, is 2 or less. A file whose gate is
+  3 still fails, and so does a `formatVersion` of `true`, which the old line read as 1. **The menu
+  paths are the app's.** Export Research Database… is under Settings ▸ System ▸ Data & Recovery
+  (§2, §4.7), as the macOS manual's §17.5 has it. The Storage pane that §2's *Check Integrity*,
+  §13's index-format row and *Copy Research-State Record*, and §A.1's shard switch named was
+  merged into Volumes & Storage, and no heading in it reads Index Health, so each now names
+  Settings ▸ Library ▸ Volumes & Storage and the section it sits in; §A.7's path gains Library,
+  and §13's About is FRUS Explorer ▸ About FRUS Explorer. The entries for 1.6 to 1.8 keep the
+  paths they were written with. The §15.1 and §15.1a blocks are unchanged.
+- 1.31 — 2026-10-20: a status line under the title (one agent tested, scored by other models, the
+  results promising but not yet comprehensively reviewed against the FRUS documents they cite or
+  the archival locations they flag, the guide a work in progress, the export Mac only), on the owner's
+  decision of 2026-10-20 to support the method openly on the Support page and in the macOS manual
+  without marketing it.
 - 1.30 — 2026-10-15: §A.7 follows the move to EmbeddingGemma 2 (#1659, B4): the pinned model, its
   310 MB, the encoder's line, the index's recall (0.902), the one text-query measurement and whose
   it is, and the app's calibrated percentages.
