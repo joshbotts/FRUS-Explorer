@@ -764,7 +764,7 @@ Adds volumes whose coverage overlaps the years you set. You can also narrow by e
 
 #### Browse — the search index could not be opened
 
-<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 954–955 | key: browser.indexing.pipelineUnavailable -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 973–974 | key: browser.indexing.pipelineUnavailable -->
 
 FRUS Explorer could not open its search index. This volume cannot be indexed or checked until you restart. Relaunch the app. If the message comes back, the index database is damaged and only reinstalling will rebuild it.
 
@@ -1475,7 +1475,7 @@ Closing this doesn’t stop a run. Progress and the result appear on the Summari
 *The iCloud and sync notices in the status bar, the store-schema diagnostic and its recovery alert, and the macOS indexing queue's finalizing line.*
 
 #### Not signed in to iCloud — notes, highlights, and…
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 591–592 | key: cloudkit.account.noAccount -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 594–595 | key: cloudkit.account.noAccount -->
 
 Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.
 
@@ -1685,13 +1685,13 @@ Preparing to summarize…
 
 <!-- END SOURCE: liveactivity.summarizing.preparing -->
 
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4355–4355 | key: liveactivity.optimizing -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4368–4368 | key: liveactivity.optimizing -->
 
 Finalizing index…
 
 <!-- END SOURCE: liveactivity.optimizing -->
 
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4397–4398 | key: liveactivity.summarizing.title -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4410–4411 | key: liveactivity.summarizing.title -->
 
 Summarizing FRUS documents
 

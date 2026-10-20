@@ -484,3 +484,314 @@ struct IndexedVolumeSetTests {
                 "boot's date re-index does not go through AppState.indexAllVolumes(with:)")
     }
 }
+
+/// Browse's **Index Now** leaves `AppState` hearing the indexing pipeline, because the app reads the
+/// pipeline's `progressStream` in one place, `AppState.connectIndexingProgress(pipeline:)`.
+///
+/// ## What broke
+/// `BrowserViewModel.indexVolume(_:)` read the stream in a task of its own, beside the loop `AppState`
+/// starts at launch. An `AsyncStream` hands each update to ONE of the readers waiting on it, so the two
+/// split the volume's updates between them, and the view model cancelled its task when the pass
+/// returned. When that task had not had the volume's last update (`.complete`, or since #1695
+/// `.failed`) it was still waiting in the stream's `next()`, and cancelling a task that waits there ends
+/// the stream for every reader. `AppState` then heard nothing more until the app was launched again: no
+/// banner, no Live Activity, no queue, and no volume recorded as indexed. Found by reading in A11
+/// (#1695) and shown there with a standalone script; these tests show it in the app, on iOS's Browse ▸
+/// compilation ▸ Index Now path.
+///
+/// ## Which reader the fixture gives the last update to
+/// Index Now's volume has four documents, stored two at a time, and the pipeline is held after each
+/// batch until the main actor has run, so both readers are waiting again before the next update goes
+/// out. `AppState` has waited longest (it heard a volume indexed before Index Now), so it takes the
+/// first update, the view model's task the second, and so on: the fifth and last is `AppState`'s. That
+/// is the case that cut `AppState` off, and on the code before the fix the first test then fails at the
+/// next volume. The two `.reading` updates and the first batch's go out unheld; if the turns slip there,
+/// the task takes the last update instead, `AppState` never hears the volume end, and the test fails at
+/// the volume itself. Either way it fails on that code, every run: measured 6 runs of 6, each in the
+/// first case (three of each kind of pass, iPhone 17 simulator, iOS 27.0).
+///
+/// ## The rest
+/// The view model now shows `AppState.currentIndexingProgress` for its volume, which `CompilationView`
+/// hands it as that changes; the second test holds it to that. The last two read the source: each of
+/// the pipeline's two streams is read in one place in the app, `AppState`'s subscription, and the
+/// compilation passes `AppState`'s progress on.
+///
+/// Version history:
+///   1.0 — 2026-10-20: initial implementation
+@Suite("Index Now — AppState stays the indexing pipeline's one reader", .serialized)
+@MainActor
+struct IndexNowProgressReaderTests {
+
+    /// Indexed through the pipeline before Index Now, so `AppState` is the reader waiting longest.
+    private static let earlier = "frus1969-76v01"
+    /// The volume Index Now indexes.
+    private static let indexedNow = "frus1969-76v02"
+    /// Indexed through the pipeline after Index Now.
+    private static let later = "frus1969-76v03"
+
+    /// How the Index Now pass ends.
+    enum PassEnd: String, CaseIterable, Sendable {
+        /// The pass stores every document and sends `.complete`.
+        case completes
+        /// The pass throws after its second batch and sends `.failed` (#1695).
+        case fails
+    }
+
+    /// Thrown by the batch hook to end a pass, as a store that fails does.
+    private struct StoreStopped: Error {}
+
+    /// What `AppState` showed while the later volume's pass was held after its store.
+    @MainActor
+    private final class Sighting {
+        /// The volume `AppState.currentIndexingProgress` named.
+        var progressVolumeId: String?
+        /// The volume of the indexing queue's latest update.
+        var queueVolumeId: String?
+
+        /// Reads `appState`, and answers `true` once its progress names `volumeId`.
+        func look(at appState: AppState, for volumeId: String) -> Bool {
+            progressVolumeId = appState.currentIndexingProgress?.volumeId
+            queueVolumeId = appState.indexingBatch?.latest.volumeId
+            return progressVolumeId == volumeId
+        }
+    }
+
+    /// What the view model kept while its Index Now pass was held after its store.
+    @MainActor
+    private final class Readings {
+        /// The volume the view model said it was indexing.
+        var indexingVolumeId: String?
+        /// Its progress once handed `AppState.currentIndexingProgress`.
+        var fromAppState: IndexingProgressUpdate?
+        /// Its progress once then handed another volume's update.
+        var afterAnotherVolume: IndexingProgressUpdate?
+        /// Its progress once then handed `nil`, as `AppState` sets at a volume's end.
+        var afterNil: IndexingProgressUpdate?
+    }
+
+    // MARK: - Harness
+
+    private func writeVolume(_ volumeId: String, documents: Int, in directory: URL) throws {
+        let docs = (1...documents).map {
+            "<div type=\"document\" xml:id=\"doc-\($0)\"><head>Doc \($0)</head><p>body text</p></div>"
+        }.joined()
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt>
+          <publicationStmt><p>Test</p></publicationStmt>
+          <sourceDesc><p>Test</p></sourceDesc></fileDesc></teiHeader>
+          <text><body><div type="volume" xml:id="\(volumeId)">
+          <div type="chapter" xml:id="ch1">\(docs)</div>
+          </div></body></text>
+        </TEI>
+        """
+        try xml.write(to: directory.appendingPathComponent("\(volumeId).xml"), atomically: true, encoding: .utf8)
+    }
+
+    private static func entry(_ volumeId: String) -> VolumeManifestEntry {
+        VolumeManifestEntry(
+            volumeId: volumeId, filename: "\(volumeId).xml", subseries: "1969-76",
+            title: "Fixture \(volumeId)",
+            dateRange: DateRange(earliest: nil, latest: nil),
+            publicationDate: "2000", status: .published,
+            editors: [], generalEditor: nil,
+            sizeBytes: 0, tags: []
+        )
+    }
+
+    /// Polls until `predicate` holds or the timeout passes, yielding the main actor between polls so
+    /// the progress subscription can run.
+    private func waitUntil(timeout: Duration = .seconds(5), _ predicate: () -> Bool) async -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if predicate() { return true }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return predicate()
+    }
+
+    /// Three volumes on disk, a pipeline over them that `AppState` reads as boot connects it, the
+    /// earlier volume indexed and heard, and a view model on the same pipeline, as Browse builds it.
+    private func withLibrary(
+        _ body: (IndexingPipeline, AppState, BrowserViewModel) async throws -> Void
+    ) async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-index-now-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        try writeVolume(Self.earlier, documents: 3, in: volDir)
+        try writeVolume(Self.indexedNow, documents: 4, in: volDir)
+        try writeVolume(Self.later, documents: 3, in: volDir)
+        let dbURL = dir.appendingPathComponent("test.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL),
+                                            databaseURL: dbURL, volumesDirectory: volDir)
+        let appState = AppState()
+        appState.indexingPipeline = pipeline
+        appState.connectIndexingProgress(pipeline: pipeline)
+        try await pipeline.indexVolume(Self.earlier)
+        let heard = await waitUntil { appState.indexedVolumeIds.contains(Self.earlier) }
+        try #require(heard, "precondition: AppState hears a pass made before Index Now")
+        let viewModel = BrowserViewModel(manifestStore: ManifestStore(bundledEntries: []),
+                                         tagStore: VolumeLevelTagStore(), downloadManager: nil,
+                                         indexingPipeline: pipeline)
+        try await body(pipeline, appState, viewModel)
+    }
+
+    // MARK: - Tests
+
+    @Test("After Index Now, AppState hears its volume end and hears the volume indexed next",
+          arguments: PassEnd.allCases)
+    func appStateHearsIndexNowAndTheVolumeAfterIt(_ end: PassEnd) async throws {
+        try await withLibrary { pipeline, appState, viewModel in
+            // Index Now's volume in two batches, each held until the main actor has run.
+            let indexedNow = Self.indexedNow
+            await pipeline.setTestBatchSize(2)
+            await pipeline.setDocumentBatchStoredTestHook { volumeId, batch in
+                guard volumeId == indexedNow else { return }
+                for _ in 0..<3 { await MainActor.run {} }
+                if end == .fails, batch == 2 { throw StoreStopped() }
+            }
+            await viewModel.indexVolume(Self.entry(indexedNow))
+            await pipeline.setDocumentBatchStoredTestHook(nil)
+            switch end {
+            case .completes:
+                #expect(viewModel.indexingError == nil,
+                        "fixture: the pass threw \(String(describing: viewModel.indexingError))")
+            case .fails:
+                #expect(viewModel.indexingError is StoreStopped,
+                        "fixture: the pass did not end at the hook's throw")
+            }
+
+            // AppState heard Index Now's pass end.
+            let heardTheEnd = await waitUntil {
+                switch end {
+                case .completes: return appState.indexedVolumeIds.contains(indexedNow)
+                case .fails: return appState.indexingBatch?.failedVolumeIds.contains(indexedNow) == true
+                }
+            }
+            #expect(heardTheEnd, """
+                AppState did not hear the volume Index Now indexed \(end == .completes ? "finish" : "fail"): \
+                its progress still names \(appState.currentIndexingProgress?.volumeId ?? "no volume") \
+                at \(String(describing: appState.currentIndexingProgress?.stage)). Another reader of the \
+                pipeline's progress stream took that update; each update reaches one reader.
+                """)
+
+            // And it hears the volume indexed next while that pass is under way: the pass is held after
+            // its store, before its `.complete`, until AppState's progress names it.
+            let later = Self.later
+            let sighting = Sighting()
+            await pipeline.setVolumeStoredTestHook { volumeId in
+                guard volumeId == later else { return }
+                let deadline = ContinuousClock.now + .seconds(10)
+                while ContinuousClock.now < deadline {
+                    if await MainActor.run(body: { sighting.look(at: appState, for: later) }) { return }
+                    try? await Task.sleep(for: .milliseconds(20))
+                }
+            }
+            try await pipeline.indexVolume(later)
+            await pipeline.setVolumeStoredTestHook(nil)
+            #expect(sighting.progressVolumeId == later, """
+                AppState showed no progress for the volume indexed after Index Now (it showed \
+                \(sighting.progressVolumeId ?? "none")): it had stopped hearing the pipeline. Cancelling a \
+                reader that waits on an AsyncStream ends the stream for every reader.
+                """)
+            #expect(sighting.queueVolumeId == later,
+                    "and the indexing queue did not move on to it (\(sighting.queueVolumeId ?? "no queue"))")
+            let recorded = await waitUntil { appState.indexedVolumeIds.contains(later) }
+            #expect(recorded, "AppState did not record the later volume indexed: \(appState.indexedVolumeIds.sorted())")
+        }
+    }
+
+    @Test("Index Now shows AppState's progress for its own volume, and keeps the last of it until its pass returns")
+    func indexNowShowsAppStatesProgressForItsVolume() async throws {
+        try await withLibrary { pipeline, appState, viewModel in
+            let indexedNow = Self.indexedNow
+            let another = IndexingProgressUpdate(volumeId: Self.later, stage: .reading,
+                                                 completedDocuments: 0, totalDocuments: 3, docsPerSecond: 0)
+            viewModel.updateIndexingProgress(from: IndexingProgressUpdate(
+                volumeId: indexedNow, stage: .reading, completedDocuments: 0, totalDocuments: 4, docsPerSecond: 0))
+            #expect(viewModel.indexingProgress == nil, "progress was kept while no Index Now was running")
+
+            // The pass is held after its store, with its updates sent and AppState's progress on it, and
+            // the view model is handed what CompilationView hands it as that progress changes.
+            let readings = Readings()
+            await pipeline.setVolumeStoredTestHook { volumeId in
+                guard volumeId == indexedNow else { return }
+                await MainActor.run {
+                    readings.indexingVolumeId = viewModel.indexingVolumeId
+                    viewModel.updateIndexingProgress(from: appState.currentIndexingProgress)
+                    readings.fromAppState = viewModel.indexingProgress
+                    viewModel.updateIndexingProgress(from: another)
+                    readings.afterAnotherVolume = viewModel.indexingProgress
+                    viewModel.updateIndexingProgress(from: nil)
+                    readings.afterNil = viewModel.indexingProgress
+                }
+            }
+            await viewModel.indexVolume(Self.entry(indexedNow))
+            await pipeline.setVolumeStoredTestHook(nil)
+
+            #expect(readings.indexingVolumeId == indexedNow, "the view model did not name the volume it was indexing")
+            let shown = try #require(readings.fromAppState, """
+                The view model kept none of AppState's progress for the volume it was indexing, so Index Now \
+                would draw "Preparing…" for the whole pass.
+                """)
+            #expect(shown.volumeId == indexedNow)
+            #expect(readings.afterAnotherVolume == shown, "another volume's update replaced Index Now's")
+            #expect(readings.afterNil == shown,
+                    "AppState's nil at a volume's end cleared Index Now's progress before its pass returned")
+            #expect(viewModel.indexingProgress == nil && viewModel.indexingVolumeId == nil && !viewModel.isIndexing,
+                    "the pass's end did not clear Index Now's progress")
+        }
+    }
+
+    @Test("The app reads each of the pipeline's two progress streams in one place, AppState's subscription")
+    func eachProgressStreamHasOneReader() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let files = AppSourceTree.swiftFiles(in: root)
+        #expect(files.count > 100, "scanned only \(files.count) app files")
+        // Each stream, and what anything else that wants its news reads instead.
+        let streams = [".progressStream": "currentIndexingProgress", ".metadataStream": "lastDiscoveredMetadata"]
+        var readers: [String: [String]] = [:]
+        for url in files {
+            let path = url.path.replacingOccurrences(of: root.path + "/", with: "")
+            let text = try String(contentsOf: url, encoding: .utf8)
+            for (index, line) in text.components(separatedBy: "\n").enumerated() {
+                // The code before any `//`: a comment that names a stream is not a reader of it.
+                let code = line.components(separatedBy: "//")[0]
+                for stream in streams.keys where code.contains(stream) {
+                    readers[stream, default: []].append("\(path):\(index + 1): \(line.trimmingCharacters(in: .whitespaces))")
+                }
+            }
+        }
+        for (stream, instead) in streams.sorted(by: { $0.key < $1.key }) {
+            let found = readers[stream] ?? []
+            #expect(found.count == 1 && found.first?.hasPrefix("FRUSExplorer/App/AppState.swift:") == true, """
+                The app must read `IndexingPipeline\(stream)` in one place, \
+                `AppState.connectIndexingProgress(pipeline:)`. An AsyncStream hands each element to one of \
+                the readers waiting on it, so another reader takes elements AppState never sees, and \
+                cancelling one that waits ends the stream for AppState too. Read `AppState.\(instead)` \
+                instead. Found:
+                \(found.joined(separator: "\n"))
+                """)
+        }
+    }
+
+    @Test("Browse's compilation passes AppState's progress to the view model as it changes")
+    func theCompilationPassesAppStatesProgressOn() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Browser/CompilationView.swift"),
+                              encoding: .utf8)
+        let code = text.components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        let forward = try Regex(#"\.onChange\(of: appState\.currentIndexingProgress\) \{ _, progress in\s*vm\.updateIndexingProgress\(from: progress\)"#)
+        #expect(code.contains(forward), """
+            CompilationView no longer hands AppState's progress to the view model as it changes, so Index \
+            Now's progress section would read "Preparing…" for the whole pass. The view model reads no \
+            stream of its own (`IndexNowProgressReaderTests`).
+            """)
+    }
+}
