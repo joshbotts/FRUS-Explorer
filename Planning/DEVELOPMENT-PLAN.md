@@ -39442,3 +39442,4 @@ Two answers departed from the session's advice: the index bump, which it had adv
 
 **Not done.**
 - `Docs/macOS-User-Manual.md` names the pane without its group in three places (Settings → Data & Recovery → Fix iCloud Sync, → Semantic Match Feedback, → Diagnostics → Language Analysis) against its own §17.5; outside this request.
+- **Opened as #1732** on the owner's word of 2026-10-20 ("Open a PR"), against `v2` at `5a8fc935`, after a rebase onto #1731. Not merged.
