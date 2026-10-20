@@ -39581,5 +39581,5 @@ Nothing was to be built until the owner chooses.
 - **The two search screenshots** (`Docs/screenshots/ipad/search-results.png`, `Docs/screenshots/macos/search.png`) show the old snippets: for the capture list.
 
 **Not done.**
-- Not pushed and no PR: the draft is in the session group's notes folder (`A10b-pr-draft.md`). It lands after #1735.
+- **Opened as #1736** on the owner's word of 2026-10-20 ("open PR"), against `v2` at `faa1c746` (#1735 merged, docs only), ahead of A11 to A18. The merge's only conflicts were the plan's three and this log's append; on it, `swift test` passed (2,967 tests) and so did the unit target ("Test run with 7449 tests in 879 suites passed after 340.327 seconds with 6 known issues"). Not merged.
 - Seen in the app only in the VoiceOver suite's recording on iPhone 17, the fixture's three rows. Not seen by eye on real documents, on the iPad or on the Mac: the measured lines are Core Text's. VoiceOver's More Content was not listened to at its new length.
