@@ -881,11 +881,11 @@ nothing either. So no test can make VoiceOver do a custom action: the suite read
 drives what it does through the chip's tap, and `SearchResultAccessibilityTests` holds the action to the chip's
 function, read from source.
 
-**On the code before #1684** (`v2` at `c9e26509`, with this suite and its fixture): RESULT_M0. The actions VoiceOver
+**On the code before #1684** (`v2` at `c9e26509`, with this suite and its fixture): **iPhone 17: 3 tests, 3 failed**, each at the label, which read "UI Test Spoken Document" where the row as drawn was required. The actions VoiceOver
 read there were Add to Collection…, Add Tags… and its own Activate Default. **Mutations** (each built and run alone,
-the file restored from the commit after each): RESULT_MUT.
+the file restored from the commit after each): **two of two caught**. The tags' actions taken out failed `testATagIsSaidAndOfferedAsAnActionThatFilters`, the actions reading Add to Collection… and Add Tags…; the actions offered in selection too failed `testSelectionOffersNoActionForATag`, with Filter by UI Test Spoken Tag among them.
 
-Measured at the final code under iOS 27.0: RESULT_FINAL.
+Measured at the final code under iOS 27.0, 2026-10-19, each device alone under the heavy-job lock: **iPhone 17 (`80CF0F18`): 3 tests, 3 passed** (61, 28 and 60 s), and **iPad Pro 13-inch (M5) (`9AB3A0C9`), built into its own build folder and warmed with one test first: 3 tests, 3 passed** (62, 27 and 59 s). A test spends most of its minute on VoiceOver: each flick waits about five seconds for the app to idle.
 ```bash
 Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
