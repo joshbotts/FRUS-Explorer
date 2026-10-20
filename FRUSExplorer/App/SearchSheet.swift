@@ -152,6 +152,8 @@ import SwiftUI
 ///          (`MacSearchViewModel.swapLayer()`), and the search task holds the swap's new list once its search is
 ///          recorded (`continueSwap(meaningAvailable:)`); the row and the engine label go on naming the list a swap let
 ///          go of until then
+///   1.27 — #1686: the facet panel narrows through the view model (`MacSearchViewModel.applyFacetNarrowing(_:)` and
+///          `applyFacetSelection(_:keys:)`), which remembers a Volumes facet's choice, so a change of project leaves it
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -541,13 +543,13 @@ struct MacSearchWindowView: View {
                     // Captured here because the narrow re-runs the search, and by the time
                     // the panel recomputes, its match count describes the narrowed set.
                     facetController.recordNarrowing(from: searchVM.totalMatchCount)
-                    narrowing.apply(to: &searchVM.parameters)
-                    searchVM.parametersVersion += 1
+                    // The view model's, which remembers a volume so that a change of project
+                    // leaves it (#1686).
+                    searchVM.applyFacetNarrowing(narrowing)
                 },
                 onApplySelection: { section, keys in
                     facetController.recordNarrowing(from: searchVM.totalMatchCount)
-                    FacetSelectionApplier.apply(section, keys: keys, to: &searchVM.parameters)
-                    searchVM.parametersVersion += 1
+                    searchVM.applyFacetSelection(section, keys: keys)
                 },
                 onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                 onBrowseTopics: { browseTopics() },

@@ -125,6 +125,9 @@ import SwiftData
 ///          as a search of their own on a version bump, with the trail's anchor set aside, and the window's search task
 ///          then holds that list and submits the held list's own inside it (`continueSwap(meaningAvailable:)`);
 ///          `layerSwap` is the swap the row offers, and `swapUnderWay` the list the row names meanwhile
+///   1.17 — #1686: a facet's narrowing is the view model's (`applyFacetNarrowing(_:)`, `applyFacetSelection(_:keys:)`),
+///          which remembers a Volumes facet's choice; a change of project keeps it while the gate still holds it
+///          (`applyProjectScope()`, `FacetVolumeChoice`), and the volume filter's ✕ forgets it
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -361,6 +364,12 @@ final class MacSearchViewModel {
     /// Created lazily on the first call to `syncToFilterVM(searchService:)`.
     /// Nil until then (and nil if `searchService` is not yet available).
     var filterVM: SearchViewModel? = nil
+
+    /// The volumes a Volumes facet last chose, or `nil` when none is remembered (#1686).
+    ///
+    /// A facet writes `parameters` and not ``filterVM``, so the window remembers what it wrote: a change of
+    /// project keeps it while the gate still holds it (``applyProjectScope()``, `FacetVolumeChoice`).
+    private var facetVolumeChoice: FacetVolumeChoice?
 
     // MARK: - Sort
 
@@ -1397,6 +1406,9 @@ final class MacSearchViewModel {
     }
 
     func clearVolumeFilter() {
+        // The ✕ clears every volume its token shows, a Volumes facet's choice among them (#1686), so
+        // the choice is forgotten first: `applyProjectScope` would otherwise keep it as the gate.
+        facetVolumeChoice = nil
         // Clear the manual volume/subseries selection, then re-derive the scope so the
         // executed gate matches: in Focus this falls back to the subject-derived volumes
         // (the manual selection was overriding them, #377 Phase 2b); off/History simply
@@ -1418,6 +1430,33 @@ final class MacSearchViewModel {
         // parameters left the selection checked in the popover and the filter returned on the next
         // edit there.
         filterVM?.selectedUserTagIds = []
+        parametersVersion += 1
+    }
+
+    // MARK: - Facets
+
+    /// Narrows the search from a facet's row (R-1), and runs it again.
+    ///
+    /// A facet writes `parameters` alone: ``filterVM`` takes the narrowing when Filters next opens
+    /// (``syncToFilterVM(searchService:volumeEntries:indexedVolumeIds:userTags:)``). A volume is remembered,
+    /// so that a change of project leaves it (#1686).
+    ///
+    /// - Parameter narrowing: The row's narrowing.
+    func applyFacetNarrowing(_ narrowing: FacetNarrowing) {
+        narrowing.apply(to: &parameters)
+        if case .volume = narrowing { facetVolumeChoice = FacetVolumeChoice(volumeIds: parameters.volumeIds) }
+        parametersVersion += 1
+    }
+
+    /// Applies a facet section's staged selection (#775), and runs the search again. A Volumes selection is
+    /// remembered, as a volume row's narrowing is (#1686).
+    ///
+    /// - Parameters:
+    ///   - section: The section whose selection is applied.
+    ///   - keys: The selection resolved over the section's rows (`FacetSelection.resolved(from:)`).
+    func applyFacetSelection(_ section: FacetSection, keys: [String]?) {
+        FacetSelectionApplier.apply(section, keys: keys, to: &parameters)
+        if section == .volumes { facetVolumeChoice = FacetVolumeChoice(volumeIds: parameters.volumeIds) }
         parametersVersion += 1
     }
 
@@ -1631,23 +1670,29 @@ final class MacSearchViewModel {
         if !namesASearch, let heldListEngine { searchMode = heldListEngine }
     }
 
-    /// Re-derives `parameters.documentIds` from the filter VM's current project scope +
-    /// engaged-key set and re-runs the search **only if the effective gate changed**
-    /// (#377 Phase 2a). Called by `SearchSheet` after it (re)loads the engaged set — on
-    /// opening Advanced filters and on an active-project change — so the executed query
-    /// always reflects the live project scope without re-searching when nothing changed
-    /// (e.g. merely opening the panel with no scope active; the engaged set is stored sorted
-    /// so an unchanged set compares equal). Note: if the active project changes *while* the
-    /// Advanced popover is open with History active, this bump plus the popover's own
-    /// `advancedFilterSignature` observer (which sees the scope flip to `.off`) can both fire
-    /// — two re-searches for one switch, both correctly yielding the ungated result.
+    /// Re-derives the project's gates from the filter VM's current project scope + engaged-key set
+    /// and re-runs the search **only if the effective gate changed** (#377 Phase 2a). Called by
+    /// `SearchSheet` after it (re)loads the engaged set — on opening Advanced filters and on an
+    /// active-project change — so the executed query always reflects the live project scope without
+    /// re-searching when nothing changed (e.g. merely opening the panel with no scope active; the
+    /// engaged set is stored sorted so an unchanged set compares equal). Note: if the active project
+    /// changes *while* the Advanced popover is open with History active, this bump plus the popover's
+    /// own `advancedFilterSignature` observer (which sees the scope flip to `.off`) can both fire —
+    /// two re-searches for one switch, both correctly yielding the ungated result.
+    ///
+    /// A project changes its History documents and its Focus volumes, and nothing a reader chose in
+    /// Facets (#1686): a Volumes facet's choice stays the volume gate while the gate still holds it
+    /// (`FacetVolumeChoice.volumeGate(_:choice:derived:)`). Until #1686 this wrote the filter VM's
+    /// volumes over it, and the search ran again over the volumes chosen in Filters, or every volume.
     func applyProjectScope() {
         guard filterVM != nil else { return }
         let scoped = scopeDerivedParams()
-        if scoped.volumeIds != parameters.volumeIds
+        let volumeIds = FacetVolumeChoice.volumeGate(parameters.volumeIds, choice: facetVolumeChoice,
+                                                     derived: scoped.volumeIds)
+        if volumeIds != parameters.volumeIds
             || scoped.documentIds != parameters.documentIds
             || scoped.excludeDocumentIds != parameters.excludeDocumentIds {
-            parameters.volumeIds          = scoped.volumeIds
+            parameters.volumeIds          = volumeIds
             parameters.documentIds        = scoped.documentIds
             parameters.excludeDocumentIds = scoped.excludeDocumentIds
             parametersVersion += 1
@@ -1672,7 +1717,8 @@ final class MacSearchViewModel {
 
     /// The volume scope + project History/Focus gates derived from the filter VM's current
     /// scope (#377 Phase 2). The single source both `applyAdvancedFilters` and
-    /// `applyProjectScope` use, so the executed `parameters` never disagree about the scope.
+    /// `applyProjectScope` use, so the executed `parameters` never disagree about the scope;
+    /// `applyProjectScope` keeps a Volumes facet's choice over the volume gate derived here (#1686).
     /// - Focus overrides the volume scope with the subject-derived focus volumes and,
     ///   with "only new" on, excludes the engaged set; History gates to the engaged set;
     ///   off uses the manual volume/subseries selection.

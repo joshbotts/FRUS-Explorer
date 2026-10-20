@@ -312,6 +312,7 @@ struct FacetPanelControllerTests {
 ///
 /// Version history:
 ///   1.0 — R-1c: initial implementation
+///   1.1 — #1686: a Volumes selection outlasts a change of project, as the Mac's facet choice now does
 @Suite("iOS facet narrowing")
 @MainActor
 struct IOSFacetNarrowingTests {
@@ -358,6 +359,28 @@ struct IOSFacetNarrowingTests {
         // Unioning would return more documents than the facet row's own count promised.
         #expect(vm.selectedVolumeIds == ["frus1948v03"])
         #expect(vm.selectedSubseriesIds.isEmpty, "a stale subseries would widen the gate back out")
+    }
+
+    /// The Mac keeps a Volumes facet's choice across a change of project since #1686 (`FacetVolumeChoiceTests`), as
+    /// iPhone and iPad did already: here a facet's volumes are the filter fields' own selection, which a change of
+    /// project leaves. `SearchView.applyActiveProject()` sets the scope off and "only new" off, as below; the view is
+    /// not driven here, its two assignments are.
+    @Test("A Volumes selection outlasts a change of project, and stands over Focus (#1686's iPhone and iPad half)")
+    func volumeSelectionOutlastsAProjectChange() async throws {
+        let (dir, vm) = try await makeViewModel()
+        defer { cleanUp(dir) }
+
+        vm.projectFocusVolumeIds = ["frus1948v01", "frus1948v02", "frus1948v03", "frus1948v04"]
+        vm.projectScope = .focus
+        #expect(vm.searchParameters.volumeIds == ["frus1948v01", "frus1948v02", "frus1948v03", "frus1948v04"])
+        vm.applyFacetSelection(.volumes, keys: ["frus1948v03", "frus1948v02"])
+        #expect(vm.searchParameters.volumeIds == ["frus1948v02", "frus1948v03"],
+                "a facet's volumes stand over the project's Focus volumes, as a selection in Filters does")
+
+        vm.projectScope = .off
+        vm.projectOnlyNew = false
+        #expect(vm.searchParameters.volumeIds == ["frus1948v02", "frus1948v03"],
+                "a change of project's reset of the scope dropped the facet's volumes")
     }
 
     @Test("A person narrowing clears the typed ref that would AND with it")
@@ -480,5 +503,62 @@ struct IOSFacetNarrowingTests {
         #expect(SearchViewModel.facetTotal(fetched: 1_000, cap: 1_000) == nil,
                 "at the cap the real total is unknown — reporting 1,000 as the total is the lie")
         #expect(SearchViewModel.facetTotal(fetched: 1_001, cap: 1_000) == nil)
+    }
+}
+
+/// A Volumes facet's choice across a change of project on the Mac (#1686).
+///
+/// A facet writes the Mac window's parameters alone, and a change of project derived the volume gate from the filter
+/// view model again, so the search ran over the volumes chosen in Filters, or every volume, and the facet's choice was
+/// gone. `MacSearchViewModel.applyProjectScope()` now asks `FacetVolumeChoice.volumeGate(_:choice:derived:)`, driven
+/// here. The view model is compiled for the Mac alone and this target runs on iOS, so its calls are read in
+/// `SearchResultRouteTests.macProjectChangeKeepsAFacetsVolumes`, and the window was walked in the check copy.
+///
+/// Version history:
+///   1.0 — #1686: initial implementation
+@Suite("A Volumes facet's choice across a change of project (#1686)")
+struct FacetVolumeChoiceTests {
+
+    /// Two volumes a reader chose in the Volumes facet of a search in the 1961–63 volumes.
+    private let chosen = ["frus1961-63v05", "frus1961-63v11"]
+
+    /// A project's Focus volumes, of which the facet's two are a part.
+    private let focus = ["frus1961-63v01", "frus1961-63v05", "frus1961-63v11", "frus1961-63v14"]
+
+    @Test("A change of project keeps a facet's volumes while the gate still holds them")
+    func aChangeOfProjectKeepsTheChoice() {
+        let choice = FacetVolumeChoice(volumeIds: chosen)
+        #expect(FacetVolumeChoice.volumeGate(chosen, choice: choice, derived: nil) == chosen,
+                "every volume, the filter view model's scope, replaced the facet's choice")
+        #expect(FacetVolumeChoice.volumeGate(chosen, choice: choice, derived: ["frus1961-63v07"]) == chosen,
+                "the volume chosen in Filters before the facet replaced the facet's choice")
+    }
+
+    @Test("A facet's volumes stand over a project's Focus volumes, as a selection in Filters does")
+    func theChoiceStandsOverFocus() {
+        #expect(FacetVolumeChoice.volumeGate(chosen, choice: FacetVolumeChoice(volumeIds: chosen),
+                                             derived: focus) == chosen)
+    }
+
+    @Test("A gate something else has written since is derived again")
+    func anotherWriterEndsTheChoice() {
+        // The facet chose two volumes; an edit in Filters then cleared them, under Focus, so the gate is the
+        // Focus volumes. A change of project sets the scope off, and the Focus volumes go with it.
+        #expect(FacetVolumeChoice.volumeGate(focus, choice: FacetVolumeChoice(volumeIds: chosen), derived: nil) == nil,
+                "a facet's choice that is no longer the gate was put back")
+    }
+
+    @Test("With no choice remembered, the gate is the derived one")
+    func noChoiceDerivesTheGate() {
+        #expect(FacetVolumeChoice.volumeGate(focus, choice: nil, derived: nil) == nil,
+                "leaving Focus kept its volumes")
+        #expect(FacetVolumeChoice.volumeGate(nil, choice: nil, derived: focus) == focus)
+    }
+
+    @Test("A facet that cleared the volume gate keeps it clear")
+    func aClearedGateStaysClear() {
+        // A Volumes selection that excludes every volume listed clears the gate (`FacetSelectionApplier`).
+        #expect(FacetVolumeChoice.volumeGate(nil, choice: FacetVolumeChoice(volumeIds: nil),
+                                             derived: ["frus1961-63v07"]) == nil)
     }
 }
