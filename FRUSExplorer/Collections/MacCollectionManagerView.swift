@@ -135,6 +135,10 @@ import UniformTypeIdentifiers
 ///          the entries it keeps (`CollectionOutline.contentsRows`), and its entries from before its link follow in a
 ///          section of their own under a dimmed heading, with Remove These Entries, which asks first
 ///          (`SmartCollectionEntriesFromBeforeLink`, the iOS editor's); its apparatus rows print no document count
+///   1.25 — 2026-10-20: #1687, decision 70 of the 2026-10-14 plan of record — the ⚙ popover's Smart Collection section
+///          offers Link to Saved Search… for a collection that is not linked (`SmartCollectionLinkButton`), which closes
+///          the popover and opens the editor's picker on the pane (`LinkSavedSearchPicker`); on the Mac a collection
+///          could be linked only while Add to Collection's New Collection created it
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -716,6 +720,13 @@ private struct CollectionDetailPane: View {
     /// composition surface that replaces the fixed header + inline Composition/Front-Matter
     /// disclosures (which are gone).
     @State private var showCollectionSettingsPopover = false
+    /// The Link to Saved Search picker (`LinkSavedSearchPicker`, #1687), presented on this pane once the ⚙ popover whose
+    /// Link to Saved Search… asked for it has closed.
+    @State private var showLinkSavedSearch = false
+    /// Set by the ⚙ popover's Link to Saved Search…, which closes the popover; the popover's going presents the picker
+    /// (#1687). The pane presents it, not the popover, and only once the popover has gone, so the sheet opens on the
+    /// window rather than on the popover, as the pane's other sheets do.
+    @State private var opensLinkPickerOnClose = false
     /// Live preview pane visibility. Defaults **on** so the manager opens with the live
     /// "exactly what exports" preview beside the outline (Composer redesign 4 — the 4-pane
     /// intent), and persists the researcher's toolbar/Collection-menu toggle across sessions.
@@ -874,6 +885,17 @@ private struct CollectionDetailPane: View {
                 allNotes: allNotes,
                 appState: appState
             )
+        }
+        // #1687: the ⚙ popover's Link to Saved Search… opens the editor's picker here, and the link commits as the
+        // popover's Unlink does, through the editor's rule.
+        .sheet(isPresented: $showLinkSavedSearch) {
+            LinkSavedSearchPicker(
+                savedSearches: allSavedSearches,
+                onLink: { searchId in
+                    if CollectionEditorCommit.savedSearch(searchId, to: collection) { try? modelContext.save() }
+                    showLinkSavedSearch = false
+                },
+                onCancel: { showLinkSavedSearch = false })
         }
         .sheet(item: $noteCreateContext) { ctx in
             InlineNoteCreateSheet(
@@ -1091,18 +1113,25 @@ private struct CollectionDetailPane: View {
                                       presetsCompact: false)
 
             // #1619 review: a smart collection takes no hand-added entry, so the window that refuses them offers the
-            // way back, Unlink, whether or not the saved search can still be found. Linking an existing collection is
-            // still only in the editor that Add to Collection's New Collection opens.
-            if let searchId = collection.savedSearchId {
-                Section {
+            // way back, Unlink, whether or not the saved search can still be found. #1687 (decision 70): and a
+            // collection that is not linked offers the link, which on the Mac had been made only while Add to
+            // Collection's New Collection created a collection. Its picker is the editor's (`LinkSavedSearchPicker`),
+            // presented on the pane once this popover has closed.
+            Section {
+                if let searchId = collection.savedSearchId {
                     SmartCollectionLinkRows(
                         savedSearchName: allSavedSearches.first(where: { $0.id == searchId })?.name,
                         onUnlink: {
                             if CollectionEditorCommit.savedSearch(nil, to: collection) { try? modelContext.save() }
                         })
-                } header: {
-                    Text(String(localized: "collection.editor.smart.header", defaultValue: "Smart Collection"))
+                } else {
+                    SmartCollectionLinkButton(hasSavedSearches: !allSavedSearches.isEmpty) {
+                        opensLinkPickerOnClose = true
+                        showCollectionSettingsPopover = false
+                    }
                 }
+            } header: {
+                Text(String(localized: "collection.editor.smart.header", defaultValue: "Smart Collection"))
             }
         }
         .formStyle(.grouped)
@@ -1571,6 +1600,12 @@ private struct CollectionDetailPane: View {
                          defaultValue: "Edit this collection’s name, front matter, and composition"))
             .popover(isPresented: $showCollectionSettingsPopover, arrowEdge: .top) {
                 macCollectionSettingsForm
+                    // #1687: Link to Saved Search… closes the popover, and its going opens the picker on the pane.
+                    .onDisappear {
+                        guard opensLinkPickerOnClose else { return }
+                        opensLinkPickerOnClose = false
+                        showLinkSavedSearch = true
+                    }
             }
 
             Button { showExport = true } label: {

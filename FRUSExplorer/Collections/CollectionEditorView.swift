@@ -166,6 +166,9 @@ import UIKit
 ///   2026-10-17 — #1704: Collection settings presents the Link to Saved Search picker, the iPad's sheet and the
 ///          compact layout's pushed screen alike, where the editor had, so on iPad it opens over the settings sheet
 ///          rather than once Done has closed it; the identifier `collection.editor.smart.link` on its button
+///   2026-10-20 — #1687, decision 70 of the 2026-10-14 plan of record: Link to Saved Search… and its picker are views
+///          of their own (`SmartCollectionLinkButton`, `LinkSavedSearchPicker`), which the Mac Collections window's ⚙
+///          popover mounts too; on the Mac the dimmed button's line names the Search window, not the Search tab
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -918,21 +921,8 @@ struct CollectionEditorView: View {
                     savedSearchName: allSavedSearches.first(where: { $0.id == searchId })?.name,
                     onUnlink: { linkSavedSearch(nil) })
             } else {
-                Button {
+                SmartCollectionLinkButton(hasSavedSearches: !allSavedSearches.isEmpty) {
                     showLinkSavedSearch = true
-                } label: {
-                    Label(String(localized: "collection.editor.smart.link",
-                                 defaultValue: "Link to Saved Search\u{2026}"),
-                          systemImage: "bolt")
-                }
-                // `CollectionEditorTitleTests` (#1704) opens the picker from Collection settings with it.
-                .accessibilityIdentifier("collection.editor.smart.link")
-                .disabled(allSavedSearches.isEmpty)
-                if allSavedSearches.isEmpty {
-                    Text(String(localized: "collection.editor.smart.noSearches",
-                                defaultValue: "Save a search from the Search tab to enable smart collections."))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -940,117 +930,16 @@ struct CollectionEditorView: View {
 
     // MARK: - Link Saved Search Sheet
 
+    /// The picker Link to Saved Search… opens (`LinkSavedSearchPicker`, which the Mac Collections window's ⚙ popover
+    /// opens too, #1687). Picking a search links the collection through `linkSavedSearch`.
     private var linkSavedSearchSheet: some View {
-        #if os(macOS)
-        linkSavedSearchMacBody
-        #else
-        linkSavedSearchiOSBody
-        #endif
-    }
-
-    #if os(macOS)
-    /// macOS variant: plain VStack + button bar avoids the NavigationStack sidebar issue.
-    private var linkSavedSearchMacBody: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(String(localized: "collection.editor.smart.picker.title",
-                            defaultValue: "Link to Saved Search"))
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-
-            Divider()
-
-            if allSavedSearches.isEmpty {
-                VStack(spacing: 8) {
-                    Spacer()
-                    Text(String(localized: "collection.editor.smart.picker.empty",
-                                defaultValue: "No saved searches yet. Save a search from the Search window first."))
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                    Spacer()
-                }
-            } else {
-                List(allSavedSearches) { search in
-                    Button {
-                        linkSavedSearch(search.id)
-                        showLinkSavedSearch = false
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(search.name).font(.body)
-                            if !search.queryText.isEmpty {
-                                Text(search.queryText)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                        // #312 follow-up: full-row tap target — both modifiers, in this order.
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-                .listStyle(.inset)
-            }
-
-            Divider()
-
-            HStack {
-                Spacer()
-                Button(String(localized: "collection.editor.smart.picker.cancel",
-                              defaultValue: "Cancel")) {
-                    showLinkSavedSearch = false
-                }
-                .keyboardShortcut(.cancelAction)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-        }
-        .frame(minWidth: 360, minHeight: 280)
-    }
-    #endif
-
-    /// iOS / iPadOS variant: NavigationStack with inline title and Cancel toolbar button.
-    private var linkSavedSearchiOSBody: some View {
-        NavigationStack {
-            List(allSavedSearches) { search in
-                Button {
-                    linkSavedSearch(search.id)
-                    showLinkSavedSearch = false
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(search.name).font(.body)
-                        if !search.queryText.isEmpty {
-                            Text(search.queryText)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-                .foregroundStyle(.primary)
-            }
-            .navigationTitle(String(localized: "collection.editor.smart.picker.title",
-                                    defaultValue: "Link to Saved Search"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "collection.editor.smart.picker.cancel",
-                                  defaultValue: "Cancel")) {
-                        showLinkSavedSearch = false
-                    }
-                }
-            }
-        }
+        LinkSavedSearchPicker(
+            savedSearches: allSavedSearches,
+            onLink: { searchId in
+                linkSavedSearch(searchId)
+                showLinkSavedSearch = false
+            },
+            onCancel: { showLinkSavedSearch = false })
     }
 
     // MARK: - Name Section
@@ -2466,6 +2355,182 @@ struct SmartCollectionLinkRows: View {
                       defaultValue: "Documents are resolved from this saved search at export time. Static entries are ignored."))
             .font(.caption)
             .foregroundStyle(.secondary)
+    }
+}
+
+// MARK: - SmartCollectionLinkButton
+
+/// An unlinked collection's Smart Collection row: **Link to Saved Search…**, which opens `LinkSavedSearchPicker`, dimmed
+/// with a line that says how to save a search when none is saved.
+///
+/// Shared by the iOS editor's Collection settings (`CollectionEditorView.smartCollectionRows`, also the Mac's New
+/// Collection sheet) and the Mac Collections window's ⚙ Collection popover (`CollectionDetailPane`). Until #1687 the
+/// popover had only `SmartCollectionLinkRows`, so on the Mac a collection could be linked only while Add to Collection's
+/// New Collection created it. The line names the Search window on the Mac, which has no Search tab.
+///
+/// Version history:
+///   1.0 — #1687, decision 70 of the 2026-10-14 plan of record: from `CollectionEditorView.smartCollectionRows`' unlinked
+///          rows, with the Mac's own line
+struct SmartCollectionLinkButton: View {
+
+    /// Whether any search is saved. With none the button is dimmed, and the line under it says how to save one.
+    let hasSavedSearches: Bool
+    /// Opens the picker. The caller presents it.
+    let onLink: () -> Void
+
+    var body: some View {
+        Button(action: onLink) {
+            Label(String(localized: "collection.editor.smart.link",
+                         defaultValue: "Link to Saved Search\u{2026}"),
+                  systemImage: "bolt")
+        }
+        // `CollectionEditorTitleTests` (#1704) opens the picker from Collection settings with it.
+        .accessibilityIdentifier("collection.editor.smart.link")
+        .disabled(!hasSavedSearches)
+        if !hasSavedSearches {
+            #if os(macOS)
+            Text(String(localized: "collection.editor.smart.noSearches.mac",
+                        defaultValue: "Save a search from the Search window to enable smart collections."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            #else
+            Text(String(localized: "collection.editor.smart.noSearches",
+                        defaultValue: "Save a search from the Search tab to enable smart collections."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            #endif
+        }
+    }
+}
+
+// MARK: - LinkSavedSearchPicker
+
+/// The Link to Saved Search picker: the saved searches, newest first, each a row that links the collection to it, and
+/// Cancel.
+///
+/// Presented by the iOS editor (`CollectionEditorView.linkSavedSearchSheet`): from Collection settings, which on iPad is
+/// a sheet that presents it itself since #1704, and from the Mac's New Collection sheet. Since #1687 also by the Mac
+/// Collections window, from its ⚙ Collection popover's Link to Saved Search… (`CollectionDetailPane`), so both Mac
+/// surfaces open one picker. Each presenter commits the link through `CollectionEditorCommit.savedSearch(_:to:)`.
+///
+/// Version history:
+///   1.0 — Session 129: `linkSavedSearchSheet`'s macOS and iOS bodies, inside `CollectionEditorView`
+///   1.1 — #1687, decision 70 of the 2026-10-14 plan of record: a view of its own, so the Mac Collections window
+///          presents the picker the editor presents
+struct LinkSavedSearchPicker: View {
+
+    /// The saved searches to offer, in the order they are listed.
+    let savedSearches: [SavedSearch]
+    /// Links the collection to the saved search with this id. The caller commits the link and closes the picker.
+    let onLink: (UUID) -> Void
+    /// Closes the picker and links nothing.
+    let onCancel: () -> Void
+
+    var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    #if os(macOS)
+    /// macOS variant: plain VStack + button bar avoids the NavigationStack sidebar issue.
+    private var macBody: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(String(localized: "collection.editor.smart.picker.title",
+                            defaultValue: "Link to Saved Search"))
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            if savedSearches.isEmpty {
+                VStack(spacing: 8) {
+                    Spacer()
+                    Text(String(localized: "collection.editor.smart.picker.empty",
+                                defaultValue: "No saved searches yet. Save a search from the Search window first."))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                    Spacer()
+                }
+            } else {
+                List(savedSearches) { search in
+                    Button {
+                        onLink(search.id)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(search.name).font(.body)
+                            if !search.queryText.isEmpty {
+                                Text(search.queryText)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        // #312 follow-up: full-row tap target — both modifiers, in this order.
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .listStyle(.inset)
+            }
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(String(localized: "collection.editor.smart.picker.cancel",
+                              defaultValue: "Cancel"), action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 360, minHeight: 280)
+    }
+    #endif
+
+    /// iOS / iPadOS variant: NavigationStack with inline title and Cancel toolbar button.
+    private var iOSBody: some View {
+        NavigationStack {
+            List(savedSearches) { search in
+                Button {
+                    onLink(search.id)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(search.name).font(.body)
+                        if !search.queryText.isEmpty {
+                            Text(search.queryText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .foregroundStyle(.primary)
+            }
+            .navigationTitle(String(localized: "collection.editor.smart.picker.title",
+                                    defaultValue: "Link to Saved Search"))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "collection.editor.smart.picker.cancel",
+                                  defaultValue: "Cancel"), action: onCancel)
+                }
+            }
+        }
     }
 }
 

@@ -10958,6 +10958,7 @@ struct CollectionPickerRowTests {
 ///   1.1 — #1619 review, round 1: the scans read a control's place inside its gate and its `else`, where they read only
 ///          the order; the views' `takesHandAddedEntries` is read where it is defined; and `aLinkCanAlwaysBeUndone`
 ///   1.2 — #1687: `projectHomeSaysSmart`, Project Home's Collections sheet, which the two lists' change left
+///   1.3 — #1687, decision 70: `theMacPopoverLinks`, the Mac Collections window's Link to Saved Search…
 @MainActor
 @Suite("A smart collection takes no hand-added entry, and the lists say it is smart (#1619)")
 struct SmartCollectionRuleTests {
@@ -11350,6 +11351,78 @@ struct SmartCollectionRuleTests {
             range: shared), "the shared rows have no Unlink that calls onUnlink")
         #expect(!named.contains(unlink.lowerBound), "Unlink is drawn only while the saved search can be found")
         #expect(editor[shared].components(separatedBy: "\"collection.editor.smart.unlink\"").count - 1 == 1)
+    }
+
+    /// On the Mac a collection could be linked to a saved search only while Add to Collection's New Collection created
+    /// it: the Collections window's ⚙ popover showed a linked collection's rows and nothing that makes a link (#1687,
+    /// decision 70 of the 2026-10-14 plan of record). The popover now draws the editor's Link to Saved Search…, which
+    /// closes the popover and has the pane open the editor's picker, and the link commits through the editor's rule.
+    /// No test target runs the Mac's views, so this reads their shape, each piece inside the declaration that holds it;
+    /// the Mac check copy is where the link was made.
+    @Test("The Mac's ⚙ popover links a collection that is not linked, with the editor's button and picker (#1687)")
+    func theMacPopoverLinks() throws {
+        let editor = try Self.source("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let mac = try Self.source("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+
+        // Both settings surfaces draw the one button for a collection that is not linked.
+        let rows = try Self.block("private var smartCollectionRows: some View {", in: editor)
+        let editorLinked = try Self.block(opening: "if let searchId = collection.savedSearchId {", in: rows, of: editor,
+                                          "the iOS editor's Smart Collection rows")
+        let editorUnlinked = try #require(Self.elseBlock(after: editorLinked.upperBound, of: editor),
+                                          "the iOS editor's linked rows have no else")
+        #expect(editor[editorUnlinked].contains(
+            "SmartCollectionLinkButton(hasSavedSearches: !allSavedSearches.isEmpty) {\n                    showLinkSavedSearch = true"),
+                "the iOS editor's unlinked row is not the shared button")
+
+        let popover = try Self.block("private var macCollectionSettingsForm: some View {", in: mac)
+        let macLinked = try Self.block(opening: "if let searchId = collection.savedSearchId {", in: popover, of: mac,
+                                       "the Mac's ⚙ popover")
+        let macUnlinked = try #require(Self.elseBlock(after: macLinked.upperBound, of: mac),
+                                       "the Mac's ⚙ popover offers nothing for a collection that is not linked")
+        #expect(mac[macUnlinked].contains("SmartCollectionLinkButton(hasSavedSearches: !allSavedSearches.isEmpty) {"),
+                "the Mac's ⚙ popover does not draw the shared button")
+        #expect(mac[macUnlinked].contains("opensLinkPickerOnClose = true"), "the button does not ask for the picker")
+        #expect(mac[macUnlinked].contains("showCollectionSettingsPopover = false"), "the button leaves the popover open")
+
+        // The popover's going opens the picker, and only when the button asked for it.
+        let popoverCall = try #require(mac.range(of: ".popover(isPresented: $showCollectionSettingsPopover, arrowEdge: .top) {"),
+                                       "the ⚙ button no longer presents the popover")
+        let popoverBody = try #require(WindowTargetingTests.balancedBlock(in: mac, from: popoverCall.lowerBound))
+        let onClose = try #require(popoverBody.range(of: ".onDisappear {"), "nothing follows the popover's going")
+        let asked = try #require(popoverBody.range(of: "guard opensLinkPickerOnClose else { return }", range: onClose.upperBound..<popoverBody.endIndex))
+        let opens = try #require(popoverBody.range(of: "showLinkSavedSearch = true", range: asked.upperBound..<popoverBody.endIndex),
+                                 "the popover's going does not open the picker")
+        #expect(asked.upperBound < opens.lowerBound)
+
+        // The pane presents the editor's picker and commits the link as the popover's Unlink does.
+        let sheetCall = try #require(mac.range(of: ".sheet(isPresented: $showLinkSavedSearch) {"), "the pane presents no picker")
+        let sheet = try #require(WindowTargetingTests.balancedBlock(in: mac, from: sheetCall.lowerBound))
+        #expect(sheet.contains("LinkSavedSearchPicker(\n                savedSearches: allSavedSearches,"))
+        #expect(sheet.contains("if CollectionEditorCommit.savedSearch(searchId, to: collection) { try? modelContext.save() }"),
+                "the Mac's link is not committed through the editor's rule")
+
+        // The editor opens the same picker and links through `linkSavedSearch`.
+        let editorSheet = try Self.block("private var linkSavedSearchSheet: some View {", in: editor)
+        #expect(editor[editorSheet].contains("LinkSavedSearchPicker("))
+        #expect(editor[editorSheet].contains("linkSavedSearch(searchId)"))
+
+        // One button and one picker: their keys are declared in the shared views alone.
+        let button = try Self.block("struct SmartCollectionLinkButton: View {", in: editor)
+        #expect(editor[button].contains(".accessibilityIdentifier(\"collection.editor.smart.link\")"),
+                "`CollectionEditorTitleTests` finds the button by this identifier")
+        #expect(editor[button].contains(".disabled(!hasSavedSearches)"))
+        // On the Mac the dimmed button's line names the Search window, which the Mac has in place of a Search tab.
+        let macLine = try #require(editor.range(of: "localized: \"collection.editor.smart.noSearches.mac\"", range: button))
+        let macBranch = try #require(editor.range(of: "#if os(macOS)", range: button))
+        let otherBranch = try #require(editor.range(of: "#else", range: macBranch.upperBound..<button.upperBound))
+        #expect(macBranch.upperBound < macLine.lowerBound && macLine.upperBound < otherBranch.lowerBound)
+        for (key, count) in [("collection.editor.smart.link", 1), ("collection.editor.smart.picker.title", 2)] {
+            #expect(editor.components(separatedBy: "localized: \"\(key)\"").count - 1 == count, "\(key) in the editor")
+            #expect(!mac.contains("localized: \"\(key)\""), "the Mac window declares its own \(key)")
+        }
+        let picker = try Self.block("struct LinkSavedSearchPicker: View {", in: editor)
+        #expect(editor[picker].components(separatedBy: "localized: \"collection.editor.smart.picker.title\"").count - 1 == 2,
+                "the picker's two bodies are not in the shared picker")
     }
 
     @Test("Add to Archives Visit's three items show why a smart collection's search could not run")
