@@ -75,6 +75,7 @@ import SwiftUI
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
 ///   1.1 — #1576 lane 5: Add Tags, in the Actions menu
+///   1.2 — #1683: Add to Collection and Add Tags, when dimmed by the limit, say why under their names
 struct ResultSelectionBar: View {
 
     /// Results picked. Zero dims Mark Reviewed.
@@ -86,6 +87,9 @@ struct ResultSelectionBar: View {
     /// Whether Add to Collection and Add Tags can run: something is picked, and no more than
     /// one of them takes.
     let canAdd: Bool
+    /// Why Add to Collection and Add Tags are dimmed, when more are picked than one of them takes;
+    /// `nil` otherwise. Each of the two shows it under its name (#1683).
+    let addRefusal: String?
     /// Whether Mark Reviewed is offered: Checklist Mode is on.
     let showsMarkReviewed: Bool
     /// What the last command did, to announce, or `nil`.
@@ -187,14 +191,20 @@ struct ResultSelectionBar: View {
 
     /// The commands on the selection. The menu itself is never dimmed: with nothing picked it
     /// opens on its dimmed items, which is how a reader learns what a selection is for.
+    ///
+    /// With more picked than one add takes, Add to Collection and Add Tags each say why under their
+    /// names (#1683, decision 69): a second text in a menu item's label is its subtitle. The reason was
+    /// a line above the results, out of sight of the menu that held the dimmed items.
     private var actionsMenu: some View {
         Menu {
             Button(action: addToCollection) {
                 Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                if let addRefusal { Text(addRefusal) }
             }
             .disabled(!canAdd)
             Button(action: addTags) {
                 Label(BulkResultCopy.addTags, systemImage: "tag")
+                if let addRefusal { Text(addRefusal) }
             }
             .disabled(!canAdd)
             if showsMarkReviewed {
@@ -217,59 +227,47 @@ struct ResultSelectionBar: View {
 
 // MARK: - ResultSelectionStatus
 
-/// The lines a selection adds above the results (#1576 lane 3): why Add to Collection is dimmed,
-/// and what the last command did, with its Undo where there is something to take back.
+/// The line a selection adds above the results (#1576 lane 3): what the last command did, with its
+/// Undo where there is something to take back.
 ///
-/// ## Why they are not in the selection bar
+/// ## Why it is not in the selection bar
 ///
-/// Both lines wrap, and grow with the reader's text. The selection bar is attached above the
+/// The line wraps, and grows with the reader's text. The selection bar is attached above the
 /// results as a safe-area inset, with the mode picker and the Query Inspector, and what is
 /// attached there cannot give way: at the largest accessibility size, on an iPhone with the tab
 /// shell's banner showing, an outcome of three lines under the bar made that stack taller than
 /// the room between the search field and the banner, and the mode picker drew behind the search
 /// field (seen 2026-10-10 on an iPhone 17e). The rows above the results can give way: they scroll
-/// where they do not fit (`SearchView.resultsColumn`). So the lines are the first of those rows.
+/// where they do not fit (`SearchView.resultsColumn`). So the line is the first of those rows.
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1683: why Add to Collection and Add Tags are dimmed is said under each of them, in the
+///          Actions menu (`ResultSelectionBar`), and no longer here
 struct ResultSelectionStatus: View {
 
-    /// Why Add to Collection is dimmed, when more are picked than one add takes; `nil` otherwise.
-    let addRefusal: String?
     /// What the last command did, or `nil`.
     let outcome: BulkOutcome?
     /// Takes the last command back.
     let undo: () -> Void
 
     var body: some View {
-        if addRefusal != nil || outcome != nil {
-            VStack(alignment: .leading, spacing: 6) {
-                if let addRefusal {
-                    Text(addRefusal)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityIdentifier("search.selection.overLimit")
-                }
-                if let outcome {
-                    HStack(alignment: .firstTextBaseline, spacing: 12) {
-                        Text(outcome.message)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityIdentifier("search.selection.outcome")
-                        if let kind = outcome.undo {
-                            Button(ResultSelectionCopy.undo, action: undo)
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
-                                // The checklist's strip has an Undo of its own a few lines
-                                // down, which takes back something else after an add.
-                                .accessibilityHint(ResultSelectionCopy.undoHint(for: kind))
-                                .accessibilityIdentifier("search.selection.undo")
-                        }
-                    }
+        if let outcome {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(outcome.message)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("search.selection.outcome")
+                if let kind = outcome.undo {
+                    Button(ResultSelectionCopy.undo, action: undo)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        // The checklist's strip has an Undo of its own a few lines
+                        // down, which takes back something else after an add.
+                        .accessibilityHint(ResultSelectionCopy.undoHint(for: kind))
+                        .accessibilityIdentifier("search.selection.undo")
                 }
             }
             .padding(.horizontal)
@@ -281,8 +279,8 @@ struct ResultSelectionStatus: View {
 // MARK: - ResultSelectionStrip
 
 /// The Mac Search window's strip while results are being selected (#1576 lane 4): the count, the
-/// Select menu, the commands and Done, and under them why Add to Collection is dimmed and what
-/// the last command did.
+/// Select menu, the commands and Done, under Add to Collection and Add Tags why they are dimmed,
+/// and under the row what the last command did.
 ///
 /// The window has room for the commands as buttons, where the iPhone's bar holds them in a menu
 /// (``ResultSelectionBar``). The strip is above the list, with the checklist's strip, and not in
@@ -292,13 +290,15 @@ struct ResultSelectionStatus: View {
 ///
 /// Measured in the Mac check copy on 2026-10-10, with Checklist Mode on and every result of a
 /// 1,852-result search checked: at the window's 640 pt minimum the row fits on one line. The
-/// lines under the row wrap. Each outcome is announced to VoiceOver once, by the rule the
+/// line under the row wraps. Each outcome is announced to VoiceOver once, by the rule the
 /// iPhone's bar uses (`BulkOutcome.owesAnnouncement`). **Not heard on a Mac.**
 ///
 /// Version history:
 ///   1.0 — #1576 lane 4: initial implementation
 ///   1.1 — #1576 lane 4, review: `canMarkReviewed`
 ///   1.2 — #1576 lane 5: Add Tags
+///   1.3 — #1683: why Add to Collection and Add Tags are dimmed is said under the two of them
+///          (`addCommands`), where it was a line under the row's other end
 struct ResultSelectionStrip: View {
 
     /// Results checked. Zero dims Mark Reviewed.
@@ -315,7 +315,8 @@ struct ResultSelectionStrip: View {
     /// Whether Mark Reviewed can run: the checklist is on the search these rows came from. It is
     /// not between another search being sent and its rows arriving.
     let canMarkReviewed: Bool
-    /// Why Add to Collection is dimmed, when more are checked than one add takes; `nil` otherwise.
+    /// Why Add to Collection and Add Tags are dimmed, when more are checked than one of them takes;
+    /// `nil` otherwise. Shown under the two (#1683).
     let addRefusal: String?
     /// What the last command did, or `nil`.
     let outcome: BulkOutcome?
@@ -343,7 +344,9 @@ struct ResultSelectionStrip: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 12) {
+            // On the text's baselines, so that the count, the menu and the buttons stay on one line when
+            // a reason grows the two commands' column down (`addCommands`).
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text(ResultSelectionCopy.selected(count))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
@@ -359,12 +362,7 @@ struct ResultSelectionStrip: View {
                 .fixedSize()
                 .accessibilityIdentifier("search.selection.menu")
                 Spacer(minLength: 8)
-                Button(BulkResultCopy.addToCollection, action: addToCollection)
-                    .disabled(!canAdd)
-                    .accessibilityIdentifier("search.selection.addToCollection")
-                Button(BulkResultCopy.addTags, action: addTags)
-                    .disabled(!canAdd)
-                    .accessibilityIdentifier("search.selection.addTags")
+                addCommands
                 if showsMarkReviewed {
                     Button(ResultSelectionCopy.markReviewed, action: markReviewed)
                         .disabled(count == 0 || !canMarkReviewed)
@@ -374,12 +372,6 @@ struct ResultSelectionStrip: View {
                     .accessibilityIdentifier("search.selection.done")
             }
             .controlSize(.small)
-            if let addRefusal {
-                Text(addRefusal)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("search.selection.overLimit")
-            }
             if let outcome {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(outcome.message)
@@ -409,6 +401,29 @@ struct ResultSelectionStrip: View {
             do { try await Task.sleep(for: ResultSelectionBar.announcementDelay) } catch { return }
             announcedSerial = outcomeSerial
             AccessibilityNotification.Announcement(TransientToast.announcement(message)).post()
+        }
+    }
+
+    /// Add to Collection and Add Tags, and under the two of them, when more are checked than one of
+    /// them takes, why they are dimmed (#1683, decision 69). The reason was a line under the whole row,
+    /// where it began under the count, at the row's other end from the commands it explained.
+    private var addCommands: some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 12) {
+                Button(BulkResultCopy.addToCollection, action: addToCollection)
+                    .disabled(!canAdd)
+                    .accessibilityIdentifier("search.selection.addToCollection")
+                Button(BulkResultCopy.addTags, action: addTags)
+                    .disabled(!canAdd)
+                    .accessibilityIdentifier("search.selection.addTags")
+            }
+            if let addRefusal {
+                Text(addRefusal)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("search.selection.overLimit")
+            }
         }
     }
 }

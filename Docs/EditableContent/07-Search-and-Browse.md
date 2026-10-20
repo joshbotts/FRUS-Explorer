@@ -1799,14 +1799,14 @@ Removed %1$@ from “%2$@”.
 
 <!-- END SOURCE: search.selection.outcome.dropped.many %@ -->
 
-##### Select %@ or fewer to add them to a collection or to tag them.
-<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 588–589 | key: search.selection.overLimit.v2 %@ -->
+##### Select %@ or fewer
+<!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.overLimit(_:locale:) | lines: 593–594 | key: search.selection.overLimit.v3 %@ -->
 
-*Shown above the results when more results are picked than one command takes, with Add to Collection and Add Tags dimmed: "Select 1,000 documents or fewer to add them to a collection or to tag them." `%@` is the limit, with its noun. Mark Reviewed stays live. Re-keyed in #1576 lane 5, when the line came to speak for Add Tags as well.*
+*Why Add to Collection and Add Tags are dimmed, when more results are picked than one of them takes: "Select 1,000 documents or fewer". `%@` is the limit, with its noun. It is said beside each of the two, under its name: in the Actions menu on iPhone and iPad, under the two buttons of the Mac's selection strip, and in a checked result's menu on the Mac. Mark Reviewed stays live. Re-keyed for #1683 (decision 69): it was a line above the results, "Select %@ or fewer to add them to a collection or to tag them.", and beside the commands it no longer says what they are for. Re-keyed in #1576 lane 5 too, when the line came to speak for Add Tags as well.*
 
-Select %@ or fewer to add them to a collection or to tag them.
+Select %@ or fewer
 
-<!-- END SOURCE: search.selection.overLimit.v2 %@ -->
+<!-- END SOURCE: search.selection.overLimit.v3 %@ -->
 
 ##### Undo did not finish: %@
 <!-- SOURCE: FRUSExplorer/Search/ResultSelection.swift | ResultSelectionCopy.undoFailed(_:) | lines: 727–728 | key: search.selection.outcome.undoFailed %@ -->

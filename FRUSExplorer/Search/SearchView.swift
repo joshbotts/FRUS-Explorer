@@ -2560,6 +2560,9 @@ struct SearchView: View {
             pageRowCount: vm.pagedResults.count,
             shownCount: vm.displayedResults.count,
             canAdd: vm.canAddSelectionToCollection,
+            // Said under each command it dims, in the Actions menu (#1683).
+            addRefusal: vm.selectionExceedsAddLimit
+                ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
             showsMarkReviewed: vm.checklistMode,
             outcomeMessage: vm.bulkOutcome?.message,
             outcomeSerial: vm.bulkOutcomeSerial,
@@ -2580,14 +2583,12 @@ struct SearchView: View {
             markReviewed: { vm.markSelectionReviewed() })
     }
 
-    /// The lines a selection adds above the results (#1576 lane 3): why Add to Collection is
-    /// dimmed, and what the last command did. Nothing outside selection.
+    /// The line a selection adds above the results (#1576 lane 3): what the last command did. Nothing
+    /// outside selection. Why Add to Collection is dimmed is said in the Actions menu (#1683).
     @ViewBuilder
     private var selectionStatus: some View {
         if vm.resultSelection.isSelecting {
             ResultSelectionStatus(
-                addRefusal: vm.selectionExceedsAddLimit
-                    ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
                 outcome: vm.bulkOutcome,
                 undo: {
                     vm.undoBulkOutcome(removingEntries: { ids in

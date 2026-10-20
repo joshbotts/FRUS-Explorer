@@ -127,6 +127,7 @@ struct ResultSelectionTests {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1683: the limit's reason says what to do, beside the commands it dims
 @Suite("Result selection, the words")
 struct ResultSelectionCopyTests {
 
@@ -161,8 +162,8 @@ struct ResultSelectionCopyTests {
         #expect(ResultSelectionCopy.removed(1, from: "Chile", locale: Self.enUS) == "Removed 1 document from “Chile”.")
         #expect(ResultSelectionCopy.dropped(1, locale: Self.enUS) == "1 selected result is not in this list now.")
         #expect(ResultSelectionCopy.dropped(12, locale: Self.enUS) == "12 selected results are not in this list now.")
-        #expect(ResultSelectionCopy.overLimit(1_000, locale: Self.enUS)
-                == "Select 1,000 documents or fewer to add them to a collection or to tag them.")
+        // Said under each command it dims, which names what it is for (#1683).
+        #expect(ResultSelectionCopy.overLimit(1_000, locale: Self.enUS) == "Select 1,000 documents or fewer")
     }
 
     private struct Refused: LocalizedError {
@@ -972,6 +973,8 @@ private struct SelectionMeaningStub: MeaningSearchRunning {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1683: why Add to Collection and Add Tags are dimmed is said under each in the Actions menu, and not
+///          above the results
 @Suite("Result selection, the wiring")
 struct ResultSelectionWiringTests {
 
@@ -1128,10 +1131,12 @@ struct ResultSelectionWiringTests {
             Menu {
                 Button(action: addToCollection) {
                     Label(BulkResultCopy.addToCollection, systemImage: "plus.circle")
+                    if let addRefusal { Text(addRefusal) }
                 }
                 .disabled(!canAdd)
                 Button(action: addTags) {
                     Label(BulkResultCopy.addTags, systemImage: "tag")
+                    if let addRefusal { Text(addRefusal) }
                 }
                 .disabled(!canAdd)
                 if showsMarkReviewed {
@@ -1144,7 +1149,10 @@ struct ResultSelectionWiringTests {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: rowGlyphSize))
             }
-            """)), "Add to Collection first, then Mark Reviewed in Checklist Mode only, under the actions bar's glyph")
+            """)), """
+            Add to Collection first, then Mark Reviewed in Checklist Mode only, under the actions bar's glyph; \
+            dimmed by the limit, Add to Collection and Add Tags each say why under their names (#1683)
+            """)
         // A glyph has no words: the name is what VoiceOver and the Large Content Viewer say.
         #expect(menu.contains(Self.squeezed(".accessibilityLabel(ResultSelectionCopy.actions)")))
         #expect(menu.contains(Self.squeezed("""
@@ -1157,19 +1165,22 @@ struct ResultSelectionWiringTests {
     }
 
     /// The bar is one row: a line under it that grew with the reader's text made the stack
-    /// attached above the results taller than its room. The lines are rows above the results,
-    /// which give way.
-    @Test("What a command did, and why Add to Collection is dimmed, are rows above the results")
+    /// attached above the results taller than its room. What a command did is a row above the
+    /// results, which gives way. Why Add to Collection is dimmed was one too, out of sight of the
+    /// menu that held the dimmed command; since #1683 it is under the command's name in that menu.
+    @Test("What a command did is a row above the results, and why Add to Collection is dimmed is said in the menu")
     func statusLinesAreRowsAboveTheResults() throws {
         let view = try Self.source(Self.view)
         let status = Self.squeezedCode(try Self.declaration("private var selectionStatus: some View {", in: view))
         #expect(status.contains(Self.squeezed("""
             if vm.resultSelection.isSelecting {
                 ResultSelectionStatus(
-                    addRefusal: vm.selectionExceedsAddLimit
-                        ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
                     outcome: vm.bulkOutcome,
-            """)), "nothing outside selection, and both lines from the view model")
+            """)), "nothing outside selection, and the line from the view model")
+        let statusView = Self.squeezedCode(try Self.declaration(
+            "struct ResultSelectionStatus: View {", in: try Self.source("FRUSExplorer/Search/ResultSelectionViews.swift")))
+        #expect(!statusView.contains("addRefusal") && !statusView.contains("overLimit"),
+                "why the commands are dimmed is said above the results again, away from the commands (#1683)")
         let rows = Self.squeezedCode(try Self.declaration("private var resultsFixedRows: some View {", in: view))
         #expect(rows.contains(Self.squeezed("""
             VStack {
@@ -1181,8 +1192,11 @@ struct ResultSelectionWiringTests {
             }
             """)), "the selection's lines are the first of the rows that scroll where they do not fit")
         let bar = Self.squeezedCode(try Self.declaration("private var selectionBar: some View {", in: view))
-        #expect(!bar.contains("undo:") && !bar.contains("addRefusal:"),
-                "the bar draws neither line: it is one row, as tall as the actions bar's")
+        #expect(!bar.contains("undo:"), "the bar draws no outcome: it is one row, as tall as the actions bar's")
+        #expect(bar.contains(Self.squeezed("""
+            addRefusal: vm.selectionExceedsAddLimit
+                ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
+            """)), "the bar is given the reason its menu says under the two commands the limit dims (#1683)")
         let barView = Self.squeezedCode(try Self.declaration("struct ResultSelectionBar: View {",
                                                              in: try Self.source("FRUSExplorer/Search/ResultSelectionViews.swift")))
         #expect(!barView.contains("outcome.message") && !barView.contains("VStack"),
