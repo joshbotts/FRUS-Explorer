@@ -39669,9 +39669,8 @@ Nothing was to be built until the owner chooses.
 - **The Mac** (`FRUSExplorerMac`, Debug, this worktree's build folder): `** BUILD SUCCEEDED **` in 43 seconds, warning only of the `GeneratedSummary` residue. The Mac compiles the two Browse files and does not use them (`BrowserView` is iOS-only); its Corpus Browser was already `AppState`'s reader.
 - **Warnings**: the incremental builds that compiled the changed files printed only the `GeneratedSummary` residue. A clean `build-for-testing` was not run.
 
-**For the owner.**
-- **Where this lands in build 51's queue** (plan of record §1). Recommended: next, ahead of A12, as A11b: it is small, app code only, and A11's banner and Live Activity are what it keeps alive after an Index Now. It touches `AppState.swift`, `BrowserViewModel.swift` and `CompilationView.swift`, so a later lane in those files merges after it.
+**Placed by the owner.** Next, as A11b, ahead of A12: "Place it next as A11b, ahead of A12, and open its PR." (2026-10-20; plan of record decision 75, with A11b's row and bullet in §1). It touches `AppState.swift`, `BrowserViewModel.swift` and `CompilationView.swift`, so a later lane in those files merges after it.
 
 **Not done.**
-- **Not pushed and no pull request**: on the owner's word only.
+- **Opened on the owner's word** (above), against `v2` at `92045991`; not merged.
 - **Not seen on a screen**: the progress section's look during Index Now (it reads the same `IndexingProgressUpdate` as before, now `AppState`'s), and a second volume's banner after an Index Now on a device.
