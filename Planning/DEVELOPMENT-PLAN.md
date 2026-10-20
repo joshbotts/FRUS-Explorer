@@ -39489,5 +39489,5 @@ Two answers departed from the session's advice: the index bump, which it had adv
 - **The Mac's tag chips draw "◆ name"**, and VoiceOver may read the diamond with the name. Not listened to.
 
 **Not done.**
-- **Not opened as a pull request**: that waits for the owner's word. The branch is `claude/jovial-noyce-bc5b36`.
+- **Opened as #1734** on the owner's word of 2026-10-20 ("Open PR"), against `v2` at `f9a200ed`, which had not moved since the merge. Not merged.
 - **Not seen by eye** on iPhone or iPad beyond the suite's screenshots, and not at the accessibility sizes or in dark appearance. VoiceOver on the Mac was not listened to.
