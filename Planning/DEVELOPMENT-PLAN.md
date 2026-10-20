@@ -39637,7 +39637,7 @@ Nothing was to be built until the owner chooses.
 - **One activity per queue, held to its end**: if the reader swipes it away, or the system ends it at eight hours, the rest of that queue has none; the next queue asks again.
 
 **Not done.**
-- **Not opened**: the pull request's draft is `A11-pr-draft.md` in the session group's notes folder; it waits for the owner's word.
+- **Opened as #1737** on the owner's word of 2026-10-20 ("Open PR"), against `v2` at `6dcd82b4`, which had not moved since the lane began. Not merged.
 - **Not seen**: a title on screen (above), a real summarization run (decision 64's sentence is the unit tests'), an iPad, a device. The Mac's status bar after a throw is built, not run.
 - **A look on the owner's iPhone**, which the brief left optional: not done. The draft's checklist has three steps.
 - **The shared simulator**: the measurement wiped the app's container there (`simctl uninstall` before a fresh install) and left 14 volumes in it; the app was uninstalled again afterwards, since the UI suites expect one volume on disk.
