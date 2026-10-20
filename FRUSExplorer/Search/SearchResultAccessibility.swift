@@ -127,11 +127,13 @@ enum SearchResultAccessibility {
     ///
     /// - **A keyword search marks the word it matched**, and More Content is the words around it
     ///   (``matchedText(inSnippet:radius:)``), "Matched text".
+    /// - **A search whose words the body does not hold, or a search by filters alone, shows the
+    ///   heading and dateline again** in the snippet's place (``isHeadingAndDatelineAgain(_:)``). The
+    ///   label has read both, so More Content offers nothing, though a ranking of such a list gives the
+    ///   row a score.
     /// - **A Meaning search marks no word.** Its snippet is the document's opening prose, after the
     ///   heading, source note and dateline (`ProseSnippet`), and More Content is that, "Opening text".
-    /// - **Anything else is the heading and dateline again**, which a search whose words the body does
-    ///   not hold, or a search by filters alone, shows in the snippet's place; the label has read
-    ///   both, so More Content offers nothing.
+    ///   A row with no score and no mark is the case above, so the score is what says a row is one.
     ///
     /// - Parameter result: The row's result.
     /// - Returns: The content, or `nil`.
@@ -141,12 +143,28 @@ enum SearchResultAccessibility {
                                              defaultValue: "Matched text"),
                                text: matched)
         }
-        guard result.semanticScore != nil else { return nil }
+        guard result.semanticScore != nil, !isHeadingAndDatelineAgain(result) else { return nil }
         let opening = cut(collapsed(unmarked(result.snippet)), to: 2 * matchRadius)
         guard !opening.isEmpty else { return nil }
         return MoreContent(label: String(localized: "search.result.a11y.openingText",
                                          defaultValue: "Opening text"),
                            text: opening)
+    }
+
+    /// Whether a row's snippet is only its heading and dateline again: what `SearchService` shows when
+    /// it has no words to mark in the body, its heading and dateline joined by " · " (the kit's private
+    /// `headerFallbackSnippet`). A ranking keeps that snippet and adds a score
+    /// (`SearchResult.replacingScores`), so the score alone does not tell it from a Meaning row's prose.
+    /// `UITestSpokenVolumeSeederTests` reads the form from the service itself.
+    ///
+    /// - Parameter result: The row's result.
+    /// - Returns: `true` when the snippet says nothing the label does not.
+    static func isHeadingAndDatelineAgain(_ result: SearchResult) -> Bool {
+        let parts = [result.header, result.dateline].compactMap { part -> String? in
+            guard let part, !part.isEmpty else { return nil }
+            return part
+        }
+        return result.snippet == parts.joined(separator: " · ")
     }
 
     /// The words around the word a keyword snippet marks, with the marks taken out: about `radius`

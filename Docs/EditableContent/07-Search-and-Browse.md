@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 365 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 370 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -2449,7 +2449,7 @@ Matched text
 
 <!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.moreContent(for:) | key: search.result.a11y.openingText -->
 
-*The same for a Meaning search result, whose snippet marks no word: it is the document's opening prose after its heading, source note and dateline. A keyword result whose snippet is only its heading and dateline again offers nothing, since the label has read both.*
+*The same for a Meaning search result, whose snippet marks no word: it is the document's opening prose after its heading, source note and dateline. A keyword result whose snippet is only its heading and dateline again offers nothing, ranked by a question or not, since the label has read both.*
 
 Opening text
 

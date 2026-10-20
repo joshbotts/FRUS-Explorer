@@ -211,12 +211,45 @@ struct SearchResultAccessibilityTests {
         let cut = try #require(SearchResultAccessibility.moreContent(for: Self.minutes(snippet: long, semanticScore: 0.5)))
         #expect(cut.text.count <= 2 * SearchResultAccessibility.matchRadius + 2)
         #expect(cut.text.hasSuffix("opening …"))
-        // A keyword row whose body did not hold the words shows its heading and dateline again.
+        // A keyword row whose body did not hold the words shows its heading and dateline again, and
+        // offers nothing, ranked by a question (a score added) or not.
         let fallback = Self.minutes(snippet: "41. Minutes of the 507th Meeting of the National Security Council · "
                                     + "Washington, October 22, 1962, 3 p.m.")
+        #expect(SearchResultAccessibility.isHeadingAndDatelineAgain(fallback))
         #expect(SearchResultAccessibility.moreContent(for: fallback) == nil)
+        #expect(SearchResultAccessibility.moreContent(for: fallback.replacingScores(bm25: -12, semantic: 0.5)) == nil)
+        // An undated row's is its heading alone.
+        #expect(SearchResultAccessibility.isHeadingAndDatelineAgain(
+            Self.bare(header: "Mr. Adams to Mr. Seward", snippet: "Mr. Adams to Mr. Seward", semanticScore: 0.5)))
         // A Meaning row with no prose offers nothing.
         #expect(SearchResultAccessibility.moreContent(for: Self.minutes(snippet: "", semanticScore: 0.5)) == nil)
+    }
+
+    /// The heading-and-dateline form is the service's, not this file's: a row the service gives no
+    /// words to mark is read through `SearchService.results(from:parameters:)` itself.
+    @Test("A row whose body does not hold the words gets the heading and dateline again from the service, and no More Content")
+    func theServicesHeadingAndDatelineAgain() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-more-content-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("frus.db")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL, volumesDirectory: dir,
+                                            concurrencyLimit: 1)
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        let row = IndexedSearchRow(documentId: "d41", volumeId: "frus1961-63v11", documentNumber: "41",
+                                   header: "41. Minutes of the 507th Meeting of the National Security Council",
+                                   dateline: "Washington, October 22, 1962, 3 p.m.", sourceNote: nil,
+                                   bodyText: "The President opened the meeting.", subjectTagIds: nil, userTagIds: nil,
+                                   isEditorialNote: false, isFrontMatter: false, dateISO: "1962-10-22", score: -3)
+        let results = try await service.results(from: [row], parameters: SearchParameters(keywords: "blockade"))
+        let result = try #require(results.first)
+        #expect(SearchResultAccessibility.isHeadingAndDatelineAgain(result), "the service's snippet: \(result.snippet)")
+        #expect(SearchResultAccessibility.moreContent(for: result.replacingScores(bm25: -3, semantic: 0.5)) == nil)
+        // And the same row with the word in its body is marked, and offers its words.
+        let marked = try await service.results(from: [row], parameters: SearchParameters(keywords: "president"))
+        #expect(SearchResultAccessibility.moreContent(for: try #require(marked.first))?.label == "Matched text")
     }
 }
 
