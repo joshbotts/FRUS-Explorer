@@ -91,7 +91,7 @@ struct ArchivalFlowEndpoint: Identifiable, Sendable, Equatable {
 /// The Flows mode's derivation over the bundled `provenance-flow-index.json` (#764).
 ///
 /// ## Read this before rendering a ribbon
-/// **95.3% of these references are footnotes** — 74,204 of 77,850 on the shipped artifact. A
+/// **95.3% of these references are footnotes** — 74,252 of 77,898 on the shipped artifact. A
 /// ribbon therefore says *the editors, annotating material from this collection, sent the reader
 /// to material from that one*. It does **not** say the two archives cite each other. The
 /// percentage is recomputed from the artifact's own `coverage` block rather than written down

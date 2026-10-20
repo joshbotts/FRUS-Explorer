@@ -730,13 +730,14 @@ let package = Package(
 
         // MARK: - CrossRefKit
 
-        /// The FRUS cross-reference target grammar, mirrored from the app so the offline validator
-        /// classifies `<ref target>` values as the reading view navigates them
+        /// The FRUS cross-reference target grammar, mirrored from the app so the offline generators
+        /// classify `<ref target>` values as the reading view navigates them
         /// (`CrossRefGrammar.resolveDestination` ≡ FRUSCoreKit's `FRUSURLScheme.resolveCrossRefTarget`,
-        /// except a footnote anchor (#988) and a `mailto:` target, which the app's copy has changed
-        /// since), plus the existence-oriented `classifyForValidation`. Pure Foundation; tested
-        /// against hard-coded fixtures drawn from the app's documented cases. SPM-only this session (a generator dependency);
-        /// wiring it into the app targets is a later session's step.
+        /// branch for branch again since #1693: a footnote anchor, a whole volume and a `mailto:`
+        /// target), plus the existence-oriented `classifyForValidation`. Pure Foundation; tested
+        /// against hard-coded fixtures drawn from the app's documented cases, and held to the app's
+        /// own function by `ResolvedEdgeIndexGeneratorTests`, whose target links FRUSCoreKit.
+        /// SPM-only (a generator dependency).
         .target(
             name: "CrossRefKit",
             path: "CrossRefKit",
@@ -1109,10 +1110,16 @@ let package = Package(
         ),
 
         /// Unit + fixture tests for ResolvedEdgeIndexGeneratorCore (the same-volume exclusion, the
-        /// endpoint interning, determinism, and the empty-result refusal).
+        /// endpoint interning, determinism, and the empty-result refusal), and CrossRefKit's twin
+        /// of the reader's grammar held to the app's own function.
         .testTarget(
             name: "ResolvedEdgeIndexGeneratorTests",
-            dependencies: [.target(name: "ResolvedEdgeIndexGeneratorCore")],
+            dependencies: [
+                .target(name: "ResolvedEdgeIndexGeneratorCore"),
+                // The mirror's parity with the app's own `resolveCrossRefTarget` (#1693).
+                .target(name: "CrossRefKit"),
+                .target(name: "FRUSCoreKit"),
+            ],
             path: "ResolvedEdgeIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

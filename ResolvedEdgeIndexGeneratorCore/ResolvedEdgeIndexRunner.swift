@@ -111,8 +111,11 @@ public enum ResolvedEdgeIndexRunner {
             for ref in refs {
                 guard let sourceDocument = ref.enclosingDocument else { continue }
                 referencesInsideDocuments += 1
-                guard case .document(let volumeOverride, let targetDocument) =
+                // A document, or the document holding a footnote (#1693): the app's index stores
+                // a reference to a note as one to its document (#1613).
+                guard let (volumeOverride, targetDocument) =
                         CrossRefGrammar.resolveDestination(ref.rawTarget, volumeId: sourceVolume)
+                            .citedDocument
                 else { continue }
                 let targetVolume = volumeOverride ?? sourceVolume
                 guard documentIds[targetVolume]?.contains(targetDocument) == true else { continue }
