@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 365 blocks · no ✎ edits held or changed · no ⚑ wording issues
+**In this file:** 370 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -114,7 +114,7 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1268–1269 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1270–1271 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
@@ -265,7 +265,7 @@ Describing these results, ranked by your question
 
 <!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | key: search.semantic.row.score.a11y %lld -->
 
-*What VoiceOver reads after a result's heading when a Meaning search ranked it, on iPhone and iPad: the figure the row's "Semantic match · N%" chip shows, in words. The row is one accessibility element whose label is its heading, so until #1577 lane 3 the chip was not read at all.*
+*What VoiceOver reads after a result's label when a Meaning search ranked it, on iPhone and iPad: the figure the row's "Semantic match · N%" chip shows, in words. The row is one accessibility element whose label replaces what it draws, so until #1577 lane 3 the chip was not read at all; its label is §7.16's since #1684.*
 
 Semantic match %lld percent
 
@@ -1672,7 +1672,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1835–1835 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1837–1837 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1685,28 +1685,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2907–2907 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2931–2931 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2896–2896 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2920–2920 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2903–2903 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2927–2927 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1403–1403 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1405–1405 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1715,7 +1715,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1429–1430 | key: search.moreActions.help.v4 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1431–1432 | key: search.moreActions.help.v4 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. It lists the menu's contents, so it is re-keyed whenever an item joins: `.v2` named the abbreviation lookup and the tips, `.v3` added Select Results (#1576), and `.v4` adds Search Within These Results (#1577 lane 4).*
 
@@ -1934,7 +1934,7 @@ Leave selection and clear the checkboxes
 <!-- END SOURCE: search.selection.toggle.off.help -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2880–2880 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2904–2904 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1943,7 +1943,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3897–3897, 4390–4390 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3901–3901, 4394–4394 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -2410,6 +2410,50 @@ Search for “%1$@” first, then rank what it finds by “%2$@”
 Ask “%1$@” first, then find “%2$@” among its closest matches
 
 <!-- END SOURCE: search.layer.swap.help.wordsInMatches %@ %@ -->
+
+### 7.16 A search result, as VoiceOver reads it (#1684)
+
+*On iPhone and iPad a search result is one button, so VoiceOver reads it as one element, and its label replaces everything the row draws. Until #1684 the label was the heading alone. Since then it is the heading and then the row as it is drawn, joined by commas: the number where the row draws one, the heading, the dateline, the volume id as printed, the classification chip's own words (“Classification markings: %@”, the chip's label), the Editorial Note and Front Matter badges, and the tags (plan of record decision 73, the owner's choice of 2026-10-19). A Meaning search's score follows as the row's value (“Semantic match %lld percent”, above). The snippet is not read with the row: VoiceOver's More Content offers it. Each tag is an action as well. The Mac's rows are not one element, and none of this is the Mac's: VoiceOver reads each part a Mac row draws.*
+
+<!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.heading(for:) | key: search.result.a11y.numbered %@ %@ -->
+
+*How a result's label begins when the row draws the document's number beside its heading: the number, then the heading (“7. Memorandum From…”). A heading that already opens with its number is read as it is printed, so neither form says the number twice.*
+
+%1$@. %2$@
+
+<!-- END SOURCE: search.result.a11y.numbered %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.tagList(_:) | key: search.result.a11y.tags %@ -->
+
+*The label's last part when the document carries tags: their names, in the order the row draws their chips, joined by commas.*
+
+Tags: %@
+
+<!-- END SOURCE: search.result.a11y.tags %@ -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.filterAction(tagName:) | key: search.tagchip.a11y -->
+
+*Interpolated with the tag's name — keep `\(tagName)` intact. The name of the result's VoiceOver action for each of its tags, and the chip's own name: it filters the search by the tag, as a tap on the chip does. Not offered while results are being selected, where a tap on a chip picks its row. The chips are buttons inside the row's button, which VoiceOver cannot reach, so until #1684 a VoiceOver reader could not filter by a tag from a result.*
+
+Filter by \(tagName)
+
+<!-- END SOURCE: search.tagchip.a11y -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.moreContent(for:) | key: search.result.a11y.matchedText -->
+
+*What VoiceOver's More Content calls a keyword search result's snippet: the words around the word the search matched, about 300 characters, cut at a space. It is not read when a reader lands on the row: the stored snippet runs to about 2,000 characters, where the row draws two lines of it.*
+
+Matched text
+
+<!-- END SOURCE: search.result.a11y.matchedText -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.moreContent(for:) | key: search.result.a11y.openingText -->
+
+*The same for a Meaning search result, whose snippet marks no word: it is the document's opening prose after its heading, source note and dateline. A keyword result whose snippet is only its heading and dateline again offers nothing, ranked by a question or not, since the label has read both.*
+
+Opening text
+
+<!-- END SOURCE: search.result.a11y.openingText -->
 
 ---
 

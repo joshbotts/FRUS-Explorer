@@ -25,10 +25,13 @@ import SwiftUI
 /// Styling is deliberately semantic-quiet: secondary text in a hairline capsule, no
 /// color coding — the text itself is the signal (classification levels are historical
 /// metadata, not alerts), and no color-only channel means nothing is lost to
-/// color-blind users. VoiceOver reads an explicit "Classification markings" prefix.
+/// color-blind users. VoiceOver reads an explicit "Classification markings" prefix,
+/// and on iPhone and iPad a search result's label says the same words, since the
+/// row's label replaces the chip's (#1684).
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-04: Source Explorer Phase 5 step 1
+///   1.1 — #1684: ``accessibilityLabel(for:)``, which a search result's label reads too
 struct ClassificationChip: View {
 
     /// The marking text (e.g. "Secret; Nodis"), already validated by
@@ -43,8 +46,18 @@ struct ClassificationChip: View {
             .padding(.vertical, 2)
             .background(.quaternary.opacity(0.5), in: Capsule())
             .overlay(Capsule().strokeBorder(.quaternary, lineWidth: 0.5))
-            .accessibilityLabel(String(format: String(
-                localized: "classification.chip.accessibility %@",
-                defaultValue: "Classification markings: %@"), marking))
+            .accessibilityLabel(Self.accessibilityLabel(for: marking))
+    }
+
+    /// What VoiceOver says of a chip: "Classification markings: Secret; Nodis".
+    ///
+    /// `nonisolated`, since it only formats words: `SearchResultAccessibility`, which is not on the
+    /// main actor, says them in a search result's label.
+    ///
+    /// - Parameter marking: The chip's marking text.
+    /// - Returns: The words.
+    nonisolated static func accessibilityLabel(for marking: String) -> String {
+        String(format: String(localized: "classification.chip.accessibility %@",
+                              defaultValue: "Classification markings: %@"), marking)
     }
 }

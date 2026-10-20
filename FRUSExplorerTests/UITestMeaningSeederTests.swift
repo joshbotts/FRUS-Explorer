@@ -425,8 +425,9 @@ struct SemanticScoreCopyTests {
         let view = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SearchView.swift"), encoding: .utf8)
         let squeezed = view.split(separator: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
             .joined().filter { !$0.isWhitespace }
+        // Since #1684 the label is the row as drawn, not the heading alone; the value still follows it.
         #expect(squeezed.contains(
-            ".accessibilityLabel(result.header)"
+            ".accessibilityLabel(SearchResultAccessibility.label(for:result,tags:chips))"
             + ".accessibilityValue(result.semanticScore.map(SemanticScoreCopy.accessibilityValue(for:))??\"\")"),
                 "the row's value does not follow its label, or is not the score's words")
         let chip = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/SemanticSearchSharedViews.swift"),

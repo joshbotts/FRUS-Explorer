@@ -60,7 +60,7 @@ import notify
 ///
 /// ## Devices
 /// An iPhone and an iPad; nothing skips. A row's score is read from its accessibility value, which
-/// this lane gave it: the row's label is its heading alone.
+/// this lane gave it: the row's label was its heading alone (since #1684, the row as drawn).
 ///
 /// Version history:
 ///   1.0 — #1577 lane 3: initial implementation
@@ -253,7 +253,13 @@ final class MeaningResultsSeamTests: XCTestCase {
         }
         XCTAssertEqual(rows.count, count, "\"\(question)\" should list \(count) fixture documents", file: file, line: line)
         return rows.sorted { $0.frame.minY < $1.frame.minY }
-            .map { (title: $0.label, score: ($0.value as? String) ?? "") }
+            .map { (title: Self.heading(of: $0.label), score: ($0.value as? String) ?? "") }
+    }
+
+    /// A row's heading: its label up to the first comma. A result's label is its heading and then the
+    /// rest of what the row draws, joined by commas (#1684), and no fixture heading holds a comma.
+    private static func heading(of label: String) -> String {
+        String(label.prefix { $0 != "," })
     }
 
     /// More ▸ Save as Working Corpus…, with a name, saved.

@@ -193,9 +193,10 @@ final class SearchResultAddToCollectionTests: XCTestCase {
             """)
     }
 
-    /// A result row, by its document's title. The row is a button labelled with the title alone.
+    /// A result row, by its document's title. The row is a button whose label is the title and then
+    /// the rest of what the row draws, after a comma (#1684): until then it was the title alone.
     private func resultRow(_ title: String) -> XCUIElement {
-        app.buttons.matching(NSPredicate(format: "label == %@", title)).firstMatch
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title + ",")).firstMatch
     }
 
     /// Long-presses a result row, chooses Add to Collection…, and answers the seeded collection's
