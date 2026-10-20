@@ -74,6 +74,39 @@ struct ArchivesClassAxisTests {
         #expect(ArchivesClassAxis.governs(decimal, 1861...1947))
     }
 
+    /// A16 (#1691's third line, the owner's decision of 2026-10-20): the subject-numeric file
+    /// closed in 1973, so a volume running past it holds no later key to mislabel and belongs to
+    /// the 1964–1973 era, as a volume opening before 1963 belongs to the first. Measured on the
+    /// manifest: 30 volumes, running from 1969 or later to 1974–1980, were unplaced for this
+    /// alone. A volume straddling 1963 and 1964 still belongs to neither era, since Browse lists
+    /// each edition by itself; one wholly after 1973 belongs to neither either.
+    @Test("A volume running past 1973 is placed in the last subject-numeric era (A16)")
+    func volumesRunningPastTheFileAreStillPlaced() throws {
+        let eras = ArchivesClassAxis.eras()
+        let first = try #require(eras.first { $0.system == .subjectNumeric && $0.span.upperBound == 1963 })
+        let later = try #require(eras.first { $0.system == .subjectNumeric && $0.span.contains(1970) })
+        #expect(ArchivesClassAxis.governs(later, 1969...1977), "frus1969-76v10's span")
+        #expect(ArchivesClassAxis.governs(later, 1973...1976))
+        #expect(ArchivesClassAxis.governs(later, 1964...1973))
+        #expect(ArchivesClassAxis.governs(later, 1961...1969) == false, "crosses the editions")
+        #expect(ArchivesClassAxis.governs(first, 1961...1969) == false)
+        #expect(ArchivesClassAxis.governs(later, 1975...1980) == false, "wholly after the file")
+        #expect(ArchivesClassAxis.governs(first, 1958...1963), "the floor clamp, as before")
+        // Through the volume set the era lists.
+        let coverage = [
+            "past": ArchivalVolumeCoverage(firstYear: 1969, lastYear: 1977),
+            "inside": ArchivalVolumeCoverage(firstYear: 1964, lastYear: 1968),
+            "straddling": ArchivalVolumeCoverage(firstYear: 1961, lastYear: 1969),
+            "after": ArchivalVolumeCoverage(firstYear: 1977, lastYear: 1980),
+        ]
+        #expect(ArchivesClassAxis.volumes(inEra: later, coverage: coverage) == ["past", "inside"])
+        #expect(ArchivesClassAxis.volumes(inEra: first, coverage: coverage).isEmpty)
+        // The ceiling is the table's own last year, not a constant in this file.
+        #expect(ArchivesClassAxis.subjectNumericCeiling == 1973)
+        #expect(ArchivesClassAxis.subjectNumericCeiling
+                    == SubjectNumericLabelStore.shared?.schedules.map(\.endYear).max())
+    }
+
     @Test("Each era admits only its own filing system's keys")
     func systemsDoNotMix() throws {
         let usage = try #require(CollectionUsageIndexStore.shared)

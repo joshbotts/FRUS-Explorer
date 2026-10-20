@@ -2315,7 +2315,7 @@ Related file numbers are ranked together. Open one for the exact designator a pu
 #### Files with no subject number
 *The reading beside a family that is a category alone, such as `POL` or `AID (US)`, in the Central-file classes ranking and in the Network's subject-numeric families (index version 69). Its files are the ones cited with a category and a country and no subject number between them, `POL US-USSR`; each is listed under the family with its country.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/SubjectNumericLabelStore.swift | SubjectNumericLabelTable.gloss | lines: 141–142 | key: archival.classLabel.noSubjectNumber -->
+<!-- SOURCE: FRUSExplorer/Analytics/SubjectNumericLabelStore.swift | SubjectNumericLabelTable.gloss | lines: 228–229 | key: archival.classLabel.noSubjectNumber -->
 
 Files with no subject number
 
