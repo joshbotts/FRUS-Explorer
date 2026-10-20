@@ -260,6 +260,9 @@ enum CollectionDocumentDiscovery {
 ///          macOS Add button no longer captures Return from the text fields; Browse
 ///          "Downloading…" tracks the live download queue (failure restores the
 ///          Download button); clearing the search field restores the search hint
+///   1.2 — #1690's first line, plan of record A14: Browse lists a volume's documents in its reading order, a
+///          section's own text before the documents it holds (`indexedDocumentsInReadingOrder(forVolume:)`), where
+///          it followed them, and Select All adds them in that order
 struct CollectionAddDocumentsSheet: View {
 
     // MARK: - Inputs
@@ -829,8 +832,9 @@ struct CollectionAddDocumentsSheet: View {
             guard isIndexed else { return }
             isLoadingBrowseDocuments = true
             defer { isLoadingBrowseDocuments = false }
+            // #1690: in the volume's reading order, a section's own text before its documents, as Browse lists it.
             let docs = (try? await appState.indexingPipeline?
-                .documents(forVolume: volume.volumeId)) ?? []
+                .indexedDocumentsInReadingOrder(forVolume: volume.volumeId)) ?? []
             if Task.isCancelled { return }
             browseDocuments = docs
         }

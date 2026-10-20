@@ -31,8 +31,8 @@ import SwiftUI
 ///   - *Volume Connections* → opens `VolumeConnectionGraphView` pre-selected to that volume,
 ///     showing corpus-wide cross-volume edges. The stage holds the graph's view model and the
 ///     window is titled from its centre (#1500), below.
-///   - *Browse Documents* → lists all documents in the volume (via
-///     `IndexingPipeline.documents(forVolume:)`); tapping one sets
+///   - *Browse Documents* → lists all documents in the volume in its reading order (via
+///     `IndexingPipeline.indexedDocumentsInReadingOrder(forVolume:)`, #1690); tapping one sets
 ///     `AppState.currentGraphEntry` which transitions to Targeted mode.
 ///
 /// ## "View Document" interaction
@@ -73,6 +73,8 @@ import SwiftUI
 ///   1.4 — #1500: the Volume Connections stage holds the graph's view model and is titled from its
 ///          centre, so Explore connections and Back move the title; every way onto the stage makes
 ///          a fresh view model (`volumeGraphStage(_:)`)
+///   1.5 — #1690's first line: the document picker lists the volume in its reading order, a section's own text
+///          before the documents it holds (`indexedDocumentsInReadingOrder(forVolume:)`), where it followed them
 struct CrossReferenceGraphWindowView: View {
 
     /// The document this window was opened for, when it was opened with one (UI review M-2).
@@ -461,9 +463,8 @@ struct CrossReferenceGraphWindowView: View {
 
     private func loadDocuments(for volumeId: String) async {
         guard let pipeline = appState.indexingPipeline else { return }
-        // `IndexingPipeline` is an actor; hop to it via `await` even though
-        // `documents(forVolume:)` is synchronous.
-        let docs = (try? await pipeline.documents(forVolume: volumeId)) ?? []
+        // #1690: in the volume's reading order, a section's own text before its documents, as Browse lists it.
+        let docs = (try? await pipeline.indexedDocumentsInReadingOrder(forVolume: volumeId)) ?? []
         withAnimation { stage = .documentList(volumeId: volumeId, documents: docs) }
     }
 }

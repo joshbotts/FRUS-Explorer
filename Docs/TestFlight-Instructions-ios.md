@@ -2,7 +2,7 @@
 
 **Version 1.0 (1861) is the release candidate. Search runs inside a list of results. Meaning search runs EmbeddingGemma 2. Keeping Current shows each update.**
 
-**First launch rebuilds People once**, in the background. It also removes the earlier search model and its match files; Related Documents and Meaning fetch new ones as you use them. No volume is re-indexed or re-downloaded.
+**First launch rebuilds People once**, in the background. It also removes the earlier search model and its match files; Related Documents and Meaning fetch new ones as needed. No volume is re-indexed or re-downloaded.
 
 ## Search
 
@@ -16,6 +16,7 @@
 ## Library and reading
 
 - **Keeping Current** (Settings ▸ Volumes & Storage): a volume keeps its row through **Update** or **Update All** and reads *Queued*, *Downloading…*, *Indexing…*, *Updated*. A failed update is tried twice more, then says why and offers **Retry**. When **Check for Corrections** cannot read the published list, it says why. A copy you side-load from now on says so in its row, since **Update** replaces it.
+- **Index Remaining** finishes partly indexed volumes.
 - **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**. On iPad, Standard is wider than the old column.
 - **People:** Jeane Kirkpatrick, Ahmad Khomeini, Richard V. Allen and some eighty more once filed under namesakes have their own entries. A person's sheet shows no Wikidata link, and **View on VIAF** only where the Office of the Historian's register names one.
 
@@ -44,6 +45,6 @@
 7. **Smart collections.** Link a collection to a saved search: are earlier entries listed apart? Does **Remove These Entries** ask first?
 8. **Your build-50 reports**: fixed?
 
-Not bugs: People counts and Meaning results that differ from build 50's; no Wikidata link on a person's sheet.
+Not bugs: People counts and Meaning results that differ from build 50's.
 
-Include device + iOS version, taps, expected, actual — and for anything archival, the document id. Thanks!
+Include device + iOS version, taps, expected, actual, and an archival document's id. Thanks!
