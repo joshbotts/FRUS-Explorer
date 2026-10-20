@@ -45,6 +45,9 @@ import UniformTypeIdentifiers
 /// Version history:
 ///   1.0 — S-2c: initial implementation, merging `DownloadsSettingsView` +
 ///          `StorageManagementView` + `SideloadView`
+///   1.1 — 2026-10-20: #1689, plan of record A14 — Index Remaining takes the volumes
+///          `IndexRemainingSelection` picks, a volume whose last store pass was cut short among
+///          them, and its detail line says "not yet fully indexed" (`.detail.v2`)
 struct VolumesStorageHubView: View {
 
     // MARK: - Batch tracking
@@ -514,8 +517,8 @@ struct VolumesStorageHubView: View {
                     label: String(localized: "settings.hub.indexRemaining.button",
                                   defaultValue: "Index Remaining"),
                     systemImage: "plus.circle",
-                    detail: String(localized: "settings.hub.indexRemaining.detail",
-                                   defaultValue: "Only volumes not yet indexed.")
+                    detail: String(localized: "settings.hub.indexRemaining.detail.v2",
+                                   defaultValue: "Only volumes not yet fully indexed.")
                 )
             }
             .buttonStyle(.plain)
@@ -1079,18 +1082,18 @@ struct VolumesStorageHubView: View {
         }
     }
 
+    /// Indexes the volumes `IndexRemainingSelection` picks: those the index holds no document of, and those whose last
+    /// store pass was cut short (#1689), which the pick by `isVolumeIndexed(_:)` alone passed over.
     private func indexRemaining() async {
         guard let pipeline = appState.indexingPipeline,
               let report = storageReport else { return }
-        let unindexed = report.perVolume.filter {
-            (try? pipeline.isVolumeIndexed($0.volumeId)) != true
-        }
-        guard !unindexed.isEmpty else { return }
+        let remaining = IndexRemainingSelection.volumeIds(among: report.perVolume.map(\.volumeId), pipeline: pipeline)
+        guard !remaining.isEmpty else { return }
         var failures = 0
-        for (idx, entry) in unindexed.enumerated() {
-            settingsBatch = .indexRemaining(current: idx + 1, total: unindexed.count)
+        for (idx, volumeId) in remaining.enumerated() {
+            settingsBatch = .indexRemaining(current: idx + 1, total: remaining.count)
             do {
-                try await pipeline.indexVolume(entry.volumeId)
+                try await pipeline.indexVolume(volumeId)
             } catch {
                 failures += 1
             }

@@ -186,6 +186,45 @@ struct StorageRemovalPlan: Equatable, Sendable {
     }
 }
 
+// MARK: - IndexRemainingSelection
+
+/// Which of the hub's downloaded volumes **Index Remaining** indexes (#1689): each one the index holds no document of,
+/// and each one whose last store pass did not finish (`IndexingPipeline.volumesWithUnfinishedStore()`, #1566).
+///
+/// Both hubs had picked with `isVolumeIndexed(_:)` alone, which is true once the index holds any document of a volume.
+/// So a volume whose last store pass was cut short, by a quit, a failure or a power loss, was passed over: it keeps what
+/// that pass wrote and has no `volume_structures` row. Among them was a volume Index Remaining itself had just failed on
+/// after writing its first batch, though the failure row on iPhone and iPad says to try Index Remaining again. The
+/// launch's reconcile finishes such a volume when the interrupted-indexing sentinel does not name it, and leaves one the
+/// sentinel names to the reader, in Needs Attention; one cut short after the launch read the sentinel is marked nowhere
+/// until the next launch. Index Remaining now takes them all. A volume the sentinel names whose last store pass
+/// finished (stopped before it began writing) keeps its rows and its record: it is not taken, and stays Needs
+/// Attention's.
+///
+/// **Read it while no pass is under way.** A volume a pass is storing has no record yet either, and would be taken. Both
+/// hubs disable Index Remaining while any indexing runs (`actionsBusy` takes `AppState.indexingBatch`), and read this
+/// when it is pressed.
+///
+/// A read that fails: a volume `isVolumeIndexed(_:)` cannot answer for is taken, as both hubs took it; a failed read of
+/// the unfinished stores adds none, as `isIndexingUnfinished(_:)` counts a failed read as no evidence.
+///
+/// Version history:
+///   1.0 — #1689, plan of record A14: initial implementation, from both hubs' `indexRemaining()`
+enum IndexRemainingSelection {
+
+    /// The volumes of `volumeIds` that Index Remaining indexes, in the order given.
+    ///
+    /// - Parameters:
+    ///   - volumeIds: The hub's downloaded volumes, in the order it lists them.
+    ///   - pipeline: The index to ask.
+    /// - Returns: Each of `volumeIds` that the index holds no document of, or holds without the record that its last
+    ///   store pass finished.
+    static func volumeIds(among volumeIds: [String], pipeline: IndexingPipeline) -> [String] {
+        let unfinished = (try? pipeline.volumesWithUnfinishedStore()) ?? []
+        return volumeIds.filter { (try? pipeline.isVolumeIndexed($0)) != true || unfinished.contains($0) }
+    }
+}
+
 // MARK: - StorageHeroContent
 
 /// What Volumes & Storage's hero card states: its headline size and its one-line sentence (#1476).
