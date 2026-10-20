@@ -30,7 +30,21 @@ import SwiftData
 ///   1.0 — Archive Visits Phase 3: initial implementation
 ///   1.1 — #1421 review: ``storedKeys`` — a stored row whose key the re-index re-spelled answers
 ///          for the target it was minted for, and the editor writes through it
+///   1.2 — decision 62 (A15): ``superseded`` — a stored row that answers for a target another
+///          stored row is shown on, kept and listed with its own tier, note and exclusion
 struct ArchiveVisitOverlay: Equatable, Sendable {
+
+    /// A stored row that answers for a derived target another stored row is shown on (decision
+    /// 62): two targets the reader had set became one, or a row re-spelled beside one minted on the
+    /// new spelling. Its tier and note are kept under its own key, in ``tierAssignments`` and
+    /// ``notes``, and none of its state is applied to the target.
+    struct Superseded: Equatable, Sendable {
+        /// The derived target it answers for.
+        let targetKey: String
+        /// Whether the row excludes its target from the packet — not applied, since the target
+        /// follows the row it shows.
+        let excluded: Bool
+    }
 
     /// The plan's tiers, in order. Empty for a plan that never prioritized.
     var tiers: [ArchiveVisitTier] = []
@@ -51,6 +65,11 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
     /// was keyed on answers for the target it was minted for (``ArchiveVisitTargetKeys``); its own
     /// key is left exactly as it was, so a device still on the older index keeps finding it.
     var storedKeys: [String: String] = [:]
+    /// The stored rows that answer for a target another stored row is shown on, by their own
+    /// stored key (decision 62): kept, listed under Stored targets with the orphans, never deleted,
+    /// and written there by their own key. Which row a target shows is
+    /// ``ArchiveVisitTargetKeys/shownRow(among:answeringFor:)``'s rule.
+    var superseded: [String: Superseded] = [:]
 
     /// The key the stored row for derived target `key` carries: its ``storedKeys`` entry, or
     /// `key` itself. What a write passes to ``ArchiveVisitPlan/targetState(forKey:resolvedBy:mintIfMissing:in:)``.
@@ -110,6 +129,10 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///         content, so a re-index of a volume already indexed does not move it) and what it costs; the
 ///         Archives Visits list's row keys its summary on it too; and Re-seed from Project saves before
 ///         it gathers, as Project Home's engaged set does (#1457)
+///   1.7 — decision 62 (A15): the overlay joins a key on a note's text to the target the note sits
+///         in now, and a target several stored rows answer for shows one of them and keeps the rest
+///         as `superseded`; the signature carries each row's creation date and id, which that choice
+///         reads
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -174,6 +197,10 @@ enum ArchiveVisitDerivation {
             let included: Bool
             /// The researcher's note.
             let userNote: String?
+            /// When the row was created, and its id: which of several rows answering for one
+            /// target the target shows (`ArchiveVisitTargetKeys.shownRow`, decision 62).
+            let createdAt: Date?
+            let id: UUID
         }
 
         /// The plan's seed rows, each with how many rows carry it. Counted rather than a set, since
@@ -196,7 +223,8 @@ enum ArchiveVisitDerivation {
     ///
     /// Computed in a view body, on every pass of it: the editor's and each Archives Visits list
     /// row's. Linear in the plan's rows — one pass reading three attributes of every seed row and
-    /// four of every state row, one decode of the tier list, and two dictionaries, which SwiftUI
+    /// six of every state row (four when the timings below were taken; A15 added the row's
+    /// creation date and id), one decode of the tier list, and two dictionaries, which SwiftUI
     /// then compares with the previous key's. On the Targets tab this is more than the body read
     /// before: it walked the seeds only when no target derived. Measured on the iPhone 17 simulator
     /// (iOS 26.4) over an in-memory store, the median of ten passes after the first: 1.6 ms for 500
@@ -221,7 +249,8 @@ enum ArchiveVisitDerivation {
         var targets: [InputSignature.StoredTarget: Int] = [:]
         for row in plan.targets ?? [] {
             targets[InputSignature.StoredTarget(targetKey: row.targetKey, tierId: row.tierId,
-                                                included: row.included, userNote: row.userNote), default: 0] += 1
+                                                included: row.included, userNote: row.userNote,
+                                                createdAt: row.createdAt, id: row.id), default: 0] += 1
         }
         return InputSignature(seeds: seeds, inquiryText: plan.inquiryText, tiers: plan.tiers,
                               targets: targets, indexedSeedVolumes: seedVolumes.intersection(indexedVolumeIds))
@@ -287,22 +316,41 @@ enum ArchiveVisitDerivation {
 
         // The overlay: stored rows joined by key; a stored key with no derived target is an
         // orphan — kept and disclosed, never deleted. A stored key the re-index re-spelled joins
-        // the target it was minted for, under the target's key (#1421 review).
+        // the target it was minted for, under the target's key (#1421 review), and a key on a
+        // note's text joins the target the note sits in now (decision 62). A target several rows
+        // answer for shows one (`ArchiveVisitTargetKeys.shownRow`); the others are kept, listed
+        // and written by their own keys (`ArchiveVisitOverlay.superseded`).
         let derivedKeys = Set(model.targets.map(\.key))
         var overlay = ArchiveVisitOverlay(tiers: plan.tiers)
-        let storedRows = plan.targets ?? []
+        let storedRows = (plan.targets ?? []).sorted(by: { $0.targetKey < $1.targetKey })
         overlay.storedKeyCount = storedRows.count
         let resolution = ArchiveVisitTargetKeys.resolve(
-            storedKeys: Set(storedRows.map(\.targetKey)), derivedKeys: derivedKeys)
-        for row in storedRows.sorted(by: { $0.targetKey < $1.targetKey }) {
-            let key = resolution[row.targetKey] ?? row.targetKey
+            storedKeys: Set(storedRows.map(\.targetKey)), derivedKeys: derivedKeys,
+            textKeys: ArchiveVisitTargetKeys.textKeys(of: model.targets))
+        func apply(_ row: ArchiveVisitTarget, under key: String, excluding: Bool) {
             if let tierId = row.tierId { overlay.tierAssignments[key] = tierId }
-            if !row.included { overlay.excludedKeys.insert(key) }
+            if excluding, !row.included { overlay.excludedKeys.insert(key) }
             if let note = row.userNote, !note.isEmpty { overlay.notes[key] = note }
-            if resolution[row.targetKey] == nil {
+        }
+        var answering: [String: [ArchiveVisitTarget]] = [:]
+        for row in storedRows {
+            guard let key = resolution[row.targetKey] else {
+                apply(row, under: row.targetKey, excluding: true)
                 overlay.orphanKeys.append(row.targetKey)
-            } else if key != row.targetKey {
-                overlay.storedKeys[key] = row.targetKey
+                continue
+            }
+            answering[key, default: []].append(row)
+        }
+        for (key, rows) in answering {
+            guard let shown = ArchiveVisitTargetKeys.shownRow(among: rows, answeringFor: key)
+            else { continue }
+            apply(shown, under: key, excluding: true)
+            if shown.targetKey != key { overlay.storedKeys[key] = shown.targetKey }
+            // A copy of the shown row's own key (two devices' rows, before the duplicate cleanup
+            // collapses them) is the same row, and is neither applied nor listed.
+            for row in rows where row.targetKey != shown.targetKey {
+                apply(row, under: row.targetKey, excluding: false)
+                overlay.superseded[row.targetKey] = .init(targetKey: key, excluded: !row.included)
             }
         }
 
@@ -318,8 +366,8 @@ enum ArchiveVisitDerivation {
 
 // MARK: - ArchiveVisitTargetKeys
 
-/// Which derived target a stored target key was minted for, when the index's text moved under the
-/// key (#1421 review).
+/// Which derived target a stored target key was minted for, when the index's text or the rule that
+/// keys a note moved under the key (#1421 review, index version 69, decision 62).
 ///
 /// A target key is built from the stored source-note and footnote text (`TripPacketBuilder`'s
 /// `targetKey(for:category:)` and `referenceKey(for:)`: `r|<raw text>`, `coll|<repository>|<series>`,
@@ -334,9 +382,12 @@ enum ArchiveVisitDerivation {
 /// **What does not match, on purpose.** 116 notes change target, not spelling: 108 NARA notes whose
 /// series the parser can now read (`coll|National Archives|Box 720` becomes the Kissinger staff
 /// meeting transcripts' own series), 7 whose subject-numeric class it can now read (`r|…` becomes
-/// `class|DEF (MLF) 9-5`), and `frus1964-68v02` d268's RG 330 note. The old key named a bucket the
-/// new one does not, and attaching its tier to the corrected unit would be a guess, so those rows
-/// stay orphans — kept and disclosed, as a row whose target stopped deriving always has been.
+/// `class|DEF (MLF) 9-5`), and `frus1964-68v02` d268's RG 330 note, a central-files note the
+/// index keyed `330` (its record group's number) until the parser read the records centre's
+/// citation. A `coll|` or `class|` key names a bucket of notes, and where the new key names another
+/// bucket, attaching the old one's tier to it would be a guess, so the 108 rows and d268's stay
+/// orphans — kept and disclosed, as a row whose target stopped deriving always has been. The 7
+/// were orphans by the same rule until decision 62 (below), and join.
 ///
 /// Keys are never rewritten: a stored row keeps the key it was minted under, and the overlay joins
 /// it to the target it names. That is what lets a device still on the older index, or one the row
@@ -349,12 +400,32 @@ enum ArchiveVisitDerivation {
 ///   13 files). The class grammar had dropped a dash that a space followed. They join, by
 ///   ``sameTarget(stored:derived:)``'s third rule.
 /// - **410 gain a class** (`r|Source: Department of State, Central Files, PR 11 Saigon. …` becomes
-///   `class|PR 11 SAIGON`; 151 files in 33 volumes). The old key named one note and the new one
-///   names a file, so they stay orphans, as the 7 above do and for the same reason.
+///   `class|PR 11 SAIGON`; 151 files in 33 volumes). They were orphans until decision 62, and join
+///   by their notes' text.
+///
+/// **A key on a note's text follows the note (decision 62, A15).** An `r|` key names one source
+/// note or footnote citation by its text, so where that text sits in a target keyed otherwise now
+/// — the note gives a class the packet once could not read, or a lot or a place — the row answers
+/// for that target (``textKeys(of:)``), read exactly and then once spaces are removed, as the first
+/// rule reads keys. A15 keys a Department-worded central file by the class the index stores for it,
+/// which moves the keys of 688 notes the citation scan reads no class from, in 39 volumes (files
+/// with no subject number, and classifications run on; measured over a full v69 index, 2026-10-20,
+/// where no other key moved); a later index version that stores a class for more notes moves their
+/// keys the same way. What the rule cannot follow is a class whose own spelling changes: no note's
+/// text names the old class, and only the dash rule joins two classes.
+///
+/// **Several rows can answer for one target** since decision 62: a target that had a row of its
+/// own and a note whose row now follows it there, two notes of one file that each had a row, or a
+/// re-spelled row beside one minted on the new spelling. The target shows one of them
+/// (``shownRow(among:answeringFor:)``), and the others are kept with their tier, note and exclusion,
+/// unapplied, listed under Stored targets (``ArchiveVisitOverlay/superseded``), never deleted.
 ///
 /// Version history:
 ///   1.0 — #1421 review: initial implementation
 ///   1.1 — index version 69: a class key that got its dash back joins the key that had lost it
+///   1.2 — decision 62 (A15): a key on a note's text joins the target the note sits in now
+///          (``textKeys(of:)``), several stored keys may resolve to one derived key, and the target
+///          shows one row of them (``shownRow(among:answeringFor:)``)
 enum ArchiveVisitTargetKeys {
 
     /// `key` with every space removed — the form the #1421 re-join cannot change, since it
@@ -396,32 +467,83 @@ enum ArchiveVisitTargetKeys {
         return long.hasPrefix(spacingInsensitive(short))
     }
 
-    /// Each stored key's derived target: itself when it still derives, otherwise the one derived
-    /// key it ``sameTarget(stored:derived:)``s — and nothing when that is ambiguous.
+    /// Each key a target's seedings would carry were they keyed on their text — `r|` and a
+    /// drawn-from document's source note, or a footnote citation's text — to the derived targets
+    /// holding such a seeding (decision 62). What ``resolve(storedKeys:derivedKeys:textKeys:)``
+    /// reads a stored `r|` key's note by.
+    static func textKeys(of targets: [TripPacketModel.Target]) -> [String: Set<String>] {
+        var keys: [String: Set<String>] = [:]
+        for target in targets {
+            for document in target.drawnFrom {
+                keys["r|" + document.sourceNote, default: []].insert(target.key)
+            }
+            for seeding in target.pointedAt {
+                keys["r|" + seeding.rawText, default: []].insert(target.key)
+            }
+        }
+        return keys
+    }
+
+    /// Each stored key's derived target: itself when it still derives; else, for a key on a note's
+    /// text, the one target that text sits in now; else the one derived key it
+    /// ``sameTarget(stored:derived:)``s or whose seedings' text it equals once spaces are removed —
+    /// and nothing when that is ambiguous.
     ///
-    /// An exact match always wins, and a derived key another stored row matches exactly is not
-    /// offered to anyone else. A stored key that matches two derived keys, or a derived key two
-    /// stored keys match, resolves for none of them: which row a target's tier comes from must
-    /// never be a guess, and an unresolved row is an orphan, which the plan discloses.
+    /// A stored key that names two derived keys resolves to neither: which target a row's state
+    /// lands on must never be a guess, and an unresolved row is an orphan, which the plan
+    /// discloses. Several stored keys may resolve to one derived key (decision 62): which of their
+    /// rows the target shows is ``shownRow(among:answeringFor:)``'s rule, and the others are kept and
+    /// listed. Until A15 a derived key two stored keys matched resolved for neither, and an exact
+    /// match took its derived key from every other stored key, so a row re-spelled beside one
+    /// minted on the new spelling was an orphan.
     ///
     /// - Parameters:
     ///   - storedKeys: The plan's stored `ArchiveVisitTarget.targetKey`s.
     ///   - derivedKeys: The keys of the targets the plan derives now.
+    ///   - textKeys: ``textKeys(of:)`` over those targets.
     /// - Returns: Stored key → derived key, for every stored key that resolves.
-    static func resolve(storedKeys: Set<String>, derivedKeys: Set<String>) -> [String: String] {
-        var resolved: [String: String] = [:]
-        for key in storedKeys where derivedKeys.contains(key) { resolved[key] = key }
-        let open = derivedKeys.subtracting(resolved.keys)
-        var candidate: [String: String] = [:]
-        var claimants: [String: Int] = [:]
-        for stored in storedKeys.sorted() where resolved[stored] == nil {
-            let matches = open.filter { sameTarget(stored: stored, derived: $0) }
-            guard matches.count == 1, let match = matches.first else { continue }
-            candidate[stored] = match
-            claimants[match, default: 0] += 1
+    static func resolve(storedKeys: Set<String>, derivedKeys: Set<String>,
+                        textKeys: [String: Set<String>] = [:]) -> [String: String] {
+        let textKeysWithoutSpaces = textKeys.reduce(into: [String: Set<String>]()) { keys, entry in
+            keys[spacingInsensitive(entry.key), default: []].formUnion(entry.value)
         }
-        for (stored, match) in candidate where claimants[match] == 1 { resolved[stored] = match }
+        var resolved: [String: String] = [:]
+        for stored in storedKeys {
+            if derivedKeys.contains(stored) {
+                resolved[stored] = stored
+                continue
+            }
+            let isTextKey = stored.hasPrefix("r|")
+            // The note the key names, read exactly: where it sits now (decision 62).
+            if isTextKey, let holders = textKeys[stored], holders.count == 1, let holder = holders.first {
+                resolved[stored] = holder
+                continue
+            }
+            var matches = derivedKeys.filter { sameTarget(stored: stored, derived: $0) }
+            if isTextKey {
+                matches.formUnion(textKeysWithoutSpaces[spacingInsensitive(stored)] ?? [])
+            }
+            if matches.count == 1, let match = matches.first { resolved[stored] = match }
+        }
         return resolved
+    }
+
+    /// The stored row a derived target shows, of the rows that answer for it (decision 62): the
+    /// one minted under the target's own key, when there is one, so a target the reader had set
+    /// shows what it showed; otherwise the earliest created, the order `DuplicateRecordCleanup`
+    /// keeps one of two copies by, so every device shows the same row. `nil` only for no rows.
+    ///
+    /// The rule was chosen in A15, where several rows can first answer for one target: a note
+    /// keyed on its text since its row was set now sits in its file's target, beside that
+    /// target's own row or another note's. It applies equally to a row re-spelled beside one
+    /// minted on the new spelling. The rows it does not show keep their tier, note and exclusion,
+    /// unapplied (``ArchiveVisitOverlay/superseded``).
+    static func shownRow(among rows: [ArchiveVisitTarget],
+                         answeringFor key: String) -> ArchiveVisitTarget? {
+        let own = rows.filter { $0.targetKey == key }
+        return (own.isEmpty ? rows : own).min {
+            DuplicateRecordCleanup.isKept(($0.createdAt, $0.id), over: ($1.createdAt, $1.id))
+        }
     }
 }
 

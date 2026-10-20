@@ -78,6 +78,9 @@ import Foundation
 ///          (`sharedRecord(of:)`), and a lot its documents cite through the National Archives is
 ///          the target's own when every document cites it, else stated apart (`citedLots(in:)`),
 ///          each read under the record group its notes name. No key moves
+///   1.11 — decision 62 (A15): a central file worded through the Department keys on the class the
+///          index stores for it (`CollectionKeying.centralFilesClass(parsed:note:)` where the scan
+///          reads none), so 688 notes keyed on their text key on their file
 @MainActor
 enum TripPacketBuilder {
 
@@ -177,7 +180,7 @@ enum TripPacketBuilder {
             let category = record.citationEra.map {
                 SourceProvenanceCategory.from(citationEra: $0, repository: record.repository)
             }
-            let keyed = Self.targetKey(for: record, category: category)
+            let keyed = Self.targetKey(for: record, category: category, parsed: parsed)
             if grouped[keyed.key] == nil {
                 grouped[keyed.key] = (record, keyed.label, keyed.lotAsPrinted, [], [])
                 order.append(keyed.key)
@@ -414,9 +417,26 @@ enum TripPacketBuilder {
     ///
     /// The model reads these prefixes back into ``TripPacketModel/Target/Form`` — the two
     /// switch statements must agree, and `TripPacketBuilderTests` pins the round trip.
+    ///
+    /// **A central file worded through the Department keys on the class the index stores for it**
+    /// (decision 62, A15): the kit's citation scan (`SourceNoteParser.decimalClassLocation(inCitation:)`),
+    /// and where the scan reads none, `CollectionKeying.centralFilesClass(parsed:note:)`, the one
+    /// definition `document_sources.decimal_class` is stored from. The scan is that definition's
+    /// own first step for these notes, so no key the scan gave moves. Until A15 the key was the
+    /// scan's alone, and 688 notes that store a class keyed on their text (measured over a full v69
+    /// index, 2026-10-20: 39 volumes, 200 classes): files with no subject number (`POL CHICOM -US`)
+    /// and classifications run on after the file (`SOC 14-1 S VIET Secret; …`). A row stored on
+    /// such a note's old key answers for its class target (`ArchiveVisitTargetKeys`), and so will the
+    /// notes a later index version stores a class for.
+    ///
+    /// - Parameters:
+    ///   - record: the stored source note.
+    ///   - category: its provenance category.
+    ///   - parsed: the note's parse, when the caller holds it; parsed here only when needed.
     static func targetKey(
         for record: CollectionGeneratedBlocks.SourceRecord,
-        category: SourceProvenanceCategory?
+        category: SourceProvenanceCategory?,
+        parsed: ParsedSourceNote? = nil
     ) -> (key: String, label: String, lotAsPrinted: String?) {
         // `where` on each pattern: in a multi-pattern case it binds only the pattern it follows.
         let keysAsCentralFile = record.repository != "National Archives"
@@ -432,9 +452,13 @@ enum TripPacketBuilder {
         case .centralDecimalFile where keysAsCentralFile,
              .subjectNumericFile where keysAsCentralFile,
              .centralForeignPolicyFile where keysAsCentralFile:
-            // The canonical class function — the same grammar `document_sources.decimal_class`
-            // stores, so this grain matches the archival-analytics vocabulary.
-            if let cls = SourceNoteParser.decimalClassLocation(inCitation: record.rawText) {
+            // The class `document_sources.decimal_class` stores, so this grain matches the
+            // archival-analytics vocabulary: the scan, then the rest of the one definition
+            // (decision 62).
+            if let cls = SourceNoteParser.decimalClassLocation(inCitation: record.rawText)
+                ?? CollectionKeying.centralFilesClass(
+                    parsed: parsed ?? SourceNoteParser().parse(record.rawText),
+                    note: record.rawText) {
                 // By the FORM of the designator, not the era field: a letter-led leaf is
                 // subject-numeric whatever year the document carries.
                 let label = cls.first?.isLetter == true

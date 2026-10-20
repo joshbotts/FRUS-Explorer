@@ -434,8 +434,16 @@ import SwiftData
 /// rewritten — `ArchiveVisitTargetKeys` joins a row to the target its re-spelled key names, and
 /// the editor writes through that join — so a row minted on either index finds its target on both.
 ///
+/// **A key on a note's text follows the note** (decision 62, A15): where the note it names now
+/// sits in a target keyed otherwise, as the 688 Department-worded notes the packet keys by their
+/// stored class since A15 do, the row answers for that target. Where several rows answer for one
+/// target, the target shows one (`ArchiveVisitTargetKeys.shownRow`) and the others are listed with
+/// the orphans, their state kept and unapplied. Nothing here is stored differently.
+///
 /// Version history:
 ///   1.0 — Archive Visits Phase 2: initial implementation
+///   1.1 — decision 62 (A15): documentation only — a key on a note's text follows the note, and a
+///          target several rows answer for shows one of them
 @Model final class ArchiveVisitTarget {
 
     // MARK: - Identity

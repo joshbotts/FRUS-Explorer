@@ -106,6 +106,8 @@ import Foundation
 ///   2.7 — #1692: a collection target whose documents cite several lots prints each lot's records
 ///          line and access line (`lotLines(_:)`), names each in its records of interest, asks about
 ///          each divided one, and counts them in the coverage report
+///   2.8 — decision 62 (A15): the coverage report's stored-rows line counts the rows that answer for
+///          a target another stored row is shown on
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -610,6 +612,16 @@ struct TripPacketExporter {
             if !overlay.orphanKeys.isEmpty {
                 let n = overlay.orphanKeys.count
                 line += " — \(n) kept and labeled, never deleted"
+            }
+            // A row answering for a target another stored row is shown on derives, and is kept
+            // and labeled beside the orphans (decision 62).
+            if !overlay.superseded.isEmpty {
+                let n = overlay.superseded.count
+                let answers = "answer\(n == 1 ? "s" : "") for a target that shows another stored "
+                    + "row's tier and note, and " + (n == 1 ? "is" : "are") + " kept and labeled"
+                line += overlay.orphanKeys.isEmpty
+                    ? " — \(n) of them \(answers), never deleted"
+                    : "; \(n) of the \(deriving) \(answers) too"
             }
             out.append(line + ".")
         }

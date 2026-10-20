@@ -1946,7 +1946,7 @@ Choose a plan from the picker in the toolbar, or create a new one. Plans can als
      sites, one string each — a change to the defaultValue must be made in all three). The message
      draws the sync boundary: the plan's own data goes, from every device; documents and volumes
      are untouched. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 333–334 | key: archiveVisit.delete.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 336–337 | key: archiveVisit.delete.message -->
 
 This deletes the plan, its priority tiers, and its per-target notes — from your other devices too, after sync. Documents and volumes are untouched.
 
@@ -1968,7 +1968,7 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 <!-- Phase 4's honesty line: targets derive from the search index, so unindexed seeding documents
      can silently contribute nothing. Placeholder note: keep `\(derived.indexedDocumentCount.formatted())`
      and `\(seeding)` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 762–763 | key: archiveVisit.editor.coverage.v3 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 765–766 | key: archiveVisit.editor.coverage.v3 -->
 
 \(derived.indexedDocumentCount.formatted()) of \(seeding) indexed on this device — targets from unindexed documents may be missing below.
 
@@ -1977,20 +1977,20 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 <!-- END SOURCE: archiveVisit.editor.coverage.v3 -->
 
 #### Deriving
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 390–391 | key: archiveVisit.editor.deriving -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 393–394 | key: archiveVisit.editor.deriving -->
 
 Deriving research targets from the plan’s documents…
 
 <!-- END SOURCE: archiveVisit.editor.deriving -->
 
 #### No documents seeded
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 724–725 | key: archiveVisit.editor.noSeeds.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 727–728 | key: archiveVisit.editor.noSeeds.title -->
 
 No documents seeded
 
 <!-- END SOURCE: archiveVisit.editor.noSeeds.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 728–729 | key: archiveVisit.editor.noSeeds.detail -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 731–732 | key: archiveVisit.editor.noSeeds.detail -->
 
 Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archives Visit.
 
@@ -2000,13 +2000,13 @@ Seed this plan from Source Explorer, Archival Neighbors, a collection, or a proj
 <!-- Two different empty states, and the difference is the diagnosis: `noTargets` means derivation
      ran and found nothing placeable; `allOff` means the reader switched every contribution off.
      Neither may be blurred into a generic "nothing here". -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1248–1249 | key: archiveVisit.editor.noTargets -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1280–1281 | key: archiveVisit.editor.noTargets -->
 
 No targets derive from these documents on this device — their volumes may not be indexed yet, or their source notes name nothing the app can place.
 
 <!-- END SOURCE: archiveVisit.editor.noTargets -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1245–1246 | key: archiveVisit.editor.allOff -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1277–1278 | key: archiveVisit.editor.allOff -->
 
 Every document’s contributions are switched off — turn a document’s archival source or unprinted references back on under Documents.
 
@@ -2017,7 +2017,7 @@ Every document’s contributions are switched off — turn a document’s archiv
      the ⋯ menu as icons alone, so each one's tooltip is where it says what it does (#1378 and its
      review). This one names what the Filter menu narrows; keep it in step with the menu's four
      controls (Repository, Tier, Claim, Included only). -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.filterToolbarMenu | lines: 639–640 | key: archiveVisit.filter.menu.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.filterToolbarMenu | lines: 642–643 | key: archiveVisit.filter.menu.help | shared: macOS only -->
 
 Narrow the Targets list by repository, tier or claim, or hide the targets excluded from the packet
 
@@ -2029,7 +2029,7 @@ Narrow the Targets list by repository, tier or claim, or hide the targets exclud
      is shared with the iPhone menu's item and the Mac ⋯ menu's, and the macOS manual names it —
      keep all three one wording. SwiftUI draws a tooltip on the Mac alone: where iOS shows this
      button, it is VoiceOver's hint and nothing a sighted reader sees. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.exportToolbarItem | lines: 464–465 | key: archiveVisit.editor.export.help | shared: iOS+macOS (single edit point — the Mac's tooltip; VoiceOver's hint alone at regular width, on iPad and on a large iPhone in landscape) -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.exportToolbarItem | lines: 467–468 | key: archiveVisit.editor.export.help | shared: iOS+macOS (single edit point — the Mac's tooltip; VoiceOver's hint alone at regular width, on iPad and on a large iPhone in landscape) -->
 
 Open this plan’s packet — its research targets, repository visit-planning links and inquiry email drafts — to share as plain text or as a PDF
 
@@ -2038,7 +2038,7 @@ Open this plan’s packet — its research targets, repository visit-planning li
 #### Toolbar tooltip — About research targets
 <!-- It names what the §15.3 popover explains; keep it in step with that popover. As with Export
      packet, iOS reads it as VoiceOver's hint and draws nothing. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.infoToolbarItem | lines: 495–496 | key: archiveVisit.editor.about.help | shared: iOS+macOS (single edit point — the Mac's tooltip; VoiceOver's hint alone at regular width, on iPad and on a large iPhone in landscape) -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.infoToolbarItem | lines: 498–499 | key: archiveVisit.editor.about.help | shared: iOS+macOS (single edit point — the Mac's tooltip; VoiceOver's hint alone at regular width, on iPad and on a large iPhone in landscape) -->
 
 What a research target is, what Drawn from and Pointed at mean, and why their counts are never added
 
@@ -2048,7 +2048,7 @@ What a research target is, what Drawn from and Pointed at mean, and why their co
 <!-- It lists the Mac ⋯ menu's items, Export packet first, because the menu is where the packet is
      when the window is too narrow to show its button. Mac only: iPad's ⋯ menu holds neither Export
      packet nor Rename. Re-seed from Project appears only for a plan that belongs to a project. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.moreToolbarItem | lines: 513–514 | key: archiveVisit.editor.more.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | ArchiveVisitEditorView.moreToolbarItem | lines: 516–517 | key: archiveVisit.editor.more.help | shared: macOS only -->
 
 Export packet, Rename, Priority Tiers, Duplicate and Delete, and Re-seed from Project for a plan that belongs to a project
 
@@ -2057,7 +2057,7 @@ Export packet, Rename, Priority Tiers, Duplicate and Delete, and Re-seed from Pr
 ### 15.3 The info popover ("About research targets")
 
 #### Title
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 654–655 | key: archiveVisit.info.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 657–658 | key: archiveVisit.info.title -->
 
 About research targets
 
@@ -2068,7 +2068,7 @@ About research targets
      different questions" is owner decision 1b's rule stated to the reader; the last sentence
      explains why a plan stays correct as volumes index (stored rows are only the reader's own
      tiers/notes/exclusions — everything else re-derives). Both must survive editing. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 657–658 | key: archiveVisit.info.body -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 660–661 | key: archiveVisit.info.body -->
 
 A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the document seeds each time, so it always reflects the current app index.
 
@@ -2078,7 +2078,7 @@ A target is one archival unit under one claim. Drawn from: the document was publ
 <!-- The corpus-wide number is literal in the string (13,750 of 316,839, measured over the full
      index) — if the index is ever rebuilt over a different corpus it must be re-measured, not
      assumed. "Sparse data, not a failed scan" is the sentence doing the work. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 660–661 | key: archiveVisit.info.sparsity -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 663–664 | key: archiveVisit.info.sparsity -->
 
 Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan.
 
@@ -2088,7 +2088,7 @@ Footnote references to unprinted material exist on only about 4% of documents co
 <!-- Phase 4's device-local companion: beside the corpus claim, never replacing it — the two
      describe different populations. Placeholder note: keep both `\(sparsity.…formatted())`
      interpolations intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1292–1293 | key: archiveVisit.info.sparsity.measured.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1324–1325 | key: archiveVisit.info.sparsity.measured.v2 -->
 
 On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.formatted()) indexed documents carry such references.
 
@@ -2097,7 +2097,7 @@ On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.for
 ### 15.4 Targets — tiers, orphans, substitution
 
 #### Tiers footer
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1682–1683 | key: archiveVisit.tiers.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1714–1715 | key: archiveVisit.tiers.footer -->
 
 Targets without a tier stay in Unprioritized, always listed last. An unlabeled tier reads “Priority 1”.
 
@@ -2113,7 +2113,7 @@ Stored target — no longer derives from this plan’s current seeds. Kept with 
 <!-- END SOURCE: archiveVisit.orphan.caption -->
 
 #### Removing an orphan
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 269–270 | key: archiveVisit.orphan.remove.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 272–273 | key: archiveVisit.orphan.remove.message -->
 
 Its tier and note are deleted — from your other devices too, after sync. Nothing else in the plan changes.
 
@@ -2122,7 +2122,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### The digitized-substitute hint
 <!-- Shown when part of the target's record group is digitized or microfilmed: read it that way
      instead of pulling boxes. Keep the leading ⇄ glyph — it is the row's badge. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 971–972 | key: archiveVisit.target.substitute -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 974–975 | key: archiveVisit.target.substitute -->
 
 ⇄ Part of this record is digitized or filmed — read it that way instead of pulling.
 
@@ -2131,7 +2131,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### An inherited (Ibid.) seeding
 <!-- The W-1b rule surfacing in the seeding detail: the citation was inherited from the preceding
      footnote's citation, and the row says so rather than presenting the reading as a quotation. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1070–1071 | key: archiveVisit.seeding.inherited -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1073–1074 | key: archiveVisit.seeding.inherited -->
 
 Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 
@@ -2140,7 +2140,7 @@ Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 ### 15.5 The Documents tab
 
 #### Footer — the two switches
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1270–1271 | key: archiveVisit.documents.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1302–1303 | key: archiveVisit.documents.footer -->
 
 Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control acts as a caption instead of a dead switch.
 
@@ -2208,7 +2208,7 @@ The inquiry drafts include what you write here.
      a research question ends in "?", and a sentence that went on after the quotation printed a
      full stop after it (#1366 review, round 2) — keep each closing ” at the end of its paragraph.
      Placeholder note: keep `\(pending.question)` and `\(pending.current)` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 307–308 | key: archiveVisit.reseed.topic.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 310–311 | key: archiveVisit.reseed.topic.message -->
 
 The project’s research question now reads:
 
@@ -2224,13 +2224,13 @@ Replace the topic with the question?
 
 <!-- The question's cancel button. It read "Keep My Topic" until the #1366 review: the topic it
      keeps may be the project's old question, which the reader never wrote. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 300–301 | key: archiveVisit.reseed.topic.keep -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 303–304 | key: archiveVisit.reseed.topic.keep -->
 
 Keep Current Topic
 
 <!-- END SOURCE: archiveVisit.reseed.topic.keep -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1487–1488 | key: archiveVisit.reseed.topic.filled -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1519–1520 | key: archiveVisit.reseed.topic.filled -->
 
 The inquiry topic now reads the project’s research question.
 

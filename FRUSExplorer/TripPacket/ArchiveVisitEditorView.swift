@@ -28,7 +28,8 @@ import SwiftData
 /// - **A claim with nothing behind it never renders a dead control** (1d): an absent half is a
 ///   caption, and a document with both halves off carries the contributes-nothing warning.
 /// - **Orphans are kept and labeled, never deleted**: a stored row whose key no longer derives
-///   from the seeds renders under its own heading with its tier and notes intact.
+///   from the seeds renders under its own heading with its tier and notes intact, and so does a
+///   row that answers for a target another stored row is shown on (decision 62), naming it.
 /// - **Coverage in both numbers, orange when incomplete** — the `WorkingCorpusResolver` grammar.
 ///
 /// State mutations write the plan (minting overlay rows through `targetState(forKey:resolvedBy:…)` — §2a:
@@ -72,6 +73,8 @@ import SwiftData
 ///         Archives Visits window, whose frame and toolbar are the editor's only size and chrome.
 ///   1.9 — #1692: a collection target whose documents cite several lots lists each lot with its
 ///         own records line and access line, the packet's own lines (`Target.lots`).
+///   1.10 — decision 62 (A15): Stored targets also lists each row that answers for a target another
+///         stored row is shown on, naming the target and saying when the row had excluded its own.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -1203,31 +1206,60 @@ struct ArchiveVisitEditorView: View {
 
     @ViewBuilder
     private func orphanSection(_ derived: ArchiveVisitDerivation.Derived) -> some View {
-        if !derived.overlay.orphanKeys.isEmpty {
+        // A row that answers for a target another stored row is shown on (decision 62) is kept
+        // here too, after the orphans, with the tier, note and exclusion that no longer apply.
+        let superseded = derived.overlay.superseded.keys.sorted()
+        if !derived.overlay.orphanKeys.isEmpty || !superseded.isEmpty {
             Section(String(localized: "archiveVisit.orphans.header",
                            defaultValue: "Stored targets")) {
                 ForEach(derived.overlay.orphanKeys, id: \.self) { key in
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack {
-                            Text(orphanLabel(forKey: key))
-                                .font(.callout.weight(.medium))
-                            Spacer()
-                            tierMenu(for: key, derived: derived)
-                        }
+                    storedTargetRow(key, derived: derived) {
                         Text(String(localized: "archiveVisit.orphan.caption",
                                     defaultValue: "Stored target — no longer derives from this plan’s current seeds. Kept with your tier and notes; it never deletes itself."))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        if let note = derived.overlay.notes[key] {
-                            Text(note).font(.caption).italic().foregroundStyle(.secondary)
-                        }
                     }
-                    .contextMenu {
-                        targetContextMenu(for: key, derived: derived, isOrphan: true)
+                }
+                ForEach(superseded, id: \.self) { key in
+                    if let entry = derived.overlay.superseded[key] {
+                        storedTargetRow(key, derived: derived) {
+                            Text(String(format: String(localized: "archiveVisit.superseded.caption %@",
+                                                       defaultValue: "Stored target — now part of “%@”, which shows another stored row’s tier, note and exclusion. Kept with your tier and notes; it never deletes itself."),
+                                        derived.model.targets.first { $0.key == entry.targetKey }?.label
+                                            ?? orphanLabel(forKey: entry.targetKey)))
+                            if entry.excluded {
+                                Text(String(localized: "archiveVisit.superseded.excluded",
+                                            defaultValue: "Excluded from the packet when it was a target of its own."))
+                            }
+                        }
                     }
                 }
             }
+        }
+    }
+
+    /// One row under Stored targets: the stored key's label with its tier menu, `caption`, and the
+    /// row's note, with the orphan's context menu. Written by its own key, through
+    /// `targetState(forKey:resolvedBy:…)`.
+    private func storedTargetRow<Caption: View>(
+        _ key: String, derived: ArchiveVisitDerivation.Derived,
+        @ViewBuilder caption: () -> Caption
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack {
+                Text(orphanLabel(forKey: key))
+                    .font(.callout.weight(.medium))
+                Spacer()
+                tierMenu(for: key, derived: derived)
+            }
+            VStack(alignment: .leading, spacing: 2) { caption() }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let note = derived.overlay.notes[key] {
+                Text(note).font(.caption).italic().foregroundStyle(.secondary)
+            }
+        }
+        .contextMenu {
+            targetContextMenu(for: key, derived: derived, isOrphan: true)
         }
     }
 
