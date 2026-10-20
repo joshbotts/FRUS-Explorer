@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 207 blocks · no ⚑ wording issues
+**In this file:** 225 blocks · no ⚑ wording issues
 
 ✓ #1476 written in by lane STOR at Volumes & Storage (Library) · ✓ the five two-text keys settled 2026-10-01 (18.15 One key, one text (#1483), its last part)
 
@@ -282,7 +282,7 @@ Your research notes, highlights, summaries, collections, and tags are stored sep
 
 #### Free Up Space — removal confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | MacManageStorageSheet / FreeUpSpaceSheet confirmation | lines: 1697–1698 | key: settings.hub.freeUp.confirm.message | shared: iOS+macOS (single edit point — the Mac adopted these keys when its missing confirmation was added) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | MacManageStorageSheet / FreeUpSpaceSheet confirmation | lines: 1702–1703 | key: settings.hub.freeUp.confirm.message | shared: iOS+macOS (single edit point — the Mac adopted these keys when its missing confirmation was added) -->
 
 The XML files and their search-index rows are deleted from this device. Every one of these volumes can be downloaded again.
 
@@ -290,7 +290,7 @@ The XML files and their search-index rows are deleted from this device. Every on
 
 #### Free Up Space — size-estimate note
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet | lines: 1657–1658 | key: settings.hub.freeUp.estimateNote | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet | lines: 1662–1663 | key: settings.hub.freeUp.estimateNote | shared: iOS (macOS carries the same text separately) -->
 
 Each size is the XML file plus an estimated 2.8× for its share of the search index. That ratio comes from the full corpus: about 9–10 GB of index for about 3.4 GB of XML. Per volume the overhead runs from roughly 2.5× to 3×, so treat these sizes as approximate.
 
@@ -366,7 +366,7 @@ Could not measure storage
 
 #### Download options footer (iOS only)
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | optionsSection footer | lines: 662–663 | key: settings.hub.options.footer | shared: iOS only — absorbed the retired iCloud-Backup exclusion note -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | optionsSection footer | lines: 667–668 | key: settings.hub.options.footer | shared: iOS only — absorbed the retired iCloud-Backup exclusion note -->
 
 Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iCloud Backup — it can be re-downloaded at any time.
 
@@ -378,13 +378,13 @@ Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iC
 has a side-loaded form whose bold warning is the load-bearing sentence — a side-loaded volume has
 no download to fall back on, so removal can be final. Keep the `**…**` emphasis intact.*
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1295–1296 | key: settings.hub.remove.message.iOS -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1300–1301 | key: settings.hub.remove.message.iOS -->
 
 The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
 
 <!-- END SOURCE: settings.hub.remove.message.iOS -->
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1292–1293 | key: settings.hub.remove.message.iOS.sideloaded -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1297–1298 | key: settings.hub.remove.message.iOS.sideloaded -->
 
 The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
 
@@ -680,7 +680,7 @@ Copies what the language check has found since the app opened, with the app’s 
 ### Background Summarization
 
 #### Continue-in-background footer
-<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 99–100 | key: bg.summarizer.continue.hint.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift | BackgroundSummarizationSettingsView.backgroundContinuationSection footer | lines: 101–102 | key: bg.summarizer.continue.hint.v2 | shared: iOS+macOS (single edit point) -->
 
 When on, the app keeps summarizing a few documents at a time while you are not using the device, even after you close the app. Uses the on-device model and some battery.
 
@@ -1443,7 +1443,7 @@ Re-read the published list to refresh sizes and download links.
 *One text on both hubs since #1483 (2026-10-01): its one block, `settings.hub.browse.corpus.detail`, is with the Mac hub’s earlier in §18.13, and an edit there is applied to this footer too.*
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1644–1645 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1649–1650 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from the full volume list.
 
@@ -1475,7 +1475,7 @@ Closing this doesn’t stop a run. Progress and the result appear on the Summari
 *The iCloud and sync notices in the status bar, the store-schema diagnostic and its recovery alert, and the macOS indexing queue's finalizing line.*
 
 #### Not signed in to iCloud — notes, highlights, and…
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 588–589 | key: cloudkit.account.noAccount -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 591–592 | key: cloudkit.account.noAccount -->
 
 Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.
 
@@ -1649,19 +1649,53 @@ Indexed %@
 
 #### The Live Activity, once the app has stopped updating it (#1642)
 
-*Added 2026-10-12 (#1642). What the Lock Screen and the Dynamic Island say under the activity’s title when the app has stopped updating it: iOS suspended the app after you left it, or the app was closed. The system marks the activity two minutes after the app’s last update, and until then it shows the progress as it stood. One sentence for an index run and one for a summarization run. The widget cannot tell a suspended app from a closed one, so each sentence has to be true of both: opening the app carries a suspended run on, and after the app was closed the launch removes the activity. Between two background runs of a batch with Continue in the background switched on, the summarization sentence shows too, although the app will summarize again by itself. The indexing sentence fits one line on an iPhone 17’s Lock Screen and the summarization sentence wraps to two; the second was seen only on a build that labelled an index run as a summarization run, since no summarization runs on a simulator.*
+*Added 2026-10-12 (#1642). What the Lock Screen and the Dynamic Island say under the activity’s title when the app has stopped updating it: iOS suspended the app after you left it, or the app was closed. The system marks the activity two minutes after the app’s last update, and until then it shows the progress as it stood. One sentence for an index run and two for a summarization run. The widget cannot tell a suspended app from a closed one, so each sentence has to be true of both: opening the app carries a suspended run on, and after the app was closed the launch removes the activity. A summarization run started with Continue in the background switched on, which the app will take up again by itself between your visits, reads the third sentence (#1695, plan of record decision 64, 2026-10-19); with it off, or switched on only after the run began, the second. Since #1695 the three are in `FRUSExplorer/Models/IndexingActivityAttributes.swift`, the file the app and the widget both compile, where they were in the widget’s own file, so a test reads what the widget prints. The indexing sentence fits one line on an iPhone 17’s Lock Screen and the summarization sentence wraps to two; the second was seen only on a build that labelled an index run as a summarization run, since no summarization runs on a simulator.*
 
-<!-- SOURCE: FRUSExplorerWidgets/IndexingLiveActivity.swift | ContentState.stoppedLabel | lines: 67–68 | key: liveactivity.stopped.indexing -->
+<!-- SOURCE: FRUSExplorer/Models/IndexingActivityAttributes.swift | ContentState.stoppedLabel | lines: 128–129 | key: liveactivity.stopped.indexing -->
 
 Indexing has stopped. Open FRUS Explorer to continue.
 
 <!-- END SOURCE: liveactivity.stopped.indexing -->
 
-<!-- SOURCE: FRUSExplorerWidgets/IndexingLiveActivity.swift | ContentState.stoppedLabel | lines: 70–71 | key: liveactivity.stopped.summarizing -->
+<!-- SOURCE: FRUSExplorer/Models/IndexingActivityAttributes.swift | ContentState.stoppedLabel | lines: 135–136 | key: liveactivity.stopped.summarizing -->
 
 Summarizing has stopped. Open FRUS Explorer to continue.
 
 <!-- END SOURCE: liveactivity.stopped.summarizing -->
+
+<!-- SOURCE: FRUSExplorer/Models/IndexingActivityAttributes.swift | ContentState.stoppedLabel | lines: 132–133 | key: liveactivity.stopped.summarizing.background -->
+
+Summarizing will continue in the background. Open FRUS Explorer to continue now.
+
+<!-- END SOURCE: liveactivity.stopped.summarizing.background -->
+
+#### The Live Activity while the app is updating it (#1695)
+
+*Added 2026-10-20 (#1695). The activity’s other words, which had no block: what it says under the title before a volume’s documents are counted, and before a summarization run knows how many documents it has; the title of the merge that ends a whole-library index pass, which had been empty; and the title of a summarization run. Since #1695 one activity follows a whole indexing queue, titled by each volume in turn (plan of record decision 63), and the finishing merge’s words are its title, where they had been a line under an empty one. The count under the bar (“312/740 docs”) and the seconds left (“~12s”, none under five since #1695) are not keyed strings, and have no block.*
+
+<!-- SOURCE: FRUSExplorerWidgets/IndexingLiveActivity.swift | ContentState.indeterminateLabel | lines: 48–48 | key: liveactivity.parsing -->
+
+Parsing…
+
+<!-- END SOURCE: liveactivity.parsing -->
+
+<!-- SOURCE: FRUSExplorerWidgets/IndexingLiveActivity.swift | ContentState.indeterminateLabel | lines: 52–53 | key: liveactivity.summarizing.preparing -->
+
+Preparing to summarize…
+
+<!-- END SOURCE: liveactivity.summarizing.preparing -->
+
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.indexingState | lines: 4355–4355 | key: liveactivity.optimizing -->
+
+Finalizing index…
+
+<!-- END SOURCE: liveactivity.optimizing -->
+
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | LiveActivityLifecycle.summarizationState | lines: 4397–4398 | key: liveactivity.summarizing.title -->
+
+Summarizing FRUS documents
+
+<!-- END SOURCE: liveactivity.summarizing.title -->
 
 ### 18.15 One key, one text (#1483)
 
