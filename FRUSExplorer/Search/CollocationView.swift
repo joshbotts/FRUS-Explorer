@@ -41,6 +41,8 @@ import SwiftUI
 ///          a count of printed forms that ranked nothing says so too, above its refusal
 ///   1.4 — #1683: the caveat's counts of what the scan read, and of where it stopped, are grouped
 ///          (`CollocationCaveatCopy`)
+///   1.5 — #1683: on the Mac the Within picker takes its own size, so its label and its left cap are on screen,
+///          and Rank by does too, so the two labels start at one edge
 struct CollocationView: View {
 
     /// Which set the search is showing, so the panel can say what it measured over.
@@ -88,7 +90,10 @@ struct CollocationView: View {
                 }
                 #if os(macOS)
                 .pickerStyle(.segmented)
-                .frame(maxWidth: 300)
+                // Its own size, label and four segments (#1683). Held to 300 pt it needed more than
+                // that: its label sat off the panel's leading edge and the control's left cap was cut,
+                // in the Mac check copy on 2026-10-20 as on 2026-10-11.
+                .fixedSize()
                 #endif
                 Spacer(minLength: 8)
             }
@@ -99,7 +104,9 @@ struct CollocationView: View {
             }
             .pickerStyle(.segmented)
             #if os(macOS)
-            .frame(maxWidth: 300)
+            // Its own size too, so that its label starts where Within's does: centred in a 300 pt frame,
+            // it began about ten points to the right of the picker above it (#1683).
+            .fixedSize()
             #endif
             if case .ranked(let result) = outcome { caveat(result) }
         }
