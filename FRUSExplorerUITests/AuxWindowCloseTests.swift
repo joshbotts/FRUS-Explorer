@@ -76,6 +76,8 @@ import XCTest
 ///         window; the hand-off case asserts the handed volume is on screen; the rail's Source
 ///         Explorer, graph and word cloud are driven from a seeded document; and a tool opened in
 ///         the standalone document window closes back to that window
+///   1.2 — #1694: the walk to the fixture document opens the fixture's subseries by name; the
+///         launcher's mark is still any subseries row
 @MainActor
 final class AuxWindowCloseTests: XCTestCase {
 
@@ -87,6 +89,10 @@ final class AuxWindowCloseTests: XCTestCase {
     /// The fixture volume the rail cases open — the one `TwoPaneDocumentTests` and
     /// `CompilationDocumentsTests` seed, so one `UITestVolumeSeeder` fixture serves all three.
     private static let seededVolumeId = "frus1961-63v06"
+
+    /// The seeded volume's subseries, as its row's label begins (#1694): a real volume of a later
+    /// subseries on the simulator puts its row first (see `CompilationDocumentsTests`).
+    private static let seededSubseriesLabel = "Subseries 1961-63"
 
     /// The compilation `<head>` in the seeded fixture. Must match `UITestVolumeSeeder`.
     private static let compilationTitle = "UI Test Compilation"
@@ -306,6 +312,10 @@ final class AuxWindowCloseTests: XCTestCase {
     /// A row of Browse's Subseries directory — the launcher's mark for the Analysis Tools cases. The
     /// root's Subseries TILE is excluded by identifier: a new window has one, and its label also
     /// begins with the word.
+    ///
+    /// Any subseries row marks the directory as open (#1694): these cases open none of the rows, and
+    /// their launch does not narrow Browse to downloaded volumes, so the simulator's volumes do not
+    /// change which row comes first. The walk to the fixture document names its subseries instead.
     private var launcherMark: XCUIElement {
         app.buttons.matching(NSPredicate(
             format: "label BEGINSWITH 'Subseries ' AND identifier != 'browse.root.subseriesTile'")).firstMatch
@@ -396,7 +406,7 @@ final class AuxWindowCloseTests: XCTestCase {
         tile.tap()
         let steps: [(what: String, query: XCUIElementQuery, timeout: TimeInterval)] = [
             ("the fixture's subseries", app.buttons.matching(NSPredicate(
-                format: "label BEGINSWITH 'Subseries ' AND identifier != 'browse.root.subseriesTile'")), 15),
+                format: "label BEGINSWITH %@", Self.seededSubseriesLabel)), 15),
             ("the fixture volume", app.buttons.matching(NSPredicate(
                 format: "label CONTAINS[c] 'Kennedy-Khrushchev'")), 15),
             ("the fixture compilation", app.buttons.matching(NSPredicate(
