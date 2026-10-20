@@ -9,6 +9,7 @@
 import Foundation
 import SQLite3
 import FTS5Store
+import FRUSCoreKit
 import SemanticVectorsKit
 import SemanticVectorsGeneratorCore
 
@@ -89,8 +90,10 @@ public final class LexicalEvalRoute {
     }
 
     /// Display fields for a result key: header, dateline, and the **prose-first** snippet —
-    /// `EvalSnippet` strips the body's own front-matter echo (header, stored source note,
-    /// dateline, despatch serial) so the judge reads text the row has not already shown.
+    /// `ProseSnippet` strips the body's own front-matter echo (header, stored source note,
+    /// dateline, despatch serial) so the judge reads text the row has not already shown. It is
+    /// FRUSCoreKit's since A10b, the strip the app's Meaning and keyword rows share, so a sitting
+    /// reads the prose a Meaning row shows.
     /// The body window is fetched at ~10× the snippet target so stripping has room to work.
     public func display(volumeId: String, documentId: String)
         -> (header: String, dateline: String?, snippet: String)? {

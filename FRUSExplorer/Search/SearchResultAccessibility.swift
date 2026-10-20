@@ -24,7 +24,7 @@ import Foundation
 ///   commas. A Meaning search's score stays the row's value (#1577 lane 3), read after the label.
 /// - **The snippet is offered on request**, as VoiceOver's More Content, and is not read when a
 ///   reader lands on the row (``moreContent(for:)``). The stored snippet runs to about 2,000
-///   characters, where the row draws two lines of it by default.
+///   characters, where the row draws two lines of it by default. More Content offers about 300.
 /// - **Each tag is an action as well**, Filter by …, which does what a tap on its chip does
 ///   (``filterAction(tagName:)``).
 ///
@@ -33,6 +33,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1684: initial implementation
+///   1.1 — A10b (plan of record decision 74): a keyword snippet starts about 30 characters before its
+///         word, so More Content takes those and the rest of its 300 after the word, where it took 150
+///         on each side. A keyword row whose words are only in its heading, source note or dateline
+///         shows its opening prose, as a Meaning row does, and offers it as "Opening text"
 enum SearchResultAccessibility {
 
     // MARK: The label
@@ -119,21 +123,22 @@ enum SearchResultAccessibility {
         let text: String
     }
 
-    /// About how many characters of the snippet More Content offers on each side of the matched
-    /// word: about 300 in all, some fifty words.
-    static let matchRadius = 150
+    /// About how many characters of the snippet More Content offers: about 300, some fifty words
+    /// (decision 73).
+    static let moreContentLength = 300
 
     /// The row's More Content, or `nil` when it has none to offer.
     ///
-    /// - **A keyword search marks the word it matched**, and More Content is the words around it
-    ///   (``matchedText(inSnippet:radius:)``), "Matched text".
+    /// - **A keyword search marks the word it matched** in the document's prose, and More Content is
+    ///   the words around it (``matchedText(inSnippet:length:)``), "Matched text".
     /// - **A search whose words the body does not hold, or a search by filters alone, shows the
     ///   heading and dateline again** in the snippet's place (``isHeadingAndDatelineAgain(_:)``). The
     ///   label has read both, so More Content offers nothing, though a ranking of such a list gives the
     ///   row a score.
-    /// - **A Meaning search marks no word.** Its snippet is the document's opening prose, after the
-    ///   heading, source note and dateline (`ProseSnippet`), and More Content is that, "Opening text".
-    ///   A row with no score and no mark is the case above, so the score is what says a row is one.
+    /// - **Otherwise the snippet marks no word, and is the document's opening prose**, after the
+    ///   heading, source note and dateline (`ProseSnippet`): a Meaning row's, and since A10b a keyword
+    ///   row's whose words are only in its heading, source note or dateline. More Content is that,
+    ///   "Opening text".
     ///
     /// - Parameter result: The row's result.
     /// - Returns: The content, or `nil`.
@@ -143,8 +148,8 @@ enum SearchResultAccessibility {
                                              defaultValue: "Matched text"),
                                text: matched)
         }
-        guard result.semanticScore != nil, !isHeadingAndDatelineAgain(result) else { return nil }
-        let opening = cut(collapsed(unmarked(result.snippet)), to: 2 * matchRadius)
+        guard !isHeadingAndDatelineAgain(result) else { return nil }
+        let opening = cut(collapsed(unmarked(result.snippet)), to: moreContentLength)
         guard !opening.isEmpty else { return nil }
         return MoreContent(label: String(localized: "search.result.a11y.openingText",
                                          defaultValue: "Opening text"),
@@ -167,23 +172,27 @@ enum SearchResultAccessibility {
         return result.snippet == parts.joined(separator: " · ")
     }
 
-    /// The words around the word a keyword snippet marks, with the marks taken out: about `radius`
-    /// characters on each side, cut at a space and marked "…" where cut, and every run of white
-    /// space read as one space.
+    /// The words around the word a keyword snippet marks, with the marks taken out: about `length`
+    /// characters in all, cut at a space and marked "…" where cut, and every run of white space read
+    /// as one space.
     ///
-    /// The snippet's own "… " and " …" stay where the window reaches the snippet's ends.
+    /// The text before the word is kept up to half of `length`. A keyword snippet has about 30
+    /// characters there since A10b (`SearchService.keywordLead`), so it is kept whole, and the rest of
+    /// `length` is taken after the word. The snippet's own "… " and " …" stay where the window
+    /// reaches the snippet's ends.
     ///
     /// - Parameters:
     ///   - snippet: A snippet, with its match between `<b>` and `</b>`.
-    ///   - radius: About how many characters to keep on each side of the match.
+    ///   - length: About how many characters to keep, the match's included.
     /// - Returns: The words, or `nil` when the snippet marks no word.
-    static func matchedText(inSnippet snippet: String, radius: Int = matchRadius) -> String? {
+    static func matchedText(inSnippet snippet: String, length: Int = moreContentLength) -> String? {
         guard let open = snippet.range(of: "<b>"),
               let close = snippet.range(of: "</b>", range: open.upperBound..<snippet.endIndex) else { return nil }
         let match = collapsed(unmarked(String(snippet[open.upperBound..<close.lowerBound])))
         guard !match.isEmpty else { return nil }
-        let before = endOf(collapsed(unmarked(String(snippet[..<open.lowerBound]))), radius: radius)
-        let after = cut(collapsed(unmarked(String(snippet[close.upperBound...]))), to: radius)
+        let before = endOf(collapsed(unmarked(String(snippet[..<open.lowerBound]))), radius: length / 2)
+        let after = cut(collapsed(unmarked(String(snippet[close.upperBound...]))),
+                        to: max(0, length - before.count - match.count))
         // Collapsing trimmed the space on either side of the match, so it is put back where the
         // snippet had one; a match against punctuation ("(Rusk)") stays against it.
         let spaceBefore = !before.isEmpty && snippet[..<open.lowerBound].last?.isWhitespace == true
@@ -202,9 +211,10 @@ enum SearchResultAccessibility {
     }
 
     /// The start of `text`, about `limit` characters of it: the whole words inside them, marked
-    /// " …" where cut.
+    /// " …" where cut, or "…" alone when `limit` leaves room for none.
     private static func cut(_ text: String, to limit: Int) -> String {
         guard text.count > limit else { return text }
+        guard limit > 0 else { return "…" }
         let end = text.index(text.startIndex, offsetBy: limit)
         // The character after the window is a space: every word inside it is whole.
         if text[end] == " " { return String(text[..<end]) + " …" }

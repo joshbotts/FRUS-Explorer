@@ -23,6 +23,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — #1684: initial implementation
+///   1.1 — A10b (decision 74): More Content keeps about 300 characters in all, the snippet's lead of
+///         about 30 and the rest after the word; a keyword row that shows its opening prose offers it
 @Suite("A search result, as VoiceOver reads it")
 struct SearchResultAccessibilityTests {
 
@@ -166,29 +168,34 @@ struct SearchResultAccessibilityTests {
                 + "message from Prime Minister Macmillan.")
     }
 
-    @Test("More Content keeps about the radius on each side of the match, whole words, and marks the cuts")
+    @Test("More Content keeps about 300 characters: the snippet's lead before the match, then the rest after it")
     func matchedTextWindow() throws {
+        // A keyword snippet since A10b: about 30 characters before its word and 2,000 after.
+        let after = (1...400).map { "w\($0)" }.joined(separator: " ")
+        let snippet = "… Bonn’s 3463 to Department repeated <b>Berlin</b> " + after + " …"
+        let text = try #require(SearchResultAccessibility.matchedText(inSnippet: snippet))
+        #expect(text.hasPrefix("… Bonn’s 3463 to Department repeated Berlin w1 w2 w3"), "the lead is kept whole")
+        #expect(text.hasSuffix(" …"))
+        #expect(abs(text.count - SearchResultAccessibility.moreContentLength) <= 6, "\(text.count) characters")
+        #expect(!text.contains("<b>") && !text.contains("</b>"))
+        // Before the word no more than half the length is kept, so a long lead is cut too, and marked:
+        // twenty characters of it, then the rest of forty after the word, in whole words.
         let before = (1...60).map { "w\($0)" }.joined(separator: " ")   // 230 characters
-        let after = (61...120).map { "w\($0)" }.joined(separator: " ")
-        let snippet = "… " + before + " <b>match</b> " + after + " …"
-        let text = try #require(SearchResultAccessibility.matchedText(inSnippet: snippet, radius: 20))
-        // About twenty characters on each side, in whole words, each cut marked.
-        #expect(text == "… w56 w57 w58 w59 w60 match w61 w62 w63 w64 w65 …")
-        // The whole default window stays near 300 characters.
-        let whole = try #require(SearchResultAccessibility.matchedText(inSnippet: snippet))
-        #expect(whole.count <= 2 * SearchResultAccessibility.matchRadius + "match".count + 6)
-        #expect(whole.hasPrefix("… ") && whole.hasSuffix(" …"))
-        #expect(!whole.contains("<b>") && !whole.contains("</b>"))
+        let longLead = try #require(SearchResultAccessibility.matchedText(
+            inSnippet: "… " + before + " <b>match</b> " + after + " …", length: 40))
+        #expect(longLead == "… w56 w57 w58 w59 w60 match w1 w2 w3 w4 w5 …")
     }
 
     @Test("A window that cuts at a word's end keeps the word; one that reaches the snippet's ends keeps its marks")
     func matchedTextEdges() throws {
         // Twenty characters after the match end on a word's last letter: that word is kept.
-        #expect(SearchResultAccessibility.matchedText(inSnippet: "<b>m</b> abcdefghi jklmnopqrs tuv", radius: 20)
+        #expect(SearchResultAccessibility.matchedText(inSnippet: "<b>m</b> abcdefghi jklmnopqrs tuv", length: 21)
                 == "m abcdefghi jklmnopqrs …")
         // Twenty that end inside a word stop before it.
-        #expect(SearchResultAccessibility.matchedText(inSnippet: "<b>m</b> abcde fghij klmno pqrs tuv", radius: 20)
+        #expect(SearchResultAccessibility.matchedText(inSnippet: "<b>m</b> abcde fghij klmno pqrs tuv", length: 21)
                 == "m abcde fghij klmno …")
+        // A length the lead and the word use up leaves an ellipsis after them.
+        #expect(SearchResultAccessibility.matchedText(inSnippet: "<b>match</b> and more", length: 5) == "match …")
         // The snippet's own "… " and " …" stay where the window reaches them.
         #expect(SearchResultAccessibility.matchedText(inSnippet: "… asking Secretary <b>Rusk</b> to read …")
                 == "… asking Secretary Rusk to read …")
@@ -209,7 +216,7 @@ struct SearchResultAccessibilityTests {
         // A long prose snippet is cut, at a space, with its cut marked.
         let long = String(repeating: "opening ", count: 80)
         let cut = try #require(SearchResultAccessibility.moreContent(for: Self.minutes(snippet: long, semanticScore: 0.5)))
-        #expect(cut.text.count <= 2 * SearchResultAccessibility.matchRadius + 2)
+        #expect(cut.text.count <= SearchResultAccessibility.moreContentLength + 2)
         #expect(cut.text.hasSuffix("opening …"))
         // A keyword row whose body did not hold the words shows its heading and dateline again, and
         // offers nothing, ranked by a question (a score added) or not.
@@ -223,6 +230,15 @@ struct SearchResultAccessibilityTests {
             Self.bare(header: "Mr. Adams to Mr. Seward", snippet: "Mr. Adams to Mr. Seward", semanticScore: 0.5)))
         // A Meaning row with no prose offers nothing.
         #expect(SearchResultAccessibility.moreContent(for: Self.minutes(snippet: "", semanticScore: 0.5)) == nil)
+    }
+
+    @Test("A keyword row whose words are only in its heading offers its opening prose, as a Meaning row does")
+    func keywordOpeningProse() throws {
+        // Since A10b the service shows such a row the document's opening prose, unmarked (decision 74),
+        // and it has no score: More Content is that prose.
+        let prose = "The President opened the meeting by asking Secretary Rusk to read the attached message."
+        let content = try #require(SearchResultAccessibility.moreContent(for: Self.minutes(snippet: prose)))
+        #expect(content == SearchResultAccessibility.MoreContent(label: "Opening text", text: prose))
     }
 
     /// The heading-and-dateline form is the service's, not this file's: a row the service gives no
@@ -250,6 +266,18 @@ struct SearchResultAccessibilityTests {
         // And the same row with the word in its body is marked, and offers its words.
         let marked = try await service.results(from: [row], parameters: SearchParameters(keywords: "president"))
         #expect(SearchResultAccessibility.moreContent(for: try #require(marked.first))?.label == "Matched text")
+        // A body that opens with the heading and dateline, as an indexed one does, and holds the word
+        // only there, shows its opening prose, which More Content offers (A10b).
+        let opening = IndexedSearchRow(documentId: "d41", volumeId: "frus1961-63v11", documentNumber: "41",
+                                       header: row.header, dateline: row.dateline, sourceNote: nil,
+                                       bodyText: row.header + " " + (row.dateline ?? "") + " " + row.bodyText,
+                                       subjectTagIds: nil, userTagIds: nil, isEditorialNote: false,
+                                       isFrontMatter: false, dateISO: "1962-10-22", score: -3)
+        let openingResults = try await service.results(from: [opening], parameters: SearchParameters(keywords: "minutes"))
+        let unmarked = try #require(openingResults.first)
+        #expect(unmarked.snippet == "The President opened the meeting.")
+        #expect(SearchResultAccessibility.moreContent(for: unmarked)
+                == SearchResultAccessibility.MoreContent(label: "Opening text", text: "The President opened the meeting."))
     }
 }
 
@@ -326,6 +354,10 @@ struct UITestSpokenVolumeSeederTests {
         let content = try #require(SearchResultAccessibility.moreContent(for: document))
         #expect(content.label == "Matched text")
         #expect(content.text.contains(UITestVolumeSeeder.spokenQueryWord))
+        // Since A10b the snippet starts at the prose, after the heading, source note and dateline
+        // the label reads (decision 74); the row drew them again until then.
+        #expect(document.snippet == "Spoken-row fixture, <b>\(UITestVolumeSeeder.spokenQueryWord)</b> document.")
+        #expect(content.text == "Spoken-row fixture, \(UITestVolumeSeeder.spokenQueryWord) document.")
 
         UITestVolumeSeeder.prepareSpokenVolume(requested: false, in: dir)
         await UITestVolumeSeeder.prepareSpokenVolumeIndex(pipeline: pipeline, requested: false)

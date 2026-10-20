@@ -899,6 +899,9 @@ let package = Package(
                 .target(name: "SemanticVectorsGeneratorCore"),
                 // One definition of the search box's MATCH rendering.
                 .target(name: "FTS5Store"),
+                // One strip of a document's own heading, source note and dateline, the one the
+                // app's Meaning and keyword rows show (`ProseSnippet`, A10b).
+                .target(name: "FRUSCoreKit"),
             ],
             path: "RetrievalEvalHarnessCore",
             swiftSettings: [.swiftLanguageMode(.v6)]

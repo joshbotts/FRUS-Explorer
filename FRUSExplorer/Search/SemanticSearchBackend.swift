@@ -21,6 +21,7 @@ import Foundation
 /// `semanticScore` carries the cosine itself for display. The snippet is `ProseSnippet` — the
 /// evaluation report's prose-first rule, now shared — because with no keywords there is nothing
 /// to bold, and the assessment's snippet break is answered with prose rather than a bare header.
+/// Since A10b it is the kit's strip, the one a keyword row's window starts from (decision 74).
 ///
 /// ## Filters intersect; they do not pretend
 ///
@@ -70,6 +71,9 @@ import Foundation
 ///   1.7 — #1577 lane 6: ``rankWholeMatch(query:base:match:parameters:limit:)`` ranks the whole match of a list
 ///         held at its ceiling, inside the filters chosen since, and lists the closest rows up to the ceiling with
 ///         their keyword snippets
+///   1.8 — A10b (decision 74): the snippet is FRUSCoreKit's `ProseSnippet`, which keyword rows share, with its two
+///         corrections: a heading that opens "No. 567" is stripped whole, and a 1946–60 telegram's classification
+///         line goes with the dateline after it. SNIPPETS MOVE for those Meaning rows
 @MainActor
 struct SemanticSearchBackend: MeaningSearchRunning {
 

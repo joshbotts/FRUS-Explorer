@@ -1770,6 +1770,7 @@ private enum PrintedJoinFixtures {
 ///   1.1 — FRUSCoreKit, part 1: the space-joined `plainText` scan reads `FRUSCoreKit/` as well as
 ///          `FRUSExplorer/`, through `AppSourceTree`: the walk lives there now, and the converter
 ///          and the page-span resolver call it
+///   1.2 — A10b: `ProseSnippet` moved into the kit, so its Meaning-snippet test runs in the package too
 @Suite("IndexingPipeline — body and note text joined as printed (#1421)")
 struct PrintedBodyTextTests {
 
@@ -1919,10 +1920,10 @@ struct PrintedBodyTextTests {
     }
     #endif
 
-    #if !SWIFT_PACKAGE // ProseSnippet is SemanticVectorsKit's, which FRUSCoreKitTests does not depend on
     /// Meaning-search rows show `ProseSnippet`, which strips the document's own header, source note
     /// and dateline from the front of `body_text`. #1375 printed the header while the body kept
-    /// "Moscow , January 20, 1961 .", so the strip missed and a row re-showed its own dateline.
+    /// "Moscow , January 20, 1961 .", so the strip missed and a row re-showed its own dateline. The
+    /// strip is the kit's since A10b, so the package runs this too.
     @Test("A Meaning-search snippet opens on the document's prose, not its dateline")
     func proseSnippetStripsTheFrontMatter() async throws {
         let nodes = try await F.nodes(F.d3, documentId: "d3")
@@ -1933,7 +1934,6 @@ struct PrintedBodyTextTests {
             body: IndexingPipeline.extractBodyText(from: nodes))
         #expect(snippet.hasPrefix("Dear Mr. President: We congratulate you"))
     }
-    #endif
 
     /// The whole route, through a real index: what `document_cache`, `external_citations` and
     /// `cross_references` actually store.
