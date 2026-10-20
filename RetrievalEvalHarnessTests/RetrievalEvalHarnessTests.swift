@@ -9,7 +9,6 @@
 import Testing
 import Foundation
 @testable import RetrievalEvalHarnessCore
-import SemanticVectorsKit
 
 /// The harness's deterministic halves: query parsing and report assembly. The funnel's own
 /// correctness is pinned where it lives — the kernel's external-query parity in
@@ -18,6 +17,8 @@ import SemanticVectorsKit
 ///
 /// Version history:
 ///   1.0 — W-17 session 3: initial implementation
+///   1.1 — A10b: the prose-first snippet's tests moved with `ProseSnippet` into FRUSCoreKit
+///         (`ProseSnippetTests`), whose strip the harness now takes
 @Suite("Retrieval eval harness")
 struct RetrievalEvalHarnessTests {
 
@@ -63,71 +64,6 @@ struct RetrievalEvalHarnessTests {
                 "the relevant column is blank on purpose — the owner's eye fills it")
         #expect(csv.contains("\"A header, with a comma\""),
                 "a comma inside a header must not break the CSV")
-    }
-
-    // MARK: - Prose-first snippets
-
-    /// Both corpus layouts, verbatim shapes from the first report: the modern order
-    /// (header → Source: … → prose) and the wartime telegram order (file citation →
-    /// header → dateline → serial → prose).
-    @Test("The modern layout strips header and source note, leaving prose")
-    func modernLayoutStripsToProse() {
-        let snippet = ProseSnippet.prose(
-            header: "12. Memorandum of Conversation",
-            dateline: "Beijing , February 17–18, 1973, 11:30 p.m.–1:20 a.m.",
-            sourceNote: "Source: National Archives, Nixon Presidential Materials, NSC Files, Box 98. Top Secret; Sensitive.",
-            body: """
-            12. Memorandum of Conversation Source: National Archives, Nixon Presidential \
-            Materials, NSC Files, Box 98. Top Secret; Sensitive. Chairman Mao: I have heard \
-            that your President said the two countries should walk together.
-            """)
-        #expect(snippet.hasPrefix("Chairman Mao: I have heard"),
-                "the judge should read prose, not the row's own header and citation again")
-    }
-
-    @Test("The wartime telegram layout strips citation, header, dateline, received bracket and serial")
-    func telegramLayoutStripsChrome() {
-        let snippet = ProseSnippet.prose(
-            header: "The Secretary of State to the Ambassador in China ( Gauss )",
-            dateline: "Washington , December 18, 1943 .",
-            sourceNote: "151.10/2003a: Telegram",
-            body: """
-            151.10/2003a: Telegram The Secretary of State to the Ambassador in China ( Gauss ) \
-            Washington , December 18, 1943 . [Received December 19—1:57 p.m.] 1819. On December \
-            17, 1943 the President approved an Act of Congress repealing the exclusion laws.
-            """)
-        #expect(snippet.hasPrefix("On December 17, 1943"),
-                "citation-first layouts must strip in any order, not just header-first")
-    }
-
-    @Test("A document that is all boilerplate falls back to the plain prefix, never empty")
-    func allBoilerplateFallsBack() {
-        let snippet = ProseSnippet.prose(
-            header: "1. Editorial Note",
-            dateline: nil,
-            sourceNote: nil,
-            body: "1. Editorial Note")
-        #expect(!snippet.isEmpty)
-        #expect(snippet.contains("Editorial Note"))
-    }
-
-    @Test("Truncation lands on a word boundary with an ellipsis")
-    func wordBoundaryTruncation() {
-        let long = Array(repeating: "word", count: 200).joined(separator: " ")
-        let snippet = ProseSnippet.truncateAtWord(long, limit: 50)
-        #expect(snippet.hasSuffix("…"))
-        #expect(!snippet.dropLast().hasSuffix("wor"), "no mid-word cuts")
-        #expect(snippet.count <= 52)
-    }
-
-    @Test("A long bracketed passage is prose, not chrome, and survives")
-    func longBracketGroupSurvives() {
-        let bracketed = "[" + Array(repeating: "substantive", count: 12).joined(separator: " ") + " text]"
-        let snippet = ProseSnippet.prose(
-            header: "h", dateline: nil, sourceNote: nil,
-            body: "h " + bracketed + " and more follows")
-        #expect(snippet.hasPrefix("["),
-                "only short [Received …]-style groups are chrome; bracketed prose must remain")
     }
 
     // MARK: - The third route and the sitting's protection

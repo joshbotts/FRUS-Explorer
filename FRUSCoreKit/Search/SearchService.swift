@@ -33,6 +33,8 @@ import FTS5Store
 /// ## Snippets
 /// FTS5 stores original (unstemmed) text, and each result row carries its body
 /// text, so snippets are built in-process from the same row — no second query.
+/// A keyword row's window is cut from the document's prose, after its own heading, source
+/// note and dateline (``keywordSnippet(body:header:dateline:sourceNote:stemmedTerms:)``).
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
@@ -107,6 +109,11 @@ import FTS5Store
 ///          `results(from:parameters:)`, at its next row
 ///   2.14 — #1577 lane 6: `matchKeys(parameters:)`, the key of every document a search matches,
 ///          which Search Within These Results ranks by a question when the list was cut at its ceiling
+///   2.15 — A10b (plan of record decision 74): a keyword row's snippet starts at its match, after the
+///          document's own heading, source note and dateline (`ProseSnippet`'s strip, which Meaning rows
+///          share): 30 characters before the prose's first match, back to a space, and 2,000 after it,
+///          where it kept 1,000 on each side of the body's first match. A row whose only match is in
+///          those fields shows its opening prose. SNIPPETS MOVE for every keyword search
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -204,20 +211,16 @@ public actor SearchService {
         for (index, row) in rows.enumerated() {
             try Task.checkCancellation()
             snippetRowTestHook?(index)
-            let snippet: String
-            if !row.bodyText.isEmpty, !stemmedQueryTerms.isEmpty,
-               let contextSnippet = Self.makeContextSnippet(
-                   body: row.bodyText,
-                   stemmedTerms: stemmedQueryTerms,
-                   // Generate a generous window so the UI's adjustable `.lineLimit` (1–10 lines,
-                   // #189-C) always has enough text to fill the chosen line count; the rendered
-                   // length is clamped per surface at display time, not here.
-                   contextRadius: 1000
-               ) {
-                snippet = contextSnippet
-            } else {
-                snippet = headerFallbackSnippet(header: row.header, dateline: row.dateline)
-            }
+            // The window keeps 2,000 characters after the match, so the UI's adjustable `.lineLimit`
+            // (1–10 lines, #189-C) always has text to fill the chosen line count; the rendered length
+            // is clamped per surface at display time, not here.
+            let snippet = Self.keywordSnippet(
+                body: row.bodyText,
+                header: row.header,
+                dateline: row.dateline,
+                sourceNote: row.sourceNote,
+                stemmedTerms: stemmedQueryTerms
+            ) ?? headerFallbackSnippet(header: row.header, dateline: row.dateline)
 
             results.append(SearchResult(
                 documentId: row.documentId,
@@ -881,103 +884,223 @@ public actor SearchService {
     /// Used when no body word matches a stemmed query term (e.g. the match was in a
     /// summary or note rather than the document body, or the app-side Porter stem
     /// disagrees with SQLite's). Showing the header and dateline is preferable to an
-    /// empty snippet row.
+    /// empty snippet row. A match in the body's own heading, source note or dateline is a
+    /// body match, and gets the opening prose instead (``keywordSnippet(body:header:dateline:sourceNote:stemmedTerms:)``).
     private func headerFallbackSnippet(header: String, dateline: String?) -> String {
         [header, dateline]
             .compactMap { s in (s?.isEmpty == false) ? s : nil }
             .joined(separator: " · ")
     }
 
+    // MARK: - The keyword window (A10b)
+
+    /// How many characters a keyword row's window keeps before the match: about five words
+    /// (plan of record decision 74), taken back to the start of the word they reach.
+    nonisolated static let keywordLead = 30
+
+    /// How many characters a keyword row's window keeps after the match: enough that the UI's
+    /// adjustable `.lineLimit` fills ten lines on the widest row (#189-C), about 1,800 characters on
+    /// an iPad Pro in landscape; the visible length is clamped at render time.
+    nonisolated static let keywordTrail = 2_000
+
+    /// A keyword row's snippet (A10b, plan of record decision 74): the window around the first word
+    /// of the document's own prose that the query matches, after its own heading, source note and
+    /// dateline. A search row draws the heading and the dateline, and the source note's classification
+    /// as a chip; the Add Documents sheet prints the source note whole.
+    ///
+    /// - **The prose** starts where `ProseSnippet.proseStart(in:header:dateline:sourceNote:)` puts
+    ///   it, the strip a Meaning row's snippet is cut by. A body that is only its boilerplate is read
+    ///   whole, as the Meaning snippet's fallback reads it.
+    /// - **The window** is ``makeContextSnippet(body:stemmedTerms:from:before:after:)``'s:
+    ///   ``keywordLead`` characters before the prose's first match, back to a space, and
+    ///   ``keywordTrail`` after it.
+    /// - **A row whose only match is in those fields** gets the opening prose, ``keywordTrail``
+    ///   characters of it with no word marked, as a Meaning row does. A word in the heading or the
+    ///   dateline is drawn there; one only in the source note, or in the line the strip takes with the
+    ///   dateline, is drawn nowhere on a search row. Over the twelve topical searches of
+    ///   `Planning/Keyword-Snippet-Assessment-2026-10-20.md`, 1.1% of the top 1,000 rows and none of
+    ///   the top 100; over archival ones, many more ("Whitman File": 52 of its top 100, 50 of them by
+    ///   the source note; plan of record §6g).
+    /// - **A row with no match in its body**, an empty body, or a query with no positive term gets
+    ///   `nil`: the caller shows the heading and dateline again (`headerFallbackSnippet`).
+    ///
+    /// - Parameters:
+    ///   - body: The unstemmed, plain-text document body.
+    ///   - header: The document's header, as the row shows it.
+    ///   - dateline: The row's dateline, when present.
+    ///   - sourceNote: The document's stored source note, when present.
+    ///   - stemmedTerms: Query terms already reduced to their Porter stems.
+    /// - Returns: The snippet, with the match between `<b>` and `</b>` when it is in the prose.
+    nonisolated static func keywordSnippet(
+        body: String,
+        header: String,
+        dateline: String?,
+        sourceNote: String?,
+        stemmedTerms: [String]
+    ) -> String? {
+        guard !body.isEmpty, !stemmedTerms.isEmpty else { return nil }
+        let characters = Array(body)
+        let terms = KeywordStems(stemmedTerms)
+        let proseStart = ProseSnippet.proseStart(
+            in: characters, header: header, dateline: dateline, sourceNote: sourceNote) ?? 0
+        if let match = terms.firstMatch(in: characters, from: proseStart, to: characters.count) {
+            return window(in: characters, around: match, from: proseStart, before: keywordLead, after: keywordTrail)
+        }
+        // A match only before the prose, in the fields the row draws: the prose's opening, unmarked.
+        guard proseStart > 0, terms.firstMatch(in: characters, from: 0, to: proseStart) != nil else { return nil }
+        var end = min(characters.count, proseStart + keywordTrail)
+        while end < characters.count, characters[end].isLetter { end += 1 }
+        return String(characters[proseStart..<end]) + (end < characters.count ? " …" : "")
+    }
+
     /// Builds a `<b>…</b>`-marked context snippet from a document body string.
     ///
-    /// The body is scanned word-by-word; the first word whose Porter stem matches
-    /// any entry in `stemmedTerms` is wrapped in `<b>…</b>` and ~`contextRadius`
-    /// characters of text on either side are included. The window is snapped to
-    /// word boundaries so the snippet does not begin or end mid-word, and ellipses
-    /// are added when the body extends beyond the window.
+    /// The body is scanned word-by-word from `start`; the first word whose Porter stem matches
+    /// any entry in `stemmedTerms` is wrapped in `<b>…</b>`, with about `before` characters ahead of
+    /// it and `after` behind it. Ahead, the window goes back to a space, so that it opens on a whole
+    /// word ("Bonn’s", not its "s"), and never before `start`; behind, it goes on to the end of the
+    /// word it reaches. "… " opens a window that starts after `start`, and " …" ends one that stops
+    /// before the body does.
     ///
-    /// Returns `nil` if no word in `body` matches any stemmed term — callers should
-    /// fall back to the header/dateline fallback so the result row is never blank.
+    /// Returns `nil` if no word in `body` from `start` on matches any stemmed term.
     ///
     /// - Parameters:
     ///   - body: The unstemmed, plain-text document body to search.
     ///   - stemmedTerms: Query terms already reduced to their Porter stems.
-    ///   - contextRadius: Approximate number of characters of context to include on
-    ///     each side of the match. The caller passes a generous value (~1000) so the
-    ///     result string can fill up to the 10-line maximum the UI's adjustable
-    ///     `.lineLimit` may request (#189-C); the visible length is clamped at render time.
+    ///   - start: Where the scan and the window may begin, in characters: a keyword row passes where
+    ///     its prose starts (``keywordSnippet(body:header:dateline:sourceNote:stemmedTerms:)``).
+    ///   - before: About how many characters to keep ahead of the match.
+    ///   - after: About how many characters to keep behind it. A keyword row keeps ``keywordTrail``,
+    ///     so the result string can fill up to the 10-line maximum the UI's adjustable `.lineLimit`
+    ///     may request (#189-C); the visible length is clamped at render time.
     nonisolated static func makeContextSnippet(
         body: String,
         stemmedTerms: [String],
-        contextRadius: Int
+        from start: Int = 0,
+        before: Int = keywordLead,
+        after: Int = keywordTrail
     ) -> String? {
         guard !body.isEmpty, !stemmedTerms.isEmpty else { return nil }
-        let stems = Set(stemmedTerms)
+        let characters = Array(body)
+        guard let match = KeywordStems(stemmedTerms).firstMatch(in: characters, from: start, to: characters.count)
+        else { return nil }
+        return window(in: characters, around: match, from: start, before: before, after: after)
+    }
 
-        // A sound, near-free rejection test, applied before any allocation.
-        //
-        // The Porter stemmer only strips or rewrites SUFFIXES — no rule alters a word's
-        // first character — so a word whose first letter is not among the query stems' first
-        // letters cannot possibly stem to one. Testing that costs a lowercase and a set
-        // probe; the alternative was three String allocations and a full stem, per word, for
-        // every word in the body.
-        //
-        // This is what made a failed match expensive. On a corpus search the body scan runs
-        // to completion — measured on the real 316,839-document index, macOS's 7,500-row
-        // fetch spent 41 s stemming ~6 million words and then discarded every result to fall
-        // back to the header. Roughly 24 words in 25 now stop at a character comparison.
-        var firstLetters = Set<Character>()
-        for term in stemmedTerms {
-            if let first = term.first { firstLetters.insert(first) }
+    /// The window ``makeContextSnippet(body:stemmedTerms:from:before:after:)`` describes, around a
+    /// match already found.
+    nonisolated private static func window(
+        in characters: [Character],
+        around match: Range<Int>,
+        from start: Int,
+        before: Int,
+        after: Int
+    ) -> String {
+        let n = characters.count
+        // Back to a space, not only across letters: a 30-character lead otherwise opens "… s 3463"
+        // on "Bonn’s 3463", whose apostrophe is not a letter.
+        var low = max(start, match.lowerBound - before)
+        while low > start, !characters[low - 1].isWhitespace { low -= 1 }
+        var high = min(n, match.upperBound + after)
+        while high < n, characters[high].isLetter { high += 1 }
+        var out = low > start ? "… " : ""
+        out += String(characters[low..<match.lowerBound])
+        out += "<b>" + String(characters[match]) + "</b>"
+        out += String(characters[match.upperBound..<high])
+        if high < n { out += " …" }
+        return out
+    }
+
+    /// A query's stems, and the scan that finds the first body word stemming to one of them.
+    private struct KeywordStems {
+
+        /// The query terms' Porter stems.
+        let stems: Set<String>
+
+        /// The stems' first characters, for the scan's first gate.
+        let firstLetters: Set<Character>
+
+        /// Each stem's opening, for the scan's second gate: the stem less its last two characters, and
+        /// never less than its first.
+        let openings: [[Character]]
+
+        /// Reads `stemmedTerms`, query terms already reduced to their Porter stems.
+        init(_ stemmedTerms: [String]) {
+            stems = Set(stemmedTerms)
+            // A sound, near-free rejection test, applied before any allocation.
+            //
+            // The Porter stemmer only strips or rewrites SUFFIXES — no rule alters a word's
+            // first character — so a word whose first letter is not among the query stems' first
+            // letters cannot possibly stem to one. Testing that costs a lowercase and a set
+            // probe; the alternative was three String allocations and a full stem, per word, for
+            // every word in the body.
+            //
+            // This is what made a failed match expensive. On a corpus search the body scan runs
+            // to completion — measured on the real 316,839-document index, macOS's 7,500-row
+            // fetch spent 41 s stemming ~6 million words and then discarded every result to fall
+            // back to the header. Roughly 24 words in 25 now stop at a character comparison.
+            firstLetters = Set(stemmedTerms.compactMap(\.first))
+            // The second gate, which A10b needs (decision 74): a row whose word is only in its heading or
+            // source note now scans its whole prose before it falls back, where the scan used to stop at
+            // the heading's match. The stemmer rewrites a word's end only, and no further back than a
+            // stem's last two characters (every replacement keeps all but the last one or two characters
+            // of what it replaces), so a word can stem to a stem only if it opens with all of the stem but
+            // those two. Measured over a full index, at the Mac's 7,500 rows: "Presidential Materials"
+            // went from 8.4 s to 3.6 s in a debug build, with not one snippet changed in nine searches.
+            // `SearchSnippetCostTests.stemmingKeepsTheWordsOpening` holds the stemmer to it.
+            openings = Set(stemmedTerms).filter { !$0.isEmpty }.map { Array($0.prefix(max(1, $0.count - 2))) }
         }
 
-        // Walk the body and find the first word whose Porter stem hits the query set.
-        let scalars = Array(body)
-        var i = 0
-        let n = scalars.count
-        while i < n {
-            // Skip non-letters.
-            while i < n, !scalars[i].isLetter { i += 1 }
-            guard i < n else { break }
-            let wordStart = i
-            var sawPunctuation = false
-            while i < n, scalars[i].isLetter || scalars[i] == "'" || scalars[i] == "-" {
-                if !scalars[i].isLetter { sawPunctuation = true }
-                i += 1
+        /// The first word in `characters[start..<end]` whose Porter stem hits the query set: its
+        /// range, or `nil` when none does.
+        func firstMatch(in characters: [Character], from start: Int, to end: Int) -> Range<Int>? {
+            var i = start
+            while i < end {
+                // Skip non-letters.
+                while i < end, !characters[i].isLetter { i += 1 }
+                guard i < end else { break }
+                let wordStart = i
+                var sawPunctuation = false
+                while i < end, characters[i].isLetter || characters[i] == "'" || characters[i] == "-" {
+                    if !characters[i].isLetter { sawPunctuation = true }
+                    i += 1
+                }
+                let wordEnd = i
+
+                // The cheap gate. `lowercased()` on a single Character allocates nothing for the
+                // ASCII case and the set probe is O(1).
+                guard let head = characters[wordStart].lowercased().first,
+                      firstLetters.contains(head) else { continue }
+                // The second gate, for a word the stemmer reads as it is written (an apostrophe or a hyphen
+                // is taken out first, which moves its letters).
+                if !sawPunctuation, !opensLikeAStem(characters, from: wordStart, to: wordEnd) { continue }
+
+                let word = String(characters[wordStart..<wordEnd])
+                // Only strip when the scan actually consumed an apostrophe or hyphen, which is
+                // rare — `filter` allocates a second String every time it is called.
+                let alpha = sawPunctuation ? word.filter { $0.isLetter } : word
+                let stem = alpha.isEmpty ? word.lowercased() : PorterStemmer.stem(alpha.lowercased())
+                if stems.contains(stem) { return wordStart..<wordEnd }
             }
-            let wordEnd = i
+            return nil
+        }
 
-            // The cheap gate. `lowercased()` on a single Character allocates nothing for the
-            // ASCII case and the set probe is O(1).
-            guard let head = scalars[wordStart].lowercased().first,
-                  firstLetters.contains(head) else { continue }
-
-            let word = String(scalars[wordStart..<wordEnd])
-            // Only strip when the scan actually consumed an apostrophe or hyphen, which is
-            // rare — `filter` allocates a second String every time it is called.
-            let alpha = sawPunctuation ? word.filter { $0.isLetter } : word
-            let stem = alpha.isEmpty ? word.lowercased() : PorterStemmer.stem(alpha.lowercased())
-            if stems.contains(stem) {
-                // Found a match. Build the surrounding window.
-                let lowerBound = max(0, wordStart - contextRadius)
-                let upperBound = min(n, wordEnd + contextRadius)
-                // Snap to word boundaries so we don't begin/end mid-word.
-                var snapLow = lowerBound
-                while snapLow > 0, scalars[snapLow - 1].isLetter { snapLow -= 1 }
-                var snapHigh = upperBound
-                while snapHigh < n, scalars[snapHigh].isLetter { snapHigh += 1 }
-                let prefix = String(scalars[snapLow..<wordStart])
-                let highlight = String(scalars[wordStart..<wordEnd])
-                let suffix = String(scalars[wordEnd..<snapHigh])
-                var out = ""
-                if snapLow > 0 { out += "… " }
-                out += prefix
-                out += "<b>" + highlight + "</b>"
-                out += suffix
-                if snapHigh < n { out += " …" }
-                return out
+        /// Whether the word in `characters[start..<end]` opens as one of the stems' ``openings`` does,
+        /// compared in ASCII. A character outside ASCII is not compared, and lets the word through to
+        /// the stemmer, which decides.
+        private func opensLikeAStem(_ characters: [Character], from start: Int, to end: Int) -> Bool {
+            let length = end - start
+            return openings.contains { opening in
+                guard opening.count <= length else { return false }
+                for j in 0..<opening.count {
+                    guard let letter = characters[start + j].asciiValue, let expected = opening[j].asciiValue
+                    else { return true }
+                    // ASCII upper case to lower; a stem is lower case already.
+                    let lower = (65...90).contains(letter) ? letter + 32 : letter
+                    if lower != expected { return false }
+                }
+                return true
             }
         }
-        return nil
     }
 }

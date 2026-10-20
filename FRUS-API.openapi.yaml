@@ -2859,8 +2859,13 @@ components:
       description: |
         A single ranked full-text search result. Results are ordered by BM25
         relevance score (lower = more relevant). The `snippet` field contains
-        the matching context with `<b>…</b>` delimiters around the first
-        matching run, suitable for display in result lists.
+        the matching context, suitable for display in result lists: the
+        document's prose from a few words before its first matching word,
+        which is wrapped in `<b>…</b>`, past the heading, source note and
+        dateline the result carries in fields of its own. A result whose
+        terms appear only in those fields carries the opening prose with no
+        `<b>`, and one whose body holds none of them its header and dateline
+        joined by ` · `.
 
         Mirrors `SearchResult` in `FRUSCoreKit/Search/SearchParameters.swift`.
         Introduced in Session 09.
@@ -2899,7 +2904,7 @@ components:
           description: Archival source note.
         snippet:
           type: string
-          description: Context snippet with matching terms wrapped in `<b>…</b>`.
+          description: Context snippet, its first matching word in the document's prose wrapped in `<b>…</b>`.
         bm25Score:
           type: number
           format: double

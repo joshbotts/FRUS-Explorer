@@ -2441,7 +2441,7 @@ Filter by \(tagName)
 
 <!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.moreContent(for:) | key: search.result.a11y.matchedText -->
 
-*What VoiceOver's More Content calls a keyword search result's snippet: the words around the word the search matched, about 300 characters, cut at a space. It is not read when a reader lands on the row: the stored snippet runs to about 2,000 characters, where the row draws two lines of it.*
+*What VoiceOver's More Content calls a keyword search result's snippet: the words from just before the word the search matched, about 300 characters, cut at a space. It is not read when a reader lands on the row: the stored snippet runs to about 2,000 characters, where the row draws two lines of it. Since A10b the snippet starts about 30 characters before the word, so More Content takes those and the rest after it.*
 
 Matched text
 
@@ -2449,7 +2449,7 @@ Matched text
 
 <!-- SOURCE: FRUSExplorer/Search/SearchResultAccessibility.swift | SearchResultAccessibility.moreContent(for:) | key: search.result.a11y.openingText -->
 
-*The same for a Meaning search result, whose snippet marks no word: it is the document's opening prose after its heading, source note and dateline. A keyword result whose snippet is only its heading and dateline again offers nothing, ranked by a question or not, since the label has read both.*
+*The same for a Meaning search result, whose snippet marks no word: it is the document's opening prose after its heading, source note and dateline. Since A10b a keyword result whose words are only in its heading, source note or dateline shows that opening prose too, and offers it under this name. A keyword result whose snippet is only its heading and dateline again offers nothing, ranked by a question or not, since the label has read both.*
 
 Opening text
 

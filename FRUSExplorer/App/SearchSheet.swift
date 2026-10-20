@@ -2926,10 +2926,11 @@ private struct SearchResultRow: View {
                 .font(.body.weight(.medium))
                 .lineLimit(2)
 
-            // TEI-derived snippet (~1000 chars of surrounding context each side, from
-            // SearchService.search). Clamped to the user's chosen line count (#189-C) —
-            // the global default, or this window's Result Preview override — so readers can
-            // widen or tighten the preview just as on iOS.
+            // TEI-derived snippet from SearchService.search: the document's prose from about 30
+            // characters before the match and 2,000 after it, past its own heading, source note and
+            // dateline (A10b). Clamped to the user's chosen line count
+            // (#189-C) — the global default, or this window's Result Preview override — so readers
+            // can widen or tighten the preview just as on iOS.
             SnippetView(snippet: result.snippet)
                 .font(.callout)
                 .foregroundStyle(.secondary)

@@ -886,6 +886,8 @@ read there were Add to Collection…, Add Tags… and its own Activate Default. 
 the file restored from the commit after each): **two of two caught**. The tags' actions taken out failed `testATagIsSaidAndOfferedAsAnActionThatFilters`, the actions reading Add to Collection… and Add Tags…; the actions offered in selection too failed `testSelectionOffersNoActionForATag`, with Filter by UI Test Spoken Tag among them.
 
 Measured at the final code under iOS 27.0, 2026-10-19, each device alone under the heavy-job lock: **iPhone 17 (`80CF0F18`): 3 tests, 3 passed** (61, 28 and 60 s), and **iPad Pro 13-inch (M5) (`9AB3A0C9`), built into its own build folder and warmed with one test first: 3 tests, 3 passed** (62, 27 and 59 s). A test spends most of its minute on VoiceOver: each flick waits about five seconds for the app to idle.
+
+**Warm the iPhone with one test too** (A10b, 2026-10-20). Twice on iPhone 17 (`80CF0F18`), each time the first test after the unit target had run on the same simulator and the simulator had restarted, `testATagIsSaidAndOfferedAsAnActionThatFilters` failed at its first step, "The row's menu has no Add Tags…": the long press opened no menu. Its recording shows the app indexing volumes under the rows (*Indexing frus1900…*, then *frus1902…*). Alone, or after one test, it passed. At A10b's final code, warmed with `testEachRowSaysWhatItDraws`: iPhone 17, 3 tests, 3 passed (60, 28 and 60 s); iPad Pro 13-inch (M5) (`9AB3A0C9`), 3 tests, 3 passed (60, 26 and 58 s).
 ```bash
 Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
