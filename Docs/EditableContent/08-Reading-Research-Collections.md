@@ -2132,7 +2132,7 @@ Timeline arranges documents chronologically along a date axis; Network uses the 
 <!-- END SOURCE: graph.banner.undownloaded.v2 %lld %lld -->
 
 #### Footer — Corpus-wide connections for this volume — every other…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphWindowView.swift | CrossReferenceGraphWindowView.modeChoiceView | lines: 342–343 | key: xref.picker.volumeGraph.footer | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphWindowView.swift | CrossReferenceGraphWindowView.modeChoiceView | lines: 344–345 | key: xref.picker.volumeGraph.footer | shared: macOS only -->
 
 Corpus-wide connections for this volume — every other volume it cross-references or is referenced by.
 
@@ -2384,14 +2384,14 @@ Choose a tag or All Research Documents from the sidebar.
 *The collection editor and inspector captions, the add-documents sheet, the export sheet's Zotero captions, the headnote and colophon printed in exports, and the trip packet's topic placeholder and footnote citation.*
 
 #### This volume is downloaded but not yet indexed. Indexing…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 819–820 | key: collection.addDocs.browse.notIndexed -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.browseDocumentLevel | lines: 822–823 | key: collection.addDocs.browse.notIndexed -->
 
 This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn’t.
 
 <!-- END SOURCE: collection.addDocs.browse.notIndexed -->
 
 #### Each line is resolved against the FRUS manifest and your…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 967–968 | key: collection.addDocs.citations.hint -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift | CollectionAddDocumentsSheet.citationsTab | lines: 971–972 | key: collection.addDocs.citations.hint -->
 
 Each line is resolved against the FRUS manifest and your local index — footnotes, bibliography entries, and document links all work.
 
@@ -2412,7 +2412,7 @@ Choose a summarization prompt in the collection’s Composition section to expor
 <!-- END SOURCE: export.summaryNoPrompt -->
 
 #### Footer — Rendered on the exported title page; the introduction opens…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1206–1207 | key: collection.frontmatter.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.frontMatterSection | lines: 1095–1096 | key: collection.frontmatter.footer -->
 
 Rendered on the exported title page; the introduction opens the body, after the table of contents and before the first document. Leave blank to keep the plain document layout.
 
@@ -2503,7 +2503,7 @@ Empty note block
 <!-- END SOURCE: collection.smart.earlier.emptyNote -->
 
 #### Saved search not found
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2452–2452 | key: collection.editor.smart.missing -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2341–2341 | key: collection.editor.smart.missing -->
 
 *Where a smart collection's Smart Collection section names its saved search, when no saved search has the linked one's id any more (#1619 review): in Collection settings on iPhone and iPad, and in the Mac Collections window's ⚙ Collection popover. Unlink sits beside it either way.*
 
@@ -2512,7 +2512,7 @@ Saved search not found
 <!-- END SOURCE: collection.editor.smart.missing -->
 
 #### The linked saved search could not be found. It may have…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2463–2464 | key: collection.editor.smart.missing.explanation -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkRows.body | lines: 2352–2353 | key: collection.editor.smart.missing.explanation -->
 
 *The line under it, in place of the line that says what the link does. A smart collection takes nothing by hand, so the line says how to take it back (#1619 review).*
 
@@ -2520,8 +2520,35 @@ The linked saved search could not be found. It may have been deleted. Unlink it 
 
 <!-- END SOURCE: collection.editor.smart.missing.explanation -->
 
+#### Link to Saved Search…
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2383–2384 | key: collection.editor.smart.link -->
+
+*A Smart Collection section's button for a collection that is not linked: in Collection settings on iPhone and iPad, which on the Mac is also the New Collection sheet's, and since #1687 in the Mac Collections window's ⚙ Collection popover, which until then could unlink a collection and not link one. It opens the list of saved searches, newest first; in the Collections window it first closes the popover, and the list opens over the window. It is dimmed until a search is saved, over the next block's line (on the Mac, the one after it).*
+
+Link to Saved Search…
+
+<!-- END SOURCE: collection.editor.smart.link -->
+
+#### Save a search from the Search tab to enable smart collections.
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2397–2398 | key: collection.editor.smart.noSearches -->
+
+*Under the dimmed Link to Saved Search… on iPhone and iPad, while no search is saved.*
+
+Save a search from the Search tab to enable smart collections.
+
+<!-- END SOURCE: collection.editor.smart.noSearches -->
+
+#### Save a search from the Search window to enable smart collections.
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | SmartCollectionLinkButton.body | lines: 2392–2393 | key: collection.editor.smart.noSearches.mac -->
+
+*The same line on the Mac (#1687): in the Collections window's ⚙ Collection popover, and in the New Collection sheet, where it had named the Search tab, which the Mac does not have.*
+
+Save a search from the Search window to enable smart collections.
+
+<!-- END SOURCE: collection.editor.smart.noSearches.mac -->
+
 #### Couldn’t Add to Archives Visit
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 353–353 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.body | lines: 356–356 | key: archiveVisit.collection.error.title | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 *The title of the alert Add to Archives Visit… shows when a smart collection's search cannot run (#1619), on iPhone, iPad and Mac. Its message is the export's own: "Search is not ready yet. Try again in a moment." before the index has opened, or "The linked saved search could not be found. It may have been deleted."*
@@ -2607,14 +2634,14 @@ The tags could not be read or saved, so no document was tagged. %@
 <!-- END SOURCE: tags.picker.addFailed.save %@ -->
 
 #### VoiceOver label — Add documents, a section heading, a note block, highlighted…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1478–1479 | key: collection.add.menu | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.iPhoneAddMenu | lines: 1367–1368 | key: collection.add.menu | shared: iOS only -->
 
 Add documents, a section heading, a note block, highlighted passages, or an apparatus block
 
 <!-- END SOURCE: collection.add.menu -->
 
 #### Footer — Search the index, browse volumes, paste citations or…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1865–1866 | key: collection.editor.addDocuments.footer -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionEditorView.swift | CollectionEditorView.addDocumentsSection | lines: 1754–1755 | key: collection.editor.addDocuments.footer -->
 
 Search the index, browse volumes, paste citations or history.state.gov links, or gather a tag. New documents are added to the end of the list.
 
@@ -2744,21 +2771,21 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1151–1152 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1180–1181 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1580–1581 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1615–1616 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1878–1879 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1913–1914 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

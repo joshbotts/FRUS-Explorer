@@ -1111,19 +1111,19 @@ rather than hidden: this is the case where the number explains the most.*
 
 <!-- END SOURCE: settings.storage.compact.blocked %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 804–805 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 807–808 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
 
 Compact Database
 
 <!-- END SOURCE: settings.storage.compact.action -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 814–815 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 817–818 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
 
 Rewrites the index to give the free space back. Searching is unavailable while it runs — usually a few seconds, longer on a large library. Nothing you have written is affected.
 
 <!-- END SOURCE: settings.storage.compact.caveat -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 823–824 | key: settings.storage.compact.done %@ -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 826–827 | key: settings.storage.compact.done %@ -->
 
 *Interpolated with the reclaimed size.*
 
