@@ -110,7 +110,10 @@ extension FRUSASTNode {
     }
 
     /// Direct and indirect child nodes (used for recursive cross-reference and page-range extraction).
-    var children: [FRUSASTNode] {
+    ///
+    /// Public since #1693, for `ResolvedEdgeIndexGenerator`, which walks the rows the index holds
+    /// for sections for their `<ref>`s.
+    public var children: [FRUSASTNode] {
         switch self {
         case .text, .formula, .lineBreak, .pageBreak, .elementSpace: return []
         case .document(_, _, let c): return c

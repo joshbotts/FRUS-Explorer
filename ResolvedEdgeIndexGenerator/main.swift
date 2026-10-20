@@ -10,7 +10,7 @@ import Foundation
 import ResolvedEdgeIndexGeneratorCore
 
 do {
-    try ResolvedEdgeIndexRunner.run()
+    try await ResolvedEdgeIndexRunner.run()
 } catch {
     FileHandle.standardError.write(Data("\(error)\n".utf8))
     exit(1)

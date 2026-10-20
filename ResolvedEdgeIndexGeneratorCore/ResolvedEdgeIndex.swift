@@ -37,6 +37,13 @@ import Foundation
 /// What is left is the edges that are *structurally* unreachable locally: citations from a volume
 /// the reader does not have.
 ///
+/// ## Who cites
+/// A citing endpoint is a row the app's index holds: a document, or since #1693 a section's own
+/// text — a division's text above the documents it holds (#1536), a container's (#1510), a prose
+/// section such as an introduction or an errata list — under the section's `xml:id`, the id the
+/// local table stores it under. The funnel counts the two apart, so its document counts stay the
+/// provenance flow matrix's.
+///
 /// ## Encoding
 /// Grouped by **target**, because the question is always "what cites this document". Endpoints are
 /// two-level `(volume index, document index)` pairs so a document id is stored once per volume
@@ -44,6 +51,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #262
+///   1.1 — #1693: a section's row cites, and the funnel counts it in `referencesInSections`,
+///          `sectionEdges` and `sameVolumeSectionEdges`; `storedEdges` adds the section edges
 public struct ResolvedEdgeIndex: Codable, Sendable, Equatable {
 
     /// One cited document and everything outside its own volume that cites it.
@@ -104,28 +113,42 @@ public struct ResolvedEdgeIndex: Codable, Sendable, Equatable {
         public let referencesScanned: Int
         /// References sitting inside a document div, and so having a source document.
         public let referencesInsideDocuments: Int
-        /// References resolving to a document div in a shippable volume.
+        /// Of those, references citing a document div in a shippable volume, directly or through
+        /// one of its notes.
         public let documentEdges: Int
         /// Of those, references whose ends share a volume — excluded, because the local table
         /// already holds them whenever the reader can see the document at all.
         public let sameVolumeEdges: Int
+        /// `<ref>`s in the rows the index holds for sections (#1693), which no document holds.
+        public let referencesInSections: Int
+        /// Of those, references citing a document div in a shippable volume.
+        public let sectionEdges: Int
+        /// Of those, references whose ends share a volume — excluded, as `sameVolumeEdges` are.
+        public let sameVolumeSectionEdges: Int
         /// Distinct cited documents in the index.
         public let targetCount: Int
         /// Volumes contributing at least one cross-volume citation.
         public let citingVolumeCount: Int
 
-        /// Cross-volume edges stored.
-        public var storedEdges: Int { documentEdges - sameVolumeEdges }
+        /// Cross-volume references stored, from documents and from sections. A source citing a
+        /// target more than once is one source in its row, so a row's sources can be fewer.
+        public var storedEdges: Int {
+            documentEdges - sameVolumeEdges + sectionEdges - sameVolumeSectionEdges
+        }
 
         /// Creates a coverage block.
         public init(volumesScanned: Int, referencesScanned: Int, referencesInsideDocuments: Int,
-                    documentEdges: Int, sameVolumeEdges: Int, targetCount: Int,
+                    documentEdges: Int, sameVolumeEdges: Int, referencesInSections: Int,
+                    sectionEdges: Int, sameVolumeSectionEdges: Int, targetCount: Int,
                     citingVolumeCount: Int) {
             self.volumesScanned = volumesScanned
             self.referencesScanned = referencesScanned
             self.referencesInsideDocuments = referencesInsideDocuments
             self.documentEdges = documentEdges
             self.sameVolumeEdges = sameVolumeEdges
+            self.referencesInSections = referencesInSections
+            self.sectionEdges = sectionEdges
+            self.sameVolumeSectionEdges = sameVolumeSectionEdges
             self.targetCount = targetCount
             self.citingVolumeCount = citingVolumeCount
         }
@@ -137,7 +160,8 @@ public struct ResolvedEdgeIndex: Codable, Sendable, Equatable {
     public let generated: String
     /// Volume ids appearing at either end, sorted.
     public let volumes: [String]
-    /// Document xml:ids per volume, parallel to ``volumes``, each sorted.
+    /// The xml:ids at an endpoint per volume, parallel to ``volumes``, each sorted: a document's,
+    /// or a citing section's (#1693).
     public let documents: [[String]]
     /// One row per cited document, sorted by (volume, document).
     public let targets: [TargetEdges]

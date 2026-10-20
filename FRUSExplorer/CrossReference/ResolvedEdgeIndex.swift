@@ -21,10 +21,20 @@ import Foundation
 /// the missing edge was never in the table to be flagged.
 ///
 /// ## Cross-volume only, and why that is the whole answer
-/// 69,229 of the corpus's 77,866 document-to-document citations are **same-volume**. If you can
+/// 69,261 of the corpus's 77,898 document-to-document citations are **same-volume**. If you can
 /// see a document you have its volume, so the local table already holds every one of those. What
-/// is left — 8,637 edges into 5,747 documents from 185 volumes — is exactly the set that is
-/// structurally unreachable without this file, and it fits in 282 KB.
+/// is left — 8,700 edges into 5,803 documents from 185 volumes, 63 of them from sections — is
+/// exactly the set that is structurally unreachable without this file, and it fits in 285 KB.
+///
+/// ## Who cites
+/// A document, or since #1693 a section's own text: a division's text above the documents it
+/// holds (#1536), a container's (#1510), or a prose section such as an introduction or an errata
+/// list, under the section's id — the id the local table stores its references under, so
+/// `CrossReferenceStore.completingInboundEdges` merges the two as one citer. At corpus
+/// `6170e4b32` five sections cite another volume: 1945 Berlin vol. II's introduction and vol. I's
+/// "Peace feelers through the Soviet Union", the summary of a microfiche supplement's print
+/// volume, and two errata lists. The regenerated file holds every cross-volume citation of a
+/// document that a full index at version 69 holds, 8,519 citing pairs, and nothing it does not.
 ///
 /// ## What it does not carry
 /// No titles, dates, or document numbers for the citing documents. Those live in the volume's own
@@ -34,6 +44,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #262
+///   1.1 — #1693: a citer may be a section; `Coverage` reads the funnel's three section fields and
+///          `storedEdges` adds the section edges
 struct ResolvedEdgeIndex: Decodable, Sendable {
 
     /// One cited document and everything outside its own volume that cites it.
@@ -78,17 +90,27 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
         let referencesScanned: Int
         /// References inside a document div.
         let referencesInsideDocuments: Int
-        /// References resolving to a document in a shippable volume.
+        /// Of those, references citing a document in a shippable volume, directly or through one
+        /// of its notes.
         let documentEdges: Int
         /// Of those, same-volume edges — excluded, because the local table holds them.
         let sameVolumeEdges: Int
+        /// `<ref>`s in the rows the index holds for sections (#1693).
+        let referencesInSections: Int
+        /// Of those, references citing a document in a shippable volume.
+        let sectionEdges: Int
+        /// Of those, same-volume edges — excluded, as `sameVolumeEdges` are.
+        let sameVolumeSectionEdges: Int
         /// Distinct cited documents.
         let targetCount: Int
         /// Volumes contributing a cross-volume citation.
         let citingVolumeCount: Int
 
-        /// Cross-volume edges stored — what the artifact actually carries.
-        var storedEdges: Int { documentEdges - sameVolumeEdges }
+        /// Cross-volume edges stored — what the artifact actually carries, from documents and
+        /// from sections.
+        var storedEdges: Int {
+            documentEdges - sameVolumeEdges + sectionEdges - sameVolumeSectionEdges
+        }
     }
 
     /// Artifact schema version.
@@ -97,7 +119,8 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
     let generated: String
     /// Volume ids, sorted.
     let volumes: [String]
-    /// Document xml:ids per volume, parallel to ``volumes``.
+    /// The xml:ids at an endpoint per volume, parallel to ``volumes``: a document's, or a citing
+    /// section's (#1693).
     let documents: [[String]]
     /// One row per cited document.
     let targets: [TargetEdges]
@@ -105,7 +128,7 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
     let coverage: Coverage
 
     /// Row lookup by `"volume/document"`, built once on decode — the query runs on every graph
-    /// load and a linear scan of 5,747 rows per load is not free.
+    /// load and a linear scan of 5,803 rows per load is not free.
     private var rowByKey: [String: Int] = [:]
 
     private enum CodingKeys: String, CodingKey {
@@ -130,7 +153,7 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
 
     // MARK: - Lookups
 
-    /// Every document outside `volumeId` that cites `(volumeId, documentId)`.
+    /// Every document or section outside `volumeId` that cites `(volumeId, documentId)`.
     ///
     /// Returns an empty array both when nothing cites it and when the document is not in the
     /// index at all. Those are the same answer here — the index covers every shippable volume, so
