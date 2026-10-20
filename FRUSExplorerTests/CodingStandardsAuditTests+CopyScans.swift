@@ -110,6 +110,9 @@ import Foundation
 ///         compile and whose strings the app shows; `lexedAppSources` names them `../FRUSCoreKit/…`
 ///   1.13 — 2026-10-12: #1643 — six baseline entries gone: the Archival network dock's partner
 ///         sentence and Browse ▸ Archives' five "docs" counts
+///   1.14 — 2026-10-19: #1683 — two baseline entries gone: Collocates' caveats of what the scan
+///         read and where it stopped, re-keyed `.v3` with their counts grouped, so the ceiling goes
+///         280 → 278
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -839,7 +842,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 280
+    static let countCopyBaselineCeiling = 278
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -1056,9 +1059,7 @@ extension CodingStandardsAuditTests {
         #"ProjectContext/SessionLogView.swift | sessionLog.results.many %lld"#,
         #"Research/ResearchView.swift | research.row.noteCount %lld"#,
         #"Research/ResearchView.swift | research.row.summaries %lld"#,
-        #"Search/CollocationView.swift | search.collocation.caveat.bounded.v2 %lld %lld"#,
         #"Search/CollocationView.swift | search.collocation.caveat.perDocument %lld"#,
-        #"Search/CollocationView.swift | search.collocation.caveat.scope.v2 %lld %lld"#,
         #"Search/CollocationView.swift | search.collocation.caveat.unpriced %lld"#,
         #"Search/CollocationView.swift | search.collocation.unavailable.floor %lld"#,
         #"Search/CollocationView.swift | search.collocation.window %lld"#,

@@ -563,10 +563,13 @@ enum ExportFormat: String, CaseIterable, Identifiable {
     }
 
     /// The one-line descriptor under the format card's title (Composer v2 export grid).
+    ///
+    /// HTML's said "Web page + word cloud" until #1688, as though it alone carried the cloud: PDF and Word draw it
+    /// too when Word-cloud overview is on (`options.includeWordCloud`, Word since #1621).
     var gridCaption: String {
         switch self {
         case .pdf:            return String(localized: "export.grid.pdf.caption", defaultValue: "Formatted reader")
-        case .html:           return String(localized: "export.grid.html.caption", defaultValue: "Web page + word cloud")
+        case .html:           return String(localized: "export.grid.html.caption.v2", defaultValue: "Web page")
         case .docx:           return String(localized: "export.grid.docx.caption", defaultValue: "Editable .docx")
         case .bibtex:         return String(localized: "export.grid.bibtex.caption", defaultValue: "Reference manager")
         case .zoteroJSON:     return String(localized: "export.grid.ris.caption", defaultValue: "Zotero / EndNote")

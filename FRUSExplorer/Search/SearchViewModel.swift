@@ -1904,14 +1904,18 @@ final class SearchViewModel {
         // match count, a complete ranking of 212 rows under a 1,000-row ceiling would print as "at
         // least 212", and a ranking keeps its base's total, which is no count of the layer.
         let layer = executedRoute.isLayer ? pinnedBase : nil
+        // So does a Meaning list's (#1688): the list is the whole of its ranking, and recorded with
+        // no match count under the engine's 100-row length (`lastFetchLimit`) a full one printed as
+        // "at least 100" in the method appendix, with `count_basis` `floor`.
+        let recordsTheListWhole = layer != nil || executedRoute == .meaning
         let outcome = SearchHistoryWriter.record(
             SearchHistoryWriter.Reading(
                 queryText: submittedQuery,
                 // The true total when there is one, the fetched count otherwise. `resultCount`
                 // cannot express "unknown", so the honest fallback is what was actually seen.
-                resultCount: layer != nil ? results.count : (totalMatchCount ?? results.count),
+                resultCount: recordsTheListWhole ? results.count : (totalMatchCount ?? results.count),
                 loadedCount: results.count,
-                matchCount: layer != nil ? results.count : totalMatchCount,
+                matchCount: recordsTheListWhole ? results.count : totalMatchCount,
                 fetchLimit: lastFetchLimit,
                 indexedVolumeCount: indexedVolumeCount,
                 // The executed parameters, not the live filter state — those may have moved.
@@ -2087,7 +2091,8 @@ final class SearchViewModel {
     /// History scope (#1577 lane 1).
     ///
     /// The Meaning strip and the pre-search prompt read it to say where a Meaning search will
-    /// rank. Zero is a set that holds nothing, which is not the same as no set.
+    /// rank, and since #1688 the prompt reads it in Keywords mode too, to say what a keyword search
+    /// will match inside. Zero is a set that holds nothing, which is not the same as no set.
     ///
     /// While a list cut at its ceiling is held it is the list's whole match, which a question ranks (#1577 lane 6;
     /// `PinnedResultBase.wholeMatchSetSize(for:)`), or `nil` where only reading the match could say it: under a gate

@@ -35,6 +35,7 @@ import SwiftData
 ///   1.0 — issue #406: initial implementation — cascading (orphan-free) user-tag deletion
 ///   1.1 — Session 2026-10-09: #1591 — `deleteCascading` rewrites the index's tag column for the
 ///          documents it touched, and returns them
+///   1.2 — 2026-10-19: #1689 — `merge` does too, for the documents whose assignment it re-pointed
 @MainActor
 enum UserTagAdmin {
 
@@ -50,8 +51,7 @@ enum UserTagAdmin {
     /// search result rows printed an id they could not name, as a 36-character chip that on
     /// iPhone and iPad filtered by it. The launch sweep cannot be left to do it either: its floor
     /// refuses to clear when the store holds no assignment at all, which is the state deleting a
-    /// reader's only tag leaves. (`merge` still leaves the index to the next reconcile, which
-    /// does reach its documents: each keeps an assignment, re-pointed.)
+    /// reader's only tag leaves. `merge` rewrites the rows it touched too, since #1689.
     ///
     /// - Parameters:
     ///   - tag: The `UserTag` to delete.
@@ -122,15 +122,28 @@ enum UserTagAdmin {
     /// Every array write reassigns rather than mutating in place, so each record's `didSet` fires
     /// and CloudKit sees a genuinely modified row.
     ///
+    /// **The index's copy (`document_cache.user_tag_ids`) is rewritten here, for the documents
+    /// whose assignment was re-pointed (#1689)**, as `deleteCascading` rewrites it for the ones it
+    /// deleted. It used to be left to the next `DocumentTagAssignment.reconcileTagColumn`, at launch
+    /// or after a settled iCloud import, and until then the index named the merged tag for those
+    /// documents and not the one that survived: a search filtered by the surviving tag missed
+    /// them, and their result rows showed no chip for it.
+    ///
     /// - Parameters:
     ///   - source: The tag being absorbed. Deleted at the end.
     ///   - target: The tag that survives.
     ///   - context: The SwiftData context owning both.
-    static func merge(_ source: UserTag, into target: UserTag, context: ModelContext) {
+    ///   - pipeline: The index whose tag column to rewrite, or `nil` when there is none to write
+    ///     (the app has not finished launching, or a test has no index). It has no default, so a
+    ///     caller says which.
+    /// - Returns: The documents whose assignment to `source` now names `target`, each once.
+    @discardableResult
+    static func merge(_ source: UserTag, into target: UserTag, context: ModelContext,
+                      pipeline: IndexingPipeline?) -> [DocumentTagAssignment.DocumentKey] {
         // Capture ids before any modification — `source` is deleted below.
         let sourceId = source.id
         let targetId = target.id
-        guard sourceId != targetId else { return }
+        guard sourceId != targetId else { return [] }
 
         // 1. Re-tag research notes. In-memory filter, not a `#Predicate`: `array.contains` on the
         //    transformable `[UUID]` column traps in SwiftData.
@@ -144,9 +157,15 @@ enum UserTagAdmin {
         }
 
         // 2. Re-tag direct document assignments. Omitting this was #406's orphaned-assignment bug.
+        //    Keeping which documents they were on, for the index below.
         let assignments = (try? context.fetch(FetchDescriptor<DocumentTagAssignment>())) ?? []
         var assignmentCount = 0
+        var touched: [DocumentTagAssignment.DocumentKey] = []
+        var seen: Set<String> = []
         for assignment in assignments where assignment.tagId == sourceId {
+            if seen.insert("\(assignment.volumeId)/\(assignment.documentId)").inserted {
+                touched.append((volumeId: assignment.volumeId, documentId: assignment.documentId))
+            }
             assignment.tagId = targetId
             assignmentCount += 1
         }
@@ -163,6 +182,19 @@ enum UserTagAdmin {
         print("[UserTagAdmin] Merged '\(source.name)' → '\(target.name)': "
               + "\(noteCount) notes, \(assignmentCount) assignments updated")
         #endif
+
+        // 5. After the save, as in `deleteCascading`: the rewrite re-reads each document's
+        //    assignments from the store, in a context of its own, and the re-pointed ones must be
+        //    there. A document that carried both tags keeps the surviving one once.
+        if let pipeline, !touched.isEmpty {
+            let container = context.container
+            let documents = touched
+            Task.detached(priority: .utility) {
+                await DocumentTagAssignment.reindexTagColumn(
+                    documents: documents, container: container, pipeline: pipeline)
+            }
+        }
+        return touched
     }
 
     /// Removes `tagId` from every `Project.defaultUserTagIds` (#377 Phase 3 tag focus). Reassigns the

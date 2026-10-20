@@ -54,6 +54,10 @@ struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
     /// floor, and a tile reading "43/267" must not imply 267 was every match.
     let truncation: WorkingCorpus.CaptureTruncation
 
+    /// Whether the corpus is a Meaning search's closest matches (`WorkingCorpus.isMeaningCapture`), whose
+    /// line names the set, in the quiet style, where a capture cut short is said to be one in amber (#1688).
+    let isMeaningCapture: Bool
+
     /// `ForEach` identity.
     var id: UUID { corpusId }
 }
@@ -343,7 +347,8 @@ struct ProjectHomeView: View {
                 coverage: DocumentEngagementService.partition(corpusKeys: corpus.documentKeys,
                                                               keys: keys,
                                                               isOpenedComplete: isOpenedComplete),
-                truncation: corpus.truncationAtCapture)
+                truncation: corpus.truncationAtCapture,
+                isMeaningCapture: corpus.isMeaningCapture)
         }
     }
 
@@ -693,10 +698,12 @@ struct ProjectHomeView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             if let note = CorporaAxis.truncationLine(entry.truncation,
-                                                     documentCount: entry.coverage.totalCount) {
+                                                     documentCount: entry.coverage.totalCount,
+                                                     isMeaningCapture: entry.isMeaningCapture) {
                 Text(note)
                     .font(.caption2)
-                    .foregroundStyle(.orange)
+                    // A Meaning search's line is quiet (#1688), as the corpus lists draw it.
+                    .foregroundStyle(entry.isMeaningCapture ? Color.secondary : Color.orange)
                     .lineLimit(2)
             }
         }
@@ -1418,25 +1425,39 @@ struct ProjectCollectionsEditor: View {
         .buttonStyle(.plain)
     }
 
-    /// The shared name + document-count label for a collection row. The count matches what actually
-    /// seeds the leads engine (`ProjectLeadsService.collectionSeedKeys`): distinct document-kind
-    /// entries with non-empty ids, so malformed or duplicate entries don't inflate it.
+    /// The shared name + document-count label for a collection row. An ordinary collection's count
+    /// matches what actually seeds the leads engine (`ProjectLeadsService.collectionSeedKeys`):
+    /// distinct document-kind entries with non-empty ids, so malformed or duplicate entries don't
+    /// inflate it.
+    ///
+    /// A smart collection's row says *Smart collection* where the count was (#1687), as both
+    /// Collections lists have since #1619: its documents come from its saved search, so a count of
+    /// its hand-added entries read "0 documents" for most of them. What seeds a project's leads is
+    /// unchanged, as the plan of record's default for #1687 leaves it: a smart collection's
+    /// hand-added entries, those from before its link, still seed them and its saved search does
+    /// not, which this row no longer shows.
     @ViewBuilder
     private func collectionInfo(_ collection: Collection) -> some View {
-        let docCount = Set(
-            (collection.documentEntries ?? [])
-                .filter { $0.entryKind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
-                .map { "\($0.volumeId)/\($0.documentId)" }
-        ).count
         VStack(alignment: .leading, spacing: 2) {
             // The name as every list row reads it, trimmed and with the shared fallback (#1464).
             Text(CollectionEditorNaming.listName(savedName: collection.name))
                 .foregroundStyle(.primary)
-            Text(docCount == 1
-                 ? String(localized: "project.collections.manage.docCount.one", defaultValue: "1 document")
-                 : String(localized: "project.collections.manage.docCount.other", defaultValue: "\(docCount) documents"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if collection.savedSearchId != nil {
+                Label(SmartCollectionRule.listLabel, systemImage: "bolt.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                let docCount = Set(
+                    (collection.documentEntries ?? [])
+                        .filter { $0.entryKind == .document && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+                        .map { "\($0.volumeId)/\($0.documentId)" }
+                ).count
+                Text(docCount == 1
+                     ? String(localized: "project.collections.manage.docCount.one", defaultValue: "1 document")
+                     : String(localized: "project.collections.manage.docCount.other", defaultValue: "\(docCount) documents"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

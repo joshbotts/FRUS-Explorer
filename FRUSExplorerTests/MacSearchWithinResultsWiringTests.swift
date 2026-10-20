@@ -333,8 +333,9 @@ struct MacSearchWithinResultsWiringTests {
     func aLayerRecordsItsRows() throws {
         let record = Self.squeezedCode(try Self.declaration("func recordSearchHistory(projectId: UUID?,", in: Self.model))
         for line in ["let layer = executedRoute.isLayer ? pinnedBase : nil",
-                     "resultCount: layer != nil ? results.count : resultCountForDisplay,",
-                     "matchCount: layer != nil ? results.count : totalMatchCount,",
+                     "let recordsTheListWhole = layer != nil || executedRoute == .meaning",
+                     "resultCount: recordsTheListWhole ? results.count : resultCountForDisplay,",
+                     "matchCount: recordsTheListWhole ? results.count : totalMatchCount,",
                      "signatureOverride: SearchScopeSignature.layered(",
                      "parameters: submittedSearchParameters, base: layer),"] {
             #expect(record.contains(Self.squeezed(line)), "recordSearchHistory lost `\(line)`")

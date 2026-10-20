@@ -2208,15 +2208,18 @@ final class MacSearchViewModel {
         // iPad): left with no match count, a complete ranking of 212 rows would print as "at least
         // 212", and a ranking keeps its list's total, which is no count of the layer.
         let layer = executedRoute.isLayer ? pinnedBase : nil
+        // So does a Meaning list's (#1688), as on iPhone and iPad: the list is the whole of its
+        // ranking, and a full one printed as "at least 100" in the method appendix.
+        let recordsTheListWhole = layer != nil || executedRoute == .meaning
         let outcome = SearchHistoryWriter.record(
             SearchHistoryWriter.Reading(
                 queryText: submittedQuery.trimmingCharacters(in: .whitespacesAndNewlines),
                 // The true total when there is one, the fetched count otherwise. Before Q-M2 an
                 // unavailable count was written as exactly the fetch cap, so a trail entry could
                 // record "7,500" for a query matching 195,519 — a number a researcher may cite.
-                resultCount: layer != nil ? results.count : resultCountForDisplay,
+                resultCount: recordsTheListWhole ? results.count : resultCountForDisplay,
                 loadedCount: results.count,
-                matchCount: layer != nil ? results.count : totalMatchCount,
+                matchCount: recordsTheListWhole ? results.count : totalMatchCount,
                 fetchLimit: lastFetchLimit,
                 indexedVolumeCount: indexedVolumeCount,
                 parameters: submittedSearchParameters,

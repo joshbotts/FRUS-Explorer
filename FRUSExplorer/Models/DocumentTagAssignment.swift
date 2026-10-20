@@ -115,8 +115,9 @@ extension DocumentTagAssignment {
     /// on it would empty every tagged row at the moment the tags are safe in iCloud and have not
     /// arrived. So nothing is cleared when there is no assignment at all. The cost is the same as
     /// the note plan's: a reader whose LAST assignment anywhere is removed on another device keeps
-    /// that one row. A tag deleted in Settings does not wait for this: `UserTagAdmin.deleteCascading`
-    /// rewrites the rows it touched at once.
+    /// that one row. A tag deleted or merged in Settings does not wait for this:
+    /// `UserTagAdmin.deleteCascading` and `UserTagAdmin.merge` (#1689) rewrite the rows they touched
+    /// at once.
     ///
     /// **A clear removes an id no assignment accounts for, whoever wrote it.** Until #1275 the note
     /// editor pushed a note's tags into this per-document column; a row that still carries such an
@@ -205,11 +206,11 @@ extension DocumentTagAssignment {
     /// it for a document that has none.
     ///
     /// For a caller that has just added or removed assignments on documents it can name, and
-    /// saved: `UserTagAdmin.deleteCascading`, and the bulk tag writer and its Undo
-    /// (`UserTagAdmin.assignAndIndex`, `removeAssignmentsAndIndex`, #1576 lane 5). It has no floor,
-    /// because the caller, not a subtraction, says which rows changed. It re-reads rather than
-    /// being told, since a document can carry other tags. When the assignments cannot be read,
-    /// nothing is written.
+    /// saved: `UserTagAdmin.deleteCascading` and `UserTagAdmin.merge` (#1689), and the bulk tag
+    /// writer and its Undo (`UserTagAdmin.assignAndIndex`, `removeAssignmentsAndIndex`, #1576
+    /// lane 5). It has no floor, because the caller, not a subtraction, says which rows changed. It
+    /// re-reads rather than being told, since a document can carry other tags. When the assignments
+    /// cannot be read, nothing is written.
     ///
     /// - Parameters:
     ///   - documents: The documents whose rows to rewrite.

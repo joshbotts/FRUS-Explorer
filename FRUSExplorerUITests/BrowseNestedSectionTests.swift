@@ -41,10 +41,13 @@ import notify
 ///  1. **The first compilation level still loads.** `.volume → .compilation` crosses switch
 ///     branches and has always worked. It is the control that isolates the *nesting* step from
 ///     the fixture, the seeding, and the indexing — all three of which would fail this first.
-///  2. **The chapter reaches "No documents in this section."** That string is reachable *only*
-///     through a completed load (`documentRows(docs:)` renders it for an empty array), so it is
-///     the fingerprint that separates "loaded and empty" from "never loaded". At `75e0fff2` this
-///     is where the run fails: the chapter sits on the spinner forever.
+///  2. **The chapter's load reaches a terminal state, and says nothing under its sections.** With
+///     the chapter on screen, the spinner goes and neither the failure row, an index banner nor the
+///     indexing progress takes its place, which leaves the document list, empty — what separates
+///     "loaded and empty" from "never loaded". At `75e0fff2` this is where the run fails: the
+///     chapter sits on the spinner forever. Until #1690 the proof was "No documents in this
+///     section.", which a completed load drew under the chapter's Sections list; a section that
+///     lists sections no longer draws it, and the step asserts that too.
 ///  3. **The subchapter's own document rows appear.** A second reuse step, one level deeper,
 ///     proving the fix is not a one-off for the first nested level.
 ///  4. **A section whose `<head>` repeats its parent's shows its OWN row** (round 2). The fixture's
@@ -150,6 +153,15 @@ import notify
 ///          (``seededSubseriesLabel``), since a simulator that holds other volumes lists more
 ///          than one, and a typed search is waited for in its field where it was read at
 ///          once
+///   1.7 — #1690: a section that lists sections no longer says "No documents in this section."
+///          under them, so assertion 2's proof that the chapter's load finished is the spinner's
+///          going, with the chapter on screen and no failure row, index banner or indexing progress
+///          in its place, and
+///          the step asserts the sentence is not drawn. Assertion 1's check for the sentence goes,
+///          since the compilation lists the chapter and so cannot draw it. The in-flight test, which
+///          the proof now rests on, checks that the subchapter's rows are not up while its load is
+///          held, where it checked for the sentence, which the subchapter (it lists the twin) cannot
+///          draw now
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -215,7 +227,12 @@ final class BrowseNestedSectionTests: XCTestCase {
     private static let indexRequiredLabel = "Index Required"
     private static let indexUnavailableLabel = "Search Index Unavailable"
 
-    /// `CompilationView`'s empty-list label. Reachable only through a completed load.
+    /// The title of the live progress a compilation shows while its volume is indexed from it.
+    private static let indexingLabel = "Indexing Volume"
+
+    /// `CompilationView`'s empty-list label. Reachable only through a completed load, and since
+    /// #1690 only for a section that lists no sections, so the walk asserts it ABSENT under the
+    /// chapter's Sections list.
     private static let emptyLabel = "No documents in this section."
 
     var app: XCUIApplication!
@@ -394,28 +411,13 @@ final class BrowseNestedSectionTests: XCTestCase {
                 + "control — it crosses a switch branch and builds a new view — so a failure here "
                 + "is the fixture, the seeding or the indexing, not #1301."
         )
-        // WHAT THIS HOLDS, stated as narrowly as it is true (corrected in round 3). A completed
-        // load and the empty-state label must never be on screen together: this section has three
-        // documents, and "No documents in this section." beside its rows would mean the list and
-        // the label disagree about the same cache entry.
-        //
-        // It is NOT the guard on assertion 2's oracle, and round 2's comment here said it was.
-        // This is an immediate `.exists` query sequenced AFTER a `waitForExistence` on the first
-        // row has returned; under the mutant that drew the pre-load state as the row list, the
-        // label is on screen exactly while the cache entry is nil and is replaced by the rows in
-        // the same render pass that makes that wait return — so the window closes before this
-        // line runs. The guard on the oracle is
+        // Rounds 2 and 3 checked here that "No documents in this section." was not beside these
+        // rows. Since #1690 a section that lists sections never draws that sentence, and this one
+        // lists the chapter, so the check could no longer fail and is gone. It was never the guard
+        // on a load drawn before it finishes, as round 3 recorded: that guard is
         // `testALoadInFlightShowsTheSpinnerAndNotAnEmptyList`, which holds a load open for eight
-        // seconds precisely so the string can be seen, and the unit test
-        // `eachPresentationDrawsItsOwnRow`, which pins the mapping one case at a time. The
-        // measured kill for that mutant is recorded against the in-flight test at its first
-        // assertion, not against this one.
-        XCTAssertFalse(
-            app.staticTexts[Self.emptyLabel].exists,
-            "[\(idiom)] '\(Self.emptyLabel)' is on screen at the FIRST compilation level, which "
-                + "holds three documents. A section that has rows is claiming it has none — the "
-                + "pre-load or in-flight state is being drawn as the document list."
-        )
+        // seconds so its row can be seen, with the unit test `eachPresentationDrawsItsOwnRow`,
+        // which pins the mapping one case at a time.
 
         // ── 2. The reuse step: compilation → compilation ───────────────────────────────────
         let chapterRow = row(containing: Self.chapterTitle)
@@ -425,20 +427,46 @@ final class BrowseNestedSectionTests: XCTestCase {
                           + "Sections list — the fixture's branch was not parsed.")
         chapterRow.tap()
 
+        // THE PROOF THAT THE CHAPTER'S LOAD FINISHED (#1690). The chapter holds no documents of its
+        // own, only the subchapter, and a completed load of it draws nothing under its Sections
+        // list: until #1690 it drew "No documents in this section." there, under the section the
+        // list had just named, and that sentence was this step's oracle. The proof now has three
+        // parts, in this order, and it is an elimination over `CompilationRowKind`, whose
+        // read-directly, persons and sources rows the chapter's kind rules out (it holds a section):
+        //  - the subchapter's row is up, which only the CHAPTER's Sections list holds, so the level
+        //    on screen is the chapter's and its document list was drawn in the same pass;
+        //  - the spinner goes, which it does only when the load reaches a terminal state: it is
+        //    drawn for a load awaited or in flight (`testALoadInFlightShowsTheSpinnerAndNotAnEmptyList`
+        //    holds one open to see it), and #1301's unkeyed task left it on screen for good;
+        //  - and neither the failure row, an index banner nor the indexing progress is drawn in its
+        //    place, which leaves the document rows, an empty list.
         XCTAssertTrue(
-            app.staticTexts[Self.emptyLabel].waitForExistence(timeout: 60),
-            "[\(idiom)] #1301: the nested chapter never reached a terminal state. "
-                + "'\(Self.emptyLabel)' is reachable ONLY through a completed load, so its "
-                + "absence means the load never ran. On iPad the detail pane renders the deepest "
-                + "level in place, so this `.compilation → .compilation` step REUSES the "
-                + "CompilationView instance and a bare `.task` — one with no `id:` — never "
-                + "re-runs for the new section. Spinner still on screen: "
-                + "\(app.staticTexts[Self.loadingLabel].exists)."
+            row(containing: Self.subchapterTitle).waitForExistence(timeout: 30),
+            "[\(idiom)] The chapter did not come up: its Sections list, which names the subchapter, "
+                + "is not on screen."
         )
+        XCTAssertTrue(
+            app.staticTexts[Self.loadingLabel].waitForNonExistence(timeout: 60),
+            "[\(idiom)] #1301: the nested chapter never reached a terminal state — "
+                + "'\(Self.loadingLabel)' is still on screen after 60 s. On iPad the detail pane "
+                + "renders the deepest level in place, so this `.compilation → .compilation` step "
+                + "REUSES the CompilationView instance and a bare `.task` — one with no `id:` — "
+                + "never re-runs for the new section."
+        )
+        XCTAssertFalse(app.staticTexts[Self.failureHeadline].exists,
+                       "[\(idiom)] The chapter's load failed, with no seam asking it to.")
         XCTAssertFalse(
-            app.staticTexts[Self.loadingLabel].exists,
-            "[\(idiom)] The chapter reached its empty state but the spinner is still on screen "
-                + "beside it — the load state and the rendered branch disagree."
+            app.staticTexts[Self.indexRequiredLabel].exists
+                || app.staticTexts[Self.indexUnavailableLabel].exists,
+            "[\(idiom)] The chapter shows an index banner where the first level loaded its rows."
+        )
+        XCTAssertFalse(app.staticTexts[Self.indexingLabel].exists,
+                       "[\(idiom)] The chapter shows the indexing progress where its rows belong.")
+        // #1690: and nothing under the list of sections says the section is empty.
+        XCTAssertFalse(
+            app.staticTexts[Self.emptyLabel].exists,
+            "[\(idiom)] #1690: '\(Self.emptyLabel)' is drawn under the chapter's Sections list. "
+                + "The chapter's documents are all in the subchapter that list names."
         )
 
         // ── 3. One level deeper: a second reuse step ───────────────────────────────────────
@@ -454,9 +482,7 @@ final class BrowseNestedSectionTests: XCTestCase {
             "[\(idiom)] #1301: the nested subchapter never rendered its document rows — the "
                 + "second `.compilation → .compilation` step. The subchapter holds two documents "
                 + "in the fixture. Spinner still on screen: "
-                + "\(app.staticTexts[Self.loadingLabel].exists); empty-state label on screen: "
-                + "\(app.staticTexts[Self.emptyLabel].exists) (which would mean the rows were "
-                + "loaded against the wrong section key rather than not loaded at all)."
+                + "\(app.staticTexts[Self.loadingLabel].exists)."
         )
         XCTAssertFalse(
             app.staticTexts[Self.loadingLabel].exists,
@@ -662,8 +688,7 @@ final class BrowseNestedSectionTests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts[Self.failureHeadline].waitForExistence(timeout: 30),
             "A failed load must draw the error row. Spinner on screen: "
-                + "\(app.staticTexts[Self.loadingLabel].exists); empty-state label: "
-                + "\(app.staticTexts[Self.emptyLabel].exists). A failure drawn as the spinner is "
+                + "\(app.staticTexts[Self.loadingLabel].exists). A failure drawn as the spinner is "
                 + "#1301's screen exactly — a terminal state that looks like a slow load, with no "
                 + "way to ask again."
         )
@@ -709,10 +734,11 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// Real loads finish in milliseconds, so the row a load in flight produces has never been
     /// asserted by anything: by the time a UI test can look, the documents are up. That is how the
     /// mutation which drew the pre-load and in-flight states as the *document list* survived every
-    /// suite, and it is not cosmetic — "No documents in this section." is the oracle
-    /// ``assertNestedSectionsLoad``'s second assertion rests on, and a section that merely has not
-    /// loaded yet must never be able to say it. Held open for eight seconds, both halves are
-    /// ordinary assertions.
+    /// suite, and it is not cosmetic: ``assertNestedSectionsLoad``'s second assertion takes the
+    /// spinner's going as its proof that a load finished (#1690), which holds only if a load that
+    /// has not finished draws the spinner. Under that mutation this section draws nothing at all,
+    /// since it lists the twin section and so says nothing under the list when it is empty. Held
+    /// open for eight seconds, both halves are ordinary assertions.
     func testALoadInFlightShowsTheSpinnerAndNotAnEmptyList() throws {
         launch(seams: ["FRUS_UI_TEST_DELAY_DOCUMENT_LOAD": "\(Self.subchapterSectionId):8"])
         navigateToSeededCompilation()
@@ -729,14 +755,14 @@ final class BrowseNestedSectionTests: XCTestCase {
 
         XCTAssertTrue(
             app.staticTexts[Self.loadingLabel].waitForExistence(timeout: 6),
-            "A load held open for 8 s is not showing '\(Self.loadingLabel)'. Empty-state label on "
-                + "screen instead: \(app.staticTexts[Self.emptyLabel].exists) — which is a section "
-                + "with two documents claiming it has none, and would make the empty label "
-                + "reachable without any load at all."
+            "A load held open for 8 s is not showing '\(Self.loadingLabel)'. A section whose load "
+                + "has not finished that draws no spinner looks, to the walk's second assertion, "
+                + "like one whose load has, so a load that never ran would pass it."
         )
+        // The subchapter's two document rows, which only the finished load draws.
         XCTAssertFalse(
-            app.staticTexts[Self.emptyLabel].exists,
-            "The spinner and the empty-list label are on screen together while the load runs."
+            row(containing: Self.firstNestedDocumentTitle).exists,
+            "The subchapter's rows are on screen while its load is held open."
         )
 
         XCTAssertTrue(

@@ -212,9 +212,9 @@ struct CompilationDocumentLoadingTests {
                 loadState: vm.documentLoadState(forKey: key)
             ) == .documents,
             """
-            And it must DRAW as the document list, which renders "No documents in this section." \
-            for an empty array — the fingerprint that separates a load that ran from one that \
-            never did.
+            And it must DRAW as the document list: an empty one, which under this chapter's list \
+            of sections prints nothing (#1690), where the spinner of a load that never ran would \
+            stay.
             """
         )
     }

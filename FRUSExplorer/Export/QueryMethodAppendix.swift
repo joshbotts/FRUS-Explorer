@@ -107,6 +107,10 @@ struct QueryMethodAppendix: Sendable, Equatable {
         /// set that is not the one the query described — and a reader has no way to tell without
         /// being told.
         var truncation: WorkingCorpus.CaptureTruncation = .unrecorded
+
+        /// Whether the corpus is a Meaning search's closest matches (`WorkingCorpus.isMeaningCapture`), which its
+        /// completeness line names rather than calling it a capture that stopped short (#1688).
+        var isMeaningCapture = false
     }
 
     /// The active project's name at export time, heading the appendix exactly as it heads a
@@ -226,7 +230,7 @@ struct QueryMethodAppendix: Sendable, Equatable {
 
     /// Whether a row records a Meaning-route search (V-5 hybrid page), by its signature.
     static func isSemanticRow(_ row: Row) -> Bool {
-        row.scopeSignature?.hasPrefix("route=semantic") == true
+        SearchScopeSignature.isMeaningRoute(row.scopeSignature)
     }
 
     /// Zero-result rows on the KEYWORD route only — the term-absence caveat's honest scope: a
@@ -285,7 +289,8 @@ struct QueryMethodAppendix: Sendable, Equatable {
             // The denominator's own completeness, in the corpus browser's exact words, prefixed
             // with the name so a multi-corpus block stays attributable line by line.
             if let note = CorporaAxis.truncationLine(entry.truncation,
-                                                     documentCount: entry.coverage.totalCount) {
+                                                     documentCount: entry.coverage.totalCount,
+                                                     isMeaningCapture: entry.isMeaningCapture) {
                 lines.append("\(entry.corpusName): \(note)")
             }
         }

@@ -1139,7 +1139,8 @@ enum SmartCollectionRule {
     }
 
     /// What the Collections list, the Mac window's collection picker and its Manage Collections rows print for a smart
-    /// collection where they print an ordinary collection's document count.
+    /// collection where they print an ordinary collection's document count, and since #1687 Project Home's Collections
+    /// sheet, on every platform.
     static var listLabel: String {
         String(localized: "collection.smart.listLabel", defaultValue: "Smart collection")
     }

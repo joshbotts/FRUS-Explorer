@@ -864,7 +864,8 @@ enum ResearchDataExporter {
                 coverage: DocumentEngagementService.partition(corpusKeys: corpus.documentKeys,
                                                               keys: keys,
                                                               isOpenedComplete: isOpenedComplete),
-                truncation: corpus.truncationAtCapture)
+                truncation: corpus.truncationAtCapture,
+                isMeaningCapture: corpus.isMeaningCapture)
         }
     }
 

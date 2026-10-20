@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 313 blocks · no ⚑ wording issues
+**In this file:** 314 blocks · no ⚑ wording issues
 
 ---
 
@@ -902,6 +902,15 @@ Shares an editable copy of this collection: its documents, composition, sections
 
 Note: the apostrophe in "don’t" is a curly quote (U+2019), copied verbatim from source.
 
+#### Export format grid — Web page
+<!-- #1688 (2026-10-19), decision 67: the caption under the HTML card in the export sheet's format grid, where it
+     read "Web page + word cloud" though PDF and Word carry the word-cloud overview too when it is on. -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | ExportFormat.gridCaption | key: export.grid.html.caption.v2 -->
+
+Web page
+
+<!-- END SOURCE: export.grid.html.caption.v2 -->
+
 ---
 
 *End of editable content. Source locations span the About screen (§1), Onboarding (§2),
@@ -1598,7 +1607,7 @@ Denominator: the era’s volumes carry %1$@ in all, and this table — every uni
 <!-- END SOURCE: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 #### ranked by meaning (on-device model), not by keywords — the…
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 235–236 | key: appendix.scope.semantic -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 247–248 | key: appendix.scope.semantic -->
 
 ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear
 
@@ -1608,13 +1617,13 @@ ranked by meaning (on-device model), not by keywords — the query’s words wer
 <!-- #1577 lane 1 (2026-10-10): the method appendix's second phrase for a Meaning search that ran inside
      a document set, after the phrase above. %@ is the set's size with its noun ("212 documents").
      The second text is for a set that held no documents. -->
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 410–411 | key: appendix.scope.semantic.within %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.rankedInsidePhrase | lines: 422–423 | key: appendix.scope.semantic.within %@ -->
 
 ranked inside a set of %@, not across the whole series
 
 <!-- END SOURCE: appendix.scope.semantic.within %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 244–245 | key: appendix.scope.semantic.within.empty -->
+<!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 256–257 | key: appendix.scope.semantic.within.empty -->
 
 ranked inside a set that held no documents
 
@@ -2270,28 +2279,28 @@ Subjects that recur across the volumes you’ve already collected, annotated, or
 <!-- END SOURCE: project.focus.suggested.detail -->
 
 #### %lld documents in volumes you have not downloaded read as…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.reachCaption | lines: 786–790 | key: project.reach.caption %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.reachCaption | lines: 793–797 | key: project.reach.caption %lld %lld -->
 
 %lld documents in volumes you have not downloaded read as close to one of this project's %lld documents as that document's nearest neighbours already on this device.
 
 <!-- END SOURCE: project.reach.caption %lld %lld -->
 
 #### As you add documents to this project’s collections, related…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.leadsSection | lines: 825–826 | key: project.home.leads.placeholder -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.leadsSection | lines: 832–833 | key: project.home.leads.placeholder -->
 
 As you add documents to this project’s collections, related documents you haven’t gathered yet will surface here.
 
 <!-- END SOURCE: project.home.leads.placeholder -->
 
 #### No activity in this project yet. Read documents, take…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.recentSection | lines: 1105–1106 | key: project.home.recent.empty -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.recentSection | lines: 1112–1113 | key: project.home.recent.empty -->
 
 No activity in this project yet. Read documents, take notes, or build a collection while this project is active and it will appear here.
 
 <!-- END SOURCE: project.home.recent.empty -->
 
 #### Footer — A collection can belong to more than one project. Attaching…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1355–1356 | key: project.collections.manage.footer -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1362–1363 | key: project.collections.manage.footer -->
 
 A collection can belong to more than one project. Attaching it here doesn’t remove it from any others.
 
@@ -2313,14 +2322,14 @@ Untitled Collection
 <!-- END SOURCE: collection.untitled.name -->
 
 #### Empty state — Tag documents while you research, then choose which tags…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1504–1505 | key: project.focusTags.empty.detail -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1525–1526 | key: project.focusTags.empty.detail -->
 
 Tag documents while you research, then choose which tags focus this project’s suggestions here.
 
 <!-- END SOURCE: project.focusTags.empty.detail -->
 
 #### %lld documents · reached from %lld of yours
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1610–1611 | key: project.reach.volumeDetail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1631–1632 | key: project.reach.volumeDetail %lld %lld -->
 
 %lld documents · reached from %lld of yours
 
@@ -2431,9 +2440,9 @@ Smart collection. Its documents come from its saved search.
 <!-- END SOURCE: collection.picker.smart -->
 
 #### Smart collection
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1144–1144 | key: collection.smart.listLabel -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | SmartCollectionRule.listLabel | lines: 1145–1145 | key: collection.smart.listLabel -->
 
-*What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, and in the Mac Collections window's collection picker and its Manage Collections sheet. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
+*What a smart collection's row prints where an ordinary collection's prints its document count (#1619): in the Collections list on iPhone and iPad, in the Mac Collections window's collection picker and its Manage Collections sheet, and since #1687 in Project Home's Collections sheet (**Manage**), on every platform. On the Mac's toolbar the picker shows a bolt in its place, which VoiceOver reads as these words.*
 
 Smart collection
 
@@ -2684,7 +2693,7 @@ Connect a Zotero account to send with your tags & research notes. Without one th
 #### Send to Zotero Library — the Zotero collection made for a collection with no name
 <!-- #1497, your decision D16 (2026-09-28): new in lane EXPORT. Only the Zotero send uses it; a file
      export of the same collection keeps "Untitled Collection". -->
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1600–1601 | key: export.zotero.collection.untitled %@ -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionExportNaming.zoteroCollectionName | lines: 1603–1604 | key: export.zotero.collection.untitled %@ -->
 
 FRUS Explorer Collection - %@
 
@@ -2704,7 +2713,7 @@ Untitled section
 <!-- END SOURCE: collection.inspector.section.untitled -->
 
 #### Compiled with FRUS Explorer · \(…) document\(…) from \(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1007–1008 | key: export.colophon.line -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionExporter.swift | CollectionColophon.text | lines: 1010–1011 | key: export.colophon.line -->
 
 Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))
 

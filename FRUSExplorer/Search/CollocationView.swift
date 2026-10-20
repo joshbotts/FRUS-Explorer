@@ -39,6 +39,8 @@ import SwiftUI
 ///   1.3 — #1608: a launch with no lemmatiser ranks printed forms against the reference counted as
 ///          printed, and the list opens with a row that says so (`CollocationResult.printedFormsNote`);
 ///          a count of printed forms that ranked nothing says so too, above its refusal
+///   1.4 — #1683: the caveat's counts of what the scan read, and of where it stopped, are grouped
+///          (`CollocationCaveatCopy`)
 struct CollocationView: View {
 
     /// Which set the search is showing, so the panel can say what it measured over.
@@ -111,17 +113,11 @@ struct CollocationView: View {
             // WHICH set was measured, before how much of it was seen. Carries no numbers: macOS's
             // over-cap advisory sits above every panel with the same two figures.
             scope.collocationScopeDescription,
-            String(format: String(localized: "search.collocation.caveat.scope.v2 %lld %lld",
-                                  defaultValue: "%lld matches, in %lld documents that had indexed text."),
-                   Int64(result.anchorCount), Int64(result.documentsScanned))
+            CollocationCaveatCopy.scanned(matches: result.anchorCount, documents: result.documentsScanned)
         ]
         if result.wasBounded {
-            // Names BOTH numbers. The first version printed the scanned count twice and never the
-            // total, so "the first N of them" read as though N were the whole set.
-            parts.append(String(format: String(
-                localized: "search.collocation.caveat.bounded.v2 %lld %lld",
-                defaultValue: "The scan stopped at %lld of your %lld results, so this ranking covers part of them, not all."),
-                Int64(result.documentsOffered), Int64(result.documentsInScope)))
+            parts.append(CollocationCaveatCopy.bounded(offered: result.documentsOffered,
+                                                       inScope: result.documentsInScope))
         }
         if result.omittedAnchorCount > 0 {
             parts.append(String(format: String(
@@ -440,4 +436,55 @@ enum SearchCollocationDefaults {
     static let windowKey = "frus.search.collocation.window"
     /// Which number the list is ranked on (`CollocationOrder`).
     static let orderKey = "frus.search.collocation.order"
+}
+
+// MARK: - CollocationCaveatCopy
+
+/// Two of Collocates' sentences about how much the scan saw, apart from the view so that a test can read them (#1683).
+///
+/// Both printed their counts through `%lld`, which `String(format:)` formats with no locale, so 6,387 read "6387"
+/// beside the grouped counts of every other line on the screen.
+///
+/// Version history:
+///   1.0 — #1683: the two sentences of `CollocationView.caveat(_:)`, their counts grouped
+enum CollocationCaveatCopy {
+
+    /// "6,387 matches, in 1,512 documents that had indexed text.": what the scan read.
+    ///
+    /// Both counts go through `CountCopy`, so they are grouped and singular at one.
+    ///
+    /// - Parameters:
+    ///   - matches: The matches the windows centred on (`CollocationResult.anchorCount`).
+    ///   - documents: The documents that had indexed text (`CollocationResult.documentsScanned`).
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func scanned(matches: Int, documents: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(localized: "search.collocation.caveat.scope.v3 %@ %@",
+                              defaultValue: "%1$@, in %2$@ that had indexed text."),
+               CountCopy.phrase(matches,
+                                one: String(localized: "search.collocation.caveat.matches.one",
+                                            defaultValue: "%@ match"),
+                                many: String(localized: "search.collocation.caveat.matches.many",
+                                             defaultValue: "%@ matches"),
+                                locale: locale),
+               CountCopy.documents(documents, locale: locale))
+    }
+
+    /// "The scan stopped at 500 of your 1,204 results…": the scan read fewer of the results than there are.
+    ///
+    /// Names BOTH numbers. The first version printed the scanned count twice and never the total, so "the first N of
+    /// them" read as though N were the whole set. A scan that stopped short of its results had at least two, so the
+    /// noun has no form for one.
+    ///
+    /// - Parameters:
+    ///   - offered: The results the scan was given (`CollocationResult.documentsOffered`).
+    ///   - inScope: The results there are (`CollocationResult.documentsInScope`).
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func bounded(offered: Int, inScope: Int, locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(
+            localized: "search.collocation.caveat.bounded.v3 %@ %@",
+            defaultValue: "The scan stopped at %1$@ of your %2$@ results, so this ranking covers part of them, not all."),
+            offered.formatted(.number.locale(locale)), inScope.formatted(.number.locale(locale)))
+    }
 }

@@ -180,14 +180,21 @@ enum SearchMode: String, CaseIterable {
     /// set's size instead. It outranks the volume prompt: the set is what the ranking runs inside,
     /// and a volume scope narrows the ranked list afterwards.
     ///
-    /// `nil` in Keywords mode, whose prompt is left as it was. A keyword search inside a corpus is
-    /// named by the banner above the results, and its two strings are not this change's to reword.
+    /// Keywords mode gives the set's size too since #1688. Its prompt read "Enter keywords to search
+    /// the FRUS corpus." with a corpus applied, though a keyword search there matches only the
+    /// corpus's documents; it now reads as Meaning's does, with the count through `CountCopy`.
     ///
     /// - Parameter size: How many documents the next search would run inside, or `nil` when no
     ///   document set is applied.
     /// - Returns: The prompt, or `nil` to use ``initialPrompt(scoped:)``.
     func documentSetPrompt(size: Int?) -> String? {
-        guard self == .meaning, let size else { return nil }
+        guard let size else { return nil }
+        guard self == .meaning else {
+            return String(format: String(
+                localized: "search.prompt.withinSet %@",
+                defaultValue: "Enter keywords to search the %@ you are searching within."),
+                CountCopy.documents(size))
+        }
         guard size > 0 else {
             return SemanticUnscoredCopy.emptyInsideSet(setSize: 0, ranked: 0, filteredOut: 0,
                                                        volumes: 0, downloading: 0)

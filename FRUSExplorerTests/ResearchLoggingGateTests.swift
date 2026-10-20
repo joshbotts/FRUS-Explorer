@@ -937,11 +937,14 @@ struct TrailCountParityTests {
                              encoding: .utf8)
         let mac = try String(contentsOf: root.appending(path: "FRUSExplorer/App/MacSearchViewModel.swift"),
                              encoding: .utf8)
-        // A layer's row (#1577 lane 4) records the list it shows as its whole answer, the one difference.
-        #expect(iOS.contains("resultCount: layer != nil ? results.count : (totalMatchCount ?? results.count)"))
+        // A layer's row (#1577 lane 4) and a Meaning list's (#1688) record the list shown as the whole
+        // answer, the one difference.
+        let whole = "let recordsTheListWhole = layer != nil || executedRoute == .meaning"
+        #expect(iOS.contains(whole) && mac.contains(whole))
+        #expect(iOS.contains("resultCount: recordsTheListWhole ? results.count : (totalMatchCount ?? results.count)"))
         // macOS reaches the same value through `resultCountForDisplay`, which is defined as
         // `totalMatchCount ?? results.count`, and records a layer's rows whole too since #1577 lane 5.
-        #expect(mac.contains("resultCount: layer != nil ? results.count : resultCountForDisplay"))
+        #expect(mac.contains("resultCount: recordsTheListWhole ? results.count : resultCountForDisplay"))
         #expect(mac.contains("var resultCountForDisplay: Int { totalMatchCount ?? results.count }"))
         // Both go through the shared writer, and neither constructs an entry itself.
         for (name, source) in [("iOS", iOS), ("macOS", mac)] {

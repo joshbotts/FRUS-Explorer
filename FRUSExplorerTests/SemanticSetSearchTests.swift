@@ -944,10 +944,16 @@ struct SemanticSetRecordAndCopyTests {
 
     // MARK: The prompt
 
-    @Test("The pre-search prompt names the set in Meaning mode, and stands aside otherwise")
+    @Test("The pre-search prompt names the set in both modes, and stands aside without one")
     func promptNamesTheSet() {
-        #expect(SearchMode.keywords.documentSetPrompt(size: 212) == nil,
-                "the keyword prompt is left as it was")
+        // #1688's fourth line: Keywords read "Enter keywords to search the FRUS corpus." inside a set.
+        #expect(SearchMode.keywords.documentSetPrompt(size: 212)
+                == "Enter keywords to search the 212 documents you are searching within.")
+        #expect(SearchMode.keywords.documentSetPrompt(size: 1_204)?.contains(1_204.formatted()) == true,
+                "the count is grouped")
+        #expect(SearchMode.keywords.documentSetPrompt(size: 1)
+                == "Enter keywords to search the 1 document you are searching within.")
+        #expect(SearchMode.keywords.documentSetPrompt(size: nil) == nil, "with no set, the volume prompt stands")
         #expect(SearchMode.meaning.documentSetPrompt(size: nil) == nil)
         let prompt = SearchMode.meaning.documentSetPrompt(size: 212)
         #expect(prompt?.contains("212 documents you are searching within") == true)

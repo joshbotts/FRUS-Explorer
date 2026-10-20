@@ -773,9 +773,7 @@ struct ResultSetScope: Equatable, Sendable {
             description = loaded == 1
                 ? String(localized: "corpus.save.source.meaning.one",
                          defaultValue: "Meaning search — the closest match")
-                : String(format: String(localized: "corpus.save.source.meaning %@",
-                                        defaultValue: "Meaning search — the %@ closest matches"),
-                         grouped(loaded))
+                : String(format: Self.meaningProvenance, grouped(loaded))
         } else if case .wordsInMatches(let base) = route {
             // Named for what it is, as a Meaning list is: the record outlives the screen that said so.
             // With the list's question where it is known (#1577 lane 4), so the record names both
@@ -841,6 +839,31 @@ struct ResultSetScope: Equatable, Sendable {
         return description
     }
 
+    /// A Meaning search's provenance sentence, with `%@` where the count of its closest matches goes.
+    private static var meaningProvenance: String {
+        String(localized: "corpus.save.source.meaning %@",
+               defaultValue: "Meaning search — the %@ closest matches")
+    }
+
+    /// Whether `description` is the provenance ``captureProvenanceDescription`` stores for a Meaning search (#1688).
+    ///
+    /// A corpus records no route, and a field for one would be a CloudKit schema change, so the sentence the capture
+    /// stored is what says the set was a Meaning search's. Both of its forms, "Meaning search — the 100 closest
+    /// matches" and "Meaning search — the closest match", begin with the words the plural form prints before its
+    /// count, and no other capture's sentence does: a keyword list's is "Search results", words found in a Meaning
+    /// list's "Words found in…", a lasso's and a cluster's the semantic map's. A corpus saved from a Meaning list
+    /// before #1598 was recorded as "Search results" and is not recognised, since nothing on its record tells it
+    /// from a keyword capture.
+    ///
+    /// - Parameter description: `WorkingCorpus.sourceDescription`.
+    /// - Returns: `true` for a Meaning search's provenance.
+    static func isMeaningCaptureProvenance(_ description: String?) -> Bool {
+        guard let description,
+              let stem = meaningProvenance.components(separatedBy: "%@").first,
+              !stem.isEmpty else { return false }
+        return description.hasPrefix(stem)
+    }
+
     /// What a capture of these results stores as `WorkingCorpus.wasTruncatedAtCapture`.
     ///
     /// ``isPartialEvidence``, and not ``didHitFetchLimit``, for a keyword search: a capture made inside a corpus that
@@ -849,8 +872,9 @@ struct ResultSetScope: Equatable, Sendable {
     /// **Always `true` for a Meaning search** (#1598). The stored flag has two recorded values, and `false` reads back
     /// as `WorkingCorpus.CaptureTruncation.complete`, "the capture was every matching document", which a ranking's
     /// nearest documents are not. `true` with no total is the value every reader of the flag already treats with care:
-    /// the corpus lists print their amber line, the method appendix prints its completeness note, and a search run
-    /// inside the corpus is captioned as partial evidence.
+    /// the corpus lists and the method appendix print a line under the corpus, and a search run inside the corpus is
+    /// captioned as partial evidence. Since #1688 that line names a Meaning search's closest matches, in grey
+    /// (``isMeaningCaptureProvenance(_:)``), where a keyword capture cut short gets the amber one.
     ///
     /// Words found inside a Meaning list are partial too, through ``isPartialEvidence``. A keyword list reordered by a
     /// question is as whole as the keyword fetch was.

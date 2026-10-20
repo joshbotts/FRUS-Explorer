@@ -27,13 +27,15 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — M-2 commit 2: initial implementation
+///   1.1 — #1688: a Meaning row an earlier build wrote with no match count is read as its list
 @Suite("Trail recorded count")
 struct TrailRecordedCountTests {
 
     private func entry(reported: Int, loaded: Int? = nil, match: Int? = nil,
-                       limit: Int? = nil) -> SearchHistoryEntry {
+                       limit: Int? = nil, signature: String? = nil) -> SearchHistoryEntry {
         SearchHistoryEntry(queryText: "détente", resultCount: reported,
-                           loadedCount: loaded, matchCount: match, fetchLimit: limit)
+                           loadedCount: loaded, matchCount: match, fetchLimit: limit,
+                           scopeSignature: signature)
     }
 
     // MARK: - The four states
@@ -72,6 +74,28 @@ struct TrailRecordedCountTests {
         let e = entry(reported: 0, loaded: 0, match: 0, limit: 1_000)
         #expect(e.recordedCount == .exact(match: 0, loaded: 0))
         #expect(!e.isPartialEvidence(), "a zero under a stated scope is a finding, not a gap")
+    }
+
+    /// #1688: a Meaning run was recorded under the engine's 100-row list length with no match count
+    /// until build 51, so a full list read back as a floor and the method appendix printed "at least
+    /// 100" of it. Build 51 records the count; the rows already in a synced trail are read the same way.
+    @Test("A Meaning row written with no match count is read as its list, never a floor")
+    func meaningRowIsItsList() {
+        let meaning = entry(reported: 100, loaded: 100, match: nil, limit: 100,
+                            signature: SearchScopeSignature.semanticRouteSignature)
+        #expect(meaning.recordedCount == .exact(match: 100, loaded: 100))
+        #expect(meaning.recordedCount.appendixDescription == 100.formatted())
+        #expect(!meaning.isPartialEvidence())
+        // Inside a document set the signature names the set, and still begins with the route.
+        let inside = entry(reported: 37, loaded: 37, match: nil, limit: 100,
+                           signature: "route=semantic;engine=on-device;docs=212/0123456789ab")
+        #expect(inside.recordedCount == .exact(match: 37, loaded: 37))
+        // The controls: the same numbers on a keyword row are a floor, and a row written before
+        // M-2 is unrecorded whatever its route.
+        #expect(entry(reported: 100, loaded: 100, match: nil, limit: 100,
+                      signature: "mode=and;dates=none").recordedCount == .floor(loaded: 100, fetchLimit: 100))
+        #expect(entry(reported: 100, signature: SearchScopeSignature.semanticRouteSignature).recordedCount
+                == .unrecorded(reported: 100))
     }
 
     // MARK: - Partial evidence
