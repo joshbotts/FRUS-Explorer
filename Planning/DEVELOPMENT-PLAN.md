@@ -39492,6 +39492,59 @@ Two answers departed from the session's advice: the index bump, which it had adv
 - **Opened as #1734** on the owner's word of 2026-10-20 ("Open PR"), against `v2` at `f9a200ed`, which had not moved since the merge. Not merged.
 - **Not seen by eye** on iPhone or iPad beyond the suite's screenshots, and not at the accessibility sizes or in dark appearance. VoiceOver on the Mac was not listened to.
 
+## Session 2026-10-20 — §6g's keyword snippet assessed: where the match lies, how much of a document's opening is the row again, and what a strip or a lead-in would draw on each platform
+
+**What was asked.** Started by the A10 session (#1684), and based on `v2` at `8927db62` once A10 had merged. The task was to assess the finding A10 recorded in §6g, and put options to the owner: a keyword result's snippet repeats the document's own heading, source note and dateline, and its two default lines rarely reach the matched word. The brief asked for three things:
+- a measurement over a full index, read-only;
+- the characters a line holds on each platform;
+- the options with their costs.
+
+Nothing was to be built until the owner chooses.
+
+**What was found.** `Planning/Keyword-Snippet-Assessment-2026-10-20.md` has the figures. The headlines:
+- **Where the match lies.** In the top 100 rows of twelve searches, the first match lies past `body_text`'s 150th character in 65.3% of rows. It lies inside the row's own heading, source note or dateline in 46.1%.
+- **How much of the opening is boilerplate.** Those fields fill a median 150 characters of a document's opening, and 88.6% of the first 150 characters. From 1961 the median is 329 to 372.
+- **What a line holds.** A line holds 57 characters on an iPhone SE, 60 on an iPhone 17, 118 to 229 on an iPad, and 133 in the Mac's default Search window (79 with Facets open).
+- **What two lines draw today.** At the default two lines on iPhone 17, the bold word is drawn in 28.7% of rows, and 90.5% of the drawn text is the row's own fields. On the Mac the figures are 53.2% and 77.6%.
+- **The options, on iPhone 17 at two lines:**
+  - A, the strip: the bold word in 56.8% of rows, with 11.9% repeated text;
+  - B, a 30-character lead-in: 100%, with 44.5% (the bold word is often the heading's own);
+  - C, both: 100%, with 4.9%;
+  - C with a corrected strip: 100%, with none.
+- **`ProseSnippet`'s strip, which Meaning rows use, stops short in 17.9% of documents.**
+  - Its serial rule cuts a heading that opens "No. 567": 6,923 documents in 26 volumes.
+  - It stops at a 1946–60 telegram's classification line before the dateline.
+
+**What changed.**
+- `Planning/Keyword-Snippet-Assessment-2026-10-20.md`: new, its §5 holding the owner's choice.
+- `Planning/Plan-Of-Record-2026-10-14.md`:
+  - §0: decision 74, and a default for A10b's place;
+  - §1: A10b's row and bullet;
+  - §4: the owner's choice, answered;
+  - §6g: A10's bullet with the measured figures and the decision.
+- This entry.
+
+**Checked.**
+- **The harness reproduced the shipped snippets.**
+  - A throwaway package test ran `SearchService.search` and `makeContextSnippet` over the full v69 index from the "iPhone 17e A8 timing" simulator (`89404205`), cloned and opened immutable.
+  - 12,000 of 12,000 rebuilt snippets equalled the service's own.
+  - It ran through `Scripts/heavy.sh swift test --filter`: "Test run with 1 test in 1 suite passed", three runs of 78 to 92 s.
+- **The layout reproduced the drawn rows.** Core Text at 12-point reproduced exactly the three lines of the August iPhone screenshot and the two of `Docs/screenshots/macos/search.png`. It reproduced A10's fixture to within a character, and 13-point did not fit the Mac's.
+- **The simulator's own files are unchanged.** Its `frus.db` is still 3,549,999,104 bytes, dated Oct 18 23:13.
+
+**Not run.**
+- No test reads the new memo.
+- `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` reads the plan's §7 line, which is unchanged.
+- Nothing was built in the app, so no unit target was owed. The throwaway test was deleted before the commit.
+
+**Not done.**
+- **Nothing was seen in the app.** The drawn lines are Core Text's, checked against three drawn rows, not new screenshots.
+- **The Add Documents sheet's widths are estimated** from its layout, not measured.
+- **The harness, its aggregation script and the full tables** are in the session group's notes folder, not the repository.
+- **Nothing pushed.**
+
+**The owner's choice, 2026-10-20**: "Option 1: C with the corrected strip, as a lane of its own in build 51 before A19." It is decision 74 and lane A10b, placed after A18 by default. Nothing of it is built here.
+
 ## Session 2026-10-20 — A10b: a keyword result's snippet starts at its match, after the row's own heading, source note and dateline, and Meaning rows share the corrected strip (plan of record decision 74)
 
 **What was asked.** Started by the assessment session (§6g's keyword snippet, decision 74): build lane A10b for build 51 from `v2` at `8927db62`, where #1735 (the assessment and the decision, docs only) was still open, so the lane does not carry it. One strip in FRUSCoreKit with decision 74's two corrections, which keyword and Meaning rows share; a keyword window that starts 30 characters before the prose's first match, snapped back to a space, and keeps 2,000 after; More Content kept at about 300 characters; the assessment's measurement run again on the lane's code. Commit on the lane's branch, and leave a PR draft; no push and no PR until the owner says.
