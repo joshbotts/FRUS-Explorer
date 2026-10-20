@@ -39742,7 +39742,7 @@ Nothing was to be built until the owner chooses.
 **Review.** One pass on the diff, inline, after the runs: each claim in the comments, the manuals and the records checked against the code and the walks. No defect found. Two comments were checked by the mutations above (the ✕'s order, the rule's comparison), and the manuals' sentences against the screens: the Focus footer's words are read from `SearchFilterView`, not walked.
 
 **Not done, and for the owner.**
-- **Not opened**: the pull request waits on the owner's word; its draft is in the session group's notes folder.
+- **Opened as #1740** on the owner's word ("Open A13's pull request as drafted"), against `v2` at `2d674c9f`, which had not moved since the branch was cut; not merged.
 - **Focus was not walked** in the check copy: its one project has no focus subjects. That a facet's volumes stand over a Focus scope, and that the footer then counts them, is read from the code (`scopeDerivedParams()`, `SearchFilterView.projectScopeFooter`).
 - **VoiceOver** was not heard on the menus' subtitles or the strip's caption; dark appearance not checked.
 - **On iPhone and iPad a keyword search loads at most 1,000 results**, so the reason shows only over a browse (a person's Find all mentions, a topic, a subject), as it was seen here.
