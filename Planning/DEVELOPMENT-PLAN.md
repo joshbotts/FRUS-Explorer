@@ -39702,5 +39702,5 @@ Nothing was to be built until the owner chooses.
 **Not done.**
 - **No TestFlight line**: nothing a tester sees changes.
 - **The Research rail's persisted state** (§6g, and the runbook's `AuxWindowCloseTests` entry) is recorded, not fixed: the suites that need the rail open could pin it open, as `ResearchReadingDepthTests` pins it closed. A finding, filed on the owner's word.
-- **Not opened**: the pull request waits for the owner's word. The draft is in the queue's shared notes folder (`A12-pr-draft.md`).
+- **Opened as #1739** on the owner's word ("Open A12's pull request as drafted"), against `v2` at `81246470`; not merged.
 - **The simulators** are as found and shut down: the iPad keeps its two 1964–68 volumes and its rail key `false`, the iPhone the fixture alone. Each app's preferences were copied before the runs (the iPad's after its first two short runs, before the rail key was removed), and each is identical to its copy again: the runs had added `activeProjectId` on both (a test store's project; UI launches pin it to "" anyway), the active tab and UIKit's split-view state on the iPhone, and moved one split-view value on the iPad, and those were taken out. On iOS 27.0 the app's data container folder is renamed between boots, so it was found again each time.
