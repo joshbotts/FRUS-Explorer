@@ -53,24 +53,6 @@ private extension IndexingActivityAttributes.ContentState {
                           defaultValue: "Preparing to summarize…")
         }
     }
-
-    /// Localised text shown once the app has stopped updating the activity (#1642).
-    ///
-    /// The system marks an activity stale two minutes after its last update, and the app sends
-    /// one every thirty seconds while it runs, so this shows when the app has been suspended in
-    /// the background or has gone. The widget cannot tell which. Opening the app is the next step
-    /// in both: a suspended run goes on, and after the app was closed the launch ends this
-    /// activity and shows what is left to do.
-    var stoppedLabel: String {
-        switch resolvedKind {
-        case .indexing:
-            return String(localized: "liveactivity.stopped.indexing",
-                          defaultValue: "Indexing has stopped. Open FRUS Explorer to continue.")
-        case .summarizing:
-            return String(localized: "liveactivity.stopped.summarizing",
-                          defaultValue: "Summarizing has stopped. Open FRUS Explorer to continue.")
-        }
-    }
 }
 
 /// Live Activity widget for FRUS Explorer indexing progress.
@@ -82,7 +64,13 @@ private extension IndexingActivityAttributes.ContentState {
 ///
 /// Each draws a stale activity as stopped (#1642): grey icons, a pause mark where the percentage
 /// was, the bar held grey at its last fraction, and `stoppedLabel` in place of the count and the
-/// seconds left. `ContentState.detail(isStale:)` decides it for all three.
+/// seconds left. `ContentState.detail(isStale:)` decides it for all three. The sentence, and
+/// which seconds left are printed (`shownSecondsLeft`), are in `IndexingActivityAttributes.swift`,
+/// which the app compiles too, so its unit tests read what this prints (#1695).
+///
+/// One activity follows a whole indexing queue (#1695), so the title names each volume in turn,
+/// and the finishing merge of a whole-library pass, which names no volume, is titled
+/// *Finalizing index…* by the app.
 struct IndexingLiveActivity: Widget {
 
     var body: some WidgetConfiguration {
@@ -166,12 +154,11 @@ private struct IndexingExpandedView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             case .finishing:
+                // The title says it: the app titles the finishing merge *Finalizing index…*
+                // (#1695), where the line under the bar said it under an empty title.
                 ProgressView()
                     .progressViewStyle(.linear)
                     .tint(.blue)
-                Text(String(localized: "liveactivity.optimizing", defaultValue: "Finalizing index…"))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
             case .progress(let fraction):
                 ProgressView(value: fraction)
                     .progressViewStyle(.linear)
@@ -183,7 +170,7 @@ private struct IndexingExpandedView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    if let eta = state.etaSeconds {
+                    if let eta = state.shownSecondsLeft {
                         Text("~\(eta)s")
                             .font(.caption2.monospacedDigit())
                             .foregroundStyle(.secondary)

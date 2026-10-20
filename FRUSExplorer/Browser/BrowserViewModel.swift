@@ -808,7 +808,7 @@ public final class BrowserViewModel {
     /// into `indexingProgress` while the pipeline runs.
     ///
     /// A concurrent `Task` iterates `pipeline.progressStream`, filtering to
-    /// `volume.volumeId` and breaking on `.complete`. The task is cancelled once
+    /// `volume.volumeId` and breaking on `.complete` or `.failed`. The task is cancelled once
     /// `pipeline.indexVolume` returns (success or error) so it never outlives the
     /// indexing operation. `indexingProgress` is cleared and `isIndexing` is set to
     /// `false` at the end — CompilationView's `.onChange(of: vm.isIndexing)` uses
@@ -832,13 +832,13 @@ public final class BrowserViewModel {
 
         // Stream per-document progress for this volume into indexingProgress.
         // Runs on the main actor so @Observable property mutations are safe.
-        // Breaks on .complete or when cancelled (i.e. when indexVolume returns).
+        // Breaks on .complete, on .failed or when cancelled (i.e. when indexVolume returns).
         let progressTask = Task { @MainActor [weak self] in
             for await update in pipeline.progressStream {
                 guard let self else { break }
                 guard update.volumeId == volume.volumeId else { continue }
                 self.indexingProgress = update
-                if update.stage == .complete { break }
+                if update.stage == .complete || update.stage == .failed { break }
             }
         }
 

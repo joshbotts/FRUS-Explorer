@@ -323,12 +323,15 @@ struct LiveActivityPolicyTests {
         try await pipeline.indexVolume(volumeId)
 
         // `.complete` is the stream's last update for the volume, so once it is handled every
-        // update that would have asked for an activity has been.
+        // update that would have asked for an activity has been. Its handling writes the volume
+        // into the indexed set. (This read `completedIndexingMetadata` until #1695, which the
+        // metadata stream's own task fills: when the progress task handled `.complete` first it
+        // stayed nil, and the test timed out, twice in 23 runs of A11's mutation sweep.)
         let deadline = ContinuousClock.now + .seconds(30)
-        while appState.completedIndexingMetadata == nil, ContinuousClock.now < deadline {
+        while !appState.indexedVolumeIds.contains(volumeId), ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
-        #expect(appState.completedIndexingMetadata?.volumeId == volumeId)
+        #expect(appState.indexedVolumeIds.contains(volumeId))
         #expect(sawAProgressUpdate.withLock { $0 },
                 "No progress update reached the branch that syncs the Live Activity, so this run proves nothing")
         #expect(Self.activityIds.subtracting(before).isEmpty,
@@ -369,19 +372,45 @@ struct LiveActivityPolicyTests {
             let count = try String(contentsOf: file, encoding: .utf8).matches(of: request).count
             if count > 0 { filesThatRequest[file.lastPathComponent] = count }
         }
-        // Two requests, both in `AppState`: one for indexing, one for summarizing.
-        #expect(filesThatRequest == ["AppState.swift": 2])
+        // One request, in the system's host, which both kinds of job ask through (#1695).
+        #expect(filesThatRequest == ["AppState.swift": 1])
 
         let source = try String(contentsOf: repoRoot.appendingPathComponent("FRUSExplorer/App/AppState.swift"),
                                 encoding: .utf8)
-        let guardLine = "guard LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment),"
+        let host = try Self.body(of: "final class SystemLiveActivityHost: LiveActivityHosting", in: source)
+        let policy = "LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment)"
+        // The request's first statement is the rule, so a test's process asks the system for nothing
+        // whatever its caller does.
+        // Read inside the host, where the protocol's requirement of the same name is not.
+        let requestBody = try Self.body(of: "func request(showing state: IndexingActivityAttributes.ContentState) -> String?",
+                                        in: String(host))
+        #expect(requestBody.drop(while: \.isWhitespace).hasPrefix("guard \(policy) else { return nil }"),
+                "the request does not ask the rule first")
+        #expect(requestBody.matches(of: request).count == 1, "the host no longer makes the one request")
+        // Whether the host may show one is the rule first, then the system's switch.
+        let mayShow = try Self.body(of: "var mayShow: Bool", in: String(host))
+        let mayShowCode = mayShow.split(separator: "\n").filter { !$0.drop(while: \.isWhitespace).hasPrefix("//") }
+            .joined(separator: "\n")
+        #expect(mayShowCode.drop(while: \.isWhitespace).hasPrefix(policy), "the host's answer does not ask the rule first")
+        // And both sync functions ask the host first, so nothing in them runs in a test's process.
         for signature in ["private func syncIndexingLiveActivity(update: IndexingProgressUpdate)",
-                          "private func syncSummarizationLiveActivity()"] {
+                          "func syncSummarizationLiveActivity()"] {
             let body = try Self.body(of: signature, in: source)
-            // The rule is the function's first statement, so nothing in it runs in a test's process.
-            #expect(body.drop(while: \.isWhitespace).hasPrefix(guardLine), "\(signature) does not ask the rule first")
-            #expect(body.matches(of: request).count == 1, "\(signature) no longer makes the one request")
+            #expect(body.drop(while: \.isWhitespace).hasPrefix("guard liveActivityHost.mayShow else { return }"),
+                    "\(signature) does not ask the host first")
         }
+    }
+
+    @Test("The system's host shows none, and asks the system for none, in a test's process")
+    func theSystemHostAsksTheRule() {
+        let host = SystemLiveActivityHost()
+        let before = Self.activityIds
+        #expect(!host.mayShow)
+        let state = IndexingActivityAttributes.ContentState(
+            kind: .indexing, volumeTitle: "Volume", progressFraction: nil, etaSeconds: nil,
+            completedDocuments: 0, totalDocuments: 0, isOptimizing: false, queueCurrent: nil, queueTotal: nil)
+        #expect(host.request(showing: state) == nil, "a test's process was given an activity")
+        #expect(Self.activityIds.subtracting(before).isEmpty)
     }
 }
 
@@ -618,43 +647,51 @@ struct LiveActivityLifecycleTests {
             if count > 0 { filesThatBuildContent[file.lastPathComponent] = count }
             #expect(!source.contains("staleDate: nil"), "\(file.lastPathComponent) gives an activity no stale date")
         }
-        // One place builds content, and both updates and both requests go through it.
+        // One place builds content, and the system host's request and update both go through it
+        // (the keep-alive sends through the update).
         #expect(filesThatBuildContent == ["AppState.swift": 1])
         let source = try Self.code("FRUSExplorer/App/AppState.swift")
-        let helper = try Self.body(of: "private static func liveActivityContent(", in: source)
+        let host = try Self.body(of: "final class SystemLiveActivityHost: LiveActivityHosting", in: source)
+        let helper = try Self.body(of: "private static func content(", in: String(host))
         #expect(helper.contains("ActivityContent(state: state, staleDate: LiveActivityLifecycle.staleDate(after: Date()))"))
-        #expect(source.components(separatedBy: "Self.liveActivityContent(").count - 1 == 4,
-                "the two requests, the update and the keep-alive no longer all build their content in one place")
-        for signature in ["private func syncIndexingLiveActivity(update: IndexingProgressUpdate)",
-                          "private func syncSummarizationLiveActivity()"] {
-            let body = try Self.body(of: signature, in: source)
-            #expect(body.contains("content: Self.liveActivityContent("), "\(signature) requests with other content")
-        }
+        #expect(host.components(separatedBy: "Self.content(state)").count - 1 == 2,
+                "the request and the update no longer both build their content in one place")
+        let request = try Self.body(of: "func request(showing state: IndexingActivityAttributes.ContentState) -> String?",
+                                    in: String(host))
+        #expect(request.contains("content: Self.content(state)"), "the request is made with other content")
     }
 
-    @Test("A leftover is dismissed at once, and a finished run's activity is not swept")
+    @Test("A leftover is dismissed at once and taken over by no run, and this process's own activity is not swept")
     func theSweepDismissesAtOnce() throws {
-        let source = try Self.code("FRUSExplorer/App/AppState.swift")
-        let sweep = try Self.body(of: "func endLeftoverLiveActivities()", in: source)
-        #expect(sweep.contains("LiveActivityLifecycle.isLeftover(LiveActivityLifecycle.Listed(activity), driver: driver)"))
+        let appState = AppState()
+        let host = RecordingLiveActivityHost()
+        appState.liveActivityHost = host
+        // An end that has not landed: the system still lists the activity as live.
+        host.endsLand = false
+        host.leave(Self.listed("left", .summarizing))
+
+        appState.endLeftoverLiveActivities()
         // At once: a dismissal that comes due after the app has gone makes the system open the app
         // again in the background.
-        #expect(sweep.contains("await activity.end(nil, dismissalPolicy: .immediate)"))
-        // The end takes a moment to land. A run that starts in that moment takes over no
-        // activity the sweep has just ended: the sweep records it, and both take-overs ask.
-        #expect(sweep.contains("endedLeftoverLiveActivityIDs.insert(activity.id)"))
-        #expect(source.components(separatedBy: "&& !endedLeftoverLiveActivityIDs.contains($0.id) }) {").count - 1 == 2)
-        // The ids the rule reads are recorded where an activity becomes this process's: at each
-        // request that succeeded, and at each taking over.
-        #expect(source.components(separatedBy: "drivenLiveActivityIDs.insert(").count - 1 == 3)
-        let requested = try Self.body(of: "private func noteLiveActivityRequested(", in: source)
-        #expect(requested.contains("drivenLiveActivityIDs.insert(activity.id)"))
-        for signature in ["private func syncIndexingLiveActivity(update: IndexingProgressUpdate)",
-                          "private func syncSummarizationLiveActivity()"] {
-            let body = try Self.body(of: signature, in: source)
-            #expect(body.contains("drivenLiveActivityIDs.insert(existing.id)"), "\(signature) takes one over unrecorded")
-            #expect(body.contains("noteLiveActivityRequested("), "\(signature) requests one unrecorded")
-        }
+        #expect(host.ends.map(\.dismissal) == [.immediately])
+        #expect(host.ends.map(\.id) == ["left"])
+
+        // A run that starts before that end lands takes over nothing the sweep has ended: it asks
+        // for an activity of its own.
+        appState.backgroundSummarizationProgress.state = .running(tally: .zero, currentDocumentId: nil, step: nil)
+        appState.syncSummarizationLiveActivity()
+        #expect(host.requests.count == 1, "the run took over the leftover the sweep had ended")
+        #expect(!host.updates.contains { $0.id == "left" })
+
+        // That activity is this process's own: when its run ends it lingers, ended, and a sweep
+        // in that time does not cut it short.
+        host.endsLand = true
+        appState.backgroundSummarizationProgress.state = .completed(tally: .zero)
+        appState.syncSummarizationLiveActivity()
+        let own = try #require(host.grantedIDs.first)
+        #expect(host.ends.last?.id == own && host.ends.last?.dismissal == .afterLinger)
+        appState.endLeftoverLiveActivities()
+        #expect(host.ends.filter { $0.id == own }.count == 1, "the sweep ended this process's own lingering activity")
     }
 
     @Test("The launch sweeps once, after each of its passes has said it will run, and each pass says when it ends")
@@ -699,8 +736,633 @@ struct LiveActivityLifecycleTests {
         // The small island has room for a mark and no words, so the mark carries the sentence
         // for VoiceOver, in the compact presentation and in the minimal one.
         #expect(source.components(separatedBy: ".accessibilityLabel(context.state.stoppedLabel)").count - 1 == 2)
-        // The two sentences, one for each kind of job.
-        #expect(source.contains(#"defaultValue: "Indexing has stopped. Open FRUS Explorer to continue.""#))
-        #expect(source.contains(#"defaultValue: "Summarizing has stopped. Open FRUS Explorer to continue.""#))
+        // The sentences are the shared file's, where a unit test reads them (#1695,
+        // `LiveActivityQueueTests`), and the widget declares none of its own.
+        #expect(!source.contains("liveactivity.stopped."))
+        // The seconds left are printed through the rule that hides a count under five (#1695),
+        #expect(source.contains("if let eta = state.shownSecondsLeft {"))
+        #expect(!source.contains("state.etaSeconds"))
+        // and the finishing merge's words are its title, which the app sets, not a line under it.
+        #expect(!source.contains("liveactivity.optimizing"))
     }
+}
+
+// MARK: - RecordingLiveActivityHost
+
+/// A stand-in for the system's Live Activities (#1695): it lists what `AppState` asked for, ends
+/// what it is told to end, and records every call.
+///
+/// It lists an activity as the system was measured to on 2026-10-12: a requested one is live; an
+/// ended one stays listed, ended, until its dismissal comes due (here, never); one dismissed at once
+/// leaves the list. `endsLand = false` holds every end back, so the activity still reads as live, as
+/// the system's does for a moment after the call.
+@MainActor
+final class RecordingLiveActivityHost: LiveActivityHosting {
+
+    /// One call `AppState` made.
+    enum Call: Equatable {
+        /// A request, and the id it was given, or `nil` when it was refused.
+        case request(Requested)
+        /// An update.
+        case update(Updated)
+        /// An end.
+        case end(Ended)
+    }
+
+    /// A request, and the id it was given, or `nil` when it was refused.
+    struct Requested: Equatable {
+        let id: String?
+        let state: IndexingActivityAttributes.ContentState
+    }
+
+    /// An update, and whether the activity it was sent to was live: no update reaches an ended one.
+    struct Updated: Equatable {
+        let id: String
+        let state: IndexingActivityAttributes.ContentState
+        let reachedALiveOne: Bool
+    }
+
+    /// An end, and how the activity was to leave the screen.
+    struct Ended: Equatable {
+        let id: String
+        let dismissal: LiveActivityLifecycle.Dismissal
+    }
+
+    var mayShow = true
+    var isInForeground = true
+    /// Whether a request is refused, as the system refuses one from an app in the background.
+    var refusesRequests = false
+    /// A request for a state this answers `true` for is refused too.
+    var refusesState: (IndexingActivityAttributes.ContentState) -> Bool = { _ in false }
+    /// Whether an end lands at once.
+    var endsLand = true
+    /// Every call, in order.
+    private(set) var calls: [Call] = []
+    /// The activities as the system would list them.
+    private(set) var listed: [LiveActivityLifecycle.Listed] = []
+    private var granted = 0
+
+    func listedActivities() -> [LiveActivityLifecycle.Listed] { listed }
+
+    func request(showing state: IndexingActivityAttributes.ContentState) -> String? {
+        guard !refusesRequests, !refusesState(state) else {
+            calls.append(.request(Requested(id: nil, state: state)))
+            return nil
+        }
+        granted += 1
+        let id = "activity-\(granted)"
+        listed.append(LiveActivityLifecycle.Listed(id: id, kind: state.resolvedKind, phase: .live))
+        calls.append(.request(Requested(id: id, state: state)))
+        return id
+    }
+
+    func update(_ id: String, to state: IndexingActivityAttributes.ContentState) {
+        let live = listed.contains { $0.id == id && $0.phase == .live }
+        calls.append(.update(Updated(id: id, state: state, reachedALiveOne: live)))
+    }
+
+    func end(_ id: String, dismissal: LiveActivityLifecycle.Dismissal) {
+        calls.append(.end(Ended(id: id, dismissal: dismissal)))
+        guard endsLand, let index = listed.firstIndex(where: { $0.id == id }) else { return }
+        switch dismissal {
+        case .immediately:
+            listed.remove(at: index)
+        case .afterLinger:
+            listed[index] = LiveActivityLifecycle.Listed(id: id, kind: listed[index].kind, phase: .ended)
+        }
+    }
+
+    /// Lists `activity` as an earlier process would have left it.
+    func leave(_ activity: LiveActivityLifecycle.Listed) {
+        listed.append(activity)
+    }
+
+    // MARK: What was asked
+
+    /// Every request, granted or refused.
+    var requests: [Requested] {
+        calls.compactMap { if case .request(let request) = $0 { return request }; return nil }
+    }
+
+    /// The ids of the requests that were granted, in order.
+    var grantedIDs: [String] { requests.compactMap(\.id) }
+
+    /// Every update.
+    var updates: [Updated] {
+        calls.compactMap { if case .update(let update) = $0 { return update }; return nil }
+    }
+
+    /// Every end.
+    var ends: [Ended] {
+        calls.compactMap { if case .end(let end) = $0 { return end }; return nil }
+    }
+
+    /// What a reader saw, in order: the state of each granted request and of each update that
+    /// reached a live activity.
+    var shown: [IndexingActivityAttributes.ContentState] {
+        calls.compactMap {
+            switch $0 {
+            case .request(let request) where request.id != nil: return request.state
+            case .update(let update) where update.reachedALiveOne: return update.state
+            default: return nil
+            }
+        }
+    }
+}
+
+// MARK: - LiveActivityQueueTests
+
+/// One Live Activity follows a whole indexing queue, a run takes over only a live activity, a
+/// refused request is not made again in a background run, a pass that throws ends its banner and
+/// its activity, and an activity says what is true (#1695, plan of record decisions 63 and 64, and
+/// the plan's default for the issue's other lines).
+///
+/// The rules are driven with values. The queue's activity is driven through `AppState`'s own
+/// progress path, with a real pipeline indexing small volumes and `RecordingLiveActivityHost` in
+/// place of the system's activities, so each test reads what `AppState` asked for. What the system
+/// then shows was looked at on a simulator; the session entry of 2026-10-20 in
+/// `Planning/DEVELOPMENT-PLAN.md` says what was seen.
+///
+/// Version history:
+///   1.0 — 2026-10-20 (#1695): initial implementation
+@Suite("One Live Activity follows a whole queue, and says what is true (#1695)")
+@MainActor
+struct LiveActivityQueueTests {
+
+    private typealias Rule = LiveActivityLifecycle
+    private typealias State = IndexingActivityAttributes.ContentState
+
+    /// An activity as the system lists it. With no kind or phase: a live indexing activity.
+    private static func listed(_ id: String, _ kind: LiveActivityJobKind = .indexing,
+                               _ phase: Rule.Phase = .live) -> Rule.Listed {
+        Rule.Listed(id: id, kind: kind, phase: phase)
+    }
+
+    // MARK: The take-over rule
+
+    @Test("A run takes over only a live activity of its kind, and none this process has asked to end")
+    func theTakeOverRule() {
+        // The defect: the last volume's activity, ended and lingering, is all the system lists.
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("a", .indexing, .ended)], ended: []) == nil)
+        // A live one listed after it is the one.
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("a", .indexing, .ended), Self.listed("b")],
+                                        ended: []) == "b")
+        // Live as listed, but this process has asked for its end, which has not landed.
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("a")], ended: ["a"]) == nil)
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("a"), Self.listed("b")], ended: ["a"]) == "b")
+        // Dismissed.
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("a", .indexing, .dismissed)], ended: []) == nil)
+        // Another kind's, either way round.
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("s", .summarizing)], ended: []) == nil)
+        #expect(Rule.activityToTakeOver(.summarizing, among: [Self.listed("a")], ended: []) == nil)
+        // The pass a launch resumes keeps the live activity the last process left (#1642).
+        #expect(Rule.activityToTakeOver(.indexing, among: [Self.listed("a")], ended: []) == "a")
+        #expect(Rule.activityToTakeOver(.summarizing, among: [Self.listed("s", .summarizing)], ended: []) == "s")
+    }
+
+    // MARK: The request gate
+
+    @Test("After a refusal in the background no request is made until the app is in the foreground again")
+    func theRequestGate() {
+        // Each answer is read into a constant first: `#expect` cannot call a mutating member.
+        var gate = Rule.RequestGate()
+        let first = gate.mayRequest(inForeground: false)
+        #expect(first, "a background run may ask once")
+        gate.noteRefusal(inForeground: false)
+        let again = gate.mayRequest(inForeground: false)
+        let andAgain = gate.mayRequest(inForeground: false)
+        #expect(!again, "and not again in that run")
+        #expect(!andAgain)
+        let inFront = gate.mayRequest(inForeground: true)
+        #expect(inFront, "the foreground opens the gate again")
+        let nextRun = gate.mayRequest(inForeground: false)
+        #expect(nextRun, "for the next background run too")
+        // A refusal in the foreground closes nothing.
+        var foreground = Rule.RequestGate()
+        foreground.noteRefusal(inForeground: true)
+        let behind = foreground.mayRequest(inForeground: false)
+        let ahead = foreground.mayRequest(inForeground: true)
+        #expect(behind)
+        #expect(ahead)
+    }
+
+    // MARK: What an activity shows
+
+    /// An indexing update. With no volume or stage: a store batch of `frus1969-76v01`.
+    private static func update(_ volumeId: String = "frus1969-76v01",
+                               _ stage: IndexingStage = .storingBatch(current: 1, total: 2),
+                               done: Int, of total: Int, at rate: Double) -> IndexingProgressUpdate {
+        IndexingProgressUpdate(volumeId: volumeId, stage: stage, completedDocuments: done,
+                               totalDocuments: total, docsPerSecond: rate)
+    }
+
+    @Test("Seconds left are rounded up, and the widget prints none under five")
+    func secondsLeft() {
+        // 2.5 seconds is 3; cut down to a whole second, as before, it read 2.
+        #expect(Rule.secondsLeft(of: Self.update(done: 90, of: 100, at: 4)) == 3)
+        // Half a second is 1; cut down it read "~0s", which #1642's session saw for most of a volume.
+        #expect(Rule.secondsLeft(of: Self.update(done: 0, of: 10, at: 20)) == 1)
+        // A whole number stays as it is.
+        #expect(Rule.secondsLeft(of: Self.update(done: 0, of: 100, at: 25)) == 4)
+        // Nothing left, or no rate yet: no count.
+        #expect(Rule.secondsLeft(of: Self.update(done: 100, of: 100, at: 25)) == nil)
+        #expect(Rule.secondsLeft(of: Self.update(done: 0, of: 100, at: 0)) == nil)
+
+        func shown(_ eta: Int?) -> Int? {
+            State(kind: .indexing, volumeTitle: "Volume", progressFraction: 0.5, etaSeconds: eta,
+                  completedDocuments: 1, totalDocuments: 2, isOptimizing: false, queueCurrent: nil,
+                  queueTotal: nil).shownSecondsLeft
+        }
+        #expect(State.fewestSecondsShown == 5)
+        #expect(shown(4) == nil)
+        #expect(shown(5) == 5)
+        #expect(shown(61) == 61)
+        #expect(shown(nil) == nil)
+    }
+
+    @Test("The finishing merge is titled Finalizing index…, a volume by the catalogue, and a finished volume is full")
+    func whatAnIndexingUpdateShows() {
+        let merge = Rule.indexingState(for: Self.update("", .optimizing, done: 0, of: 0, at: 0),
+                                       catalogueTitle: nil, queue: nil)
+        #expect(merge.volumeTitle == "Finalizing index…")
+        #expect(merge.isOptimizing)
+        #expect(merge.detail(isStale: false) == .finishing)
+
+        let volume = Rule.indexingState(for: Self.update(done: 1, of: 2, at: 1),
+                                        catalogueTitle: "Foundations of Foreign Policy", queue: (current: 2, total: 3))
+        #expect(volume.volumeTitle == "Foundations of Foreign Policy")
+        #expect(volume.queueCurrent == 2 && volume.queueTotal == 3)
+        #expect(volume.continuesInBackground == nil)
+        // A volume the catalogue does not name is titled by its id.
+        let sideLoaded = Rule.indexingState(for: Self.update("frus-sideloaded", done: 1, of: 2, at: 1),
+                                            catalogueTitle: nil, queue: nil)
+        #expect(sideLoaded.volumeTitle == "frus-sideloaded")
+        // A finished volume: its bar full and no seconds left.
+        let finished = Rule.indexingState(for: Self.update("frus1969-76v01", .complete, done: 740, of: 740, at: 50),
+                                          catalogueTitle: "Foundations of Foreign Policy", queue: (current: 1, total: 3))
+        #expect(finished.progressFraction == 1)
+        #expect(finished.etaSeconds == nil)
+        #expect(!finished.isOptimizing)
+        // One with no documents is full too, where it would read as not yet counted ("Parsing…").
+        let empty = Rule.indexingState(for: Self.update("frus1969-76v01", .complete, done: 0, of: 0, at: 0),
+                                       catalogueTitle: nil, queue: nil)
+        #expect(empty.progressFraction == 1)
+        #expect(empty.detail(isStale: false) == .progress(1))
+    }
+
+    @Test("A summarization run that goes on in the background says so once the app stops updating it (decision 64)")
+    func theSummarizingSentence() throws {
+        let tally = BatchRunTally(succeeded: 2, failed: 1, skipped: 4, attemptable: 6)
+        let goesOn = Rule.summarizationState(tally: tally, continuesInBackground: true)
+        #expect(goesOn.continuesInBackground == true)
+        #expect(goesOn.stoppedLabel
+                == "Summarizing will continue in the background. Open FRUS Explorer to continue now.")
+        #expect(goesOn.completedDocuments == 3 && goesOn.totalDocuments == 6)
+        #expect(goesOn.progressFraction == 0.5)
+        // With Continue in the background off, the sentence stands.
+        let stops = Rule.summarizationState(tally: tally, continuesInBackground: false)
+        #expect(stops.stoppedLabel == "Summarizing has stopped. Open FRUS Explorer to continue.")
+        // Content from before the field existed decodes with none, and reads as a run that stops.
+        let older = try JSONDecoder().decode(State.self, from: Data(#"""
+            {"kind":"summarizing","volumeTitle":"Summarizing FRUS documents","completedDocuments":3,\#
+            "totalDocuments":6,"isOptimizing":false}
+            """#.utf8))
+        #expect(older.continuesInBackground == nil)
+        #expect(older.stoppedLabel == "Summarizing has stopped. Open FRUS Explorer to continue.")
+        // An indexing run's sentence is its own, whatever the field says.
+        var indexing = Rule.indexingState(for: Self.update(done: 1, of: 2, at: 1), catalogueTitle: "V", queue: nil)
+        indexing.continuesInBackground = true
+        #expect(indexing.stoppedLabel == "Indexing has stopped. Open FRUS Explorer to continue.")
+    }
+
+    @Test("The summarization activity is told whether its run goes on in the background, and told again when the setting changes")
+    func theSummarizingFlagIsWired() throws {
+        // Read in the source: the flag is `BackgroundSummarizationRequestStore.hasPending`, which a
+        // test cannot set without racing `BackgroundSummarizationRequestStoreTests` on the same
+        // defaults. The builder it feeds is driven above.
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let appState = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/App/AppState.swift"),
+                                  encoding: .utf8)
+        let sync = try liveActivityTestBody(of: "func syncSummarizationLiveActivity()", in: appState)
+        #expect(liveActivityTestCode(sync).contains("continuesInBackground: BackgroundSummarizationRequestStore.hasPending"))
+        let settings = try String(contentsOf: root.appendingPathComponent(
+            "FRUSExplorer/Summarization/BackgroundSummarizationSettingsView.swift"), encoding: .utf8)
+        let onChange = try liveActivityTestBody(of: ".onChange(of: continueInBackground) { _, on in", in: settings)
+        #expect(liveActivityTestCode(onChange).contains("appState.syncSummarizationLiveActivity()"))
+    }
+
+    @Test("Turning Show Indexing Live Activity off ends the activities this process holds at once")
+    func theSwitchOffEndsTheActivitiesAtOnce() throws {
+        let appState = AppState()
+        let host = RecordingLiveActivityHost()
+        appState.liveActivityHost = host
+        appState.backgroundSummarizationProgress.state = .running(tally: .zero, currentDocumentId: nil, step: nil)
+        appState.syncSummarizationLiveActivity()
+        let id = try #require(host.grantedIDs.first)
+        // On ends nothing.
+        appState.liveActivitySwitchDidChange(isOn: true)
+        #expect(host.ends.isEmpty)
+        // Off ends it now, where it had waited for the run's next update.
+        appState.liveActivitySwitchDidChange(isOn: false)
+        #expect(host.ends.map(\.id) == [id])
+        // Settings' switch says so when it changes.
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let hub = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Settings/VolumesStorageHubView.swift"),
+                             encoding: .utf8)
+        let onChange = try liveActivityTestBody(of: ".onChange(of: liveActivityEnabled) { _, on in", in: hub)
+        #expect(liveActivityTestCode(onChange).contains("appState.liveActivitySwitchDidChange(isOn: on)"))
+    }
+
+    // MARK: A queue, through AppState's own progress path
+
+    /// Writes a volume of `documentCount` small documents into `directory`.
+    private static func writeVolume(_ volumeId: String, in directory: URL, documentCount: Int = 3) throws {
+        let documents = (1...documentCount).map {
+            "<div type=\"document\" xml:id=\"d\($0)\"><head>Document \($0)</head><p>Body \($0).</p></div>"
+        }.joined()
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt>
+          <publicationStmt><p>Test</p></publicationStmt>
+          <sourceDesc><p>Test</p></sourceDesc></fileDesc></teiHeader>
+          <text><body><div type="volume" xml:id="\(volumeId)">
+          <div type="chapter" xml:id="ch1">\(documents)</div>
+          </div></body></text>
+        </TEI>
+        """.write(to: directory.appendingPathComponent("\(volumeId).xml"), atomically: true, encoding: .utf8)
+    }
+
+    /// `volumeIds` on disk, an `AppState` subscribed to their pipeline as the app's boot subscribes
+    /// it, and the stand-in in place of the system's activities.
+    private func withLibrary(
+        _ volumeIds: [String],
+        _ body: (IndexingPipeline, AppState, RecordingLiveActivityHost, URL) async throws -> Void
+    ) async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-live-activity-queue-\(UUID().uuidString)")
+        let volumes = directory.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        for volumeId in volumeIds { try Self.writeVolume(volumeId, in: volumes) }
+        let databaseURL = directory.appendingPathComponent("test.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: databaseURL),
+                                            databaseURL: databaseURL, volumesDirectory: volumes)
+        let appState = AppState()
+        let host = RecordingLiveActivityHost()
+        appState.liveActivityHost = host
+        // The queue asks the pipeline what is left on disk; without it the queue would end at its
+        // first volume.
+        appState.indexingPipeline = pipeline
+        appState.connectIndexingProgress(pipeline: pipeline)
+        try await body(pipeline, appState, host, volumes)
+    }
+
+    /// Whether `predicate` holds within `timeout`. The progress stream and the queue's backlog
+    /// query are asynchronous, so every reading here is of eventual state.
+    private func eventually(within timeout: Duration = .seconds(10), _ predicate: () -> Bool) async throws -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if predicate() { return true }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        return predicate()
+    }
+
+    /// `volumeId`'s title as the activity shows it.
+    private static func title(_ volumeId: String, in appState: AppState) -> String {
+        appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
+    }
+
+    @Test("One activity follows a three-volume queue: asked for once, each volume shown on it in turn, ended with the queue (decision 63)")
+    func oneActivityFollowsTheQueue() async throws {
+        let volumeIds = ["frus1969-76v01", "frus1969-76v02", "frus1969-76v03"]
+        try await withLibrary(volumeIds) { pipeline, appState, host, _ in
+            // One volume after another, as the launch's pass over waiting volumes indexes them.
+            for volumeId in volumeIds { try await pipeline.indexVolume(volumeId) }
+            #expect(try await eventually { appState.indexingBatch == nil }, "the queue never ended")
+
+            #expect(host.requests.count == 1, "asked for \(host.requests.count) activities")
+            let id = try #require(host.grantedIDs.first)
+            #expect(host.updates.allSatisfy { $0.id == id && $0.reachedALiveOne },
+                    "an update went to another activity, or to one that had ended")
+            // Each volume named in turn, and each shown finished.
+            let titles = volumeIds.map { Self.title($0, in: appState) }
+            try #require(Set(titles).count == 3, "the premise: three titles a reader can tell apart")
+            var named: [String] = []
+            for state in host.shown where named.last != state.volumeTitle { named.append(state.volumeTitle) }
+            #expect(named == titles)
+            for title in titles {
+                #expect(host.shown.contains { $0.volumeTitle == title && $0.progressFraction == 1 },
+                        "\(title) was never shown finished")
+            }
+            // One end, the queue's, and nothing after it.
+            #expect(host.ends == [RecordingLiveActivityHost.Ended(id: id, dismissal: .afterLinger)])
+            #expect(host.calls.last == .end(RecordingLiveActivityHost.Ended(id: id, dismissal: .afterLinger)))
+        }
+    }
+
+    @Test("A queue that goes on in the background keeps the activity it was given in the foreground (decision 63)")
+    func aQueueInTheBackgroundKeepsItsActivity() async throws {
+        let volumeIds = ["frus1969-76v01", "frus1969-76v02", "frus1969-76v03"]
+        try await withLibrary(volumeIds) { pipeline, appState, host, _ in
+            try await pipeline.indexVolume(volumeIds[0])
+            // The reader leaves the app, and the system starts no activity from the background.
+            host.isInForeground = false
+            host.refusesRequests = true
+            for volumeId in volumeIds.dropFirst() { try await pipeline.indexVolume(volumeId) }
+            #expect(try await eventually { appState.indexingBatch == nil }, "the queue never ended")
+
+            #expect(host.requests.count == 1, "the queue asked again from the background")
+            let id = try #require(host.grantedIDs.first)
+            let last = Self.title(volumeIds[2], in: appState)
+            #expect(host.updates.contains { $0.id == id && $0.reachedALiveOne && $0.state.volumeTitle == last },
+                    "the queue's last volume, indexed in the background, was not shown")
+            #expect(host.ends.map(\.id) == [id])
+        }
+    }
+
+    @Test("A queue that starts while the last queue's activity lingers asks for one of its own")
+    func aNewQueueDoesNotTakeOverAnEndedActivity() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host, volumes in
+            try await pipeline.indexVolume("frus1969-76v01")
+            #expect(try await eventually { appState.indexingBatch == nil }, "the first queue never ended")
+            let first = try #require(host.grantedIDs.first)
+            // The premise: its activity lingers, ended, and the system still lists it.
+            #expect(host.listed.contains { $0.id == first && $0.phase == .ended })
+
+            try Self.writeVolume("frus1969-76v02", in: volumes)
+            try await pipeline.indexVolume("frus1969-76v02")
+            #expect(try await eventually { appState.indexingBatch == nil }, "the second queue never ended")
+            #expect(host.grantedIDs.count == 2, "the second queue took over the first queue's ended activity")
+            #expect(host.updates.allSatisfy { $0.reachedALiveOne }, "an update went to an ended activity")
+        }
+    }
+
+    @Test("Nor one the system lists as ended that this process never held")
+    func aQueueDoesNotTakeOverAnotherProcesssEndedActivity() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host, _ in
+            // An earlier process's activity, ended and still on the Lock Screen: that process was
+            // killed in the seconds its activity lingered, or the system ended it at eight hours.
+            host.leave(Self.listed("earlier", .indexing, .ended))
+            try await pipeline.indexVolume("frus1969-76v01")
+            let ended = try await eventually { appState.indexingBatch == nil }
+            #expect(ended, "the queue never ended")
+            #expect(host.grantedIDs.count == 1, "the queue took over the ended activity")
+            #expect(!host.updates.contains { $0.id == "earlier" }, "a state was sent to the ended activity")
+        }
+    }
+
+    @Test("A queue takes over a live activity an earlier process left, as a resumed pass does (#1642)")
+    func aQueueTakesOverALiveLeftover() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host, _ in
+            host.leave(Self.listed("earlier"))
+            try await pipeline.indexVolume("frus1969-76v01")
+            let ended = try await eventually { appState.indexingBatch == nil }
+            #expect(ended, "the queue never ended")
+            #expect(host.requests.isEmpty, "the queue asked for an activity of its own")
+            #expect(host.updates.contains { $0.id == "earlier" && $0.reachedALiveOne },
+                    "the queue's states did not reach the activity it took over")
+            #expect(host.ends.map(\.id) == ["earlier"], "the activity it took over did not end with it")
+        }
+    }
+
+    @Test("Nor one whose end this process has asked for and the system has not yet carried out")
+    func aNewQueueDoesNotTakeOverAnActivityBeingEnded() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host, volumes in
+            host.endsLand = false
+            try await pipeline.indexVolume("frus1969-76v01")
+            #expect(try await eventually { appState.indexingBatch == nil }, "the first queue never ended")
+            let first = try #require(host.grantedIDs.first)
+            // The premise: the system still lists it as live.
+            #expect(host.listed.contains { $0.id == first && $0.phase == .live })
+
+            try Self.writeVolume("frus1969-76v02", in: volumes)
+            try await pipeline.indexVolume("frus1969-76v02")
+            #expect(try await eventually { appState.indexingBatch == nil }, "the second queue never ended")
+            #expect(host.grantedIDs.count == 2, "the second queue took over an activity about to go")
+            let second = host.grantedIDs.last
+            let endOfFirst = try #require(host.calls.firstIndex(of: .end(.init(id: first, dismissal: .afterLinger))))
+            #expect(!host.calls[endOfFirst...].contains { if case .update(let update) = $0 { return update.id == first }; return false },
+                    "the second queue's states went to the first queue's activity")
+            #expect(second != first)
+        }
+    }
+
+    @Test("A pass that throws ends its banner, and its queue ends its activity, in seconds (#1695)")
+    func aPassThatThrowsEndsItsBannerAndActivity() async throws {
+        try await withLibrary(["frus1969-76v01", "frus1969-76v02"]) { pipeline, appState, host, _ in
+            try await pipeline.indexVolume("frus1969-76v01")
+            struct Stop: Error {}
+            await pipeline.setDocumentBatchStoredTestHook { _, _ in throw Stop() }
+            await #expect(throws: Stop.self) { try await pipeline.indexVolume("frus1969-76v02") }
+            // The premise: the volume had been shown as under way.
+            let second = Self.title("frus1969-76v02", in: appState)
+            #expect(host.shown.contains { $0.volumeTitle == second && $0.progressFraction != 1 })
+
+            #expect(try await eventually { appState.currentIndexingProgress == nil },
+                    "the banner went on showing the volume as under way")
+            // The failed volume stays unindexed, and nothing in this queue will index it, so nothing
+            // is left to wait for: the queue ends in the seconds the backlog's settle takes, well
+            // inside the stall timeout's fifteen.
+            #expect(try await eventually(within: .seconds(8)) { appState.indexingBatch == nil },
+                    "the queue went on waiting for the volume whose pass failed")
+            #expect(host.ends.map(\.dismissal) == [.afterLinger], "the activity did not end with the queue")
+        }
+    }
+
+    @Test("A volume's end starts no activity the queue did not already hold")
+    func aVolumesEndStartsNoActivity() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host, _ in
+            // Every state but a finished volume's is refused, so only a request made at the volume's
+            // end could be granted. In the foreground a refusal closes nothing, and the queue asks
+            // again at its next updates.
+            host.refusesState = { $0.progressFraction != 1 }
+            try await pipeline.indexVolume("frus1969-76v01")
+            let ended = try await eventually { appState.indexingBatch == nil }
+            #expect(ended, "the queue never ended")
+            #expect(!host.requests.isEmpty, "the premise: the queue asked while the volume indexed")
+            #expect(host.grantedIDs.isEmpty, "the volume's end asked for an activity, and was given one")
+        }
+    }
+
+    @Test("A volume whose parse fails is not waited for: its queue ends in seconds, not after the stall timeout")
+    func aVolumeThatCannotBeParsedIsNotWaitedFor() async throws {
+        try await withLibrary(["frus1969-76v01"]) { pipeline, appState, host, volumes in
+            // Not XML: its pass throws before it stores a row, so the pipeline still lists the volume
+            // as waiting to be indexed, which a failure in its store would not leave it.
+            try "<TEI><text><body><div type=\"document\" xml:id=\"d1\"><p>cut short"
+                .write(to: volumes.appendingPathComponent("frus1969-76v02.xml"), atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume("frus1969-76v01")
+            await #expect(throws: (any Error).self) { try await pipeline.indexVolume("frus1969-76v02") }
+            #expect(try await pipeline.unindexedDownloadedVolumeIds().contains("frus1969-76v02"),
+                    "the premise: the volume is still waiting")
+            // The backlog's settle is two seconds; the stall timeout, fifteen (not read here:
+            // `IndexingBatchLifecycleTests` shortens it while one of its tests runs).
+            let ended = try await eventually(within: .seconds(8)) { appState.indexingBatch == nil }
+            #expect(ended, "the queue went on waiting for the volume whose parse failed")
+            #expect(appState.currentIndexingProgress == nil)
+            #expect(host.ends.map(\.dismissal) == [.afterLinger], "the activity did not end with the queue")
+        }
+    }
+
+    @Test("In the background a refused request is not made again in that run, and in the foreground it is")
+    func aRefusedRequestIsNotRepeatedInTheBackground() async throws {
+        let volumeIds = ["frus1969-76v01", "frus1969-76v02", "frus1969-76v03"]
+        try await withLibrary(volumeIds) { pipeline, appState, host, volumes in
+            host.isInForeground = false
+            host.refusesRequests = true
+            for volumeId in volumeIds { try await pipeline.indexVolume(volumeId) }
+            #expect(try await eventually { appState.indexingBatch == nil }, "the queue never ended")
+            #expect(host.requests.count == 1, "asked \(host.requests.count) times in one background run")
+
+            // In the foreground again, the next queue asks, and is given one.
+            host.isInForeground = true
+            host.refusesRequests = false
+            try Self.writeVolume("frus1969-76v04", in: volumes)
+            try await pipeline.indexVolume("frus1969-76v04")
+            #expect(try await eventually { appState.indexingBatch == nil }, "the second queue never ended")
+            #expect(host.grantedIDs.count == 1, "the foreground's queue was given no activity")
+        }
+    }
+
+    @Test("A whole-library pass's finishing merge is shown under its title, and nothing it shows is untitled")
+    func theFinishingMergeIsTitled() async throws {
+        try await withLibrary(["frus1969-76v01", "frus1969-76v02"]) { pipeline, appState, host, _ in
+            await appState.indexAllVolumes(with: pipeline)
+            // Read first: a closure whose only `try` is inside `#expect` is not taken to throw.
+            let ended = try await eventually { appState.indexingBatch == nil }
+            #expect(ended, "the pass's queue never ended")
+            #expect(host.shown.contains { $0.isOptimizing && $0.volumeTitle == "Finalizing index…" },
+                    "the merge was not shown under its title")
+            #expect(!host.shown.contains { $0.volumeTitle.isEmpty }, "an untitled state was shown")
+            #expect(host.grantedIDs.count == 1 && host.ends.count == 1)
+        }
+    }
+}
+
+/// `text` without the lines that are only a comment, so a scan cannot be met by a comment.
+private func liveActivityTestCode(_ text: some StringProtocol) -> String {
+    text.split(separator: "\n", omittingEmptySubsequences: false)
+        .filter { !$0.drop(while: \.isWhitespace).hasPrefix("//") }
+        .joined(separator: "\n")
+}
+
+/// The body of the declaration or closure `signature` opens in `source`, braces matched: from the
+/// first brace at or after the signature's start, which is a closure's own, before its `in`.
+private func liveActivityTestBody(of signature: String, in source: String) throws -> Substring {
+    let start = try #require(source.range(of: signature), "\(signature) is gone")
+    let open = try #require(source[start.lowerBound...].firstIndex(of: "{"))
+    var depth = 0
+    var index = open
+    while index < source.endIndex {
+        if source[index] == "{" { depth += 1 }
+        if source[index] == "}" {
+            depth -= 1
+            if depth == 0 { return source[source.index(after: open)..<index] }
+        }
+        index = source.index(after: index)
+    }
+    Issue.record("\(signature) has no closing brace")
+    return ""
 }

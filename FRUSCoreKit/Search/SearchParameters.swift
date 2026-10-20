@@ -595,6 +595,9 @@ public struct SearchResult: Sendable, Identifiable {
 ///          the post-batch FTS5 `optimize()` phase (30–60 s on a full corpus rebuild).
 ///          Without this case the bulk-reindex UI appeared to stall on the last
 ///          volume's final `.storingBatch` until `optimize()` returned.
+///   2.2 — #1695: `.failed` case added. A pass that threw reported nothing at all, so the
+///          app's indexing banner and its Live Activity went on showing the volume as under way
+///          for as long as the app ran.
 public enum IndexingStage: Sendable, Equatable {
     /// Single-pass XML parse: document text, dates, persons, and cross-references
     /// are all extracted simultaneously. `totalDocuments` is 0 until the parse
@@ -612,6 +615,12 @@ public enum IndexingStage: Sendable, Equatable {
     /// All stages are complete for this volume (single-volume path) or for the
     /// whole batch (bulk path). `volumeId == ""` in the bulk-completion case.
     case complete
+    /// The pass threw before it finished (#1695), and no `.complete` follows for it.
+    /// `indexVolume(_:)` sends it once its first update has gone out, and
+    /// `rebuildSearchIndexFromCache()` once its `.optimizing` has (`volumeId == ""` there). The
+    /// counts are as far as the pass got. A whole-index pass never sends it: it reports each
+    /// volume that fails on the volume-level stream and goes on.
+    case failed
 }
 
 // MARK: - IndexingProgressUpdate

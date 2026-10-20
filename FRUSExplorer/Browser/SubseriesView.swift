@@ -585,6 +585,8 @@ private struct IndexingCapsule: View {
                           defaultValue: "Finalizing index…")
         case .complete:
             return String(localized: "indexing.stage.complete", defaultValue: "Complete")
+        case .failed:
+            return String(localized: "indexing.stage.failed", defaultValue: "Failed")
         }
     }
 }

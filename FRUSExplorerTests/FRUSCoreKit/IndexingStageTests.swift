@@ -29,6 +29,8 @@ import FTS5Store
 ///   2. `.reading` (totalDocuments > 0) — parse complete, count now known
 ///   3. `.storingBatch(current: n, total: N)` — one or more write batches
 ///   4. `.complete` — final emission
+///
+/// and, for a pass that throws after its first update, `.failed` in place of the rest (#1695).
 @Suite("IndexingStage — emission sequence (Session 112)")
 struct IndexingStageTests {
 
@@ -267,6 +269,8 @@ struct IndexingStageTests {
                 switch update.stage {
                 case .reading, .storingBatch, .optimizing, .complete:
                     break // expected
+                case .failed:
+                    Issue.record("a pass that succeeded reported .failed")
                 }
             }
 
@@ -286,9 +290,113 @@ struct IndexingStageTests {
                     #expect(!seenComplete, ".optimizing must not appear after .complete")
                 case .complete:
                     seenComplete = true
+                case .failed:
+                    Issue.record("a pass that succeeded reported .failed")
                 }
             }
             #expect(seenComplete, "Must observe .complete before stream ends")
+        }
+    }
+
+    // MARK: - A pass that throws (#1695)
+
+    /// What `pipeline.progressStream` carries while `run` runs, up to and including its
+    /// `.complete` or `.failed`.
+    ///
+    /// The collector ends at that update, and is awaited before its list is read. A run that
+    /// reports nothing never sends one, so its collector is stopped a second after the run returns;
+    /// stopping a collector that waits ends the stream, so use this last on a pipeline when it may.
+    private func updates(of pipeline: IndexingPipeline,
+                         during run: () async throws -> Void) async throws -> [IndexingProgressUpdate] {
+        final class Box: @unchecked Sendable { var updates: [IndexingProgressUpdate] = [] }
+        let box = Box()
+        let collectTask = Task {
+            for await update in pipeline.progressStream {
+                box.updates.append(update)
+                if update.stage == .complete || update.stage == .failed { break }
+            }
+        }
+        try? await run()
+        let stop = Task {
+            try await Task.sleep(for: .seconds(1))
+            collectTask.cancel()
+        }
+        await collectTask.value
+        stop.cancel()
+        return box.updates
+    }
+
+    @Test("A pass whose parse throws ends its updates with .failed, and no .complete")
+    func aParseThatThrowsReportsFailed() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Not XML at all: the parser throws once the pass has sent its first update.
+            try "<TEI><text><body><div type=\"document\" xml:id=\"d1\"><p>cut short"
+                .write(to: volDir.appendingPathComponent("frus1969-76v01.xml"), atomically: true, encoding: .utf8)
+
+            var threw = false
+            let updates = try await updates(of: pipeline) {
+                do { try await pipeline.indexVolume("frus1969-76v01") } catch { threw = true; throw error }
+            }
+            #expect(threw, "the premise: this volume's pass throws")
+            // The premise of the defect: the pass had said it was under way.
+            #expect(updates.first?.stage == .reading)
+            #expect(updates.last?.stage == .failed, "the stream's last word on a pass that threw is .failed")
+            #expect(updates.last?.volumeId == "frus1969-76v01")
+            #expect(!updates.contains { $0.stage == .complete })
+        }
+    }
+
+    @Test("A pass whose store throws partway ends its updates with .failed, counting what it stored")
+    func aStoreThatThrowsReportsFailed() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Three write batches on every platform (the default is 50 on iOS and one batch on the
+            // Mac), and the store stops after its second, so it has made progress when it throws.
+            let docs = (1...300).map { n in (id: "doc-\(n)", xml: "<head>Doc \(n)</head><p>Body \(n)</p>") }
+            try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                               volumeId: "frus1969-76v01", documents: docs)
+            await pipeline.setTestBatchSize(100)
+            struct Stop: Error {}
+            await pipeline.setDocumentBatchStoredTestHook { _, batch in
+                if batch == 2 { throw Stop() }
+            }
+
+            let updates = try await updates(of: pipeline) {
+                try await pipeline.indexVolume("frus1969-76v01")
+            }
+            let last = try #require(updates.last)
+            #expect(last.stage == .failed)
+            #expect(updates.contains { if case .storingBatch = $0.stage { return true }; return false },
+                    "the premise: the store had begun")
+            #expect(last.totalDocuments == 300)
+            // The first batch was counted; the hook stopped the second before its count.
+            #expect(last.completedDocuments == 100, "the count is as far as the store got")
+            #expect(!updates.contains { $0.stage == .complete })
+        }
+    }
+
+    @Test("A pass that succeeds sends no .failed, and a missing file sends nothing at all")
+    func aPassThatSucceedsOrNeverStartsSendsNoFailed() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                               volumeId: "frus1969-76v01",
+                               documents: [(id: "doc-1", xml: "<head>Doc</head><p>Body</p>")])
+            let succeeded = try await updates(of: pipeline) {
+                try await pipeline.indexVolume("frus1969-76v01")
+            }
+            #expect(succeeded.last?.stage == .complete)
+            #expect(!succeeded.contains { $0.stage == .failed })
+
+            // The file is checked before the first update, so there is nothing to take back.
+            let missing = try await updates(of: pipeline) {
+                try await pipeline.indexVolume("frus1969-76v99")
+            }
+            #expect(missing.isEmpty, "a pass that never started reported \(missing.map(\.stage))")
         }
     }
 }

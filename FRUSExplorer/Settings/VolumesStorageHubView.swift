@@ -656,6 +656,11 @@ struct VolumesStorageHubView: View {
             .accessibilityHint(
                 String(localized: "settings.storage.liveActivity.a11y",
                        defaultValue: "When off, indexing progress will not appear in the Dynamic Island or on the Lock Screen"))
+            // Off ends a running activity at once (#1695): one follows a whole queue now, and no
+            // update may come to end it while the queue waits between two volumes.
+            .onChange(of: liveActivityEnabled) { _, on in
+                appState.liveActivitySwitchDidChange(isOn: on)
+            }
         } header: {
             Text(String(localized: "settings.hub.options.header", defaultValue: "Options"))
         } footer: {

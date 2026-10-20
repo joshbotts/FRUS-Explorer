@@ -172,6 +172,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.19 — #1531: `unrecoveredExport`, an upload failure remembered across launches, which the
 ///          status summary resolves to `.stopped` and Fix iCloud Sync warns about
 ///   4.20 — #1660: `keepingCurrent`, Keeping Current's list and where each volume's update stands
+///   4.21 — #1695: one Live Activity follows a whole indexing queue and ends with it, through
+///          `LiveActivityHosting`; a pass that throws (`IndexingStage.failed`) clears the progress the
+///          banner shows, and its queue no longer waits for that volume (`IndexingBatch.failedVolumeIds`)
 
 // MARK: - CloudKitSyncState
 
@@ -2020,31 +2023,40 @@ final class AppState {
     // MARK: - Live Activity (iOS only)
 
     #if os(iOS)
-    /// The currently-running indexing Live Activity, or `nil` when idle.
-    ///
-    /// Started by `startIndexingLiveActivity` when indexing begins and ended by
-    /// `endIndexingLiveActivity` on `.complete`. Managed entirely within
-    /// `connectIndexingProgress` so the lifecycle mirrors the progress stream.
-    private var indexingActivity: Activity<IndexingActivityAttributes>?
+    /// What this process asks of ActivityKit, and what it hears back: the system's activities
+    /// (`SystemLiveActivityHost`), or a stand-in a unit test sets (#1695). See
+    /// `LiveActivityHosting`. `@ObservationIgnored`, like the seven below: no view renders from it.
+    @ObservationIgnored
+    var liveActivityHost: any LiveActivityHosting = SystemLiveActivityHost()
 
-    /// The currently-running summarization Live Activity, or `nil` when idle.
-    /// Driven by `backgroundSummarizationProgress` via `syncSummarizationLiveActivity`.
-    /// Started only while the app is foreground (ActivityKit forbids starting one
-    /// from the background); a foreground-started run's activity then persists and
-    /// updates when the app next becomes active.
-    private var summarizationActivity: Activity<IndexingActivityAttributes>?
+    /// The id of the activity this process holds for each kind of job; none while that kind is
+    /// idle.
+    ///
+    /// The indexing one follows a whole queue (#1695, plan of record decision 63): asked for, or
+    /// taken over, at the queue's first update, updated for each volume in turn, and ended with
+    /// the queue (`endIndexingBatch()`). The summarization one follows a run, through
+    /// `syncSummarizationLiveActivity()`. The system starts one only while the app is in the
+    /// foreground; once started, it takes updates in the background too, so a queue or a run that
+    /// goes on there keeps it.
+    @ObservationIgnored
+    private var heldLiveActivityIDs: [LiveActivityJobKind: String] = [:]
 
     /// The ids of the activities this process requested or took over, those it has since ended
     /// included (#1642). An activity whose id is not here was left by an earlier process.
-    /// `@ObservationIgnored`, like the three below: no view renders from it.
     @ObservationIgnored
     private var drivenLiveActivityIDs: Set<String> = []
 
-    /// The ids of the leftovers this process has asked the system to end. The end is not
-    /// instant, and until it lands the system still lists the activity: a run that starts in
-    /// that moment must not take over one that is about to be dismissed.
+    /// The ids of the activities this process has asked the system to end: its own as each queue
+    /// or run ends, and the leftovers it sweeps (#1642). The end is not instant, and until it
+    /// lands the system still lists the activity as live: a run that starts in that moment must
+    /// not take over one that is about to go (#1695).
     @ObservationIgnored
-    private var endedLeftoverLiveActivityIDs: Set<String> = []
+    private var endedLiveActivityIDs: Set<String> = []
+
+    /// Whether this process may ask the system for an activity: not again in a background run
+    /// once the system has refused one in it (#1695). See `LiveActivityLifecycle.RequestGate`.
+    @ObservationIgnored
+    private var liveActivityRequests = LiveActivityLifecycle.RequestGate()
 
     /// The state last sent to each activity this process holds, for the keep-alive to send again.
     /// Written at every progress update, up to ten times a second.
@@ -2176,9 +2188,21 @@ final class AppState {
             return
         }
         Task { @MainActor [weak self] in
-            let backlog = try? await pipeline.unindexedDownloadedVolumeIds()
+            let found = try? await pipeline.unindexedDownloadedVolumeIds()
             guard let self, var batch = self.indexingBatch else { return }
-            guard let backlog else { return }  // transient failure: retry on the next volume
+            guard let found else {
+                // A transient failure: the next volume asks again. With no next volume, nothing
+                // else would end the queue, and since #1695 its Live Activity ends with it, so the
+                // stall timeout does once the queue has been quiet that long.
+                if mayEnd {
+                    self.armIndexingBatchWatchdog(generation: batch.generation,
+                                                  seconds: Self.indexingBatchStallTimeout)
+                }
+                return
+            }
+            // A volume whose pass failed in this queue stays unindexed, and nothing here will
+            // index it: waiting for it would hold the queue until the stall timeout (#1695).
+            let backlog = found.filter { !batch.failedVolumeIds.contains($0) }
             if mayEnd, backlog.isEmpty {
                 // Deliberately does NOT end here.
                 //
@@ -2214,10 +2238,15 @@ final class AppState {
         }
     }
 
-    /// Tears the queue down and hands the summary card its queue-grain count.
+    /// Tears the queue down, ends its Live Activity, and hands the summary card its queue-grain
+    /// count.
     private func endIndexingBatch() {
         indexingBatchWatchdog?.cancel()
         indexingBatchWatchdog = nil
+        #if os(iOS)
+        // The one activity the queue had ends with it (#1695, plan of record decision 63).
+        endIndexingLiveActivity()
+        #endif
         guard let batch = indexingBatch else { return }
         completedIndexingBatchVolumeCount = batch.completed > 1 ? batch.completed : nil
         indexingBatch = nil
@@ -2515,12 +2544,29 @@ final class AppState {
                         Task { await analyticsService.invalidateCache() }
                     }
                     #if os(iOS)
-                    self.endIndexingLiveActivity()
+                    // Not ended here: one activity follows the whole queue (#1695, plan of record
+                    // decision 63), and the queue's end ends it (`endIndexingBatch()`). Until the
+                    // next volume's first update it shows this one finished.
+                    self.syncIndexingLiveActivity(update: update)
                     // Nothing is queued here any more. The background word-cloud precompute this
                     // site fed was removed: it ran NLTagger over the corpus at 97% CPU until iOS
                     // terminated the app, and an entry it managed to write was invalidated by the
                     // next volume indexed — which is to say, by the very event this call sits in.
                     #endif
+                } else if update.stage == .failed {
+                    // A pass that threw (#1695). No `.complete` follows it, and only a `.complete`
+                    // cleared the progress the banner and the Live Activity show, which the
+                    // queue's watchdog waits for: both went on showing the volume as under way for
+                    // as long as the app ran. The volume is still unindexed and in the backlog,
+                    // where nothing in this queue will index it, so the queue leaves it out of what
+                    // it waits for, goes on to the next volume if there is one, and ends if not.
+                    self.currentIndexingProgress = nil
+                    if var batch = self.indexingBatch {
+                        batch.failedVolumeIds.insert(update.volumeId)
+                        batch.generation += 1
+                        self.indexingBatch = batch
+                    }
+                    self.syncIndexingBatchWithBacklog(mayEnd: true)
                 } else {
                     let isNewVolume = self.currentIndexingProgress?.volumeId != update.volumeId
                     let isStageTransition = update.stage == .optimizing
@@ -2539,6 +2585,8 @@ final class AppState {
                         // question. The queue's own presence is the answer.
                         batch.latest = update
                         batch.generation += 1
+                        // A volume indexed again is no longer one this queue gave up on.
+                        batch.failedVolumeIds.remove(update.volumeId)
                         self.indexingBatch = batch
                     } else {
                         // A new queue. The provisional total is correct for a
@@ -2573,135 +2621,131 @@ final class AppState {
     // MARK: - Live Activity management (iOS only)
 
     #if os(iOS)
-    /// Starts a new Live Activity or updates the running one to reflect `update`.
+    /// Shows `update` on the indexing queue's Live Activity, starting the activity at the queue's
+    /// first update.
     ///
-    /// Creates the activity on the first call when `indexingActivity == nil`.
-    /// Subsequent calls update the existing activity's `ContentState` in place.
+    /// **One activity follows the whole queue** (#1695, plan of record decision 63). It is asked
+    /// for at the queue's first update, updated for each volume in turn, shown each volume finished
+    /// as its `.complete` arrives, and ended with the queue (`endIndexingBatch()`), so a queue that
+    /// goes on in the background keeps it. Until #1695 it was ended as each volume finished, and a
+    /// volume that started within the three seconds that activity lingered took the ended one over
+    /// and showed nothing: measured on 2026-10-12 (iPhone 17 simulator, iOS 27.0), of three
+    /// volumes in one launch pass the first and third had an activity and the second none.
     ///
-    /// On app restart `indexingActivity` resets to `nil` even when an activity is
-    /// still running. To prevent a second widget appearing, the else-branch checks
-    /// `Activity<IndexingActivityAttributes>.activities` before calling `request(…)`,
-    /// and takes over the first indexing activity it finds. That is how a pass a launch
-    /// resumes keeps the activity the last process left (#1642); an activity no pass
-    /// takes over is ended by `endLeftoverLiveActivities()`.
+    /// `heldLiveActivityIDs` is in memory only, so after a relaunch this process holds nothing
+    /// while an activity may still be on the Lock Screen. With none held it takes over a live one
+    /// of its kind before asking for one (`LiveActivityLifecycle.activityToTakeOver(_:among:ended:)`):
+    /// that is how a pass a launch resumes keeps the activity the last process left (#1642). An
+    /// activity no pass takes over is ended by `endLeftoverLiveActivities()`.
     ///
-    /// Every update carries a stale date (`LiveActivityLifecycle.staleDate(after:)`), and
-    /// the keep-alive sends the last one again while this process holds the activity, so
-    /// the date passes only when the app has stopped running.
+    /// Every update carries a stale date (`LiveActivityLifecycle.staleDate(after:)`), and the
+    /// keep-alive sends the last one again while this process holds the activity, so the date
+    /// passes only when the app has stopped running.
     ///
     /// Checks `SettingsKeys.liveActivityEnabled` (default on, Session 154) before
     /// requesting or updating an activity; when the user has turned the preference
     /// off, any already-running activity is ended instead.
     private func syncIndexingLiveActivity(update: IndexingProgressUpdate) {
-        guard LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment),
-              ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard liveActivityHost.mayShow else { return }
         let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
         guard liveActivityEnabled else {
             endIndexingLiveActivity()
             return
         }
-        let title = manifestStore.entry(forVolumeId: update.volumeId)?.title ?? update.volumeId
-        let qp = indexingQueuePosition
-        let fraction: Double? = update.totalDocuments > 0
-            ? Double(update.completedDocuments) / Double(update.totalDocuments)
-            : nil
-        let eta: Int? = {
-            guard update.docsPerSecond > 0, update.totalDocuments > update.completedDocuments else { return nil }
-            return Int(Double(update.totalDocuments - update.completedDocuments) / update.docsPerSecond)
-        }()
-        let state = IndexingActivityAttributes.ContentState(
-            kind: .indexing,
-            volumeTitle: title,
-            progressFraction: fraction,
-            etaSeconds: eta,
-            completedDocuments: update.completedDocuments,
-            totalDocuments: update.totalDocuments,
-            isOptimizing: update.stage == .optimizing,
-            queueCurrent: qp?.current,
-            queueTotal: qp?.total
+        let finished = update.stage == .complete
+        // The `.complete` of a whole-library pass names no volume: there is nothing new to show,
+        // and the queue's end follows within seconds.
+        if finished && update.volumeId.isEmpty { return }
+        // A finished volume counts among the queue's volumes done; one under way is the next.
+        let queue = finished
+            ? indexingBatch.flatMap { $0.total >= 2 ? (current: $0.completed, total: $0.total) : nil }
+            : indexingQueuePosition
+        let state = LiveActivityLifecycle.indexingState(
+            for: update,
+            catalogueTitle: manifestStore.entry(forVolumeId: update.volumeId)?.title,
+            queue: queue
         )
-        if let running = indexingActivity {
-            sendLiveActivityState(state, to: running)
-        } else {
-            // Adopt an existing activity that survived app restart before creating a
-            // new one. `indexingActivity` is in-memory only — after a relaunch it is
-            // nil even if a Live Activity widget is still displayed on the Dynamic
-            // Island. Without this check, each `syncIndexingLiveActivity` call during
-            // an in-progress index run after app restart spawns an additional widget.
-            //
-            // It takes the first indexing activity the system lists, an ended one included.
-            // So in a queue indexed volume by volume, a volume that starts within the three
-            // seconds the last volume's activity lingers takes that ended activity over, and
-            // shows nothing: measured 2026-10-12 (iPhone 17 simulator, iOS 27.0), of three
-            // volumes the first and third had an activity and the second none. #1642 left
-            // that as it found it; the session entry of that day has the measurement.
-            if let existing = Activity<IndexingActivityAttributes>.activities
-                .first(where: { $0.content.state.resolvedKind == .indexing
-                    && !endedLeftoverLiveActivityIDs.contains($0.id) }) {
-                indexingActivity = existing
-                drivenLiveActivityIDs.insert(existing.id)
-                sendLiveActivityState(state, to: existing)
-            } else {
-                indexingActivity = try? Activity.request(
-                    attributes: IndexingActivityAttributes(),
-                    content: Self.liveActivityContent(state)
-                )
-                noteLiveActivityRequested(indexingActivity, showing: state)
-            }
-        }
+        // A finished volume is shown on the activity the queue holds, and starts none: a queue
+        // that holds none by then is one whose request the system refused.
+        showLiveActivity(state, startingOne: !finished)
     }
 
-    /// Ends the running Live Activity with a 3-second dismissal delay so the completion
-    /// state is visible on the Dynamic Island before it disappears.
+    /// Ends the indexing queue's Live Activity, which lingers `LiveActivityLifecycle.lingerAfterEnd`
+    /// seconds so the queue's last state is seen before it goes.
     private func endIndexingLiveActivity() {
-        guard let activity = indexingActivity else { return }
-        indexingActivity = nil
-        lastLiveActivityStates[.indexing] = nil
-        Task { @MainActor in
-            await activity.end(nil, dismissalPolicy: .after(.now + 3))
+        endLiveActivity(.indexing)
+    }
+
+    /// Sends `state` to the activity this process holds for its kind. With none held, and where
+    /// `startingOne`, it takes over a live one of that kind or asks the system for one.
+    ///
+    /// A request the system refuses in a background run is not made again in that run
+    /// (`LiveActivityLifecycle.RequestGate`, #1695): the system starts no activity for an app in
+    /// the background, and this was asked again at every progress update, up to ten times a second.
+    private func showLiveActivity(_ state: IndexingActivityAttributes.ContentState, startingOne: Bool = true) {
+        let kind = state.resolvedKind
+        if let held = heldLiveActivityIDs[kind] {
+            sendLiveActivityState(state, to: held)
+            return
         }
+        guard startingOne else { return }
+        if let existing = LiveActivityLifecycle.activityToTakeOver(
+            kind, among: liveActivityHost.listedActivities(), ended: endedLiveActivityIDs) {
+            heldLiveActivityIDs[kind] = existing
+            drivenLiveActivityIDs.insert(existing)
+            sendLiveActivityState(state, to: existing)
+            return
+        }
+        guard liveActivityRequests.mayRequest(inForeground: liveActivityHost.isInForeground) else { return }
+        guard let requested = liveActivityHost.request(showing: state) else {
+            liveActivityRequests.noteRefusal(inForeground: liveActivityHost.isInForeground)
+            return
+        }
+        heldLiveActivityIDs[kind] = requested
+        drivenLiveActivityIDs.insert(requested)
+        lastLiveActivityStates[kind] = state
+        keepLiveActivitiesFresh()
     }
 
-    // MARK: - Stale dates and the keep-alive (#1642)
-
-    /// `state` as an activity's content, to go stale `LiveActivityLifecycle.staleAfter` seconds
-    /// from now unless another update follows. The one place the app builds an activity's content.
-    private static func liveActivityContent(
-        _ state: IndexingActivityAttributes.ContentState
-    ) -> ActivityContent<IndexingActivityAttributes.ContentState> {
-        ActivityContent(state: state, staleDate: LiveActivityLifecycle.staleDate(after: Date()))
+    /// The reader's **Show Indexing Live Activity** switch has changed (#1695). Off ends every
+    /// activity this process holds at once, where it had waited for the next progress update: one
+    /// activity follows a whole queue, and a queue waiting between two volumes for a download may
+    /// send none for minutes. On starts nothing; the next update asks for one. Settings calls this.
+    func liveActivitySwitchDidChange(isOn: Bool) {
+        guard !isOn else { return }
+        endLiveActivity(.indexing)
+        endLiveActivity(.summarizing)
     }
 
-    /// Sends `state` to `activity`, and keeps it for the keep-alive to send again.
-    private func sendLiveActivityState(_ state: IndexingActivityAttributes.ContentState,
-                                       to activity: Activity<IndexingActivityAttributes>) {
+    /// Ends the activity this process holds for `kind`, if it holds one. It lingers
+    /// `LiveActivityLifecycle.lingerAfterEnd` seconds, so the finished state is seen first.
+    private func endLiveActivity(_ kind: LiveActivityJobKind) {
+        guard let id = heldLiveActivityIDs.removeValue(forKey: kind) else { return }
+        lastLiveActivityStates[kind] = nil
+        endedLiveActivityIDs.insert(id)
+        liveActivityHost.end(id, dismissal: .afterLinger)
+    }
+
+    // MARK: - The keep-alive (#1642)
+
+    /// Sends `state` to the activity `id`, and keeps it for the keep-alive to send again.
+    private func sendLiveActivityState(_ state: IndexingActivityAttributes.ContentState, to id: String) {
         lastLiveActivityStates[state.resolvedKind] = state
         keepLiveActivitiesFresh()
-        Task { @MainActor in
-            await activity.update(Self.liveActivityContent(state))
-        }
-    }
-
-    /// Records an activity this process has just requested, which already shows `state`.
-    /// Nothing is recorded when the request was refused.
-    private func noteLiveActivityRequested(_ activity: Activity<IndexingActivityAttributes>?,
-                                           showing state: IndexingActivityAttributes.ContentState) {
-        guard let activity else { return }
-        drivenLiveActivityIDs.insert(activity.id)
-        lastLiveActivityStates[state.resolvedKind] = state
-        keepLiveActivitiesFresh()
+        liveActivityHost.update(id, to: state)
     }
 
     /// Starts the keep-alive, if it is not running.
     ///
     /// A run reports when it has something to report, and some of its phases report nothing for
     /// a long time: the merge that ends a whole-library pass runs 30 to 60 seconds without a
-    /// word on a full corpus, and a summarization run says nothing while it lists a large
-    /// scope's documents. A stale date counted from the run's last report would pass in such a
-    /// phase with the app at work, and the Lock Screen would say the work had stopped. So while
-    /// this process holds an activity it sends the last state again every
-    /// `LiveActivityLifecycle.keepAliveEvery` seconds, each time with a new stale date. The date
-    /// then passes only when the app has stopped running: suspended in the background, or gone.
+    /// word on a full corpus, a summarization run says nothing while it lists a large scope's
+    /// documents, and a queue waits between two volumes for a download to land. A stale date
+    /// counted from the run's last report would pass in such a phase with the app at work, and
+    /// the Lock Screen would say the work had stopped. So while this process holds an activity it
+    /// sends the last state again every `LiveActivityLifecycle.keepAliveEvery` seconds, each time
+    /// with a new stale date. The date then passes only when the app has stopped running:
+    /// suspended in the background, or gone.
     ///
     /// Measured on an iPhone 17 simulator (iOS 27.0) on 2026-10-12, with a whole-library pass of
     /// 75 volumes made to report once and then nothing. Without this loop the system marked its
@@ -2712,10 +2756,9 @@ final class AppState {
     /// The loop ends by itself at the first turn that finds no activity held, and the next
     /// update starts it again.
     ///
-    /// What it cannot tell is a run that died from one that is quiet. A volume whose pass throws
-    /// reports no end, so its activity stays held, as its banner stays up, and this goes on
-    /// calling it current for as long as the app runs. Once the app stops, the stale date passes,
-    /// and the next launch ends the activity as a leftover.
+    /// It cannot tell a run that died from one that is quiet unless the run says so. A volume whose
+    /// pass throws does, since #1695 (`IndexingStage.failed`): its queue goes on to the next volume
+    /// or ends, and until one of those happens the activity keeps the failed volume's last state.
     private func keepLiveActivitiesFresh() {
         guard liveActivityKeepAlive == nil else { return }
         liveActivityKeepAlive = Task { @MainActor [weak self] in
@@ -2734,18 +2777,11 @@ final class AppState {
     ///
     /// - Returns: Whether this process holds an activity at all.
     private func resendHeldLiveActivityStates() -> Bool {
-        let held: [(activity: Activity<IndexingActivityAttributes>?, kind: LiveActivityJobKind)] = [
-            (indexingActivity, .indexing), (summarizationActivity, .summarizing)
-        ]
-        var holdsOne = false
-        for case let (activity?, kind) in held {
-            holdsOne = true
+        for (kind, id) in heldLiveActivityIDs {
             guard let state = lastLiveActivityStates[kind] else { continue }
-            Task { @MainActor in
-                await activity.update(Self.liveActivityContent(state))
-            }
+            liveActivityHost.update(id, to: state)
         }
-        return holdsOne
+        return !heldLiveActivityIDs.isEmpty
     }
 
     // MARK: - Leftover Live Activities (#1642)
@@ -2761,10 +2797,9 @@ final class AppState {
         return LiveActivityLifecycle.Driver(
             driven: drivenLiveActivityIDs,
             running: running,
-            // The policy first, as in the two sync functions: a test's process asks the system nothing.
-            mayShow: LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment)
-                && switchedOn
-                && ActivityAuthorizationInfo().areActivitiesEnabled
+            // The host's answer first, as in the two sync functions: in a test's process it asks
+            // the system nothing (`LiveActivityPolicy`).
+            mayShow: liveActivityHost.mayShow && switchedOn
         )
     }
 
@@ -2799,12 +2834,10 @@ final class AppState {
     /// seconds of its dismissal still to run was removed by the launch's sweep.
     func endLeftoverLiveActivities() {
         let driver = liveActivityDriver
-        for activity in Activity<IndexingActivityAttributes>.activities
-        where LiveActivityLifecycle.isLeftover(LiveActivityLifecycle.Listed(activity), driver: driver) {
-            endedLeftoverLiveActivityIDs.insert(activity.id)
-            Task { @MainActor in
-                await activity.end(nil, dismissalPolicy: .immediate)
-            }
+        for listed in liveActivityHost.listedActivities()
+        where LiveActivityLifecycle.isLeftover(listed, driver: driver) {
+            endedLiveActivityIDs.insert(listed.id)
+            liveActivityHost.end(listed.id, dismissal: .immediately)
         }
     }
 
@@ -2824,58 +2857,27 @@ final class AppState {
         }
     }
 
-    /// Starts/updates/ends the summarization Live Activity from the current progress
-    /// state. Mirrors `syncIndexingLiveActivity` but for the on-device summarizer.
-    private func syncSummarizationLiveActivity() {
-        guard LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment),
-              ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+    /// Starts, updates or ends the summarization Live Activity from the current progress state.
+    /// Mirrors `syncIndexingLiveActivity(update:)`, for the on-device summarizer, and ends with
+    /// the run.
+    ///
+    /// The state says whether the run goes on by itself in the background
+    /// (`BackgroundSummarizationRequestStore.hasPending`, decision 64), which is what the activity
+    /// says once the app is suspended. So Settings calls this too when Continue in the background
+    /// changes: a run whose saved request was cleared must not go on saying it will continue.
+    func syncSummarizationLiveActivity() {
+        guard liveActivityHost.mayShow else { return }
         let liveActivityEnabled = (UserDefaults.standard.object(forKey: SettingsKeys.liveActivityEnabled) as? Bool) ?? true
 
         switch backgroundSummarizationProgress.state {
         case let .running(tally, _, _):
-            guard liveActivityEnabled else { endSummarizationLiveActivity(); return }
-            let processed = tally.finished
-            let total = tally.attemptable
-            let fraction: Double? = total > 0 ? Double(processed) / Double(total) : nil
-            let content = IndexingActivityAttributes.ContentState(
-                kind: .summarizing,
-                volumeTitle: String(localized: "liveactivity.summarizing.title",
-                                    defaultValue: "Summarizing FRUS documents"),
-                progressFraction: fraction,
-                etaSeconds: nil,
-                completedDocuments: processed,
-                totalDocuments: total,
-                isOptimizing: false,
-                queueCurrent: nil,
-                queueTotal: nil
-            )
-            if let running = summarizationActivity {
-                sendLiveActivityState(content, to: running)
-            } else if let existing = Activity<IndexingActivityAttributes>.activities
-                .first(where: { $0.content.state.resolvedKind == .summarizing
-                    && !endedLeftoverLiveActivityIDs.contains($0.id) }) {
-                summarizationActivity = existing
-                drivenLiveActivityIDs.insert(existing.id)
-                sendLiveActivityState(content, to: existing)
-            } else {
-                summarizationActivity = try? Activity.request(
-                    attributes: IndexingActivityAttributes(),
-                    content: Self.liveActivityContent(content)
-                )
-                noteLiveActivityRequested(summarizationActivity, showing: content)
-            }
+            guard liveActivityEnabled else { endLiveActivity(.summarizing); return }
+            showLiveActivity(LiveActivityLifecycle.summarizationState(
+                tally: tally,
+                continuesInBackground: BackgroundSummarizationRequestStore.hasPending
+            ))
         case .completed, .cancelled, .failed, .idle:
-            endSummarizationLiveActivity()
-        }
-    }
-
-    /// Ends the summarization Live Activity with a brief dismissal delay.
-    private func endSummarizationLiveActivity() {
-        guard let activity = summarizationActivity else { return }
-        summarizationActivity = nil
-        lastLiveActivityStates[.summarizing] = nil
-        Task { @MainActor in
-            await activity.end(nil, dismissalPolicy: .after(.now + 3))
+            endLiveActivity(.summarizing)
         }
     }
     #endif
@@ -4157,8 +4159,9 @@ enum LiveActivityPolicy {
 // MARK: - LiveActivityLifecycle
 
 #if os(iOS)
-/// The rules for a Live Activity that outlives what was driving it (#1642): which of the app's
-/// activities are leftovers, and when an update goes stale.
+/// The rules for the app's Live Activities: which of them are leftovers and when an update goes
+/// stale (#1642); which one a run takes over, when the app may ask for one, and what one shows
+/// (#1695).
 ///
 /// ## What goes wrong without them
 /// An activity is held in memory by the process that started it, and ended when its run reports
@@ -4177,11 +4180,23 @@ enum LiveActivityPolicy {
 ///   `AppState` sends the last state again every `keepAliveEvery` seconds while it holds an
 ///   activity, so the date passes only when the app has stopped running.
 ///
+/// ## #1695's, the owner's decisions 63 and 64 and the plan of record's default for the rest
+/// - **A run takes over only a live activity**, and none this process has asked to end
+///   (`activityToTakeOver(_:among:ended:)`). With that, and the queue's end ending its activity
+///   (`AppState.endIndexingBatch()`), one activity follows a whole indexing queue.
+/// - **A request the system refused in a background run is not made again in that run**
+///   (`RequestGate`).
+/// - **What an activity shows** (`indexingState(for:catalogueTitle:queue:)`,
+///   `summarizationState(tally:continuesInBackground:)`): the finishing merge is titled, seconds
+///   left are rounded up, and a summarization run says whether it goes on in the background.
+///
 /// The type reads no system state and imports nothing of ActivityKit's but the state enum it
 /// translates, so a unit test drives every rule here with values it makes.
 ///
 /// Version history:
 ///   1.0 — 2026-10-12 (#1642): initial implementation
+///   1.1 — 2026-10-20 (#1695): `activityToTakeOver(_:among:ended:)`, `RequestGate`, `Dismissal`,
+///          and the state builders
 enum LiveActivityLifecycle {
 
     // MARK: Stale dates
@@ -4259,6 +4274,138 @@ enum LiveActivityLifecycle {
             && driver.running.contains(activity.kind)
         return !aRunHereTakesItOver
     }
+
+    // MARK: Taking one over (#1695)
+
+    /// The activity a run of `kind` takes over in place of asking for one: the first live
+    /// activity of its kind that this process has not asked the system to end.
+    ///
+    /// - **Live only.** An ended activity takes no update, and the system lists it until its
+    ///   dismissal comes due. Before #1695 a run took the first of its kind the system listed, and
+    ///   in a queue whose activity was ended as each volume finished, a volume that started within
+    ///   the three seconds that activity lingered took it over and showed nothing: measured on
+    ///   2026-10-12 (iPhone 17 simulator, iOS 27.0), of three volumes in one launch pass the
+    ///   first and third had an activity and the second none.
+    /// - **None this process has asked to end**, its own or a leftover (`ended`): the end takes a
+    ///   moment to land, and until it does the system still lists the activity as live.
+    /// - **A live one an earlier process left is taken**: the pass a launch resumes keeps the
+    ///   last process's activity and goes on updating it (#1642).
+    static func activityToTakeOver(_ kind: LiveActivityJobKind, among listed: [Listed],
+                                   ended: Set<String>) -> String? {
+        listed.first { $0.kind == kind && $0.phase == .live && !ended.contains($0.id) }?.id
+    }
+
+    // MARK: Asking for one (#1695)
+
+    /// Whether the app may ask the system for an activity: not again in a background run once
+    /// the system has refused one in it.
+    ///
+    /// The system starts no activity for an app in the background. Before #1695 a run there asked
+    /// again at every progress update, up to ten times a second, and was refused each time: six
+    /// times in the launch #1642's session measured. A background run ends when the app is next
+    /// in the foreground, where a request may be made again. A refusal in the foreground closes
+    /// nothing.
+    struct RequestGate: Equatable, Sendable {
+        /// Whether the system has refused a request since the app was last in the foreground.
+        private(set) var refusedInBackground = false
+
+        /// Whether a request may be made now. Being in the foreground opens the gate again.
+        mutating func mayRequest(inForeground: Bool) -> Bool {
+            if inForeground { refusedInBackground = false }
+            return !refusedInBackground
+        }
+
+        /// Records that the system refused a request.
+        mutating func noteRefusal(inForeground: Bool) {
+            if !inForeground { refusedInBackground = true }
+        }
+    }
+
+    // MARK: Ending one
+
+    /// How an ended activity leaves the screen.
+    enum Dismissal: Equatable, Sendable {
+        /// At once: a leftover's end (#1642). A dismissal that comes due after the app has gone
+        /// makes the system open the app again in the background (`LiveActivityPolicy`).
+        case immediately
+        /// After `lingerAfterEnd` seconds, so that the finished state is seen first: the end of
+        /// this process's own queue or run.
+        case afterLinger
+    }
+
+    /// How long a finished queue's or run's activity stays on the screen after it ends, in
+    /// seconds.
+    static let lingerAfterEnd: TimeInterval = 3
+
+    // MARK: What an activity shows (#1695)
+
+    /// What an indexing activity shows for `update`.
+    ///
+    /// - **The title** is the volume's (`catalogueTitle`, or its id when the catalogue has none),
+    ///   and *Finalizing index…* for an update that names no volume: the merge that ends a
+    ///   whole-library pass, and the rebuild from the cache. Its title had been empty.
+    /// - **The seconds left** are rounded up (`secondsLeft(of:)`).
+    /// - **A finished volume** (`.complete`) shows its bar full and no seconds left, with the
+    ///   queue's count of volumes done in `queue`.
+    ///
+    /// - Parameter queue: Where the queue stands, or `nil` for a queue of one volume.
+    static func indexingState(for update: IndexingProgressUpdate, catalogueTitle: String?,
+                              queue: (current: Int, total: Int)?) -> IndexingActivityAttributes.ContentState {
+        let title = update.volumeId.isEmpty
+            ? String(localized: "liveactivity.optimizing", defaultValue: "Finalizing index…")
+            : catalogueTitle ?? update.volumeId
+        // A finished volume is full, one with no documents included, which would otherwise read
+        // as not yet counted ("Parsing…").
+        let fraction: Double? = update.stage == .complete ? 1
+            : update.totalDocuments > 0 ? Double(update.completedDocuments) / Double(update.totalDocuments)
+            : nil
+        return IndexingActivityAttributes.ContentState(
+            kind: .indexing,
+            volumeTitle: title,
+            progressFraction: fraction,
+            etaSeconds: secondsLeft(of: update),
+            completedDocuments: update.completedDocuments,
+            totalDocuments: update.totalDocuments,
+            isOptimizing: update.stage == .optimizing,
+            queueCurrent: queue?.current,
+            queueTotal: queue?.total
+        )
+    }
+
+    /// The seconds `update`'s volume has left at its rate, rounded up, or `nil` when there is no
+    /// rate or nothing left.
+    ///
+    /// Rounded up, because a volume takes a few seconds: cut down to a whole second, as before
+    /// #1695, the count read "~0s" for most of one. The widget prints none under
+    /// `IndexingActivityAttributes.ContentState.fewestSecondsShown`.
+    static func secondsLeft(of update: IndexingProgressUpdate) -> Int? {
+        guard update.docsPerSecond > 0, update.totalDocuments > update.completedDocuments else { return nil }
+        let seconds = (Double(update.totalDocuments - update.completedDocuments) / update.docsPerSecond).rounded(.up)
+        guard seconds.isFinite, seconds < Double(Int.max) else { return nil }
+        return Int(seconds)
+    }
+
+    /// What a summarization run's activity shows: its documents done of those it will send to the
+    /// model, and whether it goes on by itself in the background (decision 64), which the activity
+    /// says once the app has stopped updating it.
+    static func summarizationState(tally: BatchRunTally,
+                                   continuesInBackground: Bool) -> IndexingActivityAttributes.ContentState {
+        let processed = tally.finished
+        let total = tally.attemptable
+        return IndexingActivityAttributes.ContentState(
+            kind: .summarizing,
+            volumeTitle: String(localized: "liveactivity.summarizing.title",
+                                defaultValue: "Summarizing FRUS documents"),
+            progressFraction: total > 0 ? Double(processed) / Double(total) : nil,
+            etaSeconds: nil,
+            completedDocuments: processed,
+            totalDocuments: total,
+            isOptimizing: false,
+            queueCurrent: nil,
+            queueTotal: nil,
+            continuesInBackground: continuesInBackground
+        )
+    }
 }
 
 extension LiveActivityLifecycle.Phase {
@@ -4285,6 +4432,121 @@ extension LiveActivityLifecycle.Listed {
         self.init(id: activity.id,
                   kind: activity.content.state.resolvedKind,
                   phase: LiveActivityLifecycle.Phase(activity.activityState))
+    }
+}
+
+// MARK: - LiveActivityHosting
+
+/// What `AppState` asks of ActivityKit for its Live Activities (#1695): the system's activities
+/// in the app (`SystemLiveActivityHost`), or a stand-in a unit test sets.
+///
+/// ## Why a seam
+/// A test's process may show no activity (`LiveActivityPolicy`), so until #1695 the calls into
+/// ActivityKit could be checked only by reading the source. What a queue's activity does across
+/// its volumes (one request, an update for each volume, one end with the queue), which activity a
+/// run takes over, and how often a refused request is made again were out of a test's reach.
+/// Through this a unit test drives `AppState`'s own code with a real pipeline and reads what it
+/// asked for. What the system does with those requests no stand-in can vouch for: it was measured
+/// on a simulator, and the session entry of 2026-10-20 in `Planning/DEVELOPMENT-PLAN.md` says
+/// what was seen.
+///
+/// It speaks in ids and `LiveActivityLifecycle.Listed`, the rules' own values, so a stand-in
+/// needs nothing of ActivityKit's but the content state.
+///
+/// Version history:
+///   1.0 — 2026-10-20 (#1695): initial implementation
+@MainActor
+protocol LiveActivityHosting: AnyObject {
+    /// Whether this process may show an activity at all: `LiveActivityPolicy`, then the system's
+    /// switch for the app. The reader's own switch is `AppState`'s to read.
+    var mayShow: Bool { get }
+    /// Whether the app is in the foreground, the only place the system starts an activity.
+    var isInForeground: Bool { get }
+    /// The app's activities as the system lists them, ended ones included.
+    func listedActivities() -> [LiveActivityLifecycle.Listed]
+    /// Asks the system for an activity showing `state`. Returns its id, or `nil` when the system
+    /// refuses.
+    func request(showing state: IndexingActivityAttributes.ContentState) -> String?
+    /// Sends `state` to the activity `id`.
+    func update(_ id: String, to state: IndexingActivityAttributes.ContentState)
+    /// Ends the activity `id`, which leaves the screen as `dismissal` says.
+    func end(_ id: String, dismissal: LiveActivityLifecycle.Dismissal)
+}
+
+/// The system's Live Activities, through ActivityKit: what `AppState` uses outside a unit test.
+///
+/// It asks `LiveActivityPolicy` before it reports that it may show one and again before it makes
+/// a request, so a test's process asks the system for nothing, whatever its caller does. Listing
+/// and ending ask nothing: the launch's sweep runs in every process and can only remove (#1642).
+///
+/// Every content it gives an activity carries a stale date two minutes out (`content(_:)`, the one
+/// place the app builds one, #1642). Updates and ends go out on tasks of their own, as they did
+/// before this type: the app does not wait on ActivityKit.
+///
+/// Version history:
+///   1.0 — 2026-10-20 (#1695): initial implementation, from `AppState`'s own calls
+@MainActor
+final class SystemLiveActivityHost: LiveActivityHosting {
+
+    /// The activities this host has requested or listed, by id, so that an update reaches one
+    /// the system has not listed yet.
+    private var known: [String: Activity<IndexingActivityAttributes>] = [:]
+
+    var mayShow: Bool {
+        // The policy first: a test's process asks the system nothing.
+        LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment)
+            && ActivityAuthorizationInfo().areActivitiesEnabled
+    }
+
+    var isInForeground: Bool {
+        UIApplication.shared.applicationState != .background
+    }
+
+    func listedActivities() -> [LiveActivityLifecycle.Listed] {
+        Activity<IndexingActivityAttributes>.activities.map { activity in
+            known[activity.id] = activity
+            return LiveActivityLifecycle.Listed(activity)
+        }
+    }
+
+    func request(showing state: IndexingActivityAttributes.ContentState) -> String? {
+        guard LiveActivityPolicy.mayShow(in: ProcessInfo.processInfo.environment) else { return nil }
+        guard let activity = try? Activity.request(attributes: IndexingActivityAttributes(),
+                                                   content: Self.content(state)) else { return nil }
+        known[activity.id] = activity
+        return activity.id
+    }
+
+    func update(_ id: String, to state: IndexingActivityAttributes.ContentState) {
+        guard let activity = activity(id) else { return }
+        Task { @MainActor in
+            await activity.update(Self.content(state))
+        }
+    }
+
+    func end(_ id: String, dismissal: LiveActivityLifecycle.Dismissal) {
+        guard let activity = activity(id) else { return }
+        known[id] = nil
+        let policy: ActivityUIDismissalPolicy = switch dismissal {
+        case .immediately: .immediate
+        case .afterLinger: .after(.now + LiveActivityLifecycle.lingerAfterEnd)
+        }
+        Task { @MainActor in
+            await activity.end(nil, dismissalPolicy: policy)
+        }
+    }
+
+    /// The activity `id`, from those this host knows or the system's list.
+    private func activity(_ id: String) -> Activity<IndexingActivityAttributes>? {
+        known[id] ?? Activity<IndexingActivityAttributes>.activities.first { $0.id == id }
+    }
+
+    /// `state` as an activity's content, to go stale `LiveActivityLifecycle.staleAfter` seconds
+    /// from now unless another update follows. The one place the app builds an activity's content.
+    private static func content(
+        _ state: IndexingActivityAttributes.ContentState
+    ) -> ActivityContent<IndexingActivityAttributes.ContentState> {
+        ActivityContent(state: state, staleDate: LiveActivityLifecycle.staleDate(after: Date()))
     }
 }
 #endif

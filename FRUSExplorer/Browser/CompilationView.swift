@@ -785,6 +785,9 @@ struct CompilationView: View {
         case .complete:
             return String(localized: "browser.compilation.indexing.stage.complete",
                           defaultValue: "Complete")
+        case .failed:
+            return String(localized: "browser.compilation.indexing.stage.failed",
+                          defaultValue: "Failed")
         }
     }
 

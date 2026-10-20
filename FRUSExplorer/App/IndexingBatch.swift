@@ -34,13 +34,16 @@ import Foundation
 ///
 /// ## What ends it
 /// The backlog — `IndexingPipeline.unindexedDownloadedVolumeIds()` — is the authority,
-/// re-read after every volume. `AppState.indexingBatchStallTimeout` is the backstop for a
-/// volume that can never be indexed and so never leaves that backlog.
+/// re-read after every volume, less the volumes whose pass failed in this queue
+/// (`failedVolumeIds`). `AppState.indexingBatchStallTimeout` is the backstop for a volume
+/// that can never be indexed and so never leaves that backlog, when its failure went
+/// unreported. On iPhone and iPad the queue's end also ends its Live Activity (#1695).
 ///
 /// Version history:
 ///   1.0 — queue-grained indexing banner: extracted from the two loose counters
 ///         (`indexingBatchTotalAtStart` / `indexingBatchCompletedCount`) that could not
 ///         outlive a single volume
+///   1.1 — #1695: `failedVolumeIds`
 struct IndexingBatch: Equatable, Sendable {
 
     /// Volumes expected in this queue.
@@ -75,4 +78,12 @@ struct IndexingBatch: Equatable, Sendable {
     /// Bumped on every advance. Lets a pending stall timeout tell "still working" from
     /// "wedged" without having to be cancelled and re-armed on every progress tick.
     var generation: Int = 0
+
+    /// The volumes whose pass failed in this queue (`IndexingStage.failed`, #1695), until a
+    /// later pass over one reports progress.
+    ///
+    /// Such a volume stays in the backlog, since nothing indexed it, and nothing in this queue
+    /// will. The queue's end leaves it out, so the banner and the Live Activity end a couple
+    /// of seconds after the last volume that can be indexed, not after the stall timeout.
+    var failedVolumeIds: Set<String> = []
 }
