@@ -175,6 +175,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.21 — #1695: one Live Activity follows a whole indexing queue and ends with it, through
 ///          `LiveActivityHosting`; a pass that throws (`IndexingStage.failed`) clears the progress the
 ///          banner shows, and its queue no longer waits for that volume (`IndexingBatch.failedVolumeIds`)
+///   4.22 — 2026-10-20: `connectIndexingProgress` is documented as the progress stream's one reader,
+///          to be called once for a pipeline (it had been called safe to call again), and
+///          `currentIndexingProgress` as the source Browse's Index Now reads. Comment only
 
 // MARK: - CloudKitSyncState
 
@@ -1953,10 +1956,14 @@ final class AppState {
     /// Populated by `connectIndexingProgress(pipeline:)` which subscribes to
     /// `IndexingPipeline.progressStream`. Views observe this to render live
     /// indexing indicators (iOS: inline capsule in VolumeRowLabel; macOS: StatusBarView).
+    /// It is the one source of indexing progress outside this type: Browse's Index Now and the Mac's
+    /// Corpus Browser read it, never the stream, which has one reader.
     ///
     /// Version history:
     ///   1.0 — Session 51: initial implementation (iOS only)
     ///   1.1 — New UI scaffolding: promoted to cross-platform for macOS StatusBarView
+    ///   1.2 — 2026-10-20: Browse's Index Now reads it (`BrowserViewModel.updateIndexingProgress(from:)`)
+    ///          in place of a second reader of the stream
     var currentIndexingProgress: IndexingProgressUpdate? = nil
 
     /// The most recent volume metadata snapshot discovered during the parse phase of indexing.
@@ -2476,8 +2483,14 @@ final class AppState {
     /// updates onto the main actor as `currentIndexingProgress`, `lastDiscoveredMetadata`,
     /// and `completedIndexingMetadata`.
     ///
-    /// Safe to call multiple times — each call replaces the previous subscription
-    /// (the prior Tasks are abandoned; streams are single-consumer by design).
+    /// **The app's one reader of both streams: call it once for a pipeline.** An `AsyncStream` hands
+    /// each element to ONE of the readers waiting on it, so a second reader takes updates this loop
+    /// never sees, and cancelling a reader while it waits ends the stream for every reader. A second
+    /// call here would be such a reader, since nothing stops the first loop. Until 2026-10-20 this
+    /// comment called the method safe to call again, and Browse's Index Now read `progressStream` in
+    /// a task it cancelled: that cut this loop off for the rest of the launch. Anything else that
+    /// shows indexing progress reads `currentIndexingProgress`, as the Mac's Corpus Browser and,
+    /// since then, Index Now do; `IndexNowProgressReaderTests` fails on a second reader in the app.
     func connectIndexingProgress(pipeline: IndexingPipeline) {
         Task { @MainActor [weak self] in
             // Clock-based throttle: forward at most ~10 UI updates per second.

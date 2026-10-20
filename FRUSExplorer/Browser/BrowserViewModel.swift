@@ -90,6 +90,12 @@ import Observation
 ///          `AppState`'s and not a level's memory. Comment only
 ///   1.13 — #1363, on merging #1431: `LevelMemory`'s doc says why the two-pane's open door is the
 ///          path's root and not a level's memory. Comment only
+///   1.14 — 2026-10-20: `indexVolume(_:)` reads no progress stream. `AppState` is the one reader of
+///          `IndexingPipeline.progressStream`, and a second one here took about half Index Now's
+///          updates from it and, cancelled while it waited, ended the stream, after which `AppState`
+///          heard no indexing until a relaunch. `indexingProgress` is kept from
+///          `AppState.currentIndexingProgress` by `updateIndexingProgress(from:)`, for the volume
+///          `indexingVolumeId` names
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -467,10 +473,16 @@ public final class BrowserViewModel {
     public var isIndexing: Bool = false
     public var indexingError: Error? = nil
 
+    /// The volume ``indexVolume(_:)`` is indexing, or `nil` when no call of it is running.
+    public private(set) var indexingVolumeId: String? = nil
+
     /// Live per-document progress for the volume currently being indexed.
     /// `nil` when no indexing is in progress or before the first update arrives.
-    /// Populated by a concurrent `progressStream` observer inside `indexVolume(_:)`.
-    public var indexingProgress: IndexingProgressUpdate? = nil
+    ///
+    /// Kept from `AppState.currentIndexingProgress` by ``updateIndexingProgress(from:)``, which
+    /// `CompilationView` calls as that changes. Not from the pipeline's `progressStream`, whose one
+    /// reader is `AppState` (see ``indexVolume(_:)``).
+    public private(set) var indexingProgress: IndexingProgressUpdate? = nil
 
     // MARK: - Dependencies
 
@@ -804,15 +816,21 @@ public final class BrowserViewModel {
         return (try? pipeline.isVolumeIndexed(volumeId)) ?? false
     }
 
-    /// Triggers indexing for a single volume and streams live per-document progress
-    /// into `indexingProgress` while the pipeline runs.
+    /// Triggers indexing for a single volume. While the pipeline runs, `isIndexing` is `true` and
+    /// ``indexingVolumeId`` names the volume.
     ///
-    /// A concurrent `Task` iterates `pipeline.progressStream`, filtering to
-    /// `volume.volumeId` and breaking on `.complete` or `.failed`. The task is cancelled once
-    /// `pipeline.indexVolume` returns (success or error) so it never outlives the
-    /// indexing operation. `indexingProgress` is cleared and `isIndexing` is set to
-    /// `false` at the end — CompilationView's `.onChange(of: vm.isIndexing)` uses
-    /// this transition to load the document list without requiring navigation.
+    /// **It reads no progress stream.** `AppState.connectIndexingProgress(pipeline:)` is the app's
+    /// one reader of `pipeline.progressStream`, and the progress shown here comes from it, through
+    /// ``updateIndexingProgress(from:)``. Until 2026-10-20 this method read the stream in a task of its
+    /// own. An `AsyncStream` hands each update to one of the readers waiting on it, so the two split
+    /// the volume's updates; and the task was cancelled when the pass returned, which, if it had not
+    /// had the volume's last update and was still waiting, ended the stream for every reader.
+    /// `AppState` then heard no indexing until the app was relaunched: no banner, no Live Activity,
+    /// no queue, no volume recorded as indexed. `IndexNowProgressReaderTests` runs both cases.
+    ///
+    /// `indexingProgress` is cleared and `isIndexing` is set to `false` at the end —
+    /// CompilationView's `.onChange(of: vm.isIndexing)` uses this transition to load the document
+    /// list without requiring navigation.
     public func indexVolume(_ volume: VolumeManifestEntry) async {
         // R-9: never return silently here. This guard used to be a bare `return`, so
         // "Index Now" produced no progress, no error, and no log line — the single most
@@ -829,18 +847,7 @@ public final class BrowserViewModel {
         isIndexing = true
         indexingError = nil
         indexingProgress = nil
-
-        // Stream per-document progress for this volume into indexingProgress.
-        // Runs on the main actor so @Observable property mutations are safe.
-        // Breaks on .complete, on .failed or when cancelled (i.e. when indexVolume returns).
-        let progressTask = Task { @MainActor [weak self] in
-            for await update in pipeline.progressStream {
-                guard let self else { break }
-                guard update.volumeId == volume.volumeId else { continue }
-                self.indexingProgress = update
-                if update.stage == .complete || update.stage == .failed { break }
-            }
-        }
+        indexingVolumeId = volume.volumeId
 
         do {
             try await pipeline.indexVolume(volume.volumeId)
@@ -854,9 +861,21 @@ public final class BrowserViewModel {
             #endif
         }
 
-        progressTask.cancel()
+        indexingVolumeId = nil
         indexingProgress = nil
         isIndexing = false
+    }
+
+    /// Keeps `update` as ``indexingProgress`` when it is for the volume ``indexVolume(_:)`` is
+    /// indexing.
+    ///
+    /// `CompilationView` passes `AppState.currentIndexingProgress` here each time it changes. An
+    /// update for another volume is passed over (a downloaded volume can be indexing beside Index
+    /// Now's), and so is `nil`, which `AppState` sets when a volume ends: the progress shown stays as
+    /// the pass last reported it until ``indexVolume(_:)`` returns and clears it.
+    public func updateIndexingProgress(from update: IndexingProgressUpdate?) {
+        guard let update, let volumeId = indexingVolumeId, update.volumeId == volumeId else { return }
+        indexingProgress = update
     }
 
     // MARK: - Tag Display Helpers

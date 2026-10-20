@@ -101,6 +101,9 @@ import SwiftUI
 ///          documents, so it appears when they do and not before the volume is indexed.
 ///   2.6 — 2026-10-19 (#1690): `documentRows(docs:)` says "No documents in this section." only for
 ///          a section that lists no subsections, as the Mac's Corpus Browser does
+///   2.7 — 2026-10-20: passes `AppState.currentIndexingProgress` to the view model as it changes
+///          (`BrowserViewModel.updateIndexingProgress(from:)`), which no longer reads the pipeline's
+///          progress stream beside `AppState`, as the Mac's Corpus Browser never did
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -252,6 +255,13 @@ struct CompilationView: View {
         // volumes, so nothing behavioural could tell the difference. There is now no key here to
         // get wrong, and no room for the manifest lookup either.
         .compilationDocumentLoad(vm: vm, volumeId: volumeId, section: section)
+        // Index Now's progress, which `indexingProgressSection` draws. `AppState` reads the pipeline's
+        // progress stream for the whole app, and the view model takes its volume's updates from it
+        // here. Until 2026-10-20 the view model read the stream itself, a second reader that split the
+        // updates with `AppState` and, cancelled while it waited, ended the stream for it.
+        .onChange(of: appState.currentIndexingProgress) { _, progress in
+            vm.updateIndexingProgress(from: progress)
+        }
         // THE THREE KICKS BELOW ARE FOR INDEXING, NOT FOR SECTION CHANGES. They existed partly
         // because the load could decline silently and nothing else would ever call it again;
         // since #1301 the keyed task covers "the section I am displaying changed", and each of
@@ -708,7 +718,8 @@ struct CompilationView: View {
     // MARK: - Indexing Progress Section
 
     /// Shown while `vm.isIndexing` is true. Displays a labelled progress bar fed
-    /// by `vm.indexingProgress` (per-document updates from `IndexingPipeline.progressStream`).
+    /// by `vm.indexingProgress`: `AppState.currentIndexingProgress` for the volume Index Now is
+    /// indexing, which this view passes to the view model as it changes.
     /// Falls back to an indeterminate spinner before the first update arrives.
     @ViewBuilder
     private var indexingProgressSection: some View {
