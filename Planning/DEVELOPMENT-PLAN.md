@@ -39409,5 +39409,5 @@ Two answers departed from the session's advice: the index bump, which it had adv
 - **Collocates' *%lld further matches were skipped…*** (`search.collocation.caveat.perDocument %lld`) still prints its count ungrouped; #1683 named the other two.
 
 **Not done.**
-- **The pull request is not opened**; that waits on the owner's word.
+- **Opened as #1730** on the owner's word of 2026-10-19 ("Open PR"), against `v2` at `d0913fa0`, which had not moved since the branch was cut. Not merged.
 - **Not seen on iPhone or iPad by eye:** the Keywords prompt inside a corpus, the corpus list's line, Project Home's sheet and tile, the export grid and the checklist strip and Collocates' counts, each covered by unit tests through the functions the views call. Dark appearance, the accessibility sizes and VoiceOver were not checked on any platform.
