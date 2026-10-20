@@ -39411,3 +39411,20 @@ Two answers departed from the session's advice: the index bump, which it had adv
 **Not done.**
 - **Opened as #1730** on the owner's word of 2026-10-19 ("Open PR"), against `v2` at `d0913fa0`, which had not moved since the branch was cut. Not merged.
 - **Not seen on iPhone or iPad by eye:** the Keywords prompt inside a corpus, the corpus list's line, Project Home's sheet and tile, the export grid and the checklist strip and Collocates' counts, each covered by unit tests through the functions the views call. Dark appearance, the accessibility sizes and VoiceOver were not checked on any platform.
+
+## Session 2026-10-20 — Agentic analysis is supported openly and not marketed: a Support question, a privacy line on exports, a manual sentence and the guide's status line
+
+**What was asked.** From the owner, in a marketing session: a page describing agentic analysis, so they could decide whether it is a marketing feature or silently supported; then, having read it, "go with support it openly and open the PR", with the guide's status line to end "test results have not completed publication-level peer review."; and then, the PR open, that wording replaced with "test results are promising, but have not been comprehensively reviewed against cited FRUS documents or flagged archival locations. The guide is a work in progress." The decision: name the method on the Support page and in the macOS manual, add a privacy-policy line on exports, and leave it out of the store listing, the home page and the tour, to be revisited once C-3 has run (plan of record decision 13) and a historian has read an agent's memo against its documents.
+
+**What changed.**
+- `Docs/Support.md` and `Docs/Website/support.html`: a common question, *Can I use the search index with my own tools?*: Mac only, **Settings → System → Data & Recovery → Export Research Database…**, a checked SQLite copy, the reader's writing left out unless **Include My Notes, Summaries, and Tags** is on, a link to the guide, and that an online service's terms apply to a copy given to it.
+- `Docs/Privacy-Policy.md` and `Docs/Website/privacy.html`: a **Files you export** item under *What stays on your device* (collections, a chart's data, the JSON export, the method appendix and, on a Mac, the index copy go only where the reader saves or sends them; another service's terms apply to what it is given). *Last updated* moves to October 20, 2026.
+- `Docs/Website/README.md`: a trace row for each new sentence, naming `DataExportSections`, `DataRecoveryView`, `SettingsPaneModel.group`, `ResearchDataExporter`'s two checks and each export's share sheet or save panel.
+- `Docs/macOS-User-Manual.md` §17.5: one sentence after **Export Research Database…** linking the guide.
+- `Docs/Agentic-Analysis-Guide.md` 1.31: a status line under the title (one agent tested, scored by other models, the results promising but not yet comprehensively reviewed against the FRUS documents they cite or the archival locations they flag, the guide a work in progress, the export Mac only).
+
+**Checked.** `python3 Scripts/build_website_pages.py --check`: both pages in step. Every new sentence read against the code its trace row names; the switch's label and its `false` default, the save panel's name and the two integrity checks are as quoted. **Not run:** the unit target and `swift test` (this container has no Swift toolchain); no Swift, test or resource file changed, and no test reads the lines changed (`ResearchGuideCoverageTests.manualsCoverTheLateAdditions` reads three other phrases of both manuals; `ResearchDataExporterTests` reads the guide's name from the export's documentation row).
+
+**For the plan of record.** The owner's decision of 2026-10-20 on agentic analysis, above, is not yet a numbered decision.
+
+**Found and not fixed** (queued as a separate task). The guide's §15.2 checker rejects any `.fruscollection` whose `formatVersion` is not 1, while §15.1a and §15.3 tell writers to use version 2 for a file with a title-page field; and the guide gives the Mac path as **Settings ▸ Data & Recovery**, without **System**.

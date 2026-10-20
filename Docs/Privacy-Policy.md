@@ -8,7 +8,7 @@
 
 # FRUS Explorer Privacy Policy
 
-*Last updated October 15, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
+*Last updated October 20, 2026. This policy covers FRUS Explorer for iPhone, iPad and Mac, from version 1.0.*
 
 FRUS Explorer is made by Joshua Botts ("the developer").
 
@@ -29,6 +29,7 @@ The rest of this page says what the app keeps, where it keeps it, and every plac
 - **Diagnostics.** The app's diagnostic records stay on your device unless you copy or export them yourself: the iCloud Sync Log (event types, timing and error codes, never your content), the iCloud schema report, the language-analysis record and the index's research-state record.
 - **Semantic Match Feedback.** The verdicts you record on Related Documents' semantic matches are stored on your device and are not synced (see [Sending feedback](#sending-feedback)).
 - **Spotlight and Handoff.** The app adds the documents of the volumes you have downloaded to your device's Spotlight index, so that system search can find them; that index is kept on your device. While you read a document or use the semantic map, the app offers it to your other devices through Handoff, which Apple carries between devices signed in to the same Apple Account; the offer names the document, or the volumes and scope the map shows.
+- **Files you export.** A collection, a chart's data, the JSON export, the method appendix and, on a Mac, a copy of the search index go only where you save or send them. If you give one to another service, such as an AI tool, that service's terms apply.
 
 ## iCloud
 

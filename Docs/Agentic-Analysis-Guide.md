@@ -3,6 +3,11 @@
 > **A guide for researchers who want to point Claude, ChatGPT, Gemini, or a comparable
 > agentic tool at FRUS Explorer's local SQLite index and ask it questions.**
 
+> **Status, October 2026.** The guide's rules have been tested with one agent (Claude) and scored
+> by other models; test results are promising, but have not been comprehensively reviewed against
+> cited FRUS documents or flagged archival locations. The guide is a work in progress. The export
+> it starts from is Mac only.
+
 FRUS Explorer builds a full-text index of the *Foreign Relations of the United States* series on
 your own machine. That index is an ordinary SQLite database. Nothing stops you from opening it with
 an AI coding agent, handing the agent SQL access, and asking it to find patterns across the
@@ -3011,6 +3016,11 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.31 — 2026-10-20: a status line under the title (one agent tested, scored by other models, the
+  results promising but not yet comprehensively reviewed against the FRUS documents they cite or
+  the archival locations they flag, the guide a work in progress, the export Mac only), on the owner's
+  decision of 2026-10-20 to support the method openly on the Support page and in the macOS manual
+  without marketing it.
 - 1.30 — 2026-10-15: §A.7 follows the move to EmbeddingGemma 2 (#1659, B4): the pinned model, its
   310 MB, the encoder's line, the index's recall (0.902), the one text-query measurement and whose
   it is, and the app's calibrated percentages.
