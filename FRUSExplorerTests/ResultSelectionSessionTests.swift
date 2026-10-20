@@ -488,6 +488,7 @@ struct ResultSelectionMacCopyTests {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 5: initial implementation
+///   1.1 — #1683: the limit's reason says what to do, beside the commands it dims
 @Suite("Result tagging, the words (#1576 lane 5)")
 struct ResultTaggingCopyTests {
 
@@ -543,10 +544,10 @@ struct ResultTaggingCopyTests {
         #expect(!hint.lowercased().contains("tap"), "compiled for the Mac, where `macTextNeverSaysTap` refuses the word")
     }
 
-    @Test("The limit's line speaks for both commands it dims")
+    /// Said beside each of the two commands it dims, whose names say what they are for (#1683).
+    @Test("The limit's reason says what to do, for either command it dims")
     func overLimit() {
-        #expect(ResultSelectionCopy.overLimit(1_000, locale: Self.enUS)
-                == "Select 1,000 documents or fewer to add them to a collection or to tag them.")
+        #expect(ResultSelectionCopy.overLimit(1_000, locale: Self.enUS) == "Select 1,000 documents or fewer")
     }
 }
 
@@ -565,6 +566,8 @@ struct ResultTaggingCopyTests {
 ///   1.1 — #1576 lane 4, review: the marks are forgotten in one place; Mark Reviewed waits for the
 ///         rows it would mark; the toggle is not dimmed while on; the checkbox is named once;
 ///         Space acts once for each press; titles say what a scan reads, not what the window does
+///   1.2 — #1683: why the two commands are dimmed is said under the strip's two buttons and under a checked
+///         row's two items, not as a line under the whole strip
 @Suite("Result selection on the Mac, the wiring (#1576 lane 4)")
 struct MacResultSelectionWiringTests {
 
@@ -823,6 +826,12 @@ struct MacResultSelectionWiringTests {
             checklistHiddenBanner
             """)))
         let strip = Self.squeezedCode(try Self.declaration("private var selectionStrip: some View {", in: window))
+        #expect(Self.squeezedCode(window).contains(Self.squeezed("""
+            private var selectionAddRefusal: String? {
+                searchVM.selectionExceedsAddLimit
+                    ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil
+            }
+            """)), "the strip and a checked row's menu say why the two commands are dimmed only over the limit (#1683)")
         #expect(strip.contains(Self.squeezed("""
             if searchVM.resultSelection.isSelecting {
                 ResultSelectionStrip(
@@ -832,8 +841,7 @@ struct MacResultSelectionWiringTests {
                     canAdd: searchVM.canAddSelectionToCollection,
                     showsMarkReviewed: searchVM.checklistMode,
                     canMarkReviewed: searchVM.canMarkSelectionReviewed,
-                    addRefusal: searchVM.selectionExceedsAddLimit
-                        ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
+                    addRefusal: selectionAddRefusal,
                     outcome: searchVM.bulkOutcome,
                     outcomeSerial: searchVM.bulkOutcomeSerial,
                     done: { searchVM.endSelecting() },
@@ -945,6 +953,7 @@ struct MacResultSelectionWiringTests {
                 } label: {
                     Label(ResultSelectionCopy.addSelectedToCollection(searchVM.resultSelection.count),
                           systemImage: "plus.circle")
+                    if let selectionAddRefusal { Text(selectionAddRefusal) }
                 }
                 .disabled(!searchVM.canAddSelectionToCollection)
                 Button {
@@ -952,6 +961,7 @@ struct MacResultSelectionWiringTests {
                 } label: {
                     Label(ResultSelectionCopy.addTagsToSelected(searchVM.resultSelection.count),
                           systemImage: "tag")
+                    if let selectionAddRefusal { Text(selectionAddRefusal) }
                 }
                 .disabled(!searchVM.canAddSelectionToCollection)
             } else {
@@ -966,7 +976,10 @@ struct MacResultSelectionWiringTests {
                     Label(BulkResultCopy.addTags, systemImage: "tag")
                 }
             }
-            """)), "both commands are the selection's on a checked row among others, and the row's own otherwise (lane 5 for the tags)")
+            """)), """
+            both commands are the selection's on a checked row among others, and the row's own otherwise (lane 5 for \
+            the tags); dimmed by the limit, each says why under its name (#1683)
+            """)
         #expect(Self.squeezedCode(window).contains(Self.squeezed("""
             private func checkedTogether(with result: SearchResult) -> Bool {
                 searchVM.resultSelection.contains(result.id) && searchVM.resultSelection.count > 1
@@ -993,6 +1006,26 @@ struct MacResultSelectionWiringTests {
             Button(BulkResultCopy.addToCollection, action: addToCollection)
                 .disabled(!canAdd)
             """)))
+        // #1683: why the two are dimmed is under the two of them, and the row stays on its baselines when it grows.
+        #expect(strip.contains(Self.squeezed("""
+            Spacer(minLength: 8)
+            addCommands
+            if showsMarkReviewed {
+            """)), "the two commands are not between the Select menu and Mark Reviewed")
+        let commands = Self.squeezedCode(try Self.declaration("private var addCommands: some View {", in: views))
+        #expect(commands.contains(Self.squeezed("""
+            VStack(spacing: 2) {
+                HStack(spacing: 12) {
+                    Button(BulkResultCopy.addToCollection, action: addToCollection)
+            """)), "the reason is not under the two commands")
+        #expect(commands.contains(Self.squeezed("""
+                if let addRefusal {
+                    Text(addRefusal)
+            """)))
+        #expect(strip.components(separatedBy: Self.squeezed("if let addRefusal")).count == 2,
+                "the reason is said a second time, as the line under the whole row it was (#1683)")
+        #expect(strip.contains(Self.squeezed("HStack(alignment: .firstTextBaseline, spacing: 12) {")),
+                "with the reason under the two commands, the row's other controls would centre on the taller column")
         #expect(strip.contains(Self.squeezed("""
             Button(BulkResultCopy.addTags, action: addTags)
                 .disabled(!canAdd)

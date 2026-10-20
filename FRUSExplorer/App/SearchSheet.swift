@@ -152,6 +152,10 @@ import SwiftUI
 ///          (`MacSearchViewModel.swapLayer()`), and the search task holds the swap's new list once its search is
 ///          recorded (`continueSwap(meaningAvailable:)`); the row and the engine label go on naming the list a swap let
 ///          go of until then
+///   1.27 — #1686: the facet panel narrows through the view model (`MacSearchViewModel.applyFacetNarrowing(_:)` and
+///          `applyFacetSelection(_:keys:)`), which remembers a Volumes facet's choice, so a change of project leaves it
+///   1.28 — #1683: a checked row's Add N Selected to Collection… and Add Tags to N Selected…, dimmed by the limit,
+///          say why under their names (`selectionAddRefusal`), which the strip says under its two buttons
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -541,13 +545,13 @@ struct MacSearchWindowView: View {
                     // Captured here because the narrow re-runs the search, and by the time
                     // the panel recomputes, its match count describes the narrowed set.
                     facetController.recordNarrowing(from: searchVM.totalMatchCount)
-                    narrowing.apply(to: &searchVM.parameters)
-                    searchVM.parametersVersion += 1
+                    // The view model's, which remembers a volume so that a change of project
+                    // leaves it (#1686).
+                    searchVM.applyFacetNarrowing(narrowing)
                 },
                 onApplySelection: { section, keys in
                     facetController.recordNarrowing(from: searchVM.totalMatchCount)
-                    FacetSelectionApplier.apply(section, keys: keys, to: &searchVM.parameters)
-                    searchVM.parametersVersion += 1
+                    searchVM.applyFacetSelection(section, keys: keys)
                 },
                 onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
                 onBrowseTopics: { browseTopics() },
@@ -2394,12 +2398,14 @@ struct MacSearchWindowView: View {
                     Divider()
                     if checkedTogether(with: result) {
                         // #1576 lane 4: on a checked row with others checked, the command is the
-                        // selection's, and says how many.
+                        // selection's, and says how many. #1683: dimmed by the limit, each says why
+                        // under its name, as the strip does under its buttons.
                         Button {
                             bulkRequest = selectionAddRequest
                         } label: {
                             Label(ResultSelectionCopy.addSelectedToCollection(searchVM.resultSelection.count),
                                   systemImage: "plus.circle")
+                            if let selectionAddRefusal { Text(selectionAddRefusal) }
                         }
                         .disabled(!searchVM.canAddSelectionToCollection)
                         // #1576 lane 5: and so are its tags.
@@ -2408,6 +2414,7 @@ struct MacSearchWindowView: View {
                         } label: {
                             Label(ResultSelectionCopy.addTagsToSelected(searchVM.resultSelection.count),
                                   systemImage: "tag")
+                            if let selectionAddRefusal { Text(selectionAddRefusal) }
                         }
                         .disabled(!searchVM.canAddSelectionToCollection)
                     } else {
@@ -2493,6 +2500,14 @@ struct MacSearchWindowView: View {
                           fromMeaningSearch: searchVM.resultsAreSemantic)
     }
 
+    /// Why the selection's Add to Collection and Add Tags are dimmed, when more are checked than one of
+    /// them takes; `nil` otherwise. The strip says it under its two buttons, and a checked row's menu
+    /// under its two items (#1683).
+    private var selectionAddRefusal: String? {
+        searchVM.selectionExceedsAddLimit
+            ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil
+    }
+
     /// The strip the Select toggle brings up, above the list and the checklist's own strip
     /// (#1576 lane 4). Nothing outside selection.
     @ViewBuilder
@@ -2505,8 +2520,7 @@ struct MacSearchWindowView: View {
                 canAdd: searchVM.canAddSelectionToCollection,
                 showsMarkReviewed: searchVM.checklistMode,
                 canMarkReviewed: searchVM.canMarkSelectionReviewed,
-                addRefusal: searchVM.selectionExceedsAddLimit
-                    ? ResultSelectionCopy.overLimit(CollectionDocumentDiscovery.bulkDocumentLimit) : nil,
+                addRefusal: selectionAddRefusal,
                 outcome: searchVM.bulkOutcome,
                 outcomeSerial: searchVM.bulkOutcomeSerial,
                 done: { searchVM.endSelecting() },

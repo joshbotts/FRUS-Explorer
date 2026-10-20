@@ -438,6 +438,7 @@ extension SearchResult {
 ///
 /// Version history:
 ///   1.0 — #1576 lane 3: initial implementation
+///   1.1 — #1683: `overLimit` is said beside the two commands it dims, and says only what to do
 enum ResultSelectionCopy {
 
     /// The More menu's item that enters selection.
@@ -579,14 +580,18 @@ enum ResultSelectionCopy {
     }
 
     /// Why Add to Collection and Add Tags are dimmed: more results are picked than one of them
-    /// takes. Re-keyed in #1576 lane 5, when the line came to speak for two commands.
+    /// takes. Shown beside each of the two, under its name (decision 69, #1683): in the Actions menu on
+    /// iPhone and iPad and a checked row's menu on the Mac, and under the Mac strip's two buttons. It
+    /// was a line above the results, away from the commands it explained, and said what they were for;
+    /// re-keyed when it lost those words. Re-keyed in #1576 lane 5 too, when it came to speak for two
+    /// commands.
     ///
     /// - Parameters:
     ///   - limit: The most documents one command takes (`CollectionDocumentDiscovery.bulkDocumentLimit`).
     ///   - locale: The locale that groups the count; the user's own unless a test passes one.
     static func overLimit(_ limit: Int, locale: Locale = .autoupdatingCurrent) -> String {
-        String(format: String(localized: "search.selection.overLimit.v2 %@",
-                              defaultValue: "Select %@ or fewer to add them to a collection or to tag them."),
+        String(format: String(localized: "search.selection.overLimit.v3 %@",
+                              defaultValue: "Select %@ or fewer"),
                CountCopy.documents(limit, locale: locale))
     }
 

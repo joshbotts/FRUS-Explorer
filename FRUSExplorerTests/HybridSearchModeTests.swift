@@ -649,6 +649,7 @@ private final class QuestionGatedMeaningSearch: MeaningSearchRunning {
 /// Version history:
 ///   1.0 — #1584, #1595, #1596, #1597, #1598: initial implementation
 ///   1.1 — #1688: a full Meaning list's trail row records its count as exact
+///   1.2 — #1686: the Mac's facet panel narrows through the view model, and a change of project keeps a facet's volumes
 @Suite("Search results are described by the run that produced them")
 @MainActor
 struct SearchResultRouteTests {
@@ -1598,6 +1599,57 @@ struct SearchResultRouteTests {
         #expect(!leave.contains("applyAdvancedFilters") && !leave.contains("applyProjectScope"),
                 "leaving the corpus derives more than its document gate")
         #expect(leave.contains("parametersVersion += 1"), "leaving the corpus does not run the search again")
+    }
+
+    /// #1686: a facet's narrowing wrote the window's parameters alone, and a change of project derived the volume gate
+    /// from the filter view model again (`applyProjectScope()`), so it put back the volumes chosen in Filters, or every
+    /// volume. The facet's two routes are the view model's now, which remembers a Volumes facet's choice, and a change
+    /// of project keeps it while the gate still holds it. The rule is driven in `FacetVolumeChoiceTests`; the Mac's
+    /// calls are read here, since this target runs on iOS, and the window was walked in the check copy.
+    @Test("The Mac's facet panel narrows through the view model, and a change of project keeps a facet's volumes (#1686)")
+    func macProjectChangeKeepsAFacetsVolumes() throws {
+        func squeezed(_ text: String) -> String { text.filter { !$0.isWhitespace } }
+        let window = squeezed(Self.code(try Self.source("FRUSExplorer/App/SearchSheet.swift")))
+        #expect(window.contains(squeezed("searchVM.applyFacetNarrowing(narrowing)")),
+                "a facet row's narrowing does not go through the view model")
+        #expect(window.contains(squeezed("searchVM.applyFacetSelection(section, keys: keys)")),
+                "a facet section's selection does not go through the view model")
+        #expect(!window.contains(squeezed("&searchVM.parameters")),
+                "the window writes the parameters past the view model, which then cannot remember a facet's volumes")
+
+        let path = "FRUSExplorer/App/MacSearchViewModel.swift"
+        let model = try Self.source(path)
+        let narrowing = squeezed(Self.code(try Self.declaration(
+            "func applyFacetNarrowing(_ narrowing: FacetNarrowing) {", in: model, path: path)))
+        #expect(narrowing.contains(squeezed("narrowing.apply(to: &parameters)")))
+        #expect(narrowing.contains(squeezed("""
+            if case .volume = narrowing { facetVolumeChoice = FacetVolumeChoice(volumeIds: parameters.volumeIds) }
+            """)), "a volume row's narrowing is not remembered")
+        #expect(narrowing.contains("parametersVersion+=1"), "a facet row's narrowing does not run the search again")
+        let selection = squeezed(Self.code(try Self.declaration(
+            "func applyFacetSelection(_ section: FacetSection, keys: [String]?) {", in: model, path: path)))
+        #expect(selection.contains(squeezed("FacetSelectionApplier.apply(section, keys: keys, to: &parameters)")))
+        #expect(selection.contains(squeezed("""
+            if section == .volumes { facetVolumeChoice = FacetVolumeChoice(volumeIds: parameters.volumeIds) }
+            """)), "a Volumes selection is not remembered")
+        #expect(selection.contains("parametersVersion+=1"), "a facet's selection does not run the search again")
+
+        let scope = squeezed(Self.code(try Self.declaration("func applyProjectScope() {", in: model, path: path)))
+        #expect(scope.contains(squeezed("""
+            let volumeIds = FacetVolumeChoice.volumeGate(parameters.volumeIds, choice: facetVolumeChoice,
+                                                         derived: scoped.volumeIds)
+            """)), "a change of project derives the volume gate without asking whether a facet chose it")
+        #expect(scope.contains(squeezed("parameters.volumeIds = volumeIds")))
+        #expect(!scope.contains(squeezed("parameters.volumeIds = scoped.volumeIds")),
+                "a change of project writes the filter view model's volumes over a facet's choice")
+
+        // The ✕ clears the volumes its token shows, a facet's among them, so the choice is forgotten before the scope
+        // is derived: kept, it would be the gate the derivation leaves in place.
+        let clear = Self.code(try Self.declaration("func clearVolumeFilter() {", in: model, path: path))
+        let forget = try #require(clear.range(of: "facetVolumeChoice = nil"),
+                                  "the volume filter's ✕ does not forget a facet's choice")
+        let derive = try #require(clear.range(of: "applyProjectScope()"))
+        #expect(forget.upperBound < derive.lowerBound, "the ✕ derives the scope before it forgets the facet's choice")
     }
 
     /// #1648: both view models number a run as it starts, and write the screen's state only once its last wait is over

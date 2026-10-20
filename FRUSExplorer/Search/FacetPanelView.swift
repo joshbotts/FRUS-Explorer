@@ -39,6 +39,58 @@ struct ActiveNarrowing: Sendable, Equatable, Identifiable {
     let label: String
 }
 
+// MARK: - FacetVolumeChoice
+
+/// The volumes a Volumes facet chose for the Mac's Search window, which a change of project leaves
+/// in force (#1686).
+///
+/// ## Why the window has to remember it
+///
+/// The window's volume gate (`SearchParameters.volumeIds`) has two writers. The scope chosen in
+/// Filters, with a project's Focus volumes, is derived from the filter view model; a Volumes facet
+/// writes the gate alone and leaves the filter view model as it was. A change of project derives the
+/// project's gates again, and until #1686 it derived the volume gate with them: the filter view
+/// model's volumes replaced the facet's, so the search ran again over the volumes chosen in Filters,
+/// or over every volume, and the facet's choice was gone.
+///
+/// ## What a change of project changes
+///
+/// A project changes two things a search runs inside: its History documents and its Focus volumes.
+/// A facet's choice is neither, so a change of project leaves it, as it leaves a year or a person
+/// chosen in Facets. Over a project's Focus volumes it stands as a volume selection in Filters
+/// stands (#377 Phase 2b): it is the reader's own choice of volumes, made from the counts of the
+/// search on screen, where Focus is derived from the project's subjects. Filters shows it as its
+/// volume selection from the next time it opens, and its Focus footer then counts "your N selected
+/// volumes". iPhone and iPad already behave so, since there a facet's volumes are the filter view
+/// model's own selection (`SearchViewModel.applyFacetSelection(_:keys:)`).
+///
+/// ## How long it lasts
+///
+/// While the gate still holds it. Any other writer of the gate replaces it: an edit in Filters, a
+/// hand-off and a recalled search. The volume filter's ✕ forgets it outright, since the ✕ clears
+/// the volumes the token shows, a facet's among them.
+///
+/// Version history:
+///   1.0 — #1686: initial implementation
+struct FacetVolumeChoice: Equatable, Sendable {
+
+    /// The volume gate the facet wrote: its volumes, or `nil` where it cleared the gate.
+    let volumeIds: [String]?
+
+    /// The volume gate when a project's scope is derived again: on a change of project, when the
+    /// project's documents arrive, and when Filters opens.
+    ///
+    /// - Parameters:
+    ///   - gate: The window's volume gate now.
+    ///   - choice: The last Volumes facet choice, or `nil` when none is remembered.
+    ///   - derived: The volume gate the filter view model's scope gives now.
+    /// - Returns: `gate` while it is still `choice`, which nothing has replaced; otherwise `derived`.
+    static func volumeGate(_ gate: [String]?, choice: FacetVolumeChoice?, derived: [String]?) -> [String]? {
+        guard let choice, choice.volumeIds == gate else { return derived }
+        return gate
+    }
+}
+
 // MARK: - FacetPanelController
 
 /// Owns the facet panel's state, and decides what is affordable to compute.
