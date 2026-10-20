@@ -31,9 +31,10 @@ import XCTest
 ///     boot. Downloading the real 1.65 MB `frus1961-63v06` was the alternative and was rejected:
 ///     it makes the suite depend on GitHub and on network timing to assert nothing extra.
 ///   - `-frus.filterDownloadedOnly YES` — the persisted Browse filter, injected through
-///     `NSArgumentDomain`. With exactly one volume on disk it collapses a 552-volume, 100-plus
-///     subseries corpus to one row at each level, so the navigation below needs no scrolling and
-///     no title matching against real corpus data.
+///     `NSArgumentDomain`. With the fixture alone on disk it collapses a 552-volume, 100-plus
+///     subseries corpus to one row at each level, so the navigation below needs no scrolling.
+///     The fixture is not always alone: the UI-test app shares the simulator's volumes with every
+///     other run on it, so the walk opens the fixture's subseries and volume by name (#1694).
 ///
 /// ## Measured before/after (iPhone 17 Pro, iOS 26.5)
 /// `testCompilationListsDocumentsAfterIndexing` fails on unmodified `v2` at the "Index Now" step
@@ -46,6 +47,7 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — Wave R / R-9: initial implementation
+///   1.1 — #1694: the walk opens the fixture's subseries by name, not the first subseries row
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -56,6 +58,15 @@ final class CompilationDocumentsTests: XCTestCase {
     /// supplies the content — but this is the smallest real volume (1.65 MB), so it is also the
     /// one a download-based variant of this suite would have used.
     private static let seededVolumeId = "frus1961-63v06"
+
+    /// The seeded volume's subseries, as its row's label begins (#1694).
+    ///
+    /// Not the first row that says "Subseries": Browse narrowed to downloaded volumes lists the
+    /// subseries of every volume on the simulator, the latest first, so a real volume of a later
+    /// subseries comes before the fixture's. On an iPad Pro 13-inch (iOS 27.0) that held two real
+    /// 1964–68 volumes the first row was "Subseries 1964-68, 35 volumes" (#1641). Must match the
+    /// manifest's subseries for `seededVolumeId`.
+    private static let seededSubseriesLabel = "Subseries 1961-63"
 
     /// The compilation `<head>` in the seeded fixture. Must match `UITestVolumeSeeder`.
     private static let compilationTitle = "UI Test Compilation"
@@ -102,17 +113,17 @@ final class CompilationDocumentsTests: XCTestCase {
         return navigator.select(destination, file: file, line: line).tapped
     }
 
-    /// The corpus row for the seeded volume's subseries.
+    /// The subseries directory's row for the seeded volume's subseries, by name
+    /// (`seededSubseriesLabel`).
     ///
-    /// `BEGINSWITH 'Subseries '` — with the trailing space — matches `CorpusView`'s row button
-    /// and excludes the bare "Subseries" section header, which SwiftUI also exposes and which
-    /// sorts first. That distinction cost `UIObstructionTests` three investigations; do not
-    /// loosen it.
+    /// A row button whose label begins with the subseries' name. Do not loosen the query to the bare
+    /// word "Subseries": `UIObstructionTests` once matched a section header that way, which cost it
+    /// three investigations (its version 2.1).
     private var subseriesRow: XCUIElement {
         // Built fresh on each access: NSPredicate is not Sendable and the XCUI APIs are
         // main-actor-isolated, so a hoisted predicate would be sent twice out of this
         // nonisolated context — a hard error under Swift 6.
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.seededSubseriesLabel)).firstMatch
     }
 
     /// The volume row for the seeded volume, matched on a distinctive fragment of its manifest
@@ -167,9 +178,9 @@ final class CompilationDocumentsTests: XCTestCase {
 
         XCTAssertTrue(
             subseriesRow.waitForExistence(timeout: 15),
-            "No subseries row appeared with filterDownloadedOnly=YES — the fixture volume was "
-                + "probably not seeded (check for a [UITestVolumeSeeder] line in the app log). "
-                + "Without it this suite cannot reach a compilation at all."
+            "No \"\(Self.seededSubseriesLabel)\" row appeared with filterDownloadedOnly=YES — the "
+                + "fixture volume was probably not seeded (check for a [UITestVolumeSeeder] line in "
+                + "the app log). Without it this suite cannot reach a compilation at all."
         )
         subseriesRow.tap()
 

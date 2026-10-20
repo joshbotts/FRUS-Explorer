@@ -44,12 +44,17 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — F-2 follow-up: the document-into-the-detail-pane interaction
+///   1.1 — #1694: the walk opens the fixture's subseries by name, not the first subseries row
 @MainActor
 final class TwoPaneDocumentTests: XCTestCase {
 
     /// The manifest volume the fixture is written for — the same one `CompilationDocumentsTests`
     /// seeds, so a single `UITestVolumeSeeder` fixture serves both suites.
     private static let seededVolumeId = "frus1961-63v06"
+
+    /// The seeded volume's subseries, as its row's label begins (#1694): a real volume of a later
+    /// subseries on the simulator puts its row first (see `CompilationDocumentsTests`).
+    private static let seededSubseriesLabel = "Subseries 1961-63"
 
     /// The compilation `<head>` in the seeded fixture. Must match `UITestVolumeSeeder`.
     private static let compilationTitle = "UI Test Compilation"
@@ -95,7 +100,7 @@ final class TwoPaneDocumentTests: XCTestCase {
     }
 
     private var subseriesRow: XCUIElement {
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.seededSubseriesLabel)).firstMatch
     }
 
     private var volumeRow: XCUIElement {
@@ -176,8 +181,8 @@ final class TwoPaneDocumentTests: XCTestCase {
         Thread.sleep(forTimeInterval: 1.0)
 
         XCTAssertTrue(subseriesRow.waitForExistence(timeout: 15),
-                      "No subseries row with filterDownloadedOnly=YES — the fixture volume was "
-                          + "probably not seeded")
+                      "No \"\(Self.seededSubseriesLabel)\" row with filterDownloadedOnly=YES — the "
+                          + "fixture volume was probably not seeded")
         subseriesRow.tap()
         Thread.sleep(forTimeInterval: 1.0)
         panes("subseries")
@@ -376,6 +381,8 @@ final class TwoPaneDocumentTests: XCTestCase {
 ///   1.1 — #1431 review, round 1: the resume-row test reads a second document in Research and requires
 ///          the row still marked, and still naming its own document; the controls are described as
 ///          what they show
+///   1.2 — #1694: the resume-row test opens the fixture's subseries by name; the first test still opens
+///          the first subseries row, which any subseries answers
 @MainActor
 final class BrowseRootSelectionTests: XCTestCase {
     /// Resolves tab destinations across every representation.
@@ -406,6 +413,10 @@ final class BrowseRootSelectionTests: XCTestCase {
     /// The volume `UITestVolumeSeeder` writes for the resume-row test — the one the other two-pane
     /// suites seed.
     private static let seededVolumeId = "frus1961-63v06"
+
+    /// `seededVolumeId`'s subseries, as its row's label begins (#1694): a real volume of a later
+    /// subseries on the simulator puts its row first (see `CompilationDocumentsTests`).
+    private static let seededSubseriesLabel = "Subseries 1961-63"
 
     /// The fixture document the resume-row test reads in Research, after Continue reading has reopened
     /// the first — `UITestVolumeSeeder`'s second.
@@ -483,7 +494,10 @@ final class BrowseRootSelectionTests: XCTestCase {
             }
         }
 
-        // A level opened INSIDE a door keeps the door marked: the mark follows the path's root.
+        // A level opened INSIDE a door keeps the door marked: the mark follows the path's root. Any
+        // subseries will do (#1694): nothing here depends on which one opens, and this launch pins the
+        // downloaded-only filter off, so the first row is the catalogue's latest whatever volumes the
+        // simulator holds.
         row(Self.subseriesTile).tap()
         assertArrived(at: "Subseries", "opening Subseries again", representation)
         let subseries = app.buttons.matching(NSPredicate(
@@ -623,8 +637,10 @@ final class BrowseRootSelectionTests: XCTestCase {
 
         // Read the fixture's first document through the Subseries door, so reading history offers it.
         row(Self.subseriesTile).tap()
-        let subseries = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
-        XCTAssertTrue(subseries.waitForExistence(timeout: 15), "no seeded subseries row — the fixture was not seeded")
+        let subseries = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH %@", Self.seededSubseriesLabel)).firstMatch
+        XCTAssertTrue(subseries.waitForExistence(timeout: 15),
+                      "no \"\(Self.seededSubseriesLabel)\" row — the fixture was not seeded")
         subseries.tap()
         let volume = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Kennedy-Khrushchev'")).firstMatch
         XCTAssertTrue(volume.waitForExistence(timeout: 10), "the seeded volume's row is absent")

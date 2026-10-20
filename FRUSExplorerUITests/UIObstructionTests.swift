@@ -633,6 +633,13 @@ final class UIObstructionTests: XCTestCase {
     ///
     /// The row's accessibility label is "Subseries <name>, <n> volumes", so `BEGINSWITH 'Subseries '`
     /// — with the trailing space — matches rows and excludes the bare header. Do not drop it.
+    ///
+    /// ## Why the first row, and not the fixture's (#1694)
+    /// Any subseries will do here. The suites that seed the fixture volume name its subseries,
+    /// because they go on to read the fixture and Browse, narrowed to downloaded volumes, lists a
+    /// real volume's later subseries first. This suite seeds no volume, its scenarios do not depend
+    /// on which subseries they open, and it does not narrow Browse, so the simulator's volumes do
+    /// not change which row comes first.
     private var corpusSubseriesRow: XCUIElement {
         // Built fresh on each access — see `sidebarToggleButton` for the Swift 6 "sending" hazard a
         // hoisted NSPredicate creates in this nonisolated context.
