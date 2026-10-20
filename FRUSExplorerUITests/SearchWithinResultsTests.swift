@@ -71,9 +71,12 @@ struct LayerScreen {
     }
 
     /// The fixture rows listed, top to bottom, each with its heading and its score.
+    ///
+    /// The heading is the label up to its first comma: a result's label is its heading and then the
+    /// rest of what the row draws, joined by commas (#1684), and no fixture heading holds a comma.
     func listed() -> [(title: String, score: String)] {
         fixtureRows.allElementsBoundByIndex.sorted { $0.frame.minY < $1.frame.minY }
-            .map { (title: $0.label, score: ($0.value as? String) ?? "") }
+            .map { (title: String($0.label.prefix { $0 != "," }), score: ($0.value as? String) ?? "") }
     }
 
     /// Chooses Meaning. The control is drawn once the launch has built the searcher, which on a busy Mac can take a

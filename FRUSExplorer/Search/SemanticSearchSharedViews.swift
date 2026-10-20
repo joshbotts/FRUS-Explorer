@@ -32,8 +32,8 @@ struct SemanticScoreChip: View {
 /// The semantic score as a percentage, and as the words an accessibility value says (#1577 lane 3).
 ///
 /// Outside the chip's view so that a row can say its score without drawing a chip: on iPhone and
-/// iPad a result row is one accessibility element whose label is the heading alone, so the chip
-/// inside it was silent to VoiceOver and invisible to a UI test.
+/// iPad a result row is one accessibility element whose label replaces what it draws (the heading
+/// alone until #1684), so the chip inside it was silent to VoiceOver and invisible to a UI test.
 ///
 /// Version history:
 ///   1.0 — #1577 lane 3: initial implementation

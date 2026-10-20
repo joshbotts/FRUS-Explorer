@@ -20,7 +20,7 @@ import XCTest
 /// that lists it, and the selection's controls by identifier (#1576 lane 3).
 ///
 /// Controls are found by identifier, because iOS 27 reorders the XCUI tree and a label query can
-/// match a covered element. Result rows are the exception: a row is a button labelled with its
+/// match a covered element. Result rows are the exception: a row is a button whose label holds its
 /// document's title, and the titles are this fixture's alone.
 @MainActor
 struct BulkActionsScreen {
@@ -65,9 +65,13 @@ struct BulkActionsScreen {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    /// The result rows on screen: buttons whose label is a bulk document's title.
+    /// The result rows on screen: buttons whose label holds a bulk document's title.
+    ///
+    /// Not `BEGINSWITH`: each bulk document is numbered in `@n` and not in its head, so its row draws
+    /// the number beside the title and its label says it first, "1. UI Test Bulk Document 01,
+    /// uitest-bulk-01" (#1684). Until then the label was the title alone.
     var rows: XCUIElementQuery {
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.titlePrefix))
+        app.buttons.matching(NSPredicate(format: "label CONTAINS %@", Self.titlePrefix))
     }
 
     /// Runs the keyword search and waits for its rows. The volume is indexed during launch, and a
@@ -289,9 +293,10 @@ final class SearchBulkActionsTests: XCTestCase {
     /// the results says so; the picker, opened again, says both documents carry the tag; Undo
     /// takes it back off both, and the picker then says neither does.
     ///
-    /// The tag is read back from the picker and not from the rows: a result row is one
-    /// accessibility element named by its heading, so its tag chips are not elements a test can
-    /// find. `SearchSelectionModelTests` holds the rows' refresh.
+    /// The tag is read back from the picker and not from the rows: the picker says how many of the
+    /// two carry it. A row's chips are not elements a test can find, though since #1684 its label
+    /// names its tags (`SearchResultVoiceOverTests` reads it). `SearchSelectionModelTests` holds the
+    /// rows' refresh.
     func testASelectionIsTaggedAndUndoTakesTheTagBack() throws {
         screen.enterSelectionFromTheMoreMenu()
         screen.rows.element(boundBy: 0).tap()

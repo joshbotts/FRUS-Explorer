@@ -262,6 +262,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.33 — #1577 lane 7: the base row's Swap, once a search has run inside the held list (`swapLayer()`), records
 ///          each of the swap's two searches as `runSearch()` records one; the row goes on naming the list a swap let go
 ///          of until the new one is held
+///   1.34 — #1684: a result row's label is the row as drawn, heading first (`SearchResultAccessibility`), with its
+///          snippet as VoiceOver's More Content and a Filter by action for each tag outside selection
 
 struct SearchView: View {
 
@@ -2345,9 +2347,15 @@ struct SearchView: View {
     /// section without re-nesting this already-large ForEach.
     ///
     /// In a ranking of a held list the rows it could not rank follow a line that counts them (#1577 lane 4, rule 4).
+    ///
+    /// Each row is one button, so VoiceOver reads it as one element, by the label
+    /// `SearchResultAccessibility` composes from what the row draws (#1684).
     private var resultRows: some View {
             let unrankedTail = vm.unrankedTail
             return ForEach(vm.pagedResults) { result in
+                // The row's tags, which it draws as chips, names in its label and offers as actions.
+                let chips = UserTag.chips(for: result.userTagIds, among: vm.availableUserTags)
+                let moreContent = SearchResultAccessibility.moreContent(for: result)
                 if result.id == unrankedTail?.firstId, let count = unrankedTail?.count {
                     Text(SearchLayerCopy.unrankedHeader(count))
                         .font(.footnote.weight(.semibold))
@@ -2369,26 +2377,29 @@ struct SearchView: View {
                         }
                         SearchResultRow(
                             result: result,
-                            userTags: vm.availableUserTags,
+                            chips: chips,
                             onUserTagTap: { tagId in
                                 // In selection a chip is part of its row: it picks, and narrows nothing.
                                 guard !vm.resultSelection.isSelecting else {
                                     vm.toggleSelection(of: result)
                                     return
                                 }
-                                if let uuid = UUID(uuidString: tagId) {
-                                    vm.selectedUserTagIds.insert(uuid)
-                                    Task { await runSearch() }
-                                }
+                                filterResults(byUserTag: tagId)
                             }
                         )
                     }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(result.header)
-                // #1577 lane 3: the label is the heading alone, so a ranked row said nothing of its
-                // score. The chip's figure is the row's value, for VoiceOver and for a UI test.
+                // #1684: the label replaces everything the row draws, so it says the row as drawn,
+                // heading first. It had been the heading alone.
+                .accessibilityLabel(SearchResultAccessibility.label(for: result, tags: chips))
+                // #1577 lane 3: the label said nothing of a ranked row's score. The chip's figure is
+                // the row's value, for VoiceOver and for a UI test.
                 .accessibilityValue(result.semanticScore.map(SemanticScoreCopy.accessibilityValue(for:)) ?? "")
+                // #1684: the snippet on request, in VoiceOver's More Content, not read with the row.
+                .accessibilityCustomContent(
+                    AccessibilityCustomContentKey(Text(moreContent?.label ?? ""), id: "search.result.snippet"),
+                    moreContent.map { Text($0.text) })
                 // The trait is what tells VoiceOver a row is picked; the mark is hidden from it.
                 .accessibilityAddTraits(vm.resultSelection.contains(result.id) ? .isSelected : [])
                 .accessibilityHint(vm.resultSelection.isSelecting ? ResultSelectionCopy.rowHint : "")
@@ -2514,7 +2525,29 @@ struct SearchView: View {
                     bulkRequest = addTagsRequest(for: result)
                 }
                 #endif
+                // #1684: a tag chip is a button inside the row's button, which VoiceOver cannot reach,
+                // so each chip's filter is an action on the row, after the two above. Not in
+                // selection, where a chip picks its row as the row's own activation does.
+                .accessibilityActions {
+                    if !vm.resultSelection.isSelecting {
+                        ForEach(chips) { chip in
+                            Button(SearchResultAccessibility.filterAction(tagName: chip.name)) {
+                                filterResults(byUserTag: chip.id)
+                            }
+                        }
+                    }
+                }
             }
+    }
+
+    /// Narrows the search to the documents that carry a tag, as a tap on a result's tag chip does
+    /// outside selection, and as the row's VoiceOver action for the chip does (#1684).
+    ///
+    /// - Parameter tagId: The tag's id, as the index stores it.
+    private func filterResults(byUserTag tagId: String) {
+        guard let uuid = UUID(uuidString: tagId) else { return }
+        vm.selectedUserTagIds.insert(uuid)
+        Task { await runSearch() }
     }
 
     #if os(iOS)
@@ -2627,9 +2660,9 @@ private struct ChecklistReviewedObserver: View {
 
 private struct SearchResultRow: View {
     let result: SearchResult
-    /// All known user tags, passed from the parent view's `vm.availableUserTags`.
-    /// Forwarded to `SearchTagChipsRow` so UUID strings can be resolved to names.
-    let userTags: [UserTag]
+    /// The row's tag chips, `UserTag.chips(for:among:)` over the parent's `vm.availableUserTags`:
+    /// the parent reads them too, for the row's label and its actions (#1684).
+    let chips: [UserTagChip]
     let onUserTagTap: (String) -> Void
 
     /// Global default snippet length and this surface's override (#189-C); observed so the row
@@ -2699,30 +2732,22 @@ private struct SearchResultRow: View {
             }
             if result.isEditorialNote || result.isFrontMatter {
                 HStack(spacing: 6) {
+                    // The badges' words are the label's too (#1684).
                     if result.isEditorialNote {
-                        Label(
-                            String(localized: "search.result.editorialNote.badge",
-                                   defaultValue: "Editorial Note"),
-                            systemImage: "text.badge.checkmark"
-                        )
-                        .font(.caption2)
-                        .foregroundStyle(.purple)
+                        Label(SearchResultAccessibility.editorialNoteBadge, systemImage: "text.badge.checkmark")
+                            .font(.caption2)
+                            .foregroundStyle(.purple)
                     }
                     if result.isFrontMatter {
-                        Label(
-                            String(localized: "search.result.frontMatter.badge",
-                                   defaultValue: "Front Matter"),
-                            systemImage: "doc.text"
-                        )
-                        .font(.caption2)
-                        .foregroundStyle(.teal)
+                        Label(SearchResultAccessibility.frontMatterBadge, systemImage: "doc.text")
+                            .font(.caption2)
+                            .foregroundStyle(.teal)
                     }
                 }
             }
 
             // User tag chips: one per stored id the reader's tag list names (#1591), so a chip
             // shows a name and never a raw UUID, and a row with none draws no empty strip.
-            let chips = UserTag.chips(for: result.userTagIds, among: userTags)
             if !chips.isEmpty {
                 SearchTagChipsRow(
                     chips: chips,
@@ -2837,10 +2862,9 @@ private struct SearchTagChipsRow: View {
                             .background(.quaternary, in: Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        String(localized: "search.tagchip.a11y",
-                               defaultValue: "Filter by \(name)")
-                    )
+                    // Inside the row's button VoiceOver does not reach the chip: the row offers
+                    // the same words as an action (#1684).
+                    .accessibilityLabel(SearchResultAccessibility.filterAction(tagName: name))
                 }
             }
         }
