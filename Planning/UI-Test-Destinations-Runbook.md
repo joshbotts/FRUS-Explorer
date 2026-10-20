@@ -93,9 +93,16 @@ than one subseries: on an iPad Pro 13-inch (iOS 27.0) holding `frus1964-68v01` a
 match was "Subseries 1964-68, 35 volumes" and the test failed one step on, with "The seeded volume's
 row did not appear in the subseries list". An iPhone 17 under iOS 26.5 that held another session's
 volumes had failed with the same message that afternoon. The walk now asks for "Subseries 1961-63".
-`UIObstructionTests`, `TwoPaneDocumentTests`, `AuxWindowCloseTests` and `CompilationDocumentsTests`
-still take the first subseries row, so on a simulator that holds real volumes read that message as
-the simulator's state before the diff's.
+
+**Since A12 (#1694, 2026-10-20) every walk to the fixture volume names its subseries the same way**:
+`CompilationDocumentsTests`, `TwoPaneDocumentTests`, `BrowseRootSelectionTests`' Continue reading
+test and `AuxWindowCloseTests`' Research rail cases. Three queries still take the first subseries
+row, and need no more: `UIObstructionTests`' row, `AuxWindowCloseTests`' launcher mark and
+`BrowseRootSelectionTests`' first test. None depends on which subseries its row belongs to, and their
+launches do not narrow Browse to downloaded volumes, so the simulator's volumes do not change which
+row comes first. The iPad Pro 13-inch (M5) under iOS 27.0 (`9AB3A0C9`) still held `frus1964-68v01`
+and `v02` beside the fixture on 2026-10-20, so the code before A12 misfires there in all four walks:
+each opened "Subseries 1964-68, 35 volumes" and failed one step on, at the fixture volume's row.
 
 **A typed search is waited for in its field** (2026-10-11). `typeSearch` read the field in the
 statement after `typeText` and, on the iPad Pro 13-inch (iOS 27.0) with another job running on the
@@ -328,6 +335,14 @@ Windowed Apps: all eleven fail under that mutant), and the document-window case 
 0's code, which fronted the main window instead. The mode is a simulator setting that persists per
 install and no launch argument sets it, so check it before reading a green run as a guard against
 the drop.
+
+**Its four rail cases need the Research rail open, and so does `TwoPaneDocumentTests`** (found in
+A12, 2026-10-20). The rail's state is a persisted preference: on a simulator whose app holds
+`frus.document.researchPanel.visible = false`, as the iPad Pro 13-inch (M5) under iOS 27.0
+(`9AB3A0C9`) did that day, every document opens without it, and those tests fail once their walk
+reaches the document ("The document opened without its Research rail…", "The Research rail is not
+present…"). The key is in the app container's `Library/Preferences/bottsywattsy.FRUS-Explorer.plist`,
+which `simctl spawn … defaults` does not reach; the plan of record's §6g has the finding.
 
 ```bash
 xcodebuild test \
