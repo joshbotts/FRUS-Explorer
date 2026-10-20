@@ -94,6 +94,8 @@ struct BackgroundSummarizationSettingsView: View {
                    isOn: $continueInBackground)
                 .onChange(of: continueInBackground) { _, on in
                     if !on { BackgroundSummarizationRequestStore.clear() }
+                    // A run's Live Activity says whether it goes on in the background (#1695).
+                    appState.syncSummarizationLiveActivity()
                 }
         } footer: {
             Text(String(localized: "bg.summarizer.continue.hint.v2",

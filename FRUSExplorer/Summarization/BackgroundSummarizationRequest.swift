@@ -78,5 +78,9 @@ enum BackgroundSummarizationRequestStore {
     }
 
     /// `true` when continuation is enabled and a request is pending.
-    static var hasPending: Bool { isEnabled && load() != nil }
+    ///
+    /// Asks only whether a request is stored, without decoding it: the summarization Live Activity
+    /// reads this at each change of a run's progress (#1695), and a tag's or a saved search's
+    /// request holds every document key of its scope.
+    static var hasPending: Bool { isEnabled && UserDefaults.standard.data(forKey: requestKey) != nil }
 }

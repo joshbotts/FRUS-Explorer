@@ -7,8 +7,8 @@
 ## Search
 
 - **Search within these results.** After a Meaning question, **•••** ▸ **Find Words in These Matches**. After a keyword search, **•••** ▸ **Rank These Results by a Question**, or **Sort** ▸ **Closest to a Question…**; a list cut at 1,000 is ranked whole. A row names the held list, and its **✕** puts the list back.
-- After a search inside the list, the row's **Swap** turns one order into the other.
-- **Meaning search runs EmbeddingGemma 2**, open source. If you had the earlier model, **Download Search Model** (310 MB) is offered again, once, with no agreement to accept. Its percentages read as the earlier model's did.
+- That row's **Swap** turns one order into the other.
+- **Meaning search runs EmbeddingGemma 2**, open source. If you had the earlier model, **Download Search Model** (310 MB) is offered again, once, with no agreement to accept.
 - A common word searched inside a working corpus is much faster.
 - A keyword snippet starts at your word, after the heading, source note and dateline.
 - Browse lists a Meaning search's corpus as its closest matches.
@@ -28,6 +28,7 @@
 
 - **Accessibility:** with VoiceOver, a search result's tags are **Filter by** actions. At the five largest text sizes, Meaning mode's strip is one line; its **ⓘ** opens all of it.
 - **Word cloud:** an exported cloud counted as printed says another device may count differently.
+- **Live Activity:** one lasts a whole indexing queue, the background included.
 - **Semantic Match Feedback** (Settings ▸ System ▸ Data & Recovery): **Email Feedback File** opens a message to feedback@frusexplorer.app with your verdicts attached.
 
 **Fixes:** many, on every tab and in accessibility.

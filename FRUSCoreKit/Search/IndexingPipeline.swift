@@ -467,6 +467,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         of `document_cache` and not from each matched row, unless a tag or an exact word is among the
 ///         filters (`FilterClause.readsUnindexedColumns`; `FilterClause.conditions` is the clause without
 ///         its `WHERE`). No other statement changes; no index version
+///  4.43 — 2026-10-20 (#1695): `indexVolume(_:)` and `rebuildSearchIndexFromCache()` send
+///         `IndexingStage.failed` on `progressStream` when they throw after their first update, so
+///         the app's banner and Live Activity end with the pass. Nothing stored changes; no index
+///         version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2320,6 +2324,11 @@ public actor IndexingPipeline {
     /// Parses the volume XML, inserts FTS5 documents, populates all auxiliary tables,
     /// and runs `optimize()` once to merge FTS5 b-tree segments.
     ///
+    /// A pass that throws once its first progress update has gone out sends `.failed` on
+    /// `progressStream` before it rethrows (#1695), so a consumer showing the volume as under way
+    /// can stop. The launch's pass over waiting volumes (`finishIndexing(of:)`) passes a failure
+    /// over without a word, and before this the stream said nothing either.
+    ///
     /// - Throws: `IndexingError.volumeNotFound` if the XML file is absent.
     public func indexVolume(_ volumeId: String) async throws {
         cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
@@ -2340,7 +2349,21 @@ public actor IndexingPipeline {
             volumeId: volumeId, stage: .reading,
             completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
         ))
+        // From here a throw is reported on the stream (#1695): `finished` is set just before
+        // `.complete`, and nothing after that throws.
+        var finished = false
+        var documentTotal = 0
+        defer {
+            if !finished {
+                emitUpdate(IndexingProgressUpdate(
+                    volumeId: volumeId, stage: .failed,
+                    completedDocuments: volumeDocumentsProcessed, totalDocuments: documentTotal,
+                    docsPerSecond: 0
+                ))
+            }
+        }
         let data = try await parseAndExtract(volumeId: volumeId, url: url)
+        documentTotal = data.documentCache.count
         let parseElapsed = Date().timeIntervalSince(parseStart)
         logger.info("indexVolume: \(volumeId, privacy: .public) parsed \(data.documentCache.count, privacy: .public) docs in \(String(format: "%.1f", parseElapsed), privacy: .public)s")
 
@@ -2383,6 +2406,7 @@ public actor IndexingPipeline {
         // every non-overridden document), so the user's corrections replay on top.
         try? applyClassificationOverrides(classificationOverrides, volumeId: volumeId)
 
+        finished = true
         emitUpdate(IndexingProgressUpdate(
             volumeId: volumeId, stage: .complete,
             completedDocuments: data.documentCache.count,
@@ -2647,16 +2671,29 @@ public actor IndexingPipeline {
     /// On a full corpus this takes tens of seconds versus the better part of an
     /// hour for `indexAllVolumes()`. The resulting index is fully merged, so no
     /// separate `optimize()` pass is needed.
+    ///
+    /// A rebuild that throws sends `.failed` on `progressStream` before it rethrows (#1695), as
+    /// `indexVolume(_:)` does.
     public func rebuildSearchIndexFromCache() async throws {
         emitUpdate(IndexingProgressUpdate(
             volumeId: "", stage: .optimizing,
             completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
         ))
+        var finished = false
+        defer {
+            if !finished {
+                emitUpdate(IndexingProgressUpdate(
+                    volumeId: "", stage: .failed,
+                    completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0
+                ))
+            }
+        }
         let start = Date()
         try auxExec("INSERT INTO frus_documents(frus_documents) VALUES('rebuild')")
         try auxExec("INSERT INTO user_content(user_content) VALUES('rebuild')")
         let elapsed = Date().timeIntervalSince(start)
         logger.info("rebuildSearchIndexFromCache: complete in \(String(format: "%.1f", elapsed), privacy: .public)s")
+        finished = true
         emitUpdate(IndexingProgressUpdate(
             volumeId: "", stage: .complete,
             completedDocuments: 0, totalDocuments: 0, docsPerSecond: 0

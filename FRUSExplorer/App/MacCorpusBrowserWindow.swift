@@ -1387,6 +1387,9 @@ private struct CorpusVolumeDetailView: View {
         case .complete:
             return String(localized: "corpus.detail.indexing.stage.complete",
                           defaultValue: "Complete")
+        case .failed:
+            return String(localized: "corpus.detail.indexing.stage.failed",
+                          defaultValue: "Failed")
         }
     }
 }
