@@ -45,6 +45,8 @@ struct GenerationError: Error, CustomStringConvertible {
 ///   1.3 — the follow-up to #1644: the letter-level damage in the labels the corpus cites is
 ///          curated, each label read on the scan; the 1964–1973 list of administrative
 ///          subjects gains its first entry and three of its unread last page
+///   1.4 — 2026-10-20 (A16, #1691's third line): `coverageNote` states how a span across the two
+///          schedules, or past 1973, is read; no label moves
 public enum SubjectNumericLabelRunner {
 
     // MARK: Sources
@@ -623,9 +625,16 @@ public enum SubjectNumericLabelRunner {
 
     /// The caveat every surface reading this table owes a reader.
     static let coverageNote = """
-        A key outside every span yields no gloss, and a coverage span that straddles two \
-        schedules yields none either — the same rule the decimal table applies across the 1950 \
-        renumbering, and for the same reason. An ORGANIZATION file (UN, NATO, CENTO) is not a \
+        A key outside every span yields no gloss. A coverage span that straddles the two \
+        schedules reads the country, region or organization a file is arranged under from \
+        areas, which both schedules share, and the subject only where both print the same \
+        words, compared without spaces, case or full stops, in the later schedule's spelling \
+        (A16, 2026-10-20): 1,095 of the 1,359 designators both print agree, and the 264 that \
+        differ yield none, POL 24 among them. A span that runs past the file's last year, 1973, \
+        reads from the 1964-1973 schedule, and one that opens before 1963 reads from the 1963 \
+        schedule, since the file holds no key from the years outside it; a span wholly outside \
+        both yields none. The decimal table keeps its own rule across the 1950 renumbering, where \
+        a straddling span yields none. An ORGANIZATION file (UN, NATO, CENTO) is not a \
         primary subject: it is read from the international-organizations instruction's LIST OF \
         ADMINISTRATIVE SUBJECTS, under the name the handbook's abbreviations appendix gives the \
         prefix, and abbreviations holds the prefixes the corpus cites. A prefix absent from \

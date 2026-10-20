@@ -2854,7 +2854,7 @@ About \(ArchivesAxis.collectionSharePercent(coverage: usage.coverage))% of sourc
 <!-- END SOURCE: browser.archives.collections.ceiling -->
 
 #### Volumes citing %1$@ whose coverage falls inside %2$@.…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesClassAxis.swift | ArchivesClassAxis.spec | lines: 272–276 | key: browser.archives.class.caption %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesClassAxis.swift | ArchivesClassAxis.spec | lines: 289–293 | key: browser.archives.class.caption %@ %@ -->
 
 Volumes citing %1$@ whose coverage falls inside %2$@. Counted from document source notes.
 

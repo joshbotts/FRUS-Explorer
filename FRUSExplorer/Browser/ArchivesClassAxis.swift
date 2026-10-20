@@ -33,6 +33,8 @@ import Foundation
 ///   1.0 — #1255: initial implementation
 ///   1.1 — 2026-09-10: `rows(inEra:)` uncapped, so the lens's sort controls order the whole era
 ///   1.2 — 2026-10-12: #1643 — the drill's accessory is `ArchivesAxis.volumeAccessory`
+///   1.3 — 2026-10-20 (A16): `governs` clamps a span at the subject-numeric file's ceiling as the
+///          label store does, so a volume running past 1973 is placed in the 1964–1973 era
 enum ArchivesClassAxis {
 
     // MARK: Types
@@ -134,9 +136,14 @@ enum ArchivesClassAxis {
 
     /// Whether an era's schedule governs a coverage span.
     ///
-    /// Mirrors the label stores' own `governs`, clamp included: a volume opening before its
-    /// filing system existed is still governed by the first schedule, because it holds no keys
-    /// from before then to mislabel.
+    /// Mirrors the label stores' own clamps: a volume opening before its filing system existed is
+    /// still governed by the first schedule, because it holds no keys from before then to
+    /// mislabel, and since A16 a volume closing after the subject-numeric file did (1973, when
+    /// the Central Foreign Policy File replaced it) is governed by its last schedule for the same
+    /// reason (the owner's decision of 2026-10-20): the 30 volumes running from 1969 or later to
+    /// 1974–1980 belong to the 1964–1973 era, where they were unplaced. The decimal file's ceiling
+    /// is not clamped, as the decimal table's is not: a volume running past 1963 crosses into
+    /// the subject-numeric years, where its central-file keys are the other system's.
     ///
     /// - Parameters:
     ///   - era: The era.
@@ -145,8 +152,13 @@ enum ArchivesClassAxis {
     static func governs(_ era: FilingEra, _ span: ClosedRange<Int>) -> Bool {
         let floor = era.system == .decimal ? decimalFloor : subjectNumericFloor
         guard span.upperBound >= floor else { return false }
+        var upperBound = span.upperBound
+        if era.system == .subjectNumeric {
+            guard span.lowerBound <= subjectNumericCeiling else { return false }
+            upperBound = min(upperBound, subjectNumericCeiling)
+        }
         return max(span.lowerBound, floor) >= era.span.lowerBound
-            && span.upperBound <= era.span.upperBound
+            && upperBound <= era.span.upperBound
     }
 
     /// The year the decimal file opens, from its own coverage block.
@@ -157,6 +169,11 @@ enum ArchivesClassAxis {
     /// The year the subject-numeric file opens, from its own coverage block.
     static var subjectNumericFloor: Int {
         SubjectNumericLabelStore.shared?.coverage.systemOpensIn ?? 1963
+    }
+
+    /// The year the subject-numeric file closes, from its last schedule.
+    static var subjectNumericCeiling: Int {
+        SubjectNumericLabelStore.shared?.systemClosesIn ?? 1973
     }
 
     // MARK: Rows

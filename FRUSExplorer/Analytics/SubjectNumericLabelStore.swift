@@ -23,9 +23,23 @@ import Foundation
 /// **SUBVERSION. ESPIONAGE. SABOTAGE.** under the 1963 arrangement and **SANCTIONS** under the one
 /// that took effect in January 1964, with subversion moved to `POL 23-7`. POL alone carries about
 /// two thirds of the corpus's subject-numeric documents, so a single merged table would mislabel
-/// the most-cited category in the vocabulary. This is the 1950 decimal renumbering again, and it is
-/// handled the same way: a coverage span that straddles the two schedules is refused rather than
-/// guessed at.
+/// the most-cited category in the vocabulary. This is the 1950 decimal renumbering again. Until A16
+/// it was handled the same way, a coverage span that straddles the two schedules refused outright;
+/// since A16 (#1691's third line, the owner's decision 68 of 2026-10-19) such a span reads what both
+/// editions print alike and nothing else: the country always, since the two list all 433 areas
+/// identically, and the subject where the words match, compared without spaces, case or full
+/// stops — 1,095 of the 1,359 designators both print, measured 2026-10-19 — in the later edition's
+/// spelling. The 264 that differ stay blank, `POL 24` among them. The decimal table's rule across
+/// 1950 is unchanged. The volumes made the rule necessary: a family's citing volumes in the
+/// 1961–1968 era span 1961–1969 for `POL 27`, so no subject-numeric file in that era had a label.
+///
+/// ## The file's own years clamp a span at both ends
+/// A FRUS volume covering 1958–1965 opens before the subject-numeric file existed, and one covering
+/// 1969–1977 closes after it: the Department replaced it with the Central Foreign Policy File in
+/// 1973. Neither holds a subject-numeric key from the years outside the file to mislabel, so a span
+/// is clamped to the file's years before an edition is asked (the owner's decision of 2026-10-20,
+/// A16, extending the floor clamp of #1211 to a ceiling). In the 1969–1976 era 557 files over 1,789
+/// documents were bare for the ceiling alone, `POL 27` among them (its volumes span 1968–1975).
 ///
 /// ## What this table names, and what it does not
 /// It names the GROUP — the category and its number. Most of the corpus's subject-numeric keys
@@ -43,6 +57,9 @@ import Foundation
 ///          no subject number" under either schedule, and such a file reads as its country and
 ///          nothing before or after it; a key is divided by
 ///          `CollectionKeying.subjectNumericParts(of:)`, where the fold cuts it
+///   1.2 — 2026-10-20 (A16, #1691's third line, decision 68): a span reaching both editions reads
+///          its country, and its subject where both print the same words; a span is clamped to
+///          the file's own years at both ends (`editions(coveringYears:)`)
 struct SubjectNumericLabelTable: Decodable, Sendable {
 
     /// One edition's schedule.
@@ -66,20 +83,24 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         /// arranged under, resolved for every tail the corpus writes.
         let areas: [String: String]
 
-        /// Whether this schedule speaks for a coverage span.
+        /// Whether this schedule governs any year of a coverage span, clamped to the file's own
+        /// years.
         ///
-        /// The same rule the decimal table applies, and the clamp matters for the same reason: a
-        /// FRUS volume covering 1958–1965 opens before the subject-numeric file existed, and
-        /// requiring literal containment at both ends would silence it although every
-        /// subject-numeric key in it was filed under one arrangement.
+        /// The clamp is the decimal table's at the floor and, since A16, its mirror at the
+        /// ceiling: a FRUS volume covering 1958–1965 opens before the subject-numeric file
+        /// existed and one covering 1969–1977 closes after it, and neither holds a key from those
+        /// years to mislabel, so requiring literal containment at either end silenced volumes
+        /// every one of whose subject-numeric keys was filed under one arrangement. A span wholly
+        /// outside the file's years touches nothing.
         ///
         /// - Parameters:
         ///   - span: The coverage years being described.
         ///   - floor: The year the subject-numeric file opens.
-        /// - Returns: Whether this schedule governs the span.
-        func governs(_ span: ClosedRange<Int>, floor: Int) -> Bool {
-            guard span.upperBound >= floor else { return false }
-            return max(span.lowerBound, floor) >= startYear && span.upperBound <= endYear
+        ///   - ceiling: The year it closes.
+        /// - Returns: Whether this schedule governs any of the span's years inside the file's.
+        func touches(_ span: ClosedRange<Int>, floor: Int, ceiling: Int) -> Bool {
+            guard span.upperBound >= floor, span.lowerBound <= ceiling else { return false }
+            return max(span.lowerBound, floor) <= endYear && min(span.upperBound, ceiling) >= startYear
         }
 
         /// A key's subject, from its own outline or from the organization list.
@@ -120,10 +141,76 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         let note: String
     }
 
+    /// The year the subject-numeric file closes: the last schedule's last year, 1973.
+    var systemClosesIn: Int { schedules.map(\.endYear).max() ?? coverage.systemOpensIn }
+
+    /// The editions a coverage span reaches, in force order, once the span is clamped to the
+    /// file's own years: one for a span inside an edition, or opening before the file or closing
+    /// after it; both for a span crossing 1963 and 1964; none for a span outside the file.
+    ///
+    /// - Parameter span: The coverage years the surface's figures describe.
+    /// - Returns: The schedules whose years the clamped span touches.
+    func editions(coveringYears span: ClosedRange<Int>) -> [Schedule] {
+        schedules.filter { $0.touches(span, floor: coverage.systemOpensIn, ceiling: systemClosesIn) }
+    }
+
+    /// Whether two labels print the same words: compared without spaces, case or full stops
+    /// (decision 68's rule), so a word the scan broke or a stop one edition drops is not a
+    /// difference.
+    ///
+    /// - Parameters:
+    ///   - one: A label.
+    ///   - other: Another.
+    /// - Returns: Whether they are the same words.
+    static func sameWords(_ one: String, _ other: String) -> Bool {
+        func words(_ label: String) -> String {
+            label.lowercased().filter { !$0.isWhitespace && $0 != "." }
+        }
+        return words(one) == words(other)
+    }
+
+    /// A key's subject across the editions a span reaches: the one edition's own, or, where every
+    /// edition prints the same words, the later edition's spelling; `nil` where they differ or an
+    /// edition has none.
+    ///
+    /// The later spelling because a straddling span is mostly the later edition's years (1963 is
+    /// one year), and because that edition's cited labels were the ones read on the scan last.
+    ///
+    /// - Parameters:
+    ///   - category: The key's category letters.
+    ///   - designator: Its number.
+    ///   - editions: The editions the span reaches, in force order.
+    /// - Returns: The subject, or `nil`.
+    private static func subject(category: String, designator: String,
+                                across editions: [Schedule]) -> String? {
+        guard let last = editions.last,
+              let reading = last.subject(category: category, designator: designator) else { return nil }
+        for edition in editions.dropLast() {
+            guard let other = edition.subject(category: category, designator: designator),
+                  sameWords(other, reading) else { return nil }
+        }
+        return reading
+    }
+
+    /// A key's country, region or organization element across the editions a span reaches: the
+    /// name every edition gives the tail, or `nil` where one has none or they differ. The two
+    /// schedules ship one list, so a tail either edition names is read for any span.
+    ///
+    /// - Parameters:
+    ///   - tail: The tail as `normalizedTail` keys it.
+    ///   - editions: The editions the span reaches.
+    /// - Returns: The name, or `nil`.
+    private static func area(_ tail: String, across editions: [Schedule]) -> String? {
+        guard let name = editions.last?.areas[tail] else { return nil }
+        return editions.allSatisfy { $0.areas[tail] == name } ? name : nil
+    }
+
     /// A key's subject in plain words, or `nil` when this table cannot say.
     ///
     /// Silence is the designed outcome, exactly as it is for the decimal table: a wrong subject on
     /// an archival citation is worse than a bare code, because the reader cannot tell it is wrong.
+    /// A span reaching both editions is read where they agree (decision 68), so `POL 27` over
+    /// 1961–1969 reads *MILITARY OPERATIONS* and `POL 24` over the same years reads nothing.
     ///
     /// - Parameters:
     ///   - key: A class key as a source note wrote it (`"POL 27"`, `"POL 27 VIET S"`).
@@ -141,21 +228,20 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
             return String(localized: "archival.classLabel.noSubjectNumber",
                           defaultValue: "Files with no subject number")
         }
-        guard let schedule = schedules.first(where: {
-            $0.governs(span, floor: coverage.systemOpensIn)
-        }) else { return nil }
-        guard let (category, designator) = Self.split(key) else { return nil }
+        let reached = editions(coveringYears: span)
+        guard let last = reached.last, let (category, designator) = Self.split(key) else { return nil }
 
         // A PRIMARY SUBJECT file is arranged by its own outline; an ORGANIZATION file is arranged
         // by the international-organizations instruction's list of administrative subjects. The
         // category is tried first, and the list only when the handbook's abbreviations appendix
         // names the prefix — which is what stops the list being applied to `PSL 27` (a
         // one-character corruption of POL) and `NSSD 05-82` (a National Security Study Directive),
-        // both of which would take a plausible subject from it otherwise.
-        if let outline = schedule.subjects[category] { return outline[designator] }
-        guard let organization = schedule.abbreviations[category],
-              let subject = schedule.organizationSubjects[designator]
-        else { return nil }
+        // both of which would take a plausible subject from it otherwise. `Schedule.subject` keeps
+        // that order in each edition.
+        guard let subject = Self.subject(category: category, designator: designator,
+                                         across: reached) else { return nil }
+        guard last.subjects[category] == nil, let organization = last.abbreviations[category]
+        else { return subject }
         // The organization's name is worth saying: a reader knows UN, and CENTO and SEATO are
         // another matter, and the key itself only ever shows the abbreviation.
         return String(format: String(localized: "archival.classLabel.organization %@ %@",
@@ -177,14 +263,18 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
     /// each primary subject, kept at the beginning or the end of its run — so such a key reads as
     /// its subject alone.
     ///
+    /// A span reaching both editions reads the country always and the subject where the two
+    /// print the same words (decision 68): `POL 27 VIET S` over 1961–1969 is *Vietnam, South —
+    /// MILITARY OPERATIONS*, and `POL 24 VIET S` over the same years *Vietnam, South*.
+    ///
     /// - Parameters:
     ///   - key: A full leaf key as a source note wrote it (`"POL 27 VIET S"`).
     ///   - span: The coverage years the surface's figures describe.
     /// - Returns: The composed reading, or `nil` when the table can say nothing at all.
     func leafGloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
-        guard let schedule = schedules.first(where: {
-            $0.governs(span, floor: coverage.systemOpensIn)
-        }), let divided = CollectionKeying.subjectNumericParts(of: key) else { return nil }
+        let reached = editions(coveringYears: span)
+        guard let last = reached.last,
+              let divided = CollectionKeying.subjectNumericParts(of: key) else { return nil }
         let category = divided.category.uppercased()
 
         var parts: [String] = []
@@ -196,15 +286,15 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         // India". Since #1644 the table has `AID`'s outline for that schedule and ships no
         // abbreviation for a category that has one, so no `AID` key reaches the branch at all.
         if divided.number != nil,
-           let organization = schedule.subjects[category] == nil
-            ? schedule.abbreviations[category] : nil {
+           let organization = last.subjects[category] == nil ? last.abbreviations[category] : nil {
             parts.append(organization)
         }
-        if !divided.area.isEmpty, let area = schedule.areas[Self.normalizedTail(divided.area)] {
+        if !divided.area.isEmpty,
+           let area = Self.area(Self.normalizedTail(divided.area), across: reached) {
             parts.append(area)
         }
         if let designator = divided.number,
-           let subject = schedule.subject(category: category, designator: designator) {
+           let subject = Self.subject(category: category, designator: designator, across: reached) {
             parts.append(subject)
         }
         guard !parts.isEmpty else { return nil }

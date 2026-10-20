@@ -1032,8 +1032,11 @@ struct PrimarySubjectFileLabelTests {
         #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1963)?.contains(" — ") == false)
         // A head cited alone has neither country nor subject.
         #expect(table.leafGloss(for: "DEF (MLF)", coveringYears: 1965...1968) == nil)
-        // A span no schedule governs says nothing, as for every key.
-        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1966) == nil)
+        // A span reaching both editions reads the country, which the two list alike (A16,
+        // decision 68); until A16 it said nothing, as a span outside the file still does.
+        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1963...1966)
+                    == "United States and Union of Soviet Socialist Republics")
+        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: 1975...1980) == nil)
         // The division is the kit's, so the lookup is cut where the fold is.
         #expect(SubjectNumericLabelTable.tail(of: "POL US-USSR") == "US-USSR")
         #expect(SubjectNumericLabelTable.tail(of: "INCO-WOOL 17 US-JAPAN") == "US-JAPAN")
@@ -1107,5 +1110,137 @@ struct PrimarySubjectFileLabelTests {
             return parts.number == nil && parts.group != $0.id
         }
         #expect(strays.isEmpty, "ranked as rows of their own: \(strays.map(\.id))")
+    }
+}
+
+// MARK: - SubjectNumericStraddleLabelTests
+
+/// A span reaching both handbooks, and one running past the file's close (A16, #1691's third line:
+/// the owner's decision 68 of 2026-10-19, and the ceiling decision of 2026-10-20).
+///
+/// Measured on the shipped usage index and manifest on 2026-10-20, through the same model the
+/// ranking test below drives: in the 1961–1968 era 1,165 of 1,461 subject-numeric files were bare
+/// because their family's volumes cross 1963 and 1964 (`POL 27`'s span 1961–1969), and in
+/// 1969–1976 557 of 753 because theirs run past 1973 (`POL 27`'s 1968–1975). Under the rule
+/// 1,402 and 706 read in words.
+///
+/// Version history:
+///   1.0 — 2026-10-20 (A16)
+@Suite("Archival analytics — a span across the two handbooks, and past 1973 (A16)")
+struct SubjectNumericStraddleLabelTests {
+
+    @Test("A span crossing 1963 and 1964 reads what both editions print alike")
+    func aStraddlingSpanReadsWhereTheEditionsAgree() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+        let straddle = 1961...1969   // `POL 27`'s citing volumes in the 1961–1968 era
+        #expect(table.editions(coveringYears: straddle).map(\.id) == ["1963", "1964-1973"])
+
+        // THE SUBJECT WHERE THE WORDS MATCH, in the later edition's spelling.
+        #expect(table.gloss(for: "POL 27", coveringYears: straddle) == "MILITARY OPERATIONS")
+        #expect(table.gloss(for: "POL 27-14", coveringYears: straddle) == "Truce. Cease-Fire. Armistice.")
+        #expect(table.gloss(for: "POL 7", coveringYears: straddle) == "VISITS. MEETINGS.")
+        // AND NOTHING WHERE THEY DIFFER: the cases the two schedules exist for.
+        #expect(table.gloss(for: "POL 24", coveringYears: straddle) == nil,
+                "SUBVERSION. ESPIONAGE. SABOTAGE. against SANCTIONS")
+        #expect(table.gloss(for: "POL 23", coveringYears: straddle) == nil,
+                "INTERNAL SECURITY against INTERNAL SECURITY. COUNTER-INSURGENCY.")
+        #expect(table.gloss(for: "SOC 14-1", coveringYears: straddle) == nil,
+                "Discrimination. Protection of Minorities. against General Policy.")
+        // The same words through a space the scan broke or a letter it misread: `AV 15` is
+        // `NON -SCHEDULED OPERATIONS` in 1963 and `NON-SCHEDULED OPERATIONS` in 1964–1973.
+        #expect(table.gloss(for: "AV 15", coveringYears: straddle) == "NON-SCHEDULED OPERATIONS")
+        #expect(SubjectNumericLabelTable.sameWords("NON -SCHEDULED OPERATIONS", "NON-SCHEDULED OPERATIONS"))
+        #expect(SubjectNumericLabelTable.sameWords("Truce. Cease-Fire. Armistice.", "truce cease-fire armistice"))
+        #expect(!SubjectNumericLabelTable.sameWords("MEETINGS", "MEETINGS. SESSIONS."))
+        #expect(!SubjectNumericLabelTable.sameWords("LAWS", "LAW"))
+
+        // THE COUNTRY ALWAYS, and the subject only where it matches.
+        #expect(table.leafGloss(for: "POL 27 VIET S", coveringYears: straddle)
+                    == "Vietnam, South — MILITARY OPERATIONS")
+        #expect(table.leafGloss(for: "POL 24 VIET S", coveringYears: straddle) == "Vietnam, South")
+        #expect(table.leafGloss(for: "POL 23 VIET S", coveringYears: straddle) == "Vietnam, South")
+        #expect(table.leafGloss(for: "POL 27", coveringYears: straddle) == "MILITARY OPERATIONS")
+        #expect(table.leafGloss(for: "POL 24", coveringYears: straddle) == nil)
+        // An organization file: the list's 6 reads alike in both editions and its 3 does not.
+        #expect(table.gloss(for: "UN 6 CHICOM", coveringYears: straddle)
+                    == "United Nations — MEMBERSHIP. ASSOCIATION.")
+        #expect(table.leafGloss(for: "UN 6 CHICOM", coveringYears: straddle)
+                    == "United Nations — China (Communist) — MEMBERSHIP. ASSOCIATION.")
+        #expect(table.gloss(for: "NATO 3", coveringYears: straddle) == nil, "MEETINGS against MEETINGS. SESSIONS.")
+        #expect(table.leafGloss(for: "NATO 3 LUX", coveringYears: straddle)
+                    == "North Atlantic Treaty Organization — Luxembourg")
+        // A file with no number does not depend on the edition.
+        #expect(table.gloss(for: "POL", coveringYears: straddle) == "Files with no subject number")
+        #expect(table.leafGloss(for: "POL US-USSR", coveringYears: straddle)
+                    == "United States and Union of Soviet Socialist Republics")
+        // A span inside one edition reads as it did.
+        #expect(table.gloss(for: "POL 24", coveringYears: 1963...1963) == "SUBVERSION. ESPIONAGE. SABOTAGE.")
+        #expect(table.gloss(for: "POL 24", coveringYears: 1965...1968) == "SANCTIONS")
+        #expect(table.leafGloss(for: "POL 24 VIET S", coveringYears: 1965...1968) == "Vietnam, South — SANCTIONS")
+    }
+
+    @Test("A span running past 1973 reads from the last edition, as one opening before 1963 reads from the first")
+    func aSpanPastTheFileReadsFromTheLastEdition() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+        #expect(table.systemClosesIn == 1973)
+        #expect(table.editions(coveringYears: 1968...1975).map(\.id) == ["1964-1973"],
+                "`POL 27`'s citing volumes in the 1969–1976 era")
+        #expect(table.gloss(for: "POL 24", coveringYears: 1968...1975) == "SANCTIONS")
+        #expect(table.gloss(for: "POL 23", coveringYears: 1969...1977)
+                    == "INTERNAL SECURITY. COUNTER-INSURGENCY.")
+        #expect(table.leafGloss(for: "POL 27 VIET S", coveringYears: 1969...1977)
+                    == "Vietnam, South — MILITARY OPERATIONS")
+        // Wholly after the file: nothing, as before.
+        #expect(table.editions(coveringYears: 1975...1980).isEmpty)
+        #expect(table.gloss(for: "POL 24", coveringYears: 1975...1980) == nil)
+        #expect(table.leafGloss(for: "POL 27 VIET S", coveringYears: 1975...1980) == nil)
+        // Wholly before it: nothing; opening before it: the first edition, as before.
+        #expect(table.editions(coveringYears: 1950...1955).isEmpty)
+        #expect(table.gloss(for: "POL 24", coveringYears: 1958...1963) == "SUBVERSION. ESPIONAGE. SABOTAGE.")
+        // Both clamps at once: a span from before the file to after it reaches both editions.
+        #expect(table.editions(coveringYears: 1960...1977).map(\.id) == ["1963", "1964-1973"])
+        #expect(table.gloss(for: "POL 27", coveringYears: 1960...1977) == "MILITARY OPERATIONS")
+        #expect(table.gloss(for: "POL 24", coveringYears: 1960...1977) == nil)
+    }
+
+    @Test("Over the shipped corpus, the 1961–1968 and 1969–1976 eras' families and files read in words")
+    func theShippedRankingLabelsStraddlingFamilies() throws {
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: usage, coverage: ArchivalVolumeCoverage.map(from: entries))
+
+        // 1961–1968: `POL 27`'s volumes span 1961–1969, across the editions.
+        let sixties = data.ranking(band: ArchivalEraBand.all[2], lens: .centralFileClasses,
+                                   weight: .documents, hidingUmbrella: false, limit: .max).rows
+        let operations = try #require(sixties.first { $0.id == "POL 27" })
+        #expect(operations.gloss == "MILITARY OPERATIONS")
+        let south = try #require(operations.leaves.first { $0.key == "POL 27 VIET S" })
+        #expect(south.gloss == "Vietnam, South — MILITARY OPERATIONS")
+        // `POL 23`'s volumes span the editions too, and the editions differ on it: the family
+        // stays bare and its files read their country alone.
+        let security = try #require(sixties.first { $0.id == "POL 23" })
+        #expect(security.gloss == nil)
+        #expect(security.leaves.contains { $0.key == "POL 23 VIET S" && $0.gloss == "Vietnam, South" })
+        let sixtiesLeaves = sixties.filter { CollectionKeying.isSubjectNumericClass($0.id) }.flatMap(\.leaves)
+        let sixtiesLabelled = sixtiesLeaves.filter { $0.gloss != nil }.count
+        #expect(sixtiesLeaves.count > 1_300 && sixtiesLabelled > 1_300, """
+            \(sixtiesLabelled) of \(sixtiesLeaves.count) files read in words in 1961–1968; 1,402 of \
+            1,461 were modelled, and at most 296 could before A16
+            """)
+
+        // 1969–1976: `POL 27`'s volumes span 1968–1975, past the file's close.
+        let seventies = data.ranking(band: ArchivalEraBand.all[3], lens: .centralFileClasses,
+                                     weight: .documents, hidingUmbrella: false, limit: .max).rows
+        let later = try #require(seventies.first { $0.id == "POL 27" })
+        #expect(later.gloss == "MILITARY OPERATIONS")
+        #expect(later.leaves.contains { $0.key == "POL 27 VIET S" && $0.gloss == "Vietnam, South — MILITARY OPERATIONS" })
+        let seventiesLeaves = seventies.filter { CollectionKeying.isSubjectNumericClass($0.id) }.flatMap(\.leaves)
+        let seventiesLabelled = seventiesLeaves.filter { $0.gloss != nil }.count
+        #expect(seventiesLeaves.count > 650 && seventiesLabelled > 650, """
+            \(seventiesLabelled) of \(seventiesLeaves.count) files read in words in 1969–1976; 706 of \
+            753 were modelled, and at most 196 could before A16
+            """)
     }
 }

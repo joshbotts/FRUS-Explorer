@@ -95,9 +95,16 @@ struct DecimalNeighbourSpaceTests {
 /// less `IndexingPipeline.classFamilyExclusion`, and the stand-in below reads both. The real SQL
 /// is driven by `VolumeSourceMatcherTests.aPrimarySubjectFamilyLeavesOutTheNumberedFiles`.
 ///
+/// ## A numbered file with a country (A16, #1691's first line)
+/// A numbered key with an area is one file, itself and the same file at a post, so `POL 27 VIET`
+/// reaches neither `POL 27 VIET S` nor `POL 27 VIET N`. `aNumberedFileWithACountryIsOneFile`
+/// pins the patterns and sweeps the shipped vocabulary: every key such a key's query reaches has
+/// its category, number and area, and the reach beyond itself is the four post pairs.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-11: #841
 ///   1.1 — index version 69: the stand-in reads the exclusion, and the sweep counts the heads
+///   1.2 — 2026-10-20 (A16): a numbered file with a country reaches no other country's file
 @Suite("Class family definition (#841)")
 struct ClassFamilyDefinitionTests {
 
@@ -224,6 +231,63 @@ struct ClassFamilyDefinitionTests {
         let numbered = try #require(IndexingPipeline.classFamilyClause(forCanonicalKey: "POL 27"))
         #expect(numbered.params == ["POL 27", "POL 27 %", "POL 27.%"])
         #expect(!numbered.clause.contains("GLOB"))
+    }
+
+    @Test("A numbered file with a country reaches no other country's file, and its post is the same file (A16)")
+    func aNumberedFileWithACountryIsOneFile() throws {
+        // The patterns: the file and the file at a post, from either spelling; a family keeps
+        // its space branch, which is how `POL 27` finds its countries.
+        #expect(IndexingPipeline.classLeafPatterns(forCanonicalKey: "POL 27 VIET")
+                    == ["POL 27 VIET", "POL 27 VIET (%"])
+        #expect(IndexingPipeline.classLeafPatterns(forCanonicalKey: "NATO 3 LUX (LU)")
+                    == ["NATO 3 LUX", "NATO 3 LUX (%"])
+        #expect(IndexingPipeline.classLeafPatterns(forCanonicalKey: "AID (US) 15 INDIA")
+                    == ["AID (US) 15 INDIA", "AID (US) 15 INDIA (%"], "a head's parenthesis is not a post")
+        #expect(IndexingPipeline.classLeafPatterns(forCanonicalKey: "POL 27")
+                    == ["POL 27", "POL 27 %", "POL 27.%"])
+        #expect(IndexingPipeline.classFamilyExclusion(forCanonicalKey: "POL 27 VIET") == nil)
+        #expect(try !inFamily("POL 27 VIET S", of: "POL 27 VIET"), "South Vietnam's file is another country's")
+        #expect(try !inFamily("POL 27 VIET N", of: "POL 27 VIET"))
+        #expect(try inFamily("POL 27 VIET", of: "POL 27"), "and the family still holds it")
+        #expect(try inFamily("POL 27 VIET S", of: "POL 27"))
+        #expect(try inFamily("NATO 3 LUX (LU)", of: "NATO 3 LUX"), "the file at a post is the file")
+        #expect(try inFamily("NATO 3 LUX", of: "NATO 3 LUX (LU)"), "from the post's side too")
+        #expect(try !inFamily("POL 7 US CONNALLY", of: "POL 7 US"), "a folder written with a space is a key of its own (the owner's decision of 2026-10-20)")
+        #expect(try !inFamily("POL 2 DOM REP", of: "POL 2 DOM"))
+
+        // The sweep: over every Subject-Numeric key of the shipped vocabulary, a numbered key
+        // with an area reaches only keys with its own category, number and area. Before A16, 17
+        // keys reached another country's file at a space, `POL 27 VIET` taking in South
+        // Vietnam's 477 documents. The patterns are computed once per key, since the sweep is
+        // every key against every other.
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let keys = usage.classKeys.filter { CollectionKeying.isSubjectNumericClass($0) }
+        var patterns: [String: [String]] = [:]
+        for key in keys { patterns[key] = IndexingPipeline.classLeafPatterns(forCanonicalKey: key) }
+        var checked = 0
+        var leaks: Set<String> = []
+        var posts: Set<String> = []
+        for key in keys {
+            guard let parts = CollectionKeying.subjectNumericParts(of: key), parts.number != nil,
+                  !parts.area.isEmpty, let own = patterns[key] else { continue }
+            checked += 1
+            #expect(IndexingPipeline.classFamilyExclusion(forCanonicalKey: key) == nil,
+                    "\(key) has nothing to leave out")
+            for other in keys where other != key && matches(other, patterns: own) {
+                if let reached = CollectionKeying.subjectNumericParts(of: other),
+                   reached.group == parts.group, reached.area == parts.area {
+                    posts.insert("\(key) → \(other)")
+                } else {
+                    leaks.insert("\(key) → \(other)")
+                }
+            }
+        }
+        // 1,486 on the usage index at version 69.
+        #expect(checked > 1_400, "the sweep covered \(checked) numbered keys with an area, which is too few")
+        #expect(leaks.isEmpty, "a numbered file with a country reaches another file: \(leaks.sorted())")
+        #expect(posts == ["NATO 3 LUX → NATO 3 LUX (LU)", "NATO 3 LUX (LU) → NATO 3 LUX",
+                          "PET 6 IRAQ → PET 6 IRAQ (SYR)", "PET 6 IRAQ (SYR) → PET 6 IRAQ"],
+                "the reach beyond a key itself is the post pairs of the usage index at version 69; got \(posts.sorted())")
     }
 
     @Test("A decimal file number keeps its hyphen branch")
