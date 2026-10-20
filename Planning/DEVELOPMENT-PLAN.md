@@ -39672,5 +39672,5 @@ Nothing was to be built until the owner chooses.
 **Placed by the owner.** Next, as A11b, ahead of A12: "Place it next as A11b, ahead of A12, and open its PR." (2026-10-20; plan of record decision 75, with A11b's row and bullet in §1). It touches `AppState.swift`, `BrowserViewModel.swift` and `CompilationView.swift`, so a later lane in those files merges after it.
 
 **Not done.**
-- **Opened on the owner's word** (above), against `v2` at `92045991`; not merged.
+- **Opened as #1738** on the owner's word (above), against `v2` at `92045991`; not merged.
 - **Not seen on a screen**: the progress section's look during Index Now (it reads the same `IndexingProgressUpdate` as before, now `AppState`'s), and a second volume's banner after an Index Now on a device.
