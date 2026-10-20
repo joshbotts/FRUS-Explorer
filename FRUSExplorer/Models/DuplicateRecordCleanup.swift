@@ -69,6 +69,8 @@ extension AnnotationReview: DeduplicableRecord {}
 ///          `OrphanedTagRepair` "Recovered Tag …" placeholder that shares its id); the
 ///          removal-count log is promoted from `#if DEBUG` to always-on, since deleting synced
 ///          records is a destructive, CloudKit-propagating event worth a durable trace.
+///   1.2 — decision 62 (A15): `isKept(_:over:)`, the keeper order, shared with the Archives Visit
+///          overlay's choice of which stored row a target shows.
 @MainActor
 enum DuplicateRecordCleanup {
 
@@ -202,11 +204,19 @@ enum DuplicateRecordCleanup {
     /// The stable keeper for a duplicate group: earliest `createdAt`, tie-broken by
     /// a deterministic id ordering so independent devices agree.
     private static func stableKeeper<T: DeduplicableRecord>(_ group: [T]) -> T {
-        group.min { lhs, rhs in
-            let l = lhs.createdAt ?? .distantFuture
-            let r = rhs.createdAt ?? .distantFuture
-            if l != r { return l < r }
-            return lhs.id.uuidString < rhs.id.uuidString
-        }!
+        group.min { isKept(($0.createdAt, $0.id), over: ($1.createdAt, $1.id)) }!
+    }
+
+    /// Whether a record created at `record.createdAt` with id `record.id` is kept over `other`:
+    /// the earlier creation, a missing date sorting last, then the lower id, so independent
+    /// devices agree. The order ``stableKeeper(_:)`` keeps a duplicate by, and the one an Archives
+    /// Visit target shows one of several stored rows by (`ArchiveVisitTargetKeys.shownRow`,
+    /// decision 62), so the row a target shows is the one this pass would keep.
+    nonisolated static func isKept(_ record: (createdAt: Date?, id: UUID),
+                                   over other: (createdAt: Date?, id: UUID)) -> Bool {
+        let l = record.createdAt ?? .distantFuture
+        let r = other.createdAt ?? .distantFuture
+        if l != r { return l < r }
+        return record.id.uuidString < other.id.uuidString
     }
 }

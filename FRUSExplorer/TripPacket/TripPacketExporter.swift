@@ -103,6 +103,11 @@ import Foundation
 ///          leaves out
 ///   2.6 — PV-1 (the 2026-09-28 audit): the coverage report ends on the sources block every other
 ///          export carries (`sourceLines`) — the one place the packet's English-literal policy gives way
+///   2.7 — #1692: a collection target whose documents cite several lots prints each lot's records
+///          line and access line (`lotLines(_:)`), names each in its records of interest, asks about
+///          each divided one, and counts them in the coverage report
+///   2.8 — decision 62 (A15): the coverage report's stored-rows line counts the rows that answer for
+///          a target another stored row is shown on
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -285,6 +290,7 @@ struct TripPacketExporter {
             if let url = target.resolution?.catalogURL { out.append(url) }
         }
         out.append(contentsOf: Self.restrictionLines(target.restriction))
+        out.append(contentsOf: Self.lotLines(target))
         if Self.isCentralFileTarget(target) {
             // §3a's one crib fold: NARA's guidance asks that central-file citations carry
             // no box number, so the row says so once rather than leaving a blank column
@@ -433,6 +439,13 @@ struct TripPacketExporter {
                     out.append("    \(line)")
                     if let url = target.resolution?.catalogURL { out.append("    \(url)") }
                 }
+                // A collection whose documents cite several lots names each, with its series
+                // where one resolved (#1692): reference staff pull by lot, not by the series name
+                // the notes share.
+                for lot in target.lots {
+                    out.append("    Lot \(lot.lotAsPrinted)" + (lot.recordsLine.map { ": \($0)" } ?? ""))
+                    if let url = lot.resolution?.catalogURL { out.append("    \(url)") }
+                }
             }
             if targets.count > Self.recordsOfInterestLimit {
                 let n = targets.count - Self.recordsOfInterestLimit
@@ -499,14 +512,27 @@ struct TripPacketExporter {
             // §3a: a divided lot routes into the inquiry AS A QUESTION, because that is what
             // it is — NARA's catalog holds several correct answers, and only an archivist
             // can say which series serves this reader's records.
-            let divided = targets.filter { $0.restriction?.isDivided == true }
+            // A lot stated apart inside a collection target is asked about by its own number,
+            // with the target's label to place it (#1692).
+            let divided = targets.flatMap { target -> [(claimed: String,
+                                                        restriction: TripPacketModel.TargetRestriction)] in
+                var asked: [(claimed: String, restriction: TripPacketModel.TargetRestriction)] = []
+                if let restriction = target.restriction, restriction.isDivided {
+                    asked.append((target.label, restriction))
+                }
+                for lot in target.lots {
+                    if let restriction = lot.restriction, restriction.isDivided {
+                        asked.append(("Lot \(lot.lotAsPrinted) (\(target.label))", restriction))
+                    }
+                }
+                return asked
+            }
             if !divided.isEmpty {
                 out.append("")
                 out.append("Questions:")
-                for target in divided {
-                    guard let restriction = target.restriction else { continue }
+                for (claimed, restriction) in divided {
                     var question = "  - NARA's catalog lists \(restriction.claimantCount) series "
-                        + "claiming \(target.label)"
+                        + "claiming \(claimed)"
                     if restriction.unmeasuredClaimantCount > 0 {
                         question += ", \(restriction.unmeasuredClaimantCount) with no recorded "
                             + "access status"
@@ -587,6 +613,16 @@ struct TripPacketExporter {
                 let n = overlay.orphanKeys.count
                 line += " — \(n) kept and labeled, never deleted"
             }
+            // A row answering for a target another stored row is shown on derives, and is kept
+            // and labeled beside the orphans (decision 62).
+            if !overlay.superseded.isEmpty {
+                let n = overlay.superseded.count
+                let answers = "answer\(n == 1 ? "s" : "") for a target that shows another stored "
+                    + "row's tier and note, and " + (n == 1 ? "is" : "are") + " kept and labeled"
+                line += overlay.orphanKeys.isEmpty
+                    ? " — \(n) of them \(answers), never deleted"
+                    : "; \(n) of the \(deriving) \(answers) too"
+            }
             out.append(line + ".")
         }
         if let overlay, !overlay.excludedKeys.isEmpty {
@@ -598,7 +634,10 @@ struct TripPacketExporter {
         // unplaceable target in the plan is counted; the ones the reader excluded are not listed
         // under "Confirm before you travel", so the line says which is which (#1459).
         let all = model.targets
-        let resolved = all.filter { $0.resolution != nil }.count
+        // A collection whose documents cite several lots resolves through them (#1692).
+        let resolved = all.filter {
+            $0.resolution != nil || $0.lots.contains { $0.resolution != nil }
+        }.count
         let unplaced = all.filter { !$0.canHeadChapter }.count
         let listed = unplacedTargets.count
         var targetsLine = "\(all.count) research target\(all.count == 1 ? "" : "s"): "
@@ -688,7 +727,11 @@ struct TripPacketExporter {
         // block opens on either, the all-clear sentence waits for the divided lots too, and a
         // count of flagged series says how many divided lots it leaves out.
         let triage = model.triage
-        let divided = model.targets.compactMap(\.restriction).filter(\.isDivided)
+        // A lot stated apart inside a collection target is a divided lot of this plan too (#1692).
+        let divided = model.targets
+            .flatMap { [$0.restriction] + $0.lots.map(\.restriction) }
+            .compactMap { $0 }
+            .filter(\.isDivided)
         if !triage.isEmpty || !divided.isEmpty {
             let flagged = triage.needingAdvanceContact
             // A divided lot is clear only when every claimant is measured and unrestricted.
@@ -942,8 +985,17 @@ struct TripPacketExporter {
             var prefill = ["⟨Sender⟩ to ⟨recipient⟩, ⟨Type⟩, ⟨date⟩, file ⟨folder title⟩, "
                            + "⟨series title⟩, Entry ⟨entry number⟩, RG ⟨record group⟩: "
                            + "⟨record group title⟩, U.S. National Archives."]
-            if let resolved = nonCentral.first(where: { $0.resolution != nil }),
-               let resolution = resolved.resolution {
+            // A target's own series, or the first resolved lot of a collection whose documents
+            // cite several (#1692).
+            let firstResolved = nonCentral.lazy.compactMap { target
+                -> (label: String, resolution: ArchivalResolution)? in
+                if let resolution = target.resolution { return (target.label, resolution) }
+                return target.lots.lazy.compactMap { lot in
+                    lot.resolution.map { ("Lot \(lot.lotAsPrinted) (\(target.label))", $0) }
+                }.first
+            }.first
+            if let resolved = firstResolved {
+                let resolution = resolved.resolution
                 let entries = resolution.seriesHmsMlrEntryNumbers ?? resolution.hmsMlrEntryNumbers
                 prefill.append("For \(resolved.label): "
                     + "⟨Sender⟩ to ⟨recipient⟩, ⟨Type⟩, ⟨date⟩, file ⟨folder title⟩, "
@@ -1056,6 +1108,24 @@ struct TripPacketExporter {
             parts.append("cited by \(n) footnote\(n == 1 ? "" : "s")")
         }
         return parts.joined(separator: " · ")
+    }
+
+    /// The lots a collection target's documents cite, each with its own records line, catalog
+    /// link and access line, when they do not all cite one (#1692); nothing for any other target.
+    ///
+    /// A lot's lines are indented under its number, so "this lot" in its access line is the lot
+    /// above it. The editor's row states the same lines under a localized header.
+    static func lotLines(_ target: TripPacketModel.Target) -> [String] {
+        target.lots.flatMap { lot -> [String] in
+            let n = lot.documentCount
+            var lines = ["Lot \(lot.lotAsPrinted) — \(n) document\(n == 1 ? "" : "s")"]
+            if let line = lot.recordsLine {
+                lines.append("  " + line)
+                if let url = lot.resolution?.catalogURL { lines.append("  " + url) }
+            }
+            lines.append(contentsOf: restrictionLines(lot.restriction).map { "  " + $0 })
+            return lines
+        }
     }
 
     /// The claimant-aware access line (§3a) — one line, never a badge.

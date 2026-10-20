@@ -74,6 +74,13 @@ import Foundation
 ///          the National Archives keeps the key index v64 gave it (`coll|National
 ///          Archives|<series>`), so no stored Archive Visit key moves, and a roster row with no
 ///          parsed designation takes `CollectionKeying.centralFileDesignation(parsed:note:)`
+///   1.10 — #1692: a collection target is labelled by what all its documents share
+///          (`sharedRecord(of:)`), and a lot its documents cite through the National Archives is
+///          the target's own when every document cites it, else stated apart (`citedLots(in:)`),
+///          each read under the record group its notes name. No key moves
+///   1.11 — decision 62 (A15): a central file worded through the Department keys on the class the
+///          index stores for it (`CollectionKeying.centralFilesClass(parsed:note:)` where the scan
+///          reads none), so 688 notes keyed on their text key on their file
 @MainActor
 enum TripPacketBuilder {
 
@@ -145,6 +152,7 @@ enum TripPacketBuilder {
         var grouped: [String: (record: CollectionGeneratedBlocks.SourceRecord,
                                label: String,
                                lotAsPrinted: String?,
+                               records: [CollectionGeneratedBlocks.SourceRecord],
                                documents: [TripPacketModel.Group.DocumentRef])] = [:]
         var order: [String] = []
         var placed = 0
@@ -172,11 +180,12 @@ enum TripPacketBuilder {
             let category = record.citationEra.map {
                 SourceProvenanceCategory.from(citationEra: $0, repository: record.repository)
             }
-            let keyed = Self.targetKey(for: record, category: category)
+            let keyed = Self.targetKey(for: record, category: category, parsed: parsed)
             if grouped[keyed.key] == nil {
-                grouped[keyed.key] = (record, keyed.label, keyed.lotAsPrinted, [])
+                grouped[keyed.key] = (record, keyed.label, keyed.lotAsPrinted, [], [])
                 order.append(keyed.key)
             }
+            grouped[keyed.key]?.records.append(record)
             grouped[keyed.key]?.documents.append(.init(
                 volumeId: document.volumeId,
                 documentId: document.documentId,
@@ -195,6 +204,7 @@ enum TripPacketBuilder {
                 sourceNote: record.rawText))
         }
 
+        var citedLots: [String: TripPacketModel.CitedLots] = [:]
         let groups = order.compactMap { key -> (key: String, label: String,
                                                 category: SourceProvenanceCategory?,
                                                 repository: String?,
@@ -207,14 +217,36 @@ enum TripPacketBuilder {
             let category = record.citationEra.map {
                 SourceProvenanceCategory.from(citationEra: $0, repository: record.repository)
             }
+            var label = entry.label
+            var lotAsPrinted = entry.lotAsPrinted
+            // The WHOLE resolution — reducing it to `.naId` here is exactly what starved chapters
+            // 2, 3, 5 and 6 of the fields the app already knows.
+            var resolution = ArchivalResolver.documentResolution(lotFile: record.lotFile)
+            // #1692: a collection's key is its repository and series, so its documents can differ
+            // in everything else the label names. It names what they all share, and a lot cited
+            // through the National Archives speaks for the target only when every document cites
+            // it; otherwise each lot is stated apart.
+            if key.hasPrefix("coll|") {
+                label = CollectionGeneratedBlocks.tripPacketLabel(for: Self.sharedRecord(of: entry.records))
+                if record.repository == "National Archives" {
+                    let lots = Self.citedLots(in: entry.records)
+                    if lots.count == 1, let lot = lots.first, lot.documentCount == entry.records.count {
+                        lotAsPrinted = lot.lotAsPrinted
+                        resolution = lot.resolution
+                        citedLots[key] = .init(recordGroups: lot.recordGroups)
+                    } else {
+                        lotAsPrinted = nil
+                        resolution = nil
+                        if !lots.isEmpty { citedLots[key] = .init(parts: lots) }
+                    }
+                }
+            }
             return (key: key,
-                    label: entry.label,
+                    label: label,
                     category: category,
                     repository: record.repository,
-                    lotAsPrinted: entry.lotAsPrinted,
-                    // The WHOLE resolution — reducing it to `.naId` here is exactly what
-                    // starved chapters 2, 3, 5 and 6 of the fields the app already knows.
-                    resolution: ArchivalResolver.documentResolution(lotFile: record.lotFile),
+                    lotAsPrinted: lotAsPrinted,
+                    resolution: resolution,
                     documents: entry.documents)
         }
 
@@ -291,7 +323,83 @@ enum TripPacketBuilder {
             // channel reading as sparse data (references sit on a small minority of
             // documents corpus-wide), never as a failed scan.
             referenceCoverage: .init(documentsWithReferences: documentsWithReferences,
-                                     documentsScanned: referenceDocuments.count))
+                                     documentsScanned: referenceDocuments.count),
+            citedLots: citedLots)
+    }
+
+    // MARK: - A collection's documents (#1692)
+
+    /// A record carrying what every one of `records` shares, for a collection target's label:
+    /// the repository and series its key names, and the lot and record group only where every
+    /// document names the same one.
+    ///
+    /// The label was the first document's. Built over every document a full v69 index stores
+    /// under the key (2026-10-20), `coll|National Archives|ARA Files` read "ARA Files, Lot 70 D
+    /// 150, RG 59, National Archives" over documents citing four other lots, and the key with no
+    /// series, 609 documents, read "RG 111, National Archives" over documents of sixteen other
+    /// record groups. A Central Intelligence Agency target, whose job number the index stores as
+    /// its lot, named its first document's job over every other the same way. Lots are compared
+    /// as the bundled lookups fold them (`LotResolutionAcceptance.foldControlNumber`), so `83D066`
+    /// and `83D66` are one lot.
+    static func sharedRecord(
+        of records: [CollectionGeneratedBlocks.SourceRecord]
+    ) -> CollectionGeneratedBlocks.SourceRecord {
+        guard let first = records.first else {
+            return .init(volumeId: "", documentId: "", repository: nil, recordGroup: nil,
+                         lotFile: nil, seriesName: nil, rawText: "")
+        }
+        func lotFold(_ record: CollectionGeneratedBlocks.SourceRecord) -> String {
+            LotResolutionAcceptance.foldControlNumber(record.lotFile ?? "")
+        }
+        func recordGroup(_ record: CollectionGeneratedBlocks.SourceRecord) -> String? {
+            CollectionKeying.bareRG(record.recordGroup)
+        }
+        let sharesLot = records.allSatisfy { lotFold($0) == lotFold(first) }
+        let sharesRecordGroup = records.allSatisfy { recordGroup($0) == recordGroup(first) }
+        return .init(volumeId: first.volumeId, documentId: first.documentId,
+                     repository: first.repository,
+                     recordGroup: sharesRecordGroup ? first.recordGroup : nil,
+                     lotFile: sharesLot ? first.lotFile : nil,
+                     seriesName: first.seriesName, rawText: first.rawText,
+                     citationEra: first.citationEra)
+    }
+
+    /// The lots `records` cite through the National Archives, each with how many of them cite it,
+    /// the record groups their notes name and the lot's one series where the bundle holds it under
+    /// them, in the order their first document was placed (#1692).
+    ///
+    /// The record-group rule is Source Explorer's (`TripPacketModel.lotFact(heldUnder:answers:)`).
+    /// A divided lot has no one series (`ArchivalResolver.documentResolution(lotFile:)`); its
+    /// claimants are read by the model, under the same rule.
+    static func citedLots(
+        in records: [CollectionGeneratedBlocks.SourceRecord]
+    ) -> [TripPacketModel.CitedLots.Part] {
+        var order: [String] = []
+        var byLot: [String: (lotAsPrinted: String, count: Int, recordGroups: Set<String>)] = [:]
+        for record in records {
+            guard let lot = record.lotFile?.trimmingCharacters(in: .whitespaces), !lot.isEmpty
+            else { continue }
+            let fold = LotResolutionAcceptance.foldControlNumber(lot)
+            if byLot[fold] == nil {
+                byLot[fold] = (lot, 0, [])
+                order.append(fold)
+            }
+            byLot[fold]?.count += 1
+            if let recordGroup = record.recordGroup {
+                let number = SourceExplorerProvenance.recordGroupNumber(recordGroup)
+                if !number.isEmpty { byLot[fold]?.recordGroups.insert(number) }
+            }
+        }
+        return order.compactMap { fold in
+            guard let lot = byLot[fold] else { return nil }
+            let resolution = ArchivalResolver.documentResolution(lotFile: lot.lotAsPrinted)
+                .flatMap {
+                    TripPacketModel.lotFact(heldUnder: $0.recordGroup, answers: lot.recordGroups)
+                        ? $0 : nil
+                }
+            return .init(lotAsPrinted: lot.lotAsPrinted, documentCount: lot.count,
+                         recordGroups: lot.recordGroups, resolution: resolution)
+        }
     }
 
     // MARK: - Target keys (§2b)
@@ -309,9 +417,26 @@ enum TripPacketBuilder {
     ///
     /// The model reads these prefixes back into ``TripPacketModel/Target/Form`` — the two
     /// switch statements must agree, and `TripPacketBuilderTests` pins the round trip.
+    ///
+    /// **A central file worded through the Department keys on the class the index stores for it**
+    /// (decision 62, A15): the kit's citation scan (`SourceNoteParser.decimalClassLocation(inCitation:)`),
+    /// and where the scan reads none, `CollectionKeying.centralFilesClass(parsed:note:)`, the one
+    /// definition `document_sources.decimal_class` is stored from. The scan is that definition's
+    /// own first step for these notes, so no key the scan gave moves. Until A15 the key was the
+    /// scan's alone, and 688 notes that store a class keyed on their text (measured over a full v69
+    /// index, 2026-10-20: 39 volumes, 200 classes): files with no subject number (`POL CHICOM -US`)
+    /// and classifications run on after the file (`SOC 14-1 S VIET Secret; …`). A row stored on
+    /// such a note's old key answers for its class target (`ArchiveVisitTargetKeys`), and so will the
+    /// notes a later index version stores a class for.
+    ///
+    /// - Parameters:
+    ///   - record: the stored source note.
+    ///   - category: its provenance category.
+    ///   - parsed: the note's parse, when the caller holds it; parsed here only when needed.
     static func targetKey(
         for record: CollectionGeneratedBlocks.SourceRecord,
-        category: SourceProvenanceCategory?
+        category: SourceProvenanceCategory?,
+        parsed: ParsedSourceNote? = nil
     ) -> (key: String, label: String, lotAsPrinted: String?) {
         // `where` on each pattern: in a multi-pattern case it binds only the pattern it follows.
         let keysAsCentralFile = record.repository != "National Archives"
@@ -327,9 +452,13 @@ enum TripPacketBuilder {
         case .centralDecimalFile where keysAsCentralFile,
              .subjectNumericFile where keysAsCentralFile,
              .centralForeignPolicyFile where keysAsCentralFile:
-            // The canonical class function — the same grammar `document_sources.decimal_class`
-            // stores, so this grain matches the archival-analytics vocabulary.
-            if let cls = SourceNoteParser.decimalClassLocation(inCitation: record.rawText) {
+            // The class `document_sources.decimal_class` stores, so this grain matches the
+            // archival-analytics vocabulary: the scan, then the rest of the one definition
+            // (decision 62).
+            if let cls = SourceNoteParser.decimalClassLocation(inCitation: record.rawText)
+                ?? CollectionKeying.centralFilesClass(
+                    parsed: parsed ?? SourceNoteParser().parse(record.rawText),
+                    note: record.rawText) {
                 // By the FORM of the designator, not the era field: a letter-led leaf is
                 // subject-numeric whatever year the document carries.
                 let label = cls.first?.isLetter == true

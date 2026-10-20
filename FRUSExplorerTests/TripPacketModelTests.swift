@@ -363,7 +363,7 @@ struct TripPacketModelTests {
                 extent: nil, referenceUnit: nil, findingAids: [], years: nil) }
         }
         let divided = TripPacketModel.restriction(
-            form: .lotFile, resolution: nil, lotAsPrinted: "60 D 1",
+            resolution: nil, lotAsPrinted: "60 D 1",
             facts: facts, claimants: { _ in claimants })
         #expect(divided?.worstCoveredStatus == "Restricted - Fully",
                 "the worst MEASURED status leads, whatever order the claimants arrive in")
@@ -374,7 +374,7 @@ struct TripPacketModelTests {
         #expect(divided?.isDivided == true)
 
         let nothingMeasured = TripPacketModel.restriction(
-            form: .lotFile, resolution: nil, lotAsPrinted: "60 D 2",
+            resolution: nil, lotAsPrinted: "60 D 2",
             facts: { _ in nil }, claimants: { _ in Array(claimants.prefix(2)) })
         #expect(nothingMeasured?.worstCoveredStatus == "", """
             A divided lot with nothing measured is itself worth a line — "several series, \
@@ -383,7 +383,7 @@ struct TripPacketModelTests {
         #expect(nothingMeasured?.worstSeverity == .unknown)
 
         let single = TripPacketModel.restriction(
-            form: .lotFile, resolution: nil, lotAsPrinted: "60 D 3",
+            resolution: nil, lotAsPrinted: "60 D 3",
             facts: { _ in nil }, claimants: { _ in [claimants[2]] })
         #expect(single == nil, "one claimant, nothing measured: silence beats a guess")
     }

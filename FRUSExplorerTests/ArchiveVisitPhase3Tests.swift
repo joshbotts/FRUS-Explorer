@@ -14,6 +14,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 import SwiftData
 @testable import FRUSExplorer
 
@@ -252,14 +253,18 @@ struct ArchiveVisitDerivationTests {
 /// stores before and after — the stored row's key is minted from the v58 record by the builder's
 /// own `targetKey(for:category:)`, and the plan derives from the v59 record, so neither key is typed
 /// by hand. One fixture per way a key moves: an `r|` key, a `coll|` series, a foreign-archive
-/// series cut at 80 characters, and a footnote citation's collection. The subject-numeric note is
-/// the control the other way: its target really changed (`r|…` to `class|…`), and it must stay an
-/// orphan rather than lend its tier to a unit it never named.
+/// series cut at 80 characters, and a footnote citation's collection. The subject-numeric note's
+/// target really changed (`r|…` to `class|…`). It was the control the other way, an orphan that
+/// must not lend its tier to a unit it never named, until decision 62 (A15): a key on a note's
+/// text follows the note, so its row answers for the class target, by the note's text read with
+/// its spaces removed, since the v58 text had them.
 ///
 /// Version history:
 ///   1.0 — #1421 review: initial implementation
 ///   1.1 — index version 69: the control's v58 key is written out (`mintedOnV58`), since the
 ///          builder reads its class from either record now and mints one key for both
+///   1.2 — decision 62 (A15): the subject-numeric note joins its class target, and several stored
+///          keys may answer for one derived key
 @Suite("Archive Visit keys across the v59 re-index (#1421 review)")
 struct ArchiveVisitKeyStabilityTests {
 
@@ -318,7 +323,8 @@ struct ArchiveVisitKeyStabilityTests {
              v59: record("frus1964-68v11/d1", raw: "Source: " + seaborgV59, era: "foreign",
                          series: String(seaborgV59.prefix(IndexingPipeline.foreignArchiveSeriesLength))),
              joins: true),
-        // The control: the class the v58 text hid is readable now, so the TARGET changed.
+        // The class the v58 text hid is readable now, so the TARGET changed, and the row follows
+        // its note to it by the note's text (decision 62). Until A15 it stayed an orphan.
         Note(document: "frus1964-68v13/d4",
              v58: record("frus1964-68v13/d4",
                          raw: "Source: Department of State, Central Files, DEF ( MLF ) 9–5. Confidential.",
@@ -326,7 +332,7 @@ struct ArchiveVisitKeyStabilityTests {
              v59: record("frus1964-68v13/d4",
                          raw: "Source: Department of State, Central Files, DEF (MLF) 9–5. Confidential.",
                          era: "decimal", repository: "Department of State"),
-             joins: false,
+             joins: true,
              mintedOnV58: "r|Source: Department of State, Central Files, DEF ( MLF ) 9–5. Confidential."),
     ]
 
@@ -417,7 +423,8 @@ struct ArchiveVisitKeyStabilityTests {
             for: Self.johnsonCitation("Tom Johnson’s Notes of Meetings")).key
         #expect(derived.overlay.excludedKeys.contains(citationKey),
                 "the exclusion set on the footnote citation's v58 key did not reach its v59 key")
-        #expect(derived.overlay.orphanKeys.count == 1, "only the re-grouped note is an orphan")
+        #expect(derived.overlay.orphanKeys.isEmpty,
+                "since decision 62 the re-grouped note follows its note too: \(derived.overlay.orphanKeys)")
         #expect(derived.overlay.storedKeyCount == Self.notes.count + 1)
     }
 
@@ -452,21 +459,27 @@ struct ArchiveVisitKeyStabilityTests {
     }
 
     /// The resolution rule's conjuncts, one fixture each.
+    ///
+    /// Since decision 62 several stored keys may answer for one derived key, and the target shows
+    /// one of their rows (`ArchiveVisitTargetKeys.shownRow`, pinned by
+    /// `ArchiveVisitStoredClassKeyTests`). Until A15 the second and fourth cases below resolved the
+    /// re-spelled row for nothing, an orphan.
     @Test("A stored key joins exactly one derived key, never by a guess")
     func resolutionRefusesAmbiguity() {
         typealias K = ArchiveVisitTargetKeys
         // Spaces only: joins.
         #expect(K.resolve(storedKeys: ["r|No . 1259.]"], derivedKeys: ["r|No. 1259.]"])
                 == ["r|No . 1259.]": "r|No. 1259.]"])
-        // An exact match wins, and its derived key is not offered to the re-spelled row.
+        // An exact match resolves, and the re-spelled row answers for the same target.
         #expect(K.resolve(storedKeys: ["r|No. 1259.]", "r|No . 1259.]"], derivedKeys: ["r|No. 1259.]"])
-                == ["r|No. 1259.]": "r|No. 1259.]"])
+                == ["r|No. 1259.]": "r|No. 1259.]", "r|No . 1259.]": "r|No. 1259.]"])
         // One stored key, two derived keys it could name: neither.
         #expect(K.resolve(storedKeys: ["r|No . 1259.]"],
                           derivedKeys: ["r|No. 1259.]", "r|No .1259.]"]).isEmpty)
-        // Two stored keys, one derived key both could name: neither.
+        // Two stored keys, one derived key both name: both answer for it.
         #expect(K.resolve(storedKeys: ["r|No . 1259.]", "r|No. 1259 .]"],
-                          derivedKeys: ["r|No. 1259.]"]).isEmpty)
+                          derivedKeys: ["r|No. 1259.]"])
+                == ["r|No . 1259.]": "r|No. 1259.]", "r|No. 1259 .]": "r|No. 1259.]"])
         // A different note does not join because it merely shares a prefix.
         #expect(K.resolve(storedKeys: ["r|No . 1259.]"], derivedKeys: ["r|No. 1260.]"]).isEmpty)
     }
@@ -505,11 +518,12 @@ struct ArchiveVisitKeyStabilityTests {
 /// key below is written as the builds through version 68 minted it: `class|` and the class the
 /// index stored then, or `r|` and the note's text where it stored none. Measured over the 198,347
 /// stored notes the builder keys as a central file, 27 keys are a file that got its dash back and
-/// 410 are a note whose class is now read; `ArchiveVisitTargetKeys` says why the first join and
-/// the second do not.
+/// 410 are a note whose class is now read. The first join by the dash rule; the second stayed
+/// orphans until decision 62 (A15), and join by their notes' text (`ArchiveVisitTargetKeys`).
 ///
 /// Version history:
 ///   1.0 — index version 69
+///   1.1 — decision 62 (A15): the note whose class is now read follows its note to the file
 @Suite("Archive Visit keys across index version 69")
 struct ArchiveVisitKeysAcrossVersion69Tests {
 
@@ -545,7 +559,7 @@ struct ArchiveVisitKeysAcrossVersion69Tests {
     }
 
     @MainActor
-    @Test("A row on a file that got its dash back keeps its tier and note, and a row on a note whose class is now read stays an orphan")
+    @Test("A row on a file that got its dash back keeps its tier and note, and a row on a note whose class is now read follows it to the file")
     func planFromBeforeVersion69() async throws {
         let container = try ModelContainer.makeTestContainer()
         let context = container.mainContext
@@ -578,12 +592,14 @@ struct ArchiveVisitKeysAcrossVersion69Tests {
         #expect(derived.overlay.notes[joined] == "note for frus1961-63v05/d321")
         #expect(derived.overlay.storedKey(for: joined) == "class|POL 17 US USSR")
 
-        // One note's own target has become a file's: its tier is not lent to the file.
+        // One note's own target has become a file's, and the row follows the note there
+        // (decision 62); until A15 it stayed an orphan, its tier not lent to the file.
         let read = "class|POL 27 S VIET"
         #expect(derived.model.targets.contains { $0.key == read })
-        #expect(derived.overlay.tierAssignments[read] == nil)
-        #expect(derived.overlay.notes[read] == nil)
-        #expect(derived.overlay.orphanKeys == [minted])
+        #expect(derived.overlay.tierAssignments[read] == tier.id)
+        #expect(derived.overlay.notes[read] == "note for frus1961-63v04/d198")
+        #expect(derived.overlay.storedKey(for: read) == minted)
+        #expect(derived.overlay.orphanKeys.isEmpty, "\(derived.overlay.orphanKeys)")
         #expect(derived.overlay.storedKeyCount == 2)
     }
 
@@ -1273,6 +1289,8 @@ struct ArchiveVisitExporterOverlayTests {
 ///         the row count tells the two apart; and `swapSeedRow` and `swapTargetRow` replace a row
 ///         with one differing in its key alone. The old twin differed in its note, so a signature that
 ///         stored rows as a set, or dropped a row's key, passed every case
+///   1.2 — decision 62 (A15): `earlierCopyOfTargetRow`, a row whose creation date alone differs,
+///         which the derivation now reads to choose the row a target shows
 @Suite("Archive Visit derivation input signature (#1456)")
 @MainActor
 struct ArchiveVisitInputSignatureTests {
@@ -1327,6 +1345,10 @@ struct ArchiveVisitInputSignatureTests {
         /// A state row replaced by one under another key with the same tier, inclusion and note:
         /// only its key differs.
         case swapTargetRow
+        /// A state row replaced by its copy as another device minted it a day earlier, which is how
+        /// iCloud can deliver it: only its creation date differs. Which of several rows answering
+        /// for one target the target shows reads it (decision 62).
+        case earlierCopyOfTargetRow
 
         /// The case's name, for the test report.
         var testDescription: String { rawValue }
@@ -1388,6 +1410,18 @@ struct ArchiveVisitInputSignatureTests {
                 swapped.userNote = userNote
                 swapped.plan = plan
                 context.insert(swapped)
+            case .earlierCopyOfTargetRow:
+                let (key, tierId, included, userNote) = (row.targetKey, row.tierId, row.included,
+                                                         row.userNote)
+                let created = try #require(row.createdAt)
+                context.delete(row)
+                let copy = ArchiveVisitTarget(planId: plan.id, targetKey: key)
+                copy.tierId = tierId
+                copy.included = included
+                copy.userNote = userNote
+                copy.createdAt = created.addingTimeInterval(-86_400)
+                copy.plan = plan
+                context.insert(copy)
             }
             try context.save()
         }
@@ -1416,6 +1450,12 @@ struct ArchiveVisitInputSignatureTests {
             #expect(rowsWithoutKeys(before) == rowsWithoutKeys(after),
                     "\(edit) changed more than a row's key, so it cannot show the key is read")
             #expect(before.indexedSeedVolumes == after.indexedSeedVolumes)
+        }
+        if edit == .earlierCopyOfTargetRow {
+            // Fixture guard: the copy keeps the row's key and state, and so its id.
+            #expect(rowsWithoutKeys(before) == rowsWithoutKeys(after))
+            #expect(before.targets.keys.map(\.targetKey) == after.targets.keys.map(\.targetKey))
+            #expect(before.targets.keys.map(\.id) == after.targets.keys.map(\.id))
         }
         #expect(before != after, """
             \(edit) changes what ArchiveVisitDerivation.derive reads, and the signature did not move, \
@@ -1549,5 +1589,314 @@ struct ArchiveVisitWindowHandoffTests {
                                        planIds: [current, requested])
         #expect(selection == current)
         #expect(request == nil)
+    }
+}
+
+// MARK: - ArchiveVisitStoredClassKeyTests (decision 62)
+
+/// Decision 62 (A15, #1691's second line): a central file worded through the Department keys on the
+/// class the index stores for it, and a tier, note or exclusion set under its old key, the note's
+/// text, follows to the class target.
+///
+/// Every note below is the stored note of the document named beside it, read from a full v69 index,
+/// and each but the control stores a class the kit's citation scan does not read: `POL CHICOM -US`
+/// and `POL CHINAT -US` are files with no subject number, and `SOC 14-1 S VIET Secret;` runs its
+/// classification on. Until A15 each keyed on its text, which is what a stored row's old key is
+/// written as. `UN 6 ChiCom` stores no class and still keys on its text.
+///
+/// Version history:
+///   1.0 — decision 62 (A15): initial implementation
+@Suite("Archive Visit keys on the stored class, with a join (decision 62)")
+@MainActor
+struct ArchiveVisitStoredClassKeyTests {
+
+    private static func record(_ document: String, series: String,
+                               raw: String) -> CollectionGeneratedBlocks.SourceRecord {
+        let parts = document.split(separator: "/").map(String.init)
+        return .init(volumeId: parts[0], documentId: parts[1], repository: "Department of State",
+                     recordGroup: "59", lotFile: nil, seriesName: series, rawText: raw,
+                     citationEra: "subject_numeric")
+    }
+
+    /// `frus1964-68v30` d137: a file with no subject number; the index stores `POL CHICOM-US`.
+    static let d137 = record("frus1964-68v30/d137", series: "POL CHICOM -US", raw: "Source: Department of State, Central Files, POL CHICOM -US. Confidential; Immediate; Limdis. Repeated to Taipei and Hong Kong and passed to the White House.")
+    /// `frus1964-68v30` d148: the same file, in another note.
+    static let d148 = record("frus1964-68v30/d148", series: "POL CHICOM -US", raw: "Source: Department of State, Central Files, POL CHICOM -US. Top Secret; Exdis. Drafted by Dean on May 13. Bundy did not initial the memorandum, but it bears notations indicating that it was received in the Executive Secretariat, and Document 152 indicates that it was discussed with Rusk. The date is handwritten on the source text.")
+    /// `frus1964-68v30` d103: `POL CHINAT-US`.
+    static let d103 = record("frus1964-68v30/d103", series: "POL CHINAT -US", raw: "Source: Department of State, Central Files, POL CHINAT -US. Secret; Exdis. Drafted by Ambassador Wright and approved in S on September 30. The conversation took place at a dinner given by Rusk for Madame Chiang. Ambassador Chow called on Chief of Protocol Lloyd Nelson Hand on September 9 to state that Madame Chiang’s visit, although private, was to be considered a return visit for President Johnson’s 1961 visit to Taipei. Hand stated that since the Department had been notified that her visit was private, it had made arrangements accordingly, but that the arrangements that were made for a White House tea on September 14 and the Rusk dinner were beyond those normally made for private visits. (Telegram 239 to Taipei, September 18; ibid., POL 7 CHINAT)")
+    /// `frus1964-68v30` d170: `UN 6 ChiCom`, which stores no class: the control.
+    static let d170 = record("frus1964-68v30/d170", series: "UN 6 ChiCom", raw: "Source: Department of State, Central Files, UN 6 ChiCom. Secret; Priority; Exdis. Drafted by Bundy on July 23, cleared by Deputy Assistant Secretary for IO William B. Buffum, and approved by Rusk. Also sent to Geneva for Goldberg and repeated to Taipei, USUN, Tokyo, and London.")
+    /// `frus1961-63v03` d151: a classification run on after `SOC 14-1 S VIET`.
+    static let d151 = record("frus1961-63v03/d151", series: "SOC 14-1 S VIET", raw: "Source: Department of State, Central Files, SOC 14-1 S VIET Secret; Operational Immediate; Limit Distribution. Repeated to CINCPAC. A note on another copy of this telegram indicates that the President was briefed on its contents. (Kennedy Library, National Security Files, Vietnam Country Series, 6/63)")
+    /// `frus1961-63v03` d116: the same file, which the scan reads.
+    static let d116 = record("frus1961-63v03/d116", series: "SOC 14-1 S VIET", raw: "Source: Department of State, Central Files, SOC 14-1 S VIET. Secret; Operational Immediate. Also sent to Saigon.")
+
+    static let all = [d137, d148, d103, d170, d151, d116]
+    static let chicom = "class|POL CHICOM-US"
+    static let chinat = "class|POL CHINAT-US"
+    static let soc = "class|SOC 14-1 S VIET"
+
+    /// The key a build before A15 minted for a note the scan reads no class from: its text.
+    static func oldKey(_ record: CollectionGeneratedBlocks.SourceRecord) -> String {
+        "r|" + record.rawText
+    }
+
+    /// A plan seeded with `records`' documents for their source notes.
+    private func plan(seeding records: [CollectionGeneratedBlocks.SourceRecord],
+                      in context: ModelContext) -> ArchiveVisitPlan {
+        let plan = ArchiveVisitPlan(name: "Made before A15")
+        context.insert(plan)
+        plan.addSeeds(records.map { ($0.volumeId, $0.documentId) }, includeSource: true,
+                      includeExternalRefs: false, in: context)
+        return plan
+    }
+
+    /// A stored row under `key`, created at `created` seconds past a fixed date.
+    @discardableResult
+    private func row(_ key: String, of plan: ArchiveVisitPlan, created: TimeInterval,
+                     tier: ArchiveVisitTier? = nil, note: String? = nil, included: Bool = true,
+                     in context: ModelContext) -> ArchiveVisitTarget {
+        let row = ArchiveVisitTarget(planId: plan.id, targetKey: key)
+        row.plan = plan
+        row.tierId = tier?.id
+        row.userNote = note
+        row.included = included
+        row.createdAt = Date(timeIntervalSince1970: 1_790_000_000 + created)
+        context.insert(row)
+        return row
+    }
+
+    /// The keys as the app derives them: the notes indexed through the pipeline's own store pass,
+    /// read back through the packet's own data source, and each key held to the class the index
+    /// stored for its note, read straight from `document_sources`.
+    @Test("A note the citation scan reads no class from keys on the class the index stores for it")
+    func notesKeyOnTheClassTheIndexStores() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("A15-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let byVolume = Dictionary(grouping: Self.all, by: \.volumeId)
+        for (volumeId, records) in byVolume {
+            let documents = records.map { record in
+                "<div type=\"document\" xml:id=\"\(record.documentId)\" n=\"\(record.documentId.dropFirst())\">"
+                    + "<note type=\"source\">\(record.rawText)</note>"
+                    + "<head>A telegram</head><p>Body.</p></div>"
+            }.joined()
+            try Data(("<TEI xmlns:frus=\"http://history.state.gov/frus/ns/1.0\"><text><body>"
+                      + documents + "</body></text></TEI>").utf8)
+                .write(to: volumes.appendingPathComponent("\(volumeId).xml"))
+        }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let pipeline = try IndexingPipeline(fts5Store: FTS5Store(databaseURL: dbURL),
+                                            databaseURL: dbURL, volumesDirectory: volumes,
+                                            concurrencyLimit: 1)
+        for volumeId in byVolume.keys.sorted() { try await pipeline.indexVolume(volumeId) }
+        let stored = try Self.storedSources(at: dbURL)
+        // Fixture guard: the store pass stores what the full index does for these notes.
+        #expect(stored["frus1964-68v30/d137"]?.decimalClass == "POL CHICOM-US")
+        #expect(stored["frus1961-63v03/d151"]?.decimalClass == "SOC 14-1 S VIET")
+        #expect(stored["frus1964-68v30/d170"].map { $0.decimalClass == nil } == true,
+                "the control must store a note and no class")
+
+        let model = await TripPacketBuilder.build(
+            documents: Self.all.map { ($0.volumeId, $0.documentId) }, researchQuestion: nil,
+            dataSource: TripPacketDataSource(pipeline: pipeline))
+        let keyByDocument = Dictionary(uniqueKeysWithValues: model.targets.flatMap { target in
+            target.drawnFrom.map { ($0.id, target.key) }
+        })
+        for record in Self.all {
+            let document = "\(record.volumeId)/\(record.documentId)"
+            let source = try #require(stored[document], "\(document) stored no source note")
+            let expected = source.decimalClass.map { "class|\($0)" } ?? "r|\(source.rawText)"
+            #expect(keyByDocument[document] == expected, "\(document): «\(keyByDocument[document] ?? "none")»")
+        }
+        // Two notes of one file are one target, and the run-on note is the file the scan reads.
+        #expect(model.targets.first { $0.key == Self.chicom }?.drawnFrom.count == 2)
+        #expect(model.targets.first { $0.key == Self.soc }?.drawnFrom.count == 2)
+        #expect(model.targets.first { $0.key == Self.chicom }?.label
+                == "Subject-Numeric File POL CHICOM-US")
+    }
+
+    /// What `document_sources` stores for each document: its class and its note's text.
+    private static func storedSources(at url: URL) throws
+        -> [String: (decimalClass: String?, rawText: String)] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(url.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+              let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "ArchiveVisitStoredClassKeyTests", code: 1)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(handle, """
+            SELECT volume_id || '/' || document_id, decimal_class, raw_text FROM document_sources
+            """, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "ArchiveVisitStoredClassKeyTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [String: (decimalClass: String?, rawText: String)] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            guard let key = sqlite3_column_text(stmt, 0).map({ String(cString: $0) }) else { continue }
+            rows[key] = (sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+                         sqlite3_column_text(stmt, 2).map { String(cString: $0) } ?? "")
+        }
+        return rows
+    }
+
+    @Test("A tier, note and exclusion set under a note's old key follow it to its class target")
+    func stateFollowsTheNoteToItsClass() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let records = [Self.d137, Self.d148, Self.d103, Self.d170]
+        let plan = plan(seeding: records, in: context)
+        let tier = ArchiveVisitTier(label: "Day one", order: 0)
+        plan.tiers = [tier]
+        row(Self.oldKey(Self.d137), of: plan, created: 0, tier: tier, note: "Warsaw talks", in: context)
+        row(Self.oldKey(Self.d103), of: plan, created: 1, included: false, in: context)
+        row(Self.oldKey(Self.d170), of: plan, created: 2, note: "still its own", in: context)
+        try context.save()
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: plan, indexedVolumeIds: [], dataSource: DerivationStub(sources: records))
+
+        #expect(Set(derived.model.targets.map(\.key))
+                == [Self.chicom, Self.chinat, Self.oldKey(Self.d170)])
+        #expect(derived.overlay.tierAssignments[Self.chicom] == tier.id)
+        #expect(derived.overlay.notes[Self.chicom] == "Warsaw talks")
+        #expect(derived.overlay.excludedKeys.contains(Self.chinat))
+        #expect(derived.overlay.notes[Self.oldKey(Self.d170)] == "still its own")
+        #expect(derived.overlay.storedKey(for: Self.chicom) == Self.oldKey(Self.d137))
+        #expect(derived.overlay.orphanKeys.isEmpty, "\(derived.overlay.orphanKeys)")
+        #expect(derived.overlay.superseded.isEmpty)
+
+        // The editor's write path updates the old row, and mints none.
+        let rows = plan.targets?.count
+        let written = try #require(plan.targetState(forKey: Self.chicom, resolvedBy: derived.overlay,
+                                                    mintIfMissing: true, in: context))
+        #expect(written.targetKey == Self.oldKey(Self.d137))
+        #expect(plan.targets?.count == rows)
+    }
+
+    /// The collision rule, both halves: two notes of one file with a row each, and a file with a
+    /// row of its own beside a note whose row now follows it there.
+    @Test("A target several rows answer for shows its own key's row, else the first created, and lists the rest")
+    func severalRowsShowOneAndListTheRest() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let dayOne = ArchiveVisitTier(label: "Day one", order: 0)
+        let dayTwo = ArchiveVisitTier(label: "Day two", order: 1)
+
+        // Two notes' rows and no row of the target's own: the earlier created is shown, though
+        // its key sorts after the other's.
+        let notes = plan(seeding: [Self.d137, Self.d148], in: context)
+        notes.tiers = [dayOne, dayTwo]
+        try #require(Self.oldKey(Self.d137) < Self.oldKey(Self.d148),
+                     "fixture guard: the later row must sort first, or key order would pass for the rule")
+        row(Self.oldKey(Self.d137), of: notes, created: 100, tier: dayTwo, note: "second", in: context)
+        row(Self.oldKey(Self.d148), of: notes, created: 0, tier: dayOne, note: "first",
+            included: false, in: context)
+        try context.save()
+        let first = await ArchiveVisitDerivation.derive(
+            plan: notes, indexedVolumeIds: [],
+            dataSource: DerivationStub(sources: [Self.d137, Self.d148]))
+        #expect(first.overlay.tierAssignments[Self.chicom] == dayOne.id)
+        #expect(first.overlay.notes[Self.chicom] == "first")
+        #expect(first.overlay.excludedKeys.contains(Self.chicom))
+        #expect(first.overlay.storedKey(for: Self.chicom) == Self.oldKey(Self.d148))
+        #expect(first.overlay.superseded
+                == [Self.oldKey(Self.d137): .init(targetKey: Self.chicom, excluded: false)])
+        #expect(first.overlay.tierAssignments[Self.oldKey(Self.d137)] == dayTwo.id)
+        #expect(first.overlay.notes[Self.oldKey(Self.d137)] == "second")
+        #expect(!first.overlay.excludedKeys.contains(Self.oldKey(Self.d137)))
+        #expect(first.overlay.orphanKeys.isEmpty)
+
+        // The target's own row and a note's: the target's own is shown, though created later,
+        // and the note's exclusion is kept with its row, unapplied.
+        let file = plan(seeding: [Self.d116, Self.d151], in: context)
+        file.tiers = [dayOne, dayTwo]
+        row(Self.soc, of: file, created: 100, tier: dayOne, in: context)
+        row(Self.oldKey(Self.d151), of: file, created: 0, tier: dayTwo, note: "Hue", included: false,
+            in: context)
+        try context.save()
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: file, indexedVolumeIds: [],
+            dataSource: DerivationStub(sources: [Self.d116, Self.d151]))
+        #expect(derived.model.targets.map(\.key) == [Self.soc])
+        #expect(derived.overlay.tierAssignments[Self.soc] == dayOne.id)
+        #expect(derived.overlay.notes[Self.soc] == nil)
+        #expect(!derived.overlay.excludedKeys.contains(Self.soc))
+        #expect(derived.overlay.storedKey(for: Self.soc) == Self.soc)
+        #expect(derived.overlay.superseded
+                == [Self.oldKey(Self.d151): .init(targetKey: Self.soc, excluded: true)])
+        #expect(derived.overlay.notes[Self.oldKey(Self.d151)] == "Hue")
+
+        // Both are kept and labeled, and the export says so.
+        let line = TripPacketExporter(model: derived.model, projectName: "P", overlay: derived.overlay)
+            .coverageReport.components(separatedBy: "\n").first { $0.contains("stored target") }
+        #expect(line == "2 of 2 stored target rows derive from the current seeds — 1 of them answers "
+                + "for a target that shows another stored row's tier and note, and is kept and labeled, "
+                + "never deleted.", "\(line ?? "no line")")
+
+        // Each is written by its own key: the target's tier goes to its own row, the listed row's
+        // note to the listed row, and nothing is minted.
+        let rows = file.targets?.count
+        let shown = try #require(file.targetState(forKey: Self.soc, resolvedBy: derived.overlay,
+                                                  mintIfMissing: true, in: context))
+        #expect(shown.targetKey == Self.soc)
+        let listed = try #require(file.targetState(forKey: Self.oldKey(Self.d151),
+                                                   resolvedBy: derived.overlay,
+                                                   mintIfMissing: true, in: context))
+        #expect(listed.userNote == "Hue")
+        #expect(file.targets?.count == rows)
+    }
+
+    /// The text rule's conjuncts, one fixture each, read by `resolve` alone.
+    @Test("A key on a note's text follows wherever the note sits, and never by a guess")
+    func theTextRuleIsGeneral() {
+        typealias K = ArchiveVisitTargetKeys
+        // The rule reads the note, not the kind of key it moved to: a note that came to name a lot.
+        #expect(K.resolve(storedKeys: ["r|Note"], derivedKeys: ["lot|64D199"],
+                          textKeys: ["r|Note": ["lot|64D199"]]) == ["r|Note": "lot|64D199"])
+        // Its text in two targets: neither.
+        #expect(K.resolve(storedKeys: ["r|Note"], derivedKeys: ["class|A", "class|B"],
+                          textKeys: ["r|Note": ["class|A", "class|B"]]).isEmpty)
+        // Read exactly first: the exact text's target, though a spacing variant sits in another.
+        #expect(K.resolve(storedKeys: ["r|A B"], derivedKeys: ["class|X", "class|Y"],
+                          textKeys: ["r|A B": ["class|X"], "r|AB": ["class|Y"]])
+                == ["r|A B": "class|X"])
+        // Then with spaces removed: a row minted before v59 on a note that has since gained a class.
+        #expect(K.resolve(storedKeys: ["r|A B"], derivedKeys: ["class|X"],
+                          textKeys: ["r|AB": ["class|X"]]) == ["r|A B": "class|X"])
+        // Only a key on a note's text reads the notes.
+        #expect(K.resolve(storedKeys: ["coll|A B"], derivedKeys: ["class|X"],
+                          textKeys: ["coll|A B": ["class|X"]]).isEmpty)
+        // Two notes' keys may answer for one target.
+        #expect(K.resolve(storedKeys: ["r|A", "r|B"], derivedKeys: ["class|X"],
+                          textKeys: ["r|A": ["class|X"], "r|B": ["class|X"]])
+                == ["r|A": "class|X", "r|B": "class|X"])
+    }
+
+    /// `textKeys(of:)` reads both channels: a drawn-from document's note and a footnote citation.
+    @Test("The text keys come from the targets' notes and footnote citations")
+    func textKeysReadBothChannels() {
+        let model = TripPacketModel.build(
+            groups: [(key: Self.chicom, label: "Subject-Numeric File POL CHICOM-US",
+                      category: .subjectNumericFile, repository: "Department of State",
+                      lotAsPrinted: nil, resolution: nil,
+                      documents: [.init(volumeId: "frus1964-68v30", documentId: "d137",
+                                        citation: "c", fileDesignation: nil, documentDay: nil,
+                                        sourceNote: Self.d137.rawText)])],
+            documentYears: [], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil },
+            references: [(key: "lot|64D199", form: .lotFile, label: "Lot 64 D 199",
+                          repository: "Department of State", lotAsPrinted: "64 D 199",
+                          seedings: [.init(volumeId: "frus1964-68v30", documentId: "d1",
+                                           citation: "c", footnoteLabel: "2",
+                                           rawText: "Not printed. (Lot 64 D 199)", inherited: false)])],
+            claimants: { _ in nil })
+        let keys = ArchiveVisitTargetKeys.textKeys(of: model.targets)
+        #expect(keys[Self.oldKey(Self.d137)] == [Self.chicom])
+        #expect(keys["r|Not printed. (Lot 64 D 199)"] == ["lot|64D199"])
+        #expect(keys.count == 2)
     }
 }
