@@ -39787,7 +39787,7 @@ Nothing was to be built until the owner chooses.
 **Found** (§6g): a volume whose indexing is cut short during a launch is marked nowhere until the next launch. `AppState.interruptedVolumeIds` is read from the sentinel at launch only, and the hubs' library line counts by `isVolumeIndexed(_:)`, so Browse lists only the documents it stored, with no badge, and the line can read *all indexed · nothing needs attention*. Read, not seen.
 
 **Not done, and for the owner.**
-- **The pull request is not opened**: the brief asked for the owner's word first.
+- **Opened as #1741** on the owner's word ("Open A14's pull request as drafted"), against `v2` at `c65626cf`, which had not moved since the branch was cut; not merged.
 - **The dimmed Link to Saved Search…** (no saved search) was not walked; its line is read from the code.
 - **VoiceOver** was not heard on the Mac's new button or the re-keyed VoiceOver name; dark appearance not checked.
 - **The simulators**: iPhone 17 (`80CF0F18`) and iPad Air 11-inch (M4) (`4973970C`) are shut down. The iPad Pro 13-inch (M5) (`9AB3A0C9`) was booted by another session, which was streaming its log, and was not touched. The check copy is quit with its collections as found, its folder kept; the `v2` build walked first is in this session's scratchpad.
