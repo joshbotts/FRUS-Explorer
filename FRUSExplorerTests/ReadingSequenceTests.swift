@@ -142,3 +142,138 @@ import Foundation
         #expect(chapter.subsections[0].documentIds == chapter.subsections[0].allDocumentIds)
     }
 }
+
+// MARK: - IndexedReadingOrderTests (#1690)
+
+/// Add Documents' Browse list and the Mac graph window's document picker list a volume's indexed rows in its reading
+/// order (#1690's first line, plan of record A14), through `IndexingPipeline.indexedDocumentsInReadingOrder(forVolume:)`.
+///
+/// Both had listed `documents(forVolume:)`, whose `ORDER BY rowid` is the order the store pass wrote the rows in. A
+/// section's own text has a row of its own since index version 68 (#1536), written after the documents it holds, so
+/// the two lists put "First Meeting", the section's list of those present, after its minutes; Browse and the reader put
+/// it first. The rule is tested pure and over a real index of `SectionOwnTextTests`' fixture, the volume whose order
+/// the reader's own test pins; the two lists are views, the Mac's compiled for the Mac alone, so the last test reads
+/// their calls from source.
+///
+/// Version history:
+///   1.0 — #1690's first line: initial implementation
+@Suite("A volume's documents to pick from are in its reading order (#1690)")
+struct IndexedReadingOrderTests {
+
+    private static let volume = "frusTest"
+
+    /// An outline with a front matter of three leaf sections, of which the index holds only the preface; a compilation
+    /// whose own text has a row, holding a chapter whose own text has a row and two documents; and a back matter whose
+    /// index the index leaves out.
+    private static let structure = VolumeStructure(volumeId: volume, sections: [
+        VolumeSection(sectionId: "front", divType: "front", title: "Front Matter", documentIds: [], subsections: [
+            VolumeSection(sectionId: "toc", divType: "table-of-contents", title: "Table of Contents",
+                          documentIds: [], subsections: []),
+            VolumeSection(sectionId: "preface", divType: "preface", title: "Preface", documentIds: [], subsections: []),
+            VolumeSection(sectionId: "persons", divType: "persons", title: "Persons", documentIds: [], subsections: []),
+        ]),
+        VolumeSection(sectionId: "comp1", divType: "compilation", title: "The Conference", documentIds: [], subsections: [
+            VolumeSection(sectionId: "ch1", divType: "chapter", title: "First Meeting", documentIds: ["d1", "d2"],
+                          subsections: []),
+        ]),
+        VolumeSection(sectionId: "back", divType: "back", title: "Back Matter", documentIds: [], subsections: [
+            VolumeSection(sectionId: "index", divType: "index", title: "Index", documentIds: [], subsections: []),
+        ]),
+    ])
+
+    private static func row(_ id: String) -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: id, volumeId: volume, header: "Row \(id)")
+    }
+
+    @Test("The index's rows come back in the outline's order, with no entry made up for a section the index leaves out")
+    func rowsTakeTheOutlinesOrder() {
+        // As the store pass writes them: each section's own row after the documents it holds.
+        let stored = ["d1", "d2", "ch1", "comp1", "preface"].map(Self.row)
+        let ordered = IndexingPipeline.indexedRowsInReadingOrder(stored, structure: Self.structure, volumeId: Self.volume)
+        #expect(ordered.map(\.documentId) == ["preface", "comp1", "ch1", "d1", "d2"])
+        // Each row is the index's own, with its fields, and none is lost or doubled.
+        #expect(ordered.map(\.header) == ["Row preface", "Row comp1", "Row ch1", "Row d1", "Row d2"])
+        // The reader's sequence, by contrast, makes up a page for the table of contents, Persons and the index.
+        let reader = IndexingPipeline.mergeReadingSequence(structure: Self.structure, cached: stored, volumeId: Self.volume)
+        #expect(reader.map(\.documentId) == ["toc", "preface", "persons", "comp1", "ch1", "d1", "d2", "index"])
+    }
+
+    @Test("A row the outline does not reach comes after the rest, and with no outline the stored order stands")
+    func rowsOutsideTheOutlineAreKept() {
+        let stored = ["d9", "d1", "d2", "ch1", "d8"].map(Self.row)
+        let ordered = IndexingPipeline.indexedRowsInReadingOrder(stored, structure: Self.structure, volumeId: Self.volume)
+        #expect(ordered.map(\.documentId) == ["ch1", "d1", "d2", "d9", "d8"])
+
+        for outline in [nil, VolumeStructure(volumeId: Self.volume, sections: [])] {
+            #expect(IndexingPipeline.indexedRowsInReadingOrder(stored, structure: outline, volumeId: Self.volume)
+                        .map(\.documentId) == ["d9", "d1", "d2", "ch1", "d8"])
+        }
+    }
+
+    @Test("Over a real index, a section's own text comes before its documents, as the reader steps through the volume")
+    func aSectionsOwnTextComesFirst() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-1690-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        try SectionOwnTextTests.volumeXML
+            .write(to: volumes.appendingPathComponent("\(SectionOwnTextTests.volumeId).xml"), atomically: true, encoding: .utf8)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let pipeline = try IndexingPipeline(
+            fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL, volumesDirectory: volumes)
+        try await pipeline.indexVolume(SectionOwnTextTests.volumeId)
+
+        // The order the two lists had: the first meeting's own text after its two documents.
+        let stored = try await pipeline.documents(forVolume: SectionOwnTextTests.volumeId).map(\.documentId)
+        let storedMeeting = try #require(stored.firstIndex(of: "ch1"))
+        let storedMinutes = try #require(stored.firstIndex(of: "d1"))
+        #expect(storedMinutes < storedMeeting, "the stored order no longer puts the section after its documents")
+
+        let listed = try await pipeline.indexedDocumentsInReadingOrder(forVolume: SectionOwnTextTests.volumeId)
+            .map(\.documentId)
+        // The reader's order (`SectionOwnTextTests.theReadingOrderPutsTheRowFirst`) less `ch7note`, an editorial note
+        // the fixture prints as a section of its own: the index holds no row for it, and the reader makes up a page.
+        #expect(listed == [
+            "preface",
+            "comp1",
+            "ch1", "d1", "d2",
+            "d3", "d4", "d5",
+            "ch5", "d6",
+            "sub1", "d7",
+            "ch7", "d8",
+            "s01", "d9",
+            "comp2", "t1", "t2",
+            "t3",
+            "d10",
+            "d11",
+        ])
+        #expect(!stored.contains("ch7note"), "the index now holds a row for the editorial note section")
+        // The same rows as the index holds, reordered, and the reader's own order wherever the index has a row.
+        #expect(listed.sorted() == stored.sorted())
+        let reader = try await pipeline.readingSequence(forVolume: SectionOwnTextTests.volumeId).map(\.documentId)
+        #expect(listed == reader.filter { stored.contains($0) })
+    }
+
+    /// The two lists are views nothing in this target hosts, and the graph window is compiled for the Mac alone, so
+    /// their loads are read here: each lists the reading order, and neither the stored order.
+    @Test("Add Documents' Browse list and the Mac graph window's picker load the reading order")
+    func bothListsLoadTheReadingOrder() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let loads = [
+            ("FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift",
+             ".task(id: \"\\(volume.volumeId)|\\(isIndexed)\") {",
+             ".indexedDocumentsInReadingOrder(forVolume: volume.volumeId)) ?? []"),
+            ("FRUSExplorer/CrossReference/CrossReferenceGraphWindowView.swift",
+             "private func loadDocuments(for volumeId: String) async {",
+             "let docs = (try? await pipeline.indexedDocumentsInReadingOrder(forVolume: volumeId)) ?? []"),
+        ]
+        for (path, header, call) in loads {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            let start = try #require(source.range(of: header), "\(path) no longer loads the volume's list there")
+            let body = try #require(WindowTargetingTests.balancedBlock(in: source, from: start.lowerBound))
+            #expect(body.contains(call), "\(path) does not list the reading order")
+            #expect(!body.contains(".documents(forVolume:"), "\(path) lists the stored order")
+        }
+    }
+}
