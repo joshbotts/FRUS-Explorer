@@ -471,6 +471,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `IndexingStage.failed` on `progressStream` when they throw after their first update, so
 ///         the app's banner and Live Activity end with the pass. Nothing stored changes; no index
 ///         version
+///  4.44 — 2026-10-20 (A16, #1691's first line): `classLeafPatterns` matches a Subject-Numeric
+///         file with a country as itself and the same file at a post, so `POL 27 VIET` no longer
+///         reaches `POL 27 VIET S`. An index-read change; nothing stored moves, no index version
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -11596,11 +11599,12 @@ public actor IndexingPipeline {
     /// for a per-tap query; revisit with a `COLLATE NOCASE` declaration (a schema
     /// change riding the drop-and-recreate migration) if the corpus grows.
     ///
-    /// The key matches at four boundaries — exact, `class + " …"` (a subject/country
-    /// token boundary, so `"POL 27"` finds `"POL 27 ARAB-ISR"`), `class + "-…"` (a
-    /// subdivision, so `"POL 27"` finds `"POL 27-14 ARAB-ISR"`), and `class + ".…"`
+    /// The key matches at the boundaries `classLeafPatterns` gives it — exact,
+    /// `class + " …"` (a subject/country token boundary, so `"POL 27"` finds
+    /// `"POL 27 ARAB-ISR"`), `class + "-…"` (a decimal subdivision), and `class + ".…"`
     /// (a dotted-decimal subdivision) — which keep `"711.1"` from matching
-    /// `"711.11"` mid-token.
+    /// `"711.11"` mid-token; a Subject-Numeric file with a country matches itself and
+    /// the same file at a post, and no other country's file (A16).
     ///
     /// **S3 resolved to its lean — location prefix only, no `DecimalFileSegment`
     /// period filtering.** Porting the doc-side segmenter did not turn out cheap:
@@ -11708,11 +11712,41 @@ public actor IndexingPipeline {
     /// - **a head and an area** (`POL US-USSR`), which is one file: the key alone. Its space
     ///   branch could only reach another area's file, as `POL GER` reaches `POL GER W-US` (57
     ///   documents on a full index at version 69).
+    ///
+    /// ## A numbered file with an area (A16, #1691's first line)
+    /// `POL 27 VIET` is Viet-Nam's file and `POL 27 VIET S` South Vietnam's: the 1963 handbook's
+    /// appendix of country abbreviations prints `VIET`, `N VIET` and `S VIET` as three codes, as
+    /// it prints `KOR` beside `S KOR` and `EUR` beside `W EUR`, and the volumes' own lists of
+    /// sources gloss the pairs apart. The space branch that lets `POL 27` find its countries let
+    /// the first reach the second: 17 numbered keys of the usage index at version 69 began
+    /// another at a space, and `POL 27 VIET` alone took in South Vietnam's 477 documents. So a
+    /// numbered key with an area matches the keys with its category, number and area and no
+    /// other: itself, and the same file at a post (`NATO 3 LUX (LU)`), which the division reads
+    /// as not part of the area and the volumes gloss as the file itself. A document citing the
+    /// file at a post is matched on the file, so the two are one list from either side. The
+    /// owner's decision of 2026-10-20 (plan of record, A16): the six continuations that are a
+    /// folder or a short form rather than another country (`POL 7 US CONNALLY`, `POL 2 DOM` for
+    /// `DOM REP`, `POL 33-1 JORDAN RIVER`) are two files under this rule, 18 documents in all,
+    /// and reading a folder's name as the slash forms are read (`POL 7 US/ NIXON` stores
+    /// `POL 7 US`) is the grammar's, an index change. No dot branch: no Subject-Numeric key of
+    /// the corpus continues with one.
     nonisolated static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {
         guard !key.isEmpty else { return nil }
         let esc = likeEscaped(key)
-        if let parts = CollectionKeying.subjectNumericParts(of: key), parts.number == nil {
-            return parts.group == key ? [esc, esc + " %"] : [esc]
+        if let parts = CollectionKeying.subjectNumericParts(of: key) {
+            if parts.number == nil {
+                return parts.group == key ? [esc, esc + " %"] : [esc]
+            }
+            if !parts.area.isEmpty {
+                // The post is what the division read off the key's end, so the key ends with it
+                // in parentheses; the file is what stands before.
+                var file = key
+                if let post = parts.post, key.hasSuffix("(\(post))") {
+                    file = String(key.dropLast(post.count + 2)).trimmingCharacters(in: .whitespaces)
+                }
+                let escapedFile = likeEscaped(file)
+                return [escapedFile, escapedFile + " (%"]
+            }
         }
         var patterns = [esc, esc + " %", esc + ".%"]
         if !CollectionKeying.isSubjectNumericClass(key) {

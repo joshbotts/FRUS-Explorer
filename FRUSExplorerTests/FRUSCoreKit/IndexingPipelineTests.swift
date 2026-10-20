@@ -3614,6 +3614,89 @@ struct VolumeSourceMatcherTests {
         }
     }
 
+    /// A numbered file with a country is one file: itself, and the same file at a post (A16,
+    /// #1691's first line, the owner's decision of 2026-10-20). The 1963 handbook's appendix
+    /// prints `VIET`, `N VIET` and `S VIET` as three codes, and the volumes gloss `POL 27 VIET`
+    /// and `POL 27 VIET S` apart; `NATO 3 LUX (LU)` is glossed word for word as `NATO 3 LUX`. The
+    /// notes are the corpus's own: frus1961-63v04/d86, frus1964-68v02/d123, frus1964-68v05/d174,
+    /// frus1964-68v01/d61, frus1964-68v15/d217, frus1964-68v13/d258 (cut after its
+    /// classification), frus1969-76ve04/d183, frus1969-76v20/d139, frus1964-68v32/d209 and d208;
+    /// d11 is constructed on a real key.
+    @Test("A numbered file with a country reaches no other country's file, and the same file at a post is one list (A16)")
+    func aNumberedFileWithACountryIsOneFile() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Central Files, POL 27 VIET. Top Secret; Immediate. Received at 3:16 a.m. and passed to the White House and CIA at 4:48 a.m."),
+                ("d2", "Source: Department of State, Central Files, POL 27 VIET S. Secret; Priority; Nodis."),
+                ("d3", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 27 VIET S. Top Secret."),
+                ("d4", "Source: Department of State, Central Files, POL 27 VIET N. Secret; Sensitive. Copies were sent to U. Alexis Johnson and Rostow."),
+                ("d5", "Source: Department of State, Central Files, NATO 3 LUX. Confidential; Priority. Repeated to Bonn, London, Paris, Moscow, and Berlin."),
+                ("d6", "Source: Department of State, Central Files, NATO 3 LUX(LU). Secret."),
+                ("d7", "Source: National Archives, RG 59, Central Files 1970–73, POL 7 US/ NIXON. Secret; Exdis."),
+                ("d8", "Source: National Archives, RG 59, Central Files 1970–73, POL 7 US Connally. Secret; Priority; Exdis. Received at 4:17 a.m. on November 4."),
+                ("d9", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM"),
+                ("d10", "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM REP. Secret; Limdis. Repeated to Santiago de los Caballeros."),
+                ("d11", "Source: Department of State, Central Files, POL 27 ARAB-ISR. Secret; Priority."),
+            ])
+            let classes = try Self.decimalClasses(dir.appendingPathComponent("test.sqlite"))
+            #expect(classes.count == 11, "read \(classes.count) document_sources rows")
+            let expected: [String: String] = [
+                "d1": "POL 27 VIET", "d2": "POL 27 VIET S", "d3": "POL 27 VIET S", "d4": "POL 27 VIET N",
+                "d5": "NATO 3 LUX", "d6": "NATO 3 LUX (LU)", "d7": "POL 7 US", "d8": "POL 7 US CONNALLY",
+                "d9": "POL 2 DOM", "d10": "POL 2 DOM REP", "d11": "POL 27 ARAB-ISR",
+            ]
+            for (id, classKey) in expected {
+                #expect(classes[id] == .some(classKey), "\(id) stored \(String(describing: classes[id]))")
+            }
+
+            // What each key's family holds: a file with a country, itself and its post; a numbered
+            // family, its countries.
+            let families: [(key: String, members: Set<String>)] = [
+                ("POL 27 VIET", ["d1"]),                        // not d2, d3 or d4: another country's file
+                ("POL 27 VIET S", ["d2", "d3"]),
+                ("POL 27 VIET N", ["d4"]),
+                ("POL 27", ["d1", "d2", "d3", "d4", "d11"]),    // the family, as it was
+                ("NATO 3 LUX", ["d5", "d6"]),                   // the file and the file at its post
+                ("NATO 3 LUX (LU)", ["d5", "d6"]),              // one list from the post's side too
+                ("POL 7 US", ["d7"]),                           // the slash folder is stored as the file
+                ("POL 7 US CONNALLY", ["d8"]),                  // a folder written with a space is a key of its own
+                ("POL 2 DOM", ["d9"]),                          // a short form is a key of its own
+                ("POL 2 DOM REP", ["d10"]),
+            ]
+            var keys: [IndexingPipeline.ArchivalNeighborCountKey] = []
+            for family in families {
+                let found = try await pipeline.archivalNeighbors(
+                    forLotFile: nil, recordGroup: nil, series: nil, decimalClass: family.key)
+                #expect(Set(found.documents.map(\.documentId)) == family.members,
+                        "\(family.key) found \(found.documents.map(\.documentId).sorted())")
+                #expect(found.totalCount == family.members.count, "\(family.key) counted \(found.totalCount)")
+                keys.append(try #require(IndexingPipeline.neighborCountKey(
+                    forLotFile: nil, recordGroup: nil, series: nil, decimalClass: family.key)))
+            }
+            // The badge counts what the list holds: one clause builds both.
+            let counts = try await pipeline.archivalNeighborCounts(forKeys: keys)
+            for (family, key) in zip(families, keys) {
+                #expect(counts[key] == family.members.count, "\(family.key) badge \(String(describing: counts[key]))")
+            }
+
+            // From a document: Viet-Nam's file finds no South or North Vietnam document, South
+            // Vietnam's finds the other wording of its own file, and the file at a post and the
+            // file find each other.
+            let fromVietnam = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(fromVietnam.documents.isEmpty, "POL 27 VIET found \(fromVietnam.documents.map(\.documentId))")
+            #expect(fromVietnam.basis == "POL 27 VIET")
+            let fromSouth = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d2")
+            #expect(fromSouth.documents.map(\.documentId) == ["d3"], "POL 27 VIET S found \(fromSouth.documents.map(\.documentId))")
+            let fromPost = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d6")
+            #expect(fromPost.documents.map(\.documentId) == ["d5"], "NATO 3 LUX (LU) found \(fromPost.documents.map(\.documentId))")
+            #expect(fromPost.basis == "NATO 3 LUX (LU)")
+            let fromFile = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d5")
+            #expect(fromFile.documents.map(\.documentId) == ["d6"], "NATO 3 LUX found \(fromFile.documents.map(\.documentId))")
+            let fromVisits = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d7")
+            #expect(fromVisits.documents.isEmpty, "POL 7 US found \(fromVisits.documents.map(\.documentId))")
+        }
+    }
+
     /// Pull request D's re-parse: v69. 2,593 rows gain a class and 178 change its spelling.
     @Test("The index version is at least 69, the Subject-Numeric class keys")
     func indexVersionCoversSubjectNumericClassKeys() {
