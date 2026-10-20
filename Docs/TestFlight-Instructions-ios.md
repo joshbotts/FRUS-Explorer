@@ -7,7 +7,7 @@
 ## Search
 
 - **Search within these results.** After a Meaning question, **•••** ▸ **Find Words in These Matches**. After a keyword search, **•••** ▸ **Rank These Results by a Question**, or **Sort** ▸ **Closest to a Question…**; a list cut at 1,000 is ranked whole. A row names the held list, and its **✕** puts the list back.
-- Once you have searched inside the list, the row's **Swap** turns one order into the other without retyping.
+- After a search inside the list, the row's **Swap** turns one order into the other without retyping.
 - **Meaning search runs EmbeddingGemma 2**, open source. If you had the earlier model, **Download Search Model** (310 MB) is offered again, once, with no agreement to accept. Its percentages read as the earlier model's did.
 - A common word searched inside a working corpus is much faster (it took seven seconds or more).
 - Browse lists a Meaning search's corpus as its closest matches.
@@ -25,7 +25,7 @@
 
 ## Also
 
-- **Accessibility:** at the five largest text sizes, Meaning mode's strip is one line; its **ⓘ** opens all of it.
+- **Accessibility:** with VoiceOver, a search result's tags are **Filter by** actions. At the five largest text sizes, Meaning mode's strip is one line; its **ⓘ** opens all of it.
 - **Word cloud:** an exported cloud counted as printed says another device may count differently.
 - **Semantic Match Feedback** (Settings ▸ System ▸ Data & Recovery): **Email Feedback File** opens a message to feedback@frusexplorer.app with your verdicts attached.
 
@@ -38,10 +38,10 @@
 3. **Meaning.** Download the model: no agreement to accept? Ask a question: do the percentages read as before?
 4. **A common word** (*government*) in a working corpus (Filters): how long does it take?
 5. **Keeping Current.** **Check for Corrections**, then **Update**: does the row show each step? Open the app in Airplane Mode and check: does it say why it cannot?
-6. **Reading Width.** Each width, portrait and landscape (on iPhone, turn it sideways).
+6. **Reading Width.** Each width, portrait and landscape.
 7. **Smart collections.** Link a collection to a saved search: are earlier entries listed apart? Does **Remove These Entries** ask first?
 8. **Your build-50 reports**: fixed?
 
-Not bugs: People counts that differ from build 50's; Meaning results that differ from build 50's; no Wikidata link on a person's sheet.
+Not bugs: People counts and Meaning results that differ from build 50's; no Wikidata link on a person's sheet.
 
 Include device + iOS version, taps, expected, actual — and for anything archival, the document id. Thanks!

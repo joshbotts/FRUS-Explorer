@@ -850,12 +850,55 @@ xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
 ```
 
+**`SearchResultVoiceOverTests` (#1684) runs on an iPhone and an iPad under iOS 27, and nothing skips there.** It is
+the first suite to listen to VoiceOver: iOS 27's VoiceOver service for UI tests (`XCUIDevice.shared.voiceOverService`,
+Xcode 27.1) turns VoiceOver on in the simulator, moves its cursor (`moveForward()`) and returns what it spoke
+(`utterance`), and a flick up (`swipeUp()`) with VoiceOver on moves through the focused element's actions, which
+VoiceOver speaks. Its fixture is `FRUS_UI_TEST_SEED_SPOKEN_VOLUME`, a side-loaded volume of three sections that hold
+the word "xylograph", which no other fixture holds: a document numbered 7 in `@n` and not in its head, dated and with
+a source note classified "Secret; Nodis"; an editorial note numbered 8; and a preface, which is front matter. A
+launch without the flag removes the file and its index rows. The search is submitted until the three rows are there.
+- `testEachRowSaysWhatItDraws` reads each row's label, "7. UI Test Spoken Document, Washington, May 4, 1962,
+  uitest-spoken-01, Classification markings: Secret; Nodis", "8. UI Test Spoken Editorial Note, uitest-spoken-01,
+  Editorial Note" and "UI Test Spoken Preface, uitest-spoken-01, Front Matter", then turns VoiceOver on and requires
+  it to speak each label and then "Button".
+- `testATagIsSaidAndOfferedAsAnActionThatFilters` tags the document from its row's menu (Add Tags…, a tag made in
+  the picker titled "Tag 1 Document", Done) and requires the label to end ", Tags: UI Test Spoken Tag"; with
+  VoiceOver on the row it flicks up through the actions and requires Add to Collection…, Add Tags…, Filter by UI
+  Test Spoken Tag; then, VoiceOver off, it taps the tag's chip and requires "1 result", the document's row, and
+  neither of the other two.
+- `testSelectionOffersNoActionForATag` tags the document, enters selection from More ▸ Select Results, and requires
+  the row's actions, flicked through with VoiceOver, to hold Add Tags… and not Filter by.
+
+**Three things measured about the service** (iPhone 17, iOS 27.0, 2026-10-19), which the suite is written around.
+**It returns the first 64 characters of what VoiceOver speaks** ("Toggle filters Button Filter results by volume,
+date range, docu"), so speech is compared up to that length and the whole label is read from the element. **The
+cursor stops on the last element** and says it again at each step, so a row not met in forty steps is not on the
+screen. **A tap goes to the element under it, not to VoiceOver**: a double tap, which a reader uses to do the action
+VoiceOver last spoke, opened the editorial note's row when it fell on the screen's centre and the document's own row
+when it fell on that row, did nothing on the 23 points of empty list under the rows, and Ctrl-Option-Space did
+nothing either. So no test can make VoiceOver do a custom action: the suite reads the action's words from VoiceOver,
+drives what it does through the chip's tap, and `SearchResultAccessibilityTests` holds the action to the chip's
+function, read from source.
+
+**On the code before #1684** (`v2` at `c9e26509`, with this suite and its fixture): RESULT_M0. The actions VoiceOver
+read there were Add to Collection…, Add Tags… and its own Activate Default. **Mutations** (each built and run alone,
+the file restored from the commit after each): RESULT_MUT.
+
+Measured at the final code under iOS 27.0: RESULT_FINAL.
+```bash
+Scripts/heavy.sh xcodebuild test -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerUITests/SearchResultVoiceOverTests \
+  -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 600
+```
+
 **`SearchBulkActionsTests` (#1576 lane 3) runs on an iPhone and an iPad, and nothing skips on either.** It is the only suite that drives a selection of search results. Each of its five tests is its own launch with two fixtures: `FRUS_UI_TEST_SEED_BULK_VOLUME`, a side-loaded volume of thirty documents that all hold the word "quillwort", so a search for it lists a first page of twenty-five and a second of five; and `FRUS_UI_TEST_SEED_PROJECT`, whose collection, "UI Test Unattached Collection", holds one document of another volume. A launch without the first flag removes the volume and its index rows, so no other suite lists it. The search is submitted until its rows are there, five times at most, because the volume is indexed during launch.
 - `testPickedRowsAreCountedAndOutliveAPageTurn` enters from More ▸ Select Results, taps two rows and reads "2 selected" and the two rows' selected trait, turns to page 2 and waits for its five rows, then reads the count after This Page (7), All 30 Shown (30) and None (0), and after Done finds the actions bar back.
 - `testASelectionIsAddedToACollectionAndUndoTakesItBack` enters from a row's long-press ▸ Select, picks a second row, chooses Actions ▸ Add to Collection…, taps the seeded collection, reads "Added 2 documents to “UI Test Unattached Collection”." and then, after Undo, "Removed 2 documents…", and reads the collection's row back at "1 document" from the picker presented again.
 - `testAddingASelectionTwiceSaysTheDocumentsWereAlreadyThere` adds the same two twice and reads "Nothing added: 2 were already in…" with no Undo beside it.
 - `testASelectedPageIsMarkedReviewedAndUndoBringsItBack` turns Checklist Mode on, picks the page, chooses Actions ▸ Mark Reviewed, reads "25 reviewed hidden", "0 selected" and five rows, and after Undo "Nothing hidden".
-- `testASelectionIsTaggedAndUndoTakesTheTagBack` (#1576 lane 5) picks two rows, chooses Actions ▸ Add Tags…, makes a tag in the picker titled "Tag 2 Documents" and taps Done, and reads "Added “UI Test Tag” to 2 documents." It opens the picker again and reads "All 2 have it" beside the tag, with its switch off; after Undo it reads "Removed “UI Test Tag” from 2 documents." and, from the picker once more, no count beside the tag. **The tag is read back from the picker and not from the rows**: a result row is one accessibility element named by its heading, so its tag chips are not elements a test can find. `SearchSelectionModelTests` holds the rows' refresh. Measured on 2026-10-11 under iOS 27.0: passed on an iPhone 17 (172 s) and on an iPad Pro 13-inch (M5) (226 s).
+- `testASelectionIsTaggedAndUndoTakesTheTagBack` (#1576 lane 5) picks two rows, chooses Actions ▸ Add Tags…, makes a tag in the picker titled "Tag 2 Documents" and taps Done, and reads "Added “UI Test Tag” to 2 documents." It opens the picker again and reads "All 2 have it" beside the tag, with its switch off; after Undo it reads "Removed “UI Test Tag” from 2 documents." and, from the picker once more, no count beside the tag. **The tag is read back from the picker and not from the rows**: the picker says how many of the two carry it. A row's tag chips are not elements a test can find, though since #1684 the row's label names its tags (`SearchResultVoiceOverTests` reads one). `SearchSelectionModelTests` holds the rows' refresh. Since #1684 the suite finds a row by `label CONTAINS` the title, since a bulk document's row draws its number first and its label begins "1. UI Test Bulk Document 01, uitest-bulk-01". Measured on 2026-10-11 under iOS 27.0: passed on an iPhone 17 (172 s) and on an iPad Pro 13-inch (M5) (226 s).
 
 **On a simulator that has just booted, the first test of a run can fail before it starts.** On 2026-10-10 the suite's first test on a freshly booted iPad Pro 13-inch (M5) failed in two runs running, once when the runner restarted while the app launched and once when the search field never took the keyboard ("Neither element nor any descendant has keyboard focus"), and the three tests after it passed both times. Run by itself after one other test, it passed. It is not the iPad's alone: on 2026-10-11 the first test of `ResultSelectionBarFitTests` on an iPhone SE (3rd generation) booted for that run failed on the same line about keyboard focus, the five after it passed, and it passed when run by itself afterwards; the same night an iPad Pro 13-inch (M5) that had run one test first passed all five of this suite. So on a just-booted simulator run one test first, and read which test failed and at what step: `Executed 3 tests, with 0 failures` beside `TEST EXECUTE FAILED` is this, and the missing test has no verdict line.
 
@@ -896,7 +939,7 @@ What it expects is a fact about the bundled artifacts, held by `UITestMeaningSee
 
 **The control, on the tree before #1577 lane 1** (`477ee9b6` with the seeder, the launch's hook, the row's accessibility value and this suite added; iPhone 17, iOS 27.0, 2026-10-11, run twice, the second time with the seam as it landed): the first two tests passed, and the third failed with `"a question from far afield" should list 3 fixture documents`, 0 listed, with the corpus applied ("Leave this working corpus" on screen). That is lane 1's change seen on a screen: before it a Meaning search inside a set took the whole series' closest hundred and kept the members among them.
 
-A row's score is read from its accessibility value ("Semantic match 65 percent"), which lane 3 gave it: on iPhone and iPad a result row is one accessibility element whose label is its heading. The order is read from the rows' frames.
+A row's score is read from its accessibility value ("Semantic match 65 percent"), which lane 3 gave it: on iPhone and iPad a result row is one accessibility element whose label was its heading, and since #1684 is the row as drawn, heading first ("UI Test Document Two, Washington, January 2, 1962, frus1961-63v06"), so the suite reads the heading as the label up to its first comma. The order is read from the rows' frames.
 
 Measured on 2026-10-11 under iOS 27.0, each after one test run first: **iPhone 17: 3 tests, 3 passed (214 s); iPad Pro 13-inch (M5): 3 tests, 3 passed (211 s).** **On 2026-10-15 (B4's second pull request, the Mac loaded by builds):** iPad Pro 13-inch (M5), 3 of 3 passed with the new figures; iPhone 17 (`80CF0F18…`), the first two passed, and `testAFarQuestionInsideAWorkingCorpusRanksEveryMemberWithAVector` failed twice before its Meaning search, "Filters has no My Working Corpora group after 8 swipes", **and the same at `v2` `28dd78a0` without that change**, on the same simulator with the same `-only-testing`. **The cause was Search's, found the same day:** Search read Filters' volume list once, when the tab appeared, and Filters draws My Working Corpora, My Volume Scopes, By Subject and Limit to Volumes only while that list has a volume in it. Boot publishes the search service and reads which volumes the index holds afterwards, in a task of its own, so a Search tab the app opens on can read the set before boot has. Which tab a run opens on is the simulator's: the window's saved scene (`frus.selectedTab` in the app's `Library/Saved Application State`) opens on the tab the last saved state held, and `-frus.activeTab` seeds only a window with none. That iPhone's opens on Search: the app's log put the tab's `.task` on an empty set a second before boot's read began, and Filters saw the saved corpus and no volume. The iPad Pro 13-inch's opens on Collections, so Search appeared when the test tapped it, six seconds after the read had landed. The tree at #1634 (`9d247985`) failed the same way on the same iPhone that day, so the runs of 2026-10-11 passed on that day's saved scene, not on that day's code. `SearchView.reloadAvailableVolumes` now reads the list when the tab appears, when the panel opens and whenever the indexed set changes; `FilterVolumeListTests`, below, is the guard. An iPhone 17 under iOS 26.5, whose window opens on Browse, got past Filters with build 50's model and failed later: `ask` read the rows while the Meaning search that choosing Meaning runs on the field's text was being replaced (Three, Two, One, which is neither list), and the delete keys had left `content"` after the question. `submit` now empties the field with its Clear text button and waits for the list to empty. **With both, after B4's merge: iPhone 17 (`80CF0F18…`), 3 tests, 3 passed; iPad Pro 13-inch (M5) (`9AB3A0C9…`), 3 tests, 3 passed (each beside `FilterVolumeListTests`, 2026-10-15).** In an earlier run that day on the iPad, the one test run first, on the simulator just booted and with a build loading this Mac (load average 172), failed waiting thirty seconds for the Keywords | Meaning picker, which the launch draws only once it has loaded the bundled vectors; that wait is ninety seconds now. Run one test first on a simulator just booted, as for the suites above.
 ```bash
