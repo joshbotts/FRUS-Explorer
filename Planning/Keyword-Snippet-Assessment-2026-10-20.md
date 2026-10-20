@@ -251,4 +251,13 @@ The second question is where it goes: build 51, as a lane before A19, or a later
 
 ## 5. The owner's choice
 
-Not yet given.
+**The owner's word, 2026-10-20:** "Option 1: C with the corrected strip, as a lane of its own in build 51 before A19."
+
+- **The record.** It is the plan of record's decision 74.
+- **The lane.** It is A10b (§1), placed after A18 by default, so that every lane already placed keeps its place.
+- **What the lane builds:**
+  - one strip in FRUSCoreKit, shared by keyword and Meaning rows: `ProseSnippet`'s rules, with the document's own fields tried again before the serial rule, then on through the document's own dateline where it starts within 200 characters;
+  - a window that starts 30 characters before the prose's first match, snapped back to a space, and keeps 2,000 after it;
+  - for a row whose only match is in those fields, the document's opening prose;
+  - VoiceOver's More Content kept at about 300 characters.
+- **No index version and no CloudKit change.** It owes `swift build --target FRUSCoreKit`, `swift test`, the unit target and the Mac build.

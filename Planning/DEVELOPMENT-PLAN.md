@@ -39516,8 +39516,12 @@ Nothing was to be built until the owner chooses.
   - It stops at a 1946–60 telegram's classification line before the dateline.
 
 **What changed.**
-- `Planning/Keyword-Snippet-Assessment-2026-10-20.md`: new.
-- `Planning/Plan-Of-Record-2026-10-14.md`: §6g's A10 bullet has the measured figures, and §4 has a bullet for the owner's choice.
+- `Planning/Keyword-Snippet-Assessment-2026-10-20.md`: new, its §5 holding the owner's choice.
+- `Planning/Plan-Of-Record-2026-10-14.md`:
+  - §0: decision 74, and a default for A10b's place;
+  - §1: A10b's row and bullet;
+  - §4: the owner's choice, answered;
+  - §6g: A10's bullet with the measured figures and the decision.
 - This entry.
 
 **Checked.**
@@ -39537,4 +39541,6 @@ Nothing was to be built until the owner chooses.
 - **Nothing was seen in the app.** The drawn lines are Core Text's, checked against three drawn rows, not new screenshots.
 - **The Add Documents sheet's widths are estimated** from its layout, not measured.
 - **The harness, its aggregation script and the full tables** are in the session group's notes folder, not the repository.
-- **Nothing pushed.** Waiting on the owner's choice (the memo's §4).
+- **Nothing pushed.**
+
+**The owner's choice, 2026-10-20**: "Option 1: C with the corrected strip, as a lane of its own in build 51 before A19." It is decision 74 and lane A10b, placed after A18 by default. Nothing of it is built here.
