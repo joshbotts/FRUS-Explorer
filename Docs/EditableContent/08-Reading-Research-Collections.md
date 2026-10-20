@@ -2799,7 +2799,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: collection.import.error.version -->
 
 #### %@, footnote (no printed number recorded).
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1021–1022 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1061–1062 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 %@, footnote (no printed number recorded).
 
@@ -2808,7 +2808,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 #### %@, footnote %@.
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1025–1026 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 1065–1066 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 %@, footnote %@.
 

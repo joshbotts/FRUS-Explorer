@@ -44,6 +44,10 @@ import Foundation
 ///   2.6 — index version 69: a Subject-Numeric note whose class is now read keys on it and
 ///          prints the class key, and the note that still keys on its text is one whose
 ///          designation the grammar does not read
+///   2.7 — #1692: a divided lot cited through the National Archives prints its claimant line; a
+///          collection whose documents cite several lots names none and states each apart; its
+///          label names what every document shares; a lot's spellings fold as the lookups fold
+///          them; and a lot is answered under the record group its note names
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -762,5 +766,226 @@ struct TripPacketBuilderTests {
             dataSource: Stub())
         #expect(model.topicSentence.forExport == "US policy toward Berlin, 1948")
         #expect(!model.topicSentence.needsAttention)
+    }
+
+    // MARK: - A lot cited through the National Archives (#1692)
+
+    /// A note of `frus1969-76v41` worded through the National Archives, as the index stores it: the
+    /// parser keeps the office as the series, so the volume's four lots of the Executive
+    /// Secretariat share one key.
+    private static func executiveSecretariat(_ document: String, lot: String,
+                                             raw: String) -> CollectionGeneratedBlocks.SourceRecord {
+        .init(volumeId: "frus1969-76v41", documentId: document, repository: "National Archives",
+              recordGroup: "59", lotFile: lot, seriesName: "Executive Secretariat",
+              rawText: raw, citationEra: "structured")
+    }
+
+    /// `frus1969-76v41` d34, the issue's own note: `80D212`, which NARA divides.
+    private static let d34 = executiveSecretariat("d34", lot: "80D212", raw: "Source: National Archives, RG 59, Executive Secretariat, Files on Select National Security Study Memorandums, 1969–70, Lot 80D212, NSSM 91. Confidential.")
+    /// `frus1969-76v41` d293: `83D305`, also divided.
+    private static let d293 = executiveSecretariat("d293", lot: "83D305", raw: "Source: National Archives, RG 59, Executive Secretariat, National Security Council National Security Decision Memorandums, 1969–1977, Lot 83D305, NSDM –43. Secret. The memorandum was cleared in the Departments of State, Commerce, and Defense and by the Joint Chiefs of Staff and the Export-Import Bank.")
+    /// `frus1969-76v41` d156: `73D288`.
+    private static let d156 = executiveSecretariat("d156", lot: "73D288", raw: "Source: National Archives, RG 59, Executive Secretariat, General Files on National Security Council Matters, 1969–1972, Lot 73D288, NSC/USC Memos. Top Secret; Sensitive; Nodis. A copy was sent to the Chairman of the NSC Under Secretaries Committee.")
+
+    /// The claimants the shipped index lists for `lot`, which the builder reads through.
+    private static func shippedClaimants(_ lot: String) -> [LotClaimant]? {
+        LotClaimantsIndexStore.shared?.claimants(forRawLot: lot)
+    }
+
+    /// The issue's own case: a divided lot cited through the National Archives is keyed on its
+    /// series, as before, and now prints the claimant line and asks the inquiry's question. Until
+    /// #1692 only a lot file's target read its claimants, so this target printed neither an
+    /// access line nor the question.
+    @MainActor
+    @Test("A divided lot cited through the National Archives prints its claimant line")
+    func dividedLotThroughTheNationalArchivesPrintsItsClaimants() async throws {
+        let claimants = try #require(Self.shippedClaimants("80D212"),
+                                     "fixture guard: the shipped index must still divide 80D212")
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1969-76v41", "d34")], researchQuestion: nil,
+            dataSource: Stub(sources: [Self.d34]))
+        let target = try #require(model.targets.first)
+        #expect(target.key == "coll|National Archives|Executive Secretariat", "the key must not move")
+        #expect(target.form == .collection)
+        #expect(target.label == "Executive Secretariat, Lot 80D212, RG 59, National Archives")
+        #expect(target.resolution == nil, "a divided lot has no one series")
+        let restriction = try #require(target.restriction, """
+            No access line: the claimant line is still read for a lot file's target alone.
+            """)
+        #expect(restriction.claimantCount == claimants.count)
+        #expect(target.lots.isEmpty, "one lot that every document cites is the target's own")
+
+        let exporter = TripPacketExporter(model: model, projectName: "P")
+        let rows = exporter.targetRows(target)
+        #expect(rows.contains { $0.hasPrefix("Access: ") && $0.contains("\(claimants.count) series") },
+                "got \(rows)")
+        #expect(exporter.inquiryDrafts.contains(
+            "NARA's catalog lists \(claimants.count) series claiming Executive Secretariat, Lot 80D212"))
+    }
+
+    /// The adjacent defect: the target took its label and series from its first document, so a
+    /// plan holding three of the volume's lots printed the first lot over documents citing the
+    /// other two. The target now names no lot, and states each lot apart in placed order.
+    @MainActor
+    @Test("A collection whose documents cite several lots names none, and states each apart")
+    func severalLotsAreStatedApart() async throws {
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1969-76v41", "d34"), ("frus1969-76v41", "d293"),
+                        ("frus1969-76v41", "d156")],
+            researchQuestion: nil, dataSource: Stub(sources: [Self.d34, Self.d293, Self.d156]))
+        try #require(model.targets.count == 1, "the three notes share one key")
+        let target = model.targets[0]
+        #expect(target.label == "Executive Secretariat, RG 59, National Archives", """
+            The label named the first document's lot over documents citing two others: \
+            «\(target.label)».
+            """)
+        #expect(target.resolution == nil && target.restriction == nil, """
+            The target's own lines would speak for one lot over documents citing another.
+            """)
+        #expect(target.lots.map(\.lotAsPrinted) == ["80D212", "83D305", "73D288"])
+        #expect(target.lots.map(\.documentCount) == [1, 1, 1])
+        let first = try #require(target.lots.first, "no lot was stated apart")
+        #expect(first.restriction?.claimantCount == Self.shippedClaimants("80D212")?.count)
+        // Each lot's own lines: what the shipped bundle holds for it, under its own number.
+        for lot in target.lots {
+            let resolution = ArchivalResolver.documentResolution(lotFile: lot.lotAsPrinted)
+            #expect(lot.resolution == resolution, "Lot \(lot.lotAsPrinted)")
+        }
+
+        let exporter = TripPacketExporter(model: model, projectName: "P")
+        let rows = exporter.targetRows(target)
+        #expect(rows.first == "### Executive Secretariat, RG 59, National Archives")
+        for lot in ["80D212", "83D305", "73D288"] {
+            #expect(rows.contains("Lot \(lot) — 1 document"), "got \(rows)")
+        }
+        let questions = exporter.inquiryDrafts.components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  - NARA's catalog lists") }
+        #expect(questions.contains { $0.contains("claiming Lot 80D212 (Executive Secretariat, RG 59, National Archives)") },
+                "got \(questions)")
+        // The plan-level counts read the lots too: the two divided lots in the coverage report,
+        // and 73D288's one series in the triage. The citation crib's example takes that series,
+        // the target having none of its own.
+        let resolved = try #require(target.lots.last?.resolution,
+                                    "fixture guard: the shipped index must still resolve 73D288")
+        let recordsLine = try #require(target.lots.last?.recordsLine)
+        #expect(exporter.inquiryDrafts.contains("    Lot 73D288: \(recordsLine)"),
+                "the records of interest must name each lot with its series")
+        #expect(model.triage.rows.map(\.naId).contains(resolved.naId), "\(model.triage.rows)")
+        #expect(exporter.coverageReport.contains("across this plan's 2 divided lots."),
+                "\(exporter.coverageReport)")
+        var withCrib = exporter
+        withCrib.deliverables.includeCitationCrib = true
+        #expect(withCrib.export().contains(
+            "For Lot 73D288 (Executive Secretariat, RG 59, National Archives): "))
+    }
+
+    /// Documents citing no lot beside one that does, of two record groups, under the key with no
+    /// series: the label names what both share, the repository, and the one lot is stated apart.
+    @MainActor
+    @Test("A collection's label names only what all its documents share")
+    func labelNamesWhatEveryDocumentShares() async throws {
+        let stub = Stub(sources: [
+            // frus1977-80v02/d12, as the index stores it.
+            .init(volumeId: "frus1977-80v02", documentId: "d12", repository: "National Archives",
+                  recordGroup: "59", lotFile: "81D113", seriesName: nil,
+                  rawText: "Source: National Archives, RG 59, Office of the Deputy Secretary: Records of Warren Christopher, 1977–1980, Lot 81D113, Memoranda to the Secretary—1977. No classification marking.",
+                  citationEra: "structured"),
+            // frus1958-60v01/d198, as the index stores it.
+            .init(volumeId: "frus1958-60v01", documentId: "d198", repository: "National Archives",
+                  recordGroup: "330", lotFile: nil, seriesName: nil,
+                  rawText: "Source: Washington National Records Center, RG 330, Lansdale Papers: FRC 63 A 1803 Vietnam Correspondence 1960. Secret. Douglas’ initials on a covering note from Lansdale to Black, dated September 21, indicate that the Deputy Secretary of Defense also saw this memorandum.",
+                  citationEra: "structured"),
+        ])
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1977-80v02", "d12"), ("frus1958-60v01", "d198")],
+            researchQuestion: nil, dataSource: stub)
+        try #require(model.targets.count == 1)
+        let target = model.targets[0]
+        #expect(target.key == "coll|National Archives|")
+        #expect(target.label == "National Archives", "got «\(target.label)»")
+        #expect(target.lots.map(\.lotAsPrinted) == ["81D113"])
+        #expect(target.lots.first?.resolution == ArchivalResolver.documentResolution(lotFile: "81D113"))
+        #expect(target.resolution == nil, "a lot one of two documents cites is not the target's own")
+    }
+
+    /// The lot's spellings fold as the bundled lookups fold them, so `83D066` and `83D66` are one
+    /// lot, and every document citing it makes it the target's own.
+    @MainActor
+    @Test("Two spellings of one lot are one lot")
+    func lotSpellingsFoldAsTheLookupsFold() async throws {
+        func muskie(_ volume: String, _ document: String, lot: String, raw: String)
+            -> CollectionGeneratedBlocks.SourceRecord {
+            .init(volumeId: volume, documentId: document, repository: "National Archives",
+                  recordGroup: "59", lotFile: lot, seriesName: "Subject Files of Edmund S. Muskie",
+                  rawText: raw, citationEra: "structured")
+        }
+        let stub = Stub(sources: [
+            muskie("frus1977-80v21", "d152", lot: "83D66", raw: "Source: National Archives, RG 59, Subject Files of Edmund S. Muskie, 1963–1981, Lot 83D66, Box 2, unlabeled folder. Secret; Immediate; Exdis.Sent for information to Athens, Bonn, Nicosia, Madrid, USNATO, USNMR SHAPE, USDOCOSouth Naples, and USUN. In a covering note to L. Paul Bremer, III (S/S), John H. Kelly (S/S–S) commented: “The Secretary said we would look into what could be done on Turkish debt rescheduling.” (Ibid.) Muskie was in Ankara June 24–26 for the NATO Ministerial meeting."),
+            muskie("frus1977-80v29", "d271", lot: "83D066", raw: "Source: National Archives, RG 59, Subject Files of Edmund S. Muskie, 1963–1981, Lot 83D066, Box 2, Memoranda 1980–1981. Confidential; Priority. Drafted by Wyrough, cleared by Bremer, and approved by Bowdler."),
+        ])
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1977-80v21", "d152"), ("frus1977-80v29", "d271")],
+            researchQuestion: nil, dataSource: stub)
+        let target = try #require(model.targets.first)
+        #expect(target.lots.isEmpty, "two spellings were read as two lots: \(target.lots.map(\.lotAsPrinted))")
+        #expect(target.label == "Subject Files of Edmund S. Muskie, Lot 83D66, RG 59, National Archives")
+        #expect(target.resolution == ArchivalResolver.documentResolution(lotFile: "83D66"))
+        #expect(target.resolution != nil, "fixture guard: the shipped index must still resolve 83D66")
+    }
+
+    /// Source Explorer's record-group rule (#1589), one fixture each way: a Washington National
+    /// Records Center note of RG 330 that names a State lot as another copy prints no State series,
+    /// and an RG 59 note of the same lot does.
+    @MainActor
+    @Test("A lot cited through the National Archives is answered under the record group its note names")
+    func lotIsAnsweredUnderTheCitedRecordGroup() async throws {
+        let rg330 = CollectionGeneratedBlocks.SourceRecord(
+            volumeId: "frus1961-63v07", documentId: "d95", repository: "National Archives",
+            recordGroup: "330", lotFile: "66 D 204", seriesName: "OSD Files: FRC 65 A 3464",
+            rawText: "Source: Washington National Records Center, RG 330, OSD Files: FRC 65 A 3464, Atomic 400.112, 8 Apr 61 (Jun-Nov 61). Top Secret. Another copy is in Department of State, Presidential Correspondence: Lot 66 D 204, Macmillan - Kennedy 1960-1961.",
+            citationEra: "structured")
+        let rg59 = CollectionGeneratedBlocks.SourceRecord(
+            volumeId: "frus1964-68v12", documentId: "d229", repository: "National Archives",
+            recordGroup: "59", lotFile: "66 D 204", seriesName: "Presidential Correspondence:",
+            rawText: "Source: National Archives and Records Administration, RG 59, Presidential Correspondence: Lot 66 D 204. Confidential. The message was transmitted by the British Embassy on June 23.",
+            citationEra: "structured")
+        let shipped = try #require(ArchivalResolver.documentResolution(lotFile: "66 D 204"),
+                                   "fixture guard: the shipped index must still resolve 66 D 204")
+        try #require(shipped.recordGroup == "59")
+        for (record, answered) in [(rg330, false), (rg59, true)] {
+            let model = await TripPacketBuilder.build(
+                documents: [(record.volumeId, record.documentId)], researchQuestion: nil,
+                dataSource: Stub(sources: [record]))
+            let target = try #require(model.targets.first)
+            #expect((target.resolution != nil) == answered, """
+                \(record.volumeId)/\(record.documentId), RG \(record.recordGroup ?? ""): \
+                «\(target.recordsLine ?? "no records line")»
+                """)
+        }
+    }
+
+    /// The rule's conjuncts, one fixture each, against injected claimants.
+    @Test("A lot's claimants are read under the record group its notes name")
+    func claimantsAreReadUnderTheCitedRecordGroup() {
+        let claimants: (String) -> [LotClaimant]? = { lot in
+            guard lot == "80D212" else { return nil }
+            return [LotClaimant(naId: "1", title: "Files on Select NSSMs", recordGroup: "59",
+                                hmsMlrEntryNumbers: nil, dateRange: nil, evidence: "controlNumber"),
+                    LotClaimant(naId: "2", title: "NSSM Files", recordGroup: "RG 59",
+                                hmsMlrEntryNumbers: nil, dateRange: nil, evidence: "controlNumber")]
+        }
+        func line(_ cited: Set<String>) -> TripPacketModel.TargetRestriction? {
+            TripPacketModel.restriction(resolution: nil, lotAsPrinted: "80D212",
+                                        citedRecordGroups: cited, facts: { _ in nil },
+                                        claimants: claimants)
+        }
+        #expect(line([])?.claimantCount == 2, "a lot file's notes name no record group")
+        #expect(line(["59"])?.claimantCount == 2)
+        #expect(line(["330"]) == nil, "a note of another record group naming a State lot")
+        #expect(line(["59", "330"]) == nil, "one series is never held under two record groups")
+        typealias M = TripPacketModel
+        #expect(M.lotFact(heldUnder: "RG-59", answers: ["59"]))
+        #expect(M.lotFact(heldUnder: nil, answers: []))
+        #expect(!M.lotFact(heldUnder: nil, answers: ["59"]), "a fact of no stated record group")
     }
 }

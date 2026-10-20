@@ -70,6 +70,8 @@ import SwiftData
 ///         `ArchiveVisitDerivation.inputSignature` beside the editor's own counter. #1462: on the Mac
 ///         no sheet hosts the editor any more; Project Home and Review Changes open the plan in the
 ///         Archives Visits window, whose frame and toolbar are the editor's only size and chrome.
+///   1.9 — #1692: a collection target whose documents cite several lots lists each lot with its
+///         own records line and access line, the packet's own lines (`Target.lots`).
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -979,6 +981,25 @@ struct ArchiveVisitEditorView: View {
                 ForEach(TripPacketExporter.restrictionLines(target.restriction), id: \.self) {
                     Text($0).font(.caption2).foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                // A collection whose documents cite several lots: each lot's own lines, which the
+                // target's would state for one lot over documents citing another (#1692). The
+                // access line is the packet's English sentence, as above.
+                ForEach(target.lots, id: \.lotAsPrinted) { lot in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(format: String(localized: "archiveVisit.target.lot %@ %@",
+                                                   defaultValue: "Lot %1$@ — %2$@"),
+                                    lot.lotAsPrinted, CountCopy.documents(lot.documentCount)))
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        if let line = lot.recordsLine {
+                            Text(line).font(.caption).foregroundStyle(.secondary)
+                        }
+                        ForEach(TripPacketExporter.restrictionLines(lot.restriction), id: \.self) {
+                            Text($0).font(.caption2).foregroundStyle(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
                 if let note = derived.overlay.notes[target.key] {
                     Text(note).font(.caption).italic().foregroundStyle(.secondary)

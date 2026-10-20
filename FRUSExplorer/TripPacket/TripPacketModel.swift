@@ -177,6 +177,10 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///          citation crib checks a date-form file year against
 ///   2.5 — #1514, review round 1: a named-series group hands its series name to the facility
 ///          resolver, so a series the citation places with an agency is not placed at College Park
+///   2.6 — #1692: a lot cited through the National Archives gets its claimant line, read under
+///          the record group its notes name (`lotFact(heldUnder:answers:)`), and a collection
+///          target whose documents cite several lots states each apart (`Target.lots`), counted
+///          in the triage, instead of one lot's series for all of them
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
@@ -312,8 +316,61 @@ struct TripPacketModel: Equatable, Sendable {
         var isDivided: Bool { claimantCount > 1 }
     }
 
+    /// What the builder read of the lots a collection target's documents cite through the National
+    /// Archives (#1692): the record groups behind the target's own lot, or each lot apart.
+    ///
+    /// A note worded `National Archives, RG 59, Executive Secretariat, …, Lot 80D212` is keyed on
+    /// its series (`coll|National Archives|Executive Secretariat`), so one target can hold
+    /// documents citing several lots, or a lot beside documents citing none: 21 of the series keys
+    /// the index stores carry more than one lot (323 documents, measured 2026-10-20 over a full v69
+    /// index). The target's own label, records line and access line can speak for a lot only when
+    /// every one of its documents cites it; otherwise each lot is stated apart, in ``Target/lots``.
+    struct CitedLots: Equatable, Sendable {
+
+        /// One lot as the target's documents cite it.
+        struct Part: Equatable, Sendable {
+            /// The lot as the first document citing it prints it.
+            let lotAsPrinted: String
+            /// How many of the target's documents cite it.
+            let documentCount: Int
+            /// The record groups those documents' notes name, as numbers (`59`); empty when none
+            /// names one.
+            let recordGroups: Set<String>
+            /// The lot's one NARA series, when the bundle holds one under those record groups.
+            let resolution: ArchivalResolution?
+        }
+
+        /// The record groups the notes citing the target's own lot name — what the claimant line
+        /// is read under. Empty when the target has no lot of its own or no note names one.
+        var recordGroups: Set<String> = []
+        /// Each lot, in the order its first document was placed, when the target's documents do not
+        /// all cite one; empty otherwise.
+        var parts: [Part] = []
+    }
+
     /// One research target: an archival unit under a claim-free, form-aware key.
     struct Target: Equatable, Sendable, Identifiable {
+
+        /// One lot a collection target's documents cite, stated apart because they do not all cite
+        /// it (#1692): its own records line and access line, which the target's cannot carry.
+        struct Lot: Equatable, Sendable {
+            /// The lot as the first document citing it prints it.
+            let lotAsPrinted: String
+            /// How many of the target's documents cite it.
+            let documentCount: Int
+            /// The lot's one NARA series, when the bundle holds one.
+            let resolution: ArchivalResolution?
+            /// NARA's inclusive years for that series.
+            let seriesYears: String?
+            /// The lot's claimant-aware access line, when anything is measured or divided.
+            let restriction: TargetRestriction?
+
+            /// A3's four-field records line — shared composition with ``Group/recordsLine``.
+            var recordsLine: String? {
+                TripPacketModel.recordsLine(resolution: resolution, seriesYears: seriesYears)
+            }
+        }
+
         /// Which citation form keyed this target (§2b's table).
         enum Form: String, Equatable, Sendable {
             /// A central-file class (`611.51`) — the unit a researcher consults, NOT the
@@ -357,6 +414,10 @@ struct TripPacketModel: Equatable, Sendable {
         let pointedAt: [RefSeeding]
         /// The claimant-aware access line, when anything is measured or divided.
         let restriction: TargetRestriction?
+        /// Each lot the target's documents cite, when they do not all cite one (#1692); empty for
+        /// every other target. The target's own ``resolution`` and ``restriction`` are `nil` then:
+        /// they would speak for one lot over documents that cite another.
+        let lots: [Lot]
 
         var id: String { key }
         var canHeadChapter: Bool { facility.chapterHeading != nil }
@@ -425,6 +486,9 @@ struct TripPacketModel: Equatable, Sendable {
     ///     on BOTH channels as well as read for each target's `facts`, so a target's heading and
     ///     its `facts` come from one row.
     ///   - facts: the series-facts lookup; injected so tests drive the real rules.
+    ///   - citedLots: per group key, what the builder read of the lots a collection target's
+    ///     documents cite through the National Archives (#1692) — the record groups behind its
+    ///     own lot, or each lot apart. A key absent here has neither.
     static func build(
         groups: [(key: String, label: String, category: SourceProvenanceCategory?,
                   repository: String?, lotAsPrinted: String?,
@@ -447,7 +511,8 @@ struct TripPacketModel: Equatable, Sendable {
                                                      documentsScanned: 0),
         claimants: (String) -> [LotClaimant]? = {
             LotClaimantsIndexStore.shared?.claimants(forRawLot: $0)
-        }
+        },
+        citedLots: [String: CitedLots] = [:]
     ) -> TripPacketModel {
         let built = groups.map { group in
             Group(id: group.key,
@@ -475,9 +540,15 @@ struct TripPacketModel: Equatable, Sendable {
         var countsByNaId: [String: Int] = [:]
         var titlesByNaId: [String: String] = [:]
         for group in groups {
-            guard let resolution = group.resolution else { continue }
-            countsByNaId[resolution.naId, default: 0] += group.documents.count
-            titlesByNaId[resolution.naId] = resolution.displaySeriesTitle ?? resolution.title
+            // A target's own series, or each lot's where its documents cite several (#1692).
+            let resolved = group.resolution.map { [($0, group.documents.count)] }
+                ?? (citedLots[group.key]?.parts ?? []).compactMap { part in
+                    part.resolution.map { ($0, part.documentCount) }
+                }
+            for (resolution, count) in resolved {
+                countsByNaId[resolution.naId, default: 0] += count
+                titlesByNaId[resolution.naId] = resolution.displaySeriesTitle ?? resolution.title
+            }
         }
 
         // ── Target assembly (2.0). Both channels land under the same claim-free keys: a
@@ -509,6 +580,7 @@ struct TripPacketModel: Equatable, Sendable {
             case .unrecognized, nil: form = group.id.hasPrefix("r|") ? .raw : .collection
             default: form = .collection
             }
+            let cited = citedLots[group.id] ?? CitedLots()
             targetIndexByKey[group.id] = targets.count
             targets.append(Target(
                 key: group.id, form: form, label: group.label,
@@ -517,9 +589,20 @@ struct TripPacketModel: Equatable, Sendable {
                 resolution: group.resolution, seriesYears: group.seriesYears,
                 drawnFrom: group.documents, pointedAt: [],
                 restriction: Self.restriction(
-                    form: form, resolution: group.resolution,
+                    resolution: group.resolution,
                     lotAsPrinted: lotAsPrintedByKey[group.id] ?? nil,
-                    facts: facts, claimants: claimants)))
+                    citedRecordGroups: cited.recordGroups,
+                    facts: facts, claimants: claimants),
+                lots: cited.parts.map { part in
+                    Target.Lot(
+                        lotAsPrinted: part.lotAsPrinted, documentCount: part.documentCount,
+                        resolution: part.resolution,
+                        seriesYears: part.resolution.flatMap { facts($0.naId)?.years },
+                        restriction: Self.restriction(
+                            resolution: part.resolution, lotAsPrinted: part.lotAsPrinted,
+                            citedRecordGroups: part.recordGroups,
+                            facts: facts, claimants: claimants))
+                }))
         }
         for reference in references {
             if let index = targetIndexByKey[reference.key] {
@@ -531,7 +614,8 @@ struct TripPacketModel: Equatable, Sendable {
                     resolution: existing.resolution, seriesYears: existing.seriesYears,
                     drawnFrom: existing.drawnFrom,
                     pointedAt: reference.seedings,
-                    restriction: existing.restriction)
+                    restriction: existing.restriction,
+                    lots: existing.lots)
                 continue
             }
             // A pointed-at-only target: FRUS cites it and never printed from it — the
@@ -555,9 +639,10 @@ struct TripPacketModel: Equatable, Sendable {
                 drawnFrom: [],
                 pointedAt: reference.seedings,
                 restriction: Self.restriction(
-                    form: reference.form, resolution: resolution,
-                    lotAsPrinted: reference.lotAsPrinted,
-                    facts: facts, claimants: claimants)))
+                    resolution: resolution,
+                    lotAsPrinted: reference.form == .lotFile ? reference.lotAsPrinted : nil,
+                    facts: facts, claimants: claimants),
+                lots: []))
         }
         // Facility order first (the artifact groups by repository), label second — stable
         // and deterministic. The user's priority tiers are a render-time overlay applied by
@@ -628,23 +713,37 @@ struct TripPacketModel: Equatable, Sendable {
         return parts.joined(separator: " · ")
     }
 
-    /// The claimant-aware restriction line for a lot target (§3a), or the resolved series'
-    /// own status for anything else that resolved.
+    /// The claimant-aware restriction line for a lot (§3a), or the resolved series' own status
+    /// for anything else that resolved.
+    ///
+    /// A lot is any target, or lot of a target (#1692), that carries the lot as printed: a lot
+    /// file's, and since #1692 a collection target's whose documents cite the lot through the
+    /// National Archives. Until then the line was read for a lot file's target alone, so a divided
+    /// lot cited `National Archives, RG 59, …, Lot 80D212` printed neither it nor an access line:
+    /// 99 documents in 19 volumes cite 17 divided lots that way (#1589's measurement).
     ///
     /// Rejected renderings, recorded so they stay rejected: *most-severe-across-claimants
     /// presented as the lot's status* invents certainty; *unanimity-or-silence* goes quiet on
     /// most divided lots; *single-pick* (the pre-Phase-1 behavior) printed one claimant's
     /// status as if it were the lot's. This states the worst COVERED status, names its
     /// series, and counts the unmeasured.
+    ///
+    /// - Parameters:
+    ///   - citedRecordGroups: the record groups the notes citing the lot name, as numbers. A lot
+    ///     cited through the National Archives is answered only under the record group its notes
+    ///     name (``lotFact(heldUnder:answers:)``), so its claimants are read only when one of them
+    ///     is held there; empty, as for a lot file's notes, which name none, reads them whatever
+    ///     their record group.
     static func restriction(
-        form: Target.Form,
         resolution: ArchivalResolution?,
         lotAsPrinted: String?,
+        citedRecordGroups: Set<String> = [],
         facts: (String) -> SeriesFactsIndex.Facts?,
         claimants: (String) -> [LotClaimant]?
     ) -> TargetRestriction? {
-        if form == .lotFile, let lotAsPrinted,
-           let all = claimants(lotAsPrinted), !all.isEmpty {
+        if let lotAsPrinted,
+           let all = claimants(lotAsPrinted), !all.isEmpty,
+           all.contains(where: { lotFact(heldUnder: $0.recordGroup, answers: citedRecordGroups) }) {
             var measured: [(title: String, status: String, severity: RestrictionSeverity)] = []
             var unmeasured = 0
             for claimant in all {
@@ -681,5 +780,23 @@ struct TripPacketModel: Equatable, Sendable {
                                  claimantSeriesTitle: nil,
                                  claimantCount: 1,
                                  unmeasuredClaimantCount: 0)
+    }
+
+    /// Whether a bundled fact about a lot — a claimant series, or the lot's one series — held
+    /// under `recordGroup` may answer for notes that cite the lot under the record groups `cited`
+    /// (#1692): Source Explorer's rule for a lot cited through the National Archives (#1589,
+    /// `SourceExplorerProvenance.lotCards`), so the packet and the sheet answer a note alike.
+    ///
+    /// Some such notes are led by another record group (RG 218, 306, 330, 383, 84) whose State
+    /// Department lot is named in a later remark or as another copy, and a State lot's series
+    /// would be wrong there: of the 807 notes a full v69 index stores as a National Archives
+    /// collection carrying a lot, 9 resolve to a series of another record group and 1 to a divided
+    /// lot none of whose claimants is held under the group it names. `cited` empty — a lot file's
+    /// notes, which name no record group — answers whatever the fact's; two record groups are
+    /// never both answered, since one series cannot be held under both.
+    static func lotFact(heldUnder recordGroup: String?, answers cited: Set<String>) -> Bool {
+        guard !cited.isEmpty else { return true }
+        guard let recordGroup else { return false }
+        return cited == [SourceExplorerProvenance.recordGroupNumber(recordGroup)]
     }
 }
