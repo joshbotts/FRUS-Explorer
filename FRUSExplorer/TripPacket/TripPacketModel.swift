@@ -787,7 +787,7 @@ struct TripPacketModel: Equatable, Sendable {
     /// (#1692): Source Explorer's rule for a lot cited through the National Archives (#1589,
     /// `SourceExplorerProvenance.lotCards`), so the packet and the sheet answer a note alike.
     ///
-    /// Some such notes are led by another record group (RG 218, 306, 330, 383, 84) whose State
+    /// Some such notes are led by another record group (RG 218, 273, 306, 330, 383, 84) whose State
     /// Department lot is named in a later remark or as another copy, and a State lot's series
     /// would be wrong there: of the 807 notes a full v69 index stores as a National Archives
     /// collection carrying a lot, 9 resolve to a series of another record group and 1 to a divided

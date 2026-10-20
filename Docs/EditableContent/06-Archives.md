@@ -2112,6 +2112,26 @@ Stored target — no longer derives from this plan’s current seeds. Kept with 
 
 <!-- END SOURCE: archiveVisit.orphan.caption -->
 
+#### A stored target now part of another
+<!-- A stored row that answers for a target another stored row is shown on (decision 62, A15): two
+     targets the reader had set became one, as when a Department of State note citing a file with no
+     subject number joins its file's target. The target shows its own row's tier, note and exclusion,
+     or else the first created; this one is listed under Stored targets. %@ is the target's title. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1224–1225 | key: archiveVisit.superseded.caption %@ -->
+
+Stored target — now part of “%@”, which shows another stored row’s tier, note and exclusion. Kept with your tier and notes; it never deletes itself.
+
+<!-- END SOURCE: archiveVisit.superseded.caption %@ -->
+
+#### …when it had excluded its own target
+<!-- Under the caption above, when the listed row had excluded the target it was. Its exclusion is
+     kept with it and does not apply to the target it is now part of. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1229–1230 | key: archiveVisit.superseded.excluded -->
+
+Excluded from the packet when it was a target of its own.
+
+<!-- END SOURCE: archiveVisit.superseded.excluded -->
+
 #### Removing an orphan
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 272–273 | key: archiveVisit.orphan.remove.message -->
 
@@ -2127,6 +2147,17 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 ⇄ Part of this record is digitized or filmed — read it that way instead of pulling.
 
 <!-- END SOURCE: archiveVisit.target.substitute -->
+
+#### A lot stated apart inside a target
+<!-- A target the National Archives holds under one series whose documents cite several lots, or a lot
+     not every document cites (#1692): each lot heads its own records line and access line in the
+     target's row. %1$@ is the lot as the first document citing it prints it; %2$@ is the count,
+     “1 document” or “3 documents”. The lines under it are the packet's English sentences, with no key. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 993–994 | key: archiveVisit.target.lot %@ %@ -->
+
+Lot %1$@ — %2$@
+
+<!-- END SOURCE: archiveVisit.target.lot %@ %@ -->
 
 #### An inherited (Ibid.) seeding
 <!-- The W-1b rule surfacing in the seeding detail: the citation was inherited from the preceding
