@@ -352,7 +352,7 @@ first-appearance table, or read `date_iso_max` beside `date_iso`.
 | Column | Meaning |
 |---|---|
 | `source_volume_id`, `source_document_id` | The citing document. |
-| `target_volume_id`, `target_document_id` | The cited document. `target_volume_id` is `NULL` for same-volume references in some encodings — handle it. From index version 66, an **empty** `target_document_id` is a reference to a whole volume (`target_volume_id`), not to a document: keep it out of any per-document count. From the same version a reference to a footnote names the document that holds the note, and a web or mail address is not stored. |
+| `target_volume_id`, `target_document_id` | The cited document. `target_volume_id` is `NULL` for same-volume references in some encodings — handle it. From index version 66, an **empty** `target_document_id` is a reference to a whole volume (`target_volume_id`), not to a document: keep it out of any per-document count. From the same version a reference to a footnote names the document that holds the note, and a web or mail address is not stored. From index version 71 a reference to a printed page of **another** volume (`frus1955-57v17#pg_313`, how the volumes covering 1960 and earlier cite one another) names the document on that page where the reference is a single page or a range lying within one document, resolved from the bundled `cited-page-map.json` whether or not the cited volume is indexed; a page cited with "ff." or a range across documents keeps its page anchor (`pg_313`), as a page of the same volume that names no document always has, so keep a `target_document_id NOT GLOB 'pg_*'` predicate wherever you mean documents. |
 | `is_broken` | 1 when corpus-wide validation found the target unresolvable. **Filter these out of every count.** |
 | `reference_type` | `footnote` or `editorialNote`. **Do not trust this to separate body text from footnotes** — see [§7.3](#73-reference_type-defaults-body-references-to-footnote). |
 | `context` | Truncated surrounding text, useful for reading an edge rather than counting it. |
@@ -894,6 +894,11 @@ LIMIT 25;
 This counts only edges whose citing volume you have indexed. A document can look uncited simply
 because the volumes that cite it are not in your library — which is why the app ships a bundled
 resolved-edge index for the inbound half. Inside SQL, treat every degree as a **lower bound**.
+Add `AND target_document_id NOT GLOB 'pg_*'` to count documents alone: before index version 71
+every one of the query's top 25 rows over a full library was a page anchor of another volume
+(`frus1941v01` / `pg_367`, the Atlantic Charter's page, led with 155), since such a reference was
+never resolved; from 71 the rows a single page or a range within one document cites name the
+document, and the anchors left are "ff." pages and ranges across documents (§4.3).
 
 ### 6.7 A person's footprint
 
@@ -2091,7 +2096,8 @@ The stack, and the question each artifact answers:
 | `accession-series-index.json` | which NARA series a Federal Records Center accession became — the join a lot number cannot make, for front matter that says "now part of … Accession No. 71 A 6682". **Keys are `<record group>/<accession>` and the group is load-bearing**: an accession number is unique only within its group (`68A5612` = 1 series in RG 59, 18 in RG 84), so matching bare raises apparent coverage from 7% to 15% by answering State citations with Foreign Service Post records. **Know the ceiling before you lean on it**: counted anchor-first (the accession must directly follow *FRC* / *Federal Records Center* / *WNRC* / *Accession* — a proximity window sweeps in the lot numbers printed beside it and inflated this count from 995 mentions to 2,371), the corpus cites 116 accessions over 995 mentions, and **22 resolve — 150 mentions, 15%**; the most-cited of all, `53A278` at 115 mentions, is absent from the harvest entirely. Every claimant is stored, never chosen, because a key reaches **59**: state the division. One-letter row keys, `legend` in the file. NOTHING IN THE APP READS THIS — it is data for you, not a feature. | 4,750 keys, 7,346 stored claimants (7,349 occurrences before the dedupe by NAID), max 59 |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,898 edges, 4,913 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
-| `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 8,700 cross-volume edges into 5,803 documents from 185 volumes, 63 of them from a section's own text (an introduction, an errata list), whose id is the section's — its `volumes` array (237) is a shared vocabulary of target *and* citing volumes, not a target list (distinct targets: 208), and 7,646 of its 8,519 citing pairs (89.8%) cite through a note, not the corpus-wide 95.3% |
+| `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 38,600 cross-volume edges into 20,273 documents from 513 volumes: 9,209 by a document's id (572 of them from a section's own text — an introduction, an errata list, a heading's footnote — whose id is the section's) and, since index version 71, 29,391 by a printed page of another volume under rule C (a single page, or a range within one document; "ff." and a range across documents are not here), resolved through `cited-page-map.json` exactly as a device's index resolves them. Its `volumes` array (537) is a shared vocabulary of target *and* citing volumes, not a target list, and 33 of its targets are sections printed on a cited page. 33,235 of its 35,901 citing pairs (92.6%) cite through a note |
+| `cited-page-map.json` | what a printed page of another volume names, so a page reference resolves whether or not you hold the volume (§4.3) | 16,364 pages in 380 volumes naming 18,832 documents, 3,938 of the pages naming several (with each one's printed number and day for the tie-break); an entry for every page a single-page reference cites and for both ends of each range within one document, none for a page naming nothing; regenerated with each build's corpus from a full index the generator builds, and a device resolves from it alone, so two devices store the same row |
 | `source-provenance-index.json` | the provenance *mix* — how many documents came from a decimal file, the Subject-Numeric file, a lot file, a library — per decade and per volume | 269,288 notes, 523 volumes, 16 decades |
 
 Three rules govern using them, and the second is easy to get backwards.
@@ -3040,6 +3046,14 @@ terms are here because they appear in the outputs.
 
 *Version history*
 
+- 1.33 — 2026-10-21: **index version 71** (A18b, plan of record decision 80). `cross_references`'
+  row says that a reference to a printed page of another volume names the document on that page
+  under rule C, resolved from the bundled `cited-page-map.json` whether or not the cited volume
+  is indexed, and that "ff." and a range across documents keep their page anchor; §6.6 says to
+  keep a `NOT GLOB 'pg_*'` predicate where you mean documents, and that the query's top 25 rows
+  were all page anchors before 71; §14.11's row for `resolved-edge-index.json` carries the
+  regenerated figures (38,600 edges into 20,273 documents from 513 volumes, 29,391 of them by
+  page) and `cited-page-map.json` has a row. The §15.1 block is unchanged.
 - 1.32 — 2026-10-20: **§15.2's checker passes the version-2 file §15.1a publishes.** Its format
   gate accepted `formatVersion` 1 alone, so the guide's own §15.1a example (`formatVersion` 2,
   `minimumReaderVersion` 1), and every file §15.3 tells a writer to mark version 2, failed it. The

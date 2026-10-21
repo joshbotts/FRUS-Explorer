@@ -151,7 +151,7 @@ measured failure).
 | `CollectionAuthorityGenerator` | `collection-authority.json` and its report | the two indexes above |
 | `CollectionUsageIndexGenerator` | `collection-usage-index.json` | the authority, the manifest |
 | `ProvenanceFlowIndexGenerator` | `provenance-flow-index.json` | the authority, the manifest |
-| `ResolvedEdgeIndexGenerator` | `resolved-edge-index.json` | the manifest |
+| `ResolvedEdgeIndexGenerator` | `resolved-edge-index.json`, `cited-page-map.json` (one run writes both, from a full index it builds of the corpus through the kit's pipeline) | the manifest |
 | `ExternalCitationIndexGenerator` | `external-citation-index.json` | the authority, `decimal-class-labels.json` |
 | `SourceProvenanceIndexGenerator` | `source-provenance-index.json` | the manifest |
 | `AdministrationProfilesIndexGenerator` | `administration-profiles-index.json` | `administrations.json` |
