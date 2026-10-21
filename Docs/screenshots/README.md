@@ -169,6 +169,52 @@ row below says which of these touches it; a row that says *text unchanged* means
 section is as it was at build 48 (measured by a section-by-section diff of both manuals between
 the `build-48` tag and `b4dcd527`), not that the screen is.
 
+### The captures whose subject changed in builds 49 to 51
+
+By what the lanes changed on screen — §6a's *Why after the tag* list, then A1 to A18b — so a
+sitting knows what to look for; the rows below carry the detail.
+
+- **Every capture with a document in it** — #1578 (underlined links, contrast) and #1665 (the
+  measure): `ipad/research-rail`, `document`, `stage-manager`; `macos/research-strip`, `document`.
+- **Every search capture** — A10b (snippets), A5 (More, Sort, Search Within Results), A13, #1726:
+  `ipad/search-results`, `semantic-search`; `macos/search`, `search-tips`, `saved-searches`; and
+  the placeholders P2 and P3.
+- **People** — A4, A4c, A4d (rollup v12; the links): `ipad/people-list`, `people-detail`,
+  `people-detail-records`; `macos/people-list`, `people-detail` (its caption too),
+  `person-analytics-trends`, `person-analytics-network`.
+- **Browse** — #1536 and A18 (Read rows, the promoted prose), #1543 and A16/A18 (the Archives
+  door), A9 (#1688's corpus line), the visit-title rule for Continue reading: `ipad/browse-root`,
+  `browse-archives-provenance`, `browse-archives`, `browse-archives-collections`,
+  `browse-working-corpora`; `macos/browser`, `browse-all-volumes`.
+- **Clusters and the map** — B4's relayout (and A3c's #1700 on the Mac): `ipad/browse-clusters`,
+  `browse-clusters-detail`, `browse-clusters-map`, `semantic-map`; `macos/semantic-map`.
+- **Related Documents** — the semantic signal on at half weight, *shares:* chips, Beyond your
+  library: `ipad/related-documents`.
+- **The graph and Cross-Reference Analytics** — #1438, #1481, #1473, A17, A18b:
+  `ipad/cross-reference-graph`, `crossref-analytics`; `macos/cross-reference-graph`,
+  `crossref-analytics`.
+- **Source Explorer and the Archives Visit** — §14.1's ⓘ and ⋯ menu, the Mac's Add to Archives
+  Visit menu, #1444 (Options and Share on the Mac), A15: `ipad/source-explorer`, `trip-packet`,
+  `trip-packet-options`; `macos/source-explorer`, `trip-packet`.
+- **Collections** — #1619, A1, A3b, A4b, A14, #1446: `ipad/collections-editor`;
+  `macos/collections`.
+- **Corpus Analytics and the word cloud** — the Group by menu, Compare terms, the year chip, Save
+  query, Dispersion; #1608's fallback lines: `ipad/analytics`, `word-cloud`; `macos/analytics`,
+  `analytics-table`, `word-cloud`.
+- **Archival Analytics** — A16, A18, the chip's Hidden/Shown: `ipad/archival-analytics`;
+  `macos/archival-analytics`.
+- **Chronology** — #1387, #1400, the Chart colors menu: `ipad/chronology`; `macos/chronology`.
+- **Onboarding and About the Series** — the size line and two cloud views; the Subject-Numeric
+  File in Archival Sourcing: `ipad/onboarding-volumes`, `series-production`;
+  `macos/series-production`.
+- **The sidebar** — #909's footer: `ipad/sidebar-landscape`.
+- **The banner and Live Activities** — A11: the unembedded `ios/indexing-banner`, if re-shot.
+- **Unchanged in subject, retaken under the owner's rule**: `ipad/browse-all-volumes`,
+  `browse-administrations`, `browse-administrations-truman`, `browse-editors`, `browse-scopes`,
+  `browse-scopes-editor`, `browse-scopes-banner`, `browse-corpus-drill`,
+  `browse-archives-collection-detail`, `browse-archives-collection-citing`, `topic-index`;
+  `macos/toolbar`, `topic-index`, `research`.
+
 ### The devices, and which captures go to iOS 26.5
 
 - **S1's device is one iPad Pro 13-inch (M5) simulator under iOS 27.0**, landscape, 2752×2064,
@@ -290,6 +336,21 @@ it left out. Everything is made through the app's own UI.
     and iPhone sitting. **The sync banner**: sign the simulator into iCloud, or keep the banner out
     of frame, or patch `SyncStatusBanner.isWorthShowing` under a launch argument as build 48 did
     (never committed); say which here.
+
+**The mismatches, listed.** (1) iOS §6.1g's caption says ten doors where the text says eleven;
+the doors are eleven (row 14). (2) The Mac `people-detail` caption names VIAF and Wikidata links
+the sheet no longer shows (row 49). (3) The build-48 `browse-root` shows Continue reading under
+the volume's title, which the app no longer records that way (point 6). (4) The build-48 recipe
+never named the project's research question, which every Browse capture shows (point 1), nor the
+collection's headings and note block, which `collections-editor`'s caption needs (point 4).
+(5) iOS §7.12's placeholder asks for a Download Volume button that a full-corpus device cannot
+show without volumes removed on purpose (point 7, P2b). (6) Sixteen of the embedded `ipad/` files
+and the graph's window capture are the owner's build-47 device captures — the owner's status bar,
+3180×2384 or 2852×2139 — not the demo bar at 2752×2064; every one is retaken. (7) The Mac
+`crossref-analytics` caption describes the heat matrix alone because the build-48 rankings
+carried fallback labels (#1372); row 64 says to look again. (8) The iOS `analytics` caption says
+the Measure control is inline while four terms are compared, where §15.1 now says the picker is
+disabled for a comparison (row 35).
 
 ### S1 — iPad, full corpus: the 40 captures, and the Meaning placeholder's two frames
 
@@ -471,23 +532,45 @@ sizes, and the drafts re-run into `Planning/marketing-drafts/`.
 Read in the manuals at `b4dcd527` against the bundled files; none is a capture, and none was seen
 in the app.
 
-1. **Mac §6.1 says 89,449 documents belong to no cluster; the shipped map says 88,059**
-   (`semantic-map-index.json`, `layout.unclusteredCount`, generated 2026-10-15 after B4), which is
-   the figure iOS §6.1h prints. The Mac sentence is the earlier layout's.
-2. **iOS §6.1h says the largest cluster holds 37,865 documents; the shipped map's largest holds
-   37,899** (cluster 3, *nanking · shanghai · chinese · tientsin*). Mac §6.1 says *nearly 38,000*,
-   which holds. The iOS example label in the same section, *nanking · chinese · shanghai ·
-   chungking*, is not the shipped file's either.
-3. **Both manuals say the authority holds 3,985 archival collections (iOS §14.6, Mac §14.5); A18
-   regenerated it to 3,977** (`collection-usage-index.json`'s `coverage.authorityCollectionCount`;
-   A18's entry records 3,985 → 3,977).
+Each says where it is and why it matters before submission; the owner decides what the new plan
+takes.
+
+1. **Mac §6.1 (line 298) says 89,449 documents belong to no cluster; the shipped map says
+   88,059** (`semantic-map-index.json`, `layout.unclusteredCount`, generated 2026-10-15 after B4),
+   which is the figure iOS §6.1h prints. The Mac sentence is the earlier layout's. *Why it
+   matters:* the two manuals disagree by 1,390 on a figure the Clusters screen states on its own
+   face ("about 28% of the corpus … belongs to no cluster"), and a reader who compares them finds
+   one wrong.
+2. **iOS §6.1h (line 425) says the largest cluster holds 37,865 documents; the shipped map's
+   largest holds 37,899** (cluster 3, *nanking · shanghai · chinese · tientsin*). Mac §6.1 says
+   *nearly 38,000*, which holds. The iOS example label in the same section (line 423), *nanking ·
+   chinese · shanghai · chungking*, is not the shipped file's either. *Why it matters:* the
+   Clusters list prints each cluster's count and label on its row, so the sentence is checkable
+   against the screen beside it, and is off.
+3. **Both manuals say the authority holds 3,985 archival collections (iOS §14.6, line 1219; Mac
+   §14.5, line 1017); A18 regenerated it to 3,977** (`collection-usage-index.json`'s
+   `coverage.authorityCollectionCount`; A18's entry records 3,985 → 3,977). *Why it matters:* the
+   figure is the manuals' headline claim for the Collections view, and the app can show eight
+   fewer than it promises.
 4. **The owner's decision on `ios/indexing-banner`** (above): a §4.8 figure, or the file deleted.
+   *Why it matters:* a file on disk that nothing embeds is the #1081 rule's own case for deletion,
+   and the sweep cannot close with it undecided; nothing for App Review.
 5. **The zero-result Meaning frame's Download Volume button** needs volumes removed on purpose
-   (P2b), or the placeholder's second clause dropped.
+   (P2b), or the placeholder's second clause dropped. *Why it matters:* a `[SCREENSHOT: …]` line
+   left in a shipped manual reads as unfinished; the clause decides the frame's recipe.
 6. **#1620 is open and iOS 27.1's runtime is not installed**, so the seven analytics captures are
-   taken under iOS 26.5 (or on the owner's iPad); decision 72's re-test is still owed.
+   taken under iOS 26.5 (or on the owner's iPad); decision 72's re-test is still owed. *Why it
+   matters:* not a defect a user sees — the owner's iPad under iOS 27 runs these screens — but
+   the simulator cannot be trusted for the seven until the re-test says so.
 7. **The Mac check copy's status chip reads Local Only** without the never-committed patch: S4
-   patches or crops, and the ledger says which.
+   patches or crops, and the ledger says which. *Why it matters:* a Mac capture with *Local Only*
+   in the status bar would contradict Mac §4.4's healthy chip; cosmetic to the sitting, nothing
+   for App Review.
+8. **Both manuals carry an *AI Generated* notice under their titles**, kept until the owner's
+   review of both as they stand (`Planning/Manual-Revisions-Pending.md`'s note of 2026-10-07;
+   `Planning/Manual-Update-Build-49-Owner-Review.md` lists what the review needs). *Why it
+   matters:* the notice is the first line a reader of either manual meets after the title, and
+   the review it waits for is the owner's; S5 edits the manuals under it either way.
 
 ### The sittings' ledger (to fill as each runs — the X-8 rule)
 
