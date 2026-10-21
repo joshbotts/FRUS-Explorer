@@ -1450,7 +1450,34 @@ public actor IndexingPipeline {
     ///   wording. Without the bump an installed index keeps 2,613 of these documents with no
     ///   class, out of Browse's Archives lists and with no neighbours. The fourth of the four
     ///   pull requests of `Planning/Index-Bump-Brief-2026-10-11.md`.
-    public static let currentDateIndexVersion: Int = 69
+    /// - v69→70 — A18, build 51's index bump (plan of record decisions 60 and 77, and the owner's
+    ///   answers of 2026-10-20 to its eight questions). What a re-index stores more:
+    ///   - **Rows for the prose the index left out** (`TEIParserDelegate.promotableQuasiDocumentKinds`):
+    ///     the Notes on U.S. Covert Actions, the Presidents' annual messages, `frus1945-50Intel`'s
+    ///     chapter introductions and the other `editorial-note` sections, two reports, the editorial
+    ///     policy statements and six small pieces, and none of the corpus's lists. An
+    ///     `editorial-note` section is stored under the `.editorialNote` wrapper and flagged front
+    ///     matter where it is printed in `<front>`; the other new kinds are front matter by kind.
+    ///   - **A row for a heading's footnote** (`TEIParserDelegate.headingHoldsNote`): a chapter,
+    ///     subchapter or compilation whose only text of its own is a note on its heading, "For
+    ///     previous documentation, see…", has a row of the heading and the note, with the note's
+    ///     references, people and citations.
+    ///   - **A section row's date** (``datingSectionRows(_:sections:)``): a row whose own text
+    ///     prints no date is dated by the span of the documents its section holds.
+    ///   - **The outline** (`VolumeSection.leadsWithSubsections`): whether a section's first
+    ///     subsection opens before its first document, which the reading order follows.
+    ///   - **A volume's list of sources** (`SourceNoteParser.frontMatterClassKey`): a row naming a
+    ///     Subject-Numeric file with no subject number, or with a continuation after a slash, stores
+    ///     the file's class, as a document's citation of the same file does.
+    ///   - **The class grammar** (`SourceNoteParser.SubjectNumericDesignation`): nine words, eight
+    ///     countries' names the corpus prints in title case, join the area words; a person's name after the
+    ///     country of a visits or case file, with a space or in parentheses, is dropped as the
+    ///     slash forms' already were, so `POL 7 US Connally` stores `POL 7 US`; `POL 2 DOM` is
+    ///     `POL 2 DOM REP`; and four slips of punctuation are read through.
+    ///   The figures, before and after on two full indexes of the 553 catalogue volumes at corpus
+    ///   `6170e4b32`, are in the pull request and the session entry. Without the bump an installed
+    ///   index holds none of the rows and none of the dates. A18b follows with version 71.
+    public static let currentDateIndexVersion: Int = 70
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -3248,8 +3275,16 @@ public actor IndexingPipeline {
                     if let own = section.ownTextRowId, byId[own] != nil {
                         append(id: own, fallbackTitle: section.title)
                     }
-                    for docId in section.documentIds { append(id: docId, fallbackTitle: "") }
-                    walk(section.subsections)
+                    // A section whose first subsection opens before its first document reads its
+                    // subsections first (index version 70): `frus1945-50Intel`'s chapters open
+                    // with an editorial-note introduction, which Browse lists above the documents.
+                    if section.leadsWithSubsections {
+                        walk(section.subsections)
+                        for docId in section.documentIds { append(id: docId, fallbackTitle: "") }
+                    } else {
+                        for docId in section.documentIds { append(id: docId, fallbackTitle: "") }
+                        walk(section.subsections)
+                    }
                 } else if section.hasExplicitSectionId {
                     // Leaf section: prose front/back matter, or a structured / navigation
                     // section (Persons, Sources, TOC, Index) opened as a quasi-document.
@@ -3647,7 +3682,9 @@ public actor IndexingPipeline {
                     isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
                     isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
                     dateISO: auxColumnString(stmt, 11),
-                    score: sqlite3_column_double(stmt, 12)
+                    score: sqlite3_column_double(stmt, 12),
+                    dateISOMax: auxColumnString(stmt, 13),
+                    datePrecision: auxColumnString(stmt, 14)
                 ))
             }
             searchStatementTestHook?(.ranToItsEnd)
@@ -3706,7 +3743,8 @@ public actor IndexingPipeline {
             sql = """
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
                        dc.source_note, '' AS body_text, dc.subject_tag_ids, dc.user_tag_ids,
-                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, 0.0 AS score
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, 0.0 AS score,
+                       dd.date_iso_max, dd.date_precision
                 FROM document_cache dc
                 LEFT JOIN document_dates dd
                     ON dd.volume_id = dc.volume_id AND dd.document_id = dc.document_id
@@ -3725,7 +3763,8 @@ public actor IndexingPipeline {
                 \(matchCTE)
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
                        dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
-                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, m.score,
+                       dd.date_iso_max, dd.date_precision
                 FROM merged m
                 JOIN document_cache dc ON dc.rowid = m.docrowid
                 LEFT JOIN document_dates dd
@@ -3814,7 +3853,8 @@ public actor IndexingPipeline {
                 )
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header, dc.dateline,
                        dc.source_note, dc.body_text, dc.subject_tag_ids, dc.user_tag_ids,
-                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, r.score
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso, r.score,
+                       dd.date_iso_max, dd.date_precision
                 FROM ranked r
                 JOIN document_cache dc ON dc.rowid = r.docrowid
                 LEFT JOIN document_dates dd
@@ -5935,6 +5975,12 @@ public actor IndexingPipeline {
             ))
         }
 
+        // Index version 70 (A18): a section's row is dated by the span of the documents it holds
+        // where its own text prints no date. The rows the index holds for sections are the
+        // outline's sections with a row under their id; a prose section holds no document and
+        // keeps its own text's date, or none.
+        dateRows = Self.datingSectionRows(dateRows, sections: fullResult.structureSections)
+
         // Persons and terms were extracted in the same single-pass parse above.
         let personRows = fullResult.persons.map { p in
             PersonRow(volumeId: volumeId, ref: p.ref, name: p.name, description: p.description,
@@ -6314,6 +6360,53 @@ public actor IndexingPipeline {
     /// top-level-only search found no `.head` and stored every one of the 8,467 notes with an
     /// empty title, although all of them print one. The unwrap is the same test
     /// `isEditorialNote` makes: the wrapper is the document's first node.
+    /// `rows` with every undated section row dated by the span of the documents its section holds
+    /// (index version 70, plan of record decision 60 and the owner's answer of 2026-10-20).
+    ///
+    /// A section's row — a division's own text (#1536), a container's (#1510), a heading's
+    /// footnote (70) — prints a date of its own only where its text does: on the v69 library 109 of
+    /// the 1,336 own-text rows were dated, and seven of the Joint Chiefs' meetings at Potsdam were
+    /// titled "Meeting of the Joint Chiefs of Staff, 10 a.m." with the day in the heading of the
+    /// chapter around them (#1690's fourth line). The rule the owner chose: the earliest `date_iso`
+    /// and the latest `date_iso_max` among the dated documents under the section in the volume's
+    /// outline, at any depth. On the v69 library that dates every one of the 1,227: 484 to a single
+    /// day, 78 within a month, 385 within a year, 280 longer. The corpus's own
+    /// `frus:doc-dateTime-min/-max` on the section's div agrees for 962 of them and differs for
+    /// 265, by the −05:00 shift #1326 corrected for documents among other things, so it is not read.
+    ///
+    /// The row's precision is the coarser of the two end documents' (a span of year-only documents
+    /// reads as its years), and its certainty `.range`, or `.exact` where the span is one day. A
+    /// row whose own text prints a date keeps it, and a section holding no dated document stays
+    /// undated. The outline is the one Browse draws, so the documents a section holds here are the
+    /// ones Browse lists under it.
+    nonisolated fileprivate static func datingSectionRows(_ rows: [DocumentDateRow],
+                                                          sections: [VolumeSection]) -> [DocumentDateRow] {
+        var indexById: [String: Int] = [:]
+        for (index, row) in rows.enumerated() { indexById[row.documentId] = index }
+        var dated = rows
+
+        func walk(_ section: VolumeSection) {
+            defer { section.subsections.forEach(walk) }
+            guard let index = indexById[section.sectionId], dated[index].dateISOMin == nil else { return }
+            let held = section.allDocumentIds.compactMap { indexById[$0] }.map { rows[$0] }
+                .filter { $0.dateISOMin != nil }
+            guard let earliest = held.min(by: { ($0.dateISOMin ?? "") < ($1.dateISOMin ?? "") }),
+                  let latest = held.max(by: {
+                      ($0.dateISOMax ?? $0.dateISOMin ?? "") < ($1.dateISOMax ?? $1.dateISOMin ?? "")
+                  }),
+                  let first = earliest.dateISOMin else { return }
+            let last = latest.dateISOMax ?? latest.dateISOMin ?? first
+            let precision = [earliest.precision, latest.precision]
+                .compactMap { $0.flatMap(DatePrecision.init(rawValue:)) }.min()?.rawValue
+            dated[index] = DocumentDateRow(
+                volumeId: rows[index].volumeId, documentId: rows[index].documentId,
+                dateISOMin: first, dateISOMax: last, precision: precision,
+                certainty: (first == last ? DateCertainty.exact : .range).storageValue)
+        }
+        sections.forEach(walk)
+        return dated
+    }
+
     nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
         if case .editorialNote(let children)? = nodes.first {
             return extractHeader(from: children)
@@ -10252,7 +10345,8 @@ public actor IndexingPipeline {
                 SELECT dc.document_id, dc.volume_id, dc.document_number, dc.header,
                        dc.dateline, dc.source_note, substr(dc.body_text, 1, 3000),
                        dc.subject_tag_ids, dc.user_tag_ids,
-                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso
+                       dc.is_editorial_note, dc.is_front_matter, dd.date_iso,
+                       dd.date_iso_max, dd.date_precision
                 FROM document_cache dc
                 JOIN wanted ON wanted.v = dc.volume_id AND wanted.d = dc.document_id
                 LEFT JOIN document_dates dd
@@ -10279,7 +10373,9 @@ public actor IndexingPipeline {
                     isEditorialNote: sqlite3_column_int(stmt, 9) != 0,
                     isFrontMatter: sqlite3_column_int(stmt, 10) != 0,
                     dateISO: auxColumnString(stmt, 11),
-                    score: 0)
+                    score: 0,
+                    dateISOMax: auxColumnString(stmt, 12),
+                    datePrecision: auxColumnString(stmt, 13))
                 result["\(row.volumeId)/\(row.documentId)"] = row
             }
         }
@@ -12880,6 +12976,11 @@ public struct IndexedSearchRow: Sendable {
     /// BM25 relevance score (lower = more relevant). When the document matched in
     /// both FTS5 tables, this is the better of the two scores.
     public let score: Double
+    /// The latest day of the row's date (`document_dates.date_iso_max`), if known (index version
+    /// 70). A section's row is dated by the span of its documents, and Search draws the span.
+    public var dateISOMax: String? = nil
+    /// The row's date precision as stored (`day`, `month`, `year`), if known.
+    public var datePrecision: String? = nil
 }
 
 /// Structured filters applied inside the SQL of

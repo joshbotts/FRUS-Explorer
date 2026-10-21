@@ -264,6 +264,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          of until the new one is held
 ///   1.34 — #1684: a result row's label is the row as drawn, heading first (`SearchResultAccessibility`), with its
 ///          snippet as VoiceOver's More Content and a Filter by action for each tag outside selection
+///   1.35 — A18 (index version 70): a row with no dateline — a section's own text, a meeting's list of those
+///          present — draws the day or span the index dates it by (`SearchResult.drawnDate`)
 
 struct SearchView: View {
 
@@ -2695,8 +2697,10 @@ private struct SearchResultRow: View {
                     .lineLimit(2)
             }
 
-            // Dateline
-            if let dateline = result.dateline {
+            // Dateline — or, for a row whose text prints none, the day or span the index dates it
+            // by (index version 70): a section's row is dated by the documents it holds, and a
+            // meeting's list of those present said no day.
+            if let dateline = result.dateline ?? result.drawnDate {
                 Text(dateline)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

@@ -32,6 +32,10 @@ import Testing
 ///         77,898 and 69,229 → 69,261, all 32 in their own volume; and a section's own text cites,
 ///         63 references from five sections, so 8,637 → 8,700 stored and 5,747 → 5,803 documents
 ///         cited. `sectionsCite` pins one
+///   1.4 — index version 70 (A18), regenerated at the same corpus through the kit's v70 parse: a
+///         heading's footnote and the promoted prose kinds are rows, so references in sections
+///         5,537 → 11,381, section edges 799 → 1,459 (736 → 887 in their own volume), 572 across
+///         volumes; 8,700 → 9,209 stored, 5,803 → 5,818 documents cited, 185 → 186 citing volumes
 @Suite("Resolved edge index — artifact")
 struct ResolvedEdgeIndexTests {
 
@@ -101,8 +105,10 @@ struct ResolvedEdgeIndexTests {
             of them is reading it differently.
             """)
         #expect(coverage.sameVolumeEdges == 69_261)
-        // #1693: five sections cite another volume, 63 references.
-        #expect(coverage.sectionEdges - coverage.sameVolumeSectionEdges == 63)
+        // #1693: five sections cite another volume, 63 references. Index version 70 (A18) gives a
+        // row to a section whose only text of its own is a footnote on its heading and to the
+        // prose kinds the index had left out, and their references make it 572.
+        #expect(coverage.sectionEdges - coverage.sameVolumeSectionEdges == 572)
     }
 
     @Test("A section's own text is among a document's citers, under the id the index stores")

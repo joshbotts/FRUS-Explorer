@@ -21,6 +21,9 @@ import FTS5Store
 ///   1.0 — Session 38: initial implementation
 ///   Session 09: `SearchParameters.subjectTagIds` is retained-but-inert (the
 ///         document-level subject taxonomy was retired; the SQL filter is gone).
+///   1.1 — A18 (index version 70): `SearchResult.dateISOMax`, `datePrecision` and `drawnDate`, with
+///         `SearchResultDate`, the words a row with no dateline draws for the day or span the index
+///         dates it by.
 /// `Codable` so a whole `SearchParameters` can be archived (#756) — see `SavedSearch`.
 ///
 /// Raw-value backed on purpose: a synthesised enum encoding is positional, so reordering the cases
@@ -504,6 +507,14 @@ public struct SearchResult: Sendable, Identifiable {
     /// as a string. `nil` for genuinely undated documents.
     public let dateISO: String?
 
+    /// The latest day of the row's date, `document_dates.date_iso_max`, when the index holds
+    /// one (index version 70): the same day as `dateISO` for a document dated to a day, the end
+    /// of the span for a section's row, which is dated by the documents it holds.
+    public let dateISOMax: String?
+
+    /// How precisely the index dates the row — a day, a month or a year — when it says.
+    public let datePrecision: DatePrecision?
+
     /// Source note describing archival provenance, if present.
     public let sourceNote: String?
 
@@ -549,6 +560,8 @@ public struct SearchResult: Sendable, Identifiable {
         header: String,
         dateline: String? = nil,
         dateISO: String? = nil,
+        dateISOMax: String? = nil,
+        datePrecision: DatePrecision? = nil,
         sourceNote: String? = nil,
         snippet: String,
         bm25Score: Double,
@@ -564,6 +577,8 @@ public struct SearchResult: Sendable, Identifiable {
         self.header = header
         self.dateline = dateline
         self.dateISO = dateISO
+        self.dateISOMax = dateISOMax
+        self.datePrecision = datePrecision
         self.sourceNote = sourceNote
         self.snippet = snippet
         self.bm25Score = bm25Score
@@ -572,6 +587,66 @@ public struct SearchResult: Sendable, Identifiable {
         self.userTagIds = userTagIds
         self.isEditorialNote = isEditorialNote
         self.isFrontMatter = isFrontMatter
+    }
+
+    /// The day or span the index dates the row by, for a row whose text prints no dateline
+    /// (index version 70, the owner's answer of 2026-10-20): "July 16, 1945",
+    /// "August 21, 1945 – January 22, 1946", "July 1945", "1862"; `nil` for a row with no date.
+    /// A section's row prints no dateline and is dated by the span of the documents it holds, so
+    /// without this a search row for a meeting's list of those present said no day.
+    public var drawnDate: String? {
+        SearchResultDate.text(dateISO: dateISO, dateISOMax: dateISOMax, precision: datePrecision)
+    }
+}
+
+// MARK: - SearchResultDate
+
+/// The words for a stored date, at its stored precision (index version 70).
+///
+/// Foundation only, for the web edition: a `DateFormatter` with a localised template, as the
+/// collection exporter's method appendix uses. Dates are read as `yyyy-MM-dd` in UTC and never
+/// shifted: a stored day is a calendar day, not an instant (#1326).
+public enum SearchResultDate {
+
+    /// The text of `dateISO`, or of the span `dateISO`…`dateISOMax` where the two differ at
+    /// `precision`, joined by an en dash; `nil` when `dateISO` is `nil` or not a date.
+    ///
+    /// - Parameters:
+    ///   - dateISO: The first day, `yyyy-MM-dd`.
+    ///   - dateISOMax: The last day, or `nil` for the first alone.
+    ///   - precision: The stored precision; `nil` reads as a day, as the Chronology does.
+    ///   - locale: The locale the words are formed in.
+    public static func text(dateISO: String?, dateISOMax: String?, precision: DatePrecision?,
+                            locale: Locale = .current) -> String? {
+        guard let dateISO, let first = day(dateISO) else { return nil }
+        let shown = precision ?? .day
+        let firstText = format(first, precision: shown, locale: locale)
+        guard let dateISOMax, dateISOMax != dateISO, let last = day(dateISOMax) else { return firstText }
+        let lastText = format(last, precision: shown, locale: locale)
+        return lastText == firstText ? firstText : "\(firstText) – \(lastText)"
+    }
+
+    /// `iso`'s first ten characters as a day at noon UTC, or `nil`.
+    private static func day(_ iso: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: String(iso.prefix(10))) else { return nil }
+        return date.addingTimeInterval(12 * 60 * 60)
+    }
+
+    /// `date` in the words its precision allows: the day, the month and year, or the year.
+    private static func format(_ date: Date, precision: DatePrecision, locale: Locale) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        switch precision {
+        case .day: formatter.setLocalizedDateFormatFromTemplate("MMMMdyyyy")
+        case .month: formatter.setLocalizedDateFormatFromTemplate("MMMMyyyy")
+        case .year: formatter.setLocalizedDateFormatFromTemplate("yyyy")
+        }
+        return formatter.string(from: date)
     }
 }
 

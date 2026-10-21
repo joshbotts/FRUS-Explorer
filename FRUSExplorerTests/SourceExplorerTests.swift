@@ -1597,13 +1597,13 @@ struct SubjectNumericExplorerTests {
         #expect(emptyState(storedOnly) == .subjectNumericNoNeighbors)
 
         // Nothing to match on: the block alone (frus1964-68v29p1/d368), a word that is no area
-        // code with no number before it (frus1969-76v20/d284, a handling caption;
-        // frus1969-76ve05p1/d206, a country the handbooks have no code for), and prose after the
-        // number (frus1964-68v32/d220).
+        // code with no number before it (frus1969-76v20/d284, a handling caption), and prose after
+        // the number (frus1964-68v32/d220). Until index version 70 frus1969-76ve05p1/d206's
+        // `POL Nigeria-US` stood here as a country the handbooks have no code for; A18 made
+        // `NIGERIA` an area word, so the note keys `POL NIGERIA-US` and has the file's own states.
         for note in [
             "Source: National Archives and Records Administration, RG 59, Central Files 1964–66, JAPAN–KOR S. Secret.",
             "Source: National Archives, RG 59, Central Files 1970–73, POL Nodis. Drafted by Green and Masters on March 30, cleared by Haig in the White House and Wingate Lloyd (S/S), and approved by Green.",
-            "Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria-US, XR POL 30 Nigeria. Confidential. Repeated to Lisbon.",
             "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM Crimmins and officers of the Political and Economic sections of the Embassy. Copies were sent to Madrid, Port-Au-Prince, Santiago de los Caballeros, USCINCSO for POLAD, USCINCLANT for POLAD, COMCARIBSEAFRON, and COMSECONDFLT.",
         ] {
             let parsed = SourceNoteParser().parse(note)
@@ -1615,14 +1615,15 @@ struct SubjectNumericExplorerTests {
 
     /// The states that are not the file's. A Subject-Numeric citation whose key is NOT its file
     /// keeps the sentence every keyed note has, because the query asked about something else and
-    /// "no other indexed document was matched to the same file" would be untrue of it. One shape
-    /// is left: a note parsed as the Central Foreign Policy File whose remark carries a film
-    /// number, matched on the film, and whose designation is not a class
-    /// (frus1969-76ve09p2/d84, without the `Summary:` sentence the volume prints first). Until
-    /// index version 69 a National-Archives-led note whose series does not name the central files
-    /// was a second, matched by collection on that series (frus1964-68v34/d1): it is matched on
-    /// its class now, and has the file's own sentence. A note that is no Subject-Numeric citation
-    /// keeps its own two.
+    /// "no other indexed document was matched to the same file" would be untrue of it. Until index
+    /// version 70 one shape was left: a note parsed as the Central Foreign Policy File whose remark
+    /// carries a film number, matched on the film, and whose designation was not a class
+    /// (frus1969-76ve09p2/d84, without the `Summary:` sentence the volume prints first); A18 made
+    /// its designation a class, so it too is matched on its class, and the corpus holds no other
+    /// note of the shape. Until index version 69 a National-Archives-led note whose series does not
+    /// name the central files was a second, matched by collection on that series
+    /// (frus1964-68v34/d1): it is matched on its class now, and has the file's own sentence. A note
+    /// that is no Subject-Numeric citation keeps its own two.
     @Test("A Subject-Numeric citation keyed by something other than its file, and every other note, keep the generic sentence")
     func otherEmptyStatesAreUnmoved() {
         let bySeries = "Source: National Archives and Records Administration, RG 59, Records of the Department of State, Central Files, 1964–66, SCI 3 OECD. Limited Official Use; Priority. Passed to the White House."
@@ -1646,9 +1647,15 @@ struct SubjectNumericExplorerTests {
         }
         #expect(filmParse.archivalNeighborKey == "CFPF film D760430")
         #expect(CollectionKeying.isSubjectNumericCitation(parsed: filmParse, note: byFilm))
-        #expect(CollectionKeying.matchesOnClass(parsed: filmParse, note: byFilm) == nil)
-        #expect(emptyState(byFilm) == .noNeighbors)
-        #expect(SourceExplorerView.relatedMatchKey(for: filmParse, note: byFilm) == "CFPF film D760430")
+        // Since index version 70 (A18) `SAUDI` and `ARABIA` are area words, so the designation is
+        // the class `POL IRAN-SAUDI ARABIA`: the class outranks the film, as it outranks a series,
+        // and the note has the file's own sentence. Until 70 it was matched on the film alone and
+        // kept the generic sentence; no corpus note of that shape — a film number beside a
+        // designation that is no class — is left (none of the 4,117 CFPF-worded notes that store
+        // no class prints a designation beside its film number).
+        #expect(CollectionKeying.matchesOnClass(parsed: filmParse, note: byFilm) == "POL IRAN-SAUDI ARABIA")
+        #expect(emptyState(byFilm) == .subjectNumericNoNeighbors)
+        #expect(SourceExplorerView.relatedMatchKey(for: filmParse, note: byFilm) == "POL IRAN-SAUDI ARABIA")
 
         // A decimal number through the National Archives is matched on its class and has the
         // generic sentence (frus1961-63v25/d494). Until index version 69 it read `.unmatched`,

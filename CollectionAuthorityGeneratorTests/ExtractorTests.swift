@@ -16,6 +16,39 @@ import Testing
 
     // MARK: Front matter
 
+    /// Index version 70 (A18): the generator keys a list-of-sources row through the kit's
+    /// `frontMatterClassKey`, as the app's delegate does, so a file with no subject number and one
+    /// continued after a slash are class leaves of the authority and not records named by their text.
+    @Test func frontMatterReadsAFileWithNoNumberAndOneContinuedAfterASlash() {
+        let xml = """
+        <TEI><text><body>
+        <div type="section" subtype="sources" xml:id="sources">
+          <head>Sources</head>
+          <p>The editors made use of the following collections.</p>
+          <list>
+            <item><hi rend="strong">Department of State</hi>
+              <list>
+                <item>POL US–USSR: general U.S.-Soviet relations</item>
+                <item>POL 7 US/Harriman: Visits and meetings of W. Averell Harriman</item>
+                <item>DEF 6–8 US/NATO: Defense affairs between United States and NATO</item>
+                <item>E Files: Lot 60 D 136</item>
+                <item>DEF 18–4 Defense Affairs, Arms Control and Disarmament</item>
+              </list>
+            </item>
+          </list>
+        </div>
+        </body></text></TEI>
+        """
+        let items = FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8)).filter { $0.kind == .item }
+        func classOf(_ fragment: String) -> String? { items.first { $0.text.contains(fragment) }?.decimalClass }
+        #expect(classOf("POL US") == "POL US-USSR")
+        #expect(classOf("Harriman") == "POL 7 US")
+        #expect(classOf("NATO") == "DEF 6-8 US")
+        #expect(classOf("E Files") == nil, "a lot is a lot")
+        #expect(items.first { $0.text.contains("E Files") }?.lotFileNorm == "60D136")
+        #expect(classOf("Defense Affairs") == nil, "a subject title is not a country")
+    }
+
     @Test func frontMatterKeysMatchThePhase3Grammar() {
         let xml = """
         <TEI><text><body>

@@ -603,6 +603,70 @@ struct ArchiveVisitKeysAcrossVersion69Tests {
         #expect(derived.overlay.storedKeyCount == 2)
     }
 
+    // MARK: Index version 70 (A18)
+
+    /// `frus1961-63v05` d374. Version 69 stored no class: the name after the pair of countries kept
+    /// the designation unread. Version 70 drops it (decision 77), so the note is the file's.
+    private static let nameDropped = record(
+        "frus1961-63v05/d374", series: "PS 7-1 US- USSR Barghoorn",
+        raw: "Source: Department of State, Central Files, PS 7-1 US- USSR Barghoorn. Confidential; Flash.")
+    /// `frus1961-63v13` d76. Version 69 stored `POL 7 US KENNEDY`, the name read as a place; version
+    /// 70 stores `POL 7 US`.
+    private static let respelledClass = record(
+        "frus1961-63v13/d76", series: "Pol 7 US Kennedy",
+        raw: "Source: Department of State, Central Files, Pol 7 US Kennedy. Confidential. The source text was transmitted as enclosure 2 to airgram 2465, May 22.")
+
+    @MainActor
+    @Test("Version 70 keys a note whose name is dropped by the country's file")
+    func version70Keys() {
+        #expect(Self.key(Self.nameDropped) == "class|PS 7-1 US-USSR")
+        #expect(Self.key(Self.respelledClass) == "class|POL 7 US")
+    }
+
+    /// A18 measured the rule over the two full indexes: of the notes whose class version 70 moves,
+    /// a Department-worded note that gains a class follows its text to the file (as decision 62's
+    /// 410 did), a note worded through the National Archives keys on its block of years and moves
+    /// no key, and a row minted on a class the grammar now spells otherwise is an orphan, kept and
+    /// disclosed, as `ArchiveVisitTargetKeys` says of a class whose own spelling changes.
+    @MainActor
+    @Test("A plan made before version 70: a row on a note whose name is now dropped follows it to the file, and a row minted on the name's own class is an orphan")
+    func planFromBeforeVersion70() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let plan = ArchiveVisitPlan(name: "Made on version 69")
+        context.insert(plan)
+        let tier = ArchiveVisitTier(label: "Day one", order: 0)
+        plan.tiers = [tier]
+        let minted = "r|" + Self.nameDropped.rawText
+        for (document, key) in [("frus1961-63v05/d374", minted),
+                                ("frus1961-63v13/d76", "class|POL 7 US KENNEDY")] {
+            let parts = document.split(separator: "/").map(String.init)
+            plan.addSeeds([(parts[0], parts[1])], includeSource: true, includeExternalRefs: false,
+                          in: context)
+            let row = ArchiveVisitTarget(planId: plan.id, targetKey: key)
+            row.plan = plan
+            row.tierId = tier.id
+            row.userNote = "note for \(document)"
+            context.insert(row)
+        }
+        try context.save()
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: plan, indexedVolumeIds: [],
+            dataSource: DerivationStub(sources: [Self.nameDropped, Self.respelledClass]))
+
+        let file = "class|PS 7-1 US-USSR"
+        #expect(derived.model.targets.contains { $0.key == file })
+        #expect(derived.overlay.tierAssignments[file] == tier.id)
+        #expect(derived.overlay.notes[file] == "note for frus1961-63v05/d374")
+        #expect(derived.overlay.storedKey(for: file) == minted)
+
+        let visits = "class|POL 7 US"
+        #expect(derived.model.targets.contains { $0.key == visits })
+        #expect(derived.overlay.tierAssignments[visits] == nil, "no note's text names the old class, so nothing joins it")
+        #expect(derived.overlay.orphanKeys == ["class|POL 7 US KENNEDY"])
+        #expect(derived.overlay.storedKeyCount == 2)
+    }
+
     /// The rule's conjuncts, one fixture each.
     @Test("Two class keys join only where one has a hyphen for the other's space")
     func theDashRule() {

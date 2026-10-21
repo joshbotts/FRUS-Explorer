@@ -74,6 +74,8 @@ import Foundation
 ///   1.8 — A10b (decision 74): the snippet is FRUSCoreKit's `ProseSnippet`, which keyword rows share, with its two
 ///         corrections: a heading that opens "No. 567" is stripped whole, and a 1946–60 telegram's classification
 ///         line goes with the dateline after it. SNIPPETS MOVE for those Meaning rows
+///   1.9 — A18 (index version 70): a Meaning result carries its row's `dateISOMax` and `datePrecision`, as a
+///         keyword result does
 @MainActor
 struct SemanticSearchBackend: MeaningSearchRunning {
 
@@ -264,6 +266,8 @@ struct SemanticSearchBackend: MeaningSearchRunning {
                 header: row.header,
                 dateline: row.dateline,
                 dateISO: row.dateISO,
+                dateISOMax: row.dateISOMax,
+                datePrecision: row.datePrecision.flatMap(DatePrecision.init(rawValue:)),
                 sourceNote: row.sourceNote,
                 snippet: ProseSnippet.prose(
                     header: row.header,

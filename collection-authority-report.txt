@@ -1,28 +1,28 @@
-collection-authority.json regeneration report — 2026-10-11
+collection-authority.json regeneration report — 2026-10-20
 ============================================================
 volumes parsed:            502
 document notes parsed:     264598
-authority records:         3985 (lot-keyed: 1718, with NAID: 1014)
-sub-series children:       7525
-alias forms:               5215
+authority records:         3977 (lot-keyed: 1718, with NAID: 1014)
+sub-series children:       7606
+alias forms:               5187
 unclusterable references:  0
-artifact size:             1837691 bytes
+artifact size:             1844558 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
   lot-keyed:   4261/4261 (100.0%)
-  class-keyed: 3647/4394 (83.0%)
-  text-keyed:  10178/13359 (76.2%)
-  overall:     18086/22014 (82.2%)
+  class-keyed: 4624/5391 (85.8%)
+  text-keyed:  9508/12469 (76.3%)
+  overall:     18393/22121 (83.1%)
 
 Coverage — document source notes by era (parsed → clusterable → landed):
   1946–1960: 73702 notes → 27767 clusterable (37.7%) → 27438 landed (37.2% of notes, 98.8% of clusterable)
-  1961–1968: 22481 notes → 20805 clusterable (92.5%) → 20125 landed (89.5% of notes, 96.7% of clusterable)
-  1969–1976: 18489 notes → 15978 clusterable (86.4%) → 15564 landed (84.2% of notes, 97.4% of clusterable)
+  1961–1968: 22481 notes → 20812 clusterable (92.6%) → 20132 landed (89.6% of notes, 96.7% of clusterable)
+  1969–1976: 18489 notes → 15980 clusterable (86.4%) → 15566 landed (84.2% of notes, 97.4% of clusterable)
   1977–1988: 12171 notes → 9232 clusterable (75.9%) → 8539 landed (70.2% of notes, 92.5% of clusterable)
   1989–…: 239 notes → 169 clusterable (70.7%) → 88 landed (36.8% of notes, 52.1% of clusterable)
   …–1945: 137516 notes → 4275 clusterable (3.1%) → 3979 landed (2.9% of notes, 93.1% of clusterable)
 
-Ambiguous clusters left unmerged (same leading segment, different repositories): 388
+Ambiguous clusters left unmerged (same leading segment, different repositories): 391
   advisory committee on foreign aid: frc 74 a 58  ←  national archives | washington national records center
   advisory committees on foreign aid: frc 73 a 159  ←  national archives | washington national records center
   agency file  ←  (unattributed) | carter library | national archives | nixon
@@ -109,7 +109,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   files of the office of the deputy director for plans covering 1961  ←  (unattributed) | central intelligence agency
   files on the pentagon paper  ←  (unattributed) | washington national records center
   foia electronic reading room  ←  central intelligence agency | department of state
-  ft (ex) us: u.s. foreign trade  ←  (unattributed) | department of state
+  ft (ex) us  ←  (unattributed) | department of state
   geopolitical file  ←  (unattributed) | library of congress
   george elsey paper  ←  department of state | johnson library
   george h.w. bush presidential record  ←  (unattributed) | bush library
@@ -130,10 +130,10 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   ica director's file  ←  (unattributed) | department of state | washington national records center
   ica director's files: frc 61 a 32  ←  (unattributed) | washington national records center
   ica message file  ←  (unattributed) | department of state | washington national records center
-  inco-cotton: cotton industry and commoditie  ←  (unattributed) | department of state
-  inco-poultry us: u.s. poultry industry and commoditie  ←  (unattributed) | department of state
-  inco-wool it: wool industry and commodities of italy  ←  (unattributed) | department of state
-  inco-wool us: wool industry and commodities of united state  ←  (unattributed) | department of state
+  inco-cotton  ←  (unattributed) | department of state
+  inco-poultry us  ←  (unattributed) | department of state
+  inco-wool it  ←  (unattributed) | department of state
+  inco-wool us  ←  (unattributed) | department of state
   indonesia  ←  department of state | national archives
   inr file  ←  (unattributed) | department of state
   inr historical file  ←  (unattributed) | department of state
@@ -255,8 +255,11 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   personal papers of william p. roger  ←  (unattributed) | ford library | national archives
   plains file  ←  (unattributed) | carter library
   plumbers task force  ←  (unattributed) | national archives
-  pol cuba-ussr : soviet union-cuba relation  ←  (unattributed) | department of state
-  pol uk-us: political affairs and relations between the u.k. and the u.s  ←  (unattributed) | department of state
+  pol cuba  ←  (unattributed) | department of state
+  pol cuba-ussr  ←  (unattributed) | department of state
+  pol uk-u  ←  (unattributed) | department of state
+  pol uk-ussr  ←  (unattributed) | department of state
+  pol us-ussr  ←  (unattributed) | department of state
   presidential appointment book  ←  (unattributed) | eisenhower library | kennedy library
   presidential correspondence  ←  (unattributed) | national archives | nixon
   presidential daily appointment  ←  (unattributed) | eisenhower library

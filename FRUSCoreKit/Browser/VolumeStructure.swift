@@ -37,6 +37,10 @@ import Foundation
 ///   2.2 — 2026-10-11 (#1536): ``ownTextRowId`` and ``ownTextEntry(among:)``, the row the index
 ///          holds for the text a section prints outside the documents and sections it holds.
 ///          Browse on both platforms and the reading sequence ask here. No stored value changes.
+///   2.3 — 2026-10-20 (A18, index version 70): ``leadsWithSubsections``, stored with the outline,
+///          so the reading order can put a chapter's opening subsection before its documents;
+///          `frontMatterKinds` and `proseReadableKinds` take the prose kinds the index now
+///          promotes, so Browse opens them and the index flags the front-matter ones.
 public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
 
     /// The `xml:id` attribute of the enclosing `<div>`, or a generated stable string
@@ -65,7 +69,23 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
     /// Nested sub-sections, e.g. chapters within a compilation.
     public let subsections: [VolumeSection]
 
+    /// Whether the section's first subsection opens before its first direct document (index
+    /// version 70). The outline keeps `documentIds` and `subsections` apart, so this is what
+    /// tells the reading order (`IndexingPipeline.mergeReadingSequence`) to put such a subsection
+    /// before the documents, where Browse already lists it: `frus1945-50Intel`'s chapters each
+    /// open with an `editorial-note` introduction and then hold their documents directly. On a
+    /// full index at corpus `6170e4b32`, 18 sections in 10 volumes: those eight, three volumes'
+    /// front matter whose documents follow the title page and preface, a compilation that opens
+    /// with its table of contents, and six more. `false` for a section with no subsections or
+    /// whose documents come first, and for an outline stored before version 70, which lacks the
+    /// key.
+    public var leadsWithSubsections: Bool = false
+
     public var id: String { sectionId }
+
+    private enum CodingKeys: String, CodingKey {
+        case sectionId, divType, title, documentIds, subsections, leadsWithSubsections
+    }
 
     /// All document IDs reachable from this section or any of its subsections.
     public var allDocumentIds: [String] {
@@ -81,6 +101,13 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
         "prefatoryNote", "sources", "persons", "terms",
         "table-of-contents", "press-release", "volume-summary",
         "about-frus-series", "historical-document", "section",
+        // Index version 70: the prose kinds the corpus prints in `<front>` and the index now
+        // promotes (`TEIParserDelegate.promotableQuasiDocumentKinds` has each one's count).
+        // `editorial-note` is not here: it is front matter where the volume prints it so, and
+        // `frus1945-50Intel`'s chapter introductions are sections of their chapter.
+        "note-on-covert-actions", "message", "message1", "editorial-policies",
+        "acknowledgments", "report", "recommendations", "abstract", "united-states",
+        "translation-of-the-memorandum",
     ]
 
     /// Kinds whose content is prose (or a rendered list) that `DocumentView` can
@@ -104,6 +131,11 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
         "table-of-contents", "press-release", "volume-summary",
         "about-frus-series", "historical-document", "index", "section",
         "compilation", "chapter", "subchapter",
+        // Index version 70: the prose kinds the index now promotes, each a page the reader opens
+        // by its id. Browse said "No documents in this section." of a Note on U.S. Covert Actions.
+        "note-on-covert-actions", "message", "message1", "editorial-note", "editorial-policies",
+        "acknowledgments", "report", "recommendations", "abstract", "united-states",
+        "translation-of-the-memorandum",
     ]
 
     /// `true` when this section belongs in the browser's "Front Matter" group.
@@ -171,6 +203,21 @@ public struct VolumeSection: Sendable, Identifiable, Codable, Hashable {
     public func ownTextEntry(among rows: [DocumentBrowserEntry]) -> DocumentBrowserEntry? {
         guard let id = ownTextRowId else { return nil }
         return rows.first { $0.documentId == id }
+    }
+}
+
+extension VolumeSection {
+    /// Decodes an outline, reading ``leadsWithSubsections`` as `false` where the stored JSON has
+    /// no such key: every `volume_structures` row written before index version 70. In an
+    /// extension so that the memberwise initialiser the parser and the tests use stays.
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        sectionId = try values.decode(String.self, forKey: .sectionId)
+        divType = try values.decode(String.self, forKey: .divType)
+        title = try values.decode(String.self, forKey: .title)
+        documentIds = try values.decode([String].self, forKey: .documentIds)
+        subsections = try values.decode([VolumeSection].self, forKey: .subsections)
+        leadsWithSubsections = try values.decodeIfPresent(Bool.self, forKey: .leadsWithSubsections) ?? false
     }
 }
 

@@ -621,9 +621,11 @@ struct SubjectNumericClassKeyTests {
         ("Source: Department of State, Central Files, POL 27-10 S VIET Secret; Priority; Limit Distribution.", "POL 27-10 S VIET"),
     ])
     func aRunOnClassificationIsNotTheClass(note: String, classKey: String) {
+        // Until index version 70 the scan alone read nothing here and the class came from the
+        // designation. Since 70 the scan cuts a title-case word after the country as a person's name
+        // (A18), so `Top Secret.` goes with it and the scan reads the first file too, while
+        // `Secret; Priority;` still stops it. Either way the stored class is the designation's.
         #expect(storedClass(note) == classKey)
-        // The scan alone still reads nothing: the class comes from the designation.
-        #expect(SourceNoteParser.decimalClassLocation(inCitation: note) == nil)
     }
 
     // MARK: A subject number in a spelling the strict shape refuses
@@ -695,10 +697,11 @@ struct SubjectNumericClassKeyTests {
     }
 
     @Test("A subject number lets one or two capitalised words be read, whatever they are", arguments: [
-        // frus1961-63v15/d173, frus1969-76ve05p1/d127, frus1961-63v13/d76, frus1961-63v05/d296.
+        // frus1961-63v15/d173, frus1969-76ve05p1/d127, frus1961-63v05/d296. frus1961-63v13/d76's
+        // `Pol 7 US Kennedy` was the fourth until index version 70, which reads the name after the
+        // country as a person's and files the note under `POL 7 US` (A18, the suite below).
         ("Source: Department of State, Central Files, POL 28 Berlin.", "POL 28 BERLIN"),
         ("Source: National Archives, RG 59, Central Files 1967–69, POL 27 Biafra-Nigeria.", "POL 27 BIAFRA-NIGERIA"),
-        ("Source: Department of State, Central Files, Pol 7 US Kennedy.", "POL 7 US KENNEDY"),
         ("Source: Department of State, Central Files, DEF 18-3 Switz (GE).", "DEF 18-3 SWITZ (GE)"),
     ])
     func aNumberAdmitsTwoCapitalisedWords(note: String, classKey: String) {
@@ -706,22 +709,16 @@ struct SubjectNumericClassKeyTests {
     }
 
     @Test("Prose, and a word no list holds, are not a class", arguments: [
-        // Three words after the number, which are not all area words: frus1969-76v10/d96,
-        // frus1964-68v32/d221.
+        // Three words after the number, which are not all area words: frus1969-76v10/d96. (Until
+        // index version 70 frus1964-68v32's `POL 15 DOM John J.` and `POL 2 DOM Crimmins and officers…`
+        // were here too; A18 reads both as the Dominican Republic's file, cut short, in the suite below.)
         "Source: National Archives, RG 59, Central Files 1970–73, POL 21–Laos Internal Talks.",
-        "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 15 DOM John J.",
-        // Lower-case words: frus1964-68v32/d220.
-        "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM Crimmins and officers of the Political and Economic sections of the Embassy.",
         // Neither capitals nor title case: frus1964-68v30/d170.
         "Source: Department of State, Central Files, UN 6 ChiCom.",
         // No number, and a word that is no area code: a handling caption (frus1969-76v20/d284), a
-        // country the handbooks have no code for (frus1969-76ve05p1/d206), a person
-        // (frus1969-76v28/d12).
+        // person (frus1969-76v28/d12). (`POL Nigeria-US` was here until version 70 added the name.)
         "Source: National Archives, RG 59, Central Files 1970–73, POL Nodis.",
-        "Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria-US, XR POL 30 Nigeria.",
         "Source: National Archives, RG 59, Central Files 1967–69, PPT Ashe, Arthur.",
-        // A stray bracket: frus1961-63v10-12mSupp/d43.
-        "DOS, CF, POL 12 CHILE.]",
     ])
     func proseIsNotAClass(note: String) {
         #expect(storedClass(note) == nil, "stored \(storedClass(note) ?? "")")
@@ -768,9 +765,9 @@ struct SubjectNumericClassKeyTests {
         #expect(SourceNoteParser.decimalClassKey("DEF 18–4 Defense Affairs") == nil)
         #expect(SourceNoteParser.decimalClassKey("SOC 14 Human Rights") == nil)
         // So a place printed the same way is not read there either, as it was not before
-        // version 69.
+        // version 69. (`POL 23–9 Burundi` stood here until version 70 made Burundi an area word.)
         #expect(SourceNoteParser.decimalClassKey("POL 28 Berlin") == nil)
-        #expect(SourceNoteParser.decimalClassKey("POL 23–9 Burundi") == nil)
+        #expect(SourceNoteParser.decimalClassKey("POL 23–9 Tanzania") == nil)
         // A document's citation is: frus1961-63v15/d174, and frus1969-76ve06/d60 cut after its
         // classification.
         #expect(storedClass("Source: Department of State, Central Files, POL 28 Berlin. Secret; Priority.")
@@ -860,5 +857,193 @@ struct SubjectNumericClassKeyTests {
         #expect(match("Source: Department of State, ARA Files: Lot 58 D 749. Secret.") == nil)
         #expect(match("Source: Kennedy Library, National Security Files, Countries Series, USSR. Confidential.") == nil)
         #expect(match("Source: National Archives, RG 59, Central Files 1970–73, POL Nodis.") == nil)
+    }
+}
+
+// MARK: - Index version 70 (A18)
+
+/// The class grammar at index version 70 (A18; plan of record decision 77 and the owner's answers
+/// of 2026-10-20): a person's name after the country of a visits or case file is dropped, as the
+/// slash forms' were; a country in parentheses is the element; `POL 2 DOM` is `POL 2 DOM REP`; four
+/// slips of punctuation are read through; nine country names the corpus prints in title case join
+/// the area words; and a row of a volume's list of sources reads a file with no subject number and
+/// one continued after a slash. Each document note is one the v69 library stored, named by its
+/// document, except where the comment says otherwise.
+@Suite("Index version 70: names, parentheses, slips, nine country words and the list of sources (A18)")
+struct SubjectNumericGrammarVersion70Tests {
+
+    private let parser = SourceNoteParser()
+
+    /// The class a document note stores.
+    private func storedClass(_ note: String) -> String? {
+        CollectionKeying.centralFilesClass(parsed: parser.parse(note), note: note)
+    }
+
+    @Test("A person's name after the country, with a space or in parentheses, is dropped: the note is filed under the country's file", arguments: [
+        // frus1969-76v20/d139, frus1961-63v13/d76: a title-case name after the capitals country.
+        ("Source: National Archives, RG 59, Central Files 1970–73, POL 7 US Connally. Secret; Priority; Exdis.", "POL 7 US"),
+        ("Source: Department of State, Central Files, Pol 7 US Kennedy. Confidential.", "POL 7 US"),
+        // frus1961-63v05/d374: after a pair of countries.
+        ("Source: Department of State, Central Files, PS 7-1 US- USSR Barghoorn. Confidential; Flash.", "PS 7-1 US-USSR"),
+        // frus1961-63v16/d244, frus1964-68v01/d329: in parentheses, which the post rule did not take.
+        ("Source: Department of State, Central Files, POL 7 US (Johnson). Confidential.", "POL 7 US"),
+        ("Source: Department of State, Central Files, POL 7 US (LODGE). Secret; Immediate; Limdis.", "POL 7 US"),
+        // The slash forms were already the file's: frus1964-68v14/d207.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, PS 7–1 US – USSR /Wortham, Ray Buell. Confidential.", "PS 7-1 US-USSR"),
+    ])
+    func aPersonsNameIsDropped(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("What is not a person's name stays: a meeting's or a case's name in capitals, a river, a place in title case, a code the area words lacked", arguments: [
+        // frus1969-76ve05p2/d3, frus1964-68v18/d199, frus1964-68v31/d435: the owner left these as files of their own.
+        ("Source: National Archives, RG 59, Central Files 1967–69, POL 7 ARAB SUMMIT. Secret; Noforn.", "POL 7 ARAB SUMMIT"),
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 3 PAL ENTITY. Confidential; Air Pouch.", "POL 3 PAL ENTITY"),
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 7 IA–SUMMIT. Confidential.", "POL 7 IA-SUMMIT"),
+        // The 1963 handbook subdivides POL 33-1 by the river's name.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, POL 33-1 JORDAN RIVER. Confidential.", "POL 33-1 JORDAN RIVER"),
+        // A capitals name joined by a dash cannot be told from a country the area words lack, and stays a key of its own.
+        ("Source: Department of State, Central Files, POL 7 US-HUMPHREY. Confidential.", "POL 7 US-HUMPHREY"),
+        // A title-case place first is the element, as at version 69: frus1961-63v15/d173, frus1961-63v05/d296.
+        ("Source: Department of State, Central Files, POL 28 Berlin. Secret.", "POL 28 BERLIN"),
+        ("Source: Department of State, Central Files, DEF 18-3 Switz (GE). Secret.", "DEF 18-3 SWITZ (GE)"),
+        ("Source: Department of State, Central Files, POL 27 S Viet. Secret.", "POL 27 S VIET"),
+        ("Source: Department of State, Central Files, POL 7 Saudi Arabia. Confidential.", "POL 7 SAUDI ARABIA"),
+    ])
+    func whatStays(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("A country in parentheses is the element, and `POL 2 DOM` is the Dominican Republic's file", arguments: [
+        // frus1964-68v08/d55.
+        ("Source: Department of State, Central Files, DEF 12–5 (GER W). Secret.", "DEF 12-5 GER W"),
+        // frus1964-68v32/d209, d217 and d219 end at `POL 2 DOM`; d208 prints the file whole; d221 is
+        // cut short after `DOM` in mid-sentence, and the name rule cuts what follows its stop.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM", "POL 2 DOM REP"),
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM REP. Secret; Limdis.", "POL 2 DOM REP"),
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 15 DOM John J. Youle on December 17 and cleared by Long.", "POL 15 DOM REP"),
+    ])
+    func parenthesesAndTheShortForm(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("A parenthesis right after the number with no country stays unread, a no-number designation with a stray number is a garble, and a newspaper page is no class", arguments: [
+        // An organization in parentheses, two of the 62, and frus1969-76ve02/d26's date fragment,
+        // which version 69 stored as the key `POL US-USSR 5`.
+        "Source: Department of State, Central Files, DEF 18-3 (ENDC). Confidential.",
+        "Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria 03. Confidential.",
+        "Source: Department of State, Central Files, FT CHICOM-1 US. Confidential.",
+        "Source: National Archives, RG 59, Central Files 1967–1969, POL US – USSR 5/1/69. Secret; Exdis.",
+        // frus1964-68v32/d220, cut short in mid-sentence with no stop: its segment runs past the
+        // scan's sixty characters before the name rule can cut it, so it stays unread, as at 69.
+        "Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL 2 DOM Crimmins and officers of the Political and Economic sections of the Embassy.",
+        // frus1969-76ve11p1/d254: the run-on sentence's first segment is a newspaper page, `p. D15)`,
+        // which the strict shape would take for a class if it read through the parenthesis.
+        "Source: Ford Library, Presidential Country Files for Latin America, Box 5, Nicaragua. Confidential. Columns appeared on August 22. (Anderson and Whitten, “Economic Jolt Seen in Oil Decontrol,” Washington Post, August 22, 1975, p. D15) In telegram 3321 from Managua, August 25, the Embassy reported it. (National Archives, RG 59, Central Foreign Policy File, D750293–1038) Telegram 3201 from Managua was not found.",
+    ])
+    func whatTheNewRulesRefuse(note: String) {
+        #expect(storedClass(note) == nil, "stored \(storedClass(note) ?? "")")
+    }
+
+    @Test("A commodity in capitals joined to its number by a space keeps the key version 69 stored", arguments: [
+        // frus1969-76v19p2/d47, frus1969-76ve01/d154, frus1964-68v31/d287: the handbook's `INCO-FIBERS 17`.
+        ("Source: National Archives, RG 59, Central Files 1970–73, INCO FIBERS 17 US–JAPAN; Secret; Immediate.", "INCO FIBERS 17 US-JAPAN"),
+        ("Source: National Archives, RG 59, Central Files 1967-69, INCO -DRUGS 17 US. Confidential; Priority; Limdis.", "INCO DRUGS 17 US"),
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, INCO COPPER 17. Secret; Immediate.", "INCO COPPER 17"),
+    ])
+    func aSpaceJoinedCommodityKeepsItsKey(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("A parenthetical copy citation is read through its closing parenthesis, bare number and all", arguments: [
+        // frus1969-76v40/d381, frus1969-76v19p2/d56, frus1969-76ve07/d206: a document from the Nixon
+        // materials whose note cites a copy in the central files, in parentheses. Until version 70
+        // the parenthesis kept the file unread; about a hundred such notes store their class now.
+        // d206 stored `DEF1-1`, its first token, at 69; the whole designation is respelled as the
+        // handbook spells it, as `E–8 INDON` is `E 8 INDON`.
+        ("Source: National Archives, Nixon Presidential Materials, NSC Files, Box 692, Country Files, Europe, Germany (Berlin), Vol. V. Secret. Kissinger and Rush discussed it. (Both National Archives, RG 59, Central Files 1970–73, POL 38–6)", "POL 38-6"),
+        ("Source: National Archives, Nixon Presidential Materials, NSC Files, Box 535, Country Files, Far East, Japan, Vol. III. Secret; Exdis. Holdridge sent this memorandum to Kissinger after the meeting with Kishi. (Ibid., RG 59, Central Files 1970–73, POL 7 JAPAN)", "POL 7 JAPAN"),
+        ("Source: National Archives, Nixon Presidential Materials, NSC Files, Box H–062, SRG Meeting, South Asia. Secret; Nodis. Cleared by Schneider and Van Hollen. (Ibid., RG 59, Central Files 1970–73, DEF1–1 ASIA SE)", "DEF 1-1 ASIA SE"),
+    ])
+    func aParentheticalCopyCitationIsRead(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("Four slips of punctuation are read through", arguments: [
+        // frus1964-68v19/d185: a slash between the lead and its number.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1967–69, POL /27 ARAB–ISR. Secret; Flash; Nodis.", "POL 27 ARAB-ISR"),
+        // frus1961-63v07/d300: the same, and the item slash after it.
+        ("Source: Department of State, Central Files, POL/7 US/ Harriman. Top Secret; Priority. Repeated to Moscow.", "POL 7 US"),
+        // frus1964-68v26/d223, frus1964-68v13/d24: a closing parenthesis with no opener.
+        ("Source: National Archives and Records Administration, RG 59, Central Files 1964–66, AID (US) INDON). Secret.", "AID (US) INDON"),
+        ("Source: Department of State, Central Files, NATO 3 NETH(TH)). Confidential.", "NATO 3 NETH (TH)"),
+        // frus1961-63v10-12mSupp/d43: a bracket.
+        ("[Text not declassified. Secret. 2 pp. DOS, CF, POL 12 CHILE.]", "POL 12 CHILE"),
+    ])
+    func slipsAreReadThrough(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("Nine country names the corpus prints in title case are area words", arguments: [
+        // frus1969-76ve05p1/d208, d206, d217, d244; frus1969-76ve06/d61; frus1969-76ve08/d31; frus1961-63v13/d314.
+        ("Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria-US. Confidential.", "POL NIGERIA-US"),
+        ("Source: National Archives, RG 59, Central Files 1970–73, POL Nigeria-US, XR POL 30 Nigeria. Confidential. Repeated to Lisbon.", "POL NIGERIA-US"),
+        ("Source: National Archives, RG 59, Central Files 1970–73, AID (US) Nigeria. Confidential. Repeated to London.", "AID (US) NIGERIA"),
+        ("Source: National Archives, RG 59, Central Files 1970–73, POL Uganda-US. Confidential; Priority.", "POL UGANDA-US"),
+        ("Source: National Archives, RG 59, Central Files 1970–73, POL Burundi-US. Limited Official Use; Immediate.", "POL BURUNDI-US"),
+        ("Source: National Archives, RG 59, Central Files 1970—73, POL Bangladesh—U.S. Confidential.", "POL BANGLADESH-US"),
+        ("Source: Department of State, Central Files, Pol-Italy. Confidential.", "POL ITALY"),
+        // The form of frus1969-76ve09p2/d84's file, worded through the Department.
+        ("Source: Department of State, Central Files, POL Iran-Saudi Arabia. Secret.", "POL IRAN-SAUDI ARABIA"),
+    ])
+    func titleCaseCountries(note: String, classKey: String) {
+        #expect(storedClass(note) == classKey)
+    }
+
+    @Test("What the grammar still does not read: a mixed-case code, a folder title, a person's own file, a category alone", arguments: [
+        "Source: Department of State, Central Files, Pol US-WGer. Secret; Limit Distribution.",
+        "Source: National Archives, RG 59, Central Files 1970–73, POL 21–Laos Internal Talks. Secret.",
+        "Source: National Archives, RG 59, Central Files 1967–69, PPT Ashe, Arthur. Confidential.",
+        "Source: National Archives, RG 59, Central Files 1970–73, POL Nodis.",
+        "Source: Department of State, Central Files, AID Limited Official Use.",
+    ])
+    func whatStaysUnread(note: String) {
+        #expect(storedClass(note) == nil)
+    }
+
+    @Test("A segment of a volume's list of sources reads a file continued after a slash, and nothing else new", arguments: [
+        ("POL 7 US/Harriman", "POL 7 US"),
+        ("POL 15–1 US/KENNEDY", "POL 15-1 US"),
+        ("DEF 6-8 US/NATO", "DEF 6-8 US"),
+        ("POL 27 Laos", "POL 27 LAOS"),
+        ("POL 27 ARAB–ISR", "POL 27 ARAB-ISR"),
+        ("POL 2 DOM", "POL 2 DOM REP"),
+        // A subject title after a number, a file with no number (the leading rule's, below), and a
+        // decimal number with its item.
+        ("DEF 18–4 Defense Affairs", nil),
+        ("POL US-USSR", nil),
+        ("711.11/5–1961", nil),
+    ])
+    func aListOfSourcesSegment(segment: String, classKey: String?) {
+        #expect(SourceNoteParser.frontMatterClassKey(segment) == classKey)
+    }
+
+    @Test("The designation leading a row of a volume's list of sources reads a file with no subject number", arguments: [
+        ("POL US-USSR", "POL US-USSR"),
+        ("EDX AFR-US", "EDX AFR-US"),
+        ("POL CHICOM", "POL CHICOM"),
+        ("POL THE CONGO/US", "POL THE CONGO"),
+        // A numbered designation is the segment rule's, a title in title case, a lead alone, a
+        // prose paragraph, and a garble with a number.
+        ("POL 2 DOM", nil),
+        ("PER Files", nil),
+        ("E Files", nil),
+        ("POL", nil),
+        ("UN", nil),
+        ("Subject-Numeric Indexed Central Files. In February 1963", nil),
+        ("FT CHICOM-1 US", nil),
+    ])
+    func aListOfSourcesLeadingDesignation(leading: String, classKey: String?) {
+        #expect(SourceNoteParser.frontMatterPrimarySubjectKey(leading: leading) == classKey)
     }
 }

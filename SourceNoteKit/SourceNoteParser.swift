@@ -60,6 +60,15 @@ import Foundation
 ///          identifiers (NSDM/NSSM/NSAM/NSC/NIE/SNIE/PL, PRC accessions); the
 ///          citation class scan (`decimalClassLocation`) is bounded to the citation
 ///          sentence so remark sentences can never contribute a class key
+///   1.7 — A18 (index version 70, plan of record decision 77 and the owner's answers of
+///          2026-10-20): `subjectNumericAreaWords` takes nine country names the corpus prints
+///          in title case; `SubjectNumericDesignation` drops a person's name after the country
+///          of a visits or case file, with a space or in parentheses, reads a country in
+///          parentheses as the element, refuses a digit token in a no-number designation, and
+///          reads through an unbalanced closing parenthesis; `completingShortForm` makes
+///          `DOM` `DOM REP`; `joiningLeadSlash` and `droppingClosingSlips` read four slips of
+///          punctuation; `frontMatterClassKey` and `frontMatterPrimarySubjectKey(leading:)` key
+///          a volume's list of sources as a document's citation is keyed
 public enum ParsedSourceNote: Sendable, Equatable {
 
     /// State Department central files cited through the Department: a decimal file number
@@ -249,8 +258,16 @@ public enum ParsedSourceNote: Sendable, Equatable {
         "TP", "TR", "TRV", "TV", "V", "VEH",
     ]
 
-    /// The words the two handbooks' country and area codes are made of: 155, none longer than six
-    /// letters (the words of the 316 `areas` codes `subject-numeric-labels.json` held at index 69).
+    /// The words the two handbooks' country and area codes are made of, and the country names the
+    /// corpus prints in title case where a code would stand: 164 words. 155 are the words of the
+    /// 316 `areas` codes `subject-numeric-labels.json` held at index 69, none longer than six
+    /// letters; nine joined at index version 70 (A18, the owner's answer of 2026-10-20) — the
+    /// names printed in title case in the 62 Subject-Numeric citations that stored no class, and
+    /// in a count over every note: `ARABIA`, `BANGLADESH`, `BURUNDI`, `ITALY`, `KUWAIT`,
+    /// `NIGERIA`, `SAUDI`, `SWITZ`, `UGANDA` (`POL Nigeria-US`, `POL Uganda`, `Pol-Italy`, `POL
+    /// Iran-Saudi Arabia`, `DEF 18-3 Switz (GE)`). The strict class shape holds a word to six
+    /// letters; a longer one is read by ``SourceNoteParser/SubjectNumericDesignation``, as the
+    /// capitals `NIGERIA` of `POL 23-9 NIGERIA` always was.
     ///
     /// A country element printed in title case (`POL 27 S Viet`, `POL 1 Eur-US`) is the code in
     /// another case, and these are what tell it from prose (index version 69). The list is its own
@@ -258,20 +275,20 @@ public enum ParsedSourceNote: Sendable, Equatable {
     /// change to it is an index version. `SubjectNumericGrammarListPinTests` pins it word for word.
     public static let subjectNumericAreaWords: Set<String> = [
         "ADEN", "AF", "AFG", "AFR", "AFRICA", "ALB", "ALG", "AM", "AMER", "ANG", "ANT",
-        "ARA", "ARAB", "ARG", "ASIA", "AUS", "BAH", "BAS", "BEL", "BOL", "BONIN", "BR",
-        "BRAZ", "BUL", "BURMA", "CAMB", "CAN", "CENTO", "CHICOM", "CHILE", "CHINAT", "COAS",
-        "COL", "CONGO", "COSTA", "CUBA", "CYP", "CZ", "CZECH", "D", "DOM", "E", "EA",
-        "EAST", "ECE", "ECOSOC", "EFTA", "ETH", "EUR", "FAA", "FAO", "FIN", "FR", "GA",
-        "GATT", "GER", "GHANA", "GIB", "GR", "GREECE", "GU", "GUAM", "GUAT", "GUIN", "HAI",
-        "HAITI", "HK", "HOND", "HUNG", "IA", "ICE", "IND", "INDIA", "INDON", "IRAN", "IRAQ",
-        "IS", "ISR", "ISRAEL", "IT", "JAM", "JAPAN", "JCS", "JORDAN", "KOR", "KUW", "LA",
-        "LAOS", "LAT", "LEB", "LIBYA", "LUX", "MALTA", "MEX", "MONG", "MOR", "MOZ", "N",
-        "NATO", "NEA", "NEAR", "NEARE", "NEW", "NIC", "NR", "OAU", "OECD", "OMAN", "OPEC",
-        "PAK", "PAL", "PAN", "PAR", "PERU", "PHIL", "POL", "PORT", "REP", "RHOD", "RICA",
-        "RUM", "RWANDA", "RYU", "S", "SAUD", "SC", "SE", "SEATO", "SOM", "SOMALI", "SP",
-        "SUDAN", "SW", "SWAZ", "SWE", "SYR", "THAI", "THE", "TR", "TUN", "TUR", "U", "UAR",
-        "UK", "UN", "UNRWA", "UR", "US", "USSR", "VEN", "VIET", "VIETN", "W", "YEMEN",
-        "YUGO",
+        "ARA", "ARAB", "ARABIA", "ARG", "ASIA", "AUS", "BAH", "BANGLADESH", "BAS", "BEL",
+        "BOL", "BONIN", "BR", "BRAZ", "BUL", "BURMA", "BURUNDI", "CAMB", "CAN", "CENTO",
+        "CHICOM", "CHILE", "CHINAT", "COAS", "COL", "CONGO", "COSTA", "CUBA", "CYP", "CZ",
+        "CZECH", "D", "DOM", "E", "EA", "EAST", "ECE", "ECOSOC", "EFTA", "ETH", "EUR", "FAA",
+        "FAO", "FIN", "FR", "GA", "GATT", "GER", "GHANA", "GIB", "GR", "GREECE", "GU", "GUAM",
+        "GUAT", "GUIN", "HAI", "HAITI", "HK", "HOND", "HUNG", "IA", "ICE", "IND", "INDIA",
+        "INDON", "IRAN", "IRAQ", "IS", "ISR", "ISRAEL", "IT", "ITALY", "JAM", "JAPAN", "JCS",
+        "JORDAN", "KOR", "KUW", "KUWAIT", "LA", "LAOS", "LAT", "LEB", "LIBYA", "LUX", "MALTA",
+        "MEX", "MONG", "MOR", "MOZ", "N", "NATO", "NEA", "NEAR", "NEARE", "NEW", "NIC",
+        "NIGERIA", "NR", "OAU", "OECD", "OMAN", "OPEC", "PAK", "PAL", "PAN", "PAR", "PERU",
+        "PHIL", "POL", "PORT", "REP", "RHOD", "RICA", "RUM", "RWANDA", "RYU", "S", "SAUD",
+        "SAUDI", "SC", "SE", "SEATO", "SOM", "SOMALI", "SP", "SUDAN", "SW", "SWAZ", "SWE",
+        "SWITZ", "SYR", "THAI", "THE", "TR", "TUN", "TUR", "U", "UAR", "UGANDA", "UK", "UN",
+        "UNRWA", "UR", "US", "USSR", "VEN", "VIET", "VIETN", "W", "YEMEN", "YUGO",
     ]
 
     /// A Subject-Numeric designator with no number: a handbook category, an optional parenthesised
@@ -800,20 +817,28 @@ public struct SourceNoteParser {
             .replacingOccurrences(of: "—", with: "-")
             .split(whereSeparator: \.isWhitespace)
             .joined(separator: " ")
-        while s.hasSuffix(".") { s = String(s.dropLast()) }
-        s = s.trimmingCharacters(in: .whitespaces)
+        s = droppingClosingSlips(s, unbalancedParenthesis: false)
         guard s.count >= 3, s.count <= 60 else { return nil }
         let asPrinted = s
         s = unifyingSpacedClassSuffix(s)
         let ns = NSRange(s.startIndex..., in: s)
         let isSubjectNumeric = subjectNumericClassRegex?.firstMatch(in: s, range: ns) != nil
         let isDottedDecimal = dottedDecimalClassRegex?.firstMatch(in: s, range: ns) != nil
-        if isSubjectNumeric || isDottedDecimal { return s }
+        if isSubjectNumeric || isDottedDecimal { return completingShortForm(s) }
         // A Subject-Numeric designation the strict shape refuses for its spelling alone (index
         // version 69). Read from the candidate as printed: `unifyingSpacedClassSuffix` has by
         // now removed a dash that a space follows, and `POL 1 US - USSR` needs it.
         return SubjectNumericDesignation(asPrinted, readingNamedElements: readingNamedElements)?
-            .numberedClassKey
+            .numberedClassKey.map(completingShortForm)
+    }
+
+    /// `key` with the one two-word country code the corpus prints cut to its first word completed
+    /// (index version 70, the owner's answer of 2026-10-20): three notes of `frus1964-68v32` end at
+    /// `POL 2 DOM`, the file its other documents cite as `POL 2 DOM REP`, and two more of the volume
+    /// are cut short after `DOM` in mid-sentence. `DOM` alone is no code of the 1963 handbook's list;
+    /// `DOM REP` is the Dominican Republic's.
+    static func completingShortForm(_ key: String) -> String {
+        key.hasSuffix(" DOM") ? key + " REP" : key
     }
 
     /// The class key of a designation with no subject number (`POL US-USSR`, `AID (US) S VIET`,
@@ -831,14 +856,99 @@ public struct SourceNoteParser {
     /// - Parameter designation: `CentralFilesReading.designation`.
     /// - Returns: The canonical key, which has no subject number after its head.
     public static func primarySubjectClassKey(ofDesignation designation: String) -> String? {
-        var candidate = designation
+        var candidate = joiningLeadSlash(designation)
             .replacingOccurrences(of: "–", with: "-")
             .replacingOccurrences(of: "—", with: "-")
         if let slash = candidate.firstIndex(of: "/") { candidate = String(candidate[..<slash]) }
         candidate = candidate.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        while candidate.hasSuffix(".") { candidate = String(candidate.dropLast()) }
+        candidate = droppingClosingSlips(candidate)
         guard candidate.count >= 3, candidate.count <= 60 else { return nil }
         return SubjectNumericDesignation(candidate, readingNamedElements: true)?.primarySubjectClassKey
+            .map(completingShortForm)
+    }
+
+    /// The class key of a segment of a row of a volume's list of sources, with a subject number
+    /// (index version 70), or `nil`.
+    ///
+    /// A document's citation and a list's row name the same file, and until 70 the row was read
+    /// only where it printed a subject number in a form the strict shape accepted: 259 rows in 67
+    /// volumes printed one continued after a slash (`POL 7 US/Harriman`, `POL 15–1 US/KENNEDY`),
+    /// each a collection of its own in the authority, with no neighbours badge (#1645). A
+    /// letter-led segment is cut at its item slash, as the document side cuts a designation, and
+    /// read as ``decimalClassKey(_:)`` reads a candidate: never with a named element, since an
+    /// embassy's files are listed by subject title (`DEF 18–4 Defense Affairs`), which the document
+    /// side's rule would take for a country. A decimal number keeps its item and stays as it was.
+    /// The app's `SourcesParserDelegate` and the authority generator's `FrontMatterSourcesExtractor`
+    /// both key through this, segment by segment, as they always keyed through `decimalClassKey`.
+    public static func frontMatterClassKey(_ candidate: String) -> String? {
+        decimalClassKey(cuttingItemSlash(candidate))
+    }
+
+    /// The class key of the designation that LEADS a row of a volume's list of sources and prints
+    /// no subject number (index version 70), or `nil`: `POL US-USSR: general U.S.-Soviet relations`,
+    /// `EDX AFR-US, Education and Cultural Exchange`. About 670 such rows in 85 volumes stored no
+    /// class and were each a collection named by their text (#1645).
+    ///
+    /// Only the row's leading designation is read so, never a file named inside a row's prose or
+    /// list: a paragraph of frus1961-63v04 on the change to subject-numeric filing lists the
+    /// files it cites with semicolons between them, and reading its segments keyed the paragraph
+    /// as `PER-LODGE`. A row that names a lot is keyed as a lot before this is asked, so an office
+    /// file (`E Files: Lot 64 D 452`) never reaches it, and a title in title case (`PER Files`) is
+    /// refused as prose.
+    public static func frontMatterPrimarySubjectKey(leading candidate: String) -> String? {
+        var designation = cuttingItemSlash(candidate)
+            .replacingOccurrences(of: "–", with: "-")
+            .replacingOccurrences(of: "—", with: "-")
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        designation = droppingClosingSlips(designation)
+        guard designation.count >= 3, designation.count <= 60 else { return nil }
+        return SubjectNumericDesignation(designation, readingNamedElements: false)?.primarySubjectClassKey
+            .map(completingShortForm)
+    }
+
+    /// A letter-led `candidate` cut at its item slash, a slash between its lead and its number
+    /// read as a space first (index version 70): `POL 7 US/Harriman` is `POL 7 US`, as the document
+    /// side reads `POL 7 US/ NIXON`. A digit-led candidate is returned whole: a decimal number's
+    /// slash introduces its item, and the strict shape reads the number without it or not at all.
+    static func cuttingItemSlash(_ candidate: String) -> String {
+        let text = joiningLeadSlash(candidate).trimmingCharacters(in: .whitespaces)
+        guard text.first?.isLetter == true, let slash = text.firstIndex(of: "/") else { return text }
+        return String(text[..<slash])
+    }
+
+    /// `candidate` with a slash between a letter lead and its subject number read as the space it
+    /// stands for (index version 70): `POL /27 ARAB–ISR` and `POL/7 US/ Harriman` are `POL 27 …`
+    /// and `POL 7 …`. The cut at the item slash, which every reader makes next, would otherwise
+    /// leave the lead alone and the note with no class.
+    static func joiningLeadSlash(_ candidate: String) -> String {
+        candidate.replacingOccurrences(of: #"^(\s*[A-Za-z]{1,5})\s*/\s*(?=\d)"#, with: "$1 ",
+                                       options: .regularExpression)
+    }
+
+    /// `candidate` without the stops and the slips of punctuation that close some printed
+    /// designations (index version 70): a `]` (`POL 12 CHILE.]`, `File No. 493.00.]`), a stray
+    /// comma, and, where `unbalancedParenthesis` allows, a `)` with no `(` to open it (`AID (US)
+    /// INDON)`, `NATO 3 NETH(TH))`, and the file a parenthetical copy citation ends with: `(Ibid.,
+    /// RG 59, Central Files 1970–73, POL 38–6)`). Each such note stored no class.
+    ///
+    /// The strict shape admits any one to five letters as a lead, so it never takes the `)`: a
+    /// newspaper page in a run-on sentence, `Washington Post, August 22, 1975, p. D15)`, would read
+    /// as the class `D15`. Only ``SubjectNumericDesignation``, which holds the lead to a handbook
+    /// category, reads through an unbalanced parenthesis.
+    static func droppingClosingSlips(_ candidate: String, unbalancedParenthesis: Bool = true) -> String {
+        var s = candidate.trimmingCharacters(in: .whitespaces)
+        while let last = s.last {
+            if last == "." || last == "]" || last == "," {
+                s.removeLast()
+            } else if last == ")", unbalancedParenthesis,
+                      s.filter({ $0 == ")" }).count > s.filter({ $0 == "(" }).count {
+                s.removeLast()
+            } else {
+                break
+            }
+            s = s.trimmingCharacters(in: .whitespaces)
+        }
+        return s
     }
 
     /// A Subject-Numeric file designation read loosely, part by part, so that one the strict class
@@ -892,6 +1002,9 @@ public struct SourceNoteParser {
         ///     took the title for the country: frus1969-76ve08 prints `DEF 18–4 Defense Affairs,
         ///     Arms Control and Disarmament` and `SOC 14 Human Rights` under two embassies' lots.
         init?(_ candidate: String, readingNamedElements: Bool) {
+            // A `)` with no opener closes a slip or a parenthetical citation (index version 70): read
+            // through it here, where the lead is held to a handbook category, and nowhere looser.
+            let candidate = SourceNoteParser.droppingClosingSlips(candidate)
             guard let regex = Self.headRegex,
                   let match = regex.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)),
                   let leadRange = Range(match.range(at: 1), in: candidate),
@@ -927,14 +1040,32 @@ public struct SourceNoteParser {
                 rest = String(rest[..<postWhole.lowerBound])
             }
             post = trailingPost
+            // A parenthesised run at the end that is no post (index version 70): a country in
+            // parentheses is the element (`DEF 12-5 (GER W)`), and anything else there is a
+            // person's name after the country of a visits file (`POL 7 US (LODGE)`, `POL 7 US
+            // (Johnson)`), dropped so the note is filed under the country's file, as `POL 7 US/
+            // NIXON` is at its slash.
+            if let parenthesised = Self.parenthesisedTail(of: rest) {
+                let inside = parenthesised.inside.uppercased().split(whereSeparator: { $0 == " " || $0 == "-" })
+                if !inside.isEmpty,
+                   inside.allSatisfy({ ParsedSourceNote.subjectNumericAreaWords.contains(String($0)) }) {
+                    rest = parenthesised.before + " " + parenthesised.inside
+                } else if parenthesised.before.isEmpty {
+                    // Right after the number and no country: an organization or a subject
+                    // (`DEF 18-3 (ENDC)`), which nothing here can tell from a person. Refused,
+                    // as before version 70.
+                    return nil
+                } else {
+                    rest = parenthesised.before
+                }
+            }
             // A stop before a new word is a space (`E.Eur`) and one inside initials goes (`U.S.`
             // is `US`); then dashes tight and spaces single.
             rest = rest.replacingOccurrences(of: #"(?<=[A-Z])\.(?=[A-Z][a-z])"#, with: " ", options: .regularExpression)
                 .replacingOccurrences(of: #"(?<=[A-Za-z])\."#, with: "", options: .regularExpression)
                 .replacingOccurrences(of: #"\s*-\s*"#, with: "-", options: .regularExpression)
                 .split(whereSeparator: \.isWhitespace).joined(separator: " ")
-            let tokens = rest.split(whereSeparator: { $0 == " " || $0 == "-" })
-            guard tokens.count <= 6, !rest.hasPrefix("-"), !rest.hasSuffix("-") else { return nil }
+            var tokens = rest.split(whereSeparator: { $0 == " " || $0 == "-" })
             func inCapitals(_ token: Substring) -> Bool {
                 token == "&" || ((1...12).contains(token.count)
                     && token.allSatisfy { ($0.isASCII && $0.isUppercase) || $0.isNumber })
@@ -942,6 +1073,36 @@ public struct SourceNoteParser {
             func inTitleCase(_ token: Substring) -> Bool {
                 (2...12).contains(token.count) && token.allSatisfy { $0.isASCII && $0.isLetter }
                     && token.first?.isUppercase == true && token.dropFirst().allSatisfy(\.isLowercase)
+            }
+            func isAreaWord(_ token: Substring) -> Bool {
+                ParsedSourceNote.subjectNumericAreaWords.contains(token.uppercased())
+            }
+            // A person's name after the country (index version 70): a title-case word that is no
+            // area code, after a capitals element and a subject number, is the visitor or the
+            // subject of a case file (`POL 7 US Connally`, `Pol 7 US Kennedy`, `PS 7-1 US- USSR
+            // Barghoorn`), and the note is filed under the country's file. A title-case word first
+            // is a place the area codes lack (`POL 28 Berlin`, `POL 27 Biafra-Nigeria`) or an area
+            // word in title case (`DEF 18-3 Switz (GE)`), which the rule below reads. The cut comes
+            // before the count of words,
+            // so a note cut short in mid-sentence (`POL 2 DOM Crimmins and officers of the Political
+            // and Economic sections of the Embassy`) keeps its file.
+            if number != nil,
+               let name = tokens.firstIndex(where: { inTitleCase($0) && !isAreaWord($0) }),
+               name > 0, tokens[..<name].allSatisfy(inCapitals) {
+                rest = String(rest[..<tokens[name].startIndex])
+                    .trimmingCharacters(in: CharacterSet(charactersIn: " -"))
+                tokens = rest.split(whereSeparator: { $0 == " " || $0 == "-" })
+            }
+            guard tokens.count <= 6, !rest.hasPrefix("-"), !rest.hasSuffix("-") else { return nil }
+            // A designation with no subject number and a run of digits in its element is a garble
+            // (`POL Nigeria 03`, `FT CHICOM-1 US`, `POL US-USSR 5`), not a file (index version 70):
+            // no country or area code is a number. The one shape kept is a commodity in capitals
+            // joined to its subject number by a space (`INCO FIBERS 17 US-JAPAN`, `INCO DRUGS 17 US`),
+            // which the handbook writes `INCO-FIBERS 17` and the corpus prints both ways; its key
+            // is as version 69 stored it.
+            if number == nil, tokens.contains(where: { $0.allSatisfy(\.isNumber) }),
+               rest.range(of: #"^[A-Z]{2,12} \d{1,3}(?:-\d{1,3})*(?: |$)"#, options: .regularExpression) == nil {
+                return nil
             }
             if tokens.allSatisfy(inCapitals) {
                 element = rest
@@ -952,13 +1113,25 @@ public struct SourceNoteParser {
                 // before one or two words (`POL 28 Berlin`, `POL 27 Biafra-Nigeria`). Anything
                 // longer or lower is prose.
                 guard tokens.allSatisfy({ inCapitals($0) || inTitleCase($0) }) else { return nil }
-                let wordsAreAreaCodes = tokens.allSatisfy {
-                    inCapitals($0) || ParsedSourceNote.subjectNumericAreaWords.contains($0.uppercased())
-                }
+                let wordsAreAreaCodes = tokens.allSatisfy { inCapitals($0) || isAreaWord($0) }
                 guard wordsAreAreaCodes
                         || (readingNamedElements && number != nil && tokens.count <= 2) else { return nil }
                 element = rest.uppercased()
             }
+        }
+
+        /// A parenthesised run closing `rest` that `postRegex` did not take, apart from what
+        /// stands before it: `("US", "LODGE")` for `US (LODGE)`, `("", "GER W")` for `(GER W)`;
+        /// `nil` for none, or for one holding anything but letters, spaces, dashes and stops.
+        private static func parenthesisedTail(of rest: String) -> (before: String, inside: String)? {
+            let trimmed = rest.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasSuffix(")"), let open = trimmed.lastIndex(of: "(") else { return nil }
+            let inside = trimmed[trimmed.index(after: open)..<trimmed.index(before: trimmed.endIndex)]
+                .trimmingCharacters(in: .whitespaces)
+            guard !inside.isEmpty,
+                  inside.allSatisfy({ $0.isLetter || $0 == " " || $0 == "-" || $0 == "." }) else { return nil }
+            return (String(trimmed[..<open]).trimmingCharacters(in: .whitespaces),
+                    inside.replacingOccurrences(of: ".", with: ""))
         }
 
         /// The lead with its commodity and agency: `POL`, `INCO-GRAINS`, `AID (US)`.
@@ -1128,7 +1301,8 @@ public struct SourceNoteParser {
         // segment-level fix — 891 documents.
         let citation = citationSentence(of: collapsingClassPunctuation(text))
         for segment in citation.components(separatedBy: ",") {
-            var candidate = segment
+            // A slash between a lead and its number is a space (index version 70): `POL /27 ARAB–ISR`.
+            var candidate = joiningLeadSlash(segment)
             if let slash = candidate.firstIndex(of: "/") {
                 candidate = String(candidate[..<slash])
             }
@@ -1166,7 +1340,7 @@ public struct SourceNoteParser {
     /// - Parameter designation: `CentralFilesReading.designation`.
     /// - Returns: The canonical class key.
     public static func classKey(ofDesignation designation: String) -> String? {
-        var candidate = designation
+        var candidate = joiningLeadSlash(designation)
         if let slash = candidate.firstIndex(of: "/") { candidate = String(candidate[..<slash]) }
         return decimalClassKey(collapsingClassPunctuation(candidate), readingNamedElements: true)
     }

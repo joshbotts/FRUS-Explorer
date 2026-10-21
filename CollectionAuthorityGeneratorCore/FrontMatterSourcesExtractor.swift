@@ -446,7 +446,9 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
     /// The decimal / subject-numeric class key for a class-leaf entry — the app
     /// delegate's `classLeafKey` (after-final-colon candidate first, then
     /// before-first-colon; semicolon lists; comma-described leading segment), gated by
-    /// the shared `SourceNoteParser.decimalClassKey`.
+    /// the shared `SourceNoteParser.frontMatterClassKey`, which since index version 70 reads a
+    /// Subject-Numeric file with no subject number and one continued after a slash as the app's
+    /// delegate does.
     static func classLeafKey(from text: String) -> String? {
         var candidates: [String] = []
         if text.contains(":") {
@@ -458,14 +460,17 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         }
         for candidate in candidates {
             for segment in candidate.components(separatedBy: ";") {
-                if let key = SourceNoteParser.decimalClassKey(segment) { return key }
+                if let key = SourceNoteParser.frontMatterClassKey(segment) { return key }
                 if segment.contains(","),
                    let lead = segment.components(separatedBy: ",").first,
-                   let key = SourceNoteParser.decimalClassKey(lead) {
+                   let key = SourceNoteParser.frontMatterClassKey(lead) {
                     return key
                 }
             }
         }
-        return nil
+        // Index version 70: a file with no subject number that LEADS the row, as the app's delegate
+        // reads it, and never one named inside a row's prose or list.
+        let leading = text.components(separatedBy: CharacterSet(charactersIn: ":;,")).first ?? text
+        return SourceNoteParser.frontMatterPrimarySubjectKey(leading: leading)
     }
 }

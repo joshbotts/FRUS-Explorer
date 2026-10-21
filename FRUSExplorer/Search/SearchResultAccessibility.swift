@@ -37,6 +37,8 @@ import Foundation
 ///         word, so More Content takes those and the rest of its 300 after the word, where it took 150
 ///         on each side. A keyword row whose words are only in its heading, source note or dateline
 ///         shows its opening prose, as a Meaning row does, and offers it as "Opening text"
+///   1.2 — A18 (index version 70): a row with no dateline draws the day or span the index dates it
+///         by (`SearchResult.drawnDate`), and the label says it where the dateline would be
 enum SearchResultAccessibility {
 
     // MARK: The label
@@ -52,7 +54,7 @@ enum SearchResultAccessibility {
     /// - Returns: The label, its parts joined by commas.
     static func label(for result: SearchResult, tags: [UserTagChip]) -> String {
         var parts = [heading(for: result)]
-        if let dateline = result.dateline { parts.append(dateline) }
+        if let dateline = result.dateline ?? result.drawnDate { parts.append(dateline) }
         parts.append(result.volumeId)
         if let note = result.sourceNote,
            let marking = SourceNoteParser.classificationMarking(fromSourceNote: note) {
