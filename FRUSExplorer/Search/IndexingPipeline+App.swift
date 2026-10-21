@@ -212,6 +212,7 @@ extension IndexingResources {
         documentSubjects: { DocumentSubjectStore.shared },
         decimalClassLabels: { DecimalClassLabelStore.shared },
         brokenRefs: { BrokenRefsIndexStore.shared },
+        citedPages: { CitedPageMapStore.shared },
         collectionAliasFallback: { parsed, raw in
             CollectionAuthorityStore.shared?.record(forParsed: parsed, note: raw)
                 .map(IndexingPipeline.CollectionAliasFallback.init(record:))

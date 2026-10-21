@@ -1097,8 +1097,11 @@ let package = Package(
                 .target(name: "CrossRefKit"),
                 .target(name: "CrossRefValidationGeneratorCore"),
                 .target(name: "ProvenanceFlowIndexGeneratorCore"),
-                // The rows the app's index holds for sections, decided by its own parser (#1693).
+                // The rows the app's index holds for sections, decided by its own parser (#1693),
+                // and since A18b a full index of the volumes built through the kit's own pipeline,
+                // from which the run writes the bundled page map (`cited-page-map.json`).
                 .target(name: "FRUSCoreKit"),
+                .target(name: "FTS5Store"),
             ],
             path: "ResolvedEdgeIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
@@ -1122,6 +1125,8 @@ let package = Package(
                 // The mirror's parity with the app's own `resolveCrossRefTarget` (#1693).
                 .target(name: "CrossRefKit"),
                 .target(name: "FRUSCoreKit"),
+                // The parity of the run's page pairs with a device's index (A18b).
+                .target(name: "FTS5Store"),
             ],
             path: "ResolvedEdgeIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]

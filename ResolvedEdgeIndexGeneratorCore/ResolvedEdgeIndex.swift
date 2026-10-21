@@ -49,10 +49,21 @@ import Foundation
 /// two-level `(volume index, document index)` pairs so a document id is stored once per volume
 /// rather than once per edge, and each target's sources are a flat alternating array of the two.
 ///
+/// ## A page cites too (A18b)
+/// A reference to a printed page of another volume — how the volumes covering 1960 and earlier
+/// cite one another: 96.6% of the 44,022 such rows a full v69 index held came from them — is a
+/// citation of the document on that page under rule C (plan of record decision 80): a single
+/// page, or a range whose two end pages name the same one document, read through the bundled
+/// `cited-page-map.json` that the same run writes, so the pair here is the row a device's index
+/// stores at version 71. "ff." and a range across documents stay references to the volume. The
+/// funnel counts them in `crossVolumePageReferences` and `pageEdges`.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #262
 ///   1.1 — #1693: a section's row cites, and the funnel counts it in `referencesInSections`,
 ///          `sectionEdges` and `sameVolumeSectionEdges`; `storedEdges` adds the section edges
+///   1.2 — A18b: a page of another volume cites under rule C, through the page map the run writes;
+///          the funnel counts `crossVolumePageReferences` and `pageEdges`, which `storedEdges` adds
 public struct ResolvedEdgeIndex: Codable, Sendable, Equatable {
 
     /// One cited document and everything outside its own volume that cites it.
@@ -125,22 +136,31 @@ public struct ResolvedEdgeIndex: Codable, Sendable, Equatable {
         public let sectionEdges: Int
         /// Of those, references whose ends share a volume — excluded, as `sameVolumeEdges` are.
         public let sameVolumeSectionEdges: Int
+        /// References to a printed page of another volume (`pg_N`), in the rows the kit's parser
+        /// emits — documents' and sections' alike (A18b).
+        public let crossVolumePageReferences: Int
+        /// Of those, references rule C resolves to the document on the page through the bundled
+        /// page map (`PageSpanResolver.citedDocument(inVolume:page:form:citing:map:)`), each stored
+        /// as a citation of that document, as the app's index stores it at version 71. A cross-volume
+        /// page reference is in no document-to-document count, so none is counted twice.
+        public let pageEdges: Int
         /// Distinct cited documents in the index.
         public let targetCount: Int
         /// Volumes contributing at least one cross-volume citation.
         public let citingVolumeCount: Int
 
-        /// Cross-volume references stored, from documents and from sections. A source citing a
-        /// target more than once is one source in its row, so a row's sources can be fewer.
+        /// Cross-volume references stored, from documents, from sections and from references to a
+        /// page. A source citing a target more than once is one source in its row, so a row's
+        /// sources can be fewer.
         public var storedEdges: Int {
-            documentEdges - sameVolumeEdges + sectionEdges - sameVolumeSectionEdges
+            documentEdges - sameVolumeEdges + sectionEdges - sameVolumeSectionEdges + pageEdges
         }
 
         /// Creates a coverage block.
         public init(volumesScanned: Int, referencesScanned: Int, referencesInsideDocuments: Int,
                     documentEdges: Int, sameVolumeEdges: Int, referencesInSections: Int,
-                    sectionEdges: Int, sameVolumeSectionEdges: Int, targetCount: Int,
-                    citingVolumeCount: Int) {
+                    sectionEdges: Int, sameVolumeSectionEdges: Int, crossVolumePageReferences: Int,
+                    pageEdges: Int, targetCount: Int, citingVolumeCount: Int) {
             self.volumesScanned = volumesScanned
             self.referencesScanned = referencesScanned
             self.referencesInsideDocuments = referencesInsideDocuments
@@ -149,6 +169,8 @@ public struct ResolvedEdgeIndex: Codable, Sendable, Equatable {
             self.referencesInSections = referencesInSections
             self.sectionEdges = sectionEdges
             self.sameVolumeSectionEdges = sameVolumeSectionEdges
+            self.crossVolumePageReferences = crossVolumePageReferences
+            self.pageEdges = pageEdges
             self.targetCount = targetCount
             self.citingVolumeCount = citingVolumeCount
         }

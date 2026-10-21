@@ -94,6 +94,9 @@ private let SQLITE_TRANSIENT_PRS = unsafeBitCast(-1, to: sqlite3_destructor_type
 ///          read-only and immutable (`isImmutable`), for a host that reads an index another program
 ///          built. `init(databaseURL:)` opens as before; a failed open of either closes the handle
 ///          SQLite allocates, which it left open, and the unused private `openDatabase()` is gone
+///   1.10 — A18b: `citedDocumentFacts(inVolume:)` is public, so `ResolvedEdgeIndexGenerator` writes
+///          the bundled page map's facts through the reader's own query, beside
+///          `documents(forPage:inVolume:)` for its entries
 public actor PageRangeStore {
 
     // MARK: - State
@@ -193,8 +196,26 @@ public actor PageRangeStore {
                          citing: PageCitationHint? = nil) throws -> String? {
         guard let claimants = try documents(forPage: pageNumber, inVolume: volumeId) else { return nil }
         // The facts query reads the whole volume; with one claimant or no hint it cannot change the answer.
-        let facts = claimants.documents.count > 1 && citing != nil ? citedDocumentFacts(volumeId) : [:]
+        let facts = claimants.documents.count > 1 && citing != nil ? citedDocumentFacts(inVolume: volumeId) : [:]
         return PageSpanResolver.citedDocument(among: claimants, facts: facts, citing: citing)
+    }
+
+    /// Each document of `volumeId`'s printed number and day, by id (#1509), through the query the
+    /// indexer's page resolver runs (`PageSpanResolver.citedDocumentFactsSQL`). Public since A18b:
+    /// `ResolvedEdgeIndexGenerator` writes the bundled page map's facts from it, so a device's
+    /// tie-break over the map reads what a tap on the page would.
+    public func citedDocumentFacts(inVolume volumeId: String) -> [String: CitedDocumentFacts] {
+        guard let db, let stmt = prepare(PageSpanResolver.citedDocumentFactsSQL, db: db) else { return [:] }
+        defer { sqlite3_finalize(stmt) }
+        bind(text: volumeId, at: 1, stmt: stmt)
+        var facts: [String: CitedDocumentFacts] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            facts[string(at: 0, stmt: stmt)] = CitedDocumentFacts(
+                printedNumber: optionalString(at: 1, stmt: stmt),
+                dateISO: optionalString(at: 2, stmt: stmt),
+                precision: optionalString(at: 3, stmt: stmt))
+        }
+        return facts
     }
 
     /// The pages `documentId` of `volumeId` may be printed on, or `nil` when the index cannot tell
@@ -230,22 +251,6 @@ public actor PageRangeStore {
     }
 
     // MARK: - Private Helpers
-
-    /// Each document of `volumeId`'s printed number and day, by id (#1509), through the query the
-    /// indexer's page resolver runs.
-    private func citedDocumentFacts(_ volumeId: String) -> [String: CitedDocumentFacts] {
-        guard let db, let stmt = prepare(PageSpanResolver.citedDocumentFactsSQL, db: db) else { return [:] }
-        defer { sqlite3_finalize(stmt) }
-        bind(text: volumeId, at: 1, stmt: stmt)
-        var facts: [String: CitedDocumentFacts] = [:]
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            facts[string(at: 0, stmt: stmt)] = CitedDocumentFacts(
-                printedNumber: optionalString(at: 1, stmt: stmt),
-                dateISO: optionalString(at: 2, stmt: stmt),
-                precision: optionalString(at: 3, stmt: stmt))
-        }
-        return facts
-    }
 
     /// Every document of `volumeId` with an arabic page recorded, in source order.
     private func volumePages(_ volumeId: String) -> [PageSpanResolver.DocumentPages] {

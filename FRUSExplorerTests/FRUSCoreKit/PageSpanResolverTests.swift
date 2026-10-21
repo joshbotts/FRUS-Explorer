@@ -349,3 +349,319 @@ struct PageCitationHintTests {
         #expect(PageCitationHint(queryItems: [URLQueryItem(name: "day", value: "x-17")]) == nil)
     }
 }
+
+// MARK: - PageReferenceFormTests (A18b)
+
+/// The printed form of a page reference, classified from its siblings (`PageReferenceForm`), which
+/// decides whether a page of another volume cites the document on it (rule C, A18b). Each shape is
+/// one the corpus prints: measured over the 173,933 cross-volume page `<ref>`s of the catalogue
+/// volumes at corpus `6170e4b32`, 36,044 are an end of a range (`pp. 131</ref>–<ref>149`),
+/// 10,641 carry "ff." (23 inside the reference, the rest after it) and the others are single pages.
+@Suite("PageReferenceForm — a page's printed form, from its siblings (A18b)")
+struct PageReferenceFormTests {
+
+    /// A reference to `page` of `volume` (`nil` for the volume being read), printing `text`.
+    private func ref(_ volume: String?, _ page: Int, _ text: String) -> FRUSASTNode {
+        .crossReference(target: volume.map { "\($0)#pg_\(page)" } ?? "#pg_\(page)",
+                        targetVolumeId: volume, children: [.text(text)])
+    }
+
+    /// The forms of the references among `nodes`, in order, `nil` for a node that is no reference.
+    private func forms(_ nodes: [FRUSASTNode]) -> [PageReferenceForm?] {
+        nodes.indices.map { index in
+            if case .crossReference = nodes[index] {
+                return PageReferenceForm.form(ofPageReferenceAt: index, in: nodes)
+            }
+            return nil
+        }
+    }
+
+    @Test("A range is two page references of one volume with one dash between them, whichever dash")
+    func ranges() {
+        for dash in ["–", "—", "−", "-", " – ", "\n–\n"] {
+            let nodes: [FRUSASTNode] = [.text("See "), ref("frus1931-41v02", 131, "pp. 131"), .text(dash),
+                                        ref("frus1931-41v02", 149, "149"), .text(".")]
+            #expect(forms(nodes) == [nil, .rangeStart(end: 149), nil, .rangeEnd(start: 131), nil],
+                    "with the dash \(dash.debugDescription)")
+        }
+    }
+
+    @Test("A dash to a page of another volume, to a page of the volume being read, or to a document is no range")
+    func notARange() {
+        // Two volumes: the second reference is a single page of its own volume.
+        #expect(forms([ref("volB", 131, "pp. 131"), .text("–"), ref("volC", 149, "149")])
+                == [.single, nil, .single])
+        // A page of the volume being read, written bare, after a page of another volume.
+        #expect(forms([ref("volB", 131, "p. 131"), .text("–"), ref(nil, 149, "149")])
+                == [.single, nil, .single])
+        // A document after the dash.
+        #expect(forms([ref("volB", 131, "p. 131"), .text("–"),
+                       .crossReference(target: "volB#d5", targetVolumeId: "volB", children: [.text("Document 5")])])
+                == [.single, nil, .single])
+        // Text other than a dash between two pages: two single pages.
+        #expect(forms([ref("volB", 131, "p. 131"), .text(" and "), ref("volB", 149, "p. 149")])
+                == [.single, nil, .single])
+        // A dash and more than a dash.
+        #expect(forms([ref("volB", 131, "p. 131"), .text("– see also "), ref("volB", 149, "p. 149")])
+                == [.single, nil, .single])
+    }
+
+    @Test("\"ff.\" inside the reference, after it, after a comma, or in an emphasis sibling")
+    func andFollowing() {
+        #expect(forms([ref("volB", 865, "pp. 865 ff."), .text(" for the request.")]) == [.andFollowing, nil])
+        #expect(forms([ref("volB", 865, "pp. 865"), .text(" ff.")]) == [.andFollowing, nil])
+        #expect(forms([ref("volB", 865, "p. 865"), .text(", ff.")]) == [.andFollowing, nil])
+        #expect(forms([ref("volB", 865, "pp. 865"), .text(" "),
+                       .emphasis(style: .italic, children: [.text("ff")]), .text(".")])
+                == [.andFollowing, nil, nil, nil])
+        // A word that only begins with the letters, or holds them, is not "ff".
+        #expect(forms([ref("volB", 865, "p. 865"), .text(" offers nothing.")]) == [.single, nil])
+        #expect(forms([ref("volB", 865, "Jaffa, p. 865"), .text(".")]) == [.single, nil])
+        // "ff." later in the sentence does not reach back to the reference.
+        #expect(forms([ref("volB", 865, "p. 865"), .text(", and later pages ff.")]) == [.single, nil])
+    }
+
+    @Test("A range's form is read before \"ff.\", and a node that is no page reference is a single page")
+    func precedenceAndNonPages() {
+        #expect(forms([ref("volB", 1, "pp. 1"), .text("–"), ref("volB", 5, "5"), .text(" ff.")])
+                == [.rangeStart(end: 5), nil, .rangeEnd(start: 1), nil])
+        #expect(PageReferenceForm.form(ofPageReferenceAt: 0, in: [.text("no reference")]) == .single)
+        #expect(PageReferenceForm.form(ofPageReferenceAt: 3, in: [.text("out of range")]) == .single)
+        let document: FRUSASTNode = .crossReference(target: "volB#d5", targetVolumeId: "volB", children: [])
+        #expect(PageReferenceForm.form(ofPageReferenceAt: 0, in: [document, .text("–"), ref("volB", 5, "5")]) == .single)
+    }
+
+    @Test("The index's walk carries the form of a page of another volume, and none for a page of its own")
+    func theIndexWalkCarriesIt() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSPageForms-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("volA.xml")
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"><text><body>
+        <div type="compilation" xml:id="comp1">
+        <div type="document" xml:id="d1" n="1"><pb n="2" xml:id="pg_2"/><head>1. Report</head><p>See \
+        <ref target="volB#pg_5">p. 5</ref>, \
+        <ref target="volB#pg_7"><hi rend="italic">ibid.</hi>, pp. 7</ref>–<ref target="volB#pg_8">8</ref>, \
+        <ref target="volB#pg_5">pp. 5 ff.</ref>, <ref target="#pg_2">p. 2</ref>, \
+        <ref target="volA#pg_2">p. 2</ref> and <ref target="volC#pg_4">p. 4</ref>.\
+        <note n="1" xml:id="d1fn1">For the letter of July 2, see <ref target="volB#pg_10">p. 10</ref>.</note></p></div>
+        </div></body></text></TEI>
+        """.write(to: url, atomically: true, encoding: .utf8)
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        let document = try #require(rows.first { $0.documentId == "d1" })
+
+        var crossRefs: [CrossReferenceRow] = []
+        var personRefs: Set<String> = []
+        var listVolumes: Set<String> = []
+        var pageRanges: [PageRangeRow] = []
+        IndexingPipeline.collectDocumentRefs(from: document.nodes, volumeId: "volA", documentId: "d1",
+                                             crossRefs: &crossRefs, personRefs: &personRefs,
+                                             personListVolumes: &listVolumes, pageRanges: &pageRanges)
+        let collected = crossRefs.map { "\($0.targetVolumeId ?? "-")/\($0.targetDocumentId) \($0.pageForm.map { "\($0)" } ?? "none")" }
+        #expect(collected == [
+            "volB/pg_5 single",
+            "volB/pg_7 rangeStart(end: 8)",
+            "volB/pg_8 rangeEnd(start: 7)",
+            "volB/pg_5 andFollowing",
+            // The volume's own page, bare or with the volume's own prefix: no form.
+            "-/pg_2 none",
+            "volA/pg_2 none",
+            "volC/pg_4 single",
+            "volB/pg_10 single",
+        ])
+        // The note's reference carries the note's hint, as before; the body's carry none.
+        #expect(crossRefs.last?.citing?.days == [.init(month: 7, day: 2, year: nil)])
+        #expect(crossRefs.dropLast().allSatisfy { $0.citing == nil })
+    }
+}
+
+// MARK: - CitedPageMapTests (A18b)
+
+/// The bundled page map's decode and lookups (`CitedPageMap`), and rule C over it
+/// (`PageSpanResolver.citedDocument(inVolume:page:form:citing:map:)`), the one function the indexer's
+/// store pass and `ResolvedEdgeIndexGenerator` call.
+@Suite("CitedPageMap — the bundled page map and rule C over it (A18b)")
+struct CitedPageMapTests {
+
+    /// volB: Document 1 begins on p. 5; Document 2 begins on p. 7 and is printed on p. 8;
+    /// Documents 3 and 4 both begin on p. 10, dated July 1 and July 2 and numbered 3 and 4;
+    /// Document 3 begins on p. 12 too (a second copy) and Document 4 on p. 13; volE numbers its
+    /// pages per document, and its p. 1 is Documents 1 and 2.
+    static let json = """
+        {"schemaVersion":1,"generated":"2026-10-21","indexVersion":71,
+         "volumes":["volB","volE"],
+         "documents":[["d1","d2","d3","d4"],["d1","d2"]],
+         "pages":[[[5,0,0],[7,0,1],[8,1,1],[10,0,2,3],[12,0,2],[13,0,3]],[[1,2,0,1]]],
+         "facts":[[[2,"3","1945-07-01"],[3,"4","1945-07-02"]],[[0,"1",""],[1,"",""]]]}
+        """
+
+    private func map() throws -> CitedPageMap {
+        try JSONDecoder().decode(CitedPageMap.self, from: Data(Self.json.utf8))
+    }
+
+    @Test("The map decodes to its entries and facts, and encodes back to the same file")
+    func decodeAndEncode() throws {
+        let map = try map()
+        #expect(map.entry(volumeId: "volB", page: 5) == .init(claim: .begins, documentIds: ["d1"]))
+        #expect(map.entry(volumeId: "volB", page: 8) == .init(claim: .printed, documentIds: ["d2"]))
+        #expect(map.entry(volumeId: "volB", page: 10) == .init(claim: .begins, documentIds: ["d3", "d4"]))
+        #expect(map.entry(volumeId: "volE", page: 1) == .init(claim: .numberedPerDocument, documentIds: ["d1", "d2"]))
+        #expect(map.entry(volumeId: "volB", page: 9) == nil)
+        #expect(map.entry(volumeId: "volZ", page: 5) == nil)
+        #expect(map.pageCount == 7)
+        #expect(map.entries.map { "\($0.volumeId)/\($0.page)" }
+                == ["volB/5", "volB/7", "volB/8", "volB/10", "volB/12", "volB/13", "volE/1"])
+
+        let facts = map.facts(volumeId: "volB", documentIds: ["d3", "d4", "d1"])
+        #expect(facts["d3"] == CitedDocumentFacts(printedNumber: "3", day: .init(month: 7, day: 1, year: 1945)))
+        #expect(facts["d4"]?.day == .init(month: 7, day: 2, year: 1945))
+        #expect(facts["d1"] == nil, "a document on no page that names several carries no facts")
+        #expect(map.facts(volumeId: "volE", documentIds: ["d1", "d2"])["d2"]
+                == CitedDocumentFacts(printedNumber: nil, day: nil))
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let again = try JSONDecoder().decode(CitedPageMap.self, from: try encoder.encode(map))
+        #expect(again == map)
+        #expect(CitedPageMap.claim(ofCode: CitedPageMap.claimCode(.printed)) == .printed)
+        #expect(CitedPageMap.claim(ofCode: 3) == nil)
+    }
+
+    @Test("A map that names an index outside its vocabulary, an unknown claim or ragged rows refuses to decode")
+    func malformedMapsRefuse() {
+        func decode(_ text: String) throws -> CitedPageMap {
+            try JSONDecoder().decode(CitedPageMap.self, from: Data(text.utf8))
+        }
+        let head = #"{"schemaVersion":1,"generated":"2026-10-21","indexVersion":71,"volumes":["volB"],"documents":[["d1"]],"#
+        #expect(throws: CitedPageMapError.malformedPage(volumeId: "volB", row: [5, 0, 1])) {
+            _ = try decode(head + #""pages":[[[5,0,1]]],"facts":[[]]}"#)
+        }
+        #expect(throws: CitedPageMapError.malformedPage(volumeId: "volB", row: [5, 7, 0])) {
+            _ = try decode(head + #""pages":[[[5,7,0]]],"facts":[[]]}"#)
+        }
+        #expect(throws: CitedPageMapError.malformedPage(volumeId: "volB", row: [5, 0])) {
+            _ = try decode(head + #""pages":[[[5,0]]],"facts":[[]]}"#)
+        }
+        #expect(throws: CitedPageMapError.malformedFact(volumeId: "volB", document: 4)) {
+            _ = try decode(head + #""pages":[[[5,0,0]]],"facts":[[[4,"1",""]]]}"#)
+        }
+        #expect(throws: CitedPageMapError.raggedVolumes(volumes: 1, documents: 1, pages: 0, facts: 1)) {
+            _ = try decode(head + #""pages":[],"facts":[[]]}"#)
+        }
+    }
+
+    @Test("Rule C: a single page cites the document on it, and the note settles a page naming several")
+    func singlePages() throws {
+        let map = try map()
+        func cited(_ page: Int, _ form: PageReferenceForm, citing: PageCitationHint? = nil) -> String? {
+            PageSpanResolver.citedDocument(inVolume: "volB", page: page, form: form, citing: citing, map: map)
+        }
+        #expect(cited(5, .single) == "d1")
+        #expect(cited(8, .single) == "d2", "a page a document is printed on, having begun earlier")
+        // Several: the number, then the day, else the first, as #1509's tie-break decides.
+        #expect(cited(10, .single) == "d3")
+        #expect(cited(10, .single, citing: .init(documentNumbers: ["4"], days: [])) == "d4")
+        #expect(cited(10, .single, citing: .init(documentNumbers: [], days: [.init(month: 7, day: 2, year: nil)])) == "d4")
+        #expect(cited(10, .single, citing: .init(documentNumbers: [], days: [.init(month: 7, day: 9, year: nil)])) == "d3",
+                "a hint naming neither takes the first")
+        // Nothing on the page, or a volume the map does not know.
+        #expect(cited(9, .single) == nil)
+        #expect(cited(99, .single) == nil)
+        #expect(PageSpanResolver.citedDocument(inVolume: "volZ", page: 5, form: .single, citing: nil, map: map) == nil)
+        // A volume numbering its pages per document: the number alone names none, so the first.
+        #expect(PageSpanResolver.citedDocument(inVolume: "volE", page: 1, form: .single, citing: nil, map: map) == "d1")
+        #expect(PageSpanResolver.citedDocument(inVolume: "volE", page: 1, form: .single,
+                                               citing: .init(documentNumbers: ["1"], days: []), map: map) == "d1")
+    }
+
+    @Test("Rule C: a range cites when both end pages name the same one document; \"ff.\" never does")
+    func rangesAndFollowing() throws {
+        let map = try map()
+        func cited(_ page: Int, _ form: PageReferenceForm) -> String? {
+            PageSpanResolver.citedDocument(inVolume: "volB", page: page, form: form, citing: nil, map: map)
+        }
+        // pp. 7–8 lie within Document 2: both rows resolve.
+        #expect(cited(7, .rangeStart(end: 8)) == "d2")
+        #expect(cited(8, .rangeEnd(start: 7)) == "d2")
+        // pp. 5–7: two documents.
+        #expect(cited(5, .rangeStart(end: 7)) == nil)
+        #expect(cited(7, .rangeEnd(start: 5)) == nil)
+        // pp. 10–12: p. 10 names two documents, though p. 12 names one of them alone.
+        #expect(cited(10, .rangeStart(end: 12)) == nil)
+        #expect(cited(12, .rangeEnd(start: 10)) == nil)
+        // pp. 5–9: an end with no entry.
+        #expect(cited(5, .rangeStart(end: 9)) == nil)
+        #expect(cited(9, .rangeEnd(start: 5)) == nil)
+        // "ff." stays on the volume, whatever the page names.
+        #expect(cited(5, .andFollowing) == nil)
+        #expect(cited(10, .andFollowing) == nil)
+    }
+
+    /// The shipped `cited-page-map.json`: from the repository in the package, from the app's bundle
+    /// in Xcode, through the store the indexer reads it from.
+    private func shippedMap() throws -> CitedPageMap {
+        #if SWIFT_PACKAGE
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Resources/cited-page-map.json")
+        return try JSONDecoder().decode(CitedPageMap.self, from: Data(contentsOf: url))
+        #else
+        return try #require(CitedPageMapStore.shared, """
+            cited-page-map.json must decode from the app bundle. If it was just regenerated it needs \
+            `xcodegen generate` to be enrolled — followed by \
+            `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.
+            """)
+        #endif
+    }
+
+    @Test("The shipped map is the current version's, covers the pages the corpus cites, and names the Atlantic Charter")
+    func theShippedMap() throws {
+        let map = try shippedMap()
+        // Regenerated with the parse it was read from: a map from an older parse could name a
+        // document the device's own page rows no longer begin a page with.
+        #expect(map.indexVersion == IndexingPipeline.currentDateIndexVersion)
+        #expect(map.schemaVersion == 1)
+        // Generated 2026-10-21 at corpus `6170e4b32` from a full index of the 553 catalogue volumes:
+        // an entry for every page a single-page reference cites and for both ends of each range
+        // within one document — 16,364 pages in 380 volumes, naming 18,832 documents, 3,938 of the
+        // pages naming several, with 8,543 documents' facts.
+        #expect(map.volumes.count == 380)
+        #expect(map.pageCount == 16_364)
+        #expect(map.documents.reduce(0) { $0 + $1.count } == 18_832)
+        #expect(map.facts.reduce(0) { $0 + $1.count } == 8_543)
+        #expect(map.volumes == map.volumes.sorted())
+        for row in map.documents { #expect(row == row.sorted()) }
+        for rows in map.pages { #expect(rows.map { $0[0] } == rows.map { $0[0] }.sorted()) }
+
+        // The Atlantic Charter: p. 367 of 1941 vol. I is where d372 begins, and it names it alone.
+        #expect(map.entry(volumeId: "frus1941v01", page: 367) == .init(claim: .begins, documentIds: ["d372"]))
+        #expect(PageSpanResolver.citedDocument(inVolume: "frus1941v01", page: 367, form: .single,
+                                               citing: nil, map: map) == "d372")
+        // The Potsdam protocol runs from p. 1478 and the communiqué from p. 1499 of 1945 Berlin
+        // vol. II: a range within the communiqué cites it, one spanning both cites neither.
+        #expect(map.entry(volumeId: "frus1945Berlinv02", page: 1478)?.documentIds == ["d1383"])
+        #expect(map.entry(volumeId: "frus1945Berlinv02", page: 1499) == .init(claim: .begins, documentIds: ["d1384"]))
+        #expect(map.entry(volumeId: "frus1945Berlinv02", page: 1500) == .init(claim: .printed, documentIds: ["d1384"]))
+        #expect(PageSpanResolver.citedDocument(inVolume: "frus1945Berlinv02", page: 1499,
+                                               form: .rangeStart(end: 1514), citing: nil, map: map) == "d1384")
+        #expect(PageSpanResolver.citedDocument(inVolume: "frus1945Berlinv02", page: 1478,
+                                               form: .rangeStart(end: 1499), citing: nil, map: map) == nil)
+        // A page naming two documents carries both documents' facts: p. 716, Documents 816 and
+        // 817, both of July 25, 1945, so a note naming the number decides and the day does not.
+        #expect(map.entry(volumeId: "frus1945Berlinv02", page: 716)?.documentIds == ["d816", "d817"])
+        let facts = map.facts(volumeId: "frus1945Berlinv02", documentIds: ["d816", "d817"])
+        #expect(facts["816"] == nil)
+        #expect(facts["d816"] == CitedDocumentFacts(printedNumber: "816", day: .init(month: 7, day: 25, year: 1945)))
+        #expect(facts["d817"]?.printedNumber == "817")
+        #expect(PageSpanResolver.citedDocument(inVolume: "frus1945Berlinv02", page: 716, form: .single,
+                                               citing: .init(documentNumbers: ["817"], days: []), map: map) == "d817")
+        #expect(PageSpanResolver.citedDocument(inVolume: "frus1945Berlinv02", page: 716, form: .single,
+                                               citing: .init(documentNumbers: [], days: [.init(month: 7, day: 25, year: nil)]),
+                                               map: map) == "d816")
+        // No volume that numbers its pages per document is cited by page from another volume.
+        #expect(map.entries.allSatisfy { $0.entry.claim != .numberedPerDocument })
+    }
+}

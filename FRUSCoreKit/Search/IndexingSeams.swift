@@ -107,11 +107,13 @@ public final class InMemoryIndexingStampStore: IndexingStampStore, @unchecked Se
 
 /// The bundled data files the indexer and search read, handed to `IndexingPipeline` by its host.
 ///
-/// Four of them change what an index holds: the person-authority crosswalk (the person rollup's
+/// Five of them change what an index holds: the person-authority crosswalk (the person rollup's
 /// canonical ids), the document-subject index (`document_subjects` and its facet), the decimal-class
-/// label table (which body-footnote class citations `external_citations` keeps) and the
-/// broken-references index (`cross_references.is_broken`). The fifth provider answers the
-/// related-documents alias fallback from the collection authority, which only the app holds today.
+/// label table (which body-footnote class citations `external_citations` keeps), the
+/// broken-references index (`cross_references.is_broken`) and, since A18b, the cited-page map
+/// (which document a reference to a page of another volume is stored against). The sixth provider
+/// answers the related-documents alias fallback from the collection authority, which only the app
+/// holds today.
 ///
 /// Each provider is asked on first use and may load then, so a host decides when the decode is
 /// paid: the app's ``bundled`` wraps its existing lazy stores (`IndexingPipeline+App.swift`), whose
@@ -121,6 +123,8 @@ public final class InMemoryIndexingStampStore: IndexingStampStore, @unchecked Se
 ///
 /// Version history:
 ///   1.0 — Session 2026-10-04 (FRUSCoreKit, part 2): initial implementation
+///   1.1 — A18b (index version 71): `citedPages`, the bundled page map, and its name among
+///          `indexResourceNames`
 public struct IndexingResources: Sendable {
 
     /// The person-authority crosswalk, or `nil` when the host has none.
@@ -131,6 +135,9 @@ public struct IndexingResources: Sendable {
     let decimalClassLabels: @Sendable () -> DecimalClassLabelTable?
     /// The broken-references index, or `nil`.
     let brokenRefs: @Sendable () -> BrokenRefsIndex?
+    /// The cited-page map (A18b), or `nil`, in which case a reference to a page of another volume
+    /// stays a reference to the volume.
+    let citedPages: @Sendable () -> CitedPageMap?
     /// The collection-authority alias fallback for a source note (parsed, raw), or `nil`.
     let collectionAliasFallback: @Sendable (ParsedSourceNote, String) -> IndexingPipeline.CollectionAliasFallback?
 
@@ -140,25 +147,29 @@ public struct IndexingResources: Sendable {
          documentSubjects: @escaping @Sendable () -> DocumentSubjectIndex?,
          decimalClassLabels: @escaping @Sendable () -> DecimalClassLabelTable?,
          brokenRefs: @escaping @Sendable () -> BrokenRefsIndex?,
+         citedPages: @escaping @Sendable () -> CitedPageMap? = { nil },
          collectionAliasFallback: @escaping @Sendable (ParsedSourceNote, String)
             -> IndexingPipeline.CollectionAliasFallback? = { _, _ in nil }) {
         self.personAuthority = personAuthority
         self.documentSubjects = documentSubjects
         self.decimalClassLabels = decimalClassLabels
         self.brokenRefs = brokenRefs
+        self.citedPages = citedPages
         self.collectionAliasFallback = collectionAliasFallback
     }
 
     /// No resources: every provider answers `nil`, as the app's stores do when a file is missing.
     /// An index built this way lacks subjects, class citations, broken-reference flags and
-    /// authority ids, so it is for tests that need none of them.
+    /// authority ids, and keeps every reference to a page of another volume as a reference to the
+    /// volume, so it is for tests that need none of them.
     public static let none = IndexingResources(
         personAuthority: { nil }, documentSubjects: { nil },
-        decimalClassLabels: { nil }, brokenRefs: { nil })
+        decimalClassLabels: { nil }, brokenRefs: { nil }, citedPages: { nil })
 
-    /// The four files that change what an index holds, by resource name.
+    /// The five files that change what an index holds, by resource name.
     public static let indexResourceNames = [
         "person-authority-index", "document-subject-index", "decimal-class-labels", "broken-refs-index",
+        "cited-page-map",
     ]
 
     /// Why ``loading(fromDirectory:)`` refused a folder.
@@ -190,9 +201,11 @@ public struct IndexingResources: Sendable {
         let subjects = LazyResource<DocumentSubjectIndex>(directory, "document-subject-index")
         let labels = LazyResource<DecimalClassLabelTable>(directory, "decimal-class-labels")
         let broken = LazyResource<BrokenRefsIndex>(directory, "broken-refs-index")
+        let pages = LazyResource<CitedPageMap>(directory, "cited-page-map")
         return IndexingResources(
             personAuthority: { authority.value() }, documentSubjects: { subjects.value() },
-            decimalClassLabels: { labels.value() }, brokenRefs: { broken.value() })
+            decimalClassLabels: { labels.value() }, brokenRefs: { broken.value() },
+            citedPages: { pages.value() })
     }
 }
 
