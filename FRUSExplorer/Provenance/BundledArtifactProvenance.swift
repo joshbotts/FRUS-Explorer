@@ -107,6 +107,9 @@ enum BundledArtifactProvenance {
             generator: "CrossRefValidation", inputs: ["VOLUMES_DIR", "MANIFEST"], source: .frusText),
         "resolved-edge-index.json": .init(
             generator: "ResolvedEdgeIndex", inputs: ["VOLUMES_DIR", "MANIFEST"], source: .frusText),
+        // A18b: the same run writes the page map, from a full index it builds of the same volumes.
+        "cited-page-map.json": .init(
+            generator: "ResolvedEdgeIndex", inputs: ["VOLUMES_DIR", "MANIFEST"], source: .frusText),
         "source-provenance-index.json": .init(
             generator: "SourceProvenanceIndex", inputs: ["VOLUMES_DIR", "MANIFEST"], source: .frusText),
         "administration-profiles-index.json": .init(

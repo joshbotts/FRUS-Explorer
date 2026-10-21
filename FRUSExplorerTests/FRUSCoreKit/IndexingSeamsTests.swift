@@ -93,13 +93,16 @@ struct IndexingSeamsTests {
         #expect(store.string(forKey: "applied") == nil)
     }
 
-    @Test("A folder that lacks one of the four index files is refused, and each lacking file is named")
+    @Test("A folder that lacks one of the five index files is refused, and each lacking file is named")
     func loadingRefusesAnIncompleteFolder() async throws {
         try await withTempDir { dir in
             try Data("{}".utf8).write(to: dir.appendingPathComponent("broken-refs-index.json"))
+            // A18b: the cited-page map is the fifth, since an index built without it keeps every
+            // page of another volume on the volume.
             #expect(throws: IndexingResources.LoadError.missing(
                 directory: dir.path,
-                names: ["person-authority-index", "document-subject-index", "decimal-class-labels"])) {
+                names: ["person-authority-index", "document-subject-index", "decimal-class-labels",
+                        "cited-page-map"])) {
                 try IndexingResources.loading(fromDirectory: dir)
             }
         }

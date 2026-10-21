@@ -9777,6 +9777,160 @@ struct IndexVersion70Tests {
     }
 }
 
+// MARK: - IndexVersion71Tests (A18b)
+
+/// Index version 71 (A18b, plan of record decision 80): a reference to a printed page of another
+/// volume is stored against the document on that page under rule C, through the bundled page map
+/// (`IndexingPipeline.resolveCrossVolumePageReferences`), in the pipeline's own store pass over a
+/// fixture volume and a fixture map:
+/// - a single page, and a range whose two end pages name the same one document, resolve; "ff.", a
+///   range across documents, a page naming nothing and a volume the map lacks stay `pg_N`;
+/// - a page naming several documents takes the note's day, else the first (#1509);
+/// - a page written with the volume's own prefix is the same-volume pass's;
+/// - a row the broken-reference pass marked stays raw;
+/// - with no map, every page of another volume stays on the volume, as every index before 71.
+@Suite("Index version 71: a page of another volume cites the document on it (A18b)")
+struct IndexVersion71Tests {
+
+    static let volumeId = "volA"
+
+    /// The citing volume. Document 1 begins on its own p. 2 and cites volB's pages in every form,
+    /// its own p. 2 bare and with its own prefix, and a page of volC, which the map does not hold.
+    static let volumeXML = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt></fileDesc></teiHeader>
+          <text><body>
+            <div type="compilation" xml:id="comp1">
+              <div type="document" xml:id="d1" n="1"><pb n="2" xml:id="pg_2"/><head>1. Report</head><p>See \
+        <ref target="volB#pg_5">p. 5</ref>, \
+        <ref target="volB#pg_7">pp. 7</ref>–<ref target="volB#pg_8">8</ref>, \
+        <ref target="volB#pg_12">pp. 12</ref>–<ref target="volB#pg_13">13</ref>, \
+        <ref target="volB#pg_5">pp. 5 ff.</ref>, <ref target="volB#pg_99">p. 99</ref>, \
+        <ref target="volB#pg_10">p. 10</ref>, <ref target="#pg_2">p. 2</ref>, \
+        <ref target="volA#pg_2">p. 2</ref> and <ref target="volC#pg_4">p. 4</ref>.\
+        <note n="1" xml:id="d1fn1">For the letter of July 2, see <ref target="volB#pg_10">p. 10</ref>.</note></p></div>
+            </div>
+          </body></text>
+        </TEI>
+        """
+
+    /// The map: volB's Document 1 begins on p. 5; Document 2 begins on p. 7 and is printed on
+    /// p. 8; Documents 3 and 4 begin on p. 10 (July 1 and July 2) and on pp. 12 and 13 again.
+    static let mapJSON = """
+        {"schemaVersion":1,"generated":"2026-10-21","indexVersion":71,
+         "volumes":["volB"],"documents":[["d1","d2","d3","d4"]],
+         "pages":[[[5,0,0],[7,0,1],[8,1,1],[10,0,2,3],[12,0,2],[13,0,3]]],
+         "facts":[[[2,"3","1945-07-01"],[3,"4","1945-07-02"]]]}
+        """
+
+    /// The targets Document 1's references are stored against, in the order they are written.
+    static let stored = [
+        "volB/d1",        // p. 5
+        "volB/d2",        // pp. 7–8, both ends within Document 2
+        "volB/d2",
+        "volB/pg_12",     // pp. 12–13: the ends name different documents
+        "volB/pg_13",
+        "volB/pg_5",      // "ff."
+        "volB/pg_99",     // a page naming nothing
+        "volB/d3",        // p. 10 in the body: the first of two, with no note to say which
+        "-/d1",           // the volume's own p. 2, bare
+        "volA/d1",        // the volume's own p. 2 with its own prefix (until 71, pg_2)
+        "volC/pg_4",      // a volume the map does not hold
+        "volB/d4",        // p. 10 in the note naming July 2
+    ]
+
+    /// One stored row of `cross_references`.
+    struct Stored: Equatable, CustomStringConvertible {
+        let target: String
+        let isBroken: Bool
+        var description: String { "\(target)\(isBroken ? " (broken)" : "")" }
+    }
+
+    /// The fixture indexed through the pipeline's own store pass, with `map` and `broken` as its
+    /// bundled files.
+    private func index(map: CitedPageMap?, broken: BrokenRefsIndex? = nil) async throws -> [Stored] {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSIndexVersion71-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volumes = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        try Self.volumeXML.write(to: volumes.appendingPathComponent("\(Self.volumeId).xml"),
+                                 atomically: true, encoding: .utf8)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let resources = IndexingResources(
+            personAuthority: { nil }, documentSubjects: { nil },
+            decimalClassLabels: { nil }, brokenRefs: { broken }, citedPages: { map })
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volumes, resources: resources,
+            concurrencyLimit: 1, defaults: InMemoryIndexingStampStore())
+        try await pipeline.indexVolume(Self.volumeId)
+
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            Issue.record("the test index did not open")
+            return []
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        sqlite3_prepare_v2(db, """
+            SELECT target_volume_id, target_document_id, is_broken FROM cross_references
+            WHERE source_volume_id = '\(Self.volumeId)' AND source_document_id = 'd1'
+            ORDER BY rowid
+            """, -1, &stmt, nil)
+        defer { sqlite3_finalize(stmt) }
+        var rows: [Stored] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let volume = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "-"
+            rows.append(Stored(target: "\(volume)/\(String(cString: sqlite3_column_text(stmt, 1)))",
+                               isBroken: sqlite3_column_int(stmt, 2) != 0))
+        }
+        return rows
+    }
+
+    private func map() throws -> CitedPageMap {
+        try JSONDecoder().decode(CitedPageMap.self, from: Data(Self.mapJSON.utf8))
+    }
+
+    @Test("Rule C's references are stored against the document on the page, and the others stay on the volume")
+    func ruleCRowsResolve() async throws {
+        let rows = try await index(map: try map())
+        #expect(rows.map(\.target) == Self.stored, "stored \(rows)")
+        #expect(rows.allSatisfy { !$0.isBroken })
+    }
+
+    @Test("With no map, every page of another volume stays on the volume, and the volume's own pages resolve")
+    func noMapResolvesNothingAcrossVolumes() async throws {
+        let rows = try await index(map: nil)
+        #expect(rows.map(\.target) == [
+            "volB/pg_5", "volB/pg_7", "volB/pg_8", "volB/pg_12", "volB/pg_13", "volB/pg_5", "volB/pg_99",
+            "volB/pg_10", "-/d1", "volA/d1", "volC/pg_4", "volB/pg_10",
+        ], "stored \(rows)")
+    }
+
+    @Test("A row the broken-reference pass marked keeps its raw page, though the map could resolve it")
+    func brokenRowsStayRaw() async throws {
+        let broken = try JSONDecoder().decode(BrokenRefsIndex.self, from: Data("""
+            {"schemaVersion":1,"generated":"2026-10-21","totalBroken":1,"fullDetail":true,
+             "records":[{"sv":"volA","sd":"d1","t":"volB#pg_5","r":"unknownPage","rv":"volB","ra":"pg_5"}]}
+            """.utf8))
+        let rows = try await index(map: try map(), broken: broken)
+        // Both references written `volB#pg_5` are marked, and neither is rewritten; the rest are
+        // stored as without the marking.
+        #expect(rows[0] == Stored(target: "volB/pg_5", isBroken: true), "stored \(rows)")
+        #expect(rows[5] == Stored(target: "volB/pg_5", isBroken: true))
+        #expect(rows.enumerated().filter { $0.offset != 0 && $0.offset != 5 }.map(\.element.target)
+                == Self.stored.enumerated().filter { $0.offset != 0 && $0.offset != 5 }.map(\.element))
+    }
+
+    /// Without the bump an installed index keeps every page of another volume on the volume.
+    @Test("The index version is at least 71")
+    func indexVersionCoversTheBump() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 71)
+    }
+}
+
 // MARK: - VolumeSourcesVersion70Tests (A18)
 
 /// A volume's list of sources at index version 70 (A18, #1645's line): a row naming a Subject-Numeric

@@ -474,6 +474,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.44 — 2026-10-20 (A16, #1691's first line): `classLeafPatterns` matches a Subject-Numeric
 ///         file with a country as itself and the same file at a post, so `POL 27 VIET` no longer
 ///         reaches `POL 27 VIET S`. An index-read change; nothing stored moves, no index version
+///  4.45 — 2026-10-21 (A18b, plan of record decision 80): `currentDateIndexVersion` → 71 — a
+///         reference to a printed page of another volume is stored against the document on that
+///         page under rule C (`resolveCrossVolumePageReferences`), from the bundled page map
+///         (`IndexingResources.citedPages`, `CitedPageMap`) and the printed form `collectDocumentRefs`
+///         classifies from the reference's siblings (`PageReferenceForm`, carried as `CrossReferenceRow.pageForm`);
+///         a page written with its own volume's prefix is the same-volume pass's (see the v71 note)
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1477,7 +1483,37 @@ public actor IndexingPipeline {
     ///   The figures, before and after on two full indexes of the 553 catalogue volumes at corpus
     ///   `6170e4b32`, are in the pull request and the session entry. Without the bump an installed
     ///   index holds none of the rows and none of the dates. A18b follows with version 71.
-    public static let currentDateIndexVersion: Int = 70
+    /// - v70→71 — A18b, a printed page of another volume counted as a citation of the document on
+    ///   it (plan of record decision 80; `Planning/Cross-Volume-Page-Citations-Assessment-2026-10-20.md`
+    ///   §7). Until 71 a reference to `frus1955-57v17#pg_313` was stored as it was collected,
+    ///   `(frus1955-57v17, pg_313)`, which no citing list, graph node, Analytics count or Related
+    ///   query reads as a document: 48,577 live rows in a full index at version 70, 96.6% of them
+    ///   from the volumes covering 1960 and earlier, which cite another volume by its page. Three
+    ///   things a re-index stores differently:
+    ///   - **Rule C's rows name the document on the page** (``resolveCrossVolumePageReferences``):
+    ///     a single page, and a range whose two end pages name the same one document, through the
+    ///     bundled page map (`cited-page-map.json`, ``CitedPageMap``, `IndexingResources.citedPages`)
+    ///     and the one tie-break the same-volume pass and the reader's tap use (#1509). A page cited
+    ///     with "ff." and a range across documents keep `pg_N`. The map is the generator's reading
+    ///     of a full index of the catalogue, so the row does not depend on whether the target is on
+    ///     the device, and every device stores the same row. Measured on two full indexes of the
+    ///     553 catalogue volumes at corpus `6170e4b32`, at 70 and at 71: of 48,577 live rows,
+    ///     29,391 resolve (21,076 single pages naming one document, 6,361 naming several — 2,142
+    ///     settled by the note's day, 3 by a number, 4,216 taking the first — and 1,954 ends of
+    ///     977 ranges within one document) and 19,186 stay (10,633 "ff.", 8,326 ends of ranges
+    ///     across documents, 227 single pages naming nothing); the bundled citing pairs go from
+    ///     9,027 to 35,901 and the documents cited from another volume from 5,818 to 20,273 (33
+    ///     of them sections printed on a cited page), and the Atlantic Charter (`frus1941v01`
+    ///     d372) from 6 rows citing it to 162.
+    ///   - **The printed form is classified at parse time** (``PageReferenceForm``,
+    ///     `collectDocumentRefs`), from the reference's siblings, and carried to the store pass with
+    ///     the hint; neither is stored.
+    ///   - **A page written with its own volume's prefix** (`frus1950v06#pg_N` inside
+    ///     `frus1950v06`) is resolved by the same-volume pass, which required a `NULL`
+    ///     `target_volume_id`: 46 rows at version 70, all 46 resolving.
+    ///   Without the bump an installed index keeps every one of the 48,577 rows on the volume.
+    ///   A library still re-indexes once at build 51, for 70 and 71 together.
+    public static let currentDateIndexVersion: Int = 71
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -6259,9 +6295,14 @@ public actor IndexingPipeline {
         // each one's stored day, as the reader's page link does.
         // #1613: and the rows that name a footnote or a whole volume, which the broken-reference
         // pass above has now read raw.
+        // A18b: and the rows that name a page of another volume, from the bundled page map, which
+        // the broken-reference pass above has read raw too.
         try inTransaction {
             try resolvePageBasedCrossReferences(volumeId: data.volumeId,
                                                 citing: insertedReferences.citing)
+            try resolveCrossVolumePageReferences(volumeId: data.volumeId,
+                                                 forms: insertedReferences.forms,
+                                                 citing: insertedReferences.citing)
             try settleCrossReferenceTargets(insertedReferences.settled)
         }
         try auxInsertPersonMentions(data.personMentions)
@@ -6866,7 +6907,7 @@ public actor IndexingPipeline {
         personListVolumes: inout Set<String>,
         pageRanges: inout [PageRangeRow]
     ) {
-        for node in nodes {
+        for (index, node) in nodes.enumerated() {
             switch node {
 
             // ── Cross-references ───────────────────────────────────────────────
@@ -6875,12 +6916,19 @@ public actor IndexingPipeline {
                     target: target, targetVolumeId: targetVolumeId,
                     sourceVolumeId: volumeId, sourceDocumentId: documentId,
                     referenceType: parentReferenceType, context: enclosingText) {
-                    // #1509: a reference to a page carries what its footnote names, which decides
-                    // among several documents the page names — built from the footnote's
-                    // AST as the reader's link builds it (`ASTToRenderNodeConverter`).
-                    if let citingNote,
-                       case .page = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
-                        row.citing = PageCitationHint(noteChildren: citingNote)
+                    if case .page(let pageVolumeId, _) = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
+                        // #1509: a reference to a page carries what its footnote names, which decides
+                        // among several documents the page names — built from the footnote's
+                        // AST as the reader's link builds it (`ASTToRenderNodeConverter`).
+                        if let citingNote { row.citing = PageCitationHint(noteChildren: citingNote) }
+                        // A18b: a page of ANOTHER volume carries its printed form, read from the
+                        // reference's siblings, which rule C reads at store time
+                        // (`resolveCrossVolumePageReferences`). A page of this volume — a bare
+                        // anchor, or one written with its own volume's prefix — needs none: the
+                        // same-volume pass resolves every form against the volume's own pages.
+                        if let pageVolumeId, pageVolumeId != volumeId {
+                            row.pageForm = PageReferenceForm.form(ofPageReferenceAt: index, in: nodes)
+                        }
                     }
                     crossRefs.append(row)
                 }
@@ -8266,11 +8314,14 @@ public actor IndexingPipeline {
     /// keyed by the `rowid` a row was given.
     struct InsertedCrossReferences {
         /// What the footnote of a page reference names (`CrossReferenceRow.citing`, #1509), for
-        /// `resolvePageBasedCrossReferences`.
+        /// `resolvePageBasedCrossReferences` and `resolveCrossVolumePageReferences`.
         var citing: [Int64: PageCitationHint] = [:]
         /// What a row that names a footnote or a whole volume settles as
         /// (`CrossReferenceRow.settled`, #1613), for `settleCrossReferenceTargets`.
         var settled: [Int64: SettledCrossReferenceTarget] = [:]
+        /// The printed form of a reference to a page of another volume
+        /// (`CrossReferenceRow.pageForm`, A18b), for `resolveCrossVolumePageReferences`.
+        var forms: [Int64: PageReferenceForm] = [:]
     }
 
     /// Inserts a volume's cross-references as collected, and returns what two later passes of the
@@ -8299,6 +8350,7 @@ public actor IndexingPipeline {
                 try auxStep(stmt)
                 if let hint = row.citing { inserted.citing[sqlite3_last_insert_rowid(auxDb)] = hint }
                 if let settled = row.settled { inserted.settled[sqlite3_last_insert_rowid(auxDb)] = settled }
+                if let form = row.pageForm { inserted.forms[sqlite3_last_insert_rowid(auxDb)] = form }
                 sqlite3_reset(stmt)
             }
         }
@@ -9645,25 +9697,28 @@ public actor IndexingPipeline {
     /// Called in `storeIndexData` after `auxInsertCrossReferences`, `auxInsertPageRanges` and
     /// `auxInsertDocumentDates` are complete for the volume, so all page data and each document's
     /// day are available.
-    /// Same-volume resolution only — cross-volume page refs require the target volume
-    /// to be indexed first and are left unresolved.
+    /// Same-volume resolution only: a page of this volume, whether its anchor is bare (`#pg_427`)
+    /// or written with the volume's own prefix (`frus1950v06#pg_427` inside `frus1950v06`, 46 rows
+    /// in a full index at version 70, which until 71 kept `pg_N` for want of this clause). A page
+    /// of another volume is `resolveCrossVolumePageReferences`'s (A18b).
     private func resolvePageBasedCrossReferences(volumeId: String,
                                                  citing: [Int64: PageCitationHint] = [:]) throws {
         // Find cross-reference rows for this volume whose target is an arabic page anchor.
         // GLOB 'pg_[0-9]*' matches "pg_" followed by a digit (e.g. "pg_427"); roman
         // fragments like "pg_III" do not match and stay unresolved.
         //
-        // `target_volume_id IS NULL` enforces the same-volume-only contract documented
-        // above. Without it (index v21 and earlier), CROSS-volume page refs matched too and
-        // were resolved against the SOURCE volume's pagination — rewriting
-        // (frus1907p1, pg_773) into (frus1907p1, <some frus1910 doc id>): a fabricated edge
-        // in every graph/analytics query, and a row the #240B broken-ref marking can no
-        // longer match. currentDateIndexVersion 22 forces the reindex that heals those rows.
+        // The volume condition enforces the same-volume-only contract documented above. Without
+        // it (index v21 and earlier), CROSS-volume page refs matched too and were resolved
+        // against the SOURCE volume's pagination — rewriting (frus1907p1, pg_773) into
+        // (frus1907p1, <some frus1910 doc id>): a fabricated edge in every graph/analytics query,
+        // and a row the #240B broken-ref marking can no longer match. currentDateIndexVersion 22
+        // forced the reindex that healed those rows. A target that names this volume by its own
+        // prefix is this volume's page (A18b, version 71).
         let findSQL = """
             SELECT rowid, target_document_id
             FROM cross_references
             WHERE source_volume_id = ?
-              AND target_volume_id IS NULL
+              AND (target_volume_id IS NULL OR target_volume_id = source_volume_id)
               AND target_document_id GLOB 'pg_[0-9]*'
             """
         let findStmt = try auxPrepare(findSQL)
@@ -9743,6 +9798,76 @@ public actor IndexingPipeline {
         if resolvedCount > 0 {
             print("[IndexingPipeline] resolvePageBasedCrossReferences: resolved \(resolvedCount)/\(toResolve.count) page refs in \(volumeId)")
         }
+        #endif
+    }
+
+    /// Resolves this volume's references to a printed page of ANOTHER volume to the document on
+    /// that page, under rule C and from the bundled page map (A18b, index version 71, plan of record
+    /// decision 80): ``PageSpanResolver/citedDocument(inVolume:page:form:citing:map:)``, the one
+    /// function `ResolvedEdgeIndexGenerator` calls to write the bundled citing pairs, over the
+    /// form the parse classified (`CrossReferenceRow.pageForm`) and the hint its footnote gave
+    /// (`citing`), both keyed by the `rowid` `auxInsertCrossReferences` gave the row.
+    ///
+    /// A reference the rule leaves — "ff.", a range across documents, a page naming nothing, a
+    /// volume outside the map — keeps `pg_N` with its `target_volume_id`, which the volume-level
+    /// surfaces count as before. A row the broken-reference pass marked is left raw, as
+    /// `settleCrossReferenceTargets` leaves its rows, so the library-wide re-marking still finds
+    /// it. With no map (a host that passed none) nothing is resolved.
+    ///
+    /// Runs once, against this volume only, and reaches every page it cites, downloaded or not:
+    /// the map is the generator's reading of a full index of the catalogue, so the result does not
+    /// depend on which volumes the device holds or the order they were indexed in, and a device
+    /// resolves from the map alone even where it holds the target (plan of record §0, A18b).
+    /// Measured on a full index at version 71 against one at 70, 29,391 of 48,577 such rows resolve
+    /// and 19,186 stay (10,633 "ff.", 8,326 ends of ranges across documents, 227 single pages
+    /// naming nothing).
+    private func resolveCrossVolumePageReferences(volumeId: String,
+                                                  forms: [Int64: PageReferenceForm],
+                                                  citing: [Int64: PageCitationHint]) throws {
+        guard !forms.isEmpty, let map = resources.citedPages() else { return }
+        let findSQL = """
+            SELECT rowid, target_volume_id, target_document_id
+            FROM cross_references
+            WHERE source_volume_id = ?
+              AND target_volume_id IS NOT NULL
+              AND target_volume_id <> source_volume_id
+              AND target_document_id GLOB 'pg_[0-9]*'
+              AND is_broken = 0
+            """
+        let findStmt = try auxPrepare(findSQL)
+        defer { sqlite3_finalize(findStmt) }
+        sqlite3_bind_text(findStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+
+        var toResolve: [(rowid: Int64, targetVolumeId: String, pageNum: Int)] = []
+        while sqlite3_step(findStmt) == SQLITE_ROW {
+            let rowid = sqlite3_column_int64(findStmt, 0)
+            guard let targetVolumeId = auxColumnString(findStmt, 1),
+                  let pageId = auxColumnString(findStmt, 2),
+                  let pageNum = Int(pageId.dropFirst(3)), pageNum > 0 else { continue }
+            toResolve.append((rowid: rowid, targetVolumeId: targetVolumeId, pageNum: pageNum))
+        }
+        guard !toResolve.isEmpty else { return }
+
+        let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
+        let updateStmt = try auxPrepare(updateSQL)
+        defer { sqlite3_finalize(updateStmt) }
+
+        var resolvedCount = 0
+        for (rowid, targetVolumeId, pageNum) in toResolve {
+            // A row with no form was collected by a walk that classified none; it stays a page.
+            guard let form = forms[rowid],
+                  let docId = PageSpanResolver.citedDocument(inVolume: targetVolumeId, page: pageNum,
+                                                             form: form, citing: citing[rowid], map: map)
+            else { continue }
+            sqlite3_reset(updateStmt)
+            sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_int64(updateStmt, 2, rowid)
+            try auxStep(updateStmt)
+            resolvedCount += 1
+        }
+
+        #if DEBUG
+        print("[IndexingPipeline] resolveCrossVolumePageReferences: resolved \(resolvedCount)/\(toResolve.count) page refs into other volumes from \(volumeId)")
         #endif
     }
 
@@ -13677,6 +13802,10 @@ struct CrossReferenceRow: Sendable {
     /// (`PageCitationHint(noteChildren:)`), which decides among several documents beginning on the
     /// page (#1509). Not stored: `resolvePageBasedCrossReferences` reads it in the same pass.
     var citing: PageCitationHint? = nil
+    /// For a reference to a printed page of ANOTHER volume, its printed form
+    /// (`PageReferenceForm.form(ofPageReferenceAt:in:)`), which rule C reads (A18b). Not stored:
+    /// `resolveCrossVolumePageReferences` reads it in the same pass.
+    var pageForm: PageReferenceForm? = nil
     /// What the row becomes once the broken-reference pass has read its raw target (#1613), or
     /// `nil` for a row stored as it is collected. Not stored: `settleCrossReferenceTargets` reads
     /// it in the same pass.

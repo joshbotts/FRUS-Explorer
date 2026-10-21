@@ -78,6 +78,12 @@ import Foundation
 ///   2.2 — #1509: ``citedDocument(among:facts:citing:)``, the one tie-break among several documents
 ///          on a page, with ``PageCitationHint`` and ``CitedDocumentFacts``; the two queries both
 ///          readers run, ``arabicPageRowsSQL`` and ``citedDocumentFactsSQL``.
+///   2.3 — A18b (index version 71, plan of record decision 80): a page of another volume.
+///          ``PageReferenceForm`` is the printed form of a page reference, classified at parse time
+///          from the reference's siblings; ``citedDocument(inVolume:page:form:citing:map:)`` is rule
+///          C over a ``CitedPageMap``, which the indexer's store pass and `ResolvedEdgeIndexGenerator`
+///          both call; ``citedDocument(among:facts:citing:)`` has an overload over document ids,
+///          which the claimants overload forwards to.
 public enum PageSpanResolver {
 
     // MARK: - DocumentPages
@@ -310,7 +316,20 @@ public enum PageSpanResolver {
     public static func citedDocument(among claimants: PageClaimants,
                                      facts: [String: CitedDocumentFacts],
                                      citing: PageCitationHint?) -> String {
-        let ids = claimants.documents.map(\.documentId)
+        citedDocument(among: claimants.documents.map(\.documentId), facts: facts, citing: citing)
+    }
+
+    /// ``citedDocument(among:facts:citing:)`` over the documents' ids alone, which is all the rule
+    /// reads: the bundled page map carries a page's ids and claim and not each document's pages
+    /// (A18b), so the cross-volume resolver calls this one and the claimants overload forwards to it.
+    ///
+    /// - Parameters:
+    ///   - ids: The documents the page names, in source order. Never empty.
+    ///   - facts: As ``citedDocument(among:facts:citing:)``.
+    ///   - citing: As ``citedDocument(among:facts:citing:)``.
+    public static func citedDocument(among ids: [String],
+                                     facts: [String: CitedDocumentFacts],
+                                     citing: PageCitationHint?) -> String {
         guard ids.count > 1, let citing else { return ids[0] }
         let numbered = ids.filter { id in
             guard let number = facts[id]?.printedNumber?.lowercased() else { return false }
@@ -324,6 +343,56 @@ public enum PageSpanResolver {
             return dated
         }
         return ids[0]
+    }
+
+    // MARK: - A page of another volume (A18b, rule C)
+
+    /// The document a reference to a page of ANOTHER volume cites, read from the bundled page map
+    /// under rule C (plan of record decision 80), or `nil` when the reference stays a reference to
+    /// the volume (`pg_N`). The one function the indexer's store pass
+    /// (`IndexingPipeline.resolveCrossVolumePageReferences`) and `ResolvedEdgeIndexGenerator` call, so
+    /// the stored edge and the bundled citing pair are the same document.
+    ///
+    /// **Rule C**, measured in `Planning/Cross-Volume-Page-Citations-Assessment-2026-10-20.md` §4
+    /// over the 44,022 live rows of a full v69 index (48,577 at v70):
+    /// - **A single page** cites the document on it: "Foreign Relations, 1942, vol. i, p. 841." is a
+    ///   telegram. When the page names several documents, #1509's tie-break decides, as it does for
+    ///   a same-volume reference and for the reader's tap: the document number the note names, then
+    ///   its day, else the first in source order.
+    /// - **A range** cites a document when its two end pages each name exactly one document and the
+    ///   same one. That agrees with reading every page between for 4,008 of the 4,012 ranges the v69
+    ///   library held, and it needs nothing beyond the two pages the reference names. A range whose
+    ///   ends name different documents, several, or nothing is a range across documents — "ibid.,
+    ///   1914, pp. 443–895 passim" spans 952 — and stays on the volume.
+    /// - **"ff."** stays on the volume: 3,932 of its 8,704 rows say "documentation", as in "For
+    ///   documentation on the Guatemalan request, see Foreign Relations, 1950, Vol. ii, pp. 865
+    ///   ff.", which cites a compilation, not the first document printed on its first page.
+    /// - **A page with no entry** stays on the volume: it names nothing (front matter, apparatus
+    ///   between documents), or its volume is outside the catalogue the map was generated from.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume the page is in — the reference's own target volume, never the volume
+    ///     being indexed.
+    ///   - page: The arabic page number.
+    ///   - form: The reference's printed form, classified at parse time (``PageReferenceForm``).
+    ///   - citing: What the reference's note names (``PageCitationHint``), or `nil` outside a note.
+    ///   - map: The bundled map (``CitedPageMap``).
+    public static func citedDocument(inVolume volumeId: String, page: Int, form: PageReferenceForm,
+                                     citing: PageCitationHint?, map: CitedPageMap) -> String? {
+        switch form {
+        case .andFollowing:
+            return nil
+        case .single:
+            guard let entry = map.entry(volumeId: volumeId, page: page) else { return nil }
+            return citedDocument(among: entry.documentIds,
+                                 facts: map.facts(volumeId: volumeId, documentIds: entry.documentIds),
+                                 citing: citing)
+        case .rangeStart(let other), .rangeEnd(let other):
+            guard let here = map.entry(volumeId: volumeId, page: page),
+                  let there = map.entry(volumeId: volumeId, page: other),
+                  here.documentIds.count == 1, there.documentIds == here.documentIds else { return nil }
+            return here.documentIds[0]
+        }
     }
 
     /// The query whose rows ``CitedDocumentFacts/init(printedNumber:dateISO:precision:)`` reads: each
@@ -345,6 +414,87 @@ public enum PageSpanResolver {
         WHERE volume_id = ? AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
         ORDER BY rowid
         """
+}
+
+// MARK: - PageReferenceForm
+
+/// How a reference to a printed page is printed (A18b): on its own, with "ff.", or as one end of a
+/// range — which decides whether a page of another volume cites the document on it (rule C,
+/// ``PageSpanResolver/citedDocument(inVolume:page:form:citing:map:)``).
+///
+/// Classified at parse time from the reference's siblings (``form(ofPageReferenceAt:in:)``), by
+/// the indexer (`IndexingPipeline.collectDocumentRefs`) and by `ResolvedEdgeIndexGenerator` over the
+/// same parse, since neither the index nor the bundled edge index keeps a reference's neighbours.
+/// Measured over the 173,933 cross-volume page `<ref>`s of the 553 catalogue volumes at corpus
+/// `6170e4b32`, the text that decides a form sits among the reference's siblings in all but one:
+/// every range's dash and second page (36,044) and "ff." (10,641, 23 of them inside the reference)
+/// are siblings, and the one "ff." printed after the note that holds the reference closes
+/// (`frus1955-57v14`) reads as a single page here.
+public enum PageReferenceForm: Sendable, Equatable {
+    /// "p. 841", "pp. 131": one page, with nothing to say it runs on.
+    case single
+    /// "pp. 865 ff.": the page and the following ones, which mostly cites a compilation.
+    case andFollowing
+    /// The first page of a printed range: `<ref>pp. 131</ref>–<ref>149</ref>`, with the last page.
+    case rangeStart(end: Int)
+    /// The last page of a printed range, with the first page.
+    case rangeEnd(start: Int)
+
+    /// The form of the page reference `nodes[index]`, from the siblings around it.
+    ///
+    /// - A range: the next `<ref>` among the siblings is a page of the same volume, and the printed
+    ///   text between the two is one dash (en, em, minus or hyphen, with any space). The second of
+    ///   the two is the range's end, read the same way from the `<ref>` before it.
+    /// - "ff.": the reference's own text has the word `ff`, or the text of the siblings after it
+    ///   begins with `ff` (a comma allowed), as the volumes print "pp. 865 ff." and "p. 10, ff."
+    /// - Otherwise a single page.
+    ///
+    /// A `<ref>` that is not a page reference, or a `nodes[index]` that is not a `<ref>`, is
+    /// classified as a single page; the callers ask only for a page reference.
+    public static func form(ofPageReferenceAt index: Int, in nodes: [FRUSASTNode]) -> PageReferenceForm {
+        guard nodes.indices.contains(index), let here = page(of: nodes[index]) else { return .single }
+        if let next = nodes[(index + 1)...].firstIndex(where: isReference),
+           let there = page(of: nodes[next]), there.volumeId == here.volumeId,
+           isDash(FRUSASTNode.printedText(of: Array(nodes[(index + 1)..<next]))) {
+            return .rangeStart(end: there.page)
+        }
+        if let previous = nodes[..<index].lastIndex(where: isReference),
+           let there = page(of: nodes[previous]), there.volumeId == here.volumeId,
+           isDash(FRUSASTNode.printedText(of: Array(nodes[(previous + 1)..<index]))) {
+            return .rangeEnd(start: there.page)
+        }
+        if case .crossReference(_, _, let children) = nodes[index],
+           FRUSASTNode.printedText(of: children).range(of: #"\bff\b"#, options: .regularExpression) != nil {
+            return .andFollowing
+        }
+        // "ff." follows within the next sibling or two: a text run, or `<hi>ff</hi>` and its stop.
+        let after = FRUSASTNode.printedText(of: Array(nodes[(index + 1)..<min(index + 4, nodes.count)]))
+        if after.range(of: #"^\s*,?\s*ff\b"#, options: .regularExpression) != nil {
+            return .andFollowing
+        }
+        return .single
+    }
+
+    /// Whether `node` is a `<ref>`.
+    private static func isReference(_ node: FRUSASTNode) -> Bool {
+        if case .crossReference = node { return true }
+        return false
+    }
+
+    /// The page `node` refers to, with the volume as written (`nil` for the volume being read), or
+    /// `nil` when `node` is not a reference to a page.
+    private static func page(of node: FRUSASTNode) -> (volumeId: String?, page: Int)? {
+        guard case .crossReference(let target, let targetVolumeId, _) = node,
+              case .page(let volumeId, let page) = FRUSURLScheme.resolveCrossRefTarget(target, volumeId: targetVolumeId)
+        else { return nil }
+        return (volumeId, page)
+    }
+
+    /// Whether `text` is one dash and nothing else: an en dash, an em dash, a minus or a hyphen.
+    private static func isDash(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.count == 1 && "–—−-".contains(trimmed)
+    }
 }
 
 // MARK: - CitedDocumentFacts

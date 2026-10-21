@@ -13,7 +13,9 @@
 // limitations under the License.
 
 import FRUSCoreKit
+import FTS5Store
 import Foundation
+import SQLite3
 import Testing
 @testable import ResolvedEdgeIndexGeneratorCore
 
@@ -26,6 +28,9 @@ import Testing
 ///   1.0 — Session 2026-08-09: #262
 ///   1.1 — #1693: async, for the kit's parser; a section's row cites, and a note's reference
 ///          cites its document under the app's widened pattern
+///   1.2 — A18b: every build builds its full index in a folder of its own (`build(_:generated:in:)`);
+///          a page of another volume cites under rule C, the map the run writes, and the parity
+///          of the run's pairs with the rows a device's index stores from the same map
 @Suite("Resolved edge index — generator")
 struct ResolvedEdgeIndexRunnerTests {
 
@@ -55,6 +60,15 @@ struct ResolvedEdgeIndexRunnerTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         return try await body(directory)
+    }
+
+    /// The run over `files`, building its full index in a folder of its own under `directory`
+    /// (A18b): the edge index and the page map.
+    private func build(_ files: [URL], generated: String,
+                       in directory: URL) async throws -> (edges: ResolvedEdgeIndex, pages: CitedPageMap) {
+        let index = directory.appendingPathComponent("index-\(UUID().uuidString)", isDirectory: true)
+        return try await ResolvedEdgeIndexRunner.build(files: files, generated: generated,
+                                                       index: .build(in: index))
     }
 
     /// Writes a volume from its body's XML as written, for a fixture that needs sections.
@@ -99,7 +113,7 @@ struct ResolvedEdgeIndexRunnerTests {
             let b = try write("frus1969-76v02", documents: [(id: "d1", body: "<p>Text.</p>")],
                               to: directory)
 
-            let index = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-08-09")
+            let index = try await build([a, b], generated: "2026-08-09", in: directory).edges
 
             #expect(index.coverage.documentEdges == 2, "both references resolve to real documents")
             #expect(index.coverage.sameVolumeEdges == 1)
@@ -127,7 +141,7 @@ struct ResolvedEdgeIndexRunnerTests {
                 (id: "d1", body: "<p>Text.</p>"),
                 (id: "alsoUnused", body: "<p>Text.</p>"),
             ], to: directory)
-            let index = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-08-09")
+            let index = try await build([a, b], generated: "2026-08-09", in: directory).edges
 
             #expect(index.volumes == ["volA", "volB"])
             #expect(index.documents == [["d1"], ["d1"]], """
@@ -149,7 +163,7 @@ struct ResolvedEdgeIndexRunnerTests {
             ], to: directory)
             let b = try write("volB", documents: [(id: "d1", body: "<p>Text.</p>")], to: directory)
             await #expect(throws: ResolvedEdgeError.self) {
-                _ = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-08-09")
+                _ = try await build([a, b], generated: "2026-08-09", in: directory).edges
             }
         }
     }
@@ -163,7 +177,7 @@ struct ResolvedEdgeIndexRunnerTests {
                     """),
             ], to: directory)
             let b = try write("volB", documents: [(id: "d1", body: "<p>Text.</p>")], to: directory)
-            let index = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-08-09")
+            let index = try await build([a, b], generated: "2026-08-09", in: directory).edges
             #expect(index.coverage.documentEdges == 2, "both references are counted in the funnel")
             #expect(index.targets.first?.edgeCount == 1, """
                 Stored \(index.targets.first?.edgeCount ?? -1) edges. A reader counting "documents \
@@ -198,7 +212,7 @@ struct ResolvedEdgeIndexRunnerTests {
                 (id: "d3", body: "<p>Text.<note n=\"2\" xml:id=\"d3fn2\">A note.</note></p>"),
             ], to: directory)
 
-            let index = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-10-20")
+            let index = try await build([a, b], generated: "2026-10-20", in: directory).edges
 
             #expect(sources(of: "frus1945Berlinv01", "d1", in: index)
                     == ["frus1945Berlinv02/d1", "frus1945Berlinv02/introduction"], """
@@ -245,7 +259,7 @@ struct ResolvedEdgeIndexRunnerTests {
                 </div>
                 """, to: directory)
             let b = try write("volB", documents: [(id: "d1", body: "<p>Text.</p>")], to: directory)
-            let index = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-10-20")
+            let index = try await build([a, b], generated: "2026-10-20", in: directory).edges
             #expect(index.coverage.sectionEdges == 1)
             #expect(index.coverage.sameVolumeSectionEdges == 1)
             #expect(!index.documents.joined().contains("errata"), """
@@ -270,14 +284,14 @@ struct ResolvedEdgeIndexRunnerTests {
                 (id: "cr_d6", body: "<p>Text.<note n=\"4\" xml:id=\"cr_d6fn4\">A note.</note></p>"),
                 (id: "d705", body: "<p>Text.<note n=\"*\" xml:id=\"d705fn-sym1\">A note.</note></p>"),
             ], to: directory)
-            let index = try await ResolvedEdgeIndexRunner.build(files: [a, b], generated: "2026-10-20")
+            let index = try await build([a, b], generated: "2026-10-20", in: directory).edges
             #expect(sources(of: "volB", "cr_d6", in: index) == ["volA/d1"])
             #expect(sources(of: "volB", "d705", in: index) == ["volA/d1"])
             #expect(index.coverage.documentEdges == 2)
         }
     }
 
-    @Test("A row's references are its <ref>s in order, a note's marked as a note's")
+    @Test("A row's references are its <ref>s in order, a note's marked as a note's, a page of another volume with its form and hint")
     func rowReferences() {
         let nodes: [FRUSASTNode] = [
             .head(children: [.text("Introduction")]),
@@ -286,15 +300,39 @@ struct ResolvedEdgeIndexRunnerTests {
                                 children: [.crossReference(target: "#d2", targetVolumeId: nil,
                                                            children: [])]),
                 .footnote(id: "fn1", type: .unclassified, printedNumber: "1", children: [
-                    .paragraph(children: [.crossReference(target: "volB#d3fn1",
-                                                          targetVolumeId: "volB", children: [])]),
+                    .paragraph(children: [
+                        .crossReference(target: "volB#d3fn1", targetVolumeId: "volB", children: []),
+                        .text(" See Document 7, "),
+                        .crossReference(target: "volB#pg_12", targetVolumeId: "volB",
+                                        children: [.text("pp. 12")]),
+                        .text("–"),
+                        .crossReference(target: "volB#pg_14", targetVolumeId: "volB",
+                                        children: [.text("14")]),
+                        .text(", and "),
+                        .crossReference(target: "#pg_3", targetVolumeId: nil,
+                                        children: [.text("p. 3")]),
+                        .text(" ff."),
+                        .editorialNote([.crossReference(target: "volB#pg_21", targetVolumeId: "volB",
+                                                        children: [.text("p. 21")])]),
+                    ]),
                 ]),
             ]),
         ]
-        #expect(ResolvedEdgeIndexRunner.references(in: nodes) == [
-            .init(target: "volB#d1", isInsideNote: false),
-            .init(target: "#d2", isInsideNote: false),
-            .init(target: "volB#d3fn1", isInsideNote: true),
+        let hint = PageCitationHint(documentNumbers: ["7"], days: [])
+        #expect(ResolvedEdgeIndexRunner.references(in: nodes, volumeId: "volA") == [
+            .init(target: "volB#d1", isInsideNote: false, page: nil, pageForm: nil, citing: nil),
+            .init(target: "#d2", isInsideNote: false, page: nil, pageForm: nil, citing: nil),
+            .init(target: "volB#d3fn1", isInsideNote: true, page: nil, pageForm: nil, citing: nil),
+            // A page of another volume: its form, from its siblings, and the note's hint.
+            .init(target: "volB#pg_12", isInsideNote: true, page: ("volB", 12),
+                  pageForm: .rangeStart(end: 14), citing: hint),
+            .init(target: "volB#pg_14", isInsideNote: true, page: ("volB", 14),
+                  pageForm: .rangeEnd(start: 12), citing: hint),
+            // A page of the volume itself carries the hint, as the index's row does, and no form:
+            // the same-volume pass resolves it against the volume's own pages.
+            .init(target: "#pg_3", isInsideNote: true, page: nil, pageForm: nil, citing: hint),
+            // An editorial note's own text is in no footnote, as the index reads it: no hint.
+            .init(target: "volB#pg_21", isInsideNote: false, page: ("volB", 21), pageForm: .single, citing: nil),
         ])
     }
 
@@ -308,7 +346,7 @@ struct ResolvedEdgeIndexRunnerTests {
                 (id: "d2", body: "<p>Text.</p>"),
             ], to: directory)
             await #expect(throws: ResolvedEdgeError.self) {
-                _ = try await ResolvedEdgeIndexRunner.build(files: [a], generated: "2026-08-09")
+                _ = try await build([a], generated: "2026-08-09", in: directory).edges
             }
         }
     }
@@ -323,9 +361,8 @@ struct ResolvedEdgeIndexRunnerTests {
                     (id: "d1", body: "<p><ref target=\"volB#d1\">y</ref></p>"),
                 ], to: directory))
             }
-            let first = try await ResolvedEdgeIndexRunner.build(files: files, generated: "2026-08-09")
-            let second = try await ResolvedEdgeIndexRunner.build(files: files.reversed(),
-                                                           generated: "2026-08-09")
+            let first = try await build(files, generated: "2026-08-09", in: directory).edges
+            let second = try await build(files.reversed(), generated: "2026-08-09", in: directory).edges
             #expect(first == second, """
                 Two runs over the same corpus in a different file order produced different \
                 artifacts. A generator whose output depends on directory enumeration order makes \
@@ -346,6 +383,184 @@ struct ResolvedEdgeIndexRunnerTests {
         #expect(throws: DecodingError.self) {
             _ = try JSONDecoder().decode(ResolvedEdgeIndex.TargetEdges.self,
                                          from: Data(payload.utf8))
+        }
+    }
+
+    // MARK: - A page of another volume (A18b)
+
+    /// A cited volume with pages: Document 1 begins on p. 5; Document 2 begins on p. 7 and runs
+    /// through pp. 8–9; Documents 3 and 4 both begin on p. 10, dated July 1 and July 2.
+    private static let pagedVolumeBody = """
+        <div type="compilation" xml:id="comp1">
+        <div type="document" xml:id="d1" n="1"><pb n="5" xml:id="pg_5"/><head>1. Telegram</head>\
+        <dateline><date when="1945-06-30">June 30, 1945</date></dateline><p>First.</p></div>
+        <div type="document" xml:id="d2" n="2"><pb n="7" xml:id="pg_7"/><head>2. Memorandum</head>\
+        <p>Second.<pb n="8" xml:id="pg_8"/> More.<pb n="9" xml:id="pg_9"/> End.</p></div>
+        <div type="document" xml:id="d3" n="3"><pb n="10" xml:id="pg_10"/><head>3. Note</head>\
+        <dateline><date when="1945-07-01">July 1, 1945</date></dateline><p>Third.</p></div>
+        <div type="document" xml:id="d4" n="4"><head>4. Letter</head>\
+        <dateline><date when="1945-07-02">July 2, 1945</date></dateline><p>Fourth.</p></div>
+        </div>
+        """
+
+    /// A citing volume: a document citing the paged volume's pages in every printed form, and an
+    /// errata list citing one page.
+    private static let citingVolumeBody = """
+        <div type="section" subtype="errata" xml:id="errata">
+        <head>Errata</head><p>See <ref target="volB#pg_5">p. 5</ref>.</p>
+        </div>
+        <div type="compilation" xml:id="comp1">
+        <div type="document" xml:id="d1" n="1"><head>1. Report</head><p>See \
+        <ref target="volB#pg_5">p. 5</ref>, \
+        <ref target="volB#pg_7">pp. 7</ref>–<ref target="volB#pg_8">8</ref>, \
+        <ref target="volB#pg_5">pp. 5</ref>–<ref target="volB#pg_9">9</ref>, \
+        <ref target="volB#pg_7">pp. 7 ff.</ref>, and <ref target="volB#pg_99">p. 99</ref>.\
+        <note n="1" xml:id="d1fn1">For the letter of July 2, see <ref target="volB#pg_10">p. 10</ref>.</note></p></div>
+        </div>
+        """
+
+    @Test("A page of another volume cites the document on it under rule C, through the map the run writes")
+    func pagesCite() async throws {
+        try await withCorpus { directory in
+            let a = try write("volA", body: Self.citingVolumeBody, to: directory)
+            let b = try write("volB", body: Self.pagedVolumeBody, to: directory)
+            let built = try await build([a, b], generated: "2026-10-21", in: directory)
+            let index = built.edges
+
+            // The single page, the range within Document 2, and the page the note's day settles.
+            #expect(sources(of: "volB", "d1", in: index) == ["volA/d1", "volA/errata"], """
+                p. 5 is Document 1's first page: a single-page reference from Document 1 and one \
+                from the errata list cite it, the second under the section's own id.
+                """)
+            #expect(sources(of: "volB", "d2", in: index) == ["volA/d1"],
+                    "pp. 7–8 lie within Document 2, so both ends of the range cite it")
+            #expect(sources(of: "volB", "d4", in: index) == ["volA/d1"], """
+                p. 10 is where Documents 3 and 4 begin; the note names July 2, Document 4's day, \
+                so #1509's tie-break stores Document 4, as a same-volume reference and a tap would.
+                """)
+            #expect(sources(of: "volB", "d3", in: index).isEmpty)
+            // The note's reference is a footnote citation.
+            let d4Row = try #require(index.targets.first {
+                index.volumes[$0.volume] == "volB" && index.documents[$0.volume][$0.document] == "d4"
+            })
+            #expect(d4Row.footnoteSources == 1)
+
+            // The funnel: nine references to a page of another volume (eight in Document 1, one in
+            // the errata list), five resolving — p. 5 twice, both ends of pp. 7–8, and p. 10. The
+            // ends of pp. 5–9, which runs across two documents, "pp. 7 ff.", a compilation's
+            // opening, and p. 99, which names nothing, stay references to the volume.
+            #expect(index.coverage.crossVolumePageReferences == 9)
+            #expect(index.coverage.pageEdges == 5)
+            #expect(index.coverage.documentEdges == 0)
+            #expect(index.coverage.storedEdges == 5)
+            #expect(index.coverage.citingVolumeCount == 1)
+
+            // The map: an entry for every page a single reference cites and for both ends of the
+            // range within one document; none for p. 9 (an end of a range across documents only)
+            // and none for p. 99. Facts for the two documents on p. 10, the page naming several.
+            let map = built.pages
+            #expect(map.volumes == ["volB"])
+            #expect(map.documents == [["d1", "d2", "d3", "d4"]])
+            #expect(map.pages == [[[5, 0, 0], [7, 0, 1], [8, 1, 1], [10, 0, 2, 3]]], """
+                The map's pages are \(map.pages). p. 5 and p. 7 are where a document begins \
+                (claim 0), p. 8 is printed inside Document 2 (claim 1), and p. 10 names two.
+                """)
+            #expect(map.facts == [[.init(document: 2, printedNumber: "3", day: "1945-07-01"),
+                                   .init(document: 3, printedNumber: "4", day: "1945-07-02")]])
+            #expect(map.indexVersion == IndexingPipeline.currentDateIndexVersion)
+            #expect(map.entry(volumeId: "volB", page: 9) == nil)
+            #expect(map.entry(volumeId: "volB", page: 99) == nil)
+
+            // Built again in another file order, the map is the same file.
+            let again = try await build([b, a], generated: "2026-10-21", in: directory)
+            #expect(again.pages == map)
+            #expect(again.edges == index)
+        }
+    }
+
+    @Test("The pairs the run writes are the rows a device's index stores from the same map")
+    func pairsEqualTheIndex() async throws {
+        try await withCorpus { directory in
+            let a = try write("volA", body: Self.citingVolumeBody, to: directory)
+            let b = try write("volB", body: Self.pagedVolumeBody, to: directory)
+            let built = try await build([a, b], generated: "2026-10-21", in: directory)
+
+            // A device's resources: the map the run wrote, beside the four other files, which a
+            // host must have and which answer nothing here.
+            let resources = directory.appendingPathComponent("resources", isDirectory: true)
+            try FileManager.default.createDirectory(at: resources, withIntermediateDirectories: true)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            try encoder.encode(built.pages).write(to: resources.appendingPathComponent("cited-page-map.json"))
+            for name in IndexingResources.indexResourceNames where name != "cited-page-map" {
+                try Data("{}".utf8).write(to: resources.appendingPathComponent("\(name).json"))
+            }
+
+            // The citing volume indexed through the kit's pipeline, alone: the cited volume is
+            // not on this device, and the map stands in for it.
+            let volumes = directory.appendingPathComponent("device", isDirectory: true)
+            try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: a, to: volumes.appendingPathComponent("volA.xml"))
+            let database = directory.appendingPathComponent("device.sqlite")
+            let pipeline = try IndexingPipeline(
+                fts5Store: try FTS5Store(databaseURL: database), databaseURL: database,
+                volumesDirectory: volumes,
+                resources: try IndexingResources.loading(fromDirectory: resources),
+                concurrencyLimit: 1, defaults: InMemoryIndexingStampStore())
+            try await pipeline.indexVolume("volA")
+
+            // Every cross-volume row the device stores against a document, as (citer, target).
+            var db: OpaquePointer?
+            #expect(sqlite3_open_v2(database.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK)
+            defer { sqlite3_close_v2(db) }
+            var stmt: OpaquePointer?
+            sqlite3_prepare_v2(db, """
+                SELECT source_document_id, target_volume_id, target_document_id FROM cross_references
+                WHERE source_volume_id = 'volA' AND target_volume_id IS NOT NULL
+                  AND target_volume_id <> source_volume_id AND is_broken = 0
+                ORDER BY rowid
+                """, -1, &stmt, nil)
+            defer { sqlite3_finalize(stmt) }
+            var stored = Set<String>()
+            var left: [String] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let citer = String(cString: sqlite3_column_text(stmt, 0))
+                let target = "\(String(cString: sqlite3_column_text(stmt, 1)))/\(String(cString: sqlite3_column_text(stmt, 2)))"
+                if target.contains("/pg_") { left.append(target) } else { stored.insert("volA/\(citer) → \(target)") }
+            }
+
+            // The run's pairs, as (citer, target).
+            var pairs = Set<String>()
+            for row in built.edges.targets {
+                let target = "\(built.edges.volumes[row.volume])/\(built.edges.documents[row.volume][row.document])"
+                for offset in stride(from: 0, to: row.sources.count, by: 2) {
+                    let sv = row.sources[offset]
+                    pairs.insert("\(built.edges.volumes[sv])/\(built.edges.documents[sv][row.sources[offset + 1]]) → \(target)")
+                }
+            }
+            #expect(pairs == stored, """
+                The run's pairs are \(pairs.sorted()); the device stored \(stored.sorted()). The \
+                two must be the same rows, since both come from one map through one function.
+                """)
+            #expect(pairs.count == 4)
+            // What the device leaves on the volume is what the run left: the range across two
+            // documents, "ff." and the page naming nothing.
+            #expect(left.sorted() == ["volB/pg_5", "volB/pg_7", "volB/pg_9", "volB/pg_99"], """
+                The device left \(left.sorted()) as references to the volume.
+                """)
+        }
+    }
+
+    @Test("A run given no index refuses rather than writing an empty map")
+    func missingIndexThrows() async throws {
+        try await withCorpus { directory in
+            let a = try write("volA", body: Self.citingVolumeBody, to: directory)
+            let b = try write("volB", body: Self.pagedVolumeBody, to: directory)
+            await #expect(throws: ResolvedEdgeError.self) {
+                _ = try await ResolvedEdgeIndexRunner.build(
+                    files: [a, b], generated: "2026-10-21",
+                    index: .existing(directory.appendingPathComponent("nowhere.db")))
+            }
         }
     }
 }

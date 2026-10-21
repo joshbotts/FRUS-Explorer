@@ -42,10 +42,20 @@ import Foundation
 /// surface built on this can say *how many* documents cite this one and *which volumes* they are
 /// in — which is what tells a reader what to download — and must not imply it knows more.
 ///
+/// ## A page cites too (A18b)
+/// A reference to a printed page of another volume — how the volumes covering 1960 and earlier
+/// cite one another — is a citation of the document on that page under rule C (plan of record
+/// decision 80): a single page, or a range whose two end pages name the same one document, read
+/// through the bundled `cited-page-map.json`, exactly as a device's index stores it at version 71.
+/// A page cited with "ff." or a range across documents stays a reference to the volume and is not
+/// here. The funnel counts them in `crossVolumePageReferences` and `pageEdges`.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #262
 ///   1.1 — #1693: a citer may be a section; `Coverage` reads the funnel's three section fields and
 ///          `storedEdges` adds the section edges
+///   1.2 — A18b: a page of another volume cites under rule C; `Coverage` reads
+///          `crossVolumePageReferences` and `pageEdges`, which `storedEdges` adds
 struct ResolvedEdgeIndex: Decodable, Sendable {
 
     /// One cited document and everything outside its own volume that cites it.
@@ -101,15 +111,20 @@ struct ResolvedEdgeIndex: Decodable, Sendable {
         let sectionEdges: Int
         /// Of those, same-volume edges — excluded, as `sameVolumeEdges` are.
         let sameVolumeSectionEdges: Int
+        /// References to a printed page of another volume, in the rows the index holds (A18b).
+        let crossVolumePageReferences: Int
+        /// Of those, references rule C resolves to the document on the page, through the bundled
+        /// page map — each stored as a citation of that document, as the index stores it.
+        let pageEdges: Int
         /// Distinct cited documents.
         let targetCount: Int
         /// Volumes contributing a cross-volume citation.
         let citingVolumeCount: Int
 
-        /// Cross-volume edges stored — what the artifact actually carries, from documents and
-        /// from sections.
+        /// Cross-volume edges stored — what the artifact actually carries, from documents, from
+        /// sections and from references to a page.
         var storedEdges: Int {
-            documentEdges - sameVolumeEdges + sectionEdges - sameVolumeSectionEdges
+            documentEdges - sameVolumeEdges + sectionEdges - sameVolumeSectionEdges + pageEdges
         }
     }
 

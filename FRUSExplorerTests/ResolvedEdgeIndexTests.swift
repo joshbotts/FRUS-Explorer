@@ -36,6 +36,12 @@ import Testing
 ///         heading's footnote and the promoted prose kinds are rows, so references in sections
 ///         5,537 → 11,381, section edges 799 → 1,459 (736 → 887 in their own volume), 572 across
 ///         volumes; 8,700 → 9,209 stored, 5,803 → 5,818 documents cited, 185 → 186 citing volumes
+///   1.5 — index version 71 (A18b, plan of record decision 80), regenerated at the same corpus:
+///         a reference to a page of another volume cites the document on it under rule C, through
+///         the bundled page map the same run writes — 29,391 of 48,604 such references, so
+///         9,209 → 38,600 stored, 5,818 → 20,273 documents cited (33 of them sections printed on
+///         a cited page), 186 → 513 citing volumes, 295,999 → 1,112,590 bytes; `pagesCite` pins
+///         the Atlantic Charter
 @Suite("Resolved edge index — artifact")
 struct ResolvedEdgeIndexTests {
 
@@ -73,7 +79,7 @@ struct ResolvedEdgeIndexTests {
 
     @Test("Nothing in the index is a same-volume citation")
     func noSameVolumeEdges() throws {
-        // The whole size argument rests on this: 69,229 of the corpus's 77,866 document-to-document
+        // The whole size argument rests on this: 69,261 of the corpus's 77,898 document-to-document
         // citations are same-volume, and every one of them is already in the reader's local table
         // whenever they can see the document at all. One leaking through would be dead weight and,
         // worse, would be merged as a duplicate of an edge the graph already has.
@@ -96,8 +102,15 @@ struct ResolvedEdgeIndexTests {
         #expect(coverage.sameVolumeEdges < coverage.documentEdges)
         #expect(coverage.sectionEdges <= coverage.referencesInSections)
         #expect(coverage.sameVolumeSectionEdges <= coverage.sectionEdges)
+        #expect(coverage.pageEdges <= coverage.crossVolumePageReferences)
         #expect(coverage.storedEdges == coverage.documentEdges - coverage.sameVolumeEdges
-                + coverage.sectionEdges - coverage.sameVolumeSectionEdges)
+                + coverage.sectionEdges - coverage.sameVolumeSectionEdges + coverage.pageEdges)
+        // A18b (index version 71): the references to a page of another volume in the rows the
+        // index holds, and the ones rule C resolves through the bundled page map — the figures a
+        // full index at version 71 stores (29,391 of 48,604), since the two come from one map
+        // through one function.
+        #expect(coverage.crossVolumePageReferences == 48_604)
+        #expect(coverage.pageEdges == 29_391)
         // The same harvest #764 reports, so the two artifacts cannot disagree about the corpus.
         #expect(coverage.documentEdges == 77_898, """
             \(coverage.documentEdges) document edges, not the 77,898 the provenance flow index \
@@ -142,13 +155,37 @@ struct ResolvedEdgeIndexTests {
         #expect(bundledOnly.count { $0.sourceDocumentId == "introduction" } == 1)
     }
 
+    @Test("A page of another volume cites the document on it: the Atlantic Charter's citers (A18b)")
+    func pagesCite() throws {
+        // The Roosevelt–Churchill joint statement of 14 August 1941 (`frus1941v01` d372) is
+        // printed on p. 367, and the volumes of the 1940s cite it by that page — "Foreign
+        // Relations, 1941, vol. I, p. 367" — never by its id, so until index version 71 no
+        // document in another volume cited it here. Under rule C every single-page reference to
+        // p. 367 is a citation of d372: 156 citing documents and sections across the series,
+        // where the bundled file before A18b held none and a full v70 index's Analytics counted 6.
+        let edges = try index()
+        let sources = edges.inboundSources(volumeId: "frus1941v01", documentId: "d372")
+        #expect(sources.count == 156, "\(sources.count) citers")
+        #expect(sources.allSatisfy { $0.volumeId != "frus1941v01" })
+        // Two of them, each a single page in a footnote of its own volume.
+        for citer in [("frus1941v02", "d366"), ("frus1941-43", "d13")] {
+            #expect(sources.contains { $0.volumeId == citer.0 && $0.documentId == citer.1 },
+                    "\(citer.0)/\(citer.1) cites p. 367 of 1941 vol. I and is not among its citers")
+        }
+        #expect(edges.footnoteSourceCount(volumeId: "frus1941v01", documentId: "d372") >= 100)
+        // The Potsdam communiqué (`frus1945Berlinv02` d1384) likewise: from 29 citers by id at
+        // version 70 — the most cited document from another volume then — to 122.
+        #expect(edges.inboundSources(volumeId: "frus1945Berlinv02", documentId: "d1384").count == 122)
+    }
+
     @Test("Most citations are same-volume, which is why this artifact is small")
     func theSizeArgumentHolds() throws {
         let coverage = try index().coverage
         let share = Double(coverage.sameVolumeEdges) / Double(coverage.documentEdges)
         #expect(share > 0.8, """
             Same-volume citations are \(Int(share * 100))% of the corpus. #262 estimated this \
-            artifact from 2.70M resolved references; it is 282 KB because two filters — \
+            artifact from 2.70M resolved references; it was 282 KB, and is 1.1 MB with the page \
+            citations A18b adds, because two filters — \
             document-to-document only, then cross-volume only — remove three orders of magnitude. \
             If that share collapsed, the size design would need revisiting rather than inheriting.
             """)
@@ -207,7 +244,8 @@ struct InboundCompletionTests {
             "coverage": ["volumesScanned": 2, "referencesScanned": 10,
                           "referencesInsideDocuments": 5, "documentEdges": 3,
                           "sameVolumeEdges": 1, "referencesInSections": 0, "sectionEdges": 0,
-                          "sameVolumeSectionEdges": 0, "targetCount": targets.count,
+                          "sameVolumeSectionEdges": 0, "crossVolumePageReferences": 0,
+                          "pageEdges": 0, "targetCount": targets.count,
                           "citingVolumeCount": 1],
         ]
         return try JSONDecoder().decode(
