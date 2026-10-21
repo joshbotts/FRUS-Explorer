@@ -590,6 +590,15 @@ takes.
     bar; and **Windowed Apps**, the multitasking mode a new device starts in, kept on the owner's
     word of 13:46: each window fills the screen, and the status bar ends *FRUS Explorer*, as the
     build-48 frames' does.
+  - **The time and date erased after capture**, on the owner's word of 2026-10-21, once the pull
+    request was open ("can you edit the screenshots to obscure the time and date?"). In all 44
+    frames the status bar's *9:41 AM  Wed Oct 21* (ink at rows 21–46, columns 51–322 of the
+    2752×2064 frame) was filled with its own background: rows 15–52 and columns 45–328, blended
+    column by column from the four rows just above the box into the four just below it, with grain
+    matched to the backdrop where it has any (`stage-manager`'s wallpaper). No pixel outside that
+    box changed, checked against the frames as captured, and *FRUS Explorer* stays where iPadOS
+    draws it, from column 349. The script is kept with the sitting's notes, outside the
+    repository; an iPad frame a later sitting takes matches the set only if it gets the same edit.
   - **The corpus:** the 553 manifest volumes from the local corpus at `6170e4b32` (2026-10-14, the
     commit A18b's bundle was built from), indexed on the device from empty in 11 minutes under
     `Scripts/heavy.sh`: index version 71, People rollup 12, FTS schema 4; 553 volume structures,
