@@ -410,6 +410,9 @@ took those seven on the 27.0 device and row 3 under iOS 26.5: the sittings' ledg
 | 41 | `onboarding-volumes` | iOS §2.3, l. 86 | The Add Volumes step (Corpus, Subseries or Volume) over the word-cloud backdrop, its Concepts view. §2.3: the line under the control reads *553+ volumes · ≈ 3.5 GB*; Continue dimmed until a row is picked; two cloud views, Concepts and Topics | §2.3 rewritten (12 diff lines): the size line, the scrolling list, Skip and Back | An erased simulator, no `-hasCompletedOnboarding`; wait for the Concepts chip |
 | 42 | `series-production` | §16.1, l. 1413 | About the Series ▸ Production & Timeliness on an empty install: the publication-lag scatter, colored by era, against the timeliness targets in force | §16.1 changed (the Guide's eleven pages; Open Archival Analytics hands its scope on) | Research tab ▸ FRUS Research Guide ▸ the last four pages; the kit's frame 09 is this file |
 
+(S2 took both rows, and the kit's pass A, on a new 27.0 device on 2026-10-21: the sittings' ledger
+below.)
+
 ### S3 — iPhone
 
 | # | File | Slot | Must bear out | Notes |
@@ -659,7 +662,54 @@ takes.
     Analysis Tools window ever opened on it; the device came back in portrait and launched the app
     normally afterwards. Under iOS 26.5, Stage Manager with three FRUS windows left backboardd
     alive. The crash report is kept with the sitting's notes, outside the repository.
-- **S2 —** build, device, UDID, OS; `onboarding-volumes`, `series-production`.
+- **S2 — run 2026-10-21, 16:26 to 16:54; the session captured, on the owner's word of 16:31.**
+  Version 1.0, build **1861**, the `AppStore` configuration built for the simulator as S1's, from
+  `v2` at **`8b6afa95`** (S1's #1751 merged; nothing outside `Docs/` and `Planning/` has changed
+  since `b4dcd527`, so its code is S1's), built 16:29 to 16:32 under `Scripts/heavy.sh` with build
+  48's local-only banner patch, never committed and reverted in the worktree once the build was
+  made. **Both files predate the `build-51` tag (decision 83): a screen that a fix after
+  `8b6afa95` changes is retaken.**
+  - **The device:** a new iPad Pro 13-inch (M5) simulator, `A913C7F8-512F-4725-AF70-DAE4682B4E2C`,
+    iOS 27.0 (24A434), created for the sitting: no volume and no index were ever on it (the offline
+    convention), it was never signed in to iCloud, and it keeps the default wallpaper, which only
+    the clips' first seconds show. Turned to landscape on its home screen by S1's throwaway
+    XCUIDevice test, given a case that rotates without activating the app, so the app's first
+    launch was the sitting's own; 2752×2064; the demo status bar; **Windowed Apps**, as S1's, each
+    window filling the screen. Every launch carried `-FRUSScreenshotHideSyncBanner YES` and no
+    `-hasCompletedOnboarding`.
+  - **`onboarding-volumes`** (16:38:34, on the first launch): Get Started ▸ Add Volumes, Corpus
+    selected, the Concepts view, the line *553+ volumes · ≈ 3.5 GB — the entire series, fully
+    offline. Recommended for full functionality.* (build 48's read *≈ 3.3 GB*), Back, Skip and
+    Continue. The cloud changes view about every four seconds with a crossfade of about one, so
+    the frame is the third of a sixteen-frame burst whose first five are wholly Concepts. The
+    seeded layout is build 48's.
+  - **`series-production`** (16:51:39): Skip ▸ *You're all set — Nothing is downloading yet …* ▸
+    Finish, so nothing was ever downloaded; then Research ▸ FRUS Research Guide ▸ Next seven times
+    ▸ *Production & Timeliness*, page 8 of 11, scrolled so *Publication lag over time* heads the
+    sheet, as in build 48's take: the scatter coloured by era, the dashed timeliness step line, the
+    legend, and the head of *Volumes published per year*. The sheet sits over the Research tab, the
+    manual's first route, where build 48's sat over Settings ▸ About; the sidebar's Projects list
+    shows the starter project *My Research*.
+  - **The time and date erased after capture**, by S1's script unchanged (byte for byte), as the
+    owner asked of S1's frames. In each frame 2,382 pixels changed, all inside the box (rows 15–52,
+    columns 45–328); alpha and *FRUS Explorer* are untouched. Both backdrops are flat there (white
+    in `onboarding-volumes`, the dimmed sidebar's 182, 186, 192 in `series-production`), so the
+    fill is exactly that colour and no grain was added.
+  - **The kit's pass A** (the splash and onboarding): two clips, `simctl io recordVideo
+    --codec=h264`, 2752×2064 after the display matrix, kept outside the repository in
+    `~/Library/Caches/FRUS-Explorer/s2/recordings/` with the time and date as recorded. **A0**
+    (33.7 s) is the app's first launch after install, which confirmed that the splash renders on
+    this build before the take, as the kit asks. **A1** (94.3 s) is the take, from the home
+    screen: the launch at 10.7 s, the splash 12.0–13.7 s, Welcome to 20.2 s, Add Volumes on Corpus
+    to 32.5 s, Subseries ▸ *1969-76* picked at 50.0 s (*kissinger, nixon, president, soviet*),
+    Volume ▸ frus1861 picked at 79.2 s (*seward, majesty, vessel*; *blockade, recognition,
+    neutrality*). The Volume list runs oldest first with no search field, so the take picks its
+    first row. The kit's *prepareVolumes* trap did not show: after Volume was tapped the cloud went
+    back to the corpus's words within half a second, and the volume's own words came within a
+    second of the pick. The hand-off from the splash to onboarding is findings 1 and 2 of *Found by
+    S2*, below.
+  - **Left:** the device holds the app and nothing else, shut down at 16:54. The build and both
+    clips are under `~/Library/Caches/FRUS-Explorer/s2/` (957 MB) until the owner says.
 - **S3 —** build, device, UDID, OS; P1, the banner if taken, the kit's frames.
 - **S4 —** build, the check copy's ref and bundle id, the fake home's library; the chip's
   treatment; which files, each window's size in points.
@@ -760,6 +810,32 @@ against S1's frames.
     window's *Shared words compared as printed* line is scrolled just out of view (the frame with
     it showing is kept with the sitting's notes). A sitting under 26.5 reads the launch's verdict
     first.
+
+### Found by S2 — for the new plan of record
+
+Measured in pass A's two clips, frame by frame (every frame simctl wrote, scaled down and measured
+for ink outside the identity block and the Welcome dock; the scripts are kept with the sitting's
+notes), or seen in the frames. They go with S0's and S1's for the owner to place (decision 82).
+
+1. **The splash empties before onboarding's cloud arrives.** The fresh-install splash shows its
+   Concepts cloud and fades out, and the identity block and the Welcome dock then stand over an
+   empty backdrop for **0.46 s on the first launch and 0.79 s on the second** (A0 7.18–7.64 s, A1
+   13.75–14.53 s). Onboarding's own cloud then appears in one frame rather than fading in, in or
+   crossing into the Topics view, and on the second launch it is back in the splash's own Concepts
+   layout about a second later. `LaunchSplashView`'s doc says the fresh-install splash "holds
+   briefly and flows into onboarding's own cloud", and `ContentViewWithSplash.resolveSplash()` says
+   the same. The kit's 0–4 s beat, *the seeded splash cloud resolves to the wordmark*, is the first
+   half of that sequence: the cut has to end before the empty half-second, or the hand-off is the
+   app's to change. *The kit, or the app.*
+2. **On the first launch after install, the Welcome dock shows before the splash.** In A0 the
+   dock, with its title, its text and Get Started, is drawn under the fading launch screen from
+   5.44 s to 5.69 s and is then covered by the splash, which `resolveSplash()` raises once from a
+   `.task`, after the first frame. On the second launch only a trace shows, in a frame or two. So
+   a new reader's first sight after the launch screen is the dock, then the splash, then the dock
+   again. *The app.*
+3. **Two pairs of words overlap in the Concepts layout that `onboarding-volumes` shows**:
+   *objective* is drawn under *power*, and two vertical words collide at the screen's left edge.
+   Build 48's take of the same seeded layout has both. Seen, not measured. *The app, cosmetic.*
 
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
