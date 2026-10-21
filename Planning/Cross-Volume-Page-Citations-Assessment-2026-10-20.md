@@ -2,7 +2,7 @@
 
 **What this is.** A read-only assessment for the owner, asked for after A17 (#1693). The question: should a reference to a printed page of another volume (`frus1955-57v17#pg_313`) count as a citation of the document on that page? The places it would count are the reader's citing list, the cross-reference graph, Cross-Reference Analytics and the bundled `resolved-edge-index.json`.
 
-It was measured on `v2` at `b8be1631` (A16 merged). A17's branch (`claude/gallant-diffie-a645f8`, not yet merged) was read for the generator. Nothing is built, and nothing in build 51's queue changes until the owner decides.
+It was measured on `v2` at `b8be1631` (A16 merged). A17 was read on its branch, and has since merged as #1744 (`dcd5439a`); the `resolved-edge-index.json` it shipped is the file measured here. Nothing is built. The owner's choice is recorded in §12: plan of record decision 80.
 
 **Amended the same day, at the owner's request**, to answer two more questions:
 - How the change could ride build 51's index bump, A18's v69 → v70 (decision 60). That is §7.
@@ -18,7 +18,7 @@ The recommendation (§9) is revised to match. The first version recommended the 
   - The #1509 hint was built with `PageCitationHint(citingText:)` from the row's stored `context`, wherever the indexer would build one: for a reference inside a footnote.
   - `context` is the same printed text cut at 500 characters. So the hint equals the indexer's except in long footnotes: 336 of the 9,556 rows whose page names several documents sit in a footnote longer than that.
 - **The printed form.** The same 553 files were scanned for each cross-volume page `<ref>`, with its text and its neighbour. Each was joined back to the index row it was stored as, and 44,022 of 44,022 rows matched.
-- **The bundled file.** The size estimates re-encode the pairs into the file's own format. That encoder rebuilds A17's regenerated `resolved-edge-index.json` byte for byte: 291,446 bytes.
+- **The bundled file.** The size estimates re-encode the pairs into the file's own format. That encoder rebuilds the `resolved-edge-index.json` A17 shipped (#1744) byte for byte: 291,446 bytes.
 - **The amendment's figures** come from the same clone and files:
   - the harness again, listing each cited page's documents and facts, for the page map's size;
   - a comparison of the page and document layout of the 27 corrected volume files;
@@ -41,7 +41,7 @@ The scripts and their outputs are in the session notes folder, listed in §11. T
   - The Roosevelt–Churchill joint statement of 14 August 1941, the Atlantic Charter (`frus1941v01` d372), goes from 0 citing documents to 156.
   - The Potsdam communiqué (`frus1945Berlinv02` d1384) goes from 0 to 120.
 - **Build 51 can carry it without a second re-index.** A18 already re-indexes every library. The change can ride that re-index, either inside A18 or as a lane of its own right after it (A18b, v70 → v71). Build 50 carried four versions with a single re-index, so a reader still re-indexes once.
-- **Recommended: A18b in build 51, with the index and the bundle from one generator run (§9).**
+- **Recommended, and decided on 2026-10-20 (§12): A18b in build 51, with the index and the bundle from one generator run (§9).**
   - The indexer resolves rule C's references when it stores a volume, through a new bundled page map of 0.52 MB. A page cited from any volume on the device then resolves whether or not its target is downloaded. No new column, no second pass.
   - The same run adds rule C's pairs to `resolved-edge-index.json`, which grows from 291 KB to about 1.10 MB. The citing list then counts citers that are not downloaded too.
   - On a full library, 29,023 rows resolve and 14,999 stay `pg_N`. The documents Analytics counts as cited go from 67,881 to 77,376.
@@ -234,7 +234,7 @@ The most cited from another volume today is `frus1945Berlinv02` d1417, with 29.
 **Where.** Either inside A18 (v70, one lane), or as A18b straight after it (v70 → v71) and before A19. Build 50 is the precedent for the second: it took versions 66 to 69 in four pull requests, and a reader re-indexed once, at the build that carried them all.
 - A18b keeps A18's lane as planned, through `lane-dev.js`, one lane and one round. It can be reviewed on its own, and it can slip.
 - The web edition still moves its pin once, after the last of them.
-- Decisions 59 and 60 name A18 alone, so A18b needs the owner's word.
+- Decisions 59 and 60 named A18 alone. The owner placed A18b on 2026-10-20 (decision 80, §12).
 
 **What it carries**, with option (b) as §9 recommends:
 - **Kit:**
@@ -319,13 +319,13 @@ Five ways to combine the options:
 
 **Not (a)**, in build 51 or later. Beside (b) it costs a schema change and a second pass, and reaches less.
 
-**For the owner to decide:**
-1. **A18b as its own lane, or inside A18?** A18b keeps A18 as planned (decisions 59 and 60). Inside A18, it makes A18 larger.
-2. **Rule C, or the stricter C′?** C′ counts a page that names several documents only when its note says which: 22,381 new pairs against 26,395. Rule C keeps the default the same-volume edges and the tap already use.
-3. **Does "ff." stay a reference to the volume?** Rule C keeps it there. Alternatively, a narrower rule could count the 1,833 "ff." rows that name a document running past the page, in a note that says neither "documentation" nor "correspondence".
-4. **Should a section printed on the page count as a cited target?** That is 125 pairs. Since A17 the file holds sections as citers. As targets it has held only document divisions.
-5. **The map's staleness.** Either regenerate the map with each build's corpus, which keeps every device deterministic, or let a device prefer its own copy of a target it holds. The second makes the result depend on the order volumes are indexed in, for the volumes that changed.
-6. **Optionally, without an index version:** draw an outbound page node that rule C leaves on the volume as "volume, p. N" rather than its raw key, or leave it out of the outbound list.
+**What was put to the owner**, and how each was settled on 2026-10-20 (§12). The owner decided the first three; the plan of record takes the other three by default, each the owner's to overturn.
+1. **A18b as its own lane, or inside A18?** A18b keeps A18 as planned (decisions 59 and 60). Inside A18, it makes A18 larger. **Decided: its own lane, after A18 and before A19.**
+2. **Rule C, or the stricter C′?** C′ counts a page that names several documents only when its note says which: 22,381 new pairs against 26,395. Rule C keeps the default the same-volume edges and the tap already use. **Decided: rule C.**
+3. **Does "ff." stay a reference to the volume?** Rule C keeps it there. Alternatively, a narrower rule could count the 1,833 "ff." rows that name a document running past the page, in a note that says neither "documentation" nor "correspondence". **Decided with rule C: it stays.**
+4. **Should a section printed on the page count as a cited target?** That is 125 pairs. Since A17 the file holds sections as citers. As targets it has held only document divisions. **By default: it counts**, as same-volume page references and the tap already treat it.
+5. **The map's staleness.** Either regenerate the map with each build's corpus, which keeps every device deterministic, or let a device prefer its own copy of a target it holds. The second makes the result depend on the order volumes are indexed in, for the volumes that changed. **By default: regenerated with each build's corpus, and a device resolves from the map alone.**
+6. **Optionally, without an index version:** draw an outbound page node that rule C leaves on the volume as "volume, p. N" rather than its raw key, or leave it out of the outbound list. **By default: not A18b's.** It stays a finding in the plan's §6g.
 
 ## 10. Side findings, not acted on
 
@@ -353,3 +353,15 @@ The notes folder `~/Library/Application Support/Claude/side-session-notes/local_
   - `census.py`: §7's figures;
   - `mapsize.py`: the map's size.
 - Each script's output.
+
+## 12. The owner's choice
+
+**The owner's word, 2026-10-20:** "Record A18b in the plan of record as the memo recommends: after A18 and before A19, v70 to v71, rule C, the page map and the bundled pairs from one generator run."
+
+- **The record.** It is the plan of record's decision 80. Its §1 has A18b's row and entry; its §0 takes the other questions by default (§9's items 4 to 6); its §6g holds the three side findings A18b does not take.
+- **The lane.** A18b, after A18 and before A19, raising `currentDateIndexVersion` 70 → 71, through `lane-dev.js`. Its brief is §7. A library still re-indexes once at build 51.
+- **What the lane builds:**
+  - in the kit: each cross-volume page reference's printed form at parse time, rule C's rows resolved from the page map at store time, and the 43 self-prefixed rows resolved against their own volume;
+  - in the app: the page map, bundled, with its loader and provenance row;
+  - in the generator: one run that writes the map and adds rule C's pairs to `resolved-edge-index.json`.
+- **No CloudKit change.** It owes `swift build --target FRUSCoreKit`, `swift test`, the unit target, the Mac build and a line for the web edition, and A19's census checks its figures.
