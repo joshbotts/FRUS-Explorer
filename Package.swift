@@ -730,13 +730,14 @@ let package = Package(
 
         // MARK: - CrossRefKit
 
-        /// The FRUS cross-reference target grammar, mirrored from the app so the offline validator
-        /// classifies `<ref target>` values as the reading view navigates them
+        /// The FRUS cross-reference target grammar, mirrored from the app so the offline generators
+        /// classify `<ref target>` values as the reading view navigates them
         /// (`CrossRefGrammar.resolveDestination` ≡ FRUSCoreKit's `FRUSURLScheme.resolveCrossRefTarget`,
-        /// except a footnote anchor (#988) and a `mailto:` target, which the app's copy has changed
-        /// since), plus the existence-oriented `classifyForValidation`. Pure Foundation; tested
-        /// against hard-coded fixtures drawn from the app's documented cases. SPM-only this session (a generator dependency);
-        /// wiring it into the app targets is a later session's step.
+        /// branch for branch again since #1693: a footnote anchor, a whole volume and a `mailto:`
+        /// target), plus the existence-oriented `classifyForValidation`. Pure Foundation; tested
+        /// against hard-coded fixtures drawn from the app's documented cases, and held to the app's
+        /// own function by `ResolvedEdgeIndexGeneratorTests`, whose target links FRUSCoreKit.
+        /// SPM-only (a generator dependency).
         .target(
             name: "CrossRefKit",
             path: "CrossRefKit",
@@ -1079,15 +1080,16 @@ let package = Package(
 
         // MARK: - ResolvedEdgeIndexGenerator
 
-        /// Builds `resolved-edge-index.json` (#262) — every CROSS-VOLUME document-to-document
-        /// citation in the shippable corpus, grouped by the document cited, so inbound-citation
-        /// views are complete even when the citing volume was never downloaded.
+        /// Builds `resolved-edge-index.json` (#262) — every CROSS-VOLUME citation of a document
+        /// in the shippable corpus, grouped by the document cited, so inbound-citation views are
+        /// complete even when the citing volume was never downloaded.
         ///
-        /// Reuses the validator's RefHarvester + CrossRefGrammar and #764's DocumentIdInventory,
-        /// so an edge here is an edge there. Same-volume edges are deliberately excluded: the
-        /// local `cross_references` table already holds every one of them whenever the reader can
-        /// see the document at all. Entirely offline & deterministic; throws rather than writing
-        /// an empty index.
+        /// Reuses the validator's RefHarvester + CrossRefGrammar and #764's DocumentIdInventory
+        /// for references in documents, so an edge here is an edge there, and the kit's own parser
+        /// for the rows the index holds for sections (#1693), which cite too. Same-volume edges
+        /// are deliberately excluded: the local `cross_references` table already holds every one
+        /// of them whenever the reader can see the document at all. Entirely offline &
+        /// deterministic; throws rather than writing an empty index.
         .target(
             name: "ResolvedEdgeIndexGeneratorCore",
             dependencies: [
@@ -1095,6 +1097,8 @@ let package = Package(
                 .target(name: "CrossRefKit"),
                 .target(name: "CrossRefValidationGeneratorCore"),
                 .target(name: "ProvenanceFlowIndexGeneratorCore"),
+                // The rows the app's index holds for sections, decided by its own parser (#1693).
+                .target(name: "FRUSCoreKit"),
             ],
             path: "ResolvedEdgeIndexGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
@@ -1109,10 +1113,16 @@ let package = Package(
         ),
 
         /// Unit + fixture tests for ResolvedEdgeIndexGeneratorCore (the same-volume exclusion, the
-        /// endpoint interning, determinism, and the empty-result refusal).
+        /// endpoint interning, determinism, the empty-result refusal, and a section's row as a
+        /// citer), and CrossRefKit's twin of the reader's grammar held to the app's own function.
         .testTarget(
             name: "ResolvedEdgeIndexGeneratorTests",
-            dependencies: [.target(name: "ResolvedEdgeIndexGeneratorCore")],
+            dependencies: [
+                .target(name: "ResolvedEdgeIndexGeneratorCore"),
+                // The mirror's parity with the app's own `resolveCrossRefTarget` (#1693).
+                .target(name: "CrossRefKit"),
+                .target(name: "FRUSCoreKit"),
+            ],
             path: "ResolvedEdgeIndexGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

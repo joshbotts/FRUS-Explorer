@@ -135,8 +135,9 @@ public enum ProvenanceFlowMeasurement {
             let sourceVolume = VolumeCorpusEnumerator.volumeId(for: file)
             for ref in RefHarvester.harvest(from: data) {
                 guard let sourceDocument = ref.enclosingDocument else { continue }
-                guard case .document(let volumeOverride, let targetDocument) =
+                guard let (volumeOverride, targetDocument) =
                         CrossRefGrammar.resolveDestination(ref.rawTarget, volumeId: sourceVolume)
+                            .citedDocument
                 else { continue }
                 let targetVolume = volumeOverride ?? sourceVolume
                 guard documentIds[targetVolume]?.contains(targetDocument) == true else { continue }

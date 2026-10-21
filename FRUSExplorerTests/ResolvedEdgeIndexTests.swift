@@ -27,6 +27,11 @@ import Testing
 ///   1.2 — Regenerated at corpus `99d851c79` (2026-10-10), where `frus1952-54v09p1` has its
 ///         Documents 900–946 again: their 16 references are all to their own volume, so document
 ///         edges 77,850 → 77,866, same-volume 69,213 → 69,229, and no stored edge moved
+///   1.3 — #1693, regenerated at corpus `6170e4b32` (volumes unchanged since `99d851c79`): a
+///         reference to a note under the app's widened pattern is a document edge, 77,866 →
+///         77,898 and 69,229 → 69,261, all 32 in their own volume; and a section's own text cites,
+///         63 references from five sections, so 8,637 → 8,700 stored and 5,747 → 5,803 documents
+///         cited. `sectionsCite` pins one
 @Suite("Resolved edge index — artifact")
 struct ResolvedEdgeIndexTests {
 
@@ -85,14 +90,50 @@ struct ResolvedEdgeIndexTests {
         #expect(coverage.referencesInsideDocuments <= coverage.referencesScanned)
         #expect(coverage.documentEdges <= coverage.referencesInsideDocuments)
         #expect(coverage.sameVolumeEdges < coverage.documentEdges)
-        #expect(coverage.storedEdges == coverage.documentEdges - coverage.sameVolumeEdges)
+        #expect(coverage.sectionEdges <= coverage.referencesInSections)
+        #expect(coverage.sameVolumeSectionEdges <= coverage.sectionEdges)
+        #expect(coverage.storedEdges == coverage.documentEdges - coverage.sameVolumeEdges
+                + coverage.sectionEdges - coverage.sameVolumeSectionEdges)
         // The same harvest #764 reports, so the two artifacts cannot disagree about the corpus.
-        #expect(coverage.documentEdges == 77_866, """
-            \(coverage.documentEdges) document edges, not the 77,866 the provenance flow index \
+        #expect(coverage.documentEdges == 77_898, """
+            \(coverage.documentEdges) document edges, not the 77,898 the provenance flow index \
             reports from the same harvester. Two artifacts disagreeing about the corpus means one \
             of them is reading it differently.
             """)
-        #expect(coverage.sameVolumeEdges == 69_229)
+        #expect(coverage.sameVolumeEdges == 69_261)
+        // #1693: five sections cite another volume, 63 references.
+        #expect(coverage.sectionEdges - coverage.sameVolumeSectionEdges == 63)
+    }
+
+    @Test("A section's own text is among a document's citers, under the id the index stores")
+    func sectionsCite() throws {
+        // 1945 Berlin vol. II's introduction cites Document 140 of vol. I, in its text and in a
+        // note. A full index stores the two references under the section's id, `introduction`
+        // (index version 68), so a reader with vol. II downloaded sees the introduction cite
+        // Document 140; one without it must see the same (#1693). Before the regeneration the
+        // index kept only references inside a document div, and this list was empty.
+        let edges = try index()
+        let sources = edges.inboundSources(volumeId: "frus1945Berlinv01", documentId: "d140")
+        #expect(sources.contains { $0.volumeId == "frus1945Berlinv02"
+                                   && $0.documentId == "introduction" }, """
+            frus1945Berlinv01/d140's citers are \(sources). The introduction of vol. II cites it \
+            in a full index, so the bundled list a reader without vol. II sees must too.
+            """)
+        #expect(edges.footnoteSourceCount(volumeId: "frus1945Berlinv01", documentId: "d140") >= 1)
+
+        // And the merge takes the bundled section and the local table's as one citer.
+        let local = [CrossReferenceEdge(sourceDocumentId: "introduction",
+                                        sourceVolumeId: "frus1945Berlinv02",
+                                        targetDocumentId: "d140", targetVolumeId: "frus1945Berlinv01",
+                                        context: "See vol. i, document No. 140.",
+                                        referenceType: .footnote)]
+        let merged = CrossReferenceStore.completingInboundEdges(
+            local: local, documentId: "d140", volumeId: "frus1945Berlinv01", index: edges)
+        #expect(merged.count { $0.sourceVolumeId == "frus1945Berlinv02"
+                               && $0.sourceDocumentId == "introduction" } == 1)
+        let bundledOnly = CrossReferenceStore.completingInboundEdges(
+            local: [], documentId: "d140", volumeId: "frus1945Berlinv01", index: edges)
+        #expect(bundledOnly.count { $0.sourceDocumentId == "introduction" } == 1)
     }
 
     @Test("Most citations are same-volume, which is why this artifact is small")
@@ -159,7 +200,8 @@ struct InboundCompletionTests {
             },
             "coverage": ["volumesScanned": 2, "referencesScanned": 10,
                           "referencesInsideDocuments": 5, "documentEdges": 3,
-                          "sameVolumeEdges": 1, "targetCount": targets.count,
+                          "sameVolumeEdges": 1, "referencesInSections": 0, "sectionEdges": 0,
+                          "sameVolumeSectionEdges": 0, "targetCount": targets.count,
                           "citingVolumeCount": 1],
         ]
         return try JSONDecoder().decode(
