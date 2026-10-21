@@ -421,6 +421,9 @@ below.)
 | — | `ios/indexing-banner` | none today; a §4.8 slot if the owner takes it | §4.8: the banner along the bottom, above the tab bar on iPhone, with the current volume's progress and *Volume 3 of 27* with an estimate; *Learn about FRUS while you wait →* | Re-shoot only if S5 embeds it (the verdict below); a queue of several volumes indexing, so the position in the queue shows; A11 changed what the banner says of a failed volume and the finishing merge |
 | — | the kit's frames 01, 02, 03 (and 04, 11 if wanted) | the store listing | the kit's §3 routes | iPhone 17 Pro Max; frame 01 with the facet sheet closed and a second take with it open |
 
+(S3 took P1, the banner and the kit's frames 01 to 04 and 11 on two new iPhones under iOS 27.0 on
+2026-10-21: the sittings' ledger below.)
+
 ### S4 — the Mac: the 26 captures, the zero-result placeholder, the kit's two
 
 | # | File | Slot | Must bear out | Moved since build 48 | Route and notes |
@@ -490,6 +493,7 @@ The #1081 rule is that an unreferenced file is deleted, not refreshed.
   section with no image, and the banner is the first thing a new reader sees, so S0 recommends the
   slot: one frame, a queue of several volumes indexing, so *Volume N of M* and the estimate show,
   with the caption written from §4.8's first paragraph. The decision is the owner's, in S5.
+  **Answered on 2026-10-21 (17:14), in S3: §4.8 takes the figure.** S3 retook the file; S5 embeds it.
 
 ### The README's hero row and its mirror (S5)
 
@@ -531,6 +535,11 @@ sizes, and the drafts re-run into `Planning/marketing-drafts/`.
 8. Close the *Stale after build 48 (Mac)* and *Not re-checked after the build-49 wave* sections
    above once every file they name is retaken.
 9. The sentences *Found by S1* marks *S5* (below the sittings' ledger), read against S1's frames.
+10. S3's files: `ios/search-tips` replaces iOS §7.2's placeholder; `ios/indexing-banner` goes into
+    §4.8, with a caption written from its first paragraph. It is a whole frame, where the build-47 file
+    was a 1206×570 strip of the bottom, so S5 chooses the crop. The kit's six iPhone files go into
+    `tools/marketing/shots.json`. Its iPhone `reader` route names d474, which is not the Long Telegram
+    (*Found by S3*, 1).
 
 ### Found by S0 — for the new plan of record (decision 82)
 
@@ -559,7 +568,8 @@ takes.
    fewer than it promises.
 4. **The owner's decision on `ios/indexing-banner`** (above): a §4.8 figure, or the file deleted.
    *Why it matters:* a file on disk that nothing embeds is the #1081 rule's own case for deletion,
-   and the sweep cannot close with it undecided; nothing for App Review.
+   and the sweep cannot close with it undecided; nothing for App Review. *Answered on 2026-10-21 in
+   S3: a figure. S3 retook the file.*
 5. **The zero-result Meaning frame's Download Volume button** needs volumes removed on purpose
    (P2b), or the placeholder's second clause dropped. *Why it matters:* a `[SCREENSHOT: …]` line
    left in a shipped manual reads as unfinished; the clause decides the frame's recipe.
@@ -712,7 +722,90 @@ takes.
     session's simulator pane in the Claude app booted it again: while the pane is open, it re-boots
     the device within a second of a shutdown. The build and both clips are under
     `~/Library/Caches/FRUS-Explorer/s2/` (957 MB) until the owner says.
-- **S3 —** build, device, UDID, OS; P1, the banner if taken, the kit's frames.
+- **S3 — run 2026-10-21, 17:09 to 18:41; the session captured, on the owner's word of 17:14.**
+  Version 1.0, build **1861**, the `AppStore` configuration built for the simulator as S1's and S2's
+  (`-target FRUSExplorer -sdk iphonesimulator ARCHS=arm64 -jobs 4`), from `v2` at **`16dc2160`** (S2's
+  #1752 merged; nothing outside `Docs/` and `Planning/` has changed since `b4dcd527`, so its code is
+  S1's and S2's). It was built 17:10:43 to 17:13:43 under `Scripts/heavy.sh` with build 48's local-only
+  banner patch, never committed and reverted in the worktree once the build was made. **Every file
+  predates the `build-51` tag (decision 83): a screen that a fix after `16dc2160` changes is
+  retaken.** The owner's answers of 17:14: the session captures; iOS §4.8 takes the banner as a
+  figure; the kit's frames 04 and 11 are taken too; the iPhone App Preview's pass B is not.
+  - **The devices:** two new simulators under iOS 27.0 (24A434), portrait, the demo status bar, never
+    signed in to iCloud, with the default wallpaper, which no frame shows. The **iPhone 17 Pro Max**,
+    `7449CA80-3C9F-4121-A42A-EE586208D6F2`, 1320×2868, took the kit's frames; the **iPhone 17 Pro**,
+    `3025E8FF-B213-4B10-8E7B-67E6D635B13B`, 1206×2622, took the manual's two. Every launch carried
+    `-hasCompletedOnboarding 1 -FRUSScreenshotHideSyncBanner YES`.
+  - **The corpus and the demo state:** each container holds a clone of S1's container snapshot
+    `~/Library/Caches/FRUS-Explorer/s1/snapshot-A`, the clean demo state S4 also seeds from. It holds
+    the 553 volumes of the local corpus at `6170e4b32`, index version 71 built by this code, rollup 12,
+    S1's demo data, the encoder and 553 vector shards. Its `Library` was cloned with `cp -c` before
+    the app's first launch, leaving out `SplashBoard` and `Saved Application State` (the iPad's launch
+    snapshots and scene state). The device was then rebooted, and no re-index ran. The iPhone 17e
+    `4E79C806`, which the brief offered, was not used: its library is index version 65, built from
+    2026-10-08's files, so build 1861 would have re-indexed all of it, and the frames would come from
+    other files than the iPad's. `snapshot-A` was only read.
+  - **On the 17 Pro Max, the kit's six** (S5 wires them into `tools/marketing/shots.json`):
+    - `ios/search-results` (frame 01, 17:22:24): Search ▸ Keywords ▸ *Berlin blockade*: *900 results*,
+      *Page 1 of 36*, the MATCH strip `"berlin" AND "blockade"`, the *Working on:* line, the facet
+      sheet closed.
+    - `ios/search-facets` (frame 01's second take, 17:23:40): the binoculars menu ▸ Facets, the sheet
+      at its medium height over the dimmed list: *This result set — Describing all 900 matches*, Years
+      open and sorted by *Most documents* (1949 112, 1948 90, 1962 78 …).
+    - `ios/document` (frame 02, 17:28:10): **`frus1946v06/d475`, the Long Telegram**, in Read mode with
+      one yellow highlight on *so strange to our form of thought*, made in the app; no selection and no
+      menu. The kit's route names d474 (*Found by S3*, 1).
+    - `ios/semantic-map` (frame 03, 17:28:48): Browse ▸ Analysis Tools ▸ Semantic Analytics, a sheet
+      at full height: the explainer card, the *Experimental* line, the map coloured by Regions over the
+      whole corpus, the caveat line beneath it.
+    - `ios/source-explorer` (frame 04, 17:29:20): `frus1952-54v02p1/d41` ▸ the rail, a bottom sheet ▸
+      Sources: *S/S – NSC files, lot 63 D 351, NSC 140*, its provenance (a State Department lot file,
+      RG 59, 63 D 351) and the NARA Catalog record it resolves to.
+    - `ios/chronology` (frame 11, 17:32:17): Analysis Tools ▸ Chronology over September 1 to November
+      30, 1962, set with the wheels: *1,154 documents*, the legend (Microfiche Supplement 284, Cuban
+      Missile Crisis 202 … Other volumes 397), the chart, *714 documents span more than a year*, *25
+      documents extend beyond this range (1 begins before · 24 reach past both ends)*, the counts of
+      S1's iPad frame. The sheet opens on the corpus's last year, *Dec 31, 1991 – Dec 31, 1992*.
+  - **On the 17 Pro, the manual's two:**
+    - `ios/search-tips` (P1, iOS §7.2, 17:42:45): Search ▸ Keywords ▸ *Berlin blockade* ▸ ••• ▸ Search
+      Tips. The sheet sits at half height over the dimmed results: *Search Tips* with Done, then
+      *Typing a search* and its first three tips, each as typed with what it does. `berlin crisis`
+      finds every word in any order; `negotiate` also matches its other forms; and `"cold war"` is a
+      phrase in quotation marks, straight or curly.
+    - `ios/indexing-banner` (iOS §4.8, 18:06:46): Settings ▸ Volumes & Storage, with the eleven
+      volumes of 1951 removed through Free Up Space and queued again through Download from GitHub ▸
+      Subseries. *Active Downloads* lists frus1951v07p2 with Cancel. The banner is opened by its
+      chevron: *Volume 8 of 11*, the current volume's bar, *~1s*, one waiting title with its clock,
+      and *Learn about FRUS while you wait →*. The Settings tab carries its dot badge. The frame is the
+      20th of a burst of `simctl io` screenshots taken back to back through the queue. The build-47
+      file was a 1206×570 strip of the bottom of a dark-mode frame showing the single-volume banner;
+      the retake is the whole frame, and S5 chooses the crop.
+  - **The banner's six queues** (findings 2 and 3), with the heavy lock held from 17:47:16 to
+    18:36:07 while they downloaded and indexed:
+    - Runs 1 and 2: the 27 files of 1961-63 moved out of the container by hand and queued again; each
+      file was re-indexed on arrival.
+    - Runs 3 and 5: the eleven of 1951 removed through Free Up Space and queued again. Run 4: the 27
+      of 1961-63 the same way. Run 6: the ten of 1949.
+    - Every re-downloaded file is byte-identical to the local corpus, and the device ended with 553
+      files and 553 volume structures. Only run 3's frame is kept: a 27-volume queue's *of N* reads
+      short (finding 2).
+  - **The time erased after capture**, as in S1's and S2's frames (the owner's word of 2026-10-21).
+    An iPhone's status bar prints the time alone, *9:41*, with no date, left of the Dynamic Island.
+    The ink sits at rows 77–116, columns 167–267 on the 17 Pro, and rows 75–117, columns 192–299 on
+    the Pro Max. S1's script, with the box moved to rows 71–122 × columns 161–273 and rows 69–123 ×
+    columns 186–305, fills it column by column from the four rows above into the four below. It adds
+    grain above 0.2 where S1's added it above 0.5, since an iPhone's glass bar dithers by one level;
+    the three frames over one measure 0.24 to 0.44. In each frame 1,907 to 5,726 pixels changed, all
+    inside the box, with alpha untouched. Under twelvefold contrast the box cannot be told from its
+    surroundings. The script and the before-and-after sheets are kept with the sitting's notes,
+    outside the repository.
+  - **Every iPhone frame carries a 3×3 black square at its top-left corner pixels**, under
+    `simctl io`'s `--mask` default and `ignored` alike; the iPad frames have none. It lies under the
+    display's rounded corner, and the composer's corner radius clips it, so it is left as captured.
+  - **Left:** both devices shut down at 18:39 and kept until the owner says, each holding the app and
+    the cloned library. The 17 Pro shut down after the owner closed the session's simulator pane,
+    which had re-booted it. Nothing is booted or running. The build, the raw frames and the bursts
+    (1.0 GB) are under `~/Library/Caches/FRUS-Explorer/s3/`.
 - **S4 —** build, the check copy's ref and bundle id, the fake home's library; the chip's
   treatment; which files, each window's size in points.
 - **S5 —** the date; every caption changed, the placeholders replaced, the files deleted, the hero
@@ -838,6 +931,40 @@ notes), or seen in the frames. They go with S0's and S1's for the owner to place
 3. **Two pairs of words overlap in the Concepts layout that `onboarding-volumes` shows**:
    *objective* is drawn under *power*, and two vertical words collide at the screen's left edge.
    Build 48's take of the same seeded layout has both. Seen, not measured. *The app, cosmetic.*
+
+### Found by S3 — for the new plan of record
+
+Seen or measured in the sitting, or read in the files beside it. They go with S0's, S1's and S2's
+for the owner to place (decision 82).
+
+1. **The kit's iPhone reader frame and the demo recipe name the Long Telegram `frus1946v06/d474`;
+   the Long Telegram is `d475`.** d474 is Kennan's telegram of February 12, 1946, 3 p.m.; d475 is
+   that of February 22, 9 p.m. Both `tools/marketing/shots.json`'s iPhone `reader` route and point 4
+   of *The demo data* say d474. S1's note on the Long Telegram sits on d475 (read in `snapshot-A`'s
+   store), and so do the code's references to it (`ReaderPage.swift`, `ReadingWidth.swift`,
+   `ReadingWidthTests`). S3 took d475. *Why it matters:* the route is what a later sitting follows,
+   and it leads to another document. *The kit and the recipe; nothing in the app.*
+2. **The banner's *Volume N of M* counts only volumes already on the device, so a large download
+   reads short.** Each of three 27-volume queues showed a short count at the first frame seen. Run 2
+   opened at *Volume 1 of 15*. Run 4's first banner frame read *Volume 3 of 5*, and run 1's only
+   screenshot read *Volume 4 of 6*. Each count grew as files landed: *4 of 6*, *7 of 7*, *9 of 10*
+   … *27 of 27*. In run 2's 26th frame the chevron listed six waiting titles (volumes XVIII to
+   XXIII) under *Volume 15 of 15*. Run 2's *N downloads queued* banner counted 2, 8 and 14 before
+   the first volume began indexing, so the queue started while the download sheet was still
+   enqueuing. Queues of 10 and 11 volumes read their full size from their first frame. Read in the
+   code, not traced: `IndexingBatch`'s total is the app's download queue plus one when the first
+   volume starts indexing (`AppState`, `IndexingBatch(total:`). Afterwards only
+   `unindexedDownloadedVolumeIds()` raises it, and that counts volumes on disk. iOS §4.8 says *your
+   position in the queue — Volume 3 of 27*. *Why it matters:* the denominator is how the banner
+   tells a reader how long the wait is. A subseries download that reaches *N of N* several times
+   reads as finished when it is not. *The app.*
+3. **The FRUS Research Guide did not open by itself in the launch's first queue.** iOS §4.8 says
+   *The first time in a session that a queue of two or more volumes starts indexing, the FRUS
+   Research Guide opens by itself as a sheet*. `IndexingQueueBannerView` asks for it 0.6 s after the
+   queue banner first appears. In this launch's first queue (run 1, 17:48), the screenshot with
+   *Volume 4 of 6* on screen shows Volumes & Storage and no sheet. The flag that keeps it from opening
+   twice is set at that first appearance, so no later queue could show it. Seen once, not measured.
+   *The app, or the sentence.*
 
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
