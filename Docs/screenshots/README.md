@@ -708,8 +708,10 @@ takes.
     back to the corpus's words within half a second, and the volume's own words came within a
     second of the pick. The hand-off from the splash to onboarding is findings 1 and 2 of *Found by
     S2*, below.
-  - **Left:** the device holds the app and nothing else, shut down at 16:54. The build and both
-    clips are under `~/Library/Caches/FRUS-Explorer/s2/` (957 MB) until the owner says.
+  - **Left:** the device holds the app and nothing else. It was shut down at 16:54, and the
+    session's simulator pane in the Claude app booted it again: while the pane is open, it re-boots
+    the device within a second of a shutdown. The build and both clips are under
+    `~/Library/Caches/FRUS-Explorer/s2/` (957 MB) until the owner says.
 - **S3 —** build, device, UDID, OS; P1, the banner if taken, the kit's frames.
 - **S4 —** build, the check copy's ref and bundle id, the fake home's library; the chip's
   treatment; which files, each window's size in points.
