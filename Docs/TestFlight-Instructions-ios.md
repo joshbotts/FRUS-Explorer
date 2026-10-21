@@ -1,54 +1,51 @@
 # What's New Since Build 50 (iOS)
 
-**Version 1.0 (1861) is the release candidate. Search runs inside a list of results. Meaning search runs EmbeddingGemma 2. Keeping Current shows each update.**
+**Release candidate.** Version 1.0 (1861) is the build meant for the App Store; unless your reports stop it, this is 1.0.
 
-**First launch rebuilds People once**, in the background. It also removes the earlier search model and its match files; Related Documents and Meaning fetch new ones. No volume is re-indexed or re-downloaded.
+**First launch re-indexes your library once** (index version 71) and rebuilds People, in the background. The earlier search model and its match files are removed; Related Documents and Meaning fetch new ones.
 
 ## Search
 
-- **Search within these results.** After a Meaning question, **•••** ▸ **Find Words in These Matches**. After a keyword search, **•••** ▸ **Rank These Results by a Question**, or **Sort** ▸ **Closest to a Question…**; a list cut at 1,000 is ranked whole. A row names the held list; **Swap** swaps the two orders, **✕** puts it back.
-- **Meaning search runs EmbeddingGemma 2**, open source. If you had the earlier model, **Download Search Model** (310 MB) is offered once more, with nothing to accept.
+- **Search within these results.** After a Meaning question, **•••** ▸ **Find Words in These Matches**; after a keyword search, **•••** ▸ **Rank These Results by a Question** or **Sort** ▸ **Closest to a Question…**. A row names the held list; **Swap** swaps the two orders, **✕** puts it back.
+- **Meaning search runs EmbeddingGemma 2**, open source; if you had the earlier model, **Download Search Model** (310 MB) is offered again, nothing to accept.
 - A common word in a working corpus searches much faster.
 - A keyword snippet starts at your word, after the heading, source note and dateline.
-- Browse lists a Meaning search's corpus as its closest matches.
-- **Add to Collection** and **Add Tags**, dimmed over 1,000, say why.
+- A chapter's row shows the days of its documents.
 
 ## Library and reading
 
-- **Keeping Current** (Settings ▸ Volumes & Storage): with **Update** or **Update All** a volume's row reads *Queued*, *Downloading…*, *Indexing…*, *Updated*. A failed update is tried twice more, then says why and offers **Retry**. **Check for Corrections** says why when it cannot read the list. A side-loaded copy is now marked, since **Update** replaces it.
-- **Index Remaining** finishes partly indexed volumes.
-- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**; on iPad, Standard is wider than before.
-- **People:** Jeane Kirkpatrick, Ahmad Khomeini, Richard V. Allen and some eighty more once filed under namesakes have their own entries; a sheet links to VIAF only where the Office of the Historian names one, not to Wikidata.
+- **Keeping Current** (Settings ▸ Volumes & Storage): **Update** shows each volume's row as *Queued*, *Downloading…*, *Indexing…*, *Updated*, retries a failed update twice, then says why and offers **Retry**; **Check for Corrections** says why when it cannot read the list; a side-loaded copy is marked.
+- **Reading Width** (Settings ▸ Reading & Search ▸ Display): **Narrow**, **Standard** or **Wide**.
+- **Browse** opens chapters whose only own text is a heading's footnote, the Notes on U.S. Covert Actions, the Presidents' annual messages and other prose the index left out; a List of Sources keys files with no subject number.
+- **Cross-references:** a page of another volume (*Foreign Relations, 1942, vol. I, p. 841*) cites the document on that page, in the citing list, the graph and Cross-Reference Analytics, whether or not you hold that volume.
+- **People:** Jeane Kirkpatrick, Ahmad Khomeini, Richard V. Allen and some eighty more once filed under namesakes have their own entries; a sheet links to VIAF only where the Office of the Historian does, never to Wikidata.
 
 ## Collections
 
-- A **smart collection** (linked to a saved search) takes nothing by hand: **Add to Collection**, its editor, both Collections lists and Project Home say *Smart collection*.
-- Entries held before the link are listed apart, dimmed, with **Remove These Entries**.
+- A **smart collection** (linked to a saved search) takes nothing by hand: **Add to Collection**, its editor and the Collections lists say *Smart collection*; earlier entries are listed apart, dimmed, with **Remove These Entries**.
 
 ## Also
 
-- **Accessibility:** with VoiceOver, a search result's tags are **Filter by** actions. At the largest text sizes the Meaning strip is one line; **ⓘ** opens all of it.
+- **Accessibility:** VoiceOver offers a result's tags as **Filter by** actions; at the largest text sizes the Meaning strip is one line, **ⓘ** opens all of it.
 - **Word cloud:** an export counted as printed says another device may count differently.
 - **Live Activity:** one lasts a whole indexing queue, background included.
-- **Archival Analytics:** Subject-Numeric files read in words across the 1963 and 1965 handbooks and past 1973.
-- **Archives Visit:** a file cited with no subject number is one target, keeping your tier and note.
-- **Semantic Match Feedback** (Settings ▸ System ▸ Data & Recovery): **Email Feedback File** opens a message of your verdicts to feedback@frusexplorer.app.
+- **Archival Analytics:** Subject-Numeric files read in words, across both handbooks and past 1973.
+- **Archives Visit:** a file with no subject number is one target, keeping your tier and note.
+- **Email Feedback File** (Settings ▸ System ▸ Data & Recovery) writes a message of your Semantic Match verdicts to feedback@frusexplorer.app.
 
 **Fixes:** many, on every tab and in accessibility.
 
 ## What to test
 
-1. **First launch.** Does People open whole? Search for Kirkpatrick, Khomeini and Allen: one entry each?
-2. **Search within these results**, both ways, then **Swap** and **✕**. Do the row and header say what you see? At a large text size?
-3. **Meaning.** Download the model: no agreement to accept? Ask a question: do percentages read as before?
-4. **A common word** (*government*) in a working corpus (Filters): how long?
-5. **Keeping Current.** **Check for Corrections**, then **Update**: does the row show each step? In Airplane Mode, does it say why?
-6. **Reading Width.** Each width, portrait and landscape.
-7. **Smart collections.** Link one to a saved search: are earlier entries listed apart? Does **Remove These Entries** ask first?
+1. **First launch.** Does the re-index finish and People open whole? Kirkpatrick, Khomeini, Allen: one entry each?
+2. **Search within these results**, both ways, then **Swap** and **✕**: do the row and header say so?
+3. **Meaning.** Download the model: nothing to accept? Percentages as before?
+4. **A common word** (*government*) in a working corpus: how long?
+5. **Keeping Current.** **Check for Corrections**, then **Update**: each step shown? Offline, does it say why?
+6. **Reading Width**, portrait and landscape.
+7. **Smart collections.** Link one to a saved search: earlier entries apart? **Remove These Entries** asks first?
 8. **Your build-50 reports**: fixed?
 
-**Your library re-indexes once** at this build's first launch (index version 71): a chapter whose only text of its own is a footnote on its heading has a row, as do the Notes on U.S. Covert Actions, the Presidents' annual messages and the other prose the index left out; a chapter's row shows the days of its documents in Search; a volume's List of Sources keys files with no subject number; and a reference to a page of another volume (*Foreign Relations, 1942, vol. I, p. 841*) counts as a citation of the document on that page, in the citing list, the graph and Cross-Reference Analytics, whether or not you hold that volume.
+Not bugs: People counts, Meaning results and citing lists differing from build 50's.
 
-Not bugs: People counts and Meaning results differing from build 50's.
-
-Include device + iOS version, taps, expected, actual, and a document's id. Thanks!
+Report device, iOS version, taps, expected, actual and a document id. Thanks!
