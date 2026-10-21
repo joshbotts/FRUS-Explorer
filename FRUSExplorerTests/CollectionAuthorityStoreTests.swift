@@ -27,6 +27,8 @@ import Foundation
 ///          bucket); phantom-repository pin (no Department-of-State NSF record)
 ///   1.3 — 2026-10-01: #1468 — Indexed Central Files' printed title, and the name-length bound
 ///   1.4 — index version 69: the record floors follow the regenerated authority (3,985 records)
+///   1.5 — index version 70 (A18): 3,985 → 3,977 records; the floor stays, and the comment says
+///          what went
 @Suite("CollectionAuthorityStore — bundled artifact lookups")
 struct CollectionAuthorityStoreTests {
 
@@ -50,7 +52,15 @@ struct CollectionAuthorityStoreTests {
         // US–JAPAN: Wool trade between the U.S. and Japan`), which the class grammar refused
         // until then, so each had been a collection named by its own text: 25 from
         // frus1964-68v09 and 20 from frus1969-76ve13), and a regeneration that loses another
-        // fifty deserves the same reading.
+        // fifty deserves the same reading. Version 70's (A18) was read: 3,985 → 3,977, as the
+        // Sources rows that name a Subject-Numeric file with no subject number, or one continued
+        // after a slash or by a name, now carry a class. 96 text-keyed records named by a row's
+        // whole text went and 88 named by the row's leading designation came, each with one class
+        // child (`AID ( IDA ): Aid, International Development Association` → `AID ( IDA )` with
+        // the child `AID (IDA)`, the shape `INCO 10 UN,` already had); the rest are rows that are
+        // a bare class under a heading the authority does not cluster (`POL 7 Saudi Arabia` in
+        // frus1969-76ve09p2), refused as an identity as every bare class leaf is
+        // (`CollectionKeying.frontMatterIdentity`) and reached by their class.
         #expect(index.collections.count > 3940,
                 "the artifact carries ~3,985 records; got \(index.collections.count)")
     }
