@@ -273,18 +273,25 @@ one, or use one as an identifier across two copies of the database** — it is n
 ### 4.2 Corpus text
 
 **`document_cache`** — one row per document, keyed `(volume_id, document_id)`. The spine of
-everything. Not every row is a `<div type="document">`. On a full index at version 68, 3,370 rows
-in 230 volumes that are not front matter carry an id that is not `d` and a number (`ch1`,
-`ch10subch1`, `s05sub04`). They are of two kinds: a section that is prose alone, and, from index
-version 68, **the text a section prints at its own level when it also holds documents** — a
-meeting's list of those present, a treaty's signature and ratification dates, the statement of a
-case (1,337 rows in 139 volumes; version 67 held 2,047 such ids in 161 volumes). A row of the
-second kind holds the section's heading and its own text and none of its documents' text, so a
-word in a document is never also counted in the section around it. `is_editorial_note` is 0 on
-both kinds and `is_front_matter` follows the section's kind, so the usual
-`is_front_matter = 0 AND is_editorial_note = 0` keeps them. A `<back>` appendix div is stored as a
-document with `is_editorial_note = 0` (`frus1944v01/appendix`). Reconcile any TEI document count
-against this table with those classes named.
+everything. Not every row is a `<div type="document">`. On a full index at version 70, 6,677 rows
+in 328 volumes that are not front matter carry an id that is not `d` and a number (`ch1`,
+`ch10subch1`, `s05sub04`; 3,152 in 229 volumes at version 69). They are of three kinds: a section
+that is prose alone; from index version 68, **the text a section prints at its own level when it
+also holds documents** — a meeting's list of those present, a treaty's signature and ratification
+dates, the statement of a case (1,337 rows in 139 volumes); and from version 70 **a section whose
+only text of its own is a footnote on its heading**, "For previous documentation, see…" (3,517
+rows in 280 volumes: 2,440 chapters, 783 subchapters and 294 compilations). A row of the second or
+third kind holds the section's heading and its own text and none of its documents' text, so a word
+in a document is never also counted in the section around it. Version 70 also promotes the prose
+the index left out — the 45 Notes on U.S. Covert Actions, the Presidents' annual messages of the
+1860s–1890s, the editors' chapter introductions in `frus1945-50Intel` and eight pieces more, 81 rows
+— so a Note on U.S. Covert Actions is a front-matter row of its volume. `is_editorial_note` is 1 on
+an `editorial-note` section (12 rows, 4 of them in front matter) and 0 on the other kinds, and
+`is_front_matter` follows the section's kind, so the usual
+`is_front_matter = 0 AND is_editorial_note = 0` keeps the heading and own-text rows: to count
+documents, also keep `document_id GLOB 'd[0-9]*'`. A `<back>` appendix div is stored as a document
+with `is_editorial_note = 0` (`frus1944v01/appendix`). Reconcile any TEI document count against this
+table with those classes named.
 
 | Column | Meaning |
 |---|---|
@@ -326,6 +333,16 @@ Dates come from the editorial `frus:doc-dateTime-min`/`-max` attributes — the 
 about when a document was created, which for undated memoranda is an inference. A meaningful share
 of the corpus is undated; measure it rather than assuming (see [§6.4](#64-time-series-with-an-honest-denominator)).
 
+A section's row — a division's own text, a heading's footnote (§4.2) — prints a date of its own
+only where its text does. From index version 70 such a row with none is dated by the **span of the
+documents its section holds**: `date_iso` the earliest, `date_iso_max` the latest, `date_precision`
+the coarser of the two end documents', and `date_certainty` `range`, or `exact` where the span is
+one day (a meeting's list of those present). A section holding no dated document stays undated.
+So a chapter's row can span years, and a time series over `document_dates` that does not exclude
+section rows counts a chapter once at its first day; the usual
+`is_front_matter = 0 AND is_editorial_note = 0` does not exclude them, so join `document_cache` and
+keep `document_id GLOB 'd[0-9]*'` where you mean documents.
+
 An editorial-note div (`is_editorial_note = 1`) is dated to the **opening of the span it narrates**:
 a 1951 note on the Torquay Round carries `date_iso` 1948-07-02. Exclude editorial notes from any
 first-appearance table, or read `date_iso_max` beside `date_iso`.
@@ -347,7 +364,8 @@ Only a document or an editorial note has a start row; a prose section the index 
 document — a chapter that is only a cross-reference, a list of errata — has its own breaks and no
 start. So has the row for a section's own text (version 68), and it keeps only the breaks its own
 text follows: a break between two of the section's documents is the page the next document begins
-on, and is no row of the section's. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable` and, from index
+on, and is no row of the section's. A row for a heading's footnote alone (version 70) has no break
+of its own at all. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable` and, from index
 version 63, `other-pagination`; `page_number_int` is populated for `arabic`, `roman` and
 `other-pagination`, and a page printed as `[31]` is `arabic` 31 when its break's
 id is `pg_31` or `pg_031` (one of a separately paginated section, `pg-seq-3`, stays
@@ -374,7 +392,9 @@ index version 67 a row may also come from the document's own list of the people 
 `@ana`), which is how 1981–88 vol. XVI tags them: that volume had no rows before 67. From version
 68 a person tagged in a section's own text is a mention on the section's row (4,461 rows in 358
 sections), most of them in the lists of those present at the wartime conferences: a person who
-attended a meeting and is named nowhere in its minutes had no mention there before.
+attended a meeting and is named nowhere in its minutes had no mention there before. From version
+70 the people a heading's footnote tags, and those the Notes on U.S. Covert Actions and the other
+prose sections name, are mentions on those rows too (379 mentions).
 
 **`person_rollup`, `person_rollup_member`** — the cross-volume identity layer. `person_rollup_member`
 maps a volume-local `(volume_id, ref)` to a `rollup_id`; `person_rollup` carries the canonical name,
@@ -3055,6 +3075,16 @@ terms are here because they appear in the outputs.
   excerpts the app checks, generated apparatus, the title page) with a second test fixture, and
   §15.3 says when a file is version 2; a Glossary of 26 terms precedes *See also*. The §15.1
   block is unchanged.
+- 1.29 — 2026-10-20: **index version 70** (build 51's bump, plan of record lane A18). §4.2's
+  `document_cache` paragraph says what a row can be at this version: a section whose only text of
+  its own is a footnote on its heading has a row (3,517 in 280 volumes), and the prose kinds the
+  index had left out are promoted (81 rows, the 45 Notes on U.S. Covert Actions among them), so
+  6,677 rows in 328 volumes are not documents; its `is_editorial_note` figure and the `GLOB` advice
+  follow. §4.3 gains a `document_dates` paragraph — a section's row with no date of its own is dated
+  by the span of its documents (`date_iso_max`, the coarser precision, `range`), so a chapter's row
+  can span years and a time series must keep `document_id GLOB 'd[0-9]*'` — and its `page_ranges`
+  and `person_mentions` sentences say that a heading's row has no break of its own and that the
+  people a heading's footnote tags are mentions (379). The §15.1 block is unchanged.
 - 1.28 — 2026-10-12: **the labels the corpus cites in `subject-numeric-labels.json` are read
   against the scan, each one** (the follow-up to #1644). §14.11's row says so. 49 subject labels
   are corrected: broken words (`DIPLOMATIC & CONSULAR REPRESENTA TION`), wrong letters

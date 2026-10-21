@@ -45,6 +45,8 @@
 7. **Smart collections.** Link one to a saved search: are earlier entries listed apart? Does **Remove These Entries** ask first?
 8. **Your build-50 reports**, the semantic map after its window is reopened, and the Corpus Browser under a project's research question: fixed?
 
+**Your library re-indexes once** at this build's first launch (index version 70): a chapter whose only text of its own is a footnote on its heading has a row, as do the Notes on U.S. Covert Actions, the Presidents' annual messages and the other prose the index left out; a chapter's row shows the days of its documents in Search; and a volume's List of Sources keys files with no subject number.
+
 Not bugs: People counts and Meaning results differing from build 50's.
 
 Include macOS version, window, clicks, expected, actual, and a document's id. Thanks!
