@@ -133,6 +133,456 @@ looking at the app, so treat every line but the first as a candidate:
 Three `[SCREENSHOT` placeholders remain: `../iOS-User-Manual.md` has two (the Search Tips sheet;
 the zero-result "Search by meaning" offer) and `../macOS-User-Manual.md` one (above).
 
+## The build-51 sweep — the shot list (S0, 2026-10-21)
+
+The plan of record's §6a (`../../Planning/Plan-Of-Record-2026-10-14.md`) retakes every embedded
+capture on build 51 in five sittings after the tag, S1 to S5, with S6 optional on the owner's
+devices. This section is S0, the sitting that takes no picture: the list the others shoot from.
+It was made on 2026-10-21 at `v2` `b4dcd527` (A19 merged, index version 71, version 1.0 build
+1861), after A19 and before the tag (decisions 81 and 83), by reading the two manuals line by line
+against the code, the bundled files and the build-48 PNGs; nothing was run in the app. The
+owner's rule from #1081 stands: **every committed capture is stale**, so every one of the 68
+embedded files is retaken, and the question for each is only what it must now show. The
+**Capture conventions** section below, the build-48 entries above and `Planning/Capture-Runbook.md`
+§7 to §9 are the how; `Planning/Launch-Marketing-Kit-2026-10-13.md` §7 lists what the store
+frames need beyond the manuals.
+
+**What moved under the captures since build 48.** Builds 49, 50 and 51 change what most of the 68
+show. Every capture with a document in it: the reader's contrast and underlined person and
+cross-reference links (#1578) and its measure (#1665: Standard width holds about 100 characters a
+line at Medium text on iPad, and fills the page beside the Research rail on a 13-inch iPad; the
+Mac has its own default). Every search capture: a keyword snippet starts a few words before the
+first match in the prose, past the heading, source note and dateline (A10b); the More menu and
+Sort ▸ Closest to a Question… (A5); the dimmed bulk actions' reason (A13). Every People capture:
+rollup v12 (A4, A4c), no Wikidata link and a VIAF link only from the register's own identifier
+(A4d). Browse: a chapter's **Read** row (#1536) and the prose rows A18 promoted; the Archives door's
+eleven provenance doors (#1543) and the classes read in words across both handbooks (A16, A18);
+the regenerated authority (3,977 records, A18). The graph and Cross-Reference Analytics: labels
+above nodes (#1438), *View Document* (#1481), two-line ranking labels (#1473), and A17's and
+A18b's citations — 38,600 cross-volume citations into 20,273 documents from 513 volumes, 29,391 of
+them pages of another volume counted as citations. The Archives Visit: Options and Share on the
+Mac (#1444), the claimant line and the class-keyed notes (A15). Collections: the smart badge and
+*Smart collection* label (#1619, A1), Link to Saved Search… in the Mac's ⚙ (A14). The semantic
+layer: EmbeddingGemma 2's artifacts and relayout (B4: 140 regions, 314,616 documents, 88,059
+unclustered). Live Activities and the indexing banner: one activity for a whole queue (A11). Each
+row below says which of these touches it; a row that says *text unchanged* means the manual's
+section is as it was at build 48 (measured by a section-by-section diff of both manuals between
+the `build-48` tag and `b4dcd527`), not that the screen is.
+
+### The captures whose subject changed in builds 49 to 51
+
+By what the lanes changed on screen — §6a's *Why after the tag* list, then A1 to A18b — so a
+sitting knows what to look for; the rows below carry the detail.
+
+- **Every capture with a document in it** — #1578 (underlined links, contrast) and #1665 (the
+  measure): `ipad/research-rail`, `document`, `stage-manager`; `macos/research-strip`, `document`.
+- **Every search capture** — A10b (snippets), A5 (More, Sort, Search Within Results), A13, #1726:
+  `ipad/search-results`, `semantic-search`; `macos/search`, `search-tips`, `saved-searches`; and
+  the placeholders P2 and P3.
+- **People** — A4, A4c, A4d (rollup v12; the links): `ipad/people-list`, `people-detail`,
+  `people-detail-records`; `macos/people-list`, `people-detail` (its caption too),
+  `person-analytics-trends`, `person-analytics-network`.
+- **Browse** — #1536 and A18 (Read rows, the promoted prose), #1543 and A16/A18 (the Archives
+  door), A9 (#1688's corpus line), the visit-title rule for Continue reading: `ipad/browse-root`,
+  `browse-archives-provenance`, `browse-archives`, `browse-archives-collections`,
+  `browse-working-corpora`; `macos/browser`, `browse-all-volumes`.
+- **Clusters and the map** — B4's relayout (and A3c's #1700 on the Mac): `ipad/browse-clusters`,
+  `browse-clusters-detail`, `browse-clusters-map`, `semantic-map`; `macos/semantic-map`.
+- **Related Documents** — the semantic signal on at half weight, *shares:* chips, Beyond your
+  library: `ipad/related-documents`.
+- **The graph and Cross-Reference Analytics** — #1438, #1481, #1473, A17, A18b:
+  `ipad/cross-reference-graph`, `crossref-analytics`; `macos/cross-reference-graph`,
+  `crossref-analytics`.
+- **Source Explorer and the Archives Visit** — §14.1's ⓘ and ⋯ menu, the Mac's Add to Archives
+  Visit menu, #1444 (Options and Share on the Mac), A15: `ipad/source-explorer`, `trip-packet`,
+  `trip-packet-options`; `macos/source-explorer`, `trip-packet`.
+- **Collections** — #1619, A1, A3b, A4b, A14, #1446: `ipad/collections-editor`;
+  `macos/collections`.
+- **Corpus Analytics and the word cloud** — the Group by menu, Compare terms, the year chip, Save
+  query, Dispersion; #1608's fallback lines: `ipad/analytics`, `word-cloud`; `macos/analytics`,
+  `analytics-table`, `word-cloud`.
+- **Archival Analytics** — A16, A18, the chip's Hidden/Shown: `ipad/archival-analytics`;
+  `macos/archival-analytics`.
+- **Chronology** — #1387, #1400, the Chart colors menu: `ipad/chronology`; `macos/chronology`.
+- **Onboarding and About the Series** — the size line and two cloud views; the Subject-Numeric
+  File in Archival Sourcing: `ipad/onboarding-volumes`, `series-production`;
+  `macos/series-production`.
+- **The sidebar** — #909's footer: `ipad/sidebar-landscape`.
+- **The banner and Live Activities** — A11: the unembedded `ios/indexing-banner`, if re-shot.
+- **Unchanged in subject, retaken under the owner's rule**: `ipad/browse-all-volumes`,
+  `browse-administrations`, `browse-administrations-truman`, `browse-editors`, `browse-scopes`,
+  `browse-scopes-editor`, `browse-scopes-banner`, `browse-corpus-drill`,
+  `browse-archives-collection-detail`, `browse-archives-collection-citing`, `topic-index`;
+  `macos/toolbar`, `topic-index`, `research`.
+
+### The devices, and which captures go to iOS 26.5
+
+- **S1's device is one iPad Pro 13-inch (M5) simulator under iOS 27.0**, landscape, 2752×2064,
+  the demo status bar, the full 553-volume corpus indexed, created or erased for the sitting and
+  **never one that has run an analytics UI suite**: under iOS 27.0 an iPad simulator's render
+  server dies when a UI test that opened Corpus Analytics ends, and a simulator that has died once
+  dies again at a plain launch of the app (#1620, measured 2026-10-09 and 2026-10-11 on the 11-inch
+  `27A97343`, three of three). The existing 13-inch under 27.0 is `9AB3A0C9`, which A12 found
+  holding the Research rail closed in its preferences (`frus.document.researchPanel.visible =
+  false`, written by an earlier run): erase it or make a new one, and open a document to see the
+  rail before shooting.
+- **The seven Analysis Tools window captures go to the iPad Pro 13-inch (M5) under iOS 26.5**
+  (`9F3D84A4-C35B-4280-9607-1B64240AD8D1`), as the plan's S1 row says: `analytics`,
+  `crossref-analytics`, `archival-analytics`, `semantic-map`, `browse-clusters-map` (the same
+  Semantic Analytics window, reached from a cluster), `chronology`, and `word-cloud` (a sheet, but
+  the plan names it, and its tap on a word opens Corpus Analytics). The rule for the 27.0 device:
+  **take every other capture first, and open no Analysis Tools window on it**; if one is opened
+  there and the device survives, the ledger says so, since that is a measurement #1620 lacks. The
+  26.5 device holds the same corpus and demo data (clone the container, install first, check
+  `get_app_container` names the clone — the A6 lesson in the simulator notes). Its chrome differs
+  from 27.0's only in the system's own drawing, which the manuals do not describe.
+- **iOS 27.1's runtime is not installed** on 2026-10-21 (26.3, 26.4, 26.5 and 27.0 are), so
+  decision 72's re-test of #1620 has not run and the split above stands. The owner's iPad under
+  iOS 27 is the alternative for the seven (the plan's §5); the ledger says which.
+- **S2** is a second 13-inch simulator, erased, no volumes: `onboarding-volumes`,
+  `series-production`, and the kit's pass A (the splash and onboarding recording).
+- **S3** is an iPhone 17 Pro under iOS 27.0, portrait, the full corpus; the kit's three iPhone
+  frames want the iPhone 17 Pro Max (6.9-inch), so take them there and the manual's two on either.
+- **S4** is the Mac. Use `tools/mac-check-copy/` (bundle id `bottsywattsy.FRUS-Explorer.maccheck`,
+  the local-only store compiled in under `FRUS_MAC_CHECK`, a fake home under `CFFIXED_USER_HOME`,
+  built from the tag with `setup.sh --ref build-51`), the committed form of the build-48 sitting's
+  hand-patched copy; seed its fake home's library and store from the iPad simulator's container, as
+  build 48's was, so the Mac shots show the same project, scopes, corpora, collection and visit.
+  One thing to settle on the day: the copy has no iCloud entitlement, so its status chip reads
+  **Local Only**; build 48 patched the chip to read **iCloud Sync** and never committed the patch.
+  Either patch it again under a launch argument or crop the status bar, and say which here.
+  Windows are captured one at a time with `screencapture -o -l <window id>` at 1440×900 points
+  (2880×1800 pixels, the kit's Mac preset) wherever the capture is also a store frame.
+- **The corpus.** Fastest is the simulator notes' recipe: `cp -c` the 553 manifest volumes into
+  the app container and let the launch index them (about 30 minutes on this class; a fresh install
+  runs the whole-library date pass). A19's census left a build-51 library at version 71 under
+  `~/Library/Caches/FRUS-Explorer/a19/`; if it is whole, cloning it saves the index.
+- **Every file's build number, device, OS and UDID go in this ledger** when its sitting runs (the
+  X-8 rule); the skeleton is at the end of this section.
+
+### The demo data, re-read against the manuals' sentences
+
+The build-48 recipe above holds, with what the captions depend on made explicit and three things
+it left out. Everything is made through the app's own UI.
+
+1. **The project "Early Cold War"**, active, with the research question *How did Washington come
+   to see the Soviet Union as its principal adversary, 1945-1950?* — it heads every Browse capture
+   as the *Working on:* line (the build-48 PNGs show it; the recipe never recorded it) and seeds the
+   Archives Visit's inquiry topic sentence. With the sidebar showing, it is the checked project in
+   the Projects footer (`sidebar-landscape`).
+2. **Three scopes**: *Berlin Crises 1958-1963*, *Cuba 1958-1963*, *Soviet Union 1945-1950*. Both
+   `word-cloud` captions name the last; `browse-scopes` lists all three, most recently edited first.
+3. **Two working corpora**, captured from keyword searches for *Berlin airlift* and `"long
+   telegram"` with Save as Working Corpus — keyword captures, so the list's amber line (stopped
+   short, or complete) is what §6.1f describes; a corpus saved from a Meaning search would read
+   *The N closest matches of a Meaning search* in grey instead (A9), which no caption wants.
+4. **The collection "The Long Telegram and Its Readers"** — the Long Telegram
+   (`frus1946v06/d474`) and the documents that answer it — with **at least two section headings
+   and one note block**, since `collections-editor`'s caption shows "section headings, a prose
+   block, documents with their Configure pills"; the build-48 recipe did not say so. A note under
+   the title (Collection settings) gives the Mac's document inspector something to show.
+5. **The Archives Visit**, seeded from that collection **plus `frus1952-54v02p1/d41` and
+   `frus1955-57v19/d81`**. Read in the TEI on 2026-10-21: d41's source note is *S/S–NSC files, lot
+   63 D 351, NSC 140* and d81's *S/S–NSC Files: Lot 63 D 351, NSC 5606 Series*; both are printed
+   from the lot and cite it in their footnotes, which is what gives `trip-packet` both claim
+   lists. A15's claimant line appears only for a divided lot cited through the National Archives,
+   which 63 D 351 cited the Department's way is not; the packet's other new lines (the
+   visit-planning links' dates, the coverage report's *Where this came from*) need nothing added.
+6. **The reading history**: open the Long Telegram before the Browse captures, so **Continue
+   reading** offers it. The build-48 `browse-root` names the volume's title in that row; the app
+   now records a visit under the document's own title (Mac §16.2: a visit an earlier build recorded
+   under its volume's title is listed by its ids instead), so the retake should read *The Chargé in
+   the Soviet Union (Kennan) to the Secretary of State* — look.
+7. **Remove `frus1948v01p2` on purpose**, after the corpora are captured, so `browse-corpus-drill`
+   shows one gray identifier row with **Download** (check that the `"long telegram"` corpus holds a
+   document from it; the build-48 take did). Before the Meaning zero-result frames (P2 below),
+   remove two more volumes the question's closest matches sit in.
+8. **On the Mac add** a note on the Long Telegram, a highlight, the tag *Containment*
+   (`research-strip`'s caption names it; `research`'s strips need the highlight), and **three saved
+   searches** (`saved-searches`), *Berlin blockade* among them. Optional, and cheap once the saved
+   searches exist: link one new collection to a saved search, so the Collections picker shows
+   A1's *Smart collection* label and bolt, which §12.1 now describes; no caption needs it.
+9. **The documents by name.** Source Explorer on both platforms: `frus1952-54v02p1/d41` (the
+   build-48 takes on both platforms show its note, *S/S – NSC files, lot 63 D 351, NSC 140*, with
+   the bundled record A1 1586E and 623 archival neighbors). The cross-reference graph on both:
+   `frus1952-54v02p1/d16` (the Mac's build-48 choice, where no date label collides). The Mac's
+   `document`: `frus1948v02/d399` (the build-48 choice; see the ledger above). The iPad's
+   `document` and `research-rail`: the Long Telegram, which has detected topics (the Topics
+   accordion is hidden on a document with none). The collection's detail on the iPad:
+   **Bohlen Files: Lot 74 D 379** (RG 59, NAID 840567), the build-48 take's.
+10. **The Topic index**: the **Cold War** area on both platforms. Counted in
+    `document-subject-index.json` on 2026-10-21 it still holds **6 topics** — Berlin crisis, Cold
+    War, Detente, German reunification debate, Mutual and Balanced Force Reductions (1973–1989),
+    Truman Doctrine — so the Mac's chip reads *Topic area: Cold War — 6 topics* as its caption
+    says, with Berlin crisis open; the series holds 491 topics, as both manuals say.
+11. **People**: *Kissinger, Henry A.*, after the rollup consolidation settles (the People note
+    above). His record in `person-authority-index.json` carries no VIAF identifier of the
+    register's own, so under A4d his sheet shows **neither a VIAF nor a Wikidata link**; the Mac's
+    `people-detail` caption, which names both, is rewritten in S5 (below).
+12. **The searches**: *Berlin blockade* for `search-results` (iPad) and `search` (Mac; the kit's
+    frame 01 route names it on every device). The Meaning question for `semantic-search` is free;
+    the zero-result question for P2 can be the manual's own, *Why did the Marshall Plan happen?*,
+    if it returns no keyword result on the day.
+13. **Analytics**: four terms by year in % of documents (iPad `analytics`); *Berlin* by year,
+    1944–1975 (Mac `analytics`, `analytics-table`); Chronology over autumn 1962 (iPad
+    `chronology`); the heat matrix for 1961–1963 (Mac `crossref-analytics`); George Kennan's ego
+    network (Mac `person-analytics-network`); Archival Analytics in Collections mode, era
+    1948–1960, by documents (both `archival-analytics`); the Soviet Union 1945-1950 scope in
+    Distinctive mode, Concepts lens (both `word-cloud`).
+14. **The offline convention** for `onboarding-volumes` and `series-production`: an erased
+    simulator and, on the Mac, an empty fake home.
+15. **The status bar**: `xcrun simctl status_bar <udid> override --time "9:41" --batteryState
+    charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi` before each iPad
+    and iPhone sitting. **The sync banner**: sign the simulator into iCloud, or keep the banner out
+    of frame, or patch `SyncStatusBanner.isWorthShowing` under a launch argument as build 48 did
+    (never committed); say which here.
+
+**The mismatches, listed.** (1) iOS §6.1g's caption says ten doors where the text says eleven;
+the doors are eleven (row 14). (2) The Mac `people-detail` caption names VIAF and Wikidata links
+the sheet no longer shows (row 49). (3) The build-48 `browse-root` shows Continue reading under
+the volume's title, which the app no longer records that way (point 6). (4) The build-48 recipe
+never named the project's research question, which every Browse capture shows (point 1), nor the
+collection's headings and note block, which `collections-editor`'s caption needs (point 4).
+(5) iOS §7.12's placeholder asks for a Download Volume button that a full-corpus device cannot
+show without volumes removed on purpose (point 7, P2b). (6) Sixteen of the embedded `ipad/` files
+and the graph's window capture are the owner's build-47 device captures — the owner's status bar,
+3180×2384 or 2852×2139 — not the demo bar at 2752×2064; every one is retaken. (7) The Mac
+`crossref-analytics` caption describes the heat matrix alone because the build-48 rankings
+carried fallback labels (#1372); row 64 says to look again. (8) The iOS `analytics` caption says
+the Measure control is inline while four terms are compared, where §15.1 now says the picker is
+disabled for a comparison (row 35).
+
+### S1 — iPad, full corpus: the 40 captures, and the Meaning placeholder's two frames
+
+Device as above; the seven marked **26.5** on the twin. *Slot* is the manual line at `b4dcd527`.
+*Must bear out* is the caption, then the sentence near it that the frame has to agree with.
+
+| # | File | Slot | Must bear out | Moved since build 48 | Route and notes |
+|---|---|---|---|---|---|
+| 1 | `sidebar-landscape` | iOS §4.1, l. 138 | The adaptive tab sidebar with the active project in its Projects footer, beside the Browse root. §4.1: under the five tabs, up to five Saved Searches (newest first) and up to five Projects, a check mark on the active one; each list appears once there is something in it | §4.1 gained the shortcuts sentence (#909's footer); otherwise text unchanged | Browse root, sidebar expanded; one saved search and the project made first, so both lists show |
+| 2 | `research-rail` | §4.2, l. 162 | RESEARCH header, the seven tiles (Cite · Word Cloud · Sources · Graph · Related · On the Map · Share), the Topics, Summary, Notes, Tags and Collections accordions beside the text. §4.2: the toolbar carries two controls now, Find in Document and the rail toggle; Topics only when the document has any | #1665 (Standard measure fills the page beside the rail on a 13-inch), #1578 (underlined links); §4.2's first paragraph changed | The Long Telegram; a note and the tag on it, as the Mac's `research-strip` has, are optional |
+| 3 | `stage-manager` | §4.5, l. 196 | A document window beside a Related Documents window, the main window behind. §4.5: tool windows' Done; Related Documents has no Done | §4.5 rewritten (every multitasking mode; the Analysis Tools windows) | Settings ▸ Multitasking & Gestures ▸ Stage Manager; Open in New Window from the rail header, then Related; switch back to Windowed Apps afterwards (`AuxWindowCloseTests` runs there) |
+| 4 | `browse-root` | §6, l. 313 | Continue reading, the volume search field, the People and Topics rows, the "Browse by" tiles, Your sets. §6.1: six doors, Subseries first | Text unchanged; the Continue reading row names the document (recipe 6); the *Working on:* line (recipe 1) | Two-pane root with nothing opened on the right, or a level open — the build-48 take had the right pane empty |
+| 5 | `browse-all-volumes` | §6.1b, l. 347 | Published order, the Title / Published / Era / Length control above decade headers, newest first | Text unchanged; 1981–1988 vol. XVI heads the list | Browse ▸ All Volumes ▸ Published |
+| 6 | `browse-administrations` | §6.1c, l. 355 | Each presidency with its volume and document reach, the post-corpus presidencies dimmed at the end | Text unchanged; the build-47 file is the owner's device (3180×2384) | Scroll so the dimmed tail is in frame |
+| 7 | `browse-administrations-truman` | §6.1c, l. 357 | Truman's volumes, largest share first, each row's count and share, an *Also under …* note | Text unchanged | Find a row with the note |
+| 8 | `browse-editors` | §6.1d, l. 363 | Letter sections, each editor with a volume count, a *2 spellings merged* caption under a name recorded two ways | Text unchanged | Scroll to a merged name |
+| 9 | `browse-scopes` | §6.1e, l. 377 | Your scopes, most recently edited first. §6.1e now names the toolbar's **+** (New Scope) and the filter glyph on a scope being browsed within | Two sentences added (New Scope; where the long-press is offered) | Three scopes |
+| 10 | `browse-scopes-editor` | §6.1e, l. 379 | A scope's volumes with red minus buttons, Add Volumes… | As 9 | The pencil on a scope |
+| 11 | `browse-scopes-banner` | §6.1e, l. 381 | The amber *Browsing within: …* banner over the subseries list, its ✕. §6.1: while the filter is on, the root's Subseries tile names the scope and counts its volumes | As 9 | Browse Within This Scope on a scope's long-press menu; a second frame of the root tile is optional |
+| 12 | `browse-working-corpora` | §6.1f, l. 393 | Each corpus with where it came from, when, and whether the capture was complete (amber) | §6.1f rewritten (moved from §7.9); A9's grey Meaning line applies only to a Meaning corpus | Two keyword corpora (recipe 3) |
+| 13 | `browse-corpus-drill` | §6.1f, l. 395 | The amber coverage line, titled rows for indexed volumes, gray identifier rows with **Download** for a volume not on the device | As 12 | `frus1948v01p2` removed (recipe 7) |
+| 14 | `browse-archives-provenance` | §6.1g, l. 409 | The caption says *the ten kinds of file*; §6.1g's text says **eleven doors**. **Settled by S0: eleven.** `ArchivesAxis.categoryDoors` draws one door per category in `collection-usage-index.json`, whose list holds 11 (the Subject-Numeric File joined in #1543); the build-48 PNG shows ten because it predates #1543. S5 rewrites the caption | The eleventh door; the banner's figures follow the regenerated usage index (264,598 notes across 502 of 553 volumes; 51 volumes print none) | Archives ▸ Provenance Types |
+| 15 | `browse-archives-collections` | §6.1g, l. 411 | Collections lens grouped by record group, the Group and Sort menus, a collapsed group | A18 regenerated the authority (3,977 records); otherwise as the text | Group ▸ Record group; collapse one group |
+| 16 | `browse-archives` | §6.1g, l. 413 | Classes lens: central-file classes under their filing schedule, sorted by document count, read in words where the manuals give a reading. §6.1g: three decimal schedules (1910–49, the 1950s, 1960–63) and the two subject-numeric arrangements | A16 (labels across the two handbooks, the 1964–1973 era at 1,615 classes), A18 (the class grammar; `POL 2 DOM REP`, names dropped) | Sort ▸ document count; a class read in words in frame |
+| 17 | `browse-archives-collection-detail` | §6.1g, l. 415 | A collection's detail, reached by push: its identity, its other spellings, the NARA catalog record it resolves to, offline | Text unchanged; In Your Library's count follows the index | Bohlen Files: Lot 74 D 379 (recipe 9) |
+| 18 | `browse-archives-collection-citing` | §6.1g, l. 417 | Further down: when the series cited it, the unprinted material editors pointed at, its citing volumes | Text unchanged | Same page, scrolled |
+| 19 | `browse-clusters` | §6.1h, l. 429 | Each cluster's sampled label, document count and era histogram, under the three honesty rules. §6.1h: 140 groups; about 28% (88,059 documents) in no cluster; the example label *nanking · chinese · shanghai · chungking* | B4's relayout (171 → 140); the build-47 file is the owner's device | The list's head, with the rules in frame |
+| 20 | `browse-clusters-detail` | §6.1h, l. 431 | A cluster's documents: the era breakdown and coverage line, See on the semantic map, Save as Working Corpus, documents grouped by volume | As 19; the largest cluster holds 37,899 documents in the shipped map, where §6.1h says 37,865 (S0 finding 2, below) | Any cluster; the build-47 file is the owner's |
+| 21 | `browse-clusters-map` **26.5** | §6.1h, l. 433 | The semantic map focused on a cluster after *See on the semantic map*, its region card ready | B4's relayout | From 20's cluster |
+| 22 | `topic-index` | §6.2a, l. 445 | The index narrowed to one topic area: the area chip with its ✕, each topic with its reach across the series. §6.2a: 491 topics; the chip's form *Topic area: Cold War — 6 topics* | One sentence changed (an area such as *Warfare · General* holds ten topics) | Browse ▸ Topics ▸ a Cold War topic ▸ All Cold War topics (recipe 10) |
+| 23 | `people-list` | §6.5, l. 473 | One alphabetical list of reconciled identities, role · active-years subtitles, mention counts. §6.5: a question-mark badge marks a possible duplicate | A4, A4c, A4d (rollup v12: counts and roles move); the badge sentence changed | After the consolidation settles (the People note above) |
+| 24 | `people-detail` | §6.5, l. 477 | Kissinger's sheet: the reconciled-identity seal, mention count and active years, subjects, Find all mentions | A4d: no Wikidata link, and no VIAF link for him (recipe 11); the caption does not name the links, so it stands | The sheet's top |
+| 25 | `people-detail-records` | §6.5, l. 479 | Further down: the Career section and the underlying volume records, each with its Separate action | A4's rollups; the Career section is the register's (1,240 people) | Scrolled |
+| 26 | `search-results` | §7, l. 504 | **Caption changed since build 48**: the query field, the actions bar, the ranked list with headings, datelines, volume identifiers and highlighted snippets. §7.1: a snippet begins a few words before the first match in the text, past the heading, source note and dateline | A10b (where the snippet starts), A5 (More's items, Sort ▸ Closest to a Question…), A13; the build-47 file is the owner's device | *Berlin blockade* in Keywords; the kit's frame 01 is this file |
+| 27 | `semantic-search` | §7.12a, l. 730 | The Keywords \| Meaning control, the disclosure strip, ranked matches each with its semantic-match score. §7.12a: the header counts *N closest matches*; the strip's sentences (A9's decision-61 sentence among them); at the largest text sizes the strip is one line with an ⓘ (#1721) | §7.12a rewritten (61 diff lines); the model is EmbeddingGemma 2 (B4); the build-47 file is the owner's | **Needs the 310 MB encoder downloaded in the simulator.** Take after P2's offer frame (below), which needs it absent. The kit's frame 12 is this file |
+| 28 | `document` | §8, l. 763 | A rendered document in landscape: heading, dateline, body with linked person names, footnote markers | #1578 (underlined links, contrast), #1665 (the measure), #1516 (a figure, if the document prints one; §8 now describes figures) | The Long Telegram with the rail hidden (Read mode), so the Standard measure and the faint edge chevrons (§4.4) show |
+| 29 | `related-documents` | §8.5, l. 819 | The This volume / This subseries / All volumes scope, Adjust weights open with a slider per signal and Reset, ranked rows with their "why related" chips. §8.5: eight signals, **Reset to app defaults**, *shares: …* chips, the Beyond your library section | §8.5 changed (13 diff lines); the build-47 file is the owner's | The Long Telegram's Related window with the weights open |
+| 30 | `cross-reference-graph` | §8.6, l. 829 | Network mode at three hops: document nodes, teal archival-citation nodes, the reference list panel beside the canvas. §8.6: the legend under the canvas; Timeline and Network layouts; the inbound-citation figures | #1438, #1481, A17, A18b (the figures); §8.6 changed (15 diff lines); the build-47 file is a 2852×2139 window capture | `frus1952-54v02p1/d16` (recipe 9); Depth 3, Network, the list panel open; a whole-screen `simctl io` capture is fine |
+| 31 | `collections-editor` | §12.1, l. 1004 | The Contents outline (section headings, a prose block, documents with their Configure pills) beside the live preview. §12.1: the four toolbar buttons — gear, ＋, Sort, Export | §12.1 rewritten (the toolbar; swipe to remove; Edit for drag handles); A1's smart-collection rules do not touch this collection | *The Long Telegram and Its Readers* (recipe 4) |
+| 32 | `source-explorer` | §14.1, l. 1173 | The parsed source note and the NARA catalog record it resolves to. §14.1: the ⓘ, and Learn About Source Notes in the ⋯ menu | §14.1 changed (the two buttons); A15/A16/A18 do not touch a lot-file note | `frus1952-54v02p1/d41` (recipe 9); the kit's frame 04 is this file |
+| 33 | `trip-packet` | §14.8, l. 1254 | A research target with its two claim lists — documents published from the file and footnotes that cite it — with the Share buttons above | §14.8 changed (16 diff lines: the visit-planning links' dates, the coverage report's *Where this came from*, Stored targets, the Copy inquiry draft section); A15 | The visit of recipe 5; the Lot 63 D 351 target expanded; the kit's frame 05 is this file |
+| 34 | `trip-packet-options` | §14.8, l. 1256 | The Options menu: the repository scope, a copy of each facility's inquiry draft, what to include | As 33 | The menu open over the packet |
+| 35 | `analytics` **26.5** | §15.1, l. 1280 | Four terms charted by year as a share of documents, with the Measure, value and Export controls inline in the toolbar. §15.1: comparisons open in % of documents; the Measure picker and the table are unavailable while comparing — **so the picker is drawn dimmed in this frame**, and S5 reads the caption against it | §15.1 rewritten (the Group by chip's menu, the year chip's popover, Save query, Dispersion); the build-47 file is 2884×1540, the owner's | Analysis Tools ▸ Corpus Analytics; four terms; the kit's frame 10 is this file |
+| 36 | `word-cloud` **26.5** | §15.2, l. 1310 | Distinctive mode, the Concepts lens, the Soviet Union 1945-1950 scope, the eligibility line beneath the mode control | §15.2 changed (the lemmatiser fallback's lines, #1608, show only on a Limited launch); A3b's caveat is on exports, not the screen | Analysis Tools ▸ Corpus Word Cloud, scope picker ▸ the scope |
+| 37 | `crossref-analytics` **26.5** | §15.4, l. 1334 | The Scope, year-range and Administration controls above the Most-Referenced Documents ranking by inbound citations. §15.4: a long title takes two lines | **Stale by measurement** (the entry above: #1473's 320 pt labels); A17 and A18b move every count (a page of another volume counts) | Analysis Tools ▸ Cross-Reference Analytics, the ranking open |
+| 38 | `archival-analytics` **26.5** | §15.5, l. 1350 | Collections mode, an era ranking of named collections, the Central Files umbrella chip. §15.5: the chip reads *Hidden* or *Shown*; Show all N units opens the Every Unit sheet | A16 (classes in words), A18 (the regenerated authority and usage index); §15.5 changed (18 diff lines) | Era 1948–1960, Named collections, by documents |
+| 39 | `semantic-map` **26.5** | §15.6, l. 1376 | Colored by Regions: region labels, the explainer card above, the caveat line beneath the map. §15.6: 314,616 documents; the Provenance lens's 86 of 499 | B4's relayout (140 regions); the Point size control | Analysis Tools ▸ Semantic Analytics; the README's third hero slot and the kit's frame 03 are this file |
+| 40 | `chronology` **26.5** | §15.7, l. 1382 | The From/To range (autumn 1962), the stacked distribution chart with its per-volume legend, the date-grouped list. §15.7: the Chart colors menu; the *Spans more than a year* and *Extends beyond this range* chips | #1387/#1400 (the legend and chip counts; the build-47 file predates them), the Chart colors menu | Analysis Tools ▸ Chronology, September–November 1962; the kit's frame 11 is this file |
+| P2a | `semantic-offer` (new) | §7.12, l. 656, first half | A zero-result question with the *Search by meaning* offer card. §7.1: the zero-result screen names the term that matched nothing, with the denominator; §7.12: Download Search Model | The offer is `SemanticSearchFallbackView`; A9 (#1685) changed only what a replaced run writes | **Before the encoder is downloaded.** The manual's own question if it returns nothing |
+| P2b | `semantic-zero-result-matches` (new) | §7.12, l. 656, second half | The same search after the model downloaded: ranked semantic matches beneath the zero-result explanation, with a **Download Volume** button on an undownloaded hit | §7.12's bullets (scores, the match-file caption) | **After the download.** On a full-corpus device no hit is undownloaded: remove the two volumes the question's closest matches sit in first (recipe 7), or S5 drops the clause |
+
+### S2 — iPad, erased
+
+| # | File | Slot | Must bear out | Moved since build 48 | Route and notes |
+|---|---|---|---|---|---|
+| 41 | `onboarding-volumes` | iOS §2.3, l. 86 | The Add Volumes step (Corpus, Subseries or Volume) over the word-cloud backdrop, its Concepts view. §2.3: the line under the control reads *553+ volumes · ≈ 3.5 GB*; Continue dimmed until a row is picked; two cloud views, Concepts and Topics | §2.3 rewritten (12 diff lines): the size line, the scrolling list, Skip and Back | An erased simulator, no `-hasCompletedOnboarding`; wait for the Concepts chip |
+| 42 | `series-production` | §16.1, l. 1413 | About the Series ▸ Production & Timeliness on an empty install: the publication-lag scatter, colored by era, against the timeliness targets in force | §16.1 changed (the Guide's eleven pages; Open Archival Analytics hands its scope on) | Research tab ▸ FRUS Research Guide ▸ the last four pages; the kit's frame 09 is this file |
+
+### S3 — iPhone
+
+| # | File | Slot | Must bear out | Notes |
+|---|---|---|---|---|
+| P1 | `ios/search-tips` (new) | iOS §7.2, l. 522 | The Search Tips sheet at half height over the Search screen, showing the first rows. §7.2: •••  ▸ Search Tips in Keywords mode | iPhone 17 Pro, portrait, the demo bar; Keywords mode (in Meaning mode the sheet shows no syntax) |
+| — | `ios/indexing-banner` | none today; a §4.8 slot if the owner takes it | §4.8: the banner along the bottom, above the tab bar on iPhone, with the current volume's progress and *Volume 3 of 27* with an estimate; *Learn about FRUS while you wait →* | Re-shoot only if S5 embeds it (the verdict below); a queue of several volumes indexing, so the position in the queue shows; A11 changed what the banner says of a failed volume and the finishing merge |
+| — | the kit's frames 01, 02, 03 (and 04, 11 if wanted) | the store listing | the kit's §3 routes | iPhone 17 Pro Max; frame 01 with the facet sheet closed and a second take with it open |
+
+### S4 — the Mac: the 26 captures, the zero-result placeholder, the kit's two
+
+| # | File | Slot | Must bear out | Moved since build 48 | Route and notes |
+|---|---|---|---|---|---|
+| 43 | `toolbar` | Mac §4.1, l. 132 | The centered volumeId/documentId title and the trailing Search, Browse, Analytics ▾, My Research ▾ and Research-panel controls | Text unchanged | A 2880×104 strip; retaken under the owner's rule |
+| 44 | `research-strip` | §4.2, l. 169 | The Research panel beside the Long Telegram: the tile grid and the five accordions, holding a note and a *Containment* tag | #1665 (the Mac's default measure), #1578; §4.2's selection bar names Look Up in NARA | Recipe 8; the kit's frame 02 is this file |
+| 45 | `document` | §4.3, l. 175 | A document filling the main window: heading, dateline, body with linked names and footnote markers, the footnotes section | #1665, #1578; the empty state's ⌥⌘F line is out of frame | `frus1948v02/d399`, the rail closed |
+| 46 | `browser` | §6, l. 294 | The Corpus Browser: the sidebar's Browse, Your sets and Subseries sections, a volume's page with its Top subjects, front matter and contents | Text unchanged; A3c's *Working on:* bar now heads the detail column (#1701); A18's Read rows where a volume has prose sections | A volume page |
+| 47 | `browse-all-volumes` | §6.1, l. 300 | Browse ▸ All Volumes in Published order, each volume with its print year, document count and download status | §6.1 changed (three sections; eleven doors; 140 clusters; the Read rows) | — |
+| 48 | `people-list` | §6.3, l. 316 | An alphabetical list of reconciled identities with role · active-years subtitles and mention counts | **Stale** (the entry above: #1370/#1441); A4, A4c, A4d; the badge sentence changed | After the rollup settles; `screencapture -o -l` on the Corpus Browser window |
+| 49 | `people-detail` | §6.3, l. 320 | **The caption names VIAF and Wikidata links that Kissinger's sheet no longer shows** (recipe 11): the Career section — Secretary of State, 1973–1977, from the register — is what the frame can bear out. S5 rewrites the caption | A4d; §6.3's link sentence rewritten; stale per the entry above | Scrolled to Career |
+| 50 | `topic-index` | §6.4, l. 345 | The Topics window narrowed to the Cold War area (*Topic area: Cold War — 6 topics*), Berlin crisis open: its documents and volumes in the series and on this Mac, its covering volumes | Text unchanged; still 6 topics (recipe 10) | — |
+| 51 | `search` | §7, l. 363 | *Berlin blockade* in Keywords mode, the ranked results with highlighted snippets, citations and dates, the Facets panel open on its Subjects section | A10b (snippets), A5 lane 5 (Search Within Results; the engine label), A13 (a facet's volumes; the Within picker), #1726 | Also the README's first hero slot and the kit's frame 01; capture at 1440×900 points |
+| 52 | `search-tips` | §7.2, l. 381 | The Search window with the Tips panel open under the results | §7.2: the panel follows the engine the field runs (lane 7) | Keywords mode |
+| 53 | `saved-searches` | §7.8, l. 487 | The saved-searches list opened from the filled bookmark button | §7.8 changed (the bookmark is off inside a held list; a saved search runs inside an applied corpus) | Three saved searches (recipe 8) |
+| 54 | `cross-reference-graph` | §8.5, l. 637 | The focus document and its references along a date axis (Timeline), teal nodes for the archival material its footnotes cite, the reference list panel | #1438; A17 (Volume Connections' labels); A18b (the figures); §8.5 changed (12 diff lines) | `frus1952-54v02p1/d16`; the README's second hero slot today (swapped out in S5, decision 34) and the kit's frame 06 |
+| 55 | `research` | §9.2, l. 678 | The Research window: every annotated document, highlight strips, the grouping sidebar | §9.2 changed (the Review sheet's quotations; Changed by an update) | The highlight and note of recipe 8 |
+| 56 | `collections` | §12.1, l. 786 | The toolbar collection picker, the Contents outline, the live preview, the document inspector | **Stale** (the entry above: the picker's count, #1446's name cap); A1 (*Smart collection* in the picker), A14 (Link to Saved Search… in ⚙); §12.1 changed | *The Long Telegram and Its Readers* with the inspector open; the kit's frame 08 |
+| 57 | `source-explorer` | §14, l. 947 | A lot-file source: the parsed note, provenance and collection on the left; the NARA query, the matched record with its HMS/MLR entry, Archival Neighbors on the right | §14's opening changed (Window ▸ Source Explorer's start; the ▤ popover); A15/A16/A18 do not touch this note | `frus1952-54v02p1/d41` (recipe 9); the kit's frame 04 |
+| 58 | `trip-packet` | §14.8, l. 1058 | The Archives Visits window with a plan's packet open from Export packet: a target's two claim lists | **Stale** (the entry above: #1444 — the Mac packet has Options and Share, which the build-48 take lacks); A15; §14.8 changed (18 diff lines) | The visit of recipe 5; the kit's frame 05 |
+| 59 | `analytics` | §15.1, l. 1082 | *Berlin* by year, 1944–1975, each bar color-coded by source volume with a legend | §15.1 rewritten (17 diff lines: Compare terms chips, the year chip's popover, Save query, Dispersion, View N documents ↗) | The kit's frame 10 |
+| 60 | `analytics-table` | §15.1, l. 1097 | The same query in Table mode, a grid of year and count rows (no Copy CSV: Corpus Analytics has none) | As 59 | — |
+| 61 | `word-cloud` | §15.2, l. 1113 | Distinctive mode, the Concepts lens, the Soviet Union 1945-1950 scope, the eligibility line beneath the controls | §15.2 changed (8 diff lines; the fallback lines show only on a Limited launch, which a Mac has not had) | The scope must be in the copy's store (recipe: copy the iPad container) |
+| 62 | `person-analytics-trends` | §15.3, l. 1124 | Trends mode: the most-mentioned ranking and a multi-person trajectory comparison | A4's rollups; the build-48 take is 1072 pt tall so both sections fit | — |
+| 63 | `person-analytics-network` | §15.3, l. 1128 | Network mode: George Kennan at the center of his co-mention ego network, partners sized by shared documents | **Stale** (the entry above: #1370/#1441, #1438's labels); §15.3's Network paragraph changed | The kit's frame 13 |
+| 64 | `crossref-analytics` | §15.4, l. 1141 | The Volume Citation Heat Matrix for 1961–1963, each cell shaded by the cross-references from one volume to another | **Stale** (the entry above: #1445/#1480); A17, A18b (the counts); §15.4 changed | The build-48 take showed the matrix alone because both rankings carried fallback labels (#1372): look at the rankings again, and widen the caption if they are right |
+| 65 | `archival-analytics` | §15.5, l. 1157 | **Caption changed since build 48**: the 1948–1960 ranking of named collections by documents, with the Central Files chip in the control bar | A16, A18 (the regenerated files); §15.5 changed (14 diff lines) | The kit's frame 14 |
+| 66 | `semantic-map` | §15.6, l. 1182 | Colored by Regions: region labels, the explainer above, the caveat line beneath the map | B4's relayout; A3c's #1700 (a reopened window drew nothing: fixed, and a fresh window never did) | The kit's frame 03 |
+| 67 | `chronology` | §15.7, l. 1188 | From/To pickers, the stacked distribution chart with per-volume legend, the date-grouped list | **Stale** (the entry above: #1387, #1400); the Chart colors menu | The kit's frame 11; the hover magnifier stays S6's |
+| 68 | `series-production` | §16.4, l. 1236 | The Production & Timeliness dashboard: the publication-lag scatter above the volumes-per-year bars | §16.4 changed (the Subject-Numeric File in Archival Sourcing; the year range's defaults) | An empty fake home; the kit's frame 09 |
+| P3 | `search-zero-result-meaning` (new) | §7.11, l. 509 | The Search window's zero-result state with the semantic matches section beneath the query decomposition | The copy has the encoder (A19's walk) | A question that returns no keyword result |
+| — | `cite-popover` (new), `search-meaning` (new) | the kit's frames 07 and 12 | The Cite popover; the Search window in Meaning mode | — | The kit's §7, sitting 4 |
+
+### The three placeholders
+
+P1 (iOS §7.2, line 522) is S3's; P2 (iOS §7.12, line 656) is two frames in S1, the offer before
+the encoder is downloaded and the matches after; P3 (Mac §7.11, line 509) is S4's. Their file
+names above are proposals: S5 wires them in and removes the three `[SCREENSHOT: …]` lines, which
+are the last placeholders in either manual.
+
+### A7's slot: none in build 51
+
+The plan's S0 row names A7's slot (a *Siri, Shortcuts and Spotlight* section in each manual, with a
+capture). The owner deferred A7 past build 51 on 2026-10-18 (decision 57; the plan's §6h, #1723):
+neither manual has the section, and this sweep has no slot for it. When A7 ships, the slot returns
+with it — on iPad, Spotlight's suggested document or the Shortcuts app running Open or Summarize;
+on the Mac, Spotlight — and Siri surfacing a document is a device capture (S6's kind), since the
+simulator's Siri never called the spike app.
+
+### The four files embedded nowhere: the verdicts
+
+All four are the owner's build-47 device captures (the owner's status bar and data: the
+*Kennanology* collection, the *Cold War Origins* tag), not the demo set, and each shows retired UI.
+The #1081 rule is that an unreferenced file is deleted, not refreshed.
+
+- `ipad/research-rail-portrait` — **delete.** The rail in portrait beside the Long Telegram. No
+  manual sentence describes the rail in portrait; §4.2's slot is `research-rail`, landscape.
+- `ipad/semantic-search-loading` — **delete.** Meaning mode's waiting cloud (the Sentiment lens,
+  green and red) under the build-47 strip's wording, which A9 and #1721 have since changed. §7.1
+  describes the cloud in words and has no slot.
+- `ipad/indexing-banner-portrait` — **delete.** A portrait Browse root with the build-47 banner
+  over the Sentiment cloud; the iOS manual is landscape-first, and the banner's slot, if the owner
+  takes one, is the iPhone's.
+- `ios/indexing-banner` — **re-shoot in S3 if the owner gives §4.8 a figure, otherwise delete.**
+  The file shows the build-47 banner: the Actions lens's cloud (retired in build 48, #1346), *~0s*
+  left (A11 prints seconds from five up) and the old count line. §4.8 is the manual's longest
+  section with no image, and the banner is the first thing a new reader sees, so S0 recommends the
+  slot: one frame, a queue of several volumes indexing, so *Volume N of M* and the estimate show,
+  with the caption written from §4.8's first paragraph. The decision is the owner's, in S5.
+
+### The README's hero row and its mirror (S5)
+
+`README.md` line 21 embeds `macos/search`, `macos/cross-reference-graph` and `ipad/semantic-map`;
+`Docs/EditableContent/03-Repository-README.md` line 47 mirrors the row whole. Decision 34 swaps the
+graph for `ipad/source-explorer` in S5, in both files in one change (the mirror is checked against
+the README). The two files that stay are retaken in S4 and S1.
+
+### The store frames (the kit's §3 and §7)
+
+Every iPad and Mac frame but four is one of the manuals' files, retaken above: 01 `search-results`
+/ `search`, 02 `research-rail` / `research-strip`, 03 `semantic-map` (both), 04 `source-explorer`
+(both), 05 `trip-packet` (both), 06 `cross-reference-graph` (both), 08 `collections-editor` /
+`collections`, 09 `series-production` (both), 10 `analytics` (both), 11 `chronology` (both), 12
+`semantic-search`, 13 `person-analytics-network` (Mac), 14 `archival-analytics` (both). The four
+with no capture: **07** (the Cite sheet on iPad, the Cite popover on the Mac), **12** on the Mac
+(the Search window in Meaning mode), **13** on iPad (Person Analytics' Network, which also goes to
+the 26.5 device), and the **three iPhone frames**, which the listing cannot be submitted without.
+The kit's §9 figures for the cross-volume citations (8,637 into 5,747 from 185) are build 50's;
+A17 and A18b moved them to 38,600 into 20,273 from 513, which the composer's sublines do not quote.
+After S4, `SCALE=1 OUT_DIR=~/Desktop/store python3 tools/marketing/compose.py` for the store
+sizes, and the drafts re-run into `Planning/marketing-drafts/`.
+
+### Caption and sentence fixes S5 already owes
+
+1. iOS §6.1g, the `browse-archives-provenance` caption: *the ten kinds of file* → *the eleven
+   kinds of file* (row 14).
+2. Mac §6.3, the `people-detail` caption: drop *scrolled to its VIAF and Wikidata links and*; the
+   frame bears out the Career section (row 49).
+3. iOS §15.1, the `analytics` caption: read against the frame, where the Measure picker is dimmed
+   while four terms are compared (row 35).
+4. iOS §7.12's placeholder: if no undownloaded hit can be shown, drop *with a Download Volume
+   button on an undownloaded hit* (P2b).
+5. Mac §15.4, the `crossref-analytics` caption: widen beyond the heat matrix if the two rankings
+   now carry their labels (row 64).
+6. The two captions that changed since build 48 (`ipad/search-results`, `macos/archival-analytics`)
+   are already the new wording; the retakes must match them.
+7. The README hero row and its mirror (decision 34).
+8. Close the *Stale after build 48 (Mac)* and *Not re-checked after the build-49 wave* sections
+   above once every file they name is retaken.
+
+### Found by S0 — for the new plan of record (decision 82)
+
+Read in the manuals at `b4dcd527` against the bundled files; none is a capture, and none was seen
+in the app.
+
+Each says where it is and why it matters before submission; the owner decides what the new plan
+takes.
+
+1. **Mac §6.1 (line 298) says 89,449 documents belong to no cluster; the shipped map says
+   88,059** (`semantic-map-index.json`, `layout.unclusteredCount`, generated 2026-10-15 after B4),
+   which is the figure iOS §6.1h prints. The Mac sentence is the earlier layout's. *Why it
+   matters:* the two manuals disagree by 1,390 on a figure the Clusters screen states on its own
+   face ("about 28% of the corpus … belongs to no cluster"), and a reader who compares them finds
+   one wrong.
+2. **iOS §6.1h (line 425) says the largest cluster holds 37,865 documents; the shipped map's
+   largest holds 37,899** (cluster 3, *nanking · shanghai · chinese · tientsin*). Mac §6.1 says
+   *nearly 38,000*, which holds. The iOS example label in the same section (line 423), *nanking ·
+   chinese · shanghai · chungking*, is not the shipped file's either. *Why it matters:* the
+   Clusters list prints each cluster's count and label on its row, so the sentence is checkable
+   against the screen beside it, and is off.
+3. **Both manuals say the authority holds 3,985 archival collections (iOS §14.6, line 1219; Mac
+   §14.5, line 1017); A18 regenerated it to 3,977** (`collection-usage-index.json`'s
+   `coverage.authorityCollectionCount`; A18's entry records 3,985 → 3,977). *Why it matters:* the
+   figure is the manuals' headline claim for the Collections view, and the app can show eight
+   fewer than it promises.
+4. **The owner's decision on `ios/indexing-banner`** (above): a §4.8 figure, or the file deleted.
+   *Why it matters:* a file on disk that nothing embeds is the #1081 rule's own case for deletion,
+   and the sweep cannot close with it undecided; nothing for App Review.
+5. **The zero-result Meaning frame's Download Volume button** needs volumes removed on purpose
+   (P2b), or the placeholder's second clause dropped. *Why it matters:* a `[SCREENSHOT: …]` line
+   left in a shipped manual reads as unfinished; the clause decides the frame's recipe.
+6. **#1620 is open and iOS 27.1's runtime is not installed**, so the seven analytics captures are
+   taken under iOS 26.5 (or on the owner's iPad); decision 72's re-test is still owed. *Why it
+   matters:* not a defect a user sees — the owner's iPad under iOS 27 runs these screens — but
+   the simulator cannot be trusted for the seven until the re-test says so.
+7. **The Mac check copy's status chip reads Local Only** without the never-committed patch: S4
+   patches or crops, and the ledger says which. *Why it matters:* a Mac capture with *Local Only*
+   in the status bar would contradict Mac §4.4's healthy chip; cosmetic to the sitting, nothing
+   for App Review.
+8. **Both manuals carry an *AI Generated* notice under their titles**, kept until the owner's
+   review of both as they stand (`Planning/Manual-Revisions-Pending.md`'s note of 2026-10-07;
+   `Planning/Manual-Update-Build-49-Owner-Review.md` lists what the review needs). *Why it
+   matters:* the notice is the first line a reader of either manual meets after the title, and
+   the review it waits for is the owner's; S5 edits the manuals under it either way.
+
+### The sittings' ledger (to fill as each runs — the X-8 rule)
+
+- **S1 —** build, device, UDID, OS, orientation, resolution, the corpus's commit, the encoder's
+  version; which files, and any file taken on the 26.5 twin or the owner's iPad.
+- **S2 —** build, device, UDID, OS; `onboarding-volumes`, `series-production`.
+- **S3 —** build, device, UDID, OS; P1, the banner if taken, the kit's frames.
+- **S4 —** build, the check copy's ref and bundle id, the fake home's library; the chip's
+  treatment; which files, each window's size in points.
+- **S5 —** the date; every caption changed, the placeholders replaced, the files deleted, the hero
+  row, the composer's run.
+
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
 Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new shot · 🔄 re-capture
