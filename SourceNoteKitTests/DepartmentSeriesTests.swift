@@ -435,27 +435,34 @@ struct SubjectNumericGrammarListPinTests {
             """)
     }
 
-    @Test("The 155 country words are these, and no others")
+    /// The pin moved once, with index version 70 (A18, the owner's answer of 2026-10-20): nine country
+    /// names the corpus prints in title case where a code would stand joined the 155, so that
+    /// `POL Nigeria-US`, `POL Uganda`, `Pol-Italy` and `POL Iran-Saudi Arabia` store a class.
+    @Test("The 164 country words are these, and no others")
     func theCountryWords() {
         let pinned = Set("""
-            ADEN AF AFG AFR AFRICA ALB ALG AM AMER ANG ANT ARA ARAB ARG ASIA AUS BAH BAS BEL BOL \
-            BONIN BR BRAZ BUL BURMA CAMB CAN CENTO CHICOM CHILE CHINAT COAS COL CONGO COSTA CUBA \
-            CYP CZ CZECH D DOM E EA EAST ECE ECOSOC EFTA ETH EUR FAA FAO FIN FR GA GATT GER GHANA \
-            GIB GR GREECE GU GUAM GUAT GUIN HAI HAITI HK HOND HUNG IA ICE IND INDIA INDON IRAN \
-            IRAQ IS ISR ISRAEL IT JAM JAPAN JCS JORDAN KOR KUW LA LAOS LAT LEB LIBYA LUX MALTA MEX \
-            MONG MOR MOZ N NATO NEA NEAR NEARE NEW NIC NR OAU OECD OMAN OPEC PAK PAL PAN PAR PERU \
-            PHIL POL PORT REP RHOD RICA RUM RWANDA RYU S SAUD SC SE SEATO SOM SOMALI SP SUDAN SW \
-            SWAZ SWE SYR THAI THE TR TUN TUR U UAR UK UN UNRWA UR US USSR VEN VIET VIETN W YEMEN \
-            YUGO
+            ADEN AF AFG AFR AFRICA ALB ALG AM AMER ANG ANT ARA ARAB ARABIA ARG ASIA AUS BAH \
+            BANGLADESH BAS BEL BOL BONIN BR BRAZ BUL BURMA BURUNDI CAMB CAN CENTO CHICOM CHILE \
+            CHINAT COAS COL CONGO COSTA CUBA CYP CZ CZECH D DOM E EA EAST ECE ECOSOC EFTA ETH EUR \
+            FAA FAO FIN FR GA GATT GER GHANA GIB GR GREECE GU GUAM GUAT GUIN HAI HAITI HK HOND HUNG \
+            IA ICE IND INDIA INDON IRAN IRAQ IS ISR ISRAEL IT ITALY JAM JAPAN JCS JORDAN KOR KUW \
+            KUWAIT LA LAOS LAT LEB LIBYA LUX MALTA MEX MONG MOR MOZ N NATO NEA NEAR NEARE NEW NIC \
+            NIGERIA NR OAU OECD OMAN OPEC PAK PAL PAN PAR PERU PHIL POL PORT REP RHOD RICA RUM \
+            RWANDA RYU S SAUD SAUDI SC SE SEATO SOM SOMALI SP SUDAN SW SWAZ SWE SWITZ SYR THAI THE \
+            TR TUN TUR U UAR UGANDA UK UN UNRWA UR US USSR VEN VIET VIETN W YEMEN YUGO
             """.split(separator: " ").map(String.init))
-        #expect(pinned.count == 155, "the pin itself is short: \(pinned.count)")
-        #expect(ParsedSourceNote.subjectNumericAreaWords.count == 155)
+        #expect(pinned.count == 164, "the pin itself is short: \(pinned.count)")
+        #expect(ParsedSourceNote.subjectNumericAreaWords.count == 164)
         #expect(ParsedSourceNote.subjectNumericAreaWords == pinned, """
             only in the code: \(ParsedSourceNote.subjectNumericAreaWords.subtracting(pinned).sorted()); \
             only in the pin: \(pinned.subtracting(ParsedSourceNote.subjectNumericAreaWords).sorted()). \
             \(Self.owed)
             """)
-        // The strict class shape allows a country word six letters, and no word here needs more.
-        #expect(pinned.allSatisfy { (1...6).contains($0.count) && $0.allSatisfy(\.isUppercase) })
+        // The strict class shape allows a country word six letters. The handbooks' codes need no
+        // more; the nine names added at version 70 are read by `SubjectNumericDesignation`, which
+        // allows twelve, as `POL 23-9 NIGERIA` in capitals always was.
+        let names: Set<String> = ["ARABIA", "BANGLADESH", "BURUNDI", "ITALY", "KUWAIT", "NIGERIA", "SAUDI", "SWITZ", "UGANDA"]
+        #expect(pinned.subtracting(names).allSatisfy { (1...6).contains($0.count) })
+        #expect(pinned.allSatisfy { (1...12).contains($0.count) && $0.allSatisfy(\.isUppercase) })
     }
 }

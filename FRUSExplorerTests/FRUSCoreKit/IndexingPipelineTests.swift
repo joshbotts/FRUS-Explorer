@@ -3621,7 +3621,10 @@ struct VolumeSourceMatcherTests {
     /// notes are the corpus's own: frus1961-63v04/d86, frus1964-68v02/d123, frus1964-68v05/d174,
     /// frus1964-68v01/d61, frus1964-68v15/d217, frus1964-68v13/d258 (cut after its
     /// classification), frus1969-76ve04/d183, frus1969-76v20/d139, frus1964-68v32/d209 and d208;
-    /// d11 is constructed on a real key.
+    /// d11 is constructed on a real key. Since index version 70 (decision 77, settled in A18) d8's
+    /// `Connally`, a name written with a space after the country, is dropped and the note stores
+    /// `POL 7 US`, and d9's `POL 2 DOM`, a note cut short, completes to `POL 2 DOM REP`: the two
+    /// keys of their own that version 69 stored are gone.
     @Test("A numbered file with a country reaches no other country's file, and the same file at a post is one list (A16)")
     func aNumberedFileWithACountryIsOneFile() async throws {
         try await withTempDir { dir in
@@ -3642,8 +3645,8 @@ struct VolumeSourceMatcherTests {
             #expect(classes.count == 11, "read \(classes.count) document_sources rows")
             let expected: [String: String] = [
                 "d1": "POL 27 VIET", "d2": "POL 27 VIET S", "d3": "POL 27 VIET S", "d4": "POL 27 VIET N",
-                "d5": "NATO 3 LUX", "d6": "NATO 3 LUX (LU)", "d7": "POL 7 US", "d8": "POL 7 US CONNALLY",
-                "d9": "POL 2 DOM", "d10": "POL 2 DOM REP", "d11": "POL 27 ARAB-ISR",
+                "d5": "NATO 3 LUX", "d6": "NATO 3 LUX (LU)", "d7": "POL 7 US", "d8": "POL 7 US",
+                "d9": "POL 2 DOM REP", "d10": "POL 2 DOM REP", "d11": "POL 27 ARAB-ISR",
             ]
             for (id, classKey) in expected {
                 #expect(classes[id] == .some(classKey), "\(id) stored \(String(describing: classes[id]))")
@@ -3658,10 +3661,8 @@ struct VolumeSourceMatcherTests {
                 ("POL 27", ["d1", "d2", "d3", "d4", "d11"]),    // the family, as it was
                 ("NATO 3 LUX", ["d5", "d6"]),                   // the file and the file at its post
                 ("NATO 3 LUX (LU)", ["d5", "d6"]),              // one list from the post's side too
-                ("POL 7 US", ["d7"]),                           // the slash folder is stored as the file
-                ("POL 7 US CONNALLY", ["d8"]),                  // a folder written with a space is a key of its own
-                ("POL 2 DOM", ["d9"]),                          // a short form is a key of its own
-                ("POL 2 DOM REP", ["d10"]),
+                ("POL 7 US", ["d7", "d8"]),                     // the slash folder and the name after the country are stored as the file (v70)
+                ("POL 2 DOM REP", ["d9", "d10"]),               // the short form completes (v70)
             ]
             var keys: [IndexingPipeline.ArchivalNeighborCountKey] = []
             for family in families {
@@ -3692,8 +3693,9 @@ struct VolumeSourceMatcherTests {
             #expect(fromPost.basis == "NATO 3 LUX (LU)")
             let fromFile = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d5")
             #expect(fromFile.documents.map(\.documentId) == ["d6"], "NATO 3 LUX found \(fromFile.documents.map(\.documentId))")
+            // The visits file finds the note whose name after the country version 70 drops.
             let fromVisits = try await pipeline.archivalNeighbors(forVolumeId: "frus1969-76v01", documentId: "d7")
-            #expect(fromVisits.documents.isEmpty, "POL 7 US found \(fromVisits.documents.map(\.documentId))")
+            #expect(fromVisits.documents.map(\.documentId) == ["d8"], "POL 7 US found \(fromVisits.documents.map(\.documentId))")
         }
     }
 
@@ -9138,9 +9140,11 @@ struct SectionOwnTextTests {
         let (dir, url) = try makeVolume()
         defer { try? FileManager.default.removeItem(at: dir) }
         let rows = try await FRUSDocumentParser().parse(volumeURL: url)
-        // A section is emitted when it closes, so after everything it holds.
+        // A section is emitted when it closes, so after everything it holds. Since index version
+        // 70 (A18) ch3, whose heading carries a footnote, has a row, and so does ch7note, an
+        // editorial-note section the index now promotes: the suite below has both rules.
         #expect(rows.map(\.documentId) == [
-            "preface", "d1", "d2", "ch1", "d3", "d4", "d5", "d6", "ch5", "d7", "sub1", "d8", "ch7",
+            "preface", "d1", "d2", "ch1", "d3", "d4", "ch3", "d5", "d6", "ch5", "d7", "sub1", "ch7note", "d8", "ch7",
             "comp1", "d9", "s01", "t1", "t2", "comp2", "t3", "d10", "d11",
         ])
     }
@@ -9190,7 +9194,9 @@ struct SectionOwnTextTests {
         let ids = Set(try await FRUSDocumentParser().parse(volumeURL: url).map(\.documentId))
         #expect(ids.contains("ch5"), "a seating plan is printed at the section's own level")
         #expect(!ids.contains("ch2"), "a heading alone")
-        #expect(!ids.contains("ch3"), "a heading with a footnote, which is the heading's")
+        // Until index version 70 a footnote on the heading was the heading's and ch3 had no row;
+        // A18 gives such a section a row of the heading and its note (`IndexVersion70Tests`).
+        #expect(ids.contains("ch3"), "a heading with a footnote is text of the section's own since version 70")
         #expect(!ids.contains("ch4"), "an empty paragraph prints nothing")
     }
 
@@ -9207,13 +9213,15 @@ struct SectionOwnTextTests {
         #expect(s01.isFrontMatter, "a historical-document section is front matter by its kind")
     }
 
-    @Test("Text of a division the index does not decide is that division's, and no part of the row around it")
+    @Test("Text of a division inside is that division's, and no part of the row around it")
     func aDivisionInsideKeepsItsText() async throws {
         let (dir, url) = try makeVolume()
         defer { try? FileManager.default.removeItem(at: dir) }
         let rows = try await FRUSDocumentParser().parse(volumeURL: url)
         #expect(words(try #require(rows.first { $0.documentId == "ch7" })) == "Seventh Meeting Agenda of the seventh.")
-        #expect(!rows.contains { words($0).contains("Background the editors supply") })
+        // Until index version 70 the editorial note inside ch7 reached no row at all; now it is a
+        // row of its own (A18), and still no part of ch7's.
+        #expect(rows.filter { words($0).contains("Background the editors supply") }.map(\.documentId) == ["ch7note"])
     }
 
     @Test("A list, and a section with no id, have no row whatever they print: the reader could not open one by its id, and a list has a view of its own")
@@ -9238,7 +9246,7 @@ struct SectionOwnTextTests {
         let (dir, url) = try makeVolume()
         defer { try? FileManager.default.removeItem(at: dir) }
         let rows = try await FRUSDocumentParser().parse(volumeURL: url)
-        #expect(rows.count == 22)
+        #expect(rows.count == 24, "22 until index version 70 added ch3's heading row and ch7note's editorial note")
         for row in rows {
             let page = try #require(
                 try await FRUSDocumentParser().parseDocument(documentId: row.documentId, volumeURL: url),
@@ -9276,7 +9284,9 @@ struct SectionOwnTextTests {
         #expect(closing.map(\.documentId) == ["ch1"])
         let minutes = try await store.search(query: FTS5Query(keywords: ["Agreed"]), limit: 20, offset: 0)
         #expect(minutes.map(\.documentId) == ["d1"])
-        // The flags a row is stored with: front matter by its kind, and never an editorial note.
+        // The flags a row is stored with: front matter by its kind, and an editorial note only for
+        // the editorial-note section the index promotes since version 70 (A18); a section's own
+        // text is never one.
         #expect(try column("""
             SELECT document_id FROM document_cache
             WHERE volume_id = '\(Self.volumeId)' AND is_front_matter = 1 ORDER BY rowid
@@ -9284,7 +9294,7 @@ struct SectionOwnTextTests {
         #expect(try column("""
             SELECT document_id FROM document_cache
             WHERE volume_id = '\(Self.volumeId)' AND is_editorial_note = 1
-            """, in: dbURL).isEmpty)
+            """, in: dbURL) == ["ch7note"])
     }
 
     @Test("A reference in the section's own text is an edge from the section")
@@ -9330,14 +9340,16 @@ struct SectionOwnTextTests {
         let (dir, _, pipeline, _) = try await makeIndexedVolume()
         defer { try? FileManager.default.removeItem(at: dir) }
         let order = try await pipeline.readingSequence(forVolume: Self.volumeId).map(\.documentId)
+        // Since index version 70 (A18) ch3's heading row comes first in ch3, and ch7's editorial
+        // note, which opens before its document, reads before it (`VolumeSection.leadsWithSubsections`).
         #expect(order == [
             "preface",
             "comp1",
             "ch1", "d1", "d2",
-            "d3", "d4", "d5",
+            "d3", "ch3", "d4", "d5",
             "ch5", "d6",
             "sub1", "d7",
-            "ch7", "d8", "ch7note",
+            "ch7", "ch7note", "d8",
             "s01", "d9",
             "comp2", "t1", "t2",
             "t3",
@@ -9354,11 +9366,12 @@ struct SectionOwnTextTests {
         let structure = try #require(try await pipeline.cachedVolumeStructure(forVolumeId: Self.volumeId))
         let sections = sectionsById(structure.sections)
 
-        for id in ["comp1", "ch1", "ch5", "sub1", "ch7", "s01", "comp2"] {
+        // ch3 joined the first list at index version 70: its heading's footnote is its own text (A18).
+        for id in ["comp1", "ch1", "ch3", "ch5", "sub1", "ch7", "s01", "comp2"] {
             let section = try #require(sections[id], "the outline holds no section \(id)")
             #expect(section.ownTextEntry(among: rows)?.documentId == id)
         }
-        for id in ["ch2", "ch3", "ch4", "comp3", "index"] {
+        for id in ["ch2", "ch4", "comp3", "index"] {
             let section = try #require(sections[id], "the outline holds no section \(id)")
             #expect(section.ownTextRowId == id)
             #expect(section.ownTextEntry(among: rows) == nil, "\(id) prints nothing of its own")
@@ -9388,6 +9401,442 @@ struct SectionOwnTextTests {
     @Test("The index version is at least 68")
     func indexVersionCoversSectionRows() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 68)
+    }
+}
+
+// MARK: - IndexVersion70Tests (A18)
+
+/// Index version 70, build 51's index bump (A18; plan of record decisions 60 and 77, and the
+/// owner's answers of 2026-10-20). One fixture volume followed from the parse to the index, the
+/// reading order and Browse's rules:
+/// - the prose kinds the index left out have rows, and the corpus's lists still have none
+///   (`TEIParserDelegate.promotableQuasiDocumentKinds`);
+/// - an `editorial-note` section is an editorial note, and front matter where it is printed in
+///   `<front>`;
+/// - a section whose only text of its own is a footnote on its heading has a row of the heading
+///   and the note, with the note's reference and the person it names;
+/// - a section's row is dated by the span of the documents it holds where its own text prints no
+///   date (`IndexingPipeline.datingSectionRows`), and the words Search draws for the span
+///   (`SearchResultDate`);
+/// - a chapter whose subsection opens before its documents reads it first
+///   (`VolumeSection.leadsWithSubsections`), and an outline stored before 70 still decodes.
+@Suite("Index version 70: prose kinds, heading footnotes, section dates and the reading order (A18)")
+struct IndexVersion70Tests {
+
+    static let volumeId = "frus1945-50Intel"
+
+    static let volumeXML = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt></fileDesc></teiHeader>
+          <text>
+          <front>
+            <div type="section" subtype="note-on-covert-actions" xml:id="actionsstatement"><head>Note on U.S. Covert Actions</head>
+              <p>In compliance with the statute, the editors have identified covert actions.</p></div>
+            <div type="section" subtype="editorial-note" xml:id="note"><head>Note Concerning the Minutes</head>
+              <p>Occasionally referred to as the Council of Five.</p></div>
+            <div type="section" subtype="additional-volumes" xml:id="subseriesvols"><head>Kennedy Administration Volumes</head>
+              <list><item><ref target="frus1961-63v01">I Vietnam, 1961</ref></item></list></div>
+            <div type="section" xml:id="message"><head>Message</head>
+              <p>Fellow-citizens of the Senate and House of Representatives.</p></div>
+            <div type="section" xml:id="lod"><head>List of Documents</head>
+              <table><row><cell>1</cell><cell>Telegram 430 from La Paz</cell></row></table></div>
+          </front>
+          <body>
+            <div type="chapter" xml:id="ch1"><head>Founding of the National Intelligence Structure<note n="1" xml:id="ch1fn1">For previous documentation, see <ref target="frus1941v01#pg_12">Foreign Relations, 1941, vol. I, p. 12</ref>, and the plan of <persName corresp="#p_DWJ1">Donovan</persName>.</note></head>
+              <div type="section" subtype="editorial-note" xml:id="intro1"><head>Introduction</head>
+                <p>This volume takes as its starting point the surrender of Japan.</p></div>
+              <div type="document" xml:id="d1" n="1"><head>1. Memorandum</head><dateline>Washington, <date when="1945-08-21">August 21, 1945</date></dateline><p>First.</p></div>
+              <div type="document" xml:id="d2" n="2"><head>2. Letter</head><dateline>Washington, <date when="1946-01-22">January 22, 1946</date></dateline><p>Second.</p></div>
+            </div>
+            <div type="chapter" xml:id="ch2"><head>Meeting of the Joint Chiefs of Staff, 10 a.m.</head>
+              <dateline><date when="1945-07-16">Monday, July 16, 1945</date></dateline>
+              <table><row><cell>Present</cell></row><row><cell>Marshall and King</cell></row></table>
+              <div type="document" xml:id="d3" n="3"><head>3. Minutes</head><dateline><date when="1945-07-17">July 17, 1945</date></dateline><p>Third.</p></div>
+            </div>
+            <div type="chapter" xml:id="ch3"><head>Those Present</head>
+              <table><row><cell>Leahy</cell></row></table>
+              <div type="document" xml:id="d4" n="4"><head>4. Minutes</head><dateline><date when="1945-07-18">July 18, 1945</date></dateline><p>Fourth.</p></div>
+            </div>
+            <div type="chapter" xml:id="ch4"><head>Spain</head>
+              <p>Correspondence.</p>
+              <div type="document" xml:id="d5" n="5"><head>5. Despatch</head><dateline><date when="1870">1870</date></dateline><p>Fifth.</p></div>
+              <div type="document" xml:id="d6" n="6"><head>6. Despatch</head><dateline><date when="1871-10">October 1871</date></dateline><p>Sixth.</p></div>
+            </div>
+            <div type="chapter" xml:id="ch5"><head>Undated</head>
+              <p>Papers.</p>
+              <div type="document" xml:id="d7" n="7"><head>7. Paper</head><p>No date.</p></div>
+            </div>
+            <div type="compilation" xml:id="comp1"><head>Treaties<note n="2" xml:id="comp1fn1">Continued from the previous volume.</note></head>
+              <pb n="99" xml:id="pg_99"/>
+              <div type="chapter" xml:id="t1"><head>Treaty One</head><p>Article one.</p></div>
+            </div>
+            <div type="chapter" xml:id="ch6"><head>Later</head>
+              <div type="document" xml:id="d8" n="8"><head>8. Note</head><dateline><date when="1950-01-01">January 1, 1950</date></dateline><p>Eighth.</p></div>
+              <div type="subchapter" xml:id="ch6subch1"><head>Appendix</head><p>Appended text.</p></div>
+            </div>
+          </body></text>
+        </TEI>
+        """
+
+    private func makeVolume() throws -> (dir: URL, url: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSIndexVersion70-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let url = volumes.appendingPathComponent("\(Self.volumeId).xml")
+        try Self.volumeXML.write(to: url, atomically: true, encoding: .utf8)
+        return (dir, url)
+    }
+
+    /// The fixture indexed through the pipeline's own store pass, with no bundled data file.
+    private func makeIndexedVolume() async throws -> (dir: URL, dbURL: URL, pipeline: IndexingPipeline, store: FTS5Store) {
+        let (dir, _) = try makeVolume()
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let resources = IndexingResources(
+            personAuthority: { nil }, documentSubjects: { nil },
+            decimalClassLabels: { nil }, brokenRefs: { nil })
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL,
+            volumesDirectory: dir.appendingPathComponent("volumes"), resources: resources,
+            concurrencyLimit: 1, defaults: InMemoryIndexingStampStore())
+        try await pipeline.indexVolume(Self.volumeId)
+        return (dir, dbURL, pipeline, store)
+    }
+
+    /// The first column of each row `sql` returns, as text.
+    private func column(_ sql: String, in dbURL: URL) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            Issue.record("the test index did not open")
+            return []
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            Issue.record("\(String(cString: sqlite3_errmsg(db))): \(sql)")
+            return []
+        }
+        defer { sqlite3_finalize(stmt) }
+        var values: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            values.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return values
+    }
+
+    /// The words a row prints, on one line.
+    private func words(_ ast: FRUSDocumentAST) -> String {
+        FRUSASTNode.printedText(of: ast.nodes).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// Every section of the outline by its id, at any depth.
+    private func sectionsById(_ sections: [VolumeSection]) -> [String: VolumeSection] {
+        var found: [String: VolumeSection] = [:]
+        for section in sections {
+            found[section.sectionId] = section
+            found.merge(sectionsById(section.subsections)) { first, _ in first }
+        }
+        return found
+    }
+
+    /// A description of a node tree in which a dictionary's entries are in key order.
+    private func canonical(_ value: Any) -> String {
+        if let attributes = value as? [String: String] {
+            return "[" + attributes.keys.sorted().map { "\($0): \(attributes[$0] ?? "")" }.joined(separator: ", ") + "]"
+        }
+        let mirror = Mirror(reflecting: value)
+        if mirror.children.isEmpty { return "\(value)" }
+        return "(" + mirror.children.map { "\($0.label ?? "_"): \(canonical($0.value))" }.joined(separator: ", ") + ")"
+    }
+
+    // MARK: The parse
+
+    @Test("The prose kinds the index left out have rows, and the lists still have none")
+    func whichSectionsHaveARow() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(rows.map(\.documentId) == [
+            "actionsstatement", "note", "message",
+            "intro1", "d1", "d2", "ch1",
+            "d3", "ch2", "d4", "ch3", "d5", "d6", "ch4", "d7", "ch5",
+            "t1", "comp1", "d8", "ch6subch1",
+        ])
+        #expect(words(try #require(rows.first { $0.documentId == "actionsstatement" }))
+                == "Note on U.S. Covert Actions In compliance with the statute, the editors have identified covert actions.")
+        #expect(words(try #require(rows.first { $0.documentId == "message" }))
+                == "Message Fellow-citizens of the Senate and House of Representatives.")
+        // The lists: a subseries' volumes and a microfiche supplement's list of documents.
+        #expect(!rows.contains { $0.documentId == "subseriesvols" || $0.documentId == "lod" })
+        #expect(!rows.contains { words($0).contains("Telegram 430") || words($0).contains("I Vietnam, 1961") })
+        for kind in ["note-on-covert-actions", "message", "message1", "editorial-note", "editorial-policies",
+                     "acknowledgments", "report", "recommendations", "abstract", "united-states",
+                     "translation-of-the-memorandum"] {
+            #expect(VolumeSection.proseReadableKinds.contains(kind), "\(kind) opens in the reader")
+        }
+        for kind in ["additional-volumes", "lod", "documents", "indx1", "citations", "correspondents", "map-or-chart"] {
+            #expect(!VolumeSection.proseReadableKinds.contains(kind), "\(kind) is a list or a map, not a page")
+        }
+    }
+
+    @Test("An editorial-note section is an editorial note, and front matter only where the volume prints it so")
+    func editorialNoteSections() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        let note = try #require(rows.first { $0.documentId == "note" })
+        let intro = try #require(rows.first { $0.documentId == "intro1" })
+        for row in [note, intro] {
+            guard case .editorialNote? = row.nodes.first else {
+                Issue.record("\(row.documentId) is not wrapped as an editorial note")
+                continue
+            }
+        }
+        #expect(note.isFrontMatter, "printed in <front>")
+        #expect(!intro.isFrontMatter, "a section of its chapter")
+        #expect(words(intro) == "Introduction This volume takes as its starting point the surrender of Japan.")
+        // The other new kinds are front matter by kind, as a preface is.
+        #expect(rows.first { $0.documentId == "actionsstatement" }?.isFrontMatter == true)
+        #expect(rows.first { $0.documentId == "message" }?.isFrontMatter == true)
+    }
+
+    @Test("A heading's footnote is the section's own text: the row holds the heading and the note, and a section around sections has one too")
+    func headingFootnoteRows() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        let ch1 = try #require(rows.first { $0.documentId == "ch1" })
+        let heading = words(ch1)
+        #expect(heading == "Founding of the National Intelligence Structure For previous documentation, see Foreign Relations, 1941, vol. I, p. 12, and the plan of Donovan.",
+                "read: \(heading)")
+        #expect(!rows.contains { words($0).contains("surrender of Japan") && $0.documentId == "ch1" },
+                "the introduction is its own row, no part of the chapter's")
+        let comp1 = try #require(rows.first { $0.documentId == "comp1" }, "a container of sections with a footnote on its heading")
+        #expect(words(comp1) == "Treaties Continued from the previous volume.")
+        // The break after the heading is the chapter's that begins after it, as a container's with
+        // text of its own carries it.
+        #expect(rows.first { $0.documentId == "t1" }?.carriedPages == [.arabic(99)])
+        // A heading alone is still no row.
+        #expect(!rows.contains { $0.documentId == "ch6" })
+    }
+
+    @Test("The page the reader opens for a row is the row, flags included")
+    func theReadersPageIsTheRow() async throws {
+        let (dir, url) = try makeVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let rows = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(rows.count == 20)
+        for row in rows {
+            let page = try #require(
+                try await FRUSDocumentParser().parseDocument(documentId: row.documentId, volumeURL: url),
+                "the reader is given no page for \(row.documentId)")
+            #expect(canonical(page.nodes) == canonical(row.nodes), "\(row.documentId)'s page is not its row")
+            #expect(page.isFrontMatter == row.isFrontMatter, "\(row.documentId)")
+        }
+    }
+
+    // MARK: The index
+
+    @Test("The index stores the rows with their flags, and the heading note's reference and person")
+    func theIndexHoldsTheRows() async throws {
+        let (dir, dbURL, pipeline, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(try column("""
+            SELECT document_id FROM document_cache
+            WHERE volume_id = '\(Self.volumeId)' AND is_front_matter = 1 ORDER BY rowid
+            """, in: dbURL) == ["actionsstatement", "note", "message"])
+        #expect(try column("""
+            SELECT document_id FROM document_cache
+            WHERE volume_id = '\(Self.volumeId)' AND is_editorial_note = 1 ORDER BY rowid
+            """, in: dbURL) == ["note", "intro1"])
+        let cached = try await pipeline.documents(forVolume: Self.volumeId)
+        #expect(cached.first { $0.documentId == "ch1" }?.header == "Founding of the National Intelligence Structure")
+        #expect(cached.first { $0.documentId == "intro1" }?.isEditorialNote == true)
+        #expect(try column("""
+            SELECT source_document_id FROM cross_references
+            WHERE source_volume_id = '\(Self.volumeId)' AND target_volume_id = 'frus1941v01'
+            """, in: dbURL) == ["ch1"])
+        #expect(try column("""
+            SELECT document_id FROM person_mentions
+            WHERE volume_id = '\(Self.volumeId)' AND person_ref LIKE '%DWJ1'
+            """, in: dbURL) == ["ch1"])
+    }
+
+    @Test("A section's row is dated by the span of its documents where its own text prints no date")
+    func sectionRowsAreDatedBySpan() async throws {
+        let (dir, dbURL, _, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        func dated(_ id: String) throws -> String {
+            try column("""
+                SELECT COALESCE(date_iso, '∅') || ' ' || COALESCE(date_iso_max, '∅') || ' ' ||
+                       COALESCE(date_precision, '∅') || ' ' || COALESCE(date_certainty, '∅')
+                FROM document_dates WHERE volume_id = '\(Self.volumeId)' AND document_id = '\(id)'
+                """, in: dbURL).first ?? "no row"
+        }
+        // A heading row spanning two documents; a list of those present on one day.
+        #expect(try dated("ch1") == "1945-08-21 1946-01-22 day range")
+        #expect(try dated("ch3") == "1945-07-18 1945-07-18 day exact")
+        // Its own dateline wins.
+        #expect(try dated("ch2") == "1945-07-16 1945-07-16 day exact")
+        // Year-only and month-only documents: the span at the coarser precision.
+        #expect(try dated("ch4") == "1870-01-01 1871-10-31 year range")
+        // No dated document, and prose sections, stay undated.
+        #expect(try dated("ch5").hasPrefix("∅ ∅"))
+        #expect(try dated("intro1").hasPrefix("∅ ∅"))
+        #expect(try dated("comp1").hasPrefix("∅ ∅"), "its chapter holds no document")
+        // The documents are as they were.
+        #expect(try dated("d5") == "1870-01-01 1870-12-31 year exact")
+    }
+
+    @Test("A search result carries the span the index dates a section's row by, which Search draws in place of a dateline")
+    func searchCarriesTheSpan() async throws {
+        let (dir, _, pipeline, store) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        let founding = try #require(try await service.search(parameters: SearchParameters(keywords: "Founding")).first)
+        #expect(founding.documentId == "ch1" && founding.dateline == nil)
+        #expect(founding.dateISO == "1945-08-21" && founding.dateISOMax == "1946-01-22" && founding.datePrecision == .day)
+        #expect(founding.drawnDate == SearchResultDate.text(dateISO: "1945-08-21", dateISOMax: "1946-01-22", precision: .day))
+        // A document keeps its dateline, and carries its own single day.
+        let first = try #require(try await service.search(parameters: SearchParameters(keywords: "Memorandum")).first)
+        #expect(first.documentId == "d1" && first.dateline == "Washington, August 21, 1945")
+        #expect(first.dateISO == "1945-08-21" && first.dateISOMax == "1945-08-21" && first.datePrecision == .day)
+    }
+
+    @Test("Search draws a span's words at its precision, and nothing for a row with no date")
+    func theWordsForADate() {
+        let en = Locale(identifier: "en_US")
+        #expect(SearchResultDate.text(dateISO: "1945-07-16", dateISOMax: "1945-07-16", precision: .day, locale: en) == "July 16, 1945")
+        #expect(SearchResultDate.text(dateISO: "1945-08-21", dateISOMax: "1946-01-22", precision: .day, locale: en)
+                == "August 21, 1945 – January 22, 1946")
+        #expect(SearchResultDate.text(dateISO: "1870-01-01", dateISOMax: "1871-10-31", precision: .year, locale: en) == "1870 – 1871")
+        #expect(SearchResultDate.text(dateISO: "1862-01-01", dateISOMax: "1862-12-31", precision: .year, locale: en) == "1862")
+        #expect(SearchResultDate.text(dateISO: "1945-07-01", dateISOMax: "1945-08-31", precision: .month, locale: en) == "July 1945 – August 1945")
+        #expect(SearchResultDate.text(dateISO: "1945-07-16", dateISOMax: nil, precision: nil, locale: en) == "July 16, 1945")
+        #expect(SearchResultDate.text(dateISO: nil, dateISOMax: nil, precision: .day, locale: en) == nil)
+        #expect(SearchResultDate.text(dateISO: "undated", dateISOMax: nil, precision: .day, locale: en) == nil)
+        let row = SearchResult(documentId: "ch2", volumeId: Self.volumeId, header: "Meeting", dateISO: "1945-07-16",
+                               dateISOMax: "1945-07-16", datePrecision: .day, snippet: "", bm25Score: 0)
+        #expect(row.drawnDate == SearchResultDate.text(dateISO: "1945-07-16", dateISOMax: "1945-07-16", precision: .day))
+        #expect(SearchResult(documentId: "d7", volumeId: Self.volumeId, header: "Paper", snippet: "", bm25Score: 0).drawnDate == nil)
+    }
+
+    // MARK: Where the rows are put
+
+    @Test("A chapter whose subsection opens before its documents reads it first, and the outline says so")
+    func theReadingOrderFollowsTheOutline() async throws {
+        let (dir, _, pipeline, _) = try await makeIndexedVolume()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let order = try await pipeline.readingSequence(forVolume: Self.volumeId).map(\.documentId)
+        #expect(order == [
+            "actionsstatement", "note", "subseriesvols", "message", "lod",
+            "ch1", "intro1", "d1", "d2",
+            "ch2", "d3",
+            "ch3", "d4",
+            "ch4", "d5", "d6",
+            "ch5", "d7",
+            "comp1", "t1",
+            "d8", "ch6subch1",
+        ])
+        let structure = try #require(try await pipeline.cachedVolumeStructure(forVolumeId: Self.volumeId))
+        let sections = sectionsById(structure.sections)
+        #expect(sections["ch1"]?.leadsWithSubsections == true)
+        #expect(sections["ch6"]?.leadsWithSubsections == false, "its document comes first")
+        #expect(sections["ch2"]?.leadsWithSubsections == false, "no subsection")
+        #expect(sections["comp1"]?.leadsWithSubsections == false, "no direct document for its chapter to lead")
+        // Browse opens the new kinds, and lists the two lists as it did.
+        #expect(sections["intro1"]?.canReadDirectly == true)
+        #expect(sections["actionsstatement"]?.canReadDirectly == true)
+        #expect(sections["lod"]?.canReadDirectly == false)
+        #expect(sections["subseriesvols"]?.canReadDirectly == false)
+    }
+
+    @Test("An outline stored before version 70 decodes, with no section leading with its subsections")
+    func anOlderOutlineDecodes() throws {
+        let json = Data("""
+            {"sectionId":"ch1","divType":"chapter","title":"Founding","documentIds":["d1"],
+             "subsections":[{"sectionId":"intro1","divType":"editorial-note","title":"Introduction",
+             "documentIds":[],"subsections":[]}]}
+            """.utf8)
+        let section = try JSONDecoder().decode(VolumeSection.self, from: json)
+        #expect(section.sectionId == "ch1" && section.subsections.map(\.sectionId) == ["intro1"])
+        #expect(!section.leadsWithSubsections)
+        // And a stored one round-trips.
+        let leading = VolumeSection(sectionId: "ch1", divType: "chapter", title: "Founding",
+                                    documentIds: ["d1"], subsections: [], leadsWithSubsections: true)
+        let again = try JSONDecoder().decode(VolumeSection.self, from: JSONEncoder().encode(leading))
+        #expect(again.leadsWithSubsections)
+    }
+
+    /// Without the bump an installed index holds none of the rows and none of the dates.
+    @Test("The index version is at least 70")
+    func indexVersionCoversTheBump() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 70)
+    }
+}
+
+// MARK: - VolumeSourcesVersion70Tests (A18)
+
+/// A volume's list of sources at index version 70 (A18, #1645's line): a row naming a Subject-Numeric
+/// file with no subject number, or continued after a slash, stores the file's class, as a document's
+/// citation of the same file does, through `SourceNoteParser.frontMatterClassKey`; a lot stays a lot
+/// and a subject title in title case is not a country. The authority generator's twin has the same
+/// rows in `ExtractorTests`.
+@Suite("Volume sources at index version 70: a file with no subject number, and one continued after a slash (A18)")
+struct VolumeSourcesVersion70Tests {
+
+    static let volumeXML = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt></fileDesc></teiHeader>
+          <text>
+          <front>
+            <div type="section" subtype="sources" xml:id="sources">
+              <head>Sources</head>
+              <p>The editors drew on the collections below.</p>
+              <list>
+                <item><hi rend="strong">Department of State</hi>
+                  <list>
+                    <item>POL US–USSR: general U.S.-Soviet relations</item>
+                    <item>POL 7 US/Harriman: Visits and meetings of W. Averell Harriman</item>
+                    <item>DEF 6–8 US/NATO: Defense affairs between United States and NATO</item>
+                    <item>POL 27 Laos: military operations</item>
+                    <item>E Files: Lot 60 D 136</item>
+                    <item>DEF 18–4 Defense Affairs, Arms Control and Disarmament</item>
+                  </list>
+                </item>
+              </list>
+            </div>
+          </front>
+          <body>
+            <div type="chapter" xml:id="ch1"><head>Chapter</head>
+              <div type="document" xml:id="d1" n="1"><head>1. Telegram</head><p>Text.</p></div>
+            </div>
+          </body></text>
+        </TEI>
+        """
+
+    @Test("The rows store the classes a document's citation of the same file stores")
+    func theRowsClasses() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSVolumeSources70-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("frus1969-76v01.xml")
+        try Self.volumeXML.write(to: url, atomically: true, encoding: .utf8)
+        let entries = try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).volumeSources
+        func entry(_ fragment: String) throws -> VolumeSourceEntry {
+            try #require(entries.first { $0.rawText.contains(fragment) }, "no row holds \(fragment)")
+        }
+        #expect(try entry("POL US").decimalClass == "POL US-USSR")
+        #expect(try entry("Harriman").decimalClass == "POL 7 US")
+        #expect(try entry("US/NATO").decimalClass == "DEF 6-8 US")
+        #expect(try entry("Laos").decimalClass == "POL 27 LAOS", "a title-case area word, read since version 69")
+        let lot = try entry("E Files")
+        #expect(lot.lotFile == "60 D 136" && lot.decimalClass == nil, "a lot is a lot")
+        #expect(try entry("Defense Affairs").decimalClass == nil, "a subject title is not a country")
     }
 }
 

@@ -1078,6 +1078,8 @@ extension SearchResult {
             header: header,
             dateline: dateline,
             dateISO: dateISO,
+            dateISOMax: dateISOMax,
+            datePrecision: datePrecision,
             sourceNote: sourceNote,
             snippet: snippet,
             bm25Score: bm25,

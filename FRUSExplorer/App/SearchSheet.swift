@@ -156,6 +156,8 @@ import SwiftUI
 ///          `applyFacetSelection(_:keys:)`), which remembers a Volumes facet's choice, so a change of project leaves it
 ///   1.28 — #1683: a checked row's Add N Selected to Collection… and Add Tags to N Selected…, dimmed by the limit,
 ///          say why under their names (`selectionAddRefusal`), which the strip says under its two buttons
+///   1.29 — A18 (index version 70): a row with no dateline draws the day or span the index dates it by
+///          (`SearchResult.drawnDate`), as the iPhone's and iPad's rows do
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -2928,7 +2930,9 @@ private struct SearchResultRow: View {
 
                 Spacer()
 
-                if let dateline = result.dateline {
+                // The dateline, or for a row whose text prints none the day or span the index
+                // dates it by (index version 70), as the iPhone's and iPad's rows draw it.
+                if let dateline = result.dateline ?? result.drawnDate {
                     Text(dateline)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)

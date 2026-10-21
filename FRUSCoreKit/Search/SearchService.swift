@@ -114,6 +114,8 @@ import FTS5Store
 ///          share): 30 characters before the prose's first match, back to a space, and 2,000 after it,
 ///          where it kept 1,000 on each side of the body's first match. A row whose only match is in
 ///          those fields shows its opening prose. SNIPPETS MOVE for every keyword search
+///   2.16 — A18 (index version 70): a result carries `dateISOMax` and `datePrecision` from its row, so a
+///          row with no dateline — a section's, dated by the documents it holds — can draw its day or span
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -229,6 +231,8 @@ public actor SearchService {
                 header: row.header,
                 dateline: row.dateline,
                 dateISO: row.dateISO,
+                dateISOMax: row.dateISOMax,
+                datePrecision: row.datePrecision.flatMap(DatePrecision.init(rawValue:)),
                 sourceNote: row.sourceNote,
                 snippet: snippet,
                 bm25Score: row.score,

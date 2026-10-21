@@ -146,6 +146,14 @@ import SourceNoteKit
 ///          parse for one section decides that section as the whole volume's parse does, so
 ///          `parseDocument` returns the row the index holds, and reads a section the index leaves
 ///          out a second time to return it whole (`parseTarget`)
+///   2.14 — 2026-10-20 (A18, index version 70): a division whose only text of its own is a footnote on
+///          its heading has a row (`TEIParserDelegate.headingHoldsNote`); the prose kinds the index
+///          left out are promoted (`promotableQuasiDocumentKinds`), an `editorial-note` section under
+///          the `.editorialNote` wrapper and front matter where it is printed in `<front>`; a volume's
+///          list of sources keys a file with no subject number and one continued after a slash
+///          (`SourceNoteParser.frontMatterClassKey`, `frontMatterPrimarySubjectKey`); and the outline
+///          records whether a section's first subsection opens before its first document
+///          (`VolumeSection.leadsWithSubsections`)
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -422,6 +430,17 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
         var titleCaptured: Bool = false
         var documentIds: [String] = []
         var subsections: [VolumeSection] = []
+        /// Whether the first subsection was recorded before any direct document (index version
+        /// 70): `VolumeSection.leadsWithSubsections`. Set when a subsection is appended to a frame
+        /// that holds nothing yet.
+        var leadsWithSubsections: Bool = false
+
+        /// Records `sections` as subsections, noting whether they lead the frame's contents.
+        mutating func appendSubsections(_ sections: [VolumeSection]) {
+            guard !sections.isEmpty else { return }
+            if documentIds.isEmpty, subsections.isEmpty { leadsWithSubsections = true }
+            subsections.append(contentsOf: sections)
+        }
     }
 
     private var stack: [Frame] = []
@@ -638,25 +657,35 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
                     ))
                 }
             } else {
-                stack[stack.count - 1].subsections.append(contentsOf: frame.subsections)
-                stack[stack.count - 1].documentIds.append(contentsOf: frame.documentIds)
+                // The wrapper's order is kept where it can be: its subsections lead the parent's
+                // contents when they led the wrapper's, or the wrapper held no document.
+                if frame.documentIds.isEmpty || frame.leadsWithSubsections {
+                    stack[stack.count - 1].appendSubsections(frame.subsections)
+                    stack[stack.count - 1].documentIds.append(contentsOf: frame.documentIds)
+                } else {
+                    stack[stack.count - 1].documentIds.append(contentsOf: frame.documentIds)
+                    stack[stack.count - 1].appendSubsections(frame.subsections)
+                }
             }
             return
         }
 
         let rawTitle = Self.collapseWhitespace(frame.headParts.joined())
         let title = rawTitle.isEmpty ? humanTitle(for: frame.divType) : rawTitle
+        // A section with no direct document has nothing for its subsections to lead (index version
+        // 70): the flag is for the 18 that hold both, the other way round from the outline's order.
         let section = VolumeSection(
             sectionId: frame.sectionId,
             divType: frame.divType,
             title: title,
             documentIds: frame.documentIds,
-            subsections: frame.subsections
+            subsections: frame.subsections,
+            leadsWithSubsections: frame.leadsWithSubsections && !frame.documentIds.isEmpty
         )
         if stack.isEmpty {
             topLevelSections.append(section)
         } else {
-            stack[stack.count - 1].subsections.append(section)
+            stack[stack.count - 1].appendSubsections([section])
         }
     }
 
@@ -965,12 +994,33 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// `"persons"`/`"sources"` (structured data with dedicated views and tables),
     /// `"table-of-contents"`/`"index"` (navigation aids — page numbers and chapter
     /// titles would pollute search results), and `"section"` (unidentifiable).
+    ///
+    /// **Index version 70 (A18, the owner's decision of 2026-10-20): every prose kind the corpus
+    /// prints that the index left out, and none of its lists.** A `type="section"` div with no
+    /// subtype takes its `xml:id` as its kind, so some of these name one volume's division.
+    /// Measured over the 553 catalogue volumes at corpus `6170e4b32`, each kind's divisions
+    /// reached no row: the 45 Notes on U.S. Covert Actions (`note-on-covert-actions`, 866,558
+    /// characters), the Presidents' annual messages and proclamations of the 1860s–1890s
+    /// (`message`, 9 divisions, and `message1`, 3: 769,068), twelve `editorial-note` sections
+    /// (`frus1945-50Intel`'s eight chapter introductions and four notes on the Paris
+    /// conference's minutes: 176,510), the Secretary of State's report of 1896 (`report`,
+    /// 79,369), the recommendations of 1876 (`recommendations`, 72,998), four statements of
+    /// editorial policy (`editorial-policies`, 33,434), two `acknowledgments`, two abstracts of
+    /// the Treaty of Washington papers (`abstract`), a translated memorandum and a report's
+    /// title block in `frus1902app2` (`united-states`). Still out, as lists or title lines: a
+    /// microfiche supplement's list of documents (`lod`, `documents`), the lists of a subseries'
+    /// volumes (`additional-volumes`, 39 divisions, 838 references to other volumes), the lists
+    /// of correspondents, a table of citations, a back-of-book index (`indx1`), the title pages
+    /// (`title-page1`, `foreign-relations`) and the three map sections (`map-or-chart`).
     private static let promotableQuasiDocumentKinds: Set<String> = [
         "compilation", "chapter", "subchapter", "appendix",
         "preface", "intro", "introduction", "errata", "foreword",
         "prefatoryNote", "terms",
         "press-release", "volume-summary", "about-frus-series",
         "historical-document",
+        "note-on-covert-actions", "message", "message1", "editorial-note",
+        "editorial-policies", "acknowledgments", "report", "recommendations",
+        "abstract", "united-states", "translation-of-the-memorandum",
     ]
 
     // MARK: Init
@@ -1271,18 +1321,36 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// nowhere: passed up, it would now land in the text of a division around it that has a row.
     ///
     /// **A prose section, and a section that holds only sections (#1510),** as before 68.
+    ///
+    /// **Index version 70 (A18, the owner's decisions of 2026-10-20).** Three things more:
+    /// - A division whose only text of its own is a footnote on its heading has a row for the
+    ///   heading and the note (``headingHoldsNote(_:)``), whether it holds documents or sections:
+    ///   "For previous documentation, see…", which 3,517 chapters, subchapters and compilations in
+    ///   280 volumes print and nothing else (857,911 characters of heading and note, 5,174
+    ///   references and 71 names on a full index at corpus `6170e4b32`). Until 70 the note was the
+    ///   heading's and reached nothing.
+    /// - The prose kinds the index did not promote are promoted (``promotableQuasiDocumentKinds``).
+    /// - An `editorial-note` section is stored as an editorial note, its nodes under the
+    ///   `.editorialNote` wrapper a `subtype="editorial-note"` document gets, so it is badged and
+    ///   drawn as one; and it is front matter where the volume prints it in `<front>` or `<back>`,
+    ///   not by its kind: `frus1945-50Intel`'s chapter introductions sit in the body and stay
+    ///   sections of their chapter, the four Paris notes sit in `<front>`.
     private func sectionDecision(for frame: ParseFrame) -> SectionDecision? {
         guard let kind = Self.decidedKind(of: frame.attributes) else { return nil }
         // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
-        let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
+        let isFrontMatter = kind == "editorial-note"
+            ? stack.contains { $0.elementName == "front" || $0.elementName == "back" }
+            : VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
 
         if frame.hasChildDocuments {
             // Its own text is what is written directly inside it. What a division inside it
             // passed up is that division's: a table of contents, a persons list, the placeholder
             // of a chapter not yet released. None of that reached the index before, and none
-            // does now.
+            // does now. A footnote on the heading is its own text too (index version 70).
             let nodes = frame.ownChildren
-            guard Self.printsTextOfItsOwn(nodes) else { return SectionDecision(nodes: nil) }
+            guard Self.printsTextOfItsOwn(nodes) || Self.headingHoldsNote(nodes) else {
+                return SectionDecision(nodes: nil)
+            }
             return SectionDecision(nodes: nodes, isFrontMatter: isFrontMatter)
         }
 
@@ -1304,9 +1372,11 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         // after the sections it holds — belong to the section that begins after them.
         if frame.holdsPromotedSection, Self.containerKindsLeftOut.contains(kind) {
             let ownBreaks = Self.directPageBreaks(frame)
-            if frame.children.allSatisfy(Self.isHeadingOrPageBreak) {
+            if frame.children.allSatisfy(Self.isHeadingOrPageBreak), !Self.headingHoldsNote(frame.children) {
                 // Left out: its breaks are carried, and its heading goes nowhere — passing it up
-                // would put "I: The Treaty of Peace…" into the text of a section around it.
+                // would put "I: The Treaty of Peace…" into the text of a section around it. A
+                // heading with a footnote is a row (index version 70), with the breaks after it
+                // carried as a container's with text of its own are.
                 return SectionDecision(nodes: nil, carried: ownBreaks)
             }
             let trailing = Self.trailingPageBreaks(in: frame.children)
@@ -1315,7 +1385,32 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 decision.nodes?.removeLast(trailing)
             }
         }
+        // Index version 70: an editorial-note section is an editorial note, as a document of that
+        // subtype is: `document_cache.is_editorial_note`, the badge and the reader's treatment
+        // all read the wrapper.
+        if kind == "editorial-note", let nodes = decision.nodes {
+            decision.nodes = [.editorialNote(nodes)]
+        }
         return decision
+    }
+
+    /// Whether `children` hold a heading with a footnote in it (index version 70). A footnote on a
+    /// heading is inside the `.head`, so ``isHeadingOrPageBreak(_:)`` and ``printsTextOfItsOwn(_:)``
+    /// see nothing of it; it is the division's own text all the same, the one thing 3,517
+    /// container divisions print of their own.
+    private static func headingHoldsNote(_ children: [FRUSASTNode]) -> Bool {
+        children.contains { node in
+            guard case .head(let inside) = node else { return false }
+            return holdsFootnote(inside)
+        }
+    }
+
+    /// Whether `nodes` hold a footnote at any depth.
+    private static func holdsFootnote(_ nodes: [FRUSASTNode]) -> Bool {
+        nodes.contains { node in
+            if case .footnote = node { return true }
+            return holdsFootnote(node.children)
+        }
     }
 
     /// How many page breaks close `nodes`, with nothing printed after them.
@@ -1383,8 +1478,9 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     }
 
     /// Whether `node` is a heading or a page break — all a container that holds no text of its own
-    /// has among its children (#1510). A footnote in the heading is inside the `.head`, so it is not
-    /// text of the container's own.
+    /// has among its children (#1510). A footnote in the heading is inside the `.head`, so this sees
+    /// nothing of it; since index version 70 ``headingHoldsNote(_:)`` reads it as the container's
+    /// own text beside this.
     private static func isHeadingOrPageBreak(_ node: FRUSASTNode) -> Bool {
         switch node {
         case .head, .pageBreak: return true
@@ -3366,15 +3462,18 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
         for candidate in candidates {
             for segment in candidate.components(separatedBy: ";") {
-                if let key = SourceNoteParser.decimalClassKey(segment) { return key }
+                if let key = SourceNoteParser.frontMatterClassKey(segment) { return key }
                 if segment.contains(","),
                    let lead = segment.components(separatedBy: ",").first,
-                   let key = SourceNoteParser.decimalClassKey(lead) {
+                   let key = SourceNoteParser.frontMatterClassKey(lead) {
                     return key
                 }
             }
         }
-        return nil
+        // Index version 70: a file with no subject number that LEADS the row (`POL US-USSR: general
+        // U.S.-Soviet relations`), and never one named inside a row's prose or list.
+        let leading = text.components(separatedBy: CharacterSet(charactersIn: ":;,")).first ?? text
+        return SourceNoteParser.frontMatterPrimarySubjectKey(leading: leading)
     }
 }
 

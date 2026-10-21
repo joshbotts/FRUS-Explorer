@@ -232,23 +232,24 @@ struct IndexedReadingOrderTests {
 
         let listed = try await pipeline.indexedDocumentsInReadingOrder(forVolume: SectionOwnTextTests.volumeId)
             .map(\.documentId)
-        // The reader's order (`SectionOwnTextTests.theReadingOrderPutsTheRowFirst`) less `ch7note`, an editorial note
-        // the fixture prints as a section of its own: the index holds no row for it, and the reader makes up a page.
+        // The reader's order (`SectionOwnTextTests.theReadingOrderPutsTheRowFirst`). Since index version 70 (A18)
+        // it holds `ch3`, whose heading carries a footnote, and `ch7note`, an editorial-note section the index
+        // promotes, read before its chapter's document since it opens before it.
         #expect(listed == [
             "preface",
             "comp1",
             "ch1", "d1", "d2",
-            "d3", "d4", "d5",
+            "d3", "ch3", "d4", "d5",
             "ch5", "d6",
             "sub1", "d7",
-            "ch7", "d8",
+            "ch7", "ch7note", "d8",
             "s01", "d9",
             "comp2", "t1", "t2",
             "t3",
             "d10",
             "d11",
         ])
-        #expect(!stored.contains("ch7note"), "the index now holds a row for the editorial note section")
+        #expect(stored.contains("ch7note"), "the index holds a row for the editorial note section since version 70")
         // The same rows as the index holds, reordered, and the reader's own order wherever the index has a row.
         #expect(listed.sorted() == stored.sorted())
         let reader = try await pipeline.readingSequence(forVolume: SectionOwnTextTests.volumeId).map(\.documentId)

@@ -62,6 +62,22 @@ struct SearchResultAccessibilityTests {
                 + "Washington, October 22, 1962, 3 p.m., frus1961-63v11, Classification markings: Top Secret")
     }
 
+    @Test("A row with no dateline says the day or span the index dates it by, where the dateline would be (A18)")
+    func drawnDateInPlaceOfADateline() throws {
+        // A meeting's list of those present: a section's row, dated by its documents (index version 70).
+        let meeting = SearchResult(documentId: "ch1", volumeId: "frus1945Berlinv02",
+                                   header: "Meeting of the Joint Chiefs of Staff, 10 a.m.",
+                                   dateISO: "1945-07-16", dateISOMax: "1945-07-16", datePrecision: .day,
+                                   snippet: "", bm25Score: -3)
+        let drawn = try #require(meeting.drawnDate)
+        #expect(drawn == SearchResultDate.text(dateISO: "1945-07-16", dateISOMax: "1945-07-16", precision: .day))
+        #expect(SearchResultAccessibility.label(for: meeting, tags: [])
+                == "Meeting of the Joint Chiefs of Staff, 10 a.m., \(drawn), frus1945Berlinv02")
+        // A dateline the text prints wins, and a row with neither says neither.
+        #expect(SearchResultAccessibility.label(for: Self.minutes(), tags: []).contains("Washington, October 22, 1962, 3 p.m."))
+        #expect(SearchResultAccessibility.label(for: Self.bare(header: "Spain."), tags: []) == "Spain., frus1865p1")
+    }
+
     @Test("The number is read where the row draws it, before the heading, and never twice")
     func numberWhereDrawn() {
         // The head does not print it, so the row draws it beside the heading.
