@@ -39939,3 +39939,42 @@ Nothing was to be built until the owner chooses.
 - **The outside volume's panel** shows its id twice and cannot say that the volume is outside the catalogue; whether it should is the owner's call.
 - **Found, and left**: a page reference into another volume (43,053 from documents and 982 from sections in a full index) is resolved to a document neither in the index nor here, so no citing list shows one; the banner's "1 documents in 1 volumes" (#1638's note, still so).
 - **The simulators**: iPhone 17 (`80CF0F18`) is shut down, and the lane's own iPad (`30EA8745`) deleted with its seeded volumes; the iPad Pro 11-inch (M5) under iOS 26.5 (`313A40B8`), booted once to install before the lane made its own, then found booted again with the Claude app's log stream attached, is shut down; the "iPhone 17e A8 timing" device was neither booted nor changed, its library read through an APFS clone in the session's scratchpad.
+
+## Session 2026-10-20 — cross-volume page references assessed as citations, amended for build 51's index bump, and decided: A18b (plan of record decision 80)
+
+**What was asked.** Started by the top session after A17 (#1693), and based on `v2` at `b8be1631`. It was a read-only assessment for the owner, with no pull request: should a printed-page reference into another volume count as a citation of the document on that page? The places it would count are the reader's citing lists, the cross-reference graph, Cross-Reference Analytics and the bundled `resolved-edge-index.json`. The brief asked for:
+- the population, by citing volume, target volume and citer;
+- how many resolve to one document, several or none under `PageSpanResolver`'s own rule;
+- the options with their costs, the surfaces each changes and what an index version costs;
+- a recommendation for a build after 51.
+
+In this session the owner then asked for two more things: to amend the memo for build 51's index bump (A18) and weigh pairing it with a generated bundled resource, and to record the result.
+
+**What was found.** `Planning/Cross-Volume-Page-Citations-Assessment-2026-10-20.md` has the figures. The headlines:
+- **The population.** 44,022 live cross-volume `pg_N` rows: 43,040 from documents, 380 from a division's own text and 602 from prose sections. 96.6% come from volumes covering 1960 and earlier, where 79.6% of the 8,700 cross-volume document citations come from 1961 on.
+- **The resolver.** One document for 77.0% of the rows, several for 21.7% and none for 1.3%.
+- **What a page reference cites.** A single page cites a document: 27,294 rows. "ff." mostly cites a compilation: 8,704 rows. A printed range is two rows, one per end, and only 971 of the 4,012 ranges lie within one document.
+- **Rule C** counts single pages, and ranges whose two end pages name the same one document. It resolves 29,023 rows and adds 26,395 citing pairs; documents cited from another volume go from 5,803 to 20,032. The Atlantic Charter goes from 0 citers in other volumes to 156.
+- **Build 51.** The change can ride A18's re-index as A18b (v70 → v71), with readers re-indexing once.
+  - A bundled page map, prototyped at 16,153 pages and 519,368 bytes, resolves every row with no new column and no second pass.
+  - Resolving only against volumes on the device would reach a median 3.5% of a 25-volume library's rows.
+  - The map can go stale: 2 of 553 volumes changed their page layout in 18 days.
+- **Five side findings.** A18b takes two of them (the 43 self-prefixed same-volume references, and the Agentic Analysis Guide's §6.6 query); the plan's §6g holds the other three.
+
+**How it was measured.** The "iPhone 17e A8 timing" library (`89404205`, index v69) was read through an APFS clone. The kit's `PageSpanResolver.swift` was compiled into a throwaway harness and fed by its own two SQL strings. The device's own 553 volume files were scanned for each reference's printed form, and 44,022 of 44,022 rows were matched. The scripts and their outputs are in the session group's notes folder (`page-citations/`) and are not committed.
+
+**What changed.**
+- `Planning/Cross-Volume-Page-Citations-Assessment-2026-10-20.md`: new, amended the same day, its §12 holding the owner's choice.
+- `Planning/Plan-Of-Record-2026-10-14.md`:
+  - §0: decision 80, A18b's defaults, and the one-bump rule with A18b's v71;
+  - §1: A18b's row and entry, A18's and A19's entries, and the order;
+  - §2: A19's census and run, after A18b;
+  - §4: the answer;
+  - §6d: A18b's line;
+  - §6g: the three findings A18b does not take.
+- This entry.
+
+**Not done.**
+- **Opened as #1745** on the owner's word ("Push the branch and open a pull request against v2 for the assessment and decision 80."), against `v2` at `dcd5439a`; not merged. Before the record was written, the branch `claude/eager-khorana-ae6598` merged that commit (A17, merged as #1744) through the app's sync tool.
+- **No code.** The lane is A18b's.
+- **The device.** The "iPhone 17e A8 timing" device was neither booted nor changed; its library was read through an APFS clone in the session's scratchpad.
