@@ -355,7 +355,8 @@ disabled for a comparison (row 35).
 ### S1 — iPad, full corpus: the 40 captures, and the Meaning placeholder's two frames
 
 Device as above; the seven marked **26.5** on the twin. *Slot* is the manual line at `b4dcd527`.
-*Must bear out* is the caption, then the sentence near it that the frame has to agree with.
+*Must bear out* is the caption, then the sentence near it that the frame has to agree with. (S1
+took those seven on the 27.0 device and row 3 under iOS 26.5: the sittings' ledger below.)
 
 | # | File | Slot | Must bear out | Moved since build 48 | Route and notes |
 |---|---|---|---|---|---|
@@ -526,6 +527,7 @@ sizes, and the drafts re-run into `Planning/marketing-drafts/`.
 7. The README hero row and its mirror (decision 34).
 8. Close the *Stale after build 48 (Mac)* and *Not re-checked after the build-49 wave* sections
    above once every file they name is retaken.
+9. The sentences *Found by S1* marks *S5* (below the sittings' ledger), read against S1's frames.
 
 ### Found by S0 — for the new plan of record (decision 82)
 
@@ -574,14 +576,181 @@ takes.
 
 ### The sittings' ledger (to fill as each runs — the X-8 rule)
 
-- **S1 —** build, device, UDID, OS, orientation, resolution, the corpus's commit, the encoder's
-  version; which files, and any file taken on the 26.5 twin or the owner's iPad.
+- **S1 — run 2026-10-21, 12:40 to 16:03; the session captured, on the owner's word of 12:46.**
+  Version 1.0, build **1861**, the `AppStore` configuration built for the simulator (`-target
+  FRUSExplorer -sdk iphonesimulator ARCHS=arm64`) from `v2` at **`b24de205`** (its code is
+  `b4dcd527`'s), with build 48's one local-only patch, never committed and reverted in the worktree
+  once the build was made: `SyncStatusBanner.isWorthShowing` returns false under
+  `-FRUSScreenshotHideSyncBanner YES` (signing the simulator into iCloud would have sent the demo
+  data to the owner's container). **Every file predates the `build-51` tag (decision 83): a screen
+  that a fix after `b24de205` changes is retaken.**
+  - **The device:** a new iPad Pro 13-inch (M5) simulator, `3D2607D9-AAF8-431D-A69C-0596A25FE9AA`,
+    iOS 27.0 (24A434), created for the sitting and never used by a UI suite; landscape, turned by a
+    throwaway XCUIDevice test (`simctl` has no orientation command); 2752×2064; the demo status
+    bar; and **Windowed Apps**, the multitasking mode a new device starts in, kept on the owner's
+    word of 13:46: each window fills the screen, and the status bar ends *FRUS Explorer*, as the
+    build-48 frames' does.
+  - **The corpus:** the 553 manifest volumes from the local corpus at `6170e4b32` (2026-10-14, the
+    commit A18b's bundle was built from), indexed on the device from empty in 11 minutes under
+    `Scripts/heavy.sh`: index version 71, People rollup 12, FTS schema 4; 553 volume structures,
+    321,749 document rows, 18,009 rollups. **The encoder:** EmbeddingGemma 2,
+    `embeddinggemma-2-Q8_0.gguf` (310 MB), downloaded in the simulator through the app after P2a,
+    with vectors for all 553 volumes.
+  - **The demo data:** S0's recipe, all through the UI. The scope *Soviet Union 1945-1950* holds
+    frus1945v05, 1946v06, 1947v04, 1948v04, 1949v05 and 1950v04. A third working corpus, *Soviet
+    intentions* (1,000 of 11,122), was added so `browse-working-corpora` shows the amber line: the
+    recipe's two are complete captures and draw none. The collection's headings are *Moscow,
+    February 1946* and *Washington Responds*; the visit holds 8 targets at one repository; the
+    Long Telegram carries a note (its footnote 44's request, read in the TEI) and the tag
+    *Containment*.
+  - **On the 27.0 device, 43 files:** rows 1, 2 and 4 to 40, **the seven marked 26.5 among them**
+    (the owner's word of 12:46: try 27.0 after every other capture, then 26.5; the device lived,
+    below), and four new files: `semantic-offer` (P2a, before the encoder),
+    `semantic-zero-result-matches` (P2b), `cite-sheet` (the kit's frame 07 on iPad: the Long
+    Telegram ▸ Cite, the Copy as… menu open on Copy BibTeX and Copy RIS; nothing copied) and
+    `person-analytics-network` (the kit's frame 13 on iPad: Network, focus *Kennan, George Frost*,
+    *Acheson, Dean Gooderham* selected, 56 shared documents, as the Mac's frame reads). S5 wires the
+    two kit frames into `tools/marketing/shots.json`. The paired frames' partners are
+    `browse-archives-collection-citing`, `people-detail-records` and `trip-packet-options`.
+  - **Under iOS 26.5, 1 file:** `stage-manager` (row 3), on a second new device,
+    `5ED7E25B-3690-4F69-A412-73262634A265`, iOS 26.5 (23F77), holding a clone of the first's
+    container, in Stage Manager for this frame and in Windowed Apps again afterwards: the main
+    window behind (Browse ▸ Subseries), the Long Telegram's popped-out window at the left, its
+    Related Documents window at the right. Row 3 moved because Stage Manager killed the 27.0
+    device's render server (below). The brief's twin `9F3D84A4` took no capture.
+  - **Route notes.** P2's question is *Why did the wartime alliance unravel?* (finding 5 below).
+    `word-cloud` came from Settings ▸ Volume Scopes ▸ long-press ▸ Word Cloud, as build 48's did
+    (Analysis Tools ▸ Corpus Word Cloud starts a whole-library read before a scope can be picked),
+    on a launch whose log read `Lemma=available`: the launch before it was Limited and drew #1608's
+    *Counted as printed* line. `browse-corpus-drill` and P2b were taken with three volumes removed
+    through Settings ▸ Volumes & Storage (frus1948v01p2, frus1919Parisv01 and frus1919Parisv09,
+    their vectors fetched again so the semantic list ranks them), and a snapshot of the container
+    taken before the removals was restored afterwards. `browse-root` has Subseries open, so it
+    differs from `sidebar-landscape`; `people-detail` is scrolled 45 pt so *Find all mentions* is in
+    frame. A relaunch the system makes (after a crash or a reboot) carries no launch arguments, so
+    it opens on the onboarding wizard with the banner showing: on the 26.5 device the two flags
+    were written into the app's preferences with the simulator shut down.
+  - **Recordings R and T** (the owner's word of 12:46): one clip a beat, `simctl io recordVideo
+    --codec=h264` on the 27.0 device at 2752×2064, R1 to R7 and T1 to T7, 250 MB, kept outside the
+    repository in `~/Library/Caches/FRUS-Explorer/s1/recordings/`, with an 89 s second take of R2
+    narrowed to 1946, whose People facet reads *Nothing to break down here*. simctl writes a frame
+    only when the screen changes, so a held still is shorter in the file than on the clock. T's last
+    two beats follow the app, not the kit's script (findings 16 and 17). The App Preview's pass B
+    (the kit's §4) was not recorded. The recordings came after every capture and changed the
+    27.0 device's store (a fourth corpus, two documents and a headnote in the collection, the
+    Teaching reader preset): **the clean demo state is the container snapshot
+    `~/Library/Caches/FRUS-Explorer/s1/snapshot-A`** (6.4 GB, taken before the removals), which
+    `stage-manager`'s device was cloned from and which S4 seeds the Mac from.
+  - **#1620, measured on this Mac's iOS 27.0 runtime.** On the new 27.0 device the semantic map
+    window (13:41) opened and closed, and after its 14:36 boot Corpus Analytics (twice),
+    Cross-Reference, Archival, Semantic and Person Analytics and Chronology all opened, drew and
+    closed while backboardd kept one process until the 15:31 shutdown. **Switching the device to
+    Stage Manager at 14:09 killed backboardd** (SIGABRT in `-[MTLTextureDescriptorInternal
+    validateWithDevice:]` under `CA::OGL::FlattenNode::retain_surface`, #1620's signature) with no
+    Analysis Tools window ever opened on it; the device came back in portrait and launched the app
+    normally afterwards. Under iOS 26.5, Stage Manager with three FRUS windows left backboardd
+    alive. The crash report is kept with the sitting's notes, outside the repository.
 - **S2 —** build, device, UDID, OS; `onboarding-volumes`, `series-production`.
 - **S3 —** build, device, UDID, OS; P1, the banner if taken, the kit's frames.
 - **S4 —** build, the check copy's ref and bundle id, the fake home's library; the chip's
   treatment; which files, each window's size in points.
 - **S5 —** the date; every caption changed, the placeholders replaced, the files deleted, the hero
   row, the composer's run.
+
+### Found by S1 — for the new plan of record
+
+Seen or measured in the sitting, where S0's were read; decision 82 sends S0's to the new plan, and
+these go with them, for the owner to place. *S5* marks a sentence or caption the embed pass reads
+against S1's frames.
+
+**The manuals against the screen.**
+
+1. iOS §6.1g: *only about 28%* of sourced documents name a collection; both Archives banners now
+   say **about 29%** (`ArchivesAxis.collectionSharePercent`: 76,140 of 264,598 notes in
+   `collection-usage-index.json`, 28.8%). The build-48 banner said 28%. *S5.*
+2. iOS §6.1h: a cluster's documents are grouped by volume *in coverage order*; the drill orders
+   volumes by identifier (`ClustersBrowseView`: *in volume order*), so `frus1917-72PubDipv06`
+   (1960–1963) heads `edc · nato · nuclear · soviet` above its 36 documents from 1900–1944 volumes.
+   *S5, or the order.*
+3. iOS §6.1h's largest cluster reads **37,899** on screen: S0's finding 2, seen.
+4. iOS §6.2a says the Topic index lists every detected topic; its header reads *491 assigned topics
+   … drawn from experimental enrichment data*, the owner's EditableContent wording of 2026-10-01
+   and deliberate. *S5 may align the sentence.*
+5. iOS §7.12's example question, *Why did the Marshall Plan happen?*, returns **351** keyword
+   results on a full library, so it cannot show the zero-result offer it illustrates. P2 used *Why
+   did the wartime alliance unravel?*: no result, each term matching on its own (checked by FTS5
+   MATCH on the device's index first). *S5.*
+6. iOS §7.12: an undownloaded semantic match *shows the volume's title*; its row reads *Document
+   d32 in Papers Relating to …*, the bare document id before the volume's title. *S5's read.*
+7. iOS §15.7 names two directions for *Extends beyond this range* (begins before, ends after); the
+   chip also counts documents that *reach past both ends*, 24 of autumn 1962's 25. *S5.*
+8. `ChronologyQueryTests`' doc comments describe `ipad/chronology.png` as reading *26 documents
+   extend beyond this range (26 before · 24 after)*, the build-47 take; the retake reads *25 … (1
+   begins before · 24 reach past both ends)*. The fixtures still hold; the comments now describe a
+   file that does not show them.
+
+**The app.**
+
+9. **The Administrations drill reads out of order by its own counts.** `AdministrationAxis.spec`
+   keeps the bundled order (point documents, descending) and prints point plus range documents on
+   each row: Truman's third and fourth rows read 1,164 then 1,242 (frus1947v07 1,159 + 5;
+   frus1949v06 1,135 + 107), and an 85% row sits above a 100% one. Over the bundled
+   `administration-profiles-index.json`, 168 of 854 adjacent pairs read out of order by the shown
+   count, in 16 administrations; the caption says *largest share first*.
+10. **A coverage line prints its counts ungrouped**: *10914 of 10914 documents indexed on this
+    device* under a cluster whose row reads 10,914 (`WorkingCorpusCoverage.coverageDescription`
+    formats with `%lld`), where §6.1f's example reads *1,873 of 2,340*. Build 47's frame had *3220
+    of 3220*, so not new.
+11. **A working corpus saved from a narrowed search records only the query.** Saved from `"long
+    telegram"` narrowed by Facets to 1945 (5 documents), the sheet and the corpus read *From "long
+    telegram"* (`SaveWorkingCorpusSheet` passes `sourceQuery: queryText` alone), so the corpus does
+    not say how its documents were chosen; the kit's R caption calls it a denominator you can cite.
+12. **Clearing the query leaves Facets on the old match.** After the field's ✕ the iPad panel reads
+    *Describing this result set — total unavailable* over the old People list, with the *Narrowed
+    by 1945* chip still up; removing the chip then shows *Search Error — Enter a keyword, phrase, or
+    prefix to search.* Nothing in the binoculars menu closes the panel once it is open
+    (`showFacetSheet = true`); a Keywords ⇄ Meaning switch does. Seen, not measured.
+13. **Corpus Analytics' link and the search it opens disagree.** *Berlin*, Eisenhower's years
+    (1953–1961): *View 2,803 documents ↗* opens a Search reading **2,833**, whose Years facet lists
+    matches dated 1945, 1948, 1951 and 1952. Counted on the device's index: 16,273 documents match
+    (the chart's line read 16,271); 2,775 start in 1953–1961; 2,833 have a date span overlapping it,
+    Search's rule exactly; no rule tried gives 2,803. *Spread across 502 of 553 indexed volumes*
+    did not change when the range narrowed.
+14. **The graph at three hops** (`frus1952-54v02p1/d16`, Network): about 70 nodes since A17 and
+    A18b; the four most-connected archival nodes sit pinned at the canvas's corners with every edge
+    running to them, only the focus keeps its label, and the reference list's first *Cited By This
+    Document* row is a page node, `frus1948v01p2/pg_507`. Seen, not measured.
+15. **A question typed in Keywords mode highlights only *the*** in every snippet (A10b's window
+    starts at the first match of any term), and the MATCH strip quotes trailing punctuation
+    (`"happen?"`) that the tokenizer drops. Seen.
+
+**The kit's recordings.**
+
+16. T's 58–70 s beat: *Settings ▸ About ▸ Research Guide ▸ Production & Timeliness; drag the year
+    range*. The Guide is reached from Research ▸ FRUS Research Guide (the manual's route), and the
+    dashboard's range is a chip whose popover holds two year fields with steppers, so there is
+    nothing to drag; T6 sets the start to 1945. And the 46–58 s beat's *title and introduction*: the
+    collection has no introduction, so T5's first page shows the title, its note and the contents.
+17. T's 70–80 s beat: *tap a bar ▸ the documents behind it*. A time chart has no bar tap (a drag
+    across it narrows the range, #306; only By Subseries and By Volume bars drill, §15.1). T7 takes
+    the app's route: the Administration preset, then *View N documents ↗*, with finding 13's counts.
+
+**The simulators.**
+
+18. **#1620's trigger on this Mac's iOS 27.0 runtime is Stage Manager** (measured above): every
+    Analysis Tools window lived on a new 27.0 device, and the switch to Stage Manager killed it. S0's
+    split was not needed for the seven; decision 72's re-test can start from the switch.
+19. **The iOS 26.5 runtime here has no English lemmatiser, tagger or name tagger.** On the new 26.5
+    device the app's verdict listed only Language, Script and TokenType, and its canary found no
+    lemmas, classes or names. A scratch tool run inside the runtime asked
+    `NLTagger.requestAssets(for: .english, tagScheme:)` for all three: none answered within 180 s,
+    and every word tagged nil and `OtherWord`. The twin `9F3D84A4`, which holds the English
+    LinguisticData asset (142 MB), gave the same result, and the asset cloned into the new device
+    changed nothing. So **every #1608 surface reads Limited in a 26.5 capture**: S0's plan would
+    have put the *Counted as printed* line in `word-cloud`, and in `stage-manager` the Related
+    window's *Shared words compared as printed* line is scrolled just out of view (the frame with
+    it showing is kept with the sitting's notes). A sitting under 26.5 reads the launch's verdict
+    first.
 
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
