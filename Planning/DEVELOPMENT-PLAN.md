@@ -39975,6 +39975,6 @@ In this session the owner then asked for two more things: to amend the memo for 
 - This entry.
 
 **Not done.**
-- **Nothing pushed, no pull request.** Before the record was written, the branch `claude/eager-khorana-ae6598` merged `v2` at `dcd5439a` (A17 merged as #1744) through the app's sync tool.
+- **Opened as #1745** on the owner's word ("Push the branch and open a pull request against v2 for the assessment and decision 80."), against `v2` at `dcd5439a`; not merged. Before the record was written, the branch `claude/eager-khorana-ae6598` merged that commit (A17, merged as #1744) through the app's sync tool.
 - **No code.** The lane is A18b's.
 - **The device.** The "iPhone 17e A8 timing" device was neither booted nor changed; its library was read through an APFS clone in the session's scratchpad.
