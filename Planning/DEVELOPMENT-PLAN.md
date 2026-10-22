@@ -6833,7 +6833,13 @@ In this session the owner then asked for two more things: to amend the memo for 
   - the audits that read the new file: `CodingStandardsAuditTests`, `FRUSCoreKitBoundaryTests` and `AppSourceTreeTests`.
   - *Test run with 116 tests in 8 suites passed after 74.246 seconds*, then `** TEST SUCCEEDED **`, with the new suite's three tests among them by name. The build's only warnings were the `GeneratedSummary` residue and the AppIntents note.
 
+**Merged, and the checks landing owed.**
+- **Opened as #1771** on the owner's word of 2026-10-22, 07:09 ("Open PR"), against `v2` at `38dc3d7c`, and **merged as `8843b88e`** at 07:12. Its body is the draft kept with the coordinating session's notes (`ascii-fast-path-pr-draft.md`).
+- `v2`'s tree at `8843b88e` is the branch head's, `79e217e1`, so every check above holds for it.
+- **Run on `v2` at `8843b88e`** on the owner's word ("run checks and report outcomes in new PR"), each through the lock:
+  - **The full unit run**, on iPhone 17 (`80CF0F18`, iOS 27.0), booted for the run and shut down after it, 07:17 to 07:24: *Test run with 7571 tests in 895 suites passed after 392.302 seconds with 6 known issues*, then `** TEST SUCCEEDED **`. L2's run had 7,568 tests in 894 suites; the three tests and the one suite more are `KeywordScanCharacterTests`. The six known issues are `SyncDiagnosticsEntryTests`' (#1606), as in L2's run. No host restarted.
+  - **The Mac build**, `FRUSExplorerMac`, DirectDistribution, unsigned, 07:24 to 07:28: `** BUILD SUCCEEDED **`. Its only warnings were the `GeneratedSummary` residue and the AppIntents note.
+  - **`swift test`**, 07:28 to 07:30: exit 0, 38 `Test run with` lines, one for each test target, 3,030 tests.
+
 **Not done, and for the owner.**
-- **Opened as #1771** on the owner's word of 2026-10-22, 07:09 ("Open PR"), against `v2` at `38dc3d7c`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the coordinating session's notes (`ascii-fast-path-pr-draft.md`).
-- **The Mac build and a full unit run** are owed at landing, as for any kit change.
 - **What a further speed-up would take**, should the owner want one: the window's string and `Array(body)`, which every keyword row pays, and, for a search whose telling words are short (*war*, *end*, *pig*), a stem cache, since their one-letter openings send most words to the stemmer. Only the last is the scan.
