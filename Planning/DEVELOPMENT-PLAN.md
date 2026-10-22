@@ -40264,4 +40264,4 @@ In this session the owner then asked for two more things: to amend the memo for 
 
 **Left for the new plan of record** (decision 82), each where its sitting listed it: S0's 1, 2, 3, 6 and 8; S1's 3 and 8 to 19; S2's three; S3's 2 and 3; S4's 1, 2 and 4 to 10; and S5's five.
 
-**Not done, and for the owner.** No pull request: one is opened on the owner's word. No device was used; the simulator the tests booted was shut down after the run, and nothing runs. The store-size frames are in `~/Desktop/store` for App Store Connect, after the design pass the kit's README asks for.
+**Not done, and for the owner.** **Opened as #1755** on the owner's word of 2026-10-21, 21:44 ("Open PR"), against `v2` at `913feb62`, which had not moved since the branch was cut. It holds PNGs, Markdown and the kit's spec, with a visual-review list in its body. Not merged. No device was used; the simulator the tests booted was shut down after the run, and nothing runs. The store-size frames are in `~/Desktop/store` for App Store Connect, after the design pass the kit's README asks for.
