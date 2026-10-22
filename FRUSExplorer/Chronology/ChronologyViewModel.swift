@@ -200,6 +200,8 @@ struct ChronologyOverflowCounts: Equatable, Sendable {
 ///          overlap query cannot promise; `spanningSectionHeader` gives the section the same words
 ///   1.6 — #1472: `volumeTopic` removes an E-volume's "Volume E–N" as it does a Roman "Volume N",
 ///          so the 22 E-volumes' labels no longer say their number twice
+///   1.7 — #1761: `volumeTopic` trims a colon left at either end, so frus1961-63v23's label reads
+///          "Southeast Asia · 1961-63 v23", not ": Southeast Asia · 1961-63 v23"
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -1018,6 +1020,10 @@ final class ChronologyViewModel {
     /// matched only a Roman numeral, so all 22 E-volumes' topics began with their own number —
     /// "Volume E–13, Documents on China" — and every label said it twice, once there and once in
     /// the tag ("… · 1969-76 vE-13"). The topic now begins "Documents on China".
+    ///
+    /// A colon left at either end is trimmed with the spaces and commas (#1761): frus1961-63v23 prints
+    /// "Volume XXIII: Southeast Asia", so once the number and the years were removed its topic began
+    /// ": Southeast Asia". Over the bundled manifest that title is the only one the colon changes.
     nonisolated private static func volumeTopic(from title: String) -> String {
         var t = title.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespaces)
@@ -1053,7 +1059,7 @@ final class ChronologyViewModel {
             t = t.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
         }
         t = t.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
-            .trimmingCharacters(in: CharacterSet(charactersIn: " ,.;"))
+            .trimmingCharacters(in: CharacterSet(charactersIn: " ,.;:"))
         let low = t.lowercased()
         if t.count < 3 || low.hasPrefix("message of the president")
             || low.contains("congress") || low.contains("session") {
