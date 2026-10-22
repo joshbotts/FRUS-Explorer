@@ -131,6 +131,8 @@ enum AdministrationAxis {
 ///
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
+///   1.1 — #1761: a row's volume and document counts, and its VoiceOver label, say one in the
+///          singular ("1 vol", where it read "1 vols")
 struct AdministrationIndexView: View {
 
     /// The bundled profiles index, or `nil` when it failed to decode.
@@ -243,11 +245,10 @@ struct AdministrationIndexView: View {
             }
             Spacer(minLength: 8)
             if enabled {
+                // Each count says one in the singular: George H. W. Bush's row read "1 vols" (#1761).
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(String(localized: "browser.administrations.row.volumes",
-                                defaultValue: "\(profile.volumeCount) vols"))
-                    Text(String(localized: "browser.administrations.row.docs",
-                                defaultValue: "\(profile.pointDocCount + profile.rangeDocCount) docs"))
+                    Text(CountCopy.vols(profile.volumeCount))
+                    Text(CountCopy.docs(profile.pointDocCount + profile.rangeDocCount))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -257,9 +258,10 @@ struct AdministrationIndexView: View {
         .opacity(enabled ? 1 : 0.45)
     }
 
+    /// What VoiceOver reads for a row, its volume count in the singular at one, as the row prints it (#1761).
     private func rowA11yLabel(_ profile: AdministrationProfile) -> String {
-        String(localized: "browser.administrations.row.a11y",
-               defaultValue: "\(profile.president), \(AdministrationAxis.termText(start: profile.start, end: profile.end)), \(profile.volumeCount) volumes")
+        String(localized: "browser.administrations.row.a11y.v2",
+               defaultValue: "\(profile.president), \(AdministrationAxis.termText(start: profile.start, end: profile.end)), \(CountCopy.volumes(profile.volumeCount))")
     }
 }
 

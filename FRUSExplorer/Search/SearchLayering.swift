@@ -284,7 +284,11 @@ struct PinnedResultBase: Sendable {
     ///
     /// For the held list's words or question, and for Swap's two searches (`SearchLayerCopy.swapHelp(_:)`). The record
     /// keeps the query as typed (``signaturePart``), and the method appendix quotes it by this rule as it reads it
-    /// back (`SearchScopeSignature.describe(_:)`).
+    /// back (`SearchScopeSignature.describe(_:)`). Since #1761 a working corpus's query is quoted by it too, in Working
+    /// Corpora's provenance line and the corpora list's row (`CorporaAxis.rowCaption(_:)`), and so is a Corpus
+    /// Analytics term, in its chart headings and its empty state. The method appendix's plain-text line is not: it is
+    /// the record of what was typed, where a phrase's marks say it was a phrase (decision 86 of the plan of record from
+    /// 2026-10-21 leaves it as it is).
     ///
     /// - Parameter query: The words or question as typed, trimmed, as a submitted query is.
     /// - Returns: The words to print between the quotation marks.

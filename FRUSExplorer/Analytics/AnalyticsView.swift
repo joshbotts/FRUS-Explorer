@@ -245,6 +245,8 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          `AnalyticsViewMode.displayed(selected:isComparing:)`) where it read the chart/table
 ///          control's stored value, so a comparison begun from the table is drawn in % of documents
 ///          with its Values control live
+///   1.13 — 2026-10-21: #1761 — the chart headings and the empty state quote a term that is one
+///          phrase once, without its own marks (`quotedTerm`, `chartHeadingTerms`)
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -618,10 +620,15 @@ struct AnalyticsView: View {
         (committedTerms, committedTerms.indices.map { ChartSeriesPalette.color(at: $0) })
     }
 
-    /// The chart heading's quoted term(s): `"term"` for one, `"a", "b"` for a comparison.
+    /// The chart heading's quoted term(s): `"term"` for one, `"a", "b"` for a comparison. A term that is one phrase
+    /// is quoted once, without its own marks (`PinnedResultBase.quotable(_:)`, #1761).
     private var chartHeadingTerms: String {
-        committedTerms.map { "\"\($0)\"" }.joined(separator: ", ")
+        committedTerms.map { "\"\(PinnedResultBase.quotable($0))\"" }.joined(separator: ", ")
     }
+
+    /// The single committed term as a sentence quotes it: a phrase without its own marks, so the By Subseries and By
+    /// Volume headings and the empty state read “long telegram”, not “"long telegram"” (#1761, the rule of #1726).
+    private var quotedTerm: String { PinnedResultBase.quotable(committedTerm) }
 
     /// One committed term's By-Year data, filtered to the active year range.
     private func filteredYearData(for term: String) -> [YearFrequency] {
@@ -1707,7 +1714,7 @@ struct AnalyticsView: View {
                     ? String(localized: "analytics.empty.detail.compare",
                              defaultValue: "None of these terms match any indexed documents.")
                     : String(localized: "analytics.empty.detail",
-                             defaultValue: "No indexed documents match “\(committedTerm)”."))
+                             defaultValue: "No indexed documents match “\(quotedTerm)”."))
             )
         } else {
             // A comparison is chart-only, since the table shows a single term (D1 review fix), and
@@ -2683,7 +2690,7 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.subseries.heading",
-                       defaultValue: "“\(committedTerm)” \u{2014} by Subseries")
+                       defaultValue: "“\(quotedTerm)” \u{2014} by Subseries")
             )
             .font(.headline)
             .padding(.horizontal)
@@ -2736,7 +2743,7 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.volume.heading",
-                       defaultValue: "“\(committedTerm)” \u{2014} by Volume")
+                       defaultValue: "“\(quotedTerm)” \u{2014} by Volume")
             )
             .font(.headline)
             .padding(.horizontal)

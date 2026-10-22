@@ -124,6 +124,7 @@ struct CountCopyTests {
 ///         answers for the Word Cloud export's stop-lists sentence and the Archival ranking export's
 ///         Scope sentence
 ///   1.3 — 2026-10-09: #1586 — Related Documents' archival chip and its pool-cut footer
+///   1.4 — 2026-10-21: #1761 — a working corpus's coverage line
 struct CountCopySiteTests {
 
     /// 12,067 as this host groups it.
@@ -481,6 +482,23 @@ struct CountCopySiteTests {
         #expect(StatusBarCopy.metaSummary(persons: 1, links: 12_067, dated: 1_204, total: 12_067)
                 == "1 person · \(Self.big) links · \(1_204.formatted())/\(Self.big) dated")
         #expect(StatusBarCopy.metaSummary(persons: 0, links: 0, dated: 0, total: 5) == "")
+    }
+
+    /// #1761: a working corpus's coverage line went through two `%lld`s, so it read "10914 of 10914 documents indexed
+    /// on this device" under a cluster whose row read 10,914, and a corpus of one read "1 of 1 documents".
+    @Test("A working corpus's coverage line groups both counts and names one document in the singular (#1761)")
+    func workingCorpusCoverageLine() {
+        let many = (0..<12_067).map { "v1/d\($0)" }
+        #expect(WorkingCorpusResolution(indexedKeys: many, totalCount: 12_067, missingVolumeIds: []).coverageDescription
+                == "\(Self.big) of \(Self.big) documents indexed on this device")
+        #expect(WorkingCorpusResolution(indexedKeys: Array(many.prefix(1_204)), totalCount: 12_067,
+                                        missingVolumeIds: ["v2"]).coverageDescription
+                == "\(1_204.formatted()) of \(Self.big) documents indexed on this device",
+                "the reachable count comes first and is grouped too")
+        #expect(WorkingCorpusResolution(indexedKeys: ["v1/d1"], totalCount: 1, missingVolumeIds: []).coverageDescription
+                == "1 of 1 document indexed on this device")
+        #expect(WorkingCorpusResolution(indexedKeys: [], totalCount: 1, missingVolumeIds: ["v1"]).coverageDescription
+                == "0 of 1 document indexed on this device", "the noun follows the corpus's size")
     }
 }
 

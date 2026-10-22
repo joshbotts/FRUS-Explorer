@@ -53,6 +53,8 @@ import UniformTypeIdentifiers
 ///          "9 documents"
 ///   1.9 — 2026-10-15: #1619 — a smart collection's row reads "Smart collection"
 ///          (`SmartCollectionRule.listLabel`) where it printed its count of ignored entries
+///   1.10 — 2026-10-21: #1761 — at an accessibility text size a row puts what the collection holds
+///          above its date, so "Smart collection" no longer breaks inside a word at the largest size
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -438,19 +440,32 @@ struct CollectionListView: View {
 private struct CollectionRow: View {
     let collection: Collection
 
+    /// The reader's text size: at an accessibility size what the collection holds and its date stack.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             // The name as every list row reads it, trimmed and with the shared fallback (#1464).
             Text(CollectionEditorNaming.listName(savedName: collection.name))
                 .font(.body)
 
-            HStack(spacing: 6) {
+            // What the collection holds and when it changed: side by side, and one above the other at an accessibility
+            // text size. Side by side at the largest on an iPhone 17, the date left "Smart collection" so little room
+            // that it broke inside its first word, "Sm" / "art collec-tion" (#1761).
+            let stacked = dynamicTypeSize.isAccessibilitySize
+            let layout = stacked
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                : AnyLayout(HStackLayout(spacing: 6))
+            layout {
                 if collection.savedSearchId != nil {
                     // #1619: a smart collection's documents come from its saved search, so its count of hand-added
                     // entries, which everything it produces ignores, read "0 documents" for a search of hundreds.
                     Label(SmartCollectionRule.listLabel, systemImage: "bolt.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        // As tall as its words need, so it wraps between them: stacked at the largest text size it was
+                        // given one line and cut to "Smart collec…" (iPhone 17, iOS 27.0; #1761).
+                        .fixedSize(horizontal: false, vertical: true)
                 } else {
                     // Documents, not entries: headings and prose blocks are not documents (#1358).
                     let count = collection.documentCount
@@ -461,9 +476,11 @@ private struct CollectionRow: View {
                 }
 
                 if let date = collection.lastModified {
-                    Text("·")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    if !stacked {
+                        Text("·")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                     Text(date, style: .date)
                         .font(.caption)
                         .foregroundStyle(.secondary)

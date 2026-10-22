@@ -158,12 +158,15 @@ struct ChronologyOverflowLoad: Sendable, CustomTestStringConvertible {
         parts: [2, 1, 3],
         breakdown: "(2 begin before · 1 ends after · 3 reach past both ends)")
 
-    /// The shape of the iOS manual's Chronology capture (`Docs/screenshots/ipad/chronology.png`),
-    /// Sep 1 – Nov 30, 1962, which read "26 documents extend beyond this range (26 before · 24
-    /// after)". This device does not hold those volumes, so the rows are built to the capture's
-    /// own numbers: 26 in total and 26 before leaves none that ends after only, so 24 enclose the
-    /// range and 2 only begin before it. A three-year editorial note, which `partition` sets aside
-    /// for the spanning chip, and three documents inside the range complete the load.
+    /// The shape of the iOS manual's Chronology capture as build 47 took it
+    /// (`Docs/screenshots/ipad/chronology.png` until build 51's retake), Sep 1 – Nov 30, 1962,
+    /// which read "26 documents extend beyond this range (26 before · 24 after)". This device does
+    /// not hold those volumes, so the rows are built to the capture's own numbers: 26 in total and
+    /// 26 before leaves none that ends after only, so 24 enclose the range and 2 only begin before
+    /// it. A three-year editorial note, which `partition` sets aside for the spanning chip, and
+    /// three documents inside the range complete the load. The file now holds S1's retake on build
+    /// 1861 (2026-10-21), over the same months: "25 documents extend beyond this range (1 begins
+    /// before · 24 reach past both ends)".
     static let iPadCapture = ChronologyOverflowLoad(
         name: "the iOS manual's capture, Sep 1 – Nov 30, 1962 (2 / 0 / 24)",
         startISO: "1962-09-01", endISO: "1962-11-30",
@@ -178,10 +181,12 @@ struct ChronologyOverflowLoad: Sendable, CustomTestStringConvertible {
         parts: [2, 0, 24],
         breakdown: "(2 begin before · 24 reach past both ends)")
 
-    /// The shape of the macOS manual's Chronology capture (`Docs/screenshots/macos/chronology.png`,
-    /// the build-48 capture #1355 committed), Oct 14 – Nov 20, 1962, which read "24 documents
-    /// extend beyond this range (24 before · 24 after)": 24 before and 24 after out of 24 means
-    /// every one of them encloses the range.
+    /// The shape of the macOS manual's Chronology capture as build 48 took it
+    /// (`Docs/screenshots/macos/chronology.png`, the capture #1355 committed, until build 51's
+    /// retake), Oct 14 – Nov 20, 1962, which read "24 documents extend beyond this range (24 before
+    /// · 24 after)": 24 before and 24 after out of 24 means every one of them encloses the range.
+    /// The file now holds S4's retake on build 1861 (2026-10-21), over the same range: "24 documents
+    /// extend beyond this range (24 reach past both ends)", this load's own breakdown.
     static let macCapture = ChronologyOverflowLoad(
         name: "the macOS manual's capture, Oct 14 – Nov 20, 1962 (0 / 0 / 24)",
         startISO: "1962-10-14", endISO: "1962-11-20",
@@ -488,8 +493,9 @@ struct ChronologyOverflowChipTests {
 
     @Test("The captured shape — 2 begin before, 24 enclose — reads as 26 split into 2 and 24")
     func capturedShapeAddsUp() {
-        // The iOS manual's Chronology capture (`Docs/screenshots/ipad/chronology.png`, Sep 1 –
-        // Nov 30, 1962) printed "26 documents extend beyond this range (26 before · 24 after)".
+        // The iOS manual's Chronology capture as build 47 took it (`Docs/screenshots/ipad/chronology.png`
+        // before its retake, Sep 1 – Nov 30, 1962) printed "26 documents extend beyond this range (26
+        // before · 24 after)".
         let leadingOnly = (0..<2).map { F.row("l\($0)", iso: "1962-05-20", isoMax: "1962-07-10") }
         let enclosing = (0..<24).map { F.row("e\($0)", iso: "1962-01-01", isoMax: "1962-12-31") }
         let c = counts(leadingOnly + enclosing)
@@ -905,6 +911,41 @@ struct ChronologyVolumeLabelTests {
         }
         #expect(eVolumes > 0, "the sweep visited no E-volume, so it says nothing about them")
         #expect(offenders.isEmpty, "\(offenders.count) topics begin with their volume number: \(offenders)")
+    }
+
+    /// frus1961-63v23 prints "Volume XXIII: Southeast Asia". With the number and the years removed, the colon after
+    /// the number was left at the topic's head, and the Cross-Reference matrix labelled the volume's row ": Southeast
+    /// Asia · 1961-63 v23" (#1761).
+    @Test("A colon after the volume number is not left at the head of the topic (#1761)")
+    func colonAfterTheNumberIsTrimmed() {
+        // The manifest's own title, with its raw newline after "Volume".
+        #expect(label("frus1961-63v23", "1961-63",
+                      "Foreign Relations of the United States, 1961–1963, Volume\n                    XXIII: Southeast Asia")
+                == "Southeast Asia · 1961-63 v23")
+        #expect(ChronologyViewModel.distilledVolumeLabelParts(
+            volumeId: "frus1961-63v23", subseries: "1961-63",
+            title: "Foreign Relations of the United States, 1961–1963, Volume XXIII: Southeast Asia").topic
+                == "Southeast Asia")
+    }
+
+    /// Measured over the bundled manifest on 2026-10-21 by a mirror of the rule: 442 volumes have a topic, and only
+    /// frus1961-63v23's began with anything but a letter or a digit.
+    @Test("Every bundled volume's topic begins with a letter or a digit (#1761)")
+    @MainActor
+    func everyBundledTopicBeginsWithALetterOrDigit() throws {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        var topics = 0
+        var offenders: [String] = []
+        for entry in entries {
+            let topic = ChronologyViewModel.distilledVolumeLabelParts(
+                volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title).topic
+            guard let first = topic.first else { continue }
+            topics += 1
+            if !(first.isLetter || first.isNumber) { offenders.append("\(entry.volumeId): '\(topic)'") }
+        }
+        #expect(topics > 400, "the sweep read \(topics) topics, so it says little about the manifest")
+        #expect(offenders.isEmpty, "\(offenders.count) topics begin with punctuation: \(offenders)")
     }
 
     /// The shape table below reads only bundled ids, whose subseries always prefixes the id, so

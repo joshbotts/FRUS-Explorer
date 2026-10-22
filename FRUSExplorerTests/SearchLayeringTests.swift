@@ -913,3 +913,55 @@ struct SearchLayerSwapRulesTests {
         #expect(toRanking.listQuery == "\"offset agreement\"" && toWords.layerQuery == "\"offset agreement\"")
     }
 }
+
+// MARK: - QuotedPhraseSiteTests
+
+/// The three places #1726's fix found putting a phrase's own quotation marks inside their own (#1761, decision 86 of the
+/// plan of record from 2026-10-21): a working corpus's query in Working Corpora's provenance line and in the corpora
+/// list's row, and a Corpus Analytics term in its chart headings and its empty state. Each quotes by
+/// `PinnedResultBase.quotable(_:)`, which `SearchLayeringTests.onePhraseIsQuotedOnce` holds to its rule; here each site
+/// is driven, or, where the strings are a view's own, read in its source.
+///
+/// Version history:
+///   1.0 — 2026-10-21: #1761
+@Suite("A phrase is quoted once where a working corpus's query or a Corpus Analytics term is quoted (#1761)")
+struct QuotedPhraseSiteTests {
+
+    private typealias Scan = NaturalLanguageReadinessScanTests
+
+    @Test("The corpora list's row quotes a phrase query once, and a query of two phrases as typed")
+    func corporaRowQuotesAPhraseOnce() {
+        let phrase = WorkingCorpus(name: "A", documentKeys: ["v/d1"], sourceQuery: "\"long telegram\"")
+        #expect(CorporaAxis.rowCaption(phrase).contains("captured from “long telegram”"), "\(CorporaAxis.rowCaption(phrase))")
+        let two = WorkingCorpus(name: "B", documentKeys: ["v/d1"], sourceQuery: "\"wheat\" \"embargo\"")
+        #expect(CorporaAxis.rowCaption(two).contains("captured from “\"wheat\" \"embargo\"”"),
+                "control: a query of two phrases keeps their marks, which say what ran")
+    }
+
+    @Test("Working Corpora's provenance line quotes a phrase query once, and a word as typed")
+    @MainActor
+    func provenanceLineQuotesAPhraseOnce() throws {
+        let phrase = WorkingCorpus(name: "A", documentKeys: ["v/d1"], sourceQuery: "“long telegram”")
+        let line = try #require(WorkingCorporaView.provenanceLine(phrase))
+        #expect(line.contains("from “long telegram”"), "\(line)")
+        let word = WorkingCorpus(name: "B", documentKeys: ["v/d1"], sourceQuery: "telegram")
+        #expect(try #require(WorkingCorporaView.provenanceLine(word)).contains("from “telegram”"), "control")
+    }
+
+    /// The headings and the empty state are the view's own strings, so the source is read: each quotes `quotedTerm`,
+    /// which is the rule applied to the committed term, and the time axes' headings quote each term by the rule.
+    @Test("Corpus Analytics quotes its terms by the rule in every chart heading and in its empty state")
+    func analyticsQuotesItsTermsByTheRule() throws {
+        let source = Scan.code(try String(contentsOf: Scan.repoRoot.appending(path: "FRUSExplorer/Analytics/AnalyticsView.swift"),
+                                          encoding: .utf8))
+        #expect(source.components(separatedBy: "“\\(quotedTerm)”").count - 1 == 3,
+                "the By Subseries and By Volume headings and the empty state each quote quotedTerm")
+        #expect(!source.contains("“\\(committedTerm)”"), "a sentence quotes the committed term as typed")
+        for (declaration, call) in [("private var quotedTerm: String", "PinnedResultBase.quotable(committedTerm)"),
+                                    ("private var chartHeadingTerms: String", "PinnedResultBase.quotable($0)")] {
+            let start = try #require(source.range(of: declaration), "\(declaration) is no longer in AnalyticsView")
+            let body = source[try #require(Scan.braceBody(in: source, after: start.upperBound))]
+            #expect(body.contains(call), "\(declaration) no longer calls \(call)")
+        }
+    }
+}

@@ -28,6 +28,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #1051 B-4: initial implementation
+///   1.1 — #1761: `rowCaption` quotes a query that is one phrase once, without its own marks
 enum CorporaAxis {
 
     /// One member document, split from its `"volumeId/documentId"` key.
@@ -77,8 +78,9 @@ enum CorporaAxis {
         if let source = corpus.sourceDescription, !source.isEmpty {
             parts.append(source)
         } else if let query = corpus.sourceQuery, !query.isEmpty {
+            // A query that is one phrase is quoted once, without its own marks (#1761, the rule of #1726).
             parts.append(String(localized: "browser.corpora.row.query",
-                                defaultValue: "captured from “\(query)”"))
+                                defaultValue: "captured from “\(PinnedResultBase.quotable(query))”"))
         }
         if let captured = corpus.capturedAt {
             parts.append(captured.formatted(date: .abbreviated, time: .omitted))

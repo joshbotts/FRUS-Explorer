@@ -11765,11 +11765,14 @@ struct SmartCollectionEntriesFromBeforeLinkTests {
                                  + "Image(systemName: \"trash\") .foregroundStyle(.red) }"), "the button's label is \(content)")
         #expect(content.contains("#if os(macOS) .buttonStyle(.borderless) .foregroundStyle(.red) #endif .confirmationDialog("),
                 "the button is styled \(content)")
-        // The caption: no line limit, so it wraps; the title keeps its two lines.
+        // The caption: no line limit, so it wraps; the title keeps its two lines, except at an accessibility size, where
+        // it wraps whole. This pinned `.lineLimit(2)` until #1761, which found two lines holding a few words of a
+        // document's title at the largest size on an iPhone 17 (a pin on language is advisory, decision 9).
         let row = Self.code(editor[try Self.block("private func row(for entry: CollectionEntry) -> some View {", in: editor,
                                                   within: section)])
         #expect(row.contains("Text(caption) .font(.caption) .foregroundStyle(.tertiary) }"), "the caption is \(row)")
-        #expect(row.components(separatedBy: ".lineLimit(").count - 1 == 1 && row.contains(".lineLimit(2)"),
+        #expect(row.components(separatedBy: ".lineLimit(").count - 1 == 1
+                && row.contains(".lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)"),
                 "the row's line limits are \(row)")
     }
 

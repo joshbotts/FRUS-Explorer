@@ -15,6 +15,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — CW-10b
+///   1.1 — 2026-10-21: #1761 — the Search window's filter chip ✕
 @Suite("Mac chrome honesty")
 struct MacChromeHonestyTests {
 
@@ -148,6 +149,32 @@ struct MacChromeHonestyTests {
                                                    documentId: "frus1946v06/d475")
         #expect(!label.contains("Foreign Relations"))
         #expect(label.contains("Doc 475"))
+    }
+
+    // MARK: - #1761 · the Search window's filter chip ✕
+
+    /// S4 of the build-51 screenshot sweep measured the Date chip's *Clear Date filter* at 8 by 8 points by
+    /// accessibility, a click 2 points off it doing nothing, and read the chip's own help on it. The chip's padding now
+    /// belongs to its two parts, and its help to its editor alone; the click and the help themselves are checked in the
+    /// Mac check copy, since the unit target runs no Mac code.
+    @Test("the filter chip's ✕ takes the chip's trailing end at its full height, and the editor's help is the editor's")
+    func filterChipClearTargetAndHelp() throws {
+        let source = try Self.source("FRUSExplorer/App/SearchSheet.swift")
+        let start = try #require(source.range(of: "private func filterTokenView(_ token: SearchFilterToken) -> some View"),
+                                 "filterTokenView is no longer in SearchSheet.swift")
+        let range = try #require(NaturalLanguageReadinessScanTests.braceBody(in: source, after: start.upperBound))
+        let body = NaturalLanguageReadinessScanTests.code(String(source[range]))
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        #expect(body.contains("filterTokenEditor(token) .padding(.leading, 9) .padding(.vertical, 3) "
+                              + ".help(editorHelpText(for: token.field))"),
+                "the editor carries the leading and vertical padding and its own help: \(body)")
+        #expect(body.contains("Image(systemName: \"xmark\") .font(.caption2.weight(.bold)) "
+                              + ".foregroundStyle(Color.accentColor) .padding(.leading, 4) .padding(.trailing, 9) "
+                              + ".frame(maxHeight: .infinity) .contentShape(Rectangle())"),
+                "the ✕'s label is its glyph alone again: \(body)")
+        #expect(body.components(separatedBy: ".help(editorHelpText(").count - 1 == 1,
+                "the editor's help is set more than once, so it reaches the ✕ again")
+        #expect(!body.contains(".padding(.horizontal, 9)"), "the chip's own padding is back outside the ✕")
     }
 }
 

@@ -158,6 +158,8 @@ import SwiftUI
 ///          say why under their names (`selectionAddRefusal`), which the strip says under its two buttons
 ///   1.29 — A18 (index version 70): a row with no dateline draws the day or span the index dates it by
 ///          (`SearchResult.drawnDate`), as the iPhone's and iPad's rows do
+///   1.30 — #1761: a filter chip's ✕ takes the chip's trailing end at its full height, where only its
+///          8-point glyph took a click, and keeps its own help; the editor's help moves onto the editor
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -1299,30 +1301,29 @@ struct MacSearchWindowView: View {
     /// `SearchFilterField.editor`. Type and Front matter carry their own menu; Date, Volume, Person
     /// and Tags open the Advanced popover, which holds their only editor; Years opens the facet
     /// panel, which is the only thing in the app that produces a year set.
+    ///
+    /// **The ✕ takes the chip's whole trailing end** (#1761). It was its glyph alone, 8 by 8 points
+    /// by accessibility, and a click 2 points off the glyph did nothing; and the chip's help, set on
+    /// the whole chip, was the ✕'s too, so hovering it read "Edit this filter in Advanced filters".
+    /// The chip's padding now belongs to its two parts — the leading and vertical padding to the
+    /// editor, which carries the editor's help, and the gap, the trailing padding and the full height
+    /// to the ✕ — so the chip is drawn as it was and the ✕ keeps "Remove this filter".
     @ViewBuilder
     private func filterTokenView(_ token: SearchFilterToken) -> some View {
-        HStack(spacing: 4) {
-            if token.field.editor == .inlineMenu {
-                Menu {
-                    inlineEditorMenuItems(for: token.field)
-                } label: {
-                    filterTokenBody(token)
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .fixedSize()
-            } else {
-                Button { openEditor(for: token.field) } label: {
-                    filterTokenBody(token)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canOpenEditor(for: token.field))
-            }
+        HStack(spacing: 0) {
+            filterTokenEditor(token)
+                .padding(.leading, 9)
+                .padding(.vertical, 3)
+                .help(editorHelpText(for: token.field))
 
             Button { clearFilter(token.field) } label: {
                 Image(systemName: "xmark")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(Color.accentColor)
+                    .padding(.leading, 4)
+                    .padding(.trailing, 9)
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help(String(localized: "search.token.clear.help",
@@ -1332,12 +1333,9 @@ struct MacSearchWindowView: View {
                                defaultValue: "Clear %@ filter"),
                 token.field.displayName))
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 3)
         .background(Color.accentColor.opacity(0.10))
         .clipShape(Capsule())
         .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.3), lineWidth: 0.5))
-        .help(editorHelpText(for: token.field))
         // One element for VoiceOver, so the field and its value are announced together rather
         // than as two unrelated fragments; the remove button stays separately focusable.
         .accessibilityElement(children: .contain)
@@ -1345,6 +1343,27 @@ struct MacSearchWindowView: View {
             format: String(localized: "search.token.a11y %@ %@",
                            defaultValue: "%@ filter, %@"),
             token.field.displayName, token.value))
+    }
+
+    /// The control that edits one filter: the field's own menu, or a button that opens its editor.
+    @ViewBuilder
+    private func filterTokenEditor(_ token: SearchFilterToken) -> some View {
+        if token.field.editor == .inlineMenu {
+            Menu {
+                inlineEditorMenuItems(for: token.field)
+            } label: {
+                filterTokenBody(token)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+        } else {
+            Button { openEditor(for: token.field) } label: {
+                filterTokenBody(token)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canOpenEditor(for: token.field))
+        }
     }
 
     /// The token's text: field name in secondary, value in accent, chevron when it can be edited.

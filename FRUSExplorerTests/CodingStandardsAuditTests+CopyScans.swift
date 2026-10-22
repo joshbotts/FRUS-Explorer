@@ -113,6 +113,9 @@ import Foundation
 ///   1.14 — 2026-10-19: #1683 — two baseline entries gone: Collocates' caveats of what the scan
 ///         read and where it stopped, re-keyed `.v3` with their counts grouped, so the ceiling goes
 ///         280 → 278
+///   1.15 — 2026-10-21: #1761 — five baseline entries gone: the excluded-references caption, the
+///         Administrations row's volume and document counts and its VoiceOver label, and the working
+///         corpus coverage line, so the ceiling goes 278 → 273
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -842,7 +845,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 278
+    static let countCopyBaselineCeiling = 273
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -886,7 +889,11 @@ extension CodingStandardsAuditTests {
     /// go through `CountCopy` in `RelatedDocumentsCounts` (#1618). #1643 took it to 280: the Archival
     /// network dock's partner sentence, which sits beside the two that issue names and has their gap
     /// ("1 collections share"), and Browse ▸ Archives' five: the count beside a class row and the two
-    /// accessories of each drill list, which `ArchivesAxis.volumeAccessory` writes now.
+    /// accessories of each drill list, which `ArchivesAxis.volumeAccessory` writes now. #1683 took it
+    /// to 278 (its caveats' entry in the version history). #1761 took it to 273: Cross-Reference
+    /// Analytics' excluded-references caption ("1 unresolvable references are excluded"), the
+    /// Administrations index row's two counts and its VoiceOver label ("1 vols"), and a working
+    /// corpus's coverage line, which printed its counts ungrouped.
     static let countCopyBaseline: [String] = [
         #"../FRUSCoreKit/Collections/CollectionCitationLineResolver.swift | collection.addDocs.citations.topOf"#,
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
@@ -926,7 +933,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
-        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.excludedBrokenCaption"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.export.caveat.matrixLimit %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.matrix.cell.axLabel"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.matrix.cell.help"#,
@@ -971,9 +977,6 @@ extension CodingStandardsAuditTests {
         #"Browser/AdministrationIndexView.swift | browser.administrations.accessory.noShare"#,
         #"Browser/AdministrationIndexView.swift | browser.administrations.coverage"#,
         #"Browser/AdministrationIndexView.swift | browser.administrations.drill.caption"#,
-        #"Browser/AdministrationIndexView.swift | browser.administrations.row.a11y"#,
-        #"Browser/AdministrationIndexView.swift | browser.administrations.row.docs"#,
-        #"Browser/AdministrationIndexView.swift | browser.administrations.row.volumes"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.coverage"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.drill.caption"#,
         #"Browser/ClustersBrowseView.swift | browser.clusters.caption"#,
@@ -1049,7 +1052,6 @@ extension CodingStandardsAuditTests {
         #"Models/ResearchSessionsSummary.swift | settings.sessions.count.atLeast.many %lld"#,
         #"Models/ResearchSessionsSummary.swift | settings.sessions.count.many %lld"#,
         #"Models/ResearchSessionsSummary.swift | settings.sessions.events.many %lld"#,
-        #"Models/WorkingCorpusResolver.swift | workingCorpus.coverage %lld %lld"#,
         #"ProjectContext/ProjectFocusSubjectsEditor.swift | project.focus.volumeCount.other"#,
         #"ProjectContext/ProjectHomeView.swift | project.collections.manage.docCount.other"#,
         #"ProjectContext/ProjectHomeView.swift | project.home.search.results"#,
