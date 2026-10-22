@@ -108,6 +108,7 @@ struct FacetVolumeChoice: Equatable, Sendable {
 ///          match or reads the keys as `load` did, so the web edition computes facets by the same
 ///          route; it no longer takes the pipeline. `stagedSections` forwards to the kit's
 ///          `FacetSelectionApplier.stagedSections`
+///   1.3 — #1758: `clear()`, for a search taken off the screen with none in its place
 @Observable
 @MainActor
 final class FacetPanelController {
@@ -228,6 +229,16 @@ final class FacetPanelController {
         // it into a new one would leave the panel showing checkmarks against buckets that may not
         // exist, and an Apply that filtered to years the new search never matched.
         selection.removeAll()
+    }
+
+    /// Discards everything when the search it described leaves the screen with none in its place:
+    /// the reader emptied the field (#1758). Nothing narrowed, so no "narrowed from" survives.
+    ///
+    /// The panel closes with the search, and this is what it shows if it is opened again before
+    /// another search runs, which ``invalidate(signature:)`` then replaces as usual.
+    func clear() {
+        pendingNarrowedFrom = nil
+        invalidate(signature: "")
     }
 
     /// The display state for `section`, defaulted on first use.

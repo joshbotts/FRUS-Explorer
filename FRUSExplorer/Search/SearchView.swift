@@ -266,6 +266,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          snippet as VoiceOver's More Content and a Filter by action for each tag outside selection
 ///   1.35 — A18 (index version 70): a row with no dateline — a section's own text, a meeting's list of those
 ///          present — draws the day or span the index dates it by (`SearchResult.drawnDate`)
+///   1.36 — #1758: emptying the field closes the facet panel and takes away the narrowings it made
+///          (`endSearch()`); the binoculars menu's Facets is a toggle, offered while the panel is open; a
+///          *Narrowed by* chip's ✕ runs the search again only when something is left to search
 
 struct SearchView: View {
 
@@ -556,21 +559,7 @@ struct SearchView: View {
                         // search it starts can be under way before this runs: it stands, with its screen
                         // (#1648, `SearchViewModel.isSearchingWithNoWords`).
                         guard !vm.isSearchingWithNoWords else { return }
-                        // #1648: and a search for words still under way cannot put its rows back.
-                        vm.replaceSearchesUnderWay()
-                        vm.results    = []
-                        vm.hasSearched = false
-                        vm.searchError = nil
-                        // #1310: the tag counts describe a result set that is now empty. This
-                        // clear does not bump `executedSearchVersion`, so the panel's task does
-                        // not re-run — but a nil scope shows no counts rather than the last
-                        // query's.
-                        vm.userTagCountScope = nil
-                        // #1577 lane 1: the Meaning strip describes the run that produced the rows,
-                        // and the rows have gone. Left in place, the last run's disclosure kept the
-                        // strip naming that run's set (or the whole series) over a prompt that
-                        // names the set the next search will rank inside.
-                        vm.semanticDisclosure = nil
+                        endSearch()
                     }
                 }
                 // Active volume scope (e.g. the post-indexing "Search this volume"
@@ -947,6 +936,32 @@ struct SearchView: View {
                                in: modelContext)
     }
 
+    /// Takes the search off the screen, which goes back to its prompt, and the facet panel with it
+    /// (#1758): the panel described the search's whole match, and there is none. Its narrowings go
+    /// too (`SearchViewModel.endSearchOnScreen()`).
+    ///
+    /// Before #1758 the panel stayed open over the prompt on iPad, reading "Describing this result set —
+    /// total unavailable" over the old match's rows, and nothing on the binoculars menu closed it, which
+    /// is dimmed while there are no results.
+    private func endSearch() {
+        vm.endSearchOnScreen()
+        showFacetSheet = false
+        facetController.clear()
+    }
+
+    /// Takes away one *Narrowed by* chip, and runs the search again when there is still something to
+    /// search (#1758). With nothing left, a search on screen ends (``endSearch()``), and the prompt
+    /// stays as it is: run, the search failed with "Enter a keyword, phrase, or prefix to search."
+    private func removeNarrowing(_ id: String) {
+        vm.clearNarrowing(id)
+        // Inside a held list an empty field shows the list's own rows (`SearchViewModel.search()`).
+        if vm.pinnedBase != nil || vm.hasRunnableQuery(in: vm.searchMode) {
+            Task { await runSearch() }
+        } else if vm.hasSearched {
+            endSearch()
+        }
+    }
+
     // MARK: - Search within these results (#1577 lane 4)
 
     /// The way the More menu's layer command will run, for its title: the way a layer over the rows on screen would
@@ -1227,6 +1242,11 @@ struct SearchView: View {
     /// Facets sits below the divider because it is not a reading: it opens a sheet over the
     /// results rather than replacing them, and it is the one item measured against the whole match
     /// rather than the retained set.
+    ///
+    /// Facets is a toggle, checked while the panel is open, so the menu closes the panel it opened
+    /// (#1758): on iPad the panel is an inspector beside the results, with no Done of its own, and
+    /// until #1758 only a Keywords ⇄ Meaning switch closed it. The menu stays enabled while the panel
+    /// is open, so the panel can be closed over rows that offer no reading.
     @ViewBuilder
     private var examineMenu: some View {
         Menu {
@@ -1246,12 +1266,11 @@ struct SearchView: View {
                 }
             }
             .pickerStyle(.inline)
+            .disabled(vm.results.isEmpty || !vm.offersReadings)
 
             Divider()
 
-            Button {
-                showFacetSheet = true
-            } label: {
+            Toggle(isOn: $showFacetSheet) {
                 Label {
                     Text(String(localized: "search.mode.facets", defaultValue: "Facets"))
                     Text(ResultReading.facetsDenominatorDescription)
@@ -1259,6 +1278,8 @@ struct SearchView: View {
                     Image(systemName: "chart.bar.doc.horizontal")
                 }
             }
+            // Open only over rows that offer it; closed whatever the rows.
+            .disabled(!examineOffered && !showFacetSheet)
         } label: {
             Image(systemName: activeReading == .list ? "binoculars" : "binoculars.fill")
         }
@@ -1281,7 +1302,13 @@ struct SearchView: View {
         // Every reading here reads the words a keyword match found, so the door is the view model's
         // rule: the field's engine is Keywords and the rows on screen are a keyword match's own
         // (#1577 lane 2). A reading that is open when the door shuts is closed with it, in `body`.
-        .disabled(vm.results.isEmpty || !vm.offersReadings)
+        // Open while the facet panel is, whose toggle closes it (#1758).
+        .disabled(!examineOffered && !showFacetSheet)
+    }
+
+    /// Whether the binoculars menu's readings and Facets are offered over the rows on screen.
+    private var examineOffered: Bool {
+        !vm.results.isEmpty && vm.offersReadings
     }
 
     #if os(iOS)
@@ -1459,8 +1486,7 @@ struct SearchView: View {
                         .foregroundStyle(.tertiary)
                     ForEach(narrowings) { narrowing in
                         Button {
-                            vm.clearNarrowing(narrowing.id)
-                            Task { await runSearch() }
+                            removeNarrowing(narrowing.id)
                         } label: {
                             HStack(spacing: 3) {
                                 Text(narrowing.label)

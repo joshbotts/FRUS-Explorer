@@ -1013,20 +1013,41 @@ struct SemanticSetRecordAndCopyTests {
             """)))
     }
 
-    /// Two places clear a search's rows without running one: the emptied field on iPhone and
-    /// iPad, and a rebuilt index on the Mac. Each must clear the Meaning disclosure with the
-    /// rows, or the strip goes on describing a run whose rows are gone. Matched on the handler's
-    /// own block, from its condition to the statement.
-    @Test("Where rows are cleared without a run, the last Meaning run's disclosure goes with them")
-    func clearedRowsTakeTheDisclosureWithThem() throws {
-        let iOS = try Self.source("FRUSExplorer/Search/SearchView.swift")
+    /// The emptied field's block in `SearchView`'s keywords handler, from its condition to its close.
+    private static func emptiedFieldBlock() throws -> Substring {
+        let iOS = try source("FRUSExplorer/Search/SearchView.swift")
         let handler = try #require(iOS.range(of: ".onChange(of: vm.keywords) { _, newValue in"))
         let afterHandler = iOS[handler.upperBound...]
         let block = try #require(afterHandler.range(of: "if newValue.isEmpty {"))
         let blockEnd = try #require(afterHandler[block.upperBound...].range(of: "\n                    }\n"))
-        let body = afterHandler[block.upperBound..<blockEnd.lowerBound]
-        #expect(body.contains("vm.results    = []"), "precondition: this is the block that clears the rows")
-        #expect(body.contains("vm.semanticDisclosure = nil"))
+        return afterHandler[block.upperBound..<blockEnd.lowerBound]
+    }
+
+    /// What the emptied field does to the rows (#1758): its block calls `SearchView.endSearch()`, which closes the
+    /// facet panel and asks the view model's `endSearchOnScreen()`, whose body this is.
+    private static func endSearchOnScreenBody() throws -> Substring {
+        let view = try source("FRUSExplorer/Search/SearchView.swift")
+        let endSearch = try #require(view.range(of: "    private func endSearch() {"))
+        let endSearchEnd = try #require(view[endSearch.upperBound...].range(of: "\n    }\n"))
+        #expect(view[endSearch.upperBound..<endSearchEnd.lowerBound].contains("vm.endSearchOnScreen()"),
+                "`SearchView.endSearch()` no longer asks the view model to clear the rows")
+        let model = try source("FRUSExplorer/Search/SearchViewModel.swift")
+        let function = try #require(model.range(of: "    func endSearchOnScreen() {"))
+        let functionEnd = try #require(model[function.upperBound...].range(of: "\n    }\n"))
+        return model[function.upperBound..<functionEnd.lowerBound]
+    }
+
+    /// Two places clear a search's rows without running one: the emptied field on iPhone and
+    /// iPad, and a rebuilt index on the Mac. Each must clear the Meaning disclosure with the
+    /// rows, or the strip goes on describing a run whose rows are gone. Matched on the handler's
+    /// own block, from its condition to the statement; since #1758 the emptied field's block ends
+    /// the search through `SearchView.endSearch()`, and the clear is the view model's.
+    @Test("Where rows are cleared without a run, the last Meaning run's disclosure goes with them")
+    func clearedRowsTakeTheDisclosureWithThem() throws {
+        #expect(try Self.emptiedFieldBlock().contains("endSearch()"), "precondition: this is the block that clears the rows")
+        let body = try Self.endSearchOnScreenBody()
+        #expect(body.contains("results    = []"), "precondition: this is the function that clears the rows")
+        #expect(body.contains("semanticDisclosure = nil"))
 
         let mac = try Self.source("FRUSExplorer/App/SearchSheet.swift")
         let rebuilt = try #require(mac.range(of: ".onChange(of: appState.indexGeneration) { _, _ in"))
@@ -1047,19 +1068,18 @@ struct SemanticSetRecordAndCopyTests {
     /// `HybridSearchModeTests.aSearchWithNoWordsUnderWayIsNotTheFields` drives the property it asks.
     @Test("Where rows are cleared without a run, the search under way is replaced, unless it has no words (#1648)")
     func clearedRowsReplaceTheSearchUnderWay() throws {
-        let iOS = try Self.source("FRUSExplorer/Search/SearchView.swift")
-        let handler = try #require(iOS.range(of: ".onChange(of: vm.keywords) { _, newValue in"))
-        let afterHandler = iOS[handler.upperBound...]
-        let block = try #require(afterHandler.range(of: "if newValue.isEmpty {"))
-        let blockEnd = try #require(afterHandler[block.upperBound...].range(of: "\n                    }\n"))
-        let body = afterHandler[block.upperBound..<blockEnd.lowerBound]
-        #expect(body.contains("vm.results    = []"), "precondition: this is the block that clears the rows")
+        // Since #1758 the emptied field's block ends the search through `SearchView.endSearch()`, and the replace
+        // and the clear are the view model's `endSearchOnScreen()`.
+        let body = try Self.emptiedFieldBlock()
         let stands = try #require(body.range(of: "guard !vm.isSearchingWithNoWords else { return }"),
                                   "the emptied field replaces the search a keyword-less hand-off has just started")
-        let replaced = try #require(body.range(of: "vm.replaceSearchesUnderWay()"))
-        let cleared = try #require(body.range(of: "vm.results    = []"))
-        #expect(stands.upperBound < replaced.lowerBound && stands.upperBound < cleared.lowerBound,
+        let ended = try #require(body.range(of: "endSearch()"), "precondition: this is the block that clears the rows")
+        #expect(stands.upperBound < ended.lowerBound,
                 "the field's handler replaces or clears before it asks whether the search under way has words")
+        let clear = try Self.endSearchOnScreenBody()
+        let replaced = try #require(clear.range(of: "replaceSearchesUnderWay()"))
+        let cleared = try #require(clear.range(of: "results    = []"))
+        #expect(replaced.lowerBound < cleared.lowerBound, "the rows are cleared before the search under way is replaced")
 
         let mac = try Self.source("FRUSExplorer/App/SearchSheet.swift")
         let rebuilt = try #require(mac.range(of: ".onChange(of: appState.indexGeneration) { _, _ in"))
