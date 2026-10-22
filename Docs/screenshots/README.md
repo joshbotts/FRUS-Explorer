@@ -1199,6 +1199,19 @@ T7, whose link read 2,803 (17).
 Measured in pass A's two clips, frame by frame (every frame simctl wrote, scaled down and measured
 for ink outside the identity block and the Welcome dock; the scripts are kept with the sitting's
 notes), or seen in the frames. They go with S0's and S1's for the owner to place (decision 82).
+*After L5 (2026-10-22):* 1 to 3 are fixed, in one branch for #1759. Measured again the same way
+(S2's scripts unchanged, and one more that reads every frame on the same regions) on a new iPad Pro
+13-inch (M5) under iOS 27.0, landscape, erased for each build. With build 1861's code the first
+launch drew the dock in 14 frames under the fading launch screen (4.652 to 4.842 s), and the three
+launches after it stood on an empty backdrop for 1.212, 1.048 and 0.437 s before the cloud appeared
+in one frame (the first launch's lens change fell before the splash left, so it showed none). With
+the fix no frame draws the dock before the splash, none of four launches shows an empty backdrop,
+and the ink stays between 1.41 and 2.31% across the hand-off. The kit's 0–4 s beat now shows the
+launch screen, the splash with its seeded Concepts cloud fading in, and that cloud carrying on under
+the Welcome dock on the same lens, with no empty frame to cut before. In the Concepts layout of
+`onboarding-volumes`, reproduced at S2's instant, *objective* and *power*, and *conflict* and
+*hostility*, are apart, and no two words meet at any instant on any bundled layout of the splash
+or onboarding. R1 retakes `ipad/onboarding-volumes`.
 
 1. **The splash empties before onboarding's cloud arrives.** The fresh-install splash shows its
    Concepts cloud and fades out, and the identity block and the Welcome dock then stand over an
@@ -1270,7 +1283,11 @@ Seen or measured in the check copy, or read in the code beside it. They go with 
 the owner to place (decision 82). *After S5 (2026-10-21):* 3 is done (Mac §15.4's second figure);
 1, 2 and 4 to 10 wait for the new plan. *After L1 (2026-10-21):* 1, 2, 7 and 10 are done (#1761,
 #1762); 1 and 2 change `macos/crossref-analytics-ranking` and `macos/crossref-analytics`, for
-R1.
+R1. *After L5 (2026-10-22):* 8 is fixed (#1759). Measured again in two check copies, `v2` before
+and the fix after, each on an empty fake home of its own, the window recorded at 60 frames a second
+and read by S4's script: before, the dock alone in the window's first seven frames (0.117 s) and an
+empty backdrop for 1.100 s at the hand-off; after, the window's first frame is the splash, and the
+cloud runs unbroken through the hand-off. The splash's Concepts cloud no longer overprints words.
 
 1. **One unresolvable reference reads as a plural.** Cross-Reference Analytics over 1961–1963 says
    *1 unresolvable references are excluded from this analysis*: `crossRefAnalytics.excludedBrokenCaption`

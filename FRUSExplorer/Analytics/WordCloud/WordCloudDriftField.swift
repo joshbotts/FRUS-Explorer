@@ -50,6 +50,9 @@ import Foundation
 ///         Reduce Motion shows) and drift-time exclusion-zone avoidance
 ///   1.2 — the field expands to fill its host frame, so a large window shows a cloud you are
 ///         inside rather than a clump stranded in an empty expanse
+///   1.3 — every word is settled before the first frame where its whole drift clears the edge,
+///         the zones and every word settled before it (#1759), so the clamp and the push have
+///         nothing left to correct and no two words can meet
 struct WordCloudDriftField: Sendable {
 
     /// One word, with everything the renderer needs to place it at any instant.
@@ -76,7 +79,28 @@ struct WordCloudDriftField: Sendable {
         /// Deterministic per-term phase offsets, so no two words move in lockstep.
         let phase: SIMD3<Double>
 
+        /// How much of its depth's drift this word may use, from 1 (all of it) to 0 (none).
+        ///
+        /// Below 1 only where ``WordCloudDriftField/settle(_:packedCenters:canvas:zones:bleed:)``
+        /// found no room for the whole excursion: a crowded word moves less rather than leaving its
+        /// place in the composition. Breathing is untouched, so it still reads as part of the field.
+        let excursion: CGFloat
+
         var id: String { term }
+
+        /// Creates a particle. `excursion` defaults to the whole drift, which every particle had
+        /// before the settle pass existed.
+        init(term: String, home: CGPoint, baseFontSize: CGFloat, rotationDegrees: Double,
+             depth: Double, halfSize: CGSize, phase: SIMD3<Double>, excursion: CGFloat = 1) {
+            self.term = term
+            self.home = home
+            self.baseFontSize = baseFontSize
+            self.rotationDegrees = rotationDegrees
+            self.depth = depth
+            self.halfSize = halfSize
+            self.phase = phase
+            self.excursion = excursion
+        }
     }
 
     /// A word's placement at one instant.
@@ -120,7 +144,9 @@ struct WordCloudDriftField: Sendable {
     /// shipped analytics Word Cloud and its placements are pinned *exactly* by
     /// `WordCloudLayoutRegressionTests`. Scaling every word's displacement from the centre by
     /// a constant cannot introduce an overlap — all gaps grow — so the packer's composition
-    /// and its non-overlap guarantee both survive untouched.
+    /// survives untouched. What the scaling cannot see is the edge and the exclusion zones, which
+    /// it carries the outermost words into; ``settle(_:packedCenters:canvas:zones:bleed:)`` is
+    /// what keeps the non-overlap once they are corrected (#1759).
     let expansion: CGSize
 
     /// How far outside the frame a word may hang, as a fraction of its own half-extent.
@@ -137,9 +163,9 @@ struct WordCloudDriftField: Sendable {
     /// **The packer alone is not enough once words move.** `WordCloudLayout.place` honours
     /// zones as a placement rejection and nothing consults them afterwards, so a particle
     /// that drifts 14 pt sideways can settle straight over the dock or identity block the
-    /// zone existed to protect. Latent rather than live today — the one drifting surface
-    /// passes no zones — but it lights up the moment any full-bleed surface drifts, which is
-    /// exactly what a search or splash backdrop would be.
+    /// zone existed to protect. The splash and onboarding pass zones. Since #1759
+    /// ``settle(_:packedCenters:canvas:zones:bleed:)`` keeps every word's whole drift out of them,
+    /// and `push` remains as the net for a field built without a canvas to settle into.
     let exclusionZones: [CGRect]
 
     /// Builds a field from a packer result.
@@ -160,9 +186,10 @@ struct WordCloudDriftField: Sendable {
         self.exclusionZones = exclusionZones
         let expansion = Self.expansion(for: placed, canvas: canvas, fill: fill)
         self.expansion = expansion
-        self.bleed = max(0, fill - 1)
+        let bleed = max(0, fill - 1)
+        self.bleed = bleed
         let ceiling = Double(max(1, rankCeiling - 1))
-        particles = placed.map { word in
+        let expanded = placed.map { word in
             // colorIndex, not the array index — see the type's discussion.
             let depth = min(1, Double(word.colorIndex) / ceiling)
             let estimated = Self.estimatedHalfSize(term: word.term,
@@ -176,8 +203,17 @@ struct WordCloudDriftField: Sendable {
                             halfSize: estimated,
                             phase: Self.phase(for: word.term))
         }
-        // Far first. Nearer, brighter, larger words are drawn last and so read as in front.
-        .sorted { $0.depth > $1.depth }
+        // Settled in the packer's order, which is rank order, so the commonest words keep their
+        // homes — and only where the field is spread past its frame. A band (fill ≤ 1, no bleed)
+        // is drawn close to the packer's own tight layout, where every word's drift reaches a
+        // neighbour; settling it would take most of its words or all of their motion, so it is
+        // left exactly as it was.
+        particles = (bleed > 0
+            ? Self.settle(expanded, packedCenters: placed.map(\.center), canvas: canvas,
+                          zones: exclusionZones, bleed: bleed)
+            : expanded)
+            // Far first. Nearer, brighter, larger words are drawn last and so read as in front.
+            .sorted { $0.depth > $1.depth }
     }
 
     /// The per-axis multiplier that spreads a packed field across its canvas.
@@ -221,6 +257,196 @@ struct WordCloudDriftField: Sendable {
                        y: center.y + (point.y - center.y) * expansion.height)
     }
 
+    // MARK: - Settling
+
+    /// The whole of the space one particle can ever occupy, relative to its home.
+    ///
+    /// Every term of ``state(of:at:in:avoiding:bleed:)`` is a sine with a fixed amplitude, so its
+    /// range is known exactly: `sin(ωt + φ) − sin(φ)` runs from `−1 − sin φ` to `1 − sin φ`. The
+    /// box a word is drawn in at any instant therefore lies inside its home's box widened by those
+    /// ranges and scaled to the largest breath, and two words whose sweeps are apart can never
+    /// touch, at any instant, on any device, whatever the clock reads.
+    struct Sweep: Equatable {
+        /// The horizontal excursion's range, in points.
+        let dx: ClosedRange<CGFloat>
+        /// The vertical excursion's range, in points.
+        let dy: ClosedRange<CGFloat>
+        /// The word's half-extent at the largest scale its breath reaches.
+        let halfSize: CGSize
+
+        /// The sweep around a home: every box the word can be drawn in, at once.
+        func box(at home: CGPoint) -> CGRect {
+            CGRect(x: home.x + dx.lowerBound - halfSize.width,
+                   y: home.y + dy.lowerBound - halfSize.height,
+                   width: dx.upperBound - dx.lowerBound + halfSize.width * 2,
+                   height: dy.upperBound - dy.lowerBound + halfSize.height * 2)
+        }
+
+        /// Whether the clamp would ever move a word swept from this home: the same test
+        /// ``WordCloudDriftField/clamp(_:halfSize:scale:in:bleed:)`` applies, at the sweep's
+        /// extremes, with the share of the word that `bleed` lets hang off the edge.
+        func fits(at home: CGPoint, in canvas: CGSize, bleed: CGFloat) -> Bool {
+            let keep = 1 - min(0.95, bleed)
+            return home.x + dx.lowerBound - halfSize.width * keep >= 0
+                && home.x + dx.upperBound + halfSize.width * keep <= canvas.width
+                && home.y + dy.lowerBound - halfSize.height * keep >= 0
+                && home.y + dy.upperBound + halfSize.height * keep <= canvas.height
+        }
+    }
+
+    /// One particle's sweep — derived from the same depth, phases and tuning `state(of:)` reads.
+    ///
+    /// - Parameter excursion: the share of the drift to sweep; the particle's own by default.
+    static func sweep(of p: Particle, excursion: CGFloat? = nil) -> Sweep {
+        let nearness = 1 - p.depth
+        let amplitude = (Tuning.farAmplitude + (Tuning.nearAmplitude - Tuning.farAmplitude) * nearness)
+            * (excursion ?? p.excursion)
+        let vertical = amplitude * Tuning.verticalAmplitudeRatio
+        let baseScale = Tuning.farScale + (Tuning.nearScale - Tuning.farScale) * nearness
+        let largest = baseScale * (1 + (1 - sin(p.phase.z)) * Tuning.breathDepth)
+        let sinX = CGFloat(sin(p.phase.x)), sinY = CGFloat(sin(p.phase.y))
+        return Sweep(dx: (-1 - sinX) * amplitude...(1 - sinX) * amplitude,
+                     dy: (-1 - sinY) * vertical...(1 - sinY) * vertical,
+                     halfSize: CGSize(width: p.halfSize.width * largest,
+                                      height: p.halfSize.height * largest))
+    }
+
+    /// Gives every particle a home where nothing it ever does can touch the canvas edge, an
+    /// exclusion zone, or a word settled before it (#1759).
+    ///
+    /// ## Why the expansion needs this, though it cannot overlap two words by itself
+    /// ``expansion`` multiplies each word's offset from the centre, which grows every gap — but it
+    /// knows nothing of the zones or the edge, and the packer's flattened field (`yCompression`
+    /// 0.62) is spread furthest of all vertically: ×3.33 on a 13-inch iPad's onboarding, which
+    /// carried words straight into the dock's zone and off the canvas. `state(of:)` then corrected
+    /// each frame on its own — the clamp pulled a word back to the edge, the push lifted it over the
+    /// zone's top — and neither looked at the other words. So onboarding's Add Volumes step drew
+    /// *objective* lifted onto *power* above the dock, and *hostility*, thrown 67 pt off the left
+    /// edge, clamped onto *conflict* (S2's `onboarding-volumes`, measured at its instant).
+    ///
+    /// ## What the pass does
+    /// In rank order, each particle looks for a home whose ``Sweep`` fits the canvas, misses every
+    /// zone and clears every sweep already claimed by ``Tuning/settleClearance``. It looks first on
+    /// its own ray — the expanded home, then the line back to the packer's centre — giving up drift
+    /// a step at a time (``Tuning/settleExcursions``) before it gives up the ray. Off the ray it
+    /// searches outward from the expanded home for the nearest point where it can stand still, and
+    /// a few grid steps beyond that for one with more drift (``nearestHome(to:in:level:)``). The
+    /// commonest words claim first, so they keep the composition; a word with no room anywhere on
+    /// the canvas is left out, as the packer leaves out a word with no slot. A field that never met
+    /// an edge, a zone or a neighbour keeps every expanded home and every drift exactly.
+    ///
+    /// ## What it costs, measured
+    /// Over every bundled scope's two first-impression lenses, on the splash and onboarding canvases
+    /// of three iPhones, four iPad shapes and the Mac's 560 × 540 window, sampled for five minutes:
+    /// before, word boxes met in most frames of almost every layout and words were drawn over the
+    /// dock; after, no two boxes meet and none reaches a zone. The iPads keep every word and 89–100%
+    /// of the drift (weighted by amplitude); the iPhones keep 99.7–100% of their words and 72–85% of
+    /// the drift; the Mac's window, the densest, keeps 98–100% of its words and 76–84% of the drift.
+    /// A field takes up to a millisecond to build there on an M-series Mac, which is why
+    /// `WordCloudBackdropView` caches it beside the packer's layout.
+    ///
+    /// A field built with no canvas — the unit tests' fixtures — has nothing to settle into and is
+    /// returned as it came.
+    static func settle(_ particles: [Particle], packedCenters: [CGPoint], canvas: CGSize,
+                       zones: [CGRect], bleed: CGFloat) -> [Particle] {
+        guard canvas.width > 0, canvas.height > 0 else { return particles }
+        var kept: [Particle] = []
+        var claimed: [CGRect] = []
+        for (particle, packed) in zip(particles, packedCenters) {
+            func isClear(_ home: CGPoint, _ sweep: Sweep) -> Bool {
+                guard sweep.fits(at: home, in: canvas, bleed: bleed) else { return false }
+                let box = sweep.box(at: home)
+                let padded = box.insetBy(dx: -Tuning.settleClearance, dy: -Tuning.settleClearance)
+                return !zones.contains { $0.intersects(box) }
+                    && !claimed.contains { $0.intersects(padded) }
+            }
+            let sweeps = Tuning.settleExcursions.map { Self.sweep(of: particle, excursion: $0) }
+            var found: (home: CGPoint, level: Int)?
+            // On the ray: the most drift first, then the nearest the composition.
+            let ray = rayCandidates(from: particle.home, toward: packed)
+            for level in sweeps.indices {
+                if let home = ray.first(where: { isClear($0, sweeps[level]) }) {
+                    found = (home, level)
+                    break
+                }
+            }
+            // Off it. A sweep holds every smaller one, so a point that cannot hold the word
+            // standing still holds nothing, and that is the one test most points need.
+            if found == nil, let still = sweeps.last {
+                found = nearestHome(to: particle.home, in: canvas) { point in
+                    guard isClear(point, still) else { return nil }
+                    return sweeps.indices.first { isClear(point, sweeps[$0]) } ?? sweeps.count - 1
+                }
+            }
+            guard let found else { continue }
+            claimed.append(sweeps[found.level].box(at: found.home))
+            kept.append(Particle(term: particle.term, home: found.home,
+                                 baseFontSize: particle.baseFontSize,
+                                 rotationDegrees: particle.rotationDegrees,
+                                 depth: particle.depth, halfSize: particle.halfSize,
+                                 phase: particle.phase,
+                                 excursion: Tuning.settleExcursions[found.level]))
+        }
+        return kept
+    }
+
+    /// The homes on a particle's own ray, nearest the composition first: the expanded home, then
+    /// sixteen steps back along the line to the packed centre.
+    static func rayCandidates(from home: CGPoint, toward packed: CGPoint) -> [CGPoint] {
+        guard home != packed else { return [home] }
+        return [home] + (1...16).map { step in
+            let along = 1 - CGFloat(step) / 16
+            return CGPoint(x: packed.x + (home.x - packed.x) * along,
+                           y: packed.y + (home.y - packed.y) * along)
+        }
+    }
+
+    /// The home a particle takes off its ray: a point of a ``Tuning/settleGrid`` grid, searched in
+    /// square rings outward from `start` (pulled onto the canvas first).
+    ///
+    /// `level` answers, for a point, the index into ``Tuning/settleExcursions`` of the most drift
+    /// the word has room for there, or `nil` where it cannot even stand still. The search takes
+    /// the first point with the whole drift; failing that, it runs ``Tuning/settleSearchRings``
+    /// rings past the first point that holds the word at all and takes the one with the most drift
+    /// it met, the nearest among equals. So a word stays near its place in the composition and
+    /// still moves where the canvas allows — measured, a bare nearest-point rule kept about half
+    /// the drift on a phone, and an unbounded search for full drift cost four times as long and
+    /// carried words further. `nil` only when no grid point on the canvas holds the word.
+    static func nearestHome(to start: CGPoint, in canvas: CGSize,
+                            level: (CGPoint) -> Int?) -> (home: CGPoint, level: Int)? {
+        let step = Tuning.settleGrid
+        let origin = CGPoint(x: min(max(start.x, 0), canvas.width),
+                             y: min(max(start.y, 0), canvas.height))
+        var best: (home: CGPoint, level: Int)?
+        var firstRing: Int?
+        let rings = Int((max(canvas.width, canvas.height) / step).rounded(.up))
+        for ring in 0...rings {
+            // The ring's square, clockwise from its top-left corner, without repeating a corner.
+            var offsets: [CGPoint] = ring == 0 ? [.zero] : []
+            if ring > 0 {
+                for i in -ring..<ring { offsets.append(CGPoint(x: i, y: -ring)) }
+                for i in -ring..<ring { offsets.append(CGPoint(x: ring, y: i)) }
+                for i in -ring..<ring { offsets.append(CGPoint(x: -i, y: ring)) }
+                for i in -ring..<ring { offsets.append(CGPoint(x: -ring, y: -i)) }
+            }
+            for offset in offsets {
+                let point = CGPoint(x: origin.x + offset.x * step, y: origin.y + offset.y * step)
+                guard point.x >= 0, point.x <= canvas.width,
+                      point.y >= 0, point.y <= canvas.height,
+                      let room = level(point) else { continue }
+                if firstRing == nil { firstRing = ring }
+                if room < best?.level ?? Int.max {
+                    best = (point, room)
+                    if room == 0 { return best }
+                }
+            }
+            if let firstRing, ring >= firstRing + Tuning.settleSearchRings { return best }
+        }
+        return best
+    }
+
+    // MARK: - Motion
+
     /// Where a particle is, how big, and how bright, at `time`.
     ///
     /// - Parameter time: seconds since an arbitrary but fixed epoch. `0` yields the rest
@@ -236,8 +462,9 @@ struct WordCloudDriftField: Sendable {
         // the depth illusion — the eye reads differential motion as distance long before it
         // reads size.
         let nearness = 1 - p.depth
-        let amplitude = Tuning.farAmplitude
-            + (Tuning.nearAmplitude - Tuning.farAmplitude) * nearness
+        // Scaled by the share of the drift the settle pass left this word room for.
+        let amplitude = (Tuning.farAmplitude
+            + (Tuning.nearAmplitude - Tuning.farAmplitude) * nearness) * p.excursion
         let rate = Tuning.farRate + (Tuning.nearRate - Tuning.farRate) * nearness
 
         // Phase-corrected, so t = 0 is EXACTLY the packed layout.
@@ -427,6 +654,20 @@ struct WordCloudDriftField: Sendable {
 
         /// Points of daylight left between a pushed word and the zone it was pushed out of.
         static let zoneClearance: CGFloat = 1
+
+        /// Points of daylight kept between two settled words' sweeps, on top of the sweeps
+        /// themselves — which already hold every excursion, so at rest the gap is far wider.
+        static let settleClearance: CGFloat = 2
+
+        /// The shares of its drift a crowded word gives up to, in turn, before it leaves its ray.
+        /// Descending, and ending at 0, which ``WordCloudDriftField/settle`` relies on.
+        static let settleExcursions: [CGFloat] = [1, 0.5, 0.25, 0]
+
+        /// The spacing, in points, of the grid a word searches when its own ray has no room.
+        static let settleGrid: CGFloat = 8
+
+        /// How many grid rings past the first that holds it a word looks for more drift: 48 pt.
+        static let settleSearchRings = 6
 
         /// Depth dimming, before the surface's own `dim` multiplier.
         static let nearOpacity: Double = 1.0

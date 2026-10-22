@@ -145,6 +145,11 @@ enum AppRootRouter {
 ///         seen on any launch. The guard moved to the branch it belongs to; see
 ///         `CloudSurfaceArbiter.resolve`. Nothing here changed, which is the point: the decision
 ///         is a rule's to make, and the rule was the thing that was wrong.
+///   1.2 — a fresh install's splash is up from the FIRST frame (#1759). It used to wait for the
+///         resolve, which runs from a `.task` after that frame, so the onboarding dock underneath
+///         was the first thing a new reader saw: drawn under the fading launch screen for a quarter
+///         of a second on an iPad (5.44 to 5.69 s into S2's first launch), and in the Mac window's
+///         first two frames (S4), before the splash covered it.
 struct ContentViewWithSplash: View {
 
     @Environment(AppState.self) private var appState
@@ -152,19 +157,28 @@ struct ContentViewWithSplash: View {
     @State private var hasResolvedOnce = false
 
     var body: some View {
+        let reason = shownReason
         ContentView()
             .overlay {
-                if let splashReason {
-                    LaunchSplashView(reason: splashReason)
+                if let reason {
+                    LaunchSplashView(reason: reason)
                         .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.25), value: splashReason == nil)
+            .animation(.easeInOut(duration: 0.25), value: reason == nil)
             .task { await resolveSplash() }
             .onChange(of: appState.hasInitialProjectSyncSettled) { _, settled in
                 // A CloudKit splash dismisses when its wait actually ends, not on a timer.
                 if settled, splashReason == .cloudKitImport { splashReason = nil }
             }
+    }
+
+    /// The splash this frame shows: the resolved reason once ``resolveSplash()`` has run, and before
+    /// it, a fresh install's (`CloudSurfaceArbiter.firstFrameSplash`, which says why only that one
+    /// is known at frame zero). The resolve latches the same answer in the same pass that sets
+    /// ``hasResolvedOnce``, so nothing moves when it lands.
+    private var shownReason: CloudSurface.SplashReason? {
+        hasResolvedOnce ? splashReason : CloudSurfaceArbiter.firstFrameSplash(appState: appState)
     }
 
     /// Asks the arbiter once, after the first frame, and honours the reason's own dismissal.
@@ -173,7 +187,8 @@ struct ContentViewWithSplash: View {
     /// This runs before they can possibly be resident, so any rule that required them could only
     /// ever answer "no" here — and the answer is kept. A late splash would be worse than none:
     /// `ContentView` is already on screen underneath, so raising one a second in would fade a
-    /// launch screen over a running app.
+    /// launch screen over a running app — which is why a fresh install's splash no longer waits
+    /// for this at all (``shownReason``).
     private func resolveSplash() async {
         guard !hasResolvedOnce else { return }
         hasResolvedOnce = true
@@ -185,6 +200,12 @@ struct ContentViewWithSplash: View {
                 // Nothing to wait for, so hold briefly and flow into onboarding's own
                 // cloud. ONCE PER INSTALL — not a per-launch floor, which the plan rules
                 // out as a permanent tax on a tool people open repeatedly.
+                //
+                // The flow is real since #1759: onboarding's backdrop fades its cloud in when the
+                // vectors land, under the splash, on the splash's own lens, so the fade-out below
+                // crosses one cloud into the other. It used to wait for its next lens change to
+                // notice the vectors, and the splash left an empty backdrop, for 0.18 to 1.21 s
+                // in the launches measured.
                 try? await Task.sleep(for: .seconds(1.6))
                 splashReason = nil
             }

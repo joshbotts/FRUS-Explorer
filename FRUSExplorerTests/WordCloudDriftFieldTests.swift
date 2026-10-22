@@ -15,6 +15,7 @@
 import Testing
 import Foundation
 import CoreGraphics
+import SwiftUI
 @testable import FRUSExplorer
 
 /// The drift field's motion model.
@@ -636,5 +637,294 @@ struct WordCloudDriftFieldTests {
                                                  scale: 1, in: size, bleed: 0.5)
         #expect(bleeding.x > contained.x, "with bleed the word is allowed further out")
         #expect(bleeding.x + half.width > size.width, "and part of it genuinely leaves the frame")
+    }
+}
+
+// MARK: - Settling (#1759)
+
+/// The settle pass: every word of a full-bleed field is given a home its whole drift keeps clear of
+/// the edge, the zones and the words settled before it.
+///
+/// ## Why the fixture is a real frame
+/// S2 found the defect in a capture, `onboarding-volumes` (a 13-inch iPad in landscape, the Add
+/// Volumes step, the Concepts lens), and the harness that diagnosed it reproduced that frame from
+/// the bundled vectors at the instant it was taken: *objective* lifted onto *power* above the dock,
+/// and *conflict* and *hostility* clamped onto each other at the left edge. So the regression is
+/// that frame, packed through the backdrop's own arguments (`WordCloudBackdropView.packedWords` and
+/// `settledField`, the functions the view calls), not a hand-placed imitation of it.
+///
+/// ## What a sweep cannot prove, and what the arithmetic can
+/// Sampling time finds a collision only if a sample lands on it. The guarantee is instead that each
+/// word's ``WordCloudDriftField/Sweep`` — every box it can be drawn in — misses every other's, so
+/// the suite checks the sweeps on every bundled layout of three surfaces, and separately that a
+/// sweep really holds every instant `state(of:)` produces.
+///
+/// Version history:
+///   1.0 — #1759: initial implementation
+@Suite("Word cloud — settled field")
+struct WordCloudSettleTests {
+
+    /// The bundled core vectors, decoded here rather than through `BundledCloudVectors`' shared
+    /// state, which another suite injects and resets.
+    private func bundledCore() throws -> CloudVectorsFile {
+        let url = try #require(Bundle.main.url(forResource: "cloud-vectors-core", withExtension: "json"))
+        return try JSONDecoder().decode(CloudVectorsFile.self, from: Data(contentsOf: url))
+    }
+
+    /// A drawn box at one instant: the estimate at the instant's scale, as the existing suites use.
+    private func drawnBox(_ p: WordCloudDriftField.Particle, at time: Double, in size: CGSize,
+                          field: WordCloudDriftField) -> CGRect {
+        let state = WordCloudDriftField.state(of: p, at: time, in: size,
+                                              avoiding: field.exclusionZones, bleed: field.bleed)
+        let half = CGSize(width: p.halfSize.width * state.scale, height: p.halfSize.height * state.scale)
+        return CGRect(x: state.position.x - half.width, y: state.position.y - half.height,
+                      width: half.width * 2, height: half.height * 2)
+    }
+
+    /// S2's canvas: an iPad Pro 13-inch (M5) in landscape, full-bleed.
+    private let ipadLandscape = CGSize(width: 1376, height: 1032)
+
+    /// The dock's exclusion zone in S2's frame, as `OnboardingView.dockExclusionZone` builds it: in
+    /// the 1376 × 988 safe-area box (a 24 pt status bar, a 20 pt home indicator), the Add Volumes
+    /// dock measured at 248 pt with its 28 pt bottom padding (220 pt drawn, read off the frame), plus
+    /// `dockBottomInset`, 28 — and handed to the backdrop untranslated, as that function hands it.
+    private var s2DockZone: CGRect {
+        let width = OnboardingDockMetrics.dockWidth(forContainerWidth: ipadLandscape.width)
+        let height: CGFloat = 248 + 28
+        return CGRect(x: (ipadLandscape.width - width) / 2, y: 988 - height,
+                      width: width, height: height)
+    }
+
+    /// The instant S2 kept frame 03 of its burst: 2026-10-21 16:38:34.363 EDT, in the canvas's own
+    /// clock (seconds since the reference date).
+    private let s2Instant: Double = 814_307_914.363
+
+    /// S2's field: the corpus's Concepts list packed and settled as the backdrop does it on the
+    /// 13-inch iPad's Add Volumes step, around ``s2DockZone``.
+    @MainActor
+    private func s2Field() throws -> WordCloudDriftField {
+        let core = try bundledCore()
+        let terms = try #require(BundledCloudVectors.list(in: core, scope: "corpus", lens: .concepts))
+        let box = WordCloudBackdropView.quantised(ipadLandscape)
+        let placed = WordCloudBackdropView.packedWords(terms: terms, box: box, composition: .automatic,
+                                                       exclusionZones: [s2DockZone])
+        return WordCloudBackdropView.settledField(placed: placed, box: box, composition: .automatic,
+                                                  exclusionZones: [s2DockZone])
+    }
+
+    /// **The frame S2 kept.** Before the settle pass, at this instant *objective*'s box lay 1,040 pt²
+    /// into *power*'s and *conflict*'s 587 pt² into *hostility*'s; each word had been put there by a
+    /// render-time correction — the push lifting *objective* out of the dock's zone, the clamp
+    /// pulling *hostility* back from 67 pt off the edge — that looked at no other word.
+    @Test("S2's onboarding-volumes frame: objective clears power, conflict clears hostility")
+    @MainActor
+    func s2FrameHasNoOverlap() throws {
+        let field = try s2Field()
+        let byTerm = Dictionary(uniqueKeysWithValues: field.particles.map { ($0.term, $0) })
+        // All four are drawn — a pair that is apart because one of it was dropped proves nothing.
+        for term in ["objective", "power", "conflict", "hostility"] {
+            #expect(byTerm[term] != nil, "\(term) is missing from the field")
+        }
+        for (a, b) in [("objective", "power"), ("conflict", "hostility")] {
+            let first = try #require(byTerm[a]), second = try #require(byTerm[b])
+            let overlap = drawnBox(first, at: s2Instant, in: ipadLandscape, field: field)
+                .intersection(drawnBox(second, at: s2Instant, in: ipadLandscape, field: field))
+            #expect(overlap.isNull || overlap.width * overlap.height < 0.01,
+                    "\(a) and \(b) overlap by \(overlap.width * overlap.height) pt² at S2's instant")
+        }
+
+        // And no two words anywhere, over ten minutes from that instant at 4 Hz.
+        var frames = 0
+        for step in 0..<2_400 {
+            let t = s2Instant + Double(step) / 4
+            let boxes = field.particles.map { drawnBox($0, at: t, in: ipadLandscape, field: field) }
+            for i in boxes.indices {
+                #expect(!boxes[i].intersects(s2DockZone),
+                        "\(field.particles[i].term) is over the dock at \(t)")
+                for j in boxes.indices where j > i && boxes[i].intersects(boxes[j]) {
+                    Issue.record("\(field.particles[i].term) meets \(field.particles[j].term) at \(t)")
+                    return
+                }
+            }
+            frames += 1
+        }
+        #expect(frames == 2_400, "the sweep must have looked at every frame it claims to")
+    }
+
+    /// The settle moves only what needed moving: in S2's frame the five commonest words were never
+    /// near the dock, the edge or a collision, and each keeps its expanded home and its whole drift.
+    @Test("A word with room keeps its expanded home and all of its drift")
+    @MainActor
+    func roomyWordsAreUntouched() throws {
+        let field = try s2Field()
+        let core = try bundledCore()
+        let terms = try #require(BundledCloudVectors.list(in: core, scope: "corpus", lens: .concepts))
+        let box = WordCloudBackdropView.quantised(ipadLandscape)
+        let placed = WordCloudBackdropView.packedWords(terms: terms, box: box, composition: .automatic,
+                                                       exclusionZones: [s2DockZone])
+        let commonest = placed.filter { $0.colorIndex < 5 }
+        #expect(commonest.count == 5)
+        for word in commonest {
+            let particle = try #require(field.particles.first { $0.term == word.term })
+            let expanded = WordCloudDriftField.expand(word.center, canvas: box, by: field.expansion)
+            #expect(particle.home == expanded, "\(word.term) moved from \(expanded) to \(particle.home)")
+            #expect(particle.excursion == 1, "\(word.term) lost drift it had room for")
+        }
+    }
+
+    /// The containment the whole guarantee rests on: whatever `state(of:)` draws, at any instant, lies
+    /// inside the particle's sweep. Checked on every word of S2's field, at every excursion the
+    /// settle can hand out, over two thousand instants each.
+    @Test("A sweep holds every box state(of:) draws")
+    @MainActor
+    func sweepContainsEveryInstant() throws {
+        let field = try s2Field()
+        var checked = 0
+        for particle in field.particles {
+            for excursion in WordCloudDriftField.Tuning.settleExcursions {
+                let p = WordCloudDriftField.Particle(
+                    term: particle.term, home: particle.home, baseFontSize: particle.baseFontSize,
+                    rotationDegrees: particle.rotationDegrees, depth: particle.depth,
+                    halfSize: particle.halfSize, phase: particle.phase, excursion: excursion)
+                let sweep = WordCloudDriftField.sweep(of: p).box(at: p.home).insetBy(dx: -1e-6, dy: -1e-6)
+                for step in 0..<2_000 {
+                    // No zones and a canvas far larger than the field, so neither correction moves
+                    // the word and the box is the drift's own.
+                    let t = s2Instant + Double(step) * 0.37
+                    let state = WordCloudDriftField.state(of: p, at: t,
+                                                          in: CGSize(width: 1e6, height: 1e6), bleed: 0)
+                    let half = CGSize(width: p.halfSize.width * state.scale,
+                                      height: p.halfSize.height * state.scale)
+                    let drawn = CGRect(x: state.position.x - half.width, y: state.position.y - half.height,
+                                       width: half.width * 2, height: half.height * 2)
+                    #expect(sweep.contains(drawn), "\(p.term) at excursion \(excursion) left its sweep at \(t)")
+                    checked += 1
+                }
+            }
+        }
+        #expect(checked == field.particles.count * 4 * 2_000)
+    }
+
+    /// One surface's canvas and zones, for the every-layout sweep below.
+    struct Surface: Sendable, CustomTestStringConvertible {
+        /// The surface's name, for the test's report.
+        let name: String
+        /// Its full-bleed canvas, in points.
+        let canvas: CGSize
+        /// Its exclusion zones, from the functions the surface builds them with.
+        let zones: @MainActor @Sendable () -> [CGRect]
+        var testDescription: String { name }
+    }
+
+    /// Three of the surfaces the field draws on, each from the functions that build its zones: the
+    /// splash on an iPhone 17 (the identity block, at the phone's metrics), onboarding's Add Volumes
+    /// step on the 13-inch iPad (S2's dock), and onboarding's welcome step in the Mac's 560 × 540
+    /// window (a 150 pt dock plus the identity block, at the Mac's metrics) — the densest.
+    static let surfaces: [Surface] = [
+        Surface(name: "iPhone 17 splash", canvas: CGSize(width: 402, height: 874)) {
+            LaunchSplashView.identityZones(in: CGSize(width: 402, height: 778),
+                                           safeAreaInsets: EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0),
+                                           metrics: .phone)
+        },
+        Surface(name: "iPad Pro 13-inch Add Volumes", canvas: CGSize(width: 1376, height: 1032)) {
+            [CGRect(x: 368, y: 712, width: 640, height: 276)]
+        },
+        Surface(name: "Mac onboarding welcome", canvas: CGSize(width: 560, height: 540)) {
+            [CGRect(x: 0, y: 358, width: 560, height: 182)]
+                + LaunchSplashView.identityZones(in: CGSize(width: 560, height: 540), metrics: .mac)
+        },
+    ]
+
+    /// **Every bundled layout, not one.** Over the corpus and all 107 subseries, Concepts and Topics,
+    /// each field's sweeps fit the canvas, miss every zone and miss one another — so no two words can
+    /// meet and none can reach the dock or the identity block, at any instant. Before the settle pass,
+    /// boxes met in most sampled frames of nearly every one of these layouts.
+    ///
+    /// The floors keep the guarantee from being bought by emptying the field: a settle that dropped
+    /// words or froze them would pass the first three checks. Measured: 98–100% of words kept, and
+    /// 76–100% of the drift, weighted by each word's amplitude.
+    @Test("No two settled words can meet, on every bundled layout", arguments: surfaces)
+    @MainActor
+    func everyLayoutSettlesClear(_ surface: Surface) throws {
+        let core = try bundledCore()
+        let box = WordCloudBackdropView.quantised(surface.canvas)
+        let zones = surface.zones()
+        var layouts = 0, placedCount = 0, keptCount = 0
+        var driftKept = 0.0, driftAll = 0.0
+        for scope in core.scopes.keys.sorted() {
+            for lens in WordCloudBackdropView.firstImpressionLenses {
+                guard let terms = BundledCloudVectors.list(in: core, scope: scope, lens: lens) else { continue }
+                let placed = WordCloudBackdropView.packedWords(terms: terms, box: box, composition: .automatic,
+                                                               exclusionZones: zones)
+                let field = WordCloudBackdropView.settledField(placed: placed, box: box,
+                                                               composition: .automatic, exclusionZones: zones)
+                layouts += 1
+                placedCount += placed.count
+                keptCount += field.particles.count
+                let sweeps = field.particles.map { p in
+                    (p, WordCloudDriftField.sweep(of: p))
+                }
+                for (i, (p, sweep)) in sweeps.enumerated() {
+                    let amplitude = 4 + 10 * (1 - p.depth)
+                    driftKept += amplitude * Double(p.excursion)
+                    driftAll += amplitude
+                    #expect(sweep.fits(at: p.home, in: box, bleed: field.bleed),
+                            "\(scope) \(lens): \(p.term) can reach past the edge")
+                    let swept = sweep.box(at: p.home)
+                    #expect(!zones.contains { $0.intersects(swept) },
+                            "\(scope) \(lens): \(p.term) can reach a zone")
+                    for (q, other) in sweeps[(i + 1)...] where swept.intersects(other.box(at: q.home)) {
+                        Issue.record("\(scope) \(lens): \(p.term) can meet \(q.term)")
+                    }
+                }
+            }
+        }
+        #expect(layouts == core.scopes.count * WordCloudBackdropView.firstImpressionLenses.count,
+                "every scope's two lists must have been laid out")
+        #expect(layouts > 200)
+        #expect(Double(keptCount) >= 0.97 * Double(placedCount),
+                "\(surface.name) kept \(keptCount) of \(placedCount) words")
+        #expect(driftKept >= 0.6 * driftAll,
+                "\(surface.name) kept \(Int(100 * driftKept / driftAll))% of the drift")
+    }
+
+    /// A word the settle leaves no drift stays exactly at its home: only its size breathes.
+    @Test("A word settled with no drift never leaves its home")
+    func stillWordStaysHome() {
+        let p = WordCloudDriftField.Particle(
+            term: "treaty", home: CGPoint(x: 300, y: 200), baseFontSize: 24, rotationDegrees: 0,
+            depth: 0, halfSize: WordCloudDriftField.estimatedHalfSize(term: "treaty", fontSize: 24, rotated: false),
+            phase: WordCloudDriftField.phase(for: "treaty"), excursion: 0)
+        var scales = Set<CGFloat>()
+        for step in 0..<400 {
+            let state = WordCloudDriftField.state(of: p, at: Double(step) * 0.5,
+                                                  in: CGSize(width: 600, height: 400), bleed: 0)
+            #expect(state.position == p.home)
+            scales.insert(state.scale)
+        }
+        #expect(scales.count > 100, "the breath must still run — a still word is not a frozen one")
+    }
+
+    /// A band is drawn close to the packer's own tight layout, where every word's drift reaches a
+    /// neighbour, so settling it would take most of its words (measured: 15 of 38 kept on an iPhone
+    /// strip). It is left exactly as it was; this pins that, so changing it is a decision.
+    @Test("A band is not settled")
+    @MainActor
+    func bandIsLeftAsItWas() {
+        let strip = CGSize(width: 402, height: 96)
+        let placed = (0..<6).map { rank in
+            PlacedWord(term: "w\(rank)", count: 100 - rank,
+                       center: CGPoint(x: 60 + CGFloat(rank) * 56, y: 48), fontSize: 18,
+                       colorIndex: rank, rotationDegrees: 0)
+        }
+        let fill = WordCloudBackdropView.fillFactor(for: strip, composition: .band)
+        #expect(fill <= 1, "precondition: a band has no bleed")
+        let field = WordCloudDriftField(placed: placed, rankCeiling: 25, canvas: strip, fill: fill)
+        #expect(field.particles.count == placed.count)
+        for word in placed {
+            let particle = field.particles.first { $0.term == word.term }
+            #expect(particle?.home == WordCloudDriftField.expand(word.center, canvas: strip, by: field.expansion))
+            #expect(particle?.excursion == 1)
+        }
     }
 }

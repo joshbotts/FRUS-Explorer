@@ -48,6 +48,9 @@ import SwiftData
 ///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
 ///         unchanged but for the now-deterministic subseries tiebreak, which is
 ///         documented at `OnboardingScopeResolver.subseries`.
+///   4.3 — #1759: the backdrop takes the splash's lens seed, and fades its cloud in when the
+///         vectors land (`WordCloudBackdropView.vectorsArrived`), under the splash, so the splash
+///         fades into a cloud on its own lens rather than onto an empty backdrop.
 ///   4.2 — the welcome step draws `LaunchIdentityBlock` where the splash left it, so the app
 ///         icon stays put through launch screen → splash → onboarding, and the cloud keeps out
 ///         from under it. Shown by measurement against the dock (`OnboardingIdentityPlacement`),
@@ -166,6 +169,11 @@ struct OnboardingView: View {
                     // exists for, which until now only the splash exercised.
                     exclusionZones: exclusionZones(in: proxy),
                     drift: true,
+                    // The splash's seed, so the two name the same lens when the splash fades into
+                    // this one (#1759). Both are mounted in a fresh install's first frame, so both
+                    // record the same phase origin and step through the lenses together; unseeded,
+                    // this one followed the wall clock and crossed into the other lens half the time.
+                    lensSeed: 0,
                     // The same set the splash uses; this flows straight out of it.
                     lensSet: WordCloudBackdropView.firstImpressionLenses
                 )

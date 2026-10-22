@@ -25,6 +25,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — O-3: initial implementation
+///   1.1 — #1759: the splash drawn before the resolve (`firstFrameSplash`)
 @Suite("Cloud surface arbiter — precedence")
 @MainActor
 struct CloudSurfaceArbiterTests {
@@ -102,6 +103,45 @@ struct CloudSurfaceArbiterTests {
         inputs.hasCompletedOnboarding = false
         inputs.isCloudKitImporting = true
         #expect(CloudSurfaceArbiter.resolve(inputs) == .splash(.freshInstall))
+    }
+
+    // MARK: - The first frame (#1759)
+
+    /// **The splash a host draws before it has resolved.** On build 1861 none: the resolve ran from a
+    /// `.task` after the first frame, so a new reader saw the onboarding dock first — a quarter of a
+    /// second under the fading launch screen on an iPad, two frames in the Mac window. A fresh
+    /// install is already final at frame zero, vectors or no vectors, so its splash is drawn there;
+    /// everything else waits for the resolve as before.
+    @Test("Before the resolve, only a fresh install's splash is drawn")
+    func firstFrameDrawsOnlyTheFreshInstallSplash() {
+        // The first frame of a fresh install: nothing decoded, nothing queued.
+        var fresh = quiet
+        fresh.hasCompletedOnboarding = false
+        fresh.isCoreReady = false
+        #expect(CloudSurfaceArbiter.firstFrameSplash(fresh) == .freshInstall)
+
+        // A restore to a new device: the import is under way too, and the fresh install still wins.
+        var restoring = fresh
+        restoring.isCloudKitImporting = true
+        #expect(CloudSurfaceArbiter.firstFrameSplash(restoring) == .freshInstall)
+
+        // An import alone waits for the resolve: the sync state is not known at frame zero.
+        var importing = quiet
+        importing.isCloudKitImporting = true
+        #expect(CloudSurfaceArbiter.resolve(importing) == .splash(.cloudKitImport),
+                "precondition: the resolve would raise this splash")
+        #expect(CloudSurfaceArbiter.firstFrameSplash(importing) == nil)
+
+        // Work in flight hands the screen to the indexing backdrop, first frame or not.
+        var landing = fresh
+        landing.hasPendingCorpusWork = true
+        #expect(CloudSurfaceArbiter.firstFrameSplash(landing) == nil)
+
+        // And a UI test run, and an ordinary warm start, draw nothing.
+        var testing = fresh
+        testing.isUITestMode = true
+        #expect(CloudSurfaceArbiter.firstFrameSplash(testing) == nil)
+        #expect(CloudSurfaceArbiter.firstFrameSplash(quiet) == nil)
     }
 
     // MARK: - Suppression
