@@ -83,6 +83,7 @@
       "headline": "Search 553 volumes of the U.S. diplomatic record. Offline.",
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/ipad/search-results.png",
+      "status": "build 1861",
       "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -93,6 +94,7 @@
       "headline": "Search 553 volumes of the U.S. diplomatic record. Offline.",
       "subline": "Full-text search with phrases, proximity and exact words, faceted by year, volume, person, document type and subject.",
       "capture": "Docs/screenshots/macos/search.png",
+      "status": "build 1861",
       "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -102,7 +104,19 @@
       "preset": "iphone-6.9",
       "headline": "553 volumes of the diplomatic record, in your pocket.",
       "subline": "Full-text search, offline, with facets by year, volume, person and subject.",
-      "route": "iPhone 17 Pro Max simulator or device, iOS 27, portrait, demo status bar. Search tab ▸ Keywords ▸ \"Berlin blockade\" ▸ results list with the facet sheet closed. No iPhone capture exists in the repository yet.",
+      "capture": "Docs/screenshots/ios/search-results.png",
+      "status": "build 1861",
+      "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
+    },
+    {
+      "id": "search-facets",
+      "audience": "all",
+      "order": 1,
+      "preset": "iphone-6.9",
+      "headline": "553 volumes of the diplomatic record, in your pocket.",
+      "subline": "Full-text search, offline, with facets by year, volume, person and subject.",
+      "capture": "Docs/screenshots/ios/search-facets.png",
+      "status": "build 1861",
       "foot": "FRUS Explorer is an independent research tool. It is not an official product of the Office of the Historian or the U.S. Department of State."
     },
     {
@@ -112,7 +126,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Read it as printed. Keep what you find.",
       "subline": "The editors' headings, footnotes and cross-references, live, with a research rail beside the text for notes, highlights, tags, summaries and citations.",
-      "capture": "Docs/screenshots/ipad/research-rail.png"
+      "capture": "Docs/screenshots/ipad/research-rail.png",
+      "status": "build 1861"
     },
     {
       "id": "reader",
@@ -121,7 +136,8 @@
       "preset": "mac",
       "headline": "Read it as printed. Keep what you find.",
       "subline": "The editors' headings, footnotes and cross-references, live, with a research rail beside the text for notes, highlights, tags, summaries and citations.",
-      "capture": "Docs/screenshots/macos/research-strip.png"
+      "capture": "Docs/screenshots/macos/research-strip.png",
+      "status": "build 1861"
     },
     {
       "id": "reader",
@@ -130,7 +146,8 @@
       "preset": "iphone-6.9",
       "headline": "Read it as printed.",
       "subline": "The editors' footnotes, cross-references and people, live. Highlight, note and tag as you read.",
-      "route": "iPhone, portrait: frus1946v06/d474 (the Long Telegram) open in Read mode, one highlight visible, the floating selection bar closed."
+      "capture": "Docs/screenshots/ios/document.png",
+      "status": "build 1861"
     },
     {
       "id": "map",
@@ -141,7 +158,8 @@
       "keepFoot": true,
       "headline": "See the whole series at once.",
       "subline": "314,616 documents placed by the language they share and named by the vocabulary that sets each region apart. Tap a document to open it, lasso a set to keep it.",
-      "capture": "Docs/screenshots/ipad/semantic-map.png"
+      "capture": "Docs/screenshots/ipad/semantic-map.png",
+      "status": "build 1861"
     },
     {
       "id": "map",
@@ -152,7 +170,8 @@
       "keepFoot": true,
       "headline": "See the whole series at once.",
       "subline": "314,616 documents placed by the language they share and named by the vocabulary that sets each region apart. Click a document to open it, lasso a set to keep it.",
-      "capture": "Docs/screenshots/macos/semantic-map.png"
+      "capture": "Docs/screenshots/macos/semantic-map.png",
+      "status": "build 1861"
     },
     {
       "id": "map",
@@ -160,9 +179,11 @@
       "order": 3,
       "preset": "iphone-6.9",
       "theme": "dark",
+      "keepFoot": true,
       "headline": "See the whole series at once.",
       "subline": "314,616 documents placed by the language they share. Experimental.",
-      "route": "iPhone, portrait: Browse ▸ Analysis Tools ▸ Semantic Analytics, Regions lens, whole corpus, the caveat line visible beneath the map."
+      "capture": "Docs/screenshots/ios/semantic-map.png",
+      "status": "build 1861"
     },
     {
       "id": "source-explorer",
@@ -172,6 +193,7 @@
       "headline": "From footnote to shelf.",
       "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/ipad/source-explorer.png",
+      "status": "build 1861",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
     {
@@ -182,6 +204,18 @@
       "headline": "From footnote to shelf.",
       "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
       "capture": "Docs/screenshots/macos/source-explorer.png",
+      "status": "build 1861",
+      "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
+    },
+    {
+      "id": "source-explorer",
+      "audience": "researchers",
+      "order": 4,
+      "preset": "iphone-6.9",
+      "headline": "From footnote to shelf.",
+      "subline": "The editors' source note, resolved as far as the bundled reference data reaches: record group, entry, lot file, series dates and the repository that holds it. No network, no API key.",
+      "capture": "Docs/screenshots/ios/source-explorer.png",
+      "status": "build 1861",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration. Catalog data is subject to NARA's terms of use."
     },
     {
@@ -192,6 +226,7 @@
       "headline": "Plan the trip before you book it.",
       "subline": "An Archives Visit turns your documents into research targets with the RG, entry and NAID lines staff ask you to quote, flags restricted series, and drafts the advance inquiry.",
       "capture": "Docs/screenshots/ipad/trip-packet.png",
+      "status": "build 1861",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration."
     },
     {
@@ -202,7 +237,7 @@
       "headline": "Plan the trip before you book it.",
       "subline": "An Archives Visit turns your documents into research targets with the RG, entry and NAID lines staff ask you to quote, flags restricted series, and drafts the advance inquiry.",
       "capture": "Docs/screenshots/macos/trip-packet.png",
-      "status": "stale: re-capture on build 50 (#1444 added Options and Share)",
+      "status": "build 1861",
       "foot": "Not affiliated with, endorsed by, or sponsored by the National Archives and Records Administration."
     },
     {
@@ -213,7 +248,7 @@
       "headline": "Follow what the editors cited.",
       "subline": "The editors' own cross-references around any document, as a timeline or a network, one to three hops out. Files they cited without printing open their collection record.",
       "capture": "Docs/screenshots/ipad/cross-reference-graph.png",
-      "status": "stale: re-capture on build 50 (#1438 label placement, #1481 menu wording)"
+      "status": "build 1861"
     },
     {
       "id": "cross-reference",
@@ -223,7 +258,7 @@
       "headline": "Follow what the editors cited.",
       "subline": "The editors' own cross-references around any document, as a timeline or a network, one to three hops out. Files they cited without printing open their collection record.",
       "capture": "Docs/screenshots/macos/cross-reference-graph.png",
-      "status": "stale: re-capture on build 50 (#1438 label placement)"
+      "status": "build 1861"
     },
     {
       "id": "cite",
@@ -232,7 +267,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Cite as you write.",
       "subline": "The Department's recommended citation, BibTeX, RIS, or straight into your own Zotero library. Every search you run can be logged for a method appendix.",
-      "route": "iPad, landscape: a document open, Research rail ▸ Cite tile ▸ the citation sheet showing the formatted citation with Copy, BibTeX, RIS and Send to Zotero. No capture of this sheet exists."
+      "capture": "Docs/screenshots/ipad/cite-sheet.png",
+      "status": "build 1861"
     },
     {
       "id": "cite",
@@ -241,7 +277,8 @@
       "preset": "mac",
       "headline": "Cite as you write.",
       "subline": "The Department's recommended citation, BibTeX, RIS, or straight into your own Zotero library. Every search you run can be logged for a method appendix.",
-      "route": "Mac: main window with a document open, Research rail ▸ Cite ▸ the citation popover. No capture of this popover exists."
+      "capture": "Docs/screenshots/macos/cite-popover.png",
+      "status": "build 1861"
     },
     {
       "id": "course-reader",
@@ -250,7 +287,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Build a course reader in an afternoon.",
       "subline": "Section the collection by week, excerpt the passages discussion will centre on, add a headnote per document, apply the Teaching reader preset, export PDF or Word.",
-      "capture": "Docs/screenshots/ipad/collections-editor.png"
+      "capture": "Docs/screenshots/ipad/collections-editor.png",
+      "status": "build 1861"
     },
     {
       "id": "course-reader",
@@ -260,7 +298,7 @@
       "headline": "Build a course reader in an afternoon.",
       "subline": "Section the collection by week, excerpt the passages discussion will centre on, add a headnote per document, apply the Teaching reader preset, export PDF or Word.",
       "capture": "Docs/screenshots/macos/collections.png",
-      "status": "stale: re-capture on build 50 (picker count, #1446)"
+      "status": "build 1861"
     },
     {
       "id": "series-dashboards",
@@ -269,7 +307,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Lecture material before a single download.",
       "subline": "How late the official record runs against the law that governs it, and three more dashboards on the series itself. They ship inside the app and work offline.",
-      "capture": "Docs/screenshots/ipad/series-production.png"
+      "capture": "Docs/screenshots/ipad/series-production.png",
+      "status": "build 1861"
     },
     {
       "id": "series-dashboards",
@@ -278,7 +317,8 @@
       "preset": "mac",
       "headline": "Lecture material before a single download.",
       "subline": "How late the official record runs against the law that governs it, and three more dashboards on the series itself. They ship inside the app and work offline.",
-      "capture": "Docs/screenshots/macos/series-production.png"
+      "capture": "Docs/screenshots/macos/series-production.png",
+      "status": "build 1861"
     },
     {
       "id": "corpus-analytics",
@@ -287,7 +327,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Why raw counts mislead, shown live.",
       "subline": "Chart a term by year, switch to share of documents, and tap into the documents behind the spike. Every chart exports as a figure or a CSV with its method stated.",
-      "capture": "Docs/screenshots/ipad/analytics.png"
+      "capture": "Docs/screenshots/ipad/analytics.png",
+      "status": "build 1861"
     },
     {
       "id": "corpus-analytics",
@@ -296,7 +337,8 @@
       "preset": "mac",
       "headline": "Why raw counts mislead, shown live.",
       "subline": "Chart a term by year, switch to share of documents, and click into the documents behind the spike. Every chart exports as a figure or a CSV with its method stated.",
-      "capture": "Docs/screenshots/macos/analytics.png"
+      "capture": "Docs/screenshots/macos/analytics.png",
+      "status": "build 1861"
     },
     {
       "id": "chronology",
@@ -305,7 +347,8 @@
       "preset": "ipad-13-landscape",
       "headline": "A crisis, day by day, across every volume.",
       "subline": "Chronology lays out every dated document in a window you set, whichever volume printed it, with the volumes that carry the weight named.",
-      "capture": "Docs/screenshots/ipad/chronology.png"
+      "capture": "Docs/screenshots/ipad/chronology.png",
+      "status": "build 1861"
     },
     {
       "id": "chronology",
@@ -315,7 +358,17 @@
       "headline": "A crisis, day by day, across every volume.",
       "subline": "Chronology lays out every dated document in a window you set, whichever volume printed it, with the volumes that carry the weight named.",
       "capture": "Docs/screenshots/macos/chronology.png",
-      "status": "stale: re-capture on build 50 (legend and chip counts, #1387, #1400)"
+      "status": "build 1861"
+    },
+    {
+      "id": "chronology",
+      "audience": "analysts",
+      "order": 11,
+      "preset": "iphone-6.9",
+      "headline": "A crisis, day by day, across every volume.",
+      "subline": "Chronology lays out every dated document in a window you set, whichever volume printed it, with the volumes that carry the weight named.",
+      "capture": "Docs/screenshots/ios/chronology.png",
+      "status": "build 1861"
     },
     {
       "id": "meaning",
@@ -324,7 +377,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Ask a question, not a keyword.",
       "subline": "Search by meaning ranks the whole series by what you asked, with an optional language model that runs on your device. Nothing you type leaves it. Experimental.",
-      "capture": "Docs/screenshots/ipad/semantic-search.png"
+      "capture": "Docs/screenshots/ipad/semantic-search.png",
+      "status": "build 1861"
     },
     {
       "id": "meaning",
@@ -333,7 +387,8 @@
       "preset": "mac",
       "headline": "Ask a question, not a keyword.",
       "subline": "Search by meaning ranks the whole series by what you asked, with an optional language model that runs on your device. Nothing you type leaves it. Experimental.",
-      "route": "Mac: the Search window in Meaning mode, a question typed (\"How did Washington come to see the Soviet Union as its principal adversary?\"), results showing Semantic match percentages. No Mac capture exists."
+      "capture": "Docs/screenshots/macos/search-meaning.png",
+      "status": "build 1861"
     },
     {
       "id": "person-network",
@@ -342,7 +397,8 @@
       "preset": "ipad-13-landscape",
       "headline": "Who the record orbits.",
       "subline": "Person Analytics around any name: the people most often in the same documents, and the trajectories of two rivals across the series.",
-      "route": "iPad, landscape: Browse ▸ Analysis Tools ▸ Person Analytics ▸ Network, focus Kennan, George Frost. No iPad capture exists; the Mac one is the model."
+      "capture": "Docs/screenshots/ipad/person-analytics-network.png",
+      "status": "build 1861"
     },
     {
       "id": "person-network",
@@ -352,7 +408,7 @@
       "headline": "Who the record orbits.",
       "subline": "Person Analytics around any name: the people most often in the same documents, and the trajectories of two rivals across the series.",
       "capture": "Docs/screenshots/macos/person-analytics-network.png",
-      "status": "stale: re-capture on build 50 (#1370, #1441, #1438 labels)"
+      "status": "build 1861"
     },
     {
       "id": "archival-analytics",
@@ -362,7 +418,7 @@
       "headline": "How the archive itself changed.",
       "subline": "Which collections each era's editors drew on, from the Department's central files to the presidential libraries, with the Central Files umbrella set aside so the others can be read.",
       "capture": "Docs/screenshots/ipad/archival-analytics.png",
-      "status": "stale: counts predate the 2026-10-01 regenerations (#1514, #1468)"
+      "status": "build 1861"
     },
     {
       "id": "archival-analytics",
@@ -372,7 +428,7 @@
       "headline": "How the archive itself changed.",
       "subline": "Which collections each era's editors drew on, from the Department's central files to the presidential libraries, with the Central Files umbrella set aside so the others can be read.",
       "capture": "Docs/screenshots/macos/archival-analytics.png",
-      "status": "stale: counts predate the 2026-10-01 regenerations (#1514, #1468)"
+      "status": "build 1861"
     }
   ]
 }
