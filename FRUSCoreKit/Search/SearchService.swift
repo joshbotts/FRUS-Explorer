@@ -122,6 +122,11 @@ import FTS5Store
 ///          which for a question typed as keywords was *the*; and the highlighter reads each term as the tokenizer
 ///          does, so `happen?` is `happen`. `results(from:parameters:)` is `async`. SNIPPETS MOVE for a search of more
 ///          than one word, and only for those
+///   2.18 — The keyword scan's ASCII fast path (plan of record §5, found in L2): the word loop reads one ASCII
+///          character from a table built by asking `Character` what the scan asked of every character
+///          (`WordCharacter`), the first gate reads it from a table of the stems' first letters, and the second
+///          compares its byte; any other character is read as before. The scan had been most of the snippet pass,
+///          and since #1760 it runs on to the rarest word. NO SNIPPET MOVES
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -1151,18 +1156,21 @@ public actor SearchService {
         ///
         /// One pass. At the first word of the first tier it stops; at a word of a later tier it goes on,
         /// for the rarer tiers alone, whose gates turn away the rest of the words, the common ones first.
+        /// A word is a letter and the letters, apostrophes and hyphens after it (``WordCharacter``).
         func firstMatch(in characters: [Character], from start: Int, to end: Int) -> Range<Int>? {
             var best: (tier: Int, range: Range<Int>)?
             var gates = self.gates
             var i = start
             while i < end {
                 // Skip non-letters.
-                while i < end, !characters[i].isLetter { i += 1 }
+                while i < end, WordCharacter(characters[i]) != .letter { i += 1 }
                 guard i < end else { break }
                 let wordStart = i
                 var sawPunctuation = false
-                while i < end, characters[i].isLetter || characters[i] == "'" || characters[i] == "-" {
-                    if !characters[i].isLetter { sawPunctuation = true }
+                while i < end {
+                    let kind = WordCharacter(characters[i])
+                    if kind == .other { break }
+                    if kind == .joiner { sawPunctuation = true }
                     i += 1
                 }
                 let wordEnd = i
@@ -1190,9 +1198,13 @@ public actor SearchService {
         /// The stems' first characters, for the scan's first gate.
         let firstLetters: Set<Character>
 
+        /// The first gate for a word that opens with one ASCII character, indexed by that character
+        /// lowercased: whether it is one of ``firstLetters``.
+        let asciiFirstLetters: [Bool]
+
         /// Each stem's opening, for the scan's second gate: the stem less its last two characters, and
-        /// never less than its first.
-        let openings: [[Character]]
+        /// never less than its first, as each character's `asciiValue`.
+        let openings: [[UInt8?]]
 
         /// The gates over `stems`, query terms already reduced to their Porter stems.
         init<Stems: Sequence>(_ stems: Stems) where Stems.Element == String {
@@ -1210,6 +1222,20 @@ public actor SearchService {
             // fetch spent 41 s stemming ~6 million words and then discarded every result to fall
             // back to the header. Roughly 24 words in 25 now stop at a character comparison.
             firstLetters = Set(stems.compactMap(\.first))
+            // The same gate for a word that opens with one ASCII character, read from a table without
+            // lowercasing or hashing a `Character`. One ASCII character equals only itself, but a first
+            // letter of several bytes can equal one too (the Kelvin sign is K), so such a letter is asked.
+            var asciiFirstLetters = [Bool](repeating: false, count: 128)
+            for letter in firstLetters {
+                if let byte = WordCharacter.asciiByte(letter) {
+                    asciiFirstLetters[Int(byte)] = true
+                } else {
+                    for byte in 0..<128 where letter == Character(Unicode.Scalar(UInt8(byte))) {
+                        asciiFirstLetters[byte] = true
+                    }
+                }
+            }
+            self.asciiFirstLetters = asciiFirstLetters
             // The second gate, which A10b needs (decision 74): a row whose word is only in its heading or
             // source note now scans its whole prose before it falls back, where the scan used to stop at
             // the heading's match. The stemmer rewrites a word's end only, and no further back than a
@@ -1218,14 +1244,19 @@ public actor SearchService {
             // those two. Measured over a full index, at the Mac's 7,500 rows: "Presidential Materials"
             // went from 8.4 s to 3.6 s in a debug build, with not one snippet changed in nine searches.
             // `SearchSnippetCostTests.stemmingKeepsTheWordsOpening` holds the stemmer to it.
-            openings = stems.filter { !$0.isEmpty }.map { Array($0.prefix(max(1, $0.count - 2))) }
+            openings = stems.filter { !$0.isEmpty }.map { $0.prefix(max(1, $0.count - 2)).map(\.asciiValue) }
         }
 
         /// Whether the word in `characters[start..<end]` passes both gates, and so is stemmed.
         func admit(_ characters: [Character], from start: Int, to end: Int, sawPunctuation: Bool) -> Bool {
-            // The cheap gate. `lowercased()` on a single Character allocates nothing for the
-            // ASCII case and the set probe is O(1).
-            guard let head = characters[start].lowercased().first, firstLetters.contains(head) else { return false }
+            // The cheap gate: a table for one ASCII character, which `lowercased()` would change from A–Z
+            // to a–z and leave otherwise; for any other, the character lowercased and a set probe.
+            if let byte = WordCharacter.asciiByte(characters[start]) {
+                let lower = (65...90).contains(byte) ? byte + 32 : byte
+                guard asciiFirstLetters[Int(lower)] else { return false }
+            } else {
+                guard let head = characters[start].lowercased().first, firstLetters.contains(head) else { return false }
+            }
             // The second gate, for a word the stemmer reads as it is written (an apostrophe or a hyphen
             // is taken out first, which moves its letters).
             return sawPunctuation || opensLikeAStem(characters, from: start, to: end)
@@ -1233,13 +1264,15 @@ public actor SearchService {
 
         /// Whether the word in `characters[start..<end]` opens as one of the stems' ``openings`` does,
         /// compared in ASCII. A character outside ASCII is not compared, and lets the word through to
-        /// the stemmer, which decides.
+        /// the stemmer, which decides. A word's character has an `asciiValue` only when it is one ASCII
+        /// character (``WordCharacter/asciiByte(_:)``): CR LF, the one other character that has one, is
+        /// in no word.
         private func opensLikeAStem(_ characters: [Character], from start: Int, to end: Int) -> Bool {
             let length = end - start
             return openings.contains { opening in
                 guard opening.count <= length else { return false }
                 for j in 0..<opening.count {
-                    guard let letter = characters[start + j].asciiValue, let expected = opening[j].asciiValue
+                    guard let letter = WordCharacter.asciiByte(characters[start + j]), let expected = opening[j]
                     else { return true }
                     // ASCII upper case to lower; a stem is lower case already.
                     let lower = (65...90).contains(letter) ? letter + 32 : letter
@@ -1247,6 +1280,54 @@ public actor SearchService {
                 }
                 return true
             }
+        }
+    }
+
+    /// How the scan reads one character of a body: a letter, which opens a word or goes on with one; an
+    /// apostrophe or a hyphen, which goes on with one; or anything else, which ends it.
+    private enum WordCharacter {
+        case letter, joiner, other
+
+        /// What the scan reads `character` as: from ``ascii`` for one ASCII character, as nearly every
+        /// character of a FRUS body is, and otherwise from `Character` itself (``init(asking:)``).
+        ///
+        /// `Character.isLetter` reads its first scalar's Unicode property from the runtime's tables, a
+        /// call no build inlines. The scan asked it of every character, and twice of most, which was 85%
+        /// of the scan and 57% of the snippet pass: sampled in a release build over a full index, "What
+        /// was the Long Telegram?" at the Mac's 7,500 rows.
+        @inline(__always)
+        init(_ character: Character) {
+            if let byte = Self.asciiByte(character) {
+                self = Self.ascii[Int(byte)]
+            } else {
+                self.init(asking: character)
+            }
+        }
+
+        /// What `Character` says `character` is: the scan's test of every character before the table,
+        /// and still its test of one outside it.
+        init(asking character: Character) {
+            if character.isLetter {
+                self = .letter
+            } else if character == "'" || character == "-" {
+                self = .joiner
+            } else {
+                self = .other
+            }
+        }
+
+        /// What the scan reads each ASCII character as, by its value: asked of `Character` once
+        /// (``init(asking:)``), so that the table and the test cannot disagree.
+        static let ascii: [WordCharacter] = (0..<128).map { byte in
+            WordCharacter(asking: Character(Unicode.Scalar(UInt8(byte))))
+        }
+
+        /// The one byte of `character` when it is one ASCII character, and `nil` for any other: one outside
+        /// ASCII, or one of several scalars, as an *e* with a combining accent is.
+        @inline(__always)
+        static func asciiByte(_ character: Character) -> UInt8? {
+            let utf8 = character.utf8
+            return utf8.count == 1 ? utf8.first : nil
         }
     }
 }
