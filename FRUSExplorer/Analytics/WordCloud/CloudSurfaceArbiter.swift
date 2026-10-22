@@ -45,6 +45,7 @@ enum CloudSurface: Hashable, Sendable {
 ///
 /// Version history:
 ///   1.0 — O-3: initial implementation
+///   1.1 — #1759: `firstFrameSplash`, the splash a host draws before it has resolved
 @MainActor
 enum CloudSurfaceArbiter {
 
@@ -119,9 +120,31 @@ enum CloudSurfaceArbiter {
         return .none
     }
 
+    /// The splash a host draws before it has resolved — a fresh install's, and no other.
+    ///
+    /// **A fresh install is known at frame zero; a CloudKit import is not.** `hasCompletedOnboarding`
+    /// is read from `UserDefaults` as `AppState` is created, and the queue and the batch that would
+    /// hand the screen to the indexing backdrop are empty at launch, so the fresh-install verdict is
+    /// already final in the first frame — and drawing it there is what keeps the onboarding dock
+    /// beneath from being the first thing a new reader sees (#1759). The sync state an import needs
+    /// arrives later, so that splash still waits for `ContentViewWithSplash`'s resolve.
+    static func firstFrameSplash(_ inputs: Inputs) -> CloudSurface.SplashReason? {
+        resolve(inputs) == .splash(.freshInstall) ? .freshInstall : nil
+    }
+
+    /// Reads the live app state.
+    static func firstFrameSplash(appState: AppState) -> CloudSurface.SplashReason? {
+        firstFrameSplash(inputs(from: appState))
+    }
+
     /// Reads the live app state.
     static func resolve(appState: AppState) -> CloudSurface {
-        resolve(Inputs(
+        resolve(inputs(from: appState))
+    }
+
+    /// The rule's inputs, read from the live app state.
+    private static func inputs(from appState: AppState) -> Inputs {
+        Inputs(
             // `AppState`'s mirror, NOT `BundledCloudVectors.isCoreReady`. The store is a plain
             // `@MainActor enum` with static state, so nothing observes it: a caller evaluating this
             // inside a `body` — `IndexingBannerView` and `IndexingQueueBannerView` both do — was
@@ -142,7 +165,7 @@ enum CloudSurfaceArbiter {
             isCloudKitImporting: !appState.hasInitialProjectSyncSettled
                 && Self.isSyncing(appState.cloudKitSyncState),
             isUITestMode: ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1"
-        ))
+        )
     }
 
     /// Whether a sync is in flight.

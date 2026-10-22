@@ -16,12 +16,13 @@ import SwiftUI
 
 /// The design hand-off's 1a splash — but only on launches that have earned it.
 ///
-/// ## It is an overlay, not a first frame
-/// The (d) predicates are only knowable *after* container init and observer install, so this
-/// cannot be present at frame zero and does not try to be. The pre-render window is covered
-/// by the iOS launch screen (option (a)'s static half, shipped in #529); this picks up the
-/// same composition once SwiftUI is running, so the two read as one moment rather than a
-/// screen replaced by a different screen. **Keep them in step.**
+/// ## It is an overlay, drawn from the first frame when it can be
+/// The pre-render window is covered by the iOS launch screen (option (a)'s static half, shipped in
+/// #529); this picks up the same composition once SwiftUI is running, so the two read as one moment
+/// rather than a screen replaced by a different screen. **Keep them in step.** A fresh install's
+/// predicate is known at frame zero, so `ContentViewWithSplash` draws this in the first frame and
+/// the onboarding dock beneath it is never seen first (#1759); a CloudKit import is known only once
+/// the sync state arrives, so that splash is raised by the resolve, a frame or more later.
 ///
 /// ## Dismissal differs by reason, deliberately
 /// - `.cloudKitImport` dismisses when the import settles — a real wait, of real duration.
@@ -36,6 +37,7 @@ import SwiftUI
 ///         reachable BEFORE they have (see `CloudSurfaceArbiter.resolve`, which used to gate every
 ///         branch on them and so made this view unreachable entirely), which is the composition the
 ///         launch screen hands over: identity only, then the cloud.
+///   1.6 — #1759: a fresh install's splash is drawn from the first frame
 ///   1.5 — `LaunchIdentityMetrics`: the block's sizes are per idiom, and the iPad tile is 176 pt.
 ///   1.4 — `identityZones`: the tile's square and the text strip are protected separately, so
 ///         the cloud reaches the glass instead of stopping at a 340 x 260 rect around the block.
