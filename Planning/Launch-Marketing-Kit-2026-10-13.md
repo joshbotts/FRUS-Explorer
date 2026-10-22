@@ -246,9 +246,16 @@ Research Guide are the methods reading; the manual says so (§16).
 | 10–22 | Add Documents ▸ **Citations** tab; paste two citations from a syllabus; they resolve | Paste the syllabus; the citations resolve. |
 | 22–34 | A document's **Configure** ▸ Headnote ▸ **Generate**, then **Edit**; the *AI · edited* chip | A one-line headnote, yours, with authorship recorded. |
 | 34–46 | Collection settings ▸ **Teaching reader** preset; the Persons Index and Chronology appear in the preview | The Teaching reader preset: full text, source notes, index and chronology. |
-| 46–58 | **Export** ▸ PDF; the first page with the title and introduction | Export PDF or Word. |
-| 58–70 | Settings ▸ About ▸ Research Guide ▸ **Production & Timeliness**; drag the year range | Lecture material that ships inside the app. |
-| 70–80 | Corpus Analytics, term *Berlin*, toggle **% of documents**; tap a bar ▸ the documents behind it | Why raw counts mislead, shown live. |
+| 46–58 | **Export…** ▸ the **PDF** card ▸ **Export PDF**; the title page: the title, the collection note and the contents | Export PDF or Word. |
+| 58–70 | Research ▸ **FRUS Research Guide** ▸ **Next** to **Production & Timeliness**; the year chip ▸ the start year set to 1945 in its popover ▸ **Done**; *Publication lag over time* redrawn from 1945 | Lecture material that ships inside the app. |
+| 70–80 | Corpus Analytics, term *Berlin*, toggle **% of documents**; **Administration** ▸ *Dwight D. Eisenhower (1953–1961)*; **View N documents ↗** ▸ those documents in Search | Why raw counts mislead, shown live. |
+
+The last three beats are the routes S1 recorded on 2026-10-21 (rewritten 2026-10-22, #1763). The collection
+has no introduction, so its PDF opens on the title page. The Guide opens from its row in the Research tab, the
+manual's route, and its dashboards' year range is a chip whose popover holds two year fields with steppers, so
+there is nothing to drag. A time chart has no bar to tap: its years are narrowed by the year chip, the
+**Administration** preset or, on the Mac, a drag across the chart (#306), and **View N documents ↗** opens the
+documents behind them. Only By Subseries and By Volume bars open Search.
 
 ### 2.3 Policy analysts — crisis chronologies, meaning search, who the record orbits
 
@@ -320,7 +327,7 @@ commands); the drafts are in `Planning/marketing-drafts/`, with one contact shee
 | 07 | Cite as you write. | The Department's recommended citation, BibTeX, RIS, or straight into your own Zotero library… | **none** | **none** | — |
 | 08 | Build a course reader in an afternoon. | Section the collection by week, excerpt the passages… apply the Teaching reader preset, export PDF or Word. | `ipad/collections-editor` | `macos/collections` (**stale**, #1446) | — |
 | 09 | Lecture material before a single download. | How late the official record runs against the law that governs it, and three more dashboards… | `ipad/series-production` | `macos/series-production` | — |
-| 10 | Why raw counts mislead, shown live. | Chart a term by year, switch to share of documents, and tap into the documents behind the spike… | `ipad/analytics` (build 47) | `macos/analytics` | — |
+| 10 | Why raw counts mislead, shown live. | Chart a term by year, switch to share of documents, then narrow the years to the spike and open its documents in Search… | `ipad/analytics` (build 47) | `macos/analytics` | — |
 | 11 | A crisis, day by day, across every volume. | Chronology lays out every dated document in a window you set… | `ipad/chronology` (build 47) | `macos/chronology` (**stale**, #1387/#1400) | — |
 | 12 | Ask a question, not a keyword. | Search by meaning ranks the whole series by what you asked, with an optional language model that runs on your device… Experimental. | `ipad/semantic-search` (build 47) | **none** | — |
 | 13 | Who the record orbits. | Person Analytics around any name… | **none** | `macos/person-analytics-network` (**stale**, #1370/#1441) | — |

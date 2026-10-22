@@ -326,7 +326,7 @@
       "order": 10,
       "preset": "ipad-13-landscape",
       "headline": "Why raw counts mislead, shown live.",
-      "subline": "Chart a term by year, switch to share of documents, and tap into the documents behind the spike. Every chart exports as a figure or a CSV with its method stated.",
+      "subline": "Chart a term by year, switch to share of documents, then narrow the years to the spike and open its documents in Search. The chart exports as a figure or a CSV with its method stated.",
       "capture": "Docs/screenshots/ipad/analytics.png",
       "status": "build 1861"
     },
@@ -336,7 +336,7 @@
       "order": 10,
       "preset": "mac",
       "headline": "Why raw counts mislead, shown live.",
-      "subline": "Chart a term by year, switch to share of documents, and click into the documents behind the spike. Every chart exports as a figure or a CSV with its method stated.",
+      "subline": "Chart a term by year, switch to share of documents, then narrow the years to the spike and open its documents in Search. The chart exports as a figure or a CSV with its method stated.",
       "capture": "Docs/screenshots/macos/analytics.png",
       "status": "build 1861"
     },

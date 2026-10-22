@@ -1555,7 +1555,7 @@ Before travel to College Park or a presidential library:
 
 Ready-made demonstrations that need nothing but the app and a screen:
 
-- **The shape of official attention**: chart a term by year, toggle % of documents, and tap into the documents behind the spike (15.1) — a live lesson in why raw counts mislead.
+- **The shape of official attention**: chart a term by year, toggle % of documents, narrow the years to the spike, and open its documents with **View N documents ↗** (15.1) — a live lesson in why raw counts mislead.
 - **Who the record orbits**: Person Analytics' Network mode around a secretary of state; trajectories comparing two rivals; the relationship-dynamics chart for a pair (15.3).
 - **How the archive itself changed**: Archival Analytics' era rankings — the documentary record moving from the State Department's central files into the White House's national security files (15.5) — is a historiography seminar in one chart.
 - **What the series keeps citing**: Cross-Reference Analytics' landmarks — the memos an era kept coming back to (15.4).
