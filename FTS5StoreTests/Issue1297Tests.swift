@@ -61,6 +61,8 @@ import CSQLite
 ///          `parseDetailed` alone passed every test (the #1298 attack's P23)
 ///   1.6 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
 ///          tests compile there; Apple platforms still import `SQLite3`
+///   1.7 — #1760: two renders take parser 6.8's quoting, as the tokenizer reads a term: `cold-(korea)` renders `"cold"`
+///          for `"cold-"`, matching the same rows, and the quoted parentheses `"((…cold war…))"` render `"cold war"`
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -340,7 +342,8 @@ struct Issue1297ExclusionTests {
             Issue1297RenderCase("cold -(korea", "\"cold\" AND \"korea\"", [6, 8, 14, 16]),
             Issue1297RenderCase("cold -()", "\"cold\"", Issue1297Corpus.coldRows),
             Issue1297RenderCase("cold -(   )", "\"cold\"", Issue1297Corpus.coldRows),
-            Issue1297RenderCase("cold-(korea)", "\"cold-\" AND (\"korea\")", [6, 8, 14, 16]),
+            // Since parser 6.8 (#1760) the attached dash, which the tokenizer reads as a break, is not quoted: the same rows.
+            Issue1297RenderCase("cold-(korea)", "\"cold\" AND (\"korea\")", [6, 8, 14, 16]),
             Issue1297RenderCase("AND -korea cold", "\"and\" NOT \"korea\" AND \"cold\"", []),
             Issue1297RenderCase("OR -korea cold", "\"or\" NOT \"korea\" AND \"cold\"", []),
             Issue1297RenderCase("cold OR OR war", "\"cold\" AND \"or\" OR \"war\"", [3, 4, 7, 8, 11, 12, 15, 16]),
@@ -896,7 +899,8 @@ struct Issue1297DepthTests {
             (String(repeating: "-(", count: 5_000) + " cold", "\"cold\""),
             (String(repeating: ")", count: 5_000) + String(repeating: "(", count: 5_000) + " cold", "\"cold\""),
         ]
-        // A quoted phrase is one token, whatever it holds: its parentheses are text, and it renders as typed.
+        // A quoted phrase is one token, whatever it holds: its parentheses are text, and since parser 6.8 (#1760) it
+        // renders as the tokenizer reads it, which takes them for breaks.
         let quoted = "\"" + String(repeating: "(", count: 40) + "cold war" + String(repeating: ")", count: 40) + "\""
         let results = try #require(Issue1297SmallStack.run {
             cases.map { FTS5InlineQueryParser.parseDetailed($0.query).expression }
@@ -906,7 +910,7 @@ struct Issue1297DepthTests {
         for (index, testCase) in cases.enumerated() {
             #expect(results[index] == testCase.expression, "\(testCase.query.prefix(40))…")
         }
-        #expect(results[cases.count] == quoted)
+        #expect(results[cases.count] == "\"cold war\"", "\(quoted.prefix(12))…")
         let manyGroups = try #require(results[cases.count + 1], "60 groups each nested to the limit")
         #expect(throws: Never.self) { _ = try Issue1297TruthTable().rows(manyGroups) }
     }

@@ -326,6 +326,9 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///          24,748 lists that are not one term per word, and 240 parses whose marks on one word disagree
 ///   1.7 — Session 2026-10-04: imports `CSQLite` where `SQLite3` cannot be imported (Linux), so these
 ///          tests compile there; Apple platforms still import `SQLite3`
+///   1.8 — #1760: parser 6.8 quotes `=cold.` as `"cold"`, as the tokenizer reads it, so three pins render it so; and
+///          the exact-term sweep of the spelling alphabet counts no refusal that only the respelling makes (16 a scope
+///          before): the approximation of `=cold. -=Cold OR -=Cold` is `"cold" NOT "cold"`, which 6.1's refusal refuses
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -362,7 +365,8 @@ struct Issue1297StructuredPartsTests {
         let coldPhrase = typedOperand("cold", "\"cold\"", .phrase, negated: false)
         let coldPhraseRows = Issue1297StructuredCorpus.P("cold"), peace = Issue1297StructuredCorpus.W("peace")
         let peaceOperand = typedOperand("peace", "\"peace\"", .word, negated: false)
-        let coldPeriodApplied = typedOperand("cold.", "\"cold.\"", .word, negated: false, exact: true, applied: true)
+        // Rendered as the tokenizer reads it since parser 6.8 (#1760): the period at its end is no part of the term.
+        let coldPeriodApplied = typedOperand("cold.", "\"cold\"", .word, negated: false, exact: true, applied: true)
 
         return [
             // Finding 1: a typed complement with no anchor of its own, beside a phrase or prefix.
@@ -701,11 +705,12 @@ struct Issue1297StructuredPartsTests {
             // emptiness over the group's required set, which an `OR` empties, ran it; only the oracle caught that.
             Issue1297StructuredCase(typed: "(cold -cold OR war -war) -korea OR -vietnam", expression: nil,
                                     meaning: c.subtracting(c).union(w.subtracting(w)).subtracting(k).union(N(v))),
-            // Round 4 (Q1): marks are compared by the index word the filter reads, never by spelling, so `"cold."` and
+            // Round 4 (Q1): marks are compared by the index word the filter reads, never by spelling, so `cold.` and
             // `Cold` are marks on cold — in every alternative, and beside a required mark — and the term is the first
             // spelling applied. By spelling, the first reported nothing and the third applied only its second mark.
+            // Since parser 6.8 (#1760) `cold.` renders `"cold"`, as the tokenizer reads it; the term keeps its spelling.
             Issue1297StructuredCase(typed: "=cold. war OR =cold peace",
-                                    expression: "\"cold.\" AND \"war\" OR \"cold\" AND \"peace\"",
+                                    expression: "\"cold\" AND \"war\" OR \"cold\" AND \"peace\"",
                                     meaning: c.intersection(w).union(c.intersection(peace)),
                                     operands: [coldPeriodApplied, war, coldApplied, peaceOperand], exactTerms: ["cold."]),
             Issue1297StructuredCase(typed: "=Cold war OR =cold peace", scoped: true,
@@ -715,7 +720,7 @@ struct Issue1297StructuredPartsTests {
                                                typedOperand("war", "{body_text}:\"war\"", .word, negated: false),
                                                scopedColdApplied, typedOperand("peace", "{body_text}:\"peace\"", .word, negated: false)],
                                     exactTerms: ["Cold"]),
-            Issue1297StructuredCase(typed: "(=cold. OR war) =Cold", expression: "(\"cold.\" OR \"war\") AND \"cold\"",
+            Issue1297StructuredCase(typed: "(=cold. OR war) =Cold", expression: "(\"cold\" OR \"war\") AND \"cold\"",
                                     meaning: c.union(w).intersection(c),
                                     operands: [coldPeriodApplied, war,
                                                typedOperand("Cold", "\"cold\"", .word, negated: false, exact: true, applied: true)],
@@ -1094,16 +1099,17 @@ struct Issue1297StructuredPartsTests {
     /// a spelling must never decide whether a mark applies, nor which term is reported (round 4, Q1).
     static let spellingAlphabet = ["=cold", "=Cold", "=cold.", "-=Cold", "cold", "war", "OR", "(", ")", "-("]
 
-    /// The runs of the exact-term sweep: each alphabet in each scope, with the counts measured on it at parser 6.6.
+    /// The runs of the exact-term sweep: each alphabet in each scope, with the counts measured on it at parser 6.6, and the
+    /// spelling alphabet's refusals that only the respelling made at parser 6.8, which are none: 16 a scope before it.
     static let exactSweeps: [Issue1297ExactSweep] = [
         Issue1297ExactSweep(name: "=cold, -=cold, cold and \"cold\"", alphabet: exactAlphabet, scoped: false,
                             sequences: 22_620, unprovedRequired: 428),
         Issue1297ExactSweep(name: "=cold, -=cold, cold and \"cold\"", alphabet: exactAlphabet, scoped: true,
                             sequences: 22_620, unprovedRequired: 428),
         Issue1297ExactSweep(name: "=cold, =Cold, =cold. and -=Cold", alphabet: spellingAlphabet, scoped: false,
-                            sequences: 11_110, unprovedRequired: 64, refusedOnlyRespelled: 16),
+                            sequences: 11_110, unprovedRequired: 64, refusedOnlyRespelled: 0),
         Issue1297ExactSweep(name: "=cold, =Cold, =cold. and -=Cold", alphabet: spellingAlphabet, scoped: true,
-                            sequences: 11_110, unprovedRequired: 64, refusedOnlyRespelled: 16),
+                            sequences: 11_110, unprovedRequired: 64, refusedOnlyRespelled: 0),
     ]
 
     /// The exact-word post-filter `SearchService` reads from the combined parse, over sequences that can mark a word.
@@ -1196,10 +1202,11 @@ struct Issue1297StructuredPartsTests {
                         literalRows = try table.rows(literalExpression)
                     } else if parsed.isApproximate, matched.isEmpty {
                         // One marker for every spelling makes one identity of what 6.1's refusal compares as two
-                        // spellings: `=cold. -=Cold OR -=Cold` runs the approximation `"cold." NOT "cold"`, and its
-                        // respelling is refused as `"xcoldexact" NOT "xcoldexact"`. That is the refusal's known
-                        // incompleteness, not the filter's, and it admits nothing only because the render matches
-                        // nothing.
+                        // spellings. Until parser 6.8 `=cold. -=Cold OR -=Cold` ran the approximation
+                        // `"cold." NOT "cold"`, and its respelling was refused as `"xcoldexact" NOT "xcoldexact"`: the
+                        // refusal's known incompleteness, not the filter's, which admitted nothing only because the
+                        // render matched nothing. Since 6.8 (#1760) its approximation is `"cold" NOT "cold"`, refused
+                        // too, so the spelling alphabet reaches this branch no more.
                         refusedOnlyRespelled += 1
                         literalRows = []
                     } else {

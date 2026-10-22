@@ -70,6 +70,8 @@ import SwiftUI
 ///         warning, and the whole inspection equals its straight spelling's
 ///   1.9 — FRUS Explorer Light: a kit suite, beside the model it tests; the tests of the app's controller, view
 ///         model, strip and hosts run in Xcode only
+///   1.10 — #1760: a word typed with a mark at its end, as a question typed as keywords ends, is not flagged as
+///         searched more broadly than typed
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -283,6 +285,21 @@ struct QueryInspectionTests {
         let first = try #require(inspection.operands.first)
         #expect(first.stem == "contain")
         #expect(!first.isStemBroadening)
+    }
+
+    /// #1760: a question typed as keywords ends `happen?`, which the search reads as `happen`. Compared with the word as
+    /// typed, its stem was flagged as broader than what was typed, although the mark is no part of what is searched.
+    @Test("A word with a mark at its end is compared as the tokenizer reads it, and is not flagged as broadening")
+    func endMarkIsNotBroadening() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let inspection = await inspector.inspect(
+            parameters: SearchParameters(keywords: "contain?"), indexedVolumeCount: 1)
+        let first = try #require(inspection.operands.first)
+        #expect(first.operand.text == "contain?", "the operand keeps the word as typed")
+        #expect(first.stem == "contain")
+        #expect(!first.isStemBroadening, "contain? is searched as contain, no more broadly than typed")
     }
 
     @Test("Phrases, prefixes and NEAR carry no stem — one would be a lie of convenience")
