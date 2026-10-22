@@ -7261,4 +7261,4 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - **The L6 entry in this log repeats its iPhone walk where its Mac walk should be**: the paragraph after *Checked by hand, iPhone.* appears twice, the second time headed *MAC*. The Mac walk is in #1778's body.
 
 **Not done, and for the owner.**
-- Not pushed, and no pull request: the owner opens it. The draft is kept with the sittings' notes (`L7-pr-draft.md`).
+- **Opened as #1780** on the owner's word of 2026-10-22 ("Open L7's pull request against v2 now, as drafted."), against `v2` at `8cb9d92e`, which had not moved since the branch was cut; not merged. Its body is the draft kept with the sittings' notes (`L7-pr-draft.md`), with the owner's word at its head. Auto-fix on (the owner's switch), auto-merge off; no CI checks reported.
