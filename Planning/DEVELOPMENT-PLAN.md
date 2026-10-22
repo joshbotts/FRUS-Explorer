@@ -7185,8 +7185,17 @@ MAC**Checked by hand, iPhone.** A simulator made for the lane, "iPhone 17 L6" (`
 - The design's concurrency, typechecked alone under Swift 6 with complete checking: no diagnostic.
 - `swift test` and `swift build --target FRUSCoreKit` were not owed: no package input or kit file changed.
 
-**Not done, and for the owner.**
-- **No pull request**: it is opened only on the owner's word.
-- **L6 and this branch re-point the same two blocks** in `07-Search-and-Browse.md` (`corpus.volume.indexInterrupted.detail` and `corpus.volume.indexRequired.detail`): L6 by the 19 lines it adds above them, this branch by 141. Whichever lands second re-points them again, and `EditableContentKeyTests` names the real lines.
-- **The plan of record's §5 line**, which L6 adds, says this fault stands. Once both have landed it should say the fault is fixed here.
-- **The shared check copy** is left extracted and built at `63e43423`, whose code is this branch's, not at `v2`, and its fake home holds this walk's three searches. The `v2` build used for the "before" walk is set aside in this session's scratchpad, and the throwaway tree with L6's code is removed.
+**Merged with `v2`, and opened.**
+- **Brought up to `v2` at `700cb5a3`** (#1778, L6) by the merge `b3e7407f`, at the head of the queue once L6 had merged. Three files conflicted:
+  - the two ranges in `07-Search-and-Browse.md`, re-pointed from where #1766 left them: 1254–1255 → 1395–1396 and 1256–1257 → 1397–1398, both keys 141 lines down;
+  - the Amendment Log and this log, each keeping `v2`'s text and adding this branch's after it.
+  - `MacCorpusBrowserWindow.swift` merged cleanly.
+- **Checked read-only.** Every file only one side changed is byte-identical to that side. `MacCorpusBrowserWindow.swift` is byte-identical to a fresh `git merge-file`. The three conflicted files differ from `v2` only by this branch's lines: the two ranges, one log bullet and this entry.
+- **Walked on the merge** in the check copy, built at `b3e7407f`:
+  - the page link, d1213's *vol. i, p. 857*, opened Berlin vol. I's page with #1766's line from 1961–63 Volume V's page 2 times of 2, and from the 1961–63 list;
+  - *volume V* opened Volume V's page from Berlin vol. I's page and from 1945's list.
+- **The full unit run** on the merge, through the lock on iPhone 17 (`80CF0F18`, iOS 27.0), shut down after it: *Test run with 7606 tests in 900 suites passed after 390.792 seconds with 6 known issues* (`SyncDiagnosticsEntryTests`', #1606), then `** TEST EXECUTE SUCCEEDED **`, with no failed test.
+- **The Mac build** on the merge: `FRUSExplorerMac`, DirectDistribution, unsigned, in its own derived data. `** BUILD SUCCEEDED **`, with the `GeneratedSummary` residue as its only warning.
+- **Opened as #1779** on the owner's word of 2026-10-22 ("Open the pull request against v2, using the draft in the notes folder (corpus-browser-handoff/pr-draft.md)."), against `v2` at `700cb5a3`. Auto-fix is on (the app's switch) and auto-merge off; no CI checks reported. Not merged. Its body is the draft kept with this session's notes.
+- **The plan of record's §5** marks the finding fixed, in this pull request's last commit.
+- **The shared check copy** is left extracted and built at `b3e7407f`, and its fake home holds this session's walk searches. The `v2` build used for the "before" walk is set aside in this session's scratchpad, and the throwaway tree with L6's code is removed.
