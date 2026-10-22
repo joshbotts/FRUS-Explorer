@@ -2904,7 +2904,7 @@ components:
           description: Archival source note.
         snippet:
           type: string
-          description: Context snippet, its first matching word in the document's prose wrapped in `<b>…</b>`.
+          description: Context snippet, wrapping in `<b>…</b>` the document prose's first word of the query's rarest term that the prose holds, rarest by how many indexed documents hold it and leaving aside function words such as the, of and why while the query has other terms.
         bm25Score:
           type: number
           format: double

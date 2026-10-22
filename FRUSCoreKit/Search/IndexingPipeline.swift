@@ -3902,6 +3902,32 @@ public actor IndexingPipeline {
         return (sql, binds)
     }
 
+    /// How many documents of the index hold each of `terms`, read from the corpus table's vocabulary
+    /// (`frus_documents_vocab`): what a keyword row's snippet is anchored by, the rarest term first
+    /// (`SearchService.keywordAnchorTiers(_:)`, #1760).
+    ///
+    /// Here, on this actor and its connection, rather than through `FTS5Store`, whose connection
+    /// the index's `optimize()` holds for 30 to 60 seconds after a whole library is indexed: a search
+    /// asks this between its rows and its snippets, and must not wait for that.
+    ///
+    /// - Parameter terms: Index terms, as the vocabulary keys them. A search passes the Porter stems
+    ///   its snippets are matched by, which are SQLite's own for nearly every word.
+    /// - Returns: Each term the vocabulary holds, with its document count; a term it does not hold is
+    ///   absent.
+    func documentFrequencies(ofIndexTerms terms: [String]) throws -> [String: Int] {
+        let stmt = try auxPrepare("SELECT doc FROM \(FTS5Schema.frusDocuments.vocabTableName) WHERE term = ?")
+        defer { sqlite3_finalize(stmt) }
+        var frequencies: [String: Int] = [:]
+        for term in Set(terms) where !term.isEmpty {
+            sqlite3_reset(stmt)
+            sqlite3_bind_text(stmt, 1, term, -1, SQLITE_TRANSIENT_IP)
+            if try auxStep(stmt) {
+                frequencies[term] = Int(sqlite3_column_int64(stmt, 0))
+            }
+        }
+        return frequencies
+    }
+
     /// Returns the exact number of documents matching the search and all filters.
     ///
     /// Runs the same match CTE and `WHERE` clause as `searchDocuments` with a
